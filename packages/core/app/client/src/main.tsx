@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import './runtimePublicPath';
 import { app } from './pages/index';
 
 app.mount('#root');

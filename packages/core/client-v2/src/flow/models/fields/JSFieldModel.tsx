@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ElementProxy, tExpr, createSafeWindow, createSafeDocument, createSafeNavigator } from '@nocobase/flow-engine';
+import { ElementProxy, tExpr } from '@nocobase/flow-engine';
 import React, { useEffect } from 'react';
 import { FieldModel } from '../base/FieldModel';
 import { resolveRunJsParams } from '../utils/resolveRunJsParams';
@@ -211,12 +211,7 @@ JSFieldModel.registerFlow({
             get: () => ctx.model.props?.value,
             cache: false,
           });
-          const navigator = createSafeNavigator();
-          await ctx.runjs(
-            code,
-            { window: createSafeWindow({ navigator }), document: createSafeDocument(), navigator },
-            { version },
-          );
+          await ctx.runjs(code, undefined, { version });
         });
       },
     },

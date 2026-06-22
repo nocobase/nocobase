@@ -18,7 +18,7 @@ import { useTranslation } from 'react-i18next';
 import { FIELDS_VALIDATION_OPTIONS, REQUIRED_RULE_KEY } from './fieldValidationConstants';
 
 interface ValidationRule {
-  key: string;
+  key?: string;
   name: string;
   args?: {
     [key: string]: any;
@@ -34,14 +34,23 @@ interface ValidationData {
 interface FieldValidationProps {
   value?: ValidationData;
   onChange?: (value: ValidationData) => void;
+  inheritedValue?: ValidationData;
   type?: string;
   availableValidationOptions?: string[];
   excludeValidationOptions?: string[];
   isAssociation?: boolean;
 }
 
+function formatFallbackRuleLabel(name: string) {
+  if (!name) {
+    return name;
+  }
+  return `${name.slice(0, 1).toUpperCase()}${name.slice(1)}`;
+}
+
 export const FieldValidation = observer((props: FieldValidationProps) => {
-  const { value, onChange, type, availableValidationOptions, excludeValidationOptions, isAssociation } = props;
+  const { value, onChange, inheritedValue, type, availableValidationOptions, excludeValidationOptions, isAssociation } =
+    props;
   const { t } = useTranslation();
   const { token } = theme.useToken();
   const noCascadeCls = css`
@@ -57,8 +66,9 @@ export const FieldValidation = observer((props: FieldValidationProps) => {
   const [expandedKeys, setExpandedKeys] = useState<string[]>([]);
   const formilyField: any = useField?.() as any;
 
-  const validationType = value?.type || type;
-  const rules = value?.rules || [];
+  const validationType = value?.type || inheritedValue?.type || type;
+  const rules = useMemo(() => value?.rules || [], [value?.rules]);
+  const inheritedRules = useMemo(() => inheritedValue?.rules || [], [inheritedValue?.rules]);
 
   const normalizeArgsForDomainLike = useCallback((ruleName: string, args: Record<string, any> | undefined) => {
     if (!args) return args;
@@ -163,19 +173,19 @@ export const FieldValidation = observer((props: FieldValidationProps) => {
     let hasError = false;
     const invalidRuleKeys: string[] = [];
     try {
-      rules.forEach((rule) => {
+      rules.forEach((rule, index) => {
         const opt = validationOptions.find((o) => o.key === rule.name);
         if (!opt || !opt.params) return;
         let ruleInvalid = false;
         opt.params.forEach((param) => {
           if (!param.required) return;
-          const currentValue = (rule.args?.[param.key] ?? param.defaultValue) as any;
-          if (isValueEmpty(param.componentType as any, currentValue)) {
+          const currentValue = rule.args?.[param.key] ?? param.defaultValue;
+          if (isValueEmpty(param.componentType, currentValue)) {
             hasError = true;
             ruleInvalid = true;
           }
         });
-        if (ruleInvalid) invalidRuleKeys.push(rule.key);
+        if (ruleInvalid) invalidRuleKeys.push(getRuleKey(rule, index, 'ui'));
       });
     } catch (err) {
       hasError = true;
@@ -198,17 +208,18 @@ export const FieldValidation = observer((props: FieldValidationProps) => {
 
   const handleAddRule = (ruleType: string) => {
     const option = validationOptions.find((opt) => opt.key === ruleType);
+    const args: Record<string, any> = {};
     const newRule: ValidationRule = {
       key: `r_${Date.now()}`,
       name: ruleType,
-      args: {},
+      args,
       paramsType: option?.paramsType,
     };
 
     if (option?.params) {
       option.params.forEach((param) => {
         if (param.defaultValue !== undefined) {
-          newRule.args![param.key] = param.defaultValue;
+          args[param.key] = param.defaultValue;
         }
       });
     }
@@ -225,7 +236,7 @@ export const FieldValidation = observer((props: FieldValidationProps) => {
   };
 
   const handleRemoveRule = (ruleKey: string) => {
-    const newRules = rules.filter((rule) => rule.key !== ruleKey);
+    const newRules = rules.filter((rule, index) => getRuleKey(rule, index, 'ui') !== ruleKey);
     onChange?.({
       type: validationType,
       rules: newRules,
@@ -233,8 +244,8 @@ export const FieldValidation = observer((props: FieldValidationProps) => {
   };
 
   const handleRuleValueChange = (ruleKey: string, argKey: string, newValue: any) => {
-    const newRules = rules.map((rule) => {
-      if (rule.key === ruleKey) {
+    const newRules = rules.map((rule, index) => {
+      if (getRuleKey(rule, index, 'ui') === ruleKey) {
         let nextArgs = { ...rule.args, [argKey]: newValue } as Record<string, any>;
         nextArgs = normalizeArgsForDomainLike(rule.name, nextArgs);
         const option = validationOptions.find((item) => item.key === rule.name);
@@ -261,7 +272,10 @@ export const FieldValidation = observer((props: FieldValidationProps) => {
     }
   };
 
-  const renderValidationForm = (rule: ValidationRule) => {
+  const getRuleKey = (rule: ValidationRule, index: number, source: 'field' | 'ui') =>
+    rule.key || `${source}-${rule.name}-${index}`;
+
+  const renderValidationForm = (rule: ValidationRule, ruleKey: string, readOnly: boolean) => {
     const option = validationOptions.find((opt) => opt.key === rule.name);
     if (!option) return null;
 
@@ -282,7 +296,7 @@ export const FieldValidation = observer((props: FieldValidationProps) => {
           ) {
             currentValue = deriveTldsModeFromArgs(rule.args);
           }
-          const isInvalid = !!param.required && isValueEmpty(param.componentType as any, currentValue);
+          const isInvalid = !readOnly && !!param.required && isValueEmpty(param.componentType, currentValue);
 
           return (
             <Form.Item
@@ -296,33 +310,35 @@ export const FieldValidation = observer((props: FieldValidationProps) => {
             >
               {param.componentType === 'checkbox' ? (
                 <Checkbox
+                  disabled={readOnly}
                   checked={currentValue || false}
-                  onChange={(e) => handleRuleValueChange(rule.key, param.key, e.target.checked)}
+                  onChange={(e) => handleRuleValueChange(ruleKey, param.key, e.target.checked)}
                 >
                   {t(param.label)}
                 </Checkbox>
               ) : param.componentType === 'radio' ? (
                 <div>
                   <Radio.Group
+                    disabled={readOnly}
                     value={currentValue}
                     onChange={(e) => {
                       if (param.key === 'tlds' && (option.key === 'email' || option.key === 'domain')) {
                         const val = e.target.value as 'iana' | 'disable' | 'allow' | 'deny';
                         if (val === 'iana') {
-                          handleRuleValueChange(rule.key, 'tlds', { allow: true });
+                          handleRuleValueChange(ruleKey, 'tlds', { allow: true });
                         } else if (val === 'disable') {
-                          handleRuleValueChange(rule.key, 'tlds', false);
+                          handleRuleValueChange(ruleKey, 'tlds', false);
                         } else if (val === 'allow') {
                           const prev = rule.args?.tlds;
                           const arr = Array.isArray(prev?.allow) ? prev.allow : [];
-                          handleRuleValueChange(rule.key, 'tlds', { allow: arr });
+                          handleRuleValueChange(ruleKey, 'tlds', { allow: arr });
                         } else if (val === 'deny') {
                           const prev = rule.args?.tlds;
                           const arr = Array.isArray(prev?.deny) ? prev.deny : [];
-                          handleRuleValueChange(rule.key, 'tlds', { deny: arr });
+                          handleRuleValueChange(ruleKey, 'tlds', { deny: arr });
                         }
                       } else {
-                        handleRuleValueChange(rule.key, param.key, e.target.value);
+                        handleRuleValueChange(ruleKey, param.key, e.target.value);
                       }
                     }}
                   >
@@ -349,6 +365,7 @@ export const FieldValidation = observer((props: FieldValidationProps) => {
                                   : [];
                                 return (
                                   <Select
+                                    disabled={readOnly}
                                     mode="tags"
                                     value={arrValue}
                                     onChange={(vals) => {
@@ -356,9 +373,9 @@ export const FieldValidation = observer((props: FieldValidationProps) => {
                                         new Set((vals as string[]).map((s) => String(s).trim()).filter(Boolean)),
                                       );
                                       if (item.value === 'allow') {
-                                        handleRuleValueChange(rule.key, 'tlds', { allow: cleaned });
+                                        handleRuleValueChange(ruleKey, 'tlds', { allow: cleaned });
                                       } else {
-                                        handleRuleValueChange(rule.key, 'tlds', { deny: cleaned });
+                                        handleRuleValueChange(ruleKey, 'tlds', { deny: cleaned });
                                       }
                                     }}
                                     tokenSeparators={[',', ' ', '\n', '\t']}
@@ -370,9 +387,10 @@ export const FieldValidation = observer((props: FieldValidationProps) => {
 
                               return (
                                 <Input
+                                  disabled={readOnly}
                                   value=""
                                   onChange={(e) =>
-                                    handleRuleValueChange(rule.key, `${param.key}_${item.value}`, e.target.value)
+                                    handleRuleValueChange(ruleKey, `${param.key}_${item.value}`, e.target.value)
                                   }
                                   style={{ width: '100%' }}
                                 />
@@ -380,30 +398,33 @@ export const FieldValidation = observer((props: FieldValidationProps) => {
                             })()
                           ) : item.componentType === 'inputNumber' ? (
                             <InputNumber
+                              disabled={readOnly}
                               precision={allowDecimalInputNumber ? undefined : 0}
                               step={allowDecimalInputNumber ? 0.1 : 1}
                               value={rule.args?.[`${param.key}_${item.value}`] || ''}
-                              onChange={(val) => handleRuleValueChange(rule.key, `${param.key}_${item.value}`, val)}
+                              onChange={(val) => handleRuleValueChange(ruleKey, `${param.key}_${item.value}`, val)}
                               style={{ width: '100%' }}
                             />
                           ) : item.componentType === 'checkbox' ? (
                             <Checkbox
+                              disabled={readOnly}
                               checked={rule.args?.[`${param.key}_${item.value}`] || false}
                               onChange={(e) =>
-                                handleRuleValueChange(rule.key, `${param.key}_${item.value}`, e.target.checked)
+                                handleRuleValueChange(ruleKey, `${param.key}_${item.value}`, e.target.checked)
                               }
                             >
                               {t(item.label)}
                             </Checkbox>
                           ) : item.componentType === 'datePicker' ? (
                             <DatePicker
+                              disabled={readOnly}
                               value={
                                 rule.args?.[`${param.key}_${item.value}`]
                                   ? dayjs(rule.args[`${param.key}_${item.value}`])
                                   : null
                               }
                               onChange={(date) =>
-                                handleRuleValueChange(rule.key, `${param.key}_${item.value}`, date?.toISOString())
+                                handleRuleValueChange(ruleKey, `${param.key}_${item.value}`, date?.toISOString())
                               }
                               placeholder={t('Select date')}
                               style={{ width: '100%' }}
@@ -417,8 +438,9 @@ export const FieldValidation = observer((props: FieldValidationProps) => {
                 </div>
               ) : param.componentType === 'singleSelect' ? (
                 <Select
+                  disabled={readOnly}
                   value={currentValue}
-                  onChange={(val) => handleRuleValueChange(rule.key, param.key, val)}
+                  onChange={(val) => handleRuleValueChange(ruleKey, param.key, val)}
                   placeholder={t('Please select')}
                   style={{ width: '100%', height: '100%' }}
                   allowClear
@@ -426,9 +448,10 @@ export const FieldValidation = observer((props: FieldValidationProps) => {
                 />
               ) : param.componentType === 'multipleSelect' ? (
                 <Select
+                  disabled={readOnly}
                   mode="multiple"
                   value={currentValue}
-                  onChange={(val) => handleRuleValueChange(rule.key, param.key, val)}
+                  onChange={(val) => handleRuleValueChange(ruleKey, param.key, val)}
                   placeholder={t('Please select')}
                   style={{ width: '100%' }}
                   allowClear
@@ -436,24 +459,27 @@ export const FieldValidation = observer((props: FieldValidationProps) => {
                 />
               ) : param.componentType === 'inputNumber' ? (
                 <InputNumber
+                  disabled={readOnly}
                   precision={allowDecimalInputNumber ? undefined : 0}
                   step={allowDecimalInputNumber ? 0.1 : 1}
                   value={currentValue !== undefined ? currentValue : ''}
-                  onChange={(val) => handleRuleValueChange(rule.key, param.key, val)}
+                  onChange={(val) => handleRuleValueChange(ruleKey, param.key, val)}
                   placeholder={t('Enter value')}
                   style={{ width: '100%' }}
                 />
               ) : param.componentType === 'datePicker' ? (
                 <DatePicker
+                  disabled={readOnly}
                   value={currentValue ? dayjs(currentValue) : null}
-                  onChange={(date) => handleRuleValueChange(rule.key, param.key, date?.toISOString())}
+                  onChange={(date) => handleRuleValueChange(ruleKey, param.key, date?.toISOString())}
                   placeholder={t('Select date')}
                   style={{ width: '100%' }}
                 />
               ) : (
                 <Input
+                  disabled={readOnly}
                   value={currentValue !== undefined ? currentValue : ''}
-                  onChange={(e) => handleRuleValueChange(rule.key, param.key, e.target.value)}
+                  onChange={(e) => handleRuleValueChange(ruleKey, param.key, e.target.value)}
                   placeholder={t('Enter value')}
                 />
               )}
@@ -465,40 +491,61 @@ export const FieldValidation = observer((props: FieldValidationProps) => {
   };
 
   const menuItems: MenuProps['items'] = useMemo(() => {
-    const addedRuleNames = new Set(rules.map((rule) => rule.name));
+    const addedRuleNames = new Set([...inheritedRules, ...rules].map((rule) => rule.name));
     return validationOptions
       .filter((option) => !addedRuleNames.has(option.key))
       .map((option) => ({
         key: option.key,
         label: t(option.label),
       }));
-  }, [rules, t, validationOptions]);
+  }, [inheritedRules, rules, t, validationOptions]);
 
   const menu: MenuProps = {
     items: menuItems,
     onClick: ({ key }) => handleAddRule(key as string),
   };
 
-  return (
-    <div className={noCascadeCls} style={{ marginBottom: token.marginLG }}>
-      {rules.length > 0 && (
+  const renderSectionTitle = (title: string, extraStyle?: React.CSSProperties) => (
+    <div
+      style={{
+        alignItems: 'center',
+        color: token.colorTextSecondary,
+        display: 'flex',
+        fontSize: token.fontSize,
+        fontWeight: 500,
+        lineHeight: token.lineHeight,
+        marginBottom: token.marginXS,
+        ...extraStyle,
+      }}
+    >
+      {title}
+    </div>
+  );
+
+  const renderRuleList = (dataSource: ValidationRule[], readOnly: boolean, source: 'field' | 'ui') => {
+    if (!dataSource.length) {
+      return null;
+    }
+
+    return (
+      <div style={{ marginBottom: token.marginSM }}>
         <List
           size="small"
           style={{
-            backgroundColor: token.colorFillAlter,
-            border: `1px solid ${token.colorBorder}`,
+            backgroundColor: readOnly ? token.colorFillQuaternary : token.colorFillAlter,
+            border: `1px solid ${readOnly ? token.colorBorderSecondary : token.colorBorder}`,
             borderRadius: token.borderRadius,
-            marginBottom: token.marginSM,
           }}
-          dataSource={rules}
-          renderItem={(rule) => {
+          dataSource={dataSource}
+          renderItem={(rule, index) => {
+            const ruleKey = getRuleKey(rule, index, source);
             const option = validationOptions.find((opt) => opt.key === rule.name);
-            const ruleLabel = option ? t(option.label) : rule.name;
+            const ruleLabel = option ? t(option.label) : formatFallbackRuleLabel(rule.name);
             const hasParams = option?.hasValue && option.params.length > 0;
-            const isExpanded = expandedKeys.includes(rule.key);
+            const isExpanded = expandedKeys.includes(ruleKey);
 
             return (
-              <List.Item style={{ display: 'block', padding: 0 }}>
+              <List.Item key={ruleKey} style={{ display: 'block', padding: 0 }}>
                 <div
                   style={{
                     display: 'flex',
@@ -506,10 +553,10 @@ export const FieldValidation = observer((props: FieldValidationProps) => {
                     alignItems: 'center',
                     padding: `${token.paddingXS}px ${token.paddingSM}px`,
                     cursor: hasParams ? 'pointer' : 'default',
-                    backgroundColor: token.colorBgContainer,
+                    backgroundColor: readOnly ? token.colorFillQuaternary : token.colorBgContainer,
                     borderRadius: 6,
                   }}
-                  onClick={() => hasParams && handleToggleExpand(rule.key)}
+                  onClick={() => hasParams && handleToggleExpand(ruleKey)}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: token.marginXS }}>
                     <div
@@ -533,34 +580,49 @@ export const FieldValidation = observer((props: FieldValidationProps) => {
                       )}
                     </span>
                   </div>
-                  <Button
-                    type="text"
-                    size="small"
-                    icon={<DeleteOutlined />}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleRemoveRule(rule.key);
-                    }}
-                    style={{ color: token.colorTextSecondary }}
-                  />
+                  {!readOnly && (
+                    <Button
+                      type="text"
+                      size="small"
+                      icon={<DeleteOutlined />}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleRemoveRule(ruleKey);
+                      }}
+                      style={{ color: token.colorTextSecondary }}
+                    />
+                  )}
                 </div>
                 {hasParams && isExpanded && (
                   <div
                     style={{
                       padding: token.paddingSM,
-                      backgroundColor: token.colorBgContainer,
-                      borderTop: `1px solid ${token.colorBorder}`,
+                      backgroundColor: readOnly ? token.colorFillQuaternary : token.colorBgContainer,
+                      borderTop: `1px solid ${readOnly ? token.colorBorderSecondary : token.colorBorder}`,
                       borderRadius: '0 0 6px 6px',
                     }}
                   >
-                    {renderValidationForm(rule)}
+                    {renderValidationForm(rule, ruleKey, readOnly)}
                   </div>
                 )}
               </List.Item>
             );
           }}
         />
+      </div>
+    );
+  };
+
+  return (
+    <div className={noCascadeCls} style={{ marginBottom: token.marginLG }}>
+      {inheritedRules.length > 0 && (
+        <>
+          {renderSectionTitle(t('Server-side field validation rules'))}
+          {renderRuleList(inheritedRules, true, 'field')}
+          {renderSectionTitle(t('Client-side validation rules'), { marginTop: token.margin })}
+        </>
       )}
+      {renderRuleList(rules, false, 'ui')}
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>

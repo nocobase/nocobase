@@ -18,6 +18,7 @@ import {
 } from './constants';
 import type { Instruction } from './canvas/Instruction';
 import type { Trigger } from './triggers';
+import './models/triggerWorkflows';
 
 // Core node instructions — one file per node under `nodes/`, mirroring v1's `client/nodes/` layout. Each
 // default-exports its Instruction class.

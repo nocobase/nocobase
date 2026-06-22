@@ -162,6 +162,7 @@ describe('actions', () => {
 
       res = await agent.get('/auth:check').set({ Authorization: `Bearer ${token}`, 'X-Authenticator': 'basic' });
       expect(res.body.data.id).toBeDefined();
+      expect(res.body.data.password).toBeUndefined();
     });
 
     it('should disable sign up', async () => {

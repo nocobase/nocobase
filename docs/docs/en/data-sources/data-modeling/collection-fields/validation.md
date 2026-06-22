@@ -78,6 +78,9 @@ After configuring field rules, the corresponding validation rules will be trigge
 
 ![20250819201027](https://nocobase-docs.oss-cn-beijing.aliyuncs.com/20250819201027.png)
 
+When the field is used in a form, field validation rules are also displayed in the field validation settings. These rules appear under **Server-side field validation rules** and are read-only there. If you need to change them, edit the field in Data source → Collection configuration.
+
+You can still add extra rules for the current form field under **Client-side validation rules**. These rules only apply to the current field component. The final validation result combines **Server-side field validation rules** and **Client-side validation rules**.
 
 Validation rules also apply to sub-table and sub-form components:
 
@@ -93,12 +96,12 @@ Note that in sub-form or sub-table scenarios, required validation for associatio
 ![20250819203016](https://nocobase-docs.oss-cn-beijing.aliyuncs.com/20250819203016.png)
 
 
-## Differences from Client-Side Field Validation
-Client-side and server-side field validation are applied in different scenarios, with significant differences in implementation and rule trigger timing, so they need to be managed separately.
+## Differences Between Server-Side Field Validation Rules and Client-Side Validation Rules
+Server-side field validation rules and client-side validation rules are configured in different places and have different scopes.
 
 ### Configuration Method Differences
-- **Client-side validation**: Configure rules in edit forms (as shown in the figure below)
-- **Server-side field validation**: Set field rules in Data Source → Collection Configuration
+- **Server-side field validation rules**: Set field rules in Data source → Collection configuration. These rules are the base rules of the field.
+- **Client-side validation rules**: Configure extra rules in a form field's settings. These rules only affect the current field component.
 
 ![20250819203836](https://nocobase-docs.oss-cn-beijing.aliyuncs.com/20250819203836.png)
 
@@ -109,7 +112,7 @@ Client-side and server-side field validation are applied in different scenarios,
 
 
 ### Validation Trigger Timing Differences
-- **Client-side validation**: Triggers validation in real-time as users fill in fields, displaying error messages immediately.
-- **Server-side field validation**: Validates on the server side before data entry after data submission, with error messages returned through API responses.
-- **Application scope**: Server-side field validation takes effect not only during form submission but also triggers in all scenarios involving data addition or modification, such as workflows and data imports.
-- **Error messages**: Client-side validation supports custom error messages, while server-side validation does not currently support custom error messages.
+- **Server-side field validation rules**: Trigger frontend validation when the field is used in a form, and also validate before data is written. They also apply to scenarios that create or update data, such as workflows and data imports.
+- **Client-side validation rules**: Trigger frontend validation in the current form field only.
+- **Rule display**: Server-side field validation rules are shown as inherited read-only rules. Client-side validation rules are shown separately and can be edited there.
+- **Error messages**: Client-side validation rules support custom error messages, while server-side field validation rules do not currently support custom error messages.

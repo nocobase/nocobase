@@ -42,7 +42,7 @@ nb init --env app1 --resume
 
 `--prepare-only` ditujukan untuk alur yang perlu menyiapkan env terlebih dahulu, lalu mengaktifkan lisensi, dan baru setelah itu menginstal serta menjalankan app.
 
-Jika Anda ingin lebih dulu menyimpan konfigurasi env, menyiapkan source code atau image, dan membuat database siap digunakan, tetapi menunda instalasi app yang sebenarnya serta startup pertama, Anda dapat menggunakan:
+Jika Anda ingin lebih dulu menyimpan konfigurasi env dan menyiapkan database, tetapi menunda download dependensi, instalasi app, dan startup pertama, Anda dapat menggunakan:
 
 ```bash
 nb init --env app1 --prepare-only
@@ -67,6 +67,7 @@ Secara default, CLI akan mengatur file lokal di bawah `app-path` mengikuti konve
 
 ```text
 <app-path>/
+├── .nb/      # Metadata CLI untuk env ini, seperti hooks.mjs
 ├── source/   # Direktori default untuk source code aplikasi atau hasil unduhan
 ├── storage/  # Direktori data runtime
 └── .env      # File variabel lingkungan aplikasi opsional
@@ -74,6 +75,7 @@ Secara default, CLI akan mengatur file lokal di bawah `app-path` mengikuti konve
 
 Secara umum:
 
+- `.nb/` menyimpan metadata yang dikelola CLI. Script yang diteruskan dengan `--hook-script` akan disalin ke `<app-path>/.nb/hooks.mjs`, sehingga `nb app upgrade` dan restore source lokal berikutnya dapat menggunakannya kembali
 - `source/` terutama mengacu pada direktori aplikasi lokal untuk env npm / Git. Untuk Docker env, CLI juga mempertahankan turunan path default ini, tetapi biasanya Anda tidak perlu memperhatikannya secara manual. Perhatikan saat upgrade: direktori `source/` akan dihapus lalu diunduh ulang, jadi jangan simpan file yang perlu dipertahankan di sini
 - `storage/` digunakan untuk menyimpan data runtime, seperti data database bawaan, plugin, log, dan sebagainya
 - `.env` adalah file variabel lingkungan aplikasi yang opsional. Anda hanya perlu menambahkannya ke `<app-path>/.env` saat ingin menyesuaikan variabel lingkungan; jika file ini ada, sumber instalasi Docker, npm, dan Git akan membacanya secara default
@@ -101,7 +103,7 @@ Jika Anda mengikuti wizard UI lokal langkah demi langkah, Anda bisa memakai tabe
 | ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `Getting started`         | `--env`、`--yes`、`--ui`、`--locale`、`--verbose`、`--skip-skills`、`--resume`、`--prepare-only`                                                                                                                 |
 | `App environment`         | `--lang`、`--app-path`、`--app-port`、`--force`                                                                                                                                                                   |
-| `App source and version`  | `--source`、`--version`、`--skip-download`、`--git-url`、`--docker-registry`、`--docker-platform`、`--npm-registry`、`--replace`、`--dev-dependencies`、`--output-dir`、`--docker-save`、`--build`、`--build-dts` |
+| `App source and version`  | `--source`、`--version`、`--skip-download`、`--git-url`、`--docker-registry`、`--docker-platform`、`--npm-registry`、`--replace`、`--dev-dependencies`、`--output-dir`、`--docker-save`、`--build`、`--build-dts`、`--hook-script` |
 | `Configure the database`  | `--builtin-db`、`--db-dialect`、`--builtin-db-image`、`--db-host`、`--db-port`、`--db-database`、`--db-user`、`--db-password`、`--db-schema`、`--db-table-prefix`、`--db-underscored`                             |
 | `Create an admin account` | `--root-username`、`--root-email`、`--root-password`、`--root-nickname`                                                                                                                                           |
 | `Remote connection`       | `--api-base-url`、`--auth-type`、`--access-token`、`--username`、`--password`、`--skip-auth`                                                                                                                      |
@@ -184,6 +186,7 @@ Parameternya cukup banyak, jadi akan lebih jelas jika dilihat berdasarkan skenar
 | `--npm-registry`                                     | string  | Kosong                                                                                                   | Registry yang dipakai untuk unduhan npm/Git dan instalasi dependensi                         |
 | `--build` / `--no-build`                             | boolean | `true`                                                                                                   | Apakah melakukan build setelah dependensi npm/Git diinstal                                   |
 | `--build-dts`                                        | boolean | `false`                                                                                                  | Apakah menghasilkan file deklarasi TypeScript saat build npm/Git                             |
+| `--hook-script`                                      | string  | Tidak ada                                                                                                | Menyalin modul hook yang ditentukan ke `<app-path>/.nb/hooks.mjs` dan menyimpannya di env config; mendukung lifecycle hook `beforeDependencyInstall`, `beforeAppInstall`, dan `afterAppStart` |
 
 ## Contoh
 
@@ -232,6 +235,40 @@ nb init --env app1 --yes --source git --version feat/plugin-workflow-timeout
 nb init --env app1 --yes --source git --version latest \
   --git-url https://gitee.com/nocobase/nocobase.git
 ```
+
+### Memperluas alur instalasi dengan script hook
+
+Jika Anda perlu menyiapkan konten tambahan selama instalasi, teruskan modul ESM lokal dengan `--hook-script`:
+
+```bash
+nb init --env app1 --yes --source git --hook-script ./hooks.mjs
+```
+
+CLI menyalin file ini ke `<app-path>/.nb/hooks.mjs` dan menyimpan `hookScript: ".nb/hooks.mjs"` di env config. `nb app start`, `nb app restart`, dan `nb app upgrade` berikutnya akan menggunakannya kembali dari lokasi tersebut.
+
+File hook harus melakukan default export sebuah objek. Implementasikan hanya metode yang Anda butuhkan:
+
+```js
+export default {
+  beforeDependencyInstall: async (context) => {
+    // Runs after git clone / npm scaffold and before yarn install.
+  },
+  beforeAppInstall: async (context) => {
+    // Runs before the app-level install or upgrade command.
+  },
+  afterAppStart: async (context) => {
+    // Runs after the app actually starts and passes the health check.
+  },
+};
+```
+
+- `beforeDependencyInstall` hanya berlaku untuk source npm/Git dan berjalan tepat sebelum `yarn install` yang sebenarnya; Docker source tidak menjalankannya
+- `beforeAppInstall` berjalan sebelum perintah install atau upgrade level app, dan berlaku untuk source npm/Git/Docker
+- `afterAppStart` berjalan setelah app benar-benar start dan lolos `__health_check`; `nb app start`, `nb app restart`, dan `nb app upgrade` dapat memicunya
+
+`--prepare-only` hanya menyimpan env config dan menyalin file hook. Hook tidak dijalankan. Saat Anda kemudian menjalankan `nb app start` untuk pertama kali, CLI menjalankan hook instalasi pertama dengan `context.phase` bernilai `init` dan `context.command` bernilai `app:start`.
+
+`context` berisi informasi lifecycle seperti `phase`, `command`, `source`, `version`, `appPath`, `sourcePath`, `storagePath`, `hookScript`, dan `envConfig`. Jika hook melempar error, perintah CLI saat ini akan gagal. Karena `afterAppStart` dapat berjalan berulang saat start, restart, dan upgrade, buat logikanya idempotent.
 
 ### Instal cepat dan langsung memakai autentikasi basic
 

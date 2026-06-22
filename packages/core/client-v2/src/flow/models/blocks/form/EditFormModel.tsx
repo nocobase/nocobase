@@ -239,6 +239,7 @@ EditFormModel.registerFlow({
           // 切换记录（翻页等）时，清理“用户改动标记”，避免把上一条记录的编辑状态带到下一条
           if (recordChanged) {
             ctx.model.resetUserModifiedFields?.();
+            ctx.model.resetRuntimeUserEditedState?.();
           }
 
           ctx.form.setFieldsValue(currentRecord);

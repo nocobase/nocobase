@@ -34,6 +34,13 @@ nb app start --env local-docker
 If you explicitly pass `--env` and it differs from the current env, the CLI asks for confirmation first. In non-interactive terminals or AI agent sessions, add `--yes` yourself or run `nb env use <name>` first and try again.
 
 By default, when applicable, the CLI first runs `nb license plugins sync --skip-if-no-license` to synchronize the commercial plugins allowed by the current license. Then local envs automatically complete any required install or upgrade preparation before starting, and Docker envs recreate the app container from saved env config. Whenever the CLI needs to wait for readiness, it checks `__health_check`: it prints one waiting line first, then one progress line every 10 seconds until the app becomes available or times out.
+
+## Hook Scripts
+
+If the current env saved a hook with `nb init --hook-script`, `nb app start` runs `afterAppStart(context)` after the app actually starts and passes `__health_check`. Installed envs use `context.phase = 'app-start'` and `context.command = 'app:start'`. If the app is already running, this command does not run the hook.
+
+For prepared envs created with `--prepare-only`, the first `nb app start` runs `beforeAppInstall(context)`, completes the first install and startup, then runs `afterAppStart(context)`. Both hooks receive `context.phase = 'init'` and `context.command = 'app:start'`.
+
 ## Related Commands
 
 - [`nb app stop`](./stop.md)

@@ -114,7 +114,7 @@ export class AdminLayoutModel extends BaseLayoutModel<AdminLayoutStructure> {
 
   render() {
     return (
-      <AdminLayoutEntryGuard>
+      <AdminLayoutEntryGuard model={this}>
         <AdminLayoutComponent {...this.props} model={this} />
       </AdminLayoutEntryGuard>
     );

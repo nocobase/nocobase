@@ -179,10 +179,20 @@ const AddFieldColumn = ({ model }: { model: TableBlockModel }) => {
       ].filter(Boolean)}
       keepDropdownOpen
     >
-      <FlowSettingsButton icon={<SettingOutlined />}>{model.translate('Fields')}</FlowSettingsButton>
+      {renderTableSettingsButton(model, 'Fields')}
     </AddSubModelButton>
   );
 };
+
+function renderTableSettingsButton(model: TableBlockModel, title: string) {
+  const label = model.translate(title);
+
+  return (
+    <FlowSettingsButton aria-label={label} icon={<SettingOutlined />}>
+      {model.context.isMobileLayout ? null : label}
+    </FlowSettingsButton>
+  );
+}
 
 type CustomTableBlockModelClassesEnum = {
   CollectionActionGroupModel?: string;
@@ -265,7 +275,7 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
       cols.push({
         key: 'addColumn',
         fixed: 'right',
-        width: 100,
+        ...(this.context.isMobileLayout ? {} : { width: 100 }),
         title: <AddFieldColumn model={this} />,
       } as any);
     }
@@ -508,7 +518,7 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
         subModelBaseClass={this.getModelClassName('CollectionActionGroupModel')}
         subModelKey="actions"
       >
-        <FlowSettingsButton icon={<SettingOutlined />}>{this.translate('Actions')}</FlowSettingsButton>
+        {renderTableSettingsButton(this, 'Actions')}
       </AddSubModelButton>
     );
   }

@@ -7,156 +7,132 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { SubModelItem } from '@nocobase/flow-engine';
-import { CONTEXT_TYPE, CONTEXT_TYPE_OPTIONS, EVENT_TYPE } from '../../common/constants';
-import { NAMESPACE } from '../locale';
+import { useFlowEngine, type SubModelItem } from '@nocobase/flow-engine';
+import {
+  getCollectionFieldOptions,
+  getCollectionManagerAdapter,
+  parseCollectionName,
+  Trigger,
+  type TriggerLoaderOf,
+  type UseVariableOptions,
+  type VariableOption,
+} from '@nocobase/plugin-workflow/client-v2';
+import { CONTEXT_TYPE, EVENT_TYPE } from '../../common/constants';
+import { NAMESPACE, useT } from '../locale';
 
-export class CustomActionTrigger {
+type CustomActionTriggerConfig = {
+  type?: number | null;
+  collection?: string;
+  appends?: string[];
+  global?: boolean;
+};
+
+function getParsedCollection(collection?: string): { dataSourceKey: string; collectionName?: string } {
+  const [dataSourceKey = 'main', collectionName] = parseCollectionName(collection) as [string, string];
+  return { dataSourceKey, collectionName };
+}
+
+function useVariables(config: CustomActionTriggerConfig, options?: UseVariableOptions): VariableOption[] {
+  const flowEngine = useFlowEngine();
+  const t = useT();
+  const { dataSourceKey, collectionName } = getParsedCollection(config.collection);
+  const mainCollectionManager = getCollectionManagerAdapter(flowEngine.context.dataSourceManager, 'main');
+  const collectionManager = getCollectionManagerAdapter(flowEngine.context.dataSourceManager, dataSourceKey);
+  const userFields = getCollectionFieldOptions({
+    appends: ['user'],
+    ...options,
+    fields: [
+      {
+        collectionName: 'users',
+        name: 'user',
+        type: 'hasOne',
+        target: 'users',
+        uiSchema: {
+          title: t('User acted'),
+        },
+      },
+    ],
+    compile: t,
+    collectionManager: mainCollectionManager,
+  });
+
+  if (config.global || config.type === CONTEXT_TYPE.GLOBAL || !config.collection || !collectionName) {
+    return [
+      {
+        label: t('Trigger data'),
+        value: 'data',
+      },
+      ...userFields,
+      {
+        label: t('Role of user acted'),
+        value: 'roleName',
+      },
+    ];
+  }
+
+  return [
+    ...getCollectionFieldOptions({
+      appends: ['data', ...(config.appends?.map((item) => `data.${item}`) || [])],
+      ...options,
+      fields: [
+        {
+          collectionName,
+          name: 'data',
+          type: 'hasOne',
+          target: collectionName,
+          uiSchema: {
+            title: t('Trigger data'),
+          },
+        },
+      ],
+      compile: t,
+      collectionManager,
+    }),
+    ...userFields,
+    {
+      label: t('Role of user acted'),
+      value: 'roleName',
+    },
+  ];
+}
+
+export class CustomActionTrigger extends Trigger {
   title = `{{t("Custom action event", { ns: "${NAMESPACE}" })}}`;
   description = `{{t('When the "Trigger Workflow" button is clicked, the event is triggered based on different context where the button is located. For complex data processing that cannot be handled simply by built-in operations (CRUD) of NocoBase, you can define a series of operations through a workflow and trigger it with the "Trigger Workflow" button.', { ns: "${NAMESPACE}" })}}`;
   sync = false;
 
-  presetFieldset = {
-    type: {
-      type: 'number',
-      title: `{{t("Context type", { ns: "${NAMESPACE}" })}}`,
-      'x-decorator': 'FormItem',
-      'x-component': 'Radio.Group',
-      enum: CONTEXT_TYPE_OPTIONS,
-      required: true,
-      default: CONTEXT_TYPE.GLOBAL,
-    },
-    collection: {
-      type: 'string',
-      title: '{{t("Collection")}}',
-      required: true,
-      'x-decorator': 'FormItem',
-      'x-component': 'DataSourceCollectionCascader',
-      'x-component-props': {
-        dataSourceFilter(item) {
-          return item.options.key === 'main' || item.options.isDBInstance;
-        },
-      },
-      ['x-reactions']: [
-        {
-          dependencies: ['.type'],
-          fulfill: {
-            state: {
-              visible: '{{Boolean($deps[0])}}',
-            },
-          },
-        },
-      ],
-    },
-  };
+  PresetFieldsetLoader: TriggerLoaderOf = () =>
+    import('./CustomActionTriggerConfig').then((module) => ({ default: module.CustomActionTriggerPresetConfig }));
+  FieldsetLoader: TriggerLoaderOf = () => import('./CustomActionTriggerConfig');
+  TriggerFieldsetLoader: TriggerLoaderOf = () => import('./TriggerCustomActionConfig');
 
-  fieldset = {
-    type: {
-      type: 'number',
-      title: `{{t("Context type", { ns: "${NAMESPACE}" })}}`,
-      'x-decorator': 'FormItem',
-      'x-component': 'Radio.Group',
-      enum: CONTEXT_TYPE_OPTIONS,
-      default: CONTEXT_TYPE.GLOBAL,
-      'x-disabled': true,
-    },
-    collection: {
-      type: 'string',
-      title: '{{t("Collection")}}',
-      required: true,
-      'x-decorator': 'FormItem',
-      'x-component': 'DataSourceCollectionCascader',
-      'x-disabled': true,
-      ['x-reactions']: [
-        {
-          target: 'appends',
-          effects: ['onFieldValueChange'],
-          fulfill: {
-            state: {
-              value: [],
-            },
-          },
-        },
-        {
-          dependencies: ['type'],
-          fulfill: {
-            state: {
-              visible: '{{Boolean($deps[0])}}',
-            },
-          },
-        },
-      ],
-    },
-    appends: {
-      type: 'array',
-      title: `{{t("Associations to use", { ns: "${NAMESPACE}" })}}`,
-      description: `{{t("Please select the associated fields that need to be accessed in subsequent nodes. With more than two levels of to-many associations may cause performance issue, please use with caution.", { ns: "workflow" })}}`,
-      'x-decorator': 'FormItem',
-      'x-component': 'AppendsTreeSelect',
-      'x-component-props': {
-        multiple: true,
-      },
-      'x-reactions': [
-        {
-          dependencies: ['collection'],
-          fulfill: {
-            state: {
-              visible: '{{!!$deps[0]}}',
-            },
-          },
-        },
-      ],
-    },
-  };
+  createDefaultConfig() {
+    return {
+      type: CONTEXT_TYPE.GLOBAL,
+    };
+  }
 
-  triggerFieldset = {
-    data: {
-      type: 'object',
-      title: `{{t("Trigger data", { ns: "${NAMESPACE}" })}}`,
-      description: `{{t("Use JSON as trigger data for custom data context, or choose a record in single record context.", { ns: "${NAMESPACE}" })}}`,
-      'x-decorator': 'FormItem',
-      'x-component': 'Input.JSON',
-      default: null,
-    },
-    filterByTk: {
-      type: 'array',
-      title: `{{t("Trigger data", { ns: "${NAMESPACE}" })}}`,
-      description: `{{t("Choose a record or primary key of a record in the collection to trigger.", { ns: "workflow" })}}`,
-      'x-decorator': 'FormItem',
-      'x-component': 'Input.JSON',
-      default: [],
-    },
-    userId: {
-      type: 'number',
-      title: `{{t("User acted", { ns: "${NAMESPACE}" })}}`,
-      'x-decorator': 'FormItem',
-      'x-component': 'InputNumber',
-      default: null,
-      required: true,
-    },
-    roleName: {
-      type: 'string',
-      title: `{{t("Role of user acted", { ns: "${NAMESPACE}" })}}`,
-      'x-decorator': 'FormItem',
-      'x-component': 'Input',
-      default: null,
-    },
-  };
-
-  validate(values) {
+  validate(values: CustomActionTriggerConfig) {
     return (
       !values.type ||
       values.type === CONTEXT_TYPE.GLOBAL ||
-      ([CONTEXT_TYPE.SINGLE_RECORD, CONTEXT_TYPE.MULTIPLE_RECORDS].includes(values.type) && values.collection)
+      ([CONTEXT_TYPE.SINGLE_RECORD, CONTEXT_TYPE.MULTIPLE_RECORDS].includes(values.type) && Boolean(values.collection))
     );
   }
 
-  isActionTriggerable_deprecated = (config, context) => {
+  isActionTriggerable_deprecated = (config: CustomActionTriggerConfig, context: { buttonAction?: string }) => {
     return context.buttonAction === 'customize:triggerWorkflows' && config.type === CONTEXT_TYPE.SINGLE_RECORD;
   };
 
-  getCreateModelMenuItem({ config }): SubModelItem {
+  useVariables = useVariables;
+
+  getCreateModelMenuItem({ config }: { config: CustomActionTriggerConfig }): SubModelItem | null {
     if (!config.collection) {
+      return null;
+    }
+
+    const { dataSourceKey, collectionName } = getParsedCollection(config.collection);
+    if (!collectionName) {
       return null;
     }
 
@@ -169,8 +145,8 @@ export class CustomActionTrigger {
         stepParams: {
           resourceSettings: {
             init: {
-              dataSourceKey: 'main',
-              collectionName: config.collection,
+              dataSourceKey,
+              collectionName,
               dataPath: '$context.data',
             },
           },
