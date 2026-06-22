@@ -33,6 +33,7 @@ nb source download [flags]
 | `--npm-registry` | string | Registry yang digunakan untuk download dan instalasi dependensi npm/Git |
 | `--build` / `--no-build` | boolean | Apakah build setelah instalasi dependensi npm/Git |
 | `--build-dts` | boolean | Apakah menghasilkan file deklarasi TypeScript saat build npm/Git |
+| `--hook-script` | string | Modul hook yang dijalankan setelah npm scaffold atau Git clone dan sebelum instalasi dependensi; hanya berlaku untuk source npm/Git |
 
 ## Contoh
 
@@ -47,7 +48,25 @@ nb source download --source git --version alpha --git-url=git@github.com:nocobas
 nb source download --source git --version fix/cli-v2
 nb source download -y --source npm --version alpha --build-dts
 nb source download -y --source npm --version alpha --npm-registry=https://registry.npmmirror.com
+nb source download -y --source git --version beta --hook-script ./hooks.mjs
 ```
+
+## Hook sebelum instalasi
+
+`--hook-script` hanya memengaruhi eksekusi `nb source download` saat ini. Jika Anda ingin hook disimpan bersama env dan digunakan kembali oleh `nb app upgrade` atau restore source lokal, teruskan melalui [`nb init --hook-script`](../init.md).
+
+File hook harus melakukan default export sebuah objek dan mengimplementasikan `beforeDependencyInstall(context)`:
+
+```js
+export default {
+  beforeDependencyInstall: async ({ sourcePath, version, envConfig }) => {
+    // Berjalan setelah git clone / npm scaffold dan sebelum yarn install.
+  },
+};
+```
+
+Saat Anda menjalankan `nb source download --hook-script` secara langsung, `beforeDependencyInstall` menerima `context.phase` sebagai `source-download` dan `context.command` sebagai `source:download`. Perintah ini tidak menjalankan `beforeAppInstall` atau `afterAppStart`; kedua hook itu milik alur install, start, restart, dan upgrade app.
+
 
 ## Alias Versi
 

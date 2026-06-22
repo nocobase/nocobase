@@ -42,7 +42,7 @@ nb init --env app1 --resume
 
 `--prepare-only` is intended for flows where the env should be prepared first, then the license is activated, and only after that the app is installed and started.
 
-If you want to save the env config, prepare the source files or image, and get the database ready first, but delay the actual app installation and first startup, you can use:
+If you want to save the env config and prepare the database first, while delaying dependency download, app installation, and first startup, you can use:
 
 ```bash
 nb init --env app1 --prepare-only
@@ -67,6 +67,7 @@ By default, the CLI organizes local files under `app-path` using the following c
 
 ```text
 <app-path>/
+├── .nb/      # CLI metadata for this env, such as hooks.mjs
 ├── source/   # Default directory for app source code or downloaded content
 ├── storage/  # Runtime data directory
 └── .env      # Optional app environment variable file
@@ -74,6 +75,7 @@ By default, the CLI organizes local files under `app-path` using the following c
 
 Typically:
 
+- `.nb/` stores CLI-managed metadata. A script passed with `--hook-script` is copied to `<app-path>/.nb/hooks.mjs`, so later `nb app upgrade` and local source restore can reuse it
 - `source/` mainly corresponds to the local app directory for npm / Git envs. For Docker envs, the CLI also keeps this default path derivation, but most of the time you do not need to care about it manually. Pay special attention during upgrades: the `source/` directory will be deleted and downloaded again, so do not put files you need to keep here
 - `storage/` is used for runtime data, such as built-in database data, plugins, logs, and more
 - `.env` is an optional app environment variable file. You only need to add it in `<app-path>/.env` when you want to customize environment variables; if this file exists, Docker, npm, and Git install sources will all read it by default
@@ -101,7 +103,7 @@ If you are following the local UI wizard step by step, you can first use the tab
 | ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `Getting started`         | `--env`、`--yes`、`--ui`、`--locale`、`--verbose`、`--skip-skills`、`--resume`                                                                                                                                    |
 | `App environment`         | `--lang`、`--app-path`、`--app-port`、`--force`                                                                                                                                                                   |
-| `App source and version`  | `--source`、`--version`、`--skip-download`、`--git-url`、`--docker-registry`、`--docker-platform`、`--npm-registry`、`--replace`、`--dev-dependencies`、`--output-dir`、`--docker-save`、`--build`、`--build-dts` |
+| `App source and version`  | `--source`、`--version`、`--skip-download`、`--git-url`、`--docker-registry`、`--docker-platform`、`--npm-registry`、`--replace`、`--dev-dependencies`、`--output-dir`、`--docker-save`、`--build`、`--build-dts`、`--hook-script` |
 | `Configure the database`  | `--builtin-db`、`--db-dialect`、`--builtin-db-image`、`--db-host`、`--db-port`、`--db-database`、`--db-user`、`--db-password`、`--db-schema`、`--db-table-prefix`、`--db-underscored`                             |
 | `Create an admin account` | `--root-username`、`--root-email`、`--root-password`、`--root-nickname`                                                                                                                                           |
 | `Remote connection`       | `--api-base-url`、`--auth-type`、`--access-token`、`--username`、`--password`、`--skip-auth`                                                                                                                      |
@@ -184,6 +186,7 @@ The “Default” below means the value or behavior that `nb init` usually uses 
 | `--npm-registry`                                     | string  | Empty                                                                                            | Registry used for npm/Git download and dependency installation                           |
 | `--build` / `--no-build`                             | boolean | `true`                                                                                           | Whether to build after installing npm/Git dependencies                                   |
 | `--build-dts`                                        | boolean | `false`                                                                                          | Whether to generate TypeScript declaration files during npm/Git builds                   |
+| `--hook-script`                                      | string  | None                                                                                             | Copy the specified hook module to `<app-path>/.nb/hooks.mjs` and save it in the env config; supports the `beforeDependencyInstall`, `beforeAppInstall`, and `afterAppStart` lifecycle hooks |
 
 ## Examples
 
@@ -232,6 +235,40 @@ nb init --env app1 --yes --source git --version feat/plugin-workflow-timeout
 nb init --env app1 --yes --source git --version latest \
   --git-url https://gitee.com/nocobase/nocobase.git
 ```
+
+### Extend the install flow with a hook script
+
+If you need to prepare extra content during installation, pass a local ESM module with `--hook-script`:
+
+```bash
+nb init --env app1 --yes --source git --hook-script ./hooks.mjs
+```
+
+The CLI copies this file to `<app-path>/.nb/hooks.mjs` and saves `hookScript: ".nb/hooks.mjs"` in the env config. Later `nb app start`, `nb app restart`, and `nb app upgrade` reuse it from that location.
+
+The hook file must default-export an object. Implement only the methods you need:
+
+```js
+export default {
+  beforeDependencyInstall: async (context) => {
+    // Runs after git clone / npm scaffold and before yarn install.
+  },
+  beforeAppInstall: async (context) => {
+    // Runs before the app-level install or upgrade command.
+  },
+  afterAppStart: async (context) => {
+    // Runs after the app actually starts and passes the health check.
+  },
+};
+```
+
+- `beforeDependencyInstall` only applies to npm/Git source and runs right before the real `yarn install`; Docker source does not run it
+- `beforeAppInstall` runs before app-level install or upgrade commands, and applies to npm/Git/Docker source
+- `afterAppStart` runs after the app actually starts and passes `__health_check`; `nb app start`, `nb app restart`, and `nb app upgrade` may all trigger it
+
+`--prepare-only` only saves the env config and copies the hook file. It does not execute hooks. When you later run `nb app start` for the first time, the CLI runs the first-install hooks with `context.phase` set to `init` and `context.command` set to `app:start`.
+
+`context` includes lifecycle information such as `phase`, `command`, `source`, `version`, `appPath`, `sourcePath`, `storagePath`, `hookScript`, and `envConfig`. If a hook throws, the current CLI command fails. Because `afterAppStart` can run repeatedly during start, restart, and upgrade flows, keep it idempotent.
 
 ### Quick install and use basic authentication
 

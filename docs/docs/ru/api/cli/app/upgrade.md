@@ -58,6 +58,12 @@ nb app upgrade --env local-docker --skip-download
 
 Если последний шаг `nb env update` завершится ошибкой, обновление всё равно считается успешным. CLI выведет предупреждение и попросит затем вручную выполнить `nb env update <envName>`.
 
+## Hook-скрипты
+
+Если текущий env сохранил hook через `nb init --hook-script`, `nb app upgrade` передает hook lifecycle upgrade. Для source npm/Git обновление source запускает `beforeDependencyInstall(context)` перед установкой зависимостей с `context.phase = 'upgrade'` и `context.command = 'app:upgrade'`.
+
+Затем шаг запуска upgrade приложения выполняет `beforeAppInstall(context)`, а после старта приложения и успешного `__health_check` выполняет `afterAppStart(context)`. Оба hook также используют `context.phase = 'upgrade'` и `context.command = 'app:upgrade'`. Docker source не запускает `beforeDependencyInstall`, но запускает hooks уровня приложения.
+
 ## Связанные команды
 
 - [`nb source download`](../source/download.md)
