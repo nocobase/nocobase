@@ -14,7 +14,7 @@ import { message } from 'antd';
 import { AdminSettingsLayoutModel as ClientV2AdminSettingsLayoutModel } from '../settings-center';
 import { AdminSettingsLayoutModel as ClientV1AdminSettingsLayoutModel } from '../../../client/src/pm/AdminSettingsLayoutModel';
 import { NocoBaseBuildInPlugin } from '../nocobase-buildin-plugin';
-import { matchSettingsRoute } from '../settings-center/utils';
+import { matchSettingsRoute, sortTopLevelSettings } from '../settings-center/utils';
 
 class TestAclPlugin extends Plugin {
   async load() {
@@ -166,6 +166,12 @@ describe('settings center', () => {
     expect(matchSettingsRoute(settings, '/admin/settings/public-forms/advanced/form-1')).toMatchObject({
       name: 'public-forms.advanced',
     });
+  });
+
+  it('should sort system-settings with other top-level settings by normal ordering', () => {
+    const settings = [{ name: 'system-settings' }, { name: 'api-keys' }, { name: 'backups' }] as any;
+
+    expect(sortTopLevelSettings(settings).map((item) => item.name)).toEqual(['api-keys', 'backups', 'system-settings']);
   });
 
   it('should redirect /admin/settings to system-settings by default', async () => {
