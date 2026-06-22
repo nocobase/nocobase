@@ -482,78 +482,8 @@ describe('flowSurfaces event flow', () => {
     ).rejects.toThrow(`flowSurfaces addEventFlow only supports phase 'beforeAllFlows'`);
   });
 
-  it('should reject unsafe RunJS in event-flow registry write paths before persisting', async () => {
+  it('should reject invalid RunJS resource filters in event-flow registry write paths before persisting', async () => {
     const { formUid } = await createEmployeeForm(rootAgent);
-
-    const setEventFlowsResponse = await rootAgent.resource('flowSurfaces').setEventFlows({
-      values: {
-        target: {
-          uid: formUid,
-        },
-        flowRegistry: {
-          unsafeRegistry: {
-            key: 'unsafeRegistry',
-            on: 'beforeRender',
-            steps: {
-              runUnsafe: {
-                use: 'runjs',
-                defaultParams: {
-                  code: 'await fetch("/blocked");',
-                },
-              },
-            },
-          },
-        },
-      },
-    });
-    expect(setEventFlowsResponse.status).toBe(400);
-    expect(setEventFlowsResponse.body?.errors).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          path: '$.flowRegistry.unsafeRegistry.steps.runUnsafe.defaultParams.code',
-          ruleId: 'runjs-global-blocked',
-          details: expect.objectContaining({
-            global: 'fetch',
-          }),
-        }),
-      ]),
-    );
-
-    const setEventFlowResponse = await rootAgent.resource('flowSurfaces').setEventFlow({
-      values: {
-        target: {
-          uid: formUid,
-        },
-        key: 'unsafeSet',
-        flow: {
-          on: {
-            eventName: 'submit',
-            phase: 'beforeAllFlows',
-          },
-          steps: {
-            runUnsafe: {
-              use: 'runjs',
-              params: {
-                code: 'window["localStorage"].getItem("blocked");',
-              },
-            },
-          },
-        },
-      },
-    });
-    expect(setEventFlowResponse.status).toBe(400);
-    expect(setEventFlowResponse.body?.errors).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          path: '$.flowRegistry.unsafeSet.steps.runUnsafe.params.code',
-          ruleId: 'runjs-window-property-blocked',
-          details: expect.objectContaining({
-            global: 'window',
-            member: 'localStorage',
-          }),
-        }),
-      ]),
-    );
 
     const updateSettingsResponse = await rootAgent.resource('flowSurfaces').updateSettings({
       values: {

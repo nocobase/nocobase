@@ -7,14 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import {
-  ElementProxy,
-  FormItem,
-  createSafeDocument,
-  createSafeWindow,
-  createSafeNavigator,
-  tExpr,
-} from '@nocobase/flow-engine';
+import { ElementProxy, FormItem, tExpr } from '@nocobase/flow-engine';
 import React from 'react';
 import { CodeEditor } from '../../components/code-editor';
 import { CommonItemModel } from '../base/CommonItemModel';
@@ -150,12 +143,7 @@ ctx.render(<JsItem />);
           ctx.defineProperty('element', {
             get: () => new ElementProxy(element),
           });
-          const navigator = createSafeNavigator();
-          await ctx.runjs(
-            code,
-            { window: createSafeWindow({ navigator }), document: createSafeDocument(), navigator },
-            { version },
-          );
+          await ctx.runjs(code, undefined, { version });
         });
       },
     },

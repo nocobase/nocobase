@@ -8,7 +8,7 @@
  */
 
 import { createHash } from 'crypto';
-import type { HasManyRepository } from '@nocobase/database';
+import type { BelongsToManyRepository, HasManyRepository, TargetKey } from '@nocobase/database';
 import type { Plugin } from '@nocobase/server';
 import { transformSQL, uid } from '@nocobase/utils';
 import _ from 'lodash';
@@ -1291,6 +1291,8 @@ type FlowSurfaceApplyBlueprintResponse = {
   surface: any;
 };
 
+const DEFAULT_ADMIN_UI_LAYOUT_UID = 'admin-layout-model';
+
 export class FlowSurfacesService {
   constructor(private readonly plugin: Plugin) {}
 
@@ -1677,6 +1679,121 @@ export class FlowSurfacesService {
     };
   }
 
+  private hasDesktopRouteUiLayoutsRelation() {
+    try {
+      return !!this.db.getCollection('uiLayouts') && !!this.db.getCollection('desktopRoutes')?.getField?.('uiLayouts');
+    } catch (error) {
+      return false;
+    }
+  }
+
+  private normalizeDesktopRouteRelationId(routeId: unknown): TargetKey | undefined {
+    return _.isNil(routeId) ? undefined : (routeId as TargetKey);
+  }
+
+  private async readDesktopRouteUiLayoutUids(routeId: unknown, transaction?: any): Promise<string[]> {
+    const relationRouteId = this.normalizeDesktopRouteRelationId(routeId);
+    if (_.isUndefined(relationRouteId) || !this.hasDesktopRouteUiLayoutsRelation()) {
+      return [];
+    }
+
+    const uiLayouts = await this.db
+      .getRepository<BelongsToManyRepository>('desktopRoutes.uiLayouts', relationRouteId)
+      .find({
+        fields: ['uid'],
+        transaction,
+      });
+
+    return _.uniq(
+      uiLayouts.map((uiLayout: any) => String(uiLayout?.get?.('uid') || uiLayout?.uid || '').trim()).filter(Boolean),
+    );
+  }
+
+  private async resolveDefaultDesktopRouteUiLayoutUids(transaction?: any): Promise<string[]> {
+    if (!this.hasDesktopRouteUiLayoutsRelation()) {
+      return [];
+    }
+
+    const defaultLayout = await this.db.getRepository('uiLayouts').findOne({
+      filter: {
+        uid: DEFAULT_ADMIN_UI_LAYOUT_UID,
+        enabled: true,
+      },
+      transaction,
+    });
+
+    return defaultLayout ? [DEFAULT_ADMIN_UI_LAYOUT_UID] : [];
+  }
+
+  private async resolveInheritedDesktopRouteUiLayoutUids(parentRoute: any, transaction?: any): Promise<string[]> {
+    const parentRouteId = this.readRouteField(parentRoute, 'id');
+    if (!_.isNil(parentRouteId)) {
+      const parentLayoutUids = await this.readDesktopRouteUiLayoutUids(parentRouteId, transaction);
+      if (parentLayoutUids.length) {
+        return parentLayoutUids;
+      }
+    }
+
+    return this.resolveDefaultDesktopRouteUiLayoutUids(transaction);
+  }
+
+  private async setDesktopRouteUiLayouts(routeId: unknown, uiLayoutUids: string[], transaction?: any) {
+    const relationRouteId = this.normalizeDesktopRouteRelationId(routeId);
+    if (_.isUndefined(relationRouteId) || !uiLayoutUids.length || !this.hasDesktopRouteUiLayoutsRelation()) {
+      return;
+    }
+
+    await this.db.getRepository<BelongsToManyRepository>('desktopRoutes.uiLayouts', relationRouteId).set({
+      tk: uiLayoutUids,
+      transaction,
+    });
+  }
+
+  private async attachDesktopRouteUiLayoutsToRouteAndChildren(
+    routeId: unknown,
+    uiLayoutUids: string[],
+    transaction?: any,
+  ) {
+    if (_.isNil(routeId) || !uiLayoutUids.length || !this.hasDesktopRouteUiLayoutsRelation()) {
+      return;
+    }
+
+    await this.setDesktopRouteUiLayouts(routeId, uiLayoutUids, transaction);
+    const children = await this.db.getRepository('desktopRoutes').find({
+      fields: ['id'],
+      filter: {
+        parentId: routeId,
+      },
+      transaction,
+    });
+
+    for (const child of children) {
+      await this.attachDesktopRouteUiLayoutsToRouteAndChildren(
+        this.readRouteField(child, 'id'),
+        uiLayoutUids,
+        transaction,
+      );
+    }
+  }
+
+  private async ensureDesktopRouteUiLayouts(route: any, transaction?: any): Promise<string[]> {
+    const routeId = this.readRouteField(route, 'id');
+    if (_.isNil(routeId) || !this.hasDesktopRouteUiLayoutsRelation()) {
+      return [];
+    }
+
+    const existingLayoutUids = await this.readDesktopRouteUiLayoutUids(routeId, transaction);
+    if (existingLayoutUids.length) {
+      return existingLayoutUids;
+    }
+
+    const parentRouteId = this.readRouteField(route, 'parentId');
+    const parentRoute = _.isNil(parentRouteId) ? null : await this.findMenuRouteById(parentRouteId, transaction);
+    const inheritedLayoutUids = await this.resolveInheritedDesktopRouteUiLayoutUids(parentRoute, transaction);
+    await this.setDesktopRouteUiLayouts(routeId, inheritedLayoutUids, transaction);
+    return inheritedLayoutUids;
+  }
+
   private isValidMenuIconName(value: any) {
     const normalized = String(value || '').trim();
     return !!normalized && ANT_DESIGN_ICON_NAMES.has(normalized);
@@ -1770,7 +1887,7 @@ export class FlowSurfacesService {
     this.assertVisibleNavigationIcon('createMenu', 'values', values);
     const schemaUid = values.schemaUid || uid();
     const desktopRoutes = this.db.getRepository('desktopRoutes');
-    await desktopRoutes.create({
+    const route = await desktopRoutes.create({
       values: {
         type: 'group',
         sort: this.allocateRouteSortValue(),
@@ -1783,10 +1900,11 @@ export class FlowSurfacesService {
       },
       transaction,
     });
-    const route = await desktopRoutes.findOne({
-      filter: { schemaUid },
+    await this.attachDesktopRouteUiLayoutsToRouteAndChildren(
+      this.readRouteField(route, 'id'),
+      await this.resolveInheritedDesktopRouteUiLayoutUids(parentRoute, transaction),
       transaction,
-    });
+    );
     return this.buildMenuResult(route);
   }
 
@@ -1802,7 +1920,7 @@ export class FlowSurfacesService {
     const tabTitle = values.tabTitle || 'Untitled';
     const desktopRoutes = this.db.getRepository('desktopRoutes');
 
-    await desktopRoutes.create({
+    const createdRoute = await desktopRoutes.create({
       values: {
         type: 'flowPage',
         sort: this.allocateRouteSortValue(),
@@ -1837,6 +1955,11 @@ export class FlowSurfacesService {
       },
       transaction,
     });
+    await this.attachDesktopRouteUiLayoutsToRouteAndChildren(
+      this.readRouteField(createdRoute, 'id'),
+      await this.resolveInheritedDesktopRouteUiLayoutUids(parentRoute, transaction),
+      transaction,
+    );
 
     const route = await desktopRoutes.findOne({
       filter: { schemaUid: pageSchemaUid },
@@ -7893,7 +8016,7 @@ export class FlowSurfacesService {
       throwBadRequest('flowSurfaces updateMenu requires menuRouteId');
     }
     const route = await this.assertMenuRouteUpdatable(menuRouteId, options.transaction);
-    await this.assertMenuParentIsGroup(values.parentMenuRouteId, options.transaction);
+    const nextParentRoute = await this.assertMenuParentIsGroup(values.parentMenuRouteId, options.transaction);
     await this.assertMenuParentNotSelfOrDescendant(route, values.parentMenuRouteId, options.transaction);
 
     const nextOptions = { ...this.readRouteOptions(route) };
@@ -7926,6 +8049,13 @@ export class FlowSurfacesService {
       });
     }
     const updated = await this.findMenuRouteById(menuRouteId, options.transaction);
+    if (updated && Object.prototype.hasOwnProperty.call(values, 'parentMenuRouteId')) {
+      await this.attachDesktopRouteUiLayoutsToRouteAndChildren(
+        this.readRouteField(updated, 'id'),
+        await this.resolveInheritedDesktopRouteUiLayoutUids(nextParentRoute, options.transaction),
+        options.transaction,
+      );
+    }
     return this.buildMenuResult(updated);
   }
 
@@ -7934,6 +8064,7 @@ export class FlowSurfacesService {
     const pageSchemaUid = this.readRouteField(route, 'schemaUid');
     const structure = await this.loadRouteBackedPageStructure(route, transaction);
     let tabRoute = structure.tabRoutes[0];
+    const routeUiLayoutUids = await this.ensureDesktopRouteUiLayouts(route, transaction);
     const routeOptions = this.readRouteOptions(route);
     if (!routeOptions[FLOW_SURFACE_MENU_BINDABLE_OPTION_KEY]) {
       throwBadRequest(`flowSurfaces createPage only accepts a bindable menu route created by createMenu(type="item")`);
@@ -7956,7 +8087,7 @@ export class FlowSurfacesService {
       const tabSchemaUid = values.tabSchemaUid || uid();
       const tabSchemaName = values.tabSchemaName || uid();
       const tabTitle = values.tabTitle || 'Untitled';
-      await this.db.getRepository('desktopRoutes').create({
+      tabRoute = await this.db.getRepository('desktopRoutes').create({
         values: {
           type: 'tabs',
           sort: this.allocateRouteSortValue(1),
@@ -7973,10 +8104,7 @@ export class FlowSurfacesService {
         },
         transaction,
       });
-      tabRoute = await this.db.getRepository('desktopRoutes').findOne({
-        filter: { schemaUid: tabSchemaUid },
-        transaction,
-      });
+      await this.setDesktopRouteUiLayouts(this.readRouteField(tabRoute, 'id'), routeUiLayoutUids, transaction);
     } else {
       await this.db.getRepository('desktopRoutes').update({
         filterByTk: String(this.readRouteField(tabRoute, 'id')),
@@ -8001,6 +8129,9 @@ export class FlowSurfacesService {
         filterByTk: String(this.readRouteField(tabRoute, 'id')),
         transaction,
       });
+    }
+    if (tabRoute) {
+      await this.setDesktopRouteUiLayouts(this.readRouteField(tabRoute, 'id'), routeUiLayoutUids, transaction);
     }
 
     await this.ensureFlowRoutePageSchemaShell(pageSchemaUid, transaction);
@@ -8146,6 +8277,11 @@ export class FlowSurfacesService {
       },
       transaction: options.transaction,
     });
+    await this.setDesktopRouteUiLayouts(
+      route.get('id'),
+      await this.ensureDesktopRouteUiLayouts(pageRoute, options.transaction),
+      options.transaction,
+    );
 
     // Modern page tabs are route-backed synthetic anchors.
     // Keep the persisted subtree aligned with frontend semantics by storing only the async grid child under the tab schema uid.

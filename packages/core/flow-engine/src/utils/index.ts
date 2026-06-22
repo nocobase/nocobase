@@ -77,15 +77,6 @@ export {
   serializeCtxDateValue,
 } from './dateVariable';
 
-// 安全全局对象（window/document）
-export {
-  createSafeDocument,
-  createSafeWindow,
-  createSafeNavigator,
-  createSafeRunJSGlobals,
-  runjsWithSafeGlobals,
-} from './safeGlobals';
-
 // RunJS value helpers
 export { isRunJSValue, normalizeRunJSValue, extractUsedVariablePathsFromRunJS, type RunJSValue } from './runjsValue';
 
