@@ -7,12 +7,15 @@
   "description.zh-CN": "通过操作按钮或 API 发起请求并在执行前触发，比如新增、更新、删除数据之前。适用于在操作前进行数据验证、逻辑判断，并可通过“结束节点”来拦截请求。",
   "main": "./dist/server/index.js",
   "devDependencies": {
+    "antd": "5.x",
+    "react": "18.x",
     "joi": "^17.13.3"
   },
   "homepage": "https://docs.nocobase.com/handbook/workflow-request-interceptor",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/workflow-request-interceptor",
   "peerDependencies": {
     "@nocobase/client": "2.x",
+    "@nocobase/client-v2": "2.x",
     "@nocobase/plugin-error-handler": "2.x",
     "@nocobase/plugin-users": "2.x",
     "@nocobase/plugin-workflow": ">= 0.19.0-alpha.3",
