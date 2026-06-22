@@ -26,6 +26,9 @@ export const publicFormsSchema: ISchema = {
     params: {
       sort: '-createdAt',
       appends: ['createdBy', 'updatedBy'],
+      filter: {
+        $or: [{ version: 'v1' }, { 'version.$empty': true }],
+      },
     },
     showIndex: true,
     dragSort: false,
