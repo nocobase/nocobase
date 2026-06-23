@@ -11,6 +11,7 @@ import React from 'react';
 import { describe, it, expect, vi } from 'vitest';
 import { openView } from '../openView';
 import { FlowPage } from '../../FlowPage';
+import { ROUTE_TRANSIENT_INPUT_ARGS_KEY } from '../../routeTransientInputArgs';
 
 describe('openView action - route mode defineProperties/defineMethods', () => {
   const createRouteManagedCtx = () => {
@@ -148,5 +149,55 @@ describe('openView action - route mode defineProperties/defineMethods', () => {
 
     const defineMethodCalls = pageModelContext.defineMethod.mock.calls.map((c: any[]) => c[0]);
     expect(defineMethodCalls).toContain('pong');
+  });
+
+  it('passes formData through route navigation state', async () => {
+    const navigateTo = vi.fn();
+    const ctx: any = {
+      inputArgs: {
+        formData: {
+          start: '2026-06-24 08:00:00',
+          end: '2026-06-24 09:00:00',
+        },
+      },
+      engine: {
+        context: {},
+      },
+      model: {
+        uid: 'popup-uid',
+        context: {
+          defineProperty: vi.fn(),
+        },
+      },
+      view: {
+        navigation: {
+          navigateTo,
+        },
+      },
+      isNavigationEnabled: true,
+    };
+
+    await openView.handler(ctx, { navigation: true });
+
+    expect(navigateTo).toHaveBeenCalledWith(
+      {
+        viewUid: 'popup-uid',
+        filterByTk: undefined,
+        sourceId: undefined,
+        tabUid: undefined,
+      },
+      {
+        state: {
+          [ROUTE_TRANSIENT_INPUT_ARGS_KEY]: {
+            'popup-uid': {
+              formData: {
+                start: '2026-06-24 08:00:00',
+                end: '2026-06-24 09:00:00',
+              },
+            },
+          },
+        },
+      },
+    );
   });
 });

@@ -15,6 +15,7 @@ import { resolveViewParamsToViewList, updateViewListHidden } from '../../resolve
 import { AdminLayoutRouteCoordinator } from '../AdminLayoutRouteCoordinator';
 import { BaseLayoutRouteCoordinator, toViewStack } from '../BaseLayoutRouteCoordinator';
 import { RouteModel } from '../../models/base/RouteModel';
+import { ROUTE_TRANSIENT_INPUT_ARGS_KEY } from '../../routeTransientInputArgs';
 
 vi.mock('../../resolveViewParamsToViewList', () => ({
   resolveViewParamsToViewList: vi.fn(),
@@ -162,6 +163,137 @@ describe('AdminLayoutRouteCoordinator', () => {
     });
 
     expect(dispatchEvent.mock.calls[0][1].target).toBe(layoutContentElement);
+  });
+
+  it('passes transient route state input args to the opened view', () => {
+    const engine = new FlowEngine();
+    engine.registerModels({ RouteModel });
+    engine.context.defineProperty('routeRepository', {
+      value: {
+        getRouteBySchemaUid: vi.fn(() => ({})),
+      },
+    });
+
+    const dispatchEvent = vi.fn((_eventName: string, _payload: any) => Promise.resolve());
+    const viewItem = {
+      params: { viewUid: 'test-route' },
+      modelUid: 'test-route',
+      model: { uid: 'test-route', dispatchEvent } as any,
+      hidden: { value: false },
+      index: 0,
+    };
+    mockResolveViewParamsToViewList.mockReturnValue([viewItem]);
+    mockGetViewDiffAndUpdateHidden.mockReturnValue({
+      viewsToClose: [],
+      viewsToOpen: [viewItem],
+    });
+    mockGetOpenViewStepParams.mockReturnValue({} as any);
+
+    const coordinator = new BaseLayoutRouteCoordinator(engine, { basePathname: '/admin' });
+    coordinator.registerPage('test-route', {
+      active: true,
+      layoutContentElement: document.createElement('div'),
+    });
+    coordinator.syncRoute({
+      pageUid: 'test-route',
+      pathname: '/admin/test-route',
+      state: {
+        usr: {
+          [ROUTE_TRANSIENT_INPUT_ARGS_KEY]: {
+            'test-route': {
+              formData: {
+                start: '2026-06-24 08:00:00',
+                end: '2026-06-24 09:00:00',
+              },
+            },
+          },
+        },
+      },
+    });
+
+    expect(dispatchEvent.mock.calls[0][1]).toMatchObject({
+      formData: {
+        start: '2026-06-24 08:00:00',
+        end: '2026-06-24 09:00:00',
+      },
+    });
+  });
+
+  it('keeps transient route state input args during initial deep-link replay', async () => {
+    const engine = new FlowEngine();
+    engine.registerModels({ RouteModel });
+    const navigate = vi.fn();
+    engine.context.defineProperty('router', {
+      value: {
+        navigate,
+      },
+    });
+    engine.context.defineProperty('routeRepository', {
+      value: {
+        getRouteBySchemaUid: vi.fn(() => ({})),
+      },
+    });
+
+    const rootDispatchEvent = vi.fn((_eventName: string, payload: any) => {
+      payload.onOpen?.();
+      return Promise.resolve();
+    });
+    const popupDispatchEvent = vi.fn((_eventName: string, _payload: any) => Promise.resolve());
+    const rootViewItem = {
+      params: { viewUid: 'test-route' },
+      modelUid: 'test-route',
+      model: { uid: 'test-route', dispatchEvent: rootDispatchEvent } as any,
+      hidden: { value: false },
+      index: 0,
+    };
+    const popupViewItem = {
+      params: { viewUid: 'popup' },
+      modelUid: 'popup',
+      model: { uid: 'popup', dispatchEvent: popupDispatchEvent } as any,
+      hidden: { value: false },
+      index: 1,
+    };
+
+    mockResolveViewParamsToViewList.mockReturnValue([rootViewItem, popupViewItem]);
+    mockGetViewDiffAndUpdateHidden.mockReturnValue({
+      viewsToClose: [],
+      viewsToOpen: [rootViewItem, popupViewItem],
+    });
+    mockGetOpenViewStepParams.mockReturnValue({} as any);
+
+    const routeState = {
+      [ROUTE_TRANSIENT_INPUT_ARGS_KEY]: {
+        popup: {
+          formData: {
+            start: '2026-06-24',
+            end: '2026-06-25',
+          },
+        },
+      },
+    };
+    const coordinator = new BaseLayoutRouteCoordinator(engine, { basePathname: '/admin' });
+    coordinator.registerPage('test-route', {
+      active: true,
+      layoutContentElement: document.createElement('div'),
+    });
+    coordinator.syncRoute({
+      pageUid: 'test-route',
+      pathname: '/admin/test-route/view/popup',
+      state: routeState,
+    });
+
+    expect(navigate).toHaveBeenCalledWith('/admin/test-route', { replace: true, state: routeState });
+    expect(navigate).toHaveBeenCalledWith('/admin/test-route/view/popup', { state: routeState });
+    expect(popupDispatchEvent).not.toHaveBeenCalled();
+
+    await Promise.resolve();
+
+    expect(popupDispatchEvent.mock.calls[0][1]).toMatchObject({
+      formData: {
+        start: '2026-06-24',
+        end: '2026-06-25',
+      },
+    });
   });
 
   it('replaces stale non-route model before registering route page', () => {

@@ -66,6 +66,7 @@ export interface LayoutRouteLike {
   id?: string;
   name?: string;
   pathname?: string;
+  state?: unknown;
   params?: Record<string, string | undefined>;
   layoutRouteName?: string;
   layoutBasePathname?: string;
@@ -148,6 +149,7 @@ export class BaseLayoutModel<
   currentLayoutRoute: LayoutRouteMatch | null = null;
   protected routeCoordinator?: BaseLayoutRouteCoordinator;
   private activePageUid = '';
+  private currentRouteState?: unknown;
   private layoutContentElement: HTMLElement | null = null;
   private readonly routePageMetaMap = new Map<string, RoutePageMeta>();
   private contextBindingsActive = false;
@@ -323,6 +325,7 @@ export class BaseLayoutModel<
 
     const layoutRoute = this.resolveLayoutRoute(routeLike);
     this.currentLayoutRoute = layoutRoute;
+    this.currentRouteState = routeLike.state;
     this.activePageUid = this.getPageUidFromLayoutRoute(layoutRoute);
     this.getCoordinator().syncRoute({
       ...routeLike,
@@ -343,6 +346,7 @@ export class BaseLayoutModel<
     }
 
     this.currentLayoutRoute = null;
+    this.currentRouteState = undefined;
     this.activePageUid = '';
     this.routeCoordinator?.syncRoute({});
   }
@@ -412,6 +416,7 @@ export class BaseLayoutModel<
         layoutRouteName: this.layout.routeName,
         pageUid: this.currentLayoutRoute.pageUid,
         pathname: this.currentLayoutRoute.pathname,
+        state: this.currentRouteState,
         layoutBasePathname: this.currentLayoutRoute.basePathname,
         layoutRoute: this.currentLayoutRoute,
       };
