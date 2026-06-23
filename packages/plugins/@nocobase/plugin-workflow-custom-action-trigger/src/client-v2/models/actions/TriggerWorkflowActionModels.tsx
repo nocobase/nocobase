@@ -85,6 +85,14 @@ function parseContextData(contextData: unknown) {
   return JSON.parse(contextData);
 }
 
+async function resolveContextData(ctx: FlowRuntimeContext, contextData: unknown) {
+  const parsedContextData = parseContextData(contextData);
+  if (typeof ctx.resolveJsonTemplate !== 'function') {
+    return parsedContextData;
+  }
+  return await ctx.resolveJsonTemplate(parsedContextData);
+}
+
 function ensureTriggerWorkflowsConfigured(ctx: FlowRuntimeContext, group?: TriggerWorkflowBinding[]) {
   if (group?.length) {
     return true;
@@ -108,7 +116,7 @@ function getRecordKey(record, collection) {
   return record[filterByTk];
 }
 
-function WorkflowSelect({ filter, optionFilter, ...props }) {
+export function WorkflowSelect({ filter, optionFilter, ...props }) {
   const ctx = useFlowContext();
   const [options, setOptions] = React.useState<any[]>([]);
   const [loading, setLoading] = React.useState(false);
@@ -118,16 +126,12 @@ function WorkflowSelect({ filter, optionFilter, ...props }) {
     const loadWorkflows = async () => {
       setLoading(true);
       try {
-        const res = await ctx.api.request({
-          url: 'workflows:list',
-          method: 'get',
-          params: {
-            paginate: false,
-            filter: {
-              type: EVENT_TYPE,
-              enabled: true,
-              ...filter,
-            },
+        const res = await ctx.api.resource('workflows').list({
+          paginate: false,
+          filter: {
+            type: EVENT_TYPE,
+            enabled: true,
+            ...filter,
           },
         });
         if (!mounted) {
@@ -511,7 +515,7 @@ CollectionTriggerWorkflowActionModel.registerFlow({
           let values;
           if (contextData) {
             try {
-              values = parseContextData(contextData);
+              values = await resolveContextData(ctx, contextData);
             } catch (e) {
               // resolution error, ignore
             }
@@ -573,7 +577,7 @@ async function globalTriggerWorkflowHandler(ctx, params) {
   let values;
   if (params.contextData) {
     try {
-      values = parseContextData(params.contextData);
+      values = await resolveContextData(ctx, params.contextData);
     } catch (e) {
       // resolution error, ignore
     }
