@@ -32,6 +32,11 @@ export const WorkbenchLayout = {
   List: 'list',
 };
 
+export const WorkbenchItemLayout = {
+  Vertical: 'vertical',
+  Horizontal: 'horizontal',
+};
+
 const ResponsiveSpace = (props) => {
   const isMobileMedia = isMobile();
   const underMobileCtx = false;
@@ -57,6 +62,7 @@ export class ActionPanelBlockModel extends BlockModel {
       <AddSubModelButton
         key={'action-panel-add-actions'}
         model={this}
+        items={this.context.app.entryActionManager.getItems('action-panel')}
         subModelBaseClass={this.getModelClassName('ActionPanelGroupActionModel')}
         subModelKey="actions"
       >
@@ -66,7 +72,7 @@ export class ActionPanelBlockModel extends BlockModel {
   }
 
   renderComponent() {
-    const { layout, ellipsis } = this.props;
+    const { layout, ellipsis, itemLayout = WorkbenchItemLayout.Vertical } = this.props;
 
     const token = this.context.themeToken;
     const isConfigMode = !!this.context.flowSettingsEnabled;
@@ -92,9 +98,21 @@ export class ActionPanelBlockModel extends BlockModel {
       width: ${token.controlHeightLG * 2}px;
       text-align: center;
     `;
+    const gridHorizontalContentClass = css`
+      width: ${token.controlHeightLG * 4}px;
+      display: flex;
+      align-items: center;
+      gap: ${token.marginXS}px;
+      text-align: left;
+    `;
     const gridTitleClass = css`
       margin-top: ${token.marginSM}px;
       min-height: ${token.fontSize * token.lineHeight}px;
+    `;
+    const gridHorizontalTitleClass = css`
+      margin-top: 0;
+      min-width: 0;
+      flex: 1;
     `;
     const textEllipsisClass = css`
       overflow: hidden;
@@ -137,10 +155,19 @@ export class ActionPanelBlockModel extends BlockModel {
                     const avatarClass = css`
                       background-color: ${color};
                     `;
+                    const horizontal = itemLayout === WorkbenchItemLayout.Horizontal;
                     const renderActionContent = (compact = false) => (
-                      <div className={`${gridContentClass} ${compact ? hiddenClass : ''}`}>
+                      <div
+                        className={`${horizontal ? gridHorizontalContentClass : gridContentClass} ${
+                          compact ? hiddenClass : ''
+                        }`}
+                      >
                         <Avatar className={avatarClass} size={gridIconSize} icon={<Icon type={icon as any} />} />
-                        <div className={`${gridTitleClass} ${ellipsis ? textEllipsisClass : textWrapClass}`}>
+                        <div
+                          className={`${gridTitleClass} ${horizontal ? gridHorizontalTitleClass : ''} ${
+                            ellipsis ? textEllipsisClass : textWrapClass
+                          }`}
+                        >
                           {title}
                         </div>
                       </div>
@@ -322,6 +349,30 @@ ActionPanelBlockModel.registerFlow({
       handler(ctx, params) {
         ctx.model.setProps({
           ellipsis: params.ellipsis,
+        });
+      },
+    },
+    itemLayout: {
+      title: tExpr('Icon and label layout'),
+      uiMode(ctx) {
+        const t = ctx.t;
+        return {
+          type: 'select',
+          key: 'itemLayout',
+          props: {
+            options: [
+              { label: t('Vertical', { ns: 'block-workbench' }), value: WorkbenchItemLayout.Vertical },
+              { label: t('Horizontal', { ns: 'block-workbench' }), value: WorkbenchItemLayout.Horizontal },
+            ],
+          },
+        };
+      },
+      defaultParams: {
+        itemLayout: WorkbenchItemLayout.Vertical,
+      },
+      handler(ctx, params) {
+        ctx.model.setProps({
+          itemLayout: params.itemLayout,
         });
       },
     },

@@ -13,6 +13,7 @@ import { tval } from '@nocobase/utils';
 import _ from 'lodash';
 import * as process from 'node:process';
 import { resolve } from 'path';
+import { AppPortalsService, type AppPortalsProvider } from './appPortals';
 import { getAntdLocale } from './antd';
 import { getCronLocale } from './cron';
 import { getCronstrueLocale } from './cronstrue';
@@ -33,7 +34,17 @@ async function getLang(ctx) {
 }
 
 export class PluginClientServer extends Plugin {
+  readonly appPortals = new AppPortalsService(this.app);
+
   async beforeLoad() {}
+
+  registerAppPortalsProvider(name: string, provider: AppPortalsProvider) {
+    this.appPortals.registerProvider(name, provider);
+  }
+
+  unregisterAppPortalsProvider(name: string) {
+    this.appPortals.unregisterProvider(name);
+  }
 
   async install() {
     // const uiSchemas = this.db.getRepository<any>('uiSchemas');
@@ -67,6 +78,7 @@ export class PluginClientServer extends Plugin {
     });
     this.app.acl.allow('app', 'getLang');
     this.app.acl.allow('app', 'getInfo');
+    this.app.acl.allow('app', 'getPortals', 'loggedIn');
     this.app.acl.registerSnippet({
       name: 'app',
       actions: ['app:restart', 'app:refresh', 'app:clearCache', 'app:publishEvent'],
@@ -118,6 +130,10 @@ export class PluginClientServer extends Plugin {
             lang,
             ...resources,
           };
+          await next();
+        },
+        getPortals: async (ctx, next) => {
+          ctx.body = await this.appPortals.list(ctx);
           await next();
         },
         async clearCache(ctx, next) {

@@ -38,6 +38,7 @@ export * from './collection-manager/filter-operators';
 export * from './collection-manager/interfaces';
 export * from './collection-manager/template-fields';
 export * from './data-source';
+export * from './entry-actions';
 export * from './flow';
 export {
   DEFAULT_DATA_SOURCE_KEY,

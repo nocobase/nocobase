@@ -410,8 +410,8 @@ export const AdminLayoutComponent = observer((props: any) => {
   );
   const designable = !isMobileSider && preferredFlowSettingsEnabled;
   const { styles } = useHeaderStyle();
-  const { appList } = useApplications();
-  const appListRender = useAppListRender();
+  const { appList, appSwitcherModel } = useApplications(adminLayoutModel);
+  const appListRender = useAppListRender(appSwitcherModel);
   const flowSettingsSyncRef = useRef(0);
   const desiredFlowSettingsEnabledRef = useRef(false);
   const handleLayoutContentElementChange = useCallback(
