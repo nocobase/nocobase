@@ -7,20 +7,25 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { Instruction } from './Instruction';
 import type { SharedAddNodeAnchor } from './AddNodeContext.shared';
 
 type WorkflowCapabilityContext = SharedAddNodeAnchor & {
   engine: {
-    isWorkflowSync(workflow: any): boolean;
+    isWorkflowSync(workflow: unknown): boolean;
   };
-  workflow?: any;
+  workflow?: unknown;
+  syncOnly?: boolean;
 };
 
 type Translate = (key: string, options?: Record<string, unknown>) => string;
 
+type AvailableInstruction = {
+  async?: boolean;
+  isAvailable?(ctx: Omit<WorkflowCapabilityContext, 'branchContext'>): boolean;
+};
+
 export function getInstructionUnavailableMessage(
-  instruction: Pick<Instruction, 'async' | 'isAvailable'>,
+  instruction: AvailableInstruction,
   ctx: WorkflowCapabilityContext,
   t: Translate,
 ) {
@@ -28,23 +33,22 @@ export function getInstructionUnavailableMessage(
     return t('This type of node can not be used in current type of workflow or execute mode.');
   }
 
-  const syncOnly = ctx.branchContext?.syncOnly ?? false;
+  const syncOnly = ctx.branchContext?.syncOnly ?? ctx.syncOnly ?? false;
   if (instruction.async && syncOnly) {
     return t('This branch does not support asynchronous nodes.');
   }
 
-  if (
-    instruction.isAvailable &&
-    !instruction.isAvailable({
-      engine: ctx.engine,
-      workflow: ctx.workflow,
-      upstream: ctx.upstream,
-      branchIndex: ctx.branchIndex ?? null,
-      syncOnly,
-    })
-  ) {
+  if (instruction.isAvailable && !instruction.isAvailable({ ...ctx, syncOnly })) {
     return t('This type of node can not be used in current type of workflow or execute mode.');
   }
 
   return null;
+}
+
+export function getInstructionAvailable(
+  instruction: AvailableInstruction,
+  ctx: WorkflowCapabilityContext & { t: Translate },
+) {
+  const { t, ...context } = ctx;
+  return getInstructionUnavailableMessage(instruction, context, t);
 }
