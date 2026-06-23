@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import React from 'react';
 import {
   ActionGroupModel,
   CollectionActionGroupModel,
@@ -14,6 +15,7 @@ import {
   RecordActionGroupModel,
 } from '@nocobase/client-v2';
 import { FlowEngine } from '@nocobase/flow-engine';
+import { render, waitFor } from '@nocobase/test/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   CollectionTriggerWorkflowActionModel,
@@ -21,7 +23,35 @@ import {
   RecordTriggerWorkflowActionModel,
   registerTriggerWorkflowActionGroups,
   WorkbenchTriggerWorkflowActionModel,
+  WorkflowSelect,
 } from '../TriggerWorkflowActionModels';
+import { CONTEXT_TYPE } from '../../../../common/constants';
+
+const { mockUseFlowContext, selectMockState } = vi.hoisted(() => ({
+  mockUseFlowContext: vi.fn(),
+  selectMockState: {
+    props: undefined as any,
+  },
+}));
+
+vi.mock('@nocobase/flow-engine', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@nocobase/flow-engine')>();
+  return {
+    ...actual,
+    useFlowContext: mockUseFlowContext,
+  };
+});
+
+vi.mock('antd', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('antd')>();
+  return {
+    ...actual,
+    Select: (props: any) => {
+      selectMockState.props = props;
+      return React.createElement('div', { 'data-testid': 'workflow-select' });
+    },
+  };
+});
 
 class ActionPanelGroupActionModel extends ActionGroupModel {}
 
@@ -99,12 +129,22 @@ function getWorkbenchTriggerWorkflowHandler(model: WorkbenchTriggerWorkflowActio
   return step.handler;
 }
 
+function getCollectionTriggerHandler(model: CollectionTriggerWorkflowActionModel) {
+  const step = model.getFlow('customCollectionTriggerWorkflowsActionEventSettings')?.getStep('trigger')?.serialize() as
+    | { handler?: (ctx: any) => Promise<void> }
+    | undefined;
+  expect(step?.handler).toBeTypeOf('function');
+  return step.handler;
+}
+
 describe('trigger workflow action model registration', () => {
   beforeEach(() => {
     actionGroupModelSnapshots = actionGroupModelClasses.map((ModelClass) => [
       ModelClass,
       new Map(ModelClass.currentModels),
     ]);
+    mockUseFlowContext.mockReset();
+    selectMockState.props = undefined;
   });
 
   afterEach(() => {
@@ -142,6 +182,47 @@ describe('trigger workflow action model registration', () => {
 });
 
 describe('WorkbenchTriggerWorkflowActionModel', () => {
+  it('loads workflows through resource list so boolean filters stay typed', async () => {
+    const list = vi.fn().mockResolvedValue({
+      data: {
+        data: [{ title: 'Workflow 1', key: 'workflow-1' }],
+      },
+    });
+    const resource = vi.fn().mockReturnValue({ list });
+    const request = vi.fn();
+
+    mockUseFlowContext.mockReturnValue({
+      api: {
+        resource,
+        request,
+      },
+    });
+
+    render(
+      React.createElement(WorkflowSelect, {
+        filter: { 'config.collection': 'posts' },
+        optionFilter: () => true,
+      }),
+    );
+
+    await waitFor(() => {
+      expect(resource).toHaveBeenCalledWith('workflows');
+      expect(list).toHaveBeenCalledWith({
+        paginate: false,
+        filter: {
+          type: 'custom-action',
+          enabled: true,
+          'config.collection': 'posts',
+        },
+      });
+    });
+
+    expect(request).not.toHaveBeenCalled();
+    await waitFor(() => {
+      expect(selectMockState.props?.options).toEqual([{ label: 'Workflow 1', value: 'workflow-1' }]);
+    });
+  });
+
   it('does not send trigger request when no workflow is bound', async () => {
     const flowEngine = createEngine();
     const model = flowEngine.createModel<WorkbenchTriggerWorkflowActionModel>({
@@ -260,6 +341,69 @@ describe('WorkbenchTriggerWorkflowActionModel', () => {
     expect(ctx.exit).not.toHaveBeenCalled();
   });
 
+  it('resolves custom context data before sending trigger request body', async () => {
+    const flowEngine = createEngine();
+    const model = flowEngine.createModel<WorkbenchTriggerWorkflowActionModel>({
+      use: 'WorkbenchTriggerWorkflowActionModel',
+      uid: 'workbench-trigger-workflow-action-context-data-resolved',
+    });
+    const request = vi.fn().mockResolvedValue({});
+    const resolveJsonTemplate = vi.fn(async () => ({
+      a: '1',
+      userId: 100,
+      nested: {
+        b: '2',
+      },
+    }));
+    const ctx = {
+      api: {
+        request,
+      },
+      message: {
+        error: vi.fn(),
+        success: vi.fn(),
+      },
+      resolveJsonTemplate,
+      t: (value: string) => value,
+      exit: vi.fn(),
+    };
+
+    const handler = getWorkbenchTriggerWorkflowHandler(model);
+
+    await handler(ctx, {
+      group: [{ workflowKey: 'workflow-1' }],
+      contextData: {
+        a: '1',
+        userId: '{{$user.id}}',
+        nested: {
+          b: '2',
+        },
+      },
+    });
+
+    expect(resolveJsonTemplate).toHaveBeenCalledWith({
+      a: '1',
+      userId: '{{$user.id}}',
+      nested: {
+        b: '2',
+      },
+    });
+    expect(request).toHaveBeenCalledWith({
+      url: 'workflows:trigger',
+      method: 'post',
+      params: {
+        triggerWorkflows: 'workflow-1',
+      },
+      data: {
+        a: '1',
+        userId: 100,
+        nested: {
+          b: '2',
+        },
+      },
+    });
+  });
+
   it('exits flow when trigger request fails', async () => {
     const flowEngine = createEngine();
     const model = flowEngine.createModel<WorkbenchTriggerWorkflowActionModel>({
@@ -288,5 +432,66 @@ describe('WorkbenchTriggerWorkflowActionModel', () => {
     expect(ctx.message.success).not.toHaveBeenCalled();
     expect(ctx.exit).toHaveBeenCalled();
     consoleError.mockRestore();
+  });
+});
+
+describe('CollectionTriggerWorkflowActionModel', () => {
+  it('resolves custom context data before sending trigger request body', async () => {
+    const flowEngine = createEngine();
+    const model = flowEngine.createModel<CollectionTriggerWorkflowActionModel>({
+      use: 'CollectionTriggerWorkflowActionModel',
+      uid: 'collection-trigger-workflow-action-context-data-resolved',
+    });
+    model.setStepParams('customCollectionTriggerWorkflowsActionSettings', 'setContextType', {
+      type: CONTEXT_TYPE.GLOBAL,
+    });
+    model.setStepParams('customCollectionTriggerWorkflowsActionSettings', 'triggerWorkflows', {
+      group: [{ workflowKey: 'workflow-1' }],
+      contextData: {
+        title: 'hello',
+        currentUserId: '{{$user.id}}',
+      },
+    });
+
+    const request = vi.fn().mockResolvedValue({});
+    const resolveJsonTemplate = vi.fn(async () => ({
+      title: 'hello',
+      currentUserId: 200,
+    }));
+    const ctx = {
+      api: {
+        request,
+      },
+      message: {
+        error: vi.fn(),
+        warning: vi.fn(),
+        success: vi.fn(),
+      },
+      model,
+      resolveJsonTemplate,
+      t: (value: string) => value,
+      exit: vi.fn(),
+    };
+
+    const handler = getCollectionTriggerHandler(model);
+
+    await handler(ctx);
+
+    expect(resolveJsonTemplate).toHaveBeenCalledWith({
+      title: 'hello',
+      currentUserId: '{{$user.id}}',
+    });
+    expect(request).toHaveBeenCalledWith({
+      url: 'workflows:trigger',
+      method: 'post',
+      params: {
+        triggerWorkflows: 'workflow-1',
+      },
+      data: {
+        title: 'hello',
+        currentUserId: 200,
+      },
+    });
+    expect(ctx.exit).not.toHaveBeenCalled();
   });
 });
