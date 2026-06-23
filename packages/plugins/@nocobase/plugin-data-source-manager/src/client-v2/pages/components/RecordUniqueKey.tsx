@@ -30,6 +30,7 @@ type FieldInterfaceManager = {
 };
 
 type RecordUniqueKeyValue = string[] | undefined;
+type Translate = (key: string, options?: Record<string, unknown>) => string;
 
 function normalizeRecordUniqueKey(value: unknown): RecordUniqueKeyValue {
   if (Array.isArray(value)) {
@@ -61,8 +62,33 @@ export function collectionNeedsRecordUniqueKey(collection: Record<string, unknow
   return !getCollectionRecordUniqueKey(collection, fields);
 }
 
-function getCollectionUpdateActionUrl(dataSourceKey: string) {
+export function getCollectionUpdateActionUrl(dataSourceKey: string) {
   return dataSourceKey === 'main' ? 'collections:update' : `dataSources/${dataSourceKey}/collections:update`;
+}
+
+export function getRecordUniqueKeyFieldOptions(options: {
+  dataSourceType?: string;
+  fieldInterfaceManager?: FieldInterfaceManager;
+  fields?: CollectionFieldRecord[];
+  t: Translate;
+}) {
+  const { dataSourceType, fieldInterfaceManager, fields, t } = options;
+  return (fields || [])
+    .filter((field) => {
+      if (!field?.name || !field.interface) {
+        return false;
+      }
+      const fieldInterface = fieldInterfaceManager?.getFieldInterface?.(String(field.interface), dataSourceType);
+      return Boolean(fieldInterface?.titleUsable);
+    })
+    .map((field) => {
+      const title = field.uiSchema?.title || field.title || field.name;
+      return {
+        value: String(field.name),
+        label: compileLegacyTemplate(title, t),
+        title: compileLegacyTemplateText(title, t),
+      };
+    });
 }
 
 export function RecordUniqueKeyPrompt(props: {
@@ -83,25 +109,12 @@ export function RecordUniqueKeyPrompt(props: {
   const fieldInterfaceManager = ctx.dataSourceManager.collectionFieldInterfaceManager as FieldInterfaceManager;
   const options = useMemo(
     () =>
-      (fields || [])
-        .filter((field) => {
-          if (!field?.name || !field.interface) {
-            return false;
-          }
-          const fieldInterface = fieldInterfaceManager?.getFieldInterface?.(
-            String(field.interface),
-            dataSource?.options?.type,
-          );
-          return fieldInterface ? fieldInterface.titleUsable : true;
-        })
-        .map((field) => {
-          const title = field.uiSchema?.title || field.title || field.name;
-          return {
-            value: String(field.name),
-            label: compileLegacyTemplate(title, t),
-            title: compileLegacyTemplateText(title, t),
-          };
-        }),
+      getRecordUniqueKeyFieldOptions({
+        dataSourceType: dataSource?.options?.type,
+        fieldInterfaceManager,
+        fields,
+        t,
+      }),
     [dataSource?.options?.type, fieldInterfaceManager, fields, t],
   );
   const selectedTitle = useMemo(

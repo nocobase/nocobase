@@ -9,7 +9,12 @@
 
 import { compileLegacyTemplate } from '../../../utils/compileLegacyTemplate';
 import { getPresetFieldRows } from '../CollectionsPage';
-import { collectionNeedsRecordUniqueKey, getCollectionRecordUniqueKey } from '../RecordUniqueKey';
+import {
+  collectionNeedsRecordUniqueKey,
+  getCollectionRecordUniqueKey,
+  getCollectionUpdateActionUrl,
+  getRecordUniqueKeyFieldOptions,
+} from '../RecordUniqueKey';
 
 describe('getPresetFieldRows', () => {
   it('uses the preset title template when preset field label is a raw translation key', () => {
@@ -67,5 +72,40 @@ describe('collection record unique key helpers', () => {
 
   it('requires a record unique key when no primary key is available', () => {
     expect(collectionNeedsRecordUniqueKey({}, [{ name: 'name' }])).toBe(true);
+  });
+});
+
+describe('record unique key quick setup helpers', () => {
+  const t = (key: string) => key;
+
+  it('only includes fields whose interface is title usable', () => {
+    const options = getRecordUniqueKeyFieldOptions({
+      dataSourceType: 'postgres',
+      fieldInterfaceManager: {
+        getFieldInterface: (name, dataSourceType) => {
+          if (name === 'input' && dataSourceType === 'postgres') {
+            return { titleUsable: true };
+          }
+          if (name === 'json') {
+            return { titleUsable: false };
+          }
+          return undefined;
+        },
+      },
+      fields: [
+        { name: 'name', interface: 'input', uiSchema: { title: 'Name' } },
+        { name: 'config', interface: 'json', uiSchema: { title: 'Config' } },
+        { name: 'legacy', interface: 'unknown', uiSchema: { title: 'Legacy' } },
+        { name: 'no_interface', uiSchema: { title: 'No interface' } },
+      ],
+      t,
+    });
+
+    expect(options).toEqual([{ value: 'name', label: 'Name', title: 'Name' }]);
+  });
+
+  it('uses the external data source collection update endpoint', () => {
+    expect(getCollectionUpdateActionUrl('main')).toBe('collections:update');
+    expect(getCollectionUpdateActionUrl('analytics')).toBe('dataSources/analytics/collections:update');
   });
 });
