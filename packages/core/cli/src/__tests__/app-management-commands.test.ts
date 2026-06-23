@@ -8,6 +8,8 @@
  */
 
 import { spawn } from 'node:child_process';
+import fsp from 'node:fs/promises';
+import os from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, test, vi, expect } from 'vitest';
 import { resolveCliHomeRoot } from '../lib/cli-home.js';
@@ -547,6 +549,89 @@ test('start injects init env vars for prepared local envs and marks them install
   });
   expect(mocks.clearEnvRootSetup).toHaveBeenCalledWith('prepared-local');
   expect(mocks.upsertEnv).toHaveBeenCalledWith('prepared-local', { setupState: 'installed' });
+});
+
+test('start runs prepared env hooks with init app start context', async () => {
+  const hookDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'nocobase-cli-app-start-hook-'));
+  const hookPath = path.join(hookDir, 'hooks.mjs');
+  const markerPath = path.join(hookDir, 'marker.json');
+  await fsp.writeFile(
+    hookPath,
+    `
+export default {
+  beforeAppInstall: async (context) => {
+    const fs = await import('node:fs/promises');
+    const current = JSON.parse(await fs.readFile(${JSON.stringify(markerPath)}, 'utf8').catch(() => '[]'));
+    current.push({
+      hook: 'beforeAppInstall',
+      phase: context.phase,
+      command: context.command,
+      source: context.source,
+      setupState: context.envConfig.setupState
+    });
+    await fs.writeFile(${JSON.stringify(markerPath)}, JSON.stringify(current));
+  },
+  afterAppStart: async (context) => {
+    const fs = await import('node:fs/promises');
+    const current = JSON.parse(await fs.readFile(${JSON.stringify(markerPath)}, 'utf8').catch(() => '[]'));
+    current.push({
+      hook: 'afterAppStart',
+      phase: context.phase,
+      command: context.command,
+      source: context.source,
+      setupState: context.envConfig.setupState
+    });
+    await fs.writeFile(${JSON.stringify(markerPath)}, JSON.stringify(current));
+  }
+};
+`,
+  );
+  const { default: Start } = await import('../commands/app/start.js');
+  mocks.resolveManagedAppRuntime.mockResolvedValue({
+    kind: 'local',
+    envName: 'prepared-local',
+    source: 'npm',
+    projectRoot: path.join(hookDir, 'source'),
+    env: {
+      appPath: hookDir,
+      sourcePath: path.join(hookDir, 'source'),
+      storagePath: path.join(hookDir, 'storage'),
+      appPort: 13000,
+      config: {
+        setupState: 'prepared',
+        hookScript: hookPath,
+        downloadVersion: 'beta',
+      },
+      envVars: { APP_PORT: '13000' },
+    },
+  });
+
+  const command = createCommandHarness({
+    flags: {
+      env: 'prepared-local',
+    },
+  });
+
+  await Start.prototype.run.call(command);
+
+  await expect(fsp.readFile(markerPath, 'utf8')).resolves.toBe(
+    JSON.stringify([
+      {
+        hook: 'beforeAppInstall',
+        phase: 'init',
+        command: 'app:start',
+        source: 'npm',
+        setupState: 'prepared',
+      },
+      {
+        hook: 'afterAppStart',
+        phase: 'init',
+        command: 'app:start',
+        source: 'npm',
+        setupState: 'installed',
+      },
+    ]),
+  );
 });
 
 test('start rejects prepared local envs in foreground mode', async () => {
@@ -2059,6 +2144,43 @@ test('restart forwards quickstart by default for local envs', async () => {
     ['license:plugins:sync', ['--env', 'local', '--skip-if-no-license']],
     ['app:stop', ['--env', 'local']],
     ['app:start', ['--env', 'local', '--quickstart', '--no-sync-licensed-plugins']],
+  ]);
+});
+
+test('restart forwards app restart hook command for saved hook scripts', async () => {
+  const { default: Restart } = await import('../commands/app/restart.js');
+  mocks.resolveManagedAppRuntime.mockResolvedValue({
+    kind: 'local',
+    envName: 'local',
+    source: 'npm',
+    projectRoot: '/tmp/nocobase',
+    env: {
+      appPort: 13000,
+      envVars: { APP_PORT: '13000' },
+      config: {
+        hookScript: '.nb/hooks.mjs',
+      },
+    },
+  });
+  const runCommand = vi.fn(async () => undefined);
+  const command = createCommandHarness(
+    {
+      flags: {
+        env: 'local',
+      },
+    },
+    runCommand,
+  );
+
+  await Restart.prototype.run.call(command);
+
+  expect(runCommand.mock.calls).toEqual([
+    ['license:plugins:sync', ['--env', 'local', '--skip-if-no-license']],
+    ['app:stop', ['--env', 'local']],
+    [
+      'app:start',
+      ['--env', 'local', '--quickstart', '--no-sync-licensed-plugins', '--hook-command', 'app:restart'],
+    ],
   ]);
 });
 
@@ -4662,6 +4784,72 @@ test('upgrade uses --version for local npm envs and saves it on success', async 
     devDependencies: true,
     build: false,
   });
+});
+
+test('upgrade forwards saved hook script lifecycle context to source refresh and app start', async () => {
+  const { default: Upgrade } = await import('../commands/app/upgrade.js');
+  mocks.resolveManagedAppRuntime.mockResolvedValue({
+    kind: 'local',
+    envName: 'local',
+    source: 'npm',
+    projectRoot: '/tmp/nocobase',
+    env: {
+      appPath: '/tmp/app',
+      sourcePath: '/tmp/nocobase',
+      storagePath: '/tmp/app/storage',
+      baseUrl: 'http://127.0.0.1:13000/api',
+      appPort: 13000,
+      envVars: { APP_PORT: '13000' },
+      config: {
+        downloadVersion: 'alpha',
+        appRootPath: '/tmp/nocobase',
+        hookScript: '.nb/hooks.mjs',
+      },
+    },
+  });
+  const runCommand = vi.fn(async () => ({ projectRoot: '/tmp/nocobase' }));
+
+  const command = createCommandHarness(
+    {
+      flags: {
+        env: 'local',
+      },
+    },
+    runCommand,
+  );
+
+  await Upgrade.prototype.run.call(command);
+
+  expect(runCommand.mock.calls[1]).toEqual([
+    'source:download',
+    [
+      '-y',
+      '--no-intro',
+      '--source',
+      'npm',
+      '--replace',
+      '--version',
+      'alpha',
+      '--output-dir',
+      '/tmp/nocobase',
+      '--hook-script',
+      '/tmp/app/.nb/hooks.mjs',
+      '--hook-phase',
+      'upgrade',
+      '--hook-command',
+      'app:upgrade',
+      '--hook-env-name',
+      'local',
+      '--hook-app-path',
+      '/tmp/app',
+      '--hook-storage-path',
+      '/tmp/app/storage',
+    ],
+  ]);
+  expect(runCommand.mock.calls[3]).toEqual([
+    'app:start',
+    ['--env', 'local', '--yes', '--quickstart', '--no-sync-licensed-plugins', '--hook-command', 'app:upgrade'],
+  ]);
 });
 
 test('upgrade forwards --verbose to local source refresh and local runtime commands', async () => {

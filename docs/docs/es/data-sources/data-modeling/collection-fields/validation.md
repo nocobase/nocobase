@@ -62,6 +62,10 @@ Los campos de relación solo admiten la validación de campo requerido. Tenga en
 Una vez que haya configurado las reglas para los campos, estas reglas de validación correspondientes se activarán al añadir o modificar datos.
 ![20250819201027](https://nocobase-docs.oss-cn-beijing.aliyuncs.com/20250819201027.png)
 
+Cuando el campo se usa en un formulario, las reglas de validación del campo también se muestran en la configuración de validación del campo. Estas reglas aparecen en **Reglas de validación de campos del lado del servidor** y son de solo lectura en ese lugar. Si necesita cambiarlas, edite el campo en Fuente de datos → Configuración de la colección.
+
+Puede seguir agregando reglas adicionales para el campo de formulario actual en **Reglas de validación del lado del cliente**. Estas reglas solo se aplican al componente de campo actual. El resultado final de validación combina **Reglas de validación de campos del lado del servidor** y **Reglas de validación del lado del cliente**.
+
 Las reglas de validación también se aplican a los componentes de subtablas y subformularios:
 ![20250819202514](https://nocobase-docs.oss-cn-beijing.aliyuncs.com/20250819202514.png)
 
@@ -70,18 +74,18 @@ Las reglas de validación también se aplican a los componentes de subtablas y s
 Tenga en cuenta que, en escenarios de subformularios o subtablas, la validación de campo requerido para los campos de relación no surte efecto.
 ![20250819203016](https://nocobase-docs.oss-cn-beijing.aliyuncs.com/20250819203016.png)
 
-## Diferencias con la Validación de Campos del Lado del Cliente
-La validación de campos del lado del cliente y del lado del servidor se aplican en escenarios de uso distintos. Ambas presentan diferencias significativas en su implementación y en el momento en que se activan las reglas, por lo que deben gestionarse por separado.
+## Diferencias entre las Reglas de Validación de Campos del Lado del Servidor y del Lado del Cliente
+Las reglas de validación de campos del lado del servidor y del lado del cliente se configuran en lugares distintos y tienen alcances diferentes.
 
 ### Diferencias en el Método de Configuración
-- **Validación del lado del cliente**: Configure las reglas en los formularios de edición (como se muestra en la siguiente figura).
-- **Validación de campos del lado del servidor**: Establezca las reglas de campo en Fuente de datos → Configuración de la colección.
+- **Reglas de validación de campos del lado del servidor**: Establezca las reglas de campo en Fuente de datos → Configuración de la colección. Estas reglas son las reglas base del campo.
+- **Reglas de validación del lado del cliente**: Configure reglas adicionales en los ajustes de un campo de formulario. Estas reglas solo afectan al componente de campo actual.
 ![20250819203836](https://nocobase-docs.oss-cn-beijing.aliyuncs.com/20250819203836.png)
 
 ![20250819203845](https://nocobase-docs.oss-cn-beijing.aliyuncs.com/20250819203845.png)
 
 ### Diferencias en el Momento de Activación de la Validación
-- **Validación del lado del cliente**: Se activa en tiempo real a medida que los usuarios completan los campos y muestra los mensajes de error de inmediato.
-- **Validación de campos del lado del servidor**: Se realiza en el servidor después de enviar los datos y antes de que se almacenen, y los mensajes de error se devuelven a través de las respuestas de la API.
-- **Ámbito de aplicación**: La validación de campos del lado del servidor no solo entra en vigor al enviar formularios, sino que también se activa en todos los escenarios que implican la adición o modificación de datos, como los flujos de trabajo y la importación de datos.
-- **Mensajes de error**: La validación del lado del cliente admite mensajes de error personalizados, mientras que la validación del lado del servidor actualmente no los admite.
+- **Reglas de validación de campos del lado del servidor**: Activan la validación frontend cuando el campo se usa en un formulario y también validan antes de escribir los datos. También se aplican a escenarios que crean o actualizan datos, como flujos de trabajo e importaciones de datos.
+- **Reglas de validación del lado del cliente**: Solo activan la validación frontend en el campo de formulario actual.
+- **Visualización de reglas**: Las reglas de validación de campos del lado del servidor se muestran como reglas heredadas de solo lectura. Las reglas de validación del lado del cliente se muestran por separado y pueden editarse allí.
+- **Mensajes de error**: Las reglas de validación del lado del cliente admiten mensajes de error personalizados, mientras que las reglas de validación de campos del lado del servidor actualmente no los admiten.

@@ -17,6 +17,7 @@ const STRING_ENV_CONFIG_KEYS = [
   'dockerPlatform',
   'gitUrl',
   'npmRegistry',
+  'hookScript',
   'appPath',
   'appRootPath',
   'storagePath',
