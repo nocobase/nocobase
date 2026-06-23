@@ -19,10 +19,15 @@ import {
   useCollectionRecordData,
   useDataBlockRequest,
   useDestroyActionProps,
+  useGlobalVariable,
+  useCurrentUserVariable,
+  Variable,
+  Checkbox as NocoCheckbox,
 } from '@nocobase/client';
 import { css } from '@emotion/css';
 import { CheckCircleOutlined, CloseCircleOutlined, PlusOutlined } from '@ant-design/icons';
-import { App, Button, Space, Switch, Tag, Alert, Spin } from 'antd';
+import { App, Button, Space, Switch, Tag, Alert, Spin, Tooltip } from 'antd';
+import type { DefaultOptionType } from 'antd/lib/cascader';
 import { createForm } from '@formily/core';
 import { observer, useForm } from '@formily/react';
 import React, { useContext, useEffect, useMemo, useRef, useState, useCallback, createContext } from 'react';
@@ -77,6 +82,7 @@ const sanitizeMCPValues = (values: Record<string, any>) => {
   const transport = values.transport as MCPTransport;
   const nextValues = {
     ...values,
+    useUserContext: transport === 'stdio' ? false : values.useUserContext === true,
     args:
       typeof values.args === 'string'
         ? values.args
@@ -114,6 +120,9 @@ const useCreateFormProps = () => {
     () => ({
       enabled: true,
       transport: 'stdio',
+      useUserContext: false,
+      command: '',
+      url: '',
       args: '',
       env: [],
       headers: [],
@@ -152,6 +161,7 @@ interface MCPRecord {
   env?: Record<string, string>;
   headers?: Record<string, string>;
   restart?: Record<string, any>;
+  useUserContext?: boolean;
 }
 
 const useEditFormProps = () => {
@@ -160,6 +170,9 @@ const useEditFormProps = () => {
   const initialValues = useMemo(
     () => ({
       ...record,
+      useUserContext: record?.useUserContext === true,
+      command: record?.command ?? '',
+      url: record?.url ?? '',
       args: Array.isArray(record?.args) ? record.args.join(' ') : '',
       env: mapObjectToEntries(record?.env),
       headers: mapObjectToEntries(record?.headers),
@@ -250,6 +263,21 @@ const useEnsureConnectionBeforeSubmit = () => {
   };
 };
 
+const useConfirmSaveAfterFailedTest = () => {
+  const { modal } = App.useApp();
+  const t = useT();
+
+  return async () =>
+    modal.confirm({
+      title: t('Connection test failed'),
+      content: t(
+        'The MCP server uses current user variables and the connection test failed. Do you want to save it anyway?',
+      ),
+      okText: t('Save anyway'),
+      cancelText: t('Cancel'),
+    });
+};
+
 const useCreateActionProps = () => {
   const { setVisible } = useActionContext();
   const { message } = App.useApp();
@@ -260,6 +288,7 @@ const useCreateActionProps = () => {
   const { loading: testLoading } = useContext(TestConnectionContext);
   const { rebuildClient, rebuilding } = useContext(MCPSettingsContext);
   const ensureConnectionBeforeSubmit = useEnsureConnectionBeforeSubmit();
+  const confirmSaveAfterFailedTest = useConfirmSaveAfterFailedTest();
 
   return {
     type: 'primary',
@@ -268,7 +297,13 @@ const useCreateActionProps = () => {
       await form.submit();
       const passed = await ensureConnectionBeforeSubmit(form.values);
       if (!passed) {
-        return;
+        if (sanitizeMCPValues(form.values).useUserContext !== true) {
+          return;
+        }
+        const confirmed = await confirmSaveAfterFailedTest();
+        if (!confirmed) {
+          return;
+        }
       }
       await api.resource('aiMcpClients').create({
         values: sanitizeMCPValues(form.values),
@@ -293,6 +328,7 @@ const useEditActionProps = () => {
   const { loading: testLoading } = useContext(TestConnectionContext);
   const { rebuildClient, rebuilding } = useContext(MCPSettingsContext);
   const ensureConnectionBeforeSubmit = useEnsureConnectionBeforeSubmit();
+  const confirmSaveAfterFailedTest = useConfirmSaveAfterFailedTest();
 
   return {
     type: 'primary',
@@ -301,7 +337,13 @@ const useEditActionProps = () => {
       await form.submit();
       const passed = await ensureConnectionBeforeSubmit(form.values);
       if (!passed) {
-        return;
+        if (sanitizeMCPValues(form.values).useUserContext !== true) {
+          return;
+        }
+        const confirmed = await confirmSaveAfterFailedTest();
+        if (!confirmed) {
+          return;
+        }
       }
       await api.resource('aiMcpClients').update({
         values: sanitizeMCPValues(form.values),
@@ -422,6 +464,109 @@ const TestConnectionResult: React.FC = observer(
   { displayName: 'TestConnectionResult' },
 );
 
+const useMCPVariableScope = (includeCurrentUser: boolean) => {
+  const environmentVariables = useGlobalVariable('$env');
+  const { currentUserSettings } = useCurrentUserVariable({
+    maxDepth: 3,
+    noDisabled: true,
+  });
+
+  return useMemo(
+    () =>
+      [
+        normalizeMCPVariableOption(environmentVariables),
+        includeCurrentUser ? normalizeMCPVariableOption(currentUserSettings) : null,
+      ].filter(Boolean),
+    [currentUserSettings, environmentVariables, includeCurrentUser],
+  );
+};
+
+type MCPVariableValue = NonNullable<DefaultOptionType['value']>;
+
+type MCPVariableOption = Omit<Partial<DefaultOptionType>, 'children' | 'label' | 'value'> & {
+  name?: MCPVariableValue;
+  title?: React.ReactNode;
+  value?: MCPVariableValue;
+  label?: React.ReactNode;
+  key?: React.Key;
+  children?: MCPVariableOption[];
+  loadChildren?: (option: MCPVariableOption, ...args: unknown[]) => Promise<void> | void;
+  [key: string]: unknown;
+};
+
+const normalizeMCPVariableOption = (option?: MCPVariableOption | null): MCPVariableOption | null => {
+  if (!option) {
+    return null;
+  }
+
+  const value = option.value ?? option.name;
+  const label = option.label ?? option.title;
+  const loadChildren = option.loadChildren
+    ? async (target: MCPVariableOption, ...args: unknown[]) => {
+        await option.loadChildren?.(target, ...args);
+        target.children = target.children
+          ?.map((child) => normalizeMCPVariableOption(child))
+          .filter((child): child is MCPVariableOption => Boolean(child));
+      }
+    : undefined;
+
+  return {
+    ...option,
+    name: option.name ?? value,
+    title: option.title ?? label,
+    value,
+    label,
+    key: option.key ?? value,
+    children: option.children
+      ?.map((child) => normalizeMCPVariableOption(child))
+      .filter((child): child is MCPVariableOption => Boolean(child)),
+    ...(loadChildren ? { loadChildren } : {}),
+  };
+};
+
+const mcpVariableFieldNames = {
+  value: 'name',
+  label: 'title',
+};
+
+type MCPVariableInputProps = React.ComponentProps<typeof Variable.TextArea> & {
+  variableScope?: 'env' | 'user';
+};
+
+const MCPVariableInput: React.FC<MCPVariableInputProps> = observer(
+  (props) => {
+    const { variableScope = 'env', ...others } = props;
+    const form = useForm();
+    const includeCurrentUser = variableScope === 'user' && form.values.useUserContext === true;
+    const scope = useMCPVariableScope(includeCurrentUser);
+
+    return <Variable.TextArea {...others} scope={scope} fieldNames={mcpVariableFieldNames} trim={false} />;
+  },
+  { displayName: 'MCPVariableInput' },
+);
+
+type UserContextCheckboxProps = React.ComponentProps<typeof NocoCheckbox> & {
+  tooltip?: React.ReactNode;
+};
+
+const UserContextCheckbox: React.FC<UserContextCheckboxProps> = observer(
+  (props) => {
+    const { tooltip, ...others } = props;
+    const form = useForm();
+    const disabled = form.values.transport === 'stdio';
+
+    useEffect(() => {
+      if (disabled && form.values.useUserContext) {
+        form.setValuesIn('useUserContext', false);
+      }
+    }, [disabled, form]);
+
+    const checkbox = <NocoCheckbox {...others} disabled={disabled || props.disabled} />;
+    return tooltip ? <Tooltip title={tooltip}>{checkbox}</Tooltip> : checkbox;
+  },
+  { displayName: 'UserContextCheckbox' },
+);
+
 const AddNew = () => {
   const t = useT();
   const [visible, setVisible] = useState(false);
@@ -453,7 +598,7 @@ const AddNew = () => {
       </Button>
       <TestConnectionContext.Provider value={contextValue}>
         <SchemaComponent
-          components={{ TestConnectionButton, TestConnectionResult, Space }}
+          components={{ TestConnectionButton, TestConnectionResult, Space, MCPVariableInput, UserContextCheckbox }}
           scope={{
             t,
             transportOptions,
@@ -489,7 +634,7 @@ const MCPEditDrawerContent: React.FC = () => {
     <CollectionRecordProvider record={record}>
       <TestConnectionContext.Provider value={contextValue}>
         <SchemaComponent
-          components={{ TestConnectionButton, TestConnectionResult, Space }}
+          components={{ TestConnectionButton, TestConnectionResult, Space, MCPVariableInput, UserContextCheckbox }}
           scope={{
             t,
             transportOptions,
@@ -637,6 +782,8 @@ export const MCPSettings: React.FC = () => {
             MCPToolsList,
             TestConnectionButton,
             TestConnectionResult,
+            MCPVariableInput,
+            UserContextCheckbox,
             TransportTag,
             EnabledSwitch,
           }}

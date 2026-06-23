@@ -69,11 +69,21 @@ const createMCPFormProperties = (options: {
     enum: '{{ transportOptions }}',
     required: true,
   },
+  useUserContext: {
+    type: 'boolean',
+    'x-decorator': 'FormItem',
+    title: '{{ t("Depends on current user") }}',
+    'x-component': 'UserContextCheckbox',
+    'x-component-props': {
+      tooltip:
+        '{{ t("When enabled, URL and headers can use current user variables, and the MCP server runs per current user. Stdio transport is not supported.") }}',
+    },
+  },
   command: {
     type: 'string',
     'x-decorator': 'FormItem',
     title: '{{ t("Command") }}',
-    'x-component': 'Input',
+    'x-component': 'MCPVariableInput',
     'x-component-props': {
       placeholder: '{{ t("For example: npx, uvx, node") }}',
     },
@@ -83,7 +93,7 @@ const createMCPFormProperties = (options: {
     type: 'string',
     'x-decorator': 'FormItem',
     title: '{{ t("Arguments") }}',
-    'x-component': 'Input',
+    'x-component': 'MCPVariableInput',
     'x-component-props': {
       placeholder: '{{ t("Space-separated args, e.g.: -u --flag value") }}',
     },
@@ -120,10 +130,7 @@ const createMCPFormProperties = (options: {
             value: {
               type: 'string',
               'x-decorator': 'FormItem',
-              'x-component': 'TextAreaWithGlobalScope',
-              'x-component-props': {
-                useTypedConstant: true,
-              },
+              'x-component': 'MCPVariableInput',
             },
             remove: {
               type: 'void',
@@ -147,9 +154,10 @@ const createMCPFormProperties = (options: {
     type: 'string',
     'x-decorator': 'FormItem',
     title: '{{ t("URL") }}',
-    'x-component': 'Input',
+    'x-component': 'MCPVariableInput',
     'x-component-props': {
       placeholder: '{{ t("For example: https://example.com/mcp") }}',
+      variableScope: 'user',
     },
     'x-reactions': createTransportReaction('remote', true),
   },
@@ -184,9 +192,9 @@ const createMCPFormProperties = (options: {
             value: {
               type: 'string',
               'x-decorator': 'FormItem',
-              'x-component': 'TextAreaWithGlobalScope',
+              'x-component': 'MCPVariableInput',
               'x-component-props': {
-                useTypedConstant: true,
+                variableScope: 'user',
               },
             },
             remove: {
@@ -418,6 +426,18 @@ export const mcpSettingsSchema = {
             },
             column5: {
               type: 'void',
+              title: '{{ t("Depends on current user") }}',
+              'x-component': 'TableV2.Column',
+              properties: {
+                useUserContext: {
+                  type: 'boolean',
+                  'x-component': 'Checkbox',
+                  'x-read-pretty': true,
+                },
+              },
+            },
+            column6: {
+              type: 'void',
               title: '{{ t("Enabled") }}',
               'x-component': 'TableV2.Column',
               properties: {
@@ -427,7 +447,7 @@ export const mcpSettingsSchema = {
                 },
               },
             },
-            column6: {
+            column7: {
               type: 'void',
               title: '{{ t("Actions") }}',
               'x-decorator': 'TableV2.Column.ActionBar',
