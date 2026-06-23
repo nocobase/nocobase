@@ -83,6 +83,10 @@ describe('DatasourceSettingsPage request helpers', () => {
       data: [{ id: 1, title: 'Orders', datasource: 'main', collectionName: 'orders', limit: 100, enabled: true }],
       total: 1,
     });
+    expect(list).toHaveBeenCalledWith({
+      sort: ['-createdAt'],
+      pageSize: 16,
+    });
   });
 
   it('creates and updates datasource settings with id filter', async () => {

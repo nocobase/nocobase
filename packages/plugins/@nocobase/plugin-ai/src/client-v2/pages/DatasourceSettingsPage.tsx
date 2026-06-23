@@ -13,6 +13,7 @@ import {
   Button,
   Card,
   Cascader,
+  Divider,
   Drawer,
   Empty,
   Flex,
@@ -20,7 +21,7 @@ import {
   Input,
   InputNumber,
   List,
-  Select,
+  Radio,
   Space,
   Spin,
   Steps,
@@ -30,13 +31,16 @@ import {
   Tooltip,
   Typography,
   theme,
+  Transfer,
 } from 'antd';
+import type { GetProp, TableColumnsType, TableProps, TransferProps } from 'antd';
 import { DeleteOutlined, ExclamationCircleFilled, PlusOutlined, ReloadOutlined } from '@ant-design/icons';
-import { useApp } from '@nocobase/client-v2';
+import { FilterGroup, useApp, VariableFilterItem } from '@nocobase/client-v2';
 import type { APIClient } from '@nocobase/client-v2';
 import { dayjs } from '@nocobase/utils/client';
+import { createCollectionContextMeta, observable, useFlowContext } from '@nocobase/flow-engine';
+import type { Collection } from '@nocobase/flow-engine';
 import { useT } from '../locale';
-import { AI_SETTINGS_DRAWER_WIDTH } from './drawerWidth';
 
 type APIClientLike = Pick<APIClient, 'resource'>;
 type ResourceAction = (params?: Record<string, unknown>) => Promise<unknown>;
@@ -88,10 +92,6 @@ type CollectionOption = {
   value: string;
   children?: CollectionOption[];
 };
-type FieldOption = {
-  label: string;
-  value: string;
-};
 type DataSourceManagerLike = {
   getDataSources?: () => DataSourceLike[];
   getCollection?: (dataSourceKey: string, collectionName: string) => CollectionLike | undefined;
@@ -106,6 +106,7 @@ type DataSourceLike = {
 type CollectionLike = {
   name: string;
   title?: string;
+  dataSource?: DataSourceLike;
   getFields?: () => FieldLike[];
 };
 type FieldLike = {
@@ -116,6 +117,13 @@ type FieldLike = {
     interface?: string;
     hidden?: boolean;
   };
+};
+type TransferItem = GetProp<TransferProps, 'dataSource'>[number];
+type TableRowSelection<T extends object> = TableProps<T>['rowSelection'];
+type FieldTransferItem = {
+  key: string;
+  title: string;
+  direction?: 'asc' | 'desc';
 };
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -167,6 +175,13 @@ const safeParseJson = <T,>(value: string | undefined, fallback: T): T => {
   return parsed as T;
 };
 
+const cloneJsonValue = <T,>(value: T): T => {
+  if (value == null) {
+    return value;
+  }
+  return JSON.parse(JSON.stringify(value)) as T;
+};
+
 export const normalizeDatasourceValues = (values: DatasourceFormValues): Omit<AIContextDatasourceRecord, 'id'> => {
   const [datasource, collectionName] = values.collection || [values.datasource, values.collectionName];
   if (!datasource || !collectionName) {
@@ -178,8 +193,8 @@ export const normalizeDatasourceValues = (values: DatasourceFormValues): Omit<AI
     datasource,
     collectionName,
     fields: Array.isArray(values.fields) ? values.fields : [],
-    filter: safeParseJson<FilterValue | undefined>(values.filterText, values.filter),
-    sort: safeParseJson<SortValue | undefined>(values.sortText, values.sort),
+    filter: cloneJsonValue(safeParseJson<FilterValue | undefined>(values.filterText, values.filter)),
+    sort: cloneJsonValue(safeParseJson<SortValue | undefined>(values.sortText, values.sort)),
     limit: values.limit,
     enabled: values.enabled !== false,
   };
@@ -193,7 +208,10 @@ export const toDatasourceFormValues = (record: AIContextDatasourceRecord): Datas
 });
 
 export async function listContextDatasources(apiClient: APIClientLike): Promise<DatasourceListResult> {
-  const response = await callResourceAction(apiClient, 'aiContextDatasources', 'list');
+  const response = await callResourceAction(apiClient, 'aiContextDatasources', 'list', {
+    sort: ['-createdAt'],
+    pageSize: 16,
+  });
   const data = readResponseData(response);
   return {
     data: Array.isArray(data) ? data.filter(isAIContextDatasourceRecord) : [],
@@ -253,17 +271,39 @@ const getCollectionOptions = (manager: DataSourceManagerLike | undefined): Colle
   }));
 };
 
-const getFieldOptions = (manager: DataSourceManagerLike | undefined, collection?: string[]): FieldOption[] => {
+const getCurrentCollection = (
+  manager: DataSourceManagerLike | undefined,
+  collection?: string[],
+): CollectionLike | undefined => {
   const [dataSourceKey, collectionName] = collection || [];
   if (!dataSourceKey || !collectionName) {
-    return [];
+    return undefined;
   }
-  const fields = manager?.getCollection?.(dataSourceKey, collectionName)?.getFields?.() || [];
+  return manager?.getCollection?.(dataSourceKey, collectionName);
+};
+
+const getCollectionDisplayName = (
+  manager: DataSourceManagerLike | undefined,
+  collection?: string[],
+): string | undefined => {
+  const currentCollection = getCurrentCollection(manager, collection);
+  if (!currentCollection) {
+    return undefined;
+  }
+  const dataSourceTitle = currentCollection.dataSource?.displayName || collection?.[0];
+  return `${dataSourceTitle} / ${currentCollection.title || currentCollection.name}`;
+};
+
+const getFieldTransferItems = (
+  manager: DataSourceManagerLike | undefined,
+  collection?: string[],
+): FieldTransferItem[] => {
+  const fields = getCurrentCollection(manager, collection)?.getFields?.() || [];
   return fields
     .filter((field) => field.options?.interface && !field.options?.hidden)
     .map((field) => ({
-      label: field.title || field.name,
-      value: field.name,
+      key: field.name,
+      title: field.title || field.name,
     }));
 };
 
@@ -272,8 +312,8 @@ const createInitialValues = (): DatasourceFormValues => ({
   description: '',
   collection: undefined,
   fields: [],
-  filterText: '',
-  sortText: '',
+  filter: { logic: '$and', items: [] },
+  sort: [],
   limit: 1000,
   enabled: true,
 });
@@ -288,21 +328,288 @@ const getDatasourceStepFields = (step: number): Array<keyof DatasourceFormValues
   return [];
 };
 
-const DatasourceForm: React.FC<{
+const TableTransfer: React.FC<
+  TransferProps<FieldTransferItem> & {
+    dataSource: FieldTransferItem[];
+    leftColumns: TableColumnsType<FieldTransferItem>;
+    rightColumns: TableColumnsType<FieldTransferItem>;
+  }
+> = ({ leftColumns, rightColumns, ...restProps }) => {
+  return (
+    <Transfer style={{ width: '100%' }} {...restProps}>
+      {({ direction, filteredItems, onItemSelect, onItemSelectAll, selectedKeys: listSelectedKeys, disabled }) => {
+        const columns = direction === 'left' ? leftColumns : rightColumns;
+        const rowSelection: TableRowSelection<TransferItem> = {
+          getCheckboxProps: () => ({ disabled }),
+          onChange(selectedRowKeys) {
+            onItemSelectAll(
+              selectedRowKeys.filter((key): key is string => typeof key === 'string'),
+              'replace',
+            );
+          },
+          selectedRowKeys: listSelectedKeys,
+          selections: [Table.SELECTION_ALL, Table.SELECTION_INVERT, Table.SELECTION_NONE],
+        };
+
+        return (
+          <Table
+            rowSelection={rowSelection}
+            columns={columns as TableColumnsType<TransferItem>}
+            dataSource={filteredItems}
+            size="small"
+            style={{ pointerEvents: disabled ? 'none' : undefined }}
+            pagination={{
+              defaultPageSize: 20,
+            }}
+            onRow={({ key, disabled: itemDisabled }) => ({
+              onClick: () => {
+                if (itemDisabled || disabled || typeof key !== 'string') {
+                  return;
+                }
+                onItemSelect(key, !listSelectedKeys.includes(key));
+              },
+            })}
+          />
+        );
+      }}
+    </Transfer>
+  );
+};
+
+const fieldTransferFilterOption = (input: string, item: FieldTransferItem) => item.title.includes(input);
+
+const FieldsTransfer: React.FC<{
+  value?: string[];
+  onChange?: (targetKeys: string[]) => void;
+  manager?: DataSourceManagerLike;
+  collection?: string[];
+}> = ({ value, onChange, manager, collection }) => {
+  const t = useT();
+  const dataSource = useMemo(() => getFieldTransferItems(manager, collection), [collection, manager]);
+  const columns: TableColumnsType<FieldTransferItem> = [
+    {
+      dataIndex: 'title',
+      title: t('Field display name'),
+    },
+  ];
+
+  return (
+    <Flex align="start" gap="middle" vertical>
+      <TableTransfer
+        dataSource={dataSource}
+        targetKeys={value}
+        showSearch
+        showSelectAll={false}
+        onChange={(targetKeys) => onChange?.(targetKeys.filter((key): key is string => typeof key === 'string'))}
+        filterOption={fieldTransferFilterOption}
+        leftColumns={columns}
+        rightColumns={columns}
+      />
+    </Flex>
+  );
+};
+
+const SortFieldsTransfer: React.FC<{
+  value?: string[];
+  onChange?: (targetKeys: string[]) => void;
+  manager?: DataSourceManagerLike;
+  collection?: string[];
+}> = ({ value, onChange, manager, collection }) => {
+  const t = useT();
+  const [dataSource, setDataSource] = useState<FieldTransferItem[]>([]);
+  const [targetKeys, setTargetKeys] = useState<string[]>([]);
+
+  const emitChange = useCallback(
+    (keys: string[], items: FieldTransferItem[]) => {
+      onChange?.(
+        keys.map((key) => {
+          const record = items.find((item) => item.key === key);
+          return record?.direction === 'desc' ? `-${key}` : key;
+        }),
+      );
+    },
+    [onChange],
+  );
+
+  useEffect(() => {
+    const directions = (value || []).reduce<Record<string, 'asc' | 'desc'>>((result, item) => {
+      if (item.startsWith('-')) {
+        result[item.slice(1)] = 'desc';
+      } else {
+        result[item] = 'asc';
+      }
+      return result;
+    }, {});
+    const nextDataSource = getFieldTransferItems(manager, collection).map((item) => ({
+      ...item,
+      direction: directions[item.key],
+    }));
+    setTargetKeys((value || []).map((item) => (item.startsWith('-') ? item.slice(1) : item)));
+    setDataSource(nextDataSource);
+  }, [collection, manager, value]);
+
+  const handleTransferTargetChange = useCallback(
+    (keys: string[]) => {
+      setTargetKeys(keys);
+      emitChange(keys, dataSource);
+    },
+    [dataSource, emitChange],
+  );
+
+  const leftColumns: TableColumnsType<FieldTransferItem> = [
+    {
+      dataIndex: 'title',
+      title: t('Field display name'),
+    },
+  ];
+
+  const rightColumns: TableColumnsType<FieldTransferItem> = [
+    {
+      dataIndex: 'title',
+      title: t('Field display name'),
+    },
+    {
+      title: t('Direction'),
+      render: (_value, record) => (
+        <div onClick={(event) => event.stopPropagation()}>
+          <Radio.Group
+            value={record.direction || 'asc'}
+            options={[
+              { value: 'asc', label: t('Asc') },
+              { value: 'desc', label: t('Desc') },
+            ]}
+            onChange={(event) => {
+              event.stopPropagation();
+              const nextDataSource = dataSource.map((item) =>
+                item.key === record.key ? { ...item, direction: event.target.value } : item,
+              );
+              setDataSource(nextDataSource);
+              emitChange(targetKeys, nextDataSource);
+            }}
+          />
+        </div>
+      ),
+    },
+    {
+      title: t('Actions'),
+      render: (_value, record) => (
+        <Space direction="horizontal">
+          <Button
+            type="link"
+            onClick={(event) => {
+              event.stopPropagation();
+              const sortingIndex = targetKeys.indexOf(record.key);
+              if (sortingIndex > 0) {
+                const nextTargetKeys = [...targetKeys];
+                nextTargetKeys[sortingIndex] = nextTargetKeys[sortingIndex - 1];
+                nextTargetKeys[sortingIndex - 1] = record.key;
+                handleTransferTargetChange(nextTargetKeys);
+              }
+            }}
+          >
+            {t('Up')}
+          </Button>
+          <Button
+            type="link"
+            onClick={(event) => {
+              event.stopPropagation();
+              const sortingIndex = targetKeys.indexOf(record.key);
+              if (sortingIndex !== -1 && sortingIndex < targetKeys.length - 1) {
+                const nextTargetKeys = [...targetKeys];
+                nextTargetKeys[sortingIndex] = nextTargetKeys[sortingIndex + 1];
+                nextTargetKeys[sortingIndex + 1] = record.key;
+                handleTransferTargetChange(nextTargetKeys);
+              }
+            }}
+          >
+            {t('Down')}
+          </Button>
+        </Space>
+      ),
+    },
+  ];
+
+  return (
+    <Flex align="start" gap="middle" vertical>
+      <TableTransfer
+        dataSource={dataSource}
+        targetKeys={targetKeys}
+        showSearch
+        showSelectAll={false}
+        onChange={(keys) => handleTransferTargetChange(keys.filter((key): key is string => typeof key === 'string'))}
+        filterOption={fieldTransferFilterOption}
+        leftColumns={leftColumns}
+        rightColumns={rightColumns}
+      />
+    </Flex>
+  );
+};
+
+const FilterEditor: React.FC<{
+  value?: FilterValue;
+  onChange?: (value: FilterValue) => void;
+  collection?: CollectionLike;
+}> = ({ value, onChange, collection }) => {
+  const t = useT();
+  const flowContext = useFlowContext();
+  const filterValue = useMemo(
+    () => observable(cloneJsonValue(value || { logic: '$and', items: [] })) as FilterValue,
+    [value],
+  );
+
+  useEffect(() => {
+    if (!collection) {
+      return;
+    }
+    flowContext.model.context.defineProperty('collection', {
+      get: () => collection,
+      meta: createCollectionContextMeta(() => collection as Collection, t('Current collection')),
+    });
+  }, [collection, flowContext, t]);
+
+  return (
+    <FilterGroup
+      value={filterValue}
+      onChange={(nextValue) => onChange?.(cloneJsonValue(nextValue))}
+      FilterItem={(props) => <VariableFilterItem {...props} model={flowContext.model} />}
+    />
+  );
+};
+
+const renderPreviewValue = (value: unknown, field?: FieldLike, t?: (key: string) => string) => {
+  if (value == null) {
+    return '';
+  }
+  if (field?.type === 'date') {
+    return dayjs(value as string).format('YYYY-MM-DD HH:mm:ss');
+  }
+  if (typeof value === 'string') {
+    return t ? t(value) : value;
+  }
+  return JSON.stringify(value);
+};
+
+const PreviewPanel: React.FC<{
   manager?: DataSourceManagerLike;
   preview: PreviewResult | null;
   previewing: boolean;
-  editing: boolean;
-  currentStep: number;
-  mode: DatasourceFormMode;
-  onStepChange?: (step: number) => void;
-}> = ({ manager, preview, previewing, editing, currentStep, mode, onStepChange }) => {
+  collection?: string[];
+  onRefresh: () => void;
+}> = ({ manager, preview, previewing, collection, onRefresh }) => {
   const t = useT();
-  const { token } = theme.useToken();
-  const form = Form.useFormInstance<DatasourceFormValues>();
-  const collection = Form.useWatch('collection', form);
-  const fieldOptions = useMemo(() => getFieldOptions(manager, collection), [collection, manager]);
-  const previewRows = useMemo(
+  const collectionDisplayName = getCollectionDisplayName(manager, collection) || '';
+  const title = `${t('Collection')}: ${collectionDisplayName}`;
+  const currentCollection = preview?.options
+    ? getCurrentCollection(manager, [preview.options.datasource || '', preview.options.collectionName || ''])
+    : getCurrentCollection(manager, collection);
+  const collectionFields = useMemo(() => {
+    const names = preview?.options?.fields || [];
+    const fields = currentCollection?.getFields?.() || [];
+    return names
+      .map((name) => fields.find((field) => field.name === name) || { name, title: name })
+      .filter((field): field is FieldLike => !!field);
+  }, [currentCollection, preview?.options?.fields]);
+  const dataSource = useMemo(
     () =>
       (preview?.records || []).map((row, index) => ({
         key: index,
@@ -313,16 +620,104 @@ const DatasourceForm: React.FC<{
       })),
     [preview],
   );
-  const previewColumns = useMemo(
+  const columns = useMemo(
     () =>
-      (preview?.options?.fields || []).map((field) => ({
-        key: field,
-        dataIndex: field,
-        title: field,
-        render: (value: unknown) => (typeof value === 'string' ? value : JSON.stringify(value)),
+      collectionFields.map((field) => ({
+        key: field.name,
+        title: (
+          <Typography.Text style={{ minWidth: 100, maxWidth: 300 }} ellipsis={{ tooltip: field.title || field.name }}>
+            {field.title || field.name}
+          </Typography.Text>
+        ),
+        dataIndex: field.name,
+        width: 'auto',
+        render: (value: unknown) => (
+          <Typography.Text
+            style={{ minWidth: 100, maxWidth: 300 }}
+            ellipsis={{ tooltip: renderPreviewValue(value, field, t) }}
+          >
+            {renderPreviewValue(value, field, t)}
+          </Typography.Text>
+        ),
       })),
-    [preview],
+    [collectionFields, t],
   );
+  const jsonText = JSON.stringify(dataSource, null, 2);
+
+  return (
+    <div style={{ padding: '16px' }}>
+      <Tabs
+        type="card"
+        tabBarStyle={{ marginBottom: 0 }}
+        defaultActiveKey="table"
+        items={[
+          {
+            key: 'table',
+            label: t('Table'),
+            children: (
+              <Card
+                title={title}
+                extra={
+                  <Tooltip title={t('Refresh')}>
+                    <Button icon={<ReloadOutlined />} type="link" onClick={onRefresh} />
+                  </Tooltip>
+                }
+                style={{ borderTop: 'none', borderTopLeftRadius: 0 }}
+              >
+                <Space direction="vertical" size="large" style={{ width: '100%' }}>
+                  <Table
+                    columns={columns}
+                    dataSource={dataSource}
+                    loading={previewing}
+                    scroll={{ x: 'max-content', y: '56vh' }}
+                    pagination={{
+                      showSizeChanger: true,
+                      showTotal: (total) => t('Total {{total}} items', { total }),
+                      pageSize: 25,
+                    }}
+                  />
+                </Space>
+              </Card>
+            ),
+          },
+          {
+            key: 'json',
+            label: 'JSON',
+            children: (
+              <Card
+                title={title}
+                extra={<Typography.Text copyable={{ text: jsonText }} />}
+                style={{ borderTop: 'none', borderTopLeftRadius: 0 }}
+              >
+                <Typography.Paragraph>
+                  {!previewing ? (
+                    <pre style={{ height: '62vh', overflowY: 'auto', marginTop: 24 }}>{jsonText}</pre>
+                  ) : null}
+                </Typography.Paragraph>
+              </Card>
+            ),
+          },
+        ]}
+      />
+    </div>
+  );
+};
+
+const DatasourceForm: React.FC<{
+  manager?: DataSourceManagerLike;
+  preview: PreviewResult | null;
+  previewing: boolean;
+  editing: boolean;
+  currentStep: number;
+  mode: DatasourceFormMode;
+  onPreview: () => void;
+  onStepChange?: (step: number) => void;
+}> = ({ manager, preview, previewing, editing, currentStep, mode, onPreview, onStepChange }) => {
+  const t = useT();
+  const form = Form.useFormInstance<DatasourceFormValues>();
+  const collection = Form.useWatch('collection', form);
+  const collectionDisplayName = getCollectionDisplayName(manager, collection);
+  const currentCollection = getCurrentCollection(manager, collection);
   const stepItems = [
     { title: t('Collection') },
     { title: t('Fields') },
@@ -344,18 +739,29 @@ const DatasourceForm: React.FC<{
               showSearch
               options={getCollectionOptions(manager)}
               onChange={() => {
-                form.setFieldValue('fields', []);
+                form.setFieldsValue({
+                  fields: [],
+                  filter: { logic: '$and', items: [] },
+                  sort: [],
+                });
               }}
             />
           </Form.Item>
           <Form.Item name="description" label={t('Description')} preserve>
             <Input.TextArea rows={5} />
           </Form.Item>
-          <Flex gap="middle" align="center">
-            <Form.Item name="limit" label={t('Limit')} rules={[{ required: true }]} preserve>
+          <Flex justify="space-between" align="center">
+            <Form.Item name="limit" label={t('Limit')} rules={[{ required: true }]} layout="horizontal" preserve>
               <InputNumber min={1} max={20000} step={100} changeOnWheel />
             </Form.Item>
-            <Form.Item name="enabled" label={t('Enabled')} valuePropName="checked" preserve>
+            <Form.Item
+              name="enabled"
+              label={t('Enabled')}
+              valuePropName="checked"
+              rules={[{ required: true }]}
+              layout="horizontal"
+              preserve
+            >
               <Switch />
             </Form.Item>
           </Flex>
@@ -364,45 +770,53 @@ const DatasourceForm: React.FC<{
     }
     if (step === 1) {
       return (
-        <Form.Item name="fields" label={t('Fields')} rules={[{ required: true }]} preserve>
-          <Select mode="multiple" options={fieldOptions} />
-        </Form.Item>
+        <>
+          <Form.Item label={t('Collection')}>
+            <Input value={collectionDisplayName} disabled />
+          </Form.Item>
+          <Form.Item
+            name="fields"
+            label={t('Fields')}
+            rules={[{ required: true, message: t('Please select fields') }]}
+            preserve
+          >
+            <FieldsTransfer manager={manager} collection={collection} />
+          </Form.Item>
+        </>
       );
     }
     if (step === 2) {
       return (
-        <Form.Item name="filterText" label={t('Filter group')} preserve>
-          <Input.TextArea autoSize={{ minRows: 6 }} />
-        </Form.Item>
+        <>
+          <Form.Item label={t('Collection')}>
+            <Input value={collectionDisplayName} disabled />
+          </Form.Item>
+          <Form.Item name="filter" label={t('Filter group')} preserve>
+            <FilterEditor collection={currentCollection} />
+          </Form.Item>
+        </>
       );
     }
     if (step === 3) {
       return (
-        <Form.Item name="sortText" label={t('Sort Fields')} preserve>
-          <Input.TextArea autoSize={{ minRows: 4 }} />
-        </Form.Item>
+        <>
+          <Form.Item label={t('Collection')}>
+            <Input value={collectionDisplayName} disabled />
+          </Form.Item>
+          <Form.Item name="sort" label={t('Sort Fields')} preserve>
+            <SortFieldsTransfer manager={manager} collection={collection} />
+          </Form.Item>
+        </>
       );
     }
     return (
       <Spin spinning={previewing}>
-        <Tabs
-          type="card"
-          items={[
-            {
-              key: 'table',
-              label: t('Table'),
-              children: <Table columns={previewColumns} dataSource={previewRows} pagination={{ pageSize: 25 }} />,
-            },
-            {
-              key: 'json',
-              label: 'JSON',
-              children: (
-                <Typography.Paragraph copyable={{ text: JSON.stringify(previewRows, null, 2) }}>
-                  <pre>{JSON.stringify(previewRows, null, 2)}</pre>
-                </Typography.Paragraph>
-              ),
-            },
-          ]}
+        <PreviewPanel
+          manager={manager}
+          preview={preview}
+          previewing={previewing}
+          collection={collection}
+          onRefresh={onPreview}
         />
       </Spin>
     );
@@ -428,7 +842,7 @@ const DatasourceForm: React.FC<{
   return (
     <Flex vertical gap="middle">
       <Steps current={currentStep} size="small" items={stepItems} />
-      <div style={{ borderBlockStart: `${token.lineWidth}px ${token.lineType} ${token.colorBorderSecondary}` }} />
+      <Divider dashed />
       <div style={{ display: currentStep === 0 ? 'block' : 'none' }}>{renderStepContent(0)}</div>
       <div style={{ display: currentStep === 1 ? 'block' : 'none' }}>{renderStepContent(1)}</div>
       <div style={{ display: currentStep === 2 ? 'block' : 'none' }}>{renderStepContent(2)}</div>
@@ -471,6 +885,7 @@ export const DatasourceSettingsPage: React.FC = () => {
   const [drawerMode, setDrawerMode] = useState<DrawerMode | undefined>();
   const [editingRecord, setEditingRecord] = useState<AIContextDatasourceRecord | undefined>();
   const [currentStep, setCurrentStep] = useState(0);
+  const [total, setTotal] = useState(0);
   const drawerOpen = !!drawerMode;
 
   const refresh = useCallback(async () => {
@@ -478,6 +893,7 @@ export const DatasourceSettingsPage: React.FC = () => {
     try {
       const result = await listContextDatasources(app.apiClient);
       setRecords(result.data);
+      setTotal(result.total ?? result.data.length);
     } finally {
       setLoading(false);
     }
@@ -494,6 +910,7 @@ export const DatasourceSettingsPage: React.FC = () => {
     setEditingRecord(undefined);
     setPreview(null);
     setCurrentStep(0);
+    form.resetFields();
     form.setFieldsValue(createInitialValues());
     setDrawerMode('create');
   };
@@ -502,6 +919,7 @@ export const DatasourceSettingsPage: React.FC = () => {
     setEditingRecord(record);
     setPreview(null);
     setCurrentStep(0);
+    form.resetFields();
     form.setFieldsValue(toDatasourceFormValues(record));
     setDrawerMode('edit');
   };
@@ -574,83 +992,111 @@ export const DatasourceSettingsPage: React.FC = () => {
   };
 
   return (
-    <Card>
-      <Flex vertical gap="middle">
-        <Flex justify="space-between" wrap="wrap" gap="middle">
-          <Button icon={<ReloadOutlined />} onClick={() => refresh()}>
-            {t('Refresh')}
-          </Button>
-          <Button type="primary" icon={<PlusOutlined />} onClick={openCreateDrawer}>
-            {t('Add datasource')}
-          </Button>
-        </Flex>
-        <Spin spinning={loading}>
-          {records.length ? (
+    <>
+      {records.length === 0 && !loading ? (
+        <div style={{ display: 'flex', flexDirection: 'column', height: '80vh' }}>
+          <Card style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+            <Empty image={Empty.PRESENTED_IMAGE_SIMPLE}>
+              <Button icon={<PlusOutlined />} type="primary" onClick={openCreateDrawer}>
+                {t('Create a new datasource')}
+              </Button>
+            </Empty>
+          </Card>
+        </div>
+      ) : (
+        <div style={{ width: '100%', overflowX: 'auto', padding: token.paddingXS }}>
+          <Space direction="vertical" size="large" style={{ width: '100%', minWidth: 1200 }}>
+            <Flex justify="flex-end" align="center">
+              <Space>
+                <Button type="primary" icon={<PlusOutlined />} onClick={openCreateDrawer}>
+                  {t('Add datasource')}
+                </Button>
+              </Space>
+            </Flex>
             <List
-              grid={{ gutter: token.margin, xs: 1, sm: 1, md: 2, lg: 3, xl: 4, xxl: 4 }}
+              grid={{ gutter: token.margin, column: 4 }}
               dataSource={records}
-              pagination={{ pageSize: 12, showSizeChanger: false }}
+              loading={loading}
+              pagination={{
+                showSizeChanger: false,
+                total,
+                pageSize: 16,
+              }}
               renderItem={(record) => (
                 <List.Item>
-                  <Card hoverable onClick={() => openDetailDrawer(record)}>
+                  <Card
+                    hoverable
+                    variant="borderless"
+                    style={{ minWidth: 300, display: 'flex', flexDirection: 'column' }}
+                    onClick={() => openDetailDrawer(record)}
+                  >
                     <Card.Meta
                       title={
-                        <Flex justify="space-between" align="center" gap="small">
-                          <Typography.Text ellipsis>{record.title}</Typography.Text>
+                        <Flex justify="space-between" align="center">
+                          <span>{record.title}</span>
                           <span onClick={(event) => event.stopPropagation()}>
                             <EnabledSwitch record={record} onUpdated={refresh} />
                           </span>
                         </Flex>
                       }
                       description={
-                        <Space size="small" wrap>
+                        <Space style={{ fontSize: token.fontSizeSM }}>
                           <Typography.Text type="secondary">{t('Collection')}</Typography.Text>
                           <Typography.Text>{`${record.datasource}/${record.collectionName}`}</Typography.Text>
+                          <Divider type="vertical" />
                           <Typography.Text type="secondary">{t('Limit')}</Typography.Text>
                           <Typography.Text>{record.limit}</Typography.Text>
                         </Space>
                       }
                     />
-                    <Flex vertical gap="small" style={{ marginBlockStart: token.marginSM }}>
-                      <Typography.Paragraph type="secondary" ellipsis={{ rows: 2 }}>
-                        {record.description}
-                      </Typography.Paragraph>
-                      <Flex justify="space-between" align="center" gap="small">
-                        <Typography.Text type="secondary">
-                          {record.createdAt
-                            ? `${t('Created at')} ${dayjs(record.createdAt).format('YYYY-MM-DD HH:mm:ss')}`
-                            : null}
-                        </Typography.Text>
-                        <span onClick={(event) => event.stopPropagation()}>
+                    <div
+                      style={{
+                        height: 100,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        flex: 1,
+                        paddingTop: token.paddingSM,
+                      }}
+                    >
+                      <div style={{ width: '100%', height: 90 }}>
+                        <Typography.Paragraph type="secondary" ellipsis={{ rows: 2 }}>
+                          {record.description}
+                        </Typography.Paragraph>
+                      </div>
+                      <div style={{ marginTop: 'auto' }}>
+                        <Flex justify="space-between" align="center">
+                          <Space style={{ fontSize: token.fontSizeSM - 2 }}>
+                            <Typography.Text type="secondary">
+                              {record.createdAt
+                                ? `${t('Created at')} ${dayjs(record.createdAt).format('YYYY-MM-DD HH:mm:ss')}`
+                                : null}
+                            </Typography.Text>
+                          </Space>
                           <Tooltip title={t('Delete')}>
                             <Button
                               type="link"
-                              danger
                               icon={<DeleteOutlined />}
                               aria-label={t('Delete')}
-                              onClick={() => handleDelete(record)}
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                handleDelete(record);
+                              }}
                             />
                           </Tooltip>
-                        </span>
-                      </Flex>
-                    </Flex>
+                        </Flex>
+                      </div>
+                    </div>
                   </Card>
                 </List.Item>
               )}
             />
-          ) : (
-            <Empty image={Empty.PRESENTED_IMAGE_SIMPLE}>
-              <Button icon={<PlusOutlined />} type="primary" onClick={openCreateDrawer}>
-                {t('Create a new datasource')}
-              </Button>
-            </Empty>
-          )}
-        </Spin>
-      </Flex>
+          </Space>
+        </div>
+      )}
       <Drawer
         open={drawerOpen}
         onClose={closeDrawer}
-        width={AI_SETTINGS_DRAWER_WIDTH}
+        width="50%"
         title={drawerMode === 'edit' ? t('Edit datasource') : t('Add datasource')}
         footer={
           drawerMode === 'edit' ? (
@@ -663,12 +1109,15 @@ export const DatasourceSettingsPage: React.FC = () => {
               </Space>
             </Flex>
           ) : (
-            <Flex justify="space-between" gap="small">
-              <Button onClick={() => setCurrentStep((step) => Math.max(step - 1, 0))} disabled={currentStep === 0}>
-                {t('Previous')}
-              </Button>
+            <Flex justify="flex-end" align="end">
               <Space>
-                <Button onClick={closeDrawer}>{t('Cancel')}</Button>
+                <Button
+                  style={{ margin: `0 ${token.marginXS}px` }}
+                  onClick={() => setCurrentStep((step) => Math.max(step - 1, 0))}
+                  disabled={currentStep === 0}
+                >
+                  {t('Previous')}
+                </Button>
                 {currentStep < 4 ? (
                   <Button type="primary" loading={previewing} onClick={handleNext}>
                     {t('Next')}
@@ -693,11 +1142,17 @@ export const DatasourceSettingsPage: React.FC = () => {
               currentStep={currentStep}
               mode={drawerMode === 'edit' ? 'tabs' : 'steps'}
               onStepChange={handleDetailTabChange}
+              onPreview={() => {
+                handlePreview().catch((error: unknown) => {
+                  console.error(error);
+                  setPreviewing(false);
+                });
+              }}
             />
           </Form>
         </Spin>
       </Drawer>
-    </Card>
+    </>
   );
 };
 
