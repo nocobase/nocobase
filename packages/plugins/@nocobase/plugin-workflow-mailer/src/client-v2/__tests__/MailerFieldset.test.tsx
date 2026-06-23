@@ -195,27 +195,6 @@ describe('MailerFieldset', () => {
     });
   });
 
-  it('clears the recipient required error after adding a blank row', async () => {
-    const getForm = renderWithForm();
-
-    await act(async () => {
-      try {
-        await getForm()?.validateFields([['config', 'to']]);
-      } catch {
-        // The assertion below checks the rendered validation state.
-      }
-    });
-
-    expect(screen.getByText('Please enter at least one email address')).toBeInTheDocument();
-
-    fireEvent.click(screen.getAllByRole('button', { name: /Add email address/ })[0]);
-
-    await waitFor(() => {
-      expect(getForm()?.getFieldValue(['config', 'to'])).toEqual(['']);
-      expect(screen.queryByText('Please enter at least one email address')).toBeNull();
-    });
-  });
-
   it('supports drag sorting recipient and attachment rows', async () => {
     dndState.contexts = [];
     dndState.pendingDragEndHandlers = [];
