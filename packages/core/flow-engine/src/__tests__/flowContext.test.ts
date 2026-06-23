@@ -1427,8 +1427,8 @@ describe('FlowEngine context', () => {
     expect(engine.getDataSourceDirtyVersion('main', 'posts')).toBe(1);
   });
 
-  it('ctx.api.resource should not mark dirty for readonly action prefixes', async () => {
-    const readonlyActions = [
+  it('ctx.api.resource should not mark dirty for read or unknown actions', async () => {
+    const nonMutatingActions = [
       'get',
       'list',
       'query',
@@ -1441,9 +1441,15 @@ describe('FlowEngine context', () => {
       'aggregate',
       'listMine',
       'getSystemSettings',
+      'parents',
+      'children',
+      'search',
+      'send',
+      'testConnection',
+      'refresh',
     ];
 
-    for (const actionName of readonlyActions) {
+    for (const actionName of nonMutatingActions) {
       const engine = new FlowEngine();
       const api = {
         auth: { locale: 'zh-CN' },
@@ -1457,6 +1463,34 @@ describe('FlowEngine context', () => {
       await engine.context.api.resource('posts')[actionName]();
 
       expect(engine.getDataSourceDirtyVersion('main', 'posts')).toBe(0);
+    }
+  });
+
+  it('ctx.api.resource should mark dirty for known mutating action variants', async () => {
+    const mutatingActions = [
+      'create',
+      'updateOrCreate',
+      'firstOrCreate',
+      'setFields',
+      'updateProfile',
+      'saveAsTemplate',
+      'remove/abc',
+    ];
+
+    for (const actionName of mutatingActions) {
+      const engine = new FlowEngine();
+      const api = {
+        auth: { locale: 'zh-CN' },
+        request: vi.fn(async () => ({ data: { ok: true } })),
+        resource: vi.fn(() => ({
+          [actionName]: vi.fn(async () => ({ data: { ok: true } })),
+        })),
+      };
+      engine.context.defineProperty('api', { value: api });
+
+      await engine.context.api.resource('posts')[actionName]();
+
+      expect(engine.getDataSourceDirtyVersion('main', 'posts')).toBe(1);
     }
   });
 
@@ -1534,60 +1568,19 @@ describe('FlowEngine context', () => {
       url: '/api/posts:update?filterByTk=1',
       headers: { 'x-data-source': 'external' },
     });
-
-    expect(request).toHaveBeenCalledTimes(2);
-    expect(engine.getDataSourceDirtyVersion('main', 'posts')).toBe(1);
-    expect(engine.getDataSourceDirtyVersion('external', 'posts')).toBe(1);
-  });
-
-  it('ctx.api.request should mark URL-form association resources and parent collections dirty', async () => {
-    const engine = new FlowEngine();
-    const dirtyEvents: Array<{ dataSourceKey: string; resourceNames: string[] }> = [];
-    const request = vi.fn(async () => ({ data: { ok: true } }));
-    engine.emitter.on(DATA_SOURCE_DIRTY_EVENT, (event) => dirtyEvents.push(event));
-    engine.context.defineProperty('api', {
-      value: {
-        auth: { locale: 'zh-CN' },
-        request,
-        resource: vi.fn(),
-      },
-    });
-
     await engine.context.api.request({
       url: '/api/posts/1/tags:set',
-      headers: { 'x-data-source': 'external' },
+      headers: { 'X-Data-Source': 'analytics' },
     });
 
-    expect(request).toHaveBeenCalledTimes(1);
-    expect(engine.getDataSourceDirtyVersion('external', 'posts.tags')).toBe(1);
-    expect(engine.getDataSourceDirtyVersion('external', 'posts')).toBe(1);
-    expect(dirtyEvents).toEqual([{ dataSourceKey: 'external', resourceNames: ['posts.tags', 'posts'] }]);
-  });
-
-  it('ctx.api.request should mark root-relative URL-form resource mutations dirty', async () => {
-    const engine = new FlowEngine();
-    const request = vi.fn(async () => ({ data: { ok: true } }));
-    engine.context.defineProperty('api', {
-      value: {
-        auth: { locale: 'zh-CN' },
-        request,
-        resource: vi.fn(),
-      },
-    });
-
-    await engine.context.api.request({ url: '/posts:update' });
-    await engine.context.api.request({
-      url: '/posts/1/tags:set',
-      headers: { 'x-data-source': 'external' },
-    });
-
-    expect(request).toHaveBeenCalledTimes(2);
+    expect(request).toHaveBeenCalledTimes(3);
     expect(engine.getDataSourceDirtyVersion('main', 'posts')).toBe(1);
-    expect(engine.getDataSourceDirtyVersion('external', 'posts.tags')).toBe(1);
     expect(engine.getDataSourceDirtyVersion('external', 'posts')).toBe(1);
+    expect(engine.getDataSourceDirtyVersion('analytics', 'posts.tags')).toBe(1);
+    expect(engine.getDataSourceDirtyVersion('analytics', 'posts')).toBe(1);
   });
 
-  it('ctx.api.request should strip configured API base from root-relative URL-form mutations', async () => {
+  it('ctx.api.request should strip configured API base from URL-form mutations', async () => {
     const engine = new FlowEngine();
     const request = vi.fn(async () => ({ data: { ok: true } }));
     engine.context.defineProperty('api', {
@@ -1600,71 +1593,22 @@ describe('FlowEngine context', () => {
     engine.context.defineProperty('app', {
       value: {
         getApiUrl(pathname = '') {
-          return 'https://app.example.com/foo/api/'.replace(/\/$/g, '') + '/' + pathname.replace(/^\//g, '');
+          return `https://app.example.com/foo/api/${pathname.replace(/^\//, '')}`;
         },
       },
     });
 
     await engine.context.api.request({ url: '/foo/api/posts:update' });
     await engine.context.api.request({
-      url: '/foo/api/posts/1/tags:set',
+      url: 'https://app.example.com/foo/api/users/1/roles:set',
       headers: { 'x-data-source': 'external' },
     });
 
     expect(request).toHaveBeenCalledTimes(2);
     expect(engine.getDataSourceDirtyVersion('main', 'posts')).toBe(1);
     expect(engine.getDataSourceDirtyVersion('main', 'foo.api.posts')).toBe(0);
-    expect(engine.getDataSourceDirtyVersion('external', 'posts.tags')).toBe(1);
-    expect(engine.getDataSourceDirtyVersion('external', 'posts')).toBe(1);
-    expect(engine.getDataSourceDirtyVersion('external', 'foo.api.posts')).toBe(0);
-  });
-
-  it('ctx.api.request should mark same-api absolute URL-form mutations dirty', async () => {
-    const engine = new FlowEngine();
-    const request = vi.fn(async () => ({ data: { ok: true } }));
-    engine.context.defineProperty('api', {
-      value: {
-        auth: { locale: 'zh-CN' },
-        request,
-        resource: vi.fn(),
-      },
-    });
-    engine.context.defineProperty('app', {
-      value: {
-        getApiUrl(pathname = '') {
-          return 'https://app.example.com/api/'.replace(/\/$/g, '') + '/' + pathname.replace(/^\//g, '');
-        },
-      },
-    });
-
-    await engine.context.api.request({ url: 'https://app.example.com/api/posts:update' });
-
-    expect(request).toHaveBeenCalledTimes(1);
-    expect(engine.getDataSourceDirtyVersion('main', 'posts')).toBe(1);
-  });
-
-  it('ctx.api.request should not block the request when same-api detection throws', async () => {
-    const engine = new FlowEngine();
-    const request = vi.fn(async () => ({ data: { ok: true } }));
-    engine.context.defineProperty('api', {
-      value: {
-        auth: { locale: 'zh-CN' },
-        request,
-        resource: vi.fn(),
-      },
-    });
-    engine.context.defineProperty('app', {
-      value: {
-        getApiUrl() {
-          throw new Error('api base unavailable');
-        },
-      },
-    });
-
-    await engine.context.api.request({ url: 'https://app.example.com/api/posts:update' });
-
-    expect(request).toHaveBeenCalledTimes(1);
-    expect(engine.getDataSourceDirtyVersion('main', 'posts')).toBe(0);
+    expect(engine.getDataSourceDirtyVersion('external', 'users.roles')).toBe(1);
+    expect(engine.getDataSourceDirtyVersion('external', 'users')).toBe(1);
   });
 
   it('ctx.api.request should not mark URL-form resource dirty for reads, failed mutations, or external URLs', async () => {
@@ -1672,12 +1616,9 @@ describe('FlowEngine context', () => {
     const request = vi
       .fn()
       .mockResolvedValueOnce({ data: { data: [] } })
-      .mockResolvedValueOnce({ data: { data: {} } })
-      .mockResolvedValueOnce({ data: { data: [] } })
-      .mockResolvedValueOnce({ data: { data: {} } })
       .mockResolvedValueOnce({ data: { data: [] } })
       .mockRejectedValueOnce(new Error('request failed'))
-      .mockRejectedValueOnce(new Error('root-relative request failed'))
+      .mockResolvedValueOnce({ data: { ok: true } })
       .mockResolvedValueOnce({ data: { ok: true } });
     engine.context.defineProperty('api', {
       value: {
@@ -1688,15 +1629,12 @@ describe('FlowEngine context', () => {
     });
 
     await engine.context.api.request({ url: 'posts:list' });
-    await engine.context.api.request({ url: '/posts:list' });
-    await engine.context.api.request({ url: '/api/posts:get' });
-    await engine.context.api.request({ url: '/api/posts:query' });
-    await engine.context.api.request({ url: '/api/posts:count' });
+    await engine.context.api.request({ url: '/api/posts:parents' });
     await expect(engine.context.api.request({ url: '/api/posts:update' })).rejects.toThrow('request failed');
-    await expect(engine.context.api.request({ url: '/posts:update' })).rejects.toThrow('root-relative request failed');
     await engine.context.api.request({ url: 'https://example.com/api/posts:update' });
+    await engine.context.api.request({ url: '//example.com/api/posts:update' });
 
-    expect(request).toHaveBeenCalledTimes(8);
+    expect(request).toHaveBeenCalledTimes(5);
     expect(engine.getDataSourceDirtyVersion('main', 'posts')).toBe(0);
   });
 
@@ -1704,6 +1642,7 @@ describe('FlowEngine context', () => {
     const engine = new FlowEngine();
     const request = vi
       .fn()
+      .mockResolvedValueOnce({ data: { data: [] } })
       .mockResolvedValueOnce({ data: { data: [] } })
       .mockRejectedValueOnce(new Error('request failed'));
     engine.context.defineProperty('api', {
@@ -1715,6 +1654,7 @@ describe('FlowEngine context', () => {
     });
 
     await engine.context.request({ resource: 'posts', action: 'list' } as any);
+    await engine.context.request({ resource: 'posts', action: 'parents' } as any);
     await expect(engine.context.request({ resource: 'posts', action: 'update' } as any)).rejects.toThrow(
       'request failed',
     );

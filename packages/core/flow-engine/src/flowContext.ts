@@ -454,17 +454,28 @@ type DirtyAwareAPIClient = APIClient & {
 const dirtyAwareApiClientCache = new WeakMap<object, WeakMap<object, APIClient>>();
 const dirtyAwareApiClientProxies = new WeakSet<object>();
 
-const READONLY_RESOURCE_ACTION_PREFIXES = [
-  'get',
-  'list',
-  'query',
-  'count',
-  'check',
-  'preview',
-  'test',
-  'find',
-  'exists',
-  'aggregate',
+const MUTATING_RESOURCE_ACTIONS = [
+  'add',
+  'bind',
+  'create',
+  'destroy',
+  'disable',
+  'enable',
+  'firstorcreate',
+  'insert',
+  'load',
+  'move',
+  'pull',
+  'push',
+  'remove',
+  'retry',
+  'save',
+  'set',
+  'sync',
+  'toggle',
+  'unbind',
+  'update',
+  'updateorcreate',
 ];
 
 function isApiClientLike(value: unknown): value is DirtyAwareAPIClient {
@@ -481,7 +492,19 @@ function isMutatingResourceAction(actionName: string): boolean {
     return false;
   }
   const baseActionName = normalized.split('/')[0];
-  return !READONLY_RESOURCE_ACTION_PREFIXES.some((prefix) => baseActionName.startsWith(prefix));
+  const lowerBaseActionName = baseActionName.toLowerCase();
+  if (MUTATING_RESOURCE_ACTIONS.includes(lowerBaseActionName)) {
+    return true;
+  }
+
+  return MUTATING_RESOURCE_ACTIONS.some((prefix) => {
+    if (!lowerBaseActionName.startsWith(prefix) || baseActionName.length <= prefix.length) {
+      return false;
+    }
+
+    const nextChar = baseActionName[prefix.length];
+    return nextChar === '-' || nextChar === '_' || (nextChar >= 'A' && nextChar <= 'Z');
+  });
 }
 
 function getHeaderValue(headers: unknown, name: string): unknown {
@@ -678,7 +701,6 @@ function parseDirtyResourceActionFromUrl(url: unknown, context: FlowContext): Di
     return undefined;
   }
 
-  // NocoBase resource URLs may append one resource index after the action segment, e.g. posts:export/1.
   if (segments.length > actionSegmentIndex + 2) {
     return undefined;
   }
