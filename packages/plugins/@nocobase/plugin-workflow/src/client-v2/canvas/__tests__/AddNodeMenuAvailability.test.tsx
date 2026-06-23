@@ -14,9 +14,24 @@ import { describe, expect, it, vi } from 'vitest';
 import { AddNodeContextProvider } from '../AddNodeContext';
 import { useAddNodeContext } from '../AddNodeContext.shared';
 import { FlowContext } from '../contexts';
-import ResponseInstruction from '../../../../../plugin-workflow-webhook/src/client-v2/instructions/response';
 
 const drawer = vi.fn();
+
+class MockWebhookResponseInstruction {
+  type = 'response';
+  group = 'extended';
+  title = 'Webhook response';
+
+  isAvailable({
+    engine,
+    workflow,
+  }: {
+    engine: { isWorkflowSync?: (workflow: object) => boolean };
+    workflow: object & { type?: string };
+  }) {
+    return workflow.type === 'webhook' && Boolean(engine.isWorkflowSync?.(workflow));
+  }
+}
 
 vi.mock('../../locale', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../locale')>();
@@ -38,12 +53,12 @@ vi.mock('@nocobase/flow-engine', async (importOriginal) => {
         pm: {
           get: () => ({
             instructions: {
-              getValues: () => [new ResponseInstruction()],
+              getValues: () => [new MockWebhookResponseInstruction()],
             },
             instructionGroups: {
               getValues: () => [{ key: 'extended', label: '{{t("Extended types")}}' }],
             },
-            getInstruction: (type: string) => (type === 'response' ? new ResponseInstruction() : undefined),
+            getInstruction: (type: string) => (type === 'response' ? new MockWebhookResponseInstruction() : undefined),
             isWorkflowSync: (workflow: { sync?: boolean }) => Boolean(workflow.sync),
           }),
         },
