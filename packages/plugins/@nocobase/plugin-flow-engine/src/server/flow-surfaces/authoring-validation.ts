@@ -89,7 +89,8 @@ export interface FlowSurfaceAuthoringValidationContext {
   applyBlueprintScriptAssets?: Record<string, any>;
   getCollection?: (dataSourceKey: string, collectionName: string) => any;
   getDefaultFieldGroups?: (dataSourceKey: string, collectionName: string) => any;
-  findMenuGroupRoutesByTitle?: (title: string, transaction?: any) => Promise<any[]>;
+  findMenuGroupRoutesByTitle?: (title: string, transaction?: any, layoutUid?: string | string[]) => Promise<any[]>;
+  getUiLayoutTypeByUid?: (layoutUid: string, transaction?: any) => Promise<string | undefined>;
   transaction?: any;
   hostBlockType?: string;
   hostCollectionName?: string;
@@ -629,6 +630,9 @@ async function collectNavigationGroupErrors(
   if (actionName !== 'applyBlueprint' || values?.mode !== 'create' || !_.isPlainObject(values?.navigation?.group)) {
     return;
   }
+  if (await isApplyBlueprintMobileCreateNavigation(values, context)) {
+    return;
+  }
   if (!_.isUndefined(values.navigation.group.routeId) || !context.findMenuGroupRoutesByTitle) {
     return;
   }
@@ -636,7 +640,8 @@ async function collectNavigationGroupErrors(
   if (!groupTitle) {
     return;
   }
-  const matchedRoutes = await context.findMenuGroupRoutesByTitle(groupTitle, context.transaction);
+  const layoutUid = String(values?.navigation?.layoutUid || '').trim() || undefined;
+  const matchedRoutes = await context.findMenuGroupRoutesByTitle(groupTitle, context.transaction, layoutUid);
   const rootMatchedRoutes = filterRootMenuGroupRoutes(matchedRoutes);
   if (rootMatchedRoutes.length <= 1) {
     return;
@@ -662,11 +667,13 @@ async function collectNavigationIconErrors(
   if (actionName !== 'applyBlueprint' || values?.mode !== 'create') {
     return;
   }
+  const isMobileCreateNavigation = await isApplyBlueprintMobileCreateNavigation(values, context);
   const group = _.isPlainObject(values?.navigation?.group) ? values.navigation.group : null;
   const groupRouteId = String(group?.routeId || '').trim();
-  if (group && !groupRouteId && group.hideInMenu !== true) {
+  const layoutUid = String(values?.navigation?.layoutUid || '').trim() || undefined;
+  if (!isMobileCreateNavigation && group && !groupRouteId && group.hideInMenu !== true) {
     const groupIcon = String(group.icon || '').trim();
-    if (!groupIcon && (await shouldRequireNewNavigationGroupIcon(group, context))) {
+    if (!groupIcon && (await shouldRequireNewNavigationGroupIcon(group, context, layoutUid))) {
       pushAuthoringError(errors, {
         path: '$.navigation.group.icon',
         ruleId: 'navigation-icon-required',
@@ -686,7 +693,12 @@ async function collectNavigationIconErrors(
         },
       });
     }
-  } else if (group && String(group.icon || '').trim() && !isValidAntDesignIconName(group.icon)) {
+  } else if (
+    !isMobileCreateNavigation &&
+    group &&
+    String(group.icon || '').trim() &&
+    !isValidAntDesignIconName(group.icon)
+  ) {
     pushAuthoringError(errors, {
       path: '$.navigation.group.icon',
       ruleId: 'navigation-icon-unknown',
@@ -723,12 +735,24 @@ async function collectNavigationIconErrors(
   }
 }
 
-async function shouldRequireNewNavigationGroupIcon(group: any, context: FlowSurfaceAuthoringValidationContext) {
+async function isApplyBlueprintMobileCreateNavigation(values: any, context: FlowSurfaceAuthoringValidationContext) {
+  const layoutUid = String(values?.navigation?.layoutUid || '').trim();
+  if (!layoutUid || !context.getUiLayoutTypeByUid) {
+    return false;
+  }
+  return (await context.getUiLayoutTypeByUid(layoutUid, context.transaction)) === 'mobile';
+}
+
+async function shouldRequireNewNavigationGroupIcon(
+  group: any,
+  context: FlowSurfaceAuthoringValidationContext,
+  layoutUid?: string,
+) {
   const groupTitle = String(group?.title || '').trim();
   if (!groupTitle || !context.findMenuGroupRoutesByTitle) {
     return true;
   }
-  const matchedRoutes = await context.findMenuGroupRoutesByTitle(groupTitle, context.transaction);
+  const matchedRoutes = await context.findMenuGroupRoutesByTitle(groupTitle, context.transaction, layoutUid);
   return filterRootMenuGroupRoutes(matchedRoutes).length === 0;
 }
 
