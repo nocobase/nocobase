@@ -116,7 +116,7 @@ function getRecordKey(record, collection) {
   return record[filterByTk];
 }
 
-function WorkflowSelect({ filter, optionFilter, ...props }) {
+export function WorkflowSelect({ filter, optionFilter, ...props }) {
   const ctx = useFlowContext();
   const [options, setOptions] = React.useState<any[]>([]);
   const [loading, setLoading] = React.useState(false);
@@ -126,16 +126,12 @@ function WorkflowSelect({ filter, optionFilter, ...props }) {
     const loadWorkflows = async () => {
       setLoading(true);
       try {
-        const res = await ctx.api.request({
-          url: 'workflows:list',
-          method: 'get',
-          params: {
-            paginate: false,
-            filter: {
-              type: EVENT_TYPE,
-              enabled: true,
-              ...filter,
-            },
+        const res = await ctx.api.resource('workflows').list({
+          paginate: false,
+          filter: {
+            type: EVENT_TYPE,
+            enabled: true,
+            ...filter,
           },
         });
         if (!mounted) {
