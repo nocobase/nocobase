@@ -3148,7 +3148,40 @@ const OPEN_VIEW_INHERITED_INPUT_ARG_KEYS = [
   'tabUid',
 ];
 
-function pickDefinedKeys(source: Record<string, unknown> | null | undefined, keys: string[]) {
+const OPEN_VIEW_PERSISTED_CONFIG_KEYS = ['dataSourceKey', 'collectionName', 'associationName', 'mode', 'size'];
+const OPEN_VIEW_RUNTIME_CONFIG_KEYS = [
+  'filterByTk',
+  'sourceId',
+  'params',
+  'defineProperties',
+  'defineMethods',
+  'navigation',
+  'target',
+  'destroyRef',
+  'updateRef',
+  'onOpen',
+  'onClose',
+  'routeViewUid',
+  'viewUid',
+  'preventClose',
+  'isMobileLayout',
+  'triggerByRouter',
+  'openerUids',
+  'pageActive',
+  'tabUid',
+  'popupTemplateContext',
+  'popupTemplateHasFilterByTk',
+  'popupTemplateHasSourceId',
+];
+
+const RUNJS_OPEN_VIEW_DIRECT_NAVIGATION = Symbol('runjsOpenViewDirectNavigation');
+const OPEN_VIEW_PERSISTED_PARENT_ID = Symbol('openViewPersistedParentId');
+
+type OpenViewModelState = FlowModel & {
+  [OPEN_VIEW_PERSISTED_PARENT_ID]?: string | null;
+};
+
+function pickDefinedKeys(source: Record<string | symbol, unknown> | null | undefined, keys: string[]) {
   const res: Record<string, unknown> = {};
   for (const key of keys) {
     if (typeof source?.[key] !== 'undefined') {
@@ -3162,12 +3195,87 @@ function pickDefinedOpenViewInputArgs(source?: Record<string, unknown> | null) {
   return pickDefinedKeys(source, OPEN_VIEW_INHERITED_INPUT_ARG_KEYS);
 }
 
+function pickDefinedOpenViewPersistedConfig(source?: Record<string | symbol, unknown> | null) {
+  return pickDefinedKeys(source, OPEN_VIEW_PERSISTED_CONFIG_KEYS);
+}
+
+function omitOpenViewRuntimeConfig(source?: Record<string, unknown> | null) {
+  return _.omit(source || {}, OPEN_VIEW_RUNTIME_CONFIG_KEYS) as Record<string, unknown>;
+}
+
 function applyDefinedDefaults(target: Record<string, unknown>, defaults: Record<string, unknown>) {
   for (const [key, value] of Object.entries(defaults)) {
     if (typeof target[key] === 'undefined') {
       target[key] = value;
     }
   }
+}
+
+async function resolveOpenViewPersistedParentId(model: FlowModel, engine: FlowEngine): Promise<string | null> {
+  const state = model as OpenViewModelState;
+  const parentId = await findOpenViewPersistedParentId(engine, model.uid);
+  if (typeof parentId !== 'undefined') {
+    state[OPEN_VIEW_PERSISTED_PARENT_ID] = parentId;
+    return parentId;
+  }
+
+  if (Object.prototype.hasOwnProperty.call(state, OPEN_VIEW_PERSISTED_PARENT_ID)) {
+    return state[OPEN_VIEW_PERSISTED_PARENT_ID] ?? null;
+  }
+
+  state[OPEN_VIEW_PERSISTED_PARENT_ID] = model.parentId ?? null;
+  return state[OPEN_VIEW_PERSISTED_PARENT_ID];
+}
+
+async function findOpenViewPersistedParentId(engine: FlowEngine, uid: string): Promise<string | null | undefined> {
+  if (!engine.modelRepository) {
+    return undefined;
+  }
+  const data = await engine.modelRepository.findOne({ uid });
+  if (!data?.uid) {
+    return null;
+  }
+  return typeof data.parentId === 'string' ? data.parentId : null;
+}
+
+async function isDescendantOfPersistedModel(model: FlowModel, root: FlowModel, engine: FlowEngine) {
+  const visited = new Set<string>();
+  let parentId = await resolveOpenViewPersistedParentId(model, engine);
+
+  while (parentId && !visited.has(parentId)) {
+    if (parentId === root.uid) {
+      return true;
+    }
+    visited.add(parentId);
+    const parentModel = engine.getModel(parentId);
+    if (parentModel) {
+      parentId = await resolveOpenViewPersistedParentId(parentModel, engine);
+      continue;
+    }
+    parentId = (await findOpenViewPersistedParentId(engine, parentId)) ?? null;
+  }
+
+  return false;
+}
+
+async function syncOpenViewPersistedConfig(model: FlowModel, opts: Record<string | symbol, unknown>) {
+  const config = pickDefinedOpenViewPersistedConfig(opts);
+  if (!Object.keys(config).length) {
+    return;
+  }
+
+  const currentOpenViewConfig = model.getStepParams('popupSettings', 'openView') || {};
+  const currentConfig = omitOpenViewRuntimeConfig(currentOpenViewConfig);
+  const nextConfig = { ...currentConfig, ...config };
+  if (_.isEqual(currentOpenViewConfig, nextConfig)) {
+    return;
+  }
+
+  model.setStepParams('popupSettings', {
+    ...(model.stepParams?.popupSettings || {}),
+    openView: nextConfig,
+  });
+  await model.saveStepParams();
 }
 
 export class FlowEngineContext extends BaseFlowEngineContext {
@@ -3724,7 +3832,9 @@ export class FlowModelContext extends BaseFlowModelContext {
           : {}),
         ...pickDefinedOpenViewInputArgs(this.inputArgs),
       };
-      const opts = { ...(options || {}) };
+      const opts: Record<string | symbol, unknown> = { ...(options || {}) };
+      const shouldForceDirectNavigationForExternalRunJS = opts[RUNJS_OPEN_VIEW_DIRECT_NAVIGATION] === true;
+      delete opts[RUNJS_OPEN_VIEW_DIRECT_NAVIGATION];
       applyDefinedDefaults(opts, inheritedInputArgs);
       // NOTE: when custom context is passed, route navigation must be disabled to avoid losing it after refresh.
       if (opts.defineProperties || opts.defineMethods) {
@@ -3732,6 +3842,7 @@ export class FlowModelContext extends BaseFlowModelContext {
       }
       let model: FlowModel | null = null;
       model = await this.engine.loadModel({ uid });
+      let isTargetInCurrentSubtree = false;
       if (!model) {
         model = this.engine.createModel({
           uid, // 注意： 新建的 model 应该使用 ${parentModel.uid}-xxx 形式的 uid
@@ -3743,12 +3854,22 @@ export class FlowModelContext extends BaseFlowModelContext {
             popupSettings: {
               openView: {
                 // 仅在创建时持久化一份默认配置；运行时以本次 opts 为准，避免多个 opener 互相覆盖。
-                ...pickDefinedKeys(opts, ['dataSourceKey', 'collectionName', 'associationName', 'mode', 'size']),
+                ...pickDefinedOpenViewPersistedConfig(opts),
               },
             },
           },
         });
         await model.save();
+        isTargetInCurrentSubtree = true;
+      } else {
+        isTargetInCurrentSubtree = await isDescendantOfPersistedModel(model, this.model, this.engine);
+        if (isTargetInCurrentSubtree) {
+          await syncOpenViewPersistedConfig(model, opts);
+        }
+      }
+
+      if (shouldForceDirectNavigationForExternalRunJS && !isTargetInCurrentSubtree) {
+        opts.navigation = false;
       }
 
       model.setParent(this.model);
@@ -4558,6 +4679,20 @@ export class FlowRunJSContext extends FlowContext {
   constructor(delegate: FlowContext) {
     super();
     this.addDelegate(delegate);
+    this.defineMethod('openView', async (uid: string, options?: Record<string, unknown>) => {
+      const openView = (
+        delegate as {
+          openView?: (uid: string, options?: Record<string | symbol, unknown>) => unknown | Promise<unknown>;
+        }
+      ).openView;
+      if (typeof openView !== 'function') {
+        throw new Error('ctx.openView is not available in this RunJS context.');
+      }
+      return openView(uid, {
+        ...(options || {}),
+        [RUNJS_OPEN_VIEW_DIRECT_NAVIGATION]: true,
+      });
+    });
     this.defineProperty('React', { value: React });
     this.defineProperty('antd', { value: antd });
     this.defineProperty('dayjs', {
