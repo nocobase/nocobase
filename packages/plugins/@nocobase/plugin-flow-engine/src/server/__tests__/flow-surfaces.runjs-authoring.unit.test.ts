@@ -15,6 +15,20 @@ import {
 } from '../flow-surfaces/runjs-authoring';
 
 describe('flowSurfaces RunJS authoring unit validation', () => {
+  it('should allow JS blocks to declare native RunJS settings and resolve typed config', () => {
+    const errors = inspectRunJsAuthoringCode({
+      code: [
+        "const config = ctx.useSettings({ version: 1, fields: { title: { type: 'string' }, collection: { type: 'collection' } } });",
+        "const collection = ctx.resolveConfig('collection');",
+        "ctx.render(String(config.title || collection || ''));",
+      ].join('\n'),
+      path: '$.runjs.settings.code',
+      modelUse: 'JSBlockModel',
+    });
+
+    expect(errors).toEqual([]);
+  });
+
   it('should use AST function body ranges for destructured RunJS component parameters', () => {
     const destructuredDeclarationErrors = inspectRunJsAuthoringCode({
       code: [

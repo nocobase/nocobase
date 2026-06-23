@@ -16,8 +16,11 @@ import { FlowSettingsContextProvider, useFlowSettingsContext } from '../../../..
 import { StepSettingsDialogProps } from '../../../../types';
 import {
   compileUiSchema,
+  callAfterParamsSaveHook,
+  callBeforeParamsSaveHook,
   FlowExitException,
   getT,
+  replaceStepParams,
   resolveDefaultParams,
   resolveStepUiSchema,
   FlowCancelSaveException,
@@ -211,12 +214,25 @@ const openStepSettingsDialog = async ({
                     onClick={async () => {
                       try {
                         await form.submit();
-                        const currentValues = form.values;
+                        const currentValues = { ...form.values };
+                        let finalParams = currentValues;
                         model.setStepParams(flowKey, stepKey, currentValues);
 
                         // Call beforeParamsSave callback if it exists
                         if (beforeParamsSave) {
-                          await beforeParamsSave(flowRuntimeContext, currentValues, previousParams);
+                          const hookResult = await callBeforeParamsSaveHook(beforeParamsSave, {
+                            ctx: flowRuntimeContext,
+                            flowKey,
+                            stepKey,
+                            currentParams: currentValues,
+                            previousParams,
+                          });
+                          if (typeof hookResult !== 'undefined') {
+                            finalParams = hookResult;
+                            replaceStepParams(model, flowKey, stepKey, finalParams);
+                          } else {
+                            finalParams = model.getStepParams(flowKey, stepKey) || currentValues;
+                          }
                         }
 
                         currentDialog.close();
@@ -224,7 +240,13 @@ const openStepSettingsDialog = async ({
                         message.success(t('Configuration saved'));
                         // Call afterParamsSave callback if it exists
                         if (afterParamsSave) {
-                          await afterParamsSave(flowRuntimeContext, currentValues, previousParams);
+                          await callAfterParamsSaveHook(afterParamsSave, {
+                            ctx: flowRuntimeContext,
+                            flowKey,
+                            stepKey,
+                            savedParams: finalParams,
+                            previousParams,
+                          });
                         }
                       } catch (error) {
                         if (error instanceof FlowCancelSaveException) {

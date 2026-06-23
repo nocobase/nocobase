@@ -13,20 +13,24 @@ import type { DropdownProps, MenuProps } from 'antd';
 import { App, Dropdown, Modal, Tooltip, theme } from 'antd';
 import React, { startTransition, useCallback, useEffect, useMemo, useState, FC } from 'react';
 import { FlowModel } from '../../../../models';
+import { FlowRuntimeContext } from '../../../../flowContext';
 import type { FlowModelExtraMenuItem } from '../../../../models';
 import type { StepDefinition, StepUIMode } from '../../../../types';
 import {
+  callAfterParamsSaveHook,
+  callBeforeParamsSaveHook,
   getT,
+  replaceStepParams,
   resolveStepUiSchema,
   resolveStepDisabledInSettings,
   shouldHideStepInSettings,
   resolveDefaultParams,
   resolveUiMode,
+  setupRuntimeContextSteps,
 } from '../../../../utils';
 import { useNiceDropdownMaxHeight } from '../../../../hooks';
 import { SwitchWithTitle } from '../component/SwitchWithTitle';
 import { SelectWithTitle } from '../component/SelectWithTitle';
-import type { FlowSettingsContext } from '../../../../flowContext';
 
 const findExtraMenuItemByKey = (
   items: FlowModelExtraMenuItem[],
@@ -793,14 +797,36 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
                 return { ...defaultParams, ...stepParams };
               },
               onChange: async (val) => {
+                let finalParams = val;
                 targetModel.setStepParams(flow.key, stepInfo.stepKey, val);
+                const flowRuntimeContext = new FlowRuntimeContext(targetModel, flow.key, 'settings');
+                setupRuntimeContextSteps(flowRuntimeContext, flow.steps, targetModel, flow.key);
+                flowRuntimeContext.defineProperty('currentStep', { value: stepInfo.step });
                 if (typeof stepInfo.step.beforeParamsSave === 'function') {
-                  await stepInfo.step.beforeParamsSave(targetModel.context as FlowSettingsContext, val, stepParams);
+                  const hookResult = await callBeforeParamsSaveHook(stepInfo.step.beforeParamsSave, {
+                    ctx: flowRuntimeContext,
+                    flowKey: flow.key,
+                    stepKey: stepInfo.stepKey,
+                    currentParams: val,
+                    previousParams: stepParams,
+                  });
+                  if (typeof hookResult !== 'undefined') {
+                    finalParams = hookResult;
+                    replaceStepParams(targetModel, flow.key, stepInfo.stepKey, finalParams);
+                  } else {
+                    finalParams = targetModel.getStepParams(flow.key, stepInfo.stepKey) || val;
+                  }
                 }
                 await targetModel.saveStepParams();
                 message?.success?.(t('Configuration saved'));
                 if (typeof stepInfo.step.afterParamsSave === 'function') {
-                  await stepInfo.step.afterParamsSave(targetModel.context as FlowSettingsContext, val, stepParams);
+                  await callAfterParamsSaveHook(stepInfo.step.afterParamsSave, {
+                    ctx: flowRuntimeContext,
+                    flowKey: flow.key,
+                    stepKey: stepInfo.stepKey,
+                    savedParams: finalParams,
+                    previousParams: stepParams,
+                  });
                 }
               },
               ...((uiMode as any)?.props || {}),

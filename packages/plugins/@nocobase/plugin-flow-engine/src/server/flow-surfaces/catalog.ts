@@ -245,6 +245,13 @@ const RUN_JS_SETTINGS_GROUP = {
     'runJs.version': STRING_SCHEMA,
   },
 };
+const RUNJS_CONFIGURE_SETTINGS_GROUP = {
+  allowedPaths: ['configure.*'],
+  mergeStrategy: 'replace' as const,
+  pathSchemas: {
+    configure: OBJECT_SCHEMA,
+  },
+};
 const FIELD_SETTINGS_INIT_GROUP = {
   allowedPaths: [
     'init.dataSourceKey',
@@ -1441,7 +1448,7 @@ ACTION_PANEL_BLOCK_CONTRACT.domains.stepParams = groupedDomain({
 const JS_BLOCK_CONTRACT = createContract({
   editableDomains: ['decoratorProps', 'stepParams', 'flowRegistry'],
   decoratorProps: ['title', 'description', 'className'],
-  stepParams: ['jsSettings'],
+  stepParams: ['jsSettings', 'runjsSettings'],
   flowRegistry: true,
   eventCapabilities: {
     direct: DEFAULT_DIRECT_EVENTS,
@@ -1454,6 +1461,7 @@ const JS_BLOCK_CONTRACT = createContract({
 });
 JS_BLOCK_CONTRACT.domains.stepParams = groupedDomain({
   jsSettings: RUN_JS_SETTINGS_GROUP,
+  runjsSettings: RUNJS_CONFIGURE_SETTINGS_GROUP,
 });
 
 const MAP_BLOCK_CONTRACT = createContract({

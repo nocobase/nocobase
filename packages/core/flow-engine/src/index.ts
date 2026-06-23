@@ -45,6 +45,7 @@ export type { RunJSContextContribution, RunJSContextContributionApi } from './ru
 export { registerRunJSContextContribution } from './runjs-context/contributions';
 export type { RunJSSnippetLoader } from './runjs-context/snippets';
 export { getSnippetBody, listSnippetsForContext, registerRunJSSnippet } from './runjs-context/snippets';
+export * from './runjs-settings';
 
 export * from './views';
 export {

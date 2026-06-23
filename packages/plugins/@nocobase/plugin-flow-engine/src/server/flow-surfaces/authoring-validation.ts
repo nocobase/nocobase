@@ -226,11 +226,20 @@ const TABLE_ALLOWED_SETTINGS_KEYS = new Set([...getConfigureOptionKeysForUse('Ta
 const TABLE_INTERNAL_AUTHORING_KEYS = ['tableSettings', 'defaultSorting', 'stepParams'];
 const TABLE_SETTINGS_REPAIR_HINT =
   'Use public table settings keys such as settings.pageSize, settings.sorting, settings.dataScope, settings.density, settings.showRowNumbers, settings.treeTable, settings.dragSort, and settings.dragSortBy. Do not nest persisted tableSettings/defaultSorting/stepParams payloads.';
-const JS_BLOCK_ALLOWED_SETTINGS_KEYS = new Set(['title', 'description', 'className', 'code', 'version']);
+const JS_BLOCK_ALLOWED_SETTINGS_KEYS = new Set([
+  'title',
+  'description',
+  'className',
+  'code',
+  'version',
+  'values',
+  'set',
+  'unset',
+]);
 const JS_BLOCK_TOP_LEVEL_JS_KEYS = ['code', 'version'] as const;
 const JS_BLOCK_INTERNAL_AUTHORING_KEYS = ['props', 'decoratorProps', 'flowRegistry', 'stepParams'];
 const JS_BLOCK_REPAIR_HINT =
-  'This is a jsBlock payload shape problem. Repair this jsBlock using inline settings.code/settings.version, or applyBlueprint assets.scripts.<key>.code plus block.script. Do not change this block type to table, chart, actionPanel, gridCard, or another block type.';
+  'This is a jsBlock payload shape problem. Repair this jsBlock using inline settings.code/settings.version and optional settings.values/settings.set/settings.unset, or applyBlueprint assets.scripts.<key>.code plus block.script. Do not pass settings.schema; schema is declared by JS code via ctx.useSettings. Do not change this block type to table, chart, actionPanel, gridCard, or another block type.';
 const CHART_REPAIR_HINT =
   'This is a chart payload shape problem. Keep using chart and repair this chart using assets.charts.<key>.query/visual plus block.chart, or localized settings.query/settings.visual. Do not change this block type to table, jsBlock, actionPanel, gridCard, or another block type, and do not drop or defer the chart. KPI / summary numbers should use jsBlock; charts are for trends, distributions, rankings, and visual analysis.';
 const REPAIR_ALL_ERRORS_AGENT_INSTRUCTION =
@@ -4860,6 +4869,18 @@ function collectJsBlockPublicContractErrors(
   const settings = _.isPlainObject(block.settings) ? block.settings : undefined;
   if (settings) {
     Object.keys(settings).forEach((key) => {
+      if (key === 'schema') {
+        pushAuthoringError(errors, {
+          path: `${path}.settings.schema`,
+          ruleId: 'jsBlock-settings-schema-unsupported',
+          message: `flowSurfaces authoring ${path}.settings.schema is not accepted; schema is declared by JS code via ctx.useSettings and is not accepted in public payload`,
+          details: withJsBlockRepairHint({
+            key,
+            allowedKeys: Array.from(JS_BLOCK_ALLOWED_SETTINGS_KEYS),
+          }),
+        });
+        return;
+      }
       if (JS_BLOCK_ALLOWED_SETTINGS_KEYS.has(key)) {
         return;
       }
@@ -4906,6 +4927,15 @@ function collectJsBlockPublicContractErrors(
 function collectJsBlockConfigurePublicContractErrors(changes: any, path: string, errors: AuthoringErrorInput[]) {
   if (!_.isPlainObject(changes)) {
     return;
+  }
+
+  if (hasOwn(changes, 'schema')) {
+    pushAuthoringError(errors, {
+      path: `${path}.schema`,
+      ruleId: 'jsBlock-settings-schema-unsupported',
+      message: `flowSurfaces authoring ${path}.schema is not accepted; schema is declared by JS code via ctx.useSettings and is not accepted in public payload`,
+      details: withJsBlockRepairHint({ key: 'schema' }),
+    });
   }
 
   JS_BLOCK_INTERNAL_AUTHORING_KEYS.forEach((key) => {

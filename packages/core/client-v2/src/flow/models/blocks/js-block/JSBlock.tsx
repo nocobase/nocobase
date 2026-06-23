@@ -7,7 +7,17 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ElementProxy, tExpr, createSafeDocument, createSafeWindow, createSafeNavigator } from '@nocobase/flow-engine';
+import {
+  ElementProxy,
+  tExpr,
+  createSafeDocument,
+  createSafeWindow,
+  createSafeNavigator,
+  applyDefaults,
+  mergeActiveValuesPreserveInactiveUnknown,
+  runtimeSettingsRegistry,
+  toFlowUISchema,
+} from '@nocobase/flow-engine';
 import React from 'react';
 import { BlockModel } from '../../base';
 import { BlockItemCard } from '../../../components';
@@ -156,6 +166,9 @@ ctx.render(\`
 \`);`.trim(),
         };
       },
+      afterParamsSave({ ctx }) {
+        runtimeSettingsRegistry.clearModel(ctx.model.uid);
+      },
       async handler(ctx, params) {
         const { code, version } = resolveRunJsParams(ctx, params);
         ctx.onRefReady(ctx.ref, async (element) => {
@@ -168,12 +181,92 @@ ctx.render(\`
             },
           });
           const navigator = createSafeNavigator();
-          await ctx.runjs(
-            code,
-            { window: createSafeWindow({ navigator }), document: createSafeDocument(), navigator },
-            { version },
-          );
+          const run = runtimeSettingsRegistry.beginRun(ctx.model, code);
+          try {
+            await ctx.runjs(
+              code,
+              { window: createSafeWindow({ navigator }), document: createSafeDocument(), navigator },
+              { version },
+            );
+            runtimeSettingsRegistry.endRun(ctx.model, run.runId);
+          } catch (error) {
+            runtimeSettingsRegistry.endRun(ctx.model, run.runId, { error });
+            throw error;
+          }
         });
+      },
+    },
+  },
+});
+
+JSBlockModel.registerFlow({
+  key: 'runjsSettings',
+  title: tExpr('RunJS settings'),
+  steps: {
+    configure: {
+      title: tExpr('Configure'),
+      useRawParams: true,
+      refreshUiSchemaOnValuesChange: { debounceMs: 150 },
+      hideInSettings(ctx) {
+        return !runtimeSettingsRegistry.get(ctx.model, 'default');
+      },
+      defaultParams(ctx) {
+        const entry = runtimeSettingsRegistry.get(ctx.model, 'default');
+        if (!entry) {
+          return {};
+        }
+        const values = ctx.getStepParams('configure') || {};
+        const result = runtimeSettingsRegistry.evaluate(ctx.model, 'default', {
+          phase: 'settings-open',
+          values,
+        });
+        return result.schema ? applyDefaults(result.schema, values) : {};
+      },
+      uiSchema(ctx) {
+        const values = ctx.getStepParams('configure') || {};
+        const draftValues = ctx.getDraftStepParams('runjsSettings', 'configure');
+        const result = runtimeSettingsRegistry.evaluate(ctx.model, 'default', {
+          phase: draftValues ? 'settings-draft' : 'settings-open',
+          values,
+          draftValues,
+        });
+        const errorSchema = result.error
+          ? {
+              __runjsSettingsError: {
+                type: 'void',
+                'x-component': 'Alert',
+                'x-component-props': {
+                  type: result.schema ? 'warning' : 'error',
+                  showIcon: true,
+                  message: ctx.t('Invalid JS block settings'),
+                  description: result.error.message,
+                },
+              },
+            }
+          : {};
+        return {
+          ...errorSchema,
+          ...(result.schema ? toFlowUISchema(result.schema) : {}),
+        };
+      },
+      beforeParamsSave({ ctx, currentParams, previousParams }) {
+        const result = runtimeSettingsRegistry.evaluate(ctx.model, 'default', {
+          phase: 'settings-save',
+          values: previousParams || {},
+          draftValues: currentParams || {},
+        });
+        if (result.error || !result.schema) {
+          throw result.error || new Error(ctx.t('Invalid JS block settings'));
+        }
+        return mergeActiveValuesPreserveInactiveUnknown({
+          schema: result.schema,
+          previousParams,
+          draftParams: currentParams,
+        });
+      },
+      async afterParamsSave({ ctx }) {
+        ctx.model.invalidateFlowCache('beforeRender', true);
+        await ctx.model.rerender();
       },
     },
   },

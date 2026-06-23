@@ -450,6 +450,10 @@ const JS_BLOCK_OPTIONS: FlowSurfaceConfigureOptions = {
   className: stringOption('className', { example: 'users-banner' }),
   code: JS_CODE,
   version: JS_VERSION,
+  values: objectOption('Complete RunJS settings values replacement', { example: { title: 'Sales', threshold: 90 } }),
+  set: objectOption('RunJS settings values patch', { example: { threshold: 95 } }),
+  unset: arrayOption('RunJS settings keys to unset', { example: ['oldField'] }),
+  schema: objectOption('Unsupported: schema must be declared by JS code via ctx.useSettings', { example: {} }),
 };
 
 const ACTION_COLUMN_OPTIONS: FlowSurfaceConfigureOptions = {

@@ -58,6 +58,8 @@ import { createEphemeralContext } from './utils/createEphemeralContext';
 import dayjs from 'dayjs';
 import { externalReactRender, setupRunJSLibs } from './runjsLibs';
 import { runjsImportAsync, runjsImportModule, runjsRequireAsync } from './utils/runjsModuleLoader';
+import { resolveRunJSConfig, useRunJSSettings } from './runjs-settings/runtime';
+import type { RunJSSettingsJSONValue, UseSettingsInput, UseSettingsOptions } from './runjs-settings/types';
 
 function normalizePathname(pathname: string) {
   return pathname.endsWith('/') ? pathname : `${pathname}/`;
@@ -3880,6 +3882,7 @@ export class FlowRuntimeContext<
     className: 'APIResource' | 'SingleRecordResource' | 'MultiRecordResource' | 'SQLResource',
   ) => void;
   declare getStepParams: (stepKey: string) => Record<string, any>;
+  declare getDraftStepParams: (flowKey: string, stepKey: string) => Record<string, any> | undefined;
   declare setStepParams: (stepKey: string, params?: any) => void;
   declare getStepResults: (stepKey: string) => any;
   declare runAction: (actionName: string, params?: Record<string, any>) => Promise<any> | any;
@@ -3893,6 +3896,7 @@ export class FlowRuntimeContext<
     this.defineMethod('getStepParams', (stepKey: string) => {
       return model.getStepParams(flowKey, stepKey) || {};
     });
+    this.defineMethod('getDraftStepParams', () => undefined);
     this.defineMethod('setStepParams', (stepKey: string, params) => {
       return model.setStepParams(flowKey, stepKey, params);
     });
@@ -4555,9 +4559,19 @@ function __mergeRunJSDocMeta(base: any, patch: any): RunJSDocMeta {
   return out as RunJSDocMeta;
 }
 export class FlowRunJSContext extends FlowContext {
+  declare model: FlowModel;
+  declare dataSourceManager: DataSourceManager;
+  declare config: Record<string, RunJSSettingsJSONValue>;
+  declare useSettings: (
+    schemaOrFactory: UseSettingsInput,
+    options?: UseSettingsOptions,
+  ) => Record<string, RunJSSettingsJSONValue>;
+  declare resolveConfig: (name: string) => unknown;
+
   constructor(delegate: FlowContext) {
     super();
     this.addDelegate(delegate);
+    this.defineProperty('config', { value: {} });
     this.defineProperty('React', { value: React });
     this.defineProperty('antd', { value: antd });
     this.defineProperty('dayjs', {
@@ -4578,6 +4592,27 @@ export class FlowRunJSContext extends FlowContext {
     this.defineProperty('ReactDOM', { value: ReactDOMShim });
 
     setupRunJSLibs(this);
+    this.defineMethod(
+      'useSettings',
+      (schemaOrFactory: UseSettingsInput, options?: UseSettingsOptions) => {
+        const config = useRunJSSettings(this, schemaOrFactory, options);
+        this.defineProperty('config', { value: config });
+        return config;
+      },
+      {
+        description: 'Declare native settings for the current JS block and read the active config values.',
+        detail: '(schemaOrFactory, options?) => Record<string, JSONValue>',
+        completion: {
+          insertText: "const config = ctx.useSettings({ version: 1, fields: { title: { type: 'string' } } });",
+        },
+      },
+    );
+    this.defineMethod('resolveConfig', (name: string) => resolveRunJSConfig(this, name), {
+      description:
+        'Resolve a ctx.useSettings config value such as a data source, collection, or collection field envelope.',
+      detail: '(name: string) => unknown',
+      completion: { insertText: "ctx.resolveConfig('collection')" },
+    });
 
     // Convenience: ctx.render(<App />[, container])
     // - container defaults to ctx.element if available

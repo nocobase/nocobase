@@ -24,17 +24,21 @@ import {
   DynamicFlowSource,
   DynamicFlowSourceProvider,
   ParamObject,
+  StepDefinition,
   StepSettingsDialogProps,
   ToolbarItemConfig,
 } from './types';
 import {
   compileUiSchema,
+  callAfterParamsSaveHook,
+  callBeforeParamsSaveHook,
   FlowCancelSaveException,
   FlowExitException,
   getT,
   resolveDefaultParams,
   resolveStepUiSchema,
   resolveUiMode,
+  replaceStepParams,
   setupRuntimeContextSteps,
   shouldHideStepInSettings,
 } from './utils';
@@ -42,6 +46,17 @@ import { FlowExitAllException } from './utils/exceptions';
 import { FlowStepContext } from './hooks/useFlowStep';
 import { GLOBAL_EMBED_CONTAINER_ID, EMBED_REPLACING_DATA_KEY } from './views';
 import { lazy } from './lazy-helper';
+import {
+  RunJSSettingsColorPicker,
+  RunJSSettingsDatePicker,
+  RunJSSettingsDateTimePicker,
+  RunJSSettingsJSONTextArea,
+} from './runjs-settings/adapters';
+import {
+  RunJSSettingsCollectionFieldSelect,
+  RunJSSettingsCollectionSelect,
+  RunJSSettingsDataSourceSelect,
+} from './runjs-settings/selectors';
 
 const Panel = Collapse.Panel;
 
@@ -226,7 +241,7 @@ export class FlowSettings {
         Upload,
       } = await import('@formily/antd-v5');
 
-      const { Button, Alert } = await import('antd');
+      const { Button, Alert, ColorPicker, Slider } = await import('antd');
 
       // 注册基础组件
       this.components.Form = Form;
@@ -280,6 +295,15 @@ export class FlowSettings {
       this.components.Button = Button;
       this.components.Submit = Submit;
       this.components.Reset = Reset;
+      this.components.ColorPicker = ColorPicker;
+      this.components.Slider = Slider;
+      this.components.RunJSSettingsDatePicker = RunJSSettingsDatePicker;
+      this.components.RunJSSettingsDateTimePicker = RunJSSettingsDateTimePicker;
+      this.components.RunJSSettingsColorPicker = RunJSSettingsColorPicker;
+      this.components.RunJSSettingsJSONTextArea = RunJSSettingsJSONTextArea;
+      this.components.RunJSSettingsDataSourceSelect = RunJSSettingsDataSourceSelect;
+      this.components.RunJSSettingsCollectionSelect = RunJSSettingsCollectionSelect;
+      this.components.RunJSSettingsCollectionFieldSelect = RunJSSettingsCollectionFieldSelect;
 
       this.antdComponentsLoaded = true;
       console.log('FlowSettings: Antd components loaded successfully');
@@ -688,10 +712,12 @@ export class FlowSettings {
       mergedUiSchema: any; // 合并后的 UI Schema（未包装）
       initialValues: any;
       previousParams: any;
-      beforeParamsSave?: Function;
-      afterParamsSave?: Function;
+      beforeParamsSave?: StepDefinition['beforeParamsSave'];
+      afterParamsSave?: StepDefinition['afterParamsSave'];
       ctx: any; // FlowRuntimeContext
       uiMode: any; // UI 模式
+      step: any;
+      updateUiSchema?: (schema: any) => void;
     };
 
     const entries: StepEntry[] = [];
@@ -770,6 +796,7 @@ export class FlowSettings {
           afterParamsSave,
           ctx: flowRuntimeContext,
           uiMode: step.uiMode || uiMode,
+          step,
         });
       }
     }
@@ -845,8 +872,55 @@ export class FlowSettings {
     const forms = new Map<string, ReturnType<typeof createForm>>();
     const keyOf = (e: { flowKey: string; stepKey: string }) => `${e.flowKey}::${e.stepKey}`;
 
+    const refreshTimers = new Map<string, ReturnType<typeof setTimeout>>();
+    const getRefreshDelay = (entry: StepEntry) => {
+      const refresh = entry.step?.refreshUiSchemaOnValuesChange;
+      if (!refresh) {
+        return undefined;
+      }
+      return typeof refresh === 'object' && typeof refresh.debounceMs === 'number' ? refresh.debounceMs : 150;
+    };
+    const refreshEntryUiSchema = async (entry: StepEntry, form: ReturnType<typeof createForm>) => {
+      try {
+        const flow = model.getFlow(entry.flowKey);
+        if (!flow) {
+          return;
+        }
+        const nextSchema = await resolveStepUiSchema(model, flow, entry.step, {
+          draftParams: { ...form.values },
+          preserveEmpty: true,
+        });
+        if (nextSchema !== null) {
+          entry.mergedUiSchema = nextSchema;
+          entry.updateUiSchema?.(nextSchema);
+        }
+      } catch (error) {
+        console.warn(`FlowSettings.open: failed to refresh uiSchema for ${entry.flowKey}.${entry.stepKey}`, error);
+      }
+    };
+
     entries.forEach((e) => {
-      const form = createForm({ initialValues: compileUiSchema(scopes, e.initialValues) });
+      const formKey = keyOf(e);
+      const refreshDelay = getRefreshDelay(e);
+      const form = createForm({
+        initialValues: compileUiSchema(scopes, e.initialValues),
+        effects: refreshDelay
+          ? (formInstance) => {
+              onFormValuesChange(() => {
+                const previousTimer = refreshTimers.get(formKey);
+                if (previousTimer) {
+                  clearTimeout(previousTimer);
+                }
+                refreshTimers.set(
+                  formKey,
+                  setTimeout(() => {
+                    refreshEntryUiSchema(e, formInstance);
+                  }, refreshDelay),
+                );
+              });
+            }
+          : undefined,
+      });
       forms.set(keyOf(e), form);
     });
 
@@ -903,7 +977,11 @@ export class FlowSettings {
       title: modeProps.title || getTitle(),
       width: modeProps.width ?? 600,
       destroyOnClose: true,
-      onClose: () => dispose.value(),
+      onClose: () => {
+        refreshTimers.forEach((timer) => clearTimeout(timer));
+        refreshTimers.clear();
+        dispose.value();
+      },
       zIndex: 5000,
       // 允许透传其它 props（如 maskClosable、footer 等），但确保 content 由我们接管
       ...modeProps,
@@ -919,26 +997,39 @@ export class FlowSettings {
           if (!form) return null;
 
           entry.ctx.view = currentView;
+          const DynamicStepForm = () => {
+            const [uiSchema, setUiSchema] = React.useState(entry.mergedUiSchema);
+            React.useEffect(() => {
+              entry.updateUiSchema = setUiSchema;
+              return () => {
+                if (entry.updateUiSchema === setUiSchema) {
+                  delete entry.updateUiSchema;
+                }
+              };
+            }, []);
 
-          return React.createElement(
-            FlowSettingsContextProvider as any,
-            { value: entry.ctx },
-            React.createElement(
-              FlowStepContext.Provider,
-              {
-                value: {
-                  params: untracked(() => ({ ...entry.initialValues, ...form.values })),
-                  path: `${model.uid}_${entry.flowKey}_${entry.stepKey}`,
+            return React.createElement(
+              FlowSettingsContextProvider as any,
+              { value: entry.ctx },
+              React.createElement(
+                FlowStepContext.Provider,
+                {
+                  value: {
+                    params: untracked(() => ({ ...entry.initialValues, ...form.values })),
+                    path: `${model.uid}_${entry.flowKey}_${entry.stepKey}`,
+                  },
                 },
-              },
-              this.renderStepForm({
-                uiSchema: entry.mergedUiSchema,
-                initialValues: entry.initialValues,
-                flowEngine,
-                form,
-              }),
-            ),
-          );
+                this.renderStepForm({
+                  uiSchema,
+                  initialValues: entry.initialValues,
+                  flowEngine,
+                  form,
+                }),
+              ),
+            );
+          };
+
+          return React.createElement(DynamicStepForm);
         };
 
         const renderStepPanels = (steps: StepEntry[]) =>
@@ -984,29 +1075,46 @@ export class FlowSettings {
 
         const onSaveAll = async () => {
           try {
-            // 逐步提交并保存
-            // 顺序：submit -> setStepParams -> beforeParamsSave -> model.save -> afterParamsSave
+            // 顺序：submit -> pre-seed current params -> beforeParamsSave -> model.save -> afterParamsSave
+            const savedEntries: Array<StepEntry & { savedParams: ParamObject }> = [];
             for (const e of entries) {
               const form = forms.get(keyOf(e));
               if (!form) continue;
               await form.submit();
-              const currentValues = form.values;
-              model.setStepParams(e.flowKey, e.stepKey, currentValues as ParamObject);
+              const currentValues = { ...form.values } as ParamObject;
+              let finalParams = currentValues;
+              model.setStepParams(e.flowKey, e.stepKey, currentValues);
 
               if (typeof e.beforeParamsSave === 'function') {
-                await e.beforeParamsSave(e.ctx, currentValues, e.previousParams);
+                const hookResult = await callBeforeParamsSaveHook(e.beforeParamsSave, {
+                  ctx: e.ctx,
+                  flowKey: e.flowKey,
+                  stepKey: e.stepKey,
+                  currentParams: currentValues,
+                  previousParams: e.previousParams,
+                });
+                if (typeof hookResult !== 'undefined') {
+                  finalParams = hookResult;
+                  replaceStepParams(model, e.flowKey, e.stepKey, finalParams);
+                } else {
+                  finalParams = (model.getStepParams(e.flowKey, e.stepKey) || currentValues) as ParamObject;
+                }
               }
+              savedEntries.push({ ...e, savedParams: finalParams });
             }
 
             await model.saveStepParams();
             message?.success?.(t('Configuration saved'));
 
-            for (const e of entries) {
-              const form = forms.get(keyOf(e));
-              if (!form) continue;
-              const currentValues = form.values;
+            for (const e of savedEntries) {
               if (typeof e.afterParamsSave === 'function') {
-                await e.afterParamsSave(e.ctx, currentValues, e.previousParams);
+                await callAfterParamsSaveHook(e.afterParamsSave, {
+                  ctx: e.ctx,
+                  flowKey: e.flowKey,
+                  stepKey: e.stepKey,
+                  savedParams: e.savedParams,
+                  previousParams: e.previousParams,
+                });
               }
             }
 

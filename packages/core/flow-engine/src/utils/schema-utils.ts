@@ -212,11 +212,18 @@ export async function resolveStepUiSchema<TModel extends FlowModel = FlowModel>(
   model: TModel,
   flow: any,
   step: StepDefinition,
+  options: { draftParams?: Record<string, unknown>; preserveEmpty?: boolean } = {},
 ): Promise<Record<string, ISchema> | null> {
   // 创建运行时上下文
   const flowRuntimeContext = new FlowRuntimeContext(model, flow.key, 'settings');
   setupRuntimeContextSteps(flowRuntimeContext, flow.steps, model, flow.key);
   flowRuntimeContext.defineProperty('currentStep', { value: step });
+  flowRuntimeContext.defineMethod('getDraftStepParams', (flowKey: string, stepKey: string) => {
+    if (flowKey === flow.key && stepKey === step.key) {
+      return options.draftParams;
+    }
+    return undefined;
+  });
 
   // 获取步骤的uiSchema
   let stepUiSchema = step.uiSchema;
@@ -236,7 +243,7 @@ export async function resolveStepUiSchema<TModel extends FlowModel = FlowModel>(
 
   // 如果解析后没有可配置的UI Schema，返回null
   if (Object.keys(resolvedStepUiSchema).length === 0) {
-    return null;
+    return options.preserveEmpty ? resolvedStepUiSchema : null;
   }
 
   return resolvedStepUiSchema;

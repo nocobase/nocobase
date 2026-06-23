@@ -69,6 +69,8 @@ vi.mock('antd', () => {
   const Alert = (props: any) => 'Alert';
   return {
     Button: () => 'Button',
+    ColorPicker: () => 'ColorPicker',
+    Slider: () => 'Slider',
     Space: () => 'Space',
     Tabs: () => 'Tabs',
     Collapse,
@@ -1703,6 +1705,93 @@ describe('FlowSettings.open rendering behavior', () => {
     expect(saveStepParams).toHaveBeenCalled();
     expect(success).toHaveBeenCalledWith('Configuration saved');
     expect(capturedDialog.close).toHaveBeenCalled();
+  });
+
+  it('preserves legacy beforeParamsSave step param side effects when no replacement is returned', async () => {
+    const engine = new FlowEngine();
+    const flowSettings = new FlowSettings(engine);
+    const TestFlowModel = createIsolatedFlowModel('test-submit-legacy-side-effect');
+    const model = new TestFlowModel({ uid: 'm-submit-legacy-side-effect', flowEngine: engine });
+
+    TestFlowModel.registerFlow({
+      key: 'legacyFlow',
+      steps: {
+        step: {
+          title: 'Step',
+          beforeParamsSave(ctx: any) {
+            ctx.model.setStepParams('legacyFlow', 'step', { field: 'derived' });
+          },
+          uiSchema: { field: { type: 'string', 'x-component': 'Input' } },
+        },
+      },
+    });
+
+    model.context.defineProperty('message', {
+      value: { info: vi.fn(), error: vi.fn(), success: vi.fn() },
+    });
+    vi.spyOn(model as any, 'saveStepParams').mockResolvedValue(undefined);
+
+    let capturedDialog: any;
+    model.context.defineProperty('viewer', {
+      value: {
+        dialog: ({ content }) => {
+          capturedDialog = { close: vi.fn(), Footer: (p: any) => null };
+          if (typeof content === 'function') {
+            content(capturedDialog, { defineMethod: vi.fn() });
+          }
+          return capturedDialog;
+        },
+      },
+    });
+
+    await flowSettings.open({ model, flowKey: 'legacyFlow', stepKey: 'step' } as any);
+    await capturedDialog.submit();
+
+    expect(model.getStepParams('legacyFlow', 'step')).toEqual({ field: 'derived' });
+  });
+
+  it('replaces step params when beforeParamsSave returns final params with omitted keys', async () => {
+    const engine = new FlowEngine();
+    const flowSettings = new FlowSettings(engine);
+    const TestFlowModel = createIsolatedFlowModel('test-submit-replace-returned-params');
+    const model = new TestFlowModel({ uid: 'm-submit-replace-returned-params', flowEngine: engine });
+
+    TestFlowModel.registerFlow({
+      key: 'replaceFlow',
+      steps: {
+        step: {
+          title: 'Step',
+          beforeParamsSave() {
+            return { field: 'replacement' };
+          },
+          uiSchema: { field: { type: 'string', 'x-component': 'Input' } },
+        },
+      },
+    });
+
+    model.context.defineProperty('message', {
+      value: { info: vi.fn(), error: vi.fn(), success: vi.fn() },
+    });
+    vi.spyOn(model as any, 'saveStepParams').mockResolvedValue(undefined);
+    model.setStepParams('replaceFlow', 'step', { field: 'old', removed: 'stale' });
+
+    let capturedDialog: any;
+    model.context.defineProperty('viewer', {
+      value: {
+        dialog: ({ content }) => {
+          capturedDialog = { close: vi.fn(), Footer: (p: any) => null };
+          if (typeof content === 'function') {
+            content(capturedDialog, { defineMethod: vi.fn() });
+          }
+          return capturedDialog;
+        },
+      },
+    });
+
+    await flowSettings.open({ model, flowKey: 'replaceFlow', stepKey: 'step' } as any);
+    await capturedDialog.submit();
+
+    expect(model.getStepParams('replaceFlow', 'step')).toEqual({ field: 'replacement' });
   });
 
   it('submit method handles multiple steps correctly', async () => {

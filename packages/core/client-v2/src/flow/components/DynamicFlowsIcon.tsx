@@ -34,6 +34,8 @@ import {
   DetachedFlowRegistry,
   replaceFlowRegistry,
   serializeFlowRegistry,
+  callAfterParamsSaveHook,
+  callBeforeParamsSaveHook,
   type DynamicFlowSource,
 } from '@nocobase/flow-engine';
 import { Collapse, Input, Button, Space, Tooltip, Empty, Dropdown, Select, Tabs, theme } from 'antd';
@@ -1018,18 +1020,34 @@ const DynamicFlowsEditor = observer((props: DynamicFlowsEditorProps) => {
 
           const currentValues = { ...(step.defaultParams || {}) };
           const previousParams = { ...(step.defaultParams || {}) };
+          let finalValues = currentValues;
 
           if (typeof beforeParamsSave === 'function') {
-            await beforeParamsSave(runtimeCtx as any, currentValues, previousParams);
+            const hookResult = await callBeforeParamsSaveHook(beforeParamsSave, {
+              ctx: runtimeCtx,
+              flowKey: flow.key,
+              stepKey: step.key,
+              currentParams: currentValues,
+              previousParams,
+            });
+            if (typeof hookResult !== 'undefined') {
+              finalValues = hookResult;
+            }
           }
 
           if (typeof afterParamsSave === 'function') {
             afterSaves.push(async () => {
-              await afterParamsSave(runtimeCtx as any, currentValues, previousParams);
+              await callAfterParamsSaveHook(afterParamsSave, {
+                ctx: runtimeCtx,
+                flowKey: flow.key,
+                stepKey: step.key,
+                savedParams: finalValues,
+                previousParams,
+              });
             });
           }
 
-          step.defaultParams = currentValues;
+          step.defaultParams = finalValues;
         }
       }
 

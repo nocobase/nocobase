@@ -934,6 +934,22 @@ describe('Utils', () => {
         expect(result).toBeNull();
       });
 
+      test('should preserve an empty dynamic uiSchema when requested for draft refresh', async () => {
+        const emptyStepUiSchema = vi.fn((ctx) => {
+          expect(ctx.getDraftStepParams('testFlow', 'testStep')).toEqual({ mode: 'empty' });
+          return {};
+        });
+        mockStep.key = 'testStep';
+        mockStep.uiSchema = emptyStepUiSchema;
+
+        const result = await resolveStepUiSchema(mockModel, mockFlow, mockStep, {
+          draftParams: { mode: 'empty' },
+          preserveEmpty: true,
+        });
+
+        expect(result).toEqual({});
+      });
+
       test('should return null when dynamic uiSchemas resolve to null/undefined', async () => {
         const nullActionUiSchema = vi.fn().mockResolvedValue(null);
         const undefinedStepUiSchema = vi.fn().mockResolvedValue(undefined);

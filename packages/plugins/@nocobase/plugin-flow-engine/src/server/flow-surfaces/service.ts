@@ -351,6 +351,7 @@ import {
   resolveRelationFieldType,
   usesNestedRelationFields,
 } from './field-type-resolver';
+import { normalizeRunJSSettingsConfigureValues, normalizeRunJSSettingsUnsetKeys } from './runjs-settings-values';
 import {
   areFlowTemplatePopupUsesCompatible,
   areFlowTemplateRootUsesCompatible,
@@ -21843,6 +21844,51 @@ export class FlowSurfacesService {
   ) {
     const allowedKeys = getConfigureOptionKeysForUse('JSBlockModel');
     assertSupportedSimpleChanges('jsBlock', changes, allowedKeys);
+    if (hasOwnDefined(changes, 'schema')) {
+      throwBadRequest('schema is declared by JS code via ctx.useSettings and is not accepted in public payload');
+    }
+    const hasValues = hasOwnDefined(changes, 'values');
+    const hasSet = hasOwnDefined(changes, 'set');
+    const hasUnset = hasOwnDefined(changes, 'unset');
+    if (hasValues && (hasSet || hasUnset)) {
+      throwBadRequest('jsBlock settings.values cannot be mixed with settings.set/settings.unset');
+    }
+    const current = await this.loadResolvedNode(target, options.transaction);
+    const currentConfigureValues = _.isPlainObject(current?.stepParams?.runjsSettings?.configure)
+      ? _.cloneDeep(current.stepParams.runjsSettings.configure)
+      : {};
+    let configureValues: Record<string, unknown> | undefined;
+    if (hasValues) {
+      configureValues = normalizeRunJSSettingsConfigureValues(changes.values, 'jsBlock settings.values');
+    } else if (hasSet || hasUnset) {
+      configureValues = currentConfigureValues;
+      if (hasSet) {
+        const setValues = normalizeRunJSSettingsConfigureValues(changes.set, 'jsBlock settings.set');
+        Object.assign(configureValues, setValues);
+      }
+      normalizeRunJSSettingsUnsetKeys(changes.unset, 'jsBlock settings.unset').forEach((key) => {
+        delete configureValues?.[key];
+      });
+    }
+    const stepParams = buildDefinedPayload({
+      ...(hasDefinedValue(changes, ['code', 'version'])
+        ? {
+            jsSettings: {
+              runJs: buildDefinedPayload({
+                code: changes.code,
+                version: changes.version,
+              }),
+            },
+          }
+        : {}),
+      ...(configureValues
+        ? {
+            runjsSettings: {
+              configure: configureValues,
+            },
+          }
+        : {}),
+    });
     return this.updateSettings(
       {
         target,
@@ -21851,16 +21897,7 @@ export class FlowSurfacesService {
           description: changes.description,
           className: changes.className,
         }),
-        stepParams: hasDefinedValue(changes, ['code', 'version'])
-          ? {
-              jsSettings: {
-                runJs: buildDefinedPayload({
-                  code: changes.code,
-                  version: changes.version,
-                }),
-              },
-            }
-          : undefined,
+        stepParams: Object.keys(stepParams).length ? stepParams : undefined,
       },
       options,
     );

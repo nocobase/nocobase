@@ -1277,10 +1277,15 @@ function exportSimpleBlockSettings(block: FlowSurfaceExportNode, type: string) {
 
   if (type === 'jsBlock') {
     const runJs = clonePlainObject(getByPath(block, ['stepParams', 'jsSettings', 'runJs']));
+    const values = clonePlainObject(getByPath(block, ['stepParams', 'runjsSettings', 'configure']));
+    const settings = buildDefinedPayload({
+      ...(runJs || {}),
+      values: values && Object.keys(values).length ? values : undefined,
+    });
     return buildDefinedPayload({
       title: readString(block.decoratorProps?.title),
       description: readString(block.decoratorProps?.description),
-      settings: runJs,
+      settings: Object.keys(settings).length ? settings : undefined,
     });
   }
 
@@ -1300,8 +1305,12 @@ function getAllowedBlockStepParamPaths(type: string, groupKey: string): readonly
   if (
     (type === 'markdown' && groupKey === 'markdownBlockSettings') ||
     (type === 'jsBlock' && groupKey === 'jsSettings') ||
+    (type === 'jsBlock' && groupKey === 'runjsSettings') ||
     (type === 'iframe' && groupKey === 'iframeBlockSettings')
   ) {
+    if (type === 'jsBlock' && groupKey === 'runjsSettings') {
+      return ['configure.*'];
+    }
     return simpleBlockSettings || [];
   }
   return EXPORTED_BLOCK_STEP_PARAM_PATHS_BY_GROUP[groupKey];

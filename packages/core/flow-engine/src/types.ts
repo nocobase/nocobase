@@ -158,8 +158,8 @@ export interface ActionDefinition<TModel extends FlowModel = FlowModel, TCtx ext
   handler: (ctx: TCtx, params: any) => Promise<any> | any;
   uiSchema?: Record<string, ISchema> | ((ctx: TCtx) => Record<string, ISchema> | Promise<Record<string, ISchema>>);
   defaultParams?: Record<string, any> | ((ctx: TCtx) => Record<string, any> | Promise<Record<string, any>>);
-  beforeParamsSave?: (ctx: FlowSettingsContext<TModel>, params: any, previousParams: any) => void | Promise<void>;
-  afterParamsSave?: (ctx: FlowSettingsContext<TModel>, params: any, previousParams: any) => void | Promise<void>;
+  beforeParamsSave?: FlowSettingsBeforeParamsSave<TModel>;
+  afterParamsSave?: FlowSettingsAfterParamsSave<TModel>;
   useRawParams?: boolean | ((ctx: TCtx) => boolean | Promise<boolean>);
   uiMode?: StepUIMode | ((ctx: FlowRuntimeContext<TModel>) => StepUIMode | Promise<StepUIMode>);
   scene?: ActionScene | ActionScene[];
@@ -288,12 +288,58 @@ export type StepUIMode =
 // | { type: 'switch'; props?: Record<string, any> }
 // | { type: 'select'; props?: Record<string, any> }
 
+export type FlowSettingsBeforeParamsSaveArgs<TModel extends FlowModel = FlowModel> = {
+  ctx: FlowRuntimeContext<TModel>;
+  flowKey: string;
+  stepKey: string;
+  currentParams: ParamObject;
+  previousParams: ParamObject;
+};
+
+export type FlowSettingsAfterParamsSaveArgs<TModel extends FlowModel = FlowModel> = {
+  ctx: FlowRuntimeContext<TModel>;
+  flowKey: string;
+  stepKey: string;
+  savedParams: ParamObject;
+  previousParams: ParamObject;
+};
+
+export type FlowSettingsBeforeParamsSaveStructured<TModel extends FlowModel = FlowModel> = (
+  args: FlowSettingsBeforeParamsSaveArgs<TModel>,
+) => ParamObject | void | Promise<ParamObject | void>;
+
+export type FlowSettingsBeforeParamsSaveLegacy<TModel extends FlowModel = FlowModel> = (
+  ctx: FlowSettingsContext<TModel>,
+  params: ParamObject,
+  previousParams: ParamObject,
+) => ParamObject | void | Promise<ParamObject | void>;
+
+export type FlowSettingsBeforeParamsSave<TModel extends FlowModel = FlowModel> =
+  | FlowSettingsBeforeParamsSaveStructured<TModel>
+  | FlowSettingsBeforeParamsSaveLegacy<TModel>;
+
+export type FlowSettingsAfterParamsSaveStructured<TModel extends FlowModel = FlowModel> = (
+  args: FlowSettingsAfterParamsSaveArgs<TModel>,
+) => void | Promise<void>;
+
+export type FlowSettingsAfterParamsSaveLegacy<TModel extends FlowModel = FlowModel> = (
+  ctx: FlowSettingsContext<TModel>,
+  params: ParamObject,
+  previousParams: ParamObject,
+) => void | Promise<void>;
+
+export type FlowSettingsAfterParamsSave<TModel extends FlowModel = FlowModel> =
+  | FlowSettingsAfterParamsSaveStructured<TModel>
+  | FlowSettingsAfterParamsSaveLegacy<TModel>;
+
 /**
  * Step definition with unified support for both registered actions and inline handlers
  * Extends ActionDefinition but makes some properties optional and adds step-specific properties
  */
 export interface StepDefinition<TModel extends FlowModel = FlowModel>
-  extends Partial<Omit<ActionDefinition<TModel, FlowRuntimeContext<TModel>>, 'name'>> {
+  extends Partial<
+    Omit<ActionDefinition<TModel, FlowRuntimeContext<TModel>>, 'name' | 'beforeParamsSave' | 'afterParamsSave'>
+  > {
   key?: string; // Unique identifier for the step within the flow
   // Step-specific properties
   isAwait?: boolean; // Whether to await the handler, defaults to true
@@ -304,6 +350,9 @@ export interface StepDefinition<TModel extends FlowModel = FlowModel>
   // `preset: true` 的 step params 需要在创建时填写，没有标记的可以创建模型后再填写。
   preset?: boolean;
   uiMode?: StepUIMode | ((ctx: FlowRuntimeContext<TModel>) => StepUIMode | Promise<StepUIMode>);
+  refreshUiSchemaOnValuesChange?: boolean | { debounceMs?: number };
+  beforeParamsSave?: FlowSettingsBeforeParamsSave<TModel>;
+  afterParamsSave?: FlowSettingsAfterParamsSave<TModel>;
 }
 
 /**

@@ -65,6 +65,7 @@ export {
 export { extractPropertyPath, formatPathToVariable, isVariableExpression } from './context';
 
 export { clearAutoFlowError, getAutoFlowError, setAutoFlowError, type AutoFlowError } from './autoFlowError';
+export { callAfterParamsSaveHook, callBeforeParamsSaveHook, replaceStepParams } from './params-save-hooks';
 export { parsePathnameToViewParams, type ViewParam } from './parsePathnameToViewParams';
 export {
   decodeBase64Url,
