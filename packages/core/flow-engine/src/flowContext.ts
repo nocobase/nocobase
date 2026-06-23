@@ -437,6 +437,15 @@ type ResourceRequestOptions = RequestOptions & {
   headers?: unknown;
 };
 
+type DirtyResourceAction = {
+  resourceName: string;
+  actionName: string;
+};
+
+type ApiUrlProvider = {
+  getApiUrl?: (pathname?: string) => string;
+};
+
 type DirtyAwareAPIClient = APIClient & {
   resource: APIClient['resource'];
   request: APIClient['request'];
@@ -519,6 +528,180 @@ function getAffectedResourceNames(resourceName: unknown): string[] {
   return Array.from(names);
 }
 
+function getCurrentOrigin(): string | undefined {
+  return typeof window === 'undefined' ? undefined : window.location?.origin;
+}
+
+function parseUrl(value: string, base?: string): URL | undefined {
+  try {
+    return new URL(value, base);
+  } catch {
+    return undefined;
+  }
+}
+
+function stripSearchAndHash(path: string): string {
+  const index = path.search(/[?#]/);
+  return index === -1 ? path : path.slice(0, index);
+}
+
+function stripKnownApiPrefix(path: string): string | undefined {
+  const cleanPath = stripSearchAndHash(path).trim();
+  if (!cleanPath) {
+    return undefined;
+  }
+
+  const normalizedPath = cleanPath.replace(/^\/+/, '');
+  if (!normalizedPath || normalizedPath === 'api') {
+    return undefined;
+  }
+  if (normalizedPath.startsWith('api/')) {
+    return normalizedPath.slice('api/'.length);
+  }
+
+  return normalizedPath;
+}
+
+function getAppApiUrl(app?: ApiUrlProvider): URL | undefined {
+  if (!app?.getApiUrl) {
+    return undefined;
+  }
+
+  try {
+    return parseUrl(app.getApiUrl(), getCurrentOrigin());
+  } catch {
+    return undefined;
+  }
+}
+
+function stripConfiguredApiPrefix(path: string, apiPathname: string): string | undefined {
+  const cleanPath = stripSearchAndHash(path).trim();
+  if (!cleanPath.startsWith('/')) {
+    return undefined;
+  }
+
+  const apiPath = normalizePathname(apiPathname);
+  const requestPath = normalizePathname(cleanPath);
+  if (!requestPath.startsWith(apiPath)) {
+    return undefined;
+  }
+
+  const apiPathWithoutTrailingSlash = apiPath.replace(/\/$/, '');
+  return cleanPath.slice(apiPathWithoutTrailingSlash.length).replace(/^\/+/, '') || undefined;
+}
+
+function getDirtyResourcePathFromAbsoluteUrl(url: URL, app?: ApiUrlProvider): string | undefined {
+  if (!['http:', 'https:'].includes(url.protocol)) {
+    return undefined;
+  }
+
+  if (app?.getApiUrl) {
+    const apiUrl = getAppApiUrl(app);
+    if (!apiUrl || url.origin !== apiUrl.origin) {
+      return undefined;
+    }
+
+    return stripConfiguredApiPrefix(url.pathname, apiUrl.pathname);
+  }
+
+  const currentOrigin = getCurrentOrigin();
+  if (!currentOrigin || url.origin !== currentOrigin) {
+    return undefined;
+  }
+
+  return stripKnownApiPrefix(url.pathname);
+}
+
+function getDirtyResourcePathFromUrl(url: unknown, context: FlowContext): string | undefined {
+  if (typeof url !== 'string') {
+    return undefined;
+  }
+
+  const trimmedUrl = url.trim();
+  if (!trimmedUrl || trimmedUrl.startsWith('//')) {
+    return undefined;
+  }
+
+  if (/^https?:\/\//i.test(trimmedUrl)) {
+    const parsedUrl = parseUrl(trimmedUrl);
+    if (!parsedUrl) {
+      return undefined;
+    }
+    return getDirtyResourcePathFromAbsoluteUrl(parsedUrl, context.app as ApiUrlProvider | undefined);
+  }
+
+  const appApiUrl = getAppApiUrl(context.app as ApiUrlProvider | undefined);
+  const configuredResourcePath = appApiUrl ? stripConfiguredApiPrefix(trimmedUrl, appApiUrl.pathname) : undefined;
+  if (configuredResourcePath) {
+    return configuredResourcePath;
+  }
+
+  return stripKnownApiPrefix(trimmedUrl);
+}
+
+function decodeResourcePathSegment(segment: string): string {
+  try {
+    return decodeURIComponent(segment);
+  } catch {
+    return segment;
+  }
+}
+
+function parseDirtyResourceActionFromUrl(url: unknown, context: FlowContext): DirtyResourceAction | undefined {
+  const resourcePath = getDirtyResourcePathFromUrl(url, context);
+  if (!resourcePath) {
+    return undefined;
+  }
+
+  const segments = stripSearchAndHash(resourcePath).split('/').filter(Boolean);
+  const resourceSegments: string[] = [];
+  let actionName: string | undefined;
+  let actionSegmentIndex = -1;
+
+  for (let index = 0; index < segments.length; index += 2) {
+    const segment = segments[index];
+    const actionDelimiterIndex = segment.lastIndexOf(':');
+    const resourceSegment = actionDelimiterIndex === -1 ? segment : segment.slice(0, actionDelimiterIndex);
+    if (!resourceSegment) {
+      return undefined;
+    }
+
+    resourceSegments.push(decodeResourcePathSegment(resourceSegment));
+    if (actionDelimiterIndex !== -1) {
+      actionName = decodeResourcePathSegment(segment.slice(actionDelimiterIndex + 1)).trim();
+      actionSegmentIndex = index;
+      break;
+    }
+  }
+
+  if (!actionName || !resourceSegments.length) {
+    return undefined;
+  }
+
+  // NocoBase resource URLs may append one resource index after the action segment, e.g. posts:export/1.
+  if (segments.length > actionSegmentIndex + 2) {
+    return undefined;
+  }
+
+  return {
+    resourceName: resourceSegments.join('.'),
+    actionName,
+  };
+}
+
+function resolveDirtyResourceAction(
+  options: ResourceRequestOptions,
+  context: FlowContext,
+): DirtyResourceAction | undefined {
+  const resourceName = typeof options?.resource === 'string' ? options.resource : undefined;
+  const actionName = typeof options?.action === 'string' ? options.action : undefined;
+  if (resourceName && actionName) {
+    return { resourceName, actionName };
+  }
+
+  return parseDirtyResourceActionFromUrl(options?.url, context);
+}
+
 function getDirtyTargetEngines(engine: FlowEngine): FlowEngine[] {
   const engines: FlowEngine[] = [];
   const seen = new Set<FlowEngine>();
@@ -591,11 +774,10 @@ function createDirtyAwareApiClient(api: DirtyAwareAPIClient, context: FlowContex
 
   const request: APIClient['request'] = async (config) => {
     const options = config as ResourceRequestOptions;
-    const resourceName = typeof options?.resource === 'string' ? options.resource : undefined;
-    const actionName = typeof options?.action === 'string' ? options.action : undefined;
+    const dirtyResourceAction = resolveDirtyResourceAction(options, context);
     const result = await api.request(config);
-    if (resourceName && actionName && isMutatingResourceAction(actionName)) {
-      markResourceActionDataSourceDirty(context, resourceName, options.headers);
+    if (dirtyResourceAction && isMutatingResourceAction(dirtyResourceAction.actionName)) {
+      markResourceActionDataSourceDirty(context, dirtyResourceAction.resourceName, options.headers);
     }
     return result;
   };
