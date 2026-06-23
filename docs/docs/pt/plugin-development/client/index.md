@@ -24,3 +24,7 @@ Extensões de UI
 | **Extensões de Bloco**      | Personalize blocos de página para criar módulos e layouts de UI reutilizáveis.                                                                                                                      | [blocks](../../ui-development-block/index.md)            |
 | **Extensões de Campo**      | Personalize tipos de campo para implementar a exibição e edição de dados complexos.                                                                                                                 | [fields](../../ui-development-field/index.md)            |
 | **Extensões de Ação**       | Personalize tipos de ação para implementar lógica complexa e tratamento de interações.                                                                                                              | [actions](../../ui-development-action/index.md)           |
+
+## Links relacionados
+
+- [Componentes compartilhados](/shared-components/) — Componentes reutilizáveis de formulário, filtro e tabela
