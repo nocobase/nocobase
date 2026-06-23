@@ -113,6 +113,48 @@ export interface FieldAssignRulesEditorProps {
 
 const ALL_ASSIGN_MODES: AssignMode[] = ['default', 'override', 'assign'];
 
+function cloneCascaderOption(option: FieldAssignCascaderOption): FieldAssignCascaderOption {
+  return {
+    ...option,
+    children: option.children?.map((child) => cloneCascaderOption(child)),
+  };
+}
+
+function mergeCascaderOptionInto(options: FieldAssignCascaderOption[], source: FieldAssignCascaderOption) {
+  const value = source?.value ? String(source.value) : '';
+  if (!value) return;
+
+  const existing = options.find((item) => String(item?.value || '') === value);
+  if (!existing) {
+    options.push(cloneCascaderOption(source));
+    return;
+  }
+
+  if (!existing.label && source.label) {
+    existing.label = source.label;
+  }
+  if (source.isLeaf === false || existing.children?.length || source.children?.length) {
+    existing.isLeaf = false;
+  }
+  if (source.loading) {
+    existing.loading = source.loading;
+  }
+  if (source.children?.length) {
+    existing.children = mergeCascaderOptions(existing.children || [], source.children);
+  }
+}
+
+function mergeCascaderOptions(
+  configured: FieldAssignCascaderOption[],
+  allFields: FieldAssignCascaderOption[],
+): FieldAssignCascaderOption[] {
+  const result = (Array.isArray(configured) ? configured : []).map((item) => cloneCascaderOption(item));
+  for (const item of Array.isArray(allFields) ? allFields : []) {
+    mergeCascaderOptionInto(result, item);
+  }
+  return result;
+}
+
 function isAssignMode(mode: unknown): mode is AssignMode {
   return mode === 'default' || mode === 'override' || mode === 'assign';
 }
@@ -171,13 +213,21 @@ export const FieldAssignRulesEditor: React.FC<FieldAssignRulesEditorProps> = (pr
     },
     [normalizeItemMode, onChange],
   );
+
+  const normalizeFieldOptions = React.useCallback((options: FieldAssignRulesEditorProps['fieldOptions']) => {
+    return Array.isArray(options)
+      ? (options as FieldAssignCascaderOption[]).map((option) => cloneCascaderOption(option))
+      : [];
+  }, []);
   const [cascaderOptions, setCascaderOptions] = React.useState<FieldAssignCascaderOption[]>(() =>
-    Array.isArray(fieldOptions) ? (fieldOptions as FieldAssignCascaderOption[]) : [],
+    normalizeFieldOptions(fieldOptions),
   );
+  const loadedCascaderOptionsRef = React.useRef<WeakSet<FieldAssignCascaderOption>>(new WeakSet());
 
   React.useEffect(() => {
-    setCascaderOptions(Array.isArray(fieldOptions) ? (fieldOptions as FieldAssignCascaderOption[]) : []);
-  }, [fieldOptions]);
+    loadedCascaderOptionsRef.current = new WeakSet();
+    setCascaderOptions(normalizeFieldOptions(fieldOptions));
+  }, [fieldOptions, normalizeFieldOptions, rootCollection, maxAssociationFieldDepth]);
 
   const getRuleKey = React.useCallback((item: FieldAssignRuleItem, index: number) => item?.key || String(index), []);
   const [titleFieldDraftMap, setTitleFieldDraftMap] = React.useState<Record<string, string | undefined>>({});
@@ -597,23 +647,26 @@ export const FieldAssignRulesEditor: React.FC<FieldAssignRulesEditorProps> = (pr
       const opts = selectedOptions || [];
       const target = opts[opts.length - 1];
       if (!target) return;
-      if (target.children && Array.isArray(target.children) && target.children.length) return;
       if (target.isLeaf) return;
+      if (loadedCascaderOptionsRef.current.has(target)) return;
 
       const segments = opts.map((o) => String(o?.value)).filter(Boolean);
       const targetCollection = resolveTargetCollectionBySegments(segments);
       if (!targetCollection) {
-        target.isLeaf = true;
+        target.isLeaf = !(target.children && target.children.length);
+        loadedCascaderOptionsRef.current.add(target);
         setCascaderOptions((prev) => [...prev]);
         return;
       }
 
       const children = buildChildrenFromCollection(targetCollection, segments.length);
       if (!children.length) {
-        target.isLeaf = true;
+        target.isLeaf = !(target.children && target.children.length);
       } else {
-        target.children = children;
+        target.children = mergeCascaderOptions(target.children || [], children);
+        target.isLeaf = false;
       }
+      loadedCascaderOptionsRef.current.add(target);
       setCascaderOptions((prev) => [...prev]);
     },
     [buildChildrenFromCollection, resolveTargetCollectionBySegments],
@@ -629,12 +682,14 @@ export const FieldAssignRulesEditor: React.FC<FieldAssignRulesEditorProps> = (pr
         const hit = options.find((o) => String(o?.value) === seg);
         if (!hit) return;
         selected.push(hit);
+        if (!hit.isLeaf && !loadedCascaderOptionsRef.current.has(hit)) {
+          await loadCascaderData(selected);
+        }
         if (hit.children?.length) {
           options = hit.children;
           continue;
         }
         if (hit.isLeaf) return;
-        await loadCascaderData(selected);
         options = hit.children || [];
       }
     },
@@ -665,7 +720,7 @@ export const FieldAssignRulesEditor: React.FC<FieldAssignRulesEditorProps> = (pr
         await preloadCascaderPath(segs);
       }
     };
-    void run();
+    run();
     return () => {
       cancelled = true;
     };
