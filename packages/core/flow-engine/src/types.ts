@@ -351,6 +351,10 @@ export interface StepDefinition<TModel extends FlowModel = FlowModel>
   preset?: boolean;
   uiMode?: StepUIMode | ((ctx: FlowRuntimeContext<TModel>) => StepUIMode | Promise<StepUIMode>);
   refreshUiSchemaOnValuesChange?: boolean | { debounceMs?: number };
+  settingsParams?: {
+    flowKey?: string;
+    stepKey?: string;
+  };
   beforeParamsSave?: FlowSettingsBeforeParamsSave<TModel>;
   afterParamsSave?: FlowSettingsAfterParamsSave<TModel>;
 }

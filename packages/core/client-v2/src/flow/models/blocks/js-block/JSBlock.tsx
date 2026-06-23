@@ -15,6 +15,9 @@ import {
   createSafeNavigator,
   applyDefaults,
   mergeActiveValuesPreserveInactiveUnknown,
+  RUNJS_SETTINGS_CONFIGURE_STEP_KEY,
+  RUNJS_SETTINGS_FLOW_KEY,
+  type ParamObject,
   runtimeSettingsRegistry,
   toFlowUISchema,
 } from '@nocobase/flow-engine';
@@ -208,14 +211,23 @@ JSBlockModel.registerFlow({
       useRawParams: true,
       refreshUiSchemaOnValuesChange: { debounceMs: 150 },
       hideInSettings(ctx) {
-        return !runtimeSettingsRegistry.get(ctx.model, 'default');
+        const entry = runtimeSettingsRegistry.get(ctx.model, 'default');
+        if (!entry) {
+          return true;
+        }
+        const values = ctx.model.getStepParams(RUNJS_SETTINGS_FLOW_KEY, RUNJS_SETTINGS_CONFIGURE_STEP_KEY) || {};
+        const result = runtimeSettingsRegistry.evaluate(ctx.model, 'default', {
+          phase: 'settings-open',
+          values,
+        });
+        return !!result.schema?.steps && Object.keys(result.schema.steps).length > 0;
       },
       defaultParams(ctx) {
         const entry = runtimeSettingsRegistry.get(ctx.model, 'default');
         if (!entry) {
           return {};
         }
-        const values = ctx.getStepParams('configure') || {};
+        const values = ctx.getStepParams(RUNJS_SETTINGS_CONFIGURE_STEP_KEY) || {};
         const result = runtimeSettingsRegistry.evaluate(ctx.model, 'default', {
           phase: 'settings-open',
           values,
@@ -223,8 +235,8 @@ JSBlockModel.registerFlow({
         return result.schema ? applyDefaults(result.schema, values) : {};
       },
       uiSchema(ctx) {
-        const values = ctx.getStepParams('configure') || {};
-        const draftValues = ctx.getDraftStepParams('runjsSettings', 'configure');
+        const values = ctx.getStepParams(RUNJS_SETTINGS_CONFIGURE_STEP_KEY) || {};
+        const draftValues = ctx.getDraftStepParams(RUNJS_SETTINGS_FLOW_KEY, RUNJS_SETTINGS_CONFIGURE_STEP_KEY);
         const result = runtimeSettingsRegistry.evaluate(ctx.model, 'default', {
           phase: draftValues ? 'settings-draft' : 'settings-open',
           values,
@@ -249,7 +261,7 @@ JSBlockModel.registerFlow({
           ...(result.schema ? toFlowUISchema(result.schema) : {}),
         };
       },
-      beforeParamsSave({ ctx, currentParams, previousParams }) {
+      beforeParamsSave({ ctx, currentParams, previousParams }): ParamObject {
         const result = runtimeSettingsRegistry.evaluate(ctx.model, 'default', {
           phase: 'settings-save',
           values: previousParams || {},
@@ -262,7 +274,7 @@ JSBlockModel.registerFlow({
           schema: result.schema,
           previousParams,
           draftParams: currentParams,
-        });
+        }) as ParamObject;
       },
       async afterParamsSave({ ctx }) {
         ctx.model.invalidateFlowCache('beforeRender', true);

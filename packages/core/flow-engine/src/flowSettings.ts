@@ -35,6 +35,7 @@ import {
   FlowCancelSaveException,
   FlowExitException,
   getT,
+  getStepSettingsParamsTarget,
   resolveDefaultParams,
   resolveStepUiSchema,
   resolveUiMode,
@@ -57,6 +58,7 @@ import {
   RunJSSettingsCollectionSelect,
   RunJSSettingsDataSourceSelect,
 } from './runjs-settings/selectors';
+import { resolveRunJSSettingsFlow } from './runjs-settings/steps';
 
 const Panel = Collapse.Panel;
 
@@ -709,6 +711,8 @@ export class FlowSettings {
       flowTitle: string;
       stepKey: string;
       stepTitle: string;
+      paramsFlowKey: string;
+      paramsStepKey: string;
       mergedUiSchema: any; // 合并后的 UI Schema（未包装）
       initialValues: any;
       previousParams: any;
@@ -726,12 +730,16 @@ export class FlowSettings {
     await this.load();
 
     for (const fk of targetFlowKeys) {
-      const flow = model.getFlow(fk);
-      if (!flow) {
+      const originalFlow = model.getFlow(fk);
+      if (!originalFlow) {
         // 忽略无效 flowKey，但记录日志
         console.warn(`FlowSettings.open: Flow with key '${fk}' not found`);
         continue;
       }
+      const flow = resolveRunJSSettingsFlow(
+        model,
+        originalFlow as unknown as Parameters<typeof resolveRunJSSettingsFlow>[1],
+      );
 
       // 遍历步骤，筛选有可配置 UI 的步骤
       for (const sk of Object.keys(flow.steps || {})) {
@@ -760,6 +768,7 @@ export class FlowSettings {
             uiMode = action.uiMode;
           }
         }
+        const paramsTarget = getStepSettingsParamsTarget(step, fk, sk);
 
         // 构建 settings 上下文
         const flowRuntimeContext = new FlowRuntimeContext(model, fk, 'settings');
@@ -770,7 +779,7 @@ export class FlowSettings {
         });
 
         // 解析默认值 + 当前参数
-        const modelStepParams = model.getStepParams(fk, sk) || {};
+        const modelStepParams = model.getStepParams(paramsTarget.flowKey, paramsTarget.stepKey) || {};
         const resolvedDefaultParams = await resolveDefaultParams(step.defaultParams, flowRuntimeContext);
         const resolvedActionDefaults = await resolveDefaultParams(actionDefaultParams, flowRuntimeContext);
         const initialValues = {
@@ -797,6 +806,8 @@ export class FlowSettings {
           ctx: flowRuntimeContext,
           uiMode: step.uiMode || uiMode,
           step,
+          paramsFlowKey: paramsTarget.flowKey,
+          paramsStepKey: paramsTarget.stepKey,
         });
       }
     }
@@ -882,10 +893,14 @@ export class FlowSettings {
     };
     const refreshEntryUiSchema = async (entry: StepEntry, form: ReturnType<typeof createForm>) => {
       try {
-        const flow = model.getFlow(entry.flowKey);
-        if (!flow) {
+        const originalFlow = model.getFlow(entry.flowKey);
+        if (!originalFlow) {
           return;
         }
+        const flow = resolveRunJSSettingsFlow(
+          model,
+          originalFlow as unknown as Parameters<typeof resolveRunJSSettingsFlow>[1],
+        );
         const nextSchema = await resolveStepUiSchema(model, flow, entry.step, {
           draftParams: { ...form.values },
           preserveEmpty: true,
@@ -1083,7 +1098,7 @@ export class FlowSettings {
               await form.submit();
               const currentValues = { ...form.values } as ParamObject;
               let finalParams = currentValues;
-              model.setStepParams(e.flowKey, e.stepKey, currentValues);
+              model.setStepParams(e.paramsFlowKey, e.paramsStepKey, currentValues);
 
               if (typeof e.beforeParamsSave === 'function') {
                 const hookResult = await callBeforeParamsSaveHook(e.beforeParamsSave, {
@@ -1095,9 +1110,9 @@ export class FlowSettings {
                 });
                 if (typeof hookResult !== 'undefined') {
                   finalParams = hookResult;
-                  replaceStepParams(model, e.flowKey, e.stepKey, finalParams);
+                  replaceStepParams(model, e.paramsFlowKey, e.paramsStepKey, finalParams);
                 } else {
-                  finalParams = (model.getStepParams(e.flowKey, e.stepKey) || currentValues) as ParamObject;
+                  finalParams = (model.getStepParams(e.paramsFlowKey, e.paramsStepKey) || currentValues) as ParamObject;
                 }
               }
               savedEntries.push({ ...e, savedParams: finalParams });

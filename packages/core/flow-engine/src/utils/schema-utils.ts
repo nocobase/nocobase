@@ -219,7 +219,11 @@ export async function resolveStepUiSchema<TModel extends FlowModel = FlowModel>(
   setupRuntimeContextSteps(flowRuntimeContext, flow.steps, model, flow.key);
   flowRuntimeContext.defineProperty('currentStep', { value: step });
   flowRuntimeContext.defineMethod('getDraftStepParams', (flowKey: string, stepKey: string) => {
-    if (flowKey === flow.key && stepKey === step.key) {
+    const paramsTarget = getStepSettingsParamsTarget(step, flow.key, step.key || '');
+    if (
+      (flowKey === flow.key && stepKey === step.key) ||
+      (flowKey === paramsTarget.flowKey && stepKey === paramsTarget.stepKey)
+    ) {
       return options.draftParams;
     }
     return undefined;
@@ -247,6 +251,17 @@ export async function resolveStepUiSchema<TModel extends FlowModel = FlowModel>(
   }
 
   return resolvedStepUiSchema;
+}
+
+export function getStepSettingsParamsTarget(
+  step: StepDefinition | undefined,
+  flowKey: string,
+  stepKey: string,
+): { flowKey: string; stepKey: string } {
+  return {
+    flowKey: step?.settingsParams?.flowKey || flowKey,
+    stepKey: step?.settingsParams?.stepKey || stepKey,
+  };
 }
 
 /**

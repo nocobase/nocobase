@@ -10,11 +10,21 @@
 import React from 'react';
 import { cleanup, fireEvent, render } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { FlowRuntimeContext } from '../../flowContext';
+import { FlowEngine } from '../../flowEngine';
+import { FlowModel } from '../../models/flowModel';
+import type { FlowSettingsBeforeParamsSaveStructured } from '../../types';
 import { formatRunJSSettingsJSONTextAreaValue, RunJSSettingsJSONTextArea } from '../adapters';
 import { normalizeRunJSSettingsSchema } from '../normalize';
 import { runtimeSettingsRegistry } from '../registry';
+import {
+  buildRunJSSettingsStepDefinitions,
+  RUNJS_SETTINGS_CONFIGURE_STEP_KEY,
+  RUNJS_SETTINGS_FLOW_KEY,
+} from '../steps';
 import { toFlowUISchema } from '../toFlowUISchema';
 import {
+  activeFieldKeysForStep,
   applyDefaults,
   mergeActiveValuesPreserveInactiveUnknown,
   normalizeJsonTextValue,
@@ -60,6 +70,92 @@ describe('runjs settings values', () => {
         },
       }),
     ).toThrow(/collection is required/);
+  });
+
+  it('normalizes grouped settings steps and maps a field subset to ui schema', () => {
+    const schema = normalizeRunJSSettingsSchema({
+      version: 1,
+      fields: {
+        title: { type: 'string', title: 'Title' },
+        amount: { type: 'number', title: 'Amount' },
+        target: { type: 'number', title: 'Target' },
+      },
+      steps: {
+        basic: { title: 'Basic', fields: ['title'] },
+        metrics: { title: 'Metrics', fields: ['amount', 'target'] },
+      },
+      stepOrder: ['metrics', 'basic'],
+    });
+
+    expect(Object.keys(schema.steps || {})).toEqual(['basic', 'metrics']);
+    expect(schema.stepOrder).toEqual(['metrics', 'basic']);
+    expect(activeFieldKeysForStep(schema, 'metrics')).toEqual(['amount', 'target']);
+    expect(Object.keys(toFlowUISchema(schema, { fieldKeys: activeFieldKeysForStep(schema, 'basic') }))).toEqual([
+      'title',
+    ]);
+    expect(() =>
+      normalizeRunJSSettingsSchema({
+        fields: { title: { type: 'string' } },
+        steps: { basic: { fields: ['missing'] } },
+      }),
+    ).toThrow(/unknown field/);
+  });
+
+  it('saves one runtime settings step without dropping other step values', async () => {
+    class TestFlowModel extends FlowModel {}
+
+    const engine = new FlowEngine();
+    const model = new TestFlowModel({ uid: 'model-runjs-settings-steps-save', flowEngine: engine });
+    const previousParams = {
+      title: 'Old title',
+      amount: 10,
+      target: 20,
+      unknownValue: 'keep me',
+    };
+
+    model.setStepParams(RUNJS_SETTINGS_FLOW_KEY, RUNJS_SETTINGS_CONFIGURE_STEP_KEY, previousParams);
+    const run = runtimeSettingsRegistry.beginRun(
+      model,
+      'ctx.useSettings({ steps: { basic: { fields: ["title"] }, metrics: { fields: ["amount", "target"] } }, fields: {} })',
+    );
+    runtimeSettingsRegistry.register(
+      model,
+      'default',
+      {
+        version: 1,
+        fields: {
+          title: { type: 'string' },
+          amount: { type: 'number' },
+          target: { type: 'number' },
+        },
+        steps: {
+          basic: { title: 'Basic', fields: ['title'] },
+          metrics: { title: 'Metrics', fields: ['amount', 'target'] },
+        },
+      },
+      run,
+    );
+
+    const steps = buildRunJSSettingsStepDefinitions(model);
+    const beforeParamsSave = steps?.basic.beforeParamsSave as FlowSettingsBeforeParamsSaveStructured;
+    const saved = await beforeParamsSave({
+      ctx: new FlowRuntimeContext(model, RUNJS_SETTINGS_FLOW_KEY, 'settings'),
+      flowKey: RUNJS_SETTINGS_FLOW_KEY,
+      stepKey: 'basic',
+      previousParams,
+      currentParams: {
+        ...previousParams,
+        title: 'New title',
+      },
+    });
+
+    expect(saved).toEqual({
+      amount: 10,
+      target: 20,
+      unknownValue: 'keep me',
+      title: 'New title',
+    });
+    runtimeSettingsRegistry.clearModel(model.uid);
   });
 
   it('returns active config only and preserves inactive or unknown values on save', () => {

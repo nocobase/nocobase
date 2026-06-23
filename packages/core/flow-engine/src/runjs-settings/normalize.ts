@@ -13,6 +13,7 @@ import type {
   RunJSSettingFieldType,
   RunJSSettingOption,
   RunJSSettingOptionValue,
+  RunJSSettingsStep,
   RunJSSettingsSchema,
 } from './types';
 import {
@@ -167,6 +168,40 @@ function normalizeField(rawField: unknown, key: string): RunJSSettingField {
   return _.pickBy(field, (value) => typeof value !== 'undefined') as RunJSSettingField;
 }
 
+function normalizeStep(rawStep: unknown, key: string, fields: Record<string, RunJSSettingField>): RunJSSettingsStep {
+  const path = `steps.${key}`;
+  if (!isPlainRecord(rawStep)) {
+    throw new RunJSSettingsValidationError(`${path} must be a plain object`);
+  }
+  if (!Array.isArray(rawStep.fields)) {
+    throw new RunJSSettingsValidationError(`${path}.fields must be an array`);
+  }
+  const fieldKeys: string[] = [];
+  rawStep.fields.forEach((fieldKey, index) => {
+    if (typeof fieldKey !== 'string') {
+      throw new RunJSSettingsValidationError(`${path}.fields[${index}] must be a string`);
+    }
+    assertSafeRunJSSettingKey(fieldKey, `${path}.fields[${index}]`);
+    if (!fields[fieldKey]) {
+      throw new RunJSSettingsValidationError(`${path}.fields[${index}] references unknown field '${fieldKey}'`);
+    }
+    if (!fieldKeys.includes(fieldKey)) {
+      fieldKeys.push(fieldKey);
+    }
+  });
+  if (fieldKeys.length === 0) {
+    throw new RunJSSettingsValidationError(`${path}.fields must include at least one field`);
+  }
+  return _.pickBy(
+    {
+      title: normalizeStringOption(rawStep.title, `${path}.title`),
+      description: normalizeStringOption(rawStep.description, `${path}.description`),
+      fields: fieldKeys,
+    },
+    (value) => typeof value !== 'undefined',
+  ) as RunJSSettingsStep;
+}
+
 export function normalizeRunJSSettingsSchema(input: unknown): RunJSSettingsSchema {
   if (!isPlainRecord(input)) {
     throw new RunJSSettingsValidationError('settings schema must be a plain object');
@@ -190,6 +225,25 @@ export function normalizeRunJSSettingsSchema(input: unknown): RunJSSettingsSchem
   const order = Array.isArray(input.order)
     ? input.order.filter((key): key is string => typeof key === 'string' && !!fields[key])
     : undefined;
+  let steps: Record<string, RunJSSettingsStep> | undefined;
+  if (typeof input.steps !== 'undefined') {
+    if (!isPlainRecord(input.steps)) {
+      throw new RunJSSettingsValidationError('settings schema steps must be a plain object');
+    }
+    const stepEntries = Object.entries(input.steps);
+    if (stepEntries.length > 50) {
+      throw new RunJSSettingsValidationError('settings schema supports at most 50 steps');
+    }
+    steps = {};
+    for (const [key, step] of stepEntries) {
+      assertSafeRunJSSettingKey(key, 'steps');
+      steps[key] = normalizeStep(step, key, fields);
+    }
+  }
+  const stepOrder =
+    steps && Array.isArray(input.stepOrder)
+      ? input.stepOrder.filter((key): key is string => typeof key === 'string' && !!steps?.[key])
+      : undefined;
   return _.pickBy(
     {
       version: version as 1 | undefined,
@@ -197,6 +251,8 @@ export function normalizeRunJSSettingsSchema(input: unknown): RunJSSettingsSchem
       description: typeof input.description === 'string' ? input.description : undefined,
       fields,
       order,
+      steps,
+      stepOrder,
     },
     (value) => typeof value !== 'undefined',
   ) as RunJSSettingsSchema;

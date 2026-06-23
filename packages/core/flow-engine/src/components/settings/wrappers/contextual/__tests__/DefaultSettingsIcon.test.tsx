@@ -14,6 +14,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { FlowEngine } from '../../../../../flowEngine';
 import { FlowModel } from '../../../../../models/flowModel';
+import { runtimeSettingsRegistry } from '../../../../../runjs-settings';
 import { DefaultSettingsIcon } from '../DefaultSettingsIcon';
 
 // ---- Mock antd to capture Dropdown menu props ----
@@ -353,6 +354,61 @@ describe('DefaultSettingsIcon - only static flows are shown', () => {
       const items = (menu?.items || []) as any[];
       expect(items.some((it) => String(it.key || '') === 'flowB:useAction')).toBe(true);
     });
+  });
+
+  it('expands RunJS settings schema steps into separate menu items', async () => {
+    class TestFlowModel extends FlowModel {}
+    const engine = new FlowEngine();
+    const model = new TestFlowModel({ uid: 'm-runjs-steps', flowEngine: engine });
+
+    TestFlowModel.registerFlow({
+      key: 'runjsSettings',
+      title: 'RunJS settings',
+      steps: {
+        configure: {
+          title: 'Configure',
+          uiSchema: { all: { type: 'string', 'x-component': 'Input' } },
+        },
+      },
+    });
+
+    const run = runtimeSettingsRegistry.beginRun(model, 'ctx.useSettings({ steps: {} })');
+    runtimeSettingsRegistry.register(
+      model,
+      'default',
+      {
+        fields: {
+          title: { type: 'string', title: '标题' },
+          amount: { type: 'number', title: '当前数值' },
+          target: { type: 'number', title: '目标值' },
+        },
+        steps: {
+          basic: { title: '基础配置', fields: ['title'] },
+          metrics: { title: '指标配置', fields: ['amount', 'target'] },
+        },
+        stepOrder: ['basic', 'metrics'],
+      },
+      run,
+    );
+
+    render(
+      React.createElement(
+        ConfigProvider as any,
+        null,
+        React.createElement(App as any, null, React.createElement(DefaultSettingsIcon as any, { model })),
+      ),
+    );
+
+    await waitFor(() => {
+      const menu = (globalThis as any).__lastDropdownMenu;
+      const items = (menu?.items || []) as any[];
+      const keys = items.map((it) => String(it.key || ''));
+      expect(keys).toContain('runjsSettings:basic');
+      expect(keys).toContain('runjsSettings:metrics');
+      expect(keys).not.toContain('runjsSettings:configure');
+    });
+
+    runtimeSettingsRegistry.clearModel(model.uid);
   });
 
   it('keeps disabled legacy step visible with tooltip and blocks click', async () => {

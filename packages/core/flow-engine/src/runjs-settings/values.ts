@@ -337,6 +337,36 @@ export function activeFieldKeys(schema: RunJSSettingsSchema): string[] {
   return [...ordered, ...rest].filter((key) => schema.fields[key]?.visible !== false);
 }
 
+export function activeFieldKeysForStep(schema: RunJSSettingsSchema, stepKey: string): string[] {
+  const step = schema.steps?.[stepKey];
+  if (!step) {
+    return activeFieldKeys(schema);
+  }
+  return step.fields.filter((key) => schema.fields[key]?.visible !== false);
+}
+
+export function pickRunJSSettingsSchemaFields(schema: RunJSSettingsSchema, fieldKeys: string[]): RunJSSettingsSchema {
+  const fields: RunJSSettingsSchema['fields'] = {};
+  const orderedKeys = fieldKeys.filter((key) => schema.fields[key]);
+  orderedKeys.forEach((key) => {
+    fields[key] = schema.fields[key];
+  });
+  const nextSchema: RunJSSettingsSchema = { fields };
+  if (typeof schema.version !== 'undefined') {
+    nextSchema.version = schema.version;
+  }
+  if (typeof schema.title !== 'undefined') {
+    nextSchema.title = schema.title;
+  }
+  if (typeof schema.description !== 'undefined') {
+    nextSchema.description = schema.description;
+  }
+  if (orderedKeys.length > 0) {
+    nextSchema.order = orderedKeys;
+  }
+  return nextSchema;
+}
+
 export function applyDefaults(
   schema: RunJSSettingsSchema,
   values: Record<string, unknown> = {},

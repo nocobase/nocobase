@@ -38,6 +38,7 @@ export {
   compileUiSchema,
   resolveStepUiSchema,
   resolveStepDisabledInSettings,
+  getStepSettingsParamsTarget,
   resolveUiMode,
   shouldHideEventInSettings,
   shouldHideStepInSettings,

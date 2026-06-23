@@ -8,7 +8,12 @@
  */
 
 import type { ISchema } from '@formily/json-schema';
-import type { RunJSSettingField, RunJSSettingsSchema, RunJSSettingsUISchemaResult } from './types';
+import type {
+  RunJSSettingField,
+  RunJSSettingsSchema,
+  RunJSSettingsUISchemaOptions,
+  RunJSSettingsUISchemaResult,
+} from './types';
 import { activeFieldKeys } from './values';
 
 function baseSchema(field: RunJSSettingField): ISchema {
@@ -84,9 +89,15 @@ function mapField(field: RunJSSettingField): ISchema {
   }
 }
 
-export function toFlowUISchema(schema: RunJSSettingsSchema): RunJSSettingsUISchemaResult {
+export function toFlowUISchema(
+  schema: RunJSSettingsSchema,
+  options: RunJSSettingsUISchemaOptions = {},
+): RunJSSettingsUISchemaResult {
   const properties: RunJSSettingsUISchemaResult = {};
-  for (const key of activeFieldKeys(schema)) {
+  const keys = options.fieldKeys?.length
+    ? options.fieldKeys.filter((key) => !!schema.fields[key] && schema.fields[key]?.visible !== false)
+    : activeFieldKeys(schema);
+  for (const key of keys) {
     properties[key] = mapField(schema.fields[key]);
   }
   return properties;

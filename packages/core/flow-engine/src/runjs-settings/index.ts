@@ -12,6 +12,7 @@ export * from './normalize';
 export * from './values';
 export * from './registry';
 export * from './toFlowUISchema';
+export * from './steps';
 export * from './resolveConfig';
 export * from './runtime';
 export * from './selectors';

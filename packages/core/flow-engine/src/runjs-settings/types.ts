@@ -81,12 +81,20 @@ export type RunJSSettingField = {
   fieldTypes?: string[];
 };
 
+export type RunJSSettingsStep = {
+  title?: string;
+  description?: string;
+  fields: string[];
+};
+
 export type RunJSSettingsSchema = {
   version?: 1;
   title?: string;
   description?: string;
   fields: Record<string, RunJSSettingField>;
   order?: string[];
+  steps?: Record<string, RunJSSettingsStep>;
+  stepOrder?: string[];
 };
 
 export type SettingsFactoryPhase = 'render' | 'settings-open' | 'settings-draft' | 'settings-save';
@@ -157,6 +165,7 @@ export type RuntimeSettingsEvaluateResult =
 
 export type RunJSSettingsUISchemaOptions = {
   values?: Record<string, RunJSSettingsJSONValue>;
+  fieldKeys?: string[];
 };
 
 export type RunJSSettingsUISchemaResult = Record<string, ISchema>;

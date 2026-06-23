@@ -20,6 +20,7 @@ import {
   callAfterParamsSaveHook,
   callBeforeParamsSaveHook,
   getT,
+  getStepSettingsParamsTarget,
   replaceStepParams,
   resolveStepUiSchema,
   resolveStepDisabledInSettings,
@@ -28,6 +29,7 @@ import {
   resolveUiMode,
   setupRuntimeContextSteps,
 } from '../../../../utils';
+import { resolveRunJSSettingsFlow } from '../../../../runjs-settings/steps';
 import { useNiceDropdownMaxHeight } from '../../../../hooks';
 import { SwitchWithTitle } from '../component/SwitchWithTitle';
 import { SelectWithTitle } from '../component/SelectWithTitle';
@@ -578,15 +580,19 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
 
         const flowsWithSteps = await Promise.all(
           flowsArray.map(async (flow) => {
+            const settingsFlow = resolveRunJSSettingsFlow(
+              targetModel,
+              flow as unknown as Parameters<typeof resolveRunJSSettingsFlow>[1],
+            );
             const configurableSteps = await Promise.all(
-              Object.entries(flow.steps).map(async ([stepKey, stepDefinition]) => {
+              Object.entries(settingsFlow.steps).map(async ([stepKey, stepDefinition]) => {
                 const actionStep = stepDefinition;
                 let step = actionStep;
                 // 支持静态与动态 hideInSettings
-                if (await shouldHideStepInSettings(targetModel, flow, actionStep)) {
+                if (await shouldHideStepInSettings(targetModel, settingsFlow, actionStep)) {
                   return null;
                 }
-                const disabledState = await resolveStepDisabledInSettings(targetModel, flow, actionStep as any);
+                const disabledState = await resolveStepDisabledInSettings(targetModel, settingsFlow, actionStep);
                 let uiMode: any = await resolveUiMode(actionStep.uiMode, (targetModel as any).context);
                 // 检查是否有uiSchema（静态或动态）
                 const hasStepUiSchema = actionStep.uiSchema != null;
@@ -617,7 +623,7 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
 
                 try {
                   // 使用提取的工具函数解析并合并uiSchema
-                  const resolvedSchema = await resolveStepUiSchema(targetModel, flow, actionStep);
+                  const resolvedSchema = await resolveStepUiSchema(targetModel, settingsFlow, actionStep);
 
                   // 如果解析后没有可配置的UI Schema，跳过此步骤
                   if (!resolvedSchema && !selectOrSwitchMode) {
@@ -642,7 +648,9 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
               }),
             ).then((steps) => steps.filter(Boolean));
 
-            return configurableSteps.length > 0 ? ({ flow, steps: configurableSteps, modelKey } as FlowInfo) : null;
+            return configurableSteps.length > 0
+              ? ({ flow: settingsFlow, steps: configurableSteps, modelKey } as FlowInfo)
+              : null;
           }),
         ).then((flows) => flows.filter(Boolean));
 
@@ -786,7 +794,8 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
             const uiMode = stepInfo.uiMode;
             const subModel = stepInfo.modelKey ? findSubModelByKey(model, stepInfo.modelKey) : null;
             const targetModel = subModel || model;
-            const stepParams = targetModel.getStepParams(flow.key, stepInfo.stepKey) || {};
+            const paramsTarget = getStepSettingsParamsTarget(stepInfo.step, flow.key, stepInfo.stepKey);
+            const stepParams = targetModel.getStepParams(paramsTarget.flowKey, paramsTarget.stepKey) || {};
             const itemProps = {
               getDefaultValue: async () => {
                 let defaultParams = await resolveDefaultParams(stepInfo.step.defaultParams, targetModel.context);
@@ -798,7 +807,7 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
               },
               onChange: async (val) => {
                 let finalParams = val;
-                targetModel.setStepParams(flow.key, stepInfo.stepKey, val);
+                targetModel.setStepParams(paramsTarget.flowKey, paramsTarget.stepKey, val);
                 const flowRuntimeContext = new FlowRuntimeContext(targetModel, flow.key, 'settings');
                 setupRuntimeContextSteps(flowRuntimeContext, flow.steps, targetModel, flow.key);
                 flowRuntimeContext.defineProperty('currentStep', { value: stepInfo.step });
@@ -812,9 +821,9 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
                   });
                   if (typeof hookResult !== 'undefined') {
                     finalParams = hookResult;
-                    replaceStepParams(targetModel, flow.key, stepInfo.stepKey, finalParams);
+                    replaceStepParams(targetModel, paramsTarget.flowKey, paramsTarget.stepKey, finalParams);
                   } else {
-                    finalParams = targetModel.getStepParams(flow.key, stepInfo.stepKey) || val;
+                    finalParams = targetModel.getStepParams(paramsTarget.flowKey, paramsTarget.stepKey) || val;
                   }
                 }
                 await targetModel.saveStepParams();
