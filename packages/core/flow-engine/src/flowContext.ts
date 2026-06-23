@@ -9,7 +9,7 @@
 
 import { ISchema } from '@formily/json-schema';
 import { observable } from '@formily/reactive';
-import { APIClient, RequestOptions } from '@nocobase/sdk';
+import { APIClient, RequestOptions, type ActionParams, type IResource } from '@nocobase/sdk';
 import type { Router } from '@remix-run/router';
 import axios from 'axios';
 import { MessageInstance } from 'antd/es/message/interface';
@@ -53,6 +53,7 @@ import type { RecordRef } from './utils/serverContextParams';
 import { buildServerContextParams as _buildServerContextParams } from './utils/serverContextParams';
 import { inferRecordRef } from './utils/variablesParams';
 import { FlowView, FlowViewer } from './views/FlowView';
+import { DATA_SOURCE_DIRTY_EVENT } from './views/viewEvents';
 import { RunJSContextRegistry, getModelClassName, type RunJSVersion } from './runjs-context/registry';
 import { createEphemeralContext } from './utils/createEphemeralContext';
 import dayjs from 'dayjs';
@@ -427,6 +428,218 @@ type RouteOptions = {
   params?: Record<string, any>; // 路由参数
   pathname?: string; // 路由的完整路径
 };
+
+type ResourceActionFn = (params?: ActionParams, opts?: unknown) => Promise<unknown>;
+
+type ResourceRequestOptions = RequestOptions & {
+  resource?: unknown;
+  action?: unknown;
+  headers?: unknown;
+};
+
+type DirtyAwareAPIClient = APIClient & {
+  resource: APIClient['resource'];
+  request: APIClient['request'];
+};
+
+const dirtyAwareApiClientCache = new WeakMap<object, WeakMap<object, APIClient>>();
+const dirtyAwareApiClientProxies = new WeakSet<object>();
+
+const READONLY_RESOURCE_ACTION_PREFIXES = [
+  'get',
+  'list',
+  'query',
+  'count',
+  'check',
+  'preview',
+  'test',
+  'find',
+  'exists',
+  'aggregate',
+];
+
+function isApiClientLike(value: unknown): value is DirtyAwareAPIClient {
+  if (!value || typeof value !== 'object') {
+    return false;
+  }
+  const candidate = value as { resource?: unknown; request?: unknown };
+  return typeof candidate.resource === 'function' && typeof candidate.request === 'function';
+}
+
+function isMutatingResourceAction(actionName: string): boolean {
+  const normalized = String(actionName || '').trim();
+  if (!normalized) {
+    return false;
+  }
+  const baseActionName = normalized.split('/')[0];
+  return !READONLY_RESOURCE_ACTION_PREFIXES.some((prefix) => baseActionName.startsWith(prefix));
+}
+
+function getHeaderValue(headers: unknown, name: string): unknown {
+  if (!headers || typeof headers !== 'object') {
+    return undefined;
+  }
+
+  const maybeHeaders = headers as { get?: (key: string) => unknown };
+  if (typeof maybeHeaders.get === 'function') {
+    const value = maybeHeaders.get(name);
+    if (value != null && value !== '') {
+      return value;
+    }
+  }
+
+  const lowerName = name.toLowerCase();
+  for (const [key, value] of Object.entries(headers as Record<string, unknown>)) {
+    if (key.toLowerCase() === lowerName) {
+      return value;
+    }
+  }
+
+  return undefined;
+}
+
+function getDataSourceKeyFromHeaders(headers: unknown): string {
+  const value = getHeaderValue(headers, 'x-data-source');
+  if (Array.isArray(value)) {
+    return String(value[0] || 'main');
+  }
+  return value == null || value === '' ? 'main' : String(value);
+}
+
+function getAffectedResourceNames(resourceName: unknown): string[] {
+  const name = String(resourceName || '').trim();
+  if (!name) {
+    return [];
+  }
+
+  const names = new Set<string>([name]);
+  if (name.includes('.')) {
+    names.add(name.split('.')[0]);
+  }
+  return Array.from(names);
+}
+
+function getDirtyTargetEngines(engine: FlowEngine): FlowEngine[] {
+  const engines: FlowEngine[] = [];
+  const seen = new Set<FlowEngine>();
+  let current: FlowEngine | undefined = engine;
+  let guard = 0;
+
+  while (current && guard++ < 50) {
+    if (!seen.has(current)) {
+      engines.push(current);
+      seen.add(current);
+    }
+    current = current.previousEngine;
+  }
+
+  return engines;
+}
+
+function markResourceActionDataSourceDirty(context: FlowContext, resourceName: unknown, headers: unknown) {
+  const engine = context.engine as FlowEngine | undefined;
+  if (!engine?.markDataSourceDirty) {
+    return;
+  }
+
+  const resourceNames = getAffectedResourceNames(resourceName);
+  if (!resourceNames.length) {
+    return;
+  }
+
+  const dataSourceKey = getDataSourceKeyFromHeaders(headers);
+  for (const targetEngine of getDirtyTargetEngines(engine)) {
+    for (const name of resourceNames) {
+      targetEngine.markDataSourceDirty(dataSourceKey, name);
+    }
+  }
+
+  engine.emitter?.emit?.(DATA_SOURCE_DIRTY_EVENT, {
+    dataSourceKey,
+    resourceNames,
+  });
+}
+
+function createDirtyAwareResource(
+  context: FlowContext,
+  resource: IResource,
+  resourceName: string,
+  headers: unknown,
+): IResource {
+  return new Proxy(resource, {
+    get(target, prop, receiver) {
+      const original = Reflect.get(target, prop, receiver);
+      if (typeof prop !== 'string' || typeof original !== 'function' || !isMutatingResourceAction(prop)) {
+        return original;
+      }
+
+      const action = original as ResourceActionFn;
+      return async (...args: Parameters<ResourceActionFn>) => {
+        const result = await action(...args);
+        markResourceActionDataSourceDirty(context, resourceName, headers);
+        return result;
+      };
+    },
+  });
+}
+
+function createDirtyAwareApiClient(api: DirtyAwareAPIClient, context: FlowContext): APIClient {
+  const resource: APIClient['resource'] = (name, of, headers, cancel) => {
+    const targetResource = api.resource(name, of, headers, cancel);
+    return createDirtyAwareResource(context, targetResource, name, headers);
+  };
+
+  const request: APIClient['request'] = async (config) => {
+    const options = config as ResourceRequestOptions;
+    const resourceName = typeof options?.resource === 'string' ? options.resource : undefined;
+    const actionName = typeof options?.action === 'string' ? options.action : undefined;
+    const result = await api.request(config);
+    if (resourceName && actionName && isMutatingResourceAction(actionName)) {
+      markResourceActionDataSourceDirty(context, resourceName, options.headers);
+    }
+    return result;
+  };
+
+  const proxy = new Proxy(api, {
+    get(target, prop, receiver) {
+      if (prop === 'resource') {
+        return resource;
+      }
+      if (prop === 'request') {
+        return request;
+      }
+      return Reflect.get(target, prop, receiver);
+    },
+  }) as APIClient;
+  dirtyAwareApiClientProxies.add(proxy);
+  return proxy;
+}
+
+function getDirtyAwareApiClient(value: unknown, context: FlowContext): unknown {
+  if (!isApiClientLike(value)) {
+    return value;
+  }
+
+  if (dirtyAwareApiClientProxies.has(value)) {
+    return value;
+  }
+
+  const api = value as unknown as APIClient;
+  let contextCache = dirtyAwareApiClientCache.get(api);
+  if (!contextCache) {
+    contextCache = new WeakMap<object, APIClient>();
+    dirtyAwareApiClientCache.set(api, contextCache);
+  }
+
+  const cached = contextCache.get(context);
+  if (cached) {
+    return cached;
+  }
+
+  const wrapped = createDirtyAwareApiClient(value, context);
+  contextCache.set(context, wrapped);
+  return wrapped;
+}
 
 export class FlowContext {
   _props: Record<string, PropertyOptions> = {};
@@ -2909,19 +3122,20 @@ export class FlowContext {
 
     // 静态值
     if ('value' in options) {
-      return options.value;
+      return key === 'api' ? getDirtyAwareApiClient(options.value, currentContext) : options.value;
     }
 
     // get 方法
     if (options.get) {
       if (options.cache === false) {
-        return options.get(currentContext);
+        const value = options.get(currentContext);
+        return key === 'api' ? getDirtyAwareApiClient(value, currentContext) : value;
       }
 
       const cacheKey = options.observable ? '_observableCache' : '_cache';
 
       if (key in this[cacheKey]) {
-        return this[cacheKey][key];
+        return key === 'api' ? getDirtyAwareApiClient(this[cacheKey][key], currentContext) : this[cacheKey][key];
       }
 
       if (this._pending[key]) return this._pending[key];
@@ -2939,7 +3153,7 @@ export class FlowContext {
           (v) => {
             this[cacheKey][key] = v;
             delete this._pending[key];
-            return v;
+            return key === 'api' ? getDirtyAwareApiClient(v, currentContext) : v;
           },
           (err) => {
             delete this._pending[key];
@@ -2951,7 +3165,7 @@ export class FlowContext {
 
       // sync 直接缓存
       this[cacheKey][key] = result;
-      return result;
+      return key === 'api' ? getDirtyAwareApiClient(result, currentContext) : result;
     }
 
     return undefined;

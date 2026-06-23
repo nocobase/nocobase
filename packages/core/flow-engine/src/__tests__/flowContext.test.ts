@@ -14,6 +14,8 @@ import { FlowEngine } from '../flowEngine';
 import { FlowModel } from '../models/flowModel';
 import { RunJSContextRegistry } from '../runjs-context/registry';
 import { setupRunJSContexts } from '../runjs-context/setup';
+import { createViewScopedEngine } from '../ViewScopedFlowEngine';
+import { DATA_SOURCE_DIRTY_EVENT } from '../views/viewEvents';
 
 describe('FlowContext properties and methods', () => {
   it('should return static property value', () => {
@@ -1384,6 +1386,176 @@ describe('FlowEngine context', () => {
     const engine = new FlowEngine();
     engine.context.defineProperty('appName', { value: 'NocoBase' });
     expect(engine.context.appName).toBe('NocoBase');
+  });
+
+  it('ctx.api.resource should mark the resource dirty after mutating actions succeed', async () => {
+    const engine = new FlowEngine();
+    const list = vi.fn(async () => ({ data: { data: [] } }));
+    const update = vi.fn(async () => ({ data: { data: { id: 1 } } }));
+    const api = {
+      auth: { locale: 'zh-CN' },
+      request: vi.fn(async () => ({ data: { ok: true } })),
+      resource: vi.fn(() => ({ list, update })),
+    };
+    engine.context.defineProperty('api', { value: api });
+
+    await engine.context.api.resource('posts').list();
+    expect(engine.getDataSourceDirtyVersion('main', 'posts')).toBe(0);
+
+    await engine.context.api.resource('posts').update({ filterByTk: 1, values: { title: 't' } });
+
+    expect(update).toHaveBeenCalledTimes(1);
+    expect(engine.getDataSourceDirtyVersion('main', 'posts')).toBe(1);
+    expect(engine.context.api).toBe(engine.context.api);
+  });
+
+  it('ctx.api.resource should not double-wrap an already dirty-aware api', async () => {
+    const engine = new FlowEngine();
+    const update = vi.fn(async () => ({ data: { data: { id: 1 } } }));
+    const api = {
+      auth: { locale: 'zh-CN' },
+      request: vi.fn(async () => ({ data: { ok: true } })),
+      resource: vi.fn(() => ({ update })),
+    };
+    engine.context.defineProperty('api', { value: api });
+
+    const wrappedApi = engine.context.api;
+    engine.context.defineProperty('api', { value: wrappedApi });
+    await engine.context.api.resource('posts').update({ filterByTk: 1 });
+
+    expect(engine.context.api).toBe(wrappedApi);
+    expect(engine.getDataSourceDirtyVersion('main', 'posts')).toBe(1);
+  });
+
+  it('ctx.api.resource should not mark dirty for readonly action prefixes', async () => {
+    const readonlyActions = [
+      'get',
+      'list',
+      'query',
+      'count',
+      'check',
+      'preview',
+      'test',
+      'find',
+      'exists',
+      'aggregate',
+      'listMine',
+      'getSystemSettings',
+    ];
+
+    for (const actionName of readonlyActions) {
+      const engine = new FlowEngine();
+      const api = {
+        auth: { locale: 'zh-CN' },
+        request: vi.fn(async () => ({ data: { ok: true } })),
+        resource: vi.fn(() => ({
+          [actionName]: vi.fn(async () => ({ data: { data: [] } })),
+        })),
+      };
+      engine.context.defineProperty('api', { value: api });
+
+      await engine.context.api.resource('posts')[actionName]();
+
+      expect(engine.getDataSourceDirtyVersion('main', 'posts')).toBe(0);
+    }
+  });
+
+  it('ctx.api.resource should not mark dirty when a mutating action fails', async () => {
+    const engine = new FlowEngine();
+    const update = vi.fn(async () => {
+      throw new Error('update failed');
+    });
+    const api = {
+      auth: { locale: 'zh-CN' },
+      request: vi.fn(async () => ({ data: { ok: true } })),
+      resource: vi.fn(() => ({ update })),
+    };
+    engine.context.defineProperty('api', { value: api });
+
+    await expect(engine.context.api.resource('posts').update({ filterByTk: 1 })).rejects.toThrow('update failed');
+
+    expect(engine.getDataSourceDirtyVersion('main', 'posts')).toBe(0);
+  });
+
+  it('ctx.api.resource should mark association resource and parent collection dirty', async () => {
+    const engine = new FlowEngine();
+    const dirtyEvents: Array<{ dataSourceKey: string; resourceNames: string[] }> = [];
+    engine.emitter.on(DATA_SOURCE_DIRTY_EVENT, (event) => dirtyEvents.push(event));
+    const add = vi.fn(async () => ({ data: { data: null } }));
+    const api = {
+      auth: { locale: 'zh-CN' },
+      request: vi.fn(async () => ({ data: { ok: true } })),
+      resource: vi.fn(() => ({ add })),
+    };
+    engine.context.defineProperty('api', { value: api });
+
+    await engine.context.api.resource('users.roles', 1, { 'x-data-source': 'external' }).add({ values: [1, 2] });
+
+    expect(engine.getDataSourceDirtyVersion('external', 'users.roles')).toBe(1);
+    expect(engine.getDataSourceDirtyVersion('external', 'users')).toBe(1);
+    expect(dirtyEvents).toEqual([{ dataSourceKey: 'external', resourceNames: ['users.roles', 'users'] }]);
+  });
+
+  it('ctx.request should mark resource-action mutations dirty after success', async () => {
+    const engine = new FlowEngine();
+    const request = vi.fn(async () => ({ data: { ok: true } }));
+    engine.context.defineProperty('api', {
+      value: {
+        auth: { locale: 'zh-CN' },
+        request,
+        resource: vi.fn(),
+      },
+    });
+
+    await engine.context.request({
+      resource: 'posts',
+      action: 'update',
+      headers: { 'X-Data-Source': 'analytics' },
+      params: { filterByTk: 1 },
+    } as any);
+
+    expect(request).toHaveBeenCalledTimes(1);
+    expect(engine.getDataSourceDirtyVersion('analytics', 'posts')).toBe(1);
+  });
+
+  it('ctx.request should not mark resource-action dirty for reads or failed mutations', async () => {
+    const engine = new FlowEngine();
+    const request = vi
+      .fn()
+      .mockResolvedValueOnce({ data: { data: [] } })
+      .mockRejectedValueOnce(new Error('request failed'));
+    engine.context.defineProperty('api', {
+      value: {
+        auth: { locale: 'zh-CN' },
+        request,
+        resource: vi.fn(),
+      },
+    });
+
+    await engine.context.request({ resource: 'posts', action: 'list' } as any);
+    await expect(engine.context.request({ resource: 'posts', action: 'update' } as any)).rejects.toThrow(
+      'request failed',
+    );
+
+    expect(engine.getDataSourceDirtyVersion('main', 'posts')).toBe(0);
+  });
+
+  it('ctx.api.resource should mark opener engine dirty when called from a scoped view context', async () => {
+    const root = new FlowEngine();
+    const scoped = createViewScopedEngine(root);
+    const update = vi.fn(async () => ({ data: { data: { id: 1 } } }));
+    root.context.defineProperty('api', {
+      value: {
+        auth: { locale: 'zh-CN' },
+        request: vi.fn(async () => ({ data: { ok: true } })),
+        resource: vi.fn(() => ({ update })),
+      },
+    });
+
+    await scoped.context.api.resource('posts').update({ filterByTk: 1, values: { title: 't' } });
+
+    expect(root.getDataSourceDirtyVersion('main', 'posts')).toBe(1);
+    expect(scoped.context.engine.getDataSourceDirtyVersion('main', 'posts')).toBe(1);
   });
 
   it('ctx.sql should resolve template variables from caller context in delegate chain', async () => {
