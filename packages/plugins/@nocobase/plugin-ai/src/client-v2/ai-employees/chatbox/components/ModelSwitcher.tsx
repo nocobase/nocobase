@@ -15,7 +15,14 @@ import { observer } from '@nocobase/flow-engine';
 import { useT } from '../../../locale';
 import { useAIConfigRepository } from '../../../repositories/hooks/useAIConfigRepository';
 import type { LLMServiceItem } from '../../../repositories/AIConfigRepository';
-import { getAllModels, isSameModel, isValidModel, MODEL_PREFERENCE_STORAGE_KEY, resolveModel } from '../model';
+import {
+  getAIEmployeeModelServices,
+  getAllModels,
+  isSameModel,
+  isValidModel,
+  MODEL_PREFERENCE_STORAGE_KEY,
+  resolveModel,
+} from '../model';
 import { useChatBoxStore, type ModelRef } from '../stores/chat-box';
 import { useChatConversationsStore } from '../stores/chat-conversations';
 import { AddLLMModal } from './AddLLMModal';
@@ -48,9 +55,14 @@ export const ModelSwitcher: React.FC<{
   }, [repository]);
 
   const allModels = useMemo(() => getAllModels(llmServices), [llmServices]);
+  const scopedServices = useMemo(
+    () => getAIEmployeeModelServices(currentEmployee, llmServices),
+    [currentEmployee, llmServices],
+  );
+  const scopedModels = useMemo(() => getAllModels(scopedServices), [scopedServices]);
   const servicesWithModels = useMemo(
-    () => llmServices.filter((service) => Array.isArray(service.enabledModels) && service.enabledModels.length > 0),
-    [llmServices],
+    () => scopedServices.filter((service) => Array.isArray(service.enabledModels) && service.enabledModels.length > 0),
+    [scopedServices],
   );
 
   useEffect(() => {
@@ -64,14 +76,14 @@ export const ModelSwitcher: React.FC<{
   }, [allModels, app.apiClient, currentConversation, currentEmployee, currentEmployeeUsername, model, setModel]);
 
   const selectedModel = useMemo(() => {
-    if (isValidModel(model, allModels)) {
+    if (isValidModel(model, scopedModels)) {
       return model;
     }
-    if (allModels.length) {
-      return allModels[0];
+    if (scopedModels.length) {
+      return scopedModels[0];
     }
     return undefined;
-  }, [allModels, model]);
+  }, [model, scopedModels]);
 
   const selectedLabel = useMemo(() => getModelLabel(llmServices, selectedModel), [llmServices, selectedModel]);
 

@@ -63,6 +63,24 @@ export const getAIEmployeeModels = (aiEmployee: AIEmployee | null | undefined, a
   return getAIEmployeeConfiguredModels(aiEmployee).filter((model) => isValidModel(model, allModels));
 };
 
+const getModelKey = (model: ModelRef) => `${model.llmService}:${model.model}`;
+
+export const getAIEmployeeModelServices = (
+  aiEmployee: AIEmployee | null | undefined,
+  services: LLMServiceItem[],
+): LLMServiceItem[] => {
+  const allModels = getAllModels(services);
+  const scopedModelKeys = new Set(getAIEmployeeModels(aiEmployee, allModels).map(getModelKey));
+  return services
+    .map((service) => ({
+      ...service,
+      enabledModels: service.enabledModels.filter((model) =>
+        scopedModelKeys.has(getModelKey({ llmService: service.llmService, model: model.value })),
+      ),
+    }))
+    .filter((service) => service.enabledModels.length > 0);
+};
+
 type ModelPreferenceStorage = {
   storage?: {
     getItem?: (key: string) => string | null;
@@ -75,11 +93,15 @@ export const resolveModel = (
   allModels: ModelRef[],
   currentOverride?: ModelRef | null,
 ) => {
-  if (!allModels.length) {
+  const scopedModels = getAIEmployeeModels(aiEmployee, allModels);
+  if (!scopedModels.length) {
     return null;
   }
-  if (isValidModel(currentOverride, allModels)) {
+  if (isValidModel(currentOverride, scopedModels)) {
     return currentOverride;
+  }
+  if (aiEmployee?.modelSettings?.enabled) {
+    return scopedModels[0] || null;
   }
   let cachedId: string | null = null;
   try {
@@ -90,18 +112,18 @@ export const resolveModel = (
   if (cachedId) {
     if (cachedId.includes(':')) {
       const [cachedService, cachedModelId] = cachedId.split(':');
-      const cached = allModels.find((item) => item.llmService === cachedService && item.model === cachedModelId);
+      const cached = scopedModels.find((item) => item.llmService === cachedService && item.model === cachedModelId);
       if (cached) {
         return cached;
       }
     } else {
-      const cached = allModels.find((item) => item.model === cachedId);
+      const cached = scopedModels.find((item) => item.model === cachedId);
       if (cached) {
         return cached;
       }
     }
   }
-  return allModels[0] || null;
+  return scopedModels[0] || null;
 };
 
 export const ensureModel = async ({
