@@ -10,18 +10,20 @@
 import { ResourceOptions } from '@nocobase/resourcer';
 import PluginAIServer from '../plugin';
 import { AIManager } from '@nocobase/ai';
+import type { Context } from '@nocobase/actions';
 
 export const aiTools: ResourceOptions = {
   name: 'aiTools',
   actions: {
     list: async (ctx, next) => {
-      const { toolsManager } = ctx.app.aiManager as AIManager;
-      const { filter } = ctx.action.params;
+      const actionCtx = ctx as Context;
+      const { toolsManager } = actionCtx.app.aiManager as AIManager;
+      const { filter } = actionCtx.action.params;
       const tools = await toolsManager.listTools({
         ...filter,
-        ctx,
+        ctx: actionCtx,
       });
-      ctx.body = tools.map((t) => ({
+      actionCtx.body = tools.map((t) => ({
         ...t,
         definition: {
           name: t.definition.name,
@@ -33,8 +35,9 @@ export const aiTools: ResourceOptions = {
       await next();
     },
     listBinding: async (ctx, next) => {
-      const { username } = ctx.action.params;
-      const aiEmployee = await ctx.app.db.getRepository('aiEmployees').findOne({
+      const actionCtx = ctx as Context;
+      const { username } = actionCtx.action.params;
+      const aiEmployee = await actionCtx.app.db.getRepository('aiEmployees').findOne({
         filter: {
           username,
         },
@@ -45,14 +48,14 @@ export const aiTools: ResourceOptions = {
 
       const bindingToolNames = aiEmployee.skillSettings?.tools?.map((tool) => tool.name) ?? [];
 
-      const plugin = ctx.app.pm.get('ai') as PluginAIServer;
-      const tools = await plugin.ai.toolsManager.listTools({ ctx });
+      const plugin = actionCtx.app.pm.get('ai') as PluginAIServer;
+      const tools = await plugin.ai.toolsManager.listTools({ ctx: actionCtx });
       const result = tools.filter(
         (tool) =>
           (tool.scope === 'GENERAL' && tool.from === 'loader') || bindingToolNames.includes(tool.definition.name),
       );
 
-      ctx.body = result.map(({ introduction, definition }) => ({
+      actionCtx.body = result.map(({ introduction, definition }) => ({
         title: introduction?.title ?? definition.name,
         name: definition.name,
         description: introduction?.about ?? definition.description,
