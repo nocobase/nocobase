@@ -40,6 +40,7 @@ import {
 import { EnvVariableInput, useApp } from '@nocobase/client-v2';
 import type { APIClient } from '@nocobase/client-v2';
 import { useT } from '../locale';
+import { AI_MCP_TOOLS_DRAWER_WIDTH, AI_SETTINGS_DRAWER_WIDTH } from './drawerWidth';
 
 type APIClientLike = Pick<APIClient, 'resource'>;
 type ResourceAction = (params?: Record<string, unknown>) => Promise<unknown>;
@@ -803,6 +804,7 @@ export const MCPSettingsPage: React.FC = () => {
       <Drawer
         open={drawerOpen}
         onClose={closeDrawer}
+        width={AI_SETTINGS_DRAWER_WIDTH}
         title={drawerTitle}
         footer={
           <Flex justify="space-between" gap="small">
@@ -827,6 +829,7 @@ export const MCPSettingsPage: React.FC = () => {
       <Drawer
         open={!!toolsDrawerRecord}
         onClose={() => setToolsDrawerRecord(undefined)}
+        width={AI_MCP_TOOLS_DRAWER_WIDTH}
         title={t('MCP tools')}
         destroyOnClose
       >

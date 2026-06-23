@@ -9,16 +9,22 @@
 
 import { describe, expect, it, vi } from 'vitest';
 import {
+  EMPLOYEE_PROMPT_VARIABLE_NAMESPACES,
   createAIEmployee,
   deleteAIEmployee,
   isKnowledgeBaseEnabled,
   listAIEmployees,
   listKnowledgeBases,
+  moveAIEmployee,
   updateAIEmployee,
   updateAIEmployeeEnabled,
 } from '../pages/EmployeesPage';
 
 describe('EmployeesPage request helpers', () => {
+  it('keeps the role prompt editor wired to v2 variable namespaces', () => {
+    expect(EMPLOYEE_PROMPT_VARIABLE_NAMESPACES).toEqual(['user', 'roleName', 'locale', 'now', 'timestamp']);
+  });
+
   it('lists employees with the selected category filter', async () => {
     const list = vi.fn().mockResolvedValue({
       data: {
@@ -41,6 +47,22 @@ describe('EmployeesPage request helpers', () => {
       filter: {
         category: 'developer',
       },
+      sort: ['sort'],
+    });
+  });
+
+  it('moves employees by username and the sortable sort field', async () => {
+    const move = vi.fn().mockResolvedValue({});
+    const apiClient = {
+      resource: () => ({ move }),
+    };
+
+    await moveAIEmployee(apiClient, 'atlas', 'viz');
+
+    expect(move).toHaveBeenCalledWith({
+      sourceId: 'atlas',
+      targetId: 'viz',
+      sortField: 'sort',
     });
   });
 

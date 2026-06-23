@@ -22,6 +22,7 @@ import {
   Input,
   InputNumber,
   List,
+  Modal,
   Popconfirm,
   Radio,
   Segmented,
@@ -29,16 +30,19 @@ import {
   Space,
   Spin,
   Switch,
-  Table,
   Tabs,
   Tag,
   Tooltip,
   Typography,
   theme,
 } from 'antd';
-import type { CollapseProps, MenuProps, TableProps } from 'antd';
+import type { CollapseProps, MenuProps } from 'antd';
+import type { ColumnsType } from 'antd/es/table';
 import { DeleteOutlined, ExclamationCircleOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons';
-import { useApp } from '@nocobase/client-v2';
+import { arrayMove } from '@dnd-kit/sortable';
+import { css } from '@emotion/css';
+import isEqual from 'lodash/isEqual';
+import { Table, useApp, VariableTextArea } from '@nocobase/client-v2';
 import { observer, randomId } from '@nocobase/flow-engine';
 import type { APIClient, SkillsEntry, ToolsEntry } from '@nocobase/client-v2';
 import { useT } from '../locale';
@@ -46,6 +50,7 @@ import { avatars, avatarsMap } from '../ai-employees/avatars';
 import { useAIConfigRepository } from '../repositories/hooks/useAIConfigRepository';
 import type { LLMServiceItem } from '../repositories/AIConfigRepository';
 import type { AIEmployee as ChatAIEmployee } from '../ai-employees/types';
+import { AI_SETTINGS_DRAWER_WIDTH } from './drawerWidth';
 
 type EmployeeCategory = 'business' | 'developer';
 type APIClientLike = Pick<APIClient, 'resource'>;
@@ -67,6 +72,19 @@ type EmployeeToolSetting = {
   name: string;
   autoCall?: boolean;
 };
+type EmployeeModelSettings = {
+  enabled?: boolean;
+  llmService?: string;
+  model?: string;
+  models?: Array<{
+    llmService?: string;
+    model?: string;
+  }>;
+};
+type EmployeeSkillSettings = {
+  skills?: string[];
+  tools?: EmployeeToolSetting[];
+};
 type SettingsAIEmployee = ChatAIEmployee & {
   about?: string | null;
   dataSourceSettings?: unknown;
@@ -86,6 +104,46 @@ type EmployeeFormValues = SettingsAIEmployee & {
 };
 
 const defaultAvatar = Object.keys(avatarsMap)[0];
+const EMPLOYEE_SORT_FIELD = 'sort';
+
+export const EMPLOYEE_PROMPT_VARIABLE_NAMESPACES = ['user', 'roleName', 'locale', 'now', 'timestamp'];
+
+const formLabel = (label: string) => `${label}:`;
+
+const fillHeightTableClassName = css`
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+
+  .ant-spin-nested-loading,
+  .ant-spin-container,
+  .ant-table,
+  .ant-table-container {
+    min-height: 0;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .ant-table-content {
+    flex: 1;
+    min-height: 0;
+  }
+
+  .ant-table-body {
+    flex: 1;
+    min-height: 0;
+  }
+
+  .ant-table-thead > tr > th {
+    white-space: nowrap;
+  }
+
+  .ant-pagination {
+    flex: 0 0 auto;
+  }
+`;
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   value !== null && typeof value === 'object' && !Array.isArray(value);
@@ -149,6 +207,7 @@ export async function listAIEmployees(
     filter: {
       category: params.category,
     },
+    sort: [EMPLOYEE_SORT_FIELD],
   });
   const data = readResponseData(response);
   const meta = readResponseMeta(response);
@@ -156,6 +215,14 @@ export async function listAIEmployees(
     data: Array.isArray(data) ? data.filter(isAIEmployee) : [],
     total: typeof meta.count === 'number' ? meta.count : undefined,
   };
+}
+
+export async function moveAIEmployee(apiClient: APIClientLike, sourceUsername: string, targetUsername: string) {
+  await callResourceAction(apiClient, 'aiEmployees', 'move', {
+    sourceId: sourceUsername,
+    targetId: targetUsername,
+    sortField: EMPLOYEE_SORT_FIELD,
+  });
 }
 
 export async function createAIEmployee(apiClient: APIClientLike, values: EmployeeFormValues) {
@@ -236,31 +303,44 @@ const AvatarSelect: React.FC<{ disabled?: boolean; value?: string; onChange?: (v
   );
 
   return (
-    <Space direction="vertical">
-      <Avatar shape="square" size={token.controlHeightLG * 2} src={avatars(current)} />
+    <>
+      <div style={{ marginBottom: token.marginLG + token.margin }}>
+        <Avatar size={token.controlHeightLG * 2 + token.paddingSM + token.lineWidth * 2} src={avatars(current)} />
+      </div>
       {disabled ? null : (
         <List
-          grid={{ gutter: token.marginSM, column: 10 }}
+          grid={{ gutter: token.margin, column: 10 }}
           dataSource={avatarList}
           renderItem={(item) => (
             <List.Item>
-              <Button
+              <button
                 aria-label={item.seed}
-                type="text"
+                type="button"
                 onClick={() => onChange?.(item.seed)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    onChange?.(item.seed);
+                  }
+                }}
                 style={{
-                  borderColor: current === item.seed ? token.colorPrimary : token.colorBorder,
+                  background: 'transparent',
+                  borderColor: current === item.seed ? token.colorPrimary : 'transparent',
                   borderStyle: 'solid',
-                  borderWidth: token.lineWidth,
+                  borderWidth: token.lineWidth * 2,
+                  borderRadius: '50%',
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  padding: 0,
                 }}
               >
-                <Avatar size={token.controlHeightLG} src={item.uri} />
-              </Button>
+                <Avatar size={token.controlHeightLG + token.paddingSM + token.lineWidth * 2} src={item.uri} />
+              </button>
             </List.Item>
           )}
         />
       )}
-    </Space>
+    </>
   );
 };
 
@@ -268,22 +348,22 @@ const ProfileSettings: React.FC<{ edit: boolean; builtIn?: boolean }> = ({ edit,
   const t = useT();
   return (
     <>
-      <Form.Item name="username" label={t('Username')} rules={[{ required: true }]} preserve>
+      <Form.Item name="username" label={formLabel(t('Username'))} rules={[{ required: true }]} preserve>
         <Input disabled={edit} />
       </Form.Item>
-      <Form.Item name="nickname" label={t('Nickname')} rules={[{ required: true }]} preserve>
+      <Form.Item name="nickname" label={formLabel(t('Nickname'))} rules={[{ required: true }]} preserve>
         <Input disabled={builtIn} />
       </Form.Item>
-      <Form.Item name="position" label={t('Position')} tooltip={t('Position description')} preserve>
+      <Form.Item name="position" label={formLabel(t('Position'))} extra={t('Position description')} preserve>
         <Input disabled={builtIn} placeholder={t('Position placeholder')} />
       </Form.Item>
-      <Form.Item name="avatar" label={t('Avatar')} preserve>
+      <Form.Item name="avatar" label={formLabel(t('Avatar'))} preserve>
         <AvatarSelect disabled={builtIn} />
       </Form.Item>
-      <Form.Item name="bio" label={t('Bio')} preserve>
+      <Form.Item name="bio" label={formLabel(t('Bio'))} preserve>
         <Input.TextArea disabled={builtIn} placeholder={t('Bio placeholder')} />
       </Form.Item>
-      <Form.Item name="greeting" label={t('Greeting message')} preserve>
+      <Form.Item name="greeting" label={formLabel(t('Greeting message'))} preserve>
         <Input.TextArea disabled={builtIn} placeholder={t('Greeting message placeholder')} />
       </Form.Item>
     </>
@@ -334,8 +414,12 @@ const SystemPromptSettings: React.FC<{ builtIn?: boolean; record?: SettingsAIEmp
           {record?.defaultPrompt || ''}
         </Typography.Paragraph>
       ) : (
-        <Form.Item name="about" label={t('Role setting')} preserve>
-          <Input.TextArea placeholder={t('Role setting placeholder')} autoSize={{ minRows: 15 }} />
+        <Form.Item name="about" label={formLabel(t('Role setting'))} preserve>
+          <VariableTextArea
+            namespaces={EMPLOYEE_PROMPT_VARIABLE_NAMESPACES}
+            placeholder={t('Role setting placeholder')}
+            rows={15}
+          />
         </Form.Item>
       )}
     </>
@@ -352,6 +436,12 @@ const parseModelValue = (value: string) => {
 
 const toModelValue = (model: { llmService?: string; model?: string }) =>
   model.llmService && model.model ? `${model.llmService}:${model.model}` : undefined;
+
+const normalizeModelSettings = (value: unknown): EmployeeModelSettings =>
+  isRecord(value) ? (value as EmployeeModelSettings) : {};
+
+const normalizeSkillSettings = (value: unknown): EmployeeSkillSettings =>
+  isRecord(value) ? (value as EmployeeSkillSettings) : {};
 
 const useLLMServices = () => {
   const repo = useAIConfigRepository();
@@ -388,8 +478,10 @@ const useLLMServices = () => {
 const ModelSettings: React.FC = observer(() => {
   const t = useT();
   const form = Form.useFormInstance<EmployeeFormValues>();
-  const rawModelSettings = Form.useWatch('modelSettings', form);
-  const modelSettings = useMemo(() => rawModelSettings ?? {}, [rawModelSettings]);
+  const watchedModelSettings = Form.useWatch('modelSettings', form);
+  const [modelSettings, setModelSettingsState] = useState<EmployeeModelSettings>(() =>
+    normalizeModelSettings(form.getFieldValue('modelSettings')),
+  );
   const { services, loading } = useLLMServices();
   const enabled = !!modelSettings.enabled;
   const selectedValues = useMemo(() => {
@@ -420,13 +512,22 @@ const ModelSettings: React.FC = observer(() => {
   }, [options]);
   const setModelSettings = useCallback(
     (values: Record<string, unknown>) => {
-      form.setFieldValue('modelSettings', {
-        ...modelSettings,
+      const current = form.getFieldValue('modelSettings');
+      const next = {
+        ...normalizeModelSettings(current),
         ...values,
+      };
+      setModelSettingsState(next);
+      form.setFieldsValue({
+        modelSettings: next,
       });
     },
-    [form, modelSettings],
+    [form],
   );
+
+  useEffect(() => {
+    setModelSettingsState(normalizeModelSettings(watchedModelSettings));
+  }, [watchedModelSettings]);
 
   useEffect(() => {
     if (!enabled || selectedValues.length || !options.length) {
@@ -441,10 +542,13 @@ const ModelSettings: React.FC = observer(() => {
   return (
     <>
       <Alert type="info" showIcon message={t('Restrict this AI employee to the selected models.')} />
-      <Form.Item label={<Typography.Text strong>{t('Enable dedicated model configuration')}</Typography.Text>} preserve>
+      <Form.Item
+        label={<Typography.Text strong>{formLabel(t('Enable dedicated model configuration'))}</Typography.Text>}
+        preserve
+      >
         <Switch checked={enabled} onChange={(checked) => setModelSettings({ enabled: checked })} />
       </Form.Item>
-      <Form.Item label={<Typography.Text strong>{t('Models')}</Typography.Text>} preserve>
+      <Form.Item label={<Typography.Text strong>{formLabel(t('Models'))}</Typography.Text>} preserve>
         <Select
           allowClear
           disabled={!enabled}
@@ -548,11 +652,19 @@ const getPermissionValue = (tool: ToolsEntry, item?: EmployeeToolSetting) => {
 
 const ToolSettings: React.FC<{ builtIn?: boolean }> = observer(({ builtIn }) => {
   const t = useT();
+  const { token } = theme.useToken();
   const translateText = useTranslatedText();
   const repo = useAIConfigRepository();
   const form = Form.useFormInstance<EmployeeFormValues>();
-  const skillSettings = Form.useWatch('skillSettings', form) ?? {};
+  const watchedSkillSettings = Form.useWatch('skillSettings', form);
+  const [skillSettings, setSkillSettingsState] = useState<EmployeeSkillSettings>(() =>
+    normalizeSkillSettings(form.getFieldValue('skillSettings')),
+  );
   const selectedTools: EmployeeToolSetting[] = Array.isArray(skillSettings.tools) ? skillSettings.tools : [];
+  const [customActiveKeys, setCustomActiveKeys] = useState<string[]>(
+    builtIn && !selectedTools.length ? [] : ['custom-tools'],
+  );
+  const previousCustomToolsLength = React.useRef(selectedTools.length);
   const permissionOptions = [
     { label: t('Ask'), value: 'ASK' },
     { label: t('Allow'), value: 'ALLOW' },
@@ -564,10 +676,19 @@ const ToolSettings: React.FC<{ builtIn?: boolean }> = observer(({ builtIn }) => 
     });
   }, [repo]);
 
+  useEffect(() => {
+    setSkillSettingsState(normalizeSkillSettings(watchedSkillSettings));
+  }, [watchedSkillSettings]);
+
   const setTools = (tools: EmployeeToolSetting[]) => {
-    form.setFieldValue('skillSettings', {
-      ...skillSettings,
+    const current = form.getFieldValue('skillSettings');
+    const next = {
+      ...normalizeSkillSettings(current),
       tools,
+    };
+    setSkillSettingsState(next);
+    form.setFieldsValue({
+      skillSettings: next,
     });
   };
   const selectedNames = new Set(selectedTools.map((item) => item.name));
@@ -578,20 +699,43 @@ const ToolSettings: React.FC<{ builtIn?: boolean }> = observer(({ builtIn }) => 
     return tool && tool.scope !== 'GENERAL' && tool.scope !== 'CUSTOM';
   });
   const customTools = selectedTools.filter((item) => toolsByName.get(item.name)?.scope === 'CUSTOM');
+
+  useEffect(() => {
+    const wasEmpty = previousCustomToolsLength.current === 0;
+    if (builtIn && customTools.length === 0) {
+      setCustomActiveKeys([]);
+    } else if (wasEmpty && customTools.length > 0) {
+      setCustomActiveKeys(['custom-tools']);
+    }
+    previousCustomToolsLength.current = customTools.length;
+  }, [builtIn, customTools.length]);
+
   const customAddTools: MenuProps['items'] = repo.aiTools
     .filter((tool) => tool.scope === 'CUSTOM' && !selectedNames.has(tool.definition.name))
     .map((tool) => ({
       key: tool.definition.name,
       label: (
-        <div>
-          <div>{translateText(tool.introduction?.title ?? tool.definition.name, tool.definition.name)}</div>
+        <div
+          style={{
+            maxWidth: token.controlHeightLG * 8,
+            minWidth: token.controlHeightLG * 4,
+          }}
+        >
+          <Flex justify="space-between">
+            <div>{translateText(tool.introduction?.title ?? tool.definition.name, tool.definition.name)}</div>
+          </Flex>
           <Typography.Text type="secondary">
             {translateText(tool.introduction?.about ?? tool.definition.description)}
           </Typography.Text>
         </div>
       ),
       onClick: () => {
-        setTools([...selectedTools, { name: tool.definition.name, autoCall: false }]);
+        const currentSettings = normalizeSkillSettings(form.getFieldValue('skillSettings'));
+        const currentTools = Array.isArray(currentSettings.tools) ? currentSettings.tools : [];
+        if (currentTools.some((item) => item.name === tool.definition.name)) {
+          return;
+        }
+        setTools([...currentTools, { name: tool.definition.name, autoCall: false }]);
       },
     }));
   const renderReadonlyTool = (item: EmployeeToolSetting | ToolsEntry) => {
@@ -692,11 +836,25 @@ const ToolSettings: React.FC<{ builtIn?: boolean }> = observer(({ builtIn }) => 
       />
     ),
     extra: (
-      <Dropdown menu={{ items: customAddTools }} disabled={!customAddTools?.length}>
-        <Button type="primary" icon={<PlusOutlined />} onClick={(event) => event.stopPropagation()}>
-          {t('Add tool')}
-        </Button>
-      </Dropdown>
+      <div
+        onClick={(event) => {
+          event.stopPropagation();
+        }}
+        onKeyDown={(event) => {
+          event.stopPropagation();
+        }}
+      >
+        <Dropdown menu={{ items: customAddTools }} disabled={!customAddTools?.length} placement="bottomRight">
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            disabled={!customAddTools?.length}
+            style={{ pointerEvents: customAddTools?.length ? undefined : 'none' }}
+          >
+            {t('Add tool')}
+          </Button>
+        </Dropdown>
+      </div>
     ),
     children: <List itemLayout="vertical" bordered dataSource={customTools} renderItem={renderCustomTool} />,
   });
@@ -707,7 +865,8 @@ const ToolSettings: React.FC<{ builtIn?: boolean }> = observer(({ builtIn }) => 
     <Collapse
       ghost
       size="small"
-      defaultActiveKey={builtIn && !customTools.length ? [] : ['custom-tools']}
+      activeKey={customActiveKeys}
+      onChange={(keys) => setCustomActiveKeys(Array.isArray(keys) ? keys.map(String) : [String(keys)])}
       items={items}
     />
   );
@@ -747,15 +906,25 @@ const KnowledgeBaseSettings: React.FC<{ apiClient: APIClientLike }> = ({ apiClie
 
   return (
     <>
-      <Form.Item name="enableKnowledgeBase" label={t('Enable Knowledge Base')} valuePropName="checked" preserve>
+      <Form.Item
+        name="enableKnowledgeBase"
+        label={formLabel(t('Enable Knowledge Base'))}
+        valuePropName="checked"
+        preserve
+      >
         <Switch />
       </Form.Item>
-      <Form.Item name="knowledgeBasePrompt" label={t('Knowledge Base Prompt')} rules={[{ required: true }]} preserve>
+      <Form.Item
+        name="knowledgeBasePrompt"
+        label={formLabel(t('Knowledge Base Prompt'))}
+        rules={[{ required: true }]}
+        preserve
+      >
         <Input.TextArea disabled={!enableKnowledgeBase} autoSize={{ minRows: 5 }} />
       </Form.Item>
       <Form.Item
         name={['knowledgeBase', 'knowledgeBaseKeys']}
-        label={t('Knowledge Base')}
+        label={formLabel(t('Knowledge Base'))}
         rules={[{ required: !!enableKnowledgeBase }]}
         preserve
       >
@@ -767,10 +936,10 @@ const KnowledgeBaseSettings: React.FC<{ apiClient: APIClientLike }> = ({ apiClie
           options={options}
         />
       </Form.Item>
-      <Form.Item name={['knowledgeBase', 'topK']} label={t('Top K')} rules={[{ required: true }]} preserve>
+      <Form.Item name={['knowledgeBase', 'topK']} label={formLabel(t('Top K'))} rules={[{ required: true }]} preserve>
         <InputNumber disabled={!enableKnowledgeBase} min={1} max={100} />
       </Form.Item>
-      <Form.Item name={['knowledgeBase', 'score']} label={t('Score')} rules={[{ required: true }]} preserve>
+      <Form.Item name={['knowledgeBase', 'score']} label={formLabel(t('Score'))} rules={[{ required: true }]} preserve>
         <InputNumber disabled={!enableKnowledgeBase} min={0} max={1} step={0.1} />
       </Form.Item>
     </>
@@ -779,10 +948,12 @@ const KnowledgeBaseSettings: React.FC<{ apiClient: APIClientLike }> = ({ apiClie
 
 const EmployeeForm: React.FC<{
   apiClient: APIClientLike;
+  activeTab: string;
   edit: boolean;
+  onTabChange: (key: string) => void;
   record?: SettingsAIEmployee;
   knowledgeBaseEnabled: boolean;
-}> = ({ apiClient, edit, record, knowledgeBaseEnabled }) => {
+}> = ({ apiClient, activeTab, edit, onTabChange, record, knowledgeBaseEnabled }) => {
   const t = useT();
   const form = Form.useFormInstance<EmployeeFormValues>();
   const chatSettings = Form.useWatch('chatSettings', form) ?? {};
@@ -792,6 +963,8 @@ const EmployeeForm: React.FC<{
 
   return (
     <Tabs
+      activeKey={activeTab}
+      onChange={onTabChange}
       items={[
         {
           key: 'profile',
@@ -877,6 +1050,7 @@ const EnableSwitch: React.FC<{
 export const EmployeesPage: React.FC = () => {
   const app = useApp();
   const t = useT();
+  const { token } = theme.useToken();
   const { message } = App.useApp();
   const repo = useAIConfigRepository();
   const [form] = Form.useForm<EmployeeFormValues>();
@@ -887,8 +1061,23 @@ export const EmployeesPage: React.FC = () => {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editingRecord, setEditingRecord] = useState<SettingsAIEmployee | undefined>();
   const [knowledgeBaseEnabled, setKnowledgeBaseEnabled] = useState(false);
+  const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
+  const [formSessionKey, setFormSessionKey] = useState(0);
+  const [activeFormTab, setActiveFormTab] = useState('profile');
+  const [formDirty, setFormDirty] = useState(false);
+  const initialFormValuesRef = React.useRef<EmployeeFormValues | undefined>(undefined);
   const auth = app.apiClient.auth as { role?: string } | undefined;
   const isRoot = auth?.role === 'root';
+  const actionLinkStyle = useMemo<React.CSSProperties>(
+    () => ({
+      color: token.colorPrimary,
+      marginInline: -token.paddingSM,
+      paddingBlock: token.paddingSM,
+      paddingInlineEnd: token.paddingXS + token.paddingSM,
+      paddingInlineStart: token.paddingSM,
+    }),
+    [token.colorPrimary, token.paddingSM, token.paddingXS],
+  );
 
   const refresh = useCallback(
     async (nextCategory = category) => {
@@ -924,23 +1113,52 @@ export const EmployeesPage: React.FC = () => {
   }, [app.apiClient]);
 
   const openCreateDrawer = () => {
+    const initialValues = createInitialEmployeeValues(t);
     setEditingRecord(undefined);
-    form.setFieldsValue(createInitialEmployeeValues(t));
+    setActiveFormTab('profile');
+    form.resetFields();
+    form.setFieldsValue(initialValues);
+    initialFormValuesRef.current = initialValues;
+    setFormDirty(false);
+    setFormSessionKey((key) => key + 1);
     setDrawerOpen(true);
   };
 
   const openEditDrawer = (record: SettingsAIEmployee) => {
-    setEditingRecord(record);
-    form.setFieldsValue({
+    const initialValues: EmployeeFormValues = {
       ...record,
       _aboutMode: record.builtIn ? (record.about ? 'custom' : 'system') : undefined,
-    });
+    };
+    setEditingRecord(record);
+    setActiveFormTab('profile');
+    form.resetFields();
+    form.setFieldsValue(initialValues);
+    initialFormValuesRef.current = initialValues;
+    setFormDirty(false);
+    setFormSessionKey((key) => key + 1);
     setDrawerOpen(true);
   };
 
   const closeDrawer = () => {
     setDrawerOpen(false);
     form.resetFields();
+    setActiveFormTab('profile');
+    setFormDirty(false);
+    initialFormValuesRef.current = undefined;
+  };
+
+  const requestCloseDrawer = () => {
+    const currentValues = form.getFieldsValue(true);
+    const hasUnsavedChanges = formDirty || !isEqual(currentValues, initialFormValuesRef.current);
+    if (!hasUnsavedChanges) {
+      closeDrawer();
+      return;
+    }
+    Modal.confirm({
+      title: t('Unsaved changes'),
+      content: t("Are you sure you don't want to save?"),
+      onOk: closeDrawer,
+    });
   };
 
   const handleFinish = async (values: EmployeeFormValues) => {
@@ -960,11 +1178,33 @@ export const EmployeesPage: React.FC = () => {
     }
   };
 
-  const columns: TableProps<SettingsAIEmployee>['columns'] = [
+  const handleSortEnd = async (from: SettingsAIEmployee, to: SettingsAIEmployee) => {
+    if (!from.username || !to.username || from.username === to.username) {
+      return;
+    }
+    const previousEmployees = employees;
+    const fromIndex = employees.findIndex((employee) => employee.username === from.username);
+    const toIndex = employees.findIndex((employee) => employee.username === to.username);
+    if (fromIndex >= 0 && toIndex >= 0) {
+      setEmployees(arrayMove(employees, fromIndex, toIndex));
+    }
+    try {
+      await moveAIEmployee(app.apiClient, from.username, to.username);
+      message.success(t('Saved successfully'));
+      await refresh();
+      await repo.refreshAIEmployees();
+    } catch (error) {
+      console.error(error);
+      setEmployees(previousEmployees);
+      message.error(t('Failed to update'));
+    }
+  };
+
+  const columns: ColumnsType<SettingsAIEmployee> = [
     {
       title: t('Avatar'),
       dataIndex: 'avatar',
-      render: (value?: string) => (value ? <Avatar shape="circle" src={avatars(value)} /> : null),
+      render: (value?: string) => (value ? <Avatar shape="circle" size="large" src={avatars(value)} /> : null),
     },
     {
       title: t('Username'),
@@ -1006,10 +1246,10 @@ export const EmployeesPage: React.FC = () => {
       title: t('Actions'),
       key: 'actions',
       render: (_, record) => (
-        <Space split="|">
-          <Button type="link" onClick={() => openEditDrawer(record)}>
+        <Space size={token.marginXS}>
+          <a style={actionLinkStyle} onClick={() => openEditDrawer(record)}>
             {t('Edit')}
-          </Button>
+          </a>
           <Popconfirm
             title={t('Delete AI employee')}
             description={t('Are you sure you want to delete this AI employee?')}
@@ -1024,9 +1264,7 @@ export const EmployeesPage: React.FC = () => {
               await repo.refreshAIEmployees();
             }}
           >
-            <Button type="link" danger>
-              {t('Delete')}
-            </Button>
+            <a style={actionLinkStyle}>{t('Delete')}</a>
           </Popconfirm>
         </Space>
       ),
@@ -1034,8 +1272,18 @@ export const EmployeesPage: React.FC = () => {
   ];
 
   return (
-    <Card>
-      <Flex vertical gap="middle">
+    <Card
+      style={{ display: 'flex', flexDirection: 'column', minHeight: '100%' }}
+      styles={{
+        body: {
+          display: 'flex',
+          flex: 1,
+          flexDirection: 'column',
+          minHeight: 0,
+        },
+      }}
+    >
+      <Flex vertical gap="middle" style={{ flex: 1, minHeight: 0 }}>
         <Flex justify="space-between" wrap="wrap" gap="middle">
           <Radio.Group
             optionType="button"
@@ -1055,15 +1303,36 @@ export const EmployeesPage: React.FC = () => {
             </Button>
           </Space>
         </Flex>
-        <Table<SettingsAIEmployee> rowKey="username" loading={loading} columns={columns} dataSource={employees} />
+        <div style={{ display: 'flex', flex: 1, flexDirection: 'column', minHeight: 0 }}>
+          <Table<SettingsAIEmployee>
+            rowKey="username"
+            loading={loading}
+            columns={columns}
+            dataSource={employees}
+            className={fillHeightTableClassName}
+            isDraggable
+            onSortEnd={handleSortEnd}
+            rowSelection={{
+              selectedRowKeys,
+              onChange: setSelectedRowKeys,
+            }}
+            pagination={{
+              defaultPageSize: 20,
+              showTotal: (total) => t('Total {{count}} items', { count: total }),
+            }}
+            scroll={{ x: 'max-content', y: '100%' }}
+          />
+        </div>
       </Flex>
       <Drawer
         open={drawerOpen}
-        onClose={closeDrawer}
+        onClose={requestCloseDrawer}
+        destroyOnClose
+        width={AI_SETTINGS_DRAWER_WIDTH}
         title={editingRecord ? t('Edit AI employee') : t('New AI employee')}
         footer={
           <Flex justify="end" gap="small">
-            <Button onClick={closeDrawer}>{t('Cancel')}</Button>
+            <Button onClick={requestCloseDrawer}>{t('Cancel')}</Button>
             <Button type="primary" loading={saving} onClick={() => form.submit()}>
               {t('Submit')}
             </Button>
@@ -1071,10 +1340,18 @@ export const EmployeesPage: React.FC = () => {
         }
       >
         <Spin spinning={saving}>
-          <Form<EmployeeFormValues> form={form} layout="vertical" onFinish={handleFinish}>
+          <Form<EmployeeFormValues>
+            key={formSessionKey}
+            form={form}
+            layout="vertical"
+            onFinish={handleFinish}
+            onValuesChange={() => setFormDirty(true)}
+          >
             <EmployeeForm
               apiClient={app.apiClient}
+              activeTab={activeFormTab}
               edit={!!editingRecord}
+              onTabChange={setActiveFormTab}
               record={editingRecord}
               knowledgeBaseEnabled={knowledgeBaseEnabled}
             />

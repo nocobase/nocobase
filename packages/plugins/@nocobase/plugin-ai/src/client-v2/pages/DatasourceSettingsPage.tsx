@@ -14,24 +14,29 @@ import {
   Card,
   Cascader,
   Drawer,
+  Empty,
   Flex,
   Form,
   Input,
   InputNumber,
-  Popconfirm,
+  List,
   Select,
   Space,
   Spin,
+  Steps,
   Switch,
   Table,
   Tabs,
+  Tooltip,
   Typography,
+  theme,
 } from 'antd';
-import type { TableProps } from 'antd';
-import { DeleteOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons';
+import { DeleteOutlined, ExclamationCircleFilled, PlusOutlined, ReloadOutlined } from '@ant-design/icons';
 import { useApp } from '@nocobase/client-v2';
 import type { APIClient } from '@nocobase/client-v2';
+import { dayjs } from '@nocobase/utils/client';
 import { useT } from '../locale';
+import { AI_SETTINGS_DRAWER_WIDTH } from './drawerWidth';
 
 type APIClientLike = Pick<APIClient, 'resource'>;
 type ResourceAction = (params?: Record<string, unknown>) => Promise<unknown>;
@@ -43,6 +48,8 @@ type APIResponse = {
 };
 type FilterValue = Record<string, unknown>;
 type SortValue = string[];
+type DrawerMode = 'create' | 'edit';
+type DatasourceFormMode = 'steps' | 'tabs';
 export type AIContextDatasourceRecord = {
   id: number | string;
   title: string;
@@ -271,13 +278,27 @@ const createInitialValues = (): DatasourceFormValues => ({
   enabled: true,
 });
 
+const getDatasourceStepFields = (step: number): Array<keyof DatasourceFormValues> => {
+  if (step === 0) {
+    return ['title', 'collection', 'limit', 'enabled'];
+  }
+  if (step === 1) {
+    return ['fields'];
+  }
+  return [];
+};
+
 const DatasourceForm: React.FC<{
   manager?: DataSourceManagerLike;
   preview: PreviewResult | null;
   previewing: boolean;
   editing: boolean;
-}> = ({ manager, preview, previewing, editing }) => {
+  currentStep: number;
+  mode: DatasourceFormMode;
+  onStepChange?: (step: number) => void;
+}> = ({ manager, preview, previewing, editing, currentStep, mode, onStepChange }) => {
   const t = useT();
+  const { token } = theme.useToken();
   const form = Form.useFormInstance<DatasourceFormValues>();
   const collection = Form.useWatch('collection', form);
   const fieldOptions = useMemo(() => getFieldOptions(manager, collection), [collection, manager]);
@@ -302,96 +323,118 @@ const DatasourceForm: React.FC<{
       })),
     [preview],
   );
+  const stepItems = [
+    { title: t('Collection') },
+    { title: t('Fields') },
+    { title: t('Filter') },
+    { title: t('Sort') },
+    { title: t('Preview') },
+  ];
+
+  const renderStepContent = (step: number) => {
+    if (step === 0) {
+      return (
+        <>
+          <Form.Item name="title" label={t('Title')} rules={[{ required: true }]} preserve>
+            <Input />
+          </Form.Item>
+          <Form.Item name="collection" label={t('Collection')} rules={[{ required: true }]} preserve>
+            <Cascader
+              disabled={editing}
+              showSearch
+              options={getCollectionOptions(manager)}
+              onChange={() => {
+                form.setFieldValue('fields', []);
+              }}
+            />
+          </Form.Item>
+          <Form.Item name="description" label={t('Description')} preserve>
+            <Input.TextArea rows={5} />
+          </Form.Item>
+          <Flex gap="middle" align="center">
+            <Form.Item name="limit" label={t('Limit')} rules={[{ required: true }]} preserve>
+              <InputNumber min={1} max={20000} step={100} changeOnWheel />
+            </Form.Item>
+            <Form.Item name="enabled" label={t('Enabled')} valuePropName="checked" preserve>
+              <Switch />
+            </Form.Item>
+          </Flex>
+        </>
+      );
+    }
+    if (step === 1) {
+      return (
+        <Form.Item name="fields" label={t('Fields')} rules={[{ required: true }]} preserve>
+          <Select mode="multiple" options={fieldOptions} />
+        </Form.Item>
+      );
+    }
+    if (step === 2) {
+      return (
+        <Form.Item name="filterText" label={t('Filter group')} preserve>
+          <Input.TextArea autoSize={{ minRows: 6 }} />
+        </Form.Item>
+      );
+    }
+    if (step === 3) {
+      return (
+        <Form.Item name="sortText" label={t('Sort Fields')} preserve>
+          <Input.TextArea autoSize={{ minRows: 4 }} />
+        </Form.Item>
+      );
+    }
+    return (
+      <Spin spinning={previewing}>
+        <Tabs
+          type="card"
+          items={[
+            {
+              key: 'table',
+              label: t('Table'),
+              children: <Table columns={previewColumns} dataSource={previewRows} pagination={{ pageSize: 25 }} />,
+            },
+            {
+              key: 'json',
+              label: 'JSON',
+              children: (
+                <Typography.Paragraph copyable={{ text: JSON.stringify(previewRows, null, 2) }}>
+                  <pre>{JSON.stringify(previewRows, null, 2)}</pre>
+                </Typography.Paragraph>
+              ),
+            },
+          ]}
+        />
+      </Spin>
+    );
+  };
+
+  if (mode === 'tabs') {
+    return (
+      <Tabs
+        defaultActiveKey="0"
+        items={stepItems.map((item, step) => ({
+          key: String(step),
+          label: item.title,
+          forceRender: true,
+          children: renderStepContent(step),
+        }))}
+        onChange={(key) => {
+          onStepChange?.(Number(key));
+        }}
+      />
+    );
+  }
 
   return (
-    <Tabs
-      items={[
-        {
-          key: 'collection',
-          label: t('Collection'),
-          forceRender: true,
-          children: (
-            <>
-              <Form.Item name="title" label={t('Title')} rules={[{ required: true }]} preserve>
-                <Input />
-              </Form.Item>
-              <Form.Item name="collection" label={t('Collection')} rules={[{ required: true }]} preserve>
-                <Cascader disabled={editing} showSearch options={getCollectionOptions(manager)} />
-              </Form.Item>
-              <Form.Item name="description" label={t('Description')} preserve>
-                <Input.TextArea rows={5} />
-              </Form.Item>
-              <Flex gap="middle" align="center">
-                <Form.Item name="limit" label={t('Limit')} rules={[{ required: true }]} preserve>
-                  <InputNumber min={1} max={20000} step={100} changeOnWheel />
-                </Form.Item>
-                <Form.Item name="enabled" label={t('Enabled')} valuePropName="checked" preserve>
-                  <Switch />
-                </Form.Item>
-              </Flex>
-            </>
-          ),
-        },
-        {
-          key: 'fields',
-          label: t('Fields'),
-          forceRender: true,
-          children: (
-            <Form.Item name="fields" label={t('Fields')} rules={[{ required: true }]} preserve>
-              <Select mode="multiple" options={fieldOptions} />
-            </Form.Item>
-          ),
-        },
-        {
-          key: 'filter',
-          label: t('Filter'),
-          forceRender: true,
-          children: (
-            <Form.Item name="filterText" label={t('Filter group')} preserve>
-              <Input.TextArea autoSize={{ minRows: 6 }} />
-            </Form.Item>
-          ),
-        },
-        {
-          key: 'sort',
-          label: t('Sort'),
-          forceRender: true,
-          children: (
-            <Form.Item name="sortText" label={t('Sort Fields')} preserve>
-              <Input.TextArea autoSize={{ minRows: 4 }} />
-            </Form.Item>
-          ),
-        },
-        {
-          key: 'preview',
-          label: t('Preview'),
-          forceRender: true,
-          children: (
-            <Spin spinning={previewing}>
-              <Tabs
-                type="card"
-                items={[
-                  {
-                    key: 'table',
-                    label: t('Table'),
-                    children: <Table columns={previewColumns} dataSource={previewRows} pagination={{ pageSize: 25 }} />,
-                  },
-                  {
-                    key: 'json',
-                    label: 'JSON',
-                    children: (
-                      <Typography.Paragraph copyable={{ text: JSON.stringify(previewRows, null, 2) }}>
-                        <pre>{JSON.stringify(previewRows, null, 2)}</pre>
-                      </Typography.Paragraph>
-                    ),
-                  },
-                ]}
-              />
-            </Spin>
-          ),
-        },
-      ]}
-    />
+    <Flex vertical gap="middle">
+      <Steps current={currentStep} size="small" items={stepItems} />
+      <div style={{ borderBlockStart: `${token.lineWidth}px ${token.lineType} ${token.colorBorderSecondary}` }} />
+      <div style={{ display: currentStep === 0 ? 'block' : 'none' }}>{renderStepContent(0)}</div>
+      <div style={{ display: currentStep === 1 ? 'block' : 'none' }}>{renderStepContent(1)}</div>
+      <div style={{ display: currentStep === 2 ? 'block' : 'none' }}>{renderStepContent(2)}</div>
+      <div style={{ display: currentStep === 3 ? 'block' : 'none' }}>{renderStepContent(3)}</div>
+      <div style={{ display: currentStep === 4 ? 'block' : 'none' }}>{renderStepContent(4)}</div>
+    </Flex>
   );
 };
 
@@ -416,7 +459,8 @@ const EnabledSwitch: React.FC<{
 export const DatasourceSettingsPage: React.FC = () => {
   const app = useApp();
   const t = useT();
-  const { message } = App.useApp();
+  const { token } = theme.useToken();
+  const { message, modal } = App.useApp();
   const [form] = Form.useForm<DatasourceFormValues>();
   const manager = app.dataSourceManager as DataSourceManagerLike | undefined;
   const [records, setRecords] = useState<AIContextDatasourceRecord[]>([]);
@@ -424,8 +468,10 @@ export const DatasourceSettingsPage: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [previewing, setPreviewing] = useState(false);
   const [preview, setPreview] = useState<PreviewResult | null>(null);
-  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [drawerMode, setDrawerMode] = useState<DrawerMode | undefined>();
   const [editingRecord, setEditingRecord] = useState<AIContextDatasourceRecord | undefined>();
+  const [currentStep, setCurrentStep] = useState(0);
+  const drawerOpen = !!drawerMode;
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -447,21 +493,25 @@ export const DatasourceSettingsPage: React.FC = () => {
   const openCreateDrawer = () => {
     setEditingRecord(undefined);
     setPreview(null);
+    setCurrentStep(0);
     form.setFieldsValue(createInitialValues());
-    setDrawerOpen(true);
+    setDrawerMode('create');
   };
 
-  const openEditDrawer = (record: AIContextDatasourceRecord) => {
+  const openDetailDrawer = (record: AIContextDatasourceRecord) => {
     setEditingRecord(record);
     setPreview(null);
+    setCurrentStep(0);
     form.setFieldsValue(toDatasourceFormValues(record));
-    setDrawerOpen(true);
+    setDrawerMode('edit');
   };
 
   const closeDrawer = () => {
-    setDrawerOpen(false);
+    setDrawerMode(undefined);
+    setEditingRecord(undefined);
     form.resetFields();
     setPreview(null);
+    setCurrentStep(0);
   };
 
   const handlePreview = async () => {
@@ -474,15 +524,34 @@ export const DatasourceSettingsPage: React.FC = () => {
     }
   };
 
+  const handleDetailTabChange = (step: number) => {
+    setCurrentStep(step);
+    if (step === 4) {
+      handlePreview().catch((error: unknown) => {
+        console.error(error);
+        setPreviewing(false);
+      });
+    }
+  };
+
+  const handleNext = async () => {
+    await form.validateFields(getDatasourceStepFields(currentStep));
+    if (currentStep === 3) {
+      await handlePreview();
+    }
+    setCurrentStep((step) => Math.min(step + 1, 4));
+  };
+
   const handleFinish = async (values: DatasourceFormValues) => {
     setSaving(true);
     try {
       if (editingRecord) {
         await updateContextDatasource(app.apiClient, editingRecord.id, values);
+        message.success(t('Saved successfully'));
       } else {
         await createContextDatasource(app.apiClient, values);
+        message.success(t('Processing complete!'));
       }
-      message.success(t('Saved successfully'));
       closeDrawer();
       await refresh();
     } finally {
@@ -490,49 +559,19 @@ export const DatasourceSettingsPage: React.FC = () => {
     }
   };
 
-  const columns: TableProps<AIContextDatasourceRecord>['columns'] = [
-    {
-      title: t('Title'),
-      dataIndex: 'title',
-    },
-    {
-      title: t('Collection'),
-      render: (_, record) => `${record.datasource}/${record.collectionName}`,
-    },
-    {
-      title: t('Limit'),
-      dataIndex: 'limit',
-    },
-    {
-      title: t('Enabled'),
-      dataIndex: 'enabled',
-      render: (_, record) => <EnabledSwitch record={record} onUpdated={refresh} />,
-    },
-    {
-      title: t('Actions'),
-      key: 'actions',
-      render: (_, record) => (
-        <Space split="|">
-          <Button type="link" onClick={() => openEditDrawer(record)}>
-            {t('Edit')}
-          </Button>
-          <Popconfirm
-            title={t('Confirm whether to delete')}
-            description={t('Are you sure delete this datasource?')}
-            onConfirm={async () => {
-              await deleteContextDatasource(app.apiClient, record.id);
-              message.success(t('Datasource deleted successfully'));
-              await refresh();
-            }}
-          >
-            <Button type="link" danger>
-              {t('Delete')}
-            </Button>
-          </Popconfirm>
-        </Space>
-      ),
-    },
-  ];
+  const handleDelete = (record: AIContextDatasourceRecord) => {
+    modal.confirm({
+      title: t('Confirm whether to delete'),
+      icon: <ExclamationCircleFilled />,
+      content: t('Are you sure delete this datasource?'),
+      okType: 'danger',
+      async onOk() {
+        await deleteContextDatasource(app.apiClient, record.id);
+        message.success(t('Datasource deleted successfully'));
+        await refresh();
+      },
+    });
+  };
 
   return (
     <Card>
@@ -545,29 +584,116 @@ export const DatasourceSettingsPage: React.FC = () => {
             {t('Add datasource')}
           </Button>
         </Flex>
-        <Table<AIContextDatasourceRecord> rowKey="id" loading={loading} dataSource={records} columns={columns} />
+        <Spin spinning={loading}>
+          {records.length ? (
+            <List
+              grid={{ gutter: token.margin, xs: 1, sm: 1, md: 2, lg: 3, xl: 4, xxl: 4 }}
+              dataSource={records}
+              pagination={{ pageSize: 12, showSizeChanger: false }}
+              renderItem={(record) => (
+                <List.Item>
+                  <Card hoverable onClick={() => openDetailDrawer(record)}>
+                    <Card.Meta
+                      title={
+                        <Flex justify="space-between" align="center" gap="small">
+                          <Typography.Text ellipsis>{record.title}</Typography.Text>
+                          <span onClick={(event) => event.stopPropagation()}>
+                            <EnabledSwitch record={record} onUpdated={refresh} />
+                          </span>
+                        </Flex>
+                      }
+                      description={
+                        <Space size="small" wrap>
+                          <Typography.Text type="secondary">{t('Collection')}</Typography.Text>
+                          <Typography.Text>{`${record.datasource}/${record.collectionName}`}</Typography.Text>
+                          <Typography.Text type="secondary">{t('Limit')}</Typography.Text>
+                          <Typography.Text>{record.limit}</Typography.Text>
+                        </Space>
+                      }
+                    />
+                    <Flex vertical gap="small" style={{ marginBlockStart: token.marginSM }}>
+                      <Typography.Paragraph type="secondary" ellipsis={{ rows: 2 }}>
+                        {record.description}
+                      </Typography.Paragraph>
+                      <Flex justify="space-between" align="center" gap="small">
+                        <Typography.Text type="secondary">
+                          {record.createdAt
+                            ? `${t('Created at')} ${dayjs(record.createdAt).format('YYYY-MM-DD HH:mm:ss')}`
+                            : null}
+                        </Typography.Text>
+                        <span onClick={(event) => event.stopPropagation()}>
+                          <Tooltip title={t('Delete')}>
+                            <Button
+                              type="link"
+                              danger
+                              icon={<DeleteOutlined />}
+                              aria-label={t('Delete')}
+                              onClick={() => handleDelete(record)}
+                            />
+                          </Tooltip>
+                        </span>
+                      </Flex>
+                    </Flex>
+                  </Card>
+                </List.Item>
+              )}
+            />
+          ) : (
+            <Empty image={Empty.PRESENTED_IMAGE_SIMPLE}>
+              <Button icon={<PlusOutlined />} type="primary" onClick={openCreateDrawer}>
+                {t('Create a new datasource')}
+              </Button>
+            </Empty>
+          )}
+        </Spin>
       </Flex>
       <Drawer
         open={drawerOpen}
         onClose={closeDrawer}
-        title={editingRecord ? t('Edit datasource') : t('Add datasource')}
+        width={AI_SETTINGS_DRAWER_WIDTH}
+        title={drawerMode === 'edit' ? t('Edit datasource') : t('Add datasource')}
         footer={
-          <Flex justify="space-between" gap="small">
-            <Button onClick={handlePreview} loading={previewing}>
-              {t('Preview')}
-            </Button>
-            <Space>
-              <Button onClick={closeDrawer}>{t('Cancel')}</Button>
-              <Button type="primary" loading={saving} onClick={() => form.submit()}>
-                {t('Submit')}
+          drawerMode === 'edit' ? (
+            <Flex justify="flex-end" align="center">
+              <Space>
+                <Button onClick={closeDrawer}>{t('Cancel')}</Button>
+                <Button type="primary" loading={saving} onClick={() => form.submit()}>
+                  {t('Submit')}
+                </Button>
+              </Space>
+            </Flex>
+          ) : (
+            <Flex justify="space-between" gap="small">
+              <Button onClick={() => setCurrentStep((step) => Math.max(step - 1, 0))} disabled={currentStep === 0}>
+                {t('Previous')}
               </Button>
-            </Space>
-          </Flex>
+              <Space>
+                <Button onClick={closeDrawer}>{t('Cancel')}</Button>
+                {currentStep < 4 ? (
+                  <Button type="primary" loading={previewing} onClick={handleNext}>
+                    {t('Next')}
+                  </Button>
+                ) : (
+                  <Button type="primary" loading={saving} onClick={() => form.submit()}>
+                    {t('Submit')}
+                  </Button>
+                )}
+              </Space>
+            </Flex>
+          )
         }
       >
         <Spin spinning={saving}>
           <Form<DatasourceFormValues> form={form} layout="vertical" onFinish={handleFinish}>
-            <DatasourceForm manager={manager} preview={preview} previewing={previewing} editing={!!editingRecord} />
+            <DatasourceForm
+              manager={manager}
+              preview={preview}
+              previewing={previewing}
+              editing={!!editingRecord}
+              currentStep={currentStep}
+              mode={drawerMode === 'edit' ? 'tabs' : 'steps'}
+              onStepChange={handleDetailTabChange}
+            />
           </Form>
         </Spin>
       </Drawer>

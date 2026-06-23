@@ -15,13 +15,21 @@ import {
   listLLMProviders,
   listLLMServices,
   listProviderModels,
+  moveLLMService,
   normalizeEnabledModels,
+  shouldAutoOpenAddNew,
   testLLMServiceFlight,
   updateLLMService,
   updateLLMServiceEnabled,
 } from '../pages/LLMServicesPage';
 
 describe('LLMServicesPage request helpers', () => {
+  it('detects the v1-compatible auto-open add-new route state', () => {
+    expect(shouldAutoOpenAddNew({ autoOpenAddNew: true })).toBe(true);
+    expect(shouldAutoOpenAddNew({ autoOpenAddNew: false })).toBe(false);
+    expect(shouldAutoOpenAddNew(null)).toBe(false);
+  });
+
   it('normalizes legacy enabledModels values', () => {
     expect(normalizeEnabledModels(undefined)).toEqual({ mode: 'recommended', models: [] });
     expect(normalizeEnabledModels(['gpt-4o'])).toEqual({
@@ -49,7 +57,30 @@ describe('LLMServicesPage request helpers', () => {
       data: [{ name: 'v_openai' }],
       total: 1,
     });
-    expect(list).toHaveBeenCalledWith(undefined, undefined);
+    expect(list).toHaveBeenCalledWith(
+      {
+        sort: ['sort'],
+      },
+      undefined,
+    );
+  });
+
+  it('moves LLM services by name and the sortable sort field', async () => {
+    const move = vi.fn().mockResolvedValue({});
+    const apiClient = {
+      resource: () => ({ move }),
+    };
+
+    await moveLLMService(apiClient, 'v_openai', 'v_kimi');
+
+    expect(move).toHaveBeenCalledWith(
+      {
+        sourceId: 'v_openai',
+        targetId: 'v_kimi',
+        sortField: 'sort',
+      },
+      undefined,
+    );
   });
 
   it('creates an LLM service through llmServices.create', async () => {

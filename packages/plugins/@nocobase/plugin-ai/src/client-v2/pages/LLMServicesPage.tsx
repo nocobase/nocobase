@@ -22,21 +22,27 @@ import {
   Space,
   Spin,
   Switch,
-  Table,
   Tag,
   Tooltip,
   Typography,
+  theme,
 } from 'antd';
-import type { TableProps } from 'antd';
+import type { FormInstance } from 'antd';
+import type { ColumnsType } from 'antd/es/table';
 import { DeleteOutlined, PlusOutlined, ReloadOutlined, RocketOutlined } from '@ant-design/icons';
-import { EnvVariableInput, useApp } from '@nocobase/client-v2';
+import { arrayMove } from '@dnd-kit/sortable';
+import { css } from '@emotion/css';
+import { EnvVariableInput, Table, useApp } from '@nocobase/client-v2';
 import type { APIClient } from '@nocobase/client-v2';
 import { randomId } from '@nocobase/flow-engine';
+import { useLocation } from 'react-router-dom';
 import { getRecommendedModels, isRecommendedModel } from '../../common/recommended-models';
 import type { LLMProviderOptions } from '../manager/ai-manager';
 import { formatModelLabel } from '../llm-services/model-label';
 import { useT } from '../locale';
 import { useAIConfigRepository } from '../repositories/hooks/useAIConfigRepository';
+import { RemoteSelect } from '../components/RemoteSelect';
+import { AI_SETTINGS_DRAWER_WIDTH } from './drawerWidth';
 
 type APIClientLike = Pick<APIClient, 'resource'>;
 type ResourceAction = (params?: Record<string, unknown>, options?: Record<string, unknown>) => Promise<unknown>;
@@ -79,6 +85,44 @@ type AIPluginLike = {
     llmProviders?: Map<string, LLMProviderOptions>;
   };
 };
+
+const LLM_SERVICE_SORT_FIELD = 'sort';
+const PROVIDER_SELECT_LIST_HEIGHT = 400;
+
+const fillHeightTableClassName = css`
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+
+  .ant-spin-nested-loading,
+  .ant-spin-container,
+  .ant-table,
+  .ant-table-container {
+    min-height: 0;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .ant-table-content {
+    flex: 1;
+    min-height: 0;
+  }
+
+  .ant-table-body {
+    flex: 1;
+    min-height: 0;
+  }
+
+  .ant-table-thead > tr > th {
+    white-space: nowrap;
+  }
+
+  .ant-pagination {
+    flex: 0 0 auto;
+  }
+`;
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   value !== null && typeof value === 'object' && !Array.isArray(value);
@@ -152,7 +196,9 @@ export const normalizeEnabledModels = (value: unknown): EnabledModelsConfig => {
 };
 
 export async function listLLMServices(apiClient: APIClientLike): Promise<LLMServicesListResult> {
-  const response = await callResourceAction(apiClient, 'llmServices', 'list');
+  const response = await callResourceAction(apiClient, 'llmServices', 'list', {
+    sort: [LLM_SERVICE_SORT_FIELD],
+  });
   const data = readResponseData(response);
   return {
     data: Array.isArray(data) ? data.filter(isLLMServiceRecord) : [],
@@ -192,6 +238,14 @@ export async function updateLLMServiceEnabled(apiClient: APIClientLike, name: st
   await callResourceAction(apiClient, 'llmServices', 'update', {
     values: { enabled },
     filterByTk: name,
+  });
+}
+
+export async function moveLLMService(apiClient: APIClientLike, sourceName: string, targetName: string) {
+  await callResourceAction(apiClient, 'llmServices', 'move', {
+    sourceId: sourceName,
+    targetId: targetName,
+    sortField: LLM_SERVICE_SORT_FIELD,
   });
 }
 
@@ -280,6 +334,8 @@ const getProviderOptions = (app: ReturnType<typeof useApp>, provider?: string) =
   return provider && plugin?.aiManager?.llmProviders ? plugin.aiManager.llmProviders.get(provider) : undefined;
 };
 
+const labelWithColon = (label: string) => `${label}:`;
+
 const getInitialValues = (): LLMServiceFormValues => ({
   name: randomId('v_'),
   enabled: true,
@@ -289,9 +345,14 @@ const getInitialValues = (): LLMServiceFormValues => ({
   },
 });
 
+export const shouldAutoOpenAddNew = (state: unknown): state is { autoOpenAddNew: true } =>
+  isRecord(state) && state.autoOpenAddNew === true;
+
 const ProviderSelect: React.FC<{
   providers: ProviderOption[];
-}> = ({ providers }) => {
+  value?: string;
+  onChange?: (value: string) => void;
+}> = ({ providers, value, onChange }) => {
   const t = useT();
   const options = useMemo(
     () =>
@@ -324,7 +385,16 @@ const ProviderSelect: React.FC<{
         }),
     [providers, t],
   );
-  return <Select options={options} optionLabelProp="selectedLabel" />;
+  return (
+    <Select
+      value={value}
+      onChange={onChange}
+      options={options}
+      optionLabelProp="selectedLabel"
+      style={{ width: '100%' }}
+      listHeight={PROVIDER_SELECT_LIST_HEIGHT}
+    />
+  );
 };
 
 const ProviderDisplay: React.FC<{ provider?: string; providers: ProviderOption[] }> = ({ provider, providers }) => {
@@ -338,6 +408,7 @@ const EnabledModelsInput: React.FC<{
   const app = useApp();
   const t = useT();
   const { message } = App.useApp();
+  const { token } = theme.useToken();
   const form = Form.useFormInstance<LLMServiceFormValues>();
   const provider = Form.useWatch('provider', form);
   const providerOptions = Form.useWatch('options', form);
@@ -346,8 +417,8 @@ const EnabledModelsInput: React.FC<{
   const labelFormatter = pluginProvider?.formatModelLabel || formatModelLabel;
   const config = normalizeEnabledModels(value);
   const hasRecommended = !!providerKey && getRecommendedModels(providerKey).length > 0;
-  const [modelOptions, setModelOptions] = useState<ModelOption[]>([]);
-  const [loading, setLoading] = useState(false);
+  const enabledModelsIndent = token.paddingLG + token.paddingSM;
+  const customModelInputWidth = token.controlHeight * 7 + token.paddingXXS;
   const modelsCache = useRef<Record<EnabledModelsConfig['mode'], ModelOption[]>>({
     recommended: [],
     provider: [],
@@ -367,41 +438,35 @@ const EnabledModelsInput: React.FC<{
     }
   }, [config.mode, hasRecommended, onChange, providerKey]);
 
-  const fetchModels = async (search?: string) => {
+  const loadProviderModelOptions = async (search?: string): Promise<ModelOption[]> => {
     if (!providerKey) {
-      setModelOptions([]);
-      return;
+      return [];
     }
-    setLoading(true);
     try {
       const models = await listProviderModels(app.apiClient, {
         provider: providerKey,
         options: isRecord(providerOptions) ? providerOptions : {},
         model: search,
       });
-      setModelOptions(
-        models
-          .map((model) => ({
-            label: labelFormatter(model),
-            value: model,
-          }))
-          .sort((a, b) => {
-            const aRecommended = isRecommendedModel(providerKey, a.value);
-            const bRecommended = isRecommendedModel(providerKey, b.value);
-            if (aRecommended && !bRecommended) {
-              return -1;
-            }
-            if (!aRecommended && bRecommended) {
-              return 1;
-            }
-            return 0;
-          }),
-      );
+      return models
+        .map((model) => ({
+          label: labelFormatter(model),
+          value: model,
+        }))
+        .sort((a, b) => {
+          const aRecommended = isRecommendedModel(providerKey, a.value);
+          const bRecommended = isRecommendedModel(providerKey, b.value);
+          if (aRecommended && !bRecommended) {
+            return -1;
+          }
+          if (!aRecommended && bRecommended) {
+            return 1;
+          }
+          return 0;
+        });
     } catch (error) {
-      setModelOptions([]);
       message.error(error instanceof Error ? error.message : t('Failed to fetch models'));
-    } finally {
-      setLoading(false);
+      return [];
     }
   };
 
@@ -414,13 +479,13 @@ const EnabledModelsInput: React.FC<{
   };
 
   return (
-    <Radio.Group value={config.mode} onChange={(event) => changeMode(event.target.value)}>
-      <Flex vertical gap="middle">
+    <Radio.Group value={config.mode} onChange={(event) => changeMode(event.target.value)} style={{ width: '100%' }}>
+      <Flex vertical gap="middle" style={{ width: '100%' }}>
         {hasRecommended ? (
           <>
             <Radio value="recommended">{t('Recommended models')}</Radio>
             {config.mode === 'recommended' ? (
-              <Typography.Text type="secondary">
+              <Typography.Text type="secondary" style={{ paddingInlineStart: enabledModelsIndent }}>
                 {`${t('Use recommended models:')} ${getRecommendedModels(providerKey)
                   .map((model) => model.label)
                   .join(', ')}`}
@@ -430,46 +495,42 @@ const EnabledModelsInput: React.FC<{
         ) : null}
         <Radio value="provider">{t('Select models')}</Radio>
         {config.mode === 'provider' ? (
-          <Select
-            mode="multiple"
-            options={modelOptions}
-            loading={loading}
-            notFoundContent={loading ? <Spin size="small" /> : null}
-            value={config.models.map((model) => model.value)}
-            onChange={(selectedValues: string[]) => {
-              changeModels(
-                selectedValues.map((model) => ({
-                  value: model,
-                  label: modelOptions.find((option) => option.value === model)?.label || labelFormatter(model),
-                })),
-              );
-            }}
-            onDropdownVisibleChange={(open) => {
-              if (open) {
-                fetchModels().catch((error: unknown) => {
-                  console.error(error);
-                });
-              }
-            }}
-            placeholder={t('Select models to enable')}
-            optionRender={(option) => {
-              const recommended = isRecommendedModel(providerKey, String(option.value));
-              return (
-                <Space>
-                  <span>{option.label}</span>
-                  {recommended ? <Tag color="blue">{t('Recommended')}</Tag> : null}
-                </Space>
-              );
-            }}
-          />
+          <div style={{ paddingInlineStart: enabledModelsIndent, width: '100%' }}>
+            <RemoteSelect<string[]>
+              mode="multiple"
+              request={loadProviderModelOptions}
+              popupMatchSelectWidth
+              placeholder={t('Select models to enable')}
+              style={{ width: '100%' }}
+              optionRender={(option) => {
+                const recommended = isRecommendedModel(providerKey, String(option.value));
+                return (
+                  <Space>
+                    <span>{option.label}</span>
+                    {recommended ? <Tag color="blue">{t('Recommended')}</Tag> : null}
+                  </Space>
+                );
+              }}
+              value={config.models.map((model) => model.value)}
+              onChange={(selectedValues: string[]) => {
+                changeModels(
+                  selectedValues.map((model) => ({
+                    value: model,
+                    label: labelFormatter(model),
+                  })),
+                );
+              }}
+            />
+          </div>
         ) : null}
         <Radio value="custom">{t('Manual input')}</Radio>
         {config.mode === 'custom' ? (
-          <Flex vertical gap="small">
+          <Flex vertical gap="small" style={{ paddingInlineStart: enabledModelsIndent }}>
             {config.models.map((model, index) => (
               <Flex key={`${model.value}:${index}`} gap="small" align="baseline">
                 <Input
                   placeholder={t('Model id')}
+                  style={{ width: customModelInputWidth }}
                   value={model.value}
                   onChange={(event) => {
                     const nextModels = [...config.models];
@@ -479,6 +540,7 @@ const EnabledModelsInput: React.FC<{
                 />
                 <Input
                   placeholder={t('Display name')}
+                  style={{ width: customModelInputWidth }}
                   value={model.label}
                   onChange={(event) => {
                     const nextModels = [...config.models];
@@ -497,6 +559,7 @@ const EnabledModelsInput: React.FC<{
             <Button
               type="dashed"
               icon={<PlusOutlined />}
+              style={{ width: '100%' }}
               onClick={() => changeModels([...config.models, { label: '', value: '' }])}
             >
               {t('Add model')}
@@ -514,7 +577,7 @@ const ProviderSettingsForm: React.FC = () => {
   const provider = Form.useWatch('provider', form);
   const providerKey = typeof provider === 'string' ? provider : '';
   const Component = getProviderOptions(app, providerKey)?.components?.ProviderSettingsForm;
-  return Component ? <Component /> : null;
+  return Component ? <Component key={providerKey} /> : null;
 };
 
 const LLMServiceForm: React.FC<{
@@ -538,24 +601,30 @@ const LLMServiceForm: React.FC<{
       <Form.Item name="name" hidden>
         <Input />
       </Form.Item>
-      <Form.Item name="provider" label={t('Provider')} rules={[{ required: true }]}>
+      <Form.Item
+        name="provider"
+        label={labelWithColon(t('Provider'))}
+        rules={editing ? undefined : [{ required: true }]}
+      >
         {editing ? (
           <ProviderDisplay providers={providers} provider={providerKey} />
         ) : (
           <ProviderSelect providers={providers} />
         )}
       </Form.Item>
-      <Form.Item name="title" label={t('Title')}>
-        <Input />
-      </Form.Item>
+      {editing || providerKey ? (
+        <Form.Item name="title" label={labelWithColon(t('Title'))}>
+          <Input />
+        </Form.Item>
+      ) : null}
       {providerKey ? <ProviderSettingsForm /> : null}
       {providerKey ? (
-        <Form.Item name={['options', 'baseURL']} label={t('Base URL')}>
+        <Form.Item name={['options', 'baseURL']} label={labelWithColon(t('Base URL'))}>
           <EnvVariableInput placeholder={t('Base URL is optional, leave blank to use default (recommended)')} />
         </Form.Item>
       ) : null}
       {providerKey ? (
-        <Form.Item name="enabledModels" label={t('Enabled Models')}>
+        <Form.Item name="enabledModels" label={labelWithColon(t('Enabled Models'))}>
           <EnabledModelsInput />
         </Form.Item>
       ) : null}
@@ -563,11 +632,10 @@ const LLMServiceForm: React.FC<{
   );
 };
 
-const LLMTestFlightButton: React.FC = () => {
+const LLMTestFlightButton: React.FC<{ form: FormInstance<LLMServiceFormValues> }> = ({ form }) => {
   const app = useApp();
   const t = useT();
   const { message } = App.useApp();
-  const form = Form.useFormInstance<LLMServiceFormValues>();
   const [loading, setLoading] = useState(false);
 
   const handleTest = async () => {
@@ -640,6 +708,8 @@ const EnabledSwitch: React.FC<{
 export const LLMServicesPage: React.FC = () => {
   const app = useApp();
   const t = useT();
+  const { token } = theme.useToken();
+  const location = useLocation();
   const { message } = App.useApp();
   const repo = useAIConfigRepository();
   const [form] = Form.useForm<LLMServiceFormValues>();
@@ -650,14 +720,31 @@ export const LLMServicesPage: React.FC = () => {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editingRecord, setEditingRecord] = useState<LLMServiceRecord | undefined>();
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
+  const autoOpenHandledRef = useRef(false);
+  const selectedFormProvider = Form.useWatch('provider', form);
+  const tRef = useRef(t);
+  const actionLinkStyle = useMemo<React.CSSProperties>(
+    () => ({
+      color: token.colorPrimary,
+      marginInline: -token.paddingSM,
+      paddingBlock: token.paddingSM,
+      paddingInlineEnd: token.paddingXS + token.paddingSM,
+      paddingInlineStart: token.paddingSM,
+    }),
+    [token.colorPrimary, token.paddingSM, token.paddingXS],
+  );
 
   useEffect(() => {
-    listLLMProviders(app.apiClient, t)
+    tRef.current = t;
+  }, [t]);
+
+  useEffect(() => {
+    listLLMProviders(app.apiClient, (value) => tRef.current(value))
       .then(setProviders)
       .catch((error: unknown) => {
         console.error(error);
       });
-  }, [app.apiClient, t]);
+  }, [app.apiClient]);
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -676,14 +763,25 @@ export const LLMServicesPage: React.FC = () => {
     });
   }, [refresh]);
 
-  const openCreateDrawer = () => {
+  const openCreateDrawer = useCallback(() => {
     setEditingRecord(undefined);
+    form.resetFields();
     form.setFieldsValue(getInitialValues());
     setDrawerOpen(true);
-  };
+  }, [form]);
+
+  useEffect(() => {
+    if (autoOpenHandledRef.current || !shouldAutoOpenAddNew(location.state)) {
+      return;
+    }
+    autoOpenHandledRef.current = true;
+    openCreateDrawer();
+    window.history.replaceState({}, document.title);
+  }, [location.state, openCreateDrawer]);
 
   const openEditDrawer = (record: LLMServiceRecord) => {
     setEditingRecord(record);
+    form.resetFields();
     form.setFieldsValue({
       ...record,
       enabledModels: normalizeEnabledModels(record.enabledModels),
@@ -725,7 +823,29 @@ export const LLMServicesPage: React.FC = () => {
     await repo.refreshLLMServices();
   };
 
-  const columns: TableProps<LLMServiceRecord>['columns'] = [
+  const handleSortEnd = async (from: LLMServiceRecord, to: LLMServiceRecord) => {
+    if (!from.name || !to.name || from.name === to.name) {
+      return;
+    }
+    const previousServices = services;
+    const fromIndex = services.findIndex((service) => service.name === from.name);
+    const toIndex = services.findIndex((service) => service.name === to.name);
+    if (fromIndex >= 0 && toIndex >= 0) {
+      setServices(arrayMove(services, fromIndex, toIndex));
+    }
+    try {
+      await moveLLMService(app.apiClient, from.name, to.name);
+      message.success(t('Saved successfully'));
+      await refresh();
+      await repo.refreshLLMServices();
+    } catch (error) {
+      console.error(error);
+      setServices(previousServices);
+      message.error(t('Failed to update'));
+    }
+  };
+
+  const columns: ColumnsType<LLMServiceRecord> = [
     {
       title: t('UID'),
       dataIndex: 'name',
@@ -748,10 +868,10 @@ export const LLMServicesPage: React.FC = () => {
       title: t('Actions'),
       key: 'actions',
       render: (_, record) => (
-        <Space split="|">
-          <Button type="link" onClick={() => openEditDrawer(record)}>
+        <Space size={token.marginXS}>
+          <a style={actionLinkStyle} onClick={() => openEditDrawer(record)}>
             {t('Edit')}
-          </Button>
+          </a>
           <Popconfirm
             title={t('Delete record')}
             description={t('Are you sure you want to delete it?')}
@@ -762,9 +882,7 @@ export const LLMServicesPage: React.FC = () => {
               await repo.refreshLLMServices();
             }}
           >
-            <Button type="link" danger>
-              {t('Delete')}
-            </Button>
+            <a style={actionLinkStyle}>{t('Delete')}</a>
           </Popconfirm>
         </Space>
       ),
@@ -772,9 +890,19 @@ export const LLMServicesPage: React.FC = () => {
   ];
 
   return (
-    <Card>
-      <Flex vertical gap="middle">
-        <Flex justify="space-between" wrap="wrap" gap="middle">
+    <Card
+      style={{ display: 'flex', flexDirection: 'column', minHeight: '100%' }}
+      styles={{
+        body: {
+          display: 'flex',
+          flex: 1,
+          flexDirection: 'column',
+          minHeight: 0,
+        },
+      }}
+    >
+      <Flex vertical gap="middle" style={{ flex: 1, minHeight: 0 }}>
+        <Flex justify="end" wrap="wrap" gap="middle">
           <Space>
             <Button icon={<ReloadOutlined />} onClick={() => refresh()}>
               {t('Refresh')}
@@ -789,30 +917,46 @@ export const LLMServicesPage: React.FC = () => {
                 {t('Delete')}
               </Button>
             </Popconfirm>
+            <Button type="primary" icon={<PlusOutlined />} onClick={openCreateDrawer}>
+              {t('Add new')}
+            </Button>
           </Space>
-          <Button type="primary" icon={<PlusOutlined />} onClick={openCreateDrawer}>
-            {t('Add new')}
-          </Button>
         </Flex>
-        <Table<LLMServiceRecord>
-          rowKey="name"
-          loading={loading}
-          columns={columns}
-          dataSource={services}
-          rowSelection={{
-            selectedRowKeys,
-            onChange: setSelectedRowKeys,
-          }}
-        />
+        <div style={{ display: 'flex', flex: 1, flexDirection: 'column', minHeight: 0 }}>
+          <Table<LLMServiceRecord>
+            rowKey="name"
+            loading={loading}
+            columns={columns}
+            dataSource={services}
+            className={fillHeightTableClassName}
+            isDraggable
+            onSortEnd={handleSortEnd}
+            rowSelection={{
+              selectedRowKeys,
+              onChange: setSelectedRowKeys,
+            }}
+            pagination={{
+              defaultPageSize: 20,
+              showTotal: (total) => t('Total {{count}} items', { count: total }),
+            }}
+            scroll={{ x: 'max-content', y: '100%' }}
+          />
+        </div>
       </Flex>
       <Drawer
         open={drawerOpen}
         onClose={closeDrawer}
+        width={AI_SETTINGS_DRAWER_WIDTH}
         title={editingRecord ? t('Edit record') : t('Add new')}
+        styles={{
+          footer: {
+            paddingInlineEnd: token.paddingLG - token.paddingXS,
+          },
+        }}
         footer={
-          <Flex justify="space-between" gap="small">
-            <LLMTestFlightButton />
+          <Flex justify="end" gap="small">
             <Space>
+              {selectedFormProvider ? <LLMTestFlightButton form={form} /> : null}
               <Button onClick={closeDrawer}>{t('Cancel')}</Button>
               <Button type="primary" loading={saving} onClick={() => form.submit()}>
                 {t('Submit')}
