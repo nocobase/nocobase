@@ -152,6 +152,18 @@ export const MessageConfigForm = ({ variableOptions }) => {
               },
             },
           },
+          repyTo: {
+            type: 'strin',
+            required: false,
+            title: `{{t("Reply To")}}`,
+            'x-decorator': 'FormItem',
+            'x-component': 'Variable.TextArea',
+            'x-component-props': {
+              scope: variableOptions,
+              useTypedConstant: ['string'],
+              placeholder: `{{t("Email address")}}`,
+            },
+          },
           subject: {
             type: 'string',
             required: true,
