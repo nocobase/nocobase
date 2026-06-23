@@ -27,6 +27,7 @@ import {
 import { css } from '@emotion/css';
 import { CheckCircleOutlined, CloseCircleOutlined, PlusOutlined } from '@ant-design/icons';
 import { App, Button, Space, Switch, Tag, Alert, Spin, Tooltip } from 'antd';
+import type { DefaultOptionType } from 'antd/lib/cascader';
 import { createForm } from '@formily/core';
 import { observer, useForm } from '@formily/react';
 import React, { useContext, useEffect, useMemo, useRef, useState, useCallback, createContext } from 'react';
@@ -480,10 +481,12 @@ const useMCPVariableScope = (includeCurrentUser: boolean) => {
   );
 };
 
-type MCPVariableOption = {
-  name?: React.Key;
+type MCPVariableValue = NonNullable<DefaultOptionType['value']>;
+
+type MCPVariableOption = Omit<Partial<DefaultOptionType>, 'children' | 'label' | 'value'> & {
+  name?: MCPVariableValue;
   title?: React.ReactNode;
-  value?: React.Key;
+  value?: MCPVariableValue;
   label?: React.ReactNode;
   key?: React.Key;
   children?: MCPVariableOption[];
@@ -501,7 +504,9 @@ const normalizeMCPVariableOption = (option?: MCPVariableOption | null): MCPVaria
   const loadChildren = option.loadChildren
     ? async (target: MCPVariableOption, ...args: unknown[]) => {
         await option.loadChildren?.(target, ...args);
-        target.children = target.children?.map((child) => normalizeMCPVariableOption(child)).filter(Boolean);
+        target.children = target.children
+          ?.map((child) => normalizeMCPVariableOption(child))
+          .filter((child): child is MCPVariableOption => Boolean(child));
       }
     : undefined;
 
@@ -512,7 +517,9 @@ const normalizeMCPVariableOption = (option?: MCPVariableOption | null): MCPVaria
     value,
     label,
     key: option.key ?? value,
-    children: option.children?.map((child) => normalizeMCPVariableOption(child)).filter(Boolean),
+    children: option.children
+      ?.map((child) => normalizeMCPVariableOption(child))
+      .filter((child): child is MCPVariableOption => Boolean(child)),
     ...(loadChildren ? { loadChildren } : {}),
   };
 };
