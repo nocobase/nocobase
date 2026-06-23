@@ -32,9 +32,15 @@ vi.mock('../../locale', () => ({
 // --- Mock the client-v2 layout primitives with lightweight test doubles ---
 vi.mock('@nocobase/client-v2', () => ({
   DEFAULT_PAGE_SIZE: 20,
+  FormSubmitActionModel: {
+    registerFlow: vi.fn(),
+  },
   Plugin: class Plugin {},
   SortableCategoryTabs: () => null,
   CollectionFilter: () => null,
+  UpdateRecordActionModel: {
+    registerFlow: vi.fn(),
+  },
   ExtendCollectionsProvider: ({ children, collections }: any) => {
     providerHolder.collections = collections;
     return <>{children}</>;
