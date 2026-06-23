@@ -18,6 +18,19 @@ class TestAclPlugin extends Plugin {
   }
 }
 
+class TestSettingsLinkPlugin extends Plugin {
+  async load() {
+    this.app.pluginSettingsManager.addMenuItem({ key: 'shared-settings', title: 'Shared settings' });
+    this.app.pluginSettingsManager.addPageTabItem({
+      menuKey: 'shared-settings',
+      key: 'target',
+      title: 'Target settings',
+      Component: () => <div>Target settings page</div>,
+    });
+    this.app.pluginSettingsManager.setPluginSettingsLink('demo-plugin', 'shared-settings.target');
+  }
+}
+
 type MockClientApplication = ReturnType<typeof createMockClient>;
 
 const renderApp = (app: MockClientApplication) => {
@@ -35,9 +48,9 @@ const waitForGetRequests = async (app: MockClientApplication, urls: string[]) =>
   );
 };
 
-const setupApp = (pmList: any[]) => {
+const setupApp = (pmList: any[], plugins: Array<typeof Plugin> = []) => {
   const app = createMockClient({
-    plugins: [NocoBaseBuildInPlugin, TestAclPlugin],
+    plugins: [NocoBaseBuildInPlugin, TestAclPlugin, ...plugins],
     router: { type: 'memory', initialEntries: ['/admin/settings/plugin-manager'] },
   });
 
@@ -173,5 +186,34 @@ describe('plugin-manager page', () => {
       expect(removeCall).toBeDefined();
       expect(removeCall?.params).toMatchObject({ filterByTk: 'demo-plugin' });
     });
+  });
+
+  it('shows Settings for a plugin linked to a different settings page', async () => {
+    const app = setupApp(
+      [
+        {
+          name: 'demo-plugin',
+          packageName: '@nocobase/demo-plugin',
+          displayName: 'Demo plugin',
+          description: 'A demo',
+          enabled: true,
+          builtIn: false,
+          removable: false,
+          version: '0.1.0',
+          isCompatible: true,
+          keywords: [],
+        },
+      ],
+      [TestSettingsLinkPlugin],
+    );
+
+    renderApp(app);
+    await waitForGetRequests(app, ['/auth:check', 'roles:check', 'pm:list']);
+
+    const card = await screen.findByRole('button', { name: 'Demo plugin' });
+    const settingsLink = within(card.closest('.ant-card') as HTMLElement).getByText('Settings');
+    fireEvent.click(settingsLink);
+
+    expect(await screen.findByText('Target settings page')).toBeInTheDocument();
   });
 });
