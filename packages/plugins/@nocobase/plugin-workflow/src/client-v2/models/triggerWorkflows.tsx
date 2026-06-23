@@ -140,7 +140,7 @@ function WorkflowSelect({
 }) {
   const ctx = useFlowContext();
   const t = useT();
-  const plugin = ctx.app.pm.get<WorkflowPlugin>('workflow');
+  const plugin = ctx.app.pm.get('workflow') as WorkflowPlugin | undefined;
   const { options, loading } = useWorkflowOptions(filter);
   const optionFilter = useMemo(() => getWorkflowOptionFilter(plugin, value), [plugin, value]);
   const selectOptions = useMemo<SelectProps['options']>(
