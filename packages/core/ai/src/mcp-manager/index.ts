@@ -388,14 +388,15 @@ export class DefaultMCPManager implements MCPManager {
   }
 
   private normalizeEntry(name: string, options: MCPOptions): MCPEntry {
-    return normalizeMCPOptions({
+    const entry: MCPEntry = {
       name,
       enabled: true,
       ...options,
       args: options.args ?? [],
       env: options.env ?? {},
       useUserContext: options.useUserContext === true,
-    }) as MCPEntry;
+    };
+    return normalizeMCPOptions(entry) as MCPEntry;
   }
 
   private get aiMcpClientsCollection() {
