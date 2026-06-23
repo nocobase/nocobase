@@ -472,6 +472,8 @@
   "Open AI chat": "打开 AI 对话",
   "Request failed": "请求失败",
   "Saved successfully": "保存成功",
+  "Unsaved changes": "未保存的修改",
+  "Are you sure you don't want to save?": "确定不保存吗？",
   "Select a role to configure permissions": "选择一个角色来配置权限",
   "Debug Panel": "调试面板",
   "Export": "导出",

@@ -13,6 +13,7 @@ import {
   App,
   Button,
   Card,
+  Checkbox,
   Drawer,
   Empty,
   Flex,
@@ -25,11 +26,12 @@ import {
   Space,
   Spin,
   Switch,
-  Table,
   Tag,
+  Tooltip,
   Typography,
+  theme,
 } from 'antd';
-import type { TableProps } from 'antd';
+import type { CheckboxProps, TableProps } from 'antd';
 import {
   CheckCircleOutlined,
   CloseCircleOutlined,
@@ -37,8 +39,11 @@ import {
   PlusOutlined,
   ReloadOutlined,
 } from '@ant-design/icons';
-import { EnvVariableInput, useApp } from '@nocobase/client-v2';
+import { css } from '@emotion/css';
+import isEqual from 'lodash/isEqual';
+import { Table, useApp, VariableInput } from '@nocobase/client-v2';
 import type { APIClient } from '@nocobase/client-v2';
+import { useFlowContext, type MetaTreeNode } from '@nocobase/flow-engine';
 import { useT } from '../locale';
 import { AI_MCP_TOOLS_DRAWER_WIDTH, AI_SETTINGS_DRAWER_WIDTH } from './drawerWidth';
 
@@ -67,6 +72,7 @@ export type MCPRecord = {
   env?: Record<string, string>;
   headers?: Record<string, string>;
   restart?: Record<string, unknown>;
+  useUserContext?: boolean;
 };
 type MCPFormValues = Omit<MCPRecord, 'args' | 'env' | 'headers'> & {
   args?: string | string[];
@@ -106,6 +112,41 @@ const transportColorMap: Record<MCPTransport, string> = {
   http: 'green',
   sse: 'gold',
 };
+
+const fillHeightTableClassName = css`
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+
+  .ant-spin-nested-loading,
+  .ant-spin-container,
+  .ant-table,
+  .ant-table-container {
+    min-height: 0;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .ant-table-content {
+    flex: 1;
+    min-height: 0;
+  }
+
+  .ant-table-body {
+    flex: 1;
+    min-height: 0;
+  }
+
+  .ant-table-thead > tr > th {
+    white-space: nowrap;
+  }
+
+  .ant-pagination {
+    flex: 0 0 auto;
+  }
+`;
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   value !== null && typeof value === 'object' && !Array.isArray(value);
@@ -184,6 +225,7 @@ export const sanitizeMCPValues = (values: MCPFormValues): MCPRecord => {
   const transport = values.transport;
   const nextValues = {
     ...values,
+    useUserContext: transport === 'stdio' ? false : values.useUserContext === true,
     args:
       typeof values.args === 'string'
         ? values.args
@@ -307,17 +349,82 @@ const createInitialValues = (): MCPFormValues => ({
   title: '',
   enabled: true,
   transport: 'stdio',
+  useUserContext: false,
+  command: '',
+  url: '',
   args: '',
   env: [],
   headers: [],
   restart: {},
 });
 
+const cloneMetaTreeNodeWithRoot = (node: MetaTreeNode, rootName: string): MetaTreeNode => {
+  const cloneChildren = (children: MetaTreeNode[] | (() => Promise<MetaTreeNode[]>) | undefined) => {
+    if (!children) {
+      return undefined;
+    }
+    if (typeof children === 'function') {
+      return async () => {
+        const resolved = await children();
+        return resolved.map((child) => cloneMetaTreeNodeWithRoot(child, rootName));
+      };
+    }
+    return children.map((child) => cloneMetaTreeNodeWithRoot(child, rootName));
+  };
+
+  const paths = node.paths?.length ? [rootName, ...node.paths.slice(1)] : [rootName];
+  return {
+    ...node,
+    name: paths.length === 1 ? rootName : node.name,
+    paths,
+    children: cloneChildren(node.children),
+  };
+};
+
+const useMCPCurrentUserNodes = (enabled: boolean): MetaTreeNode[] => {
+  const flowContext = useFlowContext();
+  return useMemo(() => {
+    if (!enabled) {
+      return [];
+    }
+    const userNode = flowContext.getPropertyMetaTree?.().find((node) => node.name === 'user');
+    return userNode ? [cloneMetaTreeNodeWithRoot(userNode, '$user')] : [];
+  }, [enabled, flowContext]);
+};
+
+type MCPVariableInputProps = React.ComponentProps<typeof VariableInput> & {
+  variableScope?: 'env' | 'user';
+};
+
+const MCPVariableInput: React.FC<MCPVariableInputProps> = ({ variableScope = 'env', ...props }) => {
+  const form = Form.useFormInstance<MCPFormValues>();
+  const useUserContext = Form.useWatch('useUserContext', form);
+  const extraNodes = useMCPCurrentUserNodes(variableScope === 'user' && useUserContext === true);
+
+  return <VariableInput {...props} namespaces={['$env']} extraNodes={extraNodes} />;
+};
+
+const UserContextCheckbox: React.FC<CheckboxProps & { tooltip?: React.ReactNode }> = ({ tooltip, ...props }) => {
+  const form = Form.useFormInstance<MCPFormValues>();
+  const transport = Form.useWatch('transport', form);
+  const disabled = transport === 'stdio';
+
+  useEffect(() => {
+    if (disabled && form.getFieldValue('useUserContext')) {
+      form.setFieldValue('useUserContext', false);
+    }
+  }, [disabled, form]);
+
+  const checkbox = <Checkbox {...props} disabled={disabled || props.disabled} />;
+  return tooltip ? <Tooltip title={tooltip}>{checkbox}</Tooltip> : checkbox;
+};
+
 const KeyValueList: React.FC<{
   value?: KeyValueEntry[] | Record<string, string>;
   onChange?: (value: KeyValueEntry[]) => void;
   addLabel: string;
-}> = ({ value, onChange, addLabel }) => {
+  variableScope?: 'env' | 'user';
+}> = ({ value, onChange, addLabel, variableScope = 'env' }) => {
   const t = useT();
   const entries = Array.isArray(value) ? value : mapObjectToEntries(value);
   const updateEntry = (index: number, key: keyof KeyValueEntry, nextValue: string) => {
@@ -334,7 +441,11 @@ const KeyValueList: React.FC<{
             value={entry.name}
             onChange={(event) => updateEntry(index, 'name', event.target.value)}
           />
-          <EnvVariableInput value={entry.value} onChange={(nextValue) => updateEntry(index, 'value', nextValue)} />
+          <MCPVariableInput
+            variableScope={variableScope}
+            value={entry.value}
+            onChange={(nextValue) => updateEntry(index, 'value', nextValue)}
+          />
           <Button
             aria-label={t('Delete')}
             type="text"
@@ -375,13 +486,20 @@ const MCPForm: React.FC<{ editing: boolean; testResult: MCPTestResultData | null
       <Form.Item name="transport" label={t('Transport')} rules={[{ required: true }]}>
         <Select options={transportOptions.map((item) => ({ ...item, label: t(item.label) }))} />
       </Form.Item>
+      <Form.Item name="useUserContext" label={t('Depends on current user')} valuePropName="checked">
+        <UserContextCheckbox
+          tooltip={t(
+            'When enabled, URL and headers can use current user variables, and the MCP server runs per current user. Stdio transport is not supported.',
+          )}
+        />
+      </Form.Item>
       {isStdio ? (
         <>
           <Form.Item name="command" label={t('Command')} rules={[{ required: true }]}>
-            <Input placeholder={t('For example: npx, uvx, node')} />
+            <MCPVariableInput placeholder={t('For example: npx, uvx, node')} />
           </Form.Item>
           <Form.Item name="args" label={t('Arguments')}>
-            <Input placeholder={t('Space-separated args, e.g.: -u --flag value')} />
+            <MCPVariableInput placeholder={t('Space-separated args, e.g.: -u --flag value')} />
           </Form.Item>
           <Form.Item name="env" label={t('Environment variables')}>
             <KeyValueList addLabel={t('Add variable')} />
@@ -391,10 +509,10 @@ const MCPForm: React.FC<{ editing: boolean; testResult: MCPTestResultData | null
       {isRemote ? (
         <>
           <Form.Item name="url" label={t('URL')} rules={[{ required: true }]}>
-            <Input placeholder={t('For example: https://example.com/mcp')} />
+            <MCPVariableInput variableScope="user" placeholder={t('For example: https://example.com/mcp')} />
           </Form.Item>
           <Form.Item name="headers" label={t('Headers')}>
-            <KeyValueList addLabel={t('Add request header')} />
+            <KeyValueList variableScope="user" addLabel={t('Add request header')} />
           </Form.Item>
         </>
       ) : null}
@@ -592,7 +710,8 @@ const EnabledSwitch: React.FC<{ record: MCPRecord; rebuilding: boolean; onUpdate
 export const MCPSettingsPage: React.FC = () => {
   const app = useApp();
   const t = useT();
-  const { message } = App.useApp();
+  const { message, modal } = App.useApp();
+  const { token } = theme.useToken();
   const [form] = Form.useForm<MCPFormValues>();
   const [clients, setClients] = useState<MCPRecord[]>([]);
   const [loading, setLoading] = useState(false);
@@ -604,8 +723,21 @@ export const MCPSettingsPage: React.FC = () => {
   const [editingRecord, setEditingRecord] = useState<MCPRecord | undefined>();
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
   const [rebuilding, setRebuilding] = useState(false);
+  const [formDirty, setFormDirty] = useState(false);
   const rebuildTailRef = useRef<Promise<void>>(Promise.resolve());
   const rebuildPendingCountRef = useRef(0);
+  const initialFormValuesRef = useRef<MCPFormValues | undefined>(undefined);
+  const actionLinkStyle = useMemo<React.CSSProperties>(
+    () => ({
+      color: token.colorPrimary,
+      marginInline: -token.paddingSM,
+      paddingBlockEnd: token.paddingSM,
+      paddingBlockStart: token.paddingSM + token.paddingXS,
+      paddingInlineEnd: token.paddingXS + token.paddingSM,
+      paddingInlineStart: token.paddingSM,
+    }),
+    [token.colorPrimary, token.paddingSM, token.paddingXS],
+  );
 
   const rebuildClient = useCallback(async () => {
     rebuildPendingCountRef.current += 1;
@@ -642,16 +774,24 @@ export const MCPSettingsPage: React.FC = () => {
   }, [refresh]);
 
   const openCreateDrawer = () => {
+    const initialValues = createInitialValues();
     setEditingRecord(undefined);
     setTestResult(null);
-    form.setFieldsValue(createInitialValues());
+    form.resetFields();
+    form.setFieldsValue(initialValues);
+    setFormDirty(false);
+    initialFormValuesRef.current = initialValues;
     setDrawerOpen(true);
   };
 
   const openEditDrawer = (record: MCPRecord) => {
+    const initialValues = toMCPFormValues(record);
     setEditingRecord(record);
     setTestResult(null);
-    form.setFieldsValue(toMCPFormValues(record));
+    form.resetFields();
+    form.setFieldsValue(initialValues);
+    setFormDirty(false);
+    initialFormValuesRef.current = initialValues;
     setDrawerOpen(true);
   };
 
@@ -659,6 +799,22 @@ export const MCPSettingsPage: React.FC = () => {
     setDrawerOpen(false);
     form.resetFields();
     setTestResult(null);
+    setFormDirty(false);
+    initialFormValuesRef.current = undefined;
+  };
+
+  const requestCloseDrawer = () => {
+    const currentValues = form.getFieldsValue(true);
+    const hasUnsavedChanges = formDirty || !isEqual(currentValues, initialFormValuesRef.current);
+    if (!hasUnsavedChanges) {
+      closeDrawer();
+      return;
+    }
+    modal.confirm({
+      title: t('Unsaved changes'),
+      content: t("Are you sure you don't want to save?"),
+      onOk: closeDrawer,
+    });
   };
 
   const runTestConnection = async () => {
@@ -685,7 +841,20 @@ export const MCPSettingsPage: React.FC = () => {
     try {
       const passed = await runTestConnection();
       if (!passed) {
-        return;
+        if (sanitizeMCPValues(values).useUserContext !== true) {
+          return;
+        }
+        const confirmed = await modal.confirm({
+          title: t('Connection test failed'),
+          content: t(
+            'The MCP server uses current user variables and the connection test failed. Do you want to save it anyway?',
+          ),
+          okText: t('Save anyway'),
+          cancelText: t('Cancel'),
+        });
+        if (!confirmed) {
+          return;
+        }
       }
       if (editingRecord) {
         await updateMCPClient(app.apiClient, values, editingRecord.name);
@@ -739,13 +908,13 @@ export const MCPSettingsPage: React.FC = () => {
       title: t('Actions'),
       key: 'actions',
       render: (_, record) => (
-        <Space split="|">
-          <Button type="link" onClick={() => setToolsDrawerRecord(record)}>
-            {t('MCP tools')}
-          </Button>
-          <Button type="link" onClick={() => openEditDrawer(record)}>
+        <Space size={token.marginXS}>
+          <a style={actionLinkStyle} onClick={() => setToolsDrawerRecord(record)}>
+            {t('View')}
+          </a>
+          <a style={actionLinkStyle} onClick={() => openEditDrawer(record)}>
             {t('Edit')}
-          </Button>
+          </a>
           <Popconfirm
             title={t('Delete record')}
             description={t('Are you sure you want to delete it?')}
@@ -756,9 +925,7 @@ export const MCPSettingsPage: React.FC = () => {
               await refresh();
             }}
           >
-            <Button type="link" danger>
-              {t('Delete')}
-            </Button>
+            <a style={actionLinkStyle}>{t('Delete')}</a>
           </Popconfirm>
         </Space>
       ),
@@ -768,9 +935,19 @@ export const MCPSettingsPage: React.FC = () => {
   const drawerTitle = editingRecord ? t('Edit record') : t('Add new');
 
   return (
-    <Card>
-      <Flex vertical gap="middle">
-        <Flex justify="space-between" wrap="wrap" gap="middle">
+    <Card
+      style={{ display: 'flex', flexDirection: 'column', minHeight: '100%' }}
+      styles={{
+        body: {
+          display: 'flex',
+          flex: 1,
+          flexDirection: 'column',
+          minHeight: 0,
+        },
+      }}
+    >
+      <Flex vertical gap="middle" style={{ flex: 1, minHeight: 0 }}>
+        <Flex justify="end" wrap="wrap" gap="middle">
           <Space>
             <Button icon={<ReloadOutlined />} onClick={() => refresh()}>
               {t('Refresh')}
@@ -785,34 +962,42 @@ export const MCPSettingsPage: React.FC = () => {
                 {t('Delete')}
               </Button>
             </Popconfirm>
+            <Button type="primary" icon={<PlusOutlined />} onClick={openCreateDrawer} disabled={rebuilding}>
+              {t('Add new')}
+            </Button>
           </Space>
-          <Button type="primary" icon={<PlusOutlined />} onClick={openCreateDrawer} disabled={rebuilding}>
-            {t('Add new')}
-          </Button>
         </Flex>
-        <Table<MCPRecord>
-          rowKey="name"
-          loading={loading}
-          columns={columns}
-          dataSource={clients}
-          rowSelection={{
-            selectedRowKeys,
-            onChange: setSelectedRowKeys,
-          }}
-        />
+        <div style={{ display: 'flex', flex: 1, flexDirection: 'column', minHeight: 0 }}>
+          <Table<MCPRecord>
+            rowKey="name"
+            loading={loading}
+            columns={columns}
+            dataSource={clients}
+            className={fillHeightTableClassName}
+            rowSelection={{
+              selectedRowKeys,
+              onChange: setSelectedRowKeys,
+            }}
+            pagination={{
+              defaultPageSize: 20,
+              showTotal: (total) => t('Total {{count}} items', { count: total }),
+            }}
+            scroll={{ x: 'max-content', y: '100%' }}
+          />
+        </div>
       </Flex>
       <Drawer
         open={drawerOpen}
-        onClose={closeDrawer}
+        onClose={requestCloseDrawer}
         width={AI_SETTINGS_DRAWER_WIDTH}
         title={drawerTitle}
         footer={
-          <Flex justify="space-between" gap="small">
-            <Button loading={testing} onClick={() => runTestConnection()}>
-              {t('Test flight')}
-            </Button>
+          <Flex justify="end" gap="small">
             <Space>
-              <Button onClick={closeDrawer}>{t('Cancel')}</Button>
+              <Button loading={testing} onClick={() => runTestConnection()}>
+                {t('Test flight')}
+              </Button>
+              <Button onClick={requestCloseDrawer}>{t('Cancel')}</Button>
               <Button type="primary" loading={saving || testing || rebuilding} onClick={() => form.submit()}>
                 {t('Submit')}
               </Button>
@@ -821,7 +1006,12 @@ export const MCPSettingsPage: React.FC = () => {
         }
       >
         <Spin spinning={saving}>
-          <Form<MCPFormValues> form={form} layout="vertical" onFinish={handleFinish}>
+          <Form<MCPFormValues>
+            form={form}
+            layout="vertical"
+            onFinish={handleFinish}
+            onValuesChange={() => setFormDirty(true)}
+          >
             <MCPForm editing={!!editingRecord} testResult={testResult} testing={testing} />
           </Form>
         </Spin>

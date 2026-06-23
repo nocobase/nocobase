@@ -35,6 +35,7 @@ describe('MCPSettingsPage request helpers', () => {
         env: [{ name: 'TOKEN', value: 'secret' }],
         headers: [{ name: 'Authorization', value: 'Bearer token' }],
         url: 'https://example.com/mcp',
+        useUserContext: true,
         restart: null,
       }),
     ).toEqual({
@@ -45,6 +46,7 @@ describe('MCPSettingsPage request helpers', () => {
       env: { TOKEN: 'secret' },
       headers: {},
       url: null,
+      useUserContext: false,
       restart: {},
     });
   });
@@ -59,6 +61,7 @@ describe('MCPSettingsPage request helpers', () => {
         env: { TOKEN: 'secret' },
         headers: [{ name: 'Authorization', value: 'Bearer token' }],
         url: 'https://example.com/mcp',
+        useUserContext: true,
         restart: { max: 1 },
       }),
     ).toEqual({
@@ -69,6 +72,7 @@ describe('MCPSettingsPage request helpers', () => {
       env: {},
       headers: { Authorization: 'Bearer token' },
       url: 'https://example.com/mcp',
+      useUserContext: true,
       restart: { max: 1 },
     });
   });
@@ -81,11 +85,13 @@ describe('MCPSettingsPage request helpers', () => {
         args: ['-y', 'pkg'],
         env: { TOKEN: 'secret' },
         headers: { Authorization: 'Bearer token' },
+        useUserContext: true,
       }),
     ).toMatchObject({
       args: '-y pkg',
       env: [{ name: 'TOKEN', value: 'secret' }],
       headers: [{ name: 'Authorization', value: 'Bearer token' }],
+      useUserContext: true,
       restart: {},
     });
   });
@@ -129,6 +135,7 @@ describe('MCPSettingsPage request helpers', () => {
         transport: 'stdio',
         command: 'npx',
         args: '-y pkg',
+        useUserContext: true,
       }),
     ).resolves.toEqual({ success: true, toolsCount: 2 });
     expect(testConnection).toHaveBeenCalledWith({
@@ -140,6 +147,7 @@ describe('MCPSettingsPage request helpers', () => {
         env: {},
         headers: {},
         url: null,
+        useUserContext: false,
         restart: {},
       },
     });
@@ -156,6 +164,7 @@ describe('MCPSettingsPage request helpers', () => {
       name: 'server',
       transport: 'http',
       url: 'https://example.com/mcp',
+      useUserContext: true,
     });
     await updateMCPClient(
       apiClient,
@@ -163,6 +172,7 @@ describe('MCPSettingsPage request helpers', () => {
         name: 'server',
         transport: 'http',
         url: 'https://example.com/mcp',
+        useUserContext: true,
       },
       'server',
     );
@@ -176,6 +186,7 @@ describe('MCPSettingsPage request helpers', () => {
         args: [],
         env: {},
         headers: {},
+        useUserContext: true,
         restart: {},
       },
     });
@@ -189,6 +200,7 @@ describe('MCPSettingsPage request helpers', () => {
         args: [],
         env: {},
         headers: {},
+        useUserContext: true,
         restart: {},
       },
     });

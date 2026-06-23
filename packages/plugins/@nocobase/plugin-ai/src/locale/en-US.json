@@ -466,6 +466,8 @@
   "Open AI chat": "Open AI chat",
   "Request failed": "Request failed",
   "Saved successfully": "Saved successfully",
+  "Unsaved changes": "Unsaved changes",
+  "Are you sure you don't want to save?": "Are you sure you don't want to save?",
   "Select a role to configure permissions": "Select a role to configure permissions",
   "Debug Panel": "Debug Panel",
   "Export": "Export",
