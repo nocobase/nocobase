@@ -12,7 +12,7 @@ import { FlowContext } from '../../flowContext';
 import { FlowEngine } from '../../flowEngine';
 import { createViewScopedEngine } from '../../ViewScopedFlowEngine';
 import { DATA_SOURCE_DIRTY_EVENT } from '../../views/viewEvents';
-import { getDirtyAwareApiClient } from '../dirtyAwareApiClient';
+import { getDirtyAwareApiClient, SKIP_DATA_SOURCE_DIRTY } from '../dirtyAwareApiClient';
 
 type TestRequestOptions = {
   url?: string;
@@ -230,6 +230,69 @@ describe('dirtyAwareApiClient', () => {
     expect(engine.getDataSourceDirtyVersion('external', 'posts')).toBe(1);
     expect(engine.getDataSourceDirtyVersion('analytics', 'posts.tags')).toBe(1);
     expect(engine.getDataSourceDirtyVersion('analytics', 'posts')).toBe(1);
+  });
+
+  it('should resolve data source resource URLs to the nested data source target', async () => {
+    const engine = new FlowEngine();
+    const request = vi.fn(async () => ({ data: { ok: true } }));
+    const api: TestApi = {
+      auth: { locale: 'zh-CN' },
+      request,
+      resource: vi.fn(),
+    };
+
+    await getWrappedApi(engine, api).request({
+      url: 'dataSources/external/collections:update',
+    });
+
+    expect(request).toHaveBeenCalledTimes(1);
+    expect(engine.getDataSourceDirtyVersion('external', 'collections')).toBe(1);
+    expect(engine.getDataSourceDirtyVersion('main', 'dataSources.collections')).toBe(0);
+    expect(engine.getDataSourceDirtyVersion('main', 'dataSources')).toBe(0);
+  });
+
+  it('should resolve dataSources resourceOf requests to the nested data source target', async () => {
+    const engine = new FlowEngine();
+    const request = vi.fn(async () => ({ data: { ok: true } }));
+    const update = vi.fn(async () => ({ data: { ok: true } }));
+    const api: TestApi = {
+      auth: { locale: 'zh-CN' },
+      request,
+      resource: vi.fn(() => ({ update })),
+    };
+    const wrappedApi = getWrappedApi(engine, api);
+
+    await wrappedApi.request({
+      resource: 'dataSources.collections',
+      resourceOf: 'external',
+      action: 'update',
+    } as TestRequestOptions & { resourceOf: string });
+    await wrappedApi.resource('dataSources.roles', 'external').update({ values: { allow: true } });
+    await wrappedApi.resource('dataSources/external/roles').update({ values: { allow: false } });
+
+    expect(engine.getDataSourceDirtyVersion('external', 'collections')).toBe(1);
+    expect(engine.getDataSourceDirtyVersion('external', 'roles')).toBe(2);
+    expect(engine.getDataSourceDirtyVersion('main', 'dataSources.collections')).toBe(0);
+    expect(engine.getDataSourceDirtyVersion('main', 'dataSources.roles')).toBe(0);
+  });
+
+  it('should skip dirty marking and strip the internal skip flag from raw requests', async () => {
+    const engine = new FlowEngine();
+    const request = vi.fn(async () => ({ data: { ok: true } }));
+    const api: TestApi = {
+      auth: { locale: 'zh-CN' },
+      request,
+      resource: vi.fn(),
+    };
+
+    await getWrappedApi(engine, api).request({
+      url: 'posts:update',
+      [SKIP_DATA_SOURCE_DIRTY]: true,
+    } as TestRequestOptions & { [SKIP_DATA_SOURCE_DIRTY]: boolean });
+
+    expect(request).toHaveBeenCalledTimes(1);
+    expect(request.mock.calls[0][0]).not.toHaveProperty(SKIP_DATA_SOURCE_DIRTY);
+    expect(engine.getDataSourceDirtyVersion('main', 'posts')).toBe(0);
   });
 
   it('should strip configured API base from URL-form mutations', async () => {

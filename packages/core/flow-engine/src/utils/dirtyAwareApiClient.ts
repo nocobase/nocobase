@@ -13,13 +13,18 @@ import { getDataSourceKeyFromHeaders, markDataSourceDirty } from './dataSourceDi
 
 type ResourceActionFn = (params?: ActionParams, opts?: unknown) => Promise<unknown>;
 
+export const SKIP_DATA_SOURCE_DIRTY = '__nocobaseSkipDataSourceDirty';
+
 type ResourceRequestOptions = RequestOptions & {
   resource?: unknown;
+  resourceOf?: unknown;
   action?: unknown;
   headers?: unknown;
+  [SKIP_DATA_SOURCE_DIRTY]?: boolean;
 };
 
 type DirtyResourceAction = {
+  dataSourceKey?: string;
   resourceName: string;
   actionName: string;
 };
@@ -209,13 +214,12 @@ function decodeResourcePathSegment(segment: string): string {
   }
 }
 
-function parseDirtyResourceActionFromUrl(url: unknown, context: FlowContext): DirtyResourceAction | undefined {
-  const resourcePath = getDirtyResourcePathFromUrl(url, context);
-  if (!resourcePath) {
-    return undefined;
-  }
+function getDataSourceKeyFromResourceOf(resourceOf: unknown): string | undefined {
+  const dataSourceKey = String(resourceOf ?? '').trim();
+  return dataSourceKey || undefined;
+}
 
-  const segments = stripSearchAndHash(resourcePath).split('/').filter(Boolean);
+function parseResourceActionFromSegments(segments: string[]): DirtyResourceAction | undefined {
   const resourceSegments: string[] = [];
   let actionName: string | undefined;
   let actionSegmentIndex = -1;
@@ -250,6 +254,66 @@ function parseDirtyResourceActionFromUrl(url: unknown, context: FlowContext): Di
   };
 }
 
+function parseDirtyResourceActionFromUrl(url: unknown, context: FlowContext): DirtyResourceAction | undefined {
+  const resourcePath = getDirtyResourcePathFromUrl(url, context);
+  if (!resourcePath) {
+    return undefined;
+  }
+
+  const segments = stripSearchAndHash(resourcePath).split('/').filter(Boolean);
+  const firstSegment = decodeResourcePathSegment(segments[0] || '');
+  if (firstSegment === 'dataSources' && segments.length >= 3) {
+    const dataSourceKey = getDataSourceKeyFromResourceOf(decodeResourcePathSegment(segments[1]));
+    const parsed = parseResourceActionFromSegments(segments.slice(2));
+    if (dataSourceKey && parsed) {
+      return {
+        ...parsed,
+        dataSourceKey,
+      };
+    }
+  }
+
+  return parseResourceActionFromSegments(segments);
+}
+
+function resolveDirtyResourceActionFromResource(
+  resourceName: string,
+  resourceOf: unknown,
+  actionName: string,
+  context: FlowContext,
+): DirtyResourceAction | undefined {
+  const normalizedResourceName = resourceName.trim();
+  const normalizedActionName = actionName.trim();
+  if (!normalizedResourceName || !normalizedActionName) {
+    return undefined;
+  }
+
+  if (normalizedResourceName.includes('/')) {
+    const parsed = parseDirtyResourceActionFromUrl(`${normalizedResourceName}:${normalizedActionName}`, context);
+    if (parsed) {
+      return parsed;
+    }
+  }
+
+  const dataSourcesPrefix = 'dataSources.';
+  if (normalizedResourceName.startsWith(dataSourcesPrefix)) {
+    const dataSourceKey = getDataSourceKeyFromResourceOf(resourceOf);
+    const nestedResourceName = normalizedResourceName.slice(dataSourcesPrefix.length).trim();
+    if (dataSourceKey && nestedResourceName) {
+      return {
+        dataSourceKey,
+        resourceName: nestedResourceName,
+        actionName: normalizedActionName,
+      };
+    }
+  }
+
+  return {
+    resourceName: normalizedResourceName,
+    actionName: normalizedActionName,
+  };
+}
+
 function resolveDirtyResourceAction(
   options: ResourceRequestOptions,
   context: FlowContext,
@@ -257,17 +321,21 @@ function resolveDirtyResourceAction(
   const resourceName = typeof options?.resource === 'string' ? options.resource : undefined;
   const actionName = typeof options?.action === 'string' ? options.action : undefined;
   if (resourceName && actionName) {
-    return { resourceName, actionName };
+    return resolveDirtyResourceActionFromResource(resourceName, options.resourceOf, actionName, context);
   }
 
   return parseDirtyResourceActionFromUrl(options?.url, context);
 }
 
-function markResourceActionDataSourceDirty(context: FlowContext, resourceName: unknown, headers: unknown) {
+function markResourceActionDataSourceDirty(
+  context: FlowContext,
+  dirtyResourceAction: DirtyResourceAction,
+  headers: unknown,
+) {
   markDataSourceDirty({
     engine: context.engine,
-    dataSourceKey: getDataSourceKeyFromHeaders(headers),
-    resourceName,
+    dataSourceKey: dirtyResourceAction.dataSourceKey || getDataSourceKeyFromHeaders(headers),
+    resourceName: dirtyResourceAction.resourceName,
     includePreviousEngines: true,
   });
 }
@@ -276,6 +344,7 @@ function createDirtyAwareResource(
   context: FlowContext,
   resource: IResource,
   resourceName: string,
+  resourceOf: unknown,
   headers: unknown,
 ): IResource {
   return new Proxy(resource, {
@@ -288,7 +357,10 @@ function createDirtyAwareResource(
       const action = original as ResourceActionFn;
       return async (...args: Parameters<ResourceActionFn>) => {
         const result = await action(...args);
-        markResourceActionDataSourceDirty(context, resourceName, headers);
+        const dirtyResourceAction = resolveDirtyResourceActionFromResource(resourceName, resourceOf, prop, context);
+        if (dirtyResourceAction) {
+          markResourceActionDataSourceDirty(context, dirtyResourceAction, headers);
+        }
         return result;
       };
     },
@@ -298,15 +370,17 @@ function createDirtyAwareResource(
 function createDirtyAwareApiClient(api: DirtyAwareAPIClient, context: FlowContext): APIClient {
   const resource: APIClient['resource'] = (name, of, headers, cancel) => {
     const targetResource = api.resource(name, of, headers, cancel);
-    return createDirtyAwareResource(context, targetResource, name, headers);
+    return createDirtyAwareResource(context, targetResource, name, of, headers);
   };
 
   const request: APIClient['request'] = async (config) => {
     const options = config as ResourceRequestOptions;
-    const dirtyResourceAction = resolveDirtyResourceAction(options, context);
-    const result = await api.request(config);
+    const skipDataSourceDirty = options?.[SKIP_DATA_SOURCE_DIRTY];
+    const dirtyResourceAction = skipDataSourceDirty ? undefined : resolveDirtyResourceAction(options, context);
+    const { [SKIP_DATA_SOURCE_DIRTY]: _skipDataSourceDirty, ...cleanConfig } = options;
+    const result = await api.request(cleanConfig as typeof config);
     if (dirtyResourceAction && isMutatingResourceAction(dirtyResourceAction.actionName)) {
-      markResourceActionDataSourceDirty(context, dirtyResourceAction.resourceName, options.headers);
+      markResourceActionDataSourceDirty(context, dirtyResourceAction, options.headers);
     }
     return result;
   };
