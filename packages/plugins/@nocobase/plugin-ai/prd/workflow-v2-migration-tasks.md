@@ -55,6 +55,73 @@
 
 禁止仅凭 `TextArea` 名字新建包装层。当前迁移不新增 workflow variable textarea wrapper。
 
+## 审计结果
+
+### v1 UI 基线
+
+- LLM 节点基线来源：v1 `LLM Node` workflow，地址 `http://localhost:13022/admin/settings/workflow/workflows/369436327477250`。
+- AI employee trigger 基线来源：v1 `Tools1` workflow，地址 `http://localhost:13022/admin/settings/workflow/workflows/365215881625600`。
+- AI employee 节点基线来源：v1 `AIEmployee` workflow，地址 `http://localhost:13022/admin/settings/workflow/workflows/356950351282176`。
+- v1 `Tools1` 只包含 AI employee trigger，不包含 AI employee 节点；AI employee 节点改用 `AIEmployee` workflow 作为对照。
+- 已执行过的 workflow 会显示只读提示：`Executed workflow cannot be modified. Could be copied to a new version to modify.`；配置抽屉布局和值仍可作为真实渲染基线。
+
+### 字段级映射表
+
+| v1 字段名 | v1 当前使用的组件/Schema 写法 | 线上或现有 v1 的真实渲染形态 | 计划复用的 v2 组件或先例文件路径 | 是否需要新增公共组件 |
+| --- | --- | --- | --- | --- |
+| LLM `llmService` | `RemoteSelect` / Formily schema | 必填远程选择器，当前样例值 `OpenAI` | `packages/plugins/@nocobase/plugin-ai/src/client-v2/components/RemoteSelect.tsx` | 否 |
+| LLM `model` | provider `ModelSettings` / Formily schema | 必填模型选择，随 LLM service 切换，当前样例值 `gpt-5.5` | `packages/plugins/@nocobase/plugin-ai/src/client-v2/llm-providers/forms.tsx` | 否 |
+| LLM `options.frequency_penalty` | `InputNumber` | Options 折叠区数字输入，样例值 `0.0`，带说明 | antd `InputNumber`，抽到 LLM fieldset | 否 |
+| LLM `options.max_completion_tokens` | `InputNumber` | Options 折叠区数字输入，样例值 `-1`，带说明 | antd `InputNumber`，抽到 LLM fieldset | 否 |
+| LLM `options.presence_penalty` | `InputNumber` | Options 折叠区数字输入，样例值 `0.0`，带说明 | antd `InputNumber`，抽到 LLM fieldset | 否 |
+| LLM `options.temperature` | `InputNumber` | Options 折叠区数字输入，样例值 `1.0`，带说明 | antd `InputNumber`，抽到 LLM fieldset | 否 |
+| LLM `options.top_p` | `InputNumber` | Options 折叠区数字输入，样例值 `0.5`，带说明 | antd `InputNumber`，抽到 LLM fieldset | 否 |
+| LLM `options.response_format` | `Select` | Options 折叠区选择器，样例值 `JSON Schema`，带 JSON mode 说明 | antd `Select`，复用 provider option 定义 | 否 |
+| LLM `options.timeout` | `InputNumber` | Options 折叠区数字输入，样例值 `60000` | antd `InputNumber`，抽到 LLM fieldset | 否 |
+| LLM `options.max_retries` | `InputNumber` | Options 折叠区数字输入，样例值 `1` | antd `InputNumber`，抽到 LLM fieldset | 否 |
+| LLM `messages[]` | `ArrayItems` + `ListCollapse` | `Messages` tab 中的可折叠列表，支持新增、删除、排序、展开/收起 | 参考 v1 `ListCollapse` 行为，在 `src/client-v2/workflow/components/WorkflowListCollapse.tsx` 迁为 antd | 是 |
+| LLM `messages[].role` | `Select` | 消息行角色选择，样例有 `System`、`User` | antd `Select` | 否 |
+| LLM `messages[].content` system/assistant | `WorkflowVariableRawTextArea` | 真实多行 textarea + 变量按钮，样例系统提示为中文长文本 | `packages/plugins/@nocobase/plugin-workflow/src/client-v2/canvas/WorkflowVariableTextArea.tsx` | 否 |
+| LLM `messages[].content[]` user | 嵌套 `ArrayItems` + `ListCollapse` | User 消息内嵌内容列表，支持 `Add content`、排序、删除 | `src/client-v2/workflow/components/WorkflowListCollapse.tsx` | 是 |
+| LLM `messages[].content[].type` | `Select` | 内容类型选择，样例为 `Text`，源码支持 `text`、`image_url`、`image_base64` | antd `Select` | 否 |
+| LLM `messages[].content[].text` | `WorkflowVariableRawTextArea` | 真实多行 textarea + 变量按钮，样例含 `$context` 与 `$jobsMapByNodeKey` 变量 | `packages/plugins/@nocobase/plugin-workflow/src/client-v2/canvas/WorkflowVariableTextArea.tsx` | 否 |
+| LLM `messages[].content[].image_url` | `WorkflowVariableInput` | 单行变量输入 | `packages/plugins/@nocobase/plugin-workflow/src/client-v2/canvas/WorkflowVariableInput.tsx` | 否 |
+| LLM `messages[].content[].image_base64` | `WorkflowVariableInput` | 单行变量输入 | `packages/plugins/@nocobase/plugin-workflow/src/client-v2/canvas/WorkflowVariableInput.tsx` | 否 |
+| LLM `structuredOutput.schema` | `WorkflowVariableJSON` | `Structured output` tab 中 JSON textarea + 变量按钮，显示 `Syntax references: JSON Schema` | `packages/plugins/@nocobase/plugin-workflow/src/client-v2/canvas/WorkflowVariableJsonTextArea.tsx` | 否 |
+| LLM `structuredOutput.name` | `Input` | 单行输入 | antd `Input` | 否 |
+| LLM `structuredOutput.description` | `Input.TextArea` | 多行说明输入 | antd `Input.TextArea` | 否 |
+| LLM `structuredOutput.strict` | `Checkbox` | 复选框 | antd `Checkbox` | 否 |
+| AI employee `username` | `AIEmployeeSelect` + Formily decorator | `Task` tab 第一项，员工选择器显示头像、昵称、下拉箭头；样例为 `Atlas` | 迁到 `src/client-v2/workflow/nodes/employee/components/AIEmployeeSelect.tsx`，复用 `ProfileCard` / `avatars` | 是 |
+| AI employee `model` | `ModelOptions` + `ModelSelect` | `Model` 选择器，placeholder `Use default model`，按员工可用模型过滤 | 复用 `packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/chatbox/model.ts` 过滤逻辑 | 是 |
+| AI employee `userId` | `UsersSelect` from workflow v1 + 变量按钮 | 必填 `Operator`，用户远程选择 + 单行变量按钮 | 优先查 workflow v2 是否有用户选择先例；变量输入复用 `WorkflowVariableInput` | 是 |
+| AI employee `message.system` | `WorkflowVariableRawTextArea` rows 10 | `Background`，真实多行 textarea + 变量按钮 | `packages/plugins/@nocobase/plugin-workflow/src/client-v2/canvas/WorkflowVariableTextArea.tsx` | 否 |
+| AI employee `message.user` | `WorkflowVariableRawTextArea` rows 10 | `Default user message`，真实多行 textarea + 变量按钮，样例为 `{{$context.data.input}}` | `packages/plugins/@nocobase/plugin-workflow/src/client-v2/canvas/WorkflowVariableTextArea.tsx` | 否 |
+| AI employee `files[]` | `FileInputs` + v1 `ListCollapse` | `Attachments` 列表，空态 `No data`，按钮 `Add file` | `src/client-v2/workflow/components/WorkflowListCollapse.tsx` | 是 |
+| AI employee `files[].type` | antd `Select` inside Formily field | `Attachment Type`，选项为 Attachment / Files collection / URL | antd `Select` | 否 |
+| AI employee `files[].collection` | `DataSourceCollectionCascader` | 仅 `file_id` 时显示，限制 main 数据源和 file collection | 查 workflow v2 collection 组件，优先复用 `packages/plugins/@nocobase/plugin-workflow/src/client-v2/components/collection/*` | 待 W3.2 审计确认 |
+| AI employee `files[].value` | `WorkflowVariableInput` | 单行变量输入；label 随类型为 `Attachment field` / `ID` / `URL` | `packages/plugins/@nocobase/plugin-workflow/src/client-v2/canvas/WorkflowVariableInput.tsx` | 否 |
+| AI employee `skillSettings.skills` | `SkillSettings` | `Skills` radio：`Preset` / `Custom`，选择区提示 `Leave empty to disable skills.` | 复用/抽取 `packages/plugins/@nocobase/plugin-ai/src/client-v2/models/ai-employees/AIEmployeeShortcutModel.tsx` 同类 preset/custom 逻辑 | 是 |
+| AI employee `skillSettings.tools` | `SkillSettings` | `Tools` radio：`Preset` / `Custom`，选择区提示 `Leave empty to disable tools.` | 复用/抽取 `packages/plugins/@nocobase/plugin-ai/src/client-v2/models/ai-employees/AIEmployeeShortcutModel.tsx` 同类 preset/custom 逻辑 | 是 |
+| AI employee `webSearch` | `WebSearchSwitch` | `Web search` switch；模型不支持时禁用并显示 `Web search not supported` | antd `Switch` + `getServiceByOverride` | 否 |
+| AI employee `structuredOutput.schema` | `WorkflowVariableJSON` | `Feedback & Notification` tab 中 `Structured output` JSON textarea + 变量按钮，带 JSON Schema 帮助链接 | `packages/plugins/@nocobase/plugin-workflow/src/client-v2/canvas/WorkflowVariableJsonTextArea.tsx` | 否 |
+| AI employee `requiresApproval` | `Radio.Group` | `Approval & Notice` 三项：`No required`、`AI decision`、`Human decision`，每项有 tooltip | antd `Radio.Group` + `Tooltip` | 否 |
+| AI employee `assignees` | workflow v1 `UsersAddition` / `UsersSelect` + `ArrayItems` | 非 `no_required` 时显示并必填；样例显示条件组 `Meet All conditions in the group` | 优先复用 workflow v2 已迁移的用户/条件选择先例；若缺失，在 W3.4 迁成 antd 条件组组件 | 是 |
+| AI employee trigger `parameters[]` | `ArrayItems` + `ParameterAddition` / `EditParameter` | `Parameters` 列表，空态只显示虚线 `Add parameter` 按钮和说明 `Parameters required by the tool` | `src/client-v2/workflow/triggers/ai-employee/Parameters.tsx` 原生 antd `Form.List` | 是 |
+| trigger `parameters[].name` | modal `Input` + validator | `Add parameter` modal 必填 `Parameter name`，校验 `/^[a-zA-Z_]+$/`，错误文案 `a-z, A-Z, _` | antd `Input` + `Form.Item.rules` | 否 |
+| trigger `parameters[].type` | modal `Select` | 必填 `Parameter type`，选项 `string` / `number` / `boolean` / `enum` | antd `Select` | 否 |
+| trigger `parameters[].description` | modal `Input.TextArea` | `Parameter description` 多行输入；列表行有描述时显示问号 tooltip | antd `Input.TextArea` + `Tooltip` | 否 |
+| trigger `parameters[].enumOptions` | modal `ArrayItems` + reaction | 仅 type 为 `enum` 时显示 `Options` 并必填，支持 `Add option`、排序、删除 | antd `Form.List` + `Input` | 否 |
+| trigger `parameters[].required` | modal `Checkbox` | `Required` 复选框；列表行以小号红色 `required` 展示 | antd `Checkbox` | 否 |
+
+### 迁移方案
+
+1. 先建立 `src/client-v2/workflow` 的公共类型、常量和注册骨架，v2 instruction / trigger 只注册加载入口，不引入 v1 client 或 Formily runtime。
+2. LLM 节点按字段迁移为原生 antd 表单；变量输入严格复用 workflow v2 `WorkflowVariableInput`、`WorkflowVariableTextArea`、`WorkflowVariableJsonTextArea`。
+3. AI employee 节点按 `Task` 与 `Feedback & Notification` 两个 tab 拆分组件；AI employee 选择、模型过滤、skills/tools preset/custom 逻辑优先复用 client-v2 已有实现。
+4. AI employee trigger 参数编辑改为 antd `Form.List` + modal，保持参数值结构、排序、删除、enum options 显隐与校验。
+5. v2 主实现完成并校验后，再将 `src/client/workflow` 收敛为兼容入口；已迁移的节点/触发器配置抽屉走 v2，未迁移能力继续走 v1，不扩大 runtime 分流边界。
+6. 最后做禁止 import 扫描、UI 对照、eslint 和相关测试，确认 v2 与 v1 交互和值结构一致。
+
 ## 大任务拆分
 
 ### W0. 迁移任务文档与基线准备
@@ -77,7 +144,7 @@
 
 #### W0.2 浏览器基线截图与交互清单
 
-- 状态：未开始
+- 状态：已提交
 - 范围：
   - v1 `http://localhost:13022/admin`
   - v2 `http://localhost:13004/v/admin`
@@ -85,7 +152,11 @@
   - 使用 Kimi WebBridge 记录 LLM 节点、AI employee 节点、AI employee trigger 的 v1 配置 UI。
   - 明确每个配置项的显示顺序、默认值、显隐规则、禁用规则、按钮文案和交互。
 - 验收记录：
-  - 待填写。
+  - 已使用 Kimi WebBridge 对照 v1：`LLM Node`、`Tools1`、`AIEmployee` 三个 workflow。
+  - 已记录 LLM 节点 Messages / Structured output / Options 的字段顺序、真实控件形态、变量输入类型和值结构。
+  - 已记录 AI employee trigger 参数列表、添加参数 modal、参数类型、enum options 显隐和参数名校验。
+  - 已记录 AI employee 节点 Task / Feedback & Notification 两个 tab 的字段顺序、真实控件形态、显隐规则和值结构。
+  - 已补充字段级映射表和迁移方案；当前结论是不新增 workflow variable textarea wrapper。
 
 ### W1. workflow v2 注册骨架与共享类型
 
@@ -412,8 +483,8 @@
 
 | 大任务 | 状态 | 下一步 |
 | --- | --- | --- |
-| W0. 迁移任务文档与基线准备 | 已提交 | 开始 W0.2 |
-| W1. workflow v2 注册骨架与共享类型 | 未开始 | 等 W0.2 或用户确认后开始 |
+| W0. 迁移任务文档与基线准备 | 已提交 | 开始 W1.1 |
+| W1. workflow v2 注册骨架与共享类型 | 未开始 | 开始 W1.1 |
 | W2. LLM workflow 节点迁移 | 未开始 | 等 W1 完成 |
 | W3. AI employee workflow 节点迁移 | 未开始 | 等 W1 完成 |
 | W4. AI employee workflow trigger 迁移 | 未开始 | 等 W1 完成 |
