@@ -43,8 +43,16 @@ function toContent(value?: string | LLMMessageContent[]) {
   return Array.isArray(value) ? value : [];
 }
 
+function getTextContent(item: LLMMessageContent) {
+  return item.type === 'text' ? item.content : undefined;
+}
+
+function getImageUrlValue(item: LLMMessageContent) {
+  return item.type === 'image_url' || item.type === 'image_base64' ? item.image_url : undefined;
+}
+
 function getImageUrl(item: LLMMessageContent) {
-  const imageUrl = item.image_url;
+  const imageUrl = getImageUrlValue(item);
   if (typeof imageUrl === 'string') {
     return imageUrl;
   }
@@ -52,6 +60,20 @@ function getImageUrl(item: LLMMessageContent) {
     return typeof imageUrl.url === 'string' ? imageUrl.url : undefined;
   }
   return undefined;
+}
+
+function createContentByType(type: LLMMessageContentType, item: LLMMessageContent): LLMMessageContent {
+  if (type === 'text') {
+    return {
+      type,
+      content: getTextContent(item),
+    };
+  }
+
+  return {
+    type,
+    image_url: getImageUrlValue(item),
+  };
 }
 
 export function Messages() {
@@ -94,6 +116,17 @@ export function Messages() {
       updateContent(
         messageIndex,
         currentContent.map((item, itemIndex) => (itemIndex === contentIndex ? { ...item, ...patch } : item)),
+      );
+    },
+    [messages, updateContent],
+  );
+
+  const replaceContentItem = useCallback(
+    (messageIndex: number, contentIndex: number, nextItem: LLMMessageContent) => {
+      const currentContent = toContent(messages[messageIndex]?.content);
+      updateContent(
+        messageIndex,
+        currentContent.map((item, itemIndex) => (itemIndex === contentIndex ? nextItem : item)),
       );
     },
     [messages, updateContent],
@@ -161,18 +194,18 @@ export function Messages() {
                               { label: t('Image (send via Base64)'), value: 'image_base64' },
                             ]}
                             onChange={(nextType) => {
-                              updateContentItem(messageIndex, contentIndex, {
-                                type: nextType,
-                                content: nextType === 'text' ? contentItem.content : undefined,
-                                image_url: nextType === 'text' ? undefined : contentItem.image_url,
-                              });
+                              replaceContentItem(
+                                messageIndex,
+                                contentIndex,
+                                createContentByType(nextType, contentItem),
+                              );
                             }}
                           />
                         </Form.Item>
                         {type === 'text' ? (
                           <Form.Item label={t('Content')}>
                             <WorkflowVariableTextArea
-                              value={contentItem.content}
+                              value={getTextContent(contentItem)}
                               autoSize={{ minRows: 5 }}
                               onChange={(content) => updateContentItem(messageIndex, contentIndex, { content })}
                             />
