@@ -7,10 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { useDebounce } from 'ahooks';
 import { RemoteSelect } from '@nocobase/client-v2';
 import { useFlowEngine } from '@nocobase/flow-engine';
 import { Alert } from 'antd';
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { useCurrentWorkflowContext } from '../../canvas/contexts';
 import { useT } from '../../locale';
 import { parseCollectionName } from './utils';
@@ -46,6 +47,8 @@ export function TriggerCollectionRecordSelect({
   const flowEngine = useFlowEngine();
   const t = useT();
   const loadedItemsRef = useRef<RecordValue[]>([]);
+  const [searchValue, setSearchValue] = useState('');
+  const debouncedSearchValue = useDebounce(searchValue, { wait: 300 });
 
   const [dataSourceKey, collectionName] = parseCollectionName(workflow?.config?.collection as string) as [
     string,
@@ -85,12 +88,28 @@ export function TriggerCollectionRecordSelect({
         const matched = loadedItemsRef.current.find((item) => getPrimaryValue(item, filterTargetKey) === nextValue);
         onChange?.(matched ?? nextValue);
       }}
+      filterOption={false}
+      onSearch={(nextValue) => {
+        setSearchValue(nextValue);
+      }}
       request={async () => {
         const response = await flowEngine.context.api
           .resource(collectionName, null, { 'x-data-source': dataSourceKey })
-          .list({ pageSize: 50 });
+          .list({
+            pageSize: 200,
+            ...(debouncedSearchValue
+              ? {
+                  filter: {
+                    [labelKey]: {
+                      $includes: debouncedSearchValue,
+                    },
+                  },
+                }
+              : {}),
+          });
         return response?.data?.data ?? [];
       }}
+      refreshDeps={[debouncedSearchValue, dataSourceKey, collectionName, labelKey]}
       onLoaded={(items) => {
         loadedItemsRef.current = items as RecordValue[];
       }}

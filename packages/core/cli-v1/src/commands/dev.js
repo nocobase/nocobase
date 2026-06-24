@@ -13,6 +13,7 @@ const {
   hasCorePackages,
   run,
   runWithPrefix,
+  colorizedDevLogEnv,
   postCheck,
   nodeCheck,
   promptForTs,
@@ -279,6 +280,7 @@ module.exports = (cli) => {
 
         const argv = [
           'watch',
+          '--clear-screen=false',
           ...(inspect ? [`--inspect=${inspect === true ? 9229 : inspect}`] : []),
           `--ignore=${resolvePluginStoragePath()}/**`,
           '--tsconfig',
@@ -297,9 +299,9 @@ module.exports = (cli) => {
 
         const runDevServer = () => {
           run('tsx', argv, {
-            env: {
+            env: colorizedDevLogEnv(process.env, {
               APP_PORT: serverPort,
-            },
+            }),
           }).catch((err) => {
             if (err.exitCode == 100) {
               console.log('Restarting server...');

@@ -7,38 +7,48 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { BranchContextValue } from './BranchContext';
+import type { SharedAddNodeAnchor } from './AddNodeContext.shared';
 
-type WorkflowCapabilityContext = {
+type WorkflowCapabilityContext = SharedAddNodeAnchor & {
   engine: {
-    isWorkflowSync(workflow: any): boolean;
+    isWorkflowSync(workflow: unknown): boolean;
   };
-  workflow?: any;
-  upstream?: any;
-  branchIndex?: number | null;
+  workflow?: unknown;
   syncOnly?: boolean;
-  branchContext?: Pick<BranchContextValue, 'syncOnly'> | null;
-  t: (key: string) => string;
 };
+
+type Translate = (key: string, options?: Record<string, unknown>) => string;
 
 type AvailableInstruction = {
   async?: boolean;
-  isAvailable?(ctx: Omit<WorkflowCapabilityContext, 't'>): boolean;
+  isAvailable?(ctx: Omit<WorkflowCapabilityContext, 'branchContext'>): boolean;
 };
 
-export function getInstructionAvailable(instruction: AvailableInstruction, ctx: WorkflowCapabilityContext) {
+export function getInstructionUnavailableMessage(
+  instruction: AvailableInstruction,
+  ctx: WorkflowCapabilityContext,
+  t: Translate,
+) {
   if (instruction.async && ctx.engine.isWorkflowSync(ctx.workflow)) {
-    return ctx.t('This type of node can not be used in current type of workflow or execute mode.');
+    return t('This type of node can not be used in current type of workflow or execute mode.');
   }
 
   const syncOnly = ctx.branchContext?.syncOnly ?? ctx.syncOnly ?? false;
   if (instruction.async && syncOnly) {
-    return ctx.t('This branch does not support asynchronous nodes.');
+    return t('This branch does not support asynchronous nodes.');
   }
 
   if (instruction.isAvailable && !instruction.isAvailable({ ...ctx, syncOnly })) {
-    return ctx.t('This type of node can not be used in current type of workflow or execute mode.');
+    return t('This type of node can not be used in current type of workflow or execute mode.');
   }
 
   return null;
+}
+
+export function getInstructionAvailable(
+  instruction: AvailableInstruction,
+  ctx: WorkflowCapabilityContext & { t: Translate },
+) {
+  const { t, ...context } = ctx;
+  return getInstructionUnavailableMessage(instruction, context, t);
 }
