@@ -296,7 +296,7 @@
 
 ### W3. AI employee workflow 节点迁移
 
-状态：进行中
+状态：已提交
 
 目标：把 v1 `workflow/nodes/employee` 迁到 v2，保留配置结构并改为 antd。
 
@@ -400,7 +400,7 @@
 
 #### W3.5 AI employee 节点测试与提交
 
-- 状态：未开始
+- 状态：已提交
 - 范围：
   - AI employee 节点相关测试
   - 本 PRD 状态更新
@@ -410,7 +410,15 @@
   - `yarn eslint --fix` 已运行在触达文件上。
   - 必要 UI 对照通过。
 - 验收记录：
-  - 待填写。
+  - 已新增 `workflow-ai-employee-fieldset.test.tsx`，覆盖 AI employee `FieldsetLoader` lazy loader 指向 v2 `AIEmployeeFieldset`。
+  - 已覆盖 `StructuredOutput` 与 `FeedbackSettings` 在同一个 antd Form 中提交时的值结构，确认 `structuredOutput.schema` 保留在 `config.structuredOutput.schema`，历史 `requiresApproval: true` 会归一为 `human_decision`。
+  - 已覆盖 `Assignees` 在非 `no_required` 审批模式下显示、选择用户入口保存 `config.assignees[]`、查询用户入口保存 `{ filter }` 结构，以及 `no_required` 下隐藏。
+  - 测试中发现 `Assignees` 仅依赖 `Form.useWatch()` 时，初始非 `no_required` 值可能未显示；已补充 `form.getFieldValue()` 初始值兜底。
+  - 测试中发现添加负责人入口默认 accessible name 会包含图标名称；已补充 `aria-label`，并将 Popover 明确设为 click 触发。
+  - 已运行 `yarn eslint --fix packages/plugins/@nocobase/plugin-ai/src/client-v2/__tests__/workflow-ai-employee-fieldset.test.tsx packages/plugins/@nocobase/plugin-ai/src/client-v2/workflow/nodes/employee/components/Assignees.tsx`。
+  - 已运行 `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/__tests__/workflow-ai-employee-fieldset.test.tsx --run --reporter=verbose`，5 个用例通过。
+  - 已运行 `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/__tests__/workflow-registration.test.ts --run --reporter=verbose`，5 个用例通过。
+  - 已扫描 `src/client-v2/workflow`，未发现 `@nocobase/client`、`@formily/*` runtime、`@nocobase/plugin-workflow/client` 或本插件 `src/client/` import。
 
 ### W4. AI employee workflow trigger 迁移
 
@@ -552,7 +560,7 @@
 | W0. 迁移任务文档与基线准备 | 已提交 | 开始 W1.1 |
 | W1. workflow v2 注册骨架与共享类型 | 已提交 | 开始 W2.1 |
 | W2. LLM workflow 节点迁移 | 已提交 | 开始 W3.1 |
-| W3. AI employee workflow 节点迁移 | 进行中 | 开始 W3.5 |
-| W4. AI employee workflow trigger 迁移 | 未开始 | 等 W1 完成 |
+| W3. AI employee workflow 节点迁移 | 已提交 | 开始 W4.1 |
+| W4. AI employee workflow trigger 迁移 | 未开始 | 开始 W4.1 |
 | W5. v1 兼容入口收敛 | 未开始 | 等 W2/W3/W4 校验通过 |
 | W6. 总体验收、清理和最终提交 | 未开始 | 等 W5 完成 |

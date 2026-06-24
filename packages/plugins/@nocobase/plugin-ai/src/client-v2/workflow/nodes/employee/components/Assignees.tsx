@@ -76,7 +76,12 @@ export function Assignees() {
   const t = useT();
   const form = Form.useFormInstance();
   const [open, setOpen] = useState(false);
-  const requiresApproval = Form.useWatch(['config', 'requiresApproval'], form) as AIEmployeeApprovalMode | undefined;
+  const watchedRequiresApproval = Form.useWatch(['config', 'requiresApproval'], form) as
+    | AIEmployeeApprovalMode
+    | undefined;
+  const requiresApproval =
+    watchedRequiresApproval ??
+    (form.getFieldValue(['config', 'requiresApproval']) as AIEmployeeApprovalMode | undefined);
   const visible = requiresApproval && requiresApproval !== 'no_required';
 
   if (!visible) {
@@ -131,6 +136,7 @@ export function Assignees() {
             ))}
             <Form.ErrorList errors={meta.errors} />
             <Popover
+              trigger="click"
               open={open}
               onOpenChange={setOpen}
               placement="bottom"
@@ -157,7 +163,7 @@ export function Assignees() {
                 </Space>
               }
             >
-              <Button block type="dashed" icon={<PlusOutlined />}>
+              <Button block type="dashed" aria-label={t('Add assignee')} icon={<PlusOutlined />}>
                 {t('Add assignee')}
               </Button>
             </Popover>
