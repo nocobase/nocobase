@@ -103,10 +103,12 @@ export function AssignedFieldsEditor({
     [collection, flowEngine],
   );
   const normalizedValue = useMemo(() => normalizeAssignedValues(value), [value]);
-  const assignedFields = useMemo(
-    () => fields.filter((field) => Object.prototype.hasOwnProperty.call(normalizedValue, field.name)),
-    [fields, normalizedValue],
-  );
+  const assignedFields = useMemo(() => {
+    const fieldsByName = new Map(fields.map((field) => [field.name, field]));
+    return Object.keys(normalizedValue)
+      .map((fieldName) => fieldsByName.get(fieldName))
+      .filter(Boolean) as AssignedField[];
+  }, [fields, normalizedValue]);
   const unassignedFields = useMemo(
     () => fields.filter((field) => !Object.prototype.hasOwnProperty.call(normalizedValue, field.name)),
     [fields, normalizedValue],
