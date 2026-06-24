@@ -232,7 +232,7 @@ describe('generatePathnameFromViewParams', () => {
     ]);
 
     expect(token).toMatch(/^[A-Za-z]{8}$/);
-    expect(pathname).toBe(`/admin/xxx/view/yyy/${token}/filterbytk/1`);
+    expect(pathname).toBe(`/admin/xxx/view/yyy/opts/${token}/filterbytk/1`);
   });
 
   it('should generate complex path with all parameters', () => {

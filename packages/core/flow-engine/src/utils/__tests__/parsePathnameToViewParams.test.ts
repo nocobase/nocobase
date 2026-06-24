@@ -54,7 +54,7 @@ describe('parsePathnameToViewParams', () => {
     if (!token) {
       throw new Error('Expected openView route state token.');
     }
-    const result = parsePathnameToViewParams(`/admin/xxx/view/yyy/${token}/filterbytk/1/sourceid/2`);
+    const result = parsePathnameToViewParams(`/admin/xxx/view/yyy/opts/${token}/filterbytk/1/sourceid/2`);
 
     expect(result).toEqual([
       { viewUid: 'xxx' },
@@ -67,10 +67,21 @@ describe('parsePathnameToViewParams', () => {
     ]);
   });
 
-  test('should ignore invalid RunJS openView route state values and keep following params', () => {
-    const result = parsePathnameToViewParams('/admin/xxx/view/yyy/AbCdEfGh/filterbytk/1');
+  test('should ignore invalid RunJS openView opts and keep following params', () => {
+    const result = parsePathnameToViewParams('/admin/xxx/view/yyy/opts/AbCdEfGh/filterbytk/1');
 
     expect(result).toEqual([{ viewUid: 'xxx' }, { viewUid: 'yyy', filterByTk: '1' }]);
+  });
+
+  test('should not parse bare RunJS openView route state token segments', () => {
+    const token = encodeOpenViewRouteState('yyy', { mode: 'dialog', size: 'large' });
+    if (!token) {
+      throw new Error('Expected openView route state token.');
+    }
+    const result = parsePathnameToViewParams(`/admin/xxx/view/yyy/${token}/filterbytk/1`);
+
+    expect(result[1]).toMatchObject({ viewUid: 'yyy' });
+    expect(result[1]?.openViewRouteState).toBeUndefined();
   });
 
   test('should handle multiple views with different filterByTk and sourceId', () => {

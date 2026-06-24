@@ -81,7 +81,7 @@ export function generatePathnameFromViewParams(
 
     const openViewRouteStateToken = encodeOpenViewRouteState(viewParam.viewUid, viewParam.openViewRouteState);
     if (openViewRouteStateToken) {
-      segments.push(openViewRouteStateToken);
+      segments.push('opts', openViewRouteStateToken);
     }
 
     // 添加参数

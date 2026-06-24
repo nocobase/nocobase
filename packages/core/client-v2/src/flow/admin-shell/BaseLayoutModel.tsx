@@ -9,7 +9,7 @@
 
 import { define, observable } from '@formily/reactive';
 import {
-  isOpenViewRouteStateToken,
+  decodeOpenViewRouteState,
   parsePathnameToViewParams,
   type FlowEngine,
   FlowModel,
@@ -109,8 +109,7 @@ const getDefaultBasePathnameFromRoutePath = (routePath?: string) => {
   return '';
 };
 
-const isKnownViewParamName = (segment: string) =>
-  ['tab', 'filterbytk', 'sourceid', 'openviewmode', 'openviewsize'].includes(segment);
+const isKnownViewParamName = (segment: string) => ['tab', 'filterbytk', 'sourceid'].includes(segment);
 
 const isStandardLayoutRelativePath = (relativePath: string) => {
   if (!relativePath) {
@@ -123,11 +122,21 @@ const isStandardLayoutRelativePath = (relativePath: string) => {
   }
 
   let i = 1;
+  let currentViewUid = segments[0];
   while (i < segments.length) {
     const segment = segments[i];
 
     if (segment === 'view') {
       if (!segments[i + 1]) {
+        return false;
+      }
+      currentViewUid = segments[i + 1];
+      i += 2;
+      continue;
+    }
+
+    if (segment === 'opts') {
+      if (!segments[i + 1] || !decodeOpenViewRouteState(currentViewUid, segments[i + 1])) {
         return false;
       }
       i += 2;
@@ -136,11 +145,6 @@ const isStandardLayoutRelativePath = (relativePath: string) => {
 
     if (isKnownViewParamName(segment) && segments[i + 1]) {
       i += 2;
-      continue;
-    }
-
-    if (isOpenViewRouteStateToken(segment)) {
-      i++;
       continue;
     }
 

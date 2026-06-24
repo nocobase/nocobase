@@ -237,7 +237,7 @@ describe('AdminLayoutModel runtime', () => {
     act(() => {
       model.syncLayoutRoute({
         name: getLayoutPageViewRouteName('admin'),
-        pathname: `/admin/page-1/view/popup/${token}/filterbytk/1`,
+        pathname: `/admin/page-1/view/popup/opts/${token}/filterbytk/1`,
         layoutBasePathname: '/admin',
       });
     });
@@ -254,6 +254,43 @@ describe('AdminLayoutModel runtime', () => {
             filterByTk: '1',
           },
         ],
+      });
+    });
+  });
+
+  it('should reject malformed RunJS openView route params', async () => {
+    const wrongViewToken = encodeOpenViewRouteState('other-popup', { mode: 'dialog', size: 'large' });
+    if (!wrongViewToken) {
+      throw new Error('Expected openView route state token.');
+    }
+    const engine = new FlowEngine();
+
+    render(
+      <FlowEngineProvider engine={engine}>
+        <TestAdminLayoutHost />
+      </FlowEngineProvider>,
+    );
+    const model = engine.getModel<TestAdminLayoutModel>('admin-layout-model');
+    expect(model).toBeTruthy();
+
+    [
+      '/admin/page-1/sourceid',
+      '/admin/page-1/AbCdEfGh/filterbytk/1',
+      '/admin/page-1/view/popup/AbCdEfGh/filterbytk/1',
+      '/admin/page-1/view/popup/opts/AbCdEfGh/filterbytk/1',
+      '/admin/page-1/view/popup/openviewmode/dialog',
+      '/admin/page-1/view/popup/openviewsize/large',
+      `/admin/page-1/view/popup/opts/${wrongViewToken}/filterbytk/1`,
+    ].forEach((pathname) => {
+      expect(
+        model.resolveLayoutRoute({
+          name: getLayoutPageViewRouteName('admin'),
+          pathname,
+          layoutBasePathname: '/admin',
+        }),
+      ).toMatchObject({
+        type: 'notFound',
+        pathname,
       });
     });
   });

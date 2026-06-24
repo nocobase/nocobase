@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { decodeOpenViewRouteState, isOpenViewRouteStateToken, type OpenViewRouteState } from './openViewRouteState';
+import { decodeOpenViewRouteState, type OpenViewRouteState } from './openViewRouteState';
 
 export interface ViewParam {
   /** 视图唯一标识符，一般为某个 Model 实例的 uid */
@@ -50,9 +50,6 @@ const stripBasePath = (pathname: string, basePath: string) => {
 
   return '';
 };
-
-const isViewParamName = (segment: string) =>
-  ['tab', 'filterbytk', 'sourceid', 'openviewmode', 'openviewsize'].includes(segment);
 
 /**
  * 解析路径名为视图参数数组
@@ -117,12 +114,16 @@ export const parsePathnameToViewParams = (
     }
     // 处理参数
     else if (currentView) {
-      if (!isViewParamName(segment) && isOpenViewRouteStateToken(segment)) {
-        const routeState = decodeOpenViewRouteState(currentView.viewUid, segment);
-        if (routeState) {
-          currentView.openViewRouteState = routeState;
+      if (segment === 'opts') {
+        if (i + 1 < segments.length) {
+          const routeState = decodeOpenViewRouteState(currentView.viewUid, segments[i + 1]);
+          if (routeState) {
+            currentView.openViewRouteState = routeState;
+          }
+          i += 2;
+        } else {
+          i++;
         }
-        i++;
         continue;
       }
 
