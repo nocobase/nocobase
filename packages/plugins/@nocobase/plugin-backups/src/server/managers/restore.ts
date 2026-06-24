@@ -30,6 +30,8 @@ import {
   toMajorVersion,
 } from '../utils';
 interface Metadata {
+  metadataVersion?: number;
+  partialBackupMode?: string;
   version: string;
   database: {
     dialect: string;
@@ -51,6 +53,7 @@ interface Metadata {
 export interface RestoreOptions {
   forceSchemaRestore?: boolean;
   skipDropAllTables?: boolean;
+  restoreMode?: 'preserveTables';
 }
 
 const RESTORE_STEPS = {
@@ -192,6 +195,7 @@ export class RestoreManager {
         filePath: path.join(extractedDir, dbFile),
         schema: metadata.database.schema,
         skipDropAllTables: options?.skipDropAllTables === true,
+        restoreMode: options?.restoreMode,
         toolchain: this.#resolveRestoreToolchain(metadata),
       });
       this.ctx.logger.info('Database restored successfully', { module: BACKUPS });
@@ -499,6 +503,7 @@ export class RestoreManager {
         filePath: path.join(extractedDir, dbFile),
         schema: metadata.database.schema,
         skipDropAllTables: options?.skipDropAllTables === true,
+        restoreMode: options?.restoreMode,
         toolchain: this.#resolveRestoreToolchain(metadata),
       });
       this.ctx.logger.info('Database restored successfully', { module: BACKUPS });
