@@ -82,6 +82,14 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
     const engine = this.context.engine as FlowEngine;
     const currentVersion = this.getDirtyTrackingVersion(engine, dataSourceKey, resource, params);
 
+    if (resource instanceof MultiRecordResource && this.getDataLoadingMode() === 'manual' && !this.hasActiveFilters()) {
+      resource.setData([]);
+      resource.setMeta({ count: 0, hasNext: false, page: 1 });
+      resource.loading = false;
+      this.lastSeenDirtyVersion = currentVersion;
+      return;
+    }
+
     if (forceRefresh) {
       if (this.dirtyRefreshing) return;
       this.dirtyRefreshing = true;

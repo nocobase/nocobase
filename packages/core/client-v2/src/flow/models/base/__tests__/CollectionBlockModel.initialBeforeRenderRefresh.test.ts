@@ -128,4 +128,60 @@ describe('CollectionBlockModel initial beforeRender refresh', () => {
     expect(resource.getData()).toEqual([]);
     expect(resource.getMeta('count')).toBe(0);
   });
+
+  it('skips forced active refresh in manual mode when filters are empty', async () => {
+    const { model, resource } = setupModelWithManualMode();
+    const refreshSpy = vi.spyOn(resource, 'refresh');
+
+    resource.setData([{ id: 2, name: 'Stale' }]);
+    resource.setMeta({ count: 1, hasNext: true, page: 2 });
+    resource.loading = true;
+
+    model.onActive(true);
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(refreshSpy).not.toHaveBeenCalled();
+    expect(resource.getData()).toEqual([]);
+    expect(resource.getMeta('count')).toBe(0);
+    expect(resource.getMeta('hasNext')).toBe(false);
+    expect(resource.getMeta('page')).toBe(1);
+    expect(resource.loading).toBe(false);
+  });
+
+  it('keeps forced active refresh in manual mode when filters are active', async () => {
+    const { model, resource } = setupModelWithManualMode();
+    const refreshSpy = vi.spyOn(resource, 'refresh').mockResolvedValue();
+
+    resource.setData([{ id: 2, name: 'Stale' }]);
+    resource.setMeta({ count: 1, hasNext: true, page: 2 });
+    model.setFilterActive('filter-form-item', true);
+
+    model.onActive(true);
+    await Promise.resolve();
+
+    expect(refreshSpy).toHaveBeenCalledTimes(1);
+    expect(resource.getData()).toEqual([{ id: 2, name: 'Stale' }]);
+    expect(resource.getMeta('count')).toBe(1);
+  });
+
+  it('skips forced active refresh in manual mode when only resource filters are active', async () => {
+    const { model, resource } = setupModelWithManualMode();
+    const refreshSpy = vi.spyOn(resource, 'refresh');
+
+    resource.setData([{ id: 2, name: 'Stale' }]);
+    resource.setMeta({ count: 1, hasNext: true, page: 2 });
+    resource.loading = true;
+    resource.addFilterGroup('data-scope', { status: { $eq: 'active' } });
+
+    model.onActive(true);
+    await Promise.resolve();
+
+    expect(refreshSpy).not.toHaveBeenCalled();
+    expect(resource.getData()).toEqual([]);
+    expect(resource.getMeta('count')).toBe(0);
+    expect(resource.getMeta('hasNext')).toBe(false);
+    expect(resource.getMeta('page')).toBe(1);
+    expect(resource.loading).toBe(false);
+  });
 });
