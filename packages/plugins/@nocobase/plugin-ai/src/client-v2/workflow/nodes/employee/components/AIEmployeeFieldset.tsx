@@ -12,6 +12,10 @@ import { Form, Tabs } from 'antd';
 import { DEFAULT_AI_EMPLOYEE_USERNAME } from '../../../constants';
 import { useT } from '../../../../locale';
 import { AIEmployeeSelect } from './AIEmployeeSelect';
+import { FileInputs } from './FileInputs';
+import { MessageInputs } from './MessageInputs';
+import { ModelOptions } from './ModelOptions';
+import { UserInputFormItem } from './UserInput';
 
 export function AIEmployeeFieldset() {
   const t = useT();
@@ -25,21 +29,29 @@ export function AIEmployeeFieldset() {
           label: t('Task'),
           forceRender: true,
           children: (
-            <Form.Item
-              name={['config', 'username']}
-              label={t('AI employee')}
-              tooltip={t('Choose the AI employee for this task')}
-              initialValue={DEFAULT_AI_EMPLOYEE_USERNAME}
-              rules={[{ required: true }]}
-            >
-              <AIEmployeeSelect
-                onChange={(username) => {
-                  form.setFieldValue(['config', 'username'], username);
-                  form.setFieldValue(['config', 'skillSettings', 'skills'], undefined);
-                  form.setFieldValue(['config', 'skillSettings', 'tools'], undefined);
-                }}
-              />
-            </Form.Item>
+            <>
+              <Form.Item
+                name={['config', 'username']}
+                label={t('AI employee')}
+                tooltip={t('Choose the AI employee for this task')}
+                initialValue={DEFAULT_AI_EMPLOYEE_USERNAME}
+                rules={[{ required: true }]}
+              >
+                <AIEmployeeSelect
+                  onChange={(username) => {
+                    form.setFieldValue(['config', 'username'], username);
+                    form.setFieldValue(['config', 'skillSettings', 'skills'], undefined);
+                    form.setFieldValue(['config', 'skillSettings', 'tools'], undefined);
+                  }}
+                />
+              </Form.Item>
+              <ModelOptions />
+              <UserInputFormItem />
+              <MessageInputs />
+              <Form.Item label={t('Attachments')} tooltip={t('Select the file or image to be sent to the LLM')}>
+                <FileInputs />
+              </Form.Item>
+            </>
           ),
         },
         {

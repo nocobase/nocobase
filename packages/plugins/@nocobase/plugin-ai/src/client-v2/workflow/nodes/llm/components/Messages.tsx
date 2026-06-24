@@ -11,6 +11,7 @@ import React, { useCallback } from 'react';
 import { Form, Select } from 'antd';
 import { WorkflowVariableInput, WorkflowVariableTextArea } from '@nocobase/plugin-workflow/client-v2';
 import { useT } from '../../../../locale';
+import { FormValueRegistry } from '../../../components/FormValueRegistry';
 import { WorkflowListCollapse } from '../../../components/WorkflowListCollapse';
 import type { LLMMessage, LLMMessageContent, LLMMessageContentType, LLMMessageRole } from '../../../types';
 
@@ -47,10 +48,6 @@ function getImageUrl(item: LLMMessageContent) {
     return typeof imageUrl.url === 'string' ? imageUrl.url : undefined;
   }
   return undefined;
-}
-
-function RegisteredFormValue(_: { value?: unknown; onChange?: (value: unknown) => void }) {
-  return null;
 }
 
 export function Messages() {
@@ -94,7 +91,7 @@ export function Messages() {
   return (
     <>
       <Form.Item name={['config', 'messages']} noStyle>
-        <RegisteredFormValue />
+        <FormValueRegistry />
       </Form.Item>
       <WorkflowListCollapse<LLMMessage>
         value={messages}

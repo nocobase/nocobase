@@ -325,7 +325,7 @@
 
 #### W3.2 模型、操作者、消息、附件配置迁移
 
-- 状态：未开始
+- 状态：已提交
 - 范围：
   - `src/client-v2/workflow/nodes/employee/components/ModelOptions.tsx`
   - `src/client-v2/workflow/nodes/employee/components/UserInput.tsx`
@@ -340,7 +340,17 @@
 - UI 对照：
   - 对照模型下拉、操作者选择、消息多行变量输入、附件列表。
 - 验收记录：
-  - 待填写。
+  - 已新增 v2 `ModelOptions`，复用 `getAIEmployeeModels` / `getAllModels` 按当前员工过滤可用模型，值结构保持 `config.model = { llmService, model }`，空值表示使用默认模型。
+  - 已新增 v2 `UserInput`，保留远程用户选择与 workflow 单行变量输入能力，值写入 `config.userId`。
+  - 已新增 v2 `MessageInputs`，`Background` 与 `Default user message` 均复用 workflow v2 `WorkflowVariableTextArea`，保持真实多行变量输入和值路径 `config.message.system/user`。
+  - 已新增 v2 `FileInputs`，复用 `WorkflowListCollapse` 管理 `config.files[]`，支持 attachment / files collection / URL 三种类型；`files[].value` 复用 workflow v2 单行 `WorkflowVariableInput`。
+  - 已抽出 `FormValueRegistry` 公共组件，用于数组字段在 antd `validateFields()` 中注册值，避免手动 list 字段提交丢失；LLM `Messages` 已改为复用该公共组件。
+  - v2 当前无可直接复用的 `DataSourceCollectionCascader` 原生实现；`file_id` 的 collection 选择改为从 v2 `dataSourceManager` 读取 main 数据源中 template 为 `file` 的集合，并仍保存 collection name。
+  - 已运行 `yarn eslint --fix` 覆盖触达文件。
+  - 已运行 `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/__tests__/workflow-registration.test.ts --run --reporter=verbose`，5 个用例通过。
+  - 已运行 `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/__tests__/workflow-llm-fieldset.test.tsx --run --reporter=verbose`，2 个用例通过。
+  - 已用 Kimi WebBridge 在 v2 `http://localhost:13004/v/admin/workflow/workflows/356950351282176` 打开 AI employee 节点配置抽屉，确认 Model、Operator、Background、Default user message、Attachments 空态和已有消息值正确显示；该 workflow 已执行，新增附件按钮按只读表单不执行修改，与 v1 只读基线一致。
+  - 已扫描 `src/client-v2/workflow`，未发现 `@nocobase/client`、`@formily/*` runtime、`@nocobase/plugin-workflow/client` 或本插件 `src/client/` import。
 
 #### W3.3 技能、工具、web search 配置迁移
 
@@ -528,7 +538,7 @@
 | W0. 迁移任务文档与基线准备 | 已提交 | 开始 W1.1 |
 | W1. workflow v2 注册骨架与共享类型 | 已提交 | 开始 W2.1 |
 | W2. LLM workflow 节点迁移 | 已提交 | 开始 W3.1 |
-| W3. AI employee workflow 节点迁移 | 进行中 | 开始 W3.2 |
+| W3. AI employee workflow 节点迁移 | 进行中 | 开始 W3.3 |
 | W4. AI employee workflow trigger 迁移 | 未开始 | 等 W1 完成 |
 | W5. v1 兼容入口收敛 | 未开始 | 等 W2/W3/W4 校验通过 |
 | W6. 总体验收、清理和最终提交 | 未开始 | 等 W5 完成 |
