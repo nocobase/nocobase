@@ -20,6 +20,9 @@ const mcpClientMock = vi.hoisted(() => {
     }
 
     async initializeConnections() {
+      if (Object.values(this.connections).some((connection) => connection?.failInitialize)) {
+        throw new Error('initialize failed');
+      }
       return Object.fromEntries(
         Object.keys(this.connections).map((serverName) => [
           serverName,
@@ -250,6 +253,28 @@ describe('user-bound MCP clients', () => {
       },
     ]);
     expect(mcpClientMock.instances[0].connections.profile.url).toBe('https://mcp.example.test/11');
+  });
+
+  it('returns empty tools and logs warning when user-bound MCP initialization fails', async () => {
+    const app = createApp();
+    const manager = new UserContextMCPClientManager({
+      app,
+      listEntries: async () => [
+        {
+          name: 'profile',
+          enabled: true,
+          transport: 'http',
+          url: 'https://{{ $env.MCP_HOST }}/{{ currentUser.id }}',
+          headers: {},
+          useUserContext: true,
+        },
+      ],
+      buildConnection: () => ({ failInitialize: true }) as any,
+    });
+
+    await expect(manager.getToolsMap(createCtx(1))).resolves.toEqual({});
+    expect(app.log.warn).toHaveBeenCalledWith('fail to get user-bound mcp tools', expect.any(Error));
+    expect(mcpClientMock.instances[0].close).toHaveBeenCalledTimes(1);
   });
 
   it('reuses cached user-bound tools and refreshes them after TTL', async () => {
