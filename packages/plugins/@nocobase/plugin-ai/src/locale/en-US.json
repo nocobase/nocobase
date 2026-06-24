@@ -451,7 +451,9 @@
   "Restrict this AI employee to the selected models.": "Restrict this AI employee to the selected models.",
   "Models": "Models",
   "Depends on current user": "Depends on current user",
-  "When enabled, URL and headers can use current user variables, and the MCP server runs per current user. Stdio transport is not supported.": "When enabled, URL and headers can use current user variables, and the MCP server runs per current user. Stdio transport is not supported.",
+  "NocoBase request": "NocoBase request",
+  "When enabled, URL and headers can use current user variables. Stdio transport is not supported.": "When enabled, URL and headers can use current user variables. Stdio transport is not supported.",
+  "When enabled, URL and headers can use current user variables and NocoBase request variables. Stdio transport is not supported.": "When enabled, URL and headers can use current user variables and NocoBase request variables. Stdio transport is not supported.",
   "Connection test failed": "Connection test failed",
   "The MCP server uses current user variables and the connection test failed. Do you want to save it anyway?": "The MCP server uses current user variables and the connection test failed. Do you want to save it anyway?",
   "Save anyway": "Save anyway"

@@ -46,52 +46,67 @@ export class UserContextMCPClientManager {
       return {};
     }
 
-    this.evictExpired();
+    let client: MultiServerMCPClient | null = null;
+    try {
+      this.evictExpired();
 
-    const entries = (await this.options.listEntries())
-      .filter((entry) => entry.enabled !== false && entry.useUserContext === true && entry.transport !== 'stdio')
-      .sort((left, right) => left.name.localeCompare(right.name));
-    if (!entries.length) {
+      const entries = (await this.options.listEntries())
+        .filter((entry) => entry.enabled !== false && entry.useUserContext === true && entry.transport !== 'stdio')
+        .sort((left, right) => left.name.localeCompare(right.name));
+      if (!entries.length) {
+        return {};
+      }
+
+      const cacheKey = String(currentUser.id);
+      const cached = this.cache.get(cacheKey);
+      const now = Date.now();
+      if (cached && cached.expiresAt > now) {
+        cached.lastAccessedAt = now;
+        return cached.toolsMap;
+      }
+
+      if (cached) {
+        await this.closeEntry(cached);
+        this.cache.delete(cacheKey);
+      }
+
+      const connections: Record<string, MCPConnection> = {};
+      for (const entry of entries) {
+        const rendered = await renderMCPOptions(entry, this.options.app, ctx);
+        connections[entry.name] = this.options.buildConnection(rendered);
+      }
+
+      client = new MultiServerMCPClient(connections);
+      const initializedToolsMap = await client.initializeConnections();
+      const toolsMap = Object.fromEntries(
+        Object.entries(initializedToolsMap).map(([serverName, tools]) => [
+          serverName,
+          tools as StructuredToolInterface[],
+        ]),
+      );
+
+      this.cache.set(cacheKey, {
+        client,
+        toolsMap,
+        expiresAt: now + this.ttlMs,
+        lastAccessedAt: now,
+      });
+      client = null;
+      await this.evictOversized();
+
+      return toolsMap;
+    } catch (error) {
+      if (client) {
+        await this.closeEntry({
+          client,
+          toolsMap: {},
+          expiresAt: 0,
+          lastAccessedAt: 0,
+        });
+      }
+      this.options.app?.log?.warn?.('fail to get user-bound mcp tools', error);
       return {};
     }
-
-    const cacheKey = String(currentUser.id);
-    const cached = this.cache.get(cacheKey);
-    const now = Date.now();
-    if (cached && cached.expiresAt > now) {
-      cached.lastAccessedAt = now;
-      return cached.toolsMap;
-    }
-
-    if (cached) {
-      await this.closeEntry(cached);
-      this.cache.delete(cacheKey);
-    }
-
-    const connections: Record<string, MCPConnection> = {};
-    for (const entry of entries) {
-      const rendered = await renderMCPOptions(entry, this.options.app, ctx);
-      connections[entry.name] = this.options.buildConnection(rendered);
-    }
-
-    const client = new MultiServerMCPClient(connections);
-    const initializedToolsMap = await client.initializeConnections();
-    const toolsMap = Object.fromEntries(
-      Object.entries(initializedToolsMap).map(([serverName, tools]) => [
-        serverName,
-        tools as StructuredToolInterface[],
-      ]),
-    );
-
-    this.cache.set(cacheKey, {
-      client,
-      toolsMap,
-      expiresAt: now + this.ttlMs,
-      lastAccessedAt: now,
-    });
-    await this.evictOversized();
-
-    return toolsMap;
   }
 
   async clear() {
