@@ -142,6 +142,22 @@ describe('useWorkflowVariableOptions — runtime-neutral resolution', () => {
     expect(trigger?.children?.map((c: any) => c.name)).toContain('data');
   });
 
+  it('includes the legacy workflow title context path for saved trigger task titles', () => {
+    setupEngine(makeV1ShapedPlugin());
+    holder.currentNode = { key: 'n1', type: 'condition', upstream: null };
+    holder.workflow = { id: 7, type: 'approval', config: {} };
+
+    const { result } = renderHook(() => useWorkflowVariableOptions());
+    const trigger = result.current.find((n) => n.name === '$context');
+    const workflow = trigger?.children?.find((c: any) => c.name === 'workflow');
+    const title = workflow?.children?.find((c: any) => c.name === 'title');
+
+    expect(trigger?.title).toBe('Trigger variables');
+    expect(workflow?.title).toBe('Workflow');
+    expect(title?.title).toBe('Workflow title');
+    expect(title?.paths).toEqual(['useFlowContext()', 'workflow', 'title']);
+  });
+
   it('omits the trigger scope when no workflow is in context (drawer without workflow)', () => {
     setupEngine(makeV1ShapedPlugin());
     holder.currentNode = { key: 'n1', type: 'condition', upstream: null };

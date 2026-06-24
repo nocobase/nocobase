@@ -18,6 +18,7 @@
     "@formily/core": "2.x",
     "@formily/react": "2.x",
     "@types/ejs": "^3.1.1",
+    "ahooks": "^3.7.2",
     "antd": "5.x",
     "classnames": "^2.3.1",
     "cron-parser": "4.4.0",

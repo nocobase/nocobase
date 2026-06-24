@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { css } from '@emotion/css';
 import React, { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import { useMemoizedFn } from 'ahooks';
 import { App, Form, Input, Skeleton, Tag, Tooltip, Typography, theme } from 'antd';
@@ -35,14 +36,49 @@ function TriggerTypeDescription({
   if (!trigger.description) {
     return null;
   }
+  const containerClassName = css`
+    margin-bottom: ${token.marginLG}px;
+    padding: ${token.padding}px;
+    background-color: ${token.colorFillAlter};
+
+    > *:last-child {
+      margin-bottom: 0;
+    }
+
+    dl {
+      display: flex;
+      align-items: baseline;
+      margin: 0;
+    }
+
+    dt {
+      color: ${token.colorText};
+    }
+
+    dt::after {
+      content: ':';
+      margin-right: ${token.marginXS}px;
+    }
+
+    dd {
+      margin: 0;
+    }
+
+    p {
+      margin-top: ${token.marginSM}px;
+      color: ${token.colorTextDescription};
+    }
+  `;
+
   return (
-    <div style={{ marginBottom: token.marginLG, padding: token.padding, backgroundColor: token.colorFillAlter }}>
-      <Typography.Paragraph>
-        <Typography.Text>{t('Trigger type')}</Typography.Text>
-        <Typography.Text>: </Typography.Text>
-        <Tag icon={<ThunderboltOutlined />}>{t(trigger.title)}</Tag>
-      </Typography.Paragraph>
-      <Typography.Paragraph type="secondary">{t(trigger.description)}</Typography.Paragraph>
+    <div className={containerClassName}>
+      <dl>
+        <dt>{t('Trigger type')}</dt>
+        <dd>
+          <Tag>{t(trigger.title)}</Tag>
+        </dd>
+      </dl>
+      <p>{t(trigger.description)}</p>
     </div>
   );
 }
@@ -58,6 +94,7 @@ function TriggerConfigForm({
 }) {
   const ctx = useFlowEngineContext();
   const t = useT();
+  const { token } = theme.useToken();
   const { message } = App.useApp();
   const executed = Boolean(workflow?.versionStats?.executed);
   const [form] = Form.useForm();
@@ -90,6 +127,16 @@ function TriggerConfigForm({
     }
   });
 
+  const formClassName = css`
+    .ant-form-item {
+      margin-bottom: ${token.margin}px;
+    }
+
+    .ant-form-item-extra {
+      margin-top: ${token.marginXXS}px;
+    }
+  `;
+
   return (
     <CurrentWorkflowContext.Provider value={workflow}>
       <DrawerFormLayout
@@ -100,20 +147,37 @@ function TriggerConfigForm({
         cancelText={t('Cancel')}
         footer={executed ? <span /> : undefined}
       >
-        <Form form={form} layout="vertical" disabled={executed}>
-          {trigger ? <TriggerTypeDescription trigger={trigger} t={t} /> : null}
-          {Fieldset ? (
-            <Suspense fallback={<Skeleton active paragraph={{ rows: 4 }} />}>
-              <Fieldset />
-            </Suspense>
-          ) : (
-            <Typography.Paragraph type="secondary">
-              {trigger
-                ? t("This trigger's configuration has not been migrated to the new canvas yet.")
-                : t('This trigger type is not available in the new canvas yet.')}
-            </Typography.Paragraph>
-          )}
-        </Form>
+        <div style={{ paddingBottom: 48 }}>
+          <Form
+            className={formClassName}
+            form={form}
+            layout="vertical"
+            disabled={executed}
+            requiredMark={(label, { required }) =>
+              required ? (
+                <>
+                  <span style={{ color: token.colorError }}>*</span>
+                  {label}
+                </>
+              ) : (
+                label
+              )
+            }
+          >
+            {trigger ? <TriggerTypeDescription trigger={trigger} t={t} /> : null}
+            {Fieldset ? (
+              <Suspense fallback={<Skeleton active paragraph={{ rows: 4 }} />}>
+                <Fieldset />
+              </Suspense>
+            ) : (
+              <Typography.Paragraph type="secondary">
+                {trigger
+                  ? t("This trigger's configuration has not been migrated to the new canvas yet.")
+                  : t('This trigger type is not available in the new canvas yet.')}
+              </Typography.Paragraph>
+            )}
+          </Form>
+        </div>
       </DrawerFormLayout>
     </CurrentWorkflowContext.Provider>
   );
