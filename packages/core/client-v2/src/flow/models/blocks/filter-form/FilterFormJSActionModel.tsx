@@ -7,7 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { createSafeDocument, createSafeWindow, createSafeNavigator, tExpr } from '@nocobase/flow-engine';
+import {
+  createSafeDocument,
+  createSafeWindow,
+  createSafeNavigator,
+  createRunJSSettingsConfigureStep,
+  runtimeSettingsRegistry,
+  tExpr,
+} from '@nocobase/flow-engine';
 import { CodeEditor } from '../../../components/code-editor';
 import { FilterFormActionModel } from './FilterFormActionModel';
 import { resolveRunJsParams } from '../../utils/resolveRunJsParams';
@@ -58,15 +65,33 @@ FilterFormJSActionModel.registerFlow({
           code: '',
         };
       },
+      afterParamsSave({ ctx }) {
+        runtimeSettingsRegistry.clearModel(ctx.model.uid);
+      },
       async handler(ctx, params) {
         const { code, version } = resolveRunJsParams(ctx, params);
         const navigator = createSafeNavigator();
-        await ctx.runjs(
-          code,
-          { window: createSafeWindow({ navigator }), document: createSafeDocument(), navigator },
-          { version },
-        );
+        const run = runtimeSettingsRegistry.beginRun(ctx.model, code);
+        try {
+          await ctx.runjs(
+            code,
+            { window: createSafeWindow({ navigator }), document: createSafeDocument(), navigator },
+            { version },
+          );
+          runtimeSettingsRegistry.endRun(ctx.model, run.runId);
+        } catch (error) {
+          runtimeSettingsRegistry.endRun(ctx.model, run.runId, { error });
+          throw error;
+        }
       },
     },
+  },
+});
+
+FilterFormJSActionModel.registerFlow({
+  key: 'runjsSettings',
+  title: tExpr('RunJS settings'),
+  steps: {
+    configure: createRunJSSettingsConfigureStep(),
   },
 });

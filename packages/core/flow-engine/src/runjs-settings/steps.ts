@@ -18,11 +18,22 @@ import {
 import { isDirectRunJSSettingsSchema } from './normalize';
 import { runtimeSettingsRegistry } from './registry';
 import { toFlowUISchema } from './toFlowUISchema';
-import type { RunJSSettingField, RunJSSettingsJSONValue, RunJSSettingsModelLike, RunJSSettingsSchema } from './types';
-import type { ParamObject, StepDefinition } from '../types';
+import type {
+  RunJSSettingField,
+  RunJSSettingsJSONValue,
+  RunJSSettingsModelLike,
+  RunJSSettingsSchema,
+  UseSettingsInput,
+} from './types';
+import type { FlowSettingsAfterParamsSaveStructured, ParamObject, StepDefinition } from '../types';
 
 export const RUNJS_SETTINGS_FLOW_KEY = 'runjsSettings';
 export const RUNJS_SETTINGS_CONFIGURE_STEP_KEY = 'configure';
+
+const RUNJS_CODE_PARAM_PATHS: Array<[flowKey: string, stepKey: string]> = [
+  ['jsSettings', 'runJs'],
+  ['clickSettings', 'runJs'],
+];
 
 type FlowLike = {
   key: string;
@@ -32,6 +43,8 @@ type FlowLike = {
   options?: Record<string, unknown>;
 };
 
+type RunJSSettingsAfterSave = FlowSettingsAfterParamsSaveStructured;
+
 function getConfigureValues(model: RunJSSettingsModelLike): Record<string, RunJSSettingsJSONValue> {
   const values = model.getStepParams?.(RUNJS_SETTINGS_FLOW_KEY, RUNJS_SETTINGS_CONFIGURE_STEP_KEY);
   return values && typeof values === 'object' && !Array.isArray(values)
@@ -39,8 +52,206 @@ function getConfigureValues(model: RunJSSettingsModelLike): Record<string, RunJS
     : {};
 }
 
+function getRunJSCode(model: RunJSSettingsModelLike): string | undefined {
+  for (const [flowKey, stepKey] of RUNJS_CODE_PARAM_PATHS) {
+    const params = model.getStepParams?.(flowKey, stepKey);
+    if (params && typeof params === 'object' && !Array.isArray(params)) {
+      const code = (params as { code?: unknown }).code;
+      if (typeof code === 'string' && code.trim()) {
+        return code;
+      }
+    }
+  }
+  return undefined;
+}
+
+function findCallArgumentStart(code: string, callIndex: number): number {
+  const openParenIndex = code.indexOf('(', callIndex);
+  if (openParenIndex < 0) {
+    return -1;
+  }
+  let index = openParenIndex + 1;
+  while (index < code.length && /\s/.test(code[index])) {
+    index += 1;
+  }
+  return code[index] === '{' ? index : -1;
+}
+
+function readBalancedObjectLiteral(code: string, startIndex: number): string | undefined {
+  let depth = 0;
+  let quote: '"' | "'" | '`' | undefined;
+  let escaped = false;
+  let lineComment = false;
+  let blockComment = false;
+
+  for (let index = startIndex; index < code.length; index += 1) {
+    const char = code[index];
+    const nextChar = code[index + 1];
+
+    if (lineComment) {
+      if (char === '\n') {
+        lineComment = false;
+      }
+      continue;
+    }
+    if (blockComment) {
+      if (char === '*' && nextChar === '/') {
+        blockComment = false;
+        index += 1;
+      }
+      continue;
+    }
+    if (quote) {
+      if (escaped) {
+        escaped = false;
+      } else if (char === '\\') {
+        escaped = true;
+      } else if (char === quote) {
+        quote = undefined;
+      }
+      continue;
+    }
+    if (char === '/' && nextChar === '/') {
+      lineComment = true;
+      index += 1;
+      continue;
+    }
+    if (char === '/' && nextChar === '*') {
+      blockComment = true;
+      index += 1;
+      continue;
+    }
+    if (char === '"' || char === "'" || char === '`') {
+      quote = char;
+      continue;
+    }
+    if (char === '{') {
+      depth += 1;
+      continue;
+    }
+    if (char === '}') {
+      depth -= 1;
+      if (depth === 0) {
+        return code.slice(startIndex, index + 1);
+      }
+    }
+  }
+  return undefined;
+}
+
+function evaluateDirectSchemaLiteral(literal: string): unknown | undefined {
+  if (/\.\.\./.test(literal) || /=>/.test(literal) || /\bfunction\b/.test(literal) || /\bnew\s+/.test(literal)) {
+    return undefined;
+  }
+  try {
+    return Function(`"use strict"; return (${literal});`)();
+  } catch {
+    return undefined;
+  }
+}
+
+export function extractRunJSSettingsSchemaFromCode(code: string): unknown | undefined {
+  let searchIndex = 0;
+  while (searchIndex < code.length) {
+    const callIndex = code.indexOf('ctx.useSettings', searchIndex);
+    if (callIndex < 0) {
+      return undefined;
+    }
+    const argumentStart = findCallArgumentStart(code, callIndex);
+    if (argumentStart >= 0) {
+      const literal = readBalancedObjectLiteral(code, argumentStart);
+      if (literal) {
+        const schema = evaluateDirectSchemaLiteral(literal);
+        if (schema) {
+          return schema;
+        }
+      }
+    }
+    searchIndex = callIndex + 'ctx.useSettings'.length;
+  }
+  return undefined;
+}
+
+function discoverRunJSSettingsSchema(model: RunJSSettingsModelLike): void {
+  const code = getRunJSCode(model);
+  if (!code) {
+    return;
+  }
+  const schema = extractRunJSSettingsSchemaFromCode(code);
+  if (!schema) {
+    return;
+  }
+  const run = runtimeSettingsRegistry.beginRun(model, code);
+  runtimeSettingsRegistry.register(model, 'default', schema as UseSettingsInput, run);
+}
+
 export function hasRunJSSettingsConfigItems(schema: RunJSSettingsSchema | undefined): schema is RunJSSettingsSchema {
   return isDirectRunJSSettingsSchema(schema) && activeFieldKeys(schema).length > 0;
+}
+
+export function createRunJSSettingsConfigureStep(options: { afterParamsSave?: RunJSSettingsAfterSave } = {}) {
+  return {
+    title: 'Configure',
+    useRawParams: true,
+    refreshUiSchemaOnValuesChange: { debounceMs: 150 },
+    hideInSettings(ctx) {
+      const values = ctx.model.getStepParams(RUNJS_SETTINGS_FLOW_KEY, RUNJS_SETTINGS_CONFIGURE_STEP_KEY) || {};
+      const result = evaluateSettingsSchema(ctx.model, 'settings-open', values);
+      return hasRunJSSettingsConfigItems(result.schema);
+    },
+    defaultParams(ctx) {
+      const values = ctx.getStepParams(RUNJS_SETTINGS_CONFIGURE_STEP_KEY) || {};
+      const result = evaluateSettingsSchema(ctx.model, 'settings-open', values);
+      return result.schema ? applyDefaults(result.schema, values) : {};
+    },
+    uiSchema(ctx) {
+      const values = ctx.getStepParams(RUNJS_SETTINGS_CONFIGURE_STEP_KEY) || {};
+      const draftValues = ctx.getDraftStepParams(RUNJS_SETTINGS_FLOW_KEY, RUNJS_SETTINGS_CONFIGURE_STEP_KEY);
+      const result = evaluateSettingsSchema(
+        ctx.model,
+        draftValues ? 'settings-draft' : 'settings-open',
+        values,
+        draftValues,
+      );
+      const errorSchema = result.error
+        ? {
+            __runjsSettingsError: {
+              type: 'void',
+              'x-component': 'Alert',
+              'x-component-props': {
+                type: result.schema ? 'warning' : 'error',
+                showIcon: true,
+                message: ctx.t('Invalid JS block settings'),
+                description: result.error.message,
+              },
+            },
+          }
+        : {};
+      return {
+        ...errorSchema,
+        ...(result.schema ? toFlowUISchema(result.schema) : {}),
+      };
+    },
+    beforeParamsSave({ ctx, currentParams, previousParams }): ParamObject {
+      const result = evaluateSettingsSchema(ctx.model, 'settings-save', previousParams || {}, currentParams || {});
+      if (result.error || !result.schema) {
+        throw result.error || new Error(ctx.t('Invalid JS block settings'));
+      }
+      return mergeActiveValuesPreserveInactiveUnknown({
+        schema: result.schema,
+        previousParams,
+        draftParams: currentParams,
+      }) as ParamObject;
+    },
+    async afterParamsSave(args) {
+      if (options.afterParamsSave) {
+        await options.afterParamsSave(args);
+        return;
+      }
+      args.ctx.model.invalidateFlowCache('beforeRender', true);
+      await args.ctx.model.rerender();
+    },
+  } satisfies StepDefinition;
 }
 
 function evaluateSettingsSchema(
@@ -101,7 +312,11 @@ function getDraftValuesForEvaluate(
 export function buildRunJSSettingsStepDefinitions(
   model: RunJSSettingsModelLike,
 ): Record<string, StepDefinition> | null {
-  const entry = runtimeSettingsRegistry.get(model, 'default');
+  let entry = runtimeSettingsRegistry.get(model, 'default');
+  if (!entry) {
+    discoverRunJSSettingsSchema(model);
+    entry = runtimeSettingsRegistry.get(model, 'default');
+  }
   if (!entry) {
     return null;
   }

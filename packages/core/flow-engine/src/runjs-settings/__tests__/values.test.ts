@@ -19,6 +19,7 @@ import { normalizeRunJSSettingsSchema } from '../normalize';
 import { runtimeSettingsRegistry } from '../registry';
 import {
   buildRunJSSettingsStepDefinitions,
+  extractRunJSSettingsSchemaFromCode,
   RUNJS_SETTINGS_CONFIGURE_STEP_KEY,
   RUNJS_SETTINGS_FLOW_KEY,
 } from '../steps';
@@ -183,6 +184,57 @@ describe('runjs settings values', () => {
         title: 'New title',
       },
     });
+    runtimeSettingsRegistry.clearModel(model.uid);
+  });
+
+  it('discovers direct settings schema from stored RunJS code before execution', () => {
+    class TestFlowModel extends FlowModel {}
+
+    const engine = new FlowEngine();
+    const model = new TestFlowModel({ uid: 'model-runjs-settings-discovery', flowEngine: engine });
+    model.setStepParams('clickSettings', 'runJs', {
+      version: 'v2',
+      code: `
+const config = ctx.useSettings({
+  action: {
+    type: 'object',
+    title: 'Action behavior',
+    properties: {
+      label: { type: 'string', default: 'Preview selected rows' },
+      severity: {
+        type: 'select',
+        default: 'success',
+        options: [
+          { label: 'Success', value: 'success' },
+          { label: 'Info', value: 'info' },
+        ],
+      },
+    },
+  },
+  confirmation: {
+    type: 'object',
+    title: 'Confirmation',
+    properties: {
+      enabled: { type: 'boolean', default: true },
+    },
+  },
+});
+
+ctx.message[config.action.severity](config.action.label);
+`,
+    });
+
+    const runJsParams = model.getStepParams('clickSettings', 'runJs') as { code: string };
+    const schema = extractRunJSSettingsSchemaFromCode(runJsParams.code);
+    expect(schema).toMatchObject({
+      action: { type: 'object', title: 'Action behavior' },
+      confirmation: { type: 'object', title: 'Confirmation' },
+    });
+
+    const steps = buildRunJSSettingsStepDefinitions(model);
+    expect(Object.keys(steps || {})).toEqual(['action', 'confirmation']);
+    expect(steps?.action.title).toBe('Action behavior');
+    expect(steps?.confirmation.title).toBe('Confirmation');
     runtimeSettingsRegistry.clearModel(model.uid);
   });
 

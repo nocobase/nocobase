@@ -10,7 +10,14 @@
 /**
  * JS Form Action：表单工具栏按钮点击执行 JS。
  */
-import { tExpr, createSafeWindow, createSafeDocument, createSafeNavigator } from '@nocobase/flow-engine';
+import {
+  tExpr,
+  createSafeWindow,
+  createSafeDocument,
+  createSafeNavigator,
+  createRunJSSettingsConfigureStep,
+  runtimeSettingsRegistry,
+} from '@nocobase/flow-engine';
 import { CodeEditor } from '../../../components/code-editor';
 import { FormActionModel } from './FormActionModel';
 import { resolveRunJsParams } from '../../utils/resolveRunJsParams';
@@ -64,6 +71,9 @@ ctx.message.success('Current form values: ' + JSON.stringify(values));
 `,
         };
       },
+      afterParamsSave({ ctx }) {
+        runtimeSettingsRegistry.clearModel(ctx.model.uid);
+      },
       async handler(ctx, params) {
         const { code, version } = resolveRunJsParams(ctx, params);
         ctx.defineMethod('refresh', async () => {
@@ -74,12 +84,27 @@ ctx.message.success('Current form values: ' + JSON.stringify(values));
           }
         });
         const navigator = createSafeNavigator();
-        await ctx.runjs(
-          code,
-          { window: createSafeWindow({ navigator }), document: createSafeDocument(), navigator },
-          { version },
-        );
+        const run = runtimeSettingsRegistry.beginRun(ctx.model, code);
+        try {
+          await ctx.runjs(
+            code,
+            { window: createSafeWindow({ navigator }), document: createSafeDocument(), navigator },
+            { version },
+          );
+          runtimeSettingsRegistry.endRun(ctx.model, run.runId);
+        } catch (error) {
+          runtimeSettingsRegistry.endRun(ctx.model, run.runId, { error });
+          throw error;
+        }
       },
     },
+  },
+});
+
+JSFormActionModel.registerFlow({
+  key: 'runjsSettings',
+  title: tExpr('RunJS settings'),
+  steps: {
+    configure: createRunJSSettingsConfigureStep(),
   },
 });

@@ -61,6 +61,7 @@ import {
 import { resolveRunJSSettingsFlow } from './runjs-settings/steps';
 
 const Panel = Collapse.Panel;
+const FlowSettingsSchemaField = createSchemaField();
 
 /**
  * 打开流程设置的参数接口
@@ -644,12 +645,10 @@ export class FlowSettings {
     } as ISchema;
 
     const compiledSchema = compileUiSchema(scopes, formSchema);
-    const SchemaField = createSchemaField();
-
     return React.createElement(
       FormProviderWithForm,
       { form, initialValues, onFormValuesChange, key },
-      React.createElement(SchemaField as any, {
+      React.createElement(FlowSettingsSchemaField as any, {
         schema: compiledSchema,
         components: flowEngine?.flowSettings?.components || {},
         scope: scopes,

@@ -11,7 +11,7 @@ import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest';
 import React from 'react';
 import { createForm } from '@formily/core';
 import { createSchemaField, FormProvider } from '@formily/react';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { FlowSettings } from '../flowSettings';
 import { DefaultSettingsIcon } from '../components/settings/wrappers/contextual/DefaultSettingsIcon';
 import { FlowModel } from '../models';
@@ -85,6 +85,8 @@ vi.mock('antd', () => {
   const Select = vi.fn(() => 'Select');
   const Switch = vi.fn(() => 'Switch');
   const Alert = vi.fn(() => 'Alert');
+  const ColorPicker = vi.fn(() => 'ColorPicker');
+  const Slider = vi.fn(() => 'Slider');
   return {
     Button: vi.fn(() => 'Button'),
     Collapse,
@@ -95,6 +97,8 @@ vi.mock('antd', () => {
     Select,
     Switch,
     Alert,
+    ColorPicker,
+    Slider,
     Typography: {
       Paragraph: vi.fn(({ children }: any) => children ?? 'Paragraph'),
       Text: vi.fn(({ children }: any) => children ?? 'Text'),
@@ -226,6 +230,60 @@ describe('FlowSettings', () => {
 
       expect(await screen.findByText('Lazy Flow Settings Component')).toBeInTheDocument();
       expect(loader).toHaveBeenCalledTimes(1);
+    });
+
+    test('should keep the focused field mounted when renderStepForm schema changes', () => {
+      type StableInputProps = {
+        value?: string;
+        onChange?: (value: string) => void;
+      };
+      const StableInput = ({ value = '', onChange }: StableInputProps) =>
+        React.createElement('input', {
+          'aria-label': 'stable-title',
+          value,
+          onChange: (event: React.ChangeEvent<HTMLInputElement>) => {
+            onChange?.(event.target.value);
+          },
+        });
+      const form = createForm({ initialValues: { title: 'Initial title' } });
+      const createUiSchema = (description: string) => ({
+        title: {
+          type: 'string',
+          title: 'Title',
+          description,
+          'x-component': 'StableInput',
+        },
+      });
+
+      engine.flowSettings.registerComponents({ StableInput });
+
+      const view = render(
+        flowSettings.renderStepForm({
+          uiSchema: createUiSchema('First schema'),
+          initialValues: {},
+          flowEngine: engine,
+          form,
+        }),
+      );
+      const input = screen.getByLabelText('stable-title') as HTMLInputElement;
+      input.focus();
+      fireEvent.change(input, { target: { value: 'Edited title' } });
+
+      expect(document.activeElement).toBe(input);
+      expect(form.values.title).toBe('Edited title');
+
+      view.rerender(
+        flowSettings.renderStepForm({
+          uiSchema: createUiSchema('Refreshed schema'),
+          initialValues: {},
+          flowEngine: engine,
+          form,
+        }),
+      );
+
+      expect(screen.getByLabelText('stable-title')).toBe(input);
+      expect(document.activeElement).toBe(input);
+      expect(form.values.title).toBe('Edited title');
     });
   });
 

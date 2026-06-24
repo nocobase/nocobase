@@ -7,7 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ElementProxy, createSafeDocument, createSafeNavigator, createSafeWindow, tExpr } from '@nocobase/flow-engine';
+import {
+  ElementProxy,
+  createSafeDocument,
+  createSafeNavigator,
+  createSafeWindow,
+  createRunJSSettingsConfigureStep,
+  runtimeSettingsRegistry,
+  tExpr,
+} from '@nocobase/flow-engine';
 import React from 'react';
 import { CodeEditor } from '../../components/code-editor';
 import { ActionModel, ActionSceneEnum, CollectionActionGroupModel, RecordActionGroupModel } from '../base';
@@ -131,6 +139,9 @@ JSItemActionModel.registerFlow({
           code: defaultJSActionItemCode.trim(),
         };
       },
+      afterParamsSave({ ctx }) {
+        runtimeSettingsRegistry.clearModel(ctx.model.uid);
+      },
       async handler(ctx, params) {
         const { code, version } = resolveRunJsParams(ctx, params);
         ctx.onRefReady(ctx.ref, async (element) => {
@@ -138,14 +149,29 @@ JSItemActionModel.registerFlow({
             get: () => new ElementProxy(element),
           });
           const navigator = createSafeNavigator();
-          await ctx.runjs(
-            code,
-            { window: createSafeWindow({ navigator }), document: createSafeDocument(), navigator },
-            { version },
-          );
+          const run = runtimeSettingsRegistry.beginRun(ctx.model, code);
+          try {
+            await ctx.runjs(
+              code,
+              { window: createSafeWindow({ navigator }), document: createSafeDocument(), navigator },
+              { version },
+            );
+            runtimeSettingsRegistry.endRun(ctx.model, run.runId);
+          } catch (error) {
+            runtimeSettingsRegistry.endRun(ctx.model, run.runId, { error });
+            throw error;
+          }
         });
       },
     },
+  },
+});
+
+JSItemActionModel.registerFlow({
+  key: 'runjsSettings',
+  title: tExpr('RunJS settings'),
+  steps: {
+    configure: createRunJSSettingsConfigureStep(),
   },
 });
 
