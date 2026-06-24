@@ -4084,7 +4084,7 @@
     "MIME type": "Tipo MIME",
     "Minimum from 1 byte, maximum up to 1GB.": "Minimo da 1 byte, massimo fino a 1GB.",
     "Minimum from 1 byte.": "Minimum from 1 byte.",
-    "Multi-types seperated with comma, for example: \"image/*\", \"image/png\", \"image/*, application/pdf\" etc.": "Più tipi separati da virgola, ad esempio: \"image/*\", \"image/png\", \"image/*, application/pdf\" ecc.",
+    "Multi-types separated with comma, for example: \"image/*\", \"image/png\", \"image/*, application/pdf\" etc.": "Più tipi separati da virgola, ad esempio: \"image/*\", \"image/png\", \"image/*, application/pdf\" ecc.",
     "Path": "Percorso",
     "Region": "Regione",
     "Relative path the file will be saved to. Left blank as root path. The leading and trailing slashes \"/\" will be ignored. For example: \"user/avatar\".": "Percorso relativo in cui verrà salvato il file. Lasciare vuoto per il percorso radice. Le barre iniziali e finali \"/\" verranno ignorate. Ad esempio: \"user/avatar\".",

@@ -50,7 +50,7 @@ export default {
       mimetype: {
         type: 'string',
         title: `{{t("File type allowed (in MIME type format)", { ns: "${NAMESPACE}" })}}`,
-        description: `{{t('Multi-types seperated with comma, for example: "image/*", "image/png", "image/*, application/pdf" etc.', { ns: "${NAMESPACE}" })}}`,
+        description: `{{t('Multi-types separated with comma, for example: "image/*", "image/png", "image/*, application/pdf" etc.', { ns: "${NAMESPACE}" })}}`,
         'x-decorator': 'FormItem',
         'x-component': 'Input',
         'x-component-props': {

@@ -4378,7 +4378,7 @@
     "MIME type": "Тип MIME",
     "Minimum from 1 byte, maximum up to 1GB.": "Минимум от 1 байта, максимум до 1 ГБ.",
     "Minimum from 1 byte.": "Минимум — от 1 байта.",
-    "Multi-types seperated with comma, for example: \"image/*\", \"image/png\", \"image/*, application/pdf\" etc.": "Несколько типов, разделенных запятой, например: \"image/*\", \"image/png\", \"image/*, application/pdf\" и т. д.",
+    "Multi-types separated with comma, for example: \"image/*\", \"image/png\", \"image/*, application/pdf\" etc.": "Несколько типов, разделенных запятой, например: \"image/*\", \"image/png\", \"image/*, application/pdf\" и т. д.",
     "Path": "Путь",
     "Random string": "Случайная строка",
     "Region": "Регион",

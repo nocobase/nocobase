@@ -5165,7 +5165,7 @@
     "MIME type": "MIME típus",
     "Minimum from 1 byte, maximum up to 1GB.": "Minimum 1 byte, maximum 1GB-ig.",
     "Minimum from 1 byte.": "Minimum from 1 byte.",
-    "Multi-types seperated with comma, for example: \"image/*\", \"image/png\", \"image/*, application/pdf\" etc.": "Több típus vesszővel elválasztva, például: \"image/*\", \"image/png\", \"image/*, application/pdf\" stb.",
+    "Multi-types separated with comma, for example: \"image/*\", \"image/png\", \"image/*, application/pdf\" etc.": "Több típus vesszővel elválasztva, például: \"image/*\", \"image/png\", \"image/*, application/pdf\" stb.",
     "Path": "Útvonal",
     "Region": "Régió",
     "Relative path the file will be saved to. Left blank as root path. The leading and trailing slashes \"/\" will be ignored. For example: \"user/avatar\".": "Relatív útvonal, ahová a fájl mentésre kerül. Üresen hagyva gyökér útvonal. A kezdő és záró \"/\" karaktereket figyelmen kívül hagyjuk. Például: \"user/avatar\".",

@@ -4090,7 +4090,7 @@
     "MIME type": "MIME 타입",
     "Minimum from 1 byte, maximum up to 1GB.": "최소 1바이트, 최대 1GB까지 허용됩니다.",
     "Minimum from 1 byte.": "Minimum from 1 byte.",
-    "Multi-types seperated with comma, for example: \"image/*\", \"image/png\", \"image/*, application/pdf\" etc.": "여러 유형은 쉼표로 구분합니다. 예: \"image/*\", \"image/png\", \"image/*, application/pdf\" 등.",
+    "Multi-types separated with comma, for example: \"image/*\", \"image/png\", \"image/*, application/pdf\" etc.": "여러 유형은 쉼표로 구분합니다. 예: \"image/*\", \"image/png\", \"image/*, application/pdf\" 등.",
     "Path": "경로",
     "Region": "지역",
     "Relative path the file will be saved to. Left blank as root path. The leading and trailing slashes \"/\" will be ignored. For example: \"user/avatar\".": "파일이 저장될 상대 경로입니다. 비워두면 루트 경로로 저장됩니다. 앞뒤의 슬래시(\"/\")는 무시됩니다. 예: \"user/avatar\".",

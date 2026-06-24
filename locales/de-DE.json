@@ -4080,7 +4080,7 @@
     "MIME type": "MIME-Typ",
     "Minimum from 1 byte, maximum up to 1GB.": "Minimum 1 Byte, Maximum bis zu 1GB.",
     "Minimum from 1 byte.": "Minimum from 1 byte.",
-    "Multi-types seperated with comma, for example: \"image/*\", \"image/png\", \"image/*, application/pdf\" etc.": "Mehrere Typen durch Kommas getrennt, zum Beispiel: \"image/*\", \"image/png\", \"image/*, application/pdf\" usw.",
+    "Multi-types separated with comma, for example: \"image/*\", \"image/png\", \"image/*, application/pdf\" etc.": "Mehrere Typen durch Kommas getrennt, zum Beispiel: \"image/*\", \"image/png\", \"image/*, application/pdf\" usw.",
     "Path": "Pfad",
     "Region": "Region",
     "Relative path the file will be saved to. Left blank as root path. The leading and trailing slashes \"/\" will be ignored. For example: \"user/avatar\".": "Relativer Pfad, in dem die Datei gespeichert wird. Leer lassen als Stammpfad. Die führenden und abschließenden Schrägstriche \"/\" werden ignoriert. Zum Beispiel: \"user/avatar\".",

@@ -4046,7 +4046,7 @@
     "MIME type": "MIME type",
     "Minimum from 1 byte, maximum up to 1GB.": "Minimaal vanaf 1 byte, maximaal tot 1 GB.",
     "Minimum from 1 byte.": "Minimum from 1 byte.",
-    "Multi-types seperated with comma, for example: \"image/*\", \"image/png\", \"image/*, application/pdf\" etc.": "Meerdere typen gescheiden door een komma, bijvoorbeeld: \"image/*\", \"image/png\", \"image/*, application/pdf\" enz.",
+    "Multi-types separated with comma, for example: \"image/*\", \"image/png\", \"image/*, application/pdf\" etc.": "Meerdere typen gescheiden door een komma, bijvoorbeeld: \"image/*\", \"image/png\", \"image/*, application/pdf\" enz.",
     "Path": "Pad",
     "Region": "Regio",
     "Relative path the file will be saved to. Left blank as root path. The leading and trailing slashes \"/\" will be ignored. For example: \"user/avatar\".": "Relatief pad waar het bestand zal worden opgeslagen. Laat leeg als hoofdmap. De voorloop- en achterloop-slashes \"/\" worden genegeerd. Bijvoorbeeld: \"gebruiker/avatar\".",

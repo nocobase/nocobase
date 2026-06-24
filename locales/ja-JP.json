@@ -4094,7 +4094,7 @@
     "MIME type": "ファイル形式",
     "Minimum from 1 byte, maximum up to 1GB.": "最小サイズは1バイト、最大サイズは1GBです。",
     "Minimum from 1 byte.": "Minimum from 1 byte.",
-    "Multi-types seperated with comma, for example: \"image/*\", \"image/png\", \"image/*, application/pdf\" etc.": "複数のタイプはカンマで区切ります。 例えば「image/*」「image/png」「image/*、application/pdf」など。",
+    "Multi-types separated with comma, for example: \"image/*\", \"image/png\", \"image/*, application/pdf\" etc.": "複数のタイプはカンマで区切ります。 例えば「image/*」「image/png」「image/*、application/pdf」など。",
     "Path": "パス",
     "Region": "地域",
     "Relative path the file will be saved to. Left blank as root path. The leading and trailing slashes \"/\" will be ignored. For example: \"user/avatar\".": "更清晰的表达方式，符合技术描述",

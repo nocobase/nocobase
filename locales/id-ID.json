@@ -4064,7 +4064,7 @@
     "MIME type": "Tipe MIME",
     "Minimum from 1 byte, maximum up to 1GB.": "Minimum 1 byte, maksimum hingga 1GB.",
     "Minimum from 1 byte.": "Minimum from 1 byte.",
-    "Multi-types seperated with comma, for example: \"image/*\", \"image/png\", \"image/*, application/pdf\" etc.": "Beberapa tipe dipisahkan dengan koma, contoh: \"image/*\", \"image/png\", \"image/*, application/pdf\" dll.",
+    "Multi-types separated with comma, for example: \"image/*\", \"image/png\", \"image/*, application/pdf\" etc.": "Beberapa tipe dipisahkan dengan koma, contoh: \"image/*\", \"image/png\", \"image/*, application/pdf\" dll.",
     "Path": "Jalur",
     "Region": "Wilayah",
     "Relative path the file will be saved to. Left blank as root path. The leading and trailing slashes \"/\" will be ignored. For example: \"user/avatar\".": "Jalur relatif tempat file akan disimpan. Biarkan kosong sebagai jalur root. Garis miring di awal dan akhir \"/\" akan diabaikan. Contoh: \"user/avatar\".",
