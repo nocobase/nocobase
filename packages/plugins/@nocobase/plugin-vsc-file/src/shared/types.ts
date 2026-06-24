@@ -95,6 +95,25 @@ export interface VscStoredTree {
   byteSize: number;
 }
 
+export interface VscDraftRecord {
+  id: string;
+  repoId: string;
+  userId: string;
+  baseCommitId: string | null;
+  status: VscDraftStatus;
+  activeKey: string | null;
+}
+
+export interface VscDraftFileRecord {
+  id: string;
+  draftId: string;
+  path: VscFilePath;
+  pathHash: VscSha256Hex;
+  pathLowerHash: VscSha256Hex;
+  operation: VscDraftFileOperation;
+  blobHash: VscSha256Hex | null;
+}
+
 export interface VscDraftFileChange {
   path: VscFilePath;
   operation: VscDraftFileOperation;

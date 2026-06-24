@@ -7,13 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { Database, Model, Transaction } from '@nocobase/database';
+import type { Database, Transaction } from '@nocobase/database';
 
 import { VscError } from '../../shared/errors';
 import { normalizePath, pathHash } from '../../shared/path';
 import type {
   VscCommitRecord,
-  VscDraftStatus,
+  VscDraftRecord,
   VscFileChange,
   VscNormalizedTreeEntry,
   VscRefName,
@@ -25,12 +25,21 @@ import type {
 } from '../../shared/types';
 import { BlobService } from './BlobService';
 import { CommitService } from './CommitService';
+import type {
+  ActiveDraftResult,
+  DiscardDraftInput,
+  GetDraftInput,
+  SaveDraftInput,
+  VscDraftWritePermissionChecker,
+} from './DraftService';
+import { DraftService } from './DraftService';
 import { RepositoryService } from './RepositoryService';
 import { TreeService } from './TreeService';
 
 export interface VscServiceContext {
   transaction?: Transaction;
   authorId?: string | null;
+  assertCanWrite?: VscDraftWritePermissionChecker;
 }
 
 export interface CreateRepositoryInput extends VscRepositoryIdentity {
@@ -101,14 +110,6 @@ interface ResolvedRef {
   commit: VscCommitRecord | null;
 }
 
-interface VscDraftUpdateRecord {
-  id: string;
-  repoId: string;
-  baseCommitId: string | null;
-  status: VscDraftStatus;
-  activeKey: string | null;
-}
-
 export class VscFileService {
   private readonly blobService: BlobService;
 
@@ -118,11 +119,14 @@ export class VscFileService {
 
   private readonly commitService: CommitService;
 
+  private readonly draftService: DraftService;
+
   constructor(private readonly db: Database) {
     this.blobService = new BlobService(db);
     this.treeService = new TreeService(db, this.blobService);
     this.repositoryService = new RepositoryService(db);
     this.commitService = new CommitService(db);
+    this.draftService = new DraftService(db, this.blobService, this.repositoryService);
   }
 
   async createRepository(input: CreateRepositoryInput, ctx: VscServiceContext = {}): Promise<CreateRepositoryResult> {
@@ -231,6 +235,18 @@ export class VscFileService {
     };
   }
 
+  async getDraft(input: GetDraftInput, ctx: VscServiceContext = {}): Promise<ActiveDraftResult | null> {
+    return this.draftService.getDraft(input, ctx);
+  }
+
+  async saveDraft(input: SaveDraftInput, ctx: VscServiceContext = {}): Promise<ActiveDraftResult> {
+    return this.draftService.saveDraft(input, ctx);
+  }
+
+  async discardDraft(input: DiscardDraftInput, ctx: VscServiceContext = {}): Promise<VscDraftRecord | null> {
+    return this.draftService.discardDraft(input, ctx);
+  }
+
   async push(input: PushInput, ctx: VscServiceContext = {}): Promise<PushResult> {
     return this.withTransaction(ctx.transaction, async (transaction) => {
       const repository = await this.repositoryService.getRepository(input.repoId, transaction);
@@ -276,7 +292,14 @@ export class VscFileService {
       const updatedRepository = await this.repositoryService.updateHead(repository, commit.id, commit.seq, transaction);
 
       if (input.draftId) {
-        await this.markDraftCommitted(input, repository, transaction);
+        await this.draftService.markDraftCommitted(
+          {
+            draftId: input.draftId,
+            repoId: repository.id,
+            baseCommitId: input.baseCommitId,
+          },
+          transaction,
+        );
       }
 
       return {
@@ -323,33 +346,6 @@ export class VscFileService {
     }
 
     return Array.from(entriesByPath.values());
-  }
-
-  private async markDraftCommitted(
-    input: PushInput,
-    repository: VscRepositoryRecord,
-    transaction: Transaction,
-  ): Promise<void> {
-    const draftModel = this.db.getModel<Model<VscDraftUpdateRecord>>('vscFileDrafts');
-    const [updatedCount] = await draftModel.update(
-      {
-        status: 'committed',
-        activeKey: null,
-      },
-      {
-        where: {
-          id: input.draftId,
-          repoId: repository.id,
-          status: 'active',
-          baseCommitId: input.baseCommitId,
-        },
-        transaction,
-      },
-    );
-
-    if (updatedCount !== 1) {
-      throw new VscError('DRAFT_BASE_OUTDATED', 'Draft is not active for the pushed repository base');
-    }
   }
 
   private async resolveRef(repoId: string, refName?: VscRefName, transaction?: Transaction): Promise<ResolvedRef> {
