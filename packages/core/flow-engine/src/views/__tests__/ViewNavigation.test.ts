@@ -220,6 +220,15 @@ describe('generatePathnameFromViewParams', () => {
     expect(generatePathnameFromViewParams([{ viewUid: 'xxx' }, { viewUid: 'yyy' }])).toBe('/admin/xxx/view/yyy');
   });
 
+  it('should generate RunJS openView route state params after the matching view uid', () => {
+    const pathname = generatePathnameFromViewParams([
+      { viewUid: 'xxx' },
+      { viewUid: 'yyy', openViewRouteState: { mode: 'dialog', size: 'large' }, filterByTk: '1' },
+    ]);
+
+    expect(pathname).toBe('/admin/xxx/view/yyy/openviewmode/dialog/openviewsize/large/filterbytk/1');
+  });
+
   it('should generate complex path with all parameters', () => {
     expect(
       generatePathnameFromViewParams([

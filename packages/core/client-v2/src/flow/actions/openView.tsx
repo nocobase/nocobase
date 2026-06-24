@@ -7,7 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { defineAction, tExpr, FlowModelContext, FlowModel, FlowExitAllException } from '@nocobase/flow-engine';
+import {
+  defineAction,
+  tExpr,
+  FlowModelContext,
+  FlowModel,
+  FlowExitAllException,
+  createOpenViewRouteState,
+  RUNJS_OPEN_VIEW_ROUTE_STATE,
+} from '@nocobase/flow-engine';
 import React from 'react';
 import { FlowPage } from '../FlowPage';
 import { PageModel, RootPageModel } from '../models';
@@ -293,6 +301,13 @@ export const openView = defineAction({
     const mergedTabUid = typeof inputArgs.tabUid !== 'undefined' ? inputArgs.tabUid : params.tabUid;
     // 移动端中只需要显示子页面
     const openMode = ctx.inputArgs?.isMobileLayout ? 'embed' : ctx.inputArgs?.mode || params.mode || 'drawer';
+    const hasRunJSOpenViewRouteState = Object.prototype.hasOwnProperty.call(inputArgs, RUNJS_OPEN_VIEW_ROUTE_STATE);
+    const openViewRouteState = hasRunJSOpenViewRouteState
+      ? createOpenViewRouteState({
+          mode: openMode,
+          size: ctx.inputArgs?.size || params.size,
+        })
+      : undefined;
     let navigation = typeof inputArgs.navigation !== 'undefined' ? inputArgs.navigation : params.navigation;
 
     // 传递了上下文就必须禁用路由，否则下次路由打开会缺少上下文
@@ -313,6 +328,7 @@ export const openView = defineAction({
           sourceId: mergedSourceId,
           tabUid: mergedTabUid,
           viewUid: ctx.model.context?.inputArgs?.viewUid || ctx.model.uid,
+          ...(openViewRouteState ? { openViewRouteState } : {}),
         } as Record<string, unknown>;
         const pendingView = {
           type: pendingType,
@@ -328,6 +344,7 @@ export const openView = defineAction({
           filterByTk: mergedFilterByTk,
           sourceId: mergedSourceId,
           tabUid: mergedTabUid,
+          ...(openViewRouteState ? { openViewRouteState } : {}),
         };
         ctx.view.navigation.navigateTo(nextView);
         return;

@@ -213,6 +213,46 @@ describe('AdminLayoutModel runtime', () => {
     });
   });
 
+  it('should parse RunJS openView route params into layout route view stack state', async () => {
+    const engine = new FlowEngine();
+    engine.context.defineProperty('routeRepository', {
+      value: {
+        getRouteBySchemaUid: (pageUid: string) => ({ title: pageUid }),
+      },
+    });
+
+    render(
+      <FlowEngineProvider engine={engine}>
+        <TestAdminLayoutHost />
+      </FlowEngineProvider>,
+    );
+    const model = engine.getModel<TestAdminLayoutModel>('admin-layout-model');
+    expect(model).toBeTruthy();
+
+    act(() => {
+      model.syncLayoutRoute({
+        name: getLayoutPageViewRouteName('admin'),
+        pathname: '/admin/page-1/view/popup/openviewmode/dialog/openviewsize/large/filterbytk/1',
+        layoutBasePathname: '/admin',
+      });
+    });
+
+    await waitFor(() => {
+      expect(model.context.layoutRoute).toMatchObject({
+        type: 'page',
+        pageUid: 'page-1',
+        viewStack: [
+          { viewUid: 'page-1' },
+          {
+            viewUid: 'popup',
+            openViewRouteState: { mode: 'dialog', size: 'large' },
+            filterByTk: '1',
+          },
+        ],
+      });
+    });
+  });
+
   it('should not consume global routes that belong to nested layouts', async () => {
     const engine = new FlowEngine();
     const routeRef = observable.ref({

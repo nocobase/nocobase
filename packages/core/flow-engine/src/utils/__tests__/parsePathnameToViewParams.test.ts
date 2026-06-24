@@ -48,6 +48,28 @@ describe('parsePathnameToViewParams', () => {
     expect(result).toEqual([{ viewUid: 'xxx' }, { viewUid: 'yyy', filterByTk: '1', sourceId: '1' }]);
   });
 
+  test('should parse RunJS openView route state without losing route params', () => {
+    const result = parsePathnameToViewParams(
+      '/admin/xxx/view/yyy/openviewmode/dialog/openviewsize/large/filterbytk/1/sourceid/2',
+    );
+
+    expect(result).toEqual([
+      { viewUid: 'xxx' },
+      {
+        viewUid: 'yyy',
+        openViewRouteState: { mode: 'dialog', size: 'large' },
+        filterByTk: '1',
+        sourceId: '2',
+      },
+    ]);
+  });
+
+  test('should ignore invalid RunJS openView route state values and keep following params', () => {
+    const result = parsePathnameToViewParams('/admin/xxx/view/yyy/openviewmode/popover/filterbytk/1');
+
+    expect(result).toEqual([{ viewUid: 'xxx' }, { viewUid: 'yyy', filterByTk: '1' }]);
+  });
+
   test('should handle multiple views with different filterByTk and sourceId', () => {
     const result = parsePathnameToViewParams(
       '/admin/xxx/view/yyy/filterbytk/1/sourceid/1/view/zzz/filterbytk/2/sourceid/2',

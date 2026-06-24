@@ -103,7 +103,8 @@ const getDefaultBasePathnameFromRoutePath = (routePath?: string) => {
   return '';
 };
 
-const isKnownViewParamName = (segment: string) => ['tab', 'filterbytk', 'sourceid'].includes(segment);
+const isKnownViewParamName = (segment: string) =>
+  ['tab', 'filterbytk', 'sourceid', 'openviewmode', 'openviewsize'].includes(segment);
 
 const isStandardLayoutRelativePath = (relativePath: string) => {
   if (!relativePath) {
@@ -118,6 +119,7 @@ const isStandardLayoutRelativePath = (relativePath: string) => {
   let i = 1;
   while (i < segments.length) {
     const segment = segments[i];
+
     if (segment === 'view') {
       if (!segments[i + 1]) {
         return false;

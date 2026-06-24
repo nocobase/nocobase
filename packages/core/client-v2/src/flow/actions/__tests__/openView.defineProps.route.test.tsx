@@ -9,6 +9,7 @@
 
 import React from 'react';
 import { describe, it, expect, vi } from 'vitest';
+import { RUNJS_OPEN_VIEW_ROUTE_STATE } from '@nocobase/flow-engine';
 import { openView } from '../openView';
 import { FlowPage } from '../../FlowPage';
 
@@ -48,6 +49,27 @@ describe('openView action - route mode defineProperties/defineMethods', () => {
     };
 
     return { ctx, engine };
+  };
+
+  const createFirstStageCtx = (inputArgs: Record<PropertyKey, unknown>) => {
+    const navigateTo = vi.fn();
+    const ctx: any = {
+      inputArgs,
+      engine: { context: { themeToken: { colorBgLayout: '#fff' } } },
+      model: {
+        uid: 'popup-uid',
+        context: {
+          inputArgs: {},
+          defineProperty: vi.fn(),
+        },
+        flowEngine: { context: { themeToken: { colorBgLayout: '#fff' } } },
+      },
+      view: {
+        navigation: { navigateTo },
+      },
+    };
+
+    return { ctx, navigateTo };
   };
 
   it('injects defineProperties/defineMethods on onModelLoaded even when not present in current inputArgs', async () => {
@@ -148,5 +170,39 @@ describe('openView action - route mode defineProperties/defineMethods', () => {
 
     const defineMethodCalls = pageModelContext.defineMethod.mock.calls.map((c: any[]) => c[0]);
     expect(defineMethodCalls).toContain('pong');
+  });
+
+  it('adds route state to first-stage navigation only for RunJS ctx.openView calls', async () => {
+    const { ctx, navigateTo } = createFirstStageCtx({
+      mode: 'dialog',
+      size: 'large',
+      [RUNJS_OPEN_VIEW_ROUTE_STATE]: true,
+    });
+
+    await openView.handler(ctx, { mode: 'drawer', size: 'medium', navigation: true });
+
+    expect(navigateTo).toHaveBeenCalledWith({
+      viewUid: 'popup-uid',
+      filterByTk: undefined,
+      sourceId: undefined,
+      tabUid: undefined,
+      openViewRouteState: { mode: 'dialog', size: 'large' },
+    });
+  });
+
+  it('keeps first-stage navigation unchanged for non-RunJS openView calls', async () => {
+    const { ctx, navigateTo } = createFirstStageCtx({
+      mode: 'dialog',
+      size: 'large',
+    });
+
+    await openView.handler(ctx, { mode: 'drawer', size: 'medium', navigation: true });
+
+    expect(navigateTo).toHaveBeenCalledWith({
+      viewUid: 'popup-uid',
+      filterByTk: undefined,
+      sourceId: undefined,
+      tabUid: undefined,
+    });
   });
 });

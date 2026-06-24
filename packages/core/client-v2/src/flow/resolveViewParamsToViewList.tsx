@@ -74,6 +74,10 @@ function getViewType(viewItem: ViewItem): string {
     return 'drawer';
   }
 
+  if (viewItem.params.openViewRouteState?.mode) {
+    return viewItem.params.openViewRouteState.mode;
+  }
+
   const params = viewItem.model.getStepParams('popupSettings', 'openView');
   return params?.mode || 'drawer';
 }

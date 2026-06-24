@@ -7,6 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { createOpenViewRouteState, type OpenViewRouteState } from './openViewRouteState';
+
 export interface ViewParam {
   /** 视图唯一标识符，一般为某个 Model 实例的 uid */
   viewUid: string;
@@ -16,6 +18,8 @@ export interface ViewParam {
   filterByTk?: string | Record<string, string | number>;
   /** source Id */
   sourceId?: string;
+  /** RunJS ctx.openView runtime display overrides decoded from URL. */
+  openViewRouteState?: OpenViewRouteState;
 }
 
 export interface ParsePathnameToViewParamsOptions {
@@ -109,7 +113,12 @@ export const parsePathnameToViewParams = (
       }
     }
     // 处理参数
-    else if (currentView && i + 1 < segments.length) {
+    else if (currentView) {
+      if (i + 1 >= segments.length) {
+        i++;
+        continue;
+      }
+
       const rawValue = segments[i + 1];
       // 尝试对路径段进行解码
       let decoded: string = rawValue;
@@ -166,6 +175,26 @@ export const parsePathnameToViewParams = (
         case 'sourceid':
           currentView.sourceId = decoded;
           break;
+        case 'openviewmode': {
+          const routeState = createOpenViewRouteState({
+            ...currentView.openViewRouteState,
+            mode: decoded,
+          });
+          if (routeState) {
+            currentView.openViewRouteState = routeState;
+          }
+          break;
+        }
+        case 'openviewsize': {
+          const routeState = createOpenViewRouteState({
+            ...currentView.openViewRouteState,
+            size: decoded,
+          });
+          if (routeState) {
+            currentView.openViewRouteState = routeState;
+          }
+          break;
+        }
         default:
           // 未知参数，跳过
           break;

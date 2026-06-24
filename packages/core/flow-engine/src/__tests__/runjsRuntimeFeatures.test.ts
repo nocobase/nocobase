@@ -8,9 +8,9 @@
  */
 
 import { describe, it, expect, beforeAll, vi } from 'vitest';
-import { FlowEngineContext, FlowRunJSContext } from '../flowContext';
+import { FlowContext, FlowEngineContext, FlowRunJSContext } from '../flowContext';
+import { RUNJS_OPEN_VIEW_ROUTE_STATE } from '../utils/openViewRouteState';
 import { FlowEngine } from '../flowEngine';
-import { FlowContext } from '../flowContext';
 import { setupRunJSContexts } from '../runjs-context/setup';
 import { createJSRunnerWithVersion } from '..';
 import { RunJSContextRegistry } from '../runjs-context/registry';
@@ -266,6 +266,19 @@ describe('RunJS Runtime Features', () => {
       expect(runCtx.libs.antd).toBeDefined();
       expect(runCtx.libs.dayjs).toBeDefined();
       expect(runCtx.libs.antdIcons).toBeDefined();
+    });
+
+    it('should mark ctx.openView calls with route state only when RunJS passes display overrides', async () => {
+      const parentCtx = new FlowContext();
+      const openView = vi.fn(async () => undefined);
+      parentCtx.defineMethod('openView', openView);
+
+      const runCtx = new FlowRunJSContext(parentCtx);
+      await (runCtx as any).openView('popup', { mode: 'dialog', size: 'large' });
+      await (runCtx as any).openView('popup', { filterByTk: 1 });
+
+      expect(openView.mock.calls[0][1][RUNJS_OPEN_VIEW_ROUTE_STATE]).toBe(true);
+      expect(Object.prototype.hasOwnProperty.call(openView.mock.calls[1][1], RUNJS_OPEN_VIEW_ROUTE_STATE)).toBe(false);
     });
   });
 

@@ -390,6 +390,7 @@ export class BaseLayoutRouteCoordinator {
       openViewParams?.associationName && !hasUsableSourceId(viewItem.params.sourceId)
         ? null
         : openViewParams?.associationName;
+    const openViewRouteState = viewItem.params.openViewRouteState;
     const openerUids = viewList.slice(0, viewItem.index).map((item) => item.params.viewUid);
     const navigation = new ViewNavigation(
       this.flowEngine.context,
@@ -408,6 +409,8 @@ export class BaseLayoutRouteCoordinator {
       deactivateRef,
       openerUids,
       ...viewItem.params,
+      ...(openViewRouteState?.mode ? { mode: openViewRouteState.mode } : {}),
+      ...(openViewRouteState?.size ? { size: openViewRouteState.size } : {}),
       pageActive: runtime.meta.active,
       activationControlledByLayout: true,
       navigation,

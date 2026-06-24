@@ -250,6 +250,23 @@ describe('resolveViewParamsToViewList', () => {
       expect(result[0].hidden.value).toBe(false); // default drawer type
       expect(result[1].hidden.value).toBe(false); // default drawer type
     });
+
+    it('should let RunJS openView route state override persisted mode for hidden calculation', () => {
+      const model2 = createMockModel('view2', 'drawer');
+      mockFlowEngine.getModel = vi.fn().mockReturnValue(model2);
+
+      const viewParams: ViewParam[] = [
+        { viewUid: 'view1' },
+        { viewUid: 'view2', openViewRouteState: { mode: 'embed' } },
+      ];
+
+      const result = resolveViewParamsToViewList(mockFlowEngine, viewParams, mockRouteModel);
+      updateViewListHidden(result);
+
+      expect(result[0].hidden.value).toBe(true);
+      expect(result[1].hidden.value).toBe(false);
+      expect(model2.getStepParams).not.toHaveBeenCalled();
+    });
   });
 
   describe('edge cases', () => {
