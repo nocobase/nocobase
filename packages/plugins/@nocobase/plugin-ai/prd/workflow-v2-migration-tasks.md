@@ -559,7 +559,7 @@
 
 ### W6. 总体验收、清理和最终提交
 
-状态：进行中
+状态：已提交
 
 目标：确认 workflow 迁移整体完成，清理重复实现和风险点。
 
@@ -594,14 +594,22 @@
 
 #### W6.3 最终测试和文档收口
 
-- 状态：未开始
+- 状态：已提交
 - 完成标准：
   - 相关 workflow client-v2 测试通过。
   - 相关 plugin-ai 测试通过。
   - 本 PRD 所有已完成任务状态为“已提交”或“校验通过”。
   - 输出修改文件列表、兼容层、删除的重复实现、校验结果、自测方法。
 - 验收记录：
-  - 待填写。
+  - 已运行 `yarn eslint --fix packages/plugins/@nocobase/plugin-ai/src/client/workflow packages/plugins/@nocobase/plugin-ai/src/client-v2/workflow packages/plugins/@nocobase/plugin-ai/src/client-v2/__tests__/workflow-registration.test.ts packages/plugins/@nocobase/plugin-ai/src/client-v2/__tests__/workflow-list-collapse.test.ts packages/plugins/@nocobase/plugin-ai/src/client-v2/__tests__/workflow-llm-fieldset.test.tsx packages/plugins/@nocobase/plugin-ai/src/client-v2/__tests__/workflow-ai-employee-fieldset.test.tsx packages/plugins/@nocobase/plugin-ai/src/client-v2/__tests__/workflow-ai-employee-trigger.test.tsx`。
+  - 已运行 `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/__tests__/workflow-registration.test.ts --run --reporter=verbose`，5 个用例通过。
+  - 已运行 `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/__tests__/workflow-list-collapse.test.ts --run --reporter=verbose`，2 个用例通过。
+  - 已运行 `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/__tests__/workflow-llm-fieldset.test.tsx --run --reporter=verbose`，2 个用例通过。
+  - 已运行 `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/__tests__/workflow-ai-employee-fieldset.test.tsx --run --reporter=verbose`，5 个用例通过。
+  - 已运行 `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/__tests__/workflow-ai-employee-trigger.test.tsx --run --reporter=verbose`，4 个用例通过。
+  - 已运行 `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/__tests__/llm-providers.test.tsx --run --reporter=verbose`，5 个用例通过。
+  - 已重新运行 v2 workflow 禁止 import 扫描和 v1/v2 workflow Formily/SchemaComponent 残留扫描，均无命中。
+  - 当前未提交工作树中仅剩无关 `yarn.lock` 修改，未纳入本次 workflow 迁移提交。
 
 ## 当前任务状态总览
 
@@ -613,4 +621,4 @@
 | W3. AI employee workflow 节点迁移 | 已提交 | 开始 W4.1 |
 | W4. AI employee workflow trigger 迁移 | 已提交 | 开始 W5.1 |
 | W5. v1 兼容入口收敛 | 已提交 | 开始 W6.1 |
-| W6. 总体验收、清理和最终提交 | 进行中 | 开始 W6.3 |
+| W6. 总体验收、清理和最终提交 | 已提交 | 完成 |
