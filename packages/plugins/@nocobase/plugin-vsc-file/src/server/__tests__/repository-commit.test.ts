@@ -11,6 +11,7 @@ import { Database, createMockDatabase } from '@nocobase/database';
 import path from 'path';
 
 import { VscError } from '../../shared/errors';
+import { sha256Hex } from '../../shared/hash';
 import { VscFileService } from '../services/VscFileService';
 
 describe('vsc-file repository and commit services', () => {
@@ -79,6 +80,77 @@ describe('vsc-file repository and commit services', () => {
     expect(push.repository).toMatchObject({
       headCommitId: push.commit.id,
       headSeq: 1,
+    });
+  });
+
+  it('computes deterministic commit hashes from persisted commit fields', async () => {
+    const metadata = {
+      reason: 'unit-test',
+    };
+    const { repository, initialCommit } = await service.createRepository({
+      ownerType: 'plugin',
+      ownerId: 'demo',
+      name: 'main',
+      initialFiles: [{ path: 'README.md', content: '# Demo\n' }],
+      message: 'seed',
+      authorId: 'author-1',
+      metadata,
+    });
+    if (!initialCommit) {
+      throw new Error('Expected an initial commit');
+    }
+
+    const expectedHash = sha256Hex(
+      [
+        repository.id,
+        String(initialCommit.seq),
+        '',
+        initialCommit.treeHash,
+        initialCommit.message,
+        initialCommit.authorId || '',
+        JSON.stringify(metadata),
+      ].join('\0'),
+    );
+
+    expect(initialCommit).toMatchObject({
+      seq: 1,
+      parentCommitId: null,
+      message: 'seed',
+      authorId: 'author-1',
+      metadata,
+      hash: expectedHash,
+    });
+
+    const followUpMetadata = {
+      reason: 'follow-up',
+    };
+    const followUp = await service.push({
+      repoId: repository.id,
+      baseCommitId: initialCommit.id,
+      message: 'second',
+      authorId: 'author-2',
+      metadata: followUpMetadata,
+      files: [{ path: 'src/index.ts', content: 'export const value = 1;\n' }],
+    });
+    const expectedFollowUpHash = sha256Hex(
+      [
+        repository.id,
+        String(followUp.commit.seq),
+        initialCommit.id,
+        followUp.commit.treeHash,
+        followUp.commit.message,
+        followUp.commit.authorId || '',
+        JSON.stringify(followUpMetadata),
+      ].join('\0'),
+    );
+
+    expect(followUp.commit).toMatchObject({
+      seq: 2,
+      parentCommitId: initialCommit.id,
+      message: 'second',
+      authorId: 'author-2',
+      metadata: followUpMetadata,
+      hash: expectedFollowUpHash,
     });
   });
 

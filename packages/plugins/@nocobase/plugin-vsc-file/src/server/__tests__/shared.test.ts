@@ -39,6 +39,8 @@ describe('vsc-file shared utilities', () => {
   it('uses case-sensitive path hashes and case-insensitive lower hashes', () => {
     expect(pathHash('Foo.ts')).not.toBe(pathHash('foo.ts'));
     expect(pathLowerHash('Foo.ts')).toBe(pathLowerHash('foo.ts'));
+    expect(pathHash('src\\Foo.ts')).toBe(sha256Hex('src/Foo.ts'));
+    expect(pathLowerHash('src\\Foo.ts')).toBe(sha256Hex('src/foo.ts'));
   });
 
   it('normalizes CRLF, CR, and UTF-8 BOM without trimming whitespace', () => {
