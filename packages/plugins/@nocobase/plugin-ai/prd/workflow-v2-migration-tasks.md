@@ -422,7 +422,7 @@
 
 ### W4. AI employee workflow trigger 迁移
 
-状态：进行中
+状态：已提交
 
 目标：把 v1 `workflow/triggers/ai-employee` 参数配置迁到 v2。
 
@@ -473,7 +473,7 @@
 
 #### W4.3 trigger 测试与提交
 
-- 状态：未开始
+- 状态：已提交
 - 范围：
   - trigger 相关测试
   - 本 PRD 状态更新
@@ -482,7 +482,17 @@
   - `yarn eslint --fix` 已运行在触达文件上。
   - 必要 UI 对照通过。
 - 验收记录：
-  - 待填写。
+  - 已新增 `workflow-ai-employee-trigger.test.tsx`，覆盖 AI employee trigger `FieldsetLoader` lazy loader 指向 v2 `AIEmployeeTriggerConfig`。
+  - 已覆盖 `useVariables(config)` 输出参数变量，确认变量 `key`、`label`、`value` 均为参数名，与 v1 对齐。
+  - 已覆盖 `validate(config)` 的空参数、合法 enum 参数、空 enum options、非法参数名校验。
+  - 已覆盖通过 `Add parameter` modal 新增 string 参数并提交 `config.parameters[]`，确认 name/type/description/required 值结构保持不变。
+  - 已覆盖已有 enum 参数编辑时 `Options` 区域可见，并覆盖参数排序后提交结构。
+  - 测试中发现直接 `form.setFieldValue(['config', 'parameters'], ...)` 后立即提交时 Form.List 值注册不稳定；已改为通过 `Form.List` operations 新增/替换参数。
+  - 测试中发现 modal 编辑 enum 参数时 `Form.useWatch('type')` 首次渲染可能尚未取得初始值；已补充 `form.getFieldValue('type')` 和 `initialValue.type` 兜底，并用 `useEffect` 同步 modal form 初始值。
+  - 已运行 `yarn eslint --fix packages/plugins/@nocobase/plugin-ai/src/client-v2/__tests__/workflow-ai-employee-trigger.test.tsx packages/plugins/@nocobase/plugin-ai/src/client-v2/workflow/triggers/ai-employee/Parameters.tsx`。
+  - 已运行 `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/__tests__/workflow-ai-employee-trigger.test.tsx --run --reporter=verbose`，4 个用例通过。
+  - 已运行 `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/__tests__/workflow-registration.test.ts --run --reporter=verbose`，5 个用例通过。
+  - 已扫描 `src/client-v2/workflow`，未发现 `@nocobase/client`、`@formily/*` runtime、`@nocobase/plugin-workflow/client` 或本插件 `src/client/` import。
 
 ### W5. v1 兼容入口收敛
 
@@ -577,6 +587,6 @@
 | W1. workflow v2 注册骨架与共享类型 | 已提交 | 开始 W2.1 |
 | W2. LLM workflow 节点迁移 | 已提交 | 开始 W3.1 |
 | W3. AI employee workflow 节点迁移 | 已提交 | 开始 W4.1 |
-| W4. AI employee workflow trigger 迁移 | 进行中 | 开始 W4.3 |
-| W5. v1 兼容入口收敛 | 未开始 | 等 W2/W3/W4 校验通过 |
+| W4. AI employee workflow trigger 迁移 | 已提交 | 开始 W5.1 |
+| W5. v1 兼容入口收敛 | 未开始 | 开始 W5.1 |
 | W6. 总体验收、清理和最终提交 | 未开始 | 等 W5 完成 |

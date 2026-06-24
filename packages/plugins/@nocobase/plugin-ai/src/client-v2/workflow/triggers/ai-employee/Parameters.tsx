@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Button, Checkbox, Form, Input, Modal, Select, Space, Tooltip, Typography, type FormListFieldData } from 'antd';
 import {
   DeleteOutlined,
@@ -49,8 +49,17 @@ function toParameter(values: ParameterFormValues): AIEmployeeTriggerParameter {
 function ParameterModal({ open, initialValue, onCancel, onSubmit }: ParameterModalProps) {
   const t = useT();
   const [form] = Form.useForm<ParameterFormValues>();
-  const type = Form.useWatch('type', form);
+  const watchedType = Form.useWatch('type', form);
+  const type = watchedType ?? form.getFieldValue('type') ?? initialValue?.type;
   const typeOptions = useMemo(() => TRIGGER_PARAMETER_TYPES.map((item) => ({ label: item, value: item })), []);
+
+  useEffect(() => {
+    if (open) {
+      form.setFieldsValue(initialValue ?? { type: 'string' });
+    } else {
+      form.resetFields();
+    }
+  }, [form, initialValue, open]);
 
   return (
     <Modal
@@ -68,11 +77,6 @@ function ParameterModal({ open, initialValue, onCancel, onSubmit }: ParameterMod
       okText={t('Submit')}
       cancelText={t('Cancel')}
       destroyOnClose
-      afterOpenChange={(nextOpen) => {
-        if (nextOpen) {
-          form.setFieldsValue(initialValue ?? { type: 'string' });
-        }
-      }}
     >
       <Form form={form} layout="vertical">
         <Form.Item
@@ -241,18 +245,6 @@ export function Parameters() {
     []) as AIEmployeeTriggerParameter[];
   const currentParameter = editingIndex == null ? undefined : parameters[editingIndex];
 
-  const submitParameter = (parameter: AIEmployeeTriggerParameter) => {
-    const nextParameters = [...parameters];
-    if (editingIndex == null) {
-      nextParameters.push(parameter);
-    } else {
-      nextParameters[editingIndex] = parameter;
-    }
-    form.setFieldValue(['config', 'parameters'], nextParameters);
-    setAdding(false);
-    setEditingIndex(null);
-  };
-
   return (
     <Form.Item label={t('Parameters')} tooltip={t('The parameters required by the tool')} required>
       <Form.List
@@ -293,18 +285,27 @@ export function Parameters() {
             >
               {t('Add parameter')}
             </Button>
+            <ParameterModal
+              open={adding || editingIndex !== null}
+              initialValue={currentParameter}
+              onCancel={() => {
+                setAdding(false);
+                setEditingIndex(null);
+              }}
+              onSubmit={(parameter) => {
+                if (editingIndex == null) {
+                  operations.add(parameter);
+                } else {
+                  operations.remove(editingIndex);
+                  operations.add(parameter, editingIndex);
+                }
+                setAdding(false);
+                setEditingIndex(null);
+              }}
+            />
           </Space>
         )}
       </Form.List>
-      <ParameterModal
-        open={adding || editingIndex !== null}
-        initialValue={currentParameter}
-        onCancel={() => {
-          setAdding(false);
-          setEditingIndex(null);
-        }}
-        onSubmit={submitParameter}
-      />
     </Form.Item>
   );
 }
