@@ -71,6 +71,23 @@ export class RepositoryService {
     return repositoryFromRecord(record);
   }
 
+  async archiveRepository(repoId: string, transaction?: Transaction): Promise<VscRepositoryRecord> {
+    const repository = await this.getRepository(repoId, transaction);
+    if (repository.status === 'archived') {
+      return repository;
+    }
+
+    await this.db.getRepository('vscFileRepositories').update({
+      filterByTk: repoId,
+      values: {
+        status: 'archived',
+      },
+      transaction,
+    });
+
+    return this.getRepository(repoId, transaction);
+  }
+
   async findRepositoryByIdentity(
     input: VscRepositoryIdentity,
     transaction?: Transaction,

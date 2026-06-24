@@ -25,6 +25,7 @@ import type {
   VscTreeEntryInput,
 } from '../../shared/types';
 import { BlobService } from './BlobService';
+import type { ListCommitsInput } from './CommitService';
 import { CommitService } from './CommitService';
 import type { DiffCommitsInput, DiffDraftInput, DiffFileInput, DiffFileResult, FileDiffResult } from './DiffService';
 import { DiffService } from './DiffService';
@@ -67,6 +68,14 @@ export interface CreateRepositoryResult {
 }
 
 export type EnsureRepositoryInput = CreateRepositoryInput;
+
+export interface RepositoryIdInput {
+  repoId: string;
+}
+
+export interface GetCommitInput extends RepositoryIdInput {
+  commitId: string;
+}
 
 export interface PushInput {
   repoId: string;
@@ -165,7 +174,7 @@ export class VscFileService {
               message: input.message || 'Initial commit',
               files: input.initialFiles,
               allowEmptyCommit: true,
-              authorId: input.authorId,
+              authorId: input.authorId || ctx.authorId || null,
               metadata: input.metadata,
             },
             { ...ctx, transaction },
@@ -197,7 +206,7 @@ export class VscFileService {
           message: input.message || 'Initial commit',
           files: input.initialFiles,
           allowEmptyCommit: true,
-          authorId: input.authorId,
+          authorId: input.authorId || ctx.authorId || null,
           metadata: input.metadata,
         },
         { ...ctx, transaction },
@@ -208,6 +217,23 @@ export class VscFileService {
         initialCommit: initialCommit.commit,
       };
     });
+  }
+
+  async getRepository(input: RepositoryIdInput, ctx: VscServiceContext = {}): Promise<VscRepositoryRecord> {
+    return this.repositoryService.getRepository(input.repoId, ctx.transaction);
+  }
+
+  async archiveRepository(input: RepositoryIdInput, ctx: VscServiceContext = {}): Promise<VscRepositoryRecord> {
+    return this.repositoryService.archiveRepository(input.repoId, ctx.transaction);
+  }
+
+  async listCommits(input: ListCommitsInput, ctx: VscServiceContext = {}): Promise<VscCommitRecord[]> {
+    await this.repositoryService.getRepository(input.repoId, ctx.transaction);
+    return this.commitService.listCommits(input, ctx.transaction);
+  }
+
+  async getCommit(input: GetCommitInput, ctx: VscServiceContext = {}): Promise<VscCommitRecord> {
+    return this.commitService.getCommit(input.repoId, input.commitId, ctx.transaction);
   }
 
   async pull(input: PullInput, ctx: VscServiceContext = {}): Promise<PullResult> {
@@ -322,6 +348,10 @@ export class VscFileService {
       const baseCommit = input.baseCommitId
         ? await this.commitService.getCommit(repository.id, input.baseCommitId, transaction)
         : null;
+      if (input.draftId && ctx.authorId) {
+        await this.assertDraftOwner(input.draftId, ctx.authorId, transaction);
+      }
+
       const baseEntries = baseCommit
         ? await this.treeService.loadTreeEntries(baseCommit.treeHash, { transaction })
         : [];
@@ -489,6 +519,21 @@ export class VscFileService {
       size: record.get('size') as number,
       content: record.get('content') as string,
     };
+  }
+
+  private async assertDraftOwner(draftId: string, userId: string, transaction?: Transaction): Promise<void> {
+    const draft = await this.db.getRepository('vscFileDrafts').findOne({
+      filterByTk: draftId,
+      fields: ['id', 'userId'],
+      transaction,
+    });
+
+    if (!draft) {
+      throw new VscError('DRAFT_BASE_OUTDATED', `Draft "${draftId}" was not found`);
+    }
+    if (String(draft.get('userId')) !== userId) {
+      throw new VscError('PERMISSION_DENIED', 'Draft is not owned by the current user');
+    }
   }
 
   private async withTransaction<T>(

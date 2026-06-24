@@ -8,13 +8,27 @@
  */
 
 import { Plugin } from '@nocobase/server';
+import { resolve } from 'path';
+
+import { createVscFileResource, vscFileActionNames } from './resources/vscFile';
 
 export class PluginVscFileServer extends Plugin {
   async afterAdd() {}
 
-  async beforeLoad() {}
+  async beforeLoad() {
+    if (this.options.packageName || this.db.hasCollection('vscFileRepositories')) {
+      return;
+    }
 
-  async load() {}
+    await this.db.import({
+      directory: resolve(__dirname, 'collections'),
+    });
+  }
+
+  async load() {
+    this.app.resourceManager.define(createVscFileResource(this.db));
+    this.app.acl.allow('vscFile', [...vscFileActionNames], 'loggedIn');
+  }
 
   async install() {}
 

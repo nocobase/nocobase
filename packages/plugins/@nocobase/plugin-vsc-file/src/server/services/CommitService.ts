@@ -25,6 +25,10 @@ export interface CreateCommitInput {
   metadata?: Record<string, unknown>;
 }
 
+export interface ListCommitsInput {
+  repoId: string;
+}
+
 export class CommitService {
   constructor(private readonly db: Database) {}
 
@@ -75,6 +79,18 @@ export class CommitService {
     }
 
     return commitFromRecord(record);
+  }
+
+  async listCommits(input: ListCommitsInput, transaction?: Transaction): Promise<VscCommitRecord[]> {
+    const records = await this.db.getRepository('vscFileCommits').find({
+      filter: {
+        repoId: input.repoId,
+      },
+      sort: ['-seq'],
+      transaction,
+    });
+
+    return records.map(commitFromRecord);
   }
 
   async getTree(treeHash: string, transaction?: Transaction) {
