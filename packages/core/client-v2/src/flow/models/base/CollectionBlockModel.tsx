@@ -84,7 +84,8 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
 
     if (resource instanceof MultiRecordResource && this.getDataLoadingMode() === 'manual' && !this.hasActiveFilters()) {
       resource.setData([]);
-      resource.setMeta({ count: 0, hasNext: false, page: 1 });
+      resource.setMeta({ count: 0, hasNext: false });
+      resource.setPage(1);
       resource.loading = false;
       this.lastSeenDirtyVersion = currentVersion;
       return;

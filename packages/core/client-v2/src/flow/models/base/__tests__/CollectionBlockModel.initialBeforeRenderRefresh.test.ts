@@ -134,7 +134,8 @@ describe('CollectionBlockModel initial beforeRender refresh', () => {
     const refreshSpy = vi.spyOn(resource, 'refresh');
 
     resource.setData([{ id: 2, name: 'Stale' }]);
-    resource.setMeta({ count: 1, hasNext: true, page: 2 });
+    resource.setMeta({ count: 1, hasNext: true });
+    resource.setPage(2);
     resource.loading = true;
 
     model.onActive(true);
@@ -146,6 +147,7 @@ describe('CollectionBlockModel initial beforeRender refresh', () => {
     expect(resource.getMeta('count')).toBe(0);
     expect(resource.getMeta('hasNext')).toBe(false);
     expect(resource.getMeta('page')).toBe(1);
+    expect(resource.getRequestParameter('page')).toBe(1);
     expect(resource.loading).toBe(false);
   });
 
@@ -170,7 +172,8 @@ describe('CollectionBlockModel initial beforeRender refresh', () => {
     const refreshSpy = vi.spyOn(resource, 'refresh');
 
     resource.setData([{ id: 2, name: 'Stale' }]);
-    resource.setMeta({ count: 1, hasNext: true, page: 2 });
+    resource.setMeta({ count: 1, hasNext: true });
+    resource.setPage(2);
     resource.loading = true;
     resource.addFilterGroup('data-scope', { status: { $eq: 'active' } });
 
@@ -182,6 +185,7 @@ describe('CollectionBlockModel initial beforeRender refresh', () => {
     expect(resource.getMeta('count')).toBe(0);
     expect(resource.getMeta('hasNext')).toBe(false);
     expect(resource.getMeta('page')).toBe(1);
+    expect(resource.getRequestParameter('page')).toBe(1);
     expect(resource.loading).toBe(false);
   });
 });
