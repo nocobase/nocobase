@@ -376,7 +376,7 @@
 
 #### W3.4 feedback、structured output、assignees 配置迁移
 
-- 状态：未开始
+- 状态：已提交
 - 范围：
   - `src/client-v2/workflow/nodes/employee/components/FeedbackSettings.tsx`
   - `src/client-v2/workflow/nodes/employee/components/StructuredOutput.tsx`
@@ -389,7 +389,14 @@
 - UI 对照：
   - 对照审批模式切换、assignees 显隐、添加用户/查询用户入口。
 - 验收记录：
-  - 待填写。
+  - 已新增 v2 `StructuredOutput`，`config.structuredOutput.schema` 按专项规则复用 workflow v2 `WorkflowVariableJsonTextArea`，保留 `Syntax references: JSON Schema` 帮助链接和值结构。
+  - 已新增 v2 `FeedbackSettings`，保留 `No required` / `AI decision` / `Human decision` 三种审批模式，并兼容历史 boolean 值：`true` 归一为 `human_decision`，`false` 或空值归一为 `no_required`。
+  - 已新增 v2 `Assignees`，仅在 `requiresApproval !== 'no_required'` 时显示，并通过 `Form.List` 保持 `config.assignees[]` 数组结构和必填校验。
+  - `Assignees` 保留“选择用户”和“查询用户”两种入口；选择用户使用 v2 `RemoteSelect` + workflow v2 单行 `WorkflowVariableInput`，查询用户复用 workflow v2 `FilterDynamicComponent` 并保存 `{ filter }` 结构，未新增 workflow variable textarea 包装层。
+  - 已运行 `yarn eslint --fix` 覆盖触达文件。
+  - 已运行 `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/__tests__/workflow-registration.test.ts --run --reporter=verbose`，5 个用例通过。
+  - 已用 Kimi WebBridge 在 v2 `http://localhost:13004/v/admin/workflow/workflows/356950351282176` 打开 AI employee 节点并切换到 `Feedback & Notification`，确认 Structured output JSON textarea、变量按钮、JSON Schema 帮助链接和 Approval & Notice 三个 radio 可见；默认 `No required` 下 Assignees 隐藏。当前样例 workflow 已执行，非默认审批切换受只读状态限制，Assignees 的显示和添加入口将在 W3.5 组件测试中补充覆盖。
+  - 已扫描 `src/client-v2/workflow`，未发现 `@nocobase/client`、`@formily/*` runtime、`@nocobase/plugin-workflow/client` 或本插件 `src/client/` import。
 
 #### W3.5 AI employee 节点测试与提交
 
@@ -545,7 +552,7 @@
 | W0. 迁移任务文档与基线准备 | 已提交 | 开始 W1.1 |
 | W1. workflow v2 注册骨架与共享类型 | 已提交 | 开始 W2.1 |
 | W2. LLM workflow 节点迁移 | 已提交 | 开始 W3.1 |
-| W3. AI employee workflow 节点迁移 | 进行中 | 开始 W3.4 |
+| W3. AI employee workflow 节点迁移 | 进行中 | 开始 W3.5 |
 | W4. AI employee workflow trigger 迁移 | 未开始 | 等 W1 完成 |
 | W5. v1 兼容入口收敛 | 未开始 | 等 W2/W3/W4 校验通过 |
 | W6. 总体验收、清理和最终提交 | 未开始 | 等 W5 完成 |

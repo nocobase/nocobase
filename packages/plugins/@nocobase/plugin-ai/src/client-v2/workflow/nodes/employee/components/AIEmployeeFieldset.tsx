@@ -12,10 +12,13 @@ import { Form, Tabs } from 'antd';
 import { DEFAULT_AI_EMPLOYEE_USERNAME } from '../../../constants';
 import { useT } from '../../../../locale';
 import { AIEmployeeSelect } from './AIEmployeeSelect';
+import { Assignees } from './Assignees';
+import { FeedbackSettings } from './FeedbackSettings';
 import { FileInputs } from './FileInputs';
 import { MessageInputs } from './MessageInputs';
 import { ModelOptions } from './ModelOptions';
 import { SkillSettings } from './SkillSettings';
+import { StructuredOutput } from './StructuredOutput';
 import { UserInputFormItem } from './UserInput';
 import { WebSearchOptions } from './WebSearchOptions';
 
@@ -62,7 +65,13 @@ export function AIEmployeeFieldset() {
           key: 'feedback',
           label: t('Feedback & Notification'),
           forceRender: true,
-          children: null,
+          children: (
+            <>
+              <StructuredOutput />
+              <FeedbackSettings />
+              <Assignees />
+            </>
+          ),
         },
       ]}
     />
