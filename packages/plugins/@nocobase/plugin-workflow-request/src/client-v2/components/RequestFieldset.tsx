@@ -32,21 +32,33 @@ import { getDefaultRequestBodyValue, getRequestBodyEditorKind } from '../utils';
 
 function useContentTypeReset() {
   const form = Form.useFormInstance();
-  const contentType = Form.useWatch(['config', 'contentType'], form) as RequestContentType | undefined;
-  const data = Form.useWatch(['config', 'data'], form);
+  const watchedContentType = Form.useWatch(['config', 'contentType'], form) as RequestContentType | undefined;
   const previousContentTypeRef = useRef<RequestContentType | undefined>();
+  const initializedRef = useRef(false);
 
   useEffect(() => {
-    if (!previousContentTypeRef.current && typeof data === 'undefined') {
-      form.setFieldValue(['config', 'data'], getDefaultRequestBodyValue(contentType));
+    const contentType =
+      (form.getFieldValue(['config', 'contentType']) as RequestContentType | undefined) ??
+      watchedContentType ??
+      DEFAULT_REQUEST_CONTENT_TYPE;
+    const currentData = form.getFieldValue(['config', 'data']);
+
+    if (!initializedRef.current) {
+      initializedRef.current = true;
+      previousContentTypeRef.current = contentType;
+
+      if (typeof currentData === 'undefined') {
+        form.setFieldValue(['config', 'data'], getDefaultRequestBodyValue(contentType));
+      }
+      return;
     }
 
-    if (previousContentTypeRef.current && previousContentTypeRef.current !== contentType) {
+    if (previousContentTypeRef.current !== contentType) {
       form.setFieldValue(['config', 'data'], getDefaultRequestBodyValue(contentType));
     }
 
     previousContentTypeRef.current = contentType;
-  }, [contentType, data, form]);
+  }, [watchedContentType, form]);
 }
 
 function KeyValueListField({
@@ -187,8 +199,11 @@ function MultipartListField({ name, label }: { name: NamePath; label: React.Reac
 function RequestBodyField() {
   const t = useT();
   const form = Form.useFormInstance();
+  const watchedContentType = Form.useWatch(['config', 'contentType'], form) as RequestContentType | undefined;
   const contentType =
-    (Form.useWatch(['config', 'contentType'], form) as RequestContentType | undefined) ?? DEFAULT_REQUEST_CONTENT_TYPE;
+    (form.getFieldValue(['config', 'contentType']) as RequestContentType | undefined) ??
+    watchedContentType ??
+    DEFAULT_REQUEST_CONTENT_TYPE;
   const bodyKind = getRequestBodyEditorKind(contentType);
 
   if (bodyKind === 'json') {

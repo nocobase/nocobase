@@ -7,8 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React from 'react';
+import type { SubModelItem } from '@nocobase/flow-engine';
 import { CalculatorOutlined } from '@ant-design/icons';
+import React from 'react';
+import { BaseTypeSets } from '../canvas/collectionFieldOptions';
 import { Instruction } from '../canvas/Instruction';
 import { NAMESPACE } from '../locale';
 
@@ -18,6 +20,52 @@ export default class extends Instruction {
   type = 'calculation';
   title = t('Calculation');
   group = 'calculation';
+  description = t(
+    'Calculate an expression based on a calculation engine and obtain a value as the result. Variables in the upstream nodes can be used in the expression.',
+  );
   icon = (<CalculatorOutlined />);
   testable = true;
+
+  FieldsetLoader = () => import('./components/calculation').then((m) => ({ default: m.CalculationFieldset }));
+
+  useVariables({ key, title }, { types }) {
+    if (
+      types &&
+      !types.some(
+        (type) =>
+          typeof type === 'string' &&
+          (type in BaseTypeSets || Object.values(BaseTypeSets).some((set) => set.has(type))),
+      )
+    ) {
+      return null;
+    }
+    return {
+      value: key,
+      label: title,
+    };
+  }
+
+  getCreateModelMenuItem({ node }): SubModelItem {
+    return {
+      key: node.title ?? `#${node.id}`,
+      label: node.title ?? `#${node.id}`,
+      useModel: 'NodeValueModel',
+      createModelOptions: {
+        use: 'NodeValueModel',
+        stepParams: {
+          valueSettings: {
+            init: {
+              dataSource: `{{$jobsMapByNodeKey.${node.key}}}`,
+              defaultValue: t('Calculation result'),
+            },
+          },
+          cardSettings: {
+            titleDescription: {
+              title: t('Calculation'),
+            },
+          },
+        },
+      },
+    };
+  }
 }
