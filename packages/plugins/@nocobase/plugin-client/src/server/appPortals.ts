@@ -32,17 +32,8 @@ type AppPortalsContextLike = {
   app?: {
     name?: string;
   };
-  db: {
-    getRepository: (name: string) => {
-      findOne: () => Promise<{
-        get?: (field: string) => unknown;
-        title?: string;
-        logo?: {
-          url?: string;
-        };
-      } | null>;
-    };
-  };
+  db?: unknown;
+  [key: string]: unknown;
 };
 
 type AppPortalsAppLike = {
@@ -84,10 +75,6 @@ export class AppPortalsService {
     const apps = new Map<string, AppPortalAppItem>();
     const portals = new Map<string, AppPortalItem>();
 
-    for (const appItem of await this.getMainAppItems(ctx)) {
-      apps.set(appItem.name, appItem);
-    }
-
     for (const [name, provider] of this.providers) {
       try {
         const payload = await provider({ ctx, app: this.app });
@@ -113,24 +100,6 @@ export class AppPortalsService {
       apps: [...apps.values()],
       portals: [...portals.values()],
     };
-  }
-
-  private async getMainAppItems(ctx: AppPortalsContextLike): Promise<AppPortalAppItem[]> {
-    const name = ctx.app?.name || this.app.name || 'main';
-    if (name !== 'main') {
-      return [];
-    }
-
-    const systemSetting = await ctx.db.getRepository('systemSettings').findOne();
-    const logo = systemSetting?.get?.('logo') || systemSetting?.logo;
-    const icon = typeof logo?.url === 'string' ? logo.url : null;
-    return [
-      {
-        name,
-        title: systemSetting?.get?.('title') || systemSetting?.title || name,
-        icon,
-      },
-    ];
   }
 
   private getPortalKey(item: AppPortalItem) {

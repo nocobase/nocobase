@@ -105,6 +105,21 @@ export class ActionPanelBlockModel extends BlockModel {
       gap: ${token.marginXS}px;
       text-align: left;
     `;
+    const gridHorizontalCardClass = css`
+      min-height: ${token.controlHeightLG + token.paddingSM * 2}px;
+      padding: ${token.paddingSM}px ${token.padding}px;
+      border-radius: ${token.borderRadiusLG}px;
+      background: ${token.colorBgContainer};
+      box-shadow: ${token.boxShadowTertiary};
+      transition:
+        background ${token.motionDurationMid},
+        box-shadow ${token.motionDurationMid};
+
+      &:hover {
+        background: ${token.colorBgTextHover};
+        box-shadow: none;
+      }
+    `;
     const gridTitleClass = css`
       margin-top: ${token.marginSM}px;
       min-height: ${token.fontSize * token.lineHeight}px;
@@ -158,9 +173,9 @@ export class ActionPanelBlockModel extends BlockModel {
                     const horizontal = itemLayout === WorkbenchItemLayout.Horizontal;
                     const renderActionContent = (compact = false) => (
                       <div
-                        className={`${horizontal ? gridHorizontalContentClass : gridContentClass} ${
-                          compact ? hiddenClass : ''
-                        }`}
+                        className={`${
+                          horizontal ? `${gridHorizontalContentClass} ${gridHorizontalCardClass}` : gridContentClass
+                        } ${compact ? hiddenClass : ''}`}
                       >
                         <Avatar className={avatarClass} size={gridIconSize} icon={<Icon type={icon as any} />} />
                         <div

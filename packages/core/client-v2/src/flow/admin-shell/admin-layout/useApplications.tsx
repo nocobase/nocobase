@@ -17,40 +17,11 @@ export const APP_SWITCHER_ACTION_PANEL_MODEL_UID = `${ADMIN_LAYOUT_MODEL_UID}-ap
 
 export const useApplications = (adminLayoutModel?: AdminLayoutModel) => {
   const app = useApp();
-  const loadAppList = app.apps.loadAppList;
-  const [appList, setAppList] = React.useState([]);
   const [appSwitcherModel, setAppSwitcherModel] = React.useState<AppSwitcherActionPanelModel>();
 
   React.useEffect(() => {
     let canceled = false;
-
-    if (!loadAppList) {
-      setAppList([]);
-      return;
-    }
-
-    const load = async () => {
-      try {
-        const list = await Promise.resolve(loadAppList(app));
-        if (!canceled) {
-          setAppList(Array.isArray(list) ? list : []);
-        }
-      } catch (error) {
-        console.error('[NocoBase] Failed to load application switcher list.', error);
-        if (!canceled) {
-          setAppList([]);
-        }
-      }
-    };
-    load();
-
-    return () => {
-      canceled = true;
-    };
-  }, [app, loadAppList]);
-
-  React.useEffect(() => {
-    let canceled = false;
+    let modelWithLayoutContext: AppSwitcherActionPanelModel | undefined;
 
     if (!adminLayoutModel) {
       setAppSwitcherModel(undefined);
@@ -65,14 +36,18 @@ export const useApplications = (adminLayoutModel?: AdminLayoutModel) => {
         subKey: 'appSwitcher',
         subType: 'object',
       });
-      if (!canceled) {
-        setAppSwitcherModel(model);
+      if (canceled) {
+        return;
       }
+      model.context.addDelegate(adminLayoutModel.context);
+      modelWithLayoutContext = model;
+      setAppSwitcherModel(model);
     };
     load();
 
     return () => {
       canceled = true;
+      modelWithLayoutContext?.context.removeDelegate(adminLayoutModel.context);
     };
   }, [adminLayoutModel]);
 
@@ -81,7 +56,7 @@ export const useApplications = (adminLayoutModel?: AdminLayoutModel) => {
 
   return {
     Component: app.apps.Component,
-    appList: shouldRenderConfiguredSwitcher ? [{ title: '', url: '#' }] : appList,
+    appList: shouldRenderConfiguredSwitcher ? [{ title: '', url: '#' }] : [],
     appSwitcherModel,
   };
 };

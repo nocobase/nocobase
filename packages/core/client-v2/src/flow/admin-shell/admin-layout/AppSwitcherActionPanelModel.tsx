@@ -13,13 +13,14 @@ import { Icon } from '../../../components';
 import { ActionModel } from '../../models/base';
 import {
   AddSubModelButton,
+  DndProvider,
   DragHandler,
   Droppable,
   FlowModel,
   FlowModelRenderer,
   FlowSettingsButton,
 } from '@nocobase/flow-engine';
-import { Avatar, Button, Card, Typography } from 'antd';
+import { Avatar, Button, Card, Empty, Typography } from 'antd';
 import React from 'react';
 
 const defaultIconColors = ['#3d8bff', '#00a8b5', '#35b26b', '#f5a623', '#ff7a45', '#e85d75', '#9254de', '#597ef7'];
@@ -50,7 +51,7 @@ export class AppSwitcherActionPanelModel extends FlowModel {
 
   renderContent() {
     const token = this.context.themeToken;
-    const actions = (this.subModels.actions || []) as ActionModel[];
+    const actions = this.mapSubModels('actions', (action) => action) as ActionModel[];
     const designable = !!this.context.flowSettingsEnabled;
     const columnCount = Math.min(Math.max(actions.length || 1, 1), 2);
     const buttonResetClass = css`
@@ -91,84 +92,95 @@ export class AppSwitcherActionPanelModel extends FlowModel {
 
     return (
       <div className={contentClass}>
-        <ul className={listClass}>
-          {actions.map((action) => {
-            const { icon = 'AppstoreOutlined', title } = action.props;
-            action.enableEditDanger = false;
-            action.enableEditType = false;
-            action.renderButton = () => (
-              <Button className={buttonResetClass} onClick={action.onClick.bind(action)}>
-                <Card
-                  bordered={false}
-                  className={css`
-                    height: 56px;
-                    border-radius: ${token.borderRadius}px;
-                    box-shadow: none;
+        {actions.length ? (
+          <DndProvider>
+            <ul className={listClass}>
+              {actions.map((action) => {
+                const { icon = 'AppstoreOutlined' } = action.props;
+                const title = action.getTitle();
+                action.enableEditDanger = false;
+                action.enableEditType = false;
+                action.renderButton = () => (
+                  <Button className={buttonResetClass} onClick={action.onClick.bind(action)}>
+                    <Card
+                      bordered={false}
+                      className={css`
+                        height: 56px;
+                        border-radius: ${token.borderRadius}px;
+                        box-shadow: none;
 
-                    &:hover {
-                      background: ${token.colorBgTextHover};
-                      box-shadow: none;
-                    }
+                        &:hover {
+                          background: ${token.colorBgTextHover};
+                          box-shadow: none;
+                        }
 
-                    .ant-card-body {
-                      height: 100%;
-                      padding: ${token.paddingXS}px;
-                      display: flex;
-                      align-items: center;
-                      gap: ${token.marginXS}px;
-                    }
-                  `}
-                  styles={{ body: { background: 'transparent' } }}
-                >
-                  <Avatar
-                    size={32}
-                    shape="square"
-                    icon={<Icon type={icon as string} />}
-                    style={{
-                      flex: '0 0 auto',
-                      borderRadius: 6,
-                      background: getDefaultIconColor(title),
-                    }}
-                  />
-                  <Typography.Text
-                    ellipsis
-                    title={typeof title === 'string' ? title : undefined}
-                    style={{
-                      minWidth: 0,
-                      color: token.colorText,
-                      fontSize: token.fontSize,
-                      lineHeight: token.lineHeight,
-                    }}
-                  >
-                    {title}
-                  </Typography.Text>
-                </Card>
-              </Button>
-            );
+                        .ant-card-body {
+                          height: 100%;
+                          padding: ${token.paddingXS}px;
+                          display: flex;
+                          align-items: center;
+                          gap: ${token.marginXS}px;
+                        }
+                      `}
+                      styles={{ body: { background: 'transparent' } }}
+                    >
+                      <Avatar
+                        size={32}
+                        shape="square"
+                        icon={<Icon type={icon as string} />}
+                        style={{
+                          flex: '0 0 auto',
+                          borderRadius: 6,
+                          background: getDefaultIconColor(title),
+                        }}
+                      />
+                      <Typography.Text
+                        ellipsis
+                        title={typeof title === 'string' ? title : undefined}
+                        style={{
+                          minWidth: 0,
+                          color: token.colorText,
+                          fontSize: token.fontSize,
+                          lineHeight: token.lineHeight,
+                        }}
+                      >
+                        {title}
+                      </Typography.Text>
+                    </Card>
+                  </Button>
+                );
 
-            return (
-              <li key={action.uid} style={{ width: 260, height: 56, listStyle: 'none' }}>
-                <Droppable model={action}>
-                  <FlowModelRenderer
-                    model={action}
-                    showFlowSettings={{ showBackground: false, showBorder: false, toolbarPosition: 'above' }}
-                    extraToolbarItems={
-                      designable
-                        ? [
-                            {
-                              key: 'drag-handler',
-                              component: DragHandler,
-                              sort: 1,
-                            },
-                          ]
-                        : []
-                    }
-                  />
-                </Droppable>
-              </li>
-            );
-          })}
-        </ul>
+                return (
+                  <li key={action.uid} style={{ width: 260, height: 56, listStyle: 'none' }}>
+                    <Droppable model={action}>
+                      <FlowModelRenderer
+                        model={action}
+                        showFlowSettings={{ showBackground: false, showBorder: false, toolbarPosition: 'above' }}
+                        extraToolbarItems={
+                          designable
+                            ? [
+                                {
+                                  key: 'drag-handler',
+                                  component: DragHandler,
+                                  sort: 1,
+                                },
+                              ]
+                            : []
+                        }
+                      />
+                    </Droppable>
+                  </li>
+                );
+              })}
+            </ul>
+          </DndProvider>
+        ) : (
+          <Empty
+            image={Empty.PRESENTED_IMAGE_SIMPLE}
+            description={this.context.t('No configured applications')}
+            style={{ width: 260, margin: `${token.marginXS}px 0` }}
+          />
+        )}
         {designable && <div style={{ marginTop: token.marginXS }}>{this.renderConfigureActions()}</div>}
       </div>
     );

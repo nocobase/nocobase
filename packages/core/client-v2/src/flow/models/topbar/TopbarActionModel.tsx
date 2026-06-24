@@ -65,7 +65,7 @@ const topbarActionTriggerClassName = css`
   height: 100%;
 `;
 
-type TopbarSettingsAppLike = Pick<BaseApplication<any>, 'router' | 'getPublicPath'>;
+type TopbarSettingsAppLike = Pick<BaseApplication<any>, 'name' | 'router' | 'getPublicPath' | 'getHref'>;
 
 const normalizeTopbarPath = (pathname?: string) => {
   const trimmed = pathname?.trim();
@@ -103,6 +103,45 @@ const stripTopbarRouterBasePath = (pathname: string, basename?: string) => {
   return normalizedPath;
 };
 
+const getTopbarAppPath = (pathname: string) => {
+  const normalizedPath = normalizeTopbarPath(pathname);
+  const match = /^(.*?\/(?:apps|_app)\/[^/]+)(?=\/|$)/.exec(normalizedPath);
+  const appPath = match?.[1] || '';
+
+  return {
+    appPath,
+    routePath: appPath ? normalizeTopbarPath(normalizedPath.slice(appPath.length)) : normalizedPath,
+  };
+};
+
+const getTopbarContextAppPath = (app: TopbarSettingsAppLike | undefined, basename?: string) => {
+  const basenameAppPath = getTopbarAppPath(basename || '').appPath;
+  if (basenameAppPath) {
+    return basenameAppPath;
+  }
+
+  const publicPathAppPath = getTopbarAppPath(app?.getPublicPath?.() || '').appPath;
+  if (publicPathAppPath) {
+    return publicPathAppPath;
+  }
+
+  if (app?.name && app.name !== 'main' && app.getHref) {
+    return normalizeTopbarBasePath(app.getHref('/'));
+  }
+
+  return '';
+};
+
+const prependTopbarAppPath = (pathname: string, appPath: string) => {
+  const normalizedPath = normalizeTopbarPath(pathname);
+
+  if (!appPath || normalizedPath === appPath || normalizedPath.startsWith(`${appPath}/`)) {
+    return normalizedPath;
+  }
+
+  return `${appPath}${normalizedPath}`;
+};
+
 const isAdminRuntimePath = (pathname: string) => {
   return pathname === '/admin' || pathname.startsWith('/admin/');
 };
@@ -136,9 +175,17 @@ function TopbarInternalSettingsLabel(props: { title: React.ReactNode; path?: str
   const targetPath = props.path || '/admin/settings';
   const basename = getTopbarRouterBasePath(app);
   const currentPath = stripTopbarRouterBasePath(location.pathname, basename);
+  const currentLocationAppPath = getTopbarAppPath(currentPath);
+  const currentAppPath = currentLocationAppPath.appPath || getTopbarContextAppPath(app, basename);
+  const currentRoutePath = currentLocationAppPath.appPath ? currentLocationAppPath.routePath : currentPath;
+  const targetPathInCurrentApp = prependTopbarAppPath(stripTopbarRouterBasePath(targetPath, basename), currentAppPath);
 
-  if (isAdminRuntimePath(currentPath)) {
-    return <Link to={targetPath}>{props.title}</Link>;
+  if (currentAppPath) {
+    return <a href={buildTopbarDocumentHref(targetPathInCurrentApp, basename)}>{props.title}</a>;
+  }
+
+  if (isAdminRuntimePath(currentRoutePath)) {
+    return <Link to={targetPathInCurrentApp}>{props.title}</Link>;
   }
 
   return (
