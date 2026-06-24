@@ -33,10 +33,7 @@ export default class extends Instruction {
   PresetFieldsetLoader = () => import('./components/create').then((m) => ({ default: m.CreatePresetFieldset }));
 
   createDefaultConfig() {
-    return {
-      usingAssignFormSchema: true,
-      assignFormSchema: {},
-    };
+    return {};
   }
 
   useVariables = useCollectionNodeVariables;

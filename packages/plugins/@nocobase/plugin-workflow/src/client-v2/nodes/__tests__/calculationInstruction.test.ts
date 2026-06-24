@@ -55,7 +55,16 @@ describe('CalculationInstruction', () => {
     });
   });
 
-  it('preserves the v1 variable exposure contract for supported types', () => {
+  it('exposes the calculation result as a node-result variable', () => {
+    const instruction = new V2CalculationInstruction();
+
+    expect(instruction.useVariables({ key: 'n1', title: 'Calculate amount' })).toEqual({
+      value: 'n1',
+      label: 'Calculate amount',
+    });
+  });
+
+  it('keeps the result for compatible base type filters', () => {
     const instruction = new V2CalculationInstruction();
 
     expect(
@@ -69,6 +78,10 @@ describe('CalculationInstruction', () => {
       value: 'calc1',
       label: 'Calc 1',
     });
+  });
+
+  it('hides the result for unsupported type filters', () => {
+    const instruction = new V2CalculationInstruction();
 
     expect(
       instruction.useVariables(

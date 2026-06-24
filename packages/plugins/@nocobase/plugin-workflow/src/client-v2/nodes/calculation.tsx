@@ -10,11 +10,23 @@
 import type { SubModelItem } from '@nocobase/flow-engine';
 import { CalculatorOutlined } from '@ant-design/icons';
 import React from 'react';
-import { BaseTypeSets } from '../canvas/collectionFieldOptions';
 import { Instruction } from '../canvas/Instruction';
+import { BaseTypeSets, type UseVariableOptions, type VariableOption } from '../canvas/collectionFieldOptions';
 import { NAMESPACE } from '../locale';
 
 const t = (key: string) => `{{t("${key}", { ns: "${NAMESPACE}" })}}`;
+
+type CalculationVariableNode = {
+  key: string;
+  title: string;
+};
+
+type CalculationResultNode = {
+  id?: string | number;
+  key: string;
+  title?: string;
+  config?: unknown;
+};
 
 export default class extends Instruction {
   type = 'calculation';
@@ -28,7 +40,7 @@ export default class extends Instruction {
 
   FieldsetLoader = () => import('./components/calculation').then((m) => ({ default: m.CalculationFieldset }));
 
-  useVariables({ key, title }, { types }) {
+  useVariables({ key, title }: CalculationVariableNode, { types }: UseVariableOptions = {}): VariableOption | null {
     if (
       types &&
       !types.some(
@@ -45,7 +57,7 @@ export default class extends Instruction {
     };
   }
 
-  getCreateModelMenuItem({ node }): SubModelItem {
+  getCreateModelMenuItem({ node }: { node: CalculationResultNode }): SubModelItem {
     return {
       key: node.title ?? `#${node.id}`,
       label: node.title ?? `#${node.id}`,

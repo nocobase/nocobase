@@ -21,13 +21,10 @@ describe('CreateInstruction', () => {
     expect(typeof instruction.useInitializers).toBe('function');
   });
 
-  it('preserves the v1 default config shape', () => {
+  it('uses values-only assignment config by default', () => {
     const instruction = new V2CreateInstruction();
 
-    expect(instruction.createDefaultConfig()).toEqual({
-      usingAssignFormSchema: true,
-      assignFormSchema: {},
-    });
+    expect(instruction.createDefaultConfig()).toEqual({});
   });
 
   it('preserves the create-result block menu item contract', () => {

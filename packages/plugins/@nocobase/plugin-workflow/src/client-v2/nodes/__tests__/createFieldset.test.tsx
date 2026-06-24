@@ -92,7 +92,8 @@ describe('CreateFieldset', () => {
     await waitFor(() => {
       expect(getForm()?.getFieldValue(['config', 'collection'])).toBe('comments');
       expect(getForm()?.getFieldValue(['config', 'params'])).toEqual({});
-      expect(getForm()?.getFieldValue(['config', 'assignFormSchema'])).toEqual({});
+      expect(getForm()?.getFieldValue(['config', 'usingAssignFormSchema'])).toBeUndefined();
+      expect(getForm()?.getFieldValue(['config', 'assignFormSchema'])).toBeUndefined();
     });
   });
 });

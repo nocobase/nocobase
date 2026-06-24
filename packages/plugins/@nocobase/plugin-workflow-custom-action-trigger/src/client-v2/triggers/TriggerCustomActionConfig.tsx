@@ -15,6 +15,7 @@ import {
   TriggerCollectionRecordSelect,
   useCurrentWorkflowContext,
   useWorkflowVariableOptions,
+  WorkflowVariableWrapper,
 } from '@nocobase/plugin-workflow/client-v2';
 import { Alert, Form, Input, Space, Typography } from 'antd';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
@@ -22,6 +23,13 @@ import { CONTEXT_TYPE } from '../../common/constants';
 import { useT } from '../locale';
 
 type RecordValue = Record<string, unknown>;
+type WorkflowField = {
+  isForeignKey?: boolean;
+  type?: string;
+  target?: string;
+  collectionName?: string;
+  name?: string;
+};
 
 function getPrimaryValue(item: RecordValue | string | number | null | undefined, filterTargetKey: string | string[]) {
   if (item == null || typeof item !== 'object') {
@@ -323,24 +331,64 @@ function TriggerDataField() {
 
 export function TriggerCustomActionConfig() {
   const t = useT();
+  const userVariableOptions = useMemo(
+    () => ({
+      types: [
+        (field: WorkflowField) => {
+          if (field.isForeignKey || field.type === 'context') {
+            return field.target === 'users';
+          }
+          return field.collectionName === 'users' && field.name === 'id';
+        },
+      ],
+    }),
+    [],
+  );
+  const roleVariableOptions = useMemo(
+    () => ({
+      types: [
+        (field: WorkflowField) => {
+          if (field.isForeignKey) {
+            return field.target === 'roles';
+          }
+          return field.collectionName === 'roles' && field.name === 'name';
+        },
+      ],
+    }),
+    [],
+  );
 
   return (
     <>
       <TriggerDataField />
       <Form.Item name="userId" label={t('User acted')} rules={[{ required: true }]}>
-        <SearchableRemoteSelect<{ id: number; nickname?: string }, number>
-          cacheKey="workflow-custom-action-trigger:users"
-          resource="users"
-          labelKey="nickname"
-          valueKey="id"
+        <WorkflowVariableWrapper<number>
+          variableOptions={userVariableOptions}
+          render={({ value, onChange }) => (
+            <SearchableRemoteSelect<{ id: number; nickname?: string }, number>
+              cacheKey="workflow-custom-action-trigger:users"
+              resource="users"
+              labelKey="nickname"
+              valueKey="id"
+              value={value ?? null}
+              onChange={onChange}
+            />
+          )}
         />
       </Form.Item>
       <Form.Item name="roleName" label={t('Role of user acted')}>
-        <SearchableRemoteSelect<{ name: string; title?: string }, string>
-          cacheKey="workflow-custom-action-trigger:roles"
-          resource="roles"
-          labelKey="title"
-          valueKey="name"
+        <WorkflowVariableWrapper<string>
+          variableOptions={roleVariableOptions}
+          render={({ value, onChange }) => (
+            <SearchableRemoteSelect<{ name: string; title?: string }, string>
+              cacheKey="workflow-custom-action-trigger:roles"
+              resource="roles"
+              labelKey="title"
+              valueKey="name"
+              value={value ?? null}
+              onChange={onChange}
+            />
+          )}
         />
       </Form.Item>
     </>
