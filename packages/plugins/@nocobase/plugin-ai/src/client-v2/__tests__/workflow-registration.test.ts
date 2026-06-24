@@ -62,6 +62,14 @@ describe('plugin-ai workflow v2 registration', () => {
     ]);
   });
 
+  it('keeps LLM default messages aligned with v1', () => {
+    const instruction = new LLMInstruction();
+
+    expect(instruction.createDefaultConfig()).toEqual({
+      messages: [{ role: 'user', content: [{ type: 'text' }] }],
+    });
+  });
+
   it('parses AI employee structured output variables without throwing on invalid JSON', () => {
     const instruction = new AIEmployeeInstruction();
 

@@ -8,11 +8,13 @@
  */
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { Collapse, Form, Spin, Tabs } from 'antd';
+import { AutoComplete, Collapse, Form, Spin, Tabs } from 'antd';
 import { useApp } from '@nocobase/client-v2';
 import { RemoteSelect } from '../../../../components/RemoteSelect';
-import { ModelSelect, OptionsFields } from '../../../../llm-providers/forms';
+import { observer } from '@nocobase/flow-engine';
+import { OptionsFields } from '../../../../llm-providers/forms';
 import { getBuiltinLLMProviderModelOptionFields } from '../../../../llm-providers';
+import { useAIConfigRepository } from '../../../../repositories/hooks/useAIConfigRepository';
 import { useT } from '../../../../locale';
 import { Messages } from './Messages';
 import { StructuredOutput } from './StructuredOutput';
@@ -86,31 +88,62 @@ function useLLMServiceProvider(llmService?: string) {
   return { provider, loading };
 }
 
-function WorkflowModelSelect() {
+export const WorkflowModelSelect = observer(() => {
   const form = Form.useFormInstance();
+  const aiConfigRepository = useAIConfigRepository();
   const configLLMService = Form.useWatch(['config', 'llmService'], form);
   const configModel = Form.useWatch(['config', 'model'], form);
   const llmService = typeof configLLMService === 'string' ? configLLMService : undefined;
   const model = typeof configModel === 'string' ? configModel : undefined;
+  const [search, setSearch] = useState('');
+  const [open, setOpen] = useState(false);
+  const loading = aiConfigRepository.llmServicesLoading;
 
   useEffect(() => {
-    form.setFieldValue('llmService', llmService);
-  }, [form, llmService]);
+    aiConfigRepository.getLLMServices();
+  }, [aiConfigRepository]);
 
-  useEffect(() => {
-    form.setFieldValue('model', model);
-  }, [form, model]);
+  const options = useMemo(() => {
+    const currentService = aiConfigRepository.llmServices.find((service) => service.llmService === llmService);
+    const keyword = search.trim().toLowerCase();
+
+    return (
+      currentService?.enabledModels
+        .filter((modelOption) => {
+          if (!keyword) {
+            return true;
+          }
+          return modelOption.label.toLowerCase().includes(keyword) || modelOption.value.toLowerCase().includes(keyword);
+        })
+        .map((modelOption) => ({
+          label: modelOption.label,
+          value: modelOption.value,
+        })) ?? []
+    );
+  }, [aiConfigRepository.llmServices, llmService, search]);
 
   return (
-    <ModelSelect
+    <AutoComplete
       value={model}
+      options={options}
+      open={open && (loading || options.length > 0)}
+      onFocus={() => {
+        setSearch('');
+        setOpen(true);
+      }}
+      onBlur={() => setOpen(false)}
+      onSearch={(keyword) => {
+        setSearch(keyword);
+        setOpen(true);
+      }}
+      onSelect={() => setOpen(false)}
       onChange={(nextModel) => {
-        form.setFieldValue('model', nextModel);
         form.setFieldValue(['config', 'model'], nextModel);
       }}
+      notFoundContent={loading ? <Spin size="small" /> : null}
     />
   );
-}
+});
 
 export function LLMFieldset() {
   const t = useT();
@@ -141,25 +174,29 @@ export function LLMFieldset() {
           }}
         />
       </Form.Item>
-      <Form.Item name={['config', 'model']} label={t('Model')} rules={[{ required: true }]}>
-        <WorkflowModelSelect />
-      </Form.Item>
-      {loading ? (
-        <Spin size="small" />
-      ) : (
-        <Collapse
-          bordered={false}
-          size="small"
-          items={[
-            {
-              key: 'options',
-              label: t('Options'),
-              forceRender: true,
-              children: <OptionsFields fields={optionFields} namePrefix={['config']} />,
-            },
-          ]}
-        />
-      )}
+      {llmService ? (
+        <>
+          <Form.Item name={['config', 'model']} label={t('Model')} rules={[{ required: true }]}>
+            <WorkflowModelSelect />
+          </Form.Item>
+          {loading ? (
+            <Spin size="small" />
+          ) : (
+            <Collapse
+              bordered={false}
+              size="small"
+              items={[
+                {
+                  key: 'options',
+                  label: t('Options'),
+                  forceRender: true,
+                  children: <OptionsFields fields={optionFields} namePrefix={['config']} />,
+                },
+              ]}
+            />
+          )}
+        </>
+      ) : null}
       <Tabs
         items={[
           {

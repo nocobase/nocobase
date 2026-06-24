@@ -23,7 +23,9 @@ export default class LLMInstruction extends Instruction {
   FieldsetLoader = () => import('./components/LLMFieldset').then((m) => ({ default: m.LLMFieldset }));
 
   createDefaultConfig() {
-    return {};
+    return {
+      messages: [{ role: 'user', content: [{ type: 'text' }] }],
+    };
   }
 
   useVariables(node: WorkflowInstructionNode): WorkflowNodeVariableOption {

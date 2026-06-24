@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import { Form, Select } from 'antd';
 import { WorkflowVariableInput, WorkflowVariableTextArea } from '@nocobase/plugin-workflow/client-v2';
 import { useT } from '../../../../locale';
@@ -29,6 +29,10 @@ function cloneDefaultMessage(): LLMMessage {
     role: 'user',
     content: [{ type: 'text' }],
   };
+}
+
+function createDefaultMessages(): LLMMessage[] {
+  return [cloneDefaultMessage()];
 }
 
 function toMessages(value?: LLMMessage[]) {
@@ -54,7 +58,14 @@ export function Messages() {
   const t = useT();
   const form = Form.useFormInstance();
   const watchedMessages = Form.useWatch(['config', 'messages'], form);
-  const messages = toMessages(watchedMessages ?? form.getFieldValue(['config', 'messages']));
+  const rawMessages = watchedMessages ?? form.getFieldValue(['config', 'messages']);
+  const messages = Array.isArray(rawMessages) ? toMessages(rawMessages) : createDefaultMessages();
+
+  useEffect(() => {
+    if (!Array.isArray(form.getFieldValue(['config', 'messages']))) {
+      form.setFieldValue(['config', 'messages'], createDefaultMessages());
+    }
+  }, [form]);
 
   const updateMessages = useCallback(
     (next: LLMMessage[]) => {
