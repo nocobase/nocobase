@@ -27,7 +27,7 @@ import * as aiEmployeeActions from './resource/aiEmployees';
 import { googleGenAIProviderOptions } from './llm-providers/google-genai';
 import { AIEmployeeTrigger } from './workflow/triggers/ai-employee';
 import { getWorkflowCallers, createDocsSearchTool, type DocsFsCache } from './tools';
-import { Model } from '@nocobase/database';
+import { Model, Transaction } from '@nocobase/database';
 import { anthropicProviderOptions } from './llm-providers/anthropic';
 import aiSettings from './resource/aiSettings';
 import { dashscopeProviderOptions } from './llm-providers/dashscope';
@@ -53,6 +53,11 @@ import {
 } from './workflow/nodes/employee';
 import { KnowledgeBaseManager } from './ai-employees/ai-knowledge-base';
 import { LLMStreamCachedManager } from './manager/llm-stream-manager';
+
+type MCPClientModel = Model<{ useUserContext?: boolean }>;
+type TransactionOptions = {
+  transaction?: Transaction;
+};
 
 export class PluginAIServer extends Plugin {
   features = new AIPluginFeatureManagerImpl();
@@ -152,6 +157,7 @@ export class PluginAIServer extends Plugin {
     this.registerLLMProviders();
     this.registerTools();
     this.defineResources();
+    this.registerMcpClientEvents();
     this.setPermissions();
     this.registerWorkflow();
     this.registerWorkContextResolveStrategy();
@@ -212,6 +218,41 @@ export class PluginAIServer extends Plugin {
     Object.entries(aiEmployeeActions).forEach(([name, action]) => {
       this.app.resourceManager.registerActionHandler(`aiEmployees:${name}`, action);
     });
+  }
+
+  registerMcpClientEvents() {
+    this.db.on('aiMcpClients.afterCreate', (model: MCPClientModel, { transaction }: TransactionOptions = {}) => {
+      if (model.get('useUserContext') === true) {
+        this.clearMcpUserContextCacheAfterCommit(transaction);
+      }
+    });
+
+    this.db.on('aiMcpClients.afterUpdate', (model: MCPClientModel, { transaction }: TransactionOptions = {}) => {
+      if (model.get('useUserContext') === true || model.previous('useUserContext') === true) {
+        this.clearMcpUserContextCacheAfterCommit(transaction);
+      }
+    });
+
+    this.db.on('aiMcpClients.afterDestroy', (model: MCPClientModel, { transaction }: TransactionOptions = {}) => {
+      if (model.get('useUserContext') === true) {
+        this.clearMcpUserContextCacheAfterCommit(transaction);
+      }
+    });
+  }
+
+  private clearMcpUserContextCacheAfterCommit(transaction?: Transaction) {
+    const clearCache = () => {
+      this.ai.mcpManager.clearUserContextCache().catch((error) => {
+        this.app.log.warn('fail to clear user-bound mcp client cache', error);
+      });
+    };
+
+    if (transaction) {
+      transaction.afterCommit(clearCache);
+      return;
+    }
+
+    clearCache();
   }
 
   setPermissions() {

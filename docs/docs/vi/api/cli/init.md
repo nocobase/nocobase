@@ -42,7 +42,7 @@ nb init --env app1 --resume
 
 `--prepare-only` dành cho các luồng mà bạn cần chuẩn bị env trước, sau đó kích hoạt license, rồi mới cài đặt và khởi động app.
 
-Nếu bạn muốn lưu cấu hình env trước, chuẩn bị source code hoặc image, đồng thời chuẩn bị sẵn cơ sở dữ liệu, nhưng tạm hoãn việc cài đặt app thực tế và lần khởi động đầu tiên, bạn có thể dùng:
+Nếu bạn muốn lưu cấu hình env và chuẩn bị cơ sở dữ liệu trước, nhưng tạm hoãn việc tải dependency, cài đặt app thực tế và lần khởi động đầu tiên, bạn có thể dùng:
 
 ```bash
 nb init --env app1 --prepare-only
@@ -67,6 +67,7 @@ Theo mặc định, CLI sẽ tổ chức các tệp cục bộ dưới `app-path
 
 ```text
 <app-path>/
+├── .nb/      # Metadata CLI cho env này, chẳng hạn hooks.mjs
 ├── source/   # Thư mục mặc định tương ứng với mã nguồn ứng dụng hoặc nội dung đã tải xuống
 ├── storage/  # Thư mục dữ liệu runtime
 └── .env      # Tệp biến môi trường ứng dụng tùy chọn
@@ -74,6 +75,7 @@ Theo mặc định, CLI sẽ tổ chức các tệp cục bộ dưới `app-path
 
 Thông thường:
 
+- `.nb/` lưu metadata do CLI quản lý. Script truyền qua `--hook-script` sẽ được sao chép vào `<app-path>/.nb/hooks.mjs`, để `nb app upgrade` và restore source cục bộ về sau có thể dùng lại
 - `source/` chủ yếu tương ứng với thư mục ứng dụng cục bộ của env kiểu npm / Git. Với Docker env, CLI cũng giữ quy ước suy luận đường dẫn mặc định này, nhưng phần lớn trường hợp bạn không cần quan tâm thủ công đến nó. Hãy đặc biệt chú ý khi nâng cấp: thư mục `source/` sẽ bị xóa rồi tải lại, vì vậy đừng đặt các tệp cần giữ lại ở đây
 - `storage/` dùng để lưu dữ liệu runtime, chẳng hạn như dữ liệu cơ sở dữ liệu tích hợp, plugin, log, v.v.
 - `.env` là tệp biến môi trường ứng dụng tùy chọn. Chỉ khi bạn cần tùy chỉnh biến môi trường thì mới cần thêm nó vào `<app-path>/.env`; nếu tệp này tồn tại, các nguồn cài đặt Docker, npm và Git sẽ mặc định đọc nó
@@ -101,7 +103,7 @@ Nếu bạn đang thao tác từng bước theo trình hướng dẫn UI cục b
 | ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `Getting started`         | `--env`、`--yes`、`--ui`、`--locale`、`--verbose`、`--skip-skills`、`--resume`、`--prepare-only`                                                                                                                 |
 | `App environment`         | `--lang`、`--app-path`、`--app-port`、`--force`                                                                                                                                                                   |
-| `App source and version`  | `--source`、`--version`、`--skip-download`、`--git-url`、`--docker-registry`、`--docker-platform`、`--npm-registry`、`--replace`、`--dev-dependencies`、`--output-dir`、`--docker-save`、`--build`、`--build-dts` |
+| `App source and version`  | `--source`、`--version`、`--skip-download`、`--git-url`、`--docker-registry`、`--docker-platform`、`--npm-registry`、`--replace`、`--dev-dependencies`、`--output-dir`、`--docker-save`、`--build`、`--build-dts`、`--hook-script` |
 | `Configure the database`  | `--builtin-db`、`--db-dialect`、`--builtin-db-image`、`--db-host`、`--db-port`、`--db-database`、`--db-user`、`--db-password`、`--db-schema`、`--db-table-prefix`、`--db-underscored`                             |
 | `Create an admin account` | `--root-username`、`--root-email`、`--root-password`、`--root-nickname`                                                                                                                                           |
 | `Remote connection`       | `--api-base-url`、`--auth-type`、`--access-token`、`--username`、`--password`、`--skip-auth`                                                                                                                      |
@@ -184,6 +186,7 @@ Có khá nhiều tham số, nên sẽ dễ hiểu hơn nếu tách ra theo từn
 | `--npm-registry`                                     | string  | Trống                                                                                            | Registry dùng để tải npm/Git và cài dependency                                  |
 | `--build` / `--no-build`                             | boolean | `true`                                                                                           | Có build sau khi cài dependency npm/Git hay không                               |
 | `--build-dts`                                        | boolean | `false`                                                                                          | Có tạo file khai báo TypeScript khi build npm/Git hay không                     |
+| `--hook-script`                                      | string  | Không có                                                                                         | Sao chép hook module được chỉ định vào `<app-path>/.nb/hooks.mjs` và lưu vào env config; hỗ trợ các lifecycle hook `beforeDependencyInstall`, `beforeAppInstall` và `afterAppStart` |
 
 ## Ví dụ
 
@@ -232,6 +235,40 @@ nb init --env app1 --yes --source git --version feat/plugin-workflow-timeout
 nb init --env app1 --yes --source git --version latest \
   --git-url https://gitee.com/nocobase/nocobase.git
 ```
+
+### Mở rộng luồng cài đặt bằng hook script
+
+Nếu bạn cần chuẩn bị thêm nội dung trong quá trình cài đặt, hãy truyền một module ESM cục bộ bằng `--hook-script`:
+
+```bash
+nb init --env app1 --yes --source git --hook-script ./hooks.mjs
+```
+
+CLI sao chép tệp này vào `<app-path>/.nb/hooks.mjs` và lưu `hookScript: ".nb/hooks.mjs"` trong env config. `nb app start`, `nb app restart` và `nb app upgrade` về sau sẽ dùng lại từ vị trí này.
+
+Tệp hook cần default export một object. Chỉ implement các method bạn cần:
+
+```js
+export default {
+  beforeDependencyInstall: async (context) => {
+    // Runs after git clone / npm scaffold and before yarn install.
+  },
+  beforeAppInstall: async (context) => {
+    // Runs before the app-level install or upgrade command.
+  },
+  afterAppStart: async (context) => {
+    // Runs after the app actually starts and passes the health check.
+  },
+};
+```
+
+- `beforeDependencyInstall` chỉ áp dụng cho source npm/Git và chạy ngay trước `yarn install` thật sự; Docker source không chạy hook này
+- `beforeAppInstall` chạy trước lệnh install hoặc upgrade cấp app, và áp dụng cho source npm/Git/Docker
+- `afterAppStart` chạy sau khi app thật sự start và vượt qua `__health_check`; `nb app start`, `nb app restart` và `nb app upgrade` đều có thể kích hoạt nó
+
+`--prepare-only` chỉ lưu env config và sao chép tệp hook. Nó không chạy hook. Khi sau đó bạn chạy `nb app start` lần đầu, CLI sẽ chạy hook cài đặt đầu tiên với `context.phase` là `init` và `context.command` là `app:start`.
+
+`context` bao gồm thông tin lifecycle như `phase`, `command`, `source`, `version`, `appPath`, `sourcePath`, `storagePath`, `hookScript` và `envConfig`. Nếu hook throw error, lệnh CLI hiện tại sẽ fail. Vì `afterAppStart` có thể chạy lặp lại trong start, restart và upgrade, hãy giữ logic idempotent.
 
 ### Cài nhanh và dùng xác thực basic
 
