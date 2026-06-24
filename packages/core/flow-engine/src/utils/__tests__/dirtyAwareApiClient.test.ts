@@ -101,6 +101,9 @@ describe('dirtyAwareApiClient', () => {
       'send',
       'testConnection',
       'refresh',
+      'run',
+      'runById',
+      'unknownCustomAction',
     ];
 
     for (const actionName of nonMutatingActions) {

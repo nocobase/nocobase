@@ -43,25 +43,26 @@ type APIClientRequestConfig = Parameters<APIClient['request']>[0];
 const dirtyAwareApiClientCache = new WeakMap<object, WeakMap<object, APIClient>>();
 const dirtyAwareApiClientProxies = new WeakSet<object>();
 
-const READ_RESOURCE_ACTIONS = [
-  'aggregate',
-  'check',
-  'children',
-  'count',
-  'exists',
-  'find',
-  'get',
-  'getsystemsettings',
-  'list',
-  'listmine',
-  'parents',
-  'preview',
-  'query',
-  'refresh',
-  'search',
-  'send',
-  'test',
-  'testconnection',
+const MUTATING_RESOURCE_ACTIONS = [
+  'add',
+  'bulkdestroy',
+  'bulkupdate',
+  'create',
+  'delete',
+  'destroy',
+  'execute',
+  'firstorcreate',
+  'import',
+  'move',
+  'remove',
+  'save',
+  'saveastemplate',
+  'set',
+  'setfields',
+  'submit',
+  'update',
+  'updateorcreate',
+  'upsert',
 ];
 
 function isApiClientLike(value: unknown): value is DirtyAwareAPIClient {
@@ -79,7 +80,7 @@ function isMutatingResourceAction(actionName: string): boolean {
   }
   const baseActionName = normalized.split('/')[0];
   const lowerBaseActionName = baseActionName.toLowerCase();
-  const isReadAction = READ_RESOURCE_ACTIONS.some((action) => {
+  return MUTATING_RESOURCE_ACTIONS.some((action) => {
     if (lowerBaseActionName === action) {
       return true;
     }
@@ -90,7 +91,6 @@ function isMutatingResourceAction(actionName: string): boolean {
     const nextChar = baseActionName[action.length];
     return nextChar === '-' || nextChar === '_' || (nextChar >= 'A' && nextChar <= 'Z');
   });
-  return !isReadAction;
 }
 
 function getCurrentOrigin(): string | undefined {
