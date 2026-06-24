@@ -25,6 +25,8 @@ import type {
 } from '../../shared/types';
 import { BlobService } from './BlobService';
 import { CommitService } from './CommitService';
+import type { DiffCommitsInput, DiffDraftInput, DiffFileInput, DiffFileResult, FileDiffResult } from './DiffService';
+import { DiffService } from './DiffService';
 import type {
   ActiveDraftResult,
   DiscardDraftInput,
@@ -121,12 +123,22 @@ export class VscFileService {
 
   private readonly draftService: DraftService;
 
+  private readonly diffService: DiffService;
+
   constructor(private readonly db: Database) {
     this.blobService = new BlobService(db);
     this.treeService = new TreeService(db, this.blobService);
     this.repositoryService = new RepositoryService(db);
     this.commitService = new CommitService(db);
     this.draftService = new DraftService(db, this.blobService, this.repositoryService);
+    this.diffService = new DiffService(
+      db,
+      this.blobService,
+      this.commitService,
+      this.draftService,
+      this.repositoryService,
+      this.treeService,
+    );
   }
 
   async createRepository(input: CreateRepositoryInput, ctx: VscServiceContext = {}): Promise<CreateRepositoryResult> {
@@ -245,6 +257,22 @@ export class VscFileService {
 
   async discardDraft(input: DiscardDraftInput, ctx: VscServiceContext = {}): Promise<VscDraftRecord | null> {
     return this.draftService.discardDraft(input, ctx);
+  }
+
+  async diff(input: DiffCommitsInput, ctx: VscServiceContext = {}): Promise<FileDiffResult> {
+    return this.diffService.diffCommits(input, ctx.transaction);
+  }
+
+  async diffCommits(input: DiffCommitsInput, ctx: VscServiceContext = {}): Promise<FileDiffResult> {
+    return this.diffService.diffCommits(input, ctx.transaction);
+  }
+
+  async diffDraft(input: DiffDraftInput, ctx: VscServiceContext = {}): Promise<FileDiffResult> {
+    return this.diffService.diffDraft(input, ctx.transaction);
+  }
+
+  async diffFile(input: DiffFileInput, ctx: VscServiceContext = {}): Promise<DiffFileResult> {
+    return this.diffService.diffFile(input, ctx.transaction);
   }
 
   async push(input: PushInput, ctx: VscServiceContext = {}): Promise<PushResult> {
