@@ -19,17 +19,8 @@ Actualmente, NocoBase proporciona los siguientes plugins de vista previa de arch
 
 ## Vista previa de PDF con almacenamiento externo
 
-La vista previa de PDF utiliza PDF.js para renderizar archivos en el navegador. El navegador debe leer primero el contenido del archivo PDF y después pasarlo a PDF.js para su renderizado. Por lo tanto, cuando los archivos se almacenan en un almacenamiento externo como OSS, S3, COS o un CDN, y el dominio de acceso al archivo es diferente del dominio del sitio NocoBase, el almacenamiento externo debe permitir que el sitio NocoBase lea archivos entre orígenes.
+NocoBase muestra la vista previa de PDF mediante un iframe del navegador. Algunos navegadores o lectores de PDF pueden admitir scripts, formularios u otro contenido interactivo dentro de los archivos PDF. Si el archivo previsualizado procede de una fuente no confiable, conviene prestar atención al límite de seguridad de la ejecución de scripts.
 
-Si CORS no está configurado, la descarga de PDF puede seguir funcionando normalmente, pero la vista previa puede fallar con un error de carga del archivo.
+Recomendamos aislar el dominio de acceso a archivos de los dominios del sitio NocoBase y de la API. Por ejemplo, sirve los archivos de OSS, S3, COS o un CDN desde un dominio dedicado, en lugar de compartir el mismo origen con el frontend o la API de NocoBase.
 
-La configuración CORS del almacenamiento externo o CDN debe incluir:
-
-```http
-Access-Control-Allow-Origin: https://your-nocobase-domain
-Access-Control-Allow-Methods: GET, HEAD
-Access-Control-Allow-Headers: *
-Access-Control-Expose-Headers: Content-Length, Content-Range, Accept-Ranges, Content-Disposition, Content-Type
-```
-
-`Access-Control-Allow-Origin` debe configurarse con el dominio real usado para acceder a NocoBase. Evite usar `*` a largo plazo para archivos no públicos, porque amplía el rango de sitios que pueden leer los archivos.
+Si el dominio de archivos es diferente del dominio de la API, y la API no habilita CORS para el dominio de archivos, los scripts que se ejecuten en el entorno de vista previa de PDF suelen quedar restringidos por la política de mismo origen del navegador. No pueden leer directamente la página de NocoBase, el almacenamiento del navegador ni las respuestas de la API.
