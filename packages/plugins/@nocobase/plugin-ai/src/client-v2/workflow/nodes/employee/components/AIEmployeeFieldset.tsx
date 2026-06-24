@@ -15,7 +15,9 @@ import { AIEmployeeSelect } from './AIEmployeeSelect';
 import { FileInputs } from './FileInputs';
 import { MessageInputs } from './MessageInputs';
 import { ModelOptions } from './ModelOptions';
+import { SkillSettings } from './SkillSettings';
 import { UserInputFormItem } from './UserInput';
+import { WebSearchOptions } from './WebSearchOptions';
 
 export function AIEmployeeFieldset() {
   const t = useT();
@@ -51,6 +53,8 @@ export function AIEmployeeFieldset() {
               <Form.Item label={t('Attachments')} tooltip={t('Select the file or image to be sent to the LLM')}>
                 <FileInputs />
               </Form.Item>
+              <SkillSettings />
+              <WebSearchOptions />
             </>
           ),
         },

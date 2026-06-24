@@ -354,7 +354,7 @@
 
 #### W3.3 技能、工具、web search 配置迁移
 
-- 状态：未开始
+- 状态：已提交
 - 范围：
   - `src/client-v2/workflow/nodes/employee/components/SkillSettings.tsx`
   - `src/client-v2/workflow/nodes/employee/components/WebSearchOptions.tsx`
@@ -365,7 +365,14 @@
 - UI 对照：
   - 对照 Preset/Custom、远程多选、模型不支持 web search 提示。
 - 验收记录：
-  - 待填写。
+  - 已新增 v2 `SkillSettings`，按 v2 `AIEmployeeShortcutModel` 的同类实现迁移 Preset/Custom radio、绑定资源远程多选、option title/description 渲染和 `Leave empty to disable ...` placeholder。
+  - `Skills` 默认值来自当前 AI employee 的 `skillSettings.skills`；`Tools` 默认值来自当前 AI employee 的 `skillSettings.tools[].name`；Custom 选择会过滤到员工允许的默认集合。
+  - 已通过隐藏注册项保存 `config.skillSettings.skillsVersion/toolsVersion = 2`，preset 时对应数组为 `undefined`，custom 空数组表示禁用，保留服务端 v2 skill/tool 兼容语义。
+  - 已新增 v2 `WebSearchOptions`，按当前 `config.model.llmService` 匹配 LLM service；模型不支持 web search 时禁用并自动清空 true，保留 `Web search not supported` 提示。
+  - 已运行 `yarn eslint --fix` 覆盖触达文件。
+  - 已运行 `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/__tests__/workflow-registration.test.ts --run --reporter=verbose`，5 个用例通过。
+  - 已用 Kimi WebBridge 在 v2 `http://localhost:13004/v/admin/workflow/workflows/356950351282176` 打开 AI employee 节点配置抽屉，确认 Skills/Tools 的 Preset/Custom、远程多选 placeholder 和 Web search switch 可见；当前样例 skills/tools 为空数组，按 v1 逻辑显示 Custom 选择区。
+  - 已扫描 `src/client-v2/workflow`，未发现 `@nocobase/client`、`@formily/*` runtime、`@nocobase/plugin-workflow/client` 或本插件 `src/client/` import。
 
 #### W3.4 feedback、structured output、assignees 配置迁移
 
@@ -538,7 +545,7 @@
 | W0. 迁移任务文档与基线准备 | 已提交 | 开始 W1.1 |
 | W1. workflow v2 注册骨架与共享类型 | 已提交 | 开始 W2.1 |
 | W2. LLM workflow 节点迁移 | 已提交 | 开始 W3.1 |
-| W3. AI employee workflow 节点迁移 | 进行中 | 开始 W3.3 |
+| W3. AI employee workflow 节点迁移 | 进行中 | 开始 W3.4 |
 | W4. AI employee workflow trigger 迁移 | 未开始 | 等 W1 完成 |
 | W5. v1 兼容入口收敛 | 未开始 | 等 W2/W3/W4 校验通过 |
 | W6. 总体验收、清理和最终提交 | 未开始 | 等 W5 完成 |
