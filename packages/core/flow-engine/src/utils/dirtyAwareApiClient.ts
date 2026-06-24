@@ -38,6 +38,8 @@ type DirtyAwareAPIClient = APIClient & {
   request: APIClient['request'];
 };
 
+type APIClientRequestConfig = Parameters<APIClient['request']>[0];
+
 const dirtyAwareApiClientCache = new WeakMap<object, WeakMap<object, APIClient>>();
 const dirtyAwareApiClientProxies = new WeakSet<object>();
 
@@ -373,17 +375,18 @@ function createDirtyAwareApiClient(api: DirtyAwareAPIClient, context: FlowContex
     return createDirtyAwareResource(context, targetResource, name, of, headers);
   };
 
-  const request: APIClient['request'] = async (config) => {
+  const request = (<T, R, D>(config: APIClientRequestConfig): Promise<R> => {
     const options = config as ResourceRequestOptions;
     const skipDataSourceDirty = options?.[SKIP_DATA_SOURCE_DIRTY];
     const dirtyResourceAction = skipDataSourceDirty ? undefined : resolveDirtyResourceAction(options, context);
     const { [SKIP_DATA_SOURCE_DIRTY]: _skipDataSourceDirty, ...cleanConfig } = options;
-    const result = await api.request(cleanConfig as typeof config);
-    if (dirtyResourceAction && isMutatingResourceAction(dirtyResourceAction.actionName)) {
-      markResourceActionDataSourceDirty(context, dirtyResourceAction, options.headers);
-    }
-    return result;
-  };
+    return api.request<T, R, D>(cleanConfig as typeof config).then((result) => {
+      if (dirtyResourceAction && isMutatingResourceAction(dirtyResourceAction.actionName)) {
+        markResourceActionDataSourceDirty(context, dirtyResourceAction, options.headers);
+      }
+      return result;
+    });
+  }) as APIClient['request'];
 
   const proxy = new Proxy(api, {
     get(target, prop, receiver) {
