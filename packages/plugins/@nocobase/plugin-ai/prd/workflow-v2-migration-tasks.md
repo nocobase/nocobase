@@ -204,7 +204,7 @@
 
 ### W2. LLM workflow 节点迁移
 
-状态：未开始
+状态：已提交
 
 目标：把 v1 `workflow/nodes/llm` 迁到 v2，配置 UI 改为原生 antd。
 
@@ -275,7 +275,7 @@
 
 #### W2.4 LLM 节点测试与提交
 
-- 状态：未开始
+- 状态：已提交
 - 范围：
   - LLM 节点相关测试
   - 本 PRD 状态更新
@@ -285,7 +285,14 @@
   - `yarn eslint --fix` 已运行在触达文件上。
   - 必要 UI 对照通过。
 - 验收记录：
-  - 待填写。
+  - 已新增 `workflow-llm-fieldset.test.tsx`，覆盖 LLM `FieldsetLoader` lazy loader 指向 v2 `LLMFieldset`。
+  - 已覆盖 `Messages` 与 `StructuredOutput` 在同一个 antd Form 中提交时的值结构，确认 `messages` 和 `structuredOutput` 都保留在 `config` 下。
+  - 测试中发现 `Messages` 仅 `setFieldValue` 未注册字段会导致 `NodeConfigDrawer` 的 `form.validateFields()` 丢失 `config.messages`；已新增不渲染 UI 的 `Form.Item name={['config', 'messages']}` 注册项修复。
+  - 已运行 `yarn eslint --fix packages/plugins/@nocobase/plugin-ai/src/client-v2/workflow/nodes/llm/components/Messages.tsx packages/plugins/@nocobase/plugin-ai/src/client-v2/__tests__/workflow-llm-fieldset.test.tsx`。
+  - 已运行 `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/__tests__/workflow-llm-fieldset.test.tsx --run --reporter=verbose`，2 个用例通过。
+  - 已运行 `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/__tests__/workflow-list-collapse.test.ts --run --reporter=verbose`，2 个用例通过。
+  - 已运行 `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/__tests__/workflow-registration.test.ts --run --reporter=verbose`，5 个用例通过。
+  - 已扫描 `src/client-v2/workflow`，未发现 `@nocobase/client`、`@formily/*` runtime、`@nocobase/plugin-workflow/client` 或本插件 `src/client/` import。
 
 ### W3. AI employee workflow 节点迁移
 
@@ -513,8 +520,8 @@
 | --- | --- | --- |
 | W0. 迁移任务文档与基线准备 | 已提交 | 开始 W1.1 |
 | W1. workflow v2 注册骨架与共享类型 | 已提交 | 开始 W2.1 |
-| W2. LLM workflow 节点迁移 | 进行中 | 开始 W2.2 |
-| W3. AI employee workflow 节点迁移 | 未开始 | 等 W1 完成 |
+| W2. LLM workflow 节点迁移 | 已提交 | 开始 W3.1 |
+| W3. AI employee workflow 节点迁移 | 未开始 | 开始 W3.1 |
 | W4. AI employee workflow trigger 迁移 | 未开始 | 等 W1 完成 |
 | W5. v1 兼容入口收敛 | 未开始 | 等 W2/W3/W4 校验通过 |
 | W6. 总体验收、清理和最终提交 | 未开始 | 等 W5 完成 |

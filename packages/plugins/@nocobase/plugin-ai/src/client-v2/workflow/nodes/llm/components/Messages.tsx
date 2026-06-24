@@ -49,6 +49,10 @@ function getImageUrl(item: LLMMessageContent) {
   return undefined;
 }
 
+function RegisteredFormValue(_: { value?: unknown; onChange?: (value: unknown) => void }) {
+  return null;
+}
+
 export function Messages() {
   const t = useT();
   const form = Form.useFormInstance();
@@ -88,107 +92,112 @@ export function Messages() {
   );
 
   return (
-    <WorkflowListCollapse<LLMMessage>
-      value={messages}
-      onChange={updateMessages}
-      getDefaultValue={cloneDefaultMessage}
-      defaultValue={defaultMessage}
-      addText={t('Add prompt')}
-      itemTitle={t('Message')}
-      renderHeader={(_, index) => t('Message') || `${index + 1}`}
-      renderItem={(message, messageIndex) => {
-        const role = message.role ?? 'user';
-        return (
-          <>
-            <Form.Item label={t('Role')} required>
-              <Select<LLMMessageRole>
-                value={role}
-                options={[
-                  { label: 'System', value: 'system' },
-                  { label: 'User', value: 'user' },
-                  { label: 'Assistant', value: 'assistant' },
-                ]}
-                onChange={(nextRole) => {
-                  updateMessage(messageIndex, {
-                    role: nextRole,
-                    ...(nextRole === 'user'
-                      ? {
-                          content: toContent(message.content).length
-                            ? toContent(message.content)
-                            : [defaultUserContent],
-                        }
-                      : { message: message.message ?? '', content: message.content }),
-                  });
-                }}
-              />
-            </Form.Item>
-            {role === 'user' ? (
-              <WorkflowListCollapse<LLMMessageContent>
-                value={toContent(message.content)}
-                onChange={(nextContent) => updateContent(messageIndex, nextContent)}
-                defaultValue={defaultUserContent}
-                getDefaultValue={() => ({ type: 'text' })}
-                addText={t('Add content')}
-                itemTitle={t('Content')}
-                bordered={false}
-                renderHeader={() => t('Content')}
-                renderItem={(contentItem, contentIndex) => {
-                  const type = contentItem.type ?? 'text';
-                  return (
-                    <>
-                      <Form.Item label={t('Type')} required>
-                        <Select<LLMMessageContentType>
-                          value={type}
-                          options={[
-                            { label: t('Text'), value: 'text' },
-                            { label: t('Image (send via URL)'), value: 'image_url' },
-                            { label: t('Image (send via Base64)'), value: 'image_base64' },
-                          ]}
-                          onChange={(nextType) => {
-                            updateContentItem(messageIndex, contentIndex, {
-                              type: nextType,
-                              content: nextType === 'text' ? contentItem.content : undefined,
-                              image_url: nextType === 'text' ? undefined : contentItem.image_url,
-                            });
-                          }}
-                        />
-                      </Form.Item>
-                      {type === 'text' ? (
-                        <Form.Item label={t('Content')}>
-                          <WorkflowVariableTextArea
-                            value={contentItem.content}
-                            autoSize={{ minRows: 5 }}
-                            onChange={(content) => updateContentItem(messageIndex, contentIndex, { content })}
-                          />
-                        </Form.Item>
-                      ) : (
-                        <Form.Item label={t('Image')} required>
-                          <WorkflowVariableInput
-                            value={getImageUrl(contentItem)}
-                            onChange={(url) =>
-                              updateContentItem(messageIndex, contentIndex, {
-                                image_url: { url },
-                              })
-                            }
-                          />
-                        </Form.Item>
-                      )}
-                    </>
-                  );
-                }}
-              />
-            ) : (
-              <Form.Item label={t('Content')}>
-                <WorkflowVariableTextArea
-                  value={message.message}
-                  onChange={(nextMessage) => updateMessage(messageIndex, { message: nextMessage })}
+    <>
+      <Form.Item name={['config', 'messages']} noStyle>
+        <RegisteredFormValue />
+      </Form.Item>
+      <WorkflowListCollapse<LLMMessage>
+        value={messages}
+        onChange={updateMessages}
+        getDefaultValue={cloneDefaultMessage}
+        defaultValue={defaultMessage}
+        addText={t('Add prompt')}
+        itemTitle={t('Message')}
+        renderHeader={(_, index) => t('Message') || `${index + 1}`}
+        renderItem={(message, messageIndex) => {
+          const role = message.role ?? 'user';
+          return (
+            <>
+              <Form.Item label={t('Role')} required>
+                <Select<LLMMessageRole>
+                  value={role}
+                  options={[
+                    { label: 'System', value: 'system' },
+                    { label: 'User', value: 'user' },
+                    { label: 'Assistant', value: 'assistant' },
+                  ]}
+                  onChange={(nextRole) => {
+                    updateMessage(messageIndex, {
+                      role: nextRole,
+                      ...(nextRole === 'user'
+                        ? {
+                            content: toContent(message.content).length
+                              ? toContent(message.content)
+                              : [defaultUserContent],
+                          }
+                        : { message: message.message ?? '', content: message.content }),
+                    });
+                  }}
                 />
               </Form.Item>
-            )}
-          </>
-        );
-      }}
-    />
+              {role === 'user' ? (
+                <WorkflowListCollapse<LLMMessageContent>
+                  value={toContent(message.content)}
+                  onChange={(nextContent) => updateContent(messageIndex, nextContent)}
+                  defaultValue={defaultUserContent}
+                  getDefaultValue={() => ({ type: 'text' })}
+                  addText={t('Add content')}
+                  itemTitle={t('Content')}
+                  bordered={false}
+                  renderHeader={() => t('Content')}
+                  renderItem={(contentItem, contentIndex) => {
+                    const type = contentItem.type ?? 'text';
+                    return (
+                      <>
+                        <Form.Item label={t('Type')} required>
+                          <Select<LLMMessageContentType>
+                            value={type}
+                            options={[
+                              { label: t('Text'), value: 'text' },
+                              { label: t('Image (send via URL)'), value: 'image_url' },
+                              { label: t('Image (send via Base64)'), value: 'image_base64' },
+                            ]}
+                            onChange={(nextType) => {
+                              updateContentItem(messageIndex, contentIndex, {
+                                type: nextType,
+                                content: nextType === 'text' ? contentItem.content : undefined,
+                                image_url: nextType === 'text' ? undefined : contentItem.image_url,
+                              });
+                            }}
+                          />
+                        </Form.Item>
+                        {type === 'text' ? (
+                          <Form.Item label={t('Content')}>
+                            <WorkflowVariableTextArea
+                              value={contentItem.content}
+                              autoSize={{ minRows: 5 }}
+                              onChange={(content) => updateContentItem(messageIndex, contentIndex, { content })}
+                            />
+                          </Form.Item>
+                        ) : (
+                          <Form.Item label={t('Image')} required>
+                            <WorkflowVariableInput
+                              value={getImageUrl(contentItem)}
+                              onChange={(url) =>
+                                updateContentItem(messageIndex, contentIndex, {
+                                  image_url: { url },
+                                })
+                              }
+                            />
+                          </Form.Item>
+                        )}
+                      </>
+                    );
+                  }}
+                />
+              ) : (
+                <Form.Item label={t('Content')}>
+                  <WorkflowVariableTextArea
+                    value={message.message}
+                    onChange={(nextMessage) => updateMessage(messageIndex, { message: nextMessage })}
+                  />
+                </Form.Item>
+              )}
+            </>
+          );
+        }}
+      />
+    </>
   );
 }
 
