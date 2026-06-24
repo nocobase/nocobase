@@ -19,14 +19,17 @@ describe('vsc-file shared utilities', () => {
     expect(normalizePath('src\\Foo.ts')).toBe('src/Foo.ts');
   });
 
-  it.each(['/a.ts', '../a.ts', 'a/../../b.ts', 'a//b.ts', 'a/\0/b.ts', 'a/'])('rejects invalid path %s', (input) => {
-    expect(() => normalizePath(input)).toThrowError(VscError);
-    try {
-      normalizePath(input);
-    } catch (error) {
-      expect(error).toMatchObject({ code: 'PATH_INVALID' });
-    }
-  });
+  it.each(['/a.ts', '../a.ts', './a.ts', 'a/./b.ts', 'a/../../b.ts', 'a//b.ts', 'a/\0/b.ts', 'a/'])(
+    'rejects invalid path %s',
+    (input) => {
+      expect(() => normalizePath(input)).toThrowError(VscError);
+      try {
+        normalizePath(input);
+      } catch (error) {
+        expect(error).toMatchObject({ code: 'PATH_INVALID' });
+      }
+    },
+  );
 
   it('rejects empty and over-limit paths', () => {
     expect(() => normalizePath('')).toThrowError(VscError);

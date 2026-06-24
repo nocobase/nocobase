@@ -37,8 +37,8 @@ export function normalizePath(path: string): string {
   }
 
   const segments = normalized.split('/');
-  if (segments.some((segment) => segment === '' || segment === '..')) {
-    throw new VscError('PATH_INVALID', 'Path must not contain empty or parent segments');
+  if (segments.some((segment) => segment === '' || segment === '.' || segment === '..')) {
+    throw new VscError('PATH_INVALID', 'Path must not contain empty, current, or parent segments');
   }
 
   return normalized;

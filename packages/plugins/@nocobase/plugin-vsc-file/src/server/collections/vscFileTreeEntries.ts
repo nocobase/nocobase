@@ -64,6 +64,20 @@ export default defineCollection({
       allowNull: false,
     },
     {
+      type: 'string',
+      name: 'language',
+      length: 64,
+      allowNull: false,
+      defaultValue: 'text',
+    },
+    {
+      type: 'string',
+      name: 'mode',
+      length: 16,
+      allowNull: false,
+      defaultValue: '100644',
+    },
+    {
       type: 'integer',
       name: 'size',
       allowNull: false,

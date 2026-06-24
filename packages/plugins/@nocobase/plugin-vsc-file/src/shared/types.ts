@@ -24,6 +24,8 @@ export type VscFilePath = string;
 
 export type VscSha256Hex = string;
 
+export type VscFileMode = string;
+
 export interface VscRepositoryOwner {
   ownerType: string;
   ownerId: string;
@@ -35,6 +37,16 @@ export interface VscRepositoryIdentity extends VscRepositoryOwner {
 
 export interface VscTreeEntryInput {
   path: VscFilePath;
+  content?: string;
+  blobHash?: VscSha256Hex;
+  size?: number;
+  language?: string;
+  mode?: VscFileMode;
+}
+
+export interface VscStoredBlob {
+  hash: VscSha256Hex;
+  size: number;
   content: string;
 }
 
@@ -44,6 +56,14 @@ export interface VscNormalizedTreeEntry {
   pathLowerHash: VscSha256Hex;
   blobHash: VscSha256Hex;
   size: number;
+  language: string;
+  mode: VscFileMode;
+}
+
+export interface VscStoredTree {
+  hash: VscSha256Hex;
+  entryCount: number;
+  byteSize: number;
 }
 
 export interface VscDraftFileChange {
