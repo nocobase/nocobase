@@ -18,6 +18,10 @@ features:
         details: JavaScript-Ausführungsumgebung für Szenarien wie JS-Blöcke, JS-Felder und JS-Aktionen.
         link: /runjs
         showOnHome: true
+      - title: Gemeinsame Komponenten
+        details: Verwenden Sie die integrierten Formular-, Filter-, Tabellen- und Icon-Komponenten von NocoBase client v2 direkt wieder, wenn Sie Plugin-Seiten entwickeln.
+        link: /shared-components
+        showOnHome: true
   - title: Oberfläche & Interaktion
     details: Erfahren Sie, wie Sie die Frontend-Oberfläche erweitern und anpassen. Erstellen Sie Komponenten, Felder und Aktionslogiken, die Ihren Geschäftsanforderungen entsprechen, und verbessern Sie so die Visualisierung und das interaktive Erlebnis des Systems.
     items:
@@ -60,4 +64,3 @@ features:
         details: Binden Sie externe Wissensdatenbanken oder eigene Retrieval-Dienste an, um die RAG-Quellen für AI employees zu erweitern.
         link: /ai-employees/knowledge-base/dev/external-knowledge-base
 ---
-

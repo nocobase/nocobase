@@ -7,15 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { RemoteSelect, TypedVariableInput, type TypedVariableInputProps } from '@nocobase/client-v2';
+import { useDebounce } from 'ahooks';
+import { RemoteSelect } from '@nocobase/client-v2';
 import { FlowContextSelector, useFlowEngine, type MetaTreeNode } from '@nocobase/flow-engine';
 import {
   parseCollectionName,
   TriggerCollectionRecordSelect,
   useCurrentWorkflowContext,
   useWorkflowVariableOptions,
-  type CollectionTriggerField,
-  type UseWorkflowVariableOptions,
 } from '@nocobase/plugin-workflow/client-v2';
 import { Alert, Form, Input, Space, Typography } from 'antd';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
@@ -50,27 +49,6 @@ function getLabelValue(item: RecordValue, labelKey: string | string[]) {
       .join(' ');
   }
   return item?.[labelKey];
-}
-
-function formatOptionLabel(value: unknown, t: (key: string) => string): string | number {
-  if (typeof value === 'string') {
-    return t(value);
-  }
-  if (typeof value === 'number') {
-    return value;
-  }
-  if (value == null) {
-    return t('Untitled');
-  }
-  return String(value);
-}
-
-function WorkflowTypedVariableInput({
-  variableOptions,
-  ...props
-}: TypedVariableInputProps & { variableOptions?: UseWorkflowVariableOptions }) {
-  const metaTree = useWorkflowVariableOptions(variableOptions);
-  return <TypedVariableInput {...props} metaTree={metaTree} />;
 }
 
 function stringifyJsonValue(value: unknown) {
@@ -148,6 +126,75 @@ function WorkflowJsonInput({ value, onChange }: { value?: unknown; onChange?: (v
   );
 }
 
+type SearchableRemoteSelectProps<TRecord extends Record<string, unknown>, TValue extends string | number> = {
+  cacheKey: string;
+  labelKey: keyof TRecord & string;
+  resource: string;
+  value?: TValue | null;
+  valueKey: keyof TRecord & string;
+  onChange?: (value: TValue | null) => void;
+};
+
+function SearchableRemoteSelect<TRecord extends Record<string, unknown>, TValue extends string | number>({
+  cacheKey,
+  labelKey,
+  resource,
+  value,
+  valueKey,
+  onChange,
+}: SearchableRemoteSelectProps<TRecord, TValue>) {
+  const flowEngine = useFlowEngine();
+  const t = useT();
+  const [searchValue, setSearchValue] = useState('');
+  const debouncedSearchValue = useDebounce(searchValue, { wait: 300 });
+
+  return (
+    <RemoteSelect<TRecord, TRecord[], TValue>
+      cacheKey={cacheKey}
+      filterOption={false}
+      value={value == null ? undefined : value}
+      onChange={(nextValue) => onChange?.((nextValue as TValue | undefined) ?? null)}
+      onSearch={(nextValue) => {
+        setSearchValue(nextValue);
+      }}
+      request={async () => {
+        const response = await flowEngine.context.api.resource(resource).list({
+          pageSize: 200,
+          ...(debouncedSearchValue
+            ? {
+                filter: {
+                  [labelKey]: {
+                    $includes: debouncedSearchValue,
+                  },
+                },
+              }
+            : {}),
+        });
+        return response?.data?.data ?? [];
+      }}
+      refreshDeps={[debouncedSearchValue, resource, labelKey]}
+      mapOptions={(item) => {
+        const rawLabel = item[labelKey];
+        const rawValue = item[valueKey];
+        let label: React.ReactNode;
+
+        if (typeof rawLabel === 'string') {
+          label = t(rawLabel);
+        } else if (typeof rawLabel === 'number') {
+          label = rawLabel;
+        } else {
+          label = String(rawValue ?? '');
+        }
+
+        return {
+          label,
+          value: rawValue as TValue,
+        };
+      }}
+    />
+  );
+}
+
 function TriggerCollectionRecordMultiSelect({
   value,
   onChange,
@@ -213,8 +260,18 @@ function TriggerCollectionRecordMultiSelect({
       mapOptions={(item) => {
         const rawLabel =
           getLabelValue(item as RecordValue, labelKey) ?? getPrimaryValue(item as RecordValue, filterTargetKey);
+        let label: React.ReactNode;
+
+        if (typeof rawLabel === 'string') {
+          label = t(rawLabel);
+        } else if (typeof rawLabel === 'number') {
+          label = rawLabel;
+        } else {
+          label = t('Untitled');
+        }
+
         return {
-          label: formatOptionLabel(rawLabel, t),
+          label,
           value: getPrimaryValue(item as RecordValue, filterTargetKey),
         };
       }}
@@ -264,28 +321,6 @@ function TriggerDataField() {
   );
 }
 
-const userVariableOptions: UseWorkflowVariableOptions = {
-  types: [
-    (field: CollectionTriggerField) => {
-      if (field.isForeignKey || field.type === 'context') {
-        return field.target === 'users';
-      }
-      return field.collectionName === 'users' && field.name === 'id';
-    },
-  ],
-};
-
-const roleVariableOptions: UseWorkflowVariableOptions = {
-  types: [
-    (field: CollectionTriggerField) => {
-      if (field.isForeignKey) {
-        return field.target === 'roles';
-      }
-      return field.collectionName === 'roles' && field.name === 'name';
-    },
-  ],
-};
-
 export function TriggerCustomActionConfig() {
   const t = useT();
 
@@ -293,10 +328,20 @@ export function TriggerCustomActionConfig() {
     <>
       <TriggerDataField />
       <Form.Item name="userId" label={t('User acted')} rules={[{ required: true }]}>
-        <WorkflowTypedVariableInput types={['number']} nullable={false} variableOptions={userVariableOptions} />
+        <SearchableRemoteSelect<{ id: number; nickname?: string }, number>
+          cacheKey="workflow-custom-action-trigger:users"
+          resource="users"
+          labelKey="nickname"
+          valueKey="id"
+        />
       </Form.Item>
       <Form.Item name="roleName" label={t('Role of user acted')}>
-        <WorkflowTypedVariableInput types={['string']} nullable={false} variableOptions={roleVariableOptions} />
+        <SearchableRemoteSelect<{ name: string; title?: string }, string>
+          cacheKey="workflow-custom-action-trigger:roles"
+          resource="roles"
+          labelKey="title"
+          valueKey="name"
+        />
       </Form.Item>
     </>
   );

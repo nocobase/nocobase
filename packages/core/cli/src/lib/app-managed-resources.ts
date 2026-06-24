@@ -7,7 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { mkdir, readdir } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
+import path from 'node:path';
+import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
 import type { ManagedAppRuntime } from './app-runtime.js';
 import { resolveAppPublicPath } from './app-public-path.js';
 import {
@@ -123,6 +125,16 @@ function formatLocalPostinstallFailure(envName: string, message: string): string
   ].join('\n');
 }
 
+function formatNpmSourceDevDependenciesFailure(envName: string, projectRoot: string, message: string): string {
+  return [
+    `Couldn't prepare source dev dependencies for "${envName}".`,
+    '`nb source dev` requires @nocobase/devtools in npm source envs.',
+    `Source directory: ${projectRoot}`,
+    `Run \`cd ${projectRoot} && yarn install\` after fixing package.json, then try again.`,
+    `Details: ${message}`,
+  ].join('\n');
+}
+
 function formatSavedDockerSettingsIncomplete(envName: string, missing: string[]): string {
   return [
     `Can't start NocoBase for "${envName}" yet.`,
@@ -147,6 +159,55 @@ async function localProjectHasFiles(projectRoot: string): Promise<boolean> {
   } catch (_error) {
     return false;
   }
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+async function readPackageJson(projectRoot: string): Promise<Record<string, unknown>> {
+  const packageJsonPath = path.join(projectRoot, 'package.json');
+  const content = await readFile(packageJsonPath, 'utf-8');
+  const parsed = JSON.parse(content) as unknown;
+  if (!isRecord(parsed)) {
+    throw new Error(`${packageJsonPath} must contain a JSON object.`);
+  }
+  return parsed;
+}
+
+function getStringDependency(
+  packageJson: Record<string, unknown>,
+  section: string,
+  packageName: string,
+): string | undefined {
+  const dependencies = packageJson[section];
+  if (!isRecord(dependencies)) {
+    return undefined;
+  }
+  const version = dependencies[packageName];
+  return typeof version === 'string' && version.trim() ? version.trim() : undefined;
+}
+
+function ensureDevDependencies(packageJson: Record<string, unknown>): Record<string, unknown> {
+  const devDependencies = packageJson.devDependencies;
+  if (devDependencies === undefined) {
+    const next: Record<string, unknown> = {};
+    packageJson.devDependencies = next;
+    return next;
+  }
+  if (!isRecord(devDependencies)) {
+    throw new Error('package.json devDependencies must be an object.');
+  }
+  return devDependencies;
+}
+
+function hasNpmSourceDevtools(projectRoot: string): boolean {
+  return existsSync(path.join(projectRoot, 'node_modules', '@nocobase', 'devtools', 'package.json'));
+}
+
+function npmRegistryEnv(runtime: Extract<ManagedAppRuntime, { kind: 'local' }>): Record<string, string> | undefined {
+  const npmRegistry = String(runtime.env.config?.npmRegistry ?? '').trim();
+  return npmRegistry ? { npm_config_registry: npmRegistry } : undefined;
 }
 
 export async function buildSavedDockerRunArgs(
@@ -490,5 +551,69 @@ export async function ensureLocalPostinstall(
   } catch (error: unknown) {
     options?.onFailTask?.(`Failed to run local postinstall for "${runtime.envName}".`);
     throw new Error(formatLocalPostinstallFailure(runtime.envName, error instanceof Error ? error.message : String(error)));
+  }
+}
+
+export async function ensureNpmSourceDevDependencies(
+  runtime: Extract<ManagedAppRuntime, { kind: 'local' }>,
+  options?: {
+    verbose?: boolean;
+    onStartTask?: (message: string) => void;
+    onSucceedTask?: (message: string) => void;
+    onFailTask?: (message: string) => void;
+  },
+): Promise<void> {
+  if (runtime.source !== 'npm') {
+    return;
+  }
+
+  let taskStarted = false;
+  try {
+    const packageJson = await readPackageJson(runtime.projectRoot);
+    const appVersion = getStringDependency(packageJson, 'dependencies', '@nocobase/app');
+    const devtoolsVersion = getStringDependency(packageJson, 'devDependencies', '@nocobase/devtools');
+    let updatedPackageJson = false;
+
+    if (!devtoolsVersion) {
+      if (!appVersion) {
+        throw new Error(
+          'Cannot determine @nocobase/devtools version because dependencies["@nocobase/app"] is missing.',
+        );
+      }
+      const devDependencies = ensureDevDependencies(packageJson);
+      devDependencies['@nocobase/devtools'] = appVersion;
+      updatedPackageJson = true;
+      await writeFile(
+        path.join(runtime.projectRoot, 'package.json'),
+        `${JSON.stringify(packageJson, null, 2)}\n`,
+        'utf-8',
+      );
+    }
+
+    const needsInstall = updatedPackageJson || !hasNpmSourceDevtools(runtime.projectRoot);
+    if (!needsInstall) {
+      return;
+    }
+
+    options?.onStartTask?.(`Preparing source dev dependencies for "${runtime.envName}"...`);
+    taskStarted = true;
+    await run('yarn', ['install'], {
+      cwd: runtime.projectRoot,
+      env: npmRegistryEnv(runtime),
+      errorName: 'yarn install',
+      stdio: commandStdio(options?.verbose),
+    });
+    options?.onSucceedTask?.(`Source dev dependencies are ready for "${runtime.envName}".`);
+  } catch (error: unknown) {
+    if (taskStarted) {
+      options?.onFailTask?.(`Failed to prepare source dev dependencies for "${runtime.envName}".`);
+    }
+    throw new Error(
+      formatNpmSourceDevDependenciesFailure(
+        runtime.envName,
+        runtime.projectRoot,
+        error instanceof Error ? error.message : String(error),
+      ),
+    );
   }
 }
