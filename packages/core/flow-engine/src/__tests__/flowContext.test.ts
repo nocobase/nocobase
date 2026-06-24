@@ -15,6 +15,7 @@ import { FlowModel } from '../models/flowModel';
 import { RunJSContextRegistry } from '../runjs-context/registry';
 import { setupRunJSContexts } from '../runjs-context/setup';
 import { createViewScopedEngine } from '../ViewScopedFlowEngine';
+import { DATA_SOURCE_DIRTY_EVENT } from '../views/viewEvents';
 
 describe('FlowContext properties and methods', () => {
   it('should return static property value', () => {
@@ -1443,6 +1444,34 @@ describe('FlowEngine context', () => {
 
     expect(request).toHaveBeenCalledTimes(1);
     expect(engine.getDataSourceDirtyVersion('analytics', 'posts')).toBe(1);
+  });
+
+  it('ctx.request should use the caller context when resolved through a scoped delegate', async () => {
+    const root = new FlowEngine();
+    const scoped = createViewScopedEngine(root);
+    const callerCtx = new FlowContext();
+    const dirtyEvents: Array<{ dataSourceKey: string; resourceNames: string[] }> = [];
+    const request = vi.fn(async () => ({ data: { ok: true } }));
+    root.context.defineProperty('api', {
+      value: {
+        auth: { locale: 'zh-CN' },
+        request,
+        resource: vi.fn(),
+      },
+    });
+    callerCtx.addDelegate(scoped.context);
+    scoped.context.engine.emitter.on(DATA_SOURCE_DIRTY_EVENT, (event) => dirtyEvents.push(event));
+
+    await callerCtx.request({
+      resource: 'posts',
+      action: 'update',
+      params: { filterByTk: 1 },
+    } as any);
+
+    expect(request).toHaveBeenCalledTimes(1);
+    expect(root.getDataSourceDirtyVersion('main', 'posts')).toBe(1);
+    expect(scoped.context.engine.getDataSourceDirtyVersion('main', 'posts')).toBe(1);
+    expect(dirtyEvents).toEqual([{ dataSourceKey: 'main', resourceNames: ['posts'] }]);
   });
 
   it('ctx.sql should resolve template variables from caller context in delegate chain', async () => {

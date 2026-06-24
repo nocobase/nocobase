@@ -80,10 +80,12 @@ describe('dirtyAwareApiClient', () => {
     expect(engine.getDataSourceDirtyVersion('main', 'posts')).toBe(1);
   });
 
-  it('should not mark dirty for read or unknown actions', async () => {
+  it('should not mark dirty for read actions', async () => {
     const nonMutatingActions = [
       'get',
+      'getSystemSettings',
       'list',
+      'listByUser',
       'query',
       'count',
       'check',
@@ -93,7 +95,6 @@ describe('dirtyAwareApiClient', () => {
       'exists',
       'aggregate',
       'listMine',
-      'getSystemSettings',
       'parents',
       'children',
       'search',
@@ -121,6 +122,7 @@ describe('dirtyAwareApiClient', () => {
   it('should mark dirty for known mutating action variants', async () => {
     const mutatingActions = [
       'create',
+      'execute',
       'updateOrCreate',
       'firstOrCreate',
       'setFields',
@@ -302,5 +304,23 @@ describe('dirtyAwareApiClient', () => {
 
     expect(root.getDataSourceDirtyVersion('main', 'posts')).toBe(1);
     expect(scoped.context.engine.getDataSourceDirtyVersion('main', 'posts')).toBe(1);
+  });
+
+  it('should not double-mark when the context exposes a scoped engine proxy', async () => {
+    const root = new FlowEngine();
+    const scoped = createViewScopedEngine(root);
+    const context = new FlowContext();
+    const update = vi.fn(async () => ({ data: { data: { id: 1 } } }));
+    const api: TestApi = {
+      auth: { locale: 'zh-CN' },
+      request: vi.fn(async () => ({ data: { ok: true } })),
+      resource: vi.fn(() => ({ update })),
+    };
+    context.defineProperty('engine', { value: scoped });
+
+    await (getDirtyAwareApiClient(api, context) as TestApi).resource('posts').update({ filterByTk: 1 });
+
+    expect(root.getDataSourceDirtyVersion('main', 'posts')).toBe(1);
+    expect(scoped.getDataSourceDirtyVersion('main', 'posts')).toBe(1);
   });
 });

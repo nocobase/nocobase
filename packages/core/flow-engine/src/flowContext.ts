@@ -3076,7 +3076,7 @@ class BaseFlowEngineContext extends FlowContext {
     this.defineMethod('getModel', (modelName: string, searchInPreviousEngines?: boolean) => {
       return this.engine.getModel(modelName, searchInPreviousEngines);
     });
-    this.defineMethod('request', (options: RequestOptions) => {
+    this.defineMethod('request', function (this: FlowContext, options: RequestOptions) {
       const app = this.app as { getApiUrl?: (pathname?: string) => string } | undefined;
       if (typeof options?.url === 'string' && shouldBypassApiClient(options.url, app)) {
         return axios.request(options);

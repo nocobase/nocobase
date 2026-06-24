@@ -9,8 +9,7 @@
 
 import type { ActionParams, APIClient, IResource, RequestOptions } from '@nocobase/sdk';
 import type { FlowContext } from '../flowContext';
-import type { FlowEngine } from '../flowEngine';
-import { DATA_SOURCE_DIRTY_EVENT } from '../views/viewEvents';
+import { getDataSourceKeyFromHeaders, markDataSourceDirty } from './dataSourceDirty';
 
 type ResourceActionFn = (params?: ActionParams, opts?: unknown) => Promise<unknown>;
 
@@ -37,28 +36,25 @@ type DirtyAwareAPIClient = APIClient & {
 const dirtyAwareApiClientCache = new WeakMap<object, WeakMap<object, APIClient>>();
 const dirtyAwareApiClientProxies = new WeakSet<object>();
 
-const MUTATING_RESOURCE_ACTIONS = [
-  'add',
-  'bind',
-  'create',
-  'destroy',
-  'disable',
-  'enable',
-  'firstorcreate',
-  'insert',
-  'load',
-  'move',
-  'pull',
-  'push',
-  'remove',
-  'retry',
-  'save',
-  'set',
-  'sync',
-  'toggle',
-  'unbind',
-  'update',
-  'updateorcreate',
+const READ_RESOURCE_ACTIONS = [
+  'aggregate',
+  'check',
+  'children',
+  'count',
+  'exists',
+  'find',
+  'get',
+  'getsystemsettings',
+  'list',
+  'listmine',
+  'parents',
+  'preview',
+  'query',
+  'refresh',
+  'search',
+  'send',
+  'test',
+  'testconnection',
 ];
 
 function isApiClientLike(value: unknown): value is DirtyAwareAPIClient {
@@ -76,62 +72,18 @@ function isMutatingResourceAction(actionName: string): boolean {
   }
   const baseActionName = normalized.split('/')[0];
   const lowerBaseActionName = baseActionName.toLowerCase();
-  if (MUTATING_RESOURCE_ACTIONS.includes(lowerBaseActionName)) {
-    return true;
-  }
-
-  return MUTATING_RESOURCE_ACTIONS.some((prefix) => {
-    if (!lowerBaseActionName.startsWith(prefix) || baseActionName.length <= prefix.length) {
+  const isReadAction = READ_RESOURCE_ACTIONS.some((action) => {
+    if (lowerBaseActionName === action) {
+      return true;
+    }
+    if (!lowerBaseActionName.startsWith(action) || baseActionName.length <= action.length) {
       return false;
     }
 
-    const nextChar = baseActionName[prefix.length];
+    const nextChar = baseActionName[action.length];
     return nextChar === '-' || nextChar === '_' || (nextChar >= 'A' && nextChar <= 'Z');
   });
-}
-
-function getHeaderValue(headers: unknown, name: string): unknown {
-  if (!headers || typeof headers !== 'object') {
-    return undefined;
-  }
-
-  const maybeHeaders = headers as { get?: (key: string) => unknown };
-  if (typeof maybeHeaders.get === 'function') {
-    const value = maybeHeaders.get(name);
-    if (value != null && value !== '') {
-      return value;
-    }
-  }
-
-  const lowerName = name.toLowerCase();
-  for (const [key, value] of Object.entries(headers as Record<string, unknown>)) {
-    if (key.toLowerCase() === lowerName) {
-      return value;
-    }
-  }
-
-  return undefined;
-}
-
-function getDataSourceKeyFromHeaders(headers: unknown): string {
-  const value = getHeaderValue(headers, 'x-data-source');
-  if (Array.isArray(value)) {
-    return String(value[0] || 'main');
-  }
-  return value == null || value === '' ? 'main' : String(value);
-}
-
-function getAffectedResourceNames(resourceName: unknown): string[] {
-  const name = String(resourceName || '').trim();
-  if (!name) {
-    return [];
-  }
-
-  const names = new Set<string>([name]);
-  if (name.includes('.')) {
-    names.add(name.split('.')[0]);
-  }
-  return Array.from(names);
+  return !isReadAction;
 }
 
 function getCurrentOrigin(): string | undefined {
@@ -311,44 +263,12 @@ function resolveDirtyResourceAction(
   return parseDirtyResourceActionFromUrl(options?.url, context);
 }
 
-function getDirtyTargetEngines(engine: FlowEngine): FlowEngine[] {
-  const engines: FlowEngine[] = [];
-  const seen = new Set<FlowEngine>();
-  let current: FlowEngine | undefined = engine;
-  let guard = 0;
-
-  while (current && guard++ < 50) {
-    if (!seen.has(current)) {
-      engines.push(current);
-      seen.add(current);
-    }
-    current = current.previousEngine;
-  }
-
-  return engines;
-}
-
 function markResourceActionDataSourceDirty(context: FlowContext, resourceName: unknown, headers: unknown) {
-  const engine = context.engine as FlowEngine | undefined;
-  if (!engine?.markDataSourceDirty) {
-    return;
-  }
-
-  const resourceNames = getAffectedResourceNames(resourceName);
-  if (!resourceNames.length) {
-    return;
-  }
-
-  const dataSourceKey = getDataSourceKeyFromHeaders(headers);
-  for (const targetEngine of getDirtyTargetEngines(engine)) {
-    for (const name of resourceNames) {
-      targetEngine.markDataSourceDirty(dataSourceKey, name);
-    }
-  }
-
-  engine.emitter?.emit?.(DATA_SOURCE_DIRTY_EVENT, {
-    dataSourceKey,
-    resourceNames,
+  markDataSourceDirty({
+    engine: context.engine,
+    dataSourceKey: getDataSourceKeyFromHeaders(headers),
+    resourceName,
+    includePreviousEngines: true,
   });
 }
 
