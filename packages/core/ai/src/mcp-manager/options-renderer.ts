@@ -84,6 +84,16 @@ const stringifyArray = (value: unknown): string[] => {
   return value.filter((item) => item != null).map((item) => String(item));
 };
 
+const getRequestVariables = (ctx?: Context) => ({
+  headers: ctx?.request?.headers ?? {},
+  token: ctx?.getBearerToken?.() ?? '',
+});
+
+const emptyRequestVariables = {
+  headers: {},
+  token: '',
+};
+
 export const normalizeMCPOptions = (options: MCPOptions): MCPOptions => {
   const normalized: MCPOptions = {
     ...options,
@@ -106,12 +116,15 @@ export async function renderMCPOptions(
   ctx?: Context,
 ): Promise<MCPOptions> {
   const currentUser = options.useUserContext ? await getCurrentUser(ctx, options) : undefined;
+  const request = options.useUserContext ? getRequestVariables(ctx) : emptyRequestVariables;
   const variables = {
     $env: app.environment?.getVariables?.() ?? {},
     currentUser,
     $user: currentUser,
+    request,
     ctx: {
       currentUser,
+      request,
     },
   };
 

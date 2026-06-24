@@ -33,7 +33,7 @@ import {
   resolvePathWithinBase,
 } from '../utils';
 
-const BACKUP_METADATA_VERSION = 1;
+const BACKUP_METADATA_VERSION = 2;
 
 export interface BackupSettings {
   storageId?: string;
@@ -42,10 +42,14 @@ export interface BackupSettings {
   keep?: number;
   scheduled: boolean;
   cron: string;
+  /**
+   * @deprecated Prefer excludeTables. includeTables may miss dependent database objects.
+   */
   includeTables?: string[];
   excludeTables?: string[];
   description?: string;
   createdBy?: BackupCreator;
+  metadata?: Record<string, unknown>;
 }
 
 export interface BackupFile {
@@ -239,6 +243,7 @@ export class BackupManager {
       });
 
     const metadata = {
+      ...(opts.metadata ?? {}),
       metadataVersion: BACKUP_METADATA_VERSION,
       enableFilesBackup: opts.enableFilesBackup,
       version: await this.app.version.get(),
