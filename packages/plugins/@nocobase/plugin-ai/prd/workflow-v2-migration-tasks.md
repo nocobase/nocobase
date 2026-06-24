@@ -160,7 +160,7 @@
 
 ### W1. workflow v2 注册骨架与共享类型
 
-状态：进行中
+状态：已提交
 
 目标：建立 v2 workflow 主实现目录、公共类型和注册入口，不迁移具体 UI。
 
@@ -183,8 +183,9 @@
 
 #### W1.2 注册 v2 workflow instruction group、nodes、trigger
 
-- 状态：未开始
+- 状态：已提交
 - 范围：
+  - `src/client-v2/workflow/register.ts`
   - `src/client-v2/plugin.tsx`
   - `src/client-v2/workflow/nodes/llm/index.tsx`
   - `src/client-v2/workflow/nodes/employee/index.tsx`
@@ -194,7 +195,12 @@
   - instruction/trigger 类先只包含 title/type/group/icon/useVariables/createDefaultConfig/loader 壳。
   - loader 指向真实后续组件文件，不创建无意义 re-export shim。
 - 验收记录：
-  - 待填写。
+  - 已新增 `registerPluginAIWorkflow()`，在 workflow v2 插件存在时注册 `ai` group、`llm`、`ai-employee` instruction 和 `ai-employee` trigger。
+  - 已在 `src/client-v2/plugin.tsx` 调用 workflow v2 注册函数；workflow v2 不存在时跳过，不影响 plugin-ai 其他 v2 能力。
+  - 已新增 LLM、AI employee、AI employee trigger 的 v2 class 骨架；loader 指向后续真实组件模块。
+  - 已新增 `workflow-registration.test.ts` 覆盖注册行为、LLM 变量、AI employee structured output 变量解析和 trigger 参数校验。
+  - 已运行 `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/__tests__/workflow-registration.test.ts --run --reporter=verbose`，5 个用例通过。
+  - 已运行触达文件 eslint，并扫描确认 `src/client-v2/workflow` 和 `src/client-v2/plugin.tsx` 未引入 v1 client/Formily runtime/legacy workflow client/本插件 `src/client/`。
 
 ### W2. LLM workflow 节点迁移
 
@@ -487,8 +493,8 @@
 | 大任务 | 状态 | 下一步 |
 | --- | --- | --- |
 | W0. 迁移任务文档与基线准备 | 已提交 | 开始 W1.1 |
-| W1. workflow v2 注册骨架与共享类型 | 进行中 | 开始 W1.2 |
-| W2. LLM workflow 节点迁移 | 未开始 | 等 W1 完成 |
+| W1. workflow v2 注册骨架与共享类型 | 已提交 | 开始 W2.1 |
+| W2. LLM workflow 节点迁移 | 未开始 | 开始 W2.1 |
 | W3. AI employee workflow 节点迁移 | 未开始 | 等 W1 完成 |
 | W4. AI employee workflow trigger 迁移 | 未开始 | 等 W1 完成 |
 | W5. v1 兼容入口收敛 | 未开始 | 等 W2/W3/W4 校验通过 |

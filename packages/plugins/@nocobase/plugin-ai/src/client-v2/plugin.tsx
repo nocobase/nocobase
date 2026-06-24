@@ -19,6 +19,7 @@ import { AIManager } from './manager/ai-manager';
 import { AIPluginFeatureManagerImpl } from './manager/ai-feature-manager';
 import { AIConfigRepository } from './repositories/AIConfigRepository';
 import { builtinLLMProviderOptions } from './llm-providers';
+import { registerPluginAIWorkflow } from './workflow/register';
 
 type AIFlowContext = {
   aiConfigRepository?: AIConfigRepository;
@@ -125,6 +126,7 @@ export class PluginAIClientV2 extends Plugin<object, Application> {
     }
     registerPluginAISettingsPages(this.pluginSettingsManager, this.t.bind(this));
     registerPluginAIPermissionsTab(this.app.pm, this.t.bind(this));
+    registerPluginAIWorkflow(this.app.pm);
     builtinLLMProviderOptions.forEach(([name, options]) => {
       this.aiManager.registerLLMProvider(name, options);
     });
