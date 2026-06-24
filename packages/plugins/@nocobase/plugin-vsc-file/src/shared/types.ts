@@ -35,6 +35,35 @@ export interface VscRepositoryIdentity extends VscRepositoryOwner {
   name: string;
 }
 
+export interface VscRepositoryRecord extends VscRepositoryIdentity {
+  id: string;
+  status: VscRepositoryStatus;
+  defaultRef: string;
+  headCommitId: string | null;
+  publishedCommitId: string | null;
+  headSeq: number;
+}
+
+export interface VscCommitRecord {
+  id: string;
+  repoId: string;
+  hash: VscSha256Hex;
+  seq: number;
+  parentCommitId: string | null;
+  treeHash: VscSha256Hex;
+  message: string;
+  authorId: string | null;
+  metadata: Record<string, unknown>;
+}
+
+export interface VscRefRecord {
+  id: string;
+  repoId: string;
+  name: VscRefName;
+  type: string;
+  commitId: string | null;
+}
+
 export interface VscTreeEntryInput {
   path: VscFilePath;
   content?: string;
@@ -78,6 +107,10 @@ export interface VscCommitInput {
   message: string;
   files: VscTreeEntryInput[];
   allowEmptyCommit?: boolean;
+}
+
+export interface VscFileChange extends VscTreeEntryInput {
+  operation?: VscDraftFileOperation;
 }
 
 export interface VscErrorResponseItem {
