@@ -56,16 +56,17 @@ const LOOP_TARGET_TYPES: TypedConstantSpec[] = ['string', ['number', { step: 1, 
 
 function prefixMetaTreeNodes(nodes: MetaTreeNode[], prefix: string[]): MetaTreeNode[] {
   return nodes.map((node) => {
+    const { children } = node;
     const nextNode: MetaTreeNode = {
       ...node,
       paths: [...prefix, ...(node.paths ?? [String(node.name ?? '')])],
     };
 
-    if (Array.isArray(node.children)) {
-      nextNode.children = prefixMetaTreeNodes(node.children, prefix);
-    } else if (typeof node.children === 'function') {
+    if (Array.isArray(children)) {
+      nextNode.children = prefixMetaTreeNodes(children, prefix);
+    } else if (typeof children === 'function') {
       nextNode.children = async () => {
-        const loaded = await node.children();
+        const loaded = await children();
         return prefixMetaTreeNodes(loaded, prefix);
       };
     }

@@ -27,9 +27,10 @@ export default class extends V2DateCalculationInstruction {
 
   getCreateModelMenuItem({ node }): SubModelItem {
     const item = super.getCreateModelMenuItem({ node });
+    const createModelOptions = item?.createModelOptions;
 
-    if (item?.createModelOptions?.stepParams?.valueSettings?.init) {
-      item.createModelOptions.stepParams.valueSettings.init.defaultValue = lang('Date calculation result');
+    if (typeof createModelOptions !== 'function' && createModelOptions?.stepParams?.valueSettings?.init) {
+      createModelOptions.stepParams.valueSettings.init.defaultValue = lang('Date calculation result');
     }
 
     return item;

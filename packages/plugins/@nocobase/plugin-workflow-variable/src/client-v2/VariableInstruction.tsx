@@ -10,7 +10,7 @@
 import React, { useCallback, useMemo } from 'react';
 import { FunctionOutlined } from '@ant-design/icons';
 import { Form, Radio, Select, Space } from 'antd';
-import type { RadioChangeEvent, SelectProps } from 'antd';
+import type { RadioChangeEvent } from 'antd';
 import {
   defaultFieldNames,
   Instruction,
@@ -77,14 +77,11 @@ function VariableTargetSelect({ value, onChange, disabled }: VariableTargetSelec
     [onChange, variables],
   );
 
-  const filterOption = useCallback<NonNullable<SelectProps<string, VariableTargetOption>['filterOption']>>(
-    (input, option) => {
-      const label = option?.label ?? '';
-      const id = option?.node.id;
-      return label.toLowerCase().includes(input.toLowerCase()) || (id != null && `#${id}`.includes(input));
-    },
-    [],
-  );
+  const filterOption = useCallback((input: string, option?: VariableTargetOption) => {
+    const label = option?.label ?? '';
+    const id = option?.node.id;
+    return label.toLowerCase().includes(input.toLowerCase()) || (id != null && `#${id}`.includes(input));
+  }, []);
 
   return (
     <fieldset disabled={disabled}>

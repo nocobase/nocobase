@@ -268,8 +268,25 @@ export const dateFunctions = {
 
 export type DateCalculationFunctionKey = keyof typeof dateFunctions;
 
-export function useDateFunctionMenuItems(inputType: DateCalculationInputType): NonNullable<MenuProps['items']> {
+export function isDateCalculationFunctionKey(key: unknown): key is DateCalculationFunctionKey {
+  return typeof key === 'string' && key in dateFunctions;
+}
+
+export function isDateCalculationInputType(type: unknown): type is DateCalculationInputType {
+  return type === 'date' || type === 'number';
+}
+
+export function getDateCalculationDefaultParams(functionKey: DateCalculationFunctionKey): StepArguments {
+  const config = dateFunctions[functionKey] as DateCalculationFunctionConfig;
+  return config.defaultParams?.() ?? {};
+}
+
+export function useDateFunctionMenuItems(inputType?: DateCalculationInputType | null): NonNullable<MenuProps['items']> {
   const t = useT();
+
+  if (!inputType) {
+    return [];
+  }
 
   return functionGroupOrder.flatMap((groupKey) => {
     const candidates = Object.values(dateFunctions).filter(
@@ -381,11 +398,11 @@ export function DateCalculationInputField(props: React.ComponentProps<typeof Wor
 export function DateCalculationStepArguments({ stepName, functionKey }: { stepName: StepName; functionKey?: string }) {
   const t = useT();
 
-  if (!functionKey || !(functionKey in dateFunctions)) {
+  if (!isDateCalculationFunctionKey(functionKey)) {
     return null;
   }
 
-  switch (functionKey as DateCalculationFunctionKey) {
+  switch (functionKey) {
     case 'add':
     case 'subtract':
       return <DateOrNumberInput stepName={stepName} />;
@@ -431,14 +448,14 @@ export function DateCalculationInputTypeField(props: React.ComponentProps<typeof
       {...props}
       options={[
         {
-          label: <Tag color={dataTypeOptionMap.date.color}>{t('Date type')}</Tag>,
+          label: 'Date type',
           value: 'date',
           tooltip: t(
             'Input value will be converted from its original type to date type to do futher calculation by Day.js constructor.',
           ),
         },
         {
-          label: <Tag color={dataTypeOptionMap.number.color}>{t('Number type')}</Tag>,
+          label: 'Number type',
           value: 'number',
           tooltip: t('Only calculation functions with numeric input value are supported.'),
         },
@@ -450,11 +467,11 @@ export function DateCalculationInputTypeField(props: React.ComponentProps<typeof
 export function StepOutputTag({ functionKey }: { functionKey?: string }) {
   const t = useT();
 
-  if (!functionKey || !(functionKey in dateFunctions)) {
+  if (!isDateCalculationFunctionKey(functionKey)) {
     return null;
   }
 
-  const outputType = dateFunctions[functionKey as DateCalculationFunctionKey].outputType;
+  const outputType = dateFunctions[functionKey].outputType;
   const option = dataTypeOptionMap[outputType];
 
   return <Tag color={option.color}>{t(option.labelKey)}</Tag>;

@@ -70,17 +70,18 @@ function parseVariablePath(value: unknown): string[] | null {
 }
 
 function cloneMetaTreeNodeWithRebasedPaths(node: MetaTreeNode, fromRoot: string[], toRoot: string[]): LoopScopeNode {
+  const { children } = node;
   const suffix = Array.isArray(node.paths) ? node.paths.slice(fromRoot.length) : [String(node.name ?? '')];
   const nextNode: LoopScopeNode = {
     ...node,
     paths: [...toRoot, ...suffix],
   };
 
-  if (Array.isArray(node.children)) {
-    nextNode.children = node.children.map((child) => cloneMetaTreeNodeWithRebasedPaths(child, fromRoot, toRoot));
-  } else if (typeof node.children === 'function') {
+  if (Array.isArray(children)) {
+    nextNode.children = children.map((child) => cloneMetaTreeNodeWithRebasedPaths(child, fromRoot, toRoot));
+  } else if (typeof children === 'function') {
     nextNode.children = async () => {
-      const loaded = await node.children();
+      const loaded = await children();
       return loaded.map((child) => cloneMetaTreeNodeWithRebasedPaths(child, fromRoot, toRoot));
     };
   }

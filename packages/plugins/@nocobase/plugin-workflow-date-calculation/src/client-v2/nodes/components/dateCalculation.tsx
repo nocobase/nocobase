@@ -19,6 +19,9 @@ import {
   DateCalculationInputField,
   DateCalculationInputTypeField,
   DateCalculationStepArguments,
+  getDateCalculationDefaultParams,
+  isDateCalculationFunctionKey,
+  isDateCalculationInputType,
   StepOutputTag,
   useDateFunctionMenuItems,
 } from '../../dateFunctions';
@@ -31,11 +34,12 @@ function StepsEditor() {
   const steps = Form.useWatch(['config', 'steps'], form) ?? [];
   const inputType = (Form.useWatch(['config', 'inputType'], form) ?? 'date') as DateCalculationInputType;
   const previousInputTypeRef = useRef<DateCalculationInputType>(inputType);
-  const menuItems = useDateFunctionMenuItems(
-    (steps.length
-      ? dateFunctions[steps[steps.length - 1]?.function as keyof typeof dateFunctions]?.outputType
-      : inputType) ?? inputType,
-  );
+  const lastFunctionKey = steps[steps.length - 1]?.function;
+  const lastOutputType = isDateCalculationFunctionKey(lastFunctionKey)
+    ? dateFunctions[lastFunctionKey].outputType
+    : null;
+  const menuInputType = steps.length ? (isDateCalculationInputType(lastOutputType) ? lastOutputType : null) : inputType;
+  const menuItems = useDateFunctionMenuItems(menuInputType);
 
   useEffect(() => {
     if (previousInputTypeRef.current !== inputType) {
@@ -115,7 +119,9 @@ function StepsEditor() {
       {(fields, operations) => (
         <Space direction="vertical" size="middle" className={stepsEditorClassName}>
           {fields.map((field, index) => {
-            const functionKey = steps[index]?.function as keyof typeof dateFunctions | undefined;
+            const functionKey = isDateCalculationFunctionKey(steps[index]?.function)
+              ? steps[index].function
+              : undefined;
             const stepTitle = functionKey ? t(dateFunctions[functionKey].titleKey) : '';
             const outputType = functionKey ? dateFunctions[functionKey].outputType : undefined;
             const outputTypeOption = outputType ? dataTypeOptionMap[outputType] : undefined;
@@ -158,10 +164,12 @@ function StepsEditor() {
               menu={{
                 items: menuItems,
                 onClick({ key }) {
-                  const functionKey = key as keyof typeof dateFunctions;
+                  if (!isDateCalculationFunctionKey(key)) {
+                    return;
+                  }
                   operations.add({
-                    function: functionKey,
-                    arguments: dateFunctions[functionKey].defaultParams?.() ?? {},
+                    function: key,
+                    arguments: getDateCalculationDefaultParams(key),
                   });
                 },
               }}
