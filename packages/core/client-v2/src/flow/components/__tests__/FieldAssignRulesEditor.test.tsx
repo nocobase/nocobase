@@ -579,6 +579,61 @@ describe('FieldAssignRulesEditor', () => {
     });
   });
 
+  it('handles preload errors without leaving unhandled rejections', async () => {
+    const loadError = new Error('failed to load fields');
+    const profileCollection = {
+      getFields: vi.fn(() => {
+        throw loadError;
+      }),
+    };
+    const profileField = {
+      name: 'profile',
+      title: 'Profile',
+      type: 'belongsTo',
+      interface: 'm2o',
+      target: 'profiles',
+      targetCollection: profileCollection,
+    };
+    const rootCollection = {
+      getField: (name: string) => (name === 'profile' ? profileField : null),
+      getFields: () => [profileField],
+    };
+    const configuredParent = {
+      label: 'Profile',
+      value: 'profile',
+      isLeaf: false,
+    };
+    const value: FieldAssignRuleItem[] = [
+      {
+        key: 'rule-profile-nickname',
+        enable: true,
+        targetPath: 'profile.nickname',
+        mode: 'assign',
+      },
+    ];
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    render(
+      wrap(
+        <FieldAssignRulesEditor
+          t={t}
+          fieldOptions={[configuredParent]}
+          rootCollection={rootCollection}
+          value={value}
+          showCondition={false}
+        />,
+      ),
+    );
+
+    try {
+      await waitFor(() => {
+        expect(warnSpy).toHaveBeenCalledWith('[FieldAssignRulesEditor] Failed to preload cascader path', loadError);
+      });
+    } finally {
+      warnSpy.mockRestore();
+    }
+  });
+
   it('keeps loaded cascader children when translation function identity changes', async () => {
     const nameField = { name: 'name', title: 'Name', interface: 'input' };
     const nicknameField = { name: 'nickname', title: 'Nickname', interface: 'input' };

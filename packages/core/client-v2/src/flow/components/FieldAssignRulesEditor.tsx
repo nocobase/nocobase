@@ -720,7 +720,9 @@ export const FieldAssignRulesEditor: React.FC<FieldAssignRulesEditorProps> = (pr
         await preloadCascaderPath(segs);
       }
     };
-    run();
+    run().catch((error) => {
+      console.warn('[FieldAssignRulesEditor] Failed to preload cascader path', error);
+    });
     return () => {
       cancelled = true;
     };
