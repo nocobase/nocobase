@@ -15,7 +15,6 @@ import { FlowModelProvider, useFlowEngine, type FlowModel } from '@nocobase/flow
 import { Button, Dropdown, Empty, Form } from 'antd';
 import type { MenuProps } from 'antd';
 import { useWorkflowVariableOptions } from '../../canvas/useWorkflowVariableOptions';
-import { formatWorkflowPathToValue, parseWorkflowValueToPath } from '../../canvas/workflowVariableConverters';
 import { useT } from '../../locale';
 import { getCollection, getCollectionFields, hasFieldName, parseCollectionName } from './utils';
 
@@ -165,9 +164,6 @@ export function AssignedFieldsEditor({
                 targetPath={field.name}
                 value={normalizedValue[field.name]}
                 onChange={(nextValue) => updateValue(field.name, nextValue)}
-                allowRunJS={false}
-                variableFormatPathToValue={formatWorkflowPathToValue}
-                variableParseValueToPath={parseWorkflowValueToPath}
               />
             </Form.Item>
             <Button

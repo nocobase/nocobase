@@ -9,7 +9,7 @@
 
 import React from 'react';
 import { css } from '@emotion/css';
-import { Divider, Input, InputNumber, Select, Space, Tag, Tooltip, theme } from 'antd';
+import { Divider, Input, InputNumber, Select, Space, theme } from 'antd';
 import { dayjs } from '@nocobase/utils/client';
 import {
   FlowModelRenderer,
@@ -266,12 +266,6 @@ type DateVariableComponentProps = {
   exactNormalizeMode: DateVariableExactNormalizeMode;
 };
 
-type WorkflowVariableTagProps = {
-  value?: unknown;
-  disabled?: boolean;
-  style?: React.CSSProperties;
-};
-
 function normalizeExactDatePickerMode(value: unknown): ExactDatePickerMode {
   if (value === 'year' || value === 'quarter' || value === 'month' || value === 'date') {
     return value;
@@ -287,110 +281,6 @@ const DEFAULT_DATE_VARIABLE_COMPONENT_PROPS: DateVariableComponentProps = {
   format: 'YYYY-MM-DD',
   exactNormalizeMode: 'none',
 };
-
-function getMetaTreeTitleText(value: unknown): string {
-  if (typeof value === 'string') {
-    return value;
-  }
-  if (typeof value === 'number') {
-    return String(value);
-  }
-  return '';
-}
-
-function collectMetaTreePathLabels(nodes: MetaTreeNode[], t?: (key: string) => string): Map<string, string> {
-  const map = new Map<string, string>();
-  const walk = (items: MetaTreeNode[], parentTitles: string[] = []) => {
-    items.forEach((item) => {
-      const title = getMetaTreeTitleText(item.title ?? item.name);
-      const titles = [...parentTitles, title].filter(Boolean);
-      if (Array.isArray(item.paths) && item.paths.length) {
-        map.set(item.paths.join('.'), titles.map((text) => t?.(text) ?? text).join(' / '));
-      }
-      if (Array.isArray(item.children)) {
-        walk(item.children as MetaTreeNode[], titles);
-      }
-    });
-  };
-  walk(nodes);
-  return map;
-}
-
-async function loadMetaTreeNodeChildren(node: MetaTreeNode): Promise<MetaTreeNode[]> {
-  if (!node?.children) {
-    return [];
-  }
-  if (Array.isArray(node.children)) {
-    return node.children as MetaTreeNode[];
-  }
-  if (typeof node.children === 'function') {
-    const children = await node.children();
-    const normalizedChildren = Array.isArray(children) ? (children as MetaTreeNode[]) : [];
-    node.children = normalizedChildren;
-    return normalizedChildren;
-  }
-  return [];
-}
-
-async function resolveMetaTreePathLabel(
-  nodes: MetaTreeNode[],
-  path: string[],
-  t?: (key: string) => string,
-): Promise<string | null> {
-  if (!Array.isArray(nodes) || !path.length) {
-    return null;
-  }
-
-  const topNames = new Set(nodes.map((node) => String(node?.name)));
-  const normalizedPath = path.map(String);
-  const pathSegments = topNames.has(normalizedPath[0]) ? normalizedPath : normalizedPath.slice(1);
-  if (!pathSegments.length) {
-    return null;
-  }
-
-  let currentNodes = nodes;
-  const titles: string[] = [];
-  for (const segment of pathSegments) {
-    const node = currentNodes.find((item) => String(item?.name) === segment);
-    if (!node) {
-      return titles.length ? [...titles, ...pathSegments.slice(titles.length)].join(' / ') : null;
-    }
-
-    const title = getMetaTreeTitleText(node.title ?? node.name);
-    if (title) {
-      titles.push(t?.(title) ?? title);
-    }
-    currentNodes = await loadMetaTreeNodeChildren(node);
-  }
-
-  return titles.length ? titles.join(' / ') : null;
-}
-
-function getVariableDisplayText(
-  meta: MetaTreeNode | null,
-  fallback: unknown,
-  t?: (key: string) => string,
-  labelMap?: Map<string, string>,
-): string {
-  const mappedLabel = Array.isArray(meta?.paths) ? labelMap?.get(meta.paths.join('.')) : undefined;
-  if (mappedLabel) {
-    return mappedLabel;
-  }
-  const normalizeTitle = (value: unknown) => {
-    const text = getMetaTreeTitleText(value);
-    return text ? t?.(text) ?? text : '';
-  };
-  const titles = [...((meta?.parentTitles as unknown[]) ?? []), meta?.title ?? meta?.name]
-    .map(normalizeTitle)
-    .filter(Boolean);
-  if (titles.length) {
-    return titles.join(' / ');
-  }
-  if (typeof fallback === 'string') {
-    return fallback;
-  }
-  return '';
-}
 
 function getFieldInterface(field: any): string {
   return typeof field?.interface === 'string' ? field.interface : '';
@@ -451,10 +341,6 @@ interface Props {
    * 默认 false，保持历史行为。
    */
   enableDateVariableAsConstant?: boolean;
-  /** 是否允许在变量选择器中使用 RunJS。 */
-  allowRunJS?: boolean;
-  variableFormatPathToValue?: (item: MetaTreeNode) => string;
-  variableParseValueToPath?: (value: any) => string[] | undefined;
   maxAssociationFieldDepth?: number;
 }
 
@@ -826,9 +712,6 @@ export const FieldAssignValueInput: React.FC<Props> = ({
   preferFormItemFieldModel,
   associationFieldNamesOverride,
   enableDateVariableAsConstant = false,
-  allowRunJS = true,
-  variableFormatPathToValue,
-  variableParseValueToPath,
   maxAssociationFieldDepth = 2,
 }) => {
   const flowCtx = useFlowContext<FlowModelContext>();
@@ -1072,8 +955,6 @@ export const FieldAssignValueInput: React.FC<Props> = ({
 
   const dateVariableTranslateRef = React.useRef(flowCtx.t);
   dateVariableTranslateRef.current = flowCtx.t;
-  const variableLabelMapRef = React.useRef<Map<string, string>>(new Map());
-  const variableMetaTreeRef = React.useRef<MetaTreeNode[]>([]);
 
   const coerceEmptyValueForRenderer = React.useCallback(
     (v: any) => {
@@ -1518,101 +1399,6 @@ export const FieldAssignValueInput: React.FC<Props> = ({
     return C;
   }, [flowCtx]);
 
-  const WorkflowVariableTagComponent = React.useMemo(() => {
-    const createComponent = (meta: MetaTreeNode | null): React.FC<WorkflowVariableTagProps> => {
-      const C: React.FC<WorkflowVariableTagProps> = (inputProps) => {
-        const label = getVariableDisplayText(meta, inputProps?.value, flowCtx.t, variableLabelMapRef.current);
-        const [displayLabel, setDisplayLabel] = React.useState(label);
-        const { token } = theme.useToken();
-        const style = withFullWidthStyle(pickStyle(inputProps?.style));
-
-        React.useEffect(() => {
-          let cancelled = false;
-          setDisplayLabel(label);
-          const parsedPath = variableParseValueToPath?.(inputProps?.value);
-          const path = Array.isArray(meta?.paths) && meta.paths.length ? meta.paths.map(String) : parsedPath;
-          if (!path?.length) {
-            return () => {
-              cancelled = true;
-            };
-          }
-          resolveMetaTreePathLabel(variableMetaTreeRef.current, path, flowCtx.t)
-            .then((resolvedLabel) => {
-              if (!cancelled && resolvedLabel) {
-                setDisplayLabel(resolvedLabel);
-              }
-            })
-            .catch(() => {});
-          return () => {
-            cancelled = true;
-          };
-        }, [inputProps?.value, label]);
-
-        return (
-          <Select
-            className={css`
-              .ant-select-selector {
-                background: ${token.colorErrorBg} !important;
-                border-color: ${token.colorErrorBorder} !important;
-                min-width: 0;
-                overflow: hidden;
-              }
-
-              &.ant-select-focused .ant-select-selector,
-              &:hover .ant-select-selector {
-                border-color: ${token.colorErrorBorderHover} !important;
-              }
-
-              .rc-overflow {
-                flex-wrap: nowrap;
-              }
-            `}
-            style={style}
-            value={displayLabel ? [displayLabel] : []}
-            mode="tags"
-            open={false}
-            allowClear={false}
-            disabled={inputProps?.disabled}
-            suffixIcon={null}
-            removeIcon={null}
-            tagRender={({ label: tagLabel }) => {
-              const text = typeof tagLabel === 'string' ? tagLabel : String(tagLabel ?? '');
-              return (
-                <Tooltip title={text} placement="top" getPopupContainer={() => document.body}>
-                  <Tag
-                    color="blue"
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      maxWidth: '100%',
-                      minWidth: 0,
-                      marginInlineEnd: 0,
-                      overflow: 'hidden',
-                    }}
-                  >
-                    <span
-                      style={{
-                        minWidth: 0,
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                      }}
-                    >
-                      {text}
-                    </span>
-                  </Tag>
-                </Tooltip>
-              );
-            }}
-            onClick={(event) => event.preventDefault()}
-          />
-        );
-      };
-      return C;
-    };
-    return createComponent;
-  }, [flowCtx.t, variableParseValueToPath]);
-
   const ConstantEditor = useDateVariableConstant ? DateVariableConstantEditor : ConstantValueEditor;
 
   const metaTree = React.useMemo<() => Promise<any[]>>(() => {
@@ -1622,8 +1408,6 @@ export const FieldAssignValueInput: React.FC<Props> = ({
       const extraTree = Array.isArray(extra) ? extra : [];
       const mergedBase = mergeItemMetaTreeForAssignValue(base as MetaTreeNode[], extraTree as MetaTreeNode[]);
       const limitedBase = limitAssociationMetaTree(mergedBase, { maxAssociationDepth: maxAssociationFieldDepth });
-      variableMetaTreeRef.current = limitedBase;
-      variableLabelMapRef.current = collectMetaTreePathLabels(limitedBase, flowCtx.t);
       return [
         {
           title: tExpr('Constant'),
@@ -1633,13 +1417,11 @@ export const FieldAssignValueInput: React.FC<Props> = ({
           render: ConstantEditor,
         },
         { title: tExpr('Null'), name: 'null', type: 'object', paths: ['null'], render: NullComponent },
-        ...(allowRunJS
-          ? [{ title: tExpr('RunJS'), name: 'runjs', type: 'object', paths: ['runjs'], render: RunJSComponent }]
-          : []),
+        { title: tExpr('RunJS'), name: 'runjs', type: 'object', paths: ['runjs'], render: RunJSComponent },
         ...limitedBase,
       ];
     };
-  }, [flowCtx, ConstantEditor, NullComponent, RunJSComponent, allowRunJS, maxAssociationFieldDepth]);
+  }, [flowCtx, ConstantEditor, NullComponent, RunJSComponent, maxAssociationFieldDepth]);
 
   const displayValue = React.useMemo(() => {
     if (!useDateVariableConstant) {
@@ -1653,22 +1435,6 @@ export const FieldAssignValueInput: React.FC<Props> = ({
 
     return value;
   }, [useDateVariableConstant, value]);
-
-  const variableInputKey = React.useMemo(() => {
-    if (displayValue === null) return 'null';
-    if (allowRunJS && isRunJSValue(displayValue)) return 'runjs';
-
-    const parsedWorkflowPath = variableParseValueToPath?.(displayValue);
-    if (parsedWorkflowPath?.length) {
-      return `variable:${parsedWorkflowPath.join('.')}`;
-    }
-
-    if (useDateVariableConstant && isCtxDateExpression(displayValue)) {
-      return 'date-variable-constant';
-    }
-
-    return 'constant';
-  }, [allowRunJS, displayValue, useDateVariableConstant, variableParseValueToPath]);
 
   const handleVariableInputChange = React.useCallback(
     (nextValue: any) => {
@@ -1689,7 +1455,6 @@ export const FieldAssignValueInput: React.FC<Props> = ({
 
   return (
     <VariableInput
-      key={variableInputKey}
       value={displayValue}
       onChange={handleVariableInputChange}
       metaTree={metaTree}
@@ -1700,8 +1465,7 @@ export const FieldAssignValueInput: React.FC<Props> = ({
           const firstPath = meta?.paths?.[0];
           if (firstPath === 'constant') return ConstantEditor;
           if (firstPath === 'null') return NullComponent;
-          if (allowRunJS && firstPath === 'runjs') return RunJSComponent;
-          if (firstPath) return WorkflowVariableTagComponent(meta);
+          if (firstPath === 'runjs') return RunJSComponent;
           return null;
         },
         resolveValueFromPath: (item) => {
@@ -1710,18 +1474,14 @@ export const FieldAssignValueInput: React.FC<Props> = ({
             return useDateVariableConstant ? { type: 'today' } : '';
           }
           if (firstPath === 'null') return null;
-          if (allowRunJS && firstPath === 'runjs') return { code: '', version: 'v2' };
-          return variableFormatPathToValue?.(item);
+          if (firstPath === 'runjs') return { code: '', version: 'v2' };
+          return undefined;
         },
         resolvePathFromValue: (currentValue) => {
           if (currentValue === null) return ['null'];
-          if (allowRunJS && isRunJSValue(currentValue)) return ['runjs'];
+          if (isRunJSValue(currentValue)) return ['runjs'];
           if (useDateVariableConstant && isCtxDateExpression(currentValue)) {
             return ['constant'];
-          }
-          const workflowPath = variableParseValueToPath?.(currentValue);
-          if (workflowPath?.length) {
-            return workflowPath;
           }
           return isVariableExpression(currentValue) ? parseValueToPath(currentValue) : ['constant'];
         },
