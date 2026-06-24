@@ -559,20 +559,23 @@
 
 ### W6. 总体验收、清理和最终提交
 
-状态：未开始
+状态：进行中
 
 目标：确认 workflow 迁移整体完成，清理重复实现和风险点。
 
 #### W6.1 禁止 import 扫描
 
-- 状态：未开始
+- 状态：已提交
 - 完成标准：
   - `src/client-v2/workflow` 无 `@nocobase/client`。
   - `src/client-v2/workflow` 无 `@formily/*` runtime。
   - `src/client-v2/workflow` 无 `@nocobase/plugin-workflow/client`。
   - `src/client-v2/workflow` 无相对路径引用本插件 `src/client/`。
 - 验收记录：
-  - 待填写。
+  - 已运行禁止 import 扫描：`rg --pcre2 -n "@nocobase/client(?!-v2)|@formily/|@nocobase/plugin-workflow/client['\"]|src/client/|\\.\\./\\.\\./\\.\\./\\.\\./client/" packages/plugins/@nocobase/plugin-ai/src/client-v2/workflow`，无命中。
+  - 已扫描 `src/client/workflow` 和 `src/client-v2/workflow`，未发现 v1 workflow trigger/node 的 `SchemaComponent`、`@formily/*` runtime、`@nocobase/client` runtime、`ArrayItems`、`ActionContextProvider` 残留。
+  - 当前 `src/client/workflow` 只剩三个兼容入口：`nodes/llm/index.tsx`、`nodes/employee/index.tsx`、`triggers/ai-employee/index.tsx`，均继承 v2 实现。
+  - 变量输入扫描只命中允许复用的 workflow v2 `WorkflowVariableInput`、`WorkflowVariableTextArea` 和 `WorkflowVariableJsonTextArea`，未新增 textarea wrapper。
 
 #### W6.2 浏览器回归对照
 
@@ -605,4 +608,4 @@
 | W3. AI employee workflow 节点迁移 | 已提交 | 开始 W4.1 |
 | W4. AI employee workflow trigger 迁移 | 已提交 | 开始 W5.1 |
 | W5. v1 兼容入口收敛 | 已提交 | 开始 W6.1 |
-| W6. 总体验收、清理和最终提交 | 未开始 | 开始 W6.1 |
+| W6. 总体验收、清理和最终提交 | 进行中 | 开始 W6.2 |
