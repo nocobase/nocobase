@@ -496,7 +496,7 @@
 
 ### W5. v1 兼容入口收敛
 
-状态：进行中
+状态：已提交
 
 目标：v2 主实现完成后，把 `src/client/workflow` 改为兼容入口，避免长期维护两套实现。
 
@@ -541,7 +541,7 @@
 
 #### W5.3 AI employee trigger v1 入口改为继承 v2
 
-- 状态：未开始
+- 状态：已提交
 - 前置：W4 校验通过
 - 范围：
   - `src/client/workflow/triggers/ai-employee/**`
@@ -550,7 +550,12 @@
   - 删除 Formily `ArrayItems`、`SchemaComponent` modal 参数编辑实现。
   - 保持 v1 workflow pane 已迁移 trigger 配置走 v2 loader。
 - 验收记录：
-  - 待填写。
+  - 已将 `src/client/workflow/triggers/ai-employee/index.tsx` 收敛为兼容入口：`AIEmployeeTrigger extends V2AIEmployeeTrigger`。
+  - 已删除 v1 trigger 参数编辑 Formily 实现 `src/client/workflow/triggers/ai-employee/Parameters.tsx`。
+  - 已确认 `src/client/workflow` 与 `src/client-v2/workflow` 中不再残留 `ParameterAddition`、`EditParameter`、`ParameterDesc`、workflow trigger `@formily/antd-v5` 或 `SchemaComponent` 引用。
+  - 已运行 `yarn eslint --fix packages/plugins/@nocobase/plugin-ai/src/client/workflow/triggers/ai-employee/index.tsx`。
+  - 已运行 `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/__tests__/workflow-ai-employee-trigger.test.tsx packages/plugins/@nocobase/plugin-ai/src/client-v2/__tests__/workflow-registration.test.ts --run --reporter=verbose`，trigger 4 个用例通过。
+  - 已运行 `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/__tests__/workflow-registration.test.ts --run --reporter=verbose`，5 个用例通过。
 
 ### W6. 总体验收、清理和最终提交
 
@@ -599,5 +604,5 @@
 | W2. LLM workflow 节点迁移 | 已提交 | 开始 W3.1 |
 | W3. AI employee workflow 节点迁移 | 已提交 | 开始 W4.1 |
 | W4. AI employee workflow trigger 迁移 | 已提交 | 开始 W5.1 |
-| W5. v1 兼容入口收敛 | 进行中 | 开始 W5.3 |
-| W6. 总体验收、清理和最终提交 | 未开始 | 等 W5 完成 |
+| W5. v1 兼容入口收敛 | 已提交 | 开始 W6.1 |
+| W6. 总体验收、清理和最终提交 | 未开始 | 开始 W6.1 |
