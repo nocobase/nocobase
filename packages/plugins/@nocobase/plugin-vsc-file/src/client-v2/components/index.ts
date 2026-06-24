@@ -7,6 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './components';
-export * from './hooks';
-export { default } from './plugin';
+export * from './VscCommitHistory';
+export * from './VscDiffViewer';
+export * from './VscEditorTabs';
+export * from './VscFileExplorer';
+export * from './VscSourceControlPanel';
