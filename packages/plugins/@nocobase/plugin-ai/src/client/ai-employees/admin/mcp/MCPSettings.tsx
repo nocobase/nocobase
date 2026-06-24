@@ -39,6 +39,19 @@ import { createMCPSchema, editMCPFormContentSchema, mcpSettingsSchema, viewMCPTo
 
 type MCPTransport = 'stdio' | 'http' | 'sse';
 
+type MCPVariableValue = NonNullable<DefaultOptionType['value']>;
+
+type MCPVariableOption = Omit<Partial<DefaultOptionType>, 'children' | 'label' | 'value'> & {
+  name?: MCPVariableValue;
+  title?: React.ReactNode;
+  value?: MCPVariableValue;
+  label?: React.ReactNode;
+  key?: React.Key;
+  children?: MCPVariableOption[];
+  loadChildren?: (option: MCPVariableOption, ...args: unknown[]) => Promise<void> | void;
+  [key: string]: unknown;
+};
+
 const transportOptions = [
   { label: 'Stdio', value: 'stdio' },
   { label: 'HTTP (Streamable)', value: 'http' },
@@ -50,6 +63,15 @@ const transportColorMap: Record<MCPTransport, string> = {
   http: 'green',
   sse: 'gold',
 };
+
+const requestHeaderVariables: MCPVariableOption[] = [
+  { name: 'x-app', title: 'X-App', value: 'x-app' },
+  { name: 'x-locale', title: 'X-Locale', value: 'x-locale' },
+  { name: 'x-hostname', title: 'X-Hostname', value: 'x-hostname' },
+  { name: 'x-timezone', title: 'X-Timezone', value: 'x-timezone' },
+  { name: 'x-role', title: 'X-Role', value: 'x-role' },
+  { name: 'x-authenticator', title: 'X-Authenticator', value: 'x-authenticator' },
+];
 
 const keyValueRowClassName = css`
   & > .ant-space-item:first-child,
@@ -465,6 +487,7 @@ const TestConnectionResult: React.FC = observer(
 );
 
 const useMCPVariableScope = (includeCurrentUser: boolean) => {
+  const t = useT();
   const environmentVariables = useGlobalVariable('$env');
   const { currentUserSettings } = useCurrentUserVariable({
     maxDepth: 3,
@@ -476,22 +499,29 @@ const useMCPVariableScope = (includeCurrentUser: boolean) => {
       [
         normalizeMCPVariableOption(environmentVariables),
         includeCurrentUser ? normalizeMCPVariableOption(currentUserSettings) : null,
+        includeCurrentUser
+          ? normalizeMCPVariableOption({
+              name: 'request',
+              title: t('NocoBase request'),
+              value: 'request',
+              children: [
+                {
+                  name: 'headers',
+                  title: 'headers',
+                  value: 'headers',
+                  children: requestHeaderVariables,
+                },
+                {
+                  name: 'token',
+                  title: 'Token',
+                  value: 'token',
+                },
+              ],
+            })
+          : null,
       ].filter(Boolean),
-    [currentUserSettings, environmentVariables, includeCurrentUser],
+    [currentUserSettings, environmentVariables, includeCurrentUser, t],
   );
-};
-
-type MCPVariableValue = NonNullable<DefaultOptionType['value']>;
-
-type MCPVariableOption = Omit<Partial<DefaultOptionType>, 'children' | 'label' | 'value'> & {
-  name?: MCPVariableValue;
-  title?: React.ReactNode;
-  value?: MCPVariableValue;
-  label?: React.ReactNode;
-  key?: React.Key;
-  children?: MCPVariableOption[];
-  loadChildren?: (option: MCPVariableOption, ...args: unknown[]) => Promise<void> | void;
-  [key: string]: unknown;
 };
 
 const normalizeMCPVariableOption = (option?: MCPVariableOption | null): MCPVariableOption | null => {
@@ -598,7 +628,13 @@ const AddNew = () => {
       </Button>
       <TestConnectionContext.Provider value={contextValue}>
         <SchemaComponent
-          components={{ TestConnectionButton, TestConnectionResult, Space, MCPVariableInput, UserContextCheckbox }}
+          components={{
+            TestConnectionButton,
+            TestConnectionResult,
+            Space,
+            MCPVariableInput,
+            UserContextCheckbox,
+          }}
           scope={{
             t,
             transportOptions,
@@ -634,7 +670,13 @@ const MCPEditDrawerContent: React.FC = () => {
     <CollectionRecordProvider record={record}>
       <TestConnectionContext.Provider value={contextValue}>
         <SchemaComponent
-          components={{ TestConnectionButton, TestConnectionResult, Space, MCPVariableInput, UserContextCheckbox }}
+          components={{
+            TestConnectionButton,
+            TestConnectionResult,
+            Space,
+            MCPVariableInput,
+            UserContextCheckbox,
+          }}
           scope={{
             t,
             transportOptions,
