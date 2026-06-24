@@ -105,6 +105,7 @@ describe('AssignedFieldsEditor', () => {
     expect(mockFieldAssignValueInput).toHaveBeenCalledWith(
       expect.objectContaining({
         targetPath: 'title',
+        allowRunJS: false,
       }),
       expect.anything(),
     );

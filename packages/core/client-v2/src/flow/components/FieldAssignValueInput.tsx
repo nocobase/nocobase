@@ -341,6 +341,8 @@ interface Props {
    * 默认 false，保持历史行为。
    */
   enableDateVariableAsConstant?: boolean;
+  /** 是否允许在变量选择器中使用 RunJS。默认 true，保持历史行为。 */
+  allowRunJS?: boolean;
   maxAssociationFieldDepth?: number;
 }
 
@@ -712,6 +714,7 @@ export const FieldAssignValueInput: React.FC<Props> = ({
   preferFormItemFieldModel,
   associationFieldNamesOverride,
   enableDateVariableAsConstant = false,
+  allowRunJS = true,
   maxAssociationFieldDepth = 2,
 }) => {
   const flowCtx = useFlowContext<FlowModelContext>();
@@ -1417,11 +1420,13 @@ export const FieldAssignValueInput: React.FC<Props> = ({
           render: ConstantEditor,
         },
         { title: tExpr('Null'), name: 'null', type: 'object', paths: ['null'], render: NullComponent },
-        { title: tExpr('RunJS'), name: 'runjs', type: 'object', paths: ['runjs'], render: RunJSComponent },
+        ...(allowRunJS
+          ? [{ title: tExpr('RunJS'), name: 'runjs', type: 'object', paths: ['runjs'], render: RunJSComponent }]
+          : []),
         ...limitedBase,
       ];
     };
-  }, [flowCtx, ConstantEditor, NullComponent, RunJSComponent, maxAssociationFieldDepth]);
+  }, [flowCtx, ConstantEditor, NullComponent, RunJSComponent, allowRunJS, maxAssociationFieldDepth]);
 
   const displayValue = React.useMemo(() => {
     if (!useDateVariableConstant) {
@@ -1465,7 +1470,7 @@ export const FieldAssignValueInput: React.FC<Props> = ({
           const firstPath = meta?.paths?.[0];
           if (firstPath === 'constant') return ConstantEditor;
           if (firstPath === 'null') return NullComponent;
-          if (firstPath === 'runjs') return RunJSComponent;
+          if (allowRunJS && firstPath === 'runjs') return RunJSComponent;
           return null;
         },
         resolveValueFromPath: (item) => {
@@ -1474,12 +1479,12 @@ export const FieldAssignValueInput: React.FC<Props> = ({
             return useDateVariableConstant ? { type: 'today' } : '';
           }
           if (firstPath === 'null') return null;
-          if (firstPath === 'runjs') return { code: '', version: 'v2' };
+          if (allowRunJS && firstPath === 'runjs') return { code: '', version: 'v2' };
           return undefined;
         },
         resolvePathFromValue: (currentValue) => {
           if (currentValue === null) return ['null'];
-          if (isRunJSValue(currentValue)) return ['runjs'];
+          if (allowRunJS && isRunJSValue(currentValue)) return ['runjs'];
           if (useDateVariableConstant && isCtxDateExpression(currentValue)) {
             return ['constant'];
           }
