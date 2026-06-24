@@ -41,6 +41,7 @@ import {
   filterFieldInterfacesByCollectionTemplate,
 } from './collectionTemplateFieldInterfaces';
 import { FieldForm } from './FieldForm';
+import { collectionNeedsRecordUniqueKey, RecordUniqueKeyPrompt } from './RecordUniqueKey';
 
 interface FieldsPageProps {
   dataSourceKey: string;
@@ -926,6 +927,18 @@ export default function FieldsPage(props: FieldsPageProps) {
     }, {});
   }, [databaseDialect, ctx, dataSource?.options?.type, props.collection]);
   const presetFieldInterfaces = useMemo(() => getCollectionPresetFieldInterfaces(ctx), [ctx]);
+  const recordUniqueKeyFields = useMemo(() => {
+    const fieldsByName = new Map<string, Record<string, any>>();
+    [...(Array.isArray(props.collection.fields) ? props.collection.fields : []), ...(request.data || [])].forEach(
+      (field) => {
+        if (field?.name) {
+          fieldsByName.set(field.name, field);
+        }
+      },
+    );
+    return Array.from(fieldsByName.values());
+  }, [props.collection.fields, request.data]);
+  const recordUniqueKeyRequired = collectionNeedsRecordUniqueKey(props.collection, recordUniqueKeyFields);
 
   const openFieldForm = useCallback(
     (mode: 'create' | 'edit', field?: Record<string, any>, interfaceName?: string) => {
@@ -1321,6 +1334,24 @@ export default function FieldsPage(props: FieldsPageProps) {
 
   return (
     <>
+      {recordUniqueKeyRequired ? (
+        <Alert
+          style={{ marginBottom: 16 }}
+          type="warning"
+          message={
+            <RecordUniqueKeyPrompt
+              collection={props.collection}
+              dataSourceKey={props.dataSourceKey}
+              fields={recordUniqueKeyFields}
+              onSaved={(values) => {
+                Object.assign(props.collection, values);
+                props.onCollectionChange?.(props.collection.name, values);
+                request.refresh();
+              }}
+            />
+          }
+        />
+      ) : null}
       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginBottom: 16 }}>
         <Space>
           {fieldDeletionVisible ? (

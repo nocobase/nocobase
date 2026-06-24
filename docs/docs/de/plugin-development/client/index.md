@@ -24,3 +24,7 @@ UI-Erweiterungen
 | **Block-Erweiterungen**        | Anpassen von Seiten-Blöcken, Erstellen wiederverwendbarer UI-Module und Layouts.                                                         | [Blöcke](../../ui-development-block/index.md)           |
 | **Feld-Erweiterungen**         | Anpassen von Feldtypen, Implementierung der Anzeige und Bearbeitung komplexer Daten.                                                      | [Felder](../../ui-development-field/index.md)           |
 | **Aktions-Erweiterungen**      | Anpassen von Aktionstypen, Implementierung komplexer Logik und Interaktionsverarbeitung.                                                  | [Aktionen](../../ui-development-action/index.md)         |
+
+## Verwandte Links
+
+- [Gemeinsame Komponenten](/shared-components/) — Wiederverwendbare Formular-, Filter- und Tabellenkomponenten

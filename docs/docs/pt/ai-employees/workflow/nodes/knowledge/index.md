@@ -64,6 +64,14 @@ The core of this example is three synchronization workflows. They process the sa
 
 `Key` is the most important field in the synchronization chain. Create, update, and delete workflows must use the same `Key` rule. The example directly uses the record ID of the `Answers` collection.
 
+:::tip Text content ingestion and vectorization
+
+When configuring a Create document or Update document node, if `Document type` is set to `Text`, the workflow first saves the text field selected in `Content` as a `.txt` document, then writes it to the target knowledge base. The knowledge base then generates segments according to the current segmentation settings, vectorizes enabled segments together with their related questions, and stores them in the vector database bound to the knowledge base.
+
+This process runs as an asynchronous workflow node. A completed node does not mean the document can be retrieved immediately. Usually, wait until `Status` in the `Documents` list changes to `Success` before checking segments or running hit tests.
+
+:::
+
 ## Operation guides
 
 - [Create document](./create-document)
