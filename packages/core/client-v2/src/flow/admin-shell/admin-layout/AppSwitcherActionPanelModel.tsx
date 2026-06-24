@@ -46,7 +46,7 @@ export class AppSwitcherActionPanelModel extends FlowModel {
   }
 
   hasActions() {
-    return (this.subModels.actions || []).length > 0;
+    return Array.isArray(this.subModels.actions) && this.subModels.actions.length > 0;
   }
 
   renderContent() {

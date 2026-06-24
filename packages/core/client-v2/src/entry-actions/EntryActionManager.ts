@@ -56,7 +56,6 @@ function normalizeAppPortalsPayload(value: unknown): AppPortalsPayload {
 export class EntryActionManager {
   private readonly providers = new Map<string, ProviderRecord>();
   private appPortalsRequest?: Promise<AppPortalsPayload>;
-  private appPortalsCache?: AppPortalsPayload;
 
   register(name: string, options: { scope: EntryActionScope; provider: EntryActionProvider; sort?: number }) {
     this.providers.set(name, {
@@ -81,10 +80,6 @@ export class EntryActionManager {
   }
 
   loadAppPortals(apiClient: AppPortalsApiClientLike): Promise<AppPortalsPayload> {
-    if (this.appPortalsCache) {
-      return Promise.resolve(this.appPortalsCache);
-    }
-
     if (!this.appPortalsRequest) {
       this.appPortalsRequest = (apiClient.silent?.() || apiClient)
         .request({
@@ -92,9 +87,7 @@ export class EntryActionManager {
           skipNotify: true,
         })
         .then((response) => {
-          const payload = normalizeAppPortalsPayload((response?.data as { data?: unknown })?.data ?? response?.data);
-          this.appPortalsCache = payload;
-          return payload;
+          return normalizeAppPortalsPayload((response?.data as { data?: unknown })?.data ?? response?.data);
         })
         .finally(() => {
           this.appPortalsRequest = undefined;

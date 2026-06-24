@@ -15,6 +15,15 @@ import type { AppSwitcherActionPanelModel } from './AppSwitcherActionPanelModel'
 
 export const APP_SWITCHER_ACTION_PANEL_MODEL_UID = `${ADMIN_LAYOUT_MODEL_UID}-app-switcher-actions`;
 
+function getErrorStatus(error: unknown) {
+  if (!error || typeof error !== 'object') {
+    return;
+  }
+  const errorLike = error as { response?: { status?: unknown }; status?: unknown };
+  const status = errorLike.response?.status ?? errorLike.status;
+  return typeof status === 'number' ? status : undefined;
+}
+
 export const useApplications = (adminLayoutModel?: AdminLayoutModel) => {
   const app = useApp();
   const [appSwitcherModel, setAppSwitcherModel] = React.useState<AppSwitcherActionPanelModel>();
@@ -29,19 +38,29 @@ export const useApplications = (adminLayoutModel?: AdminLayoutModel) => {
     }
 
     const load = async () => {
-      const model = await adminLayoutModel.flowEngine.loadOrCreateModel<AppSwitcherActionPanelModel>({
-        uid: APP_SWITCHER_ACTION_PANEL_MODEL_UID,
-        use: 'AppSwitcherActionPanelModel',
-        parentId: adminLayoutModel.uid,
-        subKey: 'appSwitcher',
-        subType: 'object',
-      });
-      if (canceled) {
-        return;
+      try {
+        const model = await adminLayoutModel.flowEngine.loadOrCreateModel<AppSwitcherActionPanelModel>({
+          uid: APP_SWITCHER_ACTION_PANEL_MODEL_UID,
+          use: 'AppSwitcherActionPanelModel',
+          parentId: adminLayoutModel.uid,
+          subKey: 'appSwitcher',
+          subType: 'object',
+        });
+        if (canceled || !model) {
+          return;
+        }
+        model.context.addDelegate(adminLayoutModel.context);
+        modelWithLayoutContext = model;
+        setAppSwitcherModel(model);
+      } catch (error) {
+        if (canceled) {
+          return;
+        }
+        if (getErrorStatus(error) !== 404) {
+          throw error;
+        }
+        setAppSwitcherModel(undefined);
       }
-      model.context.addDelegate(adminLayoutModel.context);
-      modelWithLayoutContext = model;
-      setAppSwitcherModel(model);
     };
     load();
 
