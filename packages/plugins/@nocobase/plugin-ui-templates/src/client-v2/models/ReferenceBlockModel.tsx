@@ -26,6 +26,7 @@ import {
   getTemplateAvailabilityDisabledReason,
   normalizeStr,
   parseResourceListResponse,
+  tWithNs,
 } from '../utils/templateCompatibility';
 import { bindInfiniteScrollToFormilySelect, defaultSelectOptionComparator } from '../utils/infiniteSelect';
 import { replaceGridLayoutUid } from '../utils/replaceGridLayoutUid';
@@ -52,24 +53,53 @@ function getViewInputArgs(ctx: any, model: any): Record<string, any> {
   return model?.context?.view?.inputArgs || ctx?.view?.inputArgs || {};
 }
 
-function getAssociationNameFromCurrentRecordView(ctx: any, model: any, tpl: Record<string, any>): string {
+function getAssociationTemplateDisabledReasonFromCurrentRecordView(
+  ctx: any,
+  model: any,
+  tpl: Record<string, any>,
+): string | undefined {
   const associationName = normalizeStr(tpl?.associationName);
   const sourceCollectionName = associationName.includes('.') ? associationName.split('.').filter(Boolean)[0] : '';
-  if (!sourceCollectionName) return '';
+  if (!sourceCollectionName) return undefined;
 
   const viewArgs = getViewInputArgs(ctx, model);
   const collectionName = normalizeStr(viewArgs?.collectionName);
-  if (!collectionName || sourceCollectionName !== collectionName) return '';
-
-  const hasRecordAnchor =
-    isNonEmptyValue(viewArgs?.filterByTk) || isNonEmptyValue(viewArgs?.sourceId) || !!viewArgs?.record;
-  if (!hasRecordAnchor) return '';
+  if (!collectionName) {
+    return getTemplateAvailabilityDisabledReason(
+      ctx,
+      tpl,
+      { associationName: '' },
+      { checkResource: false, associationMatch: 'associationResourceOnly' },
+    );
+  }
 
   const viewDataSourceKey = normalizeStr(viewArgs?.dataSourceKey) || 'main';
   const templateDataSourceKey = normalizeStr(tpl?.dataSourceKey);
-  if (templateDataSourceKey && viewDataSourceKey && templateDataSourceKey !== viewDataSourceKey) return '';
+  if (templateDataSourceKey && viewDataSourceKey && templateDataSourceKey !== viewDataSourceKey) {
+    return tWithNs(ctx, 'Template data source mismatch', {
+      expected: `${viewDataSourceKey}/${collectionName}`,
+      actual: `${templateDataSourceKey}/${sourceCollectionName}`,
+    });
+  }
 
-  return associationName;
+  if (sourceCollectionName !== collectionName) {
+    return tWithNs(ctx, 'Template collection mismatch', {
+      expected: collectionName,
+      actual: sourceCollectionName,
+    });
+  }
+
+  const hasRecordAnchor = isNonEmptyValue(viewArgs?.filterByTk) || !!viewArgs?.record;
+  if (!hasRecordAnchor) {
+    return getTemplateAvailabilityDisabledReason(
+      ctx,
+      tpl,
+      { associationName: '' },
+      { checkResource: false, associationMatch: 'associationResourceOnly' },
+    );
+  }
+
+  return undefined;
 }
 
 function isMissingFilterByTk(value: unknown) {
@@ -745,10 +775,6 @@ ReferenceBlockModel.registerFlow({
                 typeof resourceCtx.getResourceName === 'function' ? normalizeStr(resourceCtx.getResourceName()) : '';
               if (fromResourceName) return fromResourceName;
             }
-
-            const viewArgs = getViewInputArgs(ctx, m);
-            const fromView = normalizeStr(viewArgs?.associationName);
-            if (fromView) return fromView;
           } catch (_) {
             // ignore
           }
@@ -756,12 +782,13 @@ ReferenceBlockModel.registerFlow({
         };
         const expectedAssociationName = resolveExpectedAssociationName();
         const getTemplateDisabledReason = (tpl: Record<string, any>): string | undefined => {
-          const availabilityAssociationName =
-            expectedAssociationName || getAssociationNameFromCurrentRecordView(ctx, m, tpl);
+          if (!expectedAssociationName) {
+            return getAssociationTemplateDisabledReasonFromCurrentRecordView(ctx, m, tpl);
+          }
           return getTemplateAvailabilityDisabledReason(
             ctx,
             tpl,
-            { associationName: availabilityAssociationName },
+            { associationName: expectedAssociationName },
             { checkResource: false, associationMatch: 'associationResourceOnly' },
           );
         };

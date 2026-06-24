@@ -610,9 +610,64 @@ describe('ReferenceBlockModel', () => {
       expect(opts[0].disabled).toBe(false);
       expect(opts[1].value).toBe('tpl-mismatch');
       expect(opts[1].disabled).toBe(true);
-      expect(String(opts[1].disabledReason || '')).toContain('Template association mismatch');
+      expect(String(opts[1].disabledReason || '')).toContain('Template collection mismatch');
       expect(opts[2].value).toBe('tpl-other-ds');
       expect(opts[2].disabled).toBe(true);
+    });
+
+    it('uses current popup collection as the association template base instead of the inbound association', async () => {
+      referenceBlockModel = engine.createModel({
+        uid: 'reference-block-uid',
+        use: 'ReferenceBlockModel',
+        parentId: 'grid-uid',
+        subKey: 'items',
+        subType: 'array',
+      }) as ReferenceBlockModel;
+
+      referenceBlockModel.context.defineProperty('view', {
+        value: {
+          inputArgs: {
+            dataSourceKey: 'main',
+            collectionName: 'roles',
+            associationName: 'users.roles',
+            filterByTk: 'role-1',
+            sourceId: 'user-1',
+          },
+        },
+      });
+
+      const list = vi.fn(async () => ({
+        data: {
+          rows: [
+            { uid: 'tpl-inbound', name: 'Inbound', dataSourceKey: 'main', associationName: 'users.roles' },
+            { uid: 'tpl-outgoing', name: 'Outgoing', dataSourceKey: 'main', associationName: 'roles.permissions' },
+          ],
+        },
+      }));
+
+      const ctx: any = {
+        model: referenceBlockModel,
+        api: {
+          resource: (name: string) => {
+            if (name !== 'flowModelTemplates') throw new Error('unexpected resource');
+            return { list };
+          },
+        },
+        t: (k: string) => k,
+      };
+
+      const flow: any = referenceBlockModel.getFlow('referenceSettings');
+      const step: any = flow?.getStep?.('useTemplate');
+      const schema: any = step.uiSchema(ctx);
+      const reactions = schema?.templateUid?.['x-reactions'] || [];
+      const field: any = { componentProps: {}, data: {} };
+      reactions[0](field);
+      await field.componentProps.onDropdownVisibleChange(true);
+
+      const optsByValue = new Map((field.dataSource || []).map((item: any) => [item.value, item]));
+      expect(optsByValue.get('tpl-inbound')?.disabled).toBe(true);
+      expect(String(optsByValue.get('tpl-inbound')?.disabledReason || '')).toContain('Template collection mismatch');
+      expect(optsByValue.get('tpl-outgoing')?.disabled).toBe(false);
     });
   });
 
