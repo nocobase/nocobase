@@ -8,7 +8,13 @@
  */
 
 const { resolve, posix } = require('path');
-const { storagePathJoin, resolvePublicPath, resolveV2PublicPath, normalizeModernClientPrefix } = require('../util');
+const {
+  storagePathJoin,
+  resolvePublicPath,
+  resolveV2PublicPath,
+  normalizeModernClientPrefix,
+  resolveAppClientEntryMode,
+} = require('../util');
 const { readFileSync, writeFileSync } = require('fs');
 
 /**
@@ -22,15 +28,43 @@ module.exports = (cli) => {
     const distPath = `${appPublicPath.replace(/\/$/, '')}/dist/`;
     const v2PublicPath = resolveV2PublicPath(rawAppPublicPath);
     const modernClientPrefix = normalizeModernClientPrefix(process.env.APP_MODERN_CLIENT_PREFIX);
+    const appClientEntryMode = resolveAppClientEntryMode();
     const appPublicPathWithoutTrailingSlash = appPublicPath.replace(/\/$/, '');
     const v2PublicPathWithoutTrailingSlash = v2PublicPath.replace(/\/$/, '');
     const file = resolve(__dirname, '../../nocobase.conf.tpl');
     const data = readFileSync(file, 'utf-8');
     let otherLocation = '';
     if (appPublicPath !== '/') {
-      // When the app is mounted under a sub-path, redirect the root-level
-      // `/<prefix>` and `/<prefix>/` to the real (sub-path-prefixed) location.
-      otherLocation = `location = /${modernClientPrefix} {
+      const siteRootTarget = appClientEntryMode === 'legacy-default' ? appPublicPath : v2PublicPath;
+      const siteRootIndexTarget =
+        appClientEntryMode === 'legacy-default' ? `${appPublicPath}index.html` : `${v2PublicPath}index.html`;
+      const siteRootPrefixTargetBase =
+        appClientEntryMode === 'modern-only' ? v2PublicPathWithoutTrailingSlash : appPublicPathWithoutTrailingSlash;
+      const appRootRedirectLocations =
+        appClientEntryMode === 'legacy-default'
+          ? ''
+          : `
+    location = ${appPublicPathWithoutTrailingSlash} {
+        return 302 ${v2PublicPath}$is_args$args;
+    }
+
+    location = ${appPublicPath} {
+        return 302 ${v2PublicPath}$is_args$args;
+    }
+
+    location = ${appPublicPath}index.html {
+        return 302 ${v2PublicPath}index.html$is_args$args;
+    }`;
+      // When the app is mounted under a sub-path, nginx owns the site root `/`
+      // before the app shell is reached. We therefore resolve the site-root
+      // entry in nginx first: legacy-default goes to APP_PUBLIC_PATH, while the
+      // modern modes can jump directly to APP_PUBLIC_PATH + modern prefix.
+      //
+      // `location = /` / `location = /index.html` are exact matches and do not
+      // conflict with the later `location /` prefix rule; nginx evaluates the
+      // exact locations first.
+      otherLocation = `${appRootRedirectLocations}
+    location = /${modernClientPrefix} {
         return 302 ${v2PublicPath}$is_args$args;
     }
 
@@ -38,9 +72,16 @@ module.exports = (cli) => {
         return 302 ${appPublicPathWithoutTrailingSlash}$uri$is_args$args;
     }
 
+    location = / {
+        return 302 ${siteRootTarget}$is_args$args;
+    }
+
+    location = /index.html {
+        return 302 ${siteRootIndexTarget}$is_args$args;
+    }
+
     location / {
-        alias ${posix.resolve(process.cwd())}/node_modules/@nocobase/app/dist/client/;
-        try_files $uri $uri/ /index.html;
+        return 302 ${siteRootPrefixTargetBase}$uri$is_args$args;
     }`;
     }
     const replaced = data

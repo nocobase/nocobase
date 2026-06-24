@@ -35,6 +35,7 @@ import {
   injectRuntimeScript,
   MODERN_CLIENT_DIST_DIR,
   normalizeModernClientPrefix,
+  resolveClientEntryRedirectTarget,
   resolvePublicPath,
   resolveV2PublicPath,
   rewriteV2AssetPublicPath,
@@ -323,6 +324,10 @@ export class Gateway extends EventEmitter {
     return resolvePublicPath(process.env.APP_PUBLIC_PATH || '/');
   }
 
+  private getAppClientEntryMode() {
+    return process.env.APP_CLIENT_ENTRY_MODE;
+  }
+
   private isV2Request(pathname: string) {
     const v2PublicPath = this.getV2PublicPath();
     return pathname === v2PublicPath.slice(0, -1) || pathname.startsWith(v2PublicPath);
@@ -411,9 +416,13 @@ export class Gateway extends EventEmitter {
   }
 
   async requestHandler(req: IncomingMessage, res: ServerResponse) {
-    const { pathname } = parse(req.url);
+    const parsedUrl = parse(req.url);
+    const rawPathname = parsedUrl.pathname;
+    const search = parsedUrl.search || '';
+    const pathname = rawPathname || '/';
     const { PLUGIN_STATICS_PATH } = process.env;
     const APP_PUBLIC_PATH = this.getAppPublicPath();
+    const APP_CLIENT_ENTRY_MODE = this.getAppClientEntryMode();
 
     if (pathname.endsWith('/__umi/api/bundle-status')) {
       res.statusCode = 200;
@@ -492,6 +501,21 @@ export class Gateway extends EventEmitter {
     }
 
     if (!pathname.startsWith(process.env.API_BASE_PATH)) {
+      const redirectTarget = resolveClientEntryRedirectTarget(pathname, {
+        appPublicPath: APP_PUBLIC_PATH,
+        modernClientPrefix: process.env.APP_MODERN_CLIENT_PREFIX,
+        mode: APP_CLIENT_ENTRY_MODE,
+        apiBasePath: process.env.API_BASE_PATH,
+        wsPath: process.env.WS_PATH,
+        pluginStaticsPath: PLUGIN_STATICS_PATH,
+      });
+      if (redirectTarget) {
+        res.statusCode = 302;
+        res.setHeader('Location', redirectTarget + search);
+        res.end();
+        return;
+      }
+
       if (this.isV2Request(pathname)) {
         if (handleApp !== 'main') {
           const isProxy = await this.proxyRequestToSubApp(supervisor, handleApp, req, res);

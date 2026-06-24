@@ -12,6 +12,7 @@ import {
   injectRuntimeScript,
   MODERN_CLIENT_DIST_DIR,
   normalizeModernClientPrefix,
+  resolveClientEntryRedirectTarget,
   resolveV2PublicPath,
   rewriteV2AssetPublicPath,
 } from '../gateway/utils';
@@ -21,6 +22,7 @@ const DIR = MODERN_CLIENT_DIST_DIR; // fixed build-output dir / rewrite sentinel
 describe('gateway utils', () => {
   afterEach(() => {
     delete process.env.APP_MODERN_CLIENT_PREFIX;
+    delete process.env.APP_CLIENT_ENTRY_MODE;
   });
 
   it('normalizes the modern client prefix', () => {
@@ -89,5 +91,42 @@ describe('gateway utils', () => {
     expect(injectRuntimeScript(html, runtimeScript)).toContain(
       `${runtimeScript}\n<script src="/nocobase/${DIR}/browser-checker.js?v=1"></script>`,
     );
+  });
+
+  it('resolves no redirect for legacy-default app root', () => {
+    expect(resolveClientEntryRedirectTarget('/', { mode: 'legacy-default' })).toBeNull();
+    expect(resolveClientEntryRedirectTarget('/admin', { mode: 'legacy-default' })).toBeNull();
+    expect(resolveClientEntryRedirectTarget('/', { mode: '' })).toBeNull();
+    expect(resolveClientEntryRedirectTarget('/admin', { mode: 'unknown' })).toBeNull();
+  });
+
+  it('resolves modern-default redirect only for app root entry', () => {
+    expect(resolveClientEntryRedirectTarget('/', { mode: 'modern-default' })).toBe(`/${DIR}/`);
+    expect(resolveClientEntryRedirectTarget('/index.html', { mode: 'modern-default' })).toBe(`/${DIR}/index.html`);
+    expect(resolveClientEntryRedirectTarget('/admin', { mode: 'modern-default' })).toBeNull();
+  });
+
+  it('resolves modern-only redirect by prefix rewrite under app root', () => {
+    expect(resolveClientEntryRedirectTarget('/', { mode: 'modern-only' })).toBe(`/${DIR}/`);
+    expect(resolveClientEntryRedirectTarget('/admin', { mode: 'modern-only' })).toBe(`/${DIR}/admin`);
+    expect(resolveClientEntryRedirectTarget('/signin', { mode: 'modern-only' })).toBe(`/${DIR}/signin`);
+  });
+
+  it('resolves sub-path site-root redirect directly to final target', () => {
+    expect(resolveClientEntryRedirectTarget('/', { appPublicPath: '/nocobase/', mode: 'legacy-default' })).toBe(
+      '/nocobase/',
+    );
+    expect(resolveClientEntryRedirectTarget('/', { appPublicPath: '/nocobase/', mode: 'modern-default' })).toBe(
+      `/nocobase/${DIR}/`,
+    );
+    expect(resolveClientEntryRedirectTarget('/foo/bar', { appPublicPath: '/nocobase/', mode: 'modern-only' })).toBe(
+      `/nocobase/${DIR}/foo/bar`,
+    );
+  });
+
+  it('does not redirect modern-prefixed paths or non-document requests', () => {
+    expect(resolveClientEntryRedirectTarget(`/${DIR}/admin`, { mode: 'modern-only' })).toBeNull();
+    expect(resolveClientEntryRedirectTarget('/api/app:getInfo', { mode: 'modern-only' })).toBeNull();
+    expect(resolveClientEntryRedirectTarget('/static/plugins/demo.js', { mode: 'modern-only' })).toBeNull();
   });
 });

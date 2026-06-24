@@ -46,10 +46,26 @@ function toDefineLiteral(value: string | undefined) {
   return value === undefined ? 'undefined' : JSON.stringify(value);
 }
 
+function normalizePathname(value: string | undefined) {
+  const normalized = ensurePublicPath(value || '/').replace(/\/+$/, '');
+  return normalized || '/';
+}
+
+function isClientDocumentEntryPath(pathname: string) {
+  return pathname === '/' || pathname === '/index.html' || !/\.[^/]+$/.test(pathname);
+}
+
 function createRuntimeHeadScript(appPublicPath: string, isBuild: boolean) {
+  const modernClientPrefix =
+    String(process.env.APP_MODERN_CLIENT_PREFIX || 'v')
+      .trim()
+      .replace(/^\/+|\/+$/g, '') || 'v';
+  const appClientEntryMode = process.env.APP_CLIENT_ENTRY_MODE;
   if (!isBuild) {
     return [
       `window['__nocobase_public_path__'] = ${JSON.stringify(appPublicPath)};`,
+      `window['__nocobase_modern_client_prefix__'] = ${JSON.stringify(modernClientPrefix)};`,
+      `window['__nocobase_app_client_entry_mode__'] = ${JSON.stringify(appClientEntryMode)};`,
       `window['__nocobase_dev_public_path__'] = "/";`,
       `window['__nocobase_app_dev__'] = ${JSON.stringify(process.env.NOCOBASE_APP_DEV === 'true')};`,
       `window['__esm_cdn_base_url__'] = ${JSON.stringify(process.env.ESM_CDN_BASE_URL || '')};`,
@@ -60,6 +76,8 @@ function createRuntimeHeadScript(appPublicPath: string, isBuild: boolean) {
   return [
     `window['__webpack_public_path__'] = '{{env.CDN_BASE_URL}}';`,
     `window['__nocobase_public_path__'] = '${appPublicPath}';`,
+    `window['__nocobase_modern_client_prefix__'] = '{{env.APP_MODERN_CLIENT_PREFIX}}';`,
+    `window['__nocobase_app_client_entry_mode__'] = '{{env.APP_CLIENT_ENTRY_MODE}}';`,
     `window['__nocobase_api_base_url__'] = '{{env.API_BASE_URL}}';`,
     `window['__nocobase_api_client_storage_prefix__'] = '{{env.API_CLIENT_STORAGE_PREFIX}}';`,
     `window['__nocobase_api_client_storage_type__'] = '{{env.API_CLIENT_STORAGE_TYPE}}';`,
@@ -107,6 +125,7 @@ export default defineConfig(({ command }) => {
     `${resolvedAppPublicPath.replace(/\/$/, '')}/${modernClientPrefix}/`,
     `/${modernClientPrefix}/`,
   );
+  const appClientEntryMode = process.env.APP_CLIENT_ENTRY_MODE;
   const clientPort = toNumber(process.env.APP_PORT, 13001);
   const v2Port = toNumber(process.env.APP_V2_PORT, clientPort + 2);
   const hmrPath = `${resolvedAppPublicPath.replace(/\/$/, '')}/__rspack_hmr`;
@@ -248,6 +267,44 @@ export default defineConfig(({ command }) => {
     dev: {
       assetPrefix: appPublicPath,
       lazyCompilation: false,
+      setupMiddlewares: [
+        (middlewares) => {
+          const isModernDefault = appClientEntryMode === 'modern-default';
+          const isModernOnly = appClientEntryMode === 'modern-only';
+
+          if (!isModernDefault && !isModernOnly) {
+            return;
+          }
+
+          middlewares.unshift((req, res, next) => {
+            const [rawPathname = '/', query = ''] = String(req.url || '/').split('?');
+            const pathname = normalizePathname(rawPathname);
+            if (!isClientDocumentEntryPath(pathname)) {
+              next();
+              return;
+            }
+            if (isModernDefault) {
+              if (pathname === '/' || pathname === '/index.html') {
+                res.statusCode = 302;
+                const target = pathname === '/index.html' ? `${v2BasePath}index.html` : v2BasePath;
+                res.setHeader('Location', `${target}${query ? `?${query}` : ''}`);
+                res.end();
+                return;
+              }
+              next();
+              return;
+            }
+            if (!pathname.startsWith(v2BasePath)) {
+              const target = pathname === '/' ? v2BasePath : `${v2BasePath.replace(/\/$/, '')}${pathname}`;
+              res.statusCode = 302;
+              res.setHeader('Location', `${target}${query ? `?${query}` : ''}`);
+              res.end();
+              return;
+            }
+            next();
+          });
+        },
+      ],
       client: {
         overlay: false,
         protocol: 'ws',
