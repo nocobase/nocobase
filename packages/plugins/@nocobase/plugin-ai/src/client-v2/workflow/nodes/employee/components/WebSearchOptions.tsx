@@ -64,7 +64,7 @@ export function WebSearchOptions() {
   return (
     <Form.Item
       name={['config', 'webSearch']}
-      label={t('Web search')}
+      label={`${t('Web search')}:`}
       tooltip={t('Enable the LLM to use web search tools during task execution')}
       initialValue={false}
     >

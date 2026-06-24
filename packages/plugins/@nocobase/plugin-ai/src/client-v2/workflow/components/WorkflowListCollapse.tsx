@@ -9,7 +9,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { DeleteOutlined, DownOutlined, PlusOutlined, UpOutlined } from '@ant-design/icons';
-import { Button, Collapse, Empty, Flex, Space } from 'antd';
+import { Button, Collapse, Empty, Flex, Space, theme } from 'antd';
 import type { CollapseProps } from 'antd';
 
 export interface WorkflowListCollapseProps<T> {
@@ -81,6 +81,7 @@ export const WorkflowListCollapse = <T,>({
   renderHeader,
   renderItem,
 }: WorkflowListCollapseProps<T>) => {
+  const { token } = theme.useToken();
   const items = toArray(value);
   const [activeKeys, setActiveKeys] = useState<string[]>(() =>
     rangeKeys(Math.min(items.length, defaultOpenPanelCount)),
@@ -161,7 +162,14 @@ export const WorkflowListCollapse = <T,>({
           onChange={(keys) => setActiveKeys(Array.isArray(keys) ? keys.map(String) : [String(keys)])}
         />
       ) : (
-        <Empty />
+        <Empty
+          style={{
+            border: `${token.lineWidth}px dashed ${token.colorBorder}`,
+            borderRadius: token.borderRadiusLG,
+            margin: 0,
+            padding: token.padding,
+          }}
+        />
       )}
       <Button
         block

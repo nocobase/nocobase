@@ -95,7 +95,7 @@ export function ModelOptions() {
   return (
     <Form.Item
       name={['config', 'model']}
-      label={t('Model')}
+      label={`${t('Model')}:`}
       tooltip={t('Leave empty to use AI employee or global default model.')}
     >
       <ModelSelect />

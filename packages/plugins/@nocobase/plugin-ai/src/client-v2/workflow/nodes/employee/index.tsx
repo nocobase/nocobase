@@ -30,10 +30,6 @@ export default class AIEmployeeInstruction extends Instruction {
   createDefaultConfig(): AIEmployeeInstructionConfig {
     return {
       username: DEFAULT_AI_EMPLOYEE_CONFIG.username,
-      skillSettings: {
-        skills: [],
-        tools: [],
-      },
       webSearch: DEFAULT_AI_EMPLOYEE_CONFIG.webSearch,
       requiresApproval: DEFAULT_AI_EMPLOYEE_CONFIG.requiresApproval,
     };

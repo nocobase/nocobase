@@ -70,6 +70,16 @@ describe('plugin-ai workflow v2 registration', () => {
     });
   });
 
+  it('keeps AI employee default config aligned with v1', () => {
+    const instruction = new AIEmployeeInstruction();
+
+    expect(instruction.createDefaultConfig()).toEqual({
+      username: 'atlas',
+      webSearch: false,
+      requiresApproval: 'no_required',
+    });
+  });
+
   it('parses AI employee structured output variables without throwing on invalid JSON', () => {
     const instruction = new AIEmployeeInstruction();
 

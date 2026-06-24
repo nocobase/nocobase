@@ -9,7 +9,9 @@
 
 import React, { useEffect, useMemo } from 'react';
 import { Form, Radio, Space, Tooltip, Typography, theme } from 'antd';
+import { QuestionCircleOutlined } from '@ant-design/icons';
 import type { RadioGroupProps } from 'antd';
+import { css } from '@emotion/css';
 import { observer } from '@nocobase/flow-engine';
 import { RemoteSelect } from '../../../../components/RemoteSelect';
 import type { AIEmployee } from '../../../../ai-employees/types';
@@ -143,7 +145,7 @@ export const CapabilitySelect: React.FC<{
   };
 
   return (
-    <Space direction="vertical" size={token.marginXXS}>
+    <Space direction="vertical" size={token.marginXXS} style={{ width: '100%' }}>
       <Radio.Group value={radioValue} onChange={handleRadioChange} options={radioOptions} />
       {radioValue === RadioOptions.custom.value ? (
         <RemoteSelect<string[]>
@@ -179,6 +181,62 @@ export const CapabilitySelect: React.FC<{
   );
 });
 
+function CapabilityFormRow({
+  name,
+  label,
+  tooltip,
+  children,
+}: {
+  name: string[];
+  label: React.ReactNode;
+  tooltip: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  const { token } = theme.useToken();
+  const rowClassName = css`
+    display: flex;
+    align-items: flex-start;
+    column-gap: ${token.marginXS}px;
+    margin-bottom: ${token.margin}px;
+
+    .nb-ai-capability-label {
+      display: inline-flex;
+      flex: 0 0 auto;
+      align-items: center;
+      column-gap: ${token.marginXXS}px;
+      min-height: ${token.controlHeight}px;
+      color: ${token.colorText};
+      font-size: ${token.fontSize}px;
+      font-weight: ${token.fontWeightStrong};
+      line-height: ${token.lineHeight};
+      white-space: nowrap;
+    }
+
+    .nb-ai-capability-control {
+      flex: 1 1 auto;
+      min-width: 0;
+      padding-block-start: ${token.paddingXXS}px;
+    }
+  `;
+
+  return (
+    <div className={rowClassName}>
+      <span className="nb-ai-capability-label">
+        {label}
+        <Tooltip title={tooltip}>
+          <QuestionCircleOutlined />
+        </Tooltip>
+        :
+      </span>
+      <div className="nb-ai-capability-control">
+        <Form.Item name={name} noStyle>
+          {children}
+        </Form.Item>
+      </div>
+    </div>
+  );
+}
+
 export function SkillSettings() {
   const t = useT();
 
@@ -190,20 +248,20 @@ export function SkillSettings() {
       <Form.Item name={['config', 'skillSettings', 'toolsVersion']} initialValue={2} hidden>
         <FormValueRegistry />
       </Form.Item>
-      <Form.Item
+      <CapabilityFormRow
         name={['config', 'skillSettings', 'skills']}
         label={t('Skills')}
         tooltip={t('Configure the skills available to this task')}
       >
         <CapabilitySelect type="skills" />
-      </Form.Item>
-      <Form.Item
+      </CapabilityFormRow>
+      <CapabilityFormRow
         name={['config', 'skillSettings', 'tools']}
         label={t('Tools')}
         tooltip={t('Configure the tools available to this task')}
       >
         <CapabilitySelect type="tools" />
-      </Form.Item>
+      </CapabilityFormRow>
     </>
   );
 }

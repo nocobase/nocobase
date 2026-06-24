@@ -39,10 +39,6 @@ export const DEFAULT_AI_EMPLOYEE_USERNAME = 'atlas';
 
 export const DEFAULT_AI_EMPLOYEE_CONFIG = {
   username: DEFAULT_AI_EMPLOYEE_USERNAME,
-  skillSettings: {
-    skills: [],
-    tools: [],
-  },
   webSearch: false,
   requiresApproval: 'no_required',
 } as const;

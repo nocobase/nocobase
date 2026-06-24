@@ -15,6 +15,7 @@ import AIEmployeeInstruction from '../workflow/nodes/employee';
 import { AIEmployeeFieldset } from '../workflow/nodes/employee/components/AIEmployeeFieldset';
 import { Assignees } from '../workflow/nodes/employee/components/Assignees';
 import { FeedbackSettings } from '../workflow/nodes/employee/components/FeedbackSettings';
+import { SkillSettings } from '../workflow/nodes/employee/components/SkillSettings';
 import { StructuredOutput } from '../workflow/nodes/employee/components/StructuredOutput';
 
 vi.mock('../locale', () => ({
@@ -25,6 +26,11 @@ vi.mock('../locale', () => ({
 }));
 
 vi.mock('@nocobase/flow-engine', () => ({
+  FlowContextSelector: ({ onChange }: { onChange?: (value: string) => void }) => (
+    <button type="button" aria-label="workflow-variable-selector" onClick={() => onChange?.('{{$context.user.id}}')}>
+      x
+    </button>
+  ),
   observer: <T extends React.ComponentType<unknown>>(component: T) => component,
   useFlowEngine: () => ({
     context: {
@@ -80,11 +86,13 @@ vi.mock('@nocobase/plugin-workflow/client-v2', () => {
       onChange={(event) => onChange?.(JSON.parse(event.target.value) as Record<string, unknown>)}
     />
   );
+  const useWorkflowVariableOptions = () => [];
   class Instruction {}
 
   return {
     FilterDynamicComponent,
     Instruction,
+    useWorkflowVariableOptions,
     WorkflowVariableInput,
     WorkflowVariableTextArea,
     WorkflowVariableJsonTextArea,
@@ -129,6 +137,10 @@ type FormValues = {
       schema?: unknown;
     };
     assignees?: unknown[];
+    skillSettings?: {
+      skills?: string[];
+      tools?: string[];
+    };
   };
 };
 
@@ -267,5 +279,44 @@ describe('AI employee workflow fieldset', () => {
     );
 
     expect(screen.queryByText('Assignees')).toBeNull();
+  });
+
+  it('uses preset skills and tools when task skill settings are not specified', () => {
+    render(
+      <FormHarness initialValues={{ config: {} }} onFinish={vi.fn()}>
+        <SkillSettings />
+      </FormHarness>,
+    );
+
+    const presetRadios = screen.getAllByRole('radio', { name: /Preset/ });
+    expect(presetRadios).toHaveLength(2);
+    expect(presetRadios[0].closest('.ant-radio-wrapper')).toHaveClass('ant-radio-wrapper-checked');
+    expect(presetRadios[1].closest('.ant-radio-wrapper')).toHaveClass('ant-radio-wrapper-checked');
+    expect(screen.queryByText('Leave empty to disable skills.')).not.toBeInTheDocument();
+    expect(screen.queryByText('Leave empty to disable tools.')).not.toBeInTheDocument();
+  });
+
+  it('keeps empty skill and tool arrays as custom disabled capability settings', () => {
+    render(
+      <FormHarness
+        initialValues={{
+          config: {
+            skillSettings: {
+              skills: [],
+              tools: [],
+            },
+          },
+        }}
+        onFinish={vi.fn()}
+      >
+        <SkillSettings />
+      </FormHarness>,
+    );
+
+    const customRadios = screen.getAllByRole('radio', { name: /Custom/ });
+    expect(customRadios).toHaveLength(2);
+    expect(customRadios[0].closest('.ant-radio-wrapper')).toHaveClass('ant-radio-wrapper-checked');
+    expect(customRadios[1].closest('.ant-radio-wrapper')).toHaveClass('ant-radio-wrapper-checked');
+    expect(screen.getAllByLabelText('remote-select')).toHaveLength(2);
   });
 });
