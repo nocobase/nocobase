@@ -8,8 +8,8 @@
  */
 
 import React from 'react';
-import { DatabaseOutlined } from '@ant-design/icons';
-import { Space } from 'antd';
+import { CloseOutlined, DatabaseOutlined } from '@ant-design/icons';
+import { Button, Space } from 'antd';
 import { transformFilter } from '@nocobase/utils/client';
 import type { WorkContextOptions } from '../types';
 import { useT } from '../../locale';
@@ -28,6 +28,19 @@ type DatasourceResponse = {
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   !!value && typeof value === 'object' && !Array.isArray(value);
 
+const DatasourceDialogTitle: React.FC<{
+  onClose: () => void;
+}> = ({ onClose }) => {
+  const t = useT();
+
+  return (
+    <Space>
+      <Button type="text" icon={<CloseOutlined />} onClick={onClose} />
+      <span>{t('Select datasource')}</span>
+    </Space>
+  );
+};
+
 export const DatasourceContext: WorkContextOptions = {
   name: 'datasource',
   menu: {
@@ -37,18 +50,16 @@ export const DatasourceContext: WorkContextOptions = {
       return <div>{t('Datasource')}</div>;
     },
     onClick: ({ ctx, contextItems, onAdd, onRemove }) => {
-      ctx.viewer.dialog({
+      const currentDialog: { close?: () => Promise<unknown> } = ctx.viewer.dialog({
         width: '80%',
-        content: (view) => (
-          <DatasourceSelector
-            contextItems={contextItems}
-            onAdd={onAdd}
-            onRemove={onRemove}
+        title: (
+          <DatasourceDialogTitle
             onClose={() => {
-              Promise.resolve(view.close()).catch(console.error);
+              Promise.resolve(currentDialog.close?.()).catch(console.error);
             }}
           />
         ),
+        content: (view) => <DatasourceSelector contextItems={contextItems} onAdd={onAdd} onRemove={onRemove} />,
         onOpen: () => {
           dialogController.hide();
         },

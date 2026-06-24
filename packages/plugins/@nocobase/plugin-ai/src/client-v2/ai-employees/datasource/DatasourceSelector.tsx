@@ -8,23 +8,52 @@
  */
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { CloseOutlined } from '@ant-design/icons';
-import { Button, Checkbox, Empty, Flex, Layout, List, Spin, Table, Tabs, Typography, theme } from 'antd';
+import { ReloadOutlined } from '@ant-design/icons';
+import {
+  Button,
+  Card,
+  Checkbox,
+  Divider,
+  Empty,
+  Flex,
+  Layout,
+  List,
+  Space,
+  Spin,
+  Table,
+  Tabs,
+  Tooltip,
+  Typography,
+  theme,
+} from 'antd';
+import type { ColumnsType } from 'antd/es/table';
 import type { APIClient } from '@nocobase/client-v2';
 import { useApp } from '@nocobase/client-v2';
+import type { Collection, CollectionField } from '@nocobase/flow-engine';
+import { useFlowContext } from '@nocobase/flow-engine';
 import { dayjs } from '@nocobase/utils/client';
 import { useT } from '../../locale';
 import type { ContextItem } from '../types';
 import type { AIContextDatasourceRecord, PreviewResult } from '../../pages/DatasourceSettingsPage';
 import { previewContextDatasource, toDatasourceFormValues } from '../../pages/DatasourceSettingsPage';
 
+const { Sider, Content } = Layout;
+const { Text } = Typography;
+
 type APIClientLike = Pick<APIClient, 'resource'>;
+type DataSourceManagerLike = {
+  getCollection?: (dataSourceKey: string, collectionName: string) => Collection | undefined;
+};
+type DatasourceFlowContext = {
+  dataSourceManager?: DataSourceManagerLike;
+};
 type APIResponse = {
   data?: {
     data?: unknown;
     count?: unknown;
   };
 };
+type DatasourceRow = Record<string, unknown> & { key: number };
 
 export type DatasourceSelectorProps = {
   contextItems?: ContextItem[];
@@ -77,11 +106,60 @@ async function listEnabledContextDatasources(
   };
 }
 
+const getCollectionDisplayName = (
+  collection: Collection | undefined,
+  record: AIContextDatasourceRecord | undefined,
+) => {
+  if (!collection) {
+    return record ? `${record.datasource}/${record.collectionName}` : '';
+  }
+  return `${collection.dataSource.displayName} / ${collection.title}`;
+};
+
+const getCollectionFields = (
+  collection: Collection | undefined,
+  fieldNames: string[] | undefined,
+): CollectionField[] => {
+  const selectedFieldNames = fieldNames || [];
+  const fields = collection?.getFields() || [];
+  const collectionFields = fields.filter((field) => selectedFieldNames.includes(field.name));
+  if (collectionFields.length) {
+    return collectionFields;
+  }
+  return selectedFieldNames.map((name) => ({ name, title: name }) as CollectionField);
+};
+
+const renderPreviewValue = (value: unknown, field?: CollectionField, t?: (key: string) => string) => {
+  if (value == null) {
+    return '';
+  }
+  if (['hasOne', 'hasMany', 'belongsTo', 'belongsToMany', 'belongsToArray'].includes(field?.type || '')) {
+    return JSON.stringify(value);
+  }
+  if (field?.type === 'date') {
+    return dayjs(value as string).format('YYYY-MM-DD HH:mm:ss');
+  }
+  if (typeof value === 'string') {
+    return t ? t(value) : value;
+  }
+  return JSON.stringify(value);
+};
+
 const DatasourcePreview: React.FC<{
   loading: boolean;
   preview: PreviewResult | null;
-}> = ({ loading, preview }) => {
+  record?: AIContextDatasourceRecord;
+  manager?: DataSourceManagerLike;
+  onRefresh?: () => void;
+}> = ({ loading, preview, record, manager, onRefresh }) => {
   const t = useT();
+  const { token } = theme.useToken();
+  const collection = record ? manager?.getCollection?.(record.datasource, record.collectionName) : undefined;
+  const collectionFields = useMemo(
+    () => getCollectionFields(collection, preview?.options?.fields),
+    [collection, preview?.options?.fields],
+  );
+  const title = `${t('Collection')}: ${getCollectionDisplayName(collection, record)}`;
   const rows = useMemo(
     () =>
       (preview?.records || []).map((row, index) => ({
@@ -93,54 +171,229 @@ const DatasourcePreview: React.FC<{
       })),
     [preview],
   );
-  const columns = useMemo(
+  const columns = useMemo<ColumnsType<DatasourceRow>>(
     () =>
-      (preview?.options?.fields || []).map((field) => ({
-        key: field,
-        dataIndex: field,
-        title: field,
-        render: (value: unknown) => (typeof value === 'string' ? value : JSON.stringify(value)),
+      collectionFields.map((field) => ({
+        key: field.name,
+        dataIndex: field.name,
+        title: (
+          <Text style={{ minWidth: 100, maxWidth: 300 }} ellipsis={{ tooltip: field.title }}>
+            {field.title}
+          </Text>
+        ),
+        width: 'auto',
+        render: (value: unknown) => {
+          const text = renderPreviewValue(value, field, t);
+          return (
+            <Text style={{ minWidth: 100, maxWidth: 300 }} ellipsis={{ tooltip: text }}>
+              {text}
+            </Text>
+          );
+        },
       })),
-    [preview],
+    [collectionFields, t],
   );
+  const jsonText = JSON.stringify(rows, null, 2);
 
   return (
     <Spin spinning={loading}>
       {preview ? (
-        <Tabs
-          type="card"
-          items={[
-            {
-              key: 'table',
-              label: t('Table'),
-              children: <Table columns={columns} dataSource={rows} pagination={{ pageSize: 25 }} />,
-            },
-            {
-              key: 'json',
-              label: 'JSON',
-              children: (
-                <Typography.Paragraph copyable={{ text: JSON.stringify(rows, null, 2) }}>
-                  <pre>{JSON.stringify(rows, null, 2)}</pre>
-                </Typography.Paragraph>
-              ),
-            },
-          ]}
-        />
+        <div style={{ padding: 16 }}>
+          <Tabs
+            type="card"
+            tabBarStyle={{ marginBottom: 0 }}
+            defaultActiveKey="table"
+            items={[
+              {
+                key: 'table',
+                label: t('Table'),
+                children: (
+                  <Card
+                    title={title}
+                    extra={
+                      <Tooltip title={t('Refresh')}>
+                        <Button icon={<ReloadOutlined />} type="link" onClick={onRefresh} />
+                      </Tooltip>
+                    }
+                    style={{
+                      borderTop: 'none',
+                      borderTopLeftRadius: 0,
+                    }}
+                  >
+                    <Space direction="vertical" size="large" style={{ width: '100%' }}>
+                      <Table
+                        columns={columns}
+                        dataSource={rows}
+                        loading={loading}
+                        scroll={{ x: 'max-content', y: '56vh' }}
+                        pagination={{
+                          showSizeChanger: true,
+                          showTotal: (total) => t('Total {{total}} items', { total }),
+                          pageSize: 25,
+                        }}
+                      />
+                    </Space>
+                  </Card>
+                ),
+              },
+              {
+                key: 'json',
+                label: 'JSON',
+                children: (
+                  <Card
+                    title={title}
+                    extra={<Text copyable={{ text: jsonText }} />}
+                    style={{
+                      borderTop: 'none',
+                      borderTopLeftRadius: 0,
+                    }}
+                  >
+                    <Typography.Paragraph>
+                      {!loading ? (
+                        <pre
+                          style={{
+                            height: '62vh',
+                            overflowY: 'auto',
+                            marginTop: token.marginLG,
+                          }}
+                        >
+                          {jsonText}
+                        </pre>
+                      ) : null}
+                    </Typography.Paragraph>
+                  </Card>
+                ),
+              },
+            ]}
+          />
+        </div>
       ) : (
-        <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />
+        <Flex style={{ height: '80vh' }} justify="center" align="center" vertical>
+          <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />
+        </Flex>
       )}
     </Spin>
   );
 };
 
-export const DatasourceSelector: React.FC<DatasourceSelectorProps> = ({ contextItems, onAdd, onRemove, onClose }) => {
-  const app = useApp();
+const DatasourceList: React.FC<{
+  records: AIContextDatasourceRecord[];
+  loading: boolean;
+  total?: number;
+  page: number;
+  pageSize: number;
+  selectedId?: string | number;
+  checkedIds: Set<string>;
+  onSelect: (record: AIContextDatasourceRecord) => void;
+  onAdd: (item: Omit<ContextItem, 'type'>) => void;
+  onRemove: (uid: string) => void;
+  onPageChange: (page: number, pageSize: number) => void;
+}> = ({ records, loading, total, page, pageSize, selectedId, checkedIds, onSelect, onAdd, onRemove, onPageChange }) => {
   const t = useT();
-  const { token } = theme.useToken();
+
+  return (
+    <List<AIContextDatasourceRecord>
+      style={{ height: '80vh', overflowY: 'auto', padding: '10px' }}
+      dataSource={records}
+      loading={loading}
+      pagination={{
+        align: 'center',
+        showSizeChanger: false,
+        total,
+        pageSize,
+        current: page,
+        onChange: onPageChange,
+      }}
+      renderItem={(record) => (
+        <List.Item>
+          <div
+            style={
+              record.id === selectedId
+                ? {
+                    border: '2px dashed #1677ff',
+                    borderRadius: 8,
+                  }
+                : {}
+            }
+          >
+            <Card
+              key={record.id}
+              hoverable
+              variant="borderless"
+              style={{ minWidth: 280, display: 'flex', flexDirection: 'column' }}
+              onClick={() => onSelect(record)}
+            >
+              <Card.Meta
+                title={
+                  <Flex justify="space-between" align="center">
+                    <span>{record.title}</span>
+                    <Checkbox
+                      checked={checkedIds.has(String(record.id))}
+                      onClick={(event) => event.stopPropagation()}
+                      onChange={(event) => {
+                        if (event.target.checked) {
+                          onAdd({ uid: String(record.id), title: record.title });
+                        } else {
+                          onRemove(String(record.id));
+                        }
+                      }}
+                    />
+                  </Flex>
+                }
+                description={
+                  <Space style={{ fontSize: 13 }}>
+                    <Text type="secondary">{t('Collection')}</Text>
+                    <Text>{`${record.datasource}/${record.collectionName}`}</Text>
+                    <Divider type="vertical" />
+                    <Text type="secondary">{t('Limit')}</Text>
+                    <Text>{record.limit}</Text>
+                  </Space>
+                }
+              />
+              <div
+                style={{
+                  width: 250,
+                  height: 80,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  flex: 1,
+                  paddingTop: 10,
+                }}
+              >
+                <div style={{ width: '100%', height: 70 }}>
+                  <Typography.Paragraph type="secondary" ellipsis={{ rows: 2 }}>
+                    {record.description}
+                  </Typography.Paragraph>
+                </div>
+                <div style={{ marginTop: 'auto' }}>
+                  <Flex justify="space-between" align="center">
+                    <Space style={{ fontSize: 10 }}>
+                      <Text type="secondary">
+                        {record.createdAt
+                          ? `${t('Created at')} ${dayjs(record.createdAt).format('YYYY-MM-DD HH:mm:ss')}`
+                          : null}
+                      </Text>
+                    </Space>
+                  </Flex>
+                </div>
+              </div>
+            </Card>
+          </div>
+        </List.Item>
+      )}
+    />
+  );
+};
+
+export const DatasourceSelector: React.FC<DatasourceSelectorProps> = ({ contextItems, onAdd, onRemove }) => {
+  const app = useApp();
+  const flowContext = useFlowContext<DatasourceFlowContext>();
+  const manager = flowContext.dataSourceManager || (app.dataSourceManager as DataSourceManagerLike | undefined);
   const [records, setRecords] = useState<AIContextDatasourceRecord[]>([]);
   const [loading, setLoading] = useState(false);
   const [previewing, setPreviewing] = useState(false);
   const [preview, setPreview] = useState<PreviewResult | null>(null);
+  const [selectedRecord, setSelectedRecord] = useState<AIContextDatasourceRecord>();
   const [selectedId, setSelectedId] = useState<string | number>();
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -166,6 +419,7 @@ export const DatasourceSelector: React.FC<DatasourceSelectorProps> = ({ contextI
   const selectRecord = useCallback(
     async (record: AIContextDatasourceRecord) => {
       setSelectedId(record.id);
+      setSelectedRecord(record);
       setPreviewing(true);
       try {
         setPreview(await previewContextDatasource(app.apiClient, toDatasourceFormValues(record)));
@@ -175,6 +429,16 @@ export const DatasourceSelector: React.FC<DatasourceSelectorProps> = ({ contextI
     },
     [app.apiClient],
   );
+
+  const refreshPreview = useCallback(() => {
+    if (!selectedRecord) {
+      return;
+    }
+    selectRecord(selectedRecord).catch((error: unknown) => {
+      console.error(error);
+      setPreviewing(false);
+    });
+  }, [selectRecord, selectedRecord]);
 
   useEffect(() => {
     let disposed = false;
@@ -188,6 +452,7 @@ export const DatasourceSelector: React.FC<DatasourceSelectorProps> = ({ contextI
           await selectRecord(nextRecords[0]);
         } else {
           setSelectedId(undefined);
+          setSelectedRecord(undefined);
           setPreview(null);
         }
       } catch (error) {
@@ -203,138 +468,59 @@ export const DatasourceSelector: React.FC<DatasourceSelectorProps> = ({ contextI
   }, [loadRecords, selectRecord]);
 
   return (
-    <Flex vertical>
-      <Flex
-        align="center"
-        gap="small"
+    <div>
+      <div
         style={{
-          paddingInline: token.paddingLG,
-          paddingBlock: token.padding,
-          background: token.colorBgContainer,
-          borderBlockEndWidth: token.lineWidth,
-          borderBlockEndStyle: token.lineType as React.CSSProperties['borderBlockEndStyle'],
-          borderBlockEndColor: token.colorSplit,
+          backgroundColor: '#f5f5f5',
+          borderRadius: 8,
+          overflow: 'hidden',
         }}
       >
-        {onClose ? <Button type="text" icon={<CloseOutlined />} onClick={onClose} /> : null}
-        <Typography.Text strong>{t('Select datasource')}</Typography.Text>
-      </Flex>
-      <Layout
-        style={{
-          minHeight: token.screenSM,
-          background: token.colorBgContainer,
-          borderEndStartRadius: token.borderRadiusLG,
-          borderEndEndRadius: token.borderRadiusLG,
-        }}
-      >
-        <Layout.Sider
-          width={token.screenXS}
-          theme="light"
-          style={{
-            background: token.colorBgContainer,
-            borderInlineEndWidth: token.lineWidth,
-            borderInlineEndStyle: token.lineType as React.CSSProperties['borderInlineEndStyle'],
-            borderInlineEndColor: token.colorSplit,
-          }}
-        >
-          <List<AIContextDatasourceRecord>
-            loading={loading}
-            dataSource={records}
-            pagination={{
-              align: 'center',
-              showSizeChanger: false,
-              total,
-              pageSize,
-              current: page,
-              onChange: (nextPage, nextPageSize) => {
-                setPage(nextPage);
-                setPageSize(nextPageSize);
-              },
-            }}
-            renderItem={(record) => {
-              const selected = selectedId === record.id;
-              return (
-                <List.Item
-                  style={{
-                    paddingInline: token.paddingSM,
-                    paddingBlock: token.paddingXS,
+        {records.length ? (
+          <Layout style={{ height: '80vh', backgroundColor: '#f5f5f5', borderRadius: 8 }}>
+            <Sider width={300} style={{ paddingLeft: 20, backgroundColor: 'transparent' }}>
+              <Flex align="center" vertical>
+                <DatasourceList
+                  records={records}
+                  loading={loading}
+                  total={total}
+                  page={page}
+                  pageSize={pageSize}
+                  selectedId={selectedId}
+                  checkedIds={checkedIds}
+                  onSelect={(record) => {
+                    selectRecord(record).catch((error: unknown) => {
+                      console.error(error);
+                      setPreviewing(false);
+                    });
                   }}
-                >
-                  <div
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => {
-                      selectRecord(record).catch((error: unknown) => {
-                        console.error(error);
-                        setPreviewing(false);
-                      });
-                    }}
-                    onKeyDown={(event) => {
-                      if (event.key === 'Enter' || event.key === ' ') {
-                        event.preventDefault();
-                        selectRecord(record).catch((error: unknown) => {
-                          console.error(error);
-                          setPreviewing(false);
-                        });
-                      }
-                    }}
-                    style={{
-                      width: '100%',
-                      padding: token.paddingSM,
-                      borderRadius: token.borderRadiusLG,
-                      borderWidth: token.lineWidth,
-                      borderStyle: token.lineType as React.CSSProperties['borderStyle'],
-                      borderColor: selected ? token.colorPrimary : token.colorBorderSecondary,
-                      cursor: 'pointer',
-                      background: selected ? token.colorPrimaryBg : token.colorBgContainer,
-                    }}
-                  >
-                    <Flex justify="space-between" gap="small" align="flex-start">
-                      <Typography.Text strong>{record.title}</Typography.Text>
-                      <Checkbox
-                        checked={checkedIds.has(String(record.id))}
-                        onClick={(event) => event.stopPropagation()}
-                        onChange={(event) => {
-                          if (event.target.checked) {
-                            onAdd({ uid: String(record.id), title: record.title });
-                          } else {
-                            onRemove(String(record.id));
-                          }
-                        }}
-                      />
-                    </Flex>
-                    <Typography.Paragraph type="secondary" ellipsis={{ rows: 2 }}>
-                      {record.description}
-                    </Typography.Paragraph>
-                    <Flex vertical gap={token.marginXXS}>
-                      <Typography.Text type="secondary">
-                        {t('Collection')}: {record.datasource}/{record.collectionName}
-                      </Typography.Text>
-                      <Typography.Text type="secondary">
-                        {t('Limit')}: {record.limit}
-                      </Typography.Text>
-                      {record.createdAt ? (
-                        <Typography.Text type="secondary">
-                          {t('Created at')}: {dayjs(record.createdAt).format('YYYY-MM-DD HH:mm:ss')}
-                        </Typography.Text>
-                      ) : null}
-                    </Flex>
-                  </div>
-                </List.Item>
-              );
-            }}
-          />
-        </Layout.Sider>
-        <Layout.Content
-          style={{
-            padding: token.paddingLG,
-            background: token.colorBgContainer,
-          }}
-        >
-          <DatasourcePreview loading={previewing} preview={preview} />
-        </Layout.Content>
-      </Layout>
-    </Flex>
+                  onAdd={onAdd}
+                  onRemove={onRemove}
+                  onPageChange={(nextPage, nextPageSize) => {
+                    setPage(nextPage);
+                    setPageSize(nextPageSize);
+                  }}
+                />
+              </Flex>
+            </Sider>
+            <Divider type="vertical" variant="dashed" style={{ height: '95%', margin: 'auto 0px auto 10px' }} />
+            <Content style={{ backgroundColor: 'transparent' }}>
+              <DatasourcePreview
+                loading={previewing}
+                preview={preview}
+                record={selectedRecord}
+                manager={manager}
+                onRefresh={refreshPreview}
+              />
+            </Content>
+          </Layout>
+        ) : (
+          <Flex style={{ height: '80vh' }} justify="center" align="center" vertical>
+            <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />
+          </Flex>
+        )}
+      </div>
+    </div>
   );
 };
 
