@@ -54,6 +54,9 @@ function isValidParameter(value: unknown): value is AIEmployeeTriggerParameter {
   if (typeof value.name !== 'string' || !TRIGGER_PARAMETER_NAME_PATTERN.test(value.name)) {
     return false;
   }
+  if (type === 'enum') {
+    return isStringArray(value.enumOptions) && value.enumOptions.length > 0;
+  }
   if (value.enumOptions !== undefined && !isStringArray(value.enumOptions)) {
     return false;
   }
