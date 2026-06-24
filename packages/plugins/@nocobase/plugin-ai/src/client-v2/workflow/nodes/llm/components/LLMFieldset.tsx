@@ -15,6 +15,7 @@ import { ModelSelect, OptionsFields } from '../../../../llm-providers/forms';
 import { getBuiltinLLMProviderModelOptionFields } from '../../../../llm-providers';
 import { useT } from '../../../../locale';
 import { Messages } from './Messages';
+import { StructuredOutput } from './StructuredOutput';
 
 type LLMServiceRecord = {
   name: string;
@@ -164,7 +165,14 @@ export function LLMFieldset() {
           {
             key: 'messages',
             label: t('Messages'),
+            forceRender: true,
             children: <Messages />,
+          },
+          {
+            key: 'structured-output',
+            label: t('Structured output'),
+            forceRender: true,
+            children: <StructuredOutput />,
           },
         ]}
       />

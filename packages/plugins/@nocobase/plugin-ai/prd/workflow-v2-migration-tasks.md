@@ -254,7 +254,7 @@
 
 #### W2.3 LLM structured output 配置迁移
 
-- 状态：未开始
+- 状态：已提交
 - 范围：
   - `src/client-v2/workflow/nodes/llm/components/StructuredOutput.tsx`
 - 完成标准：
@@ -264,7 +264,14 @@
 - UI 对照：
   - 对照 JSON Schema、Name、Description、Strict 字段。
 - 验收记录：
-  - 待填写。
+  - 已新增原生 antd `StructuredOutput` 组件，`schema`、`name`、`description`、`strict` 写入 `config.structuredOutput.*`，保持 v1/server 值结构。
+  - `structuredOutput.schema` 已按专项规则复用 workflow v2 `WorkflowVariableJsonTextArea`，开启 `json5` 与 `autoSize.minRows = 10`，未新增 JSON 变量输入包装层。
+  - `Name` 使用 antd `Input`，`Description` 使用 antd `Input.TextArea`，`Strict` 使用 antd `Checkbox`，并保留 `Syntax references: JSON Schema` 帮助链接。
+  - LLM `Tabs` 已对 `Messages` 和 `Structured output` 设置 `forceRender`，避免同一个 antd Form 下未访问 tab 字段提交丢失。
+  - 已运行 `yarn eslint --fix` 覆盖触达文件。
+  - 已运行 `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/__tests__/workflow-registration.test.ts --run --reporter=verbose`，5 个用例通过。
+  - 已运行 `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/__tests__/workflow-list-collapse.test.ts --run --reporter=verbose`，2 个用例通过。
+  - 已用 Kimi WebBridge 在 v2 `http://localhost:13004/v/admin/workflow/workflows/369436327477250` 打开 LLM 配置抽屉并切到 `Structured output`，确认 JSON Schema、变量按钮、帮助链接、Name、Description、Strict 与 v1 基线对齐，已有 schema 正确回显。
 
 #### W2.4 LLM 节点测试与提交
 
