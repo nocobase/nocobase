@@ -16,6 +16,7 @@ import type {
   VscDraftRecord,
   VscFileChange,
   VscNormalizedTreeEntry,
+  VscRefRecord,
   VscRefName,
   VscRepositoryIdentity,
   VscRepositoryRecord,
@@ -35,6 +36,15 @@ import type {
   VscDraftWritePermissionChecker,
 } from './DraftService';
 import { DraftService } from './DraftService';
+import type {
+  ListRefsInput,
+  RestoreCommitInput,
+  RestoreFileInput,
+  RestoreResult,
+  UpdateRefInput,
+  UpdateRefResult,
+} from './RefService';
+import { RefService } from './RefService';
 import { RepositoryService } from './RepositoryService';
 import { TreeService } from './TreeService';
 
@@ -125,6 +135,8 @@ export class VscFileService {
 
   private readonly diffService: DiffService;
 
+  private readonly refService: RefService;
+
   constructor(private readonly db: Database) {
     this.blobService = new BlobService(db);
     this.treeService = new TreeService(db, this.blobService);
@@ -139,6 +151,7 @@ export class VscFileService {
       this.repositoryService,
       this.treeService,
     );
+    this.refService = new RefService(db, this.commitService, this.repositoryService, this.treeService);
   }
 
   async createRepository(input: CreateRepositoryInput, ctx: VscServiceContext = {}): Promise<CreateRepositoryResult> {
@@ -273,6 +286,22 @@ export class VscFileService {
 
   async diffFile(input: DiffFileInput, ctx: VscServiceContext = {}): Promise<DiffFileResult> {
     return this.diffService.diffFile(input, ctx.transaction);
+  }
+
+  async listRefs(input: ListRefsInput, ctx: VscServiceContext = {}): Promise<VscRefRecord[]> {
+    return this.refService.listRefs(input, ctx.transaction);
+  }
+
+  async updateRef(input: UpdateRefInput, ctx: VscServiceContext = {}): Promise<UpdateRefResult> {
+    return this.refService.updateRef(input, ctx);
+  }
+
+  async restoreFile(input: RestoreFileInput, ctx: VscServiceContext = {}): Promise<RestoreResult> {
+    return this.refService.restoreFile(input, ctx);
+  }
+
+  async restoreCommit(input: RestoreCommitInput, ctx: VscServiceContext = {}): Promise<RestoreResult> {
+    return this.refService.restoreCommit(input, ctx);
   }
 
   async push(input: PushInput, ctx: VscServiceContext = {}): Promise<PushResult> {
