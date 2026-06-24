@@ -13,6 +13,8 @@ export const maxRepoTextSize = 10 * 1024 * 1024;
 export const diffMaxFileSize = 1024 * 1024;
 export const maxCommitMessageLength = 4000;
 export const maxPathLength = 512;
+export const commitHistoryDefaultLimit = 50;
+export const commitHistoryMaxLimit = 200;
 export const normalizeLineEndings = true;
 export const allowCaseOnlyPathConflict = false;
 
@@ -23,6 +25,8 @@ export const defaultVscFileLimits = {
   diffMaxFileSize,
   maxCommitMessageLength,
   maxPathLength,
+  commitHistoryDefaultLimit,
+  commitHistoryMaxLimit,
   normalizeLineEndings,
   allowCaseOnlyPathConflict,
 } as const;

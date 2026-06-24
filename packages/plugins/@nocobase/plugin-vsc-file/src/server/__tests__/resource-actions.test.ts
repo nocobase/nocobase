@@ -143,6 +143,19 @@ describe('vsc-file resource actions and ACL', () => {
         repoId: repository.id,
       },
     });
+    const pagedCommitsResponse = await agent.resource('vscFile').listCommits({
+      values: {
+        repoId: repository.id,
+        limit: 1,
+      },
+    });
+    const olderCommitsResponse = await agent.resource('vscFile').listCommits({
+      values: {
+        repoId: repository.id,
+        beforeSeq: secondCommit.seq,
+        limit: 1,
+      },
+    });
     const commitDiffResponse = await agent.resource('vscFile').diff({
       values: {
         repoId: repository.id,
@@ -215,6 +228,8 @@ describe('vsc-file resource actions and ACL', () => {
       secondCommit.id,
       firstCommit.id,
     ]);
+    expect(pagedCommitsResponse.body.data.map((commit: { id: string }) => commit.id)).toEqual([secondCommit.id]);
+    expect(olderCommitsResponse.body.data.map((commit: { id: string }) => commit.id)).toEqual([firstCommit.id]);
     expect(commitDiffResponse.body.data.summary).toMatchObject({
       added: 1,
       modified: 1,

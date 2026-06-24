@@ -11,6 +11,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { commitHistoryDefaultLimit } from '../../../shared/constants';
 import { VscCommitHistory } from '../VscCommitHistory';
 import { VscDiffViewer } from '../VscDiffViewer';
 import { VscEditorTabs } from '../VscEditorTabs';
@@ -969,7 +970,132 @@ describe('vsc client-v2 components', () => {
     render(<VscCommitHistory repoId="repo-1" />);
 
     expect(await screen.findByText('Initial commit')).toBeTruthy();
-    expect(hookMocks.listCommits).toHaveBeenCalledWith({ repoId: 'repo-1' });
+    expect(hookMocks.listCommits).toHaveBeenCalledWith({
+      repoId: 'repo-1',
+      limit: commitHistoryDefaultLimit,
+      beforeSeq: undefined,
+    });
+  });
+
+  it('loads additional commit history pages with a seq cursor', async () => {
+    hookMocks.listCommits.mockResolvedValueOnce(
+      Array.from({ length: commitHistoryDefaultLimit }, (_, index) => ({
+        id: `commit-${100 - index}`,
+        repoId: 'repo-1',
+        hash: `hash-${100 - index}`,
+        seq: 100 - index,
+        parentCommitId: null,
+        treeHash: `tree-${100 - index}`,
+        message: `Commit ${100 - index}`,
+        authorId: null,
+        metadata: {},
+      })),
+    );
+    hookMocks.listCommits.mockResolvedValueOnce([
+      {
+        id: 'commit-50',
+        repoId: 'repo-1',
+        hash: 'hash-50',
+        seq: 50,
+        parentCommitId: null,
+        treeHash: 'tree-50',
+        message: 'Commit 50',
+        authorId: null,
+        metadata: {},
+      },
+    ]);
+
+    render(<VscCommitHistory repoId="repo-1" />);
+
+    expect(await screen.findByText('Commit 100')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Load more commits' }));
+
+    expect(await screen.findByText('Commit 50')).toBeTruthy();
+    expect(hookMocks.listCommits).toHaveBeenNthCalledWith(1, {
+      repoId: 'repo-1',
+      limit: commitHistoryDefaultLimit,
+      beforeSeq: undefined,
+    });
+    expect(hookMocks.listCommits).toHaveBeenNthCalledWith(2, {
+      repoId: 'repo-1',
+      limit: commitHistoryDefaultLimit,
+      beforeSeq: 51,
+    });
+  });
+
+  it('clears load-more progress when refresh invalidates an append request', async () => {
+    const appendCommits = createDeferred<
+      Array<{
+        id: string;
+        repoId: string;
+        hash: string;
+        seq: number;
+        parentCommitId: null;
+        treeHash: string;
+        message: string;
+        authorId: null;
+        metadata: Record<string, unknown>;
+      }>
+    >();
+    hookMocks.listCommits.mockResolvedValueOnce(
+      Array.from({ length: commitHistoryDefaultLimit }, (_, index) => ({
+        id: `commit-${100 - index}`,
+        repoId: 'repo-1',
+        hash: `hash-${100 - index}`,
+        seq: 100 - index,
+        parentCommitId: null,
+        treeHash: `tree-${100 - index}`,
+        message: `Commit ${100 - index}`,
+        authorId: null,
+        metadata: {},
+      })),
+    );
+    hookMocks.listCommits.mockReturnValueOnce(appendCommits.promise);
+    hookMocks.listCommits.mockResolvedValueOnce(
+      Array.from({ length: commitHistoryDefaultLimit }, (_, index) => ({
+        id: `commit-refreshed-${200 - index}`,
+        repoId: 'repo-1',
+        hash: `hash-refreshed-${200 - index}`,
+        seq: 200 - index,
+        parentCommitId: null,
+        treeHash: `tree-refreshed-${200 - index}`,
+        message: `Refreshed commit ${200 - index}`,
+        authorId: null,
+        metadata: {},
+      })),
+    );
+
+    render(<VscCommitHistory repoId="repo-1" />);
+
+    expect(await screen.findByText('Commit 100')).toBeTruthy();
+    fireEvent.click(await screen.findByRole('button', { name: 'Load more commits' }));
+
+    await waitFor(() => {
+      expect(hookMocks.listCommits).toHaveBeenCalledTimes(2);
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Refresh commits' }));
+
+    expect(await screen.findByText('Refreshed commit 200')).toBeTruthy();
+    expect(await screen.findByRole('button', { name: 'Load more commits' })).not.toHaveClass('ant-btn-loading');
+
+    appendCommits.resolve([
+      {
+        id: 'commit-stale-append',
+        repoId: 'repo-1',
+        hash: 'hash-stale-append',
+        seq: 50,
+        parentCommitId: null,
+        treeHash: 'tree-stale-append',
+        message: 'Stale append commit',
+        authorId: null,
+        metadata: {},
+      },
+    ]);
+
+    await waitFor(() => {
+      expect(screen.queryByText('Stale append commit')).toBeNull();
+    });
   });
 
   it('ignores stale commit history responses after the repository changes', async () => {

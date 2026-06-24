@@ -12,6 +12,7 @@ import type { Database } from '@nocobase/database';
 import type { HandlerType, ResourceOptions } from '@nocobase/resourcer';
 
 import { VscError, isVscError } from '../../shared/errors';
+import type { ListCommitsInput } from '../services/CommitService';
 import type { DiffCommitsInput, DiffDraftInput, DiffFileEndpoint, DiffFileInput } from '../services/DiffService';
 import type { DiscardDraftInput, GetDraftInput, SaveDraftInput } from '../services/DraftService';
 import type { VscPermissionHookRegistry, VscPermissionRequestMetadata } from '../permissions';
@@ -107,7 +108,7 @@ const resourceActionRunners: Record<VscFileActionName, ResourceActionRunner> = {
   diffDraft: (service, input, currentUser) =>
     service.diffDraft(normalizeDiffDraftInput(input, currentUser), currentUser),
   push: (service, input, currentUser) => service.push(normalizePushInput(input, currentUser), currentUser),
-  listCommits: (service, input, currentUser) => service.listCommits(normalizeRepositoryIdInput(input), currentUser),
+  listCommits: (service, input, currentUser) => service.listCommits(normalizeListCommitsInput(input), currentUser),
   getCommit: (service, input, currentUser) => service.getCommit(normalizeGetCommitInput(input), currentUser),
   diff: (service, input, currentUser) => service.diff(normalizeDiffCommitsInput(input), currentUser),
   diffFile: (service, input, currentUser) => service.diffFile(normalizeDiffFileInput(input, currentUser), currentUser),
@@ -328,6 +329,14 @@ function normalizeGetCommitInput(input: ResourceActionInput): GetCommitInput {
   };
 }
 
+function normalizeListCommitsInput(input: ResourceActionInput): ListCommitsInput {
+  return compactObject({
+    repoId: requireString(input, 'repoId'),
+    limit: optionalPositiveInteger(input, 'limit'),
+    beforeSeq: optionalPositiveInteger(input, 'beforeSeq'),
+  });
+}
+
 function normalizeDiffCommitsInput(input: ResourceActionInput): DiffCommitsInput {
   return {
     repoId: requireString(input, 'repoId'),
@@ -534,6 +543,18 @@ function optionalNumber(input: ResourceActionInput, key: string, label?: string)
   }
   if (typeof value !== 'number' || !Number.isFinite(value)) {
     throwBadRequest(`${fieldPath(label, key)} must be a finite number`);
+  }
+
+  return value;
+}
+
+function optionalPositiveInteger(input: ResourceActionInput, key: string, label?: string): number | undefined {
+  const value = optionalNumber(input, key, label);
+  if (typeof value === 'undefined') {
+    return undefined;
+  }
+  if (!Number.isInteger(value) || value < 1) {
+    throwBadRequest(`${fieldPath(label, key)} must be a positive integer`);
   }
 
   return value;

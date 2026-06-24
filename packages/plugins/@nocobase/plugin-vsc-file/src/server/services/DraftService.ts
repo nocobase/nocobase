@@ -17,10 +17,14 @@ import type {
   VscDraftFileOperation,
   VscDraftFileRecord,
   VscDraftRecord,
+  VscNormalizedTreeEntry,
   VscRepositoryRecord,
+  VscTreeEntryInput,
 } from '../../shared/types';
 import { BlobService } from './BlobService';
+import { CommitService } from './CommitService';
 import { RepositoryService } from './RepositoryService';
+import { TreeService } from './TreeService';
 
 export type VscDraftWriteAction = 'saveDraft' | 'discardDraft';
 
@@ -62,6 +66,7 @@ export interface ActiveDraftResult {
 }
 
 interface DraftFileValues {
+  id?: string;
   draftId: string;
   path: string;
   pathHash: string;
@@ -75,13 +80,21 @@ export class DraftService {
 
   private readonly repositoryService: RepositoryService;
 
+  private readonly commitService: CommitService;
+
+  private readonly treeService: TreeService;
+
   constructor(
     private readonly db: Database,
     blobService?: BlobService,
     repositoryService?: RepositoryService,
+    commitService?: CommitService,
+    treeService?: TreeService,
   ) {
     this.blobService = blobService || new BlobService(db);
     this.repositoryService = repositoryService || new RepositoryService(db);
+    this.commitService = commitService || new CommitService(db);
+    this.treeService = treeService || new TreeService(db, this.blobService);
   }
 
   async getDraft(input: GetDraftInput, ctx: VscDraftServiceContext = {}): Promise<ActiveDraftResult | null> {
@@ -98,8 +111,14 @@ export class DraftService {
         throw new VscError('DRAFT_BASE_OUTDATED', 'Active draft base is no longer current');
       }
 
+      const draftFileValues: DraftFileValues[] = [];
       for (const change of input.files) {
-        const values = await this.normalizeDraftFileChange(draft.id, change, transaction);
+        draftFileValues.push(await this.normalizeDraftFileChange(draft.id, change, transaction));
+      }
+
+      await this.assertDraftTreeWithinLimits(draft, draftFileValues, transaction);
+
+      for (const values of draftFileValues) {
         await this.db.getRepository('vscFileDraftFiles').updateOrCreate({
           filterKeys: ['draftId', 'pathHash'],
           values,
@@ -282,6 +301,66 @@ export class DraftService {
     };
   }
 
+  private async assertDraftTreeWithinLimits(
+    draft: VscDraftRecord,
+    draftFileValues: DraftFileValues[],
+    transaction: Transaction,
+  ): Promise<void> {
+    const baseEntries = await this.loadBaseTreeEntries(draft, transaction);
+    const existingDraftFiles = await this.loadDraftFiles(draft.id, transaction);
+    const draftFilesByPathHash = new Map<string, DraftFileValues>();
+
+    for (const draftFile of existingDraftFiles) {
+      draftFilesByPathHash.set(draftFile.pathHash, {
+        id: draftFile.id,
+        draftId: draftFile.draftId,
+        path: draftFile.path,
+        pathHash: draftFile.pathHash,
+        pathLowerHash: draftFile.pathLowerHash,
+        operation: draftFile.operation,
+        blobHash: draftFile.blobHash,
+      });
+    }
+
+    for (const draftFile of draftFileValues) {
+      draftFilesByPathHash.set(draftFile.pathHash, draftFile);
+    }
+
+    const nextEntriesByPathHash = new Map<string, VscTreeEntryInput>();
+    for (const entry of baseEntries) {
+      nextEntriesByPathHash.set(entry.pathHash, treeEntryInputFromEntry(entry));
+    }
+
+    for (const draftFile of draftFilesByPathHash.values()) {
+      if (draftFile.operation === 'delete') {
+        nextEntriesByPathHash.delete(draftFile.pathHash);
+        continue;
+      }
+      if (!draftFile.blobHash) {
+        throw new VscError('BLOB_NOT_FOUND', `Draft file "${draftFile.path}" does not reference a blob`);
+      }
+
+      nextEntriesByPathHash.set(draftFile.pathHash, {
+        path: draftFile.path,
+        blobHash: draftFile.blobHash,
+      });
+    }
+
+    await this.treeService.hashTree(Array.from(nextEntriesByPathHash.values()), { transaction });
+  }
+
+  private async loadBaseTreeEntries(
+    draft: VscDraftRecord,
+    transaction: Transaction,
+  ): Promise<VscNormalizedTreeEntry[]> {
+    if (!draft.baseCommitId) {
+      return [];
+    }
+
+    const baseCommit = await this.commitService.getCommit(draft.repoId, draft.baseCommitId, transaction);
+    return this.treeService.loadTreeEntries(baseCommit.treeHash, { transaction });
+  }
+
   private async loadActiveDraft(
     repoId: string,
     userId: string,
@@ -292,18 +371,24 @@ export class DraftService {
       return null;
     }
 
-    const files = await this.db.getRepository('vscFileDraftFiles').find({
+    const files = await this.loadDraftFiles(draft.id, transaction);
+
+    return {
+      draft,
+      files,
+    };
+  }
+
+  private async loadDraftFiles(draftId: string, transaction?: Transaction): Promise<VscDraftFileRecord[]> {
+    const records = await this.db.getRepository('vscFileDraftFiles').find({
       filter: {
-        draftId: draft.id,
+        draftId,
       },
       sort: ['path'],
       transaction,
     });
 
-    return {
-      draft,
-      files: files.map(draftFileFromRecord),
-    };
+    return records.map(draftFileFromRecord);
   }
 
   private async findActiveDraftRecord(
@@ -359,6 +444,16 @@ export function draftFromRecord(record: Model): VscDraftRecord {
     baseCommitId: (record.get('baseCommitId') as string | null) || null,
     status: record.get('status') as VscDraftRecord['status'],
     activeKey: (record.get('activeKey') as string | null) || null,
+  };
+}
+
+function treeEntryInputFromEntry(entry: VscNormalizedTreeEntry): VscTreeEntryInput {
+  return {
+    path: entry.path,
+    blobHash: entry.blobHash,
+    size: entry.size,
+    language: entry.language,
+    mode: entry.mode,
   };
 }
 

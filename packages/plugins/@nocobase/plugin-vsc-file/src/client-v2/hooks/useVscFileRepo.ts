@@ -108,7 +108,10 @@ export interface VscFileRepoPushResult {
   tree: VscStoredTree;
 }
 
-export type VscFileRepoListCommitsInput = VscFileRepoRepositoryInput;
+export interface VscFileRepoListCommitsInput extends VscFileRepoRepositoryInput {
+  limit?: number;
+  beforeSeq?: number;
+}
 
 export interface VscFileRepoDiffInput extends VscFileRepoRepositoryInput {
   fromCommitId: string;

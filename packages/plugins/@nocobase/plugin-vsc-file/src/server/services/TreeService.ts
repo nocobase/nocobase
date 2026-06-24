@@ -9,7 +9,7 @@
 
 import type { Database, Model, Transaction } from '@nocobase/database';
 
-import { maxFilesPerRepo, maxRepoTextSize } from '../../shared/constants';
+import { maxFileSize, maxFilesPerRepo, maxRepoTextSize } from '../../shared/constants';
 import { VscError } from '../../shared/errors';
 import { sha256Hex } from '../../shared/hash';
 import { normalizePath, pathHash, pathLowerHash } from '../../shared/path';
@@ -195,6 +195,12 @@ export class TreeService {
     }
 
     const size = blob.get('size') as number;
+
+    if (size > maxFileSize) {
+      throw new VscError('FILE_TOO_LARGE', `File size must not exceed ${maxFileSize} bytes`, {
+        details: { size, maxFileSize },
+      });
+    }
 
     if (typeof entry.size === 'number' && entry.size !== size) {
       throw new VscError('PATH_INVALID', `Tree entry "${entry.path}" size does not match blob "${entry.blobHash}"`, {

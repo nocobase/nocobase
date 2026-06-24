@@ -11,6 +11,7 @@ import { ReloadOutlined, RollbackOutlined } from '@ant-design/icons';
 import { Alert, Button, Empty, Popconfirm, Space, Table, Typography } from 'antd';
 import React, { useEffect, useRef, useState } from 'react';
 
+import { commitHistoryDefaultLimit } from '../../shared/constants';
 import type { VscCommitRecord } from '../../shared/types';
 import { useVscFileRepo, type VscFileRepoRestoreResult } from '../hooks';
 import { useT } from '../locale';
@@ -29,40 +30,72 @@ export function VscCommitHistory(props: VscCommitHistoryProps) {
   const repo = useVscFileRepo();
   const repoRef = useRef(repo);
   const restoredRef = useRef(onCommitRestored);
+  const commitsRef = useRef<VscCommitRecord[]>([]);
   const requestIdRef = useRef(0);
   const [commits, setCommits] = useState<VscCommitRecord[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
   const [restoringCommitId, setRestoringCommitId] = useState<string | null>(null);
   const [error, setError] = useState<unknown>(null);
 
   repoRef.current = repo;
   restoredRef.current = onCommitRestored;
+  commitsRef.current = commits;
 
-  const loadCommits = React.useCallback(async () => {
-    const requestId = requestIdRef.current + 1;
-    requestIdRef.current = requestId;
+  const loadCommits = React.useCallback(
+    async (mode: 'replace' | 'append' = 'replace') => {
+      const requestId = requestIdRef.current + 1;
+      const append = mode === 'append';
+      const beforeSeq = append ? commitsRef.current[commitsRef.current.length - 1]?.seq : undefined;
 
-    setLoading(true);
-    setError(null);
-    setCommits([]);
-    try {
-      const nextCommits = await repoRef.current.listCommits({ repoId });
-      if (requestIdRef.current !== requestId) {
+      if (append && !beforeSeq) {
         return;
       }
-      setCommits(nextCommits);
-    } catch (nextError) {
-      if (requestIdRef.current !== requestId) {
-        return;
+
+      requestIdRef.current = requestId;
+
+      if (append) {
+        setLoadingMore(true);
+      } else {
+        setLoading(true);
+        setLoadingMore(false);
+        setCommits([]);
+        setHasMore(false);
       }
-      setError(nextError);
-      setCommits([]);
-    } finally {
-      if (requestIdRef.current === requestId) {
-        setLoading(false);
+      setError(null);
+      try {
+        const nextCommits = await repoRef.current.listCommits({
+          repoId,
+          limit: commitHistoryDefaultLimit,
+          beforeSeq,
+        });
+        if (requestIdRef.current !== requestId) {
+          return;
+        }
+        setCommits((current) => (append ? [...current, ...nextCommits] : nextCommits));
+        setHasMore(nextCommits.length === commitHistoryDefaultLimit);
+      } catch (nextError) {
+        if (requestIdRef.current !== requestId) {
+          return;
+        }
+        setError(nextError);
+        if (!append) {
+          setCommits([]);
+        }
+        setHasMore(false);
+      } finally {
+        if (requestIdRef.current === requestId) {
+          if (append) {
+            setLoadingMore(false);
+          } else {
+            setLoading(false);
+          }
+        }
       }
-    }
-  }, [repoId]);
+    },
+    [repoId],
+  );
 
   useEffect(() => {
     loadCommits();
@@ -93,7 +126,7 @@ export function VscCommitHistory(props: VscCommitHistoryProps) {
           aria-label={t('Refresh commits')}
           icon={<ReloadOutlined />}
           loading={loading}
-          onClick={loadCommits}
+          onClick={() => loadCommits()}
           size="small"
         />
       </Space>
@@ -155,6 +188,12 @@ export function VscCommitHistory(props: VscCommitHistoryProps) {
         rowKey="id"
         size="small"
       />
+
+      {hasMore ? (
+        <Button block loading={loadingMore} onClick={() => loadCommits('append')}>
+          {t('Load more commits')}
+        </Button>
+      ) : null}
     </section>
   );
 }

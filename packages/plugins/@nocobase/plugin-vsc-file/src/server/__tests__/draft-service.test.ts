@@ -10,6 +10,7 @@
 import { Database, createMockDatabase } from '@nocobase/database';
 import path from 'path';
 
+import { maxFileSize, maxFilesPerRepo, maxRepoTextSize } from '../../shared/constants';
 import { VscError } from '../../shared/errors';
 import { VscFileService } from '../services/VscFileService';
 
@@ -281,5 +282,53 @@ describe('vsc-file draft service', () => {
       code: 'PERMISSION_DENIED',
     });
     expect(await db.getRepository('vscFileDrafts').count()).toBe(0);
+  });
+
+  it('rejects draft saves that exceed the repository file limit', async () => {
+    const { repository } = await service.createRepository({
+      ownerType: 'plugin',
+      ownerId: 'demo',
+      name: 'main',
+    });
+
+    await expect(
+      service.saveDraft({
+        repoId: repository.id,
+        userId: 'user-1',
+        baseCommitId: null,
+        files: Array.from({ length: maxFilesPerRepo + 1 }, (_, index) => ({
+          path: `src/file-${String(index).padStart(3, '0')}.ts`,
+          operation: 'upsert' as const,
+          content: 'export const value = true;\n',
+        })),
+      }),
+    ).rejects.toMatchObject<VscError>({
+      code: 'REPO_LIMIT_EXCEEDED',
+    });
+    expect(await db.getRepository('vscFileDraftFiles').count()).toBe(0);
+  });
+
+  it('rejects draft saves that exceed the repository text-size limit', async () => {
+    const { repository } = await service.createRepository({
+      ownerType: 'plugin',
+      ownerId: 'demo',
+      name: 'main',
+    });
+
+    await expect(
+      service.saveDraft({
+        repoId: repository.id,
+        userId: 'user-1',
+        baseCommitId: null,
+        files: Array.from({ length: Math.floor(maxRepoTextSize / maxFileSize) + 1 }, (_, index) => ({
+          path: `src/large-${String(index).padStart(2, '0')}.txt`,
+          operation: 'upsert' as const,
+          content: 'x'.repeat(maxFileSize),
+        })),
+      }),
+    ).rejects.toMatchObject<VscError>({
+      code: 'REPO_LIMIT_EXCEEDED',
+    });
+    expect(await db.getRepository('vscFileDraftFiles').count()).toBe(0);
   });
 });

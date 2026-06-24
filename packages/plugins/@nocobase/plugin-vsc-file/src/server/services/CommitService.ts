@@ -10,7 +10,7 @@
 import type { Database, Model, Transaction } from '@nocobase/database';
 import { UniqueConstraintError } from '@nocobase/database';
 
-import { maxCommitMessageLength } from '../../shared/constants';
+import { commitHistoryDefaultLimit, commitHistoryMaxLimit, maxCommitMessageLength } from '../../shared/constants';
 import { VscError } from '../../shared/errors';
 import { sha256Hex } from '../../shared/hash';
 import type { VscCommitRecord } from '../../shared/types';
@@ -27,6 +27,8 @@ export interface CreateCommitInput {
 
 export interface ListCommitsInput {
   repoId: string;
+  limit?: number;
+  beforeSeq?: number;
 }
 
 export class CommitService {
@@ -82,11 +84,23 @@ export class CommitService {
   }
 
   async listCommits(input: ListCommitsInput, transaction?: Transaction): Promise<VscCommitRecord[]> {
+    const limit = normalizeCommitListLimit(input.limit);
+    const beforeSeq = normalizeBeforeSeq(input.beforeSeq);
+    const filter = beforeSeq
+      ? {
+          repoId: input.repoId,
+          seq: {
+            $lt: beforeSeq,
+          },
+        }
+      : {
+          repoId: input.repoId,
+        };
+
     const records = await this.db.getRepository('vscFileCommits').find({
-      filter: {
-        repoId: input.repoId,
-      },
+      filter,
       sort: ['-seq'],
+      limit,
       transaction,
     });
 
@@ -109,6 +123,30 @@ export class CommitService {
       byteSize: record.get('byteSize') as number,
     };
   }
+}
+
+function normalizeCommitListLimit(limit: number | undefined): number {
+  if (typeof limit === 'undefined') {
+    return commitHistoryDefaultLimit;
+  }
+
+  if (!Number.isInteger(limit) || limit < 1) {
+    throw new VscError('PATH_INVALID', 'Commit history limit must be a positive integer');
+  }
+
+  return Math.min(limit, commitHistoryMaxLimit);
+}
+
+function normalizeBeforeSeq(beforeSeq: number | undefined): number | undefined {
+  if (typeof beforeSeq === 'undefined') {
+    return undefined;
+  }
+
+  if (!Number.isInteger(beforeSeq) || beforeSeq < 1) {
+    throw new VscError('PATH_INVALID', 'Commit history beforeSeq must be a positive integer');
+  }
+
+  return beforeSeq;
 }
 
 function commitHash(input: CreateCommitInput): string {

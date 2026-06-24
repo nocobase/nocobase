@@ -7,6 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './permissions';
-export * from './config';
-export { default } from './plugin';
+import { defaultVscFileLimits } from '../shared/constants';
+
+export { defaultVscFileLimits };
+
+export const vscFileServerDefaults = {
+  limits: defaultVscFileLimits,
+} as const;
