@@ -160,13 +160,13 @@
 
 ### W1. workflow v2 注册骨架与共享类型
 
-状态：未开始
+状态：进行中
 
 目标：建立 v2 workflow 主实现目录、公共类型和注册入口，不迁移具体 UI。
 
 #### W1.1 新建 workflow v2 目录与共享类型
 
-- 状态：未开始
+- 状态：已提交
 - 范围：
   - `src/client-v2/workflow/types.ts`
   - `src/client-v2/workflow/constants.ts`
@@ -176,7 +176,10 @@
   - 不使用 `any`，必要时使用 `unknown` 和类型守卫。
   - `src/client-v2/workflow` 无 v1 client/Formily runtime import。
 - 验收记录：
-  - 待填写。
+  - 已新增 `constants.ts`、`types.ts`、`components/index.ts`。
+  - 已抽出 LLM messages/content/structured output/model options、AI employee config/files/approval/assignees、AI employee trigger parameters、JSON schema 和 workflow variable option 类型。
+  - 已运行 `yarn eslint --fix packages/plugins/@nocobase/plugin-ai/src/client-v2/workflow/constants.ts packages/plugins/@nocobase/plugin-ai/src/client-v2/workflow/types.ts packages/plugins/@nocobase/plugin-ai/src/client-v2/workflow/components/index.ts`。
+  - 已扫描 `src/client-v2/workflow`，未发现 `@nocobase/client`、`@formily`、`@nocobase/plugin-workflow/client` 或本插件 `src/client/` import。
 
 #### W1.2 注册 v2 workflow instruction group、nodes、trigger
 
@@ -484,7 +487,7 @@
 | 大任务 | 状态 | 下一步 |
 | --- | --- | --- |
 | W0. 迁移任务文档与基线准备 | 已提交 | 开始 W1.1 |
-| W1. workflow v2 注册骨架与共享类型 | 未开始 | 开始 W1.1 |
+| W1. workflow v2 注册骨架与共享类型 | 进行中 | 开始 W1.2 |
 | W2. LLM workflow 节点迁移 | 未开始 | 等 W1 完成 |
 | W3. AI employee workflow 节点迁移 | 未开始 | 等 W1 完成 |
 | W4. AI employee workflow trigger 迁移 | 未开始 | 等 W1 完成 |
