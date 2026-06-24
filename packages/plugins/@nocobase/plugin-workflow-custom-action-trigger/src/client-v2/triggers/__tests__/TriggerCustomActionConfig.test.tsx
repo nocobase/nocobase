@@ -62,6 +62,7 @@ vi.mock('@nocobase/plugin-workflow/client-v2', () => ({
     config: { type: 0, collection: 'posts' },
   }),
   useWorkflowVariableOptions: () => [],
+  WorkflowVariableWrapper: ({ render, value, onChange }: any) => render({ value, onChange }),
 }));
 
 vi.mock('../locale', () => ({

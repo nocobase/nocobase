@@ -14,6 +14,7 @@ import { DialogFormLayout } from '@nocobase/client-v2';
 import { useFlowContext as useFlowEngineContext, useFlowView } from '@nocobase/flow-engine';
 import { EXECUTION_STATUS_OPTIONS_MAP } from '../../common/executionStatus';
 import { CurrentWorkflowContext } from '../canvas/contexts';
+import { HideVariableContext } from '../components/HideVariableContext';
 import { useWorkflowRuntimePaths } from '../hooks/useWorkflowRuntimePaths';
 import { useT } from '../locale';
 import { PluginWorkflowClientV2 } from '../plugin';
@@ -110,40 +111,42 @@ function ExecuteWorkflowForm({
 
   return (
     <CurrentWorkflowContext.Provider value={workflow}>
-      <DialogFormLayout
-        title={t('Execute manually')}
-        onSubmit={onSubmit}
-        submitting={submitting}
-        submitText={t('Confirm')}
-        cancelText={t('Cancel')}
-        footer={footer}
-      >
-        <Form form={form} layout="vertical" initialValues={{ autoRevision: true }} disabled={disabled}>
-          <Alert
-            message={t('Trigger variables need to be filled for executing.')}
-            type="info"
-            style={{ marginBottom: token.margin }}
-          />
-          <Form.Item label={t('Trigger variables')}>
-            <div
-              style={{
-                padding: token.padding,
-                border: `${token.lineWidth}px solid ${token.colorBorderSecondary}`,
-                borderRadius: token.borderRadiusLG,
-              }}
-            >
-              <Suspense fallback={<Skeleton active paragraph={{ rows: 2 }} />}>
-                <Fieldset />
-              </Suspense>
-            </div>
-          </Form.Item>
-          {executed ? null : (
-            <Form.Item name="autoRevision" valuePropName="checked">
-              <Checkbox>{t('Automatically create a new version after execution')}</Checkbox>
+      <HideVariableContext.Provider value>
+        <DialogFormLayout
+          title={t('Execute manually')}
+          onSubmit={onSubmit}
+          submitting={submitting}
+          submitText={t('Confirm')}
+          cancelText={t('Cancel')}
+          footer={footer}
+        >
+          <Form form={form} layout="vertical" initialValues={{ autoRevision: true }} disabled={disabled}>
+            <Alert
+              message={t('Trigger variables need to be filled for executing.')}
+              type="info"
+              style={{ marginBottom: token.margin }}
+            />
+            <Form.Item label={t('Trigger variables')}>
+              <div
+                style={{
+                  padding: token.padding,
+                  border: `${token.lineWidth}px solid ${token.colorBorderSecondary}`,
+                  borderRadius: token.borderRadiusLG,
+                }}
+              >
+                <Suspense fallback={<Skeleton active paragraph={{ rows: 2 }} />}>
+                  <Fieldset />
+                </Suspense>
+              </div>
             </Form.Item>
-          )}
-        </Form>
-      </DialogFormLayout>
+            {executed ? null : (
+              <Form.Item name="autoRevision" valuePropName="checked">
+                <Checkbox>{t('Automatically create a new version after execution')}</Checkbox>
+              </Form.Item>
+            )}
+          </Form>
+        </DialogFormLayout>
+      </HideVariableContext.Provider>
     </CurrentWorkflowContext.Provider>
   );
 }
