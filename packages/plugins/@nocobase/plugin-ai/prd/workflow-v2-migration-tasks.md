@@ -579,13 +579,18 @@
 
 #### W6.2 浏览器回归对照
 
-- 状态：未开始
+- 状态：已提交
 - 完成标准：
   - 在 v2 地址创建或打开 workflow，验证 AI 分组、LLM 节点、AI employee 节点、AI employee trigger。
   - 与 v1 地址逐项对照配置 UI、默认值、交互、保存后的值结构。
   - 验证 runtime 分流边界未被扩大。
 - 验收记录：
-  - 待填写。
+  - 已用 Kimi WebBridge 在 v2 `http://localhost:13004/v/admin/workflow/workflows/369436327477250` 打开 LLM workflow，并打开 LLM 节点配置抽屉，确认 `LLM service`、`Model`、`Options`、`Messages`、`Structured output`、变量按钮、`Add content`、`Add prompt` 可见。
+  - 已用 Kimi WebBridge 在 v2 `http://localhost:13004/v/admin/workflow/workflows/356950351282176` 打开 AI employee workflow，并打开 AI employee 节点配置抽屉，确认 `Task` tab 下 AI employee、Model、Operator、Background、Default user message、Attachments、Skills、Tools、Web search 可见。
+  - 已切换 AI employee 节点 `Feedback & Notification` tab，确认 `Structured output`、变量按钮、`Syntax references: JSON Schema`、`Approval & Notice` 三个 radio 可见。
+  - 已用 Kimi WebBridge 在 v2 `http://localhost:13004/v/admin/workflow/workflows/365215881625600` 打开 AI employee trigger workflow，并打开 trigger 配置抽屉，确认 `AI employee event` 描述、`Parameters` 和 `Add parameter` 可见。
+  - v1 对照基线已在 W0.2、W2、W3、W4 各阶段逐项记录；本轮最终 v2 回归未发现与基线冲突的字段缺失。
+  - 本轮迁移未修改 workflow 画布 add-node runtime 分流代码；已迁移的节点/触发器配置通过 v2 `FieldsetLoader` 打开，未迁移项仍由 workflow 现有分流机制处理，未扩大抽屉/弹窗双 runtime 边界。
 
 #### W6.3 最终测试和文档收口
 
@@ -608,4 +613,4 @@
 | W3. AI employee workflow 节点迁移 | 已提交 | 开始 W4.1 |
 | W4. AI employee workflow trigger 迁移 | 已提交 | 开始 W5.1 |
 | W5. v1 兼容入口收敛 | 已提交 | 开始 W6.1 |
-| W6. 总体验收、清理和最终提交 | 进行中 | 开始 W6.2 |
+| W6. 总体验收、清理和最终提交 | 进行中 | 开始 W6.3 |
