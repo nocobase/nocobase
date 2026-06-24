@@ -8,9 +8,10 @@
  */
 
 import React from 'react';
+import { Parameters } from './Parameters';
 
 export function AIEmployeeTriggerConfig() {
-  return null;
+  return <Parameters />;
 }
 
 export default AIEmployeeTriggerConfig;

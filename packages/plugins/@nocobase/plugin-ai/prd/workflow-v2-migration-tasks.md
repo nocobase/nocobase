@@ -422,13 +422,13 @@
 
 ### W4. AI employee workflow trigger 迁移
 
-状态：未开始
+状态：进行中
 
 目标：把 v1 `workflow/triggers/ai-employee` 参数配置迁到 v2。
 
 #### W4.1 trigger 参数列表组件迁移
 
-- 状态：未开始
+- 状态：已提交
 - 范围：
   - `src/client-v2/workflow/triggers/ai-employee/Parameters.tsx`
   - `src/client-v2/workflow/triggers/ai-employee/AIEmployeeTriggerConfig.tsx`
@@ -441,7 +441,16 @@
 - UI 对照：
   - 对照添加参数、编辑参数、enum options、排序、删除。
 - 验收记录：
-  - 待填写。
+  - 已新增 v2 `Parameters` 组件，使用原生 antd `Form.List` 保存 `config.parameters[]`，不再依赖 v1 `SchemaComponent`、Formily `ArrayItems` 或 `@nocobase/client`。
+  - 已新增 `Add parameter` modal，字段顺序保持 v1：`Parameter name`、`Parameter type`、`Parameter description`、`Options`、`Required`、`Cancel`、`Submit`。
+  - `Parameter name` 校验复用公共 `TRIGGER_PARAMETER_NAME_PATTERN` / `TRIGGER_PARAMETER_NAME_ERROR`，保持 `/^[a-zA-Z_]+$/` 和错误文案 `a-z, A-Z, _`。
+  - `Parameter type` 复用公共 `TRIGGER_PARAMETER_TYPES`，选项保持 `string` / `number` / `boolean` / `enum`；`Options` 仅在 enum 时显示，支持添加、删除和排序。
+  - 参数列表支持编辑、删除、上移、下移；行展示保留 name、type、required 和 description tooltip。
+  - 已将 `AIEmployeeTriggerConfig` 从空壳改为渲染 `Parameters`。
+  - 已运行 `yarn eslint --fix` 覆盖触达文件。
+  - 已运行 `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/__tests__/workflow-registration.test.ts --run --reporter=verbose`，5 个用例通过。
+  - 已用 Kimi WebBridge 在 v2 `http://localhost:13004/v/admin/workflow/workflows/365215881625600` 打开 AI employee trigger 配置抽屉，确认 `Parameters`、`Add parameter` 按钮和添加参数 modal 可见，空态保持只显示添加按钮；enum options、编辑和排序将在 W4.3 组件测试中补充覆盖。
+  - 已扫描 `src/client-v2/workflow`，未发现 `@nocobase/client`、`@formily/*` runtime、`@nocobase/plugin-workflow/client` 或本插件 `src/client/` import。
 
 #### W4.2 trigger useVariables 和校验
 
@@ -561,6 +570,6 @@
 | W1. workflow v2 注册骨架与共享类型 | 已提交 | 开始 W2.1 |
 | W2. LLM workflow 节点迁移 | 已提交 | 开始 W3.1 |
 | W3. AI employee workflow 节点迁移 | 已提交 | 开始 W4.1 |
-| W4. AI employee workflow trigger 迁移 | 未开始 | 开始 W4.1 |
+| W4. AI employee workflow trigger 迁移 | 进行中 | 开始 W4.2 |
 | W5. v1 兼容入口收敛 | 未开始 | 等 W2/W3/W4 校验通过 |
 | W6. 总体验收、清理和最终提交 | 未开始 | 等 W5 完成 |
