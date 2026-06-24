@@ -36,22 +36,28 @@ export type LLMMessageContentType = 'text' | 'image_url' | 'image_base64';
 export type LLMTextContent = {
   type: 'text';
   text?: string;
+  content?: string;
+};
+
+export type LLMImageUrlValue = {
+  url?: string | { url?: string } | Array<string | { url?: string }>;
 };
 
 export type LLMImageUrlContent = {
   type: 'image_url';
-  image_url?: string;
+  image_url?: LLMImageUrlValue;
 };
 
 export type LLMImageBase64Content = {
   type: 'image_base64';
-  image_base64?: string;
+  image_url?: LLMImageUrlValue;
 };
 
 export type LLMMessageContent = LLMTextContent | LLMImageUrlContent | LLMImageBase64Content;
 
 export type LLMMessage = {
   role?: LLMMessageRole;
+  message?: string;
   content?: string | LLMMessageContent[];
 };
 

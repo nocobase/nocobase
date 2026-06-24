@@ -231,7 +231,7 @@
 
 #### W2.2 LLM messages 配置迁移
 
-- 状态：未开始
+- 状态：已提交
 - 范围：
   - `src/client-v2/workflow/nodes/llm/components/Messages.tsx`
   - `src/client-v2/workflow/components/WorkflowListCollapse.tsx`
@@ -244,7 +244,13 @@
 - UI 对照：
   - 对照 v1 添加消息、切换角色、添加 content、切换 content type、删除/排序。
 - 验收记录：
-  - 待填写。
+  - 已新增 `WorkflowListCollapse` 公共组件，迁移 v1 `ListCollapse` 的空态、新增、删除、上下排序、折叠/展开能力，未引入 v1 client/Formily runtime。
+  - 已新增原生 antd `Messages` 配置组件，`messages` 写入 `config.messages`，保持 server 实际读取结构：system/assistant 使用 `message`，user text 使用 `content[].content`，图片使用 `content[].image_url.url`。
+  - 变量输入已按专项规则复用 workflow v2：system/assistant 和 user text 使用 `WorkflowVariableTextArea`，图片 URL/Base64 使用单行 `WorkflowVariableInput`，未新增 textarea 包装层。
+  - 已用 Kimi WebBridge 在 v2 `http://localhost:13004/v/admin/workflow/workflows/369436327477250` 打开 LLM 配置抽屉，确认 Messages tab 显示已有 2 条消息，system/user 文本、嵌套 content、`Add prompt`、`Add content`、排序/删除按钮和变量按钮均可见，与 v1 基线对齐。
+  - 已运行 `yarn eslint --fix` 覆盖触达文件。
+  - 已运行 `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/__tests__/workflow-list-collapse.test.ts --run --reporter=verbose`，2 个用例通过。
+  - 已运行 `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/__tests__/workflow-registration.test.ts --run --reporter=verbose`，5 个用例通过。
 
 #### W2.3 LLM structured output 配置迁移
 

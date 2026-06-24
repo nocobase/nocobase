@@ -8,12 +8,13 @@
  */
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { Collapse, Form, Spin } from 'antd';
+import { Collapse, Form, Spin, Tabs } from 'antd';
 import { useApp } from '@nocobase/client-v2';
 import { RemoteSelect } from '../../../../components/RemoteSelect';
 import { ModelSelect, OptionsFields } from '../../../../llm-providers/forms';
 import { getBuiltinLLMProviderModelOptionFields } from '../../../../llm-providers';
 import { useT } from '../../../../locale';
+import { Messages } from './Messages';
 
 type LLMServiceRecord = {
   name: string;
@@ -158,6 +159,15 @@ export function LLMFieldset() {
           ]}
         />
       )}
+      <Tabs
+        items={[
+          {
+            key: 'messages',
+            label: t('Messages'),
+            children: <Messages />,
+          },
+        ]}
+      />
     </>
   );
 }
