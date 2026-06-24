@@ -13,6 +13,7 @@ const {
   hasCorePackages,
   run,
   runWithPrefix,
+  colorizedDevLogEnv,
   postCheck,
   nodeCheck,
   promptForTs,
@@ -276,9 +277,9 @@ module.exports = (cli) => {
 
         const runDevServer = () => {
           run('tsx', argv, {
-            env: {
+            env: colorizedDevLogEnv(process.env, {
               APP_PORT: serverPort,
-            },
+            }),
           }).catch((err) => {
             if (err.exitCode == 100) {
               console.log('Restarting server...');
