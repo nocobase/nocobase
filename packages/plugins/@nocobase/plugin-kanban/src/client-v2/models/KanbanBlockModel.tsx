@@ -88,6 +88,20 @@ type KanbanPopupActionOptions = {
   persist?: boolean;
 };
 
+const POPUP_TEMPLATE_SETTING_KEYS = [
+  'uid',
+  'dataSourceKey',
+  'collectionName',
+  'associationName',
+  'filterByTk',
+  'sourceId',
+  'popupTemplateUid',
+  'popupTemplateMode',
+  'popupTemplateContext',
+  'popupTemplateHasFilterByTk',
+  'popupTemplateHasSourceId',
+];
+
 const DRAG_SORT_FIELD_TIP =
   'Choose the sorting field that matches the current grouping field. Other sorting fields cannot be used for drag sorting.';
 const DRAG_SORT_FIELD_TIP_EXPR = tExpr(DRAG_SORT_FIELD_TIP, { ns: 'kanban' });
@@ -158,6 +172,48 @@ const hasKanbanPopupTemplateState = (params?: Record<string, any>) => {
 
 const isKanbanPopupTemplateCopyMode = (params?: Record<string, any>) => {
   return params?.popupTemplateContext === true;
+};
+
+const mergeKanbanPopupTemplateSettings = (baseSettings: Record<string, any>, popupSettings?: Record<string, any>) => {
+  if (!hasKanbanPopupTemplateState(popupSettings)) {
+    return baseSettings;
+  }
+
+  const nextSettings = { ...baseSettings };
+  POPUP_TEMPLATE_SETTING_KEYS.forEach((key) => {
+    if (Object.prototype.hasOwnProperty.call(popupSettings, key)) {
+      nextSettings[key] = popupSettings[key];
+    }
+  });
+
+  if (popupSettings?.popupTemplateContext === true) {
+    delete nextSettings.popupTemplateUid;
+    delete nextSettings.popupTemplateHasFilterByTk;
+    delete nextSettings.popupTemplateHasSourceId;
+  } else if (popupSettings?.popupTemplateUid) {
+    delete nextSettings.popupTemplateContext;
+  }
+
+  return nextSettings;
+};
+
+const getKanbanPopupActionSettings = (action: any) => getModelStepParams(action, 'popupSettings', 'openView');
+
+const buildKanbanPopupSettingsFromAction = (baseSettings: Record<string, any>, action: any) => {
+  const actionParams = getKanbanPopupActionSettings(action);
+  if (Object.keys(actionParams).length === 0) {
+    return baseSettings;
+  }
+
+  const popupSettings = {
+    ...baseSettings,
+    ...actionParams,
+    uid: actionParams.uid || baseSettings.uid,
+    collectionName: actionParams.collectionName || baseSettings.collectionName,
+    dataSourceKey: actionParams.dataSourceKey || baseSettings.dataSourceKey,
+  };
+
+  return mergeKanbanPopupTemplateSettings(popupSettings, actionParams);
 };
 
 const setKanbanModelProps = (model: any, props: Record<string, any>) => {
@@ -1547,26 +1603,46 @@ KanbanBlockModel.registerFlow({
         return !(enabled ?? defaultEnabled);
       },
       async defaultParams(ctx) {
+        const model = ctx.model as KanbanBlockModel;
         const commonParams = await resolveKanbanOpenViewDefaultParams(ctx as any);
+        const action =
+          typeof model.ensureQuickCreateAction === 'function'
+            ? await model.ensureQuickCreateAction()
+            : typeof model.getQuickCreateAction === 'function'
+              ? model.getQuickCreateAction()
+              : undefined;
         const popupPageModelClass =
-          typeof (ctx.model as KanbanBlockModel).getPopupPageModelClass === 'function'
-            ? (ctx.model as KanbanBlockModel).getPopupPageModelClass()
+          typeof model.getPopupPageModelClass === 'function'
+            ? model.getPopupPageModelClass()
             : ctx.model?.props?.popupPageModelClass;
-        return {
-          ...commonParams,
-          mode: (ctx.model as KanbanBlockModel).getPopupMode(),
-          size: (ctx.model as KanbanBlockModel).getPopupSize(),
-          popupTemplateUid: (ctx.model as KanbanBlockModel).getPopupTemplateUid(),
-          pageModelClass: popupPageModelClass || commonParams.pageModelClass,
-          uid: (ctx.model as KanbanBlockModel).getPopupTargetUid(),
-        };
+        return buildKanbanPopupSettingsFromAction(
+          {
+            ...commonParams,
+            mode: model.getPopupMode(),
+            size: model.getPopupSize(),
+            popupTemplateUid: model.getPopupTemplateUid(),
+            pageModelClass: popupPageModelClass || commonParams.pageModelClass,
+            uid: model.getPopupTargetUid(),
+          },
+          action,
+        );
       },
       async handler(ctx, params) {
         await applyKanbanBlockPopupSettings(ctx.model as KanbanBlockModel, params, { persist: false });
       },
       async beforeParamsSave(ctx, params, previousParams) {
-        await ctx.model?.getAction?.('openView')?.beforeParamsSave?.(ctx, params, previousParams);
-        await applyKanbanBlockPopupSettings(ctx.model as KanbanBlockModel, params, { persist: true });
+        const model = ctx.model as KanbanBlockModel;
+        const action =
+          typeof model.ensureQuickCreateAction === 'function'
+            ? await model.ensureQuickCreateAction()
+            : typeof model.getQuickCreateAction === 'function'
+              ? model.getQuickCreateAction()
+              : undefined;
+        const storedParams = getKanbanPopupActionSettings(action);
+        await ctx.model
+          ?.getAction?.('openView')
+          ?.beforeParamsSave?.(ctx, params, Object.keys(storedParams).length > 0 ? storedParams : previousParams);
+        await applyKanbanBlockPopupSettings(model, params, { persist: true });
       },
     },
     pageSize: {

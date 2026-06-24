@@ -310,8 +310,8 @@ describe('calendarPopupModels', () => {
     await quickCreateStep.beforeParamsSave({ model } as any, { mode: 'drawer' });
     await eventStep.beforeParamsSave({ model } as any, { mode: 'dialog' });
 
-    expect(ensurePopupAction).toHaveBeenCalledWith('quickCreateAction', { persist: true });
-    expect(ensurePopupAction).toHaveBeenCalledWith('eventViewAction', { persist: true });
+    expect(ensurePopupAction).toHaveBeenCalledWith('quickCreateAction');
+    expect(ensurePopupAction).toHaveBeenCalledWith('eventViewAction');
   });
 
   it('should delegate calendar popup settings save to openView beforeParamsSave', async () => {
@@ -324,7 +324,14 @@ describe('calendarPopupModels', () => {
       delete params.uid;
     });
     const setPopupSettings = vi.fn();
-    const ensurePopupAction = vi.fn().mockResolvedValue({ uid: 'calendar-action-uid' });
+    const hiddenActionParams = {
+      popupTemplateUid: 'hidden-template',
+      uid: 'hidden-template-target',
+    };
+    const ensurePopupAction = vi.fn().mockResolvedValue({
+      uid: 'calendar-action-uid',
+      getStepParams: vi.fn(() => hiddenActionParams),
+    });
     const params = {
       mode: 'dialog',
       popupTemplateUid: undefined,
@@ -340,9 +347,9 @@ describe('calendarPopupModels', () => {
 
     await eventStep.beforeParamsSave({ model } as any, params, { popupTemplateUid: 'template-1' });
 
-    expect(beforeParamsSave).toHaveBeenCalledWith({ model }, params, { popupTemplateUid: 'template-1' });
+    expect(beforeParamsSave).toHaveBeenCalledWith({ model }, params, hiddenActionParams);
     expect(setPopupSettings).toHaveBeenCalledWith('eventViewAction', { mode: 'dialog' });
-    expect(ensurePopupAction).toHaveBeenCalledWith('eventViewAction', { persist: true });
+    expect(ensurePopupAction).toHaveBeenCalledWith('eventViewAction');
   });
 
   it('should build quick-create formData from the selected slot', () => {

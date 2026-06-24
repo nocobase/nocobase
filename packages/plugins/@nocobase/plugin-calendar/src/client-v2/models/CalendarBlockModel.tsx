@@ -102,6 +102,20 @@ type CalendarPopupSettingsOptions = {
   preferActionSettings?: boolean;
 };
 
+const POPUP_TEMPLATE_SETTING_KEYS = [
+  'uid',
+  'dataSourceKey',
+  'collectionName',
+  'associationName',
+  'filterByTk',
+  'sourceId',
+  'popupTemplateUid',
+  'popupTemplateMode',
+  'popupTemplateContext',
+  'popupTemplateHasFilterByTk',
+  'popupTemplateHasSourceId',
+];
+
 const replaceCalendarActionOpenViewParams = (action: any, params: Record<string, any>) => {
   if (!action) {
     return;
@@ -335,18 +349,67 @@ export class CalendarBlockModel extends CollectionBlockModel {
     return actionKey === 'quickCreateAction' ? 'quickCreatePopupSettings' : 'eventPopupSettings';
   }
 
-  getStoredPopupSettings(
-    actionKey: 'quickCreateAction' | 'eventViewAction',
-    action?: any,
-    options: CalendarPopupSettingsOptions = {},
-  ) {
-    const actionParams = action?.getStepParams?.('popupSettings', 'openView');
-    if (options.preferActionSettings !== false && actionParams && Object.keys(actionParams).length > 0) {
-      return actionParams;
+  getPopupActionSettings(action: any) {
+    return action?.getStepParams?.('popupSettings', 'openView') || {};
+  }
+
+  getStoredPopupSettings(actionKey: 'quickCreateAction' | 'eventViewAction') {
+    const propKey = this.getPopupSettingsPropKey(actionKey);
+    if (this.props?.[propKey]) {
+      return this.props[propKey];
     }
 
+    try {
+      return this.getStepParams('calendarSettings', propKey) || {};
+    } catch {
+      return {};
+    }
+  }
+
+  clearStoredPopupSettings(actionKey: 'quickCreateAction' | 'eventViewAction') {
     const propKey = this.getPopupSettingsPropKey(actionKey);
-    return this.props?.[propKey] || {};
+    this.setProps({
+      [propKey]: undefined,
+    });
+    this.setStepParams('calendarSettings', {
+      [propKey]: {},
+    });
+  }
+
+  hasPopupTemplateState(popupSettings?: Record<string, any>) {
+    if (!popupSettings || typeof popupSettings !== 'object') {
+      return false;
+    }
+
+    const popupTemplateUid =
+      typeof popupSettings.popupTemplateUid === 'string'
+        ? popupSettings.popupTemplateUid.trim()
+        : popupSettings.popupTemplateUid;
+
+    return !!popupTemplateUid || popupSettings.popupTemplateContext === true;
+  }
+
+  mergePopupTemplateSettings(baseSettings: Record<string, any>, popupSettings?: Record<string, any>) {
+    if (!this.hasPopupTemplateState(popupSettings)) {
+      return baseSettings;
+    }
+
+    const nextSettings = { ...baseSettings };
+    POPUP_TEMPLATE_SETTING_KEYS.forEach((key) => {
+      if (Object.prototype.hasOwnProperty.call(popupSettings, key)) {
+        nextSettings[key] = popupSettings[key];
+      }
+    });
+
+    if (popupSettings?.popupTemplateContext === true) {
+      delete nextSettings.popupTemplateUid;
+      delete nextSettings.popupTemplateHasFilterByTk;
+      delete nextSettings.popupTemplateHasSourceId;
+    } else if (popupSettings?.popupTemplateUid) {
+      delete nextSettings.popupTemplateContext;
+    }
+
+    return nextSettings;
   }
 
   normalizePopupSettings(actionKey: 'quickCreateAction' | 'eventViewAction', popupSettings?: Record<string, any>) {
@@ -363,9 +426,13 @@ export class CalendarBlockModel extends CollectionBlockModel {
       !isCalendarPopupTemplateCopyMode(nextParams)
     ) {
       delete nextParams.popupTemplateUid;
+      delete nextParams.popupTemplateMode;
       delete nextParams.popupTemplateContext;
       delete nextParams.popupTemplateHasFilterByTk;
       delete nextParams.popupTemplateHasSourceId;
+      delete nextParams.associationName;
+      delete nextParams.filterByTk;
+      delete nextParams.sourceId;
       delete nextParams.uid;
     }
     if (
@@ -382,6 +449,10 @@ export class CalendarBlockModel extends CollectionBlockModel {
       delete nextParams.popupTemplateContext;
       delete nextParams.popupTemplateHasFilterByTk;
       delete nextParams.popupTemplateHasSourceId;
+      delete nextParams.popupTemplateMode;
+      delete nextParams.associationName;
+      delete nextParams.filterByTk;
+      delete nextParams.sourceId;
       delete nextParams.uid;
     }
 
@@ -404,15 +475,24 @@ export class CalendarBlockModel extends CollectionBlockModel {
     options: CalendarPopupSettingsOptions = {},
   ) {
     const defaults = this.getPopupSettingsDefaults(action?.uid || actionUid);
-    const currentParams = this.getStoredPopupSettings(actionKey, action, options);
-
-    return {
+    const actionParams = this.getPopupActionSettings(action);
+    const currentParams =
+      options.preferActionSettings !== false && Object.keys(actionParams).length > 0
+        ? actionParams
+        : this.getStoredPopupSettings(actionKey);
+    const popupSettings = {
       ...defaults,
       ...currentParams,
       uid: currentParams.uid || defaults.uid,
       collectionName: currentParams.collectionName || defaults.collectionName,
       dataSourceKey: currentParams.dataSourceKey || defaults.dataSourceKey,
     };
+
+    if (options.preferActionSettings === false) {
+      return popupSettings;
+    }
+
+    return this.mergePopupTemplateSettings(popupSettings, actionParams);
   }
 
   async syncPopupActionSettings(
@@ -427,16 +507,35 @@ export class CalendarBlockModel extends CollectionBlockModel {
     const nextSettings = this.getPopupSettings(action, actionKey, action?.uid, {
       preferActionSettings: !options.persist,
     });
-    const currentParams = action.getStepParams?.('popupSettings', 'openView') || {};
+    const currentParams = this.getPopupActionSettings(action);
     if (JSON.stringify(currentParams) === JSON.stringify(nextSettings)) {
       return;
     }
 
+    await this.setPopupActionSettings(action, actionKey, nextSettings, options);
+  }
+
+  async setPopupActionSettings(
+    action: any,
+    actionKey: 'quickCreateAction' | 'eventViewAction',
+    popupSettings?: Record<string, any>,
+    options: CalendarPopupActionOptions = {},
+  ) {
+    if (!action) {
+      return {};
+    }
+
+    const nextSettings = this.normalizePopupSettings(actionKey, popupSettings);
     replaceCalendarActionOpenViewParams(action, nextSettings);
 
     if (options.persist && this.context.flowSettingsEnabled && action?.saveStepParams) {
+      if (action?.save) {
+        await action.save();
+      }
       await action.saveStepParams();
     }
+
+    return nextSettings;
   }
 
   async loadPopupAction(actionKey: 'quickCreateAction' | 'eventViewAction') {
@@ -467,10 +566,6 @@ export class CalendarBlockModel extends CollectionBlockModel {
       }
 
       action = this.subModels?.[actionKey] as any;
-    }
-
-    if (options.persist && this.context.flowSettingsEnabled && action?.save) {
-      await action.save();
     }
 
     await this.syncPopupActionSettings(action, actionKey, options);
@@ -865,13 +960,29 @@ CalendarBlockModel.registerFlow({
       },
       async handler(ctx, params) {
         const model = ctx.model as CalendarBlockModel;
-        model.setPopupSettings('quickCreateAction', params);
+        const action = typeof model.getQuickCreateAction === 'function' ? model.getQuickCreateAction() : undefined;
+        if (action) {
+          await model.setPopupActionSettings?.(action, 'quickCreateAction', params);
+        } else {
+          model.setPopupSettings('quickCreateAction', params);
+        }
       },
       async beforeParamsSave(ctx, params, previousParams) {
         const model = ctx.model as CalendarBlockModel;
-        await model.getAction?.('openView')?.beforeParamsSave?.(ctx, params, previousParams);
-        model.setPopupSettings('quickCreateAction', params);
-        await model.ensurePopupAction('quickCreateAction', { persist: true });
+        const action = await model.ensurePopupAction('quickCreateAction');
+        const storedParams =
+          typeof model.getPopupActionSettings === 'function'
+            ? model.getPopupActionSettings(action)
+            : action?.getStepParams?.('popupSettings', 'openView') || {};
+        await model
+          .getAction?.('openView')
+          ?.beforeParamsSave?.(ctx, params, Object.keys(storedParams).length > 0 ? storedParams : previousParams || {});
+        if (typeof model.setPopupActionSettings === 'function') {
+          await model.setPopupActionSettings(action, 'quickCreateAction', params, { persist: true });
+        } else {
+          model.setPopupSettings('quickCreateAction', params);
+        }
+        model.clearStoredPopupSettings?.('quickCreateAction');
       },
     },
     eventPopupSettings: {
@@ -884,13 +995,29 @@ CalendarBlockModel.registerFlow({
       },
       async handler(ctx, params) {
         const model = ctx.model as CalendarBlockModel;
-        model.setPopupSettings('eventViewAction', params);
+        const action = typeof model.getEventViewAction === 'function' ? model.getEventViewAction() : undefined;
+        if (action) {
+          await model.setPopupActionSettings?.(action, 'eventViewAction', params);
+        } else {
+          model.setPopupSettings('eventViewAction', params);
+        }
       },
       async beforeParamsSave(ctx, params, previousParams) {
         const model = ctx.model as CalendarBlockModel;
-        await model.getAction?.('openView')?.beforeParamsSave?.(ctx, params, previousParams);
-        model.setPopupSettings('eventViewAction', params);
-        await model.ensurePopupAction('eventViewAction', { persist: true });
+        const action = await model.ensurePopupAction('eventViewAction');
+        const storedParams =
+          typeof model.getPopupActionSettings === 'function'
+            ? model.getPopupActionSettings(action)
+            : action?.getStepParams?.('popupSettings', 'openView') || {};
+        await model
+          .getAction?.('openView')
+          ?.beforeParamsSave?.(ctx, params, Object.keys(storedParams).length > 0 ? storedParams : previousParams || {});
+        if (typeof model.setPopupActionSettings === 'function') {
+          await model.setPopupActionSettings(action, 'eventViewAction', params, { persist: true });
+        } else {
+          model.setPopupSettings('eventViewAction', params);
+        }
+        model.clearStoredPopupSettings?.('eventViewAction');
       },
     },
     showLunar: {

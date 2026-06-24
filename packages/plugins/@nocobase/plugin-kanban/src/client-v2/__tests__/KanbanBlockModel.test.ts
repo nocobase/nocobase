@@ -2004,6 +2004,86 @@ describe('KanbanBlockModel.filterCollection', () => {
     expect(syncQuickCreateAction).not.toHaveBeenCalled();
   });
 
+  test('block popup settings default params load hidden quick-create action template params', async () => {
+    const flow: any = (KanbanBlockModel as any).globalFlowRegistry.getFlow('kanbanSettings');
+    const step: any = flow?.steps?.popup;
+    const hiddenActionParams = {
+      mode: 'drawer',
+      size: 'medium',
+      uid: 'template-popup-1',
+      dataSourceKey: 'main',
+      collectionName: 'template_tasks',
+      popupTemplateContext: true,
+    };
+    const ensureQuickCreateAction = vi.fn().mockResolvedValue({
+      uid: 'quick-create-action',
+      getStepParams: vi.fn(() => hiddenActionParams),
+    });
+
+    const defaultParams = await step.defaultParams({
+      model: {
+        props: {},
+        ensureQuickCreateAction,
+        getPopupMode: () => 'dialog',
+        getPopupSize: () => 'large',
+        getPopupTemplateUid: () => undefined,
+        getPopupTargetUid: () => undefined,
+        getPopupPageModelClass: () => undefined,
+      },
+    } as any);
+
+    expect(ensureQuickCreateAction).toHaveBeenCalledWith();
+    expect(defaultParams).toMatchObject({
+      mode: 'drawer',
+      size: 'medium',
+      uid: 'template-popup-1',
+      dataSourceKey: 'main',
+      collectionName: 'template_tasks',
+      popupTemplateContext: true,
+    });
+    expect(defaultParams).not.toHaveProperty('popupTemplateUid');
+  });
+
+  test('block popup settings save delegates previous params from hidden quick-create action', async () => {
+    const flow: any = (KanbanBlockModel as any).globalFlowRegistry.getFlow('kanbanSettings');
+    const step: any = flow?.steps?.popup;
+    const openViewBeforeParamsSave = vi.fn().mockResolvedValue(undefined);
+    const hiddenActionParams = {
+      popupTemplateUid: 'template-1',
+      uid: 'template-popup-1',
+    };
+    const ensureQuickCreateAction = vi.fn().mockResolvedValue({
+      uid: 'quick-create-action',
+      getStepParams: vi.fn(() => hiddenActionParams),
+    });
+    const setProps = vi.fn();
+
+    await step.beforeParamsSave(
+      {
+        model: {
+          props: {},
+          context: { flowSettingsEnabled: false },
+          setProps,
+          ensureQuickCreateAction,
+          getAction: () => ({ beforeParamsSave: openViewBeforeParamsSave }),
+        },
+      } as any,
+      {
+        mode: 'drawer',
+        size: 'medium',
+      },
+      {
+        popupTemplateUid: 'settings-step-template',
+      },
+    );
+
+    expect(openViewBeforeParamsSave).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ mode: 'drawer', size: 'medium' }),
+      hiddenActionParams,
+    );
+  });
+
   test('kanban model wraps openView popup template selector without changing the global action', async () => {
     const engine = new FlowEngine();
     engine.registerModels({ KanbanBlockModel });
