@@ -64,14 +64,17 @@ export type LLMStructuredOutputConfig = {
 
 export type LLMModelOptions = {
   model?: string;
-  frequency_penalty?: number;
-  max_completion_tokens?: number;
-  presence_penalty?: number;
-  response_format?: string;
+  frequencyPenalty?: number;
+  maxCompletionTokens?: number;
+  presencePenalty?: number;
+  responseFormat?: string;
   temperature?: number;
   timeout?: number;
-  max_retries?: number;
-  top_p?: number;
+  maxRetries?: number;
+  topP?: number;
+  maxOutputTokens?: number;
+  topK?: number;
+  numPredict?: number;
   [key: string]: unknown;
 };
 
@@ -79,8 +82,7 @@ export type LLMInstructionConfig = {
   llmService?: string;
   messages?: LLMMessage[];
   structuredOutput?: LLMStructuredOutputConfig;
-  options?: LLMModelOptions;
-};
+} & LLMModelOptions;
 
 export type AIEmployeeModelOverride = {
   llmService?: string;

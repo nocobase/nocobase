@@ -19,6 +19,7 @@ import {
   ProviderSettingsForm,
   qwenCompletionFields,
   xAICompletionFields,
+  type OptionField,
 } from './forms';
 import { capitalize, formatModelLabel, mergeVersionSegments, stripModelIdPrefix } from '../llm-services/model-label';
 
@@ -80,3 +81,19 @@ export const builtinLLMProviderOptions: Array<[string, LLMProviderOptions]> = [
   ['xai', xaiProviderOptions],
   ['mimo', mimoProviderOptions],
 ];
+
+const builtinLLMProviderModelOptionFields = new Map<string, OptionField[]>([
+  ['google-genai', googleGenAICompletionFields],
+  ['openai', openAIResponsesFields],
+  ['anthropic', qwenCompletionFields],
+  ['openai-completions', openAICompletionFields],
+  ['deepseek', deepSeekCompletionFields],
+  ['dashscope', qwenCompletionFields],
+  ['ollama', ollamaCompletionFields],
+  ['kimi', qwenCompletionFields],
+  ['xai', xAICompletionFields],
+  ['mimo', openAICompletionFields],
+]);
+
+export const getBuiltinLLMProviderModelOptionFields = (provider?: string): OptionField[] =>
+  provider ? builtinLLMProviderModelOptionFields.get(provider) ?? [] : [];

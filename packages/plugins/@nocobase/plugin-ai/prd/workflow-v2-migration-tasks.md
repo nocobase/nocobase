@@ -210,7 +210,7 @@
 
 #### W2.1 LLM service 选择和 provider model settings
 
-- 状态：未开始
+- 状态：已提交
 - 范围：
   - `src/client-v2/workflow/nodes/llm/components/LLMFieldset.tsx`
   - `src/client-v2/llm-providers/forms.tsx` 如需抽公共能力
@@ -221,7 +221,13 @@
 - UI 对照：
   - 对照 v1 LLM service 下拉、模型字段、Options 折叠区。
 - 验收记录：
-  - 待填写。
+  - 已将 `OptionsFields` 抽为可复用 antd 组件，支持 `namePrefix`，provider 设置页仍默认写入 `options.*`。
+  - 已新增 builtin provider -> model option fields 映射，workflow LLM 复用 v2 provider option 字段定义。
+  - `LLMFieldset` 已迁为原生 antd：`llmService` 复用 v2 `RemoteSelect`，`model` 复用 v2 `ModelSelect`，Options 使用 antd `Collapse`。
+  - 已确认 workflow LLM 提交值仍写入 `config` 根级：`llmService`、`model`、`frequencyPenalty`、`responseFormat` 等，与 server 端读取结构一致。
+  - 已运行 `yarn eslint --fix` 覆盖触达文件。
+  - 已运行 `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/__tests__/llm-providers.test.tsx packages/plugins/@nocobase/plugin-ai/src/client-v2/__tests__/workflow-registration.test.ts --run --reporter=verbose`；provider 测试 5 个用例通过，并单独确认 workflow registration 测试 5 个用例通过。
+  - 已用 Kimi WebBridge 在 v2 `http://localhost:13004/v/admin/workflow/workflows/369436327477250` 打开 LLM 配置抽屉，对照确认 `LLM service`、`Model`、`Options` 折叠区出现且已有值与 v1 对齐。
 
 #### W2.2 LLM messages 配置迁移
 
@@ -494,7 +500,7 @@
 | --- | --- | --- |
 | W0. 迁移任务文档与基线准备 | 已提交 | 开始 W1.1 |
 | W1. workflow v2 注册骨架与共享类型 | 已提交 | 开始 W2.1 |
-| W2. LLM workflow 节点迁移 | 未开始 | 开始 W2.1 |
+| W2. LLM workflow 节点迁移 | 进行中 | 开始 W2.2 |
 | W3. AI employee workflow 节点迁移 | 未开始 | 等 W1 完成 |
 | W4. AI employee workflow trigger 迁移 | 未开始 | 等 W1 完成 |
 | W5. v1 兼容入口收敛 | 未开始 | 等 W2/W3/W4 校验通过 |

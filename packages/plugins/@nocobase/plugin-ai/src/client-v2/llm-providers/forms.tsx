@@ -27,7 +27,7 @@ type ModelOption = {
   value: string;
 };
 
-type OptionField = {
+export type OptionField = {
   name: string;
   title: string;
   description?: string;
@@ -135,9 +135,10 @@ export const ModelSelect: React.FC<{
   );
 };
 
-const OptionsFields: React.FC<{
+export const OptionsFields: React.FC<{
   fields: OptionField[];
-}> = ({ fields }) => {
+  namePrefix?: Array<string | number>;
+}> = ({ fields, namePrefix = ['options'] }) => {
   const t = useT();
 
   return (
@@ -145,7 +146,7 @@ const OptionsFields: React.FC<{
       {fields.map((field) => (
         <Form.Item
           key={field.name}
-          name={['options', field.name]}
+          name={[...namePrefix, field.name]}
           label={t(field.title)}
           tooltip={field.description ? t(field.description) : undefined}
           initialValue={field.defaultValue}

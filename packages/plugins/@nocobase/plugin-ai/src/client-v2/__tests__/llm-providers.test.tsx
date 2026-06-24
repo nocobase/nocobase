@@ -13,6 +13,7 @@ import PluginAIClientV2 from '../plugin';
 import {
   builtinLLMProviderOptions,
   deepseekProviderOptions,
+  getBuiltinLLMProviderModelOptionFields,
   ollamaProviderOptions,
   openaiResponsesProviderOptions,
 } from '../llm-providers';
@@ -57,5 +58,25 @@ describe('plugin-ai client-v2 LLM providers', () => {
   it('keeps provider-specific model label formatting', () => {
     expect(openaiResponsesProviderOptions.formatModelLabel?.('gpt-4.1-mini')).toBe('GPT-4.1-Mini');
     expect(deepseekProviderOptions.formatModelLabel?.('deepseek-chat')).toBe('Deepseek Chat');
+  });
+
+  it('exposes builtin model option fields for workflow node reuse', () => {
+    expect(getBuiltinLLMProviderModelOptionFields('openai').map((field) => field.name)).toEqual([
+      'frequencyPenalty',
+      'maxCompletionTokens',
+      'presencePenalty',
+      'temperature',
+      'topP',
+      'responseFormat',
+      'timeout',
+      'maxRetries',
+    ]);
+    expect(getBuiltinLLMProviderModelOptionFields('ollama').map((field) => field.name)).toEqual([
+      'temperature',
+      'topP',
+      'topK',
+      'numPredict',
+    ]);
+    expect(getBuiltinLLMProviderModelOptionFields('unknown')).toEqual([]);
   });
 });
