@@ -296,13 +296,13 @@
 
 ### W3. AI employee workflow 节点迁移
 
-状态：未开始
+状态：进行中
 
 目标：把 v1 `workflow/nodes/employee` 迁到 v2，保留配置结构并改为 antd。
 
 #### W3.1 AI employee 基础配置迁移
 
-- 状态：未开始
+- 状态：已提交
 - 范围：
   - `src/client-v2/workflow/nodes/employee/components/AIEmployeeFieldset.tsx`
   - `src/client-v2/workflow/nodes/employee/components/AIEmployeeSelect.tsx`
@@ -314,7 +314,14 @@
 - UI 对照：
   - 对照员工选择下拉、popover、默认值和切换行为。
 - 验收记录：
-  - 待填写。
+  - 已新增 v2 `AIEmployeeSelect`，基于 antd `Dropdown`/`Popover`，复用 `AIEmployeeProfileCard` 与 `avatars`，不再依赖 Formily 或 v1 `AIEmployeeSelect`。
+  - 已将 `AIEmployeeFieldset` 改为原生 antd `Tabs`，保留 `Task` 与 `Feedback & Notification` 两个 tab，并设置 `forceRender`。
+  - `Task` tab 已注册 `config.username`，默认值为 `atlas`；选择员工时同步清空 `config.skillSettings.skills` 和 `config.skillSettings.tools`，保留 v1 切换行为。
+  - 已运行 `yarn eslint --fix` 覆盖触达文件。
+  - 已运行 `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/__tests__/workflow-registration.test.ts --run --reporter=verbose`，5 个用例通过。
+  - 已用 Kimi WebBridge 在 v2 `http://localhost:13004/v/admin/workflow/workflows/356950351282176` 打开 AI employee 节点配置抽屉，确认 `Task`/`Feedback & Notification` tabs、`AI employee` 必填项、默认 `Atlas`、头像、下拉箭头可见。
+  - 已触发员工选择下拉，确认列表显示头像、昵称、职位和当前 `Atlas` 勾选状态。
+  - 已扫描 `src/client-v2/workflow/nodes/employee`，未发现 `@nocobase/client`、`@formily/*` runtime、`@nocobase/plugin-workflow/client` 或本插件 `src/client/` import。
 
 #### W3.2 模型、操作者、消息、附件配置迁移
 
@@ -521,7 +528,7 @@
 | W0. 迁移任务文档与基线准备 | 已提交 | 开始 W1.1 |
 | W1. workflow v2 注册骨架与共享类型 | 已提交 | 开始 W2.1 |
 | W2. LLM workflow 节点迁移 | 已提交 | 开始 W3.1 |
-| W3. AI employee workflow 节点迁移 | 未开始 | 开始 W3.1 |
+| W3. AI employee workflow 节点迁移 | 进行中 | 开始 W3.2 |
 | W4. AI employee workflow trigger 迁移 | 未开始 | 等 W1 完成 |
 | W5. v1 兼容入口收敛 | 未开始 | 等 W2/W3/W4 校验通过 |
 | W6. 总体验收、清理和最终提交 | 未开始 | 等 W5 完成 |
