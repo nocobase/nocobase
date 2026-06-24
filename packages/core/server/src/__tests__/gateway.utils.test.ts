@@ -124,6 +124,27 @@ describe('gateway utils', () => {
     );
   });
 
+  it('preserves sub-app deep links until the client shell decides whether to hop into modern', () => {
+    expect(
+      resolveClientEntryRedirectTarget('/nocobase/apps/a_31itq60q4kg/admin/', {
+        appPublicPath: '/nocobase/',
+        mode: 'legacy-default',
+      }),
+    ).toBeNull();
+    expect(
+      resolveClientEntryRedirectTarget('/nocobase/apps/a_31itq60q4kg/admin/', {
+        appPublicPath: '/nocobase/',
+        mode: 'modern-default',
+      }),
+    ).toBeNull();
+    expect(
+      resolveClientEntryRedirectTarget('/nocobase/apps/a_31itq60q4kg/admin/', {
+        appPublicPath: '/nocobase/',
+        mode: 'modern-only',
+      }),
+    ).toBe(`/nocobase/${DIR}/apps/a_31itq60q4kg/admin`);
+  });
+
   it('does not redirect modern-prefixed paths or non-document requests', () => {
     expect(resolveClientEntryRedirectTarget(`/${DIR}/admin`, { mode: 'modern-only' })).toBeNull();
     expect(resolveClientEntryRedirectTarget('/api/app:getInfo', { mode: 'modern-only' })).toBeNull();

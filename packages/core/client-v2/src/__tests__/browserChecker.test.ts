@@ -158,5 +158,16 @@ describe.each(browserCheckerCases)('$label', ({ scriptPath }) => {
 
       expect(replace).toHaveBeenCalledWith('http://c.local.nocobase.com/nocobase/v/');
     });
+
+    it('rewrites sub-app legacy deep links for modern-only without collapsing the sub-app segment', () => {
+      const replace = executeBrowserChecker(scriptPath, {
+        pathname: '/nocobase/apps/a_31itq60q4kg/admin/',
+        publicPath: '/nocobase/',
+        modernClientPrefix: 'v',
+        appClientEntryMode: 'modern-only',
+      });
+
+      expect(replace).toHaveBeenCalledWith('http://c.local.nocobase.com/nocobase/v/apps/a_31itq60q4kg/admin');
+    });
   }
 });

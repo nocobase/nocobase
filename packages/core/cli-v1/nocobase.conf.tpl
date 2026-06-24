@@ -167,7 +167,11 @@ server {
 
     location {{publicPath}} {
         alias {{cwd}}/node_modules/@nocobase/app/dist/client/;
-        try_files $uri $uri/ /index.html;
+        # Keep SPA refreshes inside APP_PUBLIC_PATH. Falling back to the root
+        # `/index.html` would re-enter the site-root redirect rules and can
+        # collapse deep links (especially `/apps/<subapp>/...`) into the main
+        # app entry.
+        try_files $uri $uri/ {{publicPath}}index.html;
         add_header Last-Modified $date_gmt;
         add_header Cache-Control 'no-store, no-cache';
         add_header X-Robots-Tag "noindex, nofollow";
