@@ -9,7 +9,7 @@
 
 import { SchemaInitializerItemType } from '@nocobase/client';
 import { ValueBlock } from '../components/ValueBlock';
-import type { SubModelItem } from '@nocobase/flow-engine';
+import { SubModelItem } from '@nocobase/flow-engine';
 import V2CalculationInstruction from '../../client-v2/nodes/calculation';
 import { lang } from '../locale';
 
@@ -27,10 +27,9 @@ export default class extends V2CalculationInstruction {
 
   getCreateModelMenuItem({ node }): SubModelItem {
     const item = super.getCreateModelMenuItem({ node });
-    const createModelOptions = item?.createModelOptions;
 
-    if (typeof createModelOptions !== 'function' && createModelOptions?.stepParams?.valueSettings?.init) {
-      createModelOptions.stepParams.valueSettings.init.defaultValue = lang('Calculation result');
+    if (item?.createModelOptions?.stepParams?.valueSettings?.init) {
+      item.createModelOptions.stepParams.valueSettings.init.defaultValue = lang('Calculation result');
     }
 
     return item;

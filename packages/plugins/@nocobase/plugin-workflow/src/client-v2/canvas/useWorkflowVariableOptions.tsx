@@ -113,17 +113,16 @@ function useWorkflowPlugin(): WorkflowVariablePlugin | undefined {
 }
 
 function prefixMetaTreeNodePaths(node: MetaTreeNode, prefix: string[]): MetaTreeNode {
-  const { children } = node;
   const nextNode: MetaTreeNode = {
     ...node,
     paths: [...prefix, ...(node.paths ?? [String(node.name ?? '')])],
   };
 
-  if (Array.isArray(children)) {
-    nextNode.children = children.map((child) => prefixMetaTreeNodePaths(child, prefix));
-  } else if (typeof children === 'function') {
+  if (Array.isArray(node.children)) {
+    nextNode.children = node.children.map((child) => prefixMetaTreeNodePaths(child, prefix));
+  } else if (typeof node.children === 'function') {
     nextNode.children = async () => {
-      const loaded = await children();
+      const loaded = await node.children();
       return loaded.map((child) => prefixMetaTreeNodePaths(child, prefix));
     };
   }
