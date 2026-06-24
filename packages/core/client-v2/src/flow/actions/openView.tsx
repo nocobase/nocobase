@@ -299,15 +299,28 @@ export const openView = defineAction({
         ? (inputArgs as any).associationName
         : (params as any)?.associationName;
     const mergedTabUid = typeof inputArgs.tabUid !== 'undefined' ? inputArgs.tabUid : params.tabUid;
-    // 移动端中只需要显示子页面
-    const openMode = ctx.inputArgs?.isMobileLayout ? 'embed' : ctx.inputArgs?.mode || params.mode || 'drawer';
     const hasRunJSOpenViewRouteState = Object.prototype.hasOwnProperty.call(inputArgs, RUNJS_OPEN_VIEW_ROUTE_STATE);
-    const openViewRouteState = hasRunJSOpenViewRouteState
-      ? createOpenViewRouteState({
-          mode: openMode,
-          size: ctx.inputArgs?.size || params.size,
-        })
+    const runJSOpenViewRouteStateInput = (inputArgs as Record<PropertyKey, unknown>)[RUNJS_OPEN_VIEW_ROUTE_STATE];
+    const runJSOpenViewRouteState = hasRunJSOpenViewRouteState
+      ? createOpenViewRouteState(
+          runJSOpenViewRouteStateInput && typeof runJSOpenViewRouteStateInput === 'object'
+            ? (runJSOpenViewRouteStateInput as { mode?: unknown; size?: unknown })
+            : {
+                mode: inputArgs.mode,
+                size: inputArgs.size,
+              },
+        )
       : undefined;
+    const replayOpenViewRouteStateInput = (inputArgs as { openViewRouteState?: unknown }).openViewRouteState;
+    const replayOpenViewRouteState =
+      replayOpenViewRouteStateInput && typeof replayOpenViewRouteStateInput === 'object'
+        ? createOpenViewRouteState(replayOpenViewRouteStateInput as { mode?: unknown; size?: unknown })
+        : undefined;
+    const runtimeOpenViewRouteState = runJSOpenViewRouteState || replayOpenViewRouteState;
+    // 移动端中只需要显示子页面。本次 dispatch 参数优先于持久化默认值。
+    const openMode = ctx.inputArgs?.isMobileLayout
+      ? 'embed'
+      : runtimeOpenViewRouteState?.mode || ctx.inputArgs?.mode || params.mode || 'drawer';
     let navigation = typeof inputArgs.navigation !== 'undefined' ? inputArgs.navigation : params.navigation;
 
     // 传递了上下文就必须禁用路由，否则下次路由打开会缺少上下文
@@ -328,7 +341,7 @@ export const openView = defineAction({
           sourceId: mergedSourceId,
           tabUid: mergedTabUid,
           viewUid: ctx.model.context?.inputArgs?.viewUid || ctx.model.uid,
-          ...(openViewRouteState ? { openViewRouteState } : {}),
+          ...(runJSOpenViewRouteState ? { openViewRouteState: runJSOpenViewRouteState } : {}),
         } as Record<string, unknown>;
         const pendingView = {
           type: pendingType,
@@ -344,7 +357,7 @@ export const openView = defineAction({
           filterByTk: mergedFilterByTk,
           sourceId: mergedSourceId,
           tabUid: mergedTabUid,
-          ...(openViewRouteState ? { openViewRouteState } : {}),
+          ...(runJSOpenViewRouteState ? { openViewRouteState: runJSOpenViewRouteState } : {}),
         };
         ctx.view.navigation.navigateTo(nextView);
         return;
@@ -390,7 +403,7 @@ export const openView = defineAction({
 
     const pageModelClass =
       ctx.inputArgs.pageModelClass || params.pageModelClass || ctx.layout?.childPageModelClass || 'ChildPageModel';
-    const size = ctx.inputArgs.size || params.size || 'medium';
+    const size = runtimeOpenViewRouteState?.size || ctx.inputArgs.size || params.size || 'medium';
     let pageModelUid: string | null = null;
     let pageModelRef: FlowModel | null = null;
 

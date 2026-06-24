@@ -176,7 +176,7 @@ describe('openView action - route mode defineProperties/defineMethods', () => {
     const { ctx, navigateTo } = createFirstStageCtx({
       mode: 'dialog',
       size: 'large',
-      [RUNJS_OPEN_VIEW_ROUTE_STATE]: true,
+      [RUNJS_OPEN_VIEW_ROUTE_STATE]: { mode: 'dialog', size: 'large' },
     });
 
     await openView.handler(ctx, { mode: 'drawer', size: 'medium', navigation: true });
@@ -188,6 +188,35 @@ describe('openView action - route mode defineProperties/defineMethods', () => {
       tabUid: undefined,
       openViewRouteState: { mode: 'dialog', size: 'large' },
     });
+  });
+
+  it('uses route replay mode and size before persisted openView defaults', async () => {
+    const { ctx } = createRouteManagedCtx();
+    ctx.inputArgs.mode = 'dialog';
+    ctx.inputArgs.size = 'large';
+
+    await openView.handler(ctx, { mode: 'drawer', size: 'medium', navigation: true });
+
+    expect(ctx.viewer.open).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'dialog',
+        width: '80%',
+      }),
+    );
+  });
+
+  it('uses decoded openView route state during route replay', async () => {
+    const { ctx } = createRouteManagedCtx();
+    ctx.inputArgs.openViewRouteState = { mode: 'dialog', size: 'large' };
+
+    await openView.handler(ctx, { mode: 'drawer', size: 'medium', navigation: true });
+
+    expect(ctx.viewer.open).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'dialog',
+        width: '80%',
+      }),
+    );
   });
 
   it('keeps first-stage navigation unchanged for non-RunJS openView calls', async () => {

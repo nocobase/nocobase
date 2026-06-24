@@ -68,6 +68,9 @@ export { clearAutoFlowError, getAutoFlowError, setAutoFlowError, type AutoFlowEr
 export { parsePathnameToViewParams, type ViewParam } from './parsePathnameToViewParams';
 export {
   createOpenViewRouteState,
+  decodeOpenViewRouteState,
+  encodeOpenViewRouteState,
+  isOpenViewRouteStateToken,
   RUNJS_OPEN_VIEW_ROUTE_STATE,
   type OpenViewRouteMode,
   type OpenViewRouteSize,

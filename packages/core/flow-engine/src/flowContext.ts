@@ -4598,7 +4598,7 @@ export class FlowRunJSContext extends FlowContext {
 
       return delegateOpenView(uid, {
         ...(options || {}),
-        [RUNJS_OPEN_VIEW_ROUTE_STATE]: true,
+        [RUNJS_OPEN_VIEW_ROUTE_STATE]: routeState,
       });
     });
 

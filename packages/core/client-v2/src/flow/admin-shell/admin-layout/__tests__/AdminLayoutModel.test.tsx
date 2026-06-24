@@ -39,6 +39,7 @@ import {
   FlowEngine,
   FlowEngineProvider,
   FlowModelRenderer,
+  encodeOpenViewRouteState,
   useFlowEngine,
   type FlowModel,
 } from '@nocobase/flow-engine';
@@ -214,6 +215,10 @@ describe('AdminLayoutModel runtime', () => {
   });
 
   it('should parse RunJS openView route params into layout route view stack state', async () => {
+    const token = encodeOpenViewRouteState('popup', { mode: 'dialog', size: 'large' });
+    if (!token) {
+      throw new Error('Expected openView route state token.');
+    }
     const engine = new FlowEngine();
     engine.context.defineProperty('routeRepository', {
       value: {
@@ -232,7 +237,7 @@ describe('AdminLayoutModel runtime', () => {
     act(() => {
       model.syncLayoutRoute({
         name: getLayoutPageViewRouteName('admin'),
-        pathname: '/admin/page-1/view/popup/openviewmode/dialog/openviewsize/large/filterbytk/1',
+        pathname: `/admin/page-1/view/popup/${token}/filterbytk/1`,
         layoutBasePathname: '/admin',
       });
     });

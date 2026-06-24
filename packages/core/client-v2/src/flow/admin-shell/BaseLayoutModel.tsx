@@ -8,7 +8,13 @@
  */
 
 import { define, observable } from '@formily/reactive';
-import { parsePathnameToViewParams, type FlowEngine, FlowModel, type ViewParam } from '@nocobase/flow-engine';
+import {
+  isOpenViewRouteStateToken,
+  parsePathnameToViewParams,
+  type FlowEngine,
+  FlowModel,
+  type ViewParam,
+} from '@nocobase/flow-engine';
 import {
   BaseLayoutRouteCoordinator,
   type BaseLayoutRouteCoordinatorOptions,
@@ -128,10 +134,20 @@ const isStandardLayoutRelativePath = (relativePath: string) => {
       continue;
     }
 
-    if (!isKnownViewParamName(segment) || !segments[i + 1]) {
+    if (isKnownViewParamName(segment) && segments[i + 1]) {
+      i += 2;
+      continue;
+    }
+
+    if (isOpenViewRouteStateToken(segment)) {
+      i++;
+      continue;
+    }
+
+    if (!segments[i + 1]) {
       return false;
     }
-    i += 2;
+    return false;
   }
 
   return true;

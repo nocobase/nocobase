@@ -8,6 +8,7 @@
  */
 
 import { parsePathnameToViewParams } from '../parsePathnameToViewParams';
+import { encodeOpenViewRouteState } from '../openViewRouteState';
 
 describe('parsePathnameToViewParams', () => {
   test('should return single view param for basic admin path', () => {
@@ -49,9 +50,11 @@ describe('parsePathnameToViewParams', () => {
   });
 
   test('should parse RunJS openView route state without losing route params', () => {
-    const result = parsePathnameToViewParams(
-      '/admin/xxx/view/yyy/openviewmode/dialog/openviewsize/large/filterbytk/1/sourceid/2',
-    );
+    const token = encodeOpenViewRouteState('yyy', { mode: 'dialog', size: 'large' });
+    if (!token) {
+      throw new Error('Expected openView route state token.');
+    }
+    const result = parsePathnameToViewParams(`/admin/xxx/view/yyy/${token}/filterbytk/1/sourceid/2`);
 
     expect(result).toEqual([
       { viewUid: 'xxx' },
@@ -65,7 +68,7 @@ describe('parsePathnameToViewParams', () => {
   });
 
   test('should ignore invalid RunJS openView route state values and keep following params', () => {
-    const result = parsePathnameToViewParams('/admin/xxx/view/yyy/openviewmode/popover/filterbytk/1');
+    const result = parsePathnameToViewParams('/admin/xxx/view/yyy/AbCdEfGh/filterbytk/1');
 
     expect(result).toEqual([{ viewUid: 'xxx' }, { viewUid: 'yyy', filterByTk: '1' }]);
   });

@@ -277,7 +277,7 @@ describe('RunJS Runtime Features', () => {
       await (runCtx as any).openView('popup', { mode: 'dialog', size: 'large' });
       await (runCtx as any).openView('popup', { filterByTk: 1 });
 
-      expect(openView.mock.calls[0][1][RUNJS_OPEN_VIEW_ROUTE_STATE]).toBe(true);
+      expect(openView.mock.calls[0][1][RUNJS_OPEN_VIEW_ROUTE_STATE]).toEqual({ mode: 'dialog', size: 'large' });
       expect(Object.prototype.hasOwnProperty.call(openView.mock.calls[1][1], RUNJS_OPEN_VIEW_ROUTE_STATE)).toBe(false);
     });
   });
