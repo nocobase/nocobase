@@ -52,6 +52,19 @@ function getLabelValue(item: RecordValue, labelKey: string | string[]) {
   return item?.[labelKey];
 }
 
+function formatOptionLabel(value: unknown, t: (key: string) => string): string | number {
+  if (typeof value === 'string') {
+    return t(value);
+  }
+  if (typeof value === 'number') {
+    return value;
+  }
+  if (value == null) {
+    return t('Untitled');
+  }
+  return String(value);
+}
+
 function WorkflowTypedVariableInput({
   variableOptions,
   ...props
@@ -201,7 +214,7 @@ function TriggerCollectionRecordMultiSelect({
         const rawLabel =
           getLabelValue(item as RecordValue, labelKey) ?? getPrimaryValue(item as RecordValue, filterTargetKey);
         return {
-          label: typeof rawLabel === 'string' ? t(rawLabel) : rawLabel ?? t('Untitled'),
+          label: formatOptionLabel(rawLabel, t),
           value: getPrimaryValue(item as RecordValue, filterTargetKey),
         };
       }}
