@@ -77,6 +77,178 @@ describe('vsc-file resource actions and ACL', () => {
     });
   });
 
+  it('exercises the full repository workflow through public APIs', async () => {
+    const createResponse = await agent.resource('vscFile').createRepository({
+      values: {
+        ownerType: 'plugin',
+        ownerId: 'workflow',
+        name: `main-${Math.random()}`,
+      },
+    });
+    const repository = createResponse.body.data.repository;
+    const emptyPullResponse = await agent.resource('vscFile').pull({
+      values: {
+        repoId: repository.id,
+      },
+    });
+    const firstPushResponse = await agent.resource('vscFile').push({
+      values: {
+        repoId: repository.id,
+        baseCommitId: null,
+        message: 'first commit',
+        files: [
+          { path: 'README.md', content: '# Demo\n' },
+          { path: 'src/index.ts', content: 'export const value = 1;\n' },
+        ],
+      },
+    });
+    const firstCommit = firstPushResponse.body.data.commit;
+    const fileResponse = await agent.resource('vscFile').getFile({
+      values: {
+        repoId: repository.id,
+        path: 'README.md',
+      },
+    });
+    const saveDraftResponse = await agent.resource('vscFile').saveDraft({
+      values: {
+        repoId: repository.id,
+        baseCommitId: firstCommit.id,
+        files: [
+          { path: 'README.md', operation: 'upsert', content: '# Demo\n\nDraft update\n' },
+          { path: 'src/draft.ts', operation: 'upsert', content: 'export const draft = true;\n' },
+        ],
+      },
+    });
+    const draft = saveDraftResponse.body.data.draft;
+    const draftDiffResponse = await agent.resource('vscFile').diffDraft({
+      values: {
+        repoId: repository.id,
+      },
+    });
+    const pushDraftResponse = await agent.resource('vscFile').push({
+      values: {
+        repoId: repository.id,
+        baseCommitId: firstCommit.id,
+        message: 'commit draft',
+        draftId: draft.id,
+        files: [
+          { path: 'README.md', content: '# Demo\n\nDraft update\n' },
+          { path: 'src/draft.ts', content: 'export const draft = true;\n' },
+        ],
+      },
+    });
+    const secondCommit = pushDraftResponse.body.data.commit;
+    const commitsResponse = await agent.resource('vscFile').listCommits({
+      values: {
+        repoId: repository.id,
+      },
+    });
+    const commitDiffResponse = await agent.resource('vscFile').diff({
+      values: {
+        repoId: repository.id,
+        fromCommitId: firstCommit.id,
+        toCommitId: secondCommit.id,
+      },
+    });
+    const textDiffResponse = await agent.resource('vscFile').diffFile({
+      values: {
+        repoId: repository.id,
+        from: { type: 'commit', commitId: firstCommit.id, path: 'README.md' },
+        to: { type: 'commit', commitId: secondCommit.id, path: 'README.md' },
+      },
+    });
+    const restoreFileResponse = await agent.resource('vscFile').restoreFile({
+      values: {
+        repoId: repository.id,
+        sourceCommitId: firstCommit.id,
+        path: 'README.md',
+        message: 'restore readme',
+      },
+    });
+    const restoreCommitResponse = await agent.resource('vscFile').restoreCommit({
+      values: {
+        repoId: repository.id,
+        sourceCommitId: firstCommit.id,
+        message: 'restore first commit',
+      },
+    });
+    const publishResponse = await agent.resource('vscFile').updateRef({
+      values: {
+        repoId: repository.id,
+        name: 'published',
+        targetCommitId: restoreCommitResponse.body.data.commit.id,
+        basePublishedCommitId: null,
+      },
+    });
+    const archiveResponse = await agent.resource('vscFile').archiveRepository({
+      values: {
+        repoId: repository.id,
+      },
+    });
+
+    expect(createResponse.status).toBe(200);
+    expect(emptyPullResponse.body.data).toMatchObject({
+      commit: null,
+      tree: null,
+      files: [],
+    });
+    expect(firstPushResponse.body.data.commit).toMatchObject({
+      seq: 1,
+      parentCommitId: null,
+    });
+    expect(fileResponse.body.data).toMatchObject({
+      path: 'README.md',
+      content: '# Demo\n',
+    });
+    expect(saveDraftResponse.body.data.files).toHaveLength(2);
+    expect(draftDiffResponse.body.data.summary).toMatchObject({
+      added: 1,
+      modified: 1,
+      deleted: 0,
+    });
+    expect(pushDraftResponse.body.data.commit).toMatchObject({
+      seq: 2,
+      parentCommitId: firstCommit.id,
+      message: 'commit draft',
+    });
+    expect(commitsResponse.body.data.map((commit: { id: string }) => commit.id)).toEqual([
+      secondCommit.id,
+      firstCommit.id,
+    ]);
+    expect(commitDiffResponse.body.data.summary).toMatchObject({
+      added: 1,
+      modified: 1,
+      deleted: 0,
+    });
+    expect(textDiffResponse.body.data).toMatchObject({
+      additions: 2,
+      deletions: 0,
+      tooLarge: false,
+    });
+    expect(restoreFileResponse.body.data.commit).toMatchObject({
+      seq: 3,
+      parentCommitId: secondCommit.id,
+    });
+    expect(restoreCommitResponse.body.data.commit).toMatchObject({
+      seq: 4,
+      parentCommitId: restoreFileResponse.body.data.commit.id,
+      treeHash: firstCommit.treeHash,
+    });
+    expect(publishResponse.body.data).toMatchObject({
+      ref: {
+        name: 'published',
+        commitId: restoreCommitResponse.body.data.commit.id,
+      },
+      repository: {
+        publishedCommitId: restoreCommitResponse.body.data.commit.id,
+      },
+    });
+    expect(archiveResponse.body.data).toMatchObject({
+      id: repository.id,
+      status: 'archived',
+    });
+  });
+
   it('rejects anonymous access', async () => {
     const response = await app
       .agent()
