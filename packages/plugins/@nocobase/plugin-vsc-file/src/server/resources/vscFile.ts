@@ -14,6 +14,7 @@ import type { HandlerType, ResourceOptions } from '@nocobase/resourcer';
 import { VscError, isVscError } from '../../shared/errors';
 import type { DiffCommitsInput, DiffDraftInput, DiffFileEndpoint, DiffFileInput } from '../services/DiffService';
 import type { DiscardDraftInput, GetDraftInput, SaveDraftInput } from '../services/DraftService';
+import type { VscPermissionHookRegistry, VscPermissionRequestMetadata } from '../permissions';
 import type { ListRefsInput, RestoreCommitInput, RestoreFileInput, UpdateRefInput } from '../services/RefService';
 import type {
   CreateRepositoryInput,
@@ -54,9 +55,24 @@ type ResourceActionInput = Record<string, unknown>;
 type VscResourceContext = Context & {
   action?: {
     params?: unknown;
+    resourceName?: string;
+    actionName?: string;
   };
   auth?: {
     user?: unknown;
+  };
+  request?: {
+    path?: string;
+    method?: string;
+    header?: Record<string, string | string[] | undefined>;
+    headers?: Record<string, string | string[] | undefined>;
+  };
+  state?: {
+    currentRole?: unknown;
+    currentRoles?: unknown;
+  };
+  dataSource?: {
+    name?: unknown;
   };
   withoutDataWrapping?: boolean;
   type?: string;
@@ -66,6 +82,7 @@ type VscResourceContext = Context & {
 
 type CurrentUserContext = {
   authorId: string | null;
+  request?: VscPermissionRequestMetadata;
 };
 
 type ResourceActionRunner = (
@@ -102,24 +119,32 @@ const resourceActionRunners: Record<VscFileActionName, ResourceActionRunner> = {
   updateRef: (service, input, currentUser) => service.updateRef(normalizeUpdateRefInput(input), currentUser),
 };
 
-export function createVscFileResource(db: Database): ResourceOptions {
+export function createVscFileResource(db: Database, permissionHooks?: VscPermissionHookRegistry): ResourceOptions {
   return {
     name: 'vscFile',
     only: [...vscFileActionNames],
     actions: Object.fromEntries(
-      vscFileActionNames.map((actionName) => [actionName, createVscFileAction(db, resourceActionRunners[actionName])]),
+      vscFileActionNames.map((actionName) => [
+        actionName,
+        createVscFileAction(db, resourceActionRunners[actionName], permissionHooks),
+      ]),
     ) as Record<VscFileActionName, HandlerType>,
   };
 }
 
-function createVscFileAction(db: Database, run: ResourceActionRunner): HandlerType {
+function createVscFileAction(
+  db: Database,
+  run: ResourceActionRunner,
+  permissionHooks?: VscPermissionHookRegistry,
+): HandlerType {
   return async (ctx: Context, next) => {
     const resourceCtx = ctx as VscResourceContext;
-    const service = new VscFileService(db);
+    const service = new VscFileService(db, permissionHooks);
 
     try {
       resourceCtx.body = await run(service, getActionInput(resourceCtx), {
         authorId: getCurrentUserId(resourceCtx),
+        request: getRequestMetadata(resourceCtx),
       });
       await next();
     } catch (error) {
@@ -172,6 +197,50 @@ function getCurrentUserId(ctx: VscResourceContext): string | null {
 
   const id = get('id');
   return typeof id === 'string' || typeof id === 'number' ? String(id) : null;
+}
+
+function getRequestMetadata(ctx: VscResourceContext): VscPermissionRequestMetadata {
+  const headers = ctx.request?.headers || ctx.request?.header || {};
+
+  return compactObject({
+    resourceName: ctx.action?.resourceName,
+    actionName: ctx.action?.actionName,
+    path: ctx.request?.path,
+    method: ctx.request?.method,
+    requestSource: getHeader(headers, 'x-request-source'),
+    locale: getHeader(headers, 'x-locale'),
+    timezone: getHeader(headers, 'x-timezone'),
+    dataSource: getHeader(headers, 'x-data-source') || toStringValue(ctx.dataSource?.name),
+    roleName: toStringValue(ctx.state?.currentRole),
+    roles: toStringArray(ctx.state?.currentRoles),
+  });
+}
+
+function getHeader(headers: Record<string, string | string[] | undefined>, name: string): string | undefined {
+  const value = headers[name];
+  if (Array.isArray(value)) {
+    return value[0];
+  }
+
+  return value;
+}
+
+function toStringValue(value: unknown): string | undefined {
+  if (typeof value === 'string' || typeof value === 'number') {
+    return String(value);
+  }
+
+  return undefined;
+}
+
+function toStringArray(value: unknown): string[] | undefined {
+  if (!Array.isArray(value)) {
+    return undefined;
+  }
+
+  const strings = value.map((item) => toStringValue(item)).filter((item): item is string => typeof item === 'string');
+
+  return strings.length ? strings : undefined;
 }
 
 function normalizeCreateRepositoryInput(

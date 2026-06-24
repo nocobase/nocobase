@@ -27,7 +27,14 @@ import type {
 import { BlobService } from './BlobService';
 import type { ListCommitsInput } from './CommitService';
 import { CommitService } from './CommitService';
-import type { DiffCommitsInput, DiffDraftInput, DiffFileInput, DiffFileResult, FileDiffResult } from './DiffService';
+import type {
+  DiffCommitsInput,
+  DiffDraftInput,
+  DiffFileEndpoint,
+  DiffFileInput,
+  DiffFileResult,
+  FileDiffResult,
+} from './DiffService';
 import { DiffService } from './DiffService';
 import type {
   ActiveDraftResult,
@@ -48,10 +55,18 @@ import type {
 import { RefService } from './RefService';
 import { RepositoryService } from './RepositoryService';
 import { TreeService } from './TreeService';
+import type {
+  VscPermissionAction,
+  VscPermissionHook,
+  VscPermissionHookInput,
+  VscPermissionRequestMetadata,
+} from '../permissions';
+import { VscPermissionHookRegistry } from '../permissions';
 
 export interface VscServiceContext {
   transaction?: Transaction;
   authorId?: string | null;
+  request?: VscPermissionRequestMetadata;
   assertCanWrite?: VscDraftWritePermissionChecker;
 }
 
@@ -131,6 +146,18 @@ interface ResolvedRef {
   commit: VscCommitRecord | null;
 }
 
+interface PermissionTarget {
+  action: VscPermissionAction;
+  repository?: VscRepositoryRecord;
+  repoId?: string;
+  ownerType?: string;
+  ownerId?: string;
+  actionMetadata?: Record<string, unknown>;
+  targetCommitId?: string;
+  sourceCommitId?: string;
+  refName?: string;
+}
+
 export class VscFileService {
   private readonly blobService: BlobService;
 
@@ -146,7 +173,10 @@ export class VscFileService {
 
   private readonly refService: RefService;
 
-  constructor(private readonly db: Database) {
+  constructor(
+    private readonly db: Database,
+    private readonly permissionHooks = new VscPermissionHookRegistry(),
+  ) {
     this.blobService = new BlobService(db);
     this.treeService = new TreeService(db, this.blobService);
     this.repositoryService = new RepositoryService(db);
@@ -163,11 +193,25 @@ export class VscFileService {
     this.refService = new RefService(db, this.commitService, this.repositoryService, this.treeService);
   }
 
+  registerPermissionHook(hook: VscPermissionHook): () => void {
+    return this.permissionHooks.register(hook);
+  }
+
   async createRepository(input: CreateRepositoryInput, ctx: VscServiceContext = {}): Promise<CreateRepositoryResult> {
     return this.withTransaction(ctx.transaction, async (transaction) => {
+      await this.assertPermission(
+        {
+          action: 'createRepository',
+          ownerType: input.ownerType,
+          ownerId: input.ownerId,
+          actionMetadata: input.metadata,
+        },
+        ctx,
+      );
+
       const repository = await this.repositoryService.createRepositoryRecord(input, transaction);
       const initialCommit = input.initialFiles
-        ? await this.push(
+        ? await this.pushInternal(
             {
               repoId: repository.id,
               baseCommitId: null,
@@ -178,6 +222,7 @@ export class VscFileService {
               metadata: input.metadata,
             },
             { ...ctx, transaction },
+            false,
           )
         : null;
 
@@ -190,6 +235,16 @@ export class VscFileService {
 
   async ensureRepository(input: EnsureRepositoryInput, ctx: VscServiceContext = {}): Promise<CreateRepositoryResult> {
     return this.withTransaction(ctx.transaction, async (transaction) => {
+      await this.assertPermission(
+        {
+          action: 'createRepository',
+          ownerType: input.ownerType,
+          ownerId: input.ownerId,
+          actionMetadata: input.metadata,
+        },
+        ctx,
+      );
+
       const result = await this.repositoryService.ensureRepositoryRecord(input, transaction);
 
       if (!result.created || !input.initialFiles) {
@@ -199,7 +254,7 @@ export class VscFileService {
         };
       }
 
-      const initialCommit = await this.push(
+      const initialCommit = await this.pushInternal(
         {
           repoId: result.repository.id,
           baseCommitId: null,
@@ -210,6 +265,7 @@ export class VscFileService {
           metadata: input.metadata,
         },
         { ...ctx, transaction },
+        false,
       );
 
       return {
@@ -220,23 +276,49 @@ export class VscFileService {
   }
 
   async getRepository(input: RepositoryIdInput, ctx: VscServiceContext = {}): Promise<VscRepositoryRecord> {
-    return this.repositoryService.getRepository(input.repoId, ctx.transaction);
+    const repository = await this.repositoryService.getRepository(input.repoId, ctx.transaction);
+    await this.assertPermission({ action: 'getRepository', repository }, ctx);
+    return repository;
   }
 
   async archiveRepository(input: RepositoryIdInput, ctx: VscServiceContext = {}): Promise<VscRepositoryRecord> {
-    return this.repositoryService.archiveRepository(input.repoId, ctx.transaction);
+    return this.withTransaction(ctx.transaction, async (transaction) => {
+      const repository = await this.repositoryService.getRepository(input.repoId, transaction);
+      await this.assertPermission({ action: 'archiveRepository', repository }, ctx);
+      return this.repositoryService.archiveRepository(input.repoId, transaction);
+    });
   }
 
   async listCommits(input: ListCommitsInput, ctx: VscServiceContext = {}): Promise<VscCommitRecord[]> {
-    await this.repositoryService.getRepository(input.repoId, ctx.transaction);
+    const repository = await this.repositoryService.getRepository(input.repoId, ctx.transaction);
+    await this.assertPermission({ action: 'listCommits', repository }, ctx);
     return this.commitService.listCommits(input, ctx.transaction);
   }
 
   async getCommit(input: GetCommitInput, ctx: VscServiceContext = {}): Promise<VscCommitRecord> {
+    const repository = await this.repositoryService.getRepository(input.repoId, ctx.transaction);
+    await this.assertPermission(
+      {
+        action: 'getCommit',
+        repository,
+        targetCommitId: input.commitId,
+      },
+      ctx,
+    );
     return this.commitService.getCommit(input.repoId, input.commitId, ctx.transaction);
   }
 
   async pull(input: PullInput, ctx: VscServiceContext = {}): Promise<PullResult> {
+    const repository = await this.repositoryService.getRepository(input.repoId, ctx.transaction);
+    await this.assertPermission(
+      {
+        action: 'pull',
+        repository,
+        refName: input.ref,
+      },
+      ctx,
+    );
+
     const resolved = await this.resolveRef(input.repoId, input.ref, ctx.transaction);
 
     if (!resolved.commit) {
@@ -271,6 +353,16 @@ export class VscFileService {
   }
 
   async getFile(input: GetFileInput, ctx: VscServiceContext = {}): Promise<GetFileResult> {
+    const repository = await this.repositoryService.getRepository(input.repoId, ctx.transaction);
+    await this.assertPermission(
+      {
+        action: 'getFile',
+        repository,
+        refName: input.ref,
+      },
+      ctx,
+    );
+
     const resolved = await this.resolveRef(input.repoId, input.ref, ctx.transaction);
     if (!resolved.commit) {
       throw new VscError('FILE_NOT_FOUND', `File "${input.path}" was not found`);
@@ -287,52 +379,137 @@ export class VscFileService {
   }
 
   async getDraft(input: GetDraftInput, ctx: VscServiceContext = {}): Promise<ActiveDraftResult | null> {
+    const repository = await this.repositoryService.getRepository(input.repoId, ctx.transaction);
+    await this.assertPermission({ action: 'getDraft', repository }, ctx);
     return this.draftService.getDraft(input, ctx);
   }
 
   async saveDraft(input: SaveDraftInput, ctx: VscServiceContext = {}): Promise<ActiveDraftResult> {
-    return this.draftService.saveDraft(input, ctx);
+    return this.withTransaction(ctx.transaction, async (transaction) => {
+      const repository = await this.repositoryService.getRepository(input.repoId, transaction);
+      await this.assertPermission({ action: 'saveDraft', repository }, ctx);
+      return this.draftService.saveDraft(input, { ...ctx, transaction });
+    });
   }
 
   async discardDraft(input: DiscardDraftInput, ctx: VscServiceContext = {}): Promise<VscDraftRecord | null> {
-    return this.draftService.discardDraft(input, ctx);
+    return this.withTransaction(ctx.transaction, async (transaction) => {
+      const repository = await this.repositoryService.getRepository(input.repoId, transaction);
+      await this.assertPermission({ action: 'discardDraft', repository }, ctx);
+      return this.draftService.discardDraft(input, { ...ctx, transaction });
+    });
   }
 
   async diff(input: DiffCommitsInput, ctx: VscServiceContext = {}): Promise<FileDiffResult> {
+    const repository = await this.repositoryService.getRepository(input.repoId, ctx.transaction);
+    await this.assertPermission(
+      {
+        action: 'diff',
+        repository,
+        sourceCommitId: input.fromCommitId,
+        targetCommitId: input.toCommitId,
+      },
+      ctx,
+    );
     return this.diffService.diffCommits(input, ctx.transaction);
   }
 
   async diffCommits(input: DiffCommitsInput, ctx: VscServiceContext = {}): Promise<FileDiffResult> {
+    const repository = await this.repositoryService.getRepository(input.repoId, ctx.transaction);
+    await this.assertPermission(
+      {
+        action: 'diff',
+        repository,
+        sourceCommitId: input.fromCommitId,
+        targetCommitId: input.toCommitId,
+      },
+      ctx,
+    );
     return this.diffService.diffCommits(input, ctx.transaction);
   }
 
   async diffDraft(input: DiffDraftInput, ctx: VscServiceContext = {}): Promise<FileDiffResult> {
+    const repository = await this.repositoryService.getRepository(input.repoId, ctx.transaction);
+    await this.assertPermission({ action: 'diffDraft', repository }, ctx);
     return this.diffService.diffDraft(input, ctx.transaction);
   }
 
   async diffFile(input: DiffFileInput, ctx: VscServiceContext = {}): Promise<DiffFileResult> {
+    const repository = await this.repositoryService.getRepository(input.repoId, ctx.transaction);
+    await this.assertPermission({ action: 'diffFile', repository }, ctx);
+    this.assertDiffFileEndpointsAllowed(input);
     return this.diffService.diffFile(input, ctx.transaction);
   }
 
   async listRefs(input: ListRefsInput, ctx: VscServiceContext = {}): Promise<VscRefRecord[]> {
+    const repository = await this.repositoryService.getRepository(input.repoId, ctx.transaction);
+    await this.assertPermission({ action: 'listRefs', repository }, ctx);
     return this.refService.listRefs(input, ctx.transaction);
   }
 
   async updateRef(input: UpdateRefInput, ctx: VscServiceContext = {}): Promise<UpdateRefResult> {
-    return this.refService.updateRef(input, ctx);
+    return this.withTransaction(ctx.transaction, async (transaction) => {
+      const repository = await this.repositoryService.getRepository(input.repoId, transaction);
+      await this.assertPermission(
+        {
+          action: 'updateRef',
+          repository,
+          targetCommitId: input.targetCommitId,
+          refName: input.name,
+        },
+        ctx,
+      );
+      return this.refService.updateRef(input, { ...ctx, transaction });
+    });
   }
 
   async restoreFile(input: RestoreFileInput, ctx: VscServiceContext = {}): Promise<RestoreResult> {
-    return this.refService.restoreFile(input, ctx);
+    return this.withTransaction(ctx.transaction, async (transaction) => {
+      const repository = await this.repositoryService.getRepository(input.repoId, transaction);
+      await this.assertPermission(
+        {
+          action: 'restoreFile',
+          repository,
+          sourceCommitId: input.sourceCommitId,
+        },
+        ctx,
+      );
+      return this.refService.restoreFile(input, { ...ctx, transaction });
+    });
   }
 
   async restoreCommit(input: RestoreCommitInput, ctx: VscServiceContext = {}): Promise<RestoreResult> {
-    return this.refService.restoreCommit(input, ctx);
+    return this.withTransaction(ctx.transaction, async (transaction) => {
+      const repository = await this.repositoryService.getRepository(input.repoId, transaction);
+      await this.assertPermission(
+        {
+          action: 'restoreCommit',
+          repository,
+          sourceCommitId: input.sourceCommitId,
+        },
+        ctx,
+      );
+      return this.refService.restoreCommit(input, { ...ctx, transaction });
+    });
   }
 
   async push(input: PushInput, ctx: VscServiceContext = {}): Promise<PushResult> {
+    return this.pushInternal(input, ctx, true);
+  }
+
+  private async pushInternal(input: PushInput, ctx: VscServiceContext, checkPermission: boolean): Promise<PushResult> {
     return this.withTransaction(ctx.transaction, async (transaction) => {
       const repository = await this.repositoryService.getRepository(input.repoId, transaction);
+      if (checkPermission) {
+        await this.assertPermission(
+          {
+            action: 'push',
+            repository,
+            actionMetadata: input.metadata,
+          },
+          ctx,
+        );
+      }
       if (repository.status === 'archived') {
         throw new VscError('REPO_ARCHIVED', `Repository "${repository.id}" is archived`);
       }
@@ -395,6 +572,35 @@ export class VscFileService {
         tree,
       };
     });
+  }
+
+  private async assertPermission(target: PermissionTarget, ctx: VscServiceContext): Promise<void> {
+    const repository = target.repository ? { ...target.repository } : undefined;
+    const input: VscPermissionHookInput = {
+      userId: ctx.authorId ?? null,
+      action: target.action,
+      repoId: repository?.id || target.repoId,
+      repository,
+      ownerType: repository?.ownerType || target.ownerType,
+      ownerId: repository?.ownerId || target.ownerId,
+      request: ctx.request,
+      actionMetadata: target.actionMetadata,
+      targetCommitId: target.targetCommitId,
+      sourceCommitId: target.sourceCommitId,
+      refName: target.refName,
+    };
+
+    await this.permissionHooks.assertAllowed(input);
+  }
+
+  private assertDiffFileEndpointsAllowed(input: DiffFileInput): void {
+    if (!this.permissionHooks.hasHooks()) {
+      return;
+    }
+
+    if (isBlobDiffEndpoint(input.from) || isBlobDiffEndpoint(input.to)) {
+      throw new VscError('PERMISSION_DENIED', 'Raw blob diff endpoints are not allowed by permission hooks');
+    }
   }
 
   private applyFileChanges(baseEntries: VscNormalizedTreeEntry[], changes: VscFileChange[]): VscTreeEntryInput[] {
@@ -546,4 +752,8 @@ export class VscFileService {
 
     return this.db.sequelize.transaction(run);
   }
+}
+
+function isBlobDiffEndpoint(endpoint: DiffFileEndpoint | null | undefined): boolean {
+  return endpoint?.type === 'blob';
 }

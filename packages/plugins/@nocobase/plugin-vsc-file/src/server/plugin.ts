@@ -10,9 +10,18 @@
 import { Plugin } from '@nocobase/server';
 import { resolve } from 'path';
 
+import { createVscFileAuditActions } from './audit';
+import type { VscPermissionHook } from './permissions';
+import { VscPermissionHookRegistry } from './permissions';
 import { createVscFileResource, vscFileActionNames } from './resources/vscFile';
 
 export class PluginVscFileServer extends Plugin {
+  private readonly permissionHooks = new VscPermissionHookRegistry();
+
+  registerPermissionHook(hook: VscPermissionHook): () => void {
+    return this.permissionHooks.register(hook);
+  }
+
   async afterAdd() {}
 
   async beforeLoad() {
@@ -26,8 +35,9 @@ export class PluginVscFileServer extends Plugin {
   }
 
   async load() {
-    this.app.resourceManager.define(createVscFileResource(this.db));
+    this.app.resourceManager.define(createVscFileResource(this.db, this.permissionHooks));
     this.app.acl.allow('vscFile', [...vscFileActionNames], 'loggedIn');
+    this.app.auditManager.registerActions(createVscFileAuditActions(this.db));
   }
 
   async install() {}
