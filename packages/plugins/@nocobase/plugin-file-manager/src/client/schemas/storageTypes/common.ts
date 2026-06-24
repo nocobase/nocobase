@@ -22,7 +22,7 @@ export default {
     required: true,
     default: '{{ useNewId("s_") }}',
     description:
-      '{{t("Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.")}}',
+      '{{t("Randomly generated and can be modified. Support letters, numbers and underscores, must start with a letter.")}}',
   },
   baseUrl: {
     'x-component': 'CollectionField',
