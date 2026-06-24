@@ -523,7 +523,7 @@
 
 #### W5.2 AI employee v1 入口改为继承 v2
 
-- 状态：未开始
+- 状态：已提交
 - 前置：W3 校验通过
 - 范围：
   - `src/client/workflow/nodes/employee/**`
@@ -532,7 +532,12 @@
   - 删除重复的 v1 配置组件和 FlowModel 半迁移实现。
   - 保留必要 v1-only 覆盖；没有必要则不保留。
 - 验收记录：
-  - 待填写。
+  - 已将 `src/client/workflow/nodes/employee/index.tsx` 收敛为兼容入口：`AIEmployeeInstruction extends V2AIEmployeeInstruction`。
+  - 已删除 v1 AI employee workflow 节点的重复配置实现：`configuration.tsx`、`flow-models/task.tsx`、`flow-models/feedback.tsx` 和 `components/*`。
+  - 已确认残留 `workflow/nodes/employee` 搜索结果只剩 v1 入口、v2 实现和 v2 测试引用，不再引用删除的 v1 配置组件。
+  - 已运行 `yarn eslint --fix packages/plugins/@nocobase/plugin-ai/src/client/workflow/nodes/employee/index.tsx`。
+  - 已运行 `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/__tests__/workflow-ai-employee-fieldset.test.tsx packages/plugins/@nocobase/plugin-ai/src/client-v2/__tests__/workflow-registration.test.ts --run --reporter=verbose`，AI employee fieldset 5 个用例通过。
+  - 已运行 `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/__tests__/workflow-registration.test.ts --run --reporter=verbose`，5 个用例通过。
 
 #### W5.3 AI employee trigger v1 入口改为继承 v2
 
@@ -594,5 +599,5 @@
 | W2. LLM workflow 节点迁移 | 已提交 | 开始 W3.1 |
 | W3. AI employee workflow 节点迁移 | 已提交 | 开始 W4.1 |
 | W4. AI employee workflow trigger 迁移 | 已提交 | 开始 W5.1 |
-| W5. v1 兼容入口收敛 | 进行中 | 开始 W5.2 |
+| W5. v1 兼容入口收敛 | 进行中 | 开始 W5.3 |
 | W6. 总体验收、清理和最终提交 | 未开始 | 等 W5 完成 |
