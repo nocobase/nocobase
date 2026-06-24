@@ -198,16 +198,13 @@ module.exports = (cli) => {
         }
         subprocessRef.cancel();
         let i = 0;
-        while (true) {
+        while (i <= 10) {
           ++i;
           const result = await isPortReachable(port);
           if (!result) {
             break;
           }
           await sleep(500);
-          if (i > 10) {
-            break;
-          }
         }
         start();
       };
@@ -216,7 +213,7 @@ module.exports = (cli) => {
         const storagePluginPath = resolvePluginStoragePath();
         const watcher = chokidar.watch(`${storagePluginPath}/**/*`, {
           cwd: process.cwd(),
-          ignored: /(^|[\/\\])\../, // 忽略隐藏文件
+          ignored: /(^|[/\\])\../, // 忽略隐藏文件
           persistent: true,
           depth: 1, // 只监听第一层目录
         });
@@ -260,6 +257,7 @@ module.exports = (cli) => {
 
         const argv = [
           'watch',
+          '--clear-screen=false',
           ...(inspect ? [`--inspect=${inspect === true ? 9229 : inspect}`] : []),
           `--ignore=${resolvePluginStoragePath()}/**`,
           '--tsconfig',

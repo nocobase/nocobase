@@ -150,7 +150,7 @@ function buildAppDevServerArgs({
   argv = process.argv,
   serverTsconfigPath = process.env.SERVER_TSCONFIG_PATH,
 } = {}) {
-  const args = ['watch', `--ignore=${resolvePluginStoragePath()}/**`];
+  const args = ['watch', '--clear-screen=false', `--ignore=${resolvePluginStoragePath()}/**`];
 
   if (serverTsconfigPath) {
     args.push('--tsconfig', serverTsconfigPath);
