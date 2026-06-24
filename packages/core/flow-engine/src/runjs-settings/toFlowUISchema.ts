@@ -57,6 +57,15 @@ function mapField(field: RunJSSettingField): ISchema {
       );
     case 'boolean':
       return { ...schema, type: 'boolean', 'x-component': 'Switch' };
+    case 'object': {
+      const properties: Record<string, ISchema> = {};
+      for (const [key, property] of Object.entries(field.properties || {})) {
+        if (property.visible !== false) {
+          properties[key] = mapField(property);
+        }
+      }
+      return { ...schema, type: 'object', properties };
+    }
     case 'select':
       return withProps({ ...schema, 'x-component': 'Select' }, { options: field.options || [] });
     case 'multiSelect':

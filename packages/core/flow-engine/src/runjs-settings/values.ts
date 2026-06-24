@@ -120,6 +120,10 @@ function assertSelectOptionValue(field: RunJSSettingField, value: RunJSSettingOp
   }
 }
 
+function activePropertyKeys(field: RunJSSettingField): string[] {
+  return Object.keys(field.properties || {}).filter((key) => field.properties?.[key]?.visible !== false);
+}
+
 export function normalizeDateValue(value: unknown, path = 'date'): string {
   const normalized = normalizeString(value, path);
   if (!DATE_RE.test(normalized)) {
@@ -250,6 +254,24 @@ export function normalizeSettingValueByFieldType(
       return normalizeFiniteNumber(value, path);
     case 'boolean':
       return normalizeBoolean(value, path);
+    case 'object': {
+      if (!isPlainRecord(value)) {
+        throw new RunJSSettingsValidationError(`${path} must be a plain object`);
+      }
+      const normalized: Record<string, RunJSSettingsJSONValue> = {};
+      for (const key of activePropertyKeys(field)) {
+        const property = field.properties?.[key];
+        if (!property) {
+          continue;
+        }
+        const candidate = Object.prototype.hasOwnProperty.call(value, key) ? value[key] : property.default;
+        if (typeof candidate === 'undefined') {
+          continue;
+        }
+        normalized[key] = normalizeSettingValueByFieldType(property, candidate, `${path}.${key}`);
+      }
+      return normalized;
+    }
     case 'select': {
       const normalized = normalizeOptionValue(value, path);
       assertSelectOptionValue(field, normalized, path);
@@ -295,6 +317,45 @@ export function normalizeSettingDraftValueByFieldType(
     defaultValue?: unknown;
   } = {},
 ): RunJSSettingsJSONValue {
+  if (field.type === 'object') {
+    if (!isPlainRecord(value)) {
+      throw new RunJSSettingsValidationError(`${path} must be a plain object`);
+    }
+    const previousValue = isPlainRecord(options.previousValue) ? options.previousValue : {};
+    const activeKeys = new Set(activePropertyKeys(field));
+    const normalized: Record<string, RunJSSettingsJSONValue> = {};
+
+    for (const [key, previousItem] of Object.entries(previousValue)) {
+      assertSafeRunJSSettingKey(key);
+      if (activeKeys.has(key)) {
+        continue;
+      }
+      assertJSONValue(previousItem, `${path}.${key}`);
+      normalized[key] = _.cloneDeep(previousItem);
+    }
+
+    for (const key of activePropertyKeys(field)) {
+      const property = field.properties?.[key];
+      if (!property) {
+        continue;
+      }
+      if (!Object.prototype.hasOwnProperty.call(value, key) || typeof value[key] === 'undefined') {
+        if (property.required) {
+          throw new RunJSSettingsValidationError(`${path}.${key} is required`);
+        }
+        continue;
+      }
+      const hasPreviousValue = Object.prototype.hasOwnProperty.call(previousValue, key);
+      normalized[key] = normalizeSettingDraftValueByFieldType(property, value[key], `${path}.${key}`, {
+        hasPreviousValue,
+        previousValue: hasPreviousValue ? previousValue[key] : undefined,
+        hasDefaultValue: typeof property.default !== 'undefined',
+        defaultValue: property.default,
+      });
+    }
+
+    return normalized;
+  }
   if (field.type !== 'json') {
     return normalizeSettingValueByFieldType(field, value, path);
   }
@@ -337,12 +398,8 @@ export function activeFieldKeys(schema: RunJSSettingsSchema): string[] {
   return [...ordered, ...rest].filter((key) => schema.fields[key]?.visible !== false);
 }
 
-export function activeFieldKeysForStep(schema: RunJSSettingsSchema, stepKey: string): string[] {
-  const step = schema.steps?.[stepKey];
-  if (!step) {
-    return activeFieldKeys(schema);
-  }
-  return step.fields.filter((key) => schema.fields[key]?.visible !== false);
+export function activeFieldKeysForItem(schema: RunJSSettingsSchema, itemKey: string): string[] {
+  return schema.fields[itemKey]?.visible === false || !schema.fields[itemKey] ? [] : [itemKey];
 }
 
 export function pickRunJSSettingsSchemaFields(schema: RunJSSettingsSchema, fieldKeys: string[]): RunJSSettingsSchema {
@@ -375,6 +432,13 @@ export function applyDefaults(
   for (const key of activeFieldKeys(schema)) {
     const field = schema.fields[key];
     const candidate = Object.prototype.hasOwnProperty.call(values, key) ? values[key] : field.default;
+    if (field.type === 'object' && typeof candidate === 'undefined') {
+      const normalized = normalizeSettingValueByFieldType(field, {}, `settings.${key}`);
+      if (isPlainRecord(normalized) && Object.keys(normalized).length > 0) {
+        config[key] = normalized;
+      }
+      continue;
+    }
     if (typeof candidate === 'undefined') {
       continue;
     }

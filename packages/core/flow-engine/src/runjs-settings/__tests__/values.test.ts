@@ -24,7 +24,7 @@ import {
 } from '../steps';
 import { toFlowUISchema } from '../toFlowUISchema';
 import {
-  activeFieldKeysForStep,
+  activeFieldKeysForItem,
   applyDefaults,
   mergeActiveValuesPreserveInactiveUnknown,
   normalizeJsonTextValue,
@@ -72,65 +72,89 @@ describe('runjs settings values', () => {
     ).toThrow(/collection is required/);
   });
 
-  it('normalizes grouped settings steps and maps a field subset to ui schema', () => {
+  it('normalizes direct settings objects and maps one config item to ui schema', () => {
     const schema = normalizeRunJSSettingsSchema({
-      version: 1,
-      fields: {
-        title: { type: 'string', title: 'Title' },
-        amount: { type: 'number', title: 'Amount' },
-        target: { type: 'number', title: 'Target' },
+      basic: {
+        type: 'object',
+        title: 'Basic',
+        properties: {
+          title: { type: 'string', title: 'Title', default: 'Sales' },
+          status: {
+            type: 'select',
+            title: 'Status',
+            default: 'active',
+            options: [
+              { label: 'Active', value: 'active' },
+              { label: 'Paused', value: 'paused' },
+            ],
+          },
+        },
       },
-      steps: {
-        basic: { title: 'Basic', fields: ['title'] },
-        metrics: { title: 'Metrics', fields: ['amount', 'target'] },
+      metrics: {
+        type: 'object',
+        title: 'Metrics',
+        properties: {
+          amount: { type: 'number', title: 'Amount', default: 10 },
+          target: { type: 'number', title: 'Target', default: 20 },
+        },
       },
-      stepOrder: ['metrics', 'basic'],
+      accentColor: { type: 'color', title: 'Accent color', default: '#1677ff' },
     });
 
-    expect(Object.keys(schema.steps || {})).toEqual(['basic', 'metrics']);
-    expect(schema.stepOrder).toEqual(['metrics', 'basic']);
-    expect(activeFieldKeysForStep(schema, 'metrics')).toEqual(['amount', 'target']);
-    expect(Object.keys(toFlowUISchema(schema, { fieldKeys: activeFieldKeysForStep(schema, 'basic') }))).toEqual([
-      'title',
-    ]);
+    expect(Object.keys(schema.fields)).toEqual(['basic', 'metrics', 'accentColor']);
+    expect(activeFieldKeysForItem(schema, 'metrics')).toEqual(['metrics']);
+    expect(
+      toFlowUISchema(schema, { fieldKeys: activeFieldKeysForItem(schema, 'basic') }).basic.properties,
+    ).toHaveProperty('title');
+    expect(applyDefaults(schema)).toEqual({
+      basic: { title: 'Sales', status: 'active' },
+      metrics: { amount: 10, target: 20 },
+      accentColor: '#1677FF',
+    });
     expect(() =>
       normalizeRunJSSettingsSchema({
-        fields: { title: { type: 'string' } },
-        steps: { basic: { fields: ['missing'] } },
+        basic: { type: 'object', properties: { bad: { type: 'select' } } },
       }),
-    ).toThrow(/unknown field/);
+    ).toThrow(/options is required/);
   });
 
-  it('saves one runtime settings step without dropping other step values', async () => {
+  it('saves one runtime settings item without dropping other config values', async () => {
     class TestFlowModel extends FlowModel {}
 
     const engine = new FlowEngine();
-    const model = new TestFlowModel({ uid: 'model-runjs-settings-steps-save', flowEngine: engine });
+    const model = new TestFlowModel({ uid: 'model-runjs-settings-items-save', flowEngine: engine });
     const previousParams = {
-      title: 'Old title',
-      amount: 10,
-      target: 20,
+      basic: {
+        title: 'Old title',
+        hiddenNestedValue: 'keep nested',
+      },
+      metrics: {
+        amount: 10,
+        target: 20,
+      },
       unknownValue: 'keep me',
     };
 
     model.setStepParams(RUNJS_SETTINGS_FLOW_KEY, RUNJS_SETTINGS_CONFIGURE_STEP_KEY, previousParams);
-    const run = runtimeSettingsRegistry.beginRun(
-      model,
-      'ctx.useSettings({ steps: { basic: { fields: ["title"] }, metrics: { fields: ["amount", "target"] } }, fields: {} })',
-    );
+    const run = runtimeSettingsRegistry.beginRun(model, 'ctx.useSettings({ basic: { type: "object" } })');
     runtimeSettingsRegistry.register(
       model,
       'default',
       {
-        version: 1,
-        fields: {
-          title: { type: 'string' },
-          amount: { type: 'number' },
-          target: { type: 'number' },
+        basic: {
+          type: 'object',
+          title: 'Basic',
+          properties: {
+            title: { type: 'string' },
+          },
         },
-        steps: {
-          basic: { title: 'Basic', fields: ['title'] },
-          metrics: { title: 'Metrics', fields: ['amount', 'target'] },
+        metrics: {
+          type: 'object',
+          title: 'Metrics',
+          properties: {
+            amount: { type: 'number' },
+            target: { type: 'number' },
+          },
         },
       },
       run,
@@ -144,16 +168,20 @@ describe('runjs settings values', () => {
       stepKey: 'basic',
       previousParams,
       currentParams: {
-        ...previousParams,
         title: 'New title',
       },
     });
 
     expect(saved).toEqual({
-      amount: 10,
-      target: 20,
+      metrics: {
+        amount: 10,
+        target: 20,
+      },
       unknownValue: 'keep me',
-      title: 'New title',
+      basic: {
+        hiddenNestedValue: 'keep nested',
+        title: 'New title',
+      },
     });
     runtimeSettingsRegistry.clearModel(model.uid);
   });

@@ -9,13 +9,16 @@
 
 import {
   applyDefaults,
-  activeFieldKeysForStep,
+  activeFieldKeys,
+  activeFieldKeysForItem,
+  isPlainRecord,
   mergeActiveValuesPreserveInactiveUnknown,
   pickRunJSSettingsSchemaFields,
 } from './values';
+import { isDirectRunJSSettingsSchema } from './normalize';
 import { runtimeSettingsRegistry } from './registry';
 import { toFlowUISchema } from './toFlowUISchema';
-import type { RunJSSettingsJSONValue, RunJSSettingsModelLike, RunJSSettingsSchema } from './types';
+import type { RunJSSettingField, RunJSSettingsJSONValue, RunJSSettingsModelLike, RunJSSettingsSchema } from './types';
 import type { ParamObject, StepDefinition } from '../types';
 
 export const RUNJS_SETTINGS_FLOW_KEY = 'runjsSettings';
@@ -36,14 +39,8 @@ function getConfigureValues(model: RunJSSettingsModelLike): Record<string, RunJS
     : {};
 }
 
-function hasSettingsSteps(schema: RunJSSettingsSchema | undefined): schema is RunJSSettingsSchema {
-  return !!schema?.steps && Object.keys(schema.steps).length > 0;
-}
-
-function getOrderedStepKeys(schema: RunJSSettingsSchema): string[] {
-  const ordered = schema.stepOrder?.filter((key) => schema.steps?.[key]) || Object.keys(schema.steps || {});
-  const rest = Object.keys(schema.steps || {}).filter((key) => !ordered.includes(key));
-  return [...ordered, ...rest];
+export function hasRunJSSettingsConfigItems(schema: RunJSSettingsSchema | undefined): schema is RunJSSettingsSchema {
+  return isDirectRunJSSettingsSchema(schema) && activeFieldKeys(schema).length > 0;
 }
 
 function evaluateSettingsSchema(
@@ -59,6 +56,48 @@ function evaluateSettingsSchema(
   });
 }
 
+function isObjectField(field: RunJSSettingField | undefined): field is RunJSSettingField {
+  return field?.type === 'object';
+}
+
+function getObjectItemValues(
+  values: Record<string, unknown>,
+  settingsItemKey: string,
+): Record<string, RunJSSettingsJSONValue> {
+  const itemValues = values[settingsItemKey];
+  return isPlainRecord(itemValues) ? (itemValues as Record<string, RunJSSettingsJSONValue>) : {};
+}
+
+function getSettingsItemSchema(schema: RunJSSettingsSchema, settingsItemKey: string): RunJSSettingsSchema {
+  const field = schema.fields[settingsItemKey];
+  if (isObjectField(field)) {
+    return {
+      version: schema.version,
+      fields: field.properties || {},
+      order: Object.keys(field.properties || {}),
+    };
+  }
+  return pickRunJSSettingsSchemaFields(schema, activeFieldKeysForItem(schema, settingsItemKey));
+}
+
+function getDraftValuesForEvaluate(
+  field: RunJSSettingField | undefined,
+  settingsItemKey: string,
+  currentValues: Record<string, RunJSSettingsJSONValue>,
+  draftValues: Record<string, RunJSSettingsJSONValue> | undefined,
+): Record<string, RunJSSettingsJSONValue> | undefined {
+  if (!draftValues) {
+    return undefined;
+  }
+  if (!isObjectField(field)) {
+    return draftValues;
+  }
+  return {
+    ...currentValues,
+    [settingsItemKey]: draftValues,
+  };
+}
+
 export function buildRunJSSettingsStepDefinitions(
   model: RunJSSettingsModelLike,
 ): Record<string, StepDefinition> | null {
@@ -69,24 +108,21 @@ export function buildRunJSSettingsStepDefinitions(
 
   const values = getConfigureValues(model);
   const result = evaluateSettingsSchema(model, 'settings-open', values);
-  if (!hasSettingsSteps(result.schema)) {
+  if (!hasRunJSSettingsConfigItems(result.schema)) {
     return null;
   }
 
   const steps: Record<string, StepDefinition> = {};
-  getOrderedStepKeys(result.schema).forEach((settingsStepKey, index) => {
-    const settingsStep = result.schema.steps?.[settingsStepKey];
-    if (!settingsStep) {
-      return;
-    }
-    const fieldKeys = activeFieldKeysForStep(result.schema, settingsStepKey);
+  activeFieldKeys(result.schema).forEach((settingsItemKey, index) => {
+    const settingsField = result.schema.fields[settingsItemKey];
+    const fieldKeys = activeFieldKeysForItem(result.schema, settingsItemKey);
     if (fieldKeys.length === 0) {
       return;
     }
 
-    steps[settingsStepKey] = {
-      key: settingsStepKey,
-      title: settingsStep.title || settingsStepKey,
+    steps[settingsItemKey] = {
+      key: settingsItemKey,
+      title: settingsField.title || settingsItemKey,
       sort: index + 1,
       useRawParams: true,
       refreshUiSchemaOnValuesChange: { debounceMs: 150 },
@@ -100,21 +136,29 @@ export function buildRunJSSettingsStepDefinitions(
         if (!evaluated.schema) {
           return {};
         }
+        const field = evaluated.schema.fields[settingsItemKey];
+        const stepSchema = getSettingsItemSchema(evaluated.schema, settingsItemKey);
         return applyDefaults(
-          pickRunJSSettingsSchemaFields(evaluated.schema, activeFieldKeysForStep(evaluated.schema, settingsStepKey)),
-          currentValues,
+          stepSchema,
+          isObjectField(field) ? getObjectItemValues(currentValues, settingsItemKey) : currentValues,
         );
       },
       uiSchema(ctx) {
         const currentValues = getConfigureValues(ctx.model);
         const draftValues = ctx.getDraftStepParams(RUNJS_SETTINGS_FLOW_KEY, RUNJS_SETTINGS_CONFIGURE_STEP_KEY);
+        const draftValuesForEvaluate = getDraftValuesForEvaluate(
+          settingsField,
+          settingsItemKey,
+          currentValues,
+          draftValues,
+        );
         const evaluated = evaluateSettingsSchema(
           ctx.model,
-          draftValues ? 'settings-draft' : 'settings-open',
+          draftValuesForEvaluate ? 'settings-draft' : 'settings-open',
           {
             ...currentValues,
           },
-          draftValues,
+          draftValuesForEvaluate,
         );
         const errorSchema = evaluated.error
           ? {
@@ -133,21 +177,46 @@ export function buildRunJSSettingsStepDefinitions(
         if (!evaluated.schema) {
           return errorSchema;
         }
+        const stepSchema = getSettingsItemSchema(evaluated.schema, settingsItemKey);
         return {
           ...errorSchema,
-          ...toFlowUISchema(evaluated.schema, {
-            fieldKeys: activeFieldKeysForStep(evaluated.schema, settingsStepKey),
-          }),
+          ...toFlowUISchema(stepSchema),
         };
       },
       beforeParamsSave({ ctx, currentParams, previousParams }): ParamObject {
-        const evaluated = evaluateSettingsSchema(ctx.model, 'settings-save', previousParams || {}, currentParams || {});
+        const draftValuesForEvaluate = getDraftValuesForEvaluate(
+          settingsField,
+          settingsItemKey,
+          previousParams || {},
+          currentParams || {},
+        );
+        const evaluated = evaluateSettingsSchema(
+          ctx.model,
+          'settings-save',
+          previousParams || {},
+          draftValuesForEvaluate || currentParams || {},
+        );
         if (evaluated.error || !evaluated.schema) {
           throw evaluated.error || new Error(ctx.t('Invalid JS block settings'));
         }
-        const fieldKeys = activeFieldKeysForStep(evaluated.schema, settingsStepKey);
+        const field = evaluated.schema.fields[settingsItemKey];
+        if (isObjectField(field)) {
+          const savedItem = mergeActiveValuesPreserveInactiveUnknown({
+            schema: getSettingsItemSchema(evaluated.schema, settingsItemKey),
+            previousParams: getObjectItemValues(previousParams || {}, settingsItemKey),
+            draftParams: currentParams,
+          });
+          return mergeActiveValuesPreserveInactiveUnknown({
+            schema: pickRunJSSettingsSchemaFields(
+              evaluated.schema,
+              activeFieldKeysForItem(evaluated.schema, settingsItemKey),
+            ),
+            previousParams,
+            draftParams: { [settingsItemKey]: savedItem },
+          }) as ParamObject;
+        }
         return mergeActiveValuesPreserveInactiveUnknown({
-          schema: pickRunJSSettingsSchemaFields(evaluated.schema, fieldKeys),
+          schema: getSettingsItemSchema(evaluated.schema, settingsItemKey),
           previousParams,
           draftParams: currentParams,
         }) as ParamObject;

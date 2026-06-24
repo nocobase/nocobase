@@ -13,7 +13,6 @@ import type {
   RunJSSettingFieldType,
   RunJSSettingOption,
   RunJSSettingOptionValue,
-  RunJSSettingsStep,
   RunJSSettingsSchema,
 } from './types';
 import {
@@ -30,6 +29,7 @@ const SUPPORTED_FIELD_TYPES = new Set<RunJSSettingFieldType>([
   'text',
   'number',
   'boolean',
+  'object',
   'select',
   'multiSelect',
   'date',
@@ -40,6 +40,28 @@ const SUPPORTED_FIELD_TYPES = new Set<RunJSSettingFieldType>([
   'collectionField',
   'json',
 ]);
+
+const SCHEMA_SHAPE_KEY = '__runjsSettingsSchemaShape';
+const DIRECT_SCHEMA_META_KEYS = new Set(['version', 'title', 'description', 'order']);
+
+type SchemaShape = 'direct' | 'legacy';
+
+type RunJSSettingsSchemaWithShape = RunJSSettingsSchema & {
+  [SCHEMA_SHAPE_KEY]?: SchemaShape;
+};
+
+function markSchemaShape(schema: RunJSSettingsSchema, shape: SchemaShape): RunJSSettingsSchema {
+  Object.defineProperty(schema, SCHEMA_SHAPE_KEY, {
+    value: shape,
+    enumerable: false,
+    configurable: true,
+  });
+  return schema;
+}
+
+export function isDirectRunJSSettingsSchema(schema: RunJSSettingsSchema | undefined): boolean {
+  return (schema as RunJSSettingsSchemaWithShape | undefined)?.[SCHEMA_SHAPE_KEY] === 'direct';
+}
 
 function normalizeBooleanFlag(value: unknown, path: string): boolean | undefined {
   if (typeof value === 'undefined') {
@@ -127,8 +149,42 @@ function normalizeCollectionReference(value: unknown, path: string) {
   return reference || (typeof value === 'undefined' ? undefined : normalizeCollectionEnvelope(value, path));
 }
 
-function normalizeField(rawField: unknown, key: string): RunJSSettingField {
-  const path = `fields.${key}`;
+function isFieldDefinition(value: unknown): value is Record<string, unknown> {
+  return (
+    isPlainRecord(value) &&
+    typeof value.type === 'string' &&
+    SUPPORTED_FIELD_TYPES.has(value.type as RunJSSettingFieldType)
+  );
+}
+
+function normalizeSchemaVersion(value: unknown): 1 | undefined {
+  if (isFieldDefinition(value)) {
+    return undefined;
+  }
+  return value as 1 | undefined;
+}
+
+function normalizeProperties(
+  rawProperties: unknown,
+  path: string,
+  maxFields: number,
+): Record<string, RunJSSettingField> {
+  if (!isPlainRecord(rawProperties)) {
+    throw new RunJSSettingsValidationError(`${path} must be a plain object`);
+  }
+  const entries = Object.entries(rawProperties);
+  if (entries.length > maxFields) {
+    throw new RunJSSettingsValidationError(`${path} supports at most ${maxFields} fields`);
+  }
+  const properties: Record<string, RunJSSettingField> = {};
+  for (const [key, field] of entries) {
+    assertSafeRunJSSettingKey(key, path);
+    properties[key] = normalizeField(field, key, `${path}.${key}`);
+  }
+  return properties;
+}
+
+function normalizeField(rawField: unknown, key: string, path = `fields.${key}`): RunJSSettingField {
   if (!isPlainRecord(rawField)) {
     throw new RunJSSettingsValidationError(`${path} must be a plain object`);
   }
@@ -154,6 +210,7 @@ function normalizeField(rawField: unknown, key: string): RunJSSettingField {
     fieldTypes: Array.isArray(rawField.fieldTypes)
       ? rawField.fieldTypes.filter((item) => typeof item === 'string')
       : undefined,
+    properties: type === 'object' ? normalizeProperties(rawField.properties, `${path}.properties`, 100) : undefined,
   };
 
   if ((field.type === 'select' || field.type === 'multiSelect') && !field.options?.length) {
@@ -168,38 +225,57 @@ function normalizeField(rawField: unknown, key: string): RunJSSettingField {
   return _.pickBy(field, (value) => typeof value !== 'undefined') as RunJSSettingField;
 }
 
-function normalizeStep(rawStep: unknown, key: string, fields: Record<string, RunJSSettingField>): RunJSSettingsStep {
-  const path = `steps.${key}`;
-  if (!isPlainRecord(rawStep)) {
-    throw new RunJSSettingsValidationError(`${path} must be a plain object`);
+function normalizeLegacySchema(input: Record<string, unknown>): RunJSSettingsSchema {
+  if (!isPlainRecord(input.fields)) {
+    throw new RunJSSettingsValidationError('settings schema fields must be a plain object');
   }
-  if (!Array.isArray(rawStep.fields)) {
-    throw new RunJSSettingsValidationError(`${path}.fields must be an array`);
+  const fields = normalizeProperties(input.fields, 'fields', 100);
+  const order = Array.isArray(input.order)
+    ? input.order.filter((key): key is string => typeof key === 'string' && !!fields[key])
+    : undefined;
+  return markSchemaShape(
+    _.pickBy(
+      {
+        version: normalizeSchemaVersion(input.version),
+        title: typeof input.title === 'string' ? input.title : undefined,
+        description: typeof input.description === 'string' ? input.description : undefined,
+        fields,
+        order,
+      },
+      (value) => typeof value !== 'undefined',
+    ) as RunJSSettingsSchema,
+    'legacy',
+  );
+}
+
+function normalizeDirectSchema(input: Record<string, unknown>): RunJSSettingsSchema {
+  const fields: Record<string, RunJSSettingField> = {};
+  for (const [key, field] of Object.entries(input)) {
+    if (DIRECT_SCHEMA_META_KEYS.has(key) && !isFieldDefinition(field)) {
+      continue;
+    }
+    assertSafeRunJSSettingKey(key, 'settings');
+    fields[key] = normalizeField(field, key, `settings.${key}`);
   }
-  const fieldKeys: string[] = [];
-  rawStep.fields.forEach((fieldKey, index) => {
-    if (typeof fieldKey !== 'string') {
-      throw new RunJSSettingsValidationError(`${path}.fields[${index}] must be a string`);
-    }
-    assertSafeRunJSSettingKey(fieldKey, `${path}.fields[${index}]`);
-    if (!fields[fieldKey]) {
-      throw new RunJSSettingsValidationError(`${path}.fields[${index}] references unknown field '${fieldKey}'`);
-    }
-    if (!fieldKeys.includes(fieldKey)) {
-      fieldKeys.push(fieldKey);
-    }
-  });
-  if (fieldKeys.length === 0) {
-    throw new RunJSSettingsValidationError(`${path}.fields must include at least one field`);
+  if (Object.keys(fields).length === 0) {
+    throw new RunJSSettingsValidationError('settings schema must include at least one setting');
   }
-  return _.pickBy(
-    {
-      title: normalizeStringOption(rawStep.title, `${path}.title`),
-      description: normalizeStringOption(rawStep.description, `${path}.description`),
-      fields: fieldKeys,
-    },
-    (value) => typeof value !== 'undefined',
-  ) as RunJSSettingsStep;
+  const order = Array.isArray(input.order)
+    ? input.order.filter((key): key is string => typeof key === 'string' && !!fields[key])
+    : undefined;
+  return markSchemaShape(
+    _.pickBy(
+      {
+        version: normalizeSchemaVersion(input.version),
+        title: typeof input.title === 'string' ? input.title : undefined,
+        description: typeof input.description === 'string' ? input.description : undefined,
+        fields,
+        order,
+      },
+      (value) => typeof value !== 'undefined',
+    ) as RunJSSettingsSchema,
+    'direct',
+  );
 }
 
 export function normalizeRunJSSettingsSchema(input: unknown): RunJSSettingsSchema {
@@ -207,53 +283,11 @@ export function normalizeRunJSSettingsSchema(input: unknown): RunJSSettingsSchem
     throw new RunJSSettingsValidationError('settings schema must be a plain object');
   }
   const version = input.version;
-  if (typeof version !== 'undefined' && version !== 1) {
+  if (!isFieldDefinition(version) && typeof version !== 'undefined' && version !== 1) {
     throw new RunJSSettingsValidationError('settings schema version must be 1');
   }
-  if (!isPlainRecord(input.fields)) {
-    throw new RunJSSettingsValidationError('settings schema fields must be a plain object');
+  if (isPlainRecord(input.fields) && !isFieldDefinition(input.fields)) {
+    return normalizeLegacySchema(input);
   }
-  const fieldEntries = Object.entries(input.fields);
-  if (fieldEntries.length > 100) {
-    throw new RunJSSettingsValidationError('settings schema supports at most 100 fields');
-  }
-  const fields: Record<string, RunJSSettingField> = {};
-  for (const [key, field] of fieldEntries) {
-    assertSafeRunJSSettingKey(key, 'fields');
-    fields[key] = normalizeField(field, key);
-  }
-  const order = Array.isArray(input.order)
-    ? input.order.filter((key): key is string => typeof key === 'string' && !!fields[key])
-    : undefined;
-  let steps: Record<string, RunJSSettingsStep> | undefined;
-  if (typeof input.steps !== 'undefined') {
-    if (!isPlainRecord(input.steps)) {
-      throw new RunJSSettingsValidationError('settings schema steps must be a plain object');
-    }
-    const stepEntries = Object.entries(input.steps);
-    if (stepEntries.length > 50) {
-      throw new RunJSSettingsValidationError('settings schema supports at most 50 steps');
-    }
-    steps = {};
-    for (const [key, step] of stepEntries) {
-      assertSafeRunJSSettingKey(key, 'steps');
-      steps[key] = normalizeStep(step, key, fields);
-    }
-  }
-  const stepOrder =
-    steps && Array.isArray(input.stepOrder)
-      ? input.stepOrder.filter((key): key is string => typeof key === 'string' && !!steps?.[key])
-      : undefined;
-  return _.pickBy(
-    {
-      version: version as 1 | undefined,
-      title: typeof input.title === 'string' ? input.title : undefined,
-      description: typeof input.description === 'string' ? input.description : undefined,
-      fields,
-      order,
-      steps,
-      stepOrder,
-    },
-    (value) => typeof value !== 'undefined',
-  ) as RunJSSettingsSchema;
+  return normalizeDirectSchema(input);
 }

@@ -356,7 +356,7 @@ describe('DefaultSettingsIcon - only static flows are shown', () => {
     });
   });
 
-  it('expands RunJS settings schema steps into separate menu items', async () => {
+  it('expands direct RunJS settings config items into separate menu items', async () => {
     class TestFlowModel extends FlowModel {}
     const engine = new FlowEngine();
     const model = new TestFlowModel({ uid: 'm-runjs-steps', flowEngine: engine });
@@ -372,21 +372,26 @@ describe('DefaultSettingsIcon - only static flows are shown', () => {
       },
     });
 
-    const run = runtimeSettingsRegistry.beginRun(model, 'ctx.useSettings({ steps: {} })');
+    const run = runtimeSettingsRegistry.beginRun(model, 'ctx.useSettings({ basic: { type: "object" } })');
     runtimeSettingsRegistry.register(
       model,
       'default',
       {
-        fields: {
-          title: { type: 'string', title: '标题' },
-          amount: { type: 'number', title: '当前数值' },
-          target: { type: 'number', title: '目标值' },
+        basic: {
+          type: 'object',
+          title: '基础配置',
+          properties: {
+            title: { type: 'string', title: '标题' },
+          },
         },
-        steps: {
-          basic: { title: '基础配置', fields: ['title'] },
-          metrics: { title: '指标配置', fields: ['amount', 'target'] },
+        metrics: {
+          type: 'object',
+          title: '指标配置',
+          properties: {
+            amount: { type: 'number', title: '当前数值' },
+            target: { type: 'number', title: '目标值' },
+          },
         },
-        stepOrder: ['basic', 'metrics'],
       },
       run,
     );

@@ -52,6 +52,7 @@ export type RunJSSettingFieldType =
   | 'text'
   | 'number'
   | 'boolean'
+  | 'object'
   | 'select'
   | 'multiSelect'
   | 'date'
@@ -79,12 +80,7 @@ export type RunJSSettingField = {
   dataSource?: `$${string}` | DataSourceEnvelope;
   collection?: `$${string}` | CollectionEnvelope;
   fieldTypes?: string[];
-};
-
-export type RunJSSettingsStep = {
-  title?: string;
-  description?: string;
-  fields: string[];
+  properties?: Record<string, RunJSSettingField>;
 };
 
 export type RunJSSettingsSchema = {
@@ -93,8 +89,6 @@ export type RunJSSettingsSchema = {
   description?: string;
   fields: Record<string, RunJSSettingField>;
   order?: string[];
-  steps?: Record<string, RunJSSettingsStep>;
-  stepOrder?: string[];
 };
 
 export type SettingsFactoryPhase = 'render' | 'settings-open' | 'settings-draft' | 'settings-save';
@@ -118,9 +112,11 @@ export type SettingsFactoryArgs = {
   phase: SettingsFactoryPhase;
 };
 
-export type RunJSSettingsFactory = (args: SettingsFactoryArgs) => RunJSSettingsSchema;
+export type RunJSSettingsPublicSchema = RunJSSettingsSchema | Record<string, RunJSSettingField>;
 
-export type UseSettingsInput = RunJSSettingsSchema | RunJSSettingsFactory;
+export type RunJSSettingsFactory = (args: SettingsFactoryArgs) => RunJSSettingsPublicSchema;
+
+export type UseSettingsInput = RunJSSettingsPublicSchema | RunJSSettingsFactory;
 
 export type UseSettingsOptions = {
   key?: RunJSSettingsKey;

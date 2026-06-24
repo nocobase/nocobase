@@ -17,6 +17,7 @@ import {
   mergeActiveValuesPreserveInactiveUnknown,
   RUNJS_SETTINGS_CONFIGURE_STEP_KEY,
   RUNJS_SETTINGS_FLOW_KEY,
+  hasRunJSSettingsConfigItems,
   type ParamObject,
   runtimeSettingsRegistry,
   toFlowUISchema,
@@ -220,7 +221,7 @@ JSBlockModel.registerFlow({
           phase: 'settings-open',
           values,
         });
-        return !!result.schema?.steps && Object.keys(result.schema.steps).length > 0;
+        return hasRunJSSettingsConfigItems(result.schema);
       },
       defaultParams(ctx) {
         const entry = runtimeSettingsRegistry.get(ctx.model, 'default');
