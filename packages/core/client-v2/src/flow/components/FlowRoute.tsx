@@ -10,10 +10,13 @@
 import { type FlowEngine, useFlowContext, useFlowEngine } from '@nocobase/flow-engine';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { deviceType } from 'react-device-detect';
-import { useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useApp } from '../../hooks/useApp';
-import { NocoBaseDesktopRouteType } from '../../flow-compat';
-import { resolveAdminRouteRuntimeTarget } from '../admin-shell/admin-layout/resolveAdminRouteRuntimeTarget';
+import { NocoBaseDesktopRouteType, type NocoBaseDesktopRoute } from '../../flow-compat';
+import {
+  resolveAdminRouteRuntimeTarget,
+  toRouterNavigationPath,
+} from '../admin-shell/admin-layout/resolveAdminRouteRuntimeTarget';
 import { getAdminLayoutModel, type AdminLayoutModel } from '../admin-shell/admin-layout/AdminLayoutModel';
 import { getLayoutModel, type BaseLayoutModel } from '../admin-shell/BaseLayoutModel';
 import { useLayoutRoutePage } from '../admin-shell/useLayoutRoutePage';
@@ -21,6 +24,7 @@ import { AppNotFound } from '../../components';
 import { useKeepAlive } from '../../components/KeepAlive';
 
 type FlowRouteGuardState = {
+  pageUid?: string;
   pending: boolean;
   allowBridge: boolean;
   notFound: boolean;
@@ -33,6 +37,14 @@ type FlowRouteLayoutContext = {
   routePath?: string;
   routeName?: string;
   uid?: string;
+};
+
+type FlowRouteRepositoryLike = {
+  refreshAccessible?: () => Promise<unknown>;
+  isAccessibleLoaded?: () => boolean;
+  ensureAccessibleLoaded?: () => Promise<unknown>;
+  getRouteBySchemaUid?: (schemaUid: string) => NocoBaseDesktopRoute | undefined;
+  listAccessible?: () => NocoBaseDesktopRoute[];
 };
 
 export type FlowRouteProps = {
@@ -69,6 +81,44 @@ const getDefaultLegacyPageBehavior = (
 };
 
 const shouldRequireAccessibleRoute = (contextLayout?: FlowRouteLayoutContext) => contextLayout?.authCheck !== false;
+
+const findAccessibleRouteByIdentity = (
+  routes: NocoBaseDesktopRoute[] | undefined,
+  pageUid: string,
+): NocoBaseDesktopRoute | undefined => {
+  if (!Array.isArray(routes)) {
+    return undefined;
+  }
+
+  for (const route of routes) {
+    if (
+      (route.type !== NocoBaseDesktopRouteType.group && route.schemaUid === pageUid) ||
+      (route.type === NocoBaseDesktopRouteType.group && route.id != null && String(route.id) === pageUid)
+    ) {
+      return route;
+    }
+
+    const matched = findAccessibleRouteByIdentity(route.children, pageUid);
+    if (matched) {
+      return matched;
+    }
+  }
+
+  return undefined;
+};
+
+const getAccessibleRouteByPageUid = (
+  routeRepository: FlowRouteRepositoryLike | undefined,
+  pageUid: string,
+): NocoBaseDesktopRoute | undefined => {
+  const routeBySchemaUid = routeRepository?.getRouteBySchemaUid?.(pageUid);
+
+  if (routeBySchemaUid && routeBySchemaUid.type !== NocoBaseDesktopRouteType.group) {
+    return routeBySchemaUid;
+  }
+
+  return findAccessibleRouteByIdentity(routeRepository?.listAccessible?.(), pageUid);
+};
 
 const hasFlowModel = async (flowEngine: FlowEngine, pageUid: string) => {
   if (flowEngine.getModel(pageUid)) {
@@ -197,11 +247,15 @@ const FlowRoute = (props: FlowRouteProps = {}) => {
   );
   const legacyPageBehavior = legacyPageBehaviorProp || getDefaultLegacyPageBehavior(flowEngine, routeLayout);
   const app = useApp();
-  const routeRepository = flowEngine.context.routeRepository;
+  const location = useLocation();
+  const navigate = useNavigate();
+  const routeRepository = flowEngine.context.routeRepository as FlowRouteRepositoryLike | undefined;
   const params = useParams();
   const pageUid = pageUidProp || params?.name;
+  const hasNestedRoutePath = typeof params?.tabUid !== 'undefined' || typeof params?.['*'] !== 'undefined';
   const skipRouteRepositoryCheck = !routeRepository;
   const [guardState, setGuardState] = useState<FlowRouteGuardState>({
+    pageUid: undefined,
     pending: true,
     allowBridge: false,
     notFound: false,
@@ -214,18 +268,22 @@ const FlowRoute = (props: FlowRouteProps = {}) => {
   }
 
   useEffect(() => {
+    replaceTriggeredRef.current = false;
+  }, [location.hash, location.pathname, location.search, pageUid]);
+
+  useEffect(() => {
     let active = true;
     const requestId = ++requestIdRef.current;
 
     const run = async () => {
-      setGuardState({ pending: true, allowBridge: false, notFound: false });
+      setGuardState({ pageUid, pending: true, allowBridge: false, notFound: false });
 
       if (!skipRouteRepositoryCheck && !routeRepository?.isAccessibleLoaded?.()) {
         try {
           await routeRepository?.ensureAccessibleLoaded?.();
         } catch (_error) {
           if (active && requestId === requestIdRef.current) {
-            setGuardState({ pending: false, allowBridge: true, notFound: false });
+            setGuardState({ pageUid, pending: false, allowBridge: true, notFound: false });
           }
           return;
         }
@@ -235,28 +293,64 @@ const FlowRoute = (props: FlowRouteProps = {}) => {
         return;
       }
 
-      const route = skipRouteRepositoryCheck ? undefined : routeRepository?.getRouteBySchemaUid?.(pageUid);
+      const route = skipRouteRepositoryCheck ? undefined : getAccessibleRouteByPageUid(routeRepository, pageUid);
       if (!route && !skipRouteRepositoryCheck && shouldRequireAccessibleRoute(routeLayout)) {
-        setGuardState({ pending: false, allowBridge: false, notFound: true });
+        setGuardState({ pageUid, pending: false, allowBridge: false, notFound: true });
         return;
       }
 
       if (!route && legacyPageBehavior === 'notFound') {
         const flowModelExists = await hasFlowModel(flowEngine, pageUid);
         if (active && requestId === requestIdRef.current) {
-          setGuardState({ pending: false, allowBridge: flowModelExists, notFound: !flowModelExists });
+          setGuardState({ pageUid, pending: false, allowBridge: flowModelExists, notFound: !flowModelExists });
         }
+        return;
+      }
+
+      if (route?.type === NocoBaseDesktopRouteType.group) {
+        if (hasNestedRoutePath) {
+          setGuardState({ pageUid, pending: false, allowBridge: false, notFound: true });
+          return;
+        }
+
+        const target = resolveAdminRouteRuntimeTarget({
+          app,
+          route,
+          layout: routeLayout,
+        });
+
+        if (target.reason === 'emptyGroup') {
+          setGuardState({ pageUid, pending: false, allowBridge: false, notFound: false });
+          return;
+        }
+
+        if (target.runtimePath) {
+          if (replaceTriggeredRef.current) {
+            setGuardState({ pageUid, pending: false, allowBridge: false, notFound: false });
+            return;
+          }
+
+          replaceTriggeredRef.current = true;
+          if (target.navigationMode === 'document') {
+            window.location.replace(target.runtimePath);
+            return;
+          }
+          navigate(toRouterNavigationPath(target.runtimePath, app.router?.getBasename?.()), { replace: true });
+          return;
+        }
+
+        setGuardState({ pageUid, pending: false, allowBridge: false, notFound: true });
         return;
       }
 
       if (route?.type === NocoBaseDesktopRouteType.page) {
         if (legacyPageBehavior === 'notFound') {
-          setGuardState({ pending: false, allowBridge: false, notFound: true });
+          setGuardState({ pageUid, pending: false, allowBridge: false, notFound: true });
           return;
         }
 
         if (legacyPageBehavior === 'bridge') {
-          setGuardState({ pending: false, allowBridge: true, notFound: false });
+          setGuardState({ pageUid, pending: false, allowBridge: true, notFound: false });
           return;
         }
 
@@ -279,14 +373,14 @@ const FlowRoute = (props: FlowRouteProps = {}) => {
 
         if (target.reason === 'unsupportedV2Runtime') {
           if (active && requestId === requestIdRef.current) {
-            setGuardState({ pending: false, allowBridge: false, notFound: true });
+            setGuardState({ pageUid, pending: false, allowBridge: false, notFound: true });
           }
           return;
         }
       }
 
       if (active && requestId === requestIdRef.current) {
-        setGuardState({ pending: false, allowBridge: true, notFound: false });
+        setGuardState({ pageUid, pending: false, allowBridge: true, notFound: false });
       }
     };
 
@@ -295,10 +389,20 @@ const FlowRoute = (props: FlowRouteProps = {}) => {
     return () => {
       active = false;
     };
-  }, [app, flowEngine, legacyPageBehavior, pageUid, routeLayout, routeRepository, skipRouteRepositoryCheck]);
+  }, [
+    app,
+    flowEngine,
+    hasNestedRoutePath,
+    legacyPageBehavior,
+    navigate,
+    pageUid,
+    routeLayout,
+    routeRepository,
+    skipRouteRepositoryCheck,
+  ]);
 
   const content = useMemo(() => {
-    if (guardState.pending) {
+    if (guardState.pageUid !== pageUid || guardState.pending) {
       return null;
     }
 
@@ -311,7 +415,15 @@ const FlowRoute = (props: FlowRouteProps = {}) => {
     }
 
     return <BridgeFlowRoute pageUid={pageUid} active={active} getLayoutModel={getLayoutModel} />;
-  }, [active, getLayoutModel, guardState.allowBridge, guardState.notFound, guardState.pending, pageUid]);
+  }, [
+    active,
+    getLayoutModel,
+    guardState.allowBridge,
+    guardState.notFound,
+    guardState.pageUid,
+    guardState.pending,
+    pageUid,
+  ]);
 
   return content;
 };
