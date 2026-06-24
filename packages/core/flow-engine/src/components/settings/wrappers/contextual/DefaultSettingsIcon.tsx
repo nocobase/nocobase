@@ -485,10 +485,9 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
     [closeDropdown, model, t],
   );
 
-  const isStepMenuItemDisabled = useCallback(
+  const findStepInfoByMenuKey = useCallback(
     (key: string) => {
-      const cleanKey = key.includes('-') && /^(.+)-\d+$/.test(key) ? key.replace(/-\d+$/, '') : key;
-      const keys = cleanKey.split(':');
+      const keys = key.split(':');
       let modelKey: string | undefined;
       let flowKey: string | undefined;
       let stepKey: string | undefined;
@@ -498,23 +497,48 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
       } else if (keys.length === 2) {
         [flowKey, stepKey] = keys;
       } else {
-        return false;
+        return undefined;
       }
 
-      return configurableFlowsAndSteps.some(({ flow, steps, modelKey: flowModelKey }: FlowInfo) => {
+      for (const { flow, steps, modelKey: flowModelKey } of configurableFlowsAndSteps) {
         const sameModel = (flowModelKey || undefined) === modelKey;
-        if (!sameModel || flow.key !== flowKey) return false;
-        return steps.some((stepInfo: StepInfo) => stepInfo.stepKey === stepKey && !!stepInfo.disabled);
-      });
+        if (!sameModel || flow.key !== flowKey) continue;
+        const stepInfo = steps.find((item: StepInfo) => item.stepKey === stepKey);
+        if (stepInfo) {
+          return stepInfo;
+        }
+      }
+      return undefined;
     },
     [configurableFlowsAndSteps],
+  );
+
+  const normalizeGeneratedStepMenuKey = useCallback(
+    (key: string) => {
+      if (findStepInfoByMenuKey(key)) {
+        return key;
+      }
+      if (key.includes('-') && /^(.+)-\d+$/.test(key)) {
+        const baseKey = key.replace(/-\d+$/, '');
+        if (findStepInfoByMenuKey(baseKey)) {
+          return baseKey;
+        }
+      }
+      return key;
+    },
+    [findStepInfoByMenuKey],
+  );
+
+  const isStepMenuItemDisabled = useCallback(
+    (key: string) => !!findStepInfoByMenuKey(normalizeGeneratedStepMenuKey(key))?.disabled,
+    [findStepInfoByMenuKey, normalizeGeneratedStepMenuKey],
   );
 
   const handleMenuClick = useCallback(
     ({ key }: { key: string }) => {
       const originalKey = key;
-      // Handle duplicate key suffixes (e.g., "key-1" -> "key")
-      const cleanKey = key.includes('-') && /^(.+)-\d+$/.test(key) ? key.replace(/-\d+$/, '') : key;
+      const duplicateBaseKey = key.includes('-') && /^(.+)-\d+$/.test(key) ? key.replace(/-\d+$/, '') : key;
+      const cleanKey = normalizeGeneratedStepMenuKey(key);
 
       if (cleanKey.startsWith('copy-pop-uid:')) {
         closeDropdown();
@@ -523,7 +547,9 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
       }
 
       const extra =
-        findExtraMenuItemByKey(extraMenuItems, originalKey) || findExtraMenuItemByKey(extraMenuItems, cleanKey);
+        findExtraMenuItemByKey(extraMenuItems, originalKey) ||
+        findExtraMenuItemByKey(extraMenuItems, duplicateBaseKey) ||
+        findExtraMenuItemByKey(extraMenuItems, cleanKey);
       if (extra?.disabled) {
         return;
       }
@@ -558,6 +584,7 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
       handleCopyPopupUid,
       extraMenuItems,
       isStepMenuItemDisabled,
+      normalizeGeneratedStepMenuKey,
     ],
   );
 
@@ -574,8 +601,18 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
 
         const flowsWithSteps = await Promise.all(
           flowsArray.map(async (flow) => {
+            const staticSteps = flow.steps || {};
+            const flowSettings = targetModel.flowEngine?.flowSettings;
+            flowSettings?.syncRuntimeSettingsFromStepParams?.(targetModel, flow.key, 'runJs');
+            const runtimeSteps = flowSettings?.getRuntimeSettingSteps?.(targetModel, flow.key) || {};
+            const stepEntries = [
+              ...Object.entries(staticSteps),
+              ...Object.entries(runtimeSteps).filter(
+                ([stepKey]) => !Object.prototype.hasOwnProperty.call(staticSteps, stepKey),
+              ),
+            ];
             const configurableSteps = await Promise.all(
-              Object.entries(flow.steps).map(async ([stepKey, stepDefinition]) => {
+              stepEntries.map(async ([stepKey, stepDefinition]) => {
                 const actionStep = stepDefinition;
                 let step = actionStep;
                 // 支持静态与动态 hideInSettings
@@ -678,7 +715,7 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
     const cleanups: Array<() => void> = [];
 
     walkSubModels(model, { maxDepth: menuLevels, mode: 'visited' }, (targetModel, { depth }) => {
-      const eventNames = ['onStepParamsChanged'];
+      const eventNames = ['onStepParamsChanged', 'onRuntimeSettingsChanged'];
       if (depth === 1) {
         eventNames.push('onSubModelAdded', 'onSubModelRemoved', 'onSubModelReplaced');
       }

@@ -24,6 +24,7 @@ import {
   DynamicFlowSource,
   DynamicFlowSourceProvider,
   ParamObject,
+  StepDefinition,
   StepSettingsDialogProps,
   ToolbarItemConfig,
 } from './types';
@@ -126,6 +127,423 @@ export type FlowSettingsComponentModule = { default?: FlowSettingsComponent } | 
 export type FlowSettingsComponentLoader = () => Promise<FlowSettingsComponentModule | FlowSettingsComponent>;
 export type FlowSettingsComponentLoaderMap = Record<string, FlowSettingsComponentLoader>;
 
+export type UseSettingsPrimitive = string | number | boolean | null;
+
+export interface UseSettingsObjectDefinition {
+  title?: string;
+  default?: unknown;
+  type?: 'string' | 'number' | 'boolean' | 'object';
+  component?: string;
+  componentProps?: Record<string, unknown>;
+  options?: Array<{ label: string; value: unknown }>;
+  required?: boolean;
+  uiSchema?: Record<string, unknown>;
+}
+
+export type UseSettingsDefinition = UseSettingsPrimitive | UseSettingsObjectDefinition;
+export type UseSettingsConfig = Record<string, UseSettingsDefinition>;
+
+interface RuntimeSettingSource {
+  sourceKey: string;
+  flowKey: string;
+  steps: Record<string, StepDefinition>;
+}
+
+export interface RuntimeSettingsDeclarationSession {
+  model: FlowModel;
+  sourceKey: string;
+  flowKey: string;
+  steps: Record<string, StepDefinition>;
+  declared: boolean;
+}
+
+const RUNTIME_SETTING_KEY_RE = /^[A-Za-z_$][A-Za-z0-9_$-]*$/;
+const RESERVED_RUNTIME_SETTING_KEYS = new Set(['runJs']);
+const RUNTIME_SETTINGS_CALL = 'ctx.useSettings';
+
+type RuntimeSettingsConfigExtraction = {
+  hasRuntimeSettingsCall: boolean;
+  hasUnsupportedRuntimeSettingsCall: boolean;
+  configs: UseSettingsConfig[];
+};
+
+const humanizeRuntimeSettingKey = (key: string) =>
+  key
+    .replace(/[_-]+/g, ' ')
+    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+    .replace(/^./, (char) => char.toUpperCase());
+
+const getRuntimeSettingType = (
+  value: unknown,
+  explicitType?: UseSettingsObjectDefinition['type'],
+): 'string' | 'number' | 'boolean' | 'object' => {
+  if (explicitType) {
+    return explicitType;
+  }
+  if (typeof value === 'number') {
+    return 'number';
+  }
+  if (typeof value === 'boolean') {
+    return 'boolean';
+  }
+  if (_.isPlainObject(value)) {
+    return 'object';
+  }
+  return 'string';
+};
+
+const getRuntimeSettingComponent = (
+  type: 'string' | 'number' | 'boolean' | 'object',
+  definition: UseSettingsObjectDefinition,
+) => {
+  if (definition.component) {
+    return definition.component;
+  }
+  if (definition.options?.length) {
+    return 'Select';
+  }
+  if (type === 'number') {
+    return 'NumberPicker';
+  }
+  if (type === 'boolean') {
+    return 'Switch';
+  }
+  return 'Input';
+};
+
+class RuntimeSettingsLiteralParser {
+  private index = 0;
+
+  constructor(private readonly source: string) {}
+
+  parse(): unknown {
+    const value = this.parseValue();
+    this.skipIgnored();
+    if (this.index < this.source.length) {
+      throw new Error('Unexpected trailing content');
+    }
+    return value;
+  }
+
+  private parseValue(): unknown {
+    this.skipIgnored();
+    const char = this.source[this.index];
+    if (char === '{') {
+      return this.parseObject();
+    }
+    if (char === '[') {
+      return this.parseArray();
+    }
+    if (char === '"' || char === "'" || char === '`') {
+      return this.parseString();
+    }
+    if (char === '-' || /\d/.test(char || '')) {
+      return this.parseNumber();
+    }
+    const identifier = this.readIdentifier();
+    if (identifier === 'true') {
+      return true;
+    }
+    if (identifier === 'false') {
+      return false;
+    }
+    if (identifier === 'null') {
+      return null;
+    }
+    if (identifier === 'undefined') {
+      return undefined;
+    }
+    throw new Error('Unsupported literal value');
+  }
+
+  private parseObject(): Record<string, unknown> {
+    this.expect('{');
+    const value: Record<string, unknown> = {};
+    this.skipIgnored();
+    while (this.source[this.index] !== '}') {
+      const key = this.parseKey();
+      this.skipIgnored();
+      this.expect(':');
+      value[key] = this.parseValue();
+      this.skipIgnored();
+      if (this.source[this.index] === ',') {
+        this.index += 1;
+        this.skipIgnored();
+        continue;
+      }
+      break;
+    }
+    this.expect('}');
+    return value;
+  }
+
+  private parseArray(): unknown[] {
+    this.expect('[');
+    const value: unknown[] = [];
+    this.skipIgnored();
+    while (this.source[this.index] !== ']') {
+      value.push(this.parseValue());
+      this.skipIgnored();
+      if (this.source[this.index] === ',') {
+        this.index += 1;
+        this.skipIgnored();
+        continue;
+      }
+      break;
+    }
+    this.expect(']');
+    return value;
+  }
+
+  private parseKey(): string {
+    this.skipIgnored();
+    const char = this.source[this.index];
+    if (char === '"' || char === "'" || char === '`') {
+      return String(this.parseString());
+    }
+    const identifier = this.readIdentifier();
+    if (!identifier) {
+      throw new Error('Expected object key');
+    }
+    return identifier;
+  }
+
+  private parseString(): string {
+    const quote = this.source[this.index];
+    this.index += 1;
+    let value = '';
+    while (this.index < this.source.length) {
+      const char = this.source[this.index];
+      if (char === quote) {
+        this.index += 1;
+        return value;
+      }
+      if (char === '\\') {
+        this.index += 1;
+        value += this.readEscapedCharacter();
+        continue;
+      }
+      value += char;
+      this.index += 1;
+    }
+    throw new Error('Unterminated string literal');
+  }
+
+  private readEscapedCharacter(): string {
+    const char = this.source[this.index];
+    this.index += 1;
+    switch (char) {
+      case 'n':
+        return '\n';
+      case 'r':
+        return '\r';
+      case 't':
+        return '\t';
+      case 'b':
+        return '\b';
+      case 'f':
+        return '\f';
+      case 'v':
+        return '\v';
+      case '0':
+        return '\0';
+      default:
+        return char || '';
+    }
+  }
+
+  private parseNumber(): number {
+    const match = this.source.slice(this.index).match(/^-?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?/);
+    if (!match) {
+      throw new Error('Invalid number literal');
+    }
+    this.index += match[0].length;
+    return Number(match[0]);
+  }
+
+  private readIdentifier(): string {
+    const match = this.source.slice(this.index).match(/^[A-Za-z_$][A-Za-z0-9_$]*/);
+    if (!match) {
+      return '';
+    }
+    this.index += match[0].length;
+    return match[0];
+  }
+
+  private skipIgnored() {
+    while (this.index < this.source.length) {
+      const char = this.source[this.index];
+      if (/\s/.test(char)) {
+        this.index += 1;
+        continue;
+      }
+      if (char === '/' && this.source[this.index + 1] === '/') {
+        this.index += 2;
+        while (this.index < this.source.length && this.source[this.index] !== '\n') {
+          this.index += 1;
+        }
+        continue;
+      }
+      if (char === '/' && this.source[this.index + 1] === '*') {
+        this.index += 2;
+        while (
+          this.index < this.source.length &&
+          !(this.source[this.index] === '*' && this.source[this.index + 1] === '/')
+        ) {
+          this.index += 1;
+        }
+        if (this.index < this.source.length) {
+          this.index += 2;
+        }
+        continue;
+      }
+      break;
+    }
+  }
+
+  private expect(char: string) {
+    this.skipIgnored();
+    if (this.source[this.index] !== char) {
+      throw new Error(`Expected '${char}'`);
+    }
+    this.index += 1;
+  }
+}
+
+const skipRunJsIgnored = (source: string, index: number) => {
+  let cursor = index;
+  while (cursor < source.length && /\s/.test(source[cursor])) {
+    cursor += 1;
+  }
+  return cursor;
+};
+
+const isIdentifierPart = (char: string | undefined) => !!char && /[A-Za-z0-9_$]/.test(char);
+
+const findNextRuntimeSettingsCall = (source: string, start: number) => {
+  let quote: string | undefined;
+  let escaped = false;
+  for (let index = start; index < source.length; index += 1) {
+    const char = source[index];
+    if (quote) {
+      if (escaped) {
+        escaped = false;
+      } else if (char === '\\') {
+        escaped = true;
+      } else if (char === quote) {
+        quote = undefined;
+      }
+      continue;
+    }
+
+    if (char === '"' || char === "'" || char === '`') {
+      quote = char;
+      continue;
+    }
+    if (char === '/' && source[index + 1] === '/') {
+      index += 2;
+      while (index < source.length && source[index] !== '\n') {
+        index += 1;
+      }
+      continue;
+    }
+    if (char === '/' && source[index + 1] === '*') {
+      index += 2;
+      while (index < source.length && !(source[index] === '*' && source[index + 1] === '/')) {
+        index += 1;
+      }
+      index += 1;
+      continue;
+    }
+
+    if (
+      source.startsWith(RUNTIME_SETTINGS_CALL, index) &&
+      !isIdentifierPart(source[index - 1]) &&
+      !isIdentifierPart(source[index + RUNTIME_SETTINGS_CALL.length])
+    ) {
+      return index;
+    }
+  }
+  return -1;
+};
+
+const findRuntimeSettingsObjectEnd = (source: string, start: number) => {
+  let depth = 0;
+  let quote: string | undefined;
+  let escaped = false;
+  for (let index = start; index < source.length; index += 1) {
+    const char = source[index];
+    if (quote) {
+      if (escaped) {
+        escaped = false;
+      } else if (char === '\\') {
+        escaped = true;
+      } else if (char === quote) {
+        quote = undefined;
+      }
+      continue;
+    }
+    if (char === '"' || char === "'" || char === '`') {
+      quote = char;
+      continue;
+    }
+    if (char === '{') {
+      depth += 1;
+      continue;
+    }
+    if (char === '}') {
+      depth -= 1;
+      if (depth === 0) {
+        return index;
+      }
+    }
+  }
+  return -1;
+};
+
+const extractRuntimeSettingsConfigsFromRunJs = (code: string): RuntimeSettingsConfigExtraction => {
+  const configs: UseSettingsConfig[] = [];
+  let hasRuntimeSettingsCall = false;
+  let hasUnsupportedRuntimeSettingsCall = false;
+  let searchFrom = 0;
+  while (searchFrom < code.length) {
+    const callIndex = findNextRuntimeSettingsCall(code, searchFrom);
+    if (callIndex < 0) {
+      break;
+    }
+    hasRuntimeSettingsCall = true;
+    let cursor = skipRunJsIgnored(code, callIndex + RUNTIME_SETTINGS_CALL.length);
+    if (code[cursor] !== '(') {
+      hasUnsupportedRuntimeSettingsCall = true;
+      searchFrom = callIndex + RUNTIME_SETTINGS_CALL.length;
+      continue;
+    }
+    cursor = skipRunJsIgnored(code, cursor + 1);
+    if (code[cursor] !== '{') {
+      hasUnsupportedRuntimeSettingsCall = true;
+      searchFrom = cursor + 1;
+      continue;
+    }
+    const objectEnd = findRuntimeSettingsObjectEnd(code, cursor);
+    if (objectEnd < 0) {
+      hasUnsupportedRuntimeSettingsCall = true;
+      break;
+    }
+    const literal = code.slice(cursor, objectEnd + 1);
+    try {
+      const parsed = new RuntimeSettingsLiteralParser(literal).parse();
+      if (_.isPlainObject(parsed)) {
+        configs.push(parsed as UseSettingsConfig);
+      }
+    } catch (error) {
+      hasUnsupportedRuntimeSettingsCall = true;
+      console.warn('ctx.useSettings(config): only object literal declarations can be preloaded.', error);
+    }
+    searchFrom = objectEnd + 1;
+  }
+  return { configs, hasRuntimeSettingsCall, hasUnsupportedRuntimeSettingsCall };
+};
+
 export class FlowSettings {
   public components: Record<string, any> = {};
   public scopes: Record<string, any> = {};
@@ -135,6 +553,7 @@ export class FlowSettings {
   #forceEnabled = false; // 强制启用状态，主要用于设计模式下的强制启用
   public toolbarItems: ToolbarItemConfig[] = [];
   private dynamicFlowSourceProviders: DynamicFlowSourceProvider[] = [];
+  private runtimeSettingRegistry: WeakMap<FlowModel, Map<string, RuntimeSettingSource>> = new WeakMap();
   #emitter: Emitter = new Emitter();
 
   constructor(engine: FlowEngine) {
@@ -159,6 +578,216 @@ export class FlowSettings {
 
   off(event: 'beforeOpen', callback: (...args: any[]) => void) {
     this.#emitter.off(event, callback);
+  }
+
+  private getRuntimeSettingSourceMap(model: FlowModel, create = false) {
+    let sources = this.runtimeSettingRegistry.get(model);
+    if (!sources && create) {
+      sources = new Map<string, RuntimeSettingSource>();
+      this.runtimeSettingRegistry.set(model, sources);
+    }
+    return sources;
+  }
+
+  private emitRuntimeSettingsChanged(model: FlowModel) {
+    model.emitter?.emit('onRuntimeSettingsChanged');
+  }
+
+  private normalizeRuntimeSettingsConfig(model: FlowModel | undefined, flowKey: string, config: UseSettingsConfig) {
+    const steps: Record<string, StepDefinition> = {};
+    const values: Record<string, unknown> = {};
+
+    if (!_.isPlainObject(config)) {
+      console.warn('ctx.useSettings(config): config must be a plain object.');
+      return { steps, values };
+    }
+
+    Object.entries(config).forEach(([settingKey, rawDefinition]) => {
+      if (!RUNTIME_SETTING_KEY_RE.test(settingKey)) {
+        console.warn(`ctx.useSettings(config): invalid setting key '${settingKey}' skipped.`);
+        return;
+      }
+      if (RESERVED_RUNTIME_SETTING_KEYS.has(settingKey)) {
+        console.warn(`ctx.useSettings(config): reserved setting key '${settingKey}' skipped.`);
+        return;
+      }
+
+      const isObjectDefinition = _.isPlainObject(rawDefinition);
+      const definition = isObjectDefinition ? (rawDefinition as UseSettingsObjectDefinition) : {};
+      const hasDefault = isObjectDefinition ? Object.prototype.hasOwnProperty.call(definition, 'default') : true;
+      const defaultValue = isObjectDefinition ? definition.default : rawDefinition;
+      const title = definition.title || humanizeRuntimeSettingKey(settingKey);
+      const savedParams = model?.getStepParams(flowKey, settingKey) as Record<string, unknown> | undefined;
+      const hasSavedParams = typeof savedParams !== 'undefined';
+
+      if (_.isPlainObject(definition.uiSchema)) {
+        steps[settingKey] = {
+          title,
+          uiSchema: definition.uiSchema as Record<string, ISchema>,
+          defaultParams: _.isPlainObject(defaultValue) ? { ...(defaultValue as Record<string, unknown>) } : {},
+          uiMode: 'dialog',
+        };
+        values[settingKey] = hasSavedParams ? savedParams : defaultValue;
+        return;
+      }
+
+      const type = getRuntimeSettingType(defaultValue, definition.type);
+      const component = getRuntimeSettingComponent(type, definition);
+      const valueSchema: Record<string, unknown> = {
+        type,
+        title,
+        'x-decorator': 'FormItem',
+        'x-component': component,
+      };
+      if (definition.options) {
+        valueSchema.enum = definition.options;
+      }
+      if (definition.componentProps) {
+        valueSchema['x-component-props'] = definition.componentProps;
+      }
+      if (definition.required) {
+        valueSchema.required = true;
+      }
+
+      steps[settingKey] = {
+        title,
+        uiSchema: {
+          value: valueSchema as ISchema,
+        },
+        defaultParams: hasDefault ? { value: defaultValue } : {},
+        uiMode: 'dialog',
+      };
+      values[settingKey] =
+        savedParams && Object.prototype.hasOwnProperty.call(savedParams, 'value') ? savedParams.value : defaultValue;
+    });
+
+    return { steps, values };
+  }
+
+  public beginRuntimeSettingsDeclaration(
+    model: FlowModel,
+    sourceKey: string,
+    flowKey: string,
+  ): RuntimeSettingsDeclarationSession {
+    return {
+      model,
+      sourceKey,
+      flowKey,
+      steps: {},
+      declared: false,
+    };
+  }
+
+  public defineRuntimeSettings(
+    session: RuntimeSettingsDeclarationSession,
+    config: UseSettingsConfig,
+  ): Record<string, unknown>;
+  public defineRuntimeSettings(
+    model: FlowModel,
+    sourceKey: string,
+    flowKey: string,
+    config: UseSettingsConfig,
+  ): Record<string, unknown>;
+  public defineRuntimeSettings(
+    modelOrSession: FlowModel | RuntimeSettingsDeclarationSession,
+    sourceKeyOrConfig: string | UseSettingsConfig,
+    flowKey?: string,
+    config?: UseSettingsConfig,
+  ): Record<string, unknown> {
+    if (typeof sourceKeyOrConfig !== 'string') {
+      const session = modelOrSession as RuntimeSettingsDeclarationSession;
+      const { steps, values } = this.normalizeRuntimeSettingsConfig(session.model, session.flowKey, sourceKeyOrConfig);
+      session.steps = { ...session.steps, ...steps };
+      session.declared = true;
+      return values;
+    }
+
+    const model = modelOrSession as FlowModel;
+    const sourceKey = sourceKeyOrConfig;
+    const session = this.beginRuntimeSettingsDeclaration(model, sourceKey, flowKey || '');
+    const values = this.defineRuntimeSettings(session, config || {});
+    this.commitRuntimeSettingsDeclaration(session);
+    return values;
+  }
+
+  public commitRuntimeSettingsDeclaration(session: RuntimeSettingsDeclarationSession) {
+    const sources = this.getRuntimeSettingSourceMap(session.model, true);
+    if (!sources) {
+      return;
+    }
+
+    const previous = sources.get(session.sourceKey);
+    const hasSteps = Object.keys(session.steps).length > 0;
+    if (!hasSteps) {
+      if (previous) {
+        sources.delete(session.sourceKey);
+        if (sources.size === 0) {
+          this.runtimeSettingRegistry.delete(session.model);
+        }
+        this.emitRuntimeSettingsChanged(session.model);
+      }
+      return;
+    }
+
+    const next: RuntimeSettingSource = {
+      sourceKey: session.sourceKey,
+      flowKey: session.flowKey,
+      steps: session.steps,
+    };
+
+    if (_.isEqual(previous, next)) {
+      return;
+    }
+
+    sources.set(session.sourceKey, next);
+    this.emitRuntimeSettingsChanged(session.model);
+  }
+
+  public getRuntimeSettingSteps(model: FlowModel, flowKey: string): Record<string, StepDefinition> {
+    const sources = this.getRuntimeSettingSourceMap(model);
+    if (!sources) {
+      return {};
+    }
+
+    const steps: Record<string, StepDefinition> = {};
+    for (const source of sources.values()) {
+      if (source.flowKey === flowKey) {
+        Object.assign(steps, source.steps);
+      }
+    }
+    return steps;
+  }
+
+  public getRuntimeSettingsDefaultValues(config: UseSettingsConfig): Record<string, unknown> {
+    return this.normalizeRuntimeSettingsConfig(undefined, '', config).values;
+  }
+
+  public syncRuntimeSettingsFromRunJsSource(model: FlowModel, flowKey: string, stepKey: string, code: unknown) {
+    const source = typeof code === 'string' ? code : '';
+    const { configs, hasRuntimeSettingsCall, hasUnsupportedRuntimeSettingsCall } =
+      extractRuntimeSettingsConfigsFromRunJs(source);
+    if (hasRuntimeSettingsCall && configs.length === 0) {
+      return;
+    }
+
+    const sourceKey = `${model.uid}:${flowKey}:${stepKey}`;
+    const session = this.beginRuntimeSettingsDeclaration(model, sourceKey, flowKey);
+    const previous = this.getRuntimeSettingSourceMap(model)?.get(sourceKey);
+    if (hasUnsupportedRuntimeSettingsCall && previous?.flowKey === flowKey) {
+      session.steps = { ...previous.steps };
+    }
+    configs.forEach((config) => {
+      this.defineRuntimeSettings(session, config);
+    });
+    this.commitRuntimeSettingsDeclaration(session);
+  }
+
+  public syncRuntimeSettingsFromStepParams(model: FlowModel, flowKey: string, stepKey = 'runJs') {
+    const stepParams = model.getStepParams(flowKey, stepKey) as { code?: unknown } | undefined;
+    if (!stepParams || !Object.prototype.hasOwnProperty.call(stepParams, 'code')) {
+      return;
+    }
+    this.syncRuntimeSettingsFromRunJsSource(model, flowKey, stepKey, stepParams?.code);
   }
 
   /**
@@ -706,12 +1335,20 @@ export class FlowSettings {
         console.warn(`FlowSettings.open: Flow with key '${fk}' not found`);
         continue;
       }
+      const staticSteps = flow.steps || {};
+      const runtimeSteps = this.getRuntimeSettingSteps(model, fk);
+      const combinedSteps = { ...staticSteps };
+      Object.entries(runtimeSteps).forEach(([runtimeStepKey, runtimeStep]) => {
+        if (!Object.prototype.hasOwnProperty.call(staticSteps, runtimeStepKey)) {
+          combinedSteps[runtimeStepKey] = runtimeStep;
+        }
+      });
 
       // 遍历步骤，筛选有可配置 UI 的步骤
-      for (const sk of Object.keys(flow.steps || {})) {
+      for (const sk of Object.keys(combinedSteps)) {
         // 如明确指定了 stepKey，则仅处理对应步骤
         if (stepKey && sk !== stepKey) continue;
-        const step = (flow.steps as any)[sk];
+        const step = combinedSteps[sk];
         if (!preset && (!step || (await shouldHideStepInSettings(model, flow, step)))) continue;
         // 当指定仅打开预设步骤时，过滤掉未标记 preset 的步骤
         if (preset && !step.preset) continue;
@@ -737,8 +1374,10 @@ export class FlowSettings {
 
         // 构建 settings 上下文
         const flowRuntimeContext = new FlowRuntimeContext(model, fk, 'settings');
-        setupRuntimeContextSteps(flowRuntimeContext, flow.steps, model, fk);
+        setupRuntimeContextSteps(flowRuntimeContext, combinedSteps, model, fk);
         flowRuntimeContext.defineProperty('currentStep', { value: step });
+        flowRuntimeContext.defineProperty('currentStepKey', { value: sk });
+        flowRuntimeContext.defineProperty('currentFlowKey', { value: fk });
         flowRuntimeContext.defineMethod('getStepFormValues', (flowKey: string, stepKey: string) => {
           return forms.get(keyOf({ flowKey, stepKey }))?.values;
         });
@@ -752,9 +1391,11 @@ export class FlowSettings {
           ...(resolvedDefaultParams || {}),
           ...modelStepParams,
         };
+        const uiModeType =
+          typeof uiMode === 'object' && uiMode ? uiMode.type : typeof uiMode === 'string' ? uiMode : undefined;
         if (
           (!mergedUiSchema || Object.keys(mergedUiSchema).length === 0) &&
-          !['select', 'switch'].includes(uiMode?.type || uiMode)
+          !['select', 'switch'].includes(uiModeType)
         ) {
           continue;
         }
@@ -999,6 +1640,11 @@ export class FlowSettings {
             }
 
             await model.saveStepParams();
+            entries.forEach((e) => {
+              if (e.stepKey === 'runJs') {
+                this.syncRuntimeSettingsFromStepParams(model, e.flowKey, e.stepKey);
+              }
+            });
             message?.success?.(t('Configuration saved'));
 
             for (const e of entries) {

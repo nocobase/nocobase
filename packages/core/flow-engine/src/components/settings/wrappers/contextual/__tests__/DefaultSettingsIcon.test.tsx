@@ -289,6 +289,316 @@ describe('DefaultSettingsIcon - only static flows are shown', () => {
     expect(items.some((it) => String(it.key || '').startsWith('dyn1:'))).toBe(false);
   });
 
+  it('appends runtime setting steps without exposing instance dynamic flows', async () => {
+    class TestFlowModel extends FlowModel {}
+
+    const engine = new FlowEngine();
+    const model = new TestFlowModel({ uid: 'model-runtime-settings-menu', flowEngine: engine });
+
+    TestFlowModel.registerFlow({
+      key: 'jsSettings',
+      title: 'JavaScript settings',
+      steps: {
+        runJs: {
+          title: 'Write JavaScript',
+          uiSchema: {
+            code: { type: 'string', 'x-component': 'Input' },
+          },
+        },
+      },
+    });
+
+    model.flowRegistry.addFlow('dyn1', {
+      title: 'Dynamic Flow',
+      steps: {
+        general: {
+          title: 'General (Dyn)',
+          uiSchema: {
+            field: { type: 'string', 'x-component': 'Input' },
+          },
+        },
+      },
+    });
+
+    const session = engine.flowSettings.beginRuntimeSettingsDeclaration(
+      model,
+      `${model.uid}:jsSettings:runJs`,
+      'jsSettings',
+    );
+    engine.flowSettings.defineRuntimeSettings(session, {
+      title: 'Orders',
+      pageSize: 20,
+    });
+    engine.flowSettings.commitRuntimeSettingsDeclaration(session);
+
+    render(
+      React.createElement(
+        ConfigProvider as any,
+        null,
+        React.createElement(
+          App as any,
+          null,
+          React.createElement(DefaultSettingsIcon as any, {
+            model,
+            showDeleteButton: false,
+            showCopyUidButton: false,
+          }),
+        ),
+      ),
+    );
+
+    await waitFor(() => {
+      const menu = (globalThis as any).__lastDropdownMenu;
+      const items = (menu?.items || []) as any[];
+      const keys = items.map((it) => String(it.key || ''));
+      expect(keys).toContain('jsSettings:runJs');
+      expect(keys).toContain('jsSettings:title');
+      expect(keys).toContain('jsSettings:pageSize');
+      expect(keys.some((key) => key.startsWith('dyn1:'))).toBe(false);
+    });
+  });
+
+  it('hydrates runtime setting steps from saved click RunJS code before the action runs', async () => {
+    class TestFlowModel extends FlowModel {}
+
+    const engine = new FlowEngine();
+    const model = new TestFlowModel({ uid: 'model-runtime-settings-click-menu', flowEngine: engine });
+
+    TestFlowModel.registerFlow({
+      key: 'clickSettings',
+      title: 'Click settings',
+      steps: {
+        runJs: {
+          title: 'Write JavaScript',
+          uiSchema: {
+            code: { type: 'string', 'x-component': 'Input' },
+          },
+        },
+      },
+    });
+
+    model.setStepParams('clickSettings', 'runJs', {
+      version: 'v2',
+      code: `
+const settings = ctx.useSettings({
+  successMessage: 'Action executed',
+  openCount: 1,
+});
+ctx.message.success(settings.successMessage + ': ' + settings.openCount);
+`,
+    });
+
+    render(
+      React.createElement(
+        ConfigProvider as any,
+        null,
+        React.createElement(
+          App as any,
+          null,
+          React.createElement(DefaultSettingsIcon as any, {
+            model,
+            showDeleteButton: false,
+            showCopyUidButton: false,
+          }),
+        ),
+      ),
+    );
+
+    await waitFor(() => {
+      const menu = (globalThis as any).__lastDropdownMenu;
+      const items = (menu?.items || []) as any[];
+      const keys = items.map((it) => String(it.key || ''));
+      expect(keys).toContain('clickSettings:runJs');
+      expect(keys).toContain('clickSettings:successMessage');
+      expect(keys).toContain('clickSettings:openCount');
+    });
+  });
+
+  it('keeps existing dynamic runtime settings when saved RunJS source cannot be statically preloaded', async () => {
+    class TestFlowModel extends FlowModel {}
+
+    const engine = new FlowEngine();
+    const model = new TestFlowModel({ uid: 'model-runtime-settings-dynamic-click-menu', flowEngine: engine });
+
+    TestFlowModel.registerFlow({
+      key: 'clickSettings',
+      title: 'Click settings',
+      steps: {
+        runJs: {
+          title: 'Write JavaScript',
+          uiSchema: {
+            code: { type: 'string', 'x-component': 'Input' },
+          },
+          handler: async (ctx) => {
+            return ctx.runjs(
+              `
+const config = { helperText: 'Dynamic helper' };
+ctx.useSettings(config);
+`,
+              undefined,
+              { version: 'v2' },
+            );
+          },
+        },
+      },
+    });
+
+    await model.applyFlow('clickSettings');
+    expect(Object.keys(engine.flowSettings.getRuntimeSettingSteps(model, 'clickSettings'))).toEqual(['helperText']);
+
+    model.setStepParams('clickSettings', 'runJs', {
+      version: 'v2',
+      code: `
+const config = { helperText: 'Dynamic helper' };
+ctx.useSettings(config);
+`,
+    });
+
+    render(
+      React.createElement(
+        ConfigProvider as any,
+        null,
+        React.createElement(
+          App as any,
+          null,
+          React.createElement(DefaultSettingsIcon as any, {
+            model,
+            showDeleteButton: false,
+            showCopyUidButton: false,
+          }),
+        ),
+      ),
+    );
+
+    await waitFor(() => {
+      const menu = (globalThis as any).__lastDropdownMenu;
+      const items = (menu?.items || []) as any[];
+      const keys = items.map((it) => String(it.key || ''));
+      expect(keys).toContain('clickSettings:helperText');
+    });
+    expect(Object.keys(engine.flowSettings.getRuntimeSettingSteps(model, 'clickSettings'))).toEqual(['helperText']);
+  });
+
+  it('keeps dynamic runtime settings when saved RunJS source mixes dynamic and literal declarations', async () => {
+    class TestFlowModel extends FlowModel {}
+
+    const engine = new FlowEngine();
+    const model = new TestFlowModel({ uid: 'model-runtime-settings-mixed-click-menu', flowEngine: engine });
+    const mixedCode = `
+const config = { helperText: 'Dynamic helper' };
+ctx.useSettings(config);
+ctx.useSettings({ visible: true });
+`;
+
+    TestFlowModel.registerFlow({
+      key: 'clickSettings',
+      title: 'Click settings',
+      steps: {
+        runJs: {
+          title: 'Write JavaScript',
+          uiSchema: {
+            code: { type: 'string', 'x-component': 'Input' },
+          },
+          handler: async (ctx) => {
+            return ctx.runjs(mixedCode, undefined, { version: 'v2' });
+          },
+        },
+      },
+    });
+
+    await model.applyFlow('clickSettings');
+    expect(Object.keys(engine.flowSettings.getRuntimeSettingSteps(model, 'clickSettings'))).toEqual([
+      'helperText',
+      'visible',
+    ]);
+
+    model.setStepParams('clickSettings', 'runJs', {
+      version: 'v2',
+      code: mixedCode,
+    });
+
+    render(
+      React.createElement(
+        ConfigProvider as any,
+        null,
+        React.createElement(
+          App as any,
+          null,
+          React.createElement(DefaultSettingsIcon as any, {
+            model,
+            showDeleteButton: false,
+            showCopyUidButton: false,
+          }),
+        ),
+      ),
+    );
+
+    await waitFor(() => {
+      const menu = (globalThis as any).__lastDropdownMenu;
+      const items = (menu?.items || []) as any[];
+      const keys = items.map((it) => String(it.key || ''));
+      expect(keys).toContain('clickSettings:helperText');
+      expect(keys).toContain('clickSettings:visible');
+    });
+    expect(Object.keys(engine.flowSettings.getRuntimeSettingSteps(model, 'clickSettings'))).toEqual([
+      'helperText',
+      'visible',
+    ]);
+  });
+
+  it('does not hydrate runtime setting steps from comments or strings', async () => {
+    class TestFlowModel extends FlowModel {}
+
+    const engine = new FlowEngine();
+    const model = new TestFlowModel({ uid: 'model-runtime-settings-comment-menu', flowEngine: engine });
+
+    TestFlowModel.registerFlow({
+      key: 'clickSettings',
+      title: 'Click settings',
+      steps: {
+        runJs: {
+          title: 'Write JavaScript',
+          uiSchema: {
+            code: { type: 'string', 'x-component': 'Input' },
+          },
+        },
+      },
+    });
+
+    model.setStepParams('clickSettings', 'runJs', {
+      version: 'v2',
+      code: `
+// ctx.useSettings({ commented: true });
+const text = "ctx.useSettings({ phantom: 'no' })";
+`,
+    });
+
+    render(
+      React.createElement(
+        ConfigProvider as any,
+        null,
+        React.createElement(
+          App as any,
+          null,
+          React.createElement(DefaultSettingsIcon as any, {
+            model,
+            showDeleteButton: false,
+            showCopyUidButton: false,
+          }),
+        ),
+      ),
+    );
+
+    await waitFor(() => {
+      const menu = (globalThis as any).__lastDropdownMenu;
+      const items = (menu?.items || []) as any[];
+      const keys = items.map((it) => String(it.key || ''));
+      expect(keys).toContain('clickSettings:runJs');
+      expect(keys).not.toContain('clickSettings:commented');
+      expect(keys).not.toContain('clickSettings:phantom');
+    });
+  });
+
   it('filters out steps with hideInSettings and keeps visible ones', async () => {
     class TestFlowModel extends FlowModel {}
     const engine = new FlowEngine();
@@ -448,6 +758,40 @@ describe('DefaultSettingsIcon - only static flows are shown', () => {
       menu.onClick?.({ key: 'flowC:general' });
     });
     expect(openSpy).toHaveBeenCalledWith({ flowKey: 'flowC', stepKey: 'general' });
+  });
+
+  it('keeps trailing dash-number step keys intact when opening flow settings', async () => {
+    class TestFlowModel extends FlowModel {}
+    const engine = new FlowEngine();
+    const model = new TestFlowModel({ uid: 'm-open-hyphen', flowEngine: engine });
+    const openSpy = vi.spyOn(model, 'openFlowSettings').mockResolvedValue(undefined as any);
+
+    TestFlowModel.registerFlow({
+      key: 'flowHyphen',
+      title: 'Flow Hyphen',
+      steps: {
+        'field-1': { title: 'Field 1', uiSchema: { f: { type: 'string', 'x-component': 'Input' } } },
+      },
+    });
+
+    render(
+      React.createElement(
+        ConfigProvider as any,
+        null,
+        React.createElement(App as any, null, React.createElement(DefaultSettingsIcon as any, { model })),
+      ),
+    );
+
+    await waitFor(() => {
+      const menu = (globalThis as any).__lastDropdownMenu;
+      const items = (menu?.items || []) as any[];
+      expect(items.some((item) => String(item.key || '') === 'flowHyphen:field-1')).toBe(true);
+    });
+    const menu = (globalThis as any).__lastDropdownMenu;
+    await act(async () => {
+      menu.onClick?.({ key: 'flowHyphen:field-1' });
+    });
+    expect(openSpy).toHaveBeenCalledWith({ flowKey: 'flowHyphen', stepKey: 'field-1' });
   });
 
   it('closes dropdown when opening flow settings modal', async () => {

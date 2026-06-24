@@ -412,6 +412,201 @@ describe('FlowSettings.open rendering behavior', () => {
     expect(lastDialog.close).toHaveBeenCalled();
   });
 
+  it('opens and saves runtime setting steps without serializing them as dynamic flows', async () => {
+    const engine = new FlowEngine();
+    const flowSettings = new FlowSettings(engine);
+    const TestFlowModel = createIsolatedFlowModel('test-runtime-settings-open');
+    const model = new TestFlowModel({ uid: 'm-runtime-settings-open', flowEngine: engine });
+
+    TestFlowModel.registerFlow({
+      key: 'jsSettings',
+      title: 'JavaScript settings',
+      steps: {
+        runJs: {
+          title: 'Write JavaScript',
+          uiSchema: {
+            code: { type: 'string', 'x-component': 'Input' },
+          },
+        },
+      },
+    });
+
+    const session = flowSettings.beginRuntimeSettingsDeclaration(model, `${model.uid}:jsSettings:runJs`, 'jsSettings');
+    const values = flowSettings.defineRuntimeSettings(session, {
+      title: 'Orders',
+      pageSize: {
+        title: 'Page size',
+        default: 20,
+        component: 'NumberPicker',
+        componentProps: { min: 1 },
+      },
+      display: {
+        title: 'Display',
+        default: { title: 'Orders', showLegend: true },
+        uiSchema: {
+          title: { type: 'string', 'x-component': 'Input' },
+          showLegend: { type: 'boolean', 'x-component': 'Switch' },
+        },
+      },
+    });
+    flowSettings.commitRuntimeSettingsDeclaration(session);
+
+    expect(values).toEqual({
+      title: 'Orders',
+      pageSize: 20,
+      display: { title: 'Orders', showLegend: true },
+    });
+    expect(Object.keys(flowSettings.getRuntimeSettingSteps(model, 'jsSettings'))).toEqual([
+      'title',
+      'pageSize',
+      'display',
+    ]);
+    expect(model.serialize().flowRegistry).toEqual({});
+
+    const setStepParams = vi.spyOn(model as any, 'setStepParams');
+    vi.spyOn(model as any, 'saveStepParams').mockResolvedValue(undefined);
+    vi.spyOn(model as any, 'rerender').mockResolvedValue(undefined);
+
+    let lastTree: any;
+    let lastDialog: any;
+    model.context.defineProperty('viewer', {
+      value: {
+        dialog: ({ content }) => {
+          lastDialog = { close: vi.fn(), Footer: (p: any) => p.children ?? null } as any;
+          lastTree = typeof content === 'function' ? content(lastDialog, { defineMethod: vi.fn() }) : null;
+          return lastDialog;
+        },
+        drawer: ({ content }) => (model as any).context.viewer.dialog({ content }),
+      },
+    });
+
+    await flowSettings.open({ model, flowKey: 'jsSettings', stepKey: 'title', uiMode: 'dialog' } as any);
+
+    const primaryBtn = await findPrimaryButton(lastTree);
+    expect(primaryBtn).toBeTruthy();
+    await primaryBtn.props.onClick?.();
+
+    expect(setStepParams).toHaveBeenCalledWith('jsSettings', 'title', { value: 'Orders' });
+    expect(lastDialog.close).toHaveBeenCalled();
+  });
+
+  it('commits and clears ctx.useSettings declarations during RunJS execution', async () => {
+    const engine = new FlowEngine();
+    const TestFlowModel = createIsolatedFlowModel('test-runtime-settings-runjs');
+    const model = new TestFlowModel({ uid: 'm-runtime-settings-runjs', flowEngine: engine });
+
+    TestFlowModel.registerFlow({
+      key: 'jsSettings',
+      title: 'JavaScript settings',
+      steps: {
+        runJs: {
+          title: 'Write JavaScript',
+          handler: async (ctx) => {
+            return ctx.runjs("ctx.useSettings({ title: 'Orders', compact: false })", undefined, { version: 'v2' });
+          },
+        },
+      },
+    });
+
+    await model.applyFlow('jsSettings');
+
+    let runtimeSteps = engine.flowSettings.getRuntimeSettingSteps(model, 'jsSettings');
+    expect(Object.keys(runtimeSteps)).toEqual(['title', 'compact']);
+    expect(runtimeSteps.title.defaultParams).toEqual({ value: 'Orders' });
+    expect(runtimeSteps.compact.uiSchema?.value?.['x-component']).toBe('Switch');
+
+    model.getFlow('jsSettings')?.setStep('runJs', {
+      title: 'Write JavaScript',
+      handler: async (ctx) => {
+        return ctx.runjs('return 1', undefined, { version: 'v2' });
+      },
+    });
+
+    await model.applyFlow('jsSettings');
+
+    runtimeSteps = engine.flowSettings.getRuntimeSettingSteps(model, 'jsSettings');
+    expect(runtimeSteps).toEqual({});
+  });
+
+  it('preloads click action runtime settings from saved RunJS source without executing the action', async () => {
+    const engine = new FlowEngine();
+    const flowSettings = engine.flowSettings;
+    const TestFlowModel = createIsolatedFlowModel('test-runtime-settings-click-action');
+    const model = new TestFlowModel({ uid: 'm-runtime-settings-click-action', flowEngine: engine });
+    const message = {
+      info: vi.fn(),
+      success: vi.fn(),
+      error: vi.fn(),
+    };
+    const actionCode = `
+const settings = ctx.useSettings({
+  successMessage: 'Action executed',
+  openCount: 1,
+});
+ctx.message.success(settings.successMessage + ': ' + settings.openCount);
+`;
+
+    TestFlowModel.registerFlow({
+      key: 'clickSettings',
+      title: 'Click settings',
+      on: 'click',
+      steps: {
+        runJs: {
+          title: 'Write JavaScript',
+          useRawParams: true,
+          uiSchema: {
+            code: { type: 'string', 'x-component': 'Input' },
+          },
+          defaultParams: {
+            version: 'v2',
+            code: actionCode,
+          },
+          handler: async (ctx, params) => {
+            return ctx.runjs(String(params.code || ''), undefined, { version: String(params.version || 'v2') });
+          },
+        },
+      },
+    });
+
+    vi.spyOn(model as any, 'saveStepParams').mockResolvedValue(undefined);
+    vi.spyOn(model as any, 'rerender').mockResolvedValue(undefined);
+    model.context.defineProperty('message', { value: message });
+
+    let lastTree: any;
+    let lastDialog: any;
+    model.context.defineProperty('viewer', {
+      value: {
+        dialog: ({ content }) => {
+          lastDialog = { close: vi.fn(), Footer: (p: any) => p.children ?? null } as any;
+          lastTree = typeof content === 'function' ? content(lastDialog, { defineMethod: vi.fn() }) : null;
+          return lastDialog;
+        },
+        drawer: ({ content }) => (model as any).context.viewer.dialog({ content }),
+      },
+    });
+
+    await flowSettings.open({ model, flowKey: 'clickSettings', stepKey: 'runJs', uiMode: 'dialog' } as any);
+
+    const primaryBtn = await findPrimaryButton(lastTree);
+    expect(primaryBtn).toBeTruthy();
+    await primaryBtn.props.onClick?.();
+
+    expect(message.success).toHaveBeenCalledWith('Configuration saved');
+    expect(message.success).not.toHaveBeenCalledWith('Action executed: 1');
+    expect(Object.keys(flowSettings.getRuntimeSettingSteps(model, 'clickSettings'))).toEqual([
+      'successMessage',
+      'openCount',
+    ]);
+
+    model.setStepParams('clickSettings', 'successMessage', { value: 'Updated action' });
+    model.setStepParams('clickSettings', 'openCount', { value: 3 });
+    message.success.mockClear();
+
+    await model.applyFlow('clickSettings');
+
+    expect(message.success).toHaveBeenCalledWith('Updated action: 3');
+  });
+
   it('calls onSaved callback after successful save', async () => {
     const engine = new FlowEngine();
     const flowSettings = new FlowSettings(engine);
