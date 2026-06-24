@@ -84,6 +84,13 @@ describe('user-bound MCP clients', () => {
           findOne: vi.fn(),
         }),
       },
+      request: {
+        headers: {
+          authorization: 'Bearer request-token',
+          'x-role': 'admin',
+        },
+      },
+      getBearerToken: () => 'request-token',
     }) as any;
 
   beforeEach(() => {
@@ -136,6 +143,48 @@ describe('user-bound MCP clients', () => {
         'X-User': 'user-7',
       },
       useUserContext: true,
+    });
+  });
+
+  it('renders NocoBase request in MCP options', async () => {
+    const rendered = await renderMCPOptions(
+      {
+        transport: 'http',
+        url: 'https://{{ $env.MCP_HOST }}/mcp',
+        headers: {
+          Authorization: 'Bearer {{ request.token }}',
+          'X-Role': '{{ request.headers.x-role }}',
+        },
+        useUserContext: true,
+      },
+      createApp(),
+      createCtx(7),
+    );
+
+    expect(rendered).toMatchObject({
+      headers: {
+        Authorization: 'Bearer request-token',
+        'X-Role': 'admin',
+      },
+    });
+  });
+
+  it('does not render NocoBase request for shared MCP options', async () => {
+    const rendered = await renderMCPOptions(
+      {
+        transport: 'http',
+        url: 'https://{{ $env.MCP_HOST }}/mcp',
+        headers: {
+          Authorization: 'Bearer {{ request.token }}',
+        },
+        useUserContext: false,
+      },
+      createApp(),
+      createCtx(7),
+    );
+
+    expect(rendered.headers).toMatchObject({
+      Authorization: 'Bearer ',
     });
   });
 
