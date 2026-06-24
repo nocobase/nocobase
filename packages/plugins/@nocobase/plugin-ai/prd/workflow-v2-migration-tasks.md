@@ -496,13 +496,13 @@
 
 ### W5. v1 兼容入口收敛
 
-状态：未开始
+状态：进行中
 
 目标：v2 主实现完成后，把 `src/client/workflow` 改为兼容入口，避免长期维护两套实现。
 
 #### W5.1 LLM v1 入口改为继承 v2
 
-- 状态：未开始
+- 状态：已提交
 - 前置：W2 校验通过
 - 范围：
   - `src/client/workflow/nodes/llm/index.tsx`
@@ -513,7 +513,13 @@
   - 删除不再需要的 v1 Formily provider settings 依赖。
   - 保持 v1 canvas 已迁移节点点击配置时走 v2 loader。
 - 验收记录：
-  - 待填写。
+  - 已将 `src/client/workflow/nodes/llm/index.tsx` 收敛为兼容入口：`LLMInstruction extends V2LLMInstruction`。
+  - 已删除 v1 workflow LLM 的 Formily 配置实现 `src/client/workflow/nodes/llm/ModelSettings.tsx`。
+  - 已删除 v1 workflow LLM 的 provider 兼容映射 `src/client/workflow/nodes/llm/legacy-provider-options.ts`。
+  - 已确认残留 `ModelSettings` 搜索结果仅来自 LLM provider 自身设置页/组件，不再引用删除的 workflow LLM 配置文件。
+  - 已运行 `yarn eslint --fix packages/plugins/@nocobase/plugin-ai/src/client/workflow/nodes/llm/index.tsx`。
+  - 已运行 `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/__tests__/workflow-llm-fieldset.test.tsx packages/plugins/@nocobase/plugin-ai/src/client-v2/__tests__/workflow-registration.test.ts --run --reporter=verbose`，LLM fieldset 2 个用例通过。
+  - 已运行 `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/__tests__/workflow-registration.test.ts --run --reporter=verbose`，5 个用例通过。
 
 #### W5.2 AI employee v1 入口改为继承 v2
 
@@ -588,5 +594,5 @@
 | W2. LLM workflow 节点迁移 | 已提交 | 开始 W3.1 |
 | W3. AI employee workflow 节点迁移 | 已提交 | 开始 W4.1 |
 | W4. AI employee workflow trigger 迁移 | 已提交 | 开始 W5.1 |
-| W5. v1 兼容入口收敛 | 未开始 | 开始 W5.1 |
+| W5. v1 兼容入口收敛 | 进行中 | 开始 W5.2 |
 | W6. 总体验收、清理和最终提交 | 未开始 | 等 W5 完成 |
