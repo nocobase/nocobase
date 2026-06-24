@@ -10,6 +10,7 @@
 import { FilterGroup, VariableFilterItem, type VariableFilterItemValue } from '@nocobase/client-v2';
 import {
   FlowModel,
+  FlowModelProvider,
   observable,
   randomId,
   reaction,
@@ -363,7 +364,9 @@ export function FilterDynamicComponent({
     }
 
     const Component = ({ value }: { value: VariableFilterItemValue }) => (
-      <VariableFilterItem value={value} model={filterModel} rightAsVariable rightMetaTree={rightMetaTree} />
+      <FlowModelProvider model={filterModel}>
+        <VariableFilterItem value={value} model={filterModel} rightAsVariable rightMetaTree={rightMetaTree} />
+      </FlowModelProvider>
     );
     Component.displayName = 'WorkflowVariableFilterItem';
     return Component;
