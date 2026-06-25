@@ -282,6 +282,11 @@ export function FilterDynamicComponent({
   collection?: string;
   value?: Record<string, unknown> | null;
   onChange?: (value: Record<string, unknown> | null) => void;
+  /**
+   * Controls whether the filter row's right-hand value editor allows workflow variables.
+   * - `true`: render the RHS as a variable-aware input (constant or workflow variable)
+   * - `false`: render the RHS as a pure typed static input with no variable picker
+   */
   rightAsVariable?: boolean;
 }) {
   const flowEngine = useFlowEngine();
