@@ -448,7 +448,7 @@ const JS_BLOCK_OPTIONS: FlowSurfaceConfigureOptions = {
   title: stringOption('Title', { example: 'Runtime Banner' }),
   description: stringOption('Description', { example: 'Custom JS block' }),
   className: stringOption('className', { example: 'users-banner' }),
-  showBlockCard: booleanOption('Whether to show the outer block card', { example: false }),
+  showBlockCard: booleanOption('Whether to show the outer block card', { default: true, example: true }),
   code: JS_CODE,
   version: JS_VERSION,
 };

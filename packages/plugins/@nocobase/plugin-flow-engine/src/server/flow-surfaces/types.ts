@@ -69,6 +69,7 @@ export type FlowSurfaceConfigureOption = {
   description?: string;
   enum?: Array<string | number | boolean>;
   example?: any;
+  default?: any;
   supportsFlowContext?: boolean;
 };
 

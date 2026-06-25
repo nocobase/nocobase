@@ -94,7 +94,8 @@ describe('flowSurfaces block header contracts', () => {
     expect(options.showBlockCard).toEqual(
       expect.objectContaining({
         type: 'boolean',
-        example: false,
+        default: true,
+        example: true,
       }),
     );
     expect(jsBlockPaths).toEqual(expect.arrayContaining(['showBlockCard.showBlockCard']));
