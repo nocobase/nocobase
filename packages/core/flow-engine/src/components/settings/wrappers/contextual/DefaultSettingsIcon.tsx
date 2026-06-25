@@ -11,7 +11,7 @@ import { ExclamationCircleOutlined, MenuOutlined, QuestionCircleOutlined } from 
 import { css } from '@emotion/css';
 import type { DropdownProps, MenuProps } from 'antd';
 import { App, Dropdown, Modal, Tooltip, theme } from 'antd';
-import React, { startTransition, useCallback, useEffect, useMemo, useRef, useState, FC } from 'react';
+import React, { startTransition, useCallback, useEffect, useMemo, useState, FC } from 'react';
 import { FlowModel } from '../../../../models';
 import type { FlowModelExtraMenuItem } from '../../../../models';
 import type { StepDefinition, StepUIMode } from '../../../../types';
@@ -216,8 +216,6 @@ interface DefaultSettingsIconProps {
 
 const TOOLBAR_ICONS_SELECTOR = '.nb-toolbar-container-icons';
 const TOOLBAR_CONTAINER_SELECTOR = '.nb-toolbar-container';
-const POPOVER_SELECTOR = '.ant-popover';
-const KEEP_PARENT_POPOVER_ON_DELETE_SELECTOR = '[data-nb-keep-parent-popover-on-delete="true"]';
 const TOOLBAR_DROPDOWN_OVERLAY_CLASS = css`
   width: max-content;
   min-width: max-content;
@@ -237,16 +235,6 @@ const getToolbarPopupContainer = (triggerNode?: HTMLElement | null) => {
     (triggerNode.closest(TOOLBAR_ICONS_SELECTOR) as HTMLElement | null) ||
     (triggerNode.closest(TOOLBAR_CONTAINER_SELECTOR) as HTMLElement | null)
   );
-};
-
-const getDeleteConfirmContainer = (popupContainer: HTMLElement) => {
-  const markedAncestor = popupContainer.closest<HTMLElement>(KEEP_PARENT_POPOVER_ON_DELETE_SELECTOR);
-  if (markedAncestor) {
-    return markedAncestor;
-  }
-
-  const popover = popupContainer.closest<HTMLElement>(POPOVER_SELECTOR);
-  return popover?.querySelector<HTMLElement>(KEEP_PARENT_POPOVER_ON_DELETE_SELECTOR) || null;
 };
 
 const removeExtraMenuItemClickHandlers = (item: FlowModelExtraMenuItem): FlowModelExtraMenuItem => {
@@ -278,7 +266,6 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
   const [extraMenuItemsLoaded, setExtraMenuItemsLoaded] = useState(false);
   const [configurableFlowsAndSteps, setConfigurableFlowsAndSteps] = useState<FlowInfo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const deleteConfirmContainerRef = useRef<HTMLElement | null>(null);
   const commonExtras = useMemo(
     () => extraMenuItems.filter((it) => it.group === 'common-actions').sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0)),
     [extraMenuItems],
@@ -296,13 +283,12 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
     (triggerNode) => {
       // 工具栏自身容器必须优先，保证鼠标从 icon 移到菜单时仍处于同一 hover 树。
       // 弹窗场景的裁剪问题由 useFloatToolbarPortal 负责把 toolbar 挂到正确的 popup host。
-      const popupContainer =
+      return (
         getToolbarPopupContainer(triggerNode) ||
         getPopupContainer?.(triggerNode) ||
         triggerNode?.parentElement ||
-        document.body;
-      deleteConfirmContainerRef.current = getDeleteConfirmContainer(popupContainer);
-      return popupContainer;
+        document.body
+      );
     },
     [getPopupContainer],
   );
@@ -433,7 +419,6 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
   );
 
   const handleDelete = useCallback(() => {
-    const deleteConfirmContainer = deleteConfirmContainerRef.current;
     closeDropdown();
     Modal.confirm({
       title: t('Confirm delete'),
@@ -443,11 +428,6 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
       okType: 'primary',
       cancelText: t('Cancel'),
       zIndex: 999999,
-      ...(deleteConfirmContainer
-        ? {
-            getContainer: () => deleteConfirmContainer,
-          }
-        : {}),
       async onOk() {
         try {
           await model.destroy();
