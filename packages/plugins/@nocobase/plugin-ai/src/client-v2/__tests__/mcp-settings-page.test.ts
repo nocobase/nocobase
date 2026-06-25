@@ -10,6 +10,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
   createMCPClient,
+  createMCPRequestVariableNode,
   deleteMCPClient,
   deleteMCPClients,
   getMCPToolsByServer,
@@ -25,6 +26,42 @@ import {
 } from '../pages/MCPSettingsPage';
 
 describe('MCPSettingsPage request helpers', () => {
+  it('creates request variable node for user-context MCP fields', () => {
+    expect(createMCPRequestVariableNode((key) => key)).toEqual({
+      name: 'request',
+      title: 'NocoBase request',
+      type: 'object',
+      paths: ['request'],
+      children: [
+        {
+          name: 'headers',
+          title: 'headers',
+          type: 'object',
+          paths: ['request', 'headers'],
+          children: [
+            { name: 'x-app', title: 'X-App', type: 'string', paths: ['request', 'headers', 'x-app'] },
+            { name: 'x-locale', title: 'X-Locale', type: 'string', paths: ['request', 'headers', 'x-locale'] },
+            { name: 'x-hostname', title: 'X-Hostname', type: 'string', paths: ['request', 'headers', 'x-hostname'] },
+            { name: 'x-timezone', title: 'X-Timezone', type: 'string', paths: ['request', 'headers', 'x-timezone'] },
+            { name: 'x-role', title: 'X-Role', type: 'string', paths: ['request', 'headers', 'x-role'] },
+            {
+              name: 'x-authenticator',
+              title: 'X-Authenticator',
+              type: 'string',
+              paths: ['request', 'headers', 'x-authenticator'],
+            },
+          ],
+        },
+        {
+          name: 'token',
+          title: 'Token',
+          type: 'string',
+          paths: ['request', 'token'],
+        },
+      ],
+    });
+  });
+
   it('sanitizes stdio values and clears remote fields', () => {
     expect(
       sanitizeMCPValues({

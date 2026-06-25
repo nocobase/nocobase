@@ -358,6 +358,40 @@ const createInitialValues = (): MCPFormValues => ({
   restart: {},
 });
 
+export const createMCPRequestVariableNode = (t: (key: string) => string): MetaTreeNode => ({
+  name: 'request',
+  title: t('NocoBase request'),
+  type: 'object',
+  paths: ['request'],
+  children: [
+    {
+      name: 'headers',
+      title: 'headers',
+      type: 'object',
+      paths: ['request', 'headers'],
+      children: [
+        { name: 'x-app', title: 'X-App', type: 'string', paths: ['request', 'headers', 'x-app'] },
+        { name: 'x-locale', title: 'X-Locale', type: 'string', paths: ['request', 'headers', 'x-locale'] },
+        { name: 'x-hostname', title: 'X-Hostname', type: 'string', paths: ['request', 'headers', 'x-hostname'] },
+        { name: 'x-timezone', title: 'X-Timezone', type: 'string', paths: ['request', 'headers', 'x-timezone'] },
+        { name: 'x-role', title: 'X-Role', type: 'string', paths: ['request', 'headers', 'x-role'] },
+        {
+          name: 'x-authenticator',
+          title: 'X-Authenticator',
+          type: 'string',
+          paths: ['request', 'headers', 'x-authenticator'],
+        },
+      ],
+    },
+    {
+      name: 'token',
+      title: 'Token',
+      type: 'string',
+      paths: ['request', 'token'],
+    },
+  ],
+});
+
 const cloneMetaTreeNodeWithRoot = (node: MetaTreeNode, rootName: string): MetaTreeNode => {
   const cloneChildren = (children: MetaTreeNode[] | (() => Promise<MetaTreeNode[]>) | undefined) => {
     if (!children) {
@@ -383,13 +417,16 @@ const cloneMetaTreeNodeWithRoot = (node: MetaTreeNode, rootName: string): MetaTr
 
 const useMCPCurrentUserNodes = (enabled: boolean): MetaTreeNode[] => {
   const flowContext = useFlowContext();
+  const t = useT();
   return useMemo(() => {
     if (!enabled) {
       return [];
     }
     const userNode = flowContext.getPropertyMetaTree?.().find((node) => node.name === 'user');
-    return userNode ? [cloneMetaTreeNodeWithRoot(userNode, '$user')] : [];
-  }, [enabled, flowContext]);
+    return [userNode ? cloneMetaTreeNodeWithRoot(userNode, '$user') : null, createMCPRequestVariableNode(t)].filter(
+      (node): node is MetaTreeNode => Boolean(node),
+    );
+  }, [enabled, flowContext, t]);
 };
 
 type MCPVariableInputProps = React.ComponentProps<typeof VariableInput> & {
@@ -489,7 +526,7 @@ const MCPForm: React.FC<{ editing: boolean; testResult: MCPTestResultData | null
       <Form.Item name="useUserContext" label={t('Depends on current user')} valuePropName="checked">
         <UserContextCheckbox
           tooltip={t(
-            'When enabled, URL and headers can use current user variables, and the MCP server runs per current user. Stdio transport is not supported.',
+            'When enabled, URL and headers can use current user variables and NocoBase request variables. Stdio transport is not supported.',
           )}
         />
       </Form.Item>
