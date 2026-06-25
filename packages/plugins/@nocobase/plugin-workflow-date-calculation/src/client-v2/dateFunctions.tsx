@@ -320,7 +320,7 @@ export function useDateFunctionMenuItems(inputType?: DateCalculationInputType | 
 
 function DateOrNumberInput({ stepName }: { stepName: StepName }) {
   return (
-    <Space.Compact block>
+    <Space.Compact>
       <Form.Item name={stepArgumentName(stepName, 'number')} noStyle>
         <WorkflowTypedVariableInput types={integerOnlyType} />
       </Form.Item>
@@ -448,14 +448,14 @@ export function DateCalculationInputTypeField(props: React.ComponentProps<typeof
       {...props}
       options={[
         {
-          label: 'Date type',
+          label: t('Date type'),
           value: 'date',
           tooltip: t(
             'Input value will be converted from its original type to date type to do futher calculation by Day.js constructor.',
           ),
         },
         {
-          label: 'Number type',
+          label: t('Number type'),
           value: 'number',
           tooltip: t('Only calculation functions with numeric input value are supported.'),
         },
