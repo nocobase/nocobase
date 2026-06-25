@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { encodeOpenViewRouteState } from '../../utils/openViewRouteState';
 import { ViewNavigation, generatePathnameFromViewParams } from '../ViewNavigation';
 
 describe('ViewNavigation', () => {
@@ -218,6 +219,20 @@ describe('generatePathnameFromViewParams', () => {
 
   it('should generate multiple views', () => {
     expect(generatePathnameFromViewParams([{ viewUid: 'xxx' }, { viewUid: 'yyy' }])).toBe('/admin/xxx/view/yyy');
+  });
+
+  it('should generate RunJS openView route state params after the matching view uid', () => {
+    const token = encodeOpenViewRouteState('yyy', { mode: 'dialog', size: 'large' });
+    if (!token) {
+      throw new Error('Expected openView route state token.');
+    }
+    const pathname = generatePathnameFromViewParams([
+      { viewUid: 'xxx' },
+      { viewUid: 'yyy', openViewRouteState: { mode: 'dialog', size: 'large' }, filterByTk: '1' },
+    ]);
+
+    expect(token).toMatch(/^[A-Za-z]{8}$/);
+    expect(pathname).toBe(`/admin/xxx/view/yyy/opts/${token}/filterbytk/1`);
   });
 
   it('should generate complex path with all parameters', () => {

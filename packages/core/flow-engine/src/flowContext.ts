@@ -39,9 +39,11 @@ import {
   extractUsedVariablePaths,
   FlowExitException,
   FLOW_ENGINE_NAMESPACE,
+  createOpenViewRouteState,
   isCtxDatePathPrefix,
   isCssFile,
   prepareRunJsCode,
+  RUNJS_OPEN_VIEW_ROUTE_STATE,
   resolveCtxDatePath,
   resolveDefaultParams,
   resolveExpressions,
@@ -4600,6 +4602,27 @@ export class FlowRunJSContext extends FlowContext {
     this.defineProperty('ReactDOM', { value: ReactDOMShim });
 
     setupRunJSLibs(this);
+    this.defineMethod('openView', async function (uid: string, options?: Record<PropertyKey, unknown>) {
+      const delegateOpenView = (
+        delegate as FlowContext & {
+          openView?: (uid: string, options?: Record<PropertyKey, unknown>) => Promise<unknown>;
+        }
+      ).openView;
+
+      if (typeof delegateOpenView !== 'function') {
+        throw new Error('ctx.openView is not available in current context.');
+      }
+
+      const routeState = createOpenViewRouteState(options);
+      if (!routeState) {
+        return delegateOpenView(uid, options);
+      }
+
+      return delegateOpenView(uid, {
+        ...(options || {}),
+        [RUNJS_OPEN_VIEW_ROUTE_STATE]: routeState,
+      });
+    });
 
     // Convenience: ctx.render(<App />[, container])
     // - container defaults to ctx.element if available
