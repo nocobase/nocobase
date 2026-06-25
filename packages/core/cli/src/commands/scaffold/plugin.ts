@@ -10,13 +10,18 @@
 import fsp from 'node:fs/promises';
 import path from 'node:path';
 import { Args, Command, Flags } from '@oclif/core';
+import { run } from '../../lib/run-npm.js';
 import { printInfo, printWarning } from '../../lib/ui.js';
+import {
+  generatePluginScaffold,
+  isValidPluginPackageName,
+  resolvePluginScaffoldTargetPath,
+} from '../../scaffolds/plugin/index.js';
 import {
   isCliManagedSourceApp,
   resolveLocalPluginWorkspaceSync,
   syncPluginWorkspace,
 } from '../../lib/plugin-workspace.js';
-import { runNocoBaseCommand } from '../../lib/run-npm.ts';
 
 type EntryKind = 'missing' | 'directory' | 'symlink' | 'other';
 
@@ -52,141 +57,185 @@ async function cleanupDanglingSymlink(candidate: string): Promise<boolean> {
   }
 }
 
-async function moveGeneratedPlugin(sourcePath: string, targetPath: string): Promise<void> {
-  await fsp.mkdir(path.dirname(targetPath), { recursive: true });
-  try {
-    await fsp.rename(sourcePath, targetPath);
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code !== 'EXDEV') {
-      throw error;
-    }
-    await fsp.cp(sourcePath, targetPath, { recursive: true });
-    await fsp.rm(sourcePath, { recursive: true, force: true });
+async function assertPluginTargetAvailable(targetPath: string, packageName: string, forceRecreate: boolean): Promise<void> {
+  const entryKind = await getEntryKind(targetPath);
+  if (entryKind === 'missing') {
+    return;
   }
+  if (forceRecreate) {
+    await fsp.rm(targetPath, { recursive: true, force: true });
+    return;
+  }
+  throw new Error(`[${packageName}] plugin already exists.`);
+}
+
+async function assertSourceEntryReady(params: {
+  sourceEntryPath: string;
+  packageName: string;
+  forceRecreate: boolean;
+}): Promise<void> {
+  const sourceEntryKind = await getEntryKind(params.sourceEntryPath);
+  if (sourceEntryKind === 'missing') {
+    return;
+  }
+  if (sourceEntryKind === 'symlink') {
+    try {
+      await fsp.realpath(params.sourceEntryPath);
+      if (params.forceRecreate) {
+        return;
+      }
+    } catch {
+      return;
+    }
+  }
+
+  if (params.forceRecreate) {
+    return;
+  }
+
+  throw new Error(
+    [
+      `[${params.packageName}] plugin already exists.`,
+      `Source entry already exists at ${params.sourceEntryPath}.`,
+      `Remove the conflicting source entry or rerun with --force-recreate if you want to rebuild it.`,
+    ].join('\n'),
+  );
+}
+
+function formatSyncSummary(params: {
+  pluginWorkspaceRoot: string;
+  sourcePath: string;
+  sourceEntryPath: string;
+  pluginWorkspacePath: string;
+  packageName: string;
+  createdPluginWorkspace: boolean;
+  createdSourcePluginRoot: boolean;
+  linked: string[];
+  relinked: string[];
+  removedDangling: string[];
+}): string[] {
+  const changes: string[] = [];
+  if (params.createdPluginWorkspace) {
+    changes.push(`created ${params.pluginWorkspaceRoot}`);
+  }
+  if (params.createdSourcePluginRoot) {
+    changes.push(`created ${path.join(params.sourcePath, 'packages', 'plugins')}`);
+  }
+  if (params.linked.length > 0) {
+    changes.push(`linked ${params.sourceEntryPath} -> ${params.pluginWorkspacePath}`);
+  }
+  if (params.relinked.length > 0) {
+    changes.push(`relinked ${params.sourceEntryPath} -> ${params.pluginWorkspacePath}`);
+  }
+  if (params.removedDangling.length > 0) {
+    changes.push(`removed dangling entry for ${params.packageName}`);
+  }
+  return changes;
+}
+
+async function runPostinstall(sourcePath: string): Promise<void> {
+  await run('yarn', ['postinstall'], {
+    cwd: sourcePath,
+    env: { LOGGER_SILENT: 'true' },
+    errorName: 'yarn postinstall',
+  });
 }
 
 export default class ScaffoldPlugin extends Command {
   static override args = {
-    pkg: Args.string({description: 'plugin package name', required: true}),
-  }
+    pkg: Args.string({ description: 'plugin package name', required: true }),
+  };
+
   static override description = 'Generate a NocoBase plugin scaffold.';
+
   static override examples = [
     '<%= config.bin %> <%= command.id %> @nocobase-example/plugin-hello',
     '<%= config.bin %> <%= command.id %> @nocobase-example/plugin-hello --force-recreate',
-  ]
+  ];
 
   static override flags = {
     cwd: Flags.string({ description: 'Current working directory', char: 'c', required: false }),
-    'force-recreate': Flags.boolean({description: 'Force recreate the plugin', char: 'f', required: false}),
-  }
+    'force-recreate': Flags.boolean({ description: 'Force recreate the plugin', char: 'f', required: false }),
+  };
 
   public async run(): Promise<void> {
     const { args, flags } = await this.parse(ScaffoldPlugin);
     const cwd = flags.cwd ?? process.cwd();
+    const packageName = String(args.pkg).trim();
+
     try {
+      if (!isValidPluginPackageName(packageName)) {
+        this.error(`Invalid plugin package name: ${packageName}`);
+      }
+
       const resolved = resolveLocalPluginWorkspaceSync({
         cwd,
         supportAppPath: true,
       });
-      if (!isCliManagedSourceApp(resolved)) {
-        const npmArgs = ['pm', 'create', args.pkg];
-        if (flags['force-recreate']) {
-          npmArgs.push('--force-recreate');
-        }
-        await runNocoBaseCommand(npmArgs, {
-          cwd: resolved.sourcePath,
-          env: { LOGGER_SILENT: 'true' },
+
+      const cliManagedSourceApp = isCliManagedSourceApp(resolved);
+      const targetRoot = cliManagedSourceApp
+        ? path.join(resolved.appPath, 'plugins')
+        : path.join(resolved.sourcePath, 'packages', 'plugins');
+      const scaffoldTargetPath = resolvePluginScaffoldTargetPath(targetRoot, packageName);
+
+      await assertPluginTargetAvailable(scaffoldTargetPath, packageName, Boolean(flags['force-recreate']));
+
+      if (!cliManagedSourceApp) {
+        await generatePluginScaffold({
+          packageName,
+          sourcePath: resolved.sourcePath,
+          targetRoot,
         });
+        printInfo(`The plugin folder is in ${scaffoldTargetPath}`);
+        await runPostinstall(resolved.sourcePath);
         return;
       }
+
       const pluginWorkspaceRoot = path.join(resolved.appPath, 'plugins');
-      const packageSegments = args.pkg.split('/');
-      const pluginWorkspacePath = path.join(pluginWorkspaceRoot, ...packageSegments);
-      const sourceEntryPath = path.join(resolved.sourcePath, 'packages', 'plugins', ...packageSegments);
-      const npmArgs = ['pm', 'create', args.pkg];
-      const sourceEntryWasDangling = await cleanupDanglingSymlink(sourceEntryPath);
-      const sourceEntryKind = sourceEntryWasDangling ? 'missing' : await getEntryKind(sourceEntryPath);
+      const pluginWorkspacePath = resolvePluginScaffoldTargetPath(pluginWorkspaceRoot, packageName);
+      const sourceEntryPath = path.join(resolved.sourcePath, 'packages', 'plugins', ...packageName.split('/'));
 
-      try {
-        const existing = await fsp.stat(pluginWorkspacePath);
-        if (existing.isDirectory() && !flags['force-recreate']) {
-          this.error(`[${args.pkg}] plugin already exists.`);
-        }
-      } catch (error) {
-        if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
-          throw error;
-        }
-      }
-
-      if (sourceEntryKind !== 'missing' && !flags['force-recreate']) {
-        this.error(
-          [
-            `[${args.pkg}] plugin already exists.`,
-            `Source entry already exists at ${sourceEntryPath}.`,
-            `Remove the conflicting source entry or rerun with --force-recreate if you want to rebuild it.`,
-          ].join('\n'),
-        );
-      }
-
-      if (flags['force-recreate']) {
-        await fsp.rm(pluginWorkspacePath, { recursive: true, force: true });
-        npmArgs.push('--force-recreate');
-      }
-
-      await runNocoBaseCommand(npmArgs, {
-        cwd: resolved.sourcePath,
-        env: {
-          LOGGER_SILENT: 'true',
-          NB_PLUGIN_TARGET_ROOT: pluginWorkspaceRoot,
-        },
+      await cleanupDanglingSymlink(sourceEntryPath);
+      await assertSourceEntryReady({
+        sourceEntryPath,
+        packageName,
+        forceRecreate: Boolean(flags['force-recreate']),
       });
 
-      const pluginWorkspaceKind = await getEntryKind(pluginWorkspacePath);
-      if (pluginWorkspaceKind !== 'directory') {
-        const generatedSourceKind = await getEntryKind(sourceEntryPath);
-        if (generatedSourceKind !== 'directory') {
-          this.error(
-            [
-              `Failed to locate the scaffolded plugin for "${args.pkg}".`,
-              `Expected either ${pluginWorkspacePath} or ${sourceEntryPath} to exist after \`pm create\`.`,
-            ].join('\n'),
-          );
-        }
-        await moveGeneratedPlugin(sourceEntryPath, pluginWorkspacePath);
-      }
+      await generatePluginScaffold({
+        packageName,
+        sourcePath: resolved.sourcePath,
+        targetRoot: pluginWorkspaceRoot,
+      });
+      printInfo(`The plugin folder is in ${pluginWorkspacePath}`);
 
       const syncResult = await syncPluginWorkspace({
         appPath: resolved.appPath,
         sourcePath: resolved.sourcePath,
         mode: 'targeted',
-        targetPackageNames: [args.pkg],
+        targetPackageNames: [packageName],
         forceRecreate: flags['force-recreate'],
       });
 
-      if (sourceEntryKind !== 'missing' && flags['force-recreate']) {
-        syncResult.warnings.push(
-          `Recreated source plugin entry for "${args.pkg}" by replacing the existing source/packages/plugins target.`,
-        );
-      }
+      await runPostinstall(resolved.sourcePath);
 
       if (syncResult.changed) {
-        const changes: string[] = [];
-        if (syncResult.createdPluginWorkspace) {
-          changes.push(`created ${pluginWorkspaceRoot}`);
+        const changes = formatSyncSummary({
+          pluginWorkspaceRoot,
+          sourcePath: resolved.sourcePath,
+          sourceEntryPath,
+          pluginWorkspacePath,
+          packageName,
+          createdPluginWorkspace: syncResult.createdPluginWorkspace,
+          createdSourcePluginRoot: syncResult.createdSourcePluginRoot,
+          linked: syncResult.linked,
+          relinked: syncResult.relinked,
+          removedDangling: syncResult.removedDangling,
+        });
+        if (changes.length > 0) {
+          printInfo(`Plugin workspace synced: ${changes.join('; ')}`);
         }
-        if (syncResult.createdSourcePluginRoot) {
-          changes.push(`created ${path.join(resolved.sourcePath, 'packages', 'plugins')}`);
-        }
-        if (syncResult.linked.length > 0) {
-          changes.push(`linked ${sourceEntryPath} -> ${pluginWorkspacePath}`);
-        }
-        if (syncResult.relinked.length > 0) {
-          changes.push(`relinked ${sourceEntryPath} -> ${pluginWorkspacePath}`);
-        }
-        if (syncResult.removedDangling.length > 0) {
-          changes.push(`removed dangling entry for ${args.pkg}`);
-        }
-        printInfo(`Plugin workspace synced: ${changes.join('; ')}`);
       }
 
       for (const warning of syncResult.warnings) {

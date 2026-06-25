@@ -303,15 +303,13 @@ export class PluginManager {
   /* istanbul ignore next -- @preserve */
   async create(pluginName: string, options?: { forceRecreate?: boolean }) {
     const createPlugin = async (name) => {
-      const targetRoot = String(process.env.NB_PLUGIN_TARGET_ROOT ?? '').trim();
-      const pluginDir = targetRoot ? resolve(targetRoot, name) : resolve(process.cwd(), 'packages/plugins', name);
+      const pluginDir = resolve(process.cwd(), 'packages/plugins', name);
       if (options?.forceRecreate) {
         await fs.rm(pluginDir, { recursive: true, force: true });
       }
       const { PluginGenerator } = require('@nocobase/cli-v1/src/plugin-generator');
       const generator = new PluginGenerator({
         cwd: process.cwd(),
-        ...(targetRoot ? { targetRoot } : {}),
         args: {},
         context: {
           name,

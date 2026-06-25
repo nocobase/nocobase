@@ -13,13 +13,14 @@ const mocks = vi.hoisted(() => ({
   resolveLocalPluginWorkspaceSync: vi.fn(),
   isCliManagedSourceApp: vi.fn(),
   syncPluginWorkspace: vi.fn(),
+  generatePluginScaffold: vi.fn(),
+  isValidPluginPackageName: vi.fn(),
+  resolvePluginScaffoldTargetPath: vi.fn(),
   printInfo: vi.fn(),
   printWarning: vi.fn(),
-  runNocoBaseCommand: vi.fn(),
+  run: vi.fn(),
   lstat: vi.fn(),
   realpath: vi.fn(),
-  stat: vi.fn(),
-  rename: vi.fn(),
   rm: vi.fn(),
 }));
 
@@ -38,8 +39,14 @@ vi.mock('../lib/ui.js', () => ({
   printWarning: mocks.printWarning,
 }));
 
-vi.mock('../lib/run-npm.js', () => ({
-  runNocoBaseCommand: mocks.runNocoBaseCommand,
+vi.mock('../lib/run-npm.ts', () => ({
+  run: mocks.run,
+}));
+
+vi.mock('../scaffolds/plugin/index.js', () => ({
+  generatePluginScaffold: mocks.generatePluginScaffold,
+  isValidPluginPackageName: mocks.isValidPluginPackageName,
+  resolvePluginScaffoldTargetPath: mocks.resolvePluginScaffoldTargetPath,
 }));
 
 vi.mock('node:fs/promises', async (importOriginal) => {
@@ -48,15 +55,11 @@ vi.mock('node:fs/promises', async (importOriginal) => {
     ...actual,
     lstat: mocks.lstat,
     realpath: mocks.realpath,
-    stat: mocks.stat,
-    rename: mocks.rename,
     rm: mocks.rm,
     default: {
       ...actual,
       lstat: mocks.lstat,
       realpath: mocks.realpath,
-      stat: mocks.stat,
-      rename: mocks.rename,
       rm: mocks.rm,
     },
   };
@@ -79,11 +82,21 @@ beforeEach(() => {
     skipped: [],
     changed: true,
   });
-  mocks.runNocoBaseCommand.mockResolvedValue(undefined);
+  mocks.generatePluginScaffold.mockResolvedValue({
+    targetPath: '/tmp/app/plugins/@my-scope/plugin-hello',
+    context: {
+      packageName: '@my-scope/plugin-hello',
+      packageVersion: '2.1.11',
+      pascalCaseName: 'PluginHello',
+    },
+  });
+  mocks.isValidPluginPackageName.mockReturnValue(true);
+  mocks.resolvePluginScaffoldTargetPath.mockImplementation((targetRoot: string, packageName: string) =>
+    `${targetRoot}/${packageName}`,
+  );
+  mocks.run.mockResolvedValue(undefined);
   mocks.lstat.mockRejectedValue(Object.assign(new Error('missing'), { code: 'ENOENT' }));
   mocks.realpath.mockRejectedValue(new Error('missing'));
-  mocks.stat.mockRejectedValue(Object.assign(new Error('missing'), { code: 'ENOENT' }));
-  mocks.rename.mockResolvedValue(undefined);
   mocks.rm.mockResolvedValue(undefined);
 });
 
@@ -91,8 +104,7 @@ test('scaffold plugin supports app path cwd and syncs the created plugin', async
   const { default: ScaffoldPlugin } = await import('../commands/scaffold/plugin.js');
   mocks.lstat
     .mockRejectedValueOnce(Object.assign(new Error('missing'), { code: 'ENOENT' }))
-    .mockRejectedValueOnce(Object.assign(new Error('missing'), { code: 'ENOENT' }))
-    .mockResolvedValueOnce({ isSymbolicLink: () => false, isDirectory: () => true });
+    .mockRejectedValueOnce(Object.assign(new Error('missing'), { code: 'ENOENT' }));
 
   const command = Object.assign(Object.create(ScaffoldPlugin.prototype), {
     parse: vi.fn(async () => ({
@@ -116,14 +128,18 @@ test('scaffold plugin supports app path cwd and syncs the created plugin', async
     cwd: '/tmp/app',
     supportAppPath: true,
   });
-  expect(mocks.runNocoBaseCommand).toHaveBeenCalledWith(['pm', 'create', '@my-scope/plugin-hello'], {
+  expect(mocks.generatePluginScaffold).toHaveBeenCalledWith({
+    packageName: '@my-scope/plugin-hello',
+    sourcePath: '/tmp/app/source',
+    targetRoot: '/tmp/app/plugins',
+  });
+  expect(mocks.run).toHaveBeenCalledWith('yarn', ['postinstall'], {
     cwd: '/tmp/app/source',
     env: {
       LOGGER_SILENT: 'true',
-      NB_PLUGIN_TARGET_ROOT: '/tmp/app/plugins',
     },
+    errorName: 'yarn postinstall',
   });
-  expect(mocks.rename).not.toHaveBeenCalled();
   expect(mocks.syncPluginWorkspace).toHaveBeenCalledWith({
     appPath: '/tmp/app',
     sourcePath: '/tmp/app/source',
@@ -135,11 +151,9 @@ test('scaffold plugin supports app path cwd and syncs the created plugin', async
 
 test('scaffold plugin force-recreate removes the top-level plugin dir before regenerating', async () => {
   const { default: ScaffoldPlugin } = await import('../commands/scaffold/plugin.js');
-  mocks.stat.mockResolvedValueOnce({ isDirectory: () => true });
   mocks.lstat
-    .mockRejectedValueOnce(Object.assign(new Error('missing'), { code: 'ENOENT' }))
-    .mockRejectedValueOnce(Object.assign(new Error('missing'), { code: 'ENOENT' }))
-    .mockResolvedValueOnce({ isSymbolicLink: () => false, isDirectory: () => true });
+    .mockResolvedValueOnce({ isSymbolicLink: () => false, isDirectory: () => true })
+    .mockRejectedValueOnce(Object.assign(new Error('missing'), { code: 'ENOENT' }));
 
   const command = Object.assign(Object.create(ScaffoldPlugin.prototype), {
     parse: vi.fn(async () => ({
@@ -162,13 +176,6 @@ test('scaffold plugin force-recreate removes the top-level plugin dir before reg
   expect(mocks.rm).toHaveBeenCalledWith('/tmp/app/plugins/@my-scope/plugin-hello', {
     recursive: true,
     force: true,
-  });
-  expect(mocks.runNocoBaseCommand).toHaveBeenCalledWith(['pm', 'create', '@my-scope/plugin-hello', '--force-recreate'], {
-    cwd: '/tmp/app/source',
-    env: {
-      LOGGER_SILENT: 'true',
-      NB_PLUGIN_TARGET_ROOT: '/tmp/app/plugins',
-    },
   });
   expect(mocks.syncPluginWorkspace).toHaveBeenCalledWith(
     expect.objectContaining({
@@ -204,18 +211,24 @@ test('scaffold plugin falls back to the old source-repo behavior outside CLI-man
   await ScaffoldPlugin.prototype.run.call(command);
 
   expect(mocks.syncPluginWorkspace).not.toHaveBeenCalled();
-  expect(mocks.runNocoBaseCommand).toHaveBeenCalledWith(['pm', 'create', '@my-scope/plugin-hello', '--force-recreate'], {
+  expect(mocks.generatePluginScaffold).toHaveBeenCalledWith({
+    packageName: '@my-scope/plugin-hello',
+    sourcePath: '/tmp/source',
+    targetRoot: '/tmp/source/packages/plugins',
+  });
+  expect(mocks.run).toHaveBeenCalledWith('yarn', ['postinstall'], {
     cwd: '/tmp/source',
     env: { LOGGER_SILENT: 'true' },
+    errorName: 'yarn postinstall',
   });
 });
 
-test('scaffold plugin removes a dangling source symlink before moving the generated plugin from legacy output', async () => {
+test('scaffold plugin removes a dangling source symlink before generating into the plugin workspace', async () => {
   const { default: ScaffoldPlugin } = await import('../commands/scaffold/plugin.js');
   mocks.lstat
-    .mockResolvedValueOnce({ isSymbolicLink: () => true, isDirectory: () => false })
     .mockRejectedValueOnce(Object.assign(new Error('missing'), { code: 'ENOENT' }))
-    .mockResolvedValueOnce({ isSymbolicLink: () => false, isDirectory: () => true });
+    .mockResolvedValueOnce({ isSymbolicLink: () => true, isDirectory: () => false })
+    .mockRejectedValueOnce(Object.assign(new Error('missing'), { code: 'ENOENT' }));
   mocks.realpath.mockRejectedValue(new Error('dangling'));
 
   const command = Object.assign(Object.create(ScaffoldPlugin.prototype), {
@@ -240,15 +253,9 @@ test('scaffold plugin removes a dangling source symlink before moving the genera
     recursive: true,
     force: true,
   });
-  expect(mocks.runNocoBaseCommand).toHaveBeenCalledWith(['pm', 'create', '@my-scope/plugin-hello'], {
-    cwd: '/tmp/app/source',
-    env: {
-      LOGGER_SILENT: 'true',
-      NB_PLUGIN_TARGET_ROOT: '/tmp/app/plugins',
-    },
+  expect(mocks.generatePluginScaffold).toHaveBeenCalledWith({
+    packageName: '@my-scope/plugin-hello',
+    sourcePath: '/tmp/app/source',
+    targetRoot: '/tmp/app/plugins',
   });
-  expect(mocks.rename).toHaveBeenCalledWith(
-    '/tmp/app/source/packages/plugins/@my-scope/plugin-hello',
-    '/tmp/app/plugins/@my-scope/plugin-hello',
-  );
 });
