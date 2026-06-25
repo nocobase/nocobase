@@ -23,6 +23,7 @@
   },
   "peerDependencies": {
     "@nocobase/client": "2.x",
+    "@nocobase/client-v2": "2.x",
     "@nocobase/plugin-workflow": ">=0.18.0-alpha.2",
     "@nocobase/server": "2.x",
     "@nocobase/test": "2.x",

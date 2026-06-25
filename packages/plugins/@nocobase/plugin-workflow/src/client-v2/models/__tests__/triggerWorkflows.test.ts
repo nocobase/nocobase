@@ -8,7 +8,12 @@
  */
 
 import { describe, expect, it, vi } from 'vitest';
-import { buildTriggerWorkflows, getWorkflowCollectionName, getWorkflowOptionFilter } from '../triggerWorkflows';
+import {
+  buildTriggerWorkflows,
+  getWorkflowCollectionName,
+  getWorkflowOptionFilter,
+  getWorkflowPlugin,
+} from '../triggerWorkflows';
 
 const flowState = vi.hoisted(() => ({
   submitFlows: [] as Array<{ key: string; steps: Record<string, { handler: (...args: unknown[]) => unknown }> }>,
@@ -90,5 +95,47 @@ describe('trigger workflows action settings', () => {
     expect(filter({ key: 'global', type: 'action', config: { global: true } })).toBe(false);
     expect(filter({ key: 'selected-missing-trigger', type: 'missing' })).toBe(true);
     expect(filter({ key: 'missing', type: 'missing' })).toBe(false);
+  });
+
+  it('does not crash when the resolved workflow plugin does not expose trigger options', () => {
+    const filter = getWorkflowOptionFilter({ registerTrigger: vi.fn() });
+
+    expect(filter({ key: 'action', type: 'action' })).toBe(false);
+  });
+
+  it('filters workflows with a legacy-shaped workflow plugin trigger registry', () => {
+    const filter = getWorkflowOptionFilter({
+      triggers: {
+        get(type: string) {
+          return type === 'action' ? { actionTriggerableScope: true } : undefined;
+        },
+      },
+    });
+
+    expect(filter({ key: 'action', type: 'action' })).toBe(true);
+    expect(filter({ key: 'missing', type: 'missing' })).toBe(false);
+  });
+
+  it('resolves the package-name workflow plugin when the short alias points to another runtime', () => {
+    const workflowPlugin = {
+      getTriggerOptions(type?: string) {
+        return type === 'action' ? { actionTriggerableScope: true } : undefined;
+      },
+    };
+    const pm = {
+      get(name: string) {
+        if (name === 'workflow') {
+          return { registerTrigger: vi.fn() };
+        }
+        if (name === '@nocobase/plugin-workflow') {
+          return workflowPlugin;
+        }
+        return undefined;
+      },
+    };
+
+    const filter = getWorkflowOptionFilter(getWorkflowPlugin(pm));
+
+    expect(filter({ key: 'action', type: 'action' })).toBe(true);
   });
 });

@@ -76,7 +76,7 @@ const createMCPFormProperties = (options: {
     'x-component': 'UserContextCheckbox',
     'x-component-props': {
       tooltip:
-        '{{ t("When enabled, URL and headers can use current user variables, and the MCP server runs per current user. Stdio transport is not supported.") }}',
+        '{{ t("When enabled, URL and headers can use current user variables and NocoBase request variables. Stdio transport is not supported.") }}',
     },
   },
   command: {
@@ -421,18 +421,6 @@ export const mcpSettingsSchema = {
                 transport: {
                   type: 'string',
                   'x-component': 'TransportTag',
-                },
-              },
-            },
-            column5: {
-              type: 'void',
-              title: '{{ t("Depends on current user") }}',
-              'x-component': 'TableV2.Column',
-              properties: {
-                useUserContext: {
-                  type: 'boolean',
-                  'x-component': 'Checkbox',
-                  'x-read-pretty': true,
                 },
               },
             },

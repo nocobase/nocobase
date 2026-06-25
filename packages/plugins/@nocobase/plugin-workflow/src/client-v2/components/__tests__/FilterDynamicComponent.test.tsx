@@ -20,12 +20,18 @@ const testState = vi.hoisted(() => ({
 vi.mock('@nocobase/client-v2', async () => {
   const actual = await vi.importActual<any>('@nocobase/client-v2');
   const ReactModule = await vi.importActual<any>('react');
+  const { useFlowContext } = await vi.importActual<any>('@nocobase/flow-engine');
   return {
     ...actual,
     VariableFilterItem: (props: any) => {
-      testState.variableFilterItems.push(props);
+      const ctx = useFlowContext();
+      testState.variableFilterItems.push({
+        ...props,
+        contextModel: ctx?.model,
+      });
       return ReactModule.default.createElement('input', {
         'data-testid': 'variable-filter-item',
+        'data-flow-model-translate': typeof ctx?.model?.translate,
         value: props.value.value ?? '',
         onChange: (event: React.ChangeEvent<HTMLInputElement>) => {
           props.value.value = event.target.value;
@@ -181,6 +187,24 @@ describe('FilterDynamicComponent', () => {
 
     expect(screen.getByTestId('variable-filter-item')).toBeInTheDocument();
     expect(testState.variableFilterItems).toHaveLength(1);
+  });
+
+  it('provides the filter model context to nested value editors', () => {
+    const { engine } = setupEngine();
+    function Wrapper() {
+      const [value, setValue] = React.useState<Record<string, unknown>>({});
+      return <FilterDynamicComponent collection="posts" value={value} onChange={(next) => setValue(next ?? {})} />;
+    }
+
+    render(
+      <FlowEngineProvider engine={engine}>
+        <Wrapper />
+      </FlowEngineProvider>,
+    );
+
+    fireEvent.click(screen.getByText('Add condition'));
+
+    expect(screen.getByTestId('variable-filter-item')).toHaveAttribute('data-flow-model-translate', 'function');
   });
 
   it('keeps an empty draft condition group visible after clicking Add condition group', async () => {

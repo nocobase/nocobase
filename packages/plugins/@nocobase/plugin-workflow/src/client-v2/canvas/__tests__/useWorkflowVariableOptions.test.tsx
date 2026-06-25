@@ -69,6 +69,15 @@ function makeV1ShapedPlugin() {
       children: [{ value: 'result', label: 'Result' }],
     }),
   });
+  instructions.set('loop', {
+    useScopeVariables: (_node: any, options: any) => {
+      if (options?.includeScopes !== false) {
+        throw new Error('scope recursion guard missing');
+      }
+
+      return [{ name: 'item', title: 'Loop item', type: 'string', paths: ['item'] }];
+    },
+  });
 
   // v1-style system variables: `now` is a plain string label; `instanceId` carries an already-rendered JSX label (with
   // tooltip inlined) — NOT a `{{t}}` template.
@@ -189,6 +198,23 @@ describe('useWorkflowVariableOptions — runtime-neutral resolution', () => {
     // Same tree object — load-bearing so lazily-resolved relation children (mutated onto the meta nodes by the picker)
     // survive a re-render instead of being discarded (the infinite-spinner bug).
     expect(result.current).toBe(first);
+  });
+
+  it('disables nested $scopes aggregation when asking a scope node for its local variables', () => {
+    setupEngine(makeV1ShapedPlugin());
+    holder.currentNode = {
+      key: 'n2',
+      type: 'condition',
+      branchIndex: 0,
+      upstream: { key: 'loop1', type: 'loop', title: 'Loop posts', upstream: null },
+    };
+
+    const { result } = renderHook(() => useWorkflowVariableOptions());
+    const scopes = result.current.find((n) => n.name === '$scopes');
+
+    expect(scopes).toBeTruthy();
+    expect(scopes?.children?.map((child: any) => child.name)).toEqual(['loop1']);
+    expect(scopes?.children?.[0]?.children?.map((child: any) => child.name)).toEqual(['item']);
   });
 
   it('returns an empty tree when no workflow plugin is registered (no crash)', () => {

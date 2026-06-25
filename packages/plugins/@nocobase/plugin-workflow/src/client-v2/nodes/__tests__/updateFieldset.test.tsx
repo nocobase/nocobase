@@ -126,6 +126,7 @@ describe('UpdateFieldset', () => {
             filter: { title: { $eq: 'old' } },
             values: { title: 'new' },
           },
+          usingAssignFormSchema: true,
           assignFormSchema: { name: 'legacy' },
         },
       },
@@ -138,7 +139,8 @@ describe('UpdateFieldset', () => {
       expect(getForm()?.getFieldValue(['config', 'params', 'individualHooks'])).toBe(true);
       expect(getForm()?.getFieldValue(['config', 'params', 'filter'])).toEqual({});
       expect(getForm()?.getFieldValue(['config', 'params', 'values'])).toEqual({});
-      expect(getForm()?.getFieldValue(['config', 'assignFormSchema'])).toEqual({});
+      expect(getForm()?.getFieldValue(['config', 'usingAssignFormSchema'])).toBeUndefined();
+      expect(getForm()?.getFieldValue(['config', 'assignFormSchema'])).toBeUndefined();
     });
   });
 });
