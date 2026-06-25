@@ -179,6 +179,49 @@ describe('FlowContext properties and methods', () => {
     });
   });
 
+  it('should expose current role as a top-level variable', async () => {
+    const engine = new FlowEngine();
+    const ctx = engine.context;
+    ctx.defineProperty('api', { value: { auth: { role: 'admin' } } });
+
+    expect(ctx.role).toBe('admin');
+    await expect(ctx.resolveJsonTemplate('{{ ctx.role }}')).resolves.toBe('admin');
+
+    const roleNode = ctx.getPropertyMetaTree().find((node) => node.name === 'role');
+    expect(roleNode).toMatchObject({
+      name: 'role',
+      title: '{{t("Current role")}}',
+      paths: ['role'],
+    });
+  });
+
+  it('should expose actual role names for union role mode', async () => {
+    const engine = new FlowEngine();
+    const ctx = engine.context;
+    ctx.defineProperty('api', { value: { auth: { role: '__union__' } } });
+    ctx.defineProperty('user', {
+      value: {
+        roles: [
+          { name: 'admin', title: 'Admin' },
+          { name: 'member', title: 'Member' },
+        ],
+      },
+    });
+
+    expect(ctx.role).toEqual(['admin', 'member']);
+    await expect(ctx.resolveJsonTemplate('{{ ctx.role }}')).resolves.toEqual(['admin', 'member']);
+  });
+
+  it('should expose an empty role list for union role mode without user roles', async () => {
+    const engine = new FlowEngine();
+    const ctx = engine.context;
+    ctx.defineProperty('api', { value: { auth: { role: '__union__' } } });
+    ctx.defineProperty('user', { value: {} });
+
+    expect(ctx.role).toEqual([]);
+    await expect(ctx.resolveJsonTemplate('{{ ctx.role }}')).resolves.toEqual([]);
+  });
+
   it('should throw sync error in get', () => {
     const ctx = new FlowContext();
     ctx.defineProperty('error', {

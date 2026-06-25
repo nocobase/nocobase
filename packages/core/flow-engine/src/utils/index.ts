@@ -67,6 +67,16 @@ export { extractPropertyPath, formatPathToVariable, isVariableExpression } from 
 export { clearAutoFlowError, getAutoFlowError, setAutoFlowError, type AutoFlowError } from './autoFlowError';
 export { parsePathnameToViewParams, type ViewParam } from './parsePathnameToViewParams';
 export {
+  createOpenViewRouteState,
+  decodeOpenViewRouteState,
+  encodeOpenViewRouteState,
+  isOpenViewRouteStateToken,
+  RUNJS_OPEN_VIEW_ROUTE_STATE,
+  type OpenViewRouteMode,
+  type OpenViewRouteSize,
+  type OpenViewRouteState,
+} from './openViewRouteState';
+export {
   decodeBase64Url,
   encodeBase64Url,
   isCompleteCtxDatePath,
