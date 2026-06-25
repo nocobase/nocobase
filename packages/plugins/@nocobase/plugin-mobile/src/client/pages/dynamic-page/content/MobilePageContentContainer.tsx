@@ -114,7 +114,8 @@ export const MobilePageContentContainer: FC<{
     updateLayoutHeights();
     observeLayoutElements();
     scheduleLayoutUpdate();
-    mutationObserver?.observe(document.body, { childList: true, subtree: true });
+    const mutationObserverTarget = document.querySelector<HTMLElement>('.mobile-container') || document.body;
+    mutationObserver?.observe(mutationObserverTarget, { childList: true, subtree: true });
     const handleWindowResize = () => {
       scheduleLayoutUpdate(true);
     };

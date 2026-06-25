@@ -26,6 +26,7 @@ vi.mock('react-device-detect', async () => ({
 describe('MobilePageContent', () => {
   let resizeObserverCallback: ResizeObserverCallback | undefined;
   let resizeObserverObserve: ReturnType<typeof vi.fn>;
+  let mutationObserverObserve: ReturnType<typeof vi.fn>;
 
   const mockDynamicViewportUnitSupport = (supported: boolean) => {
     vi.stubGlobal('CSS', {
@@ -57,12 +58,22 @@ describe('MobilePageContent', () => {
     device.isDesktop = false;
     resizeObserverCallback = undefined;
     resizeObserverObserve = vi.fn();
+    mutationObserverObserve = vi.fn();
     vi.stubGlobal(
       'ResizeObserver',
       vi.fn((callback: ResizeObserverCallback) => {
         resizeObserverCallback = callback;
         return {
           observe: resizeObserverObserve,
+          disconnect: vi.fn(),
+        };
+      }),
+    );
+    vi.stubGlobal(
+      'MutationObserver',
+      vi.fn(() => {
+        return {
+          observe: mutationObserverObserve,
           disconnect: vi.fn(),
         };
       }),
@@ -185,6 +196,25 @@ describe('MobilePageContent', () => {
     await flushLayoutFrame();
 
     expect(resizeObserverObserve).toHaveBeenCalledTimes(observeCount);
+  });
+
+  it('scopes mutation observation to the mobile container when available', async () => {
+    mockDynamicViewportUnitSupport(true);
+
+    render(
+      <div className="mobile-container" data-testid="mobile-container">
+        <MobilePageContentContainer>
+          <div>Scrollable content</div>
+        </MobilePageContentContainer>
+      </div>,
+    );
+
+    await waitFor(() => {
+      expect(mutationObserverObserve).toHaveBeenCalledWith(screen.getByTestId('mobile-container'), {
+        childList: true,
+        subtree: true,
+      });
+    });
   });
 
   it('falls back to 100vh when dynamic viewport units are unsupported', async () => {
