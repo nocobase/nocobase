@@ -18,7 +18,52 @@ import {
 } from '../../lib/plugin-workspace.js';
 import { runNocoBaseCommand } from '../../lib/run-npm.ts';
 
-const PLUGIN_TARGET_ROOT_ENV = 'NB_PLUGIN_TARGET_ROOT';
+type EntryKind = 'missing' | 'directory' | 'symlink' | 'other';
+
+async function getEntryKind(candidate: string): Promise<EntryKind> {
+  try {
+    const stat = await fsp.lstat(candidate);
+    if (stat.isSymbolicLink()) {
+      return 'symlink';
+    }
+    if (stat.isDirectory()) {
+      return 'directory';
+    }
+    return 'other';
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+      return 'missing';
+    }
+    throw error;
+  }
+}
+
+async function cleanupDanglingSymlink(candidate: string): Promise<boolean> {
+  if ((await getEntryKind(candidate)) !== 'symlink') {
+    return false;
+  }
+
+  try {
+    await fsp.realpath(candidate);
+    return false;
+  } catch {
+    await fsp.rm(candidate, { recursive: true, force: true });
+    return true;
+  }
+}
+
+async function moveGeneratedPlugin(sourcePath: string, targetPath: string): Promise<void> {
+  await fsp.mkdir(path.dirname(targetPath), { recursive: true });
+  try {
+    await fsp.rename(sourcePath, targetPath);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== 'EXDEV') {
+      throw error;
+    }
+    await fsp.cp(sourcePath, targetPath, { recursive: true });
+    await fsp.rm(sourcePath, { recursive: true, force: true });
+  }
+}
 
 export default class ScaffoldPlugin extends Command {
   static override args = {
@@ -59,6 +104,8 @@ export default class ScaffoldPlugin extends Command {
       const pluginWorkspacePath = path.join(pluginWorkspaceRoot, ...packageSegments);
       const sourceEntryPath = path.join(resolved.sourcePath, 'packages', 'plugins', ...packageSegments);
       const npmArgs = ['pm', 'create', args.pkg];
+      const sourceEntryWasDangling = await cleanupDanglingSymlink(sourceEntryPath);
+      const sourceEntryKind = sourceEntryWasDangling ? 'missing' : await getEntryKind(sourceEntryPath);
 
       try {
         const existing = await fsp.stat(pluginWorkspacePath);
@@ -71,6 +118,16 @@ export default class ScaffoldPlugin extends Command {
         }
       }
 
+      if (sourceEntryKind !== 'missing' && !flags['force-recreate']) {
+        this.error(
+          [
+            `[${args.pkg}] plugin already exists.`,
+            `Source entry already exists at ${sourceEntryPath}.`,
+            `Remove the conflicting source entry or rerun with --force-recreate if you want to rebuild it.`,
+          ].join('\n'),
+        );
+      }
+
       if (flags['force-recreate']) {
         await fsp.rm(pluginWorkspacePath, { recursive: true, force: true });
         npmArgs.push('--force-recreate');
@@ -80,9 +137,23 @@ export default class ScaffoldPlugin extends Command {
         cwd: resolved.sourcePath,
         env: {
           LOGGER_SILENT: 'true',
-          [PLUGIN_TARGET_ROOT_ENV]: pluginWorkspaceRoot,
+          NB_PLUGIN_TARGET_ROOT: pluginWorkspaceRoot,
         },
       });
+
+      const pluginWorkspaceKind = await getEntryKind(pluginWorkspacePath);
+      if (pluginWorkspaceKind !== 'directory') {
+        const generatedSourceKind = await getEntryKind(sourceEntryPath);
+        if (generatedSourceKind !== 'directory') {
+          this.error(
+            [
+              `Failed to locate the scaffolded plugin for "${args.pkg}".`,
+              `Expected either ${pluginWorkspacePath} or ${sourceEntryPath} to exist after \`pm create\`.`,
+            ].join('\n'),
+          );
+        }
+        await moveGeneratedPlugin(sourceEntryPath, pluginWorkspacePath);
+      }
 
       const syncResult = await syncPluginWorkspace({
         appPath: resolved.appPath,
@@ -91,6 +162,12 @@ export default class ScaffoldPlugin extends Command {
         targetPackageNames: [args.pkg],
         forceRecreate: flags['force-recreate'],
       });
+
+      if (sourceEntryKind !== 'missing' && flags['force-recreate']) {
+        syncResult.warnings.push(
+          `Recreated source plugin entry for "${args.pkg}" by replacing the existing source/packages/plugins target.`,
+        );
+      }
 
       if (syncResult.changed) {
         const changes: string[] = [];
