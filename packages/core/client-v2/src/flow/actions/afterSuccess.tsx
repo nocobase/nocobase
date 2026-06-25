@@ -13,7 +13,7 @@ import {
   createRecordResolveOnServerWithLocal,
   defineAction,
   tExpr,
-  useFlowContext,
+  useFlowSettingsContext,
   type Collection,
   type FlowRuntimeContext,
   type MetaTreeNode,
@@ -28,6 +28,13 @@ import {
 
 type ResponseRecordPlainStepContext = {
   steps?: FlowRuntimeContext['steps'];
+};
+
+type ResponseRecordFlowDefinitionContext = {
+  flowKey?: string;
+  model?: {
+    getFlow?: (flowKey: string) => { steps?: Record<string, unknown> } | undefined;
+  };
 };
 
 type ResponseRecordContext = FlowContext &
@@ -88,14 +95,23 @@ function getResponseRecordMeta(ctx: ResponseRecordContext): PropertyMetaFactory 
 }
 
 function hasResponseRecordSource(ctx: FlowContext | ResponseRecordPlainStepContext) {
-  return Object.prototype.hasOwnProperty.call(getResponseRecordSteps(ctx), 'saveResource');
+  if (Object.prototype.hasOwnProperty.call(getResponseRecordSteps(ctx), 'saveResource')) {
+    return true;
+  }
+
+  const { model, flowKey } = ctx as ResponseRecordFlowDefinitionContext;
+  if (!model || typeof model.getFlow !== 'function' || !flowKey) {
+    return false;
+  }
+
+  return Object.prototype.hasOwnProperty.call(model.getFlow(flowKey)?.steps || {}, 'saveResource');
 }
 
 function getResponseRecordCollectionAccessor(ctx: ResponseRecordContext) {
   return () => ctx.blockModel?.collection || ctx.collection || ctx.model?.collection || null;
 }
 
-function getMetaTreeWithResponseRecord(ctx: FlowRuntimeContext): MetaTreeNode[] {
+export function getMetaTreeWithResponseRecord(ctx: FlowRuntimeContext): MetaTreeNode[] {
   const responseRecordMeta = getResponseRecordMeta(ctx);
   if (!responseRecordMeta) {
     return ctx.getPropertyMetaTree?.() || [];
@@ -115,7 +131,7 @@ function getMetaTreeWithResponseRecord(ctx: FlowRuntimeContext): MetaTreeNode[] 
 }
 
 function AfterSuccessRedirectTextArea(props: TextAreaWithContextSelectorProps) {
-  const flowCtx = useFlowContext<FlowRuntimeContext>();
+  const flowCtx = useFlowSettingsContext();
   const metaTree = useMemo(() => () => getMetaTreeWithResponseRecord(flowCtx), [flowCtx]);
 
   return <TextAreaWithContextSelector {...props} metaTree={metaTree} />;
