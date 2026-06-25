@@ -136,6 +136,10 @@ export class ActionModel<T extends DefaultStructure = DefaultStructure> extends 
     return this.props.title;
   }
 
+  getTitleFieldDescription() {
+    return undefined;
+  }
+
   getIcon() {
     return this.props.icon;
   }

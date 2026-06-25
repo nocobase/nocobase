@@ -31,7 +31,13 @@ function getDefaultIconColor(title?: React.ReactNode) {
   return defaultIconColors[hash % defaultIconColors.length];
 }
 
-export class AppSwitcherActionPanelModel extends FlowModel {
+type AppSwitcherActionPanelStructure = {
+  subModels: {
+    actions?: ActionModel[];
+  };
+};
+
+export class AppSwitcherActionPanelModel extends FlowModel<AppSwitcherActionPanelStructure> {
   renderConfigureActions() {
     return (
       <AddSubModelButton
@@ -39,6 +45,7 @@ export class AppSwitcherActionPanelModel extends FlowModel {
         model={this}
         items={this.context.app.entryActionManager.getItems('app-switcher')}
         subModelKey="actions"
+        keepDropdownOpen
       >
         <FlowSettingsButton icon={<SettingOutlined />}>{this.context.t('Actions')}</FlowSettingsButton>
       </AddSubModelButton>
@@ -46,7 +53,7 @@ export class AppSwitcherActionPanelModel extends FlowModel {
   }
 
   hasActions() {
-    return Array.isArray(this.subModels.actions) && this.subModels.actions.length > 0;
+    return !!this.subModels.actions?.length;
   }
 
   renderContent() {

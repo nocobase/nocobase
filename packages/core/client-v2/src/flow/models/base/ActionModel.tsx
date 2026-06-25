@@ -43,6 +43,7 @@ ActionModel.registerFlow({
                 'x-decorator': 'FormItem',
                 'x-component': 'Input',
                 title: tExpr('Button title'),
+                description: ctx.model.getTitleFieldDescription?.(),
               }
             : undefined,
           tooltip: ctx.model.enableEditTooltip

@@ -18,6 +18,7 @@ const DRAWER_ROOT_SELECTOR = '.ant-drawer-root';
 const MODAL_SELECTOR = '.ant-modal';
 const MODAL_WRAP_SELECTOR = '.ant-modal-wrap';
 const MODAL_ROOT_SELECTOR = '.ant-modal-root';
+const POPOVER_SELECTOR = '.ant-popover';
 
 type ToolbarPortalPositioningMode = 'fixed' | 'absolute';
 
@@ -79,6 +80,7 @@ const createAbsolutePortalHostConfig = (element: HTMLElement): ToolbarPortalHost
 
 const popupPortalHostResolvers: Array<(hostEl: HTMLElement | null) => HTMLElement | null> = [
   (hostEl) => getClosestElement(hostEl, MENU_SUBMENU_POPUP_SELECTOR),
+  (hostEl) => getClosestElement(hostEl, POPOVER_SELECTOR),
   (hostEl) => getClosestElement(hostEl, DRAWER_CONTENT_WRAPPER_SELECTOR),
   (hostEl) => getClosestElement(hostEl, MODAL_WRAP_SELECTOR),
   (hostEl) => getClosestElement(hostEl, MODAL_SELECTOR),
