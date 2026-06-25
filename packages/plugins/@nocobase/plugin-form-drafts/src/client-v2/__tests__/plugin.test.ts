@@ -10,6 +10,7 @@
 import type { Application } from '@nocobase/client-v2';
 import { FormBlockModel } from '@nocobase/client-v2';
 import { FlowEngine, FlowModel, FlowRuntimeContext } from '@nocobase/flow-engine';
+import type { ReactElement } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { PluginFormDraftsClient } from '../plugin';
 
@@ -127,8 +128,10 @@ describe('PluginFormDraftsClient v2', () => {
     const restoredValues = { title: 'Restored title' };
     const setDecoratorProps = vi.fn();
     const setFormValues = vi.fn();
+    const resetFields = vi.fn();
+    const resetAfterFormReset = vi.fn();
 
-    Object.assign(model, { setDecoratorProps });
+    Object.assign(model, { setDecoratorProps, formValueRuntime: { resetAfterFormReset } });
     store.set('form-uid:123', { uid: 'form-uid:123', values: restoredValues });
     model.context.defineProperty('resource', {
       value: {
@@ -138,7 +141,7 @@ describe('PluginFormDraftsClient v2', () => {
     model.context.defineProperty('form', {
       value: {
         getFieldsValue: () => restoredValues,
-        resetFields: vi.fn(),
+        resetFields,
       },
     });
     model.context.defineMethod('setFormValues', setFormValues);
@@ -146,8 +149,18 @@ describe('PluginFormDraftsClient v2', () => {
 
     await draftCreateFlow?.steps.createDraft.handler?.(ctx, { enabled: true });
 
-    expect(setFormValues).toHaveBeenCalledWith(restoredValues);
+    expect(setFormValues).toHaveBeenCalledWith(restoredValues, { triggerEvent: false });
     expect(setDecoratorProps).toHaveBeenCalledWith({ beforeContent: expect.anything() });
     expect(await ctx.draftRepository.get()).toEqual({ uid: 'form-uid:123', values: restoredValues });
+
+    const beforeContent = setDecoratorProps.mock.calls[0][0].beforeContent as ReactElement<{
+      onDelete: () => Promise<void>;
+    }>;
+    await beforeContent.props.onDelete();
+
+    expect(await ctx.draftRepository.get()).toBeUndefined();
+    expect(resetFields).toHaveBeenCalled();
+    expect(resetAfterFormReset).toHaveBeenCalled();
+    expect(setDecoratorProps).toHaveBeenLastCalledWith({ beforeContent: null });
   });
 });

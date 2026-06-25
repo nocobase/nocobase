@@ -23,6 +23,9 @@ const SAVED_DRAFT_MESSAGE =
 type DecoratedFormModel = {
   uid: string;
   context: FlowModelContext;
+  formValueRuntime?: {
+    resetAfterFormReset?: () => void;
+  };
   setDecoratorProps?: (props: { beforeContent: React.ReactNode | null }) => void;
   decoratorProps?: {
     beforeContent?: React.ReactNode | null;
@@ -36,7 +39,7 @@ type DraftFlowContext = FlowModelContext & {
     getFieldsValue: () => FormDraftValues;
     resetFields: () => void;
   };
-  setFormValues: (values: FormDraftValues) => Promise<void> | void;
+  setFormValues: (values: FormDraftValues, options?: { triggerEvent?: boolean }) => Promise<void> | void;
   showDraftAlert: (message: string) => void;
   t: (key: string, options?: Record<string, unknown>) => string;
 };
@@ -115,6 +118,7 @@ FormBlockModel.registerFlow({
               onDelete={async () => {
                 await draftCtx.draftRepository.delete();
                 draftCtx.form.resetFields();
+                draftCtx.model.formValueRuntime?.resetAfterFormReset?.();
                 setBeforeContent(draftCtx.model, null);
               }}
             />,
@@ -130,7 +134,7 @@ FormBlockModel.registerFlow({
           await draftCtx.draftRepository.create();
           return;
         }
-        await draftCtx.setFormValues(draft.values);
+        await draftCtx.setFormValues(draft.values, { triggerEvent: false });
         draftCtx.showDraftAlert(RESTORED_DRAFT_MESSAGE);
       },
     },
