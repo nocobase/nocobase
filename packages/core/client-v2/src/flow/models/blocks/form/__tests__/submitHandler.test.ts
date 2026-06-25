@@ -52,13 +52,14 @@ describe('submitHandler', () => {
       t: (value: string) => value,
     };
 
-    await submitHandler(ctx, {
+    const responseRecord = await submitHandler(ctx, {
       assignedValues: {
         status: 'published',
         reviewer: 'Alice',
       },
     });
 
+    expect(responseRecord).toEqual({ id: 1 });
     expect(resource.save).toHaveBeenCalledWith(
       {
         title: 'Draft title',

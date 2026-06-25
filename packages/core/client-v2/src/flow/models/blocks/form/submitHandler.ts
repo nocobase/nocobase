@@ -12,6 +12,16 @@ import { mergeAssignFieldValues, resolveAssignFieldValues } from '../assign-form
 import type { FormBlockModel } from './FormBlockModel';
 import { omitHiddenModelValuesFromSubmit, shouldSkipSubmitValidation, validateSubmitForm } from './submitValues';
 
+function getResponseRecord(response: unknown) {
+  if (!response || typeof response !== 'object') {
+    return response;
+  }
+  if ('data' in response) {
+    return (response as { data?: unknown }).data;
+  }
+  return response;
+}
+
 export async function submitHandler(ctx, params, cb?: (values?: any, filterByTk?: any) => void) {
   const resource = ctx.resource;
   const blockModel = ctx.blockModel as FormBlockModel;
@@ -41,7 +51,8 @@ export async function submitHandler(ctx, params, cb?: (values?: any, filterByTk?
         resource.setFilterByTk(currentFilterByTk);
       }
     }
-    const data: any = cb ? await cb(values) : await resource.save(values, params.requestConfig);
+    const data: unknown = cb ? await cb(values) : await resource.save(values, params.requestConfig);
+    const responseRecord = getResponseRecord(data);
     if (isEditFormModel) {
       resource.isNewRecord = false;
       // 编辑表单保存成功后，表单应回到“已同步”状态：下一次刷新应允许覆盖为服务端值
@@ -53,18 +64,20 @@ export async function submitHandler(ctx, params, cb?: (values?: any, filterByTk?
       blockModel.resetUserModifiedFields?.();
       blockModel.formValueRuntime?.resetAfterFormReset?.();
       if (ctx.view.inputArgs.collectionName === blockModel.collection.name && ctx.view.inputArgs.onChange) {
-        ctx.view.inputArgs.onChange(data?.data);
+        ctx.view.inputArgs.onChange(responseRecord);
       }
     }
+    return responseRecord;
   } else if (resource instanceof MultiRecordResource) {
     const currentFilterByTk = resource.getMeta('currentFilterByTk');
     if (!currentFilterByTk) {
       ctx.message.error(ctx.t('No filterByTk found for multi-record resource.'));
       return;
     }
-    (await cb)
+    const data = cb
       ? await cb(values, currentFilterByTk)
       : await resource.update(currentFilterByTk, values, params.requestConfig);
     blockModel.resetUserModifiedFields?.();
+    return getResponseRecord(data);
   }
 }

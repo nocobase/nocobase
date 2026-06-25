@@ -7,13 +7,132 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { defineAction, tExpr } from '@nocobase/flow-engine';
+import {
+  FlowContext,
+  createRecordMetaFactory,
+  createRecordResolveOnServerWithLocal,
+  defineAction,
+  tExpr,
+  useFlowContext,
+  type Collection,
+  type FlowRuntimeContext,
+  type MetaTreeNode,
+  type PropertyMetaFactory,
+} from '@nocobase/flow-engine';
 import { isURL } from '@nocobase/utils/client';
-import { TextAreaWithContextSelector } from '../components/TextAreaWithContextSelector';
+import React, { useMemo } from 'react';
+import {
+  TextAreaWithContextSelector,
+  type TextAreaWithContextSelectorProps,
+} from '../components/TextAreaWithContextSelector';
+
+type ContextWithCollection = FlowRuntimeContext & {
+  blockModel?: { collection?: Collection };
+  collection?: Collection;
+  model?: FlowRuntimeContext['model'] & { collection?: Collection };
+};
+
+export function getAfterSuccessResponseRecord(ctx: Pick<FlowRuntimeContext, 'steps'>) {
+  const steps = ctx.steps || {};
+  const preferredStepKeys = ['saveResource', 'submit', 'request', 'apply', 'save'];
+
+  for (const stepKey of preferredStepKeys) {
+    if (Object.prototype.hasOwnProperty.call(steps, stepKey) && steps[stepKey]?.result != null) {
+      return steps[stepKey].result;
+    }
+  }
+
+  const results = Object.entries(steps)
+    .filter(([stepKey, step]) => stepKey !== 'afterSuccess' && step?.result != null)
+    .map(([, step]) => step.result);
+  return results[results.length - 1];
+}
+
+function getResponseRecordMeta(ctx: FlowRuntimeContext): PropertyMetaFactory | undefined {
+  if (!hasResponseRecordSource(ctx)) {
+    return;
+  }
+  const collectionAccessor = getResponseRecordCollectionAccessor(ctx);
+  if (!collectionAccessor()) {
+    return;
+  }
+  return createRecordMetaFactory(collectionAccessor, ctx.t('Response record'), () => {
+    const collection = collectionAccessor();
+    const record = getAfterSuccessResponseRecord(ctx);
+    if (!collection || !record) {
+      return;
+    }
+    try {
+      const filterByTk = collection.getFilterByTK(record);
+      if (filterByTk == null) {
+        return;
+      }
+      return {
+        collection: collection.name,
+        dataSourceKey: collection.dataSourceKey || 'main',
+        filterByTk,
+      };
+    } catch (error) {
+      return;
+    }
+  });
+}
+
+function hasResponseRecordSource(ctx: Pick<FlowRuntimeContext, 'steps'>) {
+  return Object.prototype.hasOwnProperty.call(ctx.steps || {}, 'saveResource');
+}
+
+function getResponseRecordCollectionAccessor(ctx: FlowRuntimeContext) {
+  const contextWithCollection = ctx as ContextWithCollection;
+  return () =>
+    contextWithCollection.blockModel?.collection ||
+    contextWithCollection.collection ||
+    contextWithCollection.model?.collection ||
+    null;
+}
+
+function getMetaTreeWithResponseRecord(ctx: FlowRuntimeContext): MetaTreeNode[] {
+  const responseRecordMeta = getResponseRecordMeta(ctx);
+  if (!responseRecordMeta) {
+    return ctx.getPropertyMetaTree?.() || [];
+  }
+
+  const scoped = new FlowContext();
+  scoped.addDelegate(ctx);
+  scoped.defineProperty('responseRecord', {
+    get: () => getAfterSuccessResponseRecord(ctx),
+    cache: false,
+    resolveOnServer: createRecordResolveOnServerWithLocal(getResponseRecordCollectionAccessor(ctx), () =>
+      getAfterSuccessResponseRecord(ctx),
+    ),
+    meta: responseRecordMeta,
+  });
+  return scoped.getPropertyMetaTree();
+}
+
+function AfterSuccessRedirectTextArea(props: TextAreaWithContextSelectorProps) {
+  const flowCtx = useFlowContext<FlowRuntimeContext>();
+  const metaTree = useMemo(() => () => getMetaTreeWithResponseRecord(flowCtx), [flowCtx]);
+
+  return <TextAreaWithContextSelector {...props} metaTree={metaTree} />;
+}
 
 export const afterSuccess = defineAction({
   name: 'afterSuccess',
   title: tExpr('After successful submission'),
+  defineProperties(ctx) {
+    const responseRecordMeta = getResponseRecordMeta(ctx);
+    return {
+      responseRecord: {
+        get: () => getAfterSuccessResponseRecord(ctx),
+        cache: false,
+        resolveOnServer: createRecordResolveOnServerWithLocal(getResponseRecordCollectionAccessor(ctx), () =>
+          getAfterSuccessResponseRecord(ctx),
+        ),
+        ...(responseRecordMeta ? { meta: responseRecordMeta } : {}),
+      },
+    };
+  },
   uiSchema: {
     successMessage: {
       type: 'string',
@@ -46,7 +165,7 @@ export const afterSuccess = defineAction({
       type: 'string',
       title: tExpr('Link'),
       'x-decorator': 'FormItem',
-      'x-component': TextAreaWithContextSelector,
+      'x-component': AfterSuccessRedirectTextArea,
       'x-reactions': {
         dependencies: ['actionAfterSuccess'],
         fulfill: {

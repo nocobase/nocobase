@@ -56,6 +56,7 @@
   "Replace current block with template?": "Replace current block with template?",
   "Replaced with template block": "Replaced with template block",
   "Render failed": "Render failed",
+  "Response record": "Response record",
   "Step configuration": "Step configuration",
   "Step parameter configuration": "Step parameter configuration",
   "Step with key {{stepKey}} not found": "Step with key {{stepKey}} not found",
