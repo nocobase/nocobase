@@ -161,10 +161,10 @@ describe('TypedVariableInput - variable rendering', () => {
     });
   });
 
-  it('clears back to null when the close button is clicked (nullable=true)', async () => {
+  it('clears back to default-of-first-type when the close button is clicked (nullable=true)', async () => {
     const ctx = createContextWithEnv();
     const handleChange = vi.fn();
-    renderWithCtx(
+    const { container } = renderWithCtx(
       ctx,
       <TypedVariableInput
         value="{{$env.SMTP_PORT}}"
@@ -174,15 +174,17 @@ describe('TypedVariableInput - variable rendering', () => {
         onChange={handleChange}
       />,
     );
-    const clear = await screen.findByRole('button', { name: 'icon-close' });
-    fireEvent.click(clear);
-    expect(handleChange).toHaveBeenCalledWith(null);
+    const clear = container.querySelector('button.clear-button') as HTMLButtonElement | null;
+    expect(clear).not.toBeNull();
+    expect(clear).toHaveClass('clear-button');
+    fireEvent.click(clear as HTMLButtonElement);
+    expect(handleChange).toHaveBeenCalledWith(0);
   });
 
   it('clears back to default-of-first-type when nullable=false', async () => {
     const ctx = createContextWithEnv();
     const handleChange = vi.fn();
-    renderWithCtx(
+    const { container } = renderWithCtx(
       ctx,
       <TypedVariableInput
         value="{{$env.SMTP_PORT}}"
@@ -192,8 +194,9 @@ describe('TypedVariableInput - variable rendering', () => {
         onChange={handleChange}
       />,
     );
-    const clear = await screen.findByRole('button', { name: 'icon-close' });
-    fireEvent.click(clear);
+    const clear = container.querySelector('button.clear-button') as HTMLButtonElement | null;
+    expect(clear).not.toBeNull();
+    fireEvent.click(clear as HTMLButtonElement);
     expect(handleChange).toHaveBeenCalledWith(0);
   });
 });

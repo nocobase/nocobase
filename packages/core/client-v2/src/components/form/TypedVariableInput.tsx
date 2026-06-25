@@ -530,12 +530,14 @@ export function TypedVariableInput(props: TypedVariableInputProps) {
   );
 
   const onClearVariable = useCallback(() => {
-    if (nullable) {
-      onChange?.(null);
+    const first = normalizedTypes[0];
+    if (first) {
+      onChange?.(defaultValueFor(first.type));
       return;
     }
-    const first = normalizedTypes[0];
-    if (first) onChange?.(defaultValueFor(first.type));
+    if (nullable) {
+      onChange?.(null);
+    }
   }, [nullable, normalizedTypes, onChange]);
 
   const constantTypeForRendering: TypedConstantType = useMemo(() => {
@@ -619,6 +621,42 @@ export function TypedVariableInput(props: TypedVariableInputProps) {
     if (constantTypeForRendering !== 'object') setJsonError(null);
   }, [constantTypeForRendering]);
 
+  const variableValueClassName = useMemo(
+    () => css`
+      &:hover .clear-button,
+      &:focus-within .clear-button {
+        visibility: visible;
+        pointer-events: auto;
+        opacity: 1;
+      }
+
+      .clear-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: ${token.fontSizeIcon}px;
+        height: ${token.fontSizeIcon}px;
+        padding: 0;
+        color: ${token.colorTextQuaternary};
+        background: transparent;
+        cursor: pointer;
+        visibility: hidden;
+        pointer-events: none;
+        opacity: 0;
+        transition:
+          visibility ${token.motionDurationMid} ease,
+          color ${token.motionDurationMid} ease,
+          opacity ${token.motionDurationSlow} ease;
+
+        &:hover {
+          color: ${token.colorTextTertiary};
+          background: transparent;
+        }
+      }
+    `,
+    [token],
+  );
+
   return (
     <div style={{ width: '100%' }}>
       {/* Default `Space.Compact` (align-items: stretch) so the switcher button
@@ -629,6 +667,7 @@ export function TypedVariableInput(props: TypedVariableInputProps) {
         <div style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
           {isVariable ? (
             <div
+              className={variableValueClassName}
               role="button"
               aria-label="variable-tag"
               style={{
@@ -666,9 +705,10 @@ export function TypedVariableInput(props: TypedVariableInputProps) {
                 <Button
                   type="text"
                   size="small"
+                  className="clear-button"
                   aria-label="icon-close"
                   onClick={onClearVariable}
-                  icon={<CloseCircleFilled style={{ color: token.colorTextTertiary }} />}
+                  icon={<CloseCircleFilled />}
                 />
               ) : null}
             </div>
