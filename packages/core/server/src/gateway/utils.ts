@@ -7,9 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { IncomingMessage } from 'http';
-import { extname } from 'node:path';
-import type { IncomingRequest } from '.';
+import { IncomingMessage } from 'http';
+import { IncomingRequest } from '.';
 
 // Fixed on-disk build-output directory name for the modern (v2) client, and
 // the sentinel segment baked into its HTML at build time. NOT the runtime URL
@@ -17,8 +16,6 @@ import type { IncomingRequest } from '.';
 // of this default lives in packages/core/cli-v1/src/util.js
 // (DEFAULT_MODERN_CLIENT_PREFIX). See docs/adr/0001-modern-client-prefix.md.
 export const MODERN_CLIENT_DIST_DIR = 'v';
-export type AppClientEntryMode = 'legacy-default' | 'modern-default' | 'modern-only';
-const APP_CLIENT_ENTRY_MODES = new Set<AppClientEntryMode>(['legacy-default', 'modern-default', 'modern-only']);
 
 export function resolvePublicPath(appPublicPath = '/') {
   const normalized = String(appPublicPath || '/').trim() || '/';
@@ -35,214 +32,10 @@ export function normalizeModernClientPrefix(value?: string) {
   return segment || MODERN_CLIENT_DIST_DIR;
 }
 
-function normalizeAppClientEntryMode(value?: string): AppClientEntryMode | undefined {
-  const normalized = String(value || '').trim() as AppClientEntryMode;
-  return APP_CLIENT_ENTRY_MODES.has(normalized) ? normalized : undefined;
-}
-
-export function resolveModernClientPublicPath(appPublicPath = '/', modernClientPrefix?: string) {
-  const publicPath = resolvePublicPath(appPublicPath);
-  const prefix = normalizeModernClientPrefix(modernClientPrefix ?? process.env.APP_MODERN_CLIENT_PREFIX);
-  return `${publicPath.replace(/\/$/, '')}/${prefix}/`;
-}
-
 export function resolveV2PublicPath(appPublicPath = '/') {
-  return resolveModernClientPublicPath(appPublicPath);
-}
-
-// Canonicalize a request pathname into a root-relative path with collapsed
-// duplicate slashes and no trailing slash except `/`. The redirect helpers use
-// this so every branch compares the same path shape.
-function normalizeRootRelativePath(pathname = '/') {
-  const normalized = String(pathname || '/').trim() || '/';
-  const withLeadingSlash = normalized.startsWith('/') ? normalized : `/${normalized}`;
-  const deduped = withLeadingSlash.replace(/\/{2,}/g, '/');
-  if (deduped !== '/' && deduped.endsWith('/')) {
-    return deduped.replace(/\/+$/g, '');
-  }
-  return deduped || '/';
-}
-
-function trimTrailingSlash(pathname: string) {
-  return pathname === '/' ? pathname : pathname.replace(/\/+$/g, '');
-}
-
-function isRootIndexPath(pathname: string) {
-  const normalized = normalizeRootRelativePath(pathname);
-  return normalized === '/' || normalized === '/index.html';
-}
-
-// Remove the app mount path from an absolute request pathname and return the
-// remaining app-internal pathname. Returns `null` when the request is outside
-// the app mount entirely.
-function removeBasePath(pathname: string, basePath: string) {
-  const normalizedPathname = normalizeRootRelativePath(pathname);
-  const normalizedBasePath = resolvePublicPath(basePath);
-  if (normalizedBasePath === '/') {
-    return normalizedPathname;
-  }
-  const baseWithoutTrailingSlash = normalizedBasePath.replace(/\/$/, '');
-  if (normalizedPathname === baseWithoutTrailingSlash) {
-    return '/';
-  }
-  if (!normalizedPathname.startsWith(normalizedBasePath)) {
-    return null;
-  }
-  return normalizeRootRelativePath(normalizedPathname.slice(normalizedBasePath.length - 1));
-}
-
-function joinRootRelativePath(basePath: string, relativePath: string) {
-  const normalizedBasePath = resolvePublicPath(basePath);
-  const normalizedRelativePath = normalizeRootRelativePath(relativePath);
-  if (normalizedBasePath === '/') {
-    return normalizedRelativePath;
-  }
-  if (normalizedRelativePath === '/') {
-    return normalizedBasePath;
-  }
-  return normalizeRootRelativePath(`${trimTrailingSlash(normalizedBasePath)}${normalizedRelativePath}`);
-}
-
-// Build the modern-only redirect target for a site-root request that has not
-// yet entered APP_PUBLIC_PATH. This is intentionally a prefix rewrite, not a
-// semantic route translation.
-function buildModernOnlyRedirectTarget(
-  pathname: string,
-  appPublicPath: string,
-  v2PublicPath: string,
-  modernPrefix: string,
-) {
-  const normalizedPathname = normalizeRootRelativePath(pathname);
-  if (isRootIndexPath(normalizedPathname)) {
-    return normalizedPathname === '/index.html' ? `${v2PublicPath}index.html` : v2PublicPath;
-  }
-  if (normalizedPathname === `/${modernPrefix}`) {
-    return v2PublicPath;
-  }
-  if (normalizedPathname === `/${modernPrefix}/index.html`) {
-    return `${v2PublicPath}index.html`;
-  }
-  if (normalizedPathname.startsWith(`/${modernPrefix}/`)) {
-    return joinRootRelativePath(appPublicPath, normalizedPathname);
-  }
-  return joinRootRelativePath(appPublicPath, `/${modernPrefix}${normalizedPathname}`);
-}
-
-// Decide how the site root (`/`) should enter the mounted app when
-// APP_PUBLIC_PATH is a sub-path. legacy-default lands on APP_PUBLIC_PATH; the
-// modern modes may jump directly to the modern client public path.
-function buildSiteRootRedirectTarget(
-  pathname: string,
-  appPublicPath: string,
-  v2PublicPath: string,
-  modernPrefix: string,
-  mode?: AppClientEntryMode,
-) {
-  const normalizedPathname = normalizeRootRelativePath(pathname);
-  if (mode === 'modern-only') {
-    return buildModernOnlyRedirectTarget(normalizedPathname, appPublicPath, v2PublicPath, modernPrefix);
-  }
-  if (mode === 'modern-default' && isRootIndexPath(normalizedPathname)) {
-    return normalizedPathname === '/index.html' ? `${v2PublicPath}index.html` : v2PublicPath;
-  }
-  return joinRootRelativePath(appPublicPath, normalizedPathname);
-}
-
-// Decide whether an app-internal request under APP_PUBLIC_PATH should stay on
-// the legacy entry or redirect into the modern entry.
-function buildAppRootRedirectTarget(relativePath: string, v2PublicPath: string, mode?: AppClientEntryMode) {
-  const normalizedRelativePath = normalizeRootRelativePath(relativePath);
-  if (mode !== 'modern-default' && mode !== 'modern-only') {
-    return null;
-  }
-  if (mode === 'modern-default') {
-    if (!isRootIndexPath(normalizedRelativePath)) {
-      return null;
-    }
-    return normalizedRelativePath === '/index.html' ? `${v2PublicPath}index.html` : v2PublicPath;
-  }
-  if (normalizedRelativePath === '/') {
-    return v2PublicPath;
-  }
-  return `${trimTrailingSlash(v2PublicPath)}${normalizedRelativePath}`;
-}
-
-export function isClientDocumentEntryRequest(pathname: string) {
-  const normalizedPathname = normalizeRootRelativePath(pathname);
-  return isRootIndexPath(normalizedPathname) || extname(normalizedPathname) === '';
-}
-
-type ResolveClientEntryRedirectOptions = {
-  appPublicPath?: string;
-  modernClientPrefix?: string;
-  mode?: string;
-  apiBasePath?: string;
-  wsPath?: string;
-  pluginStaticsPath?: string;
-};
-
-export function resolveClientEntryRedirectTarget(pathname: string, options: ResolveClientEntryRedirectOptions = {}) {
-  const appPublicPath = resolvePublicPath(options.appPublicPath || '/');
-  const modernClientPrefix = normalizeModernClientPrefix(options.modernClientPrefix);
-  const v2PublicPath = resolveModernClientPublicPath(appPublicPath, modernClientPrefix);
-  const mode = normalizeAppClientEntryMode(options.mode);
-  const normalizedPathname = normalizeRootRelativePath(pathname);
-  const apiBasePath = options.apiBasePath ?? process.env.API_BASE_PATH ?? '/api';
-  const wsPath = options.wsPath ?? process.env.WS_PATH ?? '/ws';
-  const pluginStaticsPath = options.pluginStaticsPath ?? process.env.PLUGIN_STATICS_PATH ?? '/static/plugins/';
-  const absoluteProtectedPrefixes = [
-    apiBasePath,
-    wsPath,
-    pluginStaticsPath,
-    `${trimTrailingSlash(appPublicPath)}/storage/uploads/`,
-    `${trimTrailingSlash(appPublicPath)}/dist/`,
-  ]
-    .filter(Boolean)
-    .map((value) => resolvePublicPath(String(value)).replace(/\/$/, ''));
-  const siteRootProtectedPrefixes =
-    appPublicPath === '/'
-      ? []
-      : absoluteProtectedPrefixes
-          .map((value) => removeBasePath(`${value}/`, appPublicPath))
-          .filter(Boolean)
-          .map((value) => trimTrailingSlash(String(value)));
-
-  // Root-mounted metadata endpoints are real backend resources with
-  // extensionless paths. They must bypass client-entry routing even in
-  // modern-only mode.
-  if (normalizedPathname.startsWith('/.well-known/')) {
-    return null;
-  }
-
-  for (const prefix of absoluteProtectedPrefixes) {
-    if (normalizedPathname === prefix || normalizedPathname.startsWith(`${prefix}/`)) {
-      return null;
-    }
-  }
-
-  if (normalizedPathname === trimTrailingSlash(v2PublicPath) || normalizedPathname.startsWith(v2PublicPath)) {
-    return null;
-  }
-
-  const relativePath = removeBasePath(normalizedPathname, appPublicPath);
-  if (relativePath != null) {
-    if (!isClientDocumentEntryRequest(relativePath)) {
-      return null;
-    }
-    return buildAppRootRedirectTarget(relativePath, v2PublicPath, mode);
-  }
-
-  if (appPublicPath === '/' || !isClientDocumentEntryRequest(normalizedPathname)) {
-    return null;
-  }
-
-  for (const prefix of siteRootProtectedPrefixes) {
-    if (normalizedPathname === prefix || normalizedPathname.startsWith(`${prefix}/`)) {
-      return null;
-    }
-  }
-
-  return buildSiteRootRedirectTarget(normalizedPathname, appPublicPath, v2PublicPath, modernClientPrefix, mode);
+  const publicPath = resolvePublicPath(appPublicPath);
+  const prefix = normalizeModernClientPrefix(process.env.APP_MODERN_CLIENT_PREFIX);
+  return `${publicPath.replace(/\/$/, '')}/${prefix}/`;
 }
 
 function ensureTrailingSlash(value: string) {

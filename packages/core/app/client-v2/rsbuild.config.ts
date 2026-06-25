@@ -52,29 +52,6 @@ function toNumber(value: string | undefined, fallback: number) {
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
-// Normalize a dev-server request pathname into a single root-relative form so
-// redirect checks don't have to reason about duplicate slashes or trailing `/`.
-function normalizePathname(value: string | undefined) {
-  let normalized = value || '/';
-  if (!normalized.startsWith('/')) {
-    normalized = `/${normalized}`;
-  }
-  normalized = normalized.replace(/\/{2,}/g, '/');
-  if (normalized !== '/' && normalized.endsWith('/')) {
-    return normalized.replace(/\/+$/g, '');
-  }
-  return normalized || '/';
-}
-
-function isClientDocumentEntryPath(pathname: string) {
-  return pathname === '/' || pathname === '/index.html' || !/\.[^/]+$/.test(pathname);
-}
-
-function isWithinBasePath(pathname: string, basePath: string) {
-  const normalizedBasePath = normalizePathname(basePath);
-  return pathname === normalizedBasePath || pathname.startsWith(`${normalizedBasePath}/`);
-}
-
 function createRuntimeHeadScript(v2PublicPath: string, isBuild: boolean, modernClientPrefix: string) {
   if (!isBuild) {
     return [
@@ -155,7 +132,6 @@ export default defineConfig(({ command }) => {
   const modernClientDistPath = ensurePublicPath(`${appPublicPath.replace(/\/$/, '')}/${MODERN_CLIENT_DIST_DIR}/`);
   const modernClientPublicPath = ensurePublicPath(`${appPublicPath.replace(/\/$/, '')}/${modernClientPrefix}/`);
   const v2PublicPath = isBuild ? modernClientDistPath : modernClientPublicPath;
-  const appClientEntryMode = process.env.APP_CLIENT_ENTRY_MODE;
   const wsBasePath = ensurePublicPath(process.env.WS_PATH || '/ws/');
   const hmrPath = `${v2PublicPath.replace(/\/$/, '')}/__rspack_hmr`;
   const v2Port = toNumber(process.env.APP_V2_PORT, 13002);
@@ -299,40 +275,6 @@ export default defineConfig(({ command }) => {
     dev: {
       assetPrefix: v2PublicPath,
       lazyCompilation: false,
-      setupMiddlewares: [
-        (middlewares) => {
-          if (appClientEntryMode !== 'modern-only') {
-            return;
-          }
-
-          middlewares.unshift((req, res, next) => {
-            const [rawPathname = '/', query = ''] = String(req.url || '/').split('?');
-            const pathname = normalizePathname(rawPathname);
-            if (
-              !isClientDocumentEntryPath(pathname) ||
-              // Keep non-HTML request channels on the existing backend/static
-              // path. These requests are not "which client entry should open"
-              // questions, so they must not be rewritten into `/v/...`.
-              pathname.startsWith('/.well-known/') ||
-              pathname.startsWith(apiBasePath) ||
-              pathname.startsWith(wsBasePath) ||
-              pathname.startsWith(localStorageBasePath) ||
-              pathname.startsWith(staticBasePath)
-            ) {
-              next();
-              return;
-            }
-            if (!isWithinBasePath(pathname, v2PublicPath)) {
-              const target = pathname === '/' ? v2PublicPath : `${v2PublicPath.replace(/\/$/, '')}${pathname}`;
-              res.statusCode = 302;
-              res.setHeader('Location', `${target}${query ? `?${query}` : ''}`);
-              res.end();
-              return;
-            }
-            next();
-          });
-        },
-      ],
       client: {
         overlay: false,
         protocol: 'ws',

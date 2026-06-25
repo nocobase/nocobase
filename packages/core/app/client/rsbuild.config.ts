@@ -46,15 +46,6 @@ function toDefineLiteral(value: string | undefined) {
   return value === undefined ? 'undefined' : JSON.stringify(value);
 }
 
-function normalizePathname(value: string | undefined) {
-  const normalized = ensurePublicPath(value || '/').replace(/\/+$/, '');
-  return normalized || '/';
-}
-
-function isClientDocumentEntryPath(pathname: string) {
-  return pathname === '/' || pathname === '/index.html' || !/\.[^/]+$/.test(pathname);
-}
-
 function createRuntimeHeadScript(appPublicPath: string, isBuild: boolean) {
   const modernClientPrefix =
     String(process.env.APP_MODERN_CLIENT_PREFIX || 'v')
@@ -125,7 +116,6 @@ export default defineConfig(({ command }) => {
     `${resolvedAppPublicPath.replace(/\/$/, '')}/${modernClientPrefix}/`,
     `/${modernClientPrefix}/`,
   );
-  const appClientEntryMode = process.env.APP_CLIENT_ENTRY_MODE;
   const clientPort = toNumber(process.env.APP_PORT, 13001);
   const v2Port = toNumber(process.env.APP_V2_PORT, clientPort + 2);
   const hmrPath = `${resolvedAppPublicPath.replace(/\/$/, '')}/__rspack_hmr`;
@@ -267,44 +257,6 @@ export default defineConfig(({ command }) => {
     dev: {
       assetPrefix: appPublicPath,
       lazyCompilation: false,
-      setupMiddlewares: [
-        (middlewares) => {
-          const isModernDefault = appClientEntryMode === 'modern-default';
-          const isModernOnly = appClientEntryMode === 'modern-only';
-
-          if (!isModernDefault && !isModernOnly) {
-            return;
-          }
-
-          middlewares.unshift((req, res, next) => {
-            const [rawPathname = '/', query = ''] = String(req.url || '/').split('?');
-            const pathname = normalizePathname(rawPathname);
-            if (!isClientDocumentEntryPath(pathname)) {
-              next();
-              return;
-            }
-            if (isModernDefault) {
-              if (pathname === '/' || pathname === '/index.html') {
-                res.statusCode = 302;
-                const target = pathname === '/index.html' ? `${v2BasePath}index.html` : v2BasePath;
-                res.setHeader('Location', `${target}${query ? `?${query}` : ''}`);
-                res.end();
-                return;
-              }
-              next();
-              return;
-            }
-            if (!pathname.startsWith(v2BasePath)) {
-              const target = pathname === '/' ? v2BasePath : `${v2BasePath.replace(/\/$/, '')}${pathname}`;
-              res.statusCode = 302;
-              res.setHeader('Location', `${target}${query ? `?${query}` : ''}`);
-              res.end();
-              return;
-            }
-            next();
-          });
-        },
-      ],
       client: {
         overlay: false,
         protocol: 'ws',
