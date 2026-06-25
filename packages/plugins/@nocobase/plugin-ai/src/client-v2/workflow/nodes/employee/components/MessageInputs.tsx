@@ -19,14 +19,14 @@ export function MessageInputs() {
     <>
       <Form.Item
         name={['config', 'message', 'system']}
-        label={`${t('Background')}:`}
+        label={t('Background')}
         tooltip={t('Additional system prompt appended to the AI employee’s definition, used to refine instructions')}
       >
         <WorkflowVariableTextArea rows={10} />
       </Form.Item>
       <Form.Item
         name={['config', 'message', 'user']}
-        label={`${t('Default user message')}:`}
+        label={t('Default user message')}
         tooltip={t('Enter the specific task description')}
       >
         <WorkflowVariableTextArea rows={10} />

@@ -195,16 +195,14 @@ function CapabilityFormRow({
   const { token } = theme.useToken();
   const rowClassName = css`
     display: flex;
-    align-items: flex-start;
-    column-gap: ${token.marginXS}px;
+    flex-direction: column;
+    row-gap: ${token.marginXXS}px;
     margin-bottom: ${token.margin}px;
 
     .nb-ai-capability-label {
       display: inline-flex;
-      flex: 0 0 auto;
       align-items: center;
       column-gap: ${token.marginXXS}px;
-      min-height: ${token.controlHeight}px;
       color: ${token.colorText};
       font-size: ${token.fontSize}px;
       font-weight: ${token.fontWeightStrong};
@@ -213,9 +211,8 @@ function CapabilityFormRow({
     }
 
     .nb-ai-capability-control {
-      flex: 1 1 auto;
+      width: 100%;
       min-width: 0;
-      padding-block-start: ${token.paddingXXS}px;
     }
   `;
 
@@ -226,7 +223,6 @@ function CapabilityFormRow({
         <Tooltip title={tooltip}>
           <QuestionCircleOutlined />
         </Tooltip>
-        :
       </span>
       <div className="nb-ai-capability-control">
         <Form.Item name={name} noStyle>

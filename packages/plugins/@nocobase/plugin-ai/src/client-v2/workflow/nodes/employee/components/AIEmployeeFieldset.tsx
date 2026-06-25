@@ -66,7 +66,6 @@ export function AIEmployeeFieldset() {
                   <Tooltip title={t('Choose the AI employee for this task')}>
                     <QuestionCircleOutlined />
                   </Tooltip>
-                  :
                 </span>
                 <Form.Item name={['config', 'username']} initialValue={DEFAULT_AI_EMPLOYEE_USERNAME} noStyle>
                   <AIEmployeeSelect
@@ -81,7 +80,7 @@ export function AIEmployeeFieldset() {
               <ModelOptions />
               <UserInputFormItem />
               <MessageInputs />
-              <Form.Item label={`${t('Attachments')}:`} tooltip={t('Select the file or image to be sent to the LLM')}>
+              <Form.Item label={t('Attachments')} tooltip={t('Select the file or image to be sent to the LLM')}>
                 <FileInputs />
               </Form.Item>
               <SkillSettings />

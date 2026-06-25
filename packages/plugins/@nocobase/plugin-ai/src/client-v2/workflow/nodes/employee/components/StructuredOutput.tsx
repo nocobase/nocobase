@@ -42,7 +42,7 @@ export function StructuredOutput() {
       rules={[{ required: true }]}
       extra={
         <Space size={4}>
-          <span>{t('Syntax references')}:</span>
+          <span>{t('Syntax references')}</span>
           <Typography.Link href="https://json-schema.org" target="_blank" rel="noreferrer">
             JSON Schema
           </Typography.Link>

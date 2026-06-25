@@ -130,7 +130,7 @@ export function UserInputFormItem() {
   return (
     <Form.Item
       name={['config', 'userId']}
-      label={`${t('Operator')}:`}
+      label={t('Operator')}
       tooltip={t('Complete the task using operator permissions')}
       rules={[{ required: true }]}
     >
