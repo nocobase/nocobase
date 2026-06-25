@@ -133,7 +133,7 @@ function toNamePath(name: string) {
 
 const fieldNamePattern = /^[a-zA-Z][a-zA-Z0-9_-]*$/;
 const fieldNameDescription =
-  'Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.';
+  'Randomly generated and can be modified. Support letters, numbers and underscores, must start with a letter.';
 const collectionOptionComponents = new Set(['Select', 'CollectionSelect', 'RemoteSelect']);
 const relationCollectionPropertyNames = new Set(['target']);
 const fileCollectionEnum = '{{fileCollections}}';
