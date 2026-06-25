@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { WorkflowVariableInput } from '@nocobase/plugin-workflow/client-v2';
+import { WorkflowVariableInput, useNodeContext } from '@nocobase/plugin-workflow/client-v2';
 import { Form, theme } from 'antd';
 import React from 'react';
 
@@ -21,6 +21,7 @@ function labelWithColon(label: string) {
 
 export function CCFieldset() {
   const t = useT();
+  const node = useNodeContext();
   const { token } = theme.useToken();
   const fieldsetStyle = {
     paddingBottom: token.marginXXL,
@@ -57,7 +58,7 @@ export function CCFieldset() {
           'Title of each CC item in tasks center. Could use variables in string template. Default to node title.',
         )}
       >
-        <Form.Item name={['config', 'title']} initialValue="{{useNodeContext().title}}" noStyle>
+        <Form.Item name={['config', 'title']} initialValue={node?.title} noStyle>
           <WorkflowVariableInput />
         </Form.Item>
       </Form.Item>

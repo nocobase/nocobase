@@ -10,10 +10,13 @@
 import { render, screen } from '@testing-library/react';
 import { Form } from 'antd';
 import React from 'react';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const holder = vi.hoisted(() => ({
   flowModelConfigInput: vi.fn(),
+  node: {
+    title: 'CC',
+  },
   recipientsInput: vi.fn(),
   workflowVariableInput: vi.fn(),
 }));
@@ -28,6 +31,7 @@ vi.mock('@nocobase/plugin-workflow/client-v2', () => ({
       collection: 'main.users',
     },
   }),
+  useNodeContext: () => holder.node,
 }));
 
 vi.mock('../../locale', () => ({
@@ -68,6 +72,13 @@ function renderFieldset(initialValues?: Record<string, unknown>) {
 }
 
 describe('CCFieldset', () => {
+  beforeEach(() => {
+    holder.flowModelConfigInput.mockClear();
+    holder.recipientsInput.mockClear();
+    holder.workflowVariableInput.mockClear();
+    holder.node.title = 'CC';
+  });
+
   it('renders the v1-aligned drawer fields in order', () => {
     renderFieldset();
 
@@ -83,18 +94,26 @@ describe('CCFieldset', () => {
     expect(screen.getAllByRole('button', { name: 'Go to configure' })).toHaveLength(2);
   });
 
+  it('uses the current node title as the task title default when config title is missing', () => {
+    renderFieldset();
+
+    expect(holder.workflowVariableInput).toHaveBeenCalledWith(expect.objectContaining({ value: 'CC' }));
+    expect(holder.workflowVariableInput).not.toHaveBeenCalledWith(
+      expect.objectContaining({ value: '{{useNodeContext().title}}' }),
+    );
+  });
+
   it('uses workflow variable input for task title instead of a plain input or textarea', () => {
     renderFieldset({
       config: {
-        title: '{{useNodeContext().title}}',
+        title: 'Custom task title',
       },
     });
 
     expect(screen.getByLabelText('cc-task-title-variable-input')).toBeInTheDocument();
     expect(document.querySelector('textarea')).not.toBeInTheDocument();
-    expect(holder.workflowVariableInput).toHaveBeenCalledWith(
-      expect.objectContaining({ value: '{{useNodeContext().title}}' }),
-    );
+    expect(holder.workflowVariableInput).toHaveBeenCalledWith(expect.objectContaining({ value: 'Custom task title' }));
+    expect(holder.workflowVariableInput).not.toHaveBeenCalledWith(expect.objectContaining({ value: 'CC' }));
   });
 
   it('wires CC FlowModel config inputs to their existing config keys', () => {
