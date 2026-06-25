@@ -30,6 +30,15 @@ function isMobile() {
   return window.matchMedia('(max-width: 768px)').matches;
 }
 
+function isRenderableActionModel(action: unknown): action is ActionModel {
+  if (!action || typeof action !== 'object') {
+    return false;
+  }
+
+  const candidate = action as Partial<ActionModel>;
+  return typeof candidate.onClick === 'function' && !!candidate.props;
+}
+
 export const WorkbenchLayout = {
   Grid: 'grid',
   List: 'list',
@@ -182,8 +191,8 @@ export class ActionPanelBlockModel extends BlockModel {
             <div className="nb-action-panel-warp">
               {layout === WorkbenchLayout.Grid ? (
                 <ResponsiveSpace>
-                  {this.mapSubModels('actions', (action: ActionModel) => {
-                    if (action.hidden) {
+                  {this.mapSubModels('actions', (action) => {
+                    if (!isRenderableActionModel(action) || action.hidden) {
                       return;
                     }
                     const { icon = 'SettingOutlined', color = token.colorPrimary, title } = action.props;
@@ -261,8 +270,8 @@ export class ActionPanelBlockModel extends BlockModel {
                     } as any
                   }
                 >
-                  {this.mapSubModels('actions', (action: ActionModel) => {
-                    if (action.hidden) {
+                  {this.mapSubModels('actions', (action) => {
+                    if (!isRenderableActionModel(action) || action.hidden) {
                       return;
                     }
                     const { icon = 'SettingOutlined', color = token.colorPrimary, title } = action.props;
