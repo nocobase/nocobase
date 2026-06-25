@@ -7,8 +7,28 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import {Args, Command, Flags} from '@oclif/core'
+import fsp from 'node:fs/promises';
+import path from 'node:path';
+import { Args, Command, Flags } from '@oclif/core';
+import { printInfo, printWarning } from '../../lib/ui.js';
+import {
+  isCliManagedSourceApp,
+  resolveLocalPluginWorkspaceSync,
+  syncPluginWorkspace,
+} from '../../lib/plugin-workspace.js';
 import { runNocoBaseCommand } from '../../lib/run-npm.ts';
+import pluginGeneratorModule from '../../../../cli-v1/src/plugin-generator.js';
+
+const { PluginGenerator } = pluginGeneratorModule as {
+  PluginGenerator: new (options: {
+    cwd: string;
+    baseDir?: string;
+    targetRoot?: string;
+    log?: (...args: unknown[]) => void;
+    args?: Record<string, unknown>;
+    context: { name: string };
+  }) => { run: () => Promise<void> };
+};
 
 export default class ScaffoldPlugin extends Command {
   static override args = {
@@ -21,17 +41,97 @@ export default class ScaffoldPlugin extends Command {
   ]
 
   static override flags = {
+    cwd: Flags.string({ description: 'Current working directory', char: 'c', required: false }),
     'force-recreate': Flags.boolean({description: 'Force recreate the plugin', char: 'f', required: false}),
   }
 
   public async run(): Promise<void> {
-    const {args, flags} = await this.parse(ScaffoldPlugin)
-    const npmArgs = ['pm', 'create', args.pkg];
-    if (flags['force-recreate']) {
-      npmArgs.push('--force-recreate');
-    }
+    const { args, flags } = await this.parse(ScaffoldPlugin);
+    const cwd = flags.cwd ?? process.cwd();
     try {
-      await runNocoBaseCommand(npmArgs, { env: { LOGGER_SILENT: 'true' } });
+      const resolved = resolveLocalPluginWorkspaceSync({
+        cwd,
+        supportAppPath: true,
+      });
+      if (!isCliManagedSourceApp(resolved)) {
+        const npmArgs = ['pm', 'create', args.pkg];
+        if (flags['force-recreate']) {
+          npmArgs.push('--force-recreate');
+        }
+        await runNocoBaseCommand(npmArgs, {
+          cwd: resolved.sourcePath,
+          env: { LOGGER_SILENT: 'true' },
+        });
+        return;
+      }
+      const pluginWorkspaceRoot = path.join(resolved.appPath, 'plugins');
+      const packageSegments = args.pkg.split('/');
+      const pluginWorkspacePath = path.join(pluginWorkspaceRoot, ...packageSegments);
+      const sourceEntryPath = path.join(resolved.sourcePath, 'packages', 'plugins', ...packageSegments);
+
+      try {
+        const existing = await fsp.stat(pluginWorkspacePath);
+        if (existing.isDirectory() && !flags['force-recreate']) {
+          this.error(`[${args.pkg}] plugin already exists.`);
+        }
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
+          throw error;
+        }
+      }
+
+      if (flags['force-recreate']) {
+        await fsp.rm(pluginWorkspacePath, { recursive: true, force: true });
+      }
+
+      const generator = new PluginGenerator({
+        cwd: resolved.sourcePath,
+        baseDir: resolved.sourcePath,
+        targetRoot: pluginWorkspaceRoot,
+        args: {},
+        context: {
+          name: args.pkg,
+        },
+        log: (...messages: unknown[]) => {
+          if (messages.length > 0) {
+            this.log(messages.map((item) => String(item)).join(' '));
+          }
+        },
+      });
+
+      await generator.run();
+
+      const syncResult = await syncPluginWorkspace({
+        appPath: resolved.appPath,
+        sourcePath: resolved.sourcePath,
+        mode: 'targeted',
+        targetPackageNames: [args.pkg],
+        forceRecreate: flags['force-recreate'],
+      });
+
+      if (syncResult.changed) {
+        const changes: string[] = [];
+        if (syncResult.createdPluginWorkspace) {
+          changes.push(`created ${pluginWorkspaceRoot}`);
+        }
+        if (syncResult.createdSourcePluginRoot) {
+          changes.push(`created ${path.join(resolved.sourcePath, 'packages', 'plugins')}`);
+        }
+        if (syncResult.linked.length > 0) {
+          changes.push(`linked ${sourceEntryPath} -> ${pluginWorkspacePath}`);
+        }
+        if (syncResult.relinked.length > 0) {
+          changes.push(`relinked ${sourceEntryPath} -> ${pluginWorkspacePath}`);
+        }
+        if (syncResult.removedDangling.length > 0) {
+          changes.push(`removed dangling entry for ${args.pkg}`);
+        }
+        printInfo(`Plugin workspace synced: ${changes.join('; ')}`);
+      }
+
+      for (const warning of syncResult.warnings) {
+        printWarning(warning);
+      }
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
       this.error(message);
