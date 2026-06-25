@@ -97,7 +97,7 @@ export function CollectionTriggerConfig() {
 
       {collection && !hasCollectionTriggerMode(mode, COLLECTION_TRIGGER_MODE.DELETED) ? (
         <Form.Item name={['config', 'condition']} label={t('Only triggers when match conditions')}>
-          <ConditionField collection={collection} />
+          <ConditionField collection={collection} rightAsVariable={false} />
         </Form.Item>
       ) : null}
 
