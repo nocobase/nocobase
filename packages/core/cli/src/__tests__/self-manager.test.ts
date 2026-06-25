@@ -23,14 +23,14 @@ import {
 } from '../lib/self-manager.js';
 
 const originalCliRoot = process.env.NB_CLI_ROOT;
+const MOCK_PNPM_GLOBAL_HOME = path.join(path.sep, 'mock-home', 'Library', 'pnpm');
+const MOCK_PNPM_GLOBAL_BIN = path.join(MOCK_PNPM_GLOBAL_HOME, 'bin');
+const MOCK_PNPM_GLOBAL_ROOT = path.join(MOCK_PNPM_GLOBAL_HOME, 'global', 'v11');
 const MOCK_YARN_GLOBAL_DIR = path.join(path.sep, 'mock-home', '.config', 'yarn', 'global');
 const MOCK_YARN_GLOBAL_BIN = path.join(path.sep, 'mock-home', '.yarn', 'bin');
 const MOCK_YARN_PACKAGE_ROOT = path.join(MOCK_YARN_GLOBAL_DIR, 'node_modules', '@nocobase', 'cli');
 const MOCK_PNPM_PACKAGE_ROOT = path.join(
-  path.sep,
-  'mock-home',
-  'Library',
-  'pnpm',
+  MOCK_PNPM_GLOBAL_HOME,
   'global',
   'v11',
   'mock-install',
@@ -38,6 +38,46 @@ const MOCK_PNPM_PACKAGE_ROOT = path.join(
   '@nocobase',
   'cli',
 );
+
+function createCommandOutputFn(
+  options: {
+    distTags?: Record<string, string>;
+    globalPrefix?: string;
+    pnpmGlobalBin?: string;
+    pnpmGlobalRoot?: string;
+  } = {},
+) {
+  const {
+    distTags,
+    globalPrefix = '/usr/local',
+    pnpmGlobalBin = MOCK_PNPM_GLOBAL_BIN,
+    pnpmGlobalRoot = MOCK_PNPM_GLOBAL_ROOT,
+  } = options;
+
+  return vi.fn(async (name: string, args: string[]) => {
+    const command = args.join(' ');
+    if (name === 'npm' && command === 'prefix -g') {
+      return globalPrefix;
+    }
+    if (name === 'pnpm' && command === 'bin -g') {
+      return pnpmGlobalBin;
+    }
+    if (name === 'pnpm' && command === 'root -g') {
+      return pnpmGlobalRoot;
+    }
+    if (name === 'yarn' && command === 'global dir') {
+      return MOCK_YARN_GLOBAL_DIR;
+    }
+    if (name === 'yarn' && command === 'global bin') {
+      return MOCK_YARN_GLOBAL_BIN;
+    }
+    if (distTags && name === 'npm' && command === 'view @nocobase/cli dist-tags --json') {
+      return JSON.stringify(distTags);
+    }
+
+    throw new Error(`unexpected command: ${name} ${command}`);
+  });
+}
 
 beforeEach(async () => {
   const temp = await fsp.mkdtemp(path.join(os.tmpdir(), 'nocobase-cli-self-home-'));
@@ -64,20 +104,8 @@ test('compareVersions handles prerelease ordering', () => {
 });
 
 test('inspectSelfStatus resolves latest version and install support for npm-global installs', async () => {
-  const commandOutputFn = vi.fn(async (name: string, args: string[]) => {
-    if (name === 'npm' && args.join(' ') === 'prefix -g') {
-      return '/usr/local';
-    }
-    if (name === 'yarn' && args.join(' ') === 'global dir') {
-      return MOCK_YARN_GLOBAL_DIR;
-    }
-    if (name === 'yarn' && args.join(' ') === 'global bin') {
-      return MOCK_YARN_GLOBAL_BIN;
-    }
-    if (name === 'npm' && args.join(' ') === 'view @nocobase/cli dist-tags --json') {
-      return JSON.stringify({ latest: '2.1.0', beta: '2.1.0-beta.18', alpha: '2.1.0-alpha.3' });
-    }
-    throw new Error(`unexpected command: ${name} ${args.join(' ')}`);
+  const commandOutputFn = createCommandOutputFn({
+    distTags: { latest: '2.1.0', beta: '2.1.0-beta.18', alpha: '2.1.0-alpha.3' },
   });
 
   const status = await inspectSelfStatus({
@@ -95,20 +123,8 @@ test('inspectSelfStatus resolves latest version and install support for npm-glob
 });
 
 test('inspectSelfStatus recognizes pnpm-global installs', async () => {
-  const commandOutputFn = vi.fn(async (name: string, args: string[]) => {
-    if (name === 'npm' && args.join(' ') === 'prefix -g') {
-      return '/usr/local';
-    }
-    if (name === 'yarn' && args.join(' ') === 'global dir') {
-      return MOCK_YARN_GLOBAL_DIR;
-    }
-    if (name === 'yarn' && args.join(' ') === 'global bin') {
-      return MOCK_YARN_GLOBAL_BIN;
-    }
-    if (name === 'npm' && args.join(' ') === 'view @nocobase/cli dist-tags --json') {
-      return JSON.stringify({ latest: '2.1.0', beta: '2.1.0-beta.18' });
-    }
-    throw new Error(`unexpected command: ${name} ${args.join(' ')}`);
+  const commandOutputFn = createCommandOutputFn({
+    distTags: { latest: '2.1.0', beta: '2.1.0-beta.18' },
   });
 
   const status = await inspectSelfStatus({
@@ -126,20 +142,8 @@ test('inspectSelfStatus recognizes pnpm-global installs', async () => {
 });
 
 test('inspectSelfStatus recognizes yarn-global installs', async () => {
-  const commandOutputFn = vi.fn(async (name: string, args: string[]) => {
-    if (name === 'npm' && args.join(' ') === 'prefix -g') {
-      return '/usr/local';
-    }
-    if (name === 'yarn' && args.join(' ') === 'global dir') {
-      return MOCK_YARN_GLOBAL_DIR;
-    }
-    if (name === 'yarn' && args.join(' ') === 'global bin') {
-      return MOCK_YARN_GLOBAL_BIN;
-    }
-    if (name === 'npm' && args.join(' ') === 'view @nocobase/cli dist-tags --json') {
-      return JSON.stringify({ latest: '2.1.0', beta: '2.1.0-beta.18' });
-    }
-    throw new Error(`unexpected command: ${name} ${args.join(' ')}`);
+  const commandOutputFn = createCommandOutputFn({
+    distTags: { latest: '2.1.0', beta: '2.1.0-beta.18' },
   });
 
   const status = await inspectSelfStatus({
@@ -157,20 +161,8 @@ test('inspectSelfStatus recognizes yarn-global installs', async () => {
 });
 
 test('inspectSelfStatus detects test prerelease versions as test channel', async () => {
-  const commandOutputFn = vi.fn(async (name: string, args: string[]) => {
-    if (name === 'npm' && args.join(' ') === 'prefix -g') {
-      return '/usr/local';
-    }
-    if (name === 'yarn' && args.join(' ') === 'global dir') {
-      return MOCK_YARN_GLOBAL_DIR;
-    }
-    if (name === 'yarn' && args.join(' ') === 'global bin') {
-      return MOCK_YARN_GLOBAL_BIN;
-    }
-    if (name === 'npm' && args.join(' ') === 'view @nocobase/cli dist-tags --json') {
-      return JSON.stringify({ latest: '2.1.4', test: '2.1.4-test.10' });
-    }
-    throw new Error(`unexpected command: ${name} ${args.join(' ')}`);
+  const commandOutputFn = createCommandOutputFn({
+    distTags: { latest: '2.1.4', test: '2.1.4-test.10' },
   });
 
   const status = await inspectSelfStatus({
@@ -186,20 +178,9 @@ test('inspectSelfStatus detects test prerelease versions as test channel', async
 });
 
 test('inspectSelfStatus detects install method on every call', async () => {
-  const commandOutputFn = vi.fn(async (name: string, args: string[]) => {
-    if (name === 'npm' && args.join(' ') === 'prefix -g') {
-      return '/opt/global';
-    }
-    if (name === 'yarn' && args.join(' ') === 'global dir') {
-      return MOCK_YARN_GLOBAL_DIR;
-    }
-    if (name === 'yarn' && args.join(' ') === 'global bin') {
-      return MOCK_YARN_GLOBAL_BIN;
-    }
-    if (name === 'npm' && args.join(' ') === 'view @nocobase/cli dist-tags --json') {
-      return JSON.stringify({ latest: '2.1.0' });
-    }
-    throw new Error(`unexpected command: ${name} ${args.join(' ')}`);
+  const commandOutputFn = createCommandOutputFn({
+    distTags: { latest: '2.1.0' },
+    globalPrefix: '/opt/global',
   });
 
   const packageRoot = path.join('/opt', 'apps', 'demo', 'node_modules', '@nocobase', 'cli');
@@ -241,17 +222,8 @@ test('inspectSelfStatus detects install method on every call', async () => {
 });
 
 test('inspectSelfInstall only performs install-method detection', async () => {
-  const commandOutputFn = vi.fn(async (name: string, args: string[]) => {
-    if (name === 'npm' && args.join(' ') === 'prefix -g') {
-      return '/opt/global';
-    }
-    if (name === 'yarn' && args.join(' ') === 'global dir') {
-      return MOCK_YARN_GLOBAL_DIR;
-    }
-    if (name === 'yarn' && args.join(' ') === 'global bin') {
-      return MOCK_YARN_GLOBAL_BIN;
-    }
-    throw new Error(`unexpected command: ${name} ${args.join(' ')}`);
+  const commandOutputFn = createCommandOutputFn({
+    globalPrefix: '/opt/global',
   });
 
   const install = await inspectSelfInstall({
@@ -260,36 +232,37 @@ test('inspectSelfInstall only performs install-method detection', async () => {
   });
 
   expect(install.installMethod).toBe('package-local');
-  expect(commandOutputFn).toHaveBeenCalledTimes(3);
+  expect(commandOutputFn).toHaveBeenCalledTimes(5);
   expect(commandOutputFn).toHaveBeenCalledWith(
     'npm',
     ['prefix', '-g'],
-    expect.objectContaining({ errorName: 'npm prefix' }),
+    expect.objectContaining({ cwd: os.homedir(), errorName: 'npm prefix' }),
+  );
+  expect(commandOutputFn).toHaveBeenCalledWith(
+    'pnpm',
+    ['bin', '-g'],
+    expect.objectContaining({ cwd: os.homedir(), errorName: 'pnpm bin' }),
+  );
+  expect(commandOutputFn).toHaveBeenCalledWith(
+    'pnpm',
+    ['root', '-g'],
+    expect.objectContaining({ cwd: os.homedir(), errorName: 'pnpm root' }),
   );
   expect(commandOutputFn).toHaveBeenCalledWith(
     'yarn',
     ['global', 'dir'],
-    expect.objectContaining({ errorName: 'yarn global dir' }),
+    expect.objectContaining({ cwd: os.homedir(), errorName: 'yarn global dir' }),
   );
   expect(commandOutputFn).toHaveBeenCalledWith(
     'yarn',
     ['global', 'bin'],
-    expect.objectContaining({ errorName: 'yarn global bin' }),
+    expect.objectContaining({ cwd: os.homedir(), errorName: 'yarn global bin' }),
   );
 });
 
 test('inspectSelfInstall recognizes yarn-global from the invoked bin path', async () => {
-  const commandOutputFn = vi.fn(async (name: string, args: string[]) => {
-    if (name === 'npm' && args.join(' ') === 'prefix -g') {
-      return '/opt/global';
-    }
-    if (name === 'yarn' && args.join(' ') === 'global dir') {
-      return MOCK_YARN_GLOBAL_DIR;
-    }
-    if (name === 'yarn' && args.join(' ') === 'global bin') {
-      return MOCK_YARN_GLOBAL_BIN;
-    }
-    throw new Error(`unexpected command: ${name} ${args.join(' ')}`);
+  const commandOutputFn = createCommandOutputFn({
+    globalPrefix: '/opt/global',
   });
 
   const install = await inspectSelfInstall({
@@ -299,6 +272,48 @@ test('inspectSelfInstall recognizes yarn-global from the invoked bin path', asyn
   });
 
   expect(install.installMethod).toBe('yarn-global');
+});
+
+test('inspectSelfInstall recognizes pnpm-global installs when the package resolves from the pnpm link store', async () => {
+  const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'nocobase-cli-self-pnpm-link-store-'));
+  const pnpmHome = path.join(dir, '.local', 'share', 'pnpm');
+  const pnpmGlobalBin = path.join(pnpmHome, 'bin');
+  const pnpmGlobalRoot = path.join(pnpmHome, 'global', 'v11');
+  const pnpmGlobalNodeModules = path.join(pnpmGlobalRoot, 'node_modules');
+  const packageRoot = path.join(
+    pnpmHome,
+    'store',
+    'v11',
+    'links',
+    '@nocobase',
+    'cli',
+    '2.1.0-beta.17',
+    'mock-hash',
+    'node_modules',
+    '@nocobase',
+    'cli',
+  );
+  const globalPackageLink = path.join(pnpmGlobalNodeModules, '@nocobase', 'cli');
+
+  try {
+    await fsp.mkdir(path.dirname(globalPackageLink), { recursive: true });
+    await fsp.mkdir(packageRoot, { recursive: true });
+    await fsp.symlink(packageRoot, globalPackageLink, process.platform === 'win32' ? 'junction' : 'dir');
+
+    const commandOutputFn = createCommandOutputFn({
+      pnpmGlobalBin,
+      pnpmGlobalRoot,
+    });
+
+    const install = await inspectSelfInstall({
+      packageRoot,
+      commandOutputFn: commandOutputFn as any,
+    });
+
+    expect(install.installMethod).toBe('pnpm-global');
+  } finally {
+    await fsp.rm(dir, { recursive: true, force: true });
+  }
 });
 
 test('inspectSelfInstall ignores stale install-method cache files', async () => {
@@ -324,17 +339,8 @@ test('inspectSelfInstall ignores stale install-method cache files', async () => 
     }),
   );
 
-  const commandOutputFn = vi.fn(async (name: string, args: string[]) => {
-    if (name === 'npm' && args.join(' ') === 'prefix -g') {
-      return '/opt/global';
-    }
-    if (name === 'yarn' && args.join(' ') === 'global dir') {
-      return MOCK_YARN_GLOBAL_DIR;
-    }
-    if (name === 'yarn' && args.join(' ') === 'global bin') {
-      return MOCK_YARN_GLOBAL_BIN;
-    }
-    throw new Error(`unexpected command: ${name} ${args.join(' ')}`);
+  const commandOutputFn = createCommandOutputFn({
+    globalPrefix: '/opt/global',
   });
 
   const install = await inspectSelfInstall({
@@ -368,20 +374,8 @@ test('updateSelf rejects unsupported install methods', async () => {
 
 test('updateSelf runs npm install -g when a newer version exists', async () => {
   const runFn = vi.fn(async () => undefined);
-  const commandOutputFn = vi.fn(async (name: string, args: string[]) => {
-    if (name === 'npm' && args.join(' ') === 'prefix -g') {
-      return '/usr/local';
-    }
-    if (name === 'yarn' && args.join(' ') === 'global dir') {
-      return MOCK_YARN_GLOBAL_DIR;
-    }
-    if (name === 'yarn' && args.join(' ') === 'global bin') {
-      return MOCK_YARN_GLOBAL_BIN;
-    }
-    if (name === 'npm' && args.join(' ') === 'view @nocobase/cli dist-tags --json') {
-      return JSON.stringify({ beta: '2.1.0-beta.18' });
-    }
-    throw new Error(`unexpected command: ${name} ${args.join(' ')}`);
+  const commandOutputFn = createCommandOutputFn({
+    distTags: { beta: '2.1.0-beta.18' },
   });
 
   const result = await updateSelf({
@@ -406,20 +400,8 @@ test('updateSelf runs npm install -g when a newer version exists', async () => {
 
 test('updateSelf runs pnpm add -g for pnpm-global installs', async () => {
   const runFn = vi.fn(async () => undefined);
-  const commandOutputFn = vi.fn(async (name: string, args: string[]) => {
-    if (name === 'npm' && args.join(' ') === 'prefix -g') {
-      return '/usr/local';
-    }
-    if (name === 'yarn' && args.join(' ') === 'global dir') {
-      return MOCK_YARN_GLOBAL_DIR;
-    }
-    if (name === 'yarn' && args.join(' ') === 'global bin') {
-      return MOCK_YARN_GLOBAL_BIN;
-    }
-    if (name === 'npm' && args.join(' ') === 'view @nocobase/cli dist-tags --json') {
-      return JSON.stringify({ beta: '2.1.0-beta.18' });
-    }
-    throw new Error(`unexpected command: ${name} ${args.join(' ')}`);
+  const commandOutputFn = createCommandOutputFn({
+    distTags: { beta: '2.1.0-beta.18' },
   });
 
   const result = await updateSelf({
@@ -444,20 +426,8 @@ test('updateSelf runs pnpm add -g for pnpm-global installs', async () => {
 
 test('updateSelf runs yarn global add for yarn-global installs', async () => {
   const runFn = vi.fn(async () => undefined);
-  const commandOutputFn = vi.fn(async (name: string, args: string[]) => {
-    if (name === 'npm' && args.join(' ') === 'prefix -g') {
-      return '/usr/local';
-    }
-    if (name === 'yarn' && args.join(' ') === 'global dir') {
-      return MOCK_YARN_GLOBAL_DIR;
-    }
-    if (name === 'yarn' && args.join(' ') === 'global bin') {
-      return MOCK_YARN_GLOBAL_BIN;
-    }
-    if (name === 'npm' && args.join(' ') === 'view @nocobase/cli dist-tags --json') {
-      return JSON.stringify({ beta: '2.1.0-beta.18' });
-    }
-    throw new Error(`unexpected command: ${name} ${args.join(' ')}`);
+  const commandOutputFn = createCommandOutputFn({
+    distTags: { beta: '2.1.0-beta.18' },
   });
 
   const result = await updateSelf({
@@ -482,14 +452,8 @@ test('updateSelf runs yarn global add for yarn-global installs', async () => {
 
 test('updateSelf forwards raw install output in verbose mode', async () => {
   const runFn = vi.fn(async () => undefined);
-  const commandOutputFn = vi.fn(async (name: string, args: string[]) => {
-    if (name === 'npm' && args.join(' ') === 'prefix -g') {
-      return '/usr/local';
-    }
-    if (name === 'npm' && args.join(' ') === 'view @nocobase/cli dist-tags --json') {
-      return JSON.stringify({ beta: '2.1.0-beta.18' });
-    }
-    throw new Error(`unexpected command: ${name} ${args.join(' ')}`);
+  const commandOutputFn = createCommandOutputFn({
+    distTags: { beta: '2.1.0-beta.18' },
   });
 
   await updateSelf({

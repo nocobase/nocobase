@@ -8,6 +8,7 @@
  */
 
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { commandOutput, run } from './run-npm.js';
@@ -184,6 +185,9 @@ function detectInstallMethod(
   packageRoot: string,
   options: {
     globalPrefix?: string;
+    packageName?: string;
+    pnpmGlobalBin?: string;
+    pnpmGlobalRoot?: string;
     yarnGlobalDir?: string;
   } = {},
 ): SelfInstallMethod {
@@ -200,6 +204,17 @@ function detectInstallMethod(
 
   if (options.yarnGlobalDir && isSubPath(options.yarnGlobalDir, packageRoot)) {
     return 'yarn-global';
+  }
+
+  if (
+    isPnpmGlobalInstallPath({
+      packageName: options.packageName ?? DEFAULT_PACKAGE_NAME,
+      packageRoot,
+      pnpmGlobalBin: options.pnpmGlobalBin,
+      pnpmGlobalRoot: options.pnpmGlobalRoot,
+    })
+  ) {
+    return 'pnpm-global';
   }
 
   if (isPnpmGlobalPath(packageRoot)) {
@@ -224,6 +239,97 @@ function isPnpmGlobalPath(packageRoot: string): boolean {
   return segments.slice(globalIndex + 2).includes('node_modules');
 }
 
+function normalizePnpmGlobalNodeModulesRoot(pnpmGlobalRoot: string): string {
+  const normalizedGlobalRoot = normalizePath(pnpmGlobalRoot);
+  return path.basename(normalizedGlobalRoot) === 'node_modules'
+    ? normalizedGlobalRoot
+    : path.join(normalizedGlobalRoot, 'node_modules');
+}
+
+function packageNameToPath(packageName: string): string[] {
+  return packageName.split('/').filter(Boolean);
+}
+
+function isSameRealPath(left: string, right: string): boolean {
+  try {
+    return normalizePath(fs.realpathSync(left)) === normalizePath(fs.realpathSync(right));
+  } catch {
+    return false;
+  }
+}
+
+function isPnpmGlobalRootPath(pnpmGlobalRoot: string, packageRoot: string): boolean {
+  if (isSubPath(pnpmGlobalRoot, packageRoot)) {
+    return true;
+  }
+
+  const globalNodeModulesDir = normalizePnpmGlobalNodeModulesRoot(pnpmGlobalRoot);
+  const globalProjectDir = path.dirname(globalNodeModulesDir);
+  if (!isSubPath(globalProjectDir, packageRoot)) {
+    return false;
+  }
+
+  const segments = normalizePath(packageRoot).split(path.sep).filter(Boolean);
+  const pnpmStoreIndex = segments.indexOf('.pnpm');
+  if (pnpmStoreIndex === -1) {
+    return false;
+  }
+
+  return segments.slice(pnpmStoreIndex + 1).includes('node_modules');
+}
+
+function isPnpmGlobalPackagePath(pnpmGlobalRoot: string, packageRoot: string, packageName: string): boolean {
+  return isSameRealPath(
+    path.join(normalizePnpmGlobalNodeModulesRoot(pnpmGlobalRoot), ...packageNameToPath(packageName)),
+    packageRoot,
+  );
+}
+
+function isPnpmGlobalBinProjectPath(pnpmGlobalBin: string, packageRoot: string, packageName: string): boolean {
+  const pnpmHome = path.dirname(normalizePath(pnpmGlobalBin));
+  const globalDir = path.join(pnpmHome, 'global');
+  if (isSubPath(globalDir, packageRoot)) {
+    return true;
+  }
+
+  let entries: string[];
+  try {
+    entries = fs.readdirSync(globalDir);
+  } catch {
+    return false;
+  }
+
+  return entries.some((entry) => {
+    const pnpmGlobalRoot = path.join(globalDir, entry, 'node_modules');
+    return (
+      isPnpmGlobalRootPath(pnpmGlobalRoot, packageRoot)
+      || isPnpmGlobalPackagePath(pnpmGlobalRoot, packageRoot, packageName)
+    );
+  });
+}
+
+function isPnpmGlobalInstallPath(options: {
+  packageName: string;
+  packageRoot: string;
+  pnpmGlobalBin?: string;
+  pnpmGlobalRoot?: string;
+}): boolean {
+  if (options.pnpmGlobalRoot) {
+    const matchedRoot =
+      isPnpmGlobalRootPath(options.pnpmGlobalRoot, options.packageRoot)
+      || isPnpmGlobalPackagePath(options.pnpmGlobalRoot, options.packageRoot, options.packageName);
+    if (matchedRoot) {
+      return true;
+    }
+  }
+
+  if (options.pnpmGlobalBin) {
+    return isPnpmGlobalBinProjectPath(options.pnpmGlobalBin, options.packageRoot, options.packageName);
+  }
+
+  return false;
+}
+
 function readCurrentBinPath(currentBinPath?: string): string | undefined {
   const candidate = String(currentBinPath ?? process.argv[1] ?? '').trim();
   if (!candidate) {
@@ -233,11 +339,65 @@ function readCurrentBinPath(currentBinPath?: string): string | undefined {
   return normalizePath(candidate);
 }
 
+function cleanCommandPath(value: string): string | undefined {
+  const trimmed = value.trim();
+  return trimmed ? trimmed : undefined;
+}
+
+function resolvePackageManagerProbeCwd(): string | undefined {
+  const candidates = [os.homedir(), os.tmpdir(), path.parse(process.cwd()).root];
+
+  for (const candidate of candidates) {
+    if (!candidate) {
+      continue;
+    }
+
+    try {
+      if (fs.statSync(candidate).isDirectory()) {
+        return candidate;
+      }
+    } catch {
+      // Ignore invalid probe cwd candidates and continue to the next one.
+    }
+  }
+
+  return undefined;
+}
+
 async function readGlobalPrefix(commandOutputFn: typeof commandOutput): Promise<string | undefined> {
   try {
-    return (await commandOutputFn('npm', ['prefix', '-g'], {
-      errorName: 'npm prefix',
-    })).trim();
+    return cleanCommandPath(
+      await commandOutputFn('npm', ['prefix', '-g'], {
+        cwd: resolvePackageManagerProbeCwd(),
+        errorName: 'npm prefix',
+      }),
+    );
+  } catch {
+    return undefined;
+  }
+}
+
+async function readPnpmGlobalBin(commandOutputFn: typeof commandOutput): Promise<string | undefined> {
+  try {
+    return cleanCommandPath(
+      await commandOutputFn('pnpm', ['bin', '-g'], {
+        cwd: resolvePackageManagerProbeCwd(),
+        errorName: 'pnpm bin',
+      }),
+    );
+  } catch {
+    return undefined;
+  }
+}
+
+async function readPnpmGlobalRoot(commandOutputFn: typeof commandOutput): Promise<string | undefined> {
+  try {
+    return cleanCommandPath(
+      await commandOutputFn('pnpm', ['root', '-g'], {
+        cwd: resolvePackageManagerProbeCwd(),
+        errorName: 'pnpm root',
+      }),
+    );
   } catch {
     return undefined;
   }
@@ -245,9 +405,12 @@ async function readGlobalPrefix(commandOutputFn: typeof commandOutput): Promise<
 
 async function readYarnGlobalDir(commandOutputFn: typeof commandOutput): Promise<string | undefined> {
   try {
-    return (await commandOutputFn('yarn', ['global', 'dir'], {
-      errorName: 'yarn global dir',
-    })).trim();
+    return cleanCommandPath(
+      await commandOutputFn('yarn', ['global', 'dir'], {
+        cwd: resolvePackageManagerProbeCwd(),
+        errorName: 'yarn global dir',
+      }),
+    );
   } catch {
     return undefined;
   }
@@ -255,9 +418,12 @@ async function readYarnGlobalDir(commandOutputFn: typeof commandOutput): Promise
 
 async function readYarnGlobalBin(commandOutputFn: typeof commandOutput): Promise<string | undefined> {
   try {
-    return (await commandOutputFn('yarn', ['global', 'bin'], {
-      errorName: 'yarn global bin',
-    })).trim();
+    return cleanCommandPath(
+      await commandOutputFn('yarn', ['global', 'bin'], {
+        cwd: resolvePackageManagerProbeCwd(),
+        errorName: 'yarn global bin',
+      }),
+    );
   } catch {
     return undefined;
   }
@@ -329,18 +495,24 @@ export function getSelfUpdatePackageSpec(status: Pick<SelfStatus, 'packageName' 
 }
 
 export async function inspectSelfInstall(
-  options: Pick<SelfManagerOptions, 'packageRoot' | 'commandOutputFn' | 'currentBinPath'> = {},
+  options: Pick<SelfManagerOptions, 'packageRoot' | 'commandOutputFn' | 'currentBinPath' | 'packageName'> = {},
 ): Promise<SelfInstallInfo> {
   const packageRoot = options.packageRoot ? normalizePath(options.packageRoot) : PACKAGE_ROOT;
+  const packageName = options.packageName ?? DEFAULT_PACKAGE_NAME;
   const commandOutputFn = options.commandOutputFn ?? commandOutput;
   const currentBinPath = readCurrentBinPath(options.currentBinPath);
   const globalPrefix = await readGlobalPrefix(commandOutputFn);
+  const pnpmGlobalBin = await readPnpmGlobalBin(commandOutputFn);
+  const pnpmGlobalRoot = await readPnpmGlobalRoot(commandOutputFn);
   const yarnGlobalDir = await readYarnGlobalDir(commandOutputFn);
   const yarnGlobalBin = await readYarnGlobalBin(commandOutputFn);
   const installMethod = detectInstallMethodFromSignals({
     packageRoot,
     currentBinPath,
     globalPrefix,
+    packageName,
+    pnpmGlobalBin,
+    pnpmGlobalRoot,
     yarnGlobalBin,
     yarnGlobalDir,
   });
@@ -356,6 +528,9 @@ function detectInstallMethodFromSignals(options: {
   packageRoot: string;
   currentBinPath?: string;
   globalPrefix?: string;
+  packageName?: string;
+  pnpmGlobalBin?: string;
+  pnpmGlobalRoot?: string;
   yarnGlobalBin?: string;
   yarnGlobalDir?: string;
 }): SelfInstallMethod {
@@ -363,8 +538,15 @@ function detectInstallMethodFromSignals(options: {
     return 'yarn-global';
   }
 
+  if (options.currentBinPath && options.pnpmGlobalBin && isSubPath(options.pnpmGlobalBin, options.currentBinPath)) {
+    return 'pnpm-global';
+  }
+
   return detectInstallMethod(options.packageRoot, {
     globalPrefix: options.globalPrefix,
+    packageName: options.packageName,
+    pnpmGlobalBin: options.pnpmGlobalBin,
+    pnpmGlobalRoot: options.pnpmGlobalRoot,
     yarnGlobalDir: options.yarnGlobalDir,
   });
 }
@@ -376,6 +558,8 @@ export async function inspectSelfStatus(options: SelfManagerOptions = {}): Promi
   const channel = options.channel && options.channel !== 'auto' ? options.channel : detectChannel(currentVersion);
   const commandOutputFn = options.commandOutputFn ?? commandOutput;
   const { installMethod, globalPrefix } = await inspectSelfInstall({
+    currentBinPath: options.currentBinPath,
+    packageName,
     packageRoot,
     commandOutputFn,
   });
