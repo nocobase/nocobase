@@ -145,6 +145,7 @@ export interface AuthConfig {
       caddy?: string;
       git?: string;
       nginx?: string;
+      pnpm?: string;
       yarn?: string;
     };
     proxy?: {
@@ -311,13 +312,19 @@ function normalizeAuthConfig(config: AuthConfig & { dockerResourcePrefix?: strin
             },
           }
         : {}),
-      ...(settings.bin?.docker || settings.bin?.caddy || settings.bin?.git || settings.bin?.nginx || settings.bin?.yarn
+      ...(settings.bin?.docker ||
+      settings.bin?.caddy ||
+      settings.bin?.git ||
+      settings.bin?.nginx ||
+      settings.bin?.pnpm ||
+      settings.bin?.yarn
         ? {
             bin: {
               ...(settings.bin?.docker ? { docker: normalizeOptionalString(settings.bin.docker) } : {}),
               ...(settings.bin?.caddy ? { caddy: normalizeOptionalString(settings.bin.caddy) } : {}),
               ...(settings.bin?.git ? { git: normalizeOptionalString(settings.bin.git) } : {}),
               ...(settings.bin?.nginx ? { nginx: normalizeOptionalString(settings.bin.nginx) } : {}),
+              ...(settings.bin?.pnpm ? { pnpm: normalizeOptionalString(settings.bin.pnpm) } : {}),
               ...(settings.bin?.yarn ? { yarn: normalizeOptionalString(settings.bin.yarn) } : {}),
             },
           }
