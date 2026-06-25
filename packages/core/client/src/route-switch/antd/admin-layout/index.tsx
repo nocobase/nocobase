@@ -8,7 +8,7 @@
  */
 
 import { FlowModelRenderer, useFlowEngine } from '@nocobase/flow-engine';
-import { AppSwitcherActionPanelModel, LayoutContent, useMobileLayout } from '@nocobase/client-v2';
+import { LayoutContent, useMobileLayout } from '@nocobase/client-v2';
 import React from 'react';
 import { AdminDynamicPage } from './AdminDynamicPage';
 import { RemoteSchemaTemplateManagerPlugin } from '../../../';
@@ -57,7 +57,6 @@ export class AdminLayoutPlugin extends Plugin {
     this.app.flowEngine.registerModels({
       AdminLayoutModel: AdminLayoutModelV1,
       AdminLayoutMenuItemModel,
-      AppSwitcherActionPanelModel,
     });
     this.app.schemaSettingsManager.add(userCenterSettings);
     this.app.addComponents({ AdminLayout, AdminDynamicPage });

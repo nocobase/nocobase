@@ -19,6 +19,9 @@ import {
   FlowModel,
   FlowModelRenderer,
   FlowSettingsButton,
+  mergeSubModelItems,
+  type SubModelItem,
+  type SubModelItemsType,
 } from '@nocobase/flow-engine';
 import { Avatar, Button, Card, Empty, Typography } from 'antd';
 import React from 'react';
@@ -47,12 +50,31 @@ function isRenderableActionModel(action: unknown): action is ActionModel {
 }
 
 export class AppSwitcherActionPanelModel extends FlowModel<AppSwitcherActionPanelStructure> {
+  private getConfigureActionsItems(): SubModelItemsType {
+    const linkAction: SubModelItem = {
+      key: 'app-switcher:link',
+      label: this.context.t('Link'),
+      createModelOptions: {
+        use: 'LinkActionModel',
+      },
+    };
+    const jsAction: SubModelItem = {
+      key: 'app-switcher:js-action',
+      label: this.context.t('JS action'),
+      createModelOptions: {
+        use: 'JSActionModel',
+      },
+    };
+
+    return mergeSubModelItems([[linkAction], this.context.app.entryActionManager.getItems('app-switcher'), [jsAction]]);
+  }
+
   renderConfigureActions() {
     return (
       <AddSubModelButton
         key="app-switcher-add-actions"
         model={this}
-        items={this.context.app.entryActionManager.getItems('app-switcher')}
+        items={this.getConfigureActionsItems()}
         subModelKey="actions"
         keepDropdownOpen
       >
@@ -197,7 +219,7 @@ export class AppSwitcherActionPanelModel extends FlowModel<AppSwitcherActionPane
         ) : (
           <Empty
             image={Empty.PRESENTED_IMAGE_SIMPLE}
-            description={this.context.t('No configured applications')}
+            description={this.context.t('No configured entries')}
             style={{ width: 260, margin: `${token.marginXS}px 0` }}
           />
         )}

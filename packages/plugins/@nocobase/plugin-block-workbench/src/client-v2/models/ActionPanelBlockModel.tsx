@@ -11,9 +11,12 @@ import {
   FlowSettingsButton,
   Droppable,
   AddSubModelButton,
+  buildItems,
   DragHandler,
   FlowModelRenderer,
   DndProvider,
+  type SubModelItem,
+  type SubModelItemsType,
 } from '@nocobase/flow-engine';
 import { css } from '@emotion/css';
 import { Space, Avatar, Button, Tooltip, ConfigProvider } from 'antd';
@@ -57,13 +60,30 @@ const ResponsiveSpace = (props) => {
 };
 
 export class ActionPanelBlockModel extends BlockModel {
+  private getConfigureActionsItems(): SubModelItemsType {
+    return async (ctx) => {
+      const baseItems = await buildItems(this.getModelClassName('ActionPanelGroupActionModel'))(ctx);
+      const entryItems = await this.context.app.entryActionManager.getItems('action-panel')(ctx);
+
+      if (!entryItems.length) {
+        return baseItems;
+      }
+
+      const jsActionIndex = baseItems.findIndex((item: SubModelItem) => item.useModel === 'JSActionModel');
+      if (jsActionIndex === -1) {
+        return [...baseItems, ...entryItems];
+      }
+
+      return [...baseItems.slice(0, jsActionIndex), ...entryItems, ...baseItems.slice(jsActionIndex)];
+    };
+  }
+
   renderConfigureActions() {
     return (
       <AddSubModelButton
         key={'action-panel-add-actions'}
         model={this}
-        items={this.context.app.entryActionManager.getItems('action-panel')}
-        subModelBaseClass={this.getModelClassName('ActionPanelGroupActionModel')}
+        items={this.getConfigureActionsItems()}
         subModelKey="actions"
       >
         <FlowSettingsButton icon={<SettingOutlined />}>{this.translate('Actions')}</FlowSettingsButton>

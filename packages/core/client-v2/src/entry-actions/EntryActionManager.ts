@@ -27,6 +27,7 @@ export type AppPortalItem = {
   icon?: string | null;
   routePath: string;
   layout?: string | null;
+  defaultPortal?: boolean;
 };
 
 export type AppPortalsPayload = {

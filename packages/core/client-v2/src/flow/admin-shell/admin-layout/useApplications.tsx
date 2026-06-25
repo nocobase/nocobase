@@ -8,6 +8,7 @@
  */
 
 import { useApp } from '../../../flow-compat';
+import type { AppListProps } from '@ant-design/pro-layout/es/components/AppsLogoComponents/types';
 import React from 'react';
 import type { AdminLayoutModel } from './AdminLayoutModel';
 import { ADMIN_LAYOUT_MODEL_UID } from './constants';
@@ -26,6 +27,8 @@ function getErrorStatus(error: unknown) {
 
 export const useApplications = (adminLayoutModel?: AdminLayoutModel) => {
   const app = useApp();
+  const loadAppList = app.apps.loadAppList;
+  const [legacyAppList, setLegacyAppList] = React.useState<AppListProps>([]);
   const [appSwitcherModel, setAppSwitcherModel] = React.useState<AppSwitcherActionPanelModel>();
 
   React.useEffect(() => {
@@ -70,12 +73,45 @@ export const useApplications = (adminLayoutModel?: AdminLayoutModel) => {
     };
   }, [adminLayoutModel]);
 
+  React.useEffect(() => {
+    let canceled = false;
+
+    if (adminLayoutModel) {
+      setLegacyAppList([]);
+      return;
+    }
+
+    if (!loadAppList) {
+      setLegacyAppList([]);
+      return;
+    }
+
+    const load = async () => {
+      try {
+        const list = await Promise.resolve(loadAppList(app));
+        if (!canceled) {
+          setLegacyAppList(Array.isArray(list) ? list : []);
+        }
+      } catch (error) {
+        console.error('[NocoBase] Failed to load application switcher list.', error);
+        if (!canceled) {
+          setLegacyAppList([]);
+        }
+      }
+    };
+    load();
+
+    return () => {
+      canceled = true;
+    };
+  }, [adminLayoutModel, app, loadAppList]);
+
   const shouldRenderConfiguredSwitcher =
     !!appSwitcherModel && (appSwitcherModel.hasActions() || app.flowEngine.context.flowSettingsEnabled);
 
   return {
     Component: app.apps.Component,
-    appList: shouldRenderConfiguredSwitcher ? [{ title: '', url: '#' }] : [],
+    appList: shouldRenderConfiguredSwitcher ? [{ title: '', url: '#' }] : legacyAppList,
     appSwitcherModel,
   };
 };

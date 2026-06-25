@@ -21,6 +21,7 @@ export type AppPortalItem = {
   icon?: string | null;
   routePath: string;
   layout?: string | null;
+  defaultPortal?: boolean;
 };
 
 export type AppPortalsPayload = {
@@ -49,6 +50,26 @@ export type AppPortalsProviderContext = {
 };
 
 export type AppPortalsProvider = (context: AppPortalsProviderContext) => AppPortalsPayload | Promise<AppPortalsPayload>;
+
+const MAIN_APP_NAME = 'main';
+const DEFAULT_PORTALS = [
+  {
+    uid: '__default_admin__',
+    title: 'Admin',
+    icon: 'DesktopOutlined',
+    routePath: '/admin',
+    layout: 'desktop',
+    defaultPortal: true,
+  },
+  {
+    uid: '__default_mobile__',
+    title: 'Mobile',
+    icon: 'MobileOutlined',
+    routePath: '/mobile',
+    layout: 'mobile',
+    defaultPortal: true,
+  },
+];
 
 function isValidAppItem(item: AppPortalAppItem | null | undefined): item is AppPortalAppItem {
   return !!item?.name && typeof item.name === 'string';
@@ -96,10 +117,46 @@ export class AppPortalsService {
       }
     }
 
+    this.addDefaultPortals(apps, portals);
+
     return {
       apps: [...apps.values()],
       portals: [...portals.values()],
     };
+  }
+
+  private addDefaultPortals(apps: Map<string, AppPortalAppItem>, portals: Map<string, AppPortalItem>) {
+    const appNames = new Set<string>([MAIN_APP_NAME]);
+
+    for (const appName of apps.keys()) {
+      appNames.add(appName);
+    }
+
+    for (const portal of portals.values()) {
+      appNames.add(portal.appName);
+    }
+
+    if (appNames.size > 1 && !apps.has(MAIN_APP_NAME)) {
+      apps.set(MAIN_APP_NAME, {
+        name: MAIN_APP_NAME,
+        title: 'Main',
+        icon: null,
+        appUrl: null,
+      });
+    }
+
+    for (const appName of appNames) {
+      for (const portal of DEFAULT_PORTALS) {
+        const item: AppPortalItem = {
+          ...portal,
+          appName,
+        };
+        const key = this.getPortalKey(item);
+        if (!portals.has(key)) {
+          portals.set(key, item);
+        }
+      }
+    }
   }
 
   private getPortalKey(item: AppPortalItem) {
