@@ -13,7 +13,7 @@ import { App, ConfigProvider } from 'antd';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { FlowEngine, FlowEngineProvider } from '@nocobase/flow-engine';
 import { ActionModel } from '../../../base/ActionModel';
-import { TableActionsColumnModel } from '../TableActionsColumnModel';
+import { TableActionsColumnModel, tableRowActionsClassName } from '../TableActionsColumnModel';
 
 const capturedDroppableUids: string[] = [];
 const capturedRendererProps: any[] = [];
@@ -75,6 +75,10 @@ class TestViewActionModel extends ActionModel {
 
 class TestAlwaysActionModel extends ActionModel {
   defaultProps: any = { type: 'link', title: 'Always' };
+}
+
+class TestTextActionModel extends ActionModel {
+  defaultProps: any = { type: 'text', title: 'Text action' };
 }
 
 // 在 beforeRender 中，根据 inputArgs（即当前行 record）决定是否隐藏按钮
@@ -173,6 +177,58 @@ describe('TableActionsColumnModel: hidden action layout', () => {
     const wrappers = container.querySelectorAll('[data-test-droppable]');
     expect(wrappers).toHaveLength(0);
     expect(secondUid).toBeTruthy();
+  });
+
+  it('renders row link and text actions with compact button styles', async () => {
+    const engine = new FlowEngine();
+    engine.registerModels({ TableActionsColumnModel, TestViewActionModel, TestTextActionModel });
+
+    const actionsCol = engine.createModel<TableActionsColumnModel>({
+      use: 'TableActionsColumnModel',
+      props: { width: 200, title: 'Actions' },
+      subModels: { actions: [{ use: 'TestViewActionModel' }, { use: 'TestTextActionModel' }] },
+    });
+
+    const colProps = actionsCol.getColumnProps();
+    const record = { id: 1, phone: '000000' } as any;
+
+    const { container } = render(
+      <FlowEngineProvider engine={engine}>
+        <ConfigProvider>
+          <App>{colProps.render?.(undefined, record, 0) as any}</App>
+        </ConfigProvider>
+      </FlowEngineProvider>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('View')).toBeInTheDocument();
+      expect(screen.getByText('Text action')).toBeInTheDocument();
+    });
+
+    const actions = container.querySelector('.nb-table-row-actions');
+    expect(actions).toBeInTheDocument();
+    expect(actions).toHaveClass(tableRowActionsClassName);
+
+    const linkButton = actions?.querySelector('.ant-btn-link') as HTMLButtonElement;
+    const textButton = actions?.querySelector('.ant-btn-text') as HTMLButtonElement;
+
+    expect(linkButton).toBeInTheDocument();
+    expect(textButton).toBeInTheDocument();
+    expect(linkButton).toHaveClass('nb-table-row-action-button');
+    expect(textButton).toHaveClass('nb-table-row-action-button');
+
+    const actionButtonStyleText = Array.from(document.querySelectorAll('style'))
+      .map((style) => style.textContent || '')
+      .find((styleText) => styleText.includes('.nb-table-row-action-button.ant-btn-link'));
+    expect(actionButtonStyleText).toContain(tableRowActionsClassName);
+    expect(actionButtonStyleText).toContain('font:inherit');
+    expect(actionButtonStyleText).toContain('height:auto');
+    expect(actionButtonStyleText).toContain('line-height:inherit');
+    expect(actionButtonStyleText).toContain('padding:0');
+    expect(actionButtonStyleText).toContain('border:0');
+    expect(actionButtonStyleText).toContain('box-shadow:none');
+    expect(actionButtonStyleText).not.toContain('1.5714285714285714');
+    expect(actionButtonStyleText).not.toContain('!important');
   });
 });
 
