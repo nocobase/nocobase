@@ -128,7 +128,7 @@ export class ActionPanelBlockModel extends BlockModel {
       text-align: center;
     `;
     const gridHorizontalContentClass = css`
-      width: ${token.controlHeightLG * 4}px;
+      width: ${token.controlHeightLG * 5}px;
       display: flex;
       align-items: center;
       gap: ${token.marginXS}px;
