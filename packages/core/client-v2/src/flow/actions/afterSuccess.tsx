@@ -26,14 +26,23 @@ import {
   type TextAreaWithContextSelectorProps,
 } from '../components/TextAreaWithContextSelector';
 
-type ContextWithCollection = FlowRuntimeContext & {
-  blockModel?: { collection?: Collection };
-  collection?: Collection;
-  model?: FlowRuntimeContext['model'] & { collection?: Collection };
+type ResponseRecordPlainStepContext = {
+  steps?: FlowRuntimeContext['steps'];
 };
 
-export function getAfterSuccessResponseRecord(ctx: Pick<FlowRuntimeContext, 'steps'>) {
-  const steps = ctx.steps || {};
+type ResponseRecordContext = FlowContext &
+  ResponseRecordPlainStepContext & {
+    blockModel?: { collection?: Collection };
+    collection?: Collection;
+    model?: FlowRuntimeContext['model'] & { collection?: Collection };
+  };
+
+function getResponseRecordSteps(ctx: FlowContext | ResponseRecordPlainStepContext): FlowRuntimeContext['steps'] {
+  return 'steps' in ctx ? ctx.steps || {} : {};
+}
+
+export function getAfterSuccessResponseRecord(ctx: FlowContext | ResponseRecordPlainStepContext) {
+  const steps = getResponseRecordSteps(ctx);
   const preferredStepKeys = ['saveResource', 'submit', 'request', 'apply', 'save'];
 
   for (const stepKey of preferredStepKeys) {
@@ -48,7 +57,7 @@ export function getAfterSuccessResponseRecord(ctx: Pick<FlowRuntimeContext, 'ste
   return results[results.length - 1];
 }
 
-function getResponseRecordMeta(ctx: FlowRuntimeContext): PropertyMetaFactory | undefined {
+function getResponseRecordMeta(ctx: ResponseRecordContext): PropertyMetaFactory | undefined {
   if (!hasResponseRecordSource(ctx)) {
     return;
   }
@@ -78,17 +87,12 @@ function getResponseRecordMeta(ctx: FlowRuntimeContext): PropertyMetaFactory | u
   });
 }
 
-function hasResponseRecordSource(ctx: Pick<FlowRuntimeContext, 'steps'>) {
-  return Object.prototype.hasOwnProperty.call(ctx.steps || {}, 'saveResource');
+function hasResponseRecordSource(ctx: FlowContext | ResponseRecordPlainStepContext) {
+  return Object.prototype.hasOwnProperty.call(getResponseRecordSteps(ctx), 'saveResource');
 }
 
-function getResponseRecordCollectionAccessor(ctx: FlowRuntimeContext) {
-  const contextWithCollection = ctx as ContextWithCollection;
-  return () =>
-    contextWithCollection.blockModel?.collection ||
-    contextWithCollection.collection ||
-    contextWithCollection.model?.collection ||
-    null;
+function getResponseRecordCollectionAccessor(ctx: ResponseRecordContext) {
+  return () => ctx.blockModel?.collection || ctx.collection || ctx.model?.collection || null;
 }
 
 function getMetaTreeWithResponseRecord(ctx: FlowRuntimeContext): MetaTreeNode[] {
