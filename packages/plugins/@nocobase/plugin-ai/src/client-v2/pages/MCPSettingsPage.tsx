@@ -622,6 +622,11 @@ const MCPToolsList: React.FC<{ record: MCPRecord; rebuilding: boolean }> = ({ re
   const [tools, setTools] = useState<MCPToolEntry[]>([]);
   const [loading, setLoading] = useState(false);
   const [updatingToolName, setUpdatingToolName] = useState<string | null>(null);
+  const messageRef = useRef(message);
+  const tRef = useRef(t);
+
+  messageRef.current = message;
+  tRef.current = t;
 
   useEffect(() => {
     let ignore = false;
@@ -634,7 +639,7 @@ const MCPToolsList: React.FC<{ record: MCPRecord; rebuilding: boolean }> = ({ re
         }
       } catch (error) {
         if (!ignore) {
-          message.error(error instanceof Error ? error.message : t('Failed to load MCP tools'));
+          messageRef.current.error(error instanceof Error ? error.message : tRef.current('Failed to load MCP tools'));
           setTools([]);
         }
       } finally {
@@ -649,7 +654,7 @@ const MCPToolsList: React.FC<{ record: MCPRecord; rebuilding: boolean }> = ({ re
     return () => {
       ignore = true;
     };
-  }, [app.apiClient, message, record.name, t]);
+  }, [app.apiClient, record.name]);
 
   const handlePermissionChange = async (toolName: string, permission: MCPToolPermission) => {
     const previousTools = tools;
@@ -659,7 +664,9 @@ const MCPToolsList: React.FC<{ record: MCPRecord; rebuilding: boolean }> = ({ re
       await updateMCPToolPermission(app.apiClient, toolName, permission);
     } catch (error) {
       setTools(previousTools);
-      message.error(error instanceof Error ? error.message : t('Failed to update tool permission'));
+      messageRef.current.error(
+        error instanceof Error ? error.message : tRef.current('Failed to update tool permission'),
+      );
     } finally {
       setUpdatingToolName(null);
     }
