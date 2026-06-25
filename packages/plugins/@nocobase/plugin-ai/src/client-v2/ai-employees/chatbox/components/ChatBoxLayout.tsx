@@ -10,12 +10,14 @@
 import React, { useCallback, useEffect } from 'react';
 import { Card, Grid, theme } from 'antd';
 import { useApp } from '@nocobase/client-v2';
+import { observer } from '@nocobase/flow-engine';
 import { ChatBox } from './ChatBox';
 import { ChatButton } from './ChatButton';
 import { DebugPanel } from './DebugPanel';
 import { ToolModal } from './ToolModal';
 import { AISelection } from '../../AISelection';
 import { AISelectionControl } from '../../AISelectionControl';
+import { dialogController } from '../../stores/dialog-controller';
 import { useChatBoxStore } from '../stores/chat-box';
 import { useChatToolsStore } from '../stores/chat-tools';
 import { useChatConversationActions } from '../hooks/useChatConversationActions';
@@ -100,8 +102,9 @@ const ChatBoxWrapper: React.FC<{
   panelWidth: number;
   zIndex: number;
   onClose: () => void;
-}> = ({ expanded, isMobile, panelWidth, zIndex, onClose }) => {
+}> = observer(({ expanded, isMobile, panelWidth, zIndex, onClose }) => {
   const { token } = theme.useToken();
+  const dialogZIndex = dialogController.shouldHide ? -1 : zIndex;
 
   if (isMobile) {
     return (
@@ -111,7 +114,7 @@ const ChatBoxWrapper: React.FC<{
         style={{
           position: 'fixed',
           inset: 0,
-          zIndex,
+          zIndex: dialogZIndex,
           background: token.colorBgContainer,
         }}
       >
@@ -132,7 +135,7 @@ const ChatBoxWrapper: React.FC<{
           top: '50%',
           width: '95%',
           height: '95%',
-          zIndex,
+          zIndex: dialogZIndex,
         }}
         styles={{
           body: {
@@ -170,4 +173,4 @@ const ChatBoxWrapper: React.FC<{
       <ChatBox onClose={onClose} />
     </div>
   );
-};
+});

@@ -18,6 +18,7 @@ import { AddContextButton } from '../../ai-employees/AddContextButton';
 import { ContextItem as WorkContextItem } from '../../ai-employees/chatbox/components/ContextItem';
 import { avatars } from '../../ai-employees/avatars';
 import { getAIEmployeeModels, getAllModels } from '../../ai-employees/chatbox/model';
+import { dialogController } from '../../ai-employees/stores/dialog-controller';
 import type { AIEmployee, ContextItem, SkillSettings, Task } from '../../ai-employees/types';
 import { useT, tExpr } from '../../locale';
 import { useAIConfigRepository } from '../../repositories/hooks/useAIConfigRepository';
@@ -469,6 +470,12 @@ AIEmployeeShortcutModel.registerFlow({
       uiMode() {
         return {
           type: 'dialog',
+          props: {
+            styles: {
+              mask: { zIndex: dialogController.shouldHide ? -1 : 9999 },
+              wrapper: { zIndex: dialogController.shouldHide ? -1 : 9999 },
+            },
+          },
         };
       },
       uiSchema: async (ctx: AIShortcutFlowContext) => {

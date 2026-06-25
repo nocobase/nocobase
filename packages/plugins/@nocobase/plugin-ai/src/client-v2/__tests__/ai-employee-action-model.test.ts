@@ -18,6 +18,7 @@ import {
   AIEmployeeShortcutModel,
   normalizeShortcutTasksSkillSettings,
 } from '../models/ai-employees';
+import { dialogController } from '../ai-employees/stores/dialog-controller';
 
 describe('AI employee v2 action models', () => {
   it('registers shortcut and action model loaders from the plugin entry', async () => {
@@ -50,6 +51,22 @@ describe('AI employee v2 action models', () => {
     expect(flow).toBeDefined();
     expect(flow?.getStep('migration')).toBeDefined();
     expect(flow?.getStep('editTasks')).toBeDefined();
+  });
+
+  it('hides the task settings dialog while selecting work context', () => {
+    const step = AIEmployeeShortcutModel.globalFlowRegistry.getFlow('shortcutSettings')?.getStep('editTasks');
+    const uiMode = step?.serialize().uiMode as () => {
+      props?: { styles?: { mask?: { zIndex?: number }; wrapper?: { zIndex?: number } } };
+    };
+
+    dialogController.resume();
+    expect(uiMode().props?.styles?.mask?.zIndex).toBe(9999);
+    expect(uiMode().props?.styles?.wrapper?.zIndex).toBe(9999);
+
+    dialogController.hide();
+    expect(uiMode().props?.styles?.mask?.zIndex).toBe(-1);
+    expect(uiMode().props?.styles?.wrapper?.zIndex).toBe(-1);
+    dialogController.resume();
   });
 
   it('normalizes legacy shortcut skill settings versions during migration', () => {
