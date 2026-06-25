@@ -85,6 +85,51 @@ describe('flowSurfaces block header contracts', () => {
     }
   });
 
+  it('should expose JS block card visibility without leaking it to JS actions', () => {
+    const options = getConfigureOptionsForUse('JSBlockModel');
+    const jsBlockPaths = getNodeContract('JSBlockModel').domains.stepParams?.groups?.jsSettings?.allowedPaths || [];
+    const jsActionPaths =
+      getNodeContract('JSActionModel').domains.stepParams?.groups?.clickSettings?.allowedPaths || [];
+
+    expect(options.showBlockCard).toEqual(
+      expect.objectContaining({
+        type: 'boolean',
+        example: false,
+      }),
+    );
+    expect(jsBlockPaths).toEqual(expect.arrayContaining(['showBlockCard.showBlockCard']));
+    expect(jsActionPaths).not.toContain('showBlockCard.showBlockCard');
+  });
+
+  it('should persist JS block card visibility through semantic configure changes', async () => {
+    const service = new FlowSurfacesService({ db: {} } as any);
+    const updateSettings = vi.spyOn(service, 'updateSettings').mockResolvedValue({ uid: 'js-block-1' } as any);
+    const target = { uid: 'js-block-1' };
+
+    await (service as any).configureJSBlock(
+      target,
+      {
+        showBlockCard: false,
+      },
+      {},
+    );
+
+    expect(updateSettings).toHaveBeenCalledWith(
+      {
+        target,
+        decoratorProps: {},
+        stepParams: {
+          jsSettings: {
+            showBlockCard: {
+              showBlockCard: false,
+            },
+          },
+        },
+      },
+      {},
+    );
+  });
+
   it('should expose table relation label settings only on real table field columns', () => {
     const tableFieldColumnPaths =
       getNodeContract('TableColumnModel').domains.stepParams?.groups?.tableColumnSettings?.allowedPaths || [];

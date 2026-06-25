@@ -19,12 +19,17 @@ const NAMESPACE = 'client';
 export class JSBlockModel extends BlockModel {
   // Avoid double-run on first mount; only rerun after remounts
   private _mountedOnce = false;
+
+  get showBlockCard() {
+    return this.getStepParams('jsSettings', 'showBlockCard')?.showBlockCard !== false;
+  }
+
   renderComponent(): React.ReactNode {
     return <div ref={this.context.ref} />;
   }
   render() {
     const decoratorProps = this.decoratorProps || {};
-    const { className, id: _ignoredId, title, description, ...rest } = decoratorProps;
+    const { className, id: _ignoredId, title, description, showCard: _ignoredShowCard, ...rest } = decoratorProps;
     const mergedClassName = ['code-block', className].filter(Boolean).join(' ');
 
     return (
@@ -34,6 +39,7 @@ export class JSBlockModel extends BlockModel {
         title={title}
         description={description}
         {...rest}
+        showCard={this.showBlockCard}
       >
         <div ref={this.context.ref} />
       </BlockItemCard>
@@ -61,6 +67,13 @@ JSBlockModel.registerFlow({
   key: 'jsSettings',
   title: 'JavaScript settings',
   steps: {
+    showBlockCard: {
+      title: tExpr('Show block card'),
+      uiMode: { type: 'switch', key: 'showBlockCard' },
+      defaultParams: {
+        showBlockCard: true,
+      },
+    },
     runJs: {
       title: tExpr('Write JavaScript'),
       useRawParams: true,

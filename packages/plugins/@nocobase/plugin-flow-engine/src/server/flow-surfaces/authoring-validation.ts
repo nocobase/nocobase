@@ -226,7 +226,14 @@ const TABLE_ALLOWED_SETTINGS_KEYS = new Set([...getConfigureOptionKeysForUse('Ta
 const TABLE_INTERNAL_AUTHORING_KEYS = ['tableSettings', 'defaultSorting', 'stepParams'];
 const TABLE_SETTINGS_REPAIR_HINT =
   'Use public table settings keys such as settings.pageSize, settings.sorting, settings.dataScope, settings.density, settings.showRowNumbers, settings.treeTable, settings.dragSort, and settings.dragSortBy. Do not nest persisted tableSettings/defaultSorting/stepParams payloads.';
-const JS_BLOCK_ALLOWED_SETTINGS_KEYS = new Set(['title', 'description', 'className', 'code', 'version']);
+const JS_BLOCK_ALLOWED_SETTINGS_KEYS = new Set([
+  'title',
+  'description',
+  'className',
+  'showBlockCard',
+  'code',
+  'version',
+]);
 const JS_BLOCK_TOP_LEVEL_JS_KEYS = ['code', 'version'] as const;
 const JS_BLOCK_INTERNAL_AUTHORING_KEYS = ['props', 'decoratorProps', 'flowRegistry', 'stepParams'];
 const JS_BLOCK_REPAIR_HINT =

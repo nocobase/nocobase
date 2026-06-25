@@ -1401,6 +1401,7 @@ describe('flowSurfaces swagger', () => {
       workflowKey: 'employee_status_changed',
       context: 'department',
     });
+    expect(configureRequest.examples.jsBlockSettings.value.changes.showBlockCard).toBe(false);
     expect(configureRequest.examples.jsBlockSettings.value.changes.code).toContain('Users hero');
     expect(configureRequest.examples.jsActionSettings.value.changes.version).toBe('1.0.1');
     expect(configureRequest.examples.jsItemActionSettings.value.changes.code).toContain('ctx.render');
