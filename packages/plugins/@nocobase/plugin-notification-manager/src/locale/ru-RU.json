@@ -31,7 +31,7 @@
   "Notification type": "Тип уведомления",
   "Notification type {{type}} is not registered.": "Тип уведомления {{type}} не зарегистрирован.",
   "Query users": "Запрос пользователей",
-  "Randomly generated and can not be modified. Support letters, numbers and underscores, must start with an letter.": "Генерируется случайным образом и не может быть изменено. Поддерживаются буквы, цифры и подчеркивания, должно начинаться с буквы.",
+  "Randomly generated and can not be modified. Support letters, numbers and underscores, must start with a letter.": "Генерируется случайным образом и не может быть изменено. Поддерживаются буквы, цифры и подчеркивания, должно начинаться с буквы.",
   "Reason": "Причина",
   "Receiver": "Получатель",
   "Receiver type": "Тип получателя",
