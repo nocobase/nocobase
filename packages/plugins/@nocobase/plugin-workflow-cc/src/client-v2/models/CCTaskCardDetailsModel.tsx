@@ -7,44 +7,34 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { DetailsBlockModel, FormComponent } from '@nocobase/client-v2';
+import { FlowModelRenderer, SingleRecordResource, type FlowModelContext } from '@nocobase/flow-engine';
 import React from 'react';
-import _ from 'lodash';
-import { FlowModelRenderer, SingleRecordResource, tExpr } from '@nocobase/flow-engine';
-import { FormComponent, DetailsBlockModel } from '@nocobase/client';
 
-/**
- * 抄送任务卡片详情：隐藏顶部按钮，保留详情卡片的字段/标题配置，不支持卡片级操作按钮。
- */
+import { tExpr } from '../locale';
+
 export class CCTaskCardDetailsModel extends DetailsBlockModel {
-  // @ts-ignore
   get hidden() {
     return false;
   }
 
-  set hidden(value) {}
+  set hidden(_value) {}
 
-  onInit(options: any): void {
+  onInit(options: Parameters<DetailsBlockModel['onInit']>[0]): void {
     super.onInit(options);
-
-    // 设置卡片的样式
     this.setDecoratorProps({
       size: 'small',
     });
-
-    this.context.defineMethod('aclCheck', () => {
-      return true;
-    });
-
+    this.context.defineMethod('aclCheck', () => true);
     this.context.defineProperty('disableFieldClickToOpen', {
       get: () => true,
     });
   }
 
-  createResource(ctx, params) {
-    const resource = this.context.createResource(SingleRecordResource);
+  createResource(ctx: FlowModelContext) {
+    const resource = ctx.createResource(SingleRecordResource);
     resource.isNewRecord = false;
-    // @ts-ignore
-    resource.refresh = () => Promise.resolve();
+    resource.refresh = async () => {};
     return resource;
   }
 
@@ -83,15 +73,16 @@ CCTaskCardDetailsModel.registerFlow({
           title: tExpr('Description'),
         },
       },
-      defaultParams(ctx) {
+      defaultParams(ctx: FlowModelContext) {
         return {
           title: ctx.model.context.workflow?.title,
         };
       },
-      handler(ctx, params) {
-        const title = ctx.t(params.title);
-        const description = ctx.t(params.description);
-        ctx.model.setDecoratorProps({ title: title, description: description });
+      handler(ctx: FlowModelContext, params: { description?: string; title?: string }) {
+        ctx.model.setDecoratorProps({
+          description: ctx.t(params.description),
+          title: ctx.t(params.title),
+        });
       },
     },
   },
@@ -103,11 +94,10 @@ CCTaskCardDetailsModel.registerFlow({
   sort: 150,
   steps: {
     refresh: {
-      async handler(ctx) {
+      async handler(ctx: FlowModelContext) {
         if (!ctx.resource) {
           throw new Error('Resource is not initialized');
         }
-        // 先初始化字段网格，确保所有字段都创建完成
         await ctx.model.applySubModelsBeforeRenderFlows('grid');
       },
     },
@@ -117,3 +107,5 @@ CCTaskCardDetailsModel.registerFlow({
     },
   },
 });
+
+export default CCTaskCardDetailsModel;
