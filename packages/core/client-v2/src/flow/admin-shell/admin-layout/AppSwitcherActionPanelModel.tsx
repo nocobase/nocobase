@@ -27,6 +27,7 @@ import { Avatar, Button, Card, Empty, Typography } from 'antd';
 import React from 'react';
 
 const defaultIconColors = ['#3d8bff', '#00a8b5', '#35b26b', '#f5a623', '#ff7a45', '#e85d75', '#9254de', '#597ef7'];
+const keepParentPopoverOnDeleteAttr = 'data-nb-keep-parent-popover-on-delete';
 
 function getDefaultIconColor(title?: React.ReactNode) {
   const source = typeof title === 'string' ? title : '';
@@ -135,7 +136,7 @@ export class AppSwitcherActionPanelModel extends FlowModel<AppSwitcherActionPane
     `;
 
     return (
-      <div className={contentClass}>
+      <div className={contentClass} {...{ [keepParentPopoverOnDeleteAttr]: 'true' }}>
         {actions.length ? (
           <DndProvider>
             <ul className={listClass}>
