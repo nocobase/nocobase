@@ -7,6 +7,4 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import V2JSONQueryInstruction from '../client-v2/JSONQueryInstruction';
-
-export default class JSONQueryInstruction extends V2JSONQueryInstruction {}
+export { default } from './plugin';
