@@ -9,6 +9,7 @@
 
 import { Card, CardProps, theme } from 'antd';
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { DisplayMarkdown } from '../internal/components/Markdown/DisplayMarkdown';
 import { useFlowContext } from '@nocobase/flow-engine';
 
@@ -77,7 +78,6 @@ const useBlockHeight = ({
 }) => {
   const [fullHeight, setFullHeight] = useState<number>();
   const ctx = useFlowContext();
-  const marginBlock = ctx.themeToken?.marginBlock ?? 0;
   const updateFullHeight = useCallback(() => {
     if (heightMode !== 'fullHeight' || typeof window === 'undefined') {
       setFullHeight((prev) => (prev === undefined ? prev : undefined));
@@ -92,9 +92,9 @@ const useBlockHeight = ({
     const addBlockContainer = getAddBlockContainer(root);
     const pageTop = rootRect.top + padding.top;
     const topOffset = Math.max(0, cardRect.top - pageTop);
-    let bottomOffset = padding.bottom + marginBlock;
+    let bottomOffset = padding.bottom + ctx.themeToken.marginBlock;
     if (addBlockContainer) {
-      const gapBetween = marginBlock;
+      const gapBetween = ctx.themeToken.marginBlock;
       bottomOffset = gapBetween + getOuterHeight(addBlockContainer) + padding.bottom;
     }
     const nextHeight = Math.max(
@@ -102,7 +102,7 @@ const useBlockHeight = ({
       Math.floor(window.innerHeight - getValidPageTop(pageTop, 110) - topOffset - bottomOffset - 1),
     );
     setFullHeight((prev) => (prev === nextHeight ? prev : nextHeight));
-  }, [heightMode, cardRef, marginBlock]);
+  }, [heightMode, cardRef]);
 
   useLayoutEffect(() => {
     updateFullHeight();
@@ -145,22 +145,12 @@ export const BlockItemCard = React.forwardRef(
       afterContent?: React.ReactNode;
       description?: any;
       heightMode?: string;
-      showCard?: boolean;
     },
     ref,
   ) => {
+    const { t } = useTranslation();
     const { token } = theme.useToken();
-    const {
-      title: blockTitle,
-      description,
-      children,
-      className,
-      heightMode,
-      showCard = true,
-      beforeContent,
-      afterContent,
-      ...rest
-    } = props;
+    const { title: blockTitle, description, children, className, heightMode, ...rest } = props;
     const cardRef = useRef<HTMLDivElement | null>(null);
     const setCardRef = useCallback(
       (node: HTMLDivElement | null) => {
@@ -191,30 +181,6 @@ export const BlockItemCard = React.forwardRef(
         )}
       </div>
     );
-    if (!showCard) {
-      const { id, style } = rest;
-
-      return (
-        <div
-          ref={setCardRef}
-          id={id}
-          className={className}
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            height,
-            minHeight: 0,
-            overflow: 'auto',
-            ...(style || {}),
-          }}
-        >
-          {beforeContent}
-          {children}
-          {afterContent}
-        </div>
-      );
-    }
-
     return (
       <Card
         ref={setCardRef as any}
@@ -229,9 +195,9 @@ export const BlockItemCard = React.forwardRef(
         className={className}
         {...rest}
       >
-        {beforeContent}
+        {props.beforeContent}
         {children}
-        {afterContent}
+        {props.afterContent}
       </Card>
     );
   },

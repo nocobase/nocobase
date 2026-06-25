@@ -29,8 +29,42 @@ export class JSBlockModel extends BlockModel {
   }
   render() {
     const decoratorProps = this.decoratorProps || {};
-    const { className, id: _ignoredId, title, description, showCard: _ignoredShowCard, ...rest } = decoratorProps;
+    const {
+      className,
+      id: _ignoredId,
+      title,
+      description,
+      showCard: _ignoredShowCard,
+      heightMode,
+      height,
+      style,
+      beforeContent,
+      afterContent,
+      ...rest
+    } = decoratorProps;
     const mergedClassName = ['code-block', className].filter(Boolean).join(' ');
+
+    if (!this.showBlockCard) {
+      return (
+        <div
+          {...rest}
+          id={`model-${this.uid}`}
+          className={mergedClassName}
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            height: heightMode === 'specifyValue' ? height : undefined,
+            minHeight: 0,
+            overflow: 'auto',
+            ...(style || {}),
+          }}
+        >
+          {beforeContent}
+          <div ref={this.context.ref} />
+          {afterContent}
+        </div>
+      );
+    }
 
     return (
       <BlockItemCard
@@ -38,8 +72,12 @@ export class JSBlockModel extends BlockModel {
         className={mergedClassName}
         title={title}
         description={description}
+        heightMode={heightMode}
+        height={height}
+        style={style}
         {...rest}
-        showCard={this.showBlockCard}
+        {...(beforeContent === undefined ? {} : { beforeContent })}
+        {...(afterContent === undefined ? {} : { afterContent })}
       >
         <div ref={this.context.ref} />
       </BlockItemCard>
