@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import path from 'node:path';
 import { beforeEach, expect, test, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
@@ -83,7 +84,7 @@ beforeEach(() => {
     changed: true,
   });
   mocks.generatePluginScaffold.mockResolvedValue({
-    targetPath: '/tmp/app/plugins/@my-scope/plugin-hello',
+    targetPath: path.join('/tmp/app', 'plugins', '@my-scope', 'plugin-hello'),
     context: {
       packageName: '@my-scope/plugin-hello',
       packageVersion: '2.1.11',
@@ -92,7 +93,7 @@ beforeEach(() => {
   });
   mocks.isValidPluginPackageName.mockReturnValue(true);
   mocks.resolvePluginScaffoldTargetPath.mockImplementation((targetRoot: string, packageName: string) =>
-    `${targetRoot}/${packageName}`,
+    path.join(targetRoot, ...packageName.split('/')),
   );
   mocks.run.mockResolvedValue(undefined);
   mocks.lstat.mockRejectedValue(Object.assign(new Error('missing'), { code: 'ENOENT' }));
@@ -131,7 +132,7 @@ test('scaffold plugin supports app path cwd and syncs the created plugin', async
   expect(mocks.generatePluginScaffold).toHaveBeenCalledWith({
     packageName: '@my-scope/plugin-hello',
     sourcePath: '/tmp/app/source',
-    targetRoot: '/tmp/app/plugins',
+    targetRoot: path.join('/tmp/app', 'plugins'),
   });
   expect(mocks.run).toHaveBeenCalledWith('yarn', ['postinstall'], {
     cwd: '/tmp/app/source',
@@ -173,7 +174,7 @@ test('scaffold plugin force-recreate removes the top-level plugin dir before reg
 
   await ScaffoldPlugin.prototype.run.call(command);
 
-  expect(mocks.rm).toHaveBeenCalledWith('/tmp/app/plugins/@my-scope/plugin-hello', {
+  expect(mocks.rm).toHaveBeenCalledWith(path.join('/tmp/app', 'plugins', '@my-scope', 'plugin-hello'), {
     recursive: true,
     force: true,
   });
@@ -214,7 +215,7 @@ test('scaffold plugin falls back to the old source-repo behavior outside CLI-man
   expect(mocks.generatePluginScaffold).toHaveBeenCalledWith({
     packageName: '@my-scope/plugin-hello',
     sourcePath: '/tmp/source',
-    targetRoot: '/tmp/source/packages/plugins',
+    targetRoot: path.join('/tmp/source', 'packages', 'plugins'),
   });
   expect(mocks.run).toHaveBeenCalledWith('yarn', ['postinstall'], {
     cwd: '/tmp/source',
@@ -249,13 +250,13 @@ test('scaffold plugin removes a dangling source symlink before generating into t
 
   await ScaffoldPlugin.prototype.run.call(command);
 
-  expect(mocks.rm).toHaveBeenCalledWith('/tmp/app/source/packages/plugins/@my-scope/plugin-hello', {
+  expect(mocks.rm).toHaveBeenCalledWith(path.join('/tmp/app/source', 'packages', 'plugins', '@my-scope', 'plugin-hello'), {
     recursive: true,
     force: true,
   });
   expect(mocks.generatePluginScaffold).toHaveBeenCalledWith({
     packageName: '@my-scope/plugin-hello',
     sourcePath: '/tmp/app/source',
-    targetRoot: '/tmp/app/plugins',
+    targetRoot: path.join('/tmp/app', 'plugins'),
   });
 });
