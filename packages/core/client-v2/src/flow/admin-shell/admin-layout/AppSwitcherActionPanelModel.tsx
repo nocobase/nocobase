@@ -37,6 +37,15 @@ type AppSwitcherActionPanelStructure = {
   };
 };
 
+function isRenderableActionModel(action: unknown): action is ActionModel {
+  if (!action || typeof action !== 'object') {
+    return false;
+  }
+
+  const candidate = action as Partial<ActionModel>;
+  return typeof candidate.getTitle === 'function' && typeof candidate.onClick === 'function';
+}
+
 export class AppSwitcherActionPanelModel extends FlowModel<AppSwitcherActionPanelStructure> {
   renderConfigureActions() {
     return (
@@ -52,13 +61,17 @@ export class AppSwitcherActionPanelModel extends FlowModel<AppSwitcherActionPane
     );
   }
 
+  private getRenderableActions() {
+    return this.mapSubModels('actions', (action) => action).filter(isRenderableActionModel);
+  }
+
   hasActions() {
-    return !!this.subModels.actions?.length;
+    return this.getRenderableActions().length > 0;
   }
 
   renderContent() {
     const token = this.context.themeToken;
-    const actions = this.mapSubModels('actions', (action) => action) as ActionModel[];
+    const actions = this.getRenderableActions();
     const designable = !!this.context.flowSettingsEnabled;
     const columnCount = Math.min(Math.max(actions.length || 1, 1), 2);
     const buttonResetClass = css`
