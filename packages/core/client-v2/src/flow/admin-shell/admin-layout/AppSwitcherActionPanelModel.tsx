@@ -84,7 +84,10 @@ export class AppSwitcherActionPanelModel extends FlowModel<AppSwitcherActionPane
   }
 
   private getRenderableActions() {
-    return this.mapSubModels('actions', (action) => action).filter(isRenderableActionModel);
+    const designable = !!this.context.flowSettingsEnabled;
+    return this.mapSubModels('actions', (action) => action)
+      .filter(isRenderableActionModel)
+      .filter((action) => designable || !action.hidden);
   }
 
   hasActions() {
