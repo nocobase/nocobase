@@ -127,12 +127,16 @@ export function VscSourceControlPanel(props: VscSourceControlPanelProps) {
 
   const localDiffFiles = useMemo<VscFileRepoFileDiffEntry[]>(() => {
     return draftFiles
-      .map((file) => ({
-        status: file.operation === 'delete' ? 'deleted' : ('modified' as const),
-        path: file.path,
-        pathHash: file.path,
-        tooLarge: false,
-      }))
+      .map((file) => {
+        const status: VscFileRepoFileDiffEntry['status'] = file.operation === 'delete' ? 'deleted' : 'modified';
+
+        return {
+          status,
+          path: file.path,
+          pathHash: file.path,
+          tooLarge: false,
+        };
+      })
       .sort((left, right) => compareVscPaths(left.path, right.path));
   }, [draftFiles]);
 
@@ -219,7 +223,7 @@ export function VscSourceControlPanel(props: VscSourceControlPanelProps) {
           aria-label={t('Refresh changes')}
           icon={<ReloadOutlined />}
           loading={loadingDiff}
-          onClick={loadDraftState}
+          onClick={() => loadDraftState()}
         />
       </Space>
 

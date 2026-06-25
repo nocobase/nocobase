@@ -112,12 +112,16 @@ export interface VscDraftFileRecord {
   pathLowerHash: VscSha256Hex;
   operation: VscDraftFileOperation;
   blobHash: VscSha256Hex | null;
+  language: string | null;
+  mode: VscFileMode | null;
 }
 
 export interface VscDraftFileChange {
   path: VscFilePath;
   operation: VscDraftFileOperation;
   content?: string;
+  language?: string;
+  mode?: VscFileMode;
 }
 
 export interface VscCommitInput {

@@ -206,14 +206,33 @@ describe('vsc-file draft service', () => {
       repoId: repository.id,
       userId: 'user-1',
       baseCommitId: base.commit.id,
-      files: [{ path: 'src/index.ts', operation: 'upsert', content: 'export const value = 1;\n' }],
+      files: [
+        {
+          path: 'src/index.ts',
+          operation: 'upsert',
+          content: 'export const value = 1;\n',
+          language: 'typescript',
+          mode: '100755',
+        },
+      ],
     });
+    const draftFile = draft.files[0];
+    if (!draftFile.blobHash) {
+      throw new Error('Expected draft file blob hash');
+    }
 
     await service.push({
       repoId: repository.id,
       baseCommitId: base.commit.id,
       message: 'commit draft',
-      files: [{ path: 'src/index.ts', content: 'export const value = 1;\n' }],
+      files: [
+        {
+          path: 'src/index.ts',
+          blobHash: draftFile.blobHash,
+          language: draftFile.language || undefined,
+          mode: draftFile.mode || undefined,
+        },
+      ],
       draftId: draft.draft.id,
     });
 
@@ -222,6 +241,53 @@ describe('vsc-file draft service', () => {
     });
     expect(committedDraft?.get('status')).toBe('committed');
     expect(committedDraft?.get('activeKey')).toBeNull();
+  });
+
+  it('preserves draft file language and mode in draft diffs', async () => {
+    const { repository, initialCommit } = await service.createRepository({
+      ownerType: 'plugin',
+      ownerId: 'demo',
+      name: 'main',
+      initialFiles: [{ path: 'README.md', content: '# Base\n', language: 'custom-md', mode: '100755' }],
+    });
+    if (!initialCommit) {
+      throw new Error('Expected an initial commit');
+    }
+
+    const draft = await service.saveDraft({
+      repoId: repository.id,
+      userId: 'user-1',
+      baseCommitId: initialCommit.id,
+      files: [
+        { path: 'README.md', operation: 'upsert', content: '# Draft\n' },
+        {
+          path: 'src/index.ts',
+          operation: 'upsert',
+          content: 'export const value = 1;\n',
+          language: 'typescript',
+          mode: '100755',
+        },
+      ],
+    });
+    const diff = await service.diffDraft({
+      repoId: repository.id,
+      userId: 'user-1',
+    });
+
+    expect(draft.files.find((file) => file.path === 'src/index.ts')).toMatchObject({
+      language: 'typescript',
+      mode: '100755',
+    });
+    expect(diff.files.find((file) => file.path === 'README.md')).toMatchObject({
+      language: 'custom-md',
+      oldLanguage: 'custom-md',
+      mode: '100755',
+      oldMode: '100755',
+    });
+    expect(diff.files.find((file) => file.path === 'src/index.ts')).toMatchObject({
+      language: 'typescript',
+      mode: '100755',
+    });
   });
 
   it('keeps separate active drafts for two users in the same repository', async () => {

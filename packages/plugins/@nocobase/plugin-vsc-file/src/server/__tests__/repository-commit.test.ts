@@ -468,6 +468,34 @@ describe('vsc-file repository and commit services', () => {
     });
   });
 
+  it('rejects hash-only pushes for blobs outside the current repository context', async () => {
+    const { repository } = await service.createRepository({
+      ownerType: 'plugin',
+      ownerId: 'demo',
+      name: 'main',
+    });
+    const secretContent = 'secret\n';
+    const secretHash = sha256Hex(secretContent);
+    await db.getRepository('vscFileBlobs').create({
+      values: {
+        hash: secretHash,
+        size: Buffer.byteLength(secretContent, 'utf8'),
+        content: secretContent,
+      },
+    });
+
+    await expect(
+      service.push({
+        repoId: repository.id,
+        baseCommitId: null,
+        message: 'hash-only',
+        files: [{ path: 'secret.txt', blobHash: secretHash }],
+      }),
+    ).rejects.toMatchObject<VscError>({
+      code: 'PERMISSION_DENIED',
+    });
+  });
+
   it('marks matching active drafts committed and rejects drafts outside the repository base', async () => {
     const { repository } = await service.createRepository({
       ownerType: 'plugin',

@@ -423,6 +423,8 @@ function normalizeDraftFileChange(value: unknown, label: string): VscDraftFileCh
     path: requireString(entry, 'path', label),
     operation,
     content,
+    language: optionalString(entry, 'language', label),
+    mode: optionalString(entry, 'mode', label),
   });
 }
 
@@ -455,14 +457,7 @@ function normalizeOptionalDiffFileEndpoint(
       path: requireString(endpoint, 'path', label),
     };
   }
-  if (type === 'blob') {
-    return {
-      type,
-      blobHash: requireString(endpoint, 'blobHash', label),
-    };
-  }
-
-  throwBadRequest(`${fieldPath(label, 'type')} must be one of commit, draft, or blob`);
+  throwBadRequest(`${fieldPath(label, 'type')} must be one of commit or draft`);
 }
 
 function requireCurrentDraftUserId(
@@ -488,7 +483,7 @@ function requireString(input: ResourceActionInput, key: string, label?: string):
     throwBadRequest(`${fieldPath(label, key)} must be a non-empty string`);
   }
 
-  return value;
+  return value as string;
 }
 
 function optionalString(input: ResourceActionInput, key: string, label?: string): string | undefined {
@@ -500,7 +495,7 @@ function optionalString(input: ResourceActionInput, key: string, label?: string)
     throwBadRequest(`${fieldPath(label, key)} must be a string`);
   }
 
-  return value;
+  return value as string;
 }
 
 function optionalUserId(input: ResourceActionInput, key: string, label?: string): string | undefined {
@@ -517,8 +512,11 @@ function optionalUserId(input: ResourceActionInput, key: string, label?: string)
 
 function requireNullableString(input: ResourceActionInput, key: string, label?: string): string | null {
   const value = input[key];
-  if (value === null || typeof value === 'string') {
-    return value;
+  if (value === null) {
+    return null;
+  }
+  if (typeof value === 'string') {
+    return value as string;
   }
 
   throwBadRequest(`${fieldPath(label, key)} must be a string or null`);
@@ -529,8 +527,11 @@ function optionalNullableString(input: ResourceActionInput, key: string, label?:
   if (typeof value === 'undefined') {
     return undefined;
   }
-  if (value === null || typeof value === 'string') {
-    return value;
+  if (value === null) {
+    return null;
+  }
+  if (typeof value === 'string') {
+    return value as string;
   }
 
   throwBadRequest(`${fieldPath(label, key)} must be a string or null`);

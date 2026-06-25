@@ -56,6 +56,8 @@ export function draftRecordsToPushFileChanges(files: VscDraftFileRecord[]): VscF
       path: file.path,
       operation: 'upsert',
       blobHash: file.blobHash || undefined,
+      language: file.language || undefined,
+      mode: file.mode || undefined,
     };
   });
 }

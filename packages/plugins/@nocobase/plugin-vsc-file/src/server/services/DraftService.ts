@@ -17,6 +17,7 @@ import type {
   VscDraftFileOperation,
   VscDraftFileRecord,
   VscDraftRecord,
+  VscFileMode,
   VscNormalizedTreeEntry,
   VscRepositoryRecord,
   VscTreeEntryInput,
@@ -54,6 +55,9 @@ export interface SaveDraftInput extends GetDraftInput {
 
 export type DiscardDraftInput = GetDraftInput;
 
+const maxLanguageLength = 64;
+const maxModeLength = 16;
+
 export interface MarkDraftCommittedInput {
   draftId: string;
   repoId?: string;
@@ -73,6 +77,8 @@ interface DraftFileValues {
   pathLowerHash: string;
   operation: VscDraftFileOperation;
   blobHash: string | null;
+  language: string | null;
+  mode: VscFileMode | null;
 }
 
 export class DraftService {
@@ -281,6 +287,8 @@ export class DraftService {
         pathLowerHash: pathLowerHash(normalizedPath),
         operation,
         blobHash: null,
+        language: null,
+        mode: null,
       };
     }
     if (operation !== 'upsert') {
@@ -298,6 +306,8 @@ export class DraftService {
       pathLowerHash: pathLowerHash(normalizedPath),
       operation,
       blobHash: blob.hash,
+      language: normalizeOptionalDraftMetadata(change.language, 'language', maxLanguageLength),
+      mode: normalizeOptionalDraftMetadata(change.mode, 'mode', maxModeLength),
     };
   }
 
@@ -319,6 +329,8 @@ export class DraftService {
         pathLowerHash: draftFile.pathLowerHash,
         operation: draftFile.operation,
         blobHash: draftFile.blobHash,
+        language: draftFile.language,
+        mode: draftFile.mode,
       });
     }
 
@@ -343,6 +355,8 @@ export class DraftService {
       nextEntriesByPathHash.set(draftFile.pathHash, {
         path: draftFile.path,
         blobHash: draftFile.blobHash,
+        language: draftFile.language || nextEntriesByPathHash.get(draftFile.pathHash)?.language,
+        mode: draftFile.mode || nextEntriesByPathHash.get(draftFile.pathHash)?.mode,
       });
     }
 
@@ -466,5 +480,35 @@ export function draftFileFromRecord(record: Model): VscDraftFileRecord {
     pathLowerHash: record.get('pathLowerHash') as string,
     operation: record.get('operation') as VscDraftFileOperation,
     blobHash: (record.get('blobHash') as string | null) || null,
+    language: (record.get('language') as string | null) || null,
+    mode: (record.get('mode') as VscFileMode | null) || null,
   };
+}
+
+function normalizeOptionalDraftMetadata(
+  value: string | undefined,
+  fieldName: string,
+  maxLength: number,
+): string | null {
+  if (typeof value === 'undefined') {
+    return null;
+  }
+
+  const normalized = value.trim();
+  if (!normalized) {
+    return null;
+  }
+  if (normalized.includes('\0') || normalized.includes('\n') || normalized.includes('\r')) {
+    throw new VscError('PATH_INVALID', `Draft file ${fieldName} must not contain line breaks or NUL`);
+  }
+  if (normalized.length > maxLength) {
+    throw new VscError('PATH_INVALID', `Draft file ${fieldName} length must not exceed ${maxLength}`, {
+      details: {
+        fieldName,
+        maxLength,
+      },
+    });
+  }
+
+  return normalized;
 }

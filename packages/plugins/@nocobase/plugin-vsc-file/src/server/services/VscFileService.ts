@@ -532,7 +532,8 @@ export class VscFileService {
       const baseEntries = baseCommit
         ? await this.treeService.loadTreeEntries(baseCommit.treeHash, { transaction })
         : [];
-      const nextEntries = this.applyFileChanges(baseEntries, input.files);
+      const allowedBlobHashes = await this.collectAllowedBlobHashes(input, baseEntries, transaction);
+      const nextEntries = this.applyFileChanges(baseEntries, input.files, allowedBlobHashes);
       const nextTreeHash = await this.treeService.hashTree(nextEntries, { transaction });
       const baseTreeHash = baseCommit ? baseCommit.treeHash : await this.treeService.hashTree([], { transaction });
 
@@ -594,16 +595,57 @@ export class VscFileService {
   }
 
   private assertDiffFileEndpointsAllowed(input: DiffFileInput): void {
-    if (!this.permissionHooks.hasHooks()) {
-      return;
-    }
-
     if (isBlobDiffEndpoint(input.from) || isBlobDiffEndpoint(input.to)) {
-      throw new VscError('PERMISSION_DENIED', 'Raw blob diff endpoints are not allowed by permission hooks');
+      throw new VscError('PERMISSION_DENIED', 'Raw blob diff endpoints are not allowed through the public service');
     }
   }
 
-  private applyFileChanges(baseEntries: VscNormalizedTreeEntry[], changes: VscFileChange[]): VscTreeEntryInput[] {
+  private async collectAllowedBlobHashes(
+    input: PushInput,
+    baseEntries: VscNormalizedTreeEntry[],
+    transaction: Transaction,
+  ): Promise<Set<string>> {
+    const allowedBlobHashes = new Set(baseEntries.map((entry) => entry.blobHash));
+    if (!input.draftId) {
+      return allowedBlobHashes;
+    }
+
+    const draft = await this.db.getRepository('vscFileDrafts').findOne({
+      filter: {
+        id: input.draftId,
+        repoId: input.repoId,
+        baseCommitId: input.baseCommitId,
+        status: 'active',
+      },
+      fields: ['id'],
+      transaction,
+    });
+    if (!draft) {
+      throw new VscError('DRAFT_BASE_OUTDATED', 'Draft is not active for the pushed repository base');
+    }
+
+    const draftFiles = await this.db.getRepository('vscFileDraftFiles').find({
+      filter: {
+        draftId: input.draftId,
+      },
+      fields: ['blobHash'],
+      transaction,
+    });
+    for (const draftFile of draftFiles) {
+      const blobHash = draftFile.get('blobHash') as string | null;
+      if (blobHash) {
+        allowedBlobHashes.add(blobHash);
+      }
+    }
+
+    return allowedBlobHashes;
+  }
+
+  private applyFileChanges(
+    baseEntries: VscNormalizedTreeEntry[],
+    changes: VscFileChange[],
+    allowedBlobHashes: Set<string>,
+  ): VscTreeEntryInput[] {
     const entriesByPath = new Map<string, VscTreeEntryInput>();
 
     for (const entry of baseEntries) {
@@ -628,13 +670,18 @@ export class VscFileService {
         throw new VscError('PATH_INVALID', `Unsupported file operation "${operation}"`);
       }
 
+      if (typeof change.content !== 'string' && change.blobHash && !allowedBlobHashes.has(change.blobHash)) {
+        throw new VscError('PERMISSION_DENIED', 'Blob hash is not available in the current repository context');
+      }
+
+      const currentEntry = entriesByPath.get(normalizedPath);
       entriesByPath.set(normalizedPath, {
         path: normalizedPath,
         content: change.content,
         blobHash: change.blobHash,
         size: change.size,
-        language: change.language,
-        mode: change.mode,
+        language: change.language || currentEntry?.language,
+        mode: change.mode || currentEntry?.mode,
       });
     }
 

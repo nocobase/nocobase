@@ -138,7 +138,7 @@ describe('vsc-file permission hooks and audit registration', () => {
     });
   });
 
-  it('prevents raw blob diff endpoints from bypassing repository permission hooks', async () => {
+  it('rejects raw blob diff endpoints before they can bypass repository permission hooks', async () => {
     const allowedRepository = await createRepository('allowed');
     const deniedRepository = await createRepository('denied');
     const deniedPushResponse = await agent.resource('vscFile').push({
@@ -177,10 +177,10 @@ describe('vsc-file permission hooks and audit registration', () => {
       },
     });
 
-    expect(response.status).toBe(403);
+    expect(response.status).toBe(400);
     expect(response.body.errors[0]).toMatchObject({
-      code: 'PERMISSION_DENIED',
-      status: 403,
+      code: 'PATH_INVALID',
+      status: 400,
     });
     expect(JSON.stringify(response.body)).not.toContain('repo-b-secret');
   });

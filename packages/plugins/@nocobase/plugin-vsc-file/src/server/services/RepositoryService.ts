@@ -187,7 +187,7 @@ export class RepositoryService {
   }
 }
 
-function repositoryDefaults(input: VscRepositoryIdentity) {
+function repositoryDefaults(input: VscRepositoryIdentity): Omit<VscRepositoryRecord, 'id'> {
   return {
     ownerType: input.ownerType,
     ownerId: input.ownerId,

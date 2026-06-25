@@ -128,10 +128,6 @@ export type VscFileRepoDiffFileEndpoint =
       type: 'draft';
       userId?: string | number;
       path: string;
-    }
-  | {
-      type: 'blob';
-      blobHash: string;
     };
 
 export interface VscFileRepoDiffFileInput extends VscFileRepoRepositoryInput {

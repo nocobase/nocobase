@@ -67,5 +67,17 @@ export default defineCollection({
       length: 64,
       allowNull: true,
     },
+    {
+      type: 'string',
+      name: 'language',
+      length: 64,
+      allowNull: true,
+    },
+    {
+      type: 'string',
+      name: 'mode',
+      length: 16,
+      allowNull: true,
+    },
   ],
 });

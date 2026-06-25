@@ -6,14 +6,10 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
-
 import { Plugin } from '@nocobase/client';
-import models from './models';
 
 export class PluginVscFileClient extends Plugin {
-  async load() {
-    this.flowEngine.registerModels(models);
-  }
+  async load() {}
 }
 
 export default PluginVscFileClient;

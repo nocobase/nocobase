@@ -433,13 +433,14 @@ export class DiffService {
       }
 
       const blob = await this.getBlob(draftFile.blobHash, transaction);
+      const baseEntry = entriesByPathHash.get(draftFile.pathHash);
       entriesByPathHash.set(draftFile.pathHash, {
         path: draftFile.path,
         pathHash: draftFile.pathHash,
         blobHash: draftFile.blobHash,
         size: blob.size,
-        language: inferComparableLanguage(draftFile.path),
-        mode: defaultFileMode,
+        language: draftFile.language || baseEntry?.language || inferComparableLanguage(draftFile.path),
+        mode: draftFile.mode || baseEntry?.mode || defaultFileMode,
       });
     }
 

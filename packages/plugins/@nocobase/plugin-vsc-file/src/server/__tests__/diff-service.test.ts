@@ -13,7 +13,7 @@ import path from 'path';
 import { diffMaxFileSize } from '../../shared/constants';
 import { sha256Hex } from '../../shared/hash';
 import { BlobService } from '../services/BlobService';
-import type { FileDiffEntry, FileDiffResult } from '../services/DiffService';
+import { DiffService, type FileDiffEntry, type FileDiffResult } from '../services/DiffService';
 import { VscFileService } from '../services/VscFileService';
 
 const persistedCollections = [
@@ -34,6 +34,7 @@ describe('vsc-file diff service', () => {
   let db: Database;
   let service: VscFileService;
   let blobService: BlobService;
+  let diffService: DiffService;
 
   beforeEach(async () => {
     db = await createMockDatabase();
@@ -45,6 +46,7 @@ describe('vsc-file diff service', () => {
 
     service = new VscFileService(db);
     blobService = new BlobService(db);
+    diffService = new DiffService(db);
   });
 
   afterEach(async () => {
@@ -206,7 +208,7 @@ describe('vsc-file diff service', () => {
     });
     const oldOneLine = await blobService.ensureBlob('old\n');
     const newOneLine = await blobService.ensureBlob('new\n');
-    const oneLineDiff = await service.diffFile({
+    const oneLineDiff = await diffService.diffFile({
       repoId: repository.id,
       from: { type: 'blob', blobHash: oldOneLine.hash },
       to: { type: 'blob', blobHash: newOneLine.hash },
@@ -232,7 +234,7 @@ describe('vsc-file diff service', () => {
 
     const oldMultiLine = await blobService.ensureBlob('one\ntwo\nthree\n');
     const newMultiLine = await blobService.ensureBlob('one\nsecond\nthree\n');
-    const multiLineDiff = await service.diffFile({
+    const multiLineDiff = await diffService.diffFile({
       repoId: repository.id,
       from: { type: 'blob', blobHash: oldMultiLine.hash },
       to: { type: 'blob', blobHash: newMultiLine.hash },
@@ -260,7 +262,7 @@ describe('vsc-file diff service', () => {
 
     const oldSeparatedEdits = await blobService.ensureBlob('one\ntwo\nthree\nfour\nfive\n');
     const newSeparatedEdits = await blobService.ensureBlob('one\nsecond\nthree\nfour\nfifth\n');
-    const separatedEditDiff = await service.diffFile({
+    const separatedEditDiff = await diffService.diffFile({
       repoId: repository.id,
       from: { type: 'blob', blobHash: oldSeparatedEdits.hash },
       to: { type: 'blob', blobHash: newSeparatedEdits.hash },
@@ -283,12 +285,12 @@ describe('vsc-file diff service', () => {
 
     const withoutFinalNewline = await blobService.ensureBlob('final');
     const withFinalNewline = await blobService.ensureBlob('final\n');
-    const addedFinalNewline = await service.diffFile({
+    const addedFinalNewline = await diffService.diffFile({
       repoId: repository.id,
       from: { type: 'blob', blobHash: withoutFinalNewline.hash },
       to: { type: 'blob', blobHash: withFinalNewline.hash },
     });
-    const removedFinalNewline = await service.diffFile({
+    const removedFinalNewline = await diffService.diffFile({
       repoId: repository.id,
       from: { type: 'blob', blobHash: withFinalNewline.hash },
       to: { type: 'blob', blobHash: withoutFinalNewline.hash },
@@ -331,7 +333,7 @@ describe('vsc-file diff service', () => {
       files: [{ path: 'README.md', operation: 'upsert', content: '# Demo\n\nDraft update\n' }],
     });
 
-    const diff = await service.diffFile({
+    const diff = await diffService.diffFile({
       repoId: repository.id,
       from: { type: 'commit', commitId: initialCommit.id, path: 'README.md' },
       to: { type: 'draft', userId: 'user-1', path: 'README.md' },
@@ -361,7 +363,7 @@ describe('vsc-file diff service', () => {
       },
     });
 
-    const diff = await service.diffFile({
+    const diff = await diffService.diffFile({
       repoId: repository.id,
       from: { type: 'blob', blobHash: largeHash },
       to: null,
@@ -370,6 +372,25 @@ describe('vsc-file diff service', () => {
     expect(diff).toEqual({
       tooLarge: true,
       hunks: [],
+    });
+  });
+
+  it('rejects raw blob endpoints through the public service facade', async () => {
+    const { repository } = await service.createRepository({
+      ownerType: 'plugin',
+      ownerId: 'demo',
+      name: 'main',
+    });
+    const blob = await blobService.ensureBlob('secret\n');
+
+    await expect(
+      service.diffFile({
+        repoId: repository.id,
+        from: { type: 'blob', blobHash: blob.hash },
+        to: null,
+      }),
+    ).rejects.toMatchObject({
+      code: 'PERMISSION_DENIED',
     });
   });
 
@@ -388,7 +409,7 @@ describe('vsc-file diff service', () => {
     expect(oldBlob.size).toBeLessThanOrEqual(diffMaxFileSize);
     expect(newBlob.size).toBeLessThanOrEqual(diffMaxFileSize);
 
-    const diff = await service.diffFile({
+    const diff = await diffService.diffFile({
       repoId: repository.id,
       from: { type: 'blob', blobHash: oldBlob.hash },
       to: { type: 'blob', blobHash: newBlob.hash },

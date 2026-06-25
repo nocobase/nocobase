@@ -24,6 +24,7 @@ import { VscError } from '../../shared/errors';
 import { sha256Hex } from '../../shared/hash';
 import type { VscCommitRecord, VscTreeEntryInput } from '../../shared/types';
 import { defaultVscFileLimits, vscFileServerDefaults } from '../config';
+import { DiffService } from '../services/DiffService';
 import { VscFileService } from '../services/VscFileService';
 
 const smallRepoFileCount = 10;
@@ -34,6 +35,7 @@ const mediumRepoFileSize = 10 * 1024;
 describe('vsc-file performance smoke tests', () => {
   let db: Database;
   let service: VscFileService;
+  let diffService: DiffService;
 
   beforeEach(async () => {
     db = await createMockDatabase();
@@ -44,6 +46,7 @@ describe('vsc-file performance smoke tests', () => {
     await db.sync();
 
     service = new VscFileService(db);
+    diffService = new DiffService(db);
   });
 
   afterEach(async () => {
@@ -274,7 +277,7 @@ describe('vsc-file performance smoke tests', () => {
       },
     });
 
-    const diff = await service.diffFile({
+    const diff = await diffService.diffFile({
       repoId: repository.id,
       from: { type: 'blob', blobHash: largeHash },
       to: null,
@@ -286,7 +289,7 @@ describe('vsc-file performance smoke tests', () => {
     });
   });
 
-  it('rejects oversized files and repositories before writing commits', async () => {
+  it('rejects oversized content, unauthorized hash-only files, and oversized repositories before writing commits', async () => {
     const { repository } = await service.createRepository({
       ownerType: 'plugin',
       ownerId: 'performance-limits',
@@ -328,10 +331,7 @@ describe('vsc-file performance smoke tests', () => {
         files: [{ path: 'large-hash-only.txt', blobHash: oversizedBlobHash }],
       }),
     ).rejects.toMatchObject<VscError>({
-      code: 'FILE_TOO_LARGE',
-      details: {
-        maxFileSize,
-      },
+      code: 'PERMISSION_DENIED',
     });
     expect(
       await db.getRepository('vscFileCommits').count({
