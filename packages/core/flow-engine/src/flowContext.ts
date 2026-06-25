@@ -39,9 +39,11 @@ import {
   extractUsedVariablePaths,
   FlowExitException,
   FLOW_ENGINE_NAMESPACE,
+  createOpenViewRouteState,
   isCtxDatePathPrefix,
   isCssFile,
   prepareRunJsCode,
+  RUNJS_OPEN_VIEW_ROUTE_STATE,
   resolveCtxDatePath,
   resolveDefaultParams,
   resolveExpressions,
@@ -3429,7 +3431,19 @@ export class FlowEngineContext extends BaseFlowEngineContext {
       }),
     });
     this.defineProperty('role', {
-      get: () => this.api?.auth?.role,
+      get: () => {
+        const currentRole = this.api?.auth?.role;
+        if (currentRole !== '__union__') {
+          return currentRole;
+        }
+        const roles = this.user?.roles;
+        if (!Array.isArray(roles)) {
+          return [];
+        }
+        return roles
+          .map((role: { name?: string }) => role?.name)
+          .filter((name: string | undefined): name is string => !!name);
+      },
       cache: false,
       // 注意：使用惰性 meta 工厂，避免在 i18n 尚未注入时提前求值导致无法翻译
       meta: Object.assign(() => ({ type: 'string', title: this.t('Current role'), sort: 990 }), {
@@ -4588,6 +4602,27 @@ export class FlowRunJSContext extends FlowContext {
     this.defineProperty('ReactDOM', { value: ReactDOMShim });
 
     setupRunJSLibs(this);
+    this.defineMethod('openView', async function (uid: string, options?: Record<PropertyKey, unknown>) {
+      const delegateOpenView = (
+        delegate as FlowContext & {
+          openView?: (uid: string, options?: Record<PropertyKey, unknown>) => Promise<unknown>;
+        }
+      ).openView;
+
+      if (typeof delegateOpenView !== 'function') {
+        throw new Error('ctx.openView is not available in current context.');
+      }
+
+      const routeState = createOpenViewRouteState(options);
+      if (!routeState) {
+        return delegateOpenView(uid, options);
+      }
+
+      return delegateOpenView(uid, {
+        ...(options || {}),
+        [RUNJS_OPEN_VIEW_ROUTE_STATE]: routeState,
+      });
+    });
 
     // Convenience: ctx.render(<App />[, container])
     // - container defaults to ctx.element if available

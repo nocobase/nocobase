@@ -9,12 +9,13 @@
 
 import { Command, Flags } from '@oclif/core';
 import { ensureCrossEnvConfirmed, hasExplicitEnvSelection } from '../../lib/env-guard.js';
-import { ensureLocalPostinstall } from '../../lib/app-managed-resources.js';
+import { ensureLocalPostinstall, ensureNpmSourceDevDependencies } from '../../lib/app-managed-resources.js';
 import {
   formatMissingManagedAppEnvMessage,
   resolveManagedAppRuntime,
   runLocalNocoBaseCommand,
 } from '../../lib/app-runtime.js';
+import { findAvailableTcpPort } from '../../lib/prompt-validators.js';
 import { announceTargetEnv, failTask, printInfo, startTask, succeedTask } from '../../lib/ui.js';
 
 function formatUnsupportedRuntimeMessage(kind: 'docker' | 'http' | 'ssh', envName: string): string {
@@ -148,11 +149,7 @@ export default class SourceDev extends Command {
 
     announceTargetEnv(runtime.envName);
 
-    const devPort =
-      flags.port ||
-      (runtime.env.appPort !== undefined && runtime.env.appPort !== null
-        ? String(runtime.env.appPort).trim()
-        : undefined);
+    const devPort = flags.port?.trim() || (await findAvailableTcpPort());
     const appUrl = appUrlForPort(devPort);
     if (await isAppAlreadyRunning(appUrl)) {
       this.error(
@@ -185,6 +182,12 @@ export default class SourceDev extends Command {
     printInfo(`Starting NocoBase dev mode for "${runtime.envName}" from ${runtime.projectRoot}. Press Ctrl+C to stop.`);
 
     try {
+      await ensureNpmSourceDevDependencies(runtime, {
+        onStartTask: startTask,
+        onSucceedTask: succeedTask,
+        onFailTask: failTask,
+        verbose: true,
+      });
       await ensureLocalPostinstall(runtime, {
         onStartTask: startTask,
         onSucceedTask: succeedTask,

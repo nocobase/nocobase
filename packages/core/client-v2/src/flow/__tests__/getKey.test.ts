@@ -58,4 +58,11 @@ describe('getKey', () => {
 
     expect(getKey(a)).not.toBe(getKey(b));
   });
+
+  it('distinguishes RunJS openView route state overrides', () => {
+    const a = createViewItem({ viewUid: 'v', openViewRouteState: { mode: 'drawer' } }, 0);
+    const b = createViewItem({ viewUid: 'v', openViewRouteState: { mode: 'dialog' } }, 0);
+
+    expect(getKey(a)).not.toBe(getKey(b));
+  });
 });

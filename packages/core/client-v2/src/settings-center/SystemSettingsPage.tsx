@@ -239,7 +239,7 @@ export const SystemSettingsPage = () => {
         <Form.Item
           name="raw_title"
           label={t('System title')}
-          rules={[{ required: true, message: t('Please enter') + t('System title') }]}
+          rules={[{ required: true, message: t('Please enter') + ' ' + t('System title') }]}
         >
           <Input.TextArea autoSize={{ minRows: 2, maxRows: 4 }} />
         </Form.Item>

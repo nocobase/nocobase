@@ -455,7 +455,12 @@
   "When enabled, this AI employee will always use the selected model and users cannot switch to other models in chat.": "启用后，该 AI 员工将始终使用所选模型，用户在对话中不能切换到其他模型。",
   "When enabled, this AI employee can only use the selected models, and users can only switch between these models in chat.": "启用后，该 AI 员工只能使用这里选择的模型，用户在对话中也只能在这些模型之间切换。",
   "Restrict this AI employee to the selected models.": "限制该 AI 员工只能使用所选模型。",
-  "Select model": "选择模型",
-  "Select models": "选择模型",
-  "Models": "模型"
+  "Models": "模型",
+  "Depends on current user": "依赖当前用户信息",
+  "NocoBase request": "NocoBase 请求",
+  "When enabled, URL and headers can use current user variables. Stdio transport is not supported.": "启用后，可在 URL 和请求头中使用当前用户变量。Stdio 传输方式不支持。",
+  "When enabled, URL and headers can use current user variables and NocoBase request variables. Stdio transport is not supported.": "启用后，可在 URL 和请求头中使用当前用户变量和 NocoBase 请求变量。Stdio 传输方式不支持。",
+  "Connection test failed": "连接测试失败",
+  "The MCP server uses current user variables and the connection test failed. Do you want to save it anyway?": "该 MCP 服务使用当前用户变量，且连接测试失败。是否仍然保存？",
+  "Save anyway": "仍然保存"
 }
