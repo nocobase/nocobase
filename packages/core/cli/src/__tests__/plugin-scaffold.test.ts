@@ -17,6 +17,10 @@ import {
   isValidPluginPackageName,
 } from '../scaffolds/plugin/index.js';
 
+function normalizeLineEndings(value: string): string {
+  return value.replace(/\r\n/g, '\n');
+}
+
 test('isValidPluginPackageName accepts scoped and unscoped package names', () => {
   expect(isValidPluginPackageName('@my-scope/plugin-hello')).toBe(true);
   expect(isValidPluginPackageName('plugin-hello')).toBe(true);
@@ -55,7 +59,9 @@ test('generatePluginScaffold renders the plugin template with expected files and
     });
 
     expect(result.targetPath).toBe(path.join(targetRoot, '@my-scope', 'plugin-hello'));
-    await expect(fsp.readFile(path.join(result.targetPath, 'README.md'), 'utf8')).resolves.toBe('# @my-scope/plugin-hello\n');
+    await expect(
+      fsp.readFile(path.join(result.targetPath, 'README.md'), 'utf8').then(normalizeLineEndings),
+    ).resolves.toBe('# @my-scope/plugin-hello\n');
     await expect(fsp.readFile(path.join(result.targetPath, 'package.json'), 'utf8')).resolves.toContain(
       '"version": "2.1.11"',
     );
