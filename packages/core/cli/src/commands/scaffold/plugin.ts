@@ -17,18 +17,8 @@ import {
   syncPluginWorkspace,
 } from '../../lib/plugin-workspace.js';
 import { runNocoBaseCommand } from '../../lib/run-npm.ts';
-import pluginGeneratorModule from '../../../../cli-v1/src/plugin-generator.js';
 
-const { PluginGenerator } = pluginGeneratorModule as {
-  PluginGenerator: new (options: {
-    cwd: string;
-    baseDir?: string;
-    targetRoot?: string;
-    log?: (...args: unknown[]) => void;
-    args?: Record<string, unknown>;
-    context: { name: string };
-  }) => { run: () => Promise<void> };
-};
+const PLUGIN_TARGET_ROOT_ENV = 'NB_PLUGIN_TARGET_ROOT';
 
 export default class ScaffoldPlugin extends Command {
   static override args = {
@@ -68,6 +58,7 @@ export default class ScaffoldPlugin extends Command {
       const packageSegments = args.pkg.split('/');
       const pluginWorkspacePath = path.join(pluginWorkspaceRoot, ...packageSegments);
       const sourceEntryPath = path.join(resolved.sourcePath, 'packages', 'plugins', ...packageSegments);
+      const npmArgs = ['pm', 'create', args.pkg];
 
       try {
         const existing = await fsp.stat(pluginWorkspacePath);
@@ -82,24 +73,16 @@ export default class ScaffoldPlugin extends Command {
 
       if (flags['force-recreate']) {
         await fsp.rm(pluginWorkspacePath, { recursive: true, force: true });
+        npmArgs.push('--force-recreate');
       }
 
-      const generator = new PluginGenerator({
+      await runNocoBaseCommand(npmArgs, {
         cwd: resolved.sourcePath,
-        baseDir: resolved.sourcePath,
-        targetRoot: pluginWorkspaceRoot,
-        args: {},
-        context: {
-          name: args.pkg,
-        },
-        log: (...messages: unknown[]) => {
-          if (messages.length > 0) {
-            this.log(messages.map((item) => String(item)).join(' '));
-          }
+        env: {
+          LOGGER_SILENT: 'true',
+          [PLUGIN_TARGET_ROOT_ENV]: pluginWorkspaceRoot,
         },
       });
-
-      await generator.run();
 
       const syncResult = await syncPluginWorkspace({
         appPath: resolved.appPath,

@@ -9,11 +9,6 @@
 
 import { beforeEach, expect, test, vi } from 'vitest';
 
-const generatorRun = vi.fn();
-const generatorCtor = vi.fn(() => ({
-  run: generatorRun,
-}));
-
 const mocks = vi.hoisted(() => ({
   resolveLocalPluginWorkspaceSync: vi.fn(),
   isCliManagedSourceApp: vi.fn(),
@@ -23,13 +18,6 @@ const mocks = vi.hoisted(() => ({
   runNocoBaseCommand: vi.fn(),
   stat: vi.fn(),
   rm: vi.fn(),
-}));
-
-vi.mock('../../../../core/cli-v1/src/plugin-generator.js', () => ({
-  default: {
-    PluginGenerator: generatorCtor,
-  },
-  PluginGenerator: generatorCtor,
 }));
 
 vi.mock('../lib/plugin-workspace.js', async (importOriginal) => {
@@ -67,7 +55,6 @@ vi.mock('node:fs/promises', async (importOriginal) => {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  generatorRun.mockResolvedValue(undefined);
   mocks.resolveLocalPluginWorkspaceSync.mockReturnValue({
     appPath: '/tmp/app',
     sourcePath: '/tmp/app/source',
@@ -113,16 +100,13 @@ test('scaffold plugin supports app path cwd and syncs the created plugin', async
     cwd: '/tmp/app',
     supportAppPath: true,
   });
-  expect(generatorCtor).toHaveBeenCalledWith(
-    expect.objectContaining({
-      cwd: '/tmp/app/source',
-      baseDir: '/tmp/app/source',
-      targetRoot: '/tmp/app/plugins',
-      context: {
-        name: '@my-scope/plugin-hello',
-      },
-    }),
-  );
+  expect(mocks.runNocoBaseCommand).toHaveBeenCalledWith(['pm', 'create', '@my-scope/plugin-hello'], {
+    cwd: '/tmp/app/source',
+    env: {
+      LOGGER_SILENT: 'true',
+      NB_PLUGIN_TARGET_ROOT: '/tmp/app/plugins',
+    },
+  });
   expect(mocks.syncPluginWorkspace).toHaveBeenCalledWith({
     appPath: '/tmp/app',
     sourcePath: '/tmp/app/source',
@@ -158,6 +142,13 @@ test('scaffold plugin force-recreate removes the top-level plugin dir before reg
     recursive: true,
     force: true,
   });
+  expect(mocks.runNocoBaseCommand).toHaveBeenCalledWith(['pm', 'create', '@my-scope/plugin-hello', '--force-recreate'], {
+    cwd: '/tmp/app/source',
+    env: {
+      LOGGER_SILENT: 'true',
+      NB_PLUGIN_TARGET_ROOT: '/tmp/app/plugins',
+    },
+  });
   expect(mocks.syncPluginWorkspace).toHaveBeenCalledWith(
     expect.objectContaining({
       forceRecreate: true,
@@ -191,7 +182,6 @@ test('scaffold plugin falls back to the old source-repo behavior outside CLI-man
 
   await ScaffoldPlugin.prototype.run.call(command);
 
-  expect(generatorCtor).not.toHaveBeenCalled();
   expect(mocks.syncPluginWorkspace).not.toHaveBeenCalled();
   expect(mocks.runNocoBaseCommand).toHaveBeenCalledWith(['pm', 'create', '@my-scope/plugin-hello', '--force-recreate'], {
     cwd: '/tmp/source',

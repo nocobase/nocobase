@@ -36,6 +36,10 @@ async function getProjectVersion() {
   return json.version || '0.1.0';
 }
 
+function resolveTargetRoot(targetRoot) {
+  return targetRoot || process.env.NB_PLUGIN_TARGET_ROOT;
+}
+
 class PluginGenerator extends Generator {
   constructor(options) {
     const { log, context = {}, cwd, baseDir, targetRoot, ...opts } = options;
@@ -63,7 +67,8 @@ class PluginGenerator extends Generator {
 
   async writing() {
     const { name } = this.context;
-    const target = this.targetRoot ? resolve(this.targetRoot, name) : resolve(process.cwd(), 'packages/plugins/', name);
+    const targetRoot = resolveTargetRoot(this.targetRoot);
+    const target = targetRoot ? resolve(targetRoot, name) : resolve(process.cwd(), 'packages/plugins/', name);
     if (existsSync(target)) {
       this.log(chalk.red(`[${name}] plugin already exists.`));
       return;
@@ -77,7 +82,7 @@ class PluginGenerator extends Generator {
     this.log('');
     genTsConfigPaths();
     execa.sync('yarn', ['postinstall'], { shell: true, stdio: 'inherit' });
-    if (this.targetRoot) {
+    if (targetRoot) {
       this.log(`The plugin folder is in ${chalk.green(target)}`);
       return;
     }
@@ -86,3 +91,4 @@ class PluginGenerator extends Generator {
 }
 
 exports.PluginGenerator = PluginGenerator;
+exports.resolveTargetRoot = resolveTargetRoot;

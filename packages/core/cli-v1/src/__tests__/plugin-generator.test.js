@@ -10,7 +10,7 @@
 /* eslint-env jest */
 
 const path = require('path');
-const { PluginGenerator } = require('../plugin-generator');
+const { PluginGenerator, resolveTargetRoot } = require('../plugin-generator');
 
 describe('cli-v1 plugin generator', () => {
   test('uses cwd as baseDir when baseDir is not provided', () => {
@@ -39,5 +39,21 @@ describe('cli-v1 plugin generator', () => {
     });
 
     expect(generator.baseDir).toBe(baseDir);
+  });
+
+  test('resolveTargetRoot falls back to NB_PLUGIN_TARGET_ROOT', () => {
+    const originalTargetRoot = process.env.NB_PLUGIN_TARGET_ROOT;
+    process.env.NB_PLUGIN_TARGET_ROOT = '/tmp/app/plugins';
+
+    try {
+      expect(resolveTargetRoot()).toBe('/tmp/app/plugins');
+      expect(resolveTargetRoot('/tmp/explicit')).toBe('/tmp/explicit');
+    } finally {
+      if (originalTargetRoot === undefined) {
+        delete process.env.NB_PLUGIN_TARGET_ROOT;
+      } else {
+        process.env.NB_PLUGIN_TARGET_ROOT = originalTargetRoot;
+      }
+    }
   });
 });
