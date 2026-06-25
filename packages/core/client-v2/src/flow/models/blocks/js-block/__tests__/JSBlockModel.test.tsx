@@ -10,7 +10,7 @@
 import React from 'react';
 import { App, ConfigProvider } from 'antd';
 import { render } from '@nocobase/test/client';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { FlowEngine, FlowEngineProvider } from '@nocobase/flow-engine';
 import { JSBlockModel } from '../JSBlock';
 
@@ -94,5 +94,57 @@ describe('JSBlockModel', () => {
     expect(host?.style.minHeight).toBe('0');
     expect(host?.style.overflow).toBe('auto');
     expect(model.context.ref.current?.firstElementChild).toBe(overflowContent);
+  });
+
+  it('calculates cardless full-height on the plain host', () => {
+    const originalInnerHeight = window.innerHeight;
+    Object.defineProperty(window, 'innerHeight', {
+      configurable: true,
+      value: 500,
+    });
+    const rectSpy = vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function () {
+      if ((this as HTMLElement).id === 'model-js-block-without-card-full-height') {
+        return {
+          x: 0,
+          y: 150,
+          top: 150,
+          left: 0,
+          bottom: 150,
+          right: 0,
+          width: 0,
+          height: 0,
+          toJSON: () => ({}),
+        } as DOMRect;
+      }
+      return {
+        x: 0,
+        y: 0,
+        top: 0,
+        left: 0,
+        bottom: 0,
+        right: 0,
+        width: 0,
+        height: 0,
+        toJSON: () => ({}),
+      } as DOMRect;
+    });
+
+    try {
+      const { engine, model } = createJSBlock('js-block-without-card-full-height', false, {
+        heightMode: 'fullHeight',
+        style: undefined,
+      });
+      const { container } = renderBlock(engine, model);
+      const host = container.querySelector('#model-js-block-without-card-full-height') as HTMLElement | null;
+
+      expect(parseInt(host?.style.height || '0', 10)).toBeGreaterThan(0);
+      expect(host?.style.overflow).toBe('auto');
+    } finally {
+      rectSpy.mockRestore();
+      Object.defineProperty(window, 'innerHeight', {
+        configurable: true,
+        value: originalInnerHeight,
+      });
+    }
   });
 });

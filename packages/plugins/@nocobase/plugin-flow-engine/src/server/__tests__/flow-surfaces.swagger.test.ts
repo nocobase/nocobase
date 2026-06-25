@@ -394,6 +394,7 @@ describe('flowSurfaces swagger', () => {
     expect(schemas.FlowSurfaceSetFieldValueRulesRequest.properties.target.description).toContain(
       'outer form block uid',
     );
+    expect(schemas.FlowSurfaceConfigureOption.properties.default).toEqual({});
     expect(schemas.FlowSurfaceSetFieldValueRulesRequest.properties.rules.description).toContain('Pass `[]` to clear');
     expect(schemas.FlowSurfaceSetFieldValueRulesRequest.properties.expectedFingerprint.description).toContain(
       '`getReactionMeta.capabilities[].fingerprint`',
