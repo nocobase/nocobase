@@ -8,8 +8,9 @@
  */
 
 import { useFlowEngine } from '@nocobase/flow-engine';
+import { useMemoizedFn } from 'ahooks';
 import { Tag, TreeSelect } from 'antd';
-import React, { useCallback, useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { useT } from '../../locale';
 import {
   getCollectionFields,
@@ -95,35 +96,32 @@ export function AppendsSelect({
     [optionsMap, value],
   );
 
-  const handleChange = useCallback(
-    (next: TreeSelectValue | TreeSelectValue[] | undefined) => {
-      const nextItems = Array.isArray(next) ? next : next ? [next] : [];
-      const nextValues = nextItems.map((item) => item.value).filter(Boolean) as string[];
-      const valueSet = new Set(nextValues);
-      const removedValue = (value ?? []).find((item) => !valueSet.has(item));
+  const handleChange = useMemoizedFn((next: TreeSelectValue | TreeSelectValue[] | undefined) => {
+    const nextItems = Array.isArray(next) ? next : next ? [next] : [];
+    const nextValues = nextItems.map((item) => item.value).filter(Boolean) as string[];
+    const valueSet = new Set(nextValues);
+    const removedValue = (value ?? []).find((item) => !valueSet.has(item));
 
-      if (removedValue) {
-        const prefix = `${removedValue}.`;
-        Object.keys(optionsMap).forEach((key) => {
-          if (key.startsWith(prefix)) {
-            valueSet.delete(key);
-          }
-        });
-      } else {
-        nextValues.forEach((item) => {
-          const paths = item.split('.');
-          for (let i = 1; i <= paths.length; i++) {
-            valueSet.add(paths.slice(0, i).join('.'));
-          }
-        });
-      }
+    if (removedValue) {
+      const prefix = `${removedValue}.`;
+      Object.keys(optionsMap).forEach((key) => {
+        if (key.startsWith(prefix)) {
+          valueSet.delete(key);
+        }
+      });
+    } else {
+      nextValues.forEach((item) => {
+        const paths = item.split('.');
+        for (let i = 1; i <= paths.length; i++) {
+          valueSet.add(paths.slice(0, i).join('.'));
+        }
+      });
+    }
 
-      onChange?.(Array.from(valueSet));
-    },
-    [onChange, optionsMap, value],
-  );
+    onChange?.(Array.from(valueSet));
+  });
 
-  const tagRender = useCallback(
+  const tagRender = useMemoizedFn(
     (props: { value?: string; closable?: boolean; onClose?: (event?: React.MouseEvent<HTMLElement>) => void }) => {
       const node = props.value ? optionsMap[props.value] : undefined;
       if (!node) {
@@ -135,7 +133,6 @@ export function AppendsSelect({
         </Tag>
       );
     },
-    [optionsMap],
   );
 
   return (
