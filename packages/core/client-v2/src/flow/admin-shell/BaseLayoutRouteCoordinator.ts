@@ -272,7 +272,7 @@ export class BaseLayoutRouteCoordinator {
           runtime.viewState[getKey(viewItem)]?.destroy?.(true);
           delete runtime.viewState[getKey(viewItem)];
         });
-        updateViewListHidden(viewList);
+        updateViewListHidden(viewList, !!this.layoutContext?.isMobileLayout);
       }
 
       if (viewsToOpen.length) {
@@ -299,7 +299,7 @@ export class BaseLayoutRouteCoordinator {
     }
 
     if (runtime.meta.active) {
-      updateViewListHidden(viewList);
+      updateViewListHidden(viewList, !!this.layoutContext?.isMobileLayout);
       return;
     }
 

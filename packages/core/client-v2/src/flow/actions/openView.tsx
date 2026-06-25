@@ -321,6 +321,10 @@ export const openView = defineAction({
     const openMode = ctx.inputArgs?.isMobileLayout
       ? 'embed'
       : runtimeOpenViewRouteState?.mode || ctx.inputArgs?.mode || params.mode || 'drawer';
+    const effectiveRunJSOpenViewRouteState =
+      runJSOpenViewRouteState && ctx.inputArgs?.isMobileLayout
+        ? createOpenViewRouteState({ ...runJSOpenViewRouteState, mode: openMode })
+        : runJSOpenViewRouteState;
     let navigation = typeof inputArgs.navigation !== 'undefined' ? inputArgs.navigation : params.navigation;
 
     // 传递了上下文就必须禁用路由，否则下次路由打开会缺少上下文
@@ -341,7 +345,7 @@ export const openView = defineAction({
           sourceId: mergedSourceId,
           tabUid: mergedTabUid,
           viewUid: ctx.model.context?.inputArgs?.viewUid || ctx.model.uid,
-          ...(runJSOpenViewRouteState ? { openViewRouteState: runJSOpenViewRouteState } : {}),
+          ...(effectiveRunJSOpenViewRouteState ? { openViewRouteState: effectiveRunJSOpenViewRouteState } : {}),
         } as Record<string, unknown>;
         const pendingView = {
           type: pendingType,
@@ -357,7 +361,7 @@ export const openView = defineAction({
           filterByTk: mergedFilterByTk,
           sourceId: mergedSourceId,
           tabUid: mergedTabUid,
-          ...(runJSOpenViewRouteState ? { openViewRouteState: runJSOpenViewRouteState } : {}),
+          ...(effectiveRunJSOpenViewRouteState ? { openViewRouteState: effectiveRunJSOpenViewRouteState } : {}),
         };
         ctx.view.navigation.navigateTo(nextView);
         return;

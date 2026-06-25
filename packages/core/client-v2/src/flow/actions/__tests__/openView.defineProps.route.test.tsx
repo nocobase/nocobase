@@ -190,6 +190,25 @@ describe('openView action - route mode defineProperties/defineMethods', () => {
     });
   });
 
+  it('normalizes first-stage RunJS route state mode on mobile layout', async () => {
+    const { ctx, navigateTo } = createFirstStageCtx({
+      isMobileLayout: true,
+      mode: 'dialog',
+      size: 'large',
+      [RUNJS_OPEN_VIEW_ROUTE_STATE]: { mode: 'dialog', size: 'large' },
+    });
+
+    await openView.handler(ctx, { mode: 'drawer', size: 'medium', navigation: true });
+
+    expect(navigateTo).toHaveBeenCalledWith({
+      viewUid: 'popup-uid',
+      filterByTk: undefined,
+      sourceId: undefined,
+      tabUid: undefined,
+      openViewRouteState: { mode: 'embed', size: 'large' },
+    });
+  });
+
   it('uses route replay mode and size before persisted openView defaults', async () => {
     const { ctx } = createRouteManagedCtx();
     ctx.inputArgs.mode = 'dialog';
