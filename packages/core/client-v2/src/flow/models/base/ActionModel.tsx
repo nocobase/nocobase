@@ -20,7 +20,7 @@ import { ActionModel } from './ActionModelCore';
 
 function getMobileDefaultProps(ctx) {
   const defaultProps = ctx.model.defaultProps || {};
-  if (ctx.isMobileLayout && defaultProps.icon) {
+  if (ctx.isMobileLayout && defaultProps.icon && ctx.model.enableEditIconOnly !== false) {
     return {
       ...defaultProps,
       iconOnly: true,
@@ -60,13 +60,14 @@ ActionModel.registerFlow({
                 title: tExpr('Button icon'),
               }
             : undefined,
-          iconOnly: ctx.model.enableEditIcon
-            ? {
-                'x-decorator': 'FormItem',
-                'x-component': 'Switch',
-                title: tExpr('Icon only'),
-              }
-            : undefined,
+          iconOnly:
+            ctx.model.enableEditIcon && ctx.model.enableEditIconOnly !== false
+              ? {
+                  'x-decorator': 'FormItem',
+                  'x-component': 'Switch',
+                  title: tExpr('Icon only'),
+                }
+              : undefined,
           type: ctx.model.enableEditType
             ? {
                 'x-decorator': 'FormItem',

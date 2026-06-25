@@ -219,6 +219,7 @@ export class ActionPanelBlockModel extends BlockModel {
 
                     action.enableEditDanger = false;
                     action.enableEditType = false;
+                    action.enableEditIconOnly = false;
                     action.enableEditColor = true;
                     action.renderButton = () => {
                       return (
@@ -292,6 +293,7 @@ export class ActionPanelBlockModel extends BlockModel {
 
                     action.enableEditDanger = false;
                     action.enableEditType = false;
+                    action.enableEditIconOnly = false;
                     action.enableEditColor = true;
                     action.renderButton = () => {
                       return (

@@ -140,10 +140,12 @@ export class AppSwitcherActionPanelModel extends FlowModel<AppSwitcherActionPane
           <DndProvider>
             <ul className={listClass}>
               {actions.map((action) => {
-                const { icon = 'AppstoreOutlined' } = action.props;
+                const { icon = 'AppstoreOutlined', color } = action.props;
                 const title = action.getTitle();
                 action.enableEditDanger = false;
                 action.enableEditType = false;
+                action.enableEditIconOnly = false;
+                action.enableEditColor = true;
                 action.renderButton = () => (
                   <Button className={buttonResetClass} onClick={action.onClick.bind(action)}>
                     <Card
@@ -175,7 +177,7 @@ export class AppSwitcherActionPanelModel extends FlowModel<AppSwitcherActionPane
                         style={{
                           flex: '0 0 auto',
                           borderRadius: 6,
-                          background: getDefaultIconColor(title),
+                          background: color || getDefaultIconColor(title),
                         }}
                       />
                       <Typography.Text
