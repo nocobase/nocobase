@@ -9,7 +9,7 @@
 
 import React, { useEffect, useRef } from 'react';
 import { Button, Flex, notification, theme } from 'antd';
-import { StopOutlined } from '@ant-design/icons';
+import { CloseCircleOutlined } from '@ant-design/icons';
 import { observer } from '@nocobase/flow-engine';
 import { useT } from '../locale';
 import { aiSelection } from './stores/ai-selection';
@@ -43,8 +43,15 @@ export const AISelectionControl: React.FC = observer(() => {
             <Button
               type="text"
               size="small"
-              icon={<StopOutlined />}
-              style={{ color: token.colorError, fontSize: token.fontSizeSM, lineHeight: token.lineHeightSM }}
+              icon={<CloseCircleOutlined />}
+              style={{
+                color: token.colorError,
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: token.fontSizeSM,
+                lineHeight: token.lineHeightSM,
+              }}
               aria-label={t('Cancel')}
               onClick={() => {
                 aiSelection.stopSelect();
