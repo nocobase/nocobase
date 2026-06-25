@@ -277,10 +277,12 @@ export function FilterDynamicComponent({
   collection,
   value,
   onChange,
+  rightAsVariable = true,
 }: {
   collection?: string;
   value?: Record<string, unknown> | null;
   onChange?: (value: Record<string, unknown> | null) => void;
+  rightAsVariable?: boolean;
 }) {
   const flowEngine = useFlowEngine();
   const t = useT();
@@ -365,12 +367,17 @@ export function FilterDynamicComponent({
 
     const Component = ({ value }: { value: VariableFilterItemValue }) => (
       <FlowModelProvider model={filterModel}>
-        <VariableFilterItem value={value} model={filterModel} rightAsVariable rightMetaTree={rightMetaTree} />
+        <VariableFilterItem
+          value={value}
+          model={filterModel}
+          rightAsVariable={rightAsVariable}
+          rightMetaTree={rightMetaTree}
+        />
       </FlowModelProvider>
     );
     Component.displayName = 'WorkflowVariableFilterItem';
     return Component;
-  }, [filterModel, rightMetaTree]);
+  }, [filterModel, rightAsVariable, rightMetaTree]);
 
   return <FilterGroup value={filterRef.current} FilterItem={FilterItemComponent ?? undefined} />;
 }
