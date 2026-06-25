@@ -99,7 +99,12 @@ function useOperandMetaTree(): MetaTreeNode[] {
 
 function Calculation({ calculator, operands = [], onChange }: any) {
   const compile = useT();
-  const metaTree = useOperandMetaTree();
+  // Keep the left/right operands on separate meta-tree instances. `TypedVariableInput`
+  // lazily resolves relation children by mutating its `metaTree` in place; sharing one
+  // tree between both sides can leave the other cascader stuck on a stale loading column
+  // when both operands walk the same workflow-variable branch.
+  const leftMetaTree = useOperandMetaTree();
+  const rightMetaTree = useOperandMetaTree();
   const leftOperandOnChange = useCallback(
     (v: unknown) => onChange({ calculator, operands: [v, operands[1]] }),
     [calculator, onChange, operands],
@@ -127,7 +132,7 @@ function Calculation({ calculator, operands = [], onChange }: any) {
           matches v1's single-row [operand · operator · operand] layout. */}
       <TypedVariableInput
         types={OPERAND_TYPES}
-        metaTree={metaTree}
+        metaTree={leftMetaTree}
         value={operands[0]}
         onChange={leftOperandOnChange}
         style={{ flex: 1, minWidth: 0 }}
@@ -158,7 +163,7 @@ function Calculation({ calculator, operands = [], onChange }: any) {
       </Select>
       <TypedVariableInput
         types={OPERAND_TYPES}
-        metaTree={metaTree}
+        metaTree={rightMetaTree}
         value={operands[1]}
         onChange={rightOperandOnChange}
         style={{ flex: 1, minWidth: 0 }}
