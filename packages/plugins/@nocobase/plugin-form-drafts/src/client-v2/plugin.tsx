@@ -132,7 +132,7 @@ FormBlockModel.registerFlow({
         enabled: false,
       },
       async handler(ctx, params) {
-        const draftCtx = ctx as DraftFlowContext;
+        const draftCtx = ctx as unknown as DraftFlowContext;
         draftCtx.model.context.defineProperty('draftRepository', {
           get: () => new FormDraftRepository(draftCtx),
         });
@@ -174,7 +174,7 @@ FormBlockModel.registerFlow({
   steps: {
     saveDraft: {
       async handler(ctx) {
-        const draftCtx = ctx as DraftFlowContext;
+        const draftCtx = ctx as unknown as DraftFlowContext;
         if (draftCtx.draftRepository.disabled) {
           return;
         }
@@ -196,7 +196,7 @@ FormBlockModel.registerFlow({
   steps: {
     deleteDraft: {
       async handler(ctx) {
-        const draftCtx = ctx as DraftFlowContext;
+        const draftCtx = ctx as unknown as DraftFlowContext;
         if (draftCtx.draftRepository.disabled) {
           return;
         }
