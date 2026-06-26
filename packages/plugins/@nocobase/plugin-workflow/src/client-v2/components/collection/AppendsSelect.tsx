@@ -22,7 +22,7 @@ import {
   type CollectionTriggerField,
 } from './utils';
 
-type AppendsTreeNode = {
+type AppendsTreeNode = LegacyDataNode & {
   pId: string | null;
   id: string;
   title: string;
@@ -38,15 +38,6 @@ type AppendsTreeScope = {
   compile: (value: string) => string;
   getCollectionFields: CollectionFieldGetter;
 };
-
-function isAppendsTreeNode(dataNode: LegacyDataNode): dataNode is LegacyDataNode & AppendsTreeNode {
-  return (
-    typeof dataNode?.value === 'string' &&
-    typeof (dataNode as Partial<AppendsTreeNode>)?.id === 'string' &&
-    Array.isArray((dataNode as Partial<AppendsTreeNode>)?.fullTitle) &&
-    typeof (dataNode as Partial<AppendsTreeNode>)?.field?.name === 'string'
-  );
-}
 
 function isAssociation(field: CollectionTriggerField) {
   return isAssociationField(field) && Boolean(field.target) && Boolean(field.interface);
@@ -82,6 +73,7 @@ function getCollectionFieldOptions(
     const isLeaf = !this.getCollectionFields(field.target).filter(isAssociation).length;
 
     return {
+      props: undefined,
       pId: parentNode?.key ?? null,
       id: key,
       key,
@@ -202,10 +194,7 @@ export function AppendsSelect({
   }, [optionsMap, treeData.length, value]);
 
   const loadData = useMemoizedFn(async (dataNode: LegacyDataNode) => {
-    if (!isAppendsTreeNode(dataNode)) {
-      return;
-    }
-    const option = dataNode;
+    const option = dataNode as AppendsTreeNode;
     if (!option.isLeaf && option.loadChildren) {
       const children = option.loadChildren(option);
       setOptionsMap((prev) => {
