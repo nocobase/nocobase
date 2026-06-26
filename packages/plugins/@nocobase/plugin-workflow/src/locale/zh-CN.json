@@ -311,7 +311,5 @@
   "Confirm paste": "确认粘贴",
   "This action will remove invalid variable references, otherwise the workflow cannot run correctly.": "该操作将移除无效的变量引用，否则工作流将无法正确执行。",
   "Failed to paste node": "粘贴节点失败",
-  "Available in the classic UI for now": "暂时仅在旧版界面中可用",
-  "Unsaved changes": "未保存的修改",
-  "Are you sure you don't want to save?": "确定不保存吗？"
+  "Available in the classic UI for now": "暂时仅在旧版界面中可用"
 }
