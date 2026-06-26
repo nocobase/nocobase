@@ -9,7 +9,7 @@
 
 import { useAPIClient, useApp } from '@nocobase/client';
 import { Alert, Button, Card, Form, Input, Result, Space, Spin, Typography } from 'antd';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useT } from './locale';
 
@@ -54,7 +54,7 @@ export const DevicePage = () => {
   const [error, setError] = useState<string | null>(null);
   const [deviceState, setDeviceState] = useState<DeviceState | null>(null);
 
-  const userCode = useMemo(() => searchParams.get('user_code') || undefined, [searchParams]);
+  const userCode = searchParams.get('user_code') || undefined;
 
   const requestDeviceState = useCallback(
     async (action = '', data?: Record<string, unknown>) => {
