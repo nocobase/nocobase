@@ -8,46 +8,19 @@
  */
 
 import { PlusOutlined } from '@ant-design/icons';
-import { BlockGridModel, usePlugin } from '@nocobase/client-v2';
-import { PluginWorkflowClientV2 } from '@nocobase/plugin-workflow/client-v2';
+import { BlockGridModel } from '@nocobase/client-v2';
 import { AddSubModelButton, FlowSettingsButton, type SubModelItem } from '@nocobase/flow-engine';
 import React, { useMemo } from 'react';
 
 import { tExpr } from '../locale';
-
-type WorkflowPluginLike = {
-  getInstruction?: (type?: string) => {
-    getCreateModelMenuItem?: (args: {
-      node: CanvasNodeLike;
-      workflow?: WorkflowLike;
-    }) => SubModelItem | SubModelItem[] | null;
-  };
-  getTriggerOptions?: (type?: string) => {
-    getCreateModelMenuItem?: (args: {
-      config: Record<string, unknown>;
-      nodeType?: string;
-      workflow?: WorkflowLike;
-    }) => SubModelItem | SubModelItem[] | null;
-  };
-};
-
-type WorkflowLike = {
-  config?: Record<string, unknown>;
-  type?: string;
-};
-
-type CanvasNodeLike = {
-  config?: Record<string, unknown>;
-  key?: string;
-  type?: string;
-};
+import { useWorkflowPluginCompat, type CanvasNodeLike, type WorkflowLike } from '../workflowPluginCompat';
 
 function toItems(value: SubModelItem | SubModelItem[] | null | undefined): SubModelItem[] {
   return Array.isArray(value) ? value.filter(Boolean) : value ? [value] : [];
 }
 
 function CCAddBlockButton({ model }: { model: CCBlockGridModel }) {
-  const workflowPlugin = usePlugin(PluginWorkflowClientV2) as WorkflowPluginLike;
+  const workflowPlugin = useWorkflowPluginCompat();
   const inputArgs = model.context.view?.inputArgs || {};
   const workflow = inputArgs.flowContext?.workflow as WorkflowLike | undefined;
   const availableUpstreams = inputArgs.availableUpstreams as CanvasNodeLike[] | undefined;
@@ -56,7 +29,7 @@ function CCAddBlockButton({ model }: { model: CCBlockGridModel }) {
     const upstreams = availableUpstreams || [];
     const dataBlockChildren: SubModelItem[] = [];
     const triggerItems = toItems(
-      workflowPlugin.getTriggerOptions?.(workflow?.type)?.getCreateModelMenuItem?.({
+      workflowPlugin.getTrigger(workflow?.type)?.getCreateModelMenuItem?.({
         config: workflow?.config || {},
         nodeType: 'cc',
         workflow,
@@ -71,7 +44,7 @@ function CCAddBlockButton({ model }: { model: CCBlockGridModel }) {
     }
 
     const nodeItems = upstreams.flatMap((node) =>
-      toItems(workflowPlugin.getInstruction?.(node.type)?.getCreateModelMenuItem?.({ node, workflow })),
+      toItems(workflowPlugin.getInstruction(node.type)?.getCreateModelMenuItem?.({ node, workflow })),
     );
     if (nodeItems.length) {
       dataBlockChildren.push({
