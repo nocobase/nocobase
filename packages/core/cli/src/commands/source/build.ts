@@ -8,7 +8,7 @@
  */
 
 import { Args, Command, Flags } from '@oclif/core';
-import { runNocoBaseCommand } from '../../lib/run-npm.ts';
+import { runNocoBaseCommand } from '../../lib/run-npm.js';
 import {
   isCliManagedSourceApp,
   resolveLocalPluginWorkspaceSync,
