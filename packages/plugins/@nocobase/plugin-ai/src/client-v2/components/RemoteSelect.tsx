@@ -7,9 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useCallback, useMemo, useRef } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { CloseCircleFilled, CloseOutlined } from '@ant-design/icons';
-import { Select, Tag, Tooltip, theme, type SelectProps } from 'antd';
+import { Select, Spin, Tag, Tooltip, theme, type SelectProps } from 'antd';
 import type { DefaultOptionType } from 'antd/es/select';
 import { useRequest } from 'ahooks';
 import { useApp } from '@nocobase/client-v2';
@@ -149,6 +149,7 @@ export function RemoteSelect<ValueType = unknown>(props: RemoteSelectProps<Value
     maxTagCount,
     maxTagPlaceholder,
     tagRender,
+    notFoundContent,
     onDropdownVisibleChange,
     onSearch,
     style,
@@ -159,6 +160,7 @@ export function RemoteSelect<ValueType = unknown>(props: RemoteSelectProps<Value
   const { token } = theme.useToken();
   const searchRef = useRef('');
   const firstOpenRef = useRef(false);
+  const [requestPending, setRequestPending] = useState(false);
   const labelKey = fieldNames?.label ?? DEFAULT_FIELD_NAMES.label;
   const valueKey = fieldNames?.value ?? DEFAULT_FIELD_NAMES.value;
   const selectMode = multiple ? 'multiple' : mode;
@@ -210,7 +212,11 @@ export function RemoteSelect<ValueType = unknown>(props: RemoteSelectProps<Value
   const { data, loading, run } = useRequest<unknown, [string | undefined]>(loadOptions, {
     manual,
     debounceWait: wait,
+    onFinally: () => {
+      setRequestPending(false);
+    },
   });
+  const mergedLoading = requestPending || loading || (data === undefined && !firstOpenRef.current);
 
   const options = useMemo(() => {
     const sourceItems = readResponseItems(data);
@@ -243,14 +249,18 @@ export function RemoteSelect<ValueType = unknown>(props: RemoteSelectProps<Value
 
   const handleSearch = (search: string) => {
     searchRef.current = search;
+    setRequestPending(true);
     run(search);
     onSearch?.(search);
   };
 
   const handleOpenChange = (open: boolean) => {
     if (open) {
+      setRequestPending(true);
       run(searchRef.current || undefined);
       firstOpenRef.current = true;
+    } else {
+      setRequestPending(false);
     }
     onDropdownVisibleChange?.(open);
   };
@@ -282,7 +292,10 @@ export function RemoteSelect<ValueType = unknown>(props: RemoteSelectProps<Value
       optionFilterProp="label"
       onSearch={handleSearch}
       onDropdownVisibleChange={handleOpenChange}
-      loading={data === undefined && !firstOpenRef.current ? true : loading}
+      loading={mergedLoading}
+      notFoundContent={
+        notFoundContent !== undefined ? notFoundContent : mergedLoading ? <Spin size="small" /> : undefined
+      }
       options={options}
       maxTagCount={maxTagCount ?? (isMultipleMode ? 'responsive' : undefined)}
       maxTagPlaceholder={

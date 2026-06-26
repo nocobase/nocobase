@@ -14,7 +14,6 @@ import {
   Card,
   Cascader,
   Divider,
-  Drawer,
   Empty,
   Flex,
   Form,
@@ -41,6 +40,7 @@ import { dayjs } from '@nocobase/utils/client';
 import { createCollectionContextMeta, observable, useFlowContext } from '@nocobase/flow-engine';
 import type { Collection } from '@nocobase/flow-engine';
 import { useT } from '../locale';
+import { useUnsavedChangesBeforeClose } from './useUnsavedChangesBeforeClose';
 
 type APIClientLike = Pick<APIClient, 'resource'>;
 type ResourceAction = (params?: Record<string, unknown>) => Promise<unknown>;
@@ -872,21 +872,14 @@ const EnabledSwitch: React.FC<{
 
 export const DatasourceSettingsPage: React.FC = () => {
   const app = useApp();
+  const ctx = useFlowContext();
   const t = useT();
   const { token } = theme.useToken();
   const { message, modal } = App.useApp();
-  const [form] = Form.useForm<DatasourceFormValues>();
   const manager = app.dataSourceManager as DataSourceManagerLike | undefined;
   const [records, setRecords] = useState<AIContextDatasourceRecord[]>([]);
   const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [previewing, setPreviewing] = useState(false);
-  const [preview, setPreview] = useState<PreviewResult | null>(null);
-  const [drawerMode, setDrawerMode] = useState<DrawerMode | undefined>();
-  const [editingRecord, setEditingRecord] = useState<AIContextDatasourceRecord | undefined>();
-  const [currentStep, setCurrentStep] = useState(0);
   const [total, setTotal] = useState(0);
-  const drawerOpen = !!drawerMode;
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -907,74 +900,21 @@ export const DatasourceSettingsPage: React.FC = () => {
   }, [refresh]);
 
   const openCreateDrawer = () => {
-    setEditingRecord(undefined);
-    setPreview(null);
-    setCurrentStep(0);
-    form.resetFields();
-    form.setFieldsValue(createInitialValues());
-    setDrawerMode('create');
+    ctx.viewer.open({
+      type: 'drawer',
+      width: '50%',
+      closable: true,
+      content: <DatasourceDrawerContent manager={manager} onSubmitted={refresh} />,
+    });
   };
 
   const openDetailDrawer = (record: AIContextDatasourceRecord) => {
-    setEditingRecord(record);
-    setPreview(null);
-    setCurrentStep(0);
-    form.resetFields();
-    form.setFieldsValue(toDatasourceFormValues(record));
-    setDrawerMode('edit');
-  };
-
-  const closeDrawer = () => {
-    setDrawerMode(undefined);
-    setEditingRecord(undefined);
-    form.resetFields();
-    setPreview(null);
-    setCurrentStep(0);
-  };
-
-  const handlePreview = async () => {
-    const values = form.getFieldsValue(true);
-    setPreviewing(true);
-    try {
-      setPreview(await previewContextDatasource(app.apiClient, values));
-    } finally {
-      setPreviewing(false);
-    }
-  };
-
-  const handleDetailTabChange = (step: number) => {
-    setCurrentStep(step);
-    if (step === 4) {
-      handlePreview().catch((error: unknown) => {
-        console.error(error);
-        setPreviewing(false);
-      });
-    }
-  };
-
-  const handleNext = async () => {
-    await form.validateFields(getDatasourceStepFields(currentStep));
-    if (currentStep === 3) {
-      await handlePreview();
-    }
-    setCurrentStep((step) => Math.min(step + 1, 4));
-  };
-
-  const handleFinish = async (values: DatasourceFormValues) => {
-    setSaving(true);
-    try {
-      if (editingRecord) {
-        await updateContextDatasource(app.apiClient, editingRecord.id, values);
-        message.success(t('Saved successfully'));
-      } else {
-        await createContextDatasource(app.apiClient, values);
-        message.success(t('Processing complete!'));
-      }
-      closeDrawer();
-      await refresh();
-    } finally {
-      setSaving(false);
-    }
+    ctx.viewer.open({
+      type: 'drawer',
+      width: '50%',
+      closable: true,
+      content: <DatasourceDrawerContent record={record} manager={manager} onSubmitted={refresh} />,
+    });
   };
 
   const handleDelete = (record: AIContextDatasourceRecord) => {
@@ -1093,65 +1033,148 @@ export const DatasourceSettingsPage: React.FC = () => {
           </Space>
         </div>
       )}
-      <Drawer
-        open={drawerOpen}
-        onClose={closeDrawer}
-        width="50%"
-        title={drawerMode === 'edit' ? t('Edit datasource') : t('Add datasource')}
-        footer={
-          drawerMode === 'edit' ? (
-            <Flex justify="flex-end" align="center">
-              <Space>
-                <Button onClick={closeDrawer}>{t('Cancel')}</Button>
+    </>
+  );
+};
+
+const DatasourceDrawerContent: React.FC<{
+  record?: AIContextDatasourceRecord;
+  manager?: DataSourceManagerLike;
+  onSubmitted: () => Promise<void>;
+}> = ({ record, manager, onSubmitted }) => {
+  const app = useApp();
+  const ctx = useFlowContext();
+  const t = useT();
+  const { message } = App.useApp();
+  const { token: themeToken } = theme.useToken();
+  const [form] = Form.useForm<DatasourceFormValues>();
+  const [saving, setSaving] = useState(false);
+  const [previewing, setPreviewing] = useState(false);
+  const [preview, setPreview] = useState<PreviewResult | null>(null);
+  const [currentStep, setCurrentStep] = useState(0);
+  const [formDirty, setFormDirty] = useState(false);
+  const mode: DrawerMode = record ? 'edit' : 'create';
+  const initialValues = useMemo(() => (record ? toDatasourceFormValues(record) : createInitialValues()), [record]);
+  const { Header, Footer } = ctx.view;
+
+  useEffect(() => {
+    form.setFieldsValue(initialValues);
+  }, [form, initialValues]);
+
+  const requestClose = useUnsavedChangesBeforeClose({
+    view: ctx.view,
+    form,
+    initialValues,
+    dirty: formDirty,
+    title: t('Unsaved changes'),
+    content: t("Are you sure you don't want to save?"),
+  });
+
+  const handlePreview = async () => {
+    const values = form.getFieldsValue(true);
+    setPreviewing(true);
+    try {
+      setPreview(await previewContextDatasource(app.apiClient, values));
+    } finally {
+      setPreviewing(false);
+    }
+  };
+
+  const handleDetailTabChange = (step: number) => {
+    setCurrentStep(step);
+    if (step === 4) {
+      handlePreview().catch((error: unknown) => {
+        console.error(error);
+        setPreviewing(false);
+      });
+    }
+  };
+
+  const handleNext = async () => {
+    await form.validateFields(getDatasourceStepFields(currentStep));
+    if (currentStep === 3) {
+      await handlePreview();
+    }
+    setCurrentStep((step) => Math.min(step + 1, 4));
+  };
+
+  const handleFinish = async (values: DatasourceFormValues) => {
+    setSaving(true);
+    try {
+      if (record) {
+        await updateContextDatasource(app.apiClient, record.id, values);
+        message.success(t('Saved successfully'));
+      } else {
+        await createContextDatasource(app.apiClient, values);
+        message.success(t('Processing complete!'));
+      }
+      await onSubmitted();
+      await ctx.view.close(undefined, true);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <>
+      <Header title={record ? t('Edit datasource') : t('Add datasource')} />
+      <Spin spinning={saving}>
+        <Form<DatasourceFormValues>
+          form={form}
+          layout="vertical"
+          onFinish={handleFinish}
+          onValuesChange={() => setFormDirty(true)}
+        >
+          <DatasourceForm
+            manager={manager}
+            preview={preview}
+            previewing={previewing}
+            editing={!!record}
+            currentStep={currentStep}
+            mode={record ? 'tabs' : 'steps'}
+            onStepChange={handleDetailTabChange}
+            onPreview={() => {
+              handlePreview().catch((error: unknown) => {
+                console.error(error);
+                setPreviewing(false);
+              });
+            }}
+          />
+        </Form>
+      </Spin>
+      <Footer>
+        {mode === 'edit' ? (
+          <Flex justify="flex-end" align="center">
+            <Space>
+              <Button onClick={requestClose}>{t('Cancel')}</Button>
+              <Button type="primary" loading={saving} onClick={() => form.submit()}>
+                {t('Submit')}
+              </Button>
+            </Space>
+          </Flex>
+        ) : (
+          <Flex justify="flex-end" align="end">
+            <Space>
+              <Button
+                style={{ margin: `0 ${themeToken.marginXS}px` }}
+                onClick={() => setCurrentStep((step) => Math.max(step - 1, 0))}
+                disabled={currentStep === 0}
+              >
+                {t('Previous')}
+              </Button>
+              {currentStep < 4 ? (
+                <Button type="primary" loading={previewing} onClick={handleNext}>
+                  {t('Next')}
+                </Button>
+              ) : (
                 <Button type="primary" loading={saving} onClick={() => form.submit()}>
                   {t('Submit')}
                 </Button>
-              </Space>
-            </Flex>
-          ) : (
-            <Flex justify="flex-end" align="end">
-              <Space>
-                <Button
-                  style={{ margin: `0 ${token.marginXS}px` }}
-                  onClick={() => setCurrentStep((step) => Math.max(step - 1, 0))}
-                  disabled={currentStep === 0}
-                >
-                  {t('Previous')}
-                </Button>
-                {currentStep < 4 ? (
-                  <Button type="primary" loading={previewing} onClick={handleNext}>
-                    {t('Next')}
-                  </Button>
-                ) : (
-                  <Button type="primary" loading={saving} onClick={() => form.submit()}>
-                    {t('Submit')}
-                  </Button>
-                )}
-              </Space>
-            </Flex>
-          )
-        }
-      >
-        <Spin spinning={saving}>
-          <Form<DatasourceFormValues> form={form} layout="vertical" onFinish={handleFinish}>
-            <DatasourceForm
-              manager={manager}
-              preview={preview}
-              previewing={previewing}
-              editing={!!editingRecord}
-              currentStep={currentStep}
-              mode={drawerMode === 'edit' ? 'tabs' : 'steps'}
-              onStepChange={handleDetailTabChange}
-              onPreview={() => {
-                handlePreview().catch((error: unknown) => {
-                  console.error(error);
-                  setPreviewing(false);
-                });
-              }}
-            />
-          </Form>
-        </Spin>
-      </Drawer>
+              )}
+            </Space>
+          </Flex>
+        )}
+      </Footer>
     </>
   );
 };

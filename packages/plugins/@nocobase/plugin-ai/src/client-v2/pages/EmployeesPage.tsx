@@ -15,14 +15,12 @@ import {
   Button,
   Card,
   Collapse,
-  Drawer,
   Dropdown,
   Flex,
   Form,
   Input,
   InputNumber,
   List,
-  Modal,
   Popconfirm,
   Radio,
   Segmented,
@@ -41,9 +39,8 @@ import type { ColumnsType } from 'antd/es/table';
 import { DeleteOutlined, ExclamationCircleOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons';
 import { arrayMove } from '@dnd-kit/sortable';
 import { css } from '@emotion/css';
-import isEqual from 'lodash/isEqual';
 import { Table, useApp, VariableTextArea } from '@nocobase/client-v2';
-import { observer, randomId } from '@nocobase/flow-engine';
+import { observer, randomId, useFlowContext } from '@nocobase/flow-engine';
 import type { APIClient, SkillsEntry, ToolsEntry } from '@nocobase/client-v2';
 import { useT } from '../locale';
 import { avatars, avatarsMap } from '../ai-employees/avatars';
@@ -51,6 +48,7 @@ import { useAIConfigRepository } from '../repositories/hooks/useAIConfigReposito
 import type { LLMServiceItem } from '../repositories/AIConfigRepository';
 import type { AIEmployee as ChatAIEmployee } from '../ai-employees/types';
 import { AI_SETTINGS_DRAWER_WIDTH } from './drawerWidth';
+import { useUnsavedChangesBeforeClose } from './useUnsavedChangesBeforeClose';
 
 type EmployeeCategory = 'business' | 'developer';
 type APIClientLike = Pick<APIClient, 'resource'>;
@@ -1049,23 +1047,16 @@ const EnableSwitch: React.FC<{
 
 export const EmployeesPage: React.FC = () => {
   const app = useApp();
+  const ctx = useFlowContext();
   const t = useT();
   const { token } = theme.useToken();
   const { message } = App.useApp();
   const repo = useAIConfigRepository();
-  const [form] = Form.useForm<EmployeeFormValues>();
   const [category, setCategory] = useState<EmployeeCategory>('business');
   const [employees, setEmployees] = useState<SettingsAIEmployee[]>([]);
   const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const [editingRecord, setEditingRecord] = useState<SettingsAIEmployee | undefined>();
   const [knowledgeBaseEnabled, setKnowledgeBaseEnabled] = useState(false);
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
-  const [formSessionKey, setFormSessionKey] = useState(0);
-  const [activeFormTab, setActiveFormTab] = useState('profile');
-  const [formDirty, setFormDirty] = useState(false);
-  const initialFormValuesRef = React.useRef<EmployeeFormValues | undefined>(undefined);
   const auth = app.apiClient.auth as { role?: string } | undefined;
   const isRoot = auth?.role === 'root';
   const actionLinkStyle = useMemo<React.CSSProperties>(
@@ -1113,69 +1104,38 @@ export const EmployeesPage: React.FC = () => {
   }, [app.apiClient]);
 
   const openCreateDrawer = () => {
-    const initialValues = createInitialEmployeeValues(t);
-    setEditingRecord(undefined);
-    setActiveFormTab('profile');
-    form.resetFields();
-    form.setFieldsValue(initialValues);
-    initialFormValuesRef.current = initialValues;
-    setFormDirty(false);
-    setFormSessionKey((key) => key + 1);
-    setDrawerOpen(true);
-  };
-
-  const openEditDrawer = (record: SettingsAIEmployee) => {
-    const initialValues: EmployeeFormValues = {
-      ...record,
-      _aboutMode: record.builtIn ? (record.about ? 'custom' : 'system') : undefined,
-    };
-    setEditingRecord(record);
-    setActiveFormTab('profile');
-    form.resetFields();
-    form.setFieldsValue(initialValues);
-    initialFormValuesRef.current = initialValues;
-    setFormDirty(false);
-    setFormSessionKey((key) => key + 1);
-    setDrawerOpen(true);
-  };
-
-  const closeDrawer = () => {
-    setDrawerOpen(false);
-    form.resetFields();
-    setActiveFormTab('profile');
-    setFormDirty(false);
-    initialFormValuesRef.current = undefined;
-  };
-
-  const requestCloseDrawer = () => {
-    const currentValues = form.getFieldsValue(true);
-    const hasUnsavedChanges = formDirty || !isEqual(currentValues, initialFormValuesRef.current);
-    if (!hasUnsavedChanges) {
-      closeDrawer();
-      return;
-    }
-    Modal.confirm({
-      title: t('Unsaved changes'),
-      content: t("Are you sure you don't want to save?"),
-      onOk: closeDrawer,
+    ctx.viewer.open({
+      type: 'drawer',
+      width: AI_SETTINGS_DRAWER_WIDTH,
+      closable: true,
+      content: (
+        <AIEmployeeDrawerContent
+          knowledgeBaseEnabled={knowledgeBaseEnabled}
+          onSubmitted={async () => {
+            await refresh();
+            await repo.refreshAIEmployees();
+          }}
+        />
+      ),
     });
   };
 
-  const handleFinish = async (values: EmployeeFormValues) => {
-    setSaving(true);
-    try {
-      if (editingRecord) {
-        await updateAIEmployee(app.apiClient, values);
-      } else {
-        await createAIEmployee(app.apiClient, values);
-      }
-      message.success(t('Saved successfully'));
-      closeDrawer();
-      await refresh();
-      await repo.refreshAIEmployees();
-    } finally {
-      setSaving(false);
-    }
+  const openEditDrawer = (record: SettingsAIEmployee) => {
+    ctx.viewer.open({
+      type: 'drawer',
+      width: AI_SETTINGS_DRAWER_WIDTH,
+      closable: true,
+      content: (
+        <AIEmployeeDrawerContent
+          editingRecord={record}
+          knowledgeBaseEnabled={knowledgeBaseEnabled}
+          onSubmitted={async () => {
+            await refresh();
+            await repo.refreshAIEmployees();
+          }}
+        />
+      ),
+    });
   };
 
   const handleSortEnd = async (from: SettingsAIEmployee, to: SettingsAIEmployee) => {
@@ -1324,41 +1284,93 @@ export const EmployeesPage: React.FC = () => {
           />
         </div>
       </Flex>
-      <Drawer
-        open={drawerOpen}
-        onClose={requestCloseDrawer}
-        destroyOnClose
-        width={AI_SETTINGS_DRAWER_WIDTH}
-        title={editingRecord ? t('Edit AI employee') : t('New AI employee')}
-        footer={
-          <Flex justify="end" gap="small">
-            <Button onClick={requestCloseDrawer}>{t('Cancel')}</Button>
-            <Button type="primary" loading={saving} onClick={() => form.submit()}>
-              {t('Submit')}
-            </Button>
-          </Flex>
-        }
-      >
-        <Spin spinning={saving}>
-          <Form<EmployeeFormValues>
-            key={formSessionKey}
-            form={form}
-            layout="vertical"
-            onFinish={handleFinish}
-            onValuesChange={() => setFormDirty(true)}
-          >
-            <EmployeeForm
-              apiClient={app.apiClient}
-              activeTab={activeFormTab}
-              edit={!!editingRecord}
-              onTabChange={setActiveFormTab}
-              record={editingRecord}
-              knowledgeBaseEnabled={knowledgeBaseEnabled}
-            />
-          </Form>
-        </Spin>
-      </Drawer>
     </Card>
+  );
+};
+
+const AIEmployeeDrawerContent: React.FC<{
+  editingRecord?: SettingsAIEmployee;
+  knowledgeBaseEnabled: boolean;
+  onSubmitted: () => Promise<void>;
+}> = ({ editingRecord, knowledgeBaseEnabled, onSubmitted }) => {
+  const app = useApp();
+  const ctx = useFlowContext();
+  const t = useT();
+  const { message } = App.useApp();
+  const [form] = Form.useForm<EmployeeFormValues>();
+  const [saving, setSaving] = useState(false);
+  const [activeFormTab, setActiveFormTab] = useState('profile');
+  const [formDirty, setFormDirty] = useState(false);
+  const initialValues = useMemo<EmployeeFormValues>(
+    () =>
+      editingRecord
+        ? {
+            ...editingRecord,
+            _aboutMode: editingRecord.builtIn ? (editingRecord.about ? 'custom' : 'system') : undefined,
+          }
+        : createInitialEmployeeValues(t),
+    [editingRecord, t],
+  );
+  const { Header, Footer } = ctx.view;
+
+  useEffect(() => {
+    form.setFieldsValue(initialValues);
+  }, [form, initialValues]);
+
+  const requestClose = useUnsavedChangesBeforeClose({
+    view: ctx.view,
+    form,
+    initialValues,
+    dirty: formDirty,
+    title: t('Unsaved changes'),
+    content: t("Are you sure you don't want to save?"),
+  });
+
+  const handleFinish = async (values: EmployeeFormValues) => {
+    setSaving(true);
+    try {
+      if (editingRecord) {
+        await updateAIEmployee(app.apiClient, values);
+      } else {
+        await createAIEmployee(app.apiClient, values);
+      }
+      message.success(t('Saved successfully'));
+      await onSubmitted();
+      await ctx.view.close(undefined, true);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <>
+      <Header title={editingRecord ? t('Edit AI employee') : t('New AI employee')} />
+      <Spin spinning={saving}>
+        <Form<EmployeeFormValues>
+          form={form}
+          layout="vertical"
+          onFinish={handleFinish}
+          onValuesChange={() => setFormDirty(true)}
+        >
+          <EmployeeForm
+            apiClient={app.apiClient}
+            activeTab={activeFormTab}
+            edit={!!editingRecord}
+            onTabChange={setActiveFormTab}
+            record={editingRecord}
+            knowledgeBaseEnabled={knowledgeBaseEnabled}
+          />
+        </Form>
+      </Spin>
+      <Footer>
+        <Flex justify="end" gap="small">
+          <Button onClick={requestClose}>{t('Cancel')}</Button>
+          <Button type="primary" loading={saving} onClick={() => form.submit()}>
+            {t('Submit')}
+          </Button>
+        </Flex>
+      </Footer>
+    </>
   );
 };
 

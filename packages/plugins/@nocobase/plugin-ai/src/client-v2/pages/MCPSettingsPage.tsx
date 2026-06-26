@@ -14,7 +14,6 @@ import {
   Button,
   Card,
   Checkbox,
-  Drawer,
   Empty,
   Flex,
   Form,
@@ -40,12 +39,12 @@ import {
   ReloadOutlined,
 } from '@ant-design/icons';
 import { css } from '@emotion/css';
-import isEqual from 'lodash/isEqual';
 import { Table, useApp, VariableInput } from '@nocobase/client-v2';
 import type { APIClient } from '@nocobase/client-v2';
 import { useFlowContext, type MetaTreeNode } from '@nocobase/flow-engine';
 import { useT } from '../locale';
 import { AI_MCP_TOOLS_DRAWER_WIDTH, AI_SETTINGS_DRAWER_WIDTH } from './drawerWidth';
+import { useUnsavedChangesBeforeClose } from './useUnsavedChangesBeforeClose';
 
 type APIClientLike = Pick<APIClient, 'resource'>;
 type ResourceAction = (params?: Record<string, unknown>) => Promise<unknown>;
@@ -753,24 +752,16 @@ const EnabledSwitch: React.FC<{ record: MCPRecord; rebuilding: boolean; onUpdate
 
 export const MCPSettingsPage: React.FC = () => {
   const app = useApp();
+  const ctx = useFlowContext();
   const t = useT();
   const { message, modal } = App.useApp();
   const { token } = theme.useToken();
-  const [form] = Form.useForm<MCPFormValues>();
   const [clients, setClients] = useState<MCPRecord[]>([]);
   const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [testing, setTesting] = useState(false);
-  const [testResult, setTestResult] = useState<MCPTestResultData | null>(null);
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const [toolsDrawerRecord, setToolsDrawerRecord] = useState<MCPRecord | undefined>();
-  const [editingRecord, setEditingRecord] = useState<MCPRecord | undefined>();
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
   const [rebuilding, setRebuilding] = useState(false);
-  const [formDirty, setFormDirty] = useState(false);
   const rebuildTailRef = useRef<Promise<void>>(Promise.resolve());
   const rebuildPendingCountRef = useRef(0);
-  const initialFormValuesRef = useRef<MCPFormValues | undefined>(undefined);
   const actionLinkStyle = useMemo<React.CSSProperties>(
     () => ({
       color: token.colorPrimary,
@@ -818,100 +809,28 @@ export const MCPSettingsPage: React.FC = () => {
   }, [refresh]);
 
   const openCreateDrawer = () => {
-    const initialValues = createInitialValues();
-    setEditingRecord(undefined);
-    setTestResult(null);
-    form.resetFields();
-    form.setFieldsValue(initialValues);
-    setFormDirty(false);
-    initialFormValuesRef.current = initialValues;
-    setDrawerOpen(true);
-  };
-
-  const openEditDrawer = (record: MCPRecord) => {
-    const initialValues = toMCPFormValues(record);
-    setEditingRecord(record);
-    setTestResult(null);
-    form.resetFields();
-    form.setFieldsValue(initialValues);
-    setFormDirty(false);
-    initialFormValuesRef.current = initialValues;
-    setDrawerOpen(true);
-  };
-
-  const closeDrawer = () => {
-    setDrawerOpen(false);
-    form.resetFields();
-    setTestResult(null);
-    setFormDirty(false);
-    initialFormValuesRef.current = undefined;
-  };
-
-  const requestCloseDrawer = () => {
-    const currentValues = form.getFieldsValue(true);
-    const hasUnsavedChanges = formDirty || !isEqual(currentValues, initialFormValuesRef.current);
-    if (!hasUnsavedChanges) {
-      closeDrawer();
-      return;
-    }
-    modal.confirm({
-      title: t('Unsaved changes'),
-      content: t("Are you sure you don't want to save?"),
-      onOk: closeDrawer,
+    ctx.viewer.open({
+      type: 'drawer',
+      width: AI_SETTINGS_DRAWER_WIDTH,
+      closable: true,
+      content: <MCPSettingsDrawerContent rebuilding={rebuilding} rebuildClient={rebuildClient} onSubmitted={refresh} />,
     });
   };
 
-  const runTestConnection = async () => {
-    const values = form.getFieldsValue(true);
-    setTesting(true);
-    setTestResult(null);
-    try {
-      const result = await testMCPConnection(app.apiClient, values);
-      setTestResult(result);
-      return !!result?.success;
-    } catch (error) {
-      setTestResult({
-        success: false,
-        error: error instanceof Error ? error.message : t('An error occurred while testing the connection'),
-      });
-      return false;
-    } finally {
-      setTesting(false);
-    }
-  };
-
-  const handleFinish = async (values: MCPFormValues) => {
-    setSaving(true);
-    try {
-      const passed = await runTestConnection();
-      if (!passed) {
-        if (sanitizeMCPValues(values).useUserContext !== true) {
-          return;
-        }
-        const confirmed = await modal.confirm({
-          title: t('Connection test failed'),
-          content: t(
-            'The MCP server uses current user variables and the connection test failed. Do you want to save it anyway?',
-          ),
-          okText: t('Save anyway'),
-          cancelText: t('Cancel'),
-        });
-        if (!confirmed) {
-          return;
-        }
-      }
-      if (editingRecord) {
-        await updateMCPClient(app.apiClient, values, editingRecord.name);
-      } else {
-        await createMCPClient(app.apiClient, values);
-      }
-      await rebuildClient();
-      message.success(t('Saved successfully'));
-      closeDrawer();
-      await refresh();
-    } finally {
-      setSaving(false);
-    }
+  const openEditDrawer = (record: MCPRecord) => {
+    ctx.viewer.open({
+      type: 'drawer',
+      width: AI_SETTINGS_DRAWER_WIDTH,
+      closable: true,
+      content: (
+        <MCPSettingsDrawerContent
+          record={record}
+          rebuilding={rebuilding}
+          rebuildClient={rebuildClient}
+          onSubmitted={refresh}
+        />
+      ),
+    });
   };
 
   const handleBulkDelete = async () => {
@@ -953,7 +872,17 @@ export const MCPSettingsPage: React.FC = () => {
       key: 'actions',
       render: (_, record) => (
         <Space size={token.marginXS}>
-          <a style={actionLinkStyle} onClick={() => setToolsDrawerRecord(record)}>
+          <a
+            style={actionLinkStyle}
+            onClick={() => {
+              ctx.viewer.open({
+                type: 'drawer',
+                width: AI_MCP_TOOLS_DRAWER_WIDTH,
+                closable: true,
+                content: <MCPToolsDrawerContent record={record} rebuilding={rebuilding} />,
+              });
+            }}
+          >
             {t('View')}
           </a>
           <a style={actionLinkStyle} onClick={() => openEditDrawer(record)}>
@@ -975,8 +904,6 @@ export const MCPSettingsPage: React.FC = () => {
       ),
     },
   ];
-
-  const drawerTitle = editingRecord ? t('Edit record') : t('Add new');
 
   return (
     <Card
@@ -1030,46 +957,133 @@ export const MCPSettingsPage: React.FC = () => {
           />
         </div>
       </Flex>
-      <Drawer
-        open={drawerOpen}
-        onClose={requestCloseDrawer}
-        width={AI_SETTINGS_DRAWER_WIDTH}
-        title={drawerTitle}
-        footer={
-          <Flex justify="end" gap="small">
-            <Space>
-              <Button loading={testing} onClick={() => runTestConnection()}>
-                {t('Test flight')}
-              </Button>
-              <Button onClick={requestCloseDrawer}>{t('Cancel')}</Button>
-              <Button type="primary" loading={saving || testing || rebuilding} onClick={() => form.submit()}>
-                {t('Submit')}
-              </Button>
-            </Space>
-          </Flex>
-        }
-      >
-        <Spin spinning={saving}>
-          <Form<MCPFormValues>
-            form={form}
-            layout="vertical"
-            onFinish={handleFinish}
-            onValuesChange={() => setFormDirty(true)}
-          >
-            <MCPForm editing={!!editingRecord} testResult={testResult} testing={testing} />
-          </Form>
-        </Spin>
-      </Drawer>
-      <Drawer
-        open={!!toolsDrawerRecord}
-        onClose={() => setToolsDrawerRecord(undefined)}
-        width={AI_MCP_TOOLS_DRAWER_WIDTH}
-        title={t('MCP tools')}
-        destroyOnClose
-      >
-        {toolsDrawerRecord ? <MCPToolsList record={toolsDrawerRecord} rebuilding={rebuilding} /> : null}
-      </Drawer>
     </Card>
+  );
+};
+
+const MCPSettingsDrawerContent: React.FC<{
+  record?: MCPRecord;
+  rebuilding: boolean;
+  rebuildClient: () => Promise<void>;
+  onSubmitted: () => Promise<void>;
+}> = ({ record, rebuilding, rebuildClient, onSubmitted }) => {
+  const app = useApp();
+  const ctx = useFlowContext();
+  const t = useT();
+  const { message, modal } = App.useApp();
+  const [form] = Form.useForm<MCPFormValues>();
+  const [saving, setSaving] = useState(false);
+  const [testing, setTesting] = useState(false);
+  const [testResult, setTestResult] = useState<MCPTestResultData | null>(null);
+  const [formDirty, setFormDirty] = useState(false);
+  const initialValues = useMemo(() => (record ? toMCPFormValues(record) : createInitialValues()), [record]);
+  const { Header, Footer } = ctx.view;
+
+  useEffect(() => {
+    form.setFieldsValue(initialValues);
+  }, [form, initialValues]);
+
+  const requestClose = useUnsavedChangesBeforeClose({
+    view: ctx.view,
+    form,
+    initialValues,
+    dirty: formDirty,
+    title: t('Unsaved changes'),
+    content: t("Are you sure you don't want to save?"),
+  });
+
+  const runTestConnection = async () => {
+    const values = form.getFieldsValue(true);
+    setTesting(true);
+    setTestResult(null);
+    try {
+      const result = await testMCPConnection(app.apiClient, values);
+      setTestResult(result);
+      return !!result?.success;
+    } catch (error) {
+      setTestResult({
+        success: false,
+        error: error instanceof Error ? error.message : t('An error occurred while testing the connection'),
+      });
+      return false;
+    } finally {
+      setTesting(false);
+    }
+  };
+
+  const handleFinish = async (values: MCPFormValues) => {
+    setSaving(true);
+    try {
+      const passed = await runTestConnection();
+      if (!passed) {
+        if (sanitizeMCPValues(values).useUserContext !== true) {
+          return;
+        }
+        const confirmed = await modal.confirm({
+          title: t('Connection test failed'),
+          content: t(
+            'The MCP server uses current user variables and the connection test failed. Do you want to save it anyway?',
+          ),
+          okText: t('Save anyway'),
+          cancelText: t('Cancel'),
+        });
+        if (!confirmed) {
+          return;
+        }
+      }
+      if (record) {
+        await updateMCPClient(app.apiClient, values, record.name);
+      } else {
+        await createMCPClient(app.apiClient, values);
+      }
+      await rebuildClient();
+      message.success(t('Saved successfully'));
+      await onSubmitted();
+      await ctx.view.close(undefined, true);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <>
+      <Header title={record ? t('Edit record') : t('Add new')} />
+      <Spin spinning={saving}>
+        <Form<MCPFormValues>
+          form={form}
+          layout="vertical"
+          onFinish={handleFinish}
+          onValuesChange={() => setFormDirty(true)}
+        >
+          <MCPForm editing={!!record} testResult={testResult} testing={testing} />
+        </Form>
+      </Spin>
+      <Footer>
+        <Flex justify="end" gap="small">
+          <Space>
+            <Button loading={testing} onClick={() => runTestConnection()}>
+              {t('Test flight')}
+            </Button>
+            <Button onClick={requestClose}>{t('Cancel')}</Button>
+            <Button type="primary" loading={saving || testing || rebuilding} onClick={() => form.submit()}>
+              {t('Submit')}
+            </Button>
+          </Space>
+        </Flex>
+      </Footer>
+    </>
+  );
+};
+
+const MCPToolsDrawerContent: React.FC<{ record: MCPRecord; rebuilding: boolean }> = ({ record, rebuilding }) => {
+  const ctx = useFlowContext();
+  const t = useT();
+  const { Header } = ctx.view;
+  return (
+    <>
+      <Header title={t('MCP tools')} />
+      <MCPToolsList record={record} rebuilding={rebuilding} />
+    </>
   );
 };
 

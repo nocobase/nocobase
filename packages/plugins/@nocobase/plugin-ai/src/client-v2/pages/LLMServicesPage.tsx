@@ -12,7 +12,6 @@ import {
   App,
   Button,
   Card,
-  Drawer,
   Flex,
   Form,
   Input,
@@ -34,7 +33,7 @@ import { arrayMove } from '@dnd-kit/sortable';
 import { css } from '@emotion/css';
 import { EnvVariableInput, Table, useApp } from '@nocobase/client-v2';
 import type { APIClient } from '@nocobase/client-v2';
-import { randomId } from '@nocobase/flow-engine';
+import { randomId, useFlowContext } from '@nocobase/flow-engine';
 import { useLocation } from 'react-router-dom';
 import { getRecommendedModels, isRecommendedModel } from '../../common/recommended-models';
 import type { LLMProviderOptions } from '../manager/ai-manager';
@@ -43,6 +42,7 @@ import { useT } from '../locale';
 import { useAIConfigRepository } from '../repositories/hooks/useAIConfigRepository';
 import { RemoteSelect } from '../components/RemoteSelect';
 import { AI_SETTINGS_DRAWER_WIDTH } from './drawerWidth';
+import { useUnsavedChangesBeforeClose } from './useUnsavedChangesBeforeClose';
 
 type APIClientLike = Pick<APIClient, 'resource'>;
 type ResourceAction = (params?: Record<string, unknown>, options?: Record<string, unknown>) => Promise<unknown>;
@@ -52,7 +52,7 @@ type APIResponse = {
     count?: unknown;
   };
 };
-type ProviderOption = {
+export type ProviderOption = {
   key: string;
   value: string;
   label: string;
@@ -75,7 +75,7 @@ export type LLMServiceRecord = {
   enabled?: boolean;
   modelOptions?: Record<string, unknown>;
 };
-type LLMServiceFormValues = LLMServiceRecord;
+export type LLMServiceFormValues = LLMServiceRecord;
 type LLMServicesListResult = {
   data: LLMServiceRecord[];
   total?: number;
@@ -336,7 +336,7 @@ const getProviderOptions = (app: ReturnType<typeof useApp>, provider?: string) =
 
 const labelWithColon = (label: string) => `${label}:`;
 
-const getInitialValues = (): LLMServiceFormValues => ({
+export const getInitialLLMServiceFormValues = (): LLMServiceFormValues => ({
   name: randomId('v_'),
   enabled: true,
   enabledModels: {
@@ -580,7 +580,7 @@ const ProviderSettingsForm: React.FC = () => {
   return Component ? <Component key={providerKey} /> : null;
 };
 
-const LLMServiceForm: React.FC<{
+export const LLMServiceForm: React.FC<{
   editing: boolean;
   providers: ProviderOption[];
 }> = ({ editing, providers }) => {
@@ -632,7 +632,7 @@ const LLMServiceForm: React.FC<{
   );
 };
 
-const LLMTestFlightButton: React.FC<{ form: FormInstance<LLMServiceFormValues> }> = ({ form }) => {
+export const LLMTestFlightButton: React.FC<{ form: FormInstance<LLMServiceFormValues> }> = ({ form }) => {
   const app = useApp();
   const t = useT();
   const { message } = App.useApp();
@@ -707,21 +707,17 @@ const EnabledSwitch: React.FC<{
 
 export const LLMServicesPage: React.FC = () => {
   const app = useApp();
+  const ctx = useFlowContext();
   const t = useT();
   const { token } = theme.useToken();
   const location = useLocation();
   const { message } = App.useApp();
   const repo = useAIConfigRepository();
-  const [form] = Form.useForm<LLMServiceFormValues>();
   const [providers, setProviders] = useState<ProviderOption[]>([]);
   const [services, setServices] = useState<LLMServiceRecord[]>([]);
   const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const [editingRecord, setEditingRecord] = useState<LLMServiceRecord | undefined>();
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
   const autoOpenHandledRef = useRef(false);
-  const selectedFormProvider = Form.useWatch('provider', form);
   const tRef = useRef(t);
   const actionLinkStyle = useMemo<React.CSSProperties>(
     () => ({
@@ -764,11 +760,21 @@ export const LLMServicesPage: React.FC = () => {
   }, [refresh]);
 
   const openCreateDrawer = useCallback(() => {
-    setEditingRecord(undefined);
-    form.resetFields();
-    form.setFieldsValue(getInitialValues());
-    setDrawerOpen(true);
-  }, [form]);
+    ctx.viewer.open({
+      type: 'drawer',
+      width: AI_SETTINGS_DRAWER_WIDTH,
+      closable: true,
+      content: (
+        <LLMServiceDrawerContent
+          providers={providers}
+          onSubmitted={async () => {
+            await refresh();
+            await repo.refreshLLMServices();
+          }}
+        />
+      ),
+    });
+  }, [ctx.viewer, providers, refresh, repo]);
 
   useEffect(() => {
     if (autoOpenHandledRef.current || !shouldAutoOpenAddNew(location.state)) {
@@ -780,35 +786,21 @@ export const LLMServicesPage: React.FC = () => {
   }, [location.state, openCreateDrawer]);
 
   const openEditDrawer = (record: LLMServiceRecord) => {
-    setEditingRecord(record);
-    form.resetFields();
-    form.setFieldsValue({
-      ...record,
-      enabledModels: normalizeEnabledModels(record.enabledModels),
+    ctx.viewer.open({
+      type: 'drawer',
+      width: AI_SETTINGS_DRAWER_WIDTH,
+      closable: true,
+      content: (
+        <LLMServiceDrawerContent
+          providers={providers}
+          record={record}
+          onSubmitted={async () => {
+            await refresh();
+            await repo.refreshLLMServices();
+          }}
+        />
+      ),
     });
-    setDrawerOpen(true);
-  };
-
-  const closeDrawer = () => {
-    setDrawerOpen(false);
-    form.resetFields();
-  };
-
-  const handleFinish = async (values: LLMServiceFormValues) => {
-    setSaving(true);
-    try {
-      if (editingRecord) {
-        await updateLLMService(app.apiClient, values);
-      } else {
-        await createLLMService(app.apiClient, values);
-      }
-      message.success(t('Saved successfully'));
-      closeDrawer();
-      await refresh();
-      await repo.refreshLLMServices();
-    } finally {
-      setSaving(false);
-    }
   };
 
   const handleBulkDelete = async () => {
@@ -943,35 +935,90 @@ export const LLMServicesPage: React.FC = () => {
           />
         </div>
       </Flex>
-      <Drawer
-        open={drawerOpen}
-        onClose={closeDrawer}
-        width={AI_SETTINGS_DRAWER_WIDTH}
-        title={editingRecord ? t('Edit record') : t('Add new')}
-        styles={{
-          footer: {
-            paddingInlineEnd: token.paddingLG - token.paddingXS,
-          },
-        }}
-        footer={
-          <Flex justify="end" gap="small">
-            <Space>
-              {selectedFormProvider ? <LLMTestFlightButton form={form} /> : null}
-              <Button onClick={closeDrawer}>{t('Cancel')}</Button>
-              <Button type="primary" loading={saving} onClick={() => form.submit()}>
-                {t('Submit')}
-              </Button>
-            </Space>
-          </Flex>
-        }
-      >
-        <Spin spinning={saving}>
-          <Form<LLMServiceFormValues> form={form} layout="vertical" onFinish={handleFinish}>
-            <LLMServiceForm providers={providers} editing={!!editingRecord} />
-          </Form>
-        </Spin>
-      </Drawer>
     </Card>
+  );
+};
+
+const LLMServiceDrawerContent: React.FC<{
+  providers: ProviderOption[];
+  record?: LLMServiceRecord;
+  onSubmitted: () => Promise<void>;
+}> = ({ providers, record, onSubmitted }) => {
+  const app = useApp();
+  const ctx = useFlowContext();
+  const t = useT();
+  const { message } = App.useApp();
+  const [form] = Form.useForm<LLMServiceFormValues>();
+  const [saving, setSaving] = useState(false);
+  const [formDirty, setFormDirty] = useState(false);
+  const selectedProvider = Form.useWatch('provider', form);
+  const selectedFormProvider = useMemo(() => getProviderOptions(app, selectedProvider), [app, selectedProvider]);
+  const initialValues = useMemo(
+    () =>
+      record
+        ? {
+            ...record,
+            enabledModels: normalizeEnabledModels(record.enabledModels),
+          }
+        : getInitialLLMServiceFormValues(),
+    [record],
+  );
+  const { Header, Footer } = ctx.view;
+
+  useEffect(() => {
+    form.setFieldsValue(initialValues);
+  }, [form, initialValues]);
+
+  const requestClose = useUnsavedChangesBeforeClose({
+    view: ctx.view,
+    form,
+    initialValues,
+    dirty: formDirty,
+    title: t('Unsaved changes'),
+    content: t("Are you sure you don't want to save?"),
+  });
+
+  const handleFinish = async (values: LLMServiceFormValues) => {
+    setSaving(true);
+    try {
+      if (record) {
+        await updateLLMService(app.apiClient, values);
+      } else {
+        await createLLMService(app.apiClient, values);
+      }
+      message.success(t('Saved successfully'));
+      await onSubmitted();
+      await ctx.view.close(undefined, true);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <>
+      <Header title={record ? t('Edit record') : t('Add new')} />
+      <Spin spinning={saving}>
+        <Form<LLMServiceFormValues>
+          form={form}
+          layout="vertical"
+          onFinish={handleFinish}
+          onValuesChange={() => setFormDirty(true)}
+        >
+          <LLMServiceForm providers={providers} editing={!!record} />
+        </Form>
+      </Spin>
+      <Footer>
+        <Flex justify="end" gap="small">
+          <Space>
+            {selectedFormProvider ? <LLMTestFlightButton form={form} /> : null}
+            <Button onClick={requestClose}>{t('Cancel')}</Button>
+            <Button type="primary" loading={saving} onClick={() => form.submit()}>
+              {t('Submit')}
+            </Button>
+          </Space>
+        </Flex>
+      </Footer>
+    </>
   );
 };
 
