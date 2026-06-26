@@ -151,6 +151,7 @@ describe('UserSelect', () => {
 
     await waitFor(() => {
       expect(getRootMenuItemTexts()).toEqual([
+        'Null',
         'Constant',
         'Scope variables',
         'Node result',
@@ -208,7 +209,13 @@ describe('UserSelect', () => {
     await openVariableMenu();
 
     await waitFor(() => {
-      expect(getRootMenuItemTexts()).toEqual(['Constant', 'Scope variables', 'Node result', 'Trigger variables']);
+      expect(getRootMenuItemTexts()).toEqual([
+        'Null',
+        'Constant',
+        'Scope variables',
+        'Node result',
+        'Trigger variables',
+      ]);
     });
     expect(getMenuItem('Scope variables').className).not.toContain('ant-cascader-menu-item-disabled');
     expect(getMenuItem('Node result').className).not.toContain('ant-cascader-menu-item-disabled');

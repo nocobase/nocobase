@@ -155,6 +155,16 @@ function isMetaTreeNodeArray(value: unknown): value is MetaTreeNode[] {
   return Array.isArray(value) && value.every((item) => item && typeof item === 'object' && 'paths' in item);
 }
 
+function createDisabledWorkflowRoot(name: string, title: string): MetaTreeNode {
+  return {
+    name,
+    title,
+    type: '',
+    paths: [name],
+    disabled: true,
+  };
+}
+
 export type UseWorkflowVariableOptions = {
   types?: any[];
   fieldNames?: { label?: string; value?: string; children?: string };
@@ -366,6 +376,7 @@ function useScopeVariablesScope(options: UseWorkflowVariableOptions): MetaTreeNo
  * children survive the re-render.
  */
 export function useWorkflowVariableOptions(options: UseWorkflowVariableOptions = {}): MetaTreeNode[] {
+  const flowEngine = useFlowEngine();
   const scopeVars = useScopeVariablesScope(options);
   const nodeResult = useNodeResultScope(options);
   const trigger = useTriggerScope(options);
@@ -387,9 +398,20 @@ export function useWorkflowVariableOptions(options: UseWorkflowVariableOptions =
     workflow?.id ?? ''
   }|${workflow?.type ?? ''}|${options.includeScopes === false ? 'no-scopes' : 'with-scopes'}`;
 
-  /* eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally keyed
-     on the structural `signature`, not the scope objects (which are fresh each
-     render); see the doc comment above. Including them would defeat the memo and
-     reintroduce the lazy-load spinner bug. */
-  return useMemo(() => [scopeVars, nodeResult, trigger, system, env].filter(Boolean) as MetaTreeNode[], [signature]);
+  return useMemo(() => {
+    const roots: Array<MetaTreeNode | null> = [
+      options.includeScopes === false
+        ? null
+        : scopeVars ??
+          createDisabledWorkflowRoot(SCOPES_ROOT, flowEngine.context.t('Scope variables', { ns: NAMESPACE })),
+      nodeResult ??
+        createDisabledWorkflowRoot(NODE_RESULT_ROOT, flowEngine.context.t('Node result', { ns: 'workflow' })),
+      trigger,
+      system,
+      env,
+    ];
+
+    return roots.filter(Boolean) as MetaTreeNode[];
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally keyed on the structural `signature`; including fresh scope objects would defeat the memo and reintroduce the lazy-load spinner bug.
+  }, [signature]);
 }

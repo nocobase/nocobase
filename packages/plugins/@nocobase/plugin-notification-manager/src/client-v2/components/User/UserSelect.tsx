@@ -44,6 +44,7 @@ type WorkflowFieldLike = {
 };
 
 const WORKFLOW_VARIABLE_ROOTS = {
+  null: 'null',
   scopes: '$scopes',
   nodeResult: '$jobsMapByNodeKey',
   trigger: '$context',
@@ -216,7 +217,8 @@ function WorkflowUserVariableInput(props: {
       if (!meta) {
         return;
       }
-      onChange?.(meta.paths?.[0] === 'constant' ? '' : formatWorkflowPathToValue(meta));
+      const root = meta.paths?.[0];
+      onChange?.(root === WORKFLOW_VARIABLE_ROOTS.null || root === 'constant' ? '' : formatWorkflowPathToValue(meta));
     },
   );
 
@@ -256,6 +258,12 @@ function WorkflowUserSelectInput(props: { value?: string | null; onChange?: (nex
   );
   const metaTree = useMemo<MetaTreeNode[]>(() => {
     return [
+      {
+        name: WORKFLOW_VARIABLE_ROOTS.null,
+        title: translateWorkflowLabel('Null'),
+        type: 'string',
+        paths: [WORKFLOW_VARIABLE_ROOTS.null],
+      },
       {
         name: 'constant',
         title: translateWorkflowLabel('Constant'),

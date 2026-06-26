@@ -236,14 +236,82 @@ describe('useWorkflowVariableOptions — runtime-neutral resolution', () => {
     expect(scopes?.children?.[0]?.children?.map((child: any) => child.name)).toEqual(['item']);
   });
 
-  it('returns an empty tree when no workflow plugin is registered (no crash)', () => {
+  it('keeps disabled scope and node-result roots when they have no available children', () => {
+    setupEngine(makeV1ShapedPlugin(), {
+      propertyTree: [{ name: '$env', title: 'Variables and secrets', type: 'object', children: async () => [] }],
+    });
+    holder.currentNode = { key: 'n1', type: 'condition', upstream: null };
+    holder.workflow = { id: 7, type: 'collection', config: { collection: 'posts' } };
+
+    const { result } = renderHook(() => useWorkflowVariableOptions());
+
+    expect(result.current.map((node) => node.name)).toEqual([
+      '$scopes',
+      '$jobsMapByNodeKey',
+      '$context',
+      '$system',
+      '$env',
+    ]);
+    expect(result.current[0]).toEqual(
+      expect.objectContaining({ name: '$scopes', title: 'Scope variables', disabled: true, paths: ['$scopes'] }),
+    );
+    expect(result.current[1]).toEqual(
+      expect.objectContaining({
+        name: '$jobsMapByNodeKey',
+        title: 'Node result',
+        disabled: true,
+        paths: ['$jobsMapByNodeKey'],
+      }),
+    );
+  });
+
+  it('keeps real scope and node-result children selectable instead of replacing them with disabled roots', () => {
+    setupEngine(makeV1ShapedPlugin());
+    holder.currentNode = {
+      key: 'n3',
+      type: 'condition',
+      branchIndex: 0,
+      upstream: {
+        key: 'loop1',
+        type: 'loop',
+        title: 'Loop posts',
+        upstream: { key: 'n1', type: 'calculation', title: 'Calc 1', upstream: null },
+      },
+    };
+
+    const { result } = renderHook(() => useWorkflowVariableOptions());
+    const scopes = result.current.find((node) => node.name === '$scopes');
+    const nodeResult = result.current.find((node) => node.name === '$jobsMapByNodeKey');
+
+    expect(result.current.map((node) => node.name).slice(0, 2)).toEqual(['$scopes', '$jobsMapByNodeKey']);
+    expect(scopes?.disabled).toBeUndefined();
+    expect(nodeResult?.disabled).toBeUndefined();
+    expect(scopes?.children?.map((child: any) => child.name)).toEqual(['loop1']);
+    expect(nodeResult?.children?.map((child: any) => child.name)).toContain('n1');
+  });
+
+  it('does not add a disabled $scopes placeholder when includeScopes is false', () => {
+    setupEngine(makeV1ShapedPlugin());
+    holder.currentNode = { key: 'n1', type: 'condition', upstream: null };
+
+    const { result } = renderHook(() => useWorkflowVariableOptions({ includeScopes: false }));
+
+    expect(result.current.find((node) => node.name === '$scopes')).toBeUndefined();
+    expect(result.current.find((node) => node.name === '$jobsMapByNodeKey')).toEqual(
+      expect.objectContaining({ disabled: true }),
+    );
+  });
+
+  it('returns disabled workflow roots when no workflow plugin is registered (no crash)', () => {
     // The pre-fix failure mode: `pm.get` returns undefined in the "wrong" runtime.
     setupEngine(undefined);
     holder.currentNode = { key: 'n1', type: 'condition', upstream: null };
 
     const { result } = renderHook(() => useWorkflowVariableOptions());
-    // No upstreams, no system vars, no env → empty (not a throw).
-    expect(result.current).toEqual([]);
+    expect(result.current).toEqual([
+      expect.objectContaining({ name: '$scopes', disabled: true }),
+      expect.objectContaining({ name: '$jobsMapByNodeKey', disabled: true }),
+    ]);
   });
 
   it('coerces a v1 JSX system-variable label to plain-text title (MetaTreeNode.title is a string)', () => {
