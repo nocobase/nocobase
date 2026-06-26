@@ -13,7 +13,8 @@ import pkg from './../../package.json';
 
 export function useT() {
   const engine = useFlowEngine();
-  return (str: string) => engine.context.t(str, { ns: [pkg.name, 'client'] });
+  return (str: string, options?: Record<string, unknown>) =>
+    engine.context.t(str, { ns: [pkg.name, 'client'], ...options });
 }
 
 export function tExpr(key: string) {
