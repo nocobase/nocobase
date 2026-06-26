@@ -17,9 +17,15 @@ const NEW_RECORD_KEY = '__new_record__';
 
 export type FormDraftValues = Record<string, unknown>;
 
+export type FormDraftValuePatch = {
+  path: Array<string | number>;
+  value: unknown;
+};
+
 export type FormDraft = {
   uid: string;
   values: FormDraftValues;
+  patches?: FormDraftValuePatch[];
 };
 
 export type FormDraftContext = {
@@ -77,12 +83,16 @@ export class FormDraftRepository {
     return this.getDb().get(STORE_NAME, this.uid);
   }
 
-  async save(values: FormDraftValues) {
+  async save(values: FormDraftValues, patches?: FormDraftValuePatch[]) {
     if (this.#disabled) {
       return;
     }
     const safeValues = JSON.parse(JSON.stringify(values)) as FormDraftValues;
-    await this.getDb().put(STORE_NAME, { uid: this.uid, values: safeValues });
+    const draft: FormDraft = { uid: this.uid, values: safeValues };
+    if (patches) {
+      draft.patches = JSON.parse(JSON.stringify(patches)) as FormDraftValuePatch[];
+    }
+    await this.getDb().put(STORE_NAME, draft);
   }
 
   async delete() {

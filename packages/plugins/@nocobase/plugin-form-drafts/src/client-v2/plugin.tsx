@@ -12,7 +12,7 @@ import { FormBlockModel, Plugin } from '@nocobase/client-v2';
 import type { FlowModelContext } from '@nocobase/flow-engine';
 import { Alert, Button, theme } from 'antd';
 import React from 'react';
-import { FormDraftRepository, type FormDraftValues } from './formDraftRepository';
+import { FormDraftRepository, type FormDraftValuePatch, type FormDraftValues } from './formDraftRepository';
 import { NAMESPACE, tExpr } from './locale';
 
 const RESTORED_DRAFT_MESSAGE =
@@ -24,18 +24,13 @@ type DecoratedFormModel = {
   uid: string;
   context: FlowModelContext;
   formValueRuntime?: {
-    getUserEditedValuesSnapshot?: () => FormDraftValues;
+    getUserEditedValuePatches?: () => FormDraftValuePatch[];
     resetAfterFormReset?: () => void;
   };
   setDecoratorProps?: (props: { beforeContent: React.ReactNode | null }) => void;
   decoratorProps?: {
     beforeContent?: React.ReactNode | null;
   };
-};
-
-type DraftValuePatch = {
-  path: Array<string | number>;
-  value: unknown;
 };
 
 type DraftFlowContext = FlowModelContext & {
@@ -46,7 +41,7 @@ type DraftFlowContext = FlowModelContext & {
     resetFields: () => void;
   };
   setFormValues: (
-    values: FormDraftValues | DraftValuePatch[],
+    values: FormDraftValues | FormDraftValuePatch[],
     options?: { source?: 'user'; triggerEvent?: boolean },
   ) => Promise<void> | void;
   showDraftAlert: (message: string) => void;
@@ -70,21 +65,54 @@ function setBeforeContent(model: DecoratedFormModel, beforeContent: React.ReactN
 }
 
 function buildDraftValuePatches(values: FormDraftValues) {
-  const patches: DraftValuePatch[] = [];
+  const patches: FormDraftValuePatch[] = [];
   const visit = (value: unknown, path: Array<string | number>) => {
-    patches.push({ path, value });
     if (!value || typeof value !== 'object') {
+      patches.push({ path, value });
       return;
     }
     if (Array.isArray(value)) {
+      if (value.length === 0) {
+        patches.push({ path, value });
+        return;
+      }
       value.forEach((item, index) => visit(item, [...path, index]));
       return;
     }
-    Object.entries(value as Record<string, unknown>).forEach(([key, item]) => visit(item, [...path, key]));
+    const entries = Object.entries(value as Record<string, unknown>);
+    if (entries.length === 0) {
+      patches.push({ path, value });
+      return;
+    }
+    entries.forEach(([key, item]) => visit(item, [...path, key]));
   };
 
   Object.entries(values).forEach(([key, value]) => visit(value, [key]));
   return patches;
+}
+
+function buildDraftValuesFromPatches(patches: FormDraftValuePatch[]) {
+  const values: FormDraftValues = {};
+  patches.forEach((patch) => {
+    setDraftValue(values, patch.path, patch.value);
+  });
+  return values;
+}
+
+function setDraftValue(values: FormDraftValues, path: Array<string | number>, value: unknown) {
+  let current: Record<string | number, unknown> = values;
+  path.forEach((segment, index) => {
+    if (index === path.length - 1) {
+      current[segment] = value;
+      return;
+    }
+    const nextSegment = path[index + 1];
+    const existing = current[segment];
+    if (!existing || typeof existing !== 'object') {
+      current[segment] = typeof nextSegment === 'number' ? [] : {};
+    }
+    current = current[segment] as Record<string | number, unknown>;
+  });
 }
 
 function DraftAlert({ message, onDelete, t }: DraftAlertProps) {
@@ -157,11 +185,15 @@ FormBlockModel.registerFlow({
         }
         await draftCtx.draftRepository.connect();
         const draft = await draftCtx.draftRepository.get();
-        if (!draft?.values || Object.keys(draft.values).length === 0) {
+        const patches = draft?.patches?.length ? draft.patches : undefined;
+        if (!patches?.length && (!draft?.values || Object.keys(draft.values).length === 0)) {
           await draftCtx.draftRepository.create();
           return;
         }
-        await draftCtx.setFormValues(buildDraftValuePatches(draft.values), { source: 'user', triggerEvent: false });
+        await draftCtx.setFormValues(patches ?? buildDraftValuePatches(draft.values), {
+          source: 'user',
+          triggerEvent: false,
+        });
         draftCtx.showDraftAlert(RESTORED_DRAFT_MESSAGE);
       },
     },
@@ -178,10 +210,10 @@ FormBlockModel.registerFlow({
         if (draftCtx.draftRepository.disabled) {
           return;
         }
-        const values =
-          draftCtx.model.formValueRuntime?.getUserEditedValuesSnapshot?.() ?? draftCtx.form.getFieldsValue();
-        await draftCtx.draftRepository.save(values);
-        if (Object.keys(values).length === 0) {
+        const patches = draftCtx.model.formValueRuntime?.getUserEditedValuePatches?.();
+        const values = patches ? buildDraftValuesFromPatches(patches) : draftCtx.form.getFieldsValue();
+        await draftCtx.draftRepository.save(values, patches);
+        if (patches ? patches.length === 0 : Object.keys(values).length === 0) {
           return;
         }
         draftCtx.showDraftAlert(SAVED_DRAFT_MESSAGE);

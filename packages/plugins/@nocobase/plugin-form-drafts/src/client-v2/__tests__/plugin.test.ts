@@ -135,10 +135,14 @@ describe('PluginFormDraftsClient v2', () => {
       title: 'Manual title',
       roles: [{ roleName: 'Manual role' }],
     };
+    const userEditedPatches = [
+      { path: ['title'], value: 'Manual title' },
+      { path: ['roles', 0, 'roleName'], value: 'Manual role' },
+    ];
     const getFieldsValue = vi.fn(() => formValues);
-    const getUserEditedValuesSnapshot = vi.fn(() => userEditedValues);
+    const getUserEditedValuePatches = vi.fn(() => userEditedPatches);
 
-    Object.assign(model, { formValueRuntime: { getUserEditedValuesSnapshot } });
+    Object.assign(model, { formValueRuntime: { getUserEditedValuePatches } });
     model.context.defineProperty('resource', {
       value: {
         getFilterByTk: () => 123,
@@ -156,9 +160,13 @@ describe('PluginFormDraftsClient v2', () => {
     await draftCreateFlow?.steps.createDraft.handler?.(ctx, { enabled: true });
     await draftSaveFlow?.steps.saveDraft.handler?.(ctx, {});
 
-    expect(getUserEditedValuesSnapshot).toHaveBeenCalled();
+    expect(getUserEditedValuePatches).toHaveBeenCalled();
     expect(getFieldsValue).not.toHaveBeenCalled();
-    expect(await ctx.draftRepository.get()).toEqual({ uid: 'form-uid:123', values: userEditedValues });
+    expect(await ctx.draftRepository.get()).toEqual({
+      uid: 'form-uid:123',
+      values: userEditedValues,
+      patches: userEditedPatches,
+    });
   });
 
   it('saves an empty draft without showing a saved alert when there are no runtime user edits', async () => {
@@ -169,9 +177,9 @@ describe('PluginFormDraftsClient v2', () => {
     const draftSaveFlow = FormBlockModel.globalFlowRegistry.getFlow('draftSaveFlow');
     const setDecoratorProps = vi.fn();
     const getFieldsValue = vi.fn(() => ({ fixed: 'Fixed auto value' }));
-    const getUserEditedValuesSnapshot = vi.fn(() => ({}));
+    const getUserEditedValuePatches = vi.fn(() => []);
 
-    Object.assign(model, { setDecoratorProps, formValueRuntime: { getUserEditedValuesSnapshot } });
+    Object.assign(model, { setDecoratorProps, formValueRuntime: { getUserEditedValuePatches } });
     model.context.defineProperty('resource', {
       value: {
         getFilterByTk: () => 123,
@@ -190,9 +198,43 @@ describe('PluginFormDraftsClient v2', () => {
     setDecoratorProps.mockClear();
     await draftSaveFlow?.steps.saveDraft.handler?.(ctx, {});
 
-    expect(await ctx.draftRepository.get()).toEqual({ uid: 'form-uid:123', values: {} });
+    expect(await ctx.draftRepository.get()).toEqual({ uid: 'form-uid:123', values: {}, patches: [] });
     expect(getFieldsValue).not.toHaveBeenCalled();
     expect(setDecoratorProps).not.toHaveBeenCalled();
+  });
+
+  it('restores persisted draft patches without expanding parent containers', async () => {
+    const engine = new FlowEngine();
+    const model = engine.createModel<FlowModel>({ use: 'FlowModel', uid: 'form-uid' });
+    const ctx = new FlowRuntimeContext(model, 'draftCreateFlow');
+    const draftCreateFlow = FormBlockModel.globalFlowRegistry.getFlow('draftCreateFlow');
+    const draftValues = {
+      roles: [{ id: 1, roleName: 'Draft role', fixedRoleName: 'Fixed role' }],
+    };
+    const draftPatches = [{ path: ['roles', 0, 'roleName'], value: 'Draft role' }];
+    const setDecoratorProps = vi.fn();
+    const setFormValues = vi.fn();
+
+    Object.assign(model, { setDecoratorProps });
+    store.set('form-uid:123', { uid: 'form-uid:123', values: draftValues, patches: draftPatches });
+    model.context.defineProperty('resource', {
+      value: {
+        getFilterByTk: () => 123,
+      },
+    });
+    model.context.defineProperty('form', {
+      value: {
+        getFieldsValue: () => draftValues,
+        resetFields: vi.fn(),
+      },
+    });
+    model.context.defineMethod('setFormValues', setFormValues);
+    model.context.defineMethod('t', (key: string) => key);
+
+    await draftCreateFlow?.steps.createDraft.handler?.(ctx, { enabled: true });
+
+    expect(setFormValues).toHaveBeenCalledWith(draftPatches, { source: 'user', triggerEvent: false });
+    expect(setDecoratorProps).toHaveBeenCalledWith({ beforeContent: expect.anything() });
   });
 
   it('restores an existing non-empty draft as user-edited form values', async () => {
@@ -227,8 +269,6 @@ describe('PluginFormDraftsClient v2', () => {
     expect(setFormValues).toHaveBeenCalledWith(
       [
         { path: ['title'], value: 'Restored title' },
-        { path: ['roles'], value: restoredValues.roles },
-        { path: ['roles', 0], value: restoredValues.roles[0] },
         { path: ['roles', 0, 'roleName'], value: 'Draft role' },
       ],
       { source: 'user', triggerEvent: false },

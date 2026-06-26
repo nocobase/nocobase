@@ -38,6 +38,11 @@ type FormBlockModel = FlowModel & {
   getAclActionName?: () => string;
 };
 
+export type FormValuePatch = {
+  path: NamePath;
+  value: unknown;
+};
+
 export class FormValueRuntime {
   private readonly model: FormBlockModel;
   private readonly getForm: () => FormInstance;
@@ -142,20 +147,19 @@ export class FormValueRuntime {
     return this.getForm().getFieldsValue(true);
   }
 
-  getUserEditedValuesSnapshot(): Record<string, unknown> {
+  getUserEditedValuePatches(): FormValuePatch[] {
     const snapshot = this.getFormValuesSnapshot();
     if (!snapshot || typeof snapshot !== 'object') {
-      return {};
+      return [];
     }
 
-    const values: Record<string, unknown> = {};
+    const patches: FormValuePatch[] = [];
     const pathKeys = Array.from(this.userEditedSet).sort(
       (a, b) => pathKeyToNamePath(a).length - pathKeyToNamePath(b).length,
     );
 
     for (const pathKey of pathKeys) {
-      const lastWrite = this.findLatestWriteMeta(pathKey);
-      if (lastWrite && lastWrite.source !== 'user') {
+      if (!this.isCurrentUserEditedPath(pathKey)) {
         continue;
       }
 
@@ -169,9 +173,20 @@ export class FormValueRuntime {
         continue;
       }
 
-      _.set(values, namePath as any, this.toMirrorSnapshot(value));
+      patches.push({
+        path: namePath,
+        value: this.omitNonUserDescendantValues(pathKey, this.toMirrorSnapshot(value)),
+      });
     }
 
+    return patches;
+  }
+
+  getUserEditedValuesSnapshot(): Record<string, unknown> {
+    const values: Record<string, unknown> = {};
+    for (const patch of this.getUserEditedValuePatches()) {
+      _.set(values, patch.path as any, patch.value);
+    }
     return values;
   }
 
@@ -1503,6 +1518,30 @@ export class FormValueRuntime {
     }
 
     return latest;
+  }
+
+  private isCurrentUserEditedPath(pathKey: string) {
+    const lastWrite = this.findLatestWriteMeta(pathKey);
+    return !lastWrite || lastWrite.source === 'user';
+  }
+
+  private omitNonUserDescendantValues(pathKey: string, value: unknown) {
+    if (!value || typeof value !== 'object') {
+      return value;
+    }
+
+    const namePath = pathKeyToNamePath(pathKey);
+    for (const childKey of this.lastWriteMetaByPathKey.keys()) {
+      if (!this.isDescendantPathKey(childKey, pathKey)) {
+        continue;
+      }
+      if (this.isCurrentUserEditedPath(childKey)) {
+        continue;
+      }
+      _.unset(value as Record<string, unknown>, pathKeyToNamePath(childKey).slice(namePath.length) as any);
+    }
+
+    return value;
   }
 
   private isDescendantPathKey(candidateKey: string, parentKey: string) {

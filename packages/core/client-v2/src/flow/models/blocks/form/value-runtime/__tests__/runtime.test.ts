@@ -153,6 +153,7 @@ describe('FormValueRuntime (default rules)', () => {
       source: 'override',
     });
 
+    expect(runtime.getUserEditedValuePatches()).toEqual([]);
     expect(runtime.getUserEditedValuesSnapshot()).toEqual({});
 
     await runtime.setFormValues(
@@ -164,6 +165,10 @@ describe('FormValueRuntime (default rules)', () => {
       { source: 'user' },
     );
 
+    expect(runtime.getUserEditedValuePatches()).toEqual([
+      { path: ['title'], value: 'Manual title' },
+      { path: ['roles', 0, 'roleName'], value: 'Manual role' },
+    ]);
     expect(runtime.getUserEditedValuesSnapshot()).toEqual({
       title: 'Manual title',
       roles: [{ roleName: 'Manual role' }],
@@ -171,6 +176,39 @@ describe('FormValueRuntime (default rules)', () => {
 
     await runtime.setFormValues(blockCtx, [{ path: ['title'], value: 'Fixed title' }], { source: 'system' });
 
+    expect(runtime.getUserEditedValuesSnapshot()).toEqual({
+      roles: [{ roleName: 'Manual role' }],
+    });
+  });
+
+  it('omits non-user descendant values from parent user-edited draft patches', async () => {
+    const engineEmitter = new EventEmitter();
+    const blockEmitter = new EventEmitter();
+    const formStub = createFormStub({});
+    const dispatchEvent = vi.fn();
+
+    const blockModel = {
+      uid: 'form-user-edited-parent-draft-patch',
+      flowEngine: { emitter: engineEmitter },
+      emitter: blockEmitter,
+      dispatchEvent,
+      getAclActionName: () => 'create',
+    } as ConstructorParameters<typeof FormValueRuntime>[0]['model'];
+
+    const runtime = new FormValueRuntime({ model: blockModel, getForm: () => formStub as unknown as FormInstance });
+    runtime.mount({ sync: true });
+
+    const blockCtx = createFieldContext(runtime);
+    await runtime.setFormValues(
+      blockCtx,
+      [{ path: ['roles'], value: [{ roleName: 'Manual role', fixedRoleName: 'Initial fixed role' }] }],
+      { source: 'user' },
+    );
+    await runtime.setFormValues(blockCtx, [{ path: ['roles', 0, 'fixedRoleName'], value: 'System fixed role' }], {
+      source: 'system',
+    });
+
+    expect(runtime.getUserEditedValuePatches()).toEqual([{ path: ['roles'], value: [{ roleName: 'Manual role' }] }]);
     expect(runtime.getUserEditedValuesSnapshot()).toEqual({
       roles: [{ roleName: 'Manual role' }],
     });
