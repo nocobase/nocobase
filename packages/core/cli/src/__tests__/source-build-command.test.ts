@@ -18,6 +18,7 @@ const mocks = vi.hoisted(() => ({
   summarizePluginWorkspaceSync: vi.fn(),
   printInfo: vi.fn(),
   printWarning: vi.fn(),
+  readFile: vi.fn(),
 }));
 
 vi.mock('../lib/run-npm.js', () => ({
@@ -29,6 +30,18 @@ vi.mock('../lib/ui.js', () => ({
   printInfo: mocks.printInfo,
   printWarning: mocks.printWarning,
 }));
+
+vi.mock('node:fs/promises', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('node:fs/promises')>();
+  return {
+    ...actual,
+    readFile: mocks.readFile,
+    default: {
+      ...actual,
+      readFile: mocks.readFile,
+    },
+  };
+});
 
 vi.mock('../lib/plugin-workspace.js', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../lib/plugin-workspace.js')>();
@@ -60,6 +73,7 @@ beforeEach(() => {
     changed: false,
   });
   mocks.summarizePluginWorkspaceSync.mockReturnValue([]);
+  mocks.readFile.mockRejectedValue(new Error('missing'));
 });
 
 test('source build syncs targeted plugin workspace entries and forwards --tar', async () => {
@@ -99,6 +113,7 @@ test('source build syncs targeted plugin workspace entries and forwards --tar', 
     cwd: '/tmp/app/source',
     stdio: 'ignore',
   });
+  expect(mocks.printInfo).toHaveBeenCalledWith('Tarball output directory: /tmp/app/source/storage/tar');
 });
 
 test('source build syncs all top-level plugins when no package is specified', async () => {
@@ -134,6 +149,40 @@ test('source build syncs all top-level plugins when no package is specified', as
     cwd: '/tmp/app/source',
     stdio: 'inherit',
   });
+});
+
+test('source build prints tarball path summary when target package metadata is available', async () => {
+  const { default: SourceBuild } = await import('../commands/source/build.js');
+  mocks.readFile.mockResolvedValueOnce(
+    JSON.stringify({
+      name: '@my-scope/plugin-a',
+      version: '1.0.0',
+    }),
+  );
+
+  const command = Object.assign(Object.create(SourceBuild.prototype), {
+    parse: vi.fn(async () => ({
+      args: {
+        packages: ['@my-scope/plugin-a'],
+      },
+      flags: {
+        cwd: '/tmp/app/source',
+        'no-dts': false,
+        sourcemap: false,
+        tar: true,
+        verbose: false,
+      },
+    })),
+    error: (message: string) => {
+      throw new Error(message);
+    },
+  });
+
+  await SourceBuild.prototype.run.call(command);
+
+  expect(mocks.printInfo).toHaveBeenCalledWith(
+    'Tarball created: /tmp/app/source/storage/tar/@my-scope/plugin-a-1.0.0.tgz',
+  );
 });
 
 test('source build keeps old behavior for plain source repos', async () => {
