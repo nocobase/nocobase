@@ -9,7 +9,7 @@
 
 import { tExpr as _tExpr, useFlowEngine } from '@nocobase/flow-engine';
 
-export const NAMESPACE = '@nocobase/plugin-comments-flexible';
+export const NAMESPACE = '@nocobase/plugin-block-comment';
 
 export function useT() {
   const engine = useFlowEngine();
