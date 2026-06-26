@@ -23,6 +23,8 @@ export { WorkflowVariableInput } from './canvas/WorkflowVariableInput';
 export type { WorkflowVariableInputProps } from './canvas/WorkflowVariableInput';
 export { WorkflowVariableSelect } from './canvas/WorkflowVariableSelect';
 export type { WorkflowVariableSelectProps } from './canvas/WorkflowVariableSelect';
+export { WorkflowVariableTag } from './canvas/WorkflowVariableTag';
+export type { WorkflowVariableTagProps } from './canvas/WorkflowVariableTag';
 export { WorkflowVariableTextArea } from './canvas/WorkflowVariableTextArea';
 export type { WorkflowVariableTextAreaProps } from './canvas/WorkflowVariableTextArea';
 export { WorkflowVariableJsonTextArea } from './canvas/WorkflowVariableJsonTextArea';

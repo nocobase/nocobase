@@ -10,6 +10,7 @@
 import { useFlowEngine } from '@nocobase/flow-engine';
 import { useMemoizedFn } from 'ahooks';
 import { Tag, TreeSelect } from 'antd';
+import type { LegacyDataNode } from 'rc-tree-select/lib/interface';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useT } from '../../locale';
 import {
@@ -37,6 +38,15 @@ type AppendsTreeScope = {
   compile: (value: string) => string;
   getCollectionFields: CollectionFieldGetter;
 };
+
+function isAppendsTreeNode(dataNode: LegacyDataNode): dataNode is LegacyDataNode & AppendsTreeNode {
+  return (
+    typeof dataNode?.value === 'string' &&
+    typeof (dataNode as Partial<AppendsTreeNode>)?.id === 'string' &&
+    Array.isArray((dataNode as Partial<AppendsTreeNode>)?.fullTitle) &&
+    typeof (dataNode as Partial<AppendsTreeNode>)?.field?.name === 'string'
+  );
+}
 
 function isAssociation(field: CollectionTriggerField) {
   return isAssociationField(field) && Boolean(field.target) && Boolean(field.interface);
@@ -104,7 +114,7 @@ export function AppendsSelect({
     () => parseCollectionName(collection) as [string, string],
     [collection],
   );
-  const treeData = useMemo(() => Object.values(optionsMap), [optionsMap]);
+  const treeData = useMemo<AppendsTreeNode[]>(() => Object.values(optionsMap), [optionsMap]);
   const treeValue = useMemo<TreeSelectValue[]>(
     () =>
       (value ?? [])
@@ -135,7 +145,7 @@ export function AppendsSelect({
       return;
     }
 
-    const options = getCollectionFieldOptions.call(
+    const options: AppendsTreeNode[] = getCollectionFieldOptions.call(
       { compile, getCollectionFields: getCollectionFieldsByName },
       collectionName,
     );
@@ -191,7 +201,11 @@ export function AppendsSelect({
     });
   }, [optionsMap, treeData.length, value]);
 
-  const loadData = useMemoizedFn(async (option: AppendsTreeNode) => {
+  const loadData = useMemoizedFn(async (dataNode: LegacyDataNode) => {
+    if (!isAppendsTreeNode(dataNode)) {
+      return;
+    }
+    const option = dataNode;
     if (!option.isLeaf && option.loadChildren) {
       const children = option.loadChildren(option);
       setOptionsMap((prev) => {

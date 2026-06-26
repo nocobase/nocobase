@@ -54,16 +54,14 @@ describe('WorkflowVariableSelect', () => {
 
     const input = screen.getByPlaceholderText('Select variable');
     expect(input).toHaveAttribute('readonly');
-    expect(screen.queryByRole('button', { name: 'workflow-variable-select-value' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'workflow-variable-tag' })).toBeNull();
     expect(holder.selectorProps?.active).toBe(false);
   });
 
   it('renders the variable tag and keeps the selector active only for variable values', () => {
     render(<WorkflowVariableSelect value="{{$context.id}}" />);
 
-    expect(screen.getByRole('button', { name: 'workflow-variable-select-value' })).toHaveTextContent(
-      'Trigger variables / id',
-    );
+    expect(screen.getByRole('button', { name: 'workflow-variable-tag' })).toHaveTextContent('Trigger variables / id');
     expect(holder.selectorProps?.active).toBe(true);
     expect(holder.selectorProps?.value).toBe('{{$context.id}}');
   });
@@ -72,8 +70,8 @@ describe('WorkflowVariableSelect', () => {
     const onChange = vi.fn();
     render(<WorkflowVariableSelect value="{{$context.id}}" onChange={onChange} />);
 
-    fireEvent.mouseEnter(screen.getByRole('button', { name: 'workflow-variable-select-value' }));
-    fireEvent.click(screen.getByLabelText('workflow-variable-select-clear'));
+    fireEvent.mouseEnter(screen.getByRole('button', { name: 'workflow-variable-tag' }));
+    fireEvent.click(screen.getByLabelText('workflow-variable-tag-clear'));
 
     expect(onChange).toHaveBeenCalledWith(null);
   });
