@@ -11,9 +11,23 @@ import { AppSupervisor } from '@nocobase/server';
 import { createLocalJWKSet, exportJWK, generateKeyPair, SignJWT } from 'jose';
 import { IdpOauthService } from '../service';
 
+const originalApiBasePath = process.env.API_BASE_PATH;
+const originalAppPublicPath = process.env.APP_PUBLIC_PATH;
+
+function restoreEnv(name: string, value: string | undefined) {
+  if (typeof value === 'undefined') {
+    delete process.env[name];
+    return;
+  }
+
+  process.env[name] = value;
+}
+
 describe('plugin-idp-oauth > IdpOauthService', () => {
   afterEach(() => {
     vi.restoreAllMocks();
+    restoreEnv('API_BASE_PATH', originalApiBasePath);
+    restoreEnv('APP_PUBLIC_PATH', originalAppPublicPath);
   });
 
   test('should build frontend interaction paths for main app and sub app in multi-app mode', () => {
@@ -24,6 +38,30 @@ describe('plugin-idp-oauth > IdpOauthService', () => {
 
     expect(service.getFrontendInteractionPath('main', 'uid-1')).toBe('/idp-oauth/interaction/uid-1');
     expect(service.getFrontendInteractionPath('demo', 'uid-2')).toBe('/apps/demo/idp-oauth/interaction/uid-2');
+  });
+
+  test('should build frontend paths under app public path inferred from api base path', () => {
+    process.env.API_BASE_PATH = '/nocobase/api';
+    delete process.env.APP_PUBLIC_PATH;
+    const service = new IdpOauthService({} as any, {} as any);
+    vi.spyOn(AppSupervisor, 'getInstance').mockReturnValue({
+      runningMode: 'multiple',
+    } as any);
+
+    expect(service.getFrontendInteractionPath('main', 'uid-1')).toBe('/nocobase/idp-oauth/interaction/uid-1');
+    expect(service.getFrontendErrorPath('main')).toBe('/nocobase/idp-oauth/error');
+    expect(service.getFrontendDevicePath('main')).toBe('/nocobase/idpOAuth/device');
+    expect(service.getFrontendInteractionPath('demo', 'uid-2')).toBe('/nocobase/apps/demo/idp-oauth/interaction/uid-2');
+    expect(service.getFrontendErrorPath('demo')).toBe('/nocobase/apps/demo/idp-oauth/error');
+    expect(service.getFrontendDevicePath('demo')).toBe('/nocobase/apps/demo/idpOAuth/device');
+  });
+
+  test('should prefer explicit app public path for frontend paths', () => {
+    process.env.API_BASE_PATH = '/proxy/api';
+    process.env.APP_PUBLIC_PATH = '/nocobase/';
+    const service = new IdpOauthService({} as any, {} as any);
+
+    expect(service.getFrontendDevicePath('main')).toBe('/nocobase/idpOAuth/device');
   });
 
   test('should build frontend paths without apps prefix in single mode', () => {

@@ -270,6 +270,17 @@ export class IdpOauthService {
     return normalizeBasePath(process.env.API_BASE_PATH || '/api');
   }
 
+  private getAppPublicPath() {
+    const appPublicPath = normalizeBasePath(process.env.APP_PUBLIC_PATH || '');
+    if (appPublicPath !== '/') {
+      return appPublicPath;
+    }
+
+    const apiBasePath = this.getApiBasePath();
+    const inferredPublicPath = apiBasePath.endsWith('/api') ? normalizeBasePath(apiBasePath.slice(0, -4)) : '';
+    return inferredPublicPath === '/' ? '' : inferredPublicPath;
+  }
+
   private getRequestPath(ctx: any) {
     if (typeof ctx?.req?.originalUrl === 'string') {
       return ctx.req.originalUrl.split('?')[0];
@@ -331,27 +342,30 @@ export class IdpOauthService {
   }
 
   getFrontendInteractionPath(appName: string, uid: string, issuerPath = this.getIssuerPath(appName)) {
+    const appPublicPath = this.getAppPublicPath();
     if (!this.shouldUseSubAppPublicPrefix(appName, issuerPath)) {
-      return `/idp-oauth/interaction/${uid}`;
+      return `${appPublicPath}/idp-oauth/interaction/${uid}`;
     }
 
-    return `/apps/${appName}/idp-oauth/interaction/${uid}`;
+    return `${appPublicPath}/apps/${appName}/idp-oauth/interaction/${uid}`;
   }
 
   getFrontendErrorPath(appName: string, issuerPath = this.getIssuerPath(appName)) {
+    const appPublicPath = this.getAppPublicPath();
     if (!this.shouldUseSubAppPublicPrefix(appName, issuerPath)) {
-      return '/idp-oauth/error';
+      return `${appPublicPath}/idp-oauth/error`;
     }
 
-    return `/apps/${appName}/idp-oauth/error`;
+    return `${appPublicPath}/apps/${appName}/idp-oauth/error`;
   }
 
   getFrontendDevicePath(appName: string, issuerPath = this.getIssuerPath(appName)) {
+    const appPublicPath = this.getAppPublicPath();
     if (!this.shouldUseSubAppPublicPrefix(appName, issuerPath)) {
-      return '/idpOAuth/device';
+      return `${appPublicPath}/idpOAuth/device`;
     }
 
-    return `/apps/${appName}/idpOAuth/device`;
+    return `${appPublicPath}/apps/${appName}/idpOAuth/device`;
   }
 
   getProviderContext(ctx: any): ProviderContext {
