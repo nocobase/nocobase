@@ -26,6 +26,7 @@ import {
 type AdminLayoutContentProps = {
   onContentElementChange?: (element: HTMLDivElement | null) => void;
   layout?: (AdminLayoutRoutePathLike & { routeName?: string }) | null;
+  designable?: boolean;
 };
 
 const layoutContentClass = css`
@@ -70,7 +71,7 @@ function isDvhSupported() {
   return testEl.style.height === '1dvh';
 }
 
-const ShowTipWhenNoPages = observer((props: { layout?: AdminLayoutRoutePathLike | null }) => {
+const ShowTipWhenNoPages = observer((props: { designable?: boolean; layout?: AdminLayoutRoutePathLike | null }) => {
   const flowEngine = useFlowEngine();
   const { token } = antdTheme.useToken();
   const { t } = useTranslation();
@@ -79,7 +80,7 @@ const ShowTipWhenNoPages = observer((props: { layout?: AdminLayoutRoutePathLike 
   const visibleRoutes = isV2AdminRuntime(flowEngine.context.app)
     ? allAccessRoutes.filter((route) => isV2MenuRoute(route))
     : allAccessRoutes;
-  const designable = !!flowEngine.context.flowSettingsEnabled;
+  const designable = !!props.designable || !!flowEngine.context.flowSettingsEnabled;
   const layoutRoutePath = getAdminLayoutRoutePath(props.layout);
 
   if (
@@ -104,7 +105,7 @@ const ShowTipWhenNoPages = observer((props: { layout?: AdminLayoutRoutePathLike 
  *
  * 内容区不再依赖独立 FlowModel，而是通过回调把挂载目标同步给 root model。
  */
-export const AdminLayoutContent: FC<AdminLayoutContentProps> = ({ onContentElementChange, layout }) => {
+export const AdminLayoutContent: FC<AdminLayoutContentProps> = ({ designable, onContentElementChange, layout }) => {
   const style = useMemo(() => (isDvhSupported() ? mobileHeight : undefined), []);
   const params = useParams();
   const matches = useMatches();
@@ -131,7 +132,7 @@ export const AdminLayoutContent: FC<AdminLayoutContentProps> = ({ onContentEleme
     >
       <div style={pageContentStyle}>
         {shouldKeepAlive && pageUid ? <KeepAlive uid={pageUid}>{() => <Outlet />}</KeepAlive> : <Outlet />}
-        <ShowTipWhenNoPages layout={layout} />
+        <ShowTipWhenNoPages designable={designable} layout={layout} />
       </div>
     </div>
   );
