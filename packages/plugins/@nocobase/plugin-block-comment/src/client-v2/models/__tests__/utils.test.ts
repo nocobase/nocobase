@@ -10,8 +10,12 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import {
+  COMMENT_OWNER_FILTER_BY_TK_VARIABLE,
   COMMENT_OWNER_VARIABLE_EXAMPLE,
   createOwnerFieldFilter,
+  getAssociationRecordCommentFieldMapping,
+  getAssociationSourceCollectionName,
+  getDefaultRecordCommentFieldMapping,
   getCommentOwnerFieldOptions,
   getCommentUserFieldOptions,
   isContextVariableExpression,
@@ -207,6 +211,72 @@ describe('record comments owner value utils', () => {
         ],
       }),
     ).toEqual([{ label: 'Task', value: 'task' }]);
+  });
+
+  it('defaults comment owner mapping to the current popup collection relation', () => {
+    expect(
+      getDefaultRecordCommentFieldMapping({
+        currentCollectionName: 'tasks',
+        collection: {
+          fields: [
+            { name: 'project', type: 'belongsTo', interface: 'm2o', title: 'Project', target: 'projects' },
+            { name: 'task', type: 'belongsTo', interface: 'm2o', title: 'Task', target: 'tasks' },
+          ],
+        },
+      }),
+    ).toEqual({
+      ownerField: 'task',
+      ownerValueField: COMMENT_OWNER_FILTER_BY_TK_VARIABLE,
+    });
+  });
+
+  it('does not default comment owner mapping when the current popup collection has no relation field', () => {
+    expect(
+      getDefaultRecordCommentFieldMapping({
+        currentCollectionName: 'tasks',
+        collection: {
+          fields: [{ name: 'project', type: 'belongsTo', interface: 'm2o', title: 'Project', target: 'projects' }],
+        },
+      }),
+    ).toEqual({});
+  });
+
+  it('resolves the association source collection name from the association object first', () => {
+    expect(
+      getAssociationSourceCollectionName({
+        association: {
+          collection: {
+            name: 'posts',
+          },
+        },
+        associationName: 'tasks.comments',
+      }),
+    ).toBe('posts');
+  });
+
+  it('falls back to parsing the association name for the source collection name', () => {
+    expect(
+      getAssociationSourceCollectionName({
+        associationName: 'posts.comments',
+      }),
+    ).toBe('posts');
+  });
+
+  it('defaults comment owner mapping from the association source collection', () => {
+    expect(
+      getAssociationRecordCommentFieldMapping({
+        associationName: 'posts.comments',
+        collection: {
+          fields: [
+            { name: 'post', type: 'belongsTo', interface: 'm2o', title: 'Post', target: 'posts' },
+            { name: 'task', type: 'belongsTo', interface: 'm2o', title: 'Task', target: 'tasks' },
+          ],
+        },
+      }),
+    ).toEqual({
+      ownerField: 'post',
+      ownerValueField: COMMENT_OWNER_FILTER_BY_TK_VARIABLE,
+    });
   });
 
   it('only exposes users many-to-one fields as commenter field options', () => {

@@ -41,6 +41,8 @@ import { DataBlock, useFilterBlock } from '../../filter-provider/FilterProvider'
 import { mergeFilter, transformToFilter } from '../../filter-provider/utils';
 import { NAMESPACE_UI_SCHEMA } from '../../i18n/constant';
 import { useTreeParentRecord } from '../../modules/blocks/data-blocks/table/TreeRecordProvider';
+import { useCurrentPopupRecord } from '../../modules/variable/variablesProvider/VariablePopupRecordProvider';
+import { getPopupRecordAssignedValues } from '../../modules/variable/variablesProvider/getPopupRecordAssignedValues';
 import { useRecord } from '../../record-provider';
 import { removeNullCondition, useActionContext, useColumnSettings, useCompile } from '../../schema-component';
 import { isSubMode } from '../../schema-component/antd/association-field/util';
@@ -174,9 +176,19 @@ export function useCollectValuesToSubmit(f?: Form) {
   const localVariables = useLocalVariables({ currentForm: form });
   const actionSchema = useFieldSchema();
   const treeParentRecord = useTreeParentRecord();
+  const popupRecord = useCurrentPopupRecord();
 
   return useCallback(async () => {
     const { assignedValues: originalAssignedValues = {}, overwriteValues } = actionSchema?.['x-action-settings'] ?? {};
+    const fallbackAssignedValues = getPopupRecordAssignedValues({
+      collectionName: name,
+      collectionFields: fields,
+      popupCollectionName: popupRecord?.collection?.name,
+    });
+    const mergedAssignedValues = {
+      ...fallbackAssignedValues,
+      ...originalAssignedValues,
+    };
     const values = getFormValues({
       filterByTk,
       field,
@@ -188,8 +200,8 @@ export function useCollectValuesToSubmit(f?: Form) {
     });
 
     const assignedValues = {};
-    const waitList = Object.keys(originalAssignedValues).map(async (key) => {
-      const value = originalAssignedValues[key];
+    const waitList = Object.keys(mergedAssignedValues).map(async (key) => {
+      const value = mergedAssignedValues[key];
       const collectionField = getField(key);
       if (process.env.NODE_ENV !== 'production') {
         if (!collectionField) {
@@ -228,8 +240,10 @@ export function useCollectValuesToSubmit(f?: Form) {
     getActiveFieldsName,
     getField,
     getTreeParentField,
+    fields,
     localVariables,
     name,
+    popupRecord?.collection?.name,
     resource,
     treeParentRecord,
     variables,
@@ -1500,7 +1514,7 @@ export const useEditTableActionProps = () => {
     // Clear localStorage settings to revert to schema defaults
     clearSettings();
     setSavedSettings(getSettings());
-  }, [clearSettings]);
+  }, [clearSettings, getSettings]);
 
   return {
     columns: mergedColumns,

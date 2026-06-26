@@ -48,10 +48,10 @@ export const CommentBlockInitializer = ({
       filterOtherRecordsCollection={filterOtherRecordsCollection}
       showAssociationFields={showAssociationFields}
       hideOtherRecordsInPopup={hideOtherRecordsInPopup}
-      onCreateBlockSchema={async ({ item, fromOthersInPopup }) => {
+      onCreateBlockSchema={async ({ item }) => {
         const collection = getCollection(item.name, item.dataSource);
         const field = item.associationField;
-        if (field && !fromOthersInPopup) {
+        if (field) {
           insert(
             createCommentBlockUISchema({
               dataSource: item.dataSource,

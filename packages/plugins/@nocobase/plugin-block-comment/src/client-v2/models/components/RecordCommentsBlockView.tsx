@@ -21,7 +21,7 @@ import {
 } from '@nocobase/flow-engine';
 import { dayjs } from '@nocobase/utils/client';
 import { App, Button, Card, Empty, Input, List, Space, Tooltip } from 'antd';
-import React, { useCallback, useEffect, useId, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 
 import { useT } from '../../locale';
 import type { RecordCommentsBlockModel } from '../RecordCommentsBlockModel';
@@ -172,6 +172,8 @@ const DisplayContent = observer(({ value, model }: { value: unknown; model: Reco
   const t = useT();
   const [content, setContent] = useState<React.ReactNode>(null);
   const context = model.context as RecordCommentContext;
+  const translateRef = useRef(t);
+  translateRef.current = t;
 
   useEffect(() => {
     let active = true;
@@ -188,28 +190,30 @@ const DisplayContent = observer(({ value, model }: { value: unknown; model: Reco
           ? await context.liquid.renderWithFullContext(rawValue, model.context)
           : rawValue;
         const rendered = context.markdown?.render
-          ? context.markdown.render(t(liquidValue), { ellipsis: false, textOnly: false })
+          ? context.markdown.render(translateRef.current(liquidValue), { ellipsis: false, textOnly: false })
           : liquidValue;
         if (active) {
           setContent(rendered);
         }
       } catch (error) {
         if (active) {
-          setContent(<pre style={{ color: 'red' }}>{getErrorMessage(error, t('Render error'))}</pre>);
+          setContent(
+            <pre style={{ color: 'red' }}>{getErrorMessage(error, translateRef.current('Render error'))}</pre>,
+          );
         }
       }
     }
 
     renderContent().catch((error) => {
       if (active) {
-        setContent(<pre style={{ color: 'red' }}>{getErrorMessage(error, t('Render error'))}</pre>);
+        setContent(<pre style={{ color: 'red' }}>{getErrorMessage(error, translateRef.current('Render error'))}</pre>);
       }
     });
 
     return () => {
       active = false;
     };
-  }, [context.liquid, context.markdown, model, t, value]);
+  }, [context.liquid, context.markdown, model, value]);
 
   return <>{content}</>;
 });
@@ -370,16 +374,22 @@ const RecordCommentItemView = observer(
     const { message } = App.useApp();
     const context = blockModel.context as RecordCommentContext;
     const mapping = blockModel.mapping;
+    const contentValue = String(record[mapping.contentField || ''] || '');
     const [editing, setEditing] = useState(false);
-    const [updateValue, setUpdateValue] = useState(String(record[mapping.contentField || ''] || ''));
+    const [updateValue, setUpdateValue] = useState(contentValue);
     const [saving, setSaving] = useState(false);
     const title = getCommenterDisplayName(record, mapping, t('Comment'));
     const dateValue = mapping.dateField ? record[mapping.dateField] : undefined;
     const recordKey = getRecordPrimaryKeyValue(record, blockModel.collection);
 
     useEffect(() => {
-      setUpdateValue(String(record[mapping.contentField || ''] || ''));
-    }, [mapping.contentField, record]);
+      setUpdateValue(contentValue);
+    }, [contentValue]);
+
+    const cancelEditing = useCallback(() => {
+      setUpdateValue(contentValue);
+      setEditing(false);
+    }, [contentValue]);
 
     const saveComment = useCallback(async () => {
       if (!recordKey || !mapping.contentField) {
@@ -459,13 +469,7 @@ const RecordCommentItemView = observer(
                 <Button type="primary" loading={saving} onClick={saveComment}>
                   {t('Update Comment')}
                 </Button>
-                <Button
-                  onClick={() => {
-                    setEditing(false);
-                  }}
-                >
-                  {t('Cancel')}
-                </Button>
+                <Button onClick={cancelEditing}>{t('Cancel')}</Button>
               </div>
             ) : null}
           </div>
@@ -493,6 +497,10 @@ export const RecordCommentsBlockView = Object.assign(
       const count = resource.getCount() || 0;
       const renderInstanceKey = normalizeForkKeyPart(useId());
       const blockForkKeyPrefix = `${normalizeForkKeyPart(model.uid)}_${renderInstanceKey}`;
+
+      useEffect(() => {
+        void model.ensureLastPageLoaded();
+      }, [count, model, page, pageSize, resource.loading]);
 
       return (
         <Space direction="vertical" size={16} style={{ width: '100%' }}>

@@ -40,6 +40,8 @@ import {
   SchemaSettingsSwitchItem,
 } from '../../../schema-settings/SchemaSettings';
 import { DefaultValueProvider } from '../../../schema-settings/hooks/useIsAllowToSetDefaultValue';
+import { useCurrentPopupRecord } from '../../../modules/variable/variablesProvider/VariablePopupRecordProvider';
+import { getPopupRecordAssignedValues } from '../../../modules/variable/variablesProvider/getPopupRecordAssignedValues';
 import { useAllDataBlocks } from '../page/AllDataBlocksProvider';
 import { useLinkageAction } from './hooks';
 import { useAfterSuccessOptions } from './hooks/useGetAfterSuccessVariablesOptions';
@@ -193,6 +195,8 @@ export function AssignedFieldValues() {
   const { dn } = useDesignable();
   const { t } = useTranslation();
   const fieldSchema = useFieldSchema();
+  const { name, fields } = useCollection_deprecated();
+  const popupRecord = useCurrentPopupRecord();
   const initialSchema = {
     type: 'void',
     'x-uid': uid(),
@@ -215,6 +219,18 @@ export function AssignedFieldValues() {
     ),
   };
   const actionType = fieldSchema['x-action'] ?? '';
+  const initialValues = useMemo(() => {
+    const fallbackAssignedValues = getPopupRecordAssignedValues({
+      collectionName: name,
+      collectionFields: fields,
+      popupCollectionName: popupRecord?.collection?.name,
+    });
+
+    return {
+      ...fallbackAssignedValues,
+      ...(fieldSchema?.['x-action-settings']?.assignedValues || {}),
+    };
+  }, [fieldSchema, fields, name, popupRecord?.collection?.name]);
   const onSubmit = useCallback(
     (assignedValues) => {
       fieldSchema['x-action-settings']['assignedValues'] = assignedValues;
@@ -234,7 +250,7 @@ export function AssignedFieldValues() {
           title={t('Assign field values')}
           // maskClosable={false}
           initialSchema={initialSchema}
-          initialValues={fieldSchema?.['x-action-settings']?.assignedValues}
+          initialValues={initialValues}
           modalTip={tips[actionType]}
           uid={fieldSchema?.['x-action-settings']?.schemaUid}
           onSubmit={onSubmit}
@@ -365,7 +381,7 @@ export const BlocksSelector = (props) => {
         };
       })
       .filter(Boolean);
-  }, [allDataBlocks, t]);
+  }, [allDataBlocks, compile]);
 
   return (
     <Select

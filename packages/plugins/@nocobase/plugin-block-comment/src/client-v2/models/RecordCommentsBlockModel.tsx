@@ -18,6 +18,7 @@ import { RecordCommentsBlockView } from './components/RecordCommentsBlockView';
 import { RecordCommentFieldSelect } from './components/RecordCommentFieldSelect';
 import {
   DEFAULT_PAGE_SIZE,
+  getAssociationRecordCommentFieldMapping,
   OWNER_FILTER_GROUP_KEY,
   createOwnerFieldFilter,
   getCollectionField,
@@ -28,6 +29,7 @@ import {
   resolveCommentOwnerValue,
   resolveCommentOwnerValueFromFilterByTk,
   toScalarFilterValue,
+  type RecordCommentAssociationLike,
   type RecordCommentCollection,
   type RecordCommentFieldMapping,
   type RecordCommentRecord,
@@ -41,6 +43,49 @@ type RecordCommentsBlockStructure = {
 };
 
 type RecordCommentOwnerValue = string | number | boolean | undefined;
+
+const getFieldMappingDefaults = (
+  model: RecordCommentsBlockModel | undefined,
+  ctx: {
+    collection?: unknown;
+    view?: {
+      inputArgs?: {
+        associationName?: string;
+        collectionName?: string;
+      };
+    };
+    inputArgs?: {
+      associationName?: string;
+      collectionName?: string;
+    };
+    association?: RecordCommentAssociationLike;
+  },
+) => {
+  const resourceSettingsInit =
+    model && typeof model.getResourceSettingsInitParams === 'function'
+      ? model.getResourceSettingsInitParams()
+      : undefined;
+  const associationName =
+    resourceSettingsInit?.associationName || ctx.view?.inputArgs?.associationName || ctx.inputArgs?.associationName;
+  const association = (model?.context?.association as RecordCommentAssociationLike | undefined) || ctx.association;
+  const associationMapping = getAssociationRecordCommentFieldMapping({
+    collection: model?.collection || ctx.collection,
+    association,
+    associationName,
+  });
+
+  if (associationMapping.ownerField) {
+    return {
+      defaultMapping: associationMapping,
+      shouldHideOwnerMappingFields: true,
+    };
+  }
+
+  return {
+    defaultMapping: {},
+    shouldHideOwnerMappingFields: false,
+  };
+};
 
 export class RecordCommentItemModel extends FlowModel {
   render() {
@@ -59,6 +104,7 @@ export class RecordCommentsBlockModel extends CollectionBlockModel<RecordComment
   static scene = BlockSceneEnum.many;
 
   private readonly resolvedOwnerValue = observable.ref<RecordCommentOwnerValue>(undefined);
+  private shouldLoadLastPage = true;
 
   static filterCollection(collection: Collection) {
     return Boolean(collection?.filterTargetKey || getCollectionFilterTargetKey(collection as RecordCommentCollection));
@@ -150,7 +196,7 @@ export class RecordCommentsBlockModel extends CollectionBlockModel<RecordComment
     resource.setPageSize(this.props.pageSize || DEFAULT_PAGE_SIZE);
 
     if (mapping.dateField) {
-      resource.setSort([`-${mapping.dateField}`]);
+      resource.setSort([mapping.dateField]);
     }
 
     if (mapping.ownerField) {
@@ -170,7 +216,44 @@ export class RecordCommentsBlockModel extends CollectionBlockModel<RecordComment
     return resource;
   }
 
+  getLastPage(pageSize = this.resource.getPageSize() || this.props.pageSize || DEFAULT_PAGE_SIZE) {
+    const count = this.resource.getCount() || 0;
+    return Math.max(Math.ceil(count / pageSize), 1);
+  }
+
+  async ensureLastPageLoaded() {
+    if (this.resource.loading) {
+      return;
+    }
+
+    const currentPage = this.resource.getPage() || 1;
+    const lastPage = this.getLastPage();
+
+    if (currentPage > lastPage) {
+      this.shouldLoadLastPage = false;
+      this.resource.setPage(lastPage);
+      this.resource.loading = true;
+      await this.refresh();
+      return;
+    }
+
+    if (!this.shouldLoadLastPage) {
+      return;
+    }
+
+    this.shouldLoadLastPage = false;
+
+    if (currentPage === lastPage) {
+      return;
+    }
+
+    this.resource.setPage(lastPage);
+    this.resource.loading = true;
+    await this.refresh();
+  }
+
   async handlePageChange(page: number) {
+    this.shouldLoadLastPage = false;
     this.resource.setPage(page);
     this.resource.loading = true;
     await this.refresh();
@@ -227,7 +310,10 @@ RecordCommentsBlockModel.registerFlow({
     fieldMapping: {
       title: tExpr('Field mapping'),
       preset: true,
-      uiSchema() {
+      uiSchema(ctx) {
+        const model = ctx.model as RecordCommentsBlockModel | undefined;
+        const { shouldHideOwnerMappingFields } = getFieldMappingDefaults(model, ctx);
+
         return {
           contentField: {
             type: 'string',
@@ -247,29 +333,33 @@ RecordCommentsBlockModel.registerFlow({
             },
             description: tExpr('Only many-to-one fields associated with the users collection can be selected.'),
           },
-          ownerField: {
-            type: 'string',
-            title: tExpr('Comment association field'),
-            required: true,
-            'x-decorator': 'FormItem',
-            'x-component': RecordCommentFieldSelect,
-            'x-component-props': {
-              fieldFilter: 'belongsTo',
-            },
-          },
-          ownerValueField: {
-            type: 'string',
-            title: tExpr('Comment association field value'),
-            required: true,
-            'x-decorator': 'FormItem',
-            'x-component': TextAreaWithContextSelector,
-            'x-component-props': {
-              rows: 1,
-              maxRows: 3,
-              placeholder: 'ctx.record.id',
-            },
-            description: tExpr('Specify the associated business record value, for example the current record ID.'),
-          },
+          ownerField: shouldHideOwnerMappingFields
+            ? undefined
+            : {
+                type: 'string',
+                title: tExpr('Comment association field'),
+                required: true,
+                'x-decorator': 'FormItem',
+                'x-component': RecordCommentFieldSelect,
+                'x-component-props': {
+                  fieldFilter: 'belongsTo',
+                },
+              },
+          ownerValueField: shouldHideOwnerMappingFields
+            ? undefined
+            : {
+                type: 'string',
+                title: tExpr('Comment association field value'),
+                required: true,
+                'x-decorator': 'FormItem',
+                'x-component': TextAreaWithContextSelector,
+                'x-component-props': {
+                  rows: 1,
+                  maxRows: 3,
+                  placeholder: 'ctx.record.id',
+                },
+                description: tExpr('Specify the associated business record value, for example the current record ID.'),
+              },
           dateField: {
             type: 'string',
             title: tExpr('Comment date field'),
@@ -277,6 +367,18 @@ RecordCommentsBlockModel.registerFlow({
             'x-decorator': 'FormItem',
             'x-component': RecordCommentFieldSelect,
           },
+        };
+      },
+      defaultParams(ctx) {
+        const model = ctx.model as RecordCommentsBlockModel;
+        const { defaultMapping } = getFieldMappingDefaults(model, ctx);
+
+        return {
+          contentField: model.props.contentField,
+          commenterField: model.props.commenterField,
+          ownerField: model.props.ownerField ?? defaultMapping.ownerField,
+          ownerValueField: model.props.ownerValueField ?? defaultMapping.ownerValueField,
+          dateField: model.props.dateField,
         };
       },
       async handler(ctx, params) {
@@ -315,18 +417,19 @@ RecordCommentsBlockModel.registerFlow({
       },
       handler(ctx, params) {
         const model = ctx.model as RecordCommentsBlockModel;
+        const pageSize = params.pageSize || DEFAULT_PAGE_SIZE;
         model.setProps({
-          pageSize: params.pageSize || DEFAULT_PAGE_SIZE,
+          pageSize,
         });
-        model.resource.setPage(1);
-        model.resource.setPageSize(params.pageSize || DEFAULT_PAGE_SIZE);
+        model.resource.setPageSize(pageSize);
+        model.resource.setPage(model.getLastPage(pageSize));
       },
     },
   },
 });
 
 RecordCommentsBlockModel.define({
-  label: tExpr('Record comments'),
+  label: tExpr('Comments'),
   searchable: true,
   searchPlaceholder: tExpr('Search'),
   createModelOptions: {

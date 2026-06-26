@@ -20,6 +20,14 @@ export type RecordCommentFieldMapping = {
   ownerValueField?: unknown;
 };
 
+export type DefaultRecordCommentFieldMapping = Pick<RecordCommentFieldMapping, 'ownerField' | 'ownerValueField'>;
+
+export type RecordCommentAssociationLike = {
+  collection?: {
+    name?: string;
+  };
+};
+
 export type RecordCommentCollection = {
   filterTargetKey?: string | string[];
   getFilterByTK?: (record: RecordCommentRecord) => unknown;
@@ -57,6 +65,7 @@ export type RecordCommentOwnerValueContext = {
 export const DEFAULT_PAGE_SIZE = 20;
 export const OWNER_FILTER_GROUP_KEY = 'record-comments-owner';
 export const COMMENT_OWNER_VARIABLE_EXAMPLE = '{{ ctx.record.id }}';
+export const COMMENT_OWNER_FILTER_BY_TK_VARIABLE = '{{ ctx.view.inputArgs.filterByTk }}';
 
 const isCollectionLike = (value: unknown): value is RecordCommentCollection => {
   return Boolean(value && typeof value === 'object');
@@ -135,6 +144,65 @@ export const getCommentUserFieldOptions = (collection?: unknown) => {
       label: field.title || field.uiSchema?.title || field.name,
       value: field.name,
     }));
+};
+
+export const getDefaultRecordCommentFieldMapping = (options: {
+  collection?: unknown;
+  currentCollectionName?: string;
+}): DefaultRecordCommentFieldMapping => {
+  const { collection, currentCollectionName } = options;
+
+  if (!currentCollectionName) {
+    return {};
+  }
+
+  const ownerField = getCollectionFields(collection).find((field) => {
+    if (!field.name || !isBelongsToField(field)) {
+      return false;
+    }
+
+    return field.target === currentCollectionName || field.targetCollection?.name === currentCollectionName;
+  })?.name;
+
+  if (!ownerField) {
+    return {};
+  }
+
+  return {
+    ownerField,
+    ownerValueField: COMMENT_OWNER_FILTER_BY_TK_VARIABLE,
+  };
+};
+
+export const getAssociationSourceCollectionName = (options: {
+  association?: RecordCommentAssociationLike;
+  associationName?: string;
+}) => {
+  const { association, associationName } = options;
+
+  if (association?.collection?.name) {
+    return association.collection.name;
+  }
+
+  if (!associationName) {
+    return undefined;
+  }
+
+  const [sourceCollectionName] = associationName.split('.');
+  return sourceCollectionName || undefined;
+};
+
+export const getAssociationRecordCommentFieldMapping = (options: {
+  collection?: unknown;
+  association?: RecordCommentAssociationLike;
+  associationName?: string;
+}): DefaultRecordCommentFieldMapping => {
+  const sourceCollectionName = getAssociationSourceCollectionName(options);
+
+  return getDefaultRecordCommentFieldMapping({
+    collection: options.collection,
+    currentCollectionName: sourceCollectionName,
+  });
 };
 
 export const getCollectionFilterTargetKey = (collection?: unknown) => {
