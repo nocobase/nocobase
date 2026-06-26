@@ -9,7 +9,7 @@
 
 import React from 'react';
 import { describe, expect, it, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import { AppendsSelect } from '../collection/AppendsSelect';
 
 const treeSelectState = vi.hoisted(() => ({
@@ -33,25 +33,43 @@ vi.mock('@nocobase/flow-engine', () => ({
       dataSourceManager: {
         getDataSource: () => ({
           collectionManager: {
-            getCollection: () => ({
-              getFields: () => [
-                {
-                  options: {
-                    name: 'createdBy',
-                    type: 'belongsTo',
-                    target: 'users',
-                    uiSchema: { title: '{{t("Created by")}}' },
-                  },
-                },
-                {
-                  options: {
-                    name: 'role',
-                    type: 'belongsTo',
-                    target: 'roles',
-                    uiSchema: { title: '{{t("Role")}}' },
-                  },
-                },
-              ],
+            getCollection: (collectionName: string) => ({
+              getFields: () =>
+                (
+                  ({
+                    users: [
+                      {
+                        options: {
+                          name: 'createdBy',
+                          type: 'belongsTo',
+                          target: 'users',
+                          interface: 'm2o',
+                          uiSchema: { title: '{{t("Created by")}}' },
+                        },
+                      },
+                      {
+                        options: {
+                          name: 'role',
+                          type: 'belongsTo',
+                          target: 'roles',
+                          interface: 'm2o',
+                          uiSchema: { title: '{{t("Role")}}' },
+                        },
+                      },
+                    ],
+                    roles: [
+                      {
+                        options: {
+                          name: 'createdBy',
+                          type: 'belongsTo',
+                          target: 'users',
+                          interface: 'm2o',
+                          uiSchema: { title: '{{t("Created by")}}' },
+                        },
+                      },
+                    ],
+                  }) as Record<string, Array<{ options: Record<string, any> }>>
+                )[collectionName] ?? [],
             }),
           },
         }),
@@ -90,7 +108,7 @@ describe('AppendsSelect', () => {
 
     expect(treeSelectState.props?.treeCheckStrictly).toBe(true);
     expect(treeSelectState.props?.showCheckedStrategy).toBe('SHOW_ALL');
-    expect(treeSelectState.props?.value).toEqual([{ value: 'createdBy.role', label: 'createdBy.role' }]);
+    expect(treeSelectState.props?.value).toMatchObject([{ value: 'createdBy.role', label: 'createdBy.role' }]);
 
     const tag = treeSelectState.props?.tagRender?.({
       value: 'createdBy.role',
@@ -115,5 +133,49 @@ describe('AppendsSelect', () => {
 
     treeSelectState.props?.onChange?.([{ value: 'createdBy.role', label: 'createdBy.role' }]);
     expect(onChange).toHaveBeenCalledWith([]);
+  });
+
+  it('continues loading deeper association levels on demand', async () => {
+    render(<AppendsSelect collection="users" value={[]} />);
+
+    await act(async () => {
+      await treeSelectState.props?.loadData?.(
+        treeSelectState.props?.treeData?.find((item) => item.value === 'createdBy'),
+      );
+    });
+
+    await waitFor(() => {
+      expect(treeSelectState.props?.treeData).toEqual(
+        expect.arrayContaining([expect.objectContaining({ value: 'createdBy.createdBy' })]),
+      );
+    });
+
+    await act(async () => {
+      await treeSelectState.props?.loadData?.(
+        treeSelectState.props?.treeData?.find((item) => item.value === 'createdBy.createdBy'),
+      );
+    });
+
+    await waitFor(() => {
+      expect(treeSelectState.props?.treeData).toEqual(
+        expect.arrayContaining([expect.objectContaining({ value: 'createdBy.createdBy.createdBy' })]),
+      );
+    });
+  });
+
+  it('preloads nested value paths so deep selections can be displayed', async () => {
+    render(<AppendsSelect collection="users" value={['createdBy.createdBy.role']} />);
+
+    await waitFor(() => {
+      expect(treeSelectState.props?.value).toMatchObject([{ value: 'createdBy.createdBy.role' }]);
+    });
+
+    const tag = treeSelectState.props?.tagRender?.({
+      value: 'createdBy.createdBy.role',
+      closable: true,
+      onClose: vi.fn(),
+    });
+    const { container } = render(tag);
+    expect(container).toHaveTextContent('Created by / Created by / Role');
   });
 });

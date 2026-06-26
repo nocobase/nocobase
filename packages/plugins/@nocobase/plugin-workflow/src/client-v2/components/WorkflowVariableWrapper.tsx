@@ -7,12 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useMemo, useState } from 'react';
-import { FlowContextSelector, VariableTag, type MetaTreeNode } from '@nocobase/flow-engine';
+import React, { useMemo } from 'react';
+import { FlowContextSelector } from '@nocobase/flow-engine';
 import type { FlowContextSelectorProps } from '@nocobase/flow-engine';
 import { Space } from 'antd';
 import { useWorkflowVariableOptions, type UseWorkflowVariableOptions } from '../canvas/useWorkflowVariableOptions';
 import { formatWorkflowPathToValue, parseWorkflowValueToPath } from '../canvas/workflowVariableConverters';
+import { WorkflowVariableTag, isWorkflowVariableValue } from '../canvas/WorkflowVariableTag';
 import { useHideVariable } from './HideVariableContext';
 
 type BaseWrapperRenderProps<TValue> = {
@@ -29,10 +30,6 @@ export type WorkflowVariableWrapperProps<TValue> = {
   selectorProps?: Partial<FlowContextSelectorProps>;
 };
 
-function isWorkflowVariableValue(value: unknown): value is string {
-  return typeof value === 'string' && /^\{\{\s*[^{}]+?\s*\}\}$/.test(value);
-}
-
 export function WorkflowVariableWrapper<TValue>({
   value,
   onChange,
@@ -43,7 +40,6 @@ export function WorkflowVariableWrapper<TValue>({
 }: WorkflowVariableWrapperProps<TValue>) {
   const hideVariable = useHideVariable();
   const metaTree = useWorkflowVariableOptions(variableOptions);
-  const [selectedMetaTreeNode, setSelectedMetaTreeNode] = useState<MetaTreeNode | undefined>();
   const isVariable = isWorkflowVariableValue(value);
   const translatedMetaTree = useMemo(() => metaTree, [metaTree]);
   const hasVariableOptions = !hideVariable && translatedMetaTree.length > 0;
@@ -62,12 +58,7 @@ export function WorkflowVariableWrapper<TValue>({
   return (
     <Space.Compact block>
       {isVariable ? (
-        <VariableTag
-          value={value}
-          metaTree={translatedMetaTree}
-          metaTreeNode={selectedMetaTreeNode}
-          onClear={() => onChange?.(clearValue)}
-        />
+        <WorkflowVariableTag value={value} metaTree={translatedMetaTree} onClear={() => onChange?.(clearValue)} />
       ) : (
         render({
           value: (value as TValue | null | undefined) ?? undefined,
@@ -79,8 +70,7 @@ export function WorkflowVariableWrapper<TValue>({
         value={isVariable ? value : undefined}
         parseValueToPath={parseWorkflowValueToPath}
         formatPathToValue={formatWorkflowPathToValue}
-        onChange={(nextValue, metaTreeNode) => {
-          setSelectedMetaTreeNode(metaTreeNode);
+        onChange={(nextValue) => {
           onChange?.(nextValue);
         }}
         {...selectorProps}

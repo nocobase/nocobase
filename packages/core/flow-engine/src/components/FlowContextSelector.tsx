@@ -85,6 +85,7 @@ const FlowContextSelectorComponent: React.FC<FlowContextSelectorProps> = ({
   value,
   onChange,
   children,
+  active,
   metaTree,
   showSearch = false,
   parseValueToPath: customParseValueToPath = parseValueToPath,
@@ -266,13 +267,13 @@ const FlowContextSelectorComponent: React.FC<FlowContextSelectorProps> = ({
 
   // 默认按钮组件
   const defaultChildren = useMemo(() => {
-    const hasSelected = currentPath && currentPath.length > 0;
+    const hasSelected = active ?? Boolean(currentPath && currentPath.length > 0);
     return (
       <Button type={hasSelected ? 'primary' : 'default'} style={defaultButtonStyle}>
         x
       </Button>
     );
-  }, [currentPath]);
+  }, [active, currentPath]);
 
   // 处理选择变化事件
   const handleChange = useCallback(

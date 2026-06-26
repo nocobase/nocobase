@@ -11,7 +11,7 @@ import React, { useCallback } from 'react';
 import { DeleteOutlined } from '@ant-design/icons';
 import { Button, Checkbox, Form, Input, Popconfirm, Space } from 'antd';
 import { JsonTextArea } from '@nocobase/client-v2';
-import { WorkflowVariableInput } from '@nocobase/plugin-workflow/client-v2';
+import { WorkflowVariableSelect } from '@nocobase/plugin-workflow/client-v2';
 
 import { useT } from '../locale';
 import { parseJsonVariables } from '../utils/parseJsonVariables';
@@ -34,7 +34,7 @@ export function JSONVariableMappingFieldset() {
   return (
     <>
       <Form.Item name={['config', 'dataSource']} label={t('JSON data source')} rules={[{ required: true }]}>
-        <WorkflowVariableInput />
+        <WorkflowVariableSelect />
       </Form.Item>
 
       <Form.Item name={['config', 'example']} label={t('Input example')}>
