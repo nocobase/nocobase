@@ -81,9 +81,13 @@ const envJwksKeys = ['IDP_OAUTH_JWKS', 'OAUTH_JWKS'] as const;
 const MAX_CACHE_TTL_MS = 2_147_483_647;
 const DEFAULT_ACCESS_TOKEN_TTL_SECONDS = Math.floor(ms(String(defaultTokenPolicyConfig.tokenExpirationTime)) / 1000);
 const DEFAULT_SESSION_TTL_SECONDS = Math.floor(ms(String(defaultTokenPolicyConfig.sessionExpirationTime)) / 1000);
+const DEVICE_CODE_TTL_SECONDS = 10 * 60;
 type JsonWebKeySet = Awaited<ReturnType<JoseModule['exportJWK']>> extends infer T
   ? { keys: Array<T & { kid?: string; use?: string; alg?: string }> }
   : { keys: Array<Record<string, any>> };
+type DeviceFlowRenderContext = {
+  body?: unknown;
+};
 
 function policyMillisecondsToSeconds(value: unknown, fallback: number) {
   if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0) {
@@ -91,6 +95,145 @@ function policyMillisecondsToSeconds(value: unknown, fallback: number) {
   }
 
   return Math.max(1, Math.floor(value / 1000));
+}
+
+function escapeHtmlText(value: unknown) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function renderDevicePage(options: {
+  title: string;
+  heading: string;
+  description: string;
+  form?: string;
+  footer?: string;
+}) {
+  return `<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>${escapeHtmlText(options.title)}</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      background: #f5f5f5;
+      color: rgba(0, 0, 0, 0.88);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+    main {
+      width: min(100%, 440px);
+      padding: 32px;
+      border: 1px solid #f0f0f0;
+      border-radius: 8px;
+      background: #fff;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.08);
+    }
+    h1 { margin: 0 0 12px; font-size: 26px; line-height: 1.25; font-weight: 600; }
+    p { margin: 0 0 20px; color: rgba(0, 0, 0, 0.65); line-height: 1.7; }
+    form { display: grid; gap: 12px; }
+    input[type="text"] {
+      width: 100%;
+      height: 44px;
+      padding: 0 12px;
+      border: 1px solid #d9d9d9;
+      border-radius: 6px;
+      font-size: 18px;
+      text-align: center;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    button {
+      min-height: 40px;
+      border: 1px solid #1677ff;
+      border-radius: 6px;
+      background: #1677ff;
+      color: #fff;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+    }
+    button[name="abort"] {
+      margin-top: 8px;
+      border: 0;
+      background: transparent;
+      color: rgba(0, 0, 0, 0.45);
+    }
+    code {
+      display: inline-block;
+      margin: 8px 0;
+      font-size: 28px;
+      letter-spacing: 0.08em;
+      color: rgba(0, 0, 0, 0.88);
+    }
+    .footer { margin-top: 20px; margin-bottom: 0; font-size: 13px; color: rgba(0, 0, 0, 0.45); }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>${escapeHtmlText(options.heading)}</h1>
+    <p>${escapeHtmlText(options.description)}</p>
+    ${options.form ?? ''}
+    ${options.footer ? `<p class="footer">${escapeHtmlText(options.footer)}</p>` : ''}
+  </main>
+</body>
+</html>`;
+}
+
+async function renderDeviceCodeInput(
+  ctx: DeviceFlowRenderContext,
+  form: string,
+  out?: Record<string, unknown>,
+  error?: Error & { userCode?: string },
+) {
+  const description =
+    error || out?.error
+      ? 'The code could not be verified. Check the code from your device and try again.'
+      : 'Enter the code shown in your terminal to continue signing in.';
+
+  ctx.body = renderDevicePage({
+    title: 'Device sign-in',
+    heading: 'Device sign-in',
+    description,
+    form: `${form}<button type="submit" form="op.deviceInputForm">Continue</button>`,
+  });
+}
+
+async function renderDeviceCodeConfirmation(
+  ctx: DeviceFlowRenderContext,
+  form: string,
+  client: { clientName?: string; clientId?: string },
+  _deviceInfo: Record<string, unknown>,
+  userCode: string,
+) {
+  const clientName = client.clientName || client.clientId || 'Application';
+
+  ctx.body = renderDevicePage({
+    title: 'Confirm device',
+    heading: 'Confirm device',
+    description: `${clientName} is requesting access. Confirm that this code matches the one shown in your terminal.`,
+    form: `<p><code>${escapeHtmlText(
+      userCode,
+    )}</code></p>${form}<button autofocus type="submit" form="op.deviceConfirmForm">Continue</button><button type="submit" form="op.deviceConfirmForm" value="yes" name="abort">Cancel</button>`,
+  });
+}
+
+async function renderDeviceSuccess(ctx: DeviceFlowRenderContext) {
+  ctx.body = renderDevicePage({
+    title: 'Device sign-in complete',
+    heading: 'Device sign-in complete',
+    description: 'Authorization is complete. You can return to the terminal.',
+    footer: 'This browser tab can be closed.',
+  });
 }
 
 export class IdpOauthService {
@@ -685,6 +828,8 @@ export class IdpOauthService {
       routes: {
         authorization: '/idpOAuth/authorize',
         token: '/idpOAuth/token',
+        code_verification: '/idpOAuth/device',
+        device_authorization: '/idpOAuth/device/auth',
         jwks: '/idpOAuth/jwks',
         registration: '/idpOAuth/register',
         revocation: '/idpOAuth/revoke',
@@ -693,6 +838,12 @@ export class IdpOauthService {
         end_session: '/idpOAuth/end-session',
       },
       features: {
+        deviceFlow: {
+          enabled: true,
+          userCodeInputSource: renderDeviceCodeInput,
+          userCodeConfirmSource: renderDeviceCodeConfirmation,
+          successSource: renderDeviceSuccess,
+        },
         devInteractions: { enabled: false },
         registration: { enabled: true },
         revocation: { enabled: true },
@@ -732,6 +883,7 @@ export class IdpOauthService {
       ttl: {
         AccessToken: accessTokenTtl,
         AuthorizationCode: 60,
+        DeviceCode: DEVICE_CODE_TTL_SECONDS,
         Grant: sessionTtl,
         IdToken: 60 * 60,
         RefreshToken: sessionTtl,

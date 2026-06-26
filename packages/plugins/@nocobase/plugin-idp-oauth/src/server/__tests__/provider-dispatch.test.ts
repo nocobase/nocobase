@@ -78,6 +78,29 @@ describe('plugin-idp-oauth > provider dispatch', () => {
     expect(provider.callback).toHaveBeenCalledTimes(1);
   });
 
+  test('should allow device-code dynamic registration without redirect URIs', async () => {
+    const provider = {
+      issuer: 'http://127.0.0.1:13000/api',
+      callback: vi.fn(() => (_req: any, res: any) => {
+        res.statusCode = 201;
+        res.setHeader('content-type', 'application/json');
+        res.end(JSON.stringify({ client_id: 'client-device-1' }));
+      }),
+    } as any;
+    const ctx = createContext({
+      grant_types: ['urn:ietf:params:oauth:grant-type:device_code', 'refresh_token'],
+      redirect_uris: [],
+    });
+
+    await dispatchToProvider(ctx, provider, '/idpOAuth/register', service);
+
+    expect(ctx.status).toBe(201);
+    expect(ctx.body).toMatchObject({
+      client_id: 'client-device-1',
+    });
+    expect(provider.callback).toHaveBeenCalledTimes(1);
+  });
+
   test('should reject dynamic registration with reserved app client id prefix', async () => {
     const provider = {
       issuer: 'http://127.0.0.1:13000/api',

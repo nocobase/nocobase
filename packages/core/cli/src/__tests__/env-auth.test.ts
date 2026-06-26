@@ -11,9 +11,10 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { test, expect } from 'vitest';
-import { saveAuthConfig } from '../lib/auth-store.js';
+import { getEnv, saveAuthConfig } from '../lib/auth-store.js';
 import {
   authenticateEnvWithBasic,
+  authenticateEnvWithOauth,
   buildOauthCompletionHtml,
   buildOauthErrorHtml,
   buildOauthRedirectHtml,
@@ -53,6 +54,21 @@ async function withOauthRetryDelay(delayMs: string, run: () => Promise<void>) {
       delete process.env.NOCOBASE_CLI_OAUTH_RETRY_DELAY_MS;
     } else {
       process.env.NOCOBASE_CLI_OAUTH_RETRY_DELAY_MS = previous;
+    }
+  }
+}
+
+async function withOauthDevicePollDelay(delayMs: string, run: () => Promise<void>) {
+  const previous = process.env.NOCOBASE_CLI_OAUTH_DEVICE_POLL_INTERVAL_MS;
+  process.env.NOCOBASE_CLI_OAUTH_DEVICE_POLL_INTERVAL_MS = delayMs;
+
+  try {
+    await run();
+  } finally {
+    if (previous === undefined) {
+      delete process.env.NOCOBASE_CLI_OAUTH_DEVICE_POLL_INTERVAL_MS;
+    } else {
+      process.env.NOCOBASE_CLI_OAUTH_DEVICE_POLL_INTERVAL_MS = previous;
     }
   }
 }
@@ -259,6 +275,127 @@ test('authenticateEnvWithBasic rejects responses without a token', async () => {
     } finally {
       globalThis.fetch = originalFetch;
     }
+  });
+});
+
+test('authenticateEnvWithOauth uses device flow when the server supports it', async () => {
+  await withOauthDevicePollDelay('0', async () => {
+    await withTempCliHome(async () => {
+      await saveAuthConfig(
+        {
+          lastEnv: 'test',
+          envs: {
+            test: {
+              baseUrl: 'http://localhost:13000/api',
+            },
+          },
+        },
+        { scope: 'global' },
+      );
+
+      const originalFetch = globalThis.fetch;
+      let tokenAttempts = 0;
+      globalThis.fetch = (async (input: string | URL | Request, init?: RequestInit) => {
+        const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
+
+        if (url.endsWith('/.well-known/oauth-authorization-server')) {
+          return new Response(
+            JSON.stringify({
+              issuer: 'http://localhost:13000/api',
+              authorization_endpoint: 'http://localhost:13000/api/idpOAuth/authorize',
+              token_endpoint: 'http://localhost:13000/api/idpOAuth/token',
+              registration_endpoint: 'http://localhost:13000/api/idpOAuth/register',
+              device_authorization_endpoint: 'http://localhost:13000/api/idpOAuth/device/auth',
+            }),
+            { status: 200, headers: { 'content-type': 'application/json' } },
+          );
+        }
+
+        if (url === 'http://localhost:13000/api/idpOAuth/register') {
+          expect(init?.method).toBe('POST');
+          const body = JSON.parse(String(init?.body ?? '{}'));
+          expect(body).toMatchObject({
+            client_name: 'NocoBase CLI',
+            application_type: 'native',
+            token_endpoint_auth_method: 'none',
+            grant_types: ['urn:ietf:params:oauth:grant-type:device_code', 'refresh_token'],
+            response_types: [],
+            scope: 'openid api offline_access',
+          });
+          expect(body.redirect_uris).toBeUndefined();
+
+          return new Response(JSON.stringify({ client_id: 'device-client-1' }), {
+            status: 201,
+            headers: { 'content-type': 'application/json' },
+          });
+        }
+
+        if (url === 'http://localhost:13000/api/idpOAuth/device/auth') {
+          expect(init?.method).toBe('POST');
+          const body = init?.body instanceof URLSearchParams ? init.body : new URLSearchParams(String(init?.body ?? ''));
+          expect(body.get('client_id')).toBe('device-client-1');
+          expect(body.get('scope')).toBe('openid api offline_access');
+          expect(body.get('resource')).toBe('http://localhost:13000/api/');
+
+          return new Response(
+            JSON.stringify({
+              device_code: 'device-code-1',
+              user_code: 'ABCD-EFGH',
+              verification_uri: 'http://localhost:13000/api/idpOAuth/device',
+              verification_uri_complete: 'http://localhost:13000/api/idpOAuth/device?user_code=ABCD-EFGH',
+              expires_in: 600,
+              interval: 5,
+            }),
+            { status: 200, headers: { 'content-type': 'application/json' } },
+          );
+        }
+
+        expect(url).toBe('http://localhost:13000/api/idpOAuth/token');
+        tokenAttempts += 1;
+        const body = init?.body instanceof URLSearchParams ? init.body : new URLSearchParams(String(init?.body ?? ''));
+        expect(body.get('grant_type')).toBe('urn:ietf:params:oauth:grant-type:device_code');
+        expect(body.get('client_id')).toBe('device-client-1');
+        expect(body.get('device_code')).toBe('device-code-1');
+
+        if (tokenAttempts === 1) {
+          return new Response(JSON.stringify({ error: 'authorization_pending' }), {
+            status: 400,
+            headers: { 'content-type': 'application/json' },
+          });
+        }
+
+        return new Response(
+          JSON.stringify({
+            access_token: 'device-access-token',
+            refresh_token: 'device-refresh-token',
+            expires_in: 3600,
+            scope: 'openid api offline_access',
+          }),
+          { status: 200, headers: { 'content-type': 'application/json' } },
+        );
+      }) as typeof fetch;
+
+      try {
+        await authenticateEnvWithOauth({
+          envName: 'test',
+          scope: 'global',
+        });
+
+        const env = await getEnv('test', { scope: 'global' });
+        expect(env?.auth).toMatchObject({
+          type: 'oauth',
+          accessToken: 'device-access-token',
+          refreshToken: 'device-refresh-token',
+          scope: 'openid api offline_access',
+          issuer: 'http://localhost:13000/api',
+          clientId: 'device-client-1',
+          resource: 'http://localhost:13000/api/',
+        });
+        expect(tokenAttempts).toBe(2);
+      } finally {
+        globalThis.fetch = originalFetch;
+      }
+    });
   });
 });
 

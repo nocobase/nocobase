@@ -14,6 +14,7 @@ import { getProviderInternalPath } from './paths';
 type Provider = import('oidc-provider').Provider;
 
 const LOOPBACK_REDIRECT_HOSTS = new Set(['localhost', '127.0.0.1', '::1', '[::1]']);
+const DEVICE_CODE_GRANT_TYPE = 'urn:ietf:params:oauth:grant-type:device_code';
 
 type DispatchContext = {
   method: string;
@@ -71,7 +72,16 @@ function assertRegistrationRedirectUris(ctx: DispatchContext, pathname: string) 
     return false;
   }
 
+  const grantTypes = Array.isArray(body?.grant_types)
+    ? body.grant_types.filter((grantType): grantType is string => typeof grantType === 'string')
+    : [];
+  const isDeviceCodeOnlyClient =
+    grantTypes.includes(DEVICE_CODE_GRANT_TYPE) && !grantTypes.includes('authorization_code');
   const redirectUris = body?.redirect_uris;
+  if (isDeviceCodeOnlyClient && (redirectUris === undefined || (Array.isArray(redirectUris) && !redirectUris.length))) {
+    return true;
+  }
+
   if (
     !Array.isArray(redirectUris) ||
     !redirectUris.length ||
@@ -218,6 +228,7 @@ function rewriteProviderJsonBody(ctx: DispatchContext, service: IdpOauthService,
     '/idpOAuth/authorize',
     '/idpOAuth/token',
     '/idpOAuth/register',
+    '/idpOAuth/device/auth',
     '/idpOAuth/revoke',
     '/idpOAuth/jwks',
     '/idpOAuth/me',
@@ -228,6 +239,7 @@ function rewriteProviderJsonBody(ctx: DispatchContext, service: IdpOauthService,
     'authorization_endpoint',
     'token_endpoint',
     'registration_endpoint',
+    'device_authorization_endpoint',
     'revocation_endpoint',
     'jwks_uri',
     'userinfo_endpoint',
@@ -285,6 +297,31 @@ function rewriteProviderResponseHeaders(
   }
 }
 
+function decodeProviderPayload(payload: unknown) {
+  if (typeof payload === 'string') {
+    return payload;
+  }
+
+  if (Buffer.isBuffer(payload)) {
+    return payload.toString('utf8');
+  }
+
+  if (payload instanceof Uint8Array) {
+    return Buffer.from(payload).toString('utf8');
+  }
+
+  if (
+    payload &&
+    typeof payload === 'object' &&
+    (payload as { type?: unknown }).type === 'Buffer' &&
+    Array.isArray((payload as { data?: unknown }).data)
+  ) {
+    return Buffer.from((payload as { data: number[] }).data).toString('utf8');
+  }
+
+  return String(payload ?? '');
+}
+
 export async function dispatchToProvider(
   ctx: DispatchContext,
   provider: Provider,
@@ -314,8 +351,9 @@ export async function dispatchToProvider(
   ctx.status = response.statusCode;
   rewriteProviderResponseHeaders(ctx, service, response.headers as Record<string, string | string[] | undefined>);
 
+  const responseHeaders = response.headers as Record<string, string | string[] | undefined>;
   const payload = response.rawPayload;
-  const contentType = String(response.headers['content-type'] || '').toLowerCase();
+  const contentType = String(responseHeaders['content-type'] || responseHeaders['Content-Type'] || '').toLowerCase();
   ctx.logger?.debug?.('idp-oauth provider response', {
     method: ctx.method,
     externalPath: ctx.path,
@@ -324,9 +362,18 @@ export async function dispatchToProvider(
     contentType,
     location: response.headers.location,
   });
-  if (payload.length && (contentType.includes('application/json') || contentType.includes('+json'))) {
+  const isDiscoveryResponse =
+    ctx.path.endsWith('/.well-known/oauth-authorization-server') ||
+    ctx.path.endsWith('/.well-known/openid-configuration') ||
+    pathname.endsWith('/.well-known/oauth-authorization-server') ||
+    pathname.endsWith('/.well-known/openid-configuration');
+  const payloadText = decodeProviderPayload(payload);
+  if (
+    payloadText &&
+    (isDiscoveryResponse || contentType.includes('application/json') || contentType.includes('+json'))
+  ) {
     try {
-      const body = rewriteProviderJsonBody(ctx, service, JSON.parse(payload.toString('utf8')));
+      const body = rewriteProviderJsonBody(ctx, service, JSON.parse(payloadText));
       ctx.body = body;
       return;
     } catch (error) {
@@ -337,7 +384,7 @@ export async function dispatchToProvider(
         status: response.statusCode,
         contentType,
         error: error instanceof Error ? error.message : String(error),
-        payloadPreview: payload.toString('utf8').slice(0, 500),
+        payloadPreview: payloadText.slice(0, 500),
       });
       // fall through and return raw payload
     }

@@ -200,6 +200,10 @@ describe('plugin-idp-oauth > IdpOauthService', () => {
     expect(configuration.ttl.RefreshToken).toBe(7 * 24 * 60 * 60);
     expect(configuration.ttl.Session).toBe(7 * 24 * 60 * 60);
     expect(configuration.ttl.AuthorizationCode).toBe(60);
+    expect(configuration.ttl.DeviceCode).toBe(10 * 60);
+    expect(configuration.routes.device_authorization).toBe('/idpOAuth/device/auth');
+    expect(configuration.routes.code_verification).toBe('/idpOAuth/device');
+    expect(configuration.features.deviceFlow.enabled).toBe(true);
   });
 
   test('should prefer the most specific resource config for nested paths', () => {
