@@ -49,6 +49,11 @@ function isRenderableActionModel(action: unknown): action is ActionModel {
   return typeof candidate.getTitle === 'function' && typeof candidate.onClick === 'function';
 }
 
+function isEntryActionAvailable(action: ActionModel) {
+  const candidate = action as ActionModel & { isEntryActionAvailable?: () => boolean };
+  return typeof candidate.isEntryActionAvailable !== 'function' || candidate.isEntryActionAvailable();
+}
+
 export class AppSwitcherActionPanelModel extends FlowModel<AppSwitcherActionPanelStructure> {
   private getConfigureActionsItems(): SubModelItemsType {
     const linkAction: SubModelItem = {
@@ -86,6 +91,7 @@ export class AppSwitcherActionPanelModel extends FlowModel<AppSwitcherActionPane
   private getRenderableActions(options: { includeHidden?: boolean } = {}) {
     return this.mapSubModels('actions', (action) => action)
       .filter(isRenderableActionModel)
+      .filter(isEntryActionAvailable)
       .filter((action) => options.includeHidden || !action.hidden);
   }
 

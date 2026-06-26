@@ -39,6 +39,11 @@ function isRenderableActionModel(action: unknown): action is ActionModel {
   return typeof candidate.onClick === 'function' && !!candidate.props;
 }
 
+function isEntryActionAvailable(action: ActionModel) {
+  const candidate = action as ActionModel & { isEntryActionAvailable?: () => boolean };
+  return typeof candidate.isEntryActionAvailable !== 'function' || candidate.isEntryActionAvailable();
+}
+
 export const WorkbenchLayout = {
   Grid: 'grid',
   List: 'list',
@@ -192,7 +197,11 @@ export class ActionPanelBlockModel extends BlockModel {
               {layout === WorkbenchLayout.Grid ? (
                 <ResponsiveSpace>
                   {this.mapSubModels('actions', (action) => {
-                    if (!isRenderableActionModel(action) || (action.hidden && !isConfigMode)) {
+                    if (
+                      !isRenderableActionModel(action) ||
+                      !isEntryActionAvailable(action) ||
+                      (action.hidden && !isConfigMode)
+                    ) {
                       return;
                     }
                     const { icon = 'SettingOutlined', color = token.colorPrimary, title } = action.props;
@@ -272,7 +281,11 @@ export class ActionPanelBlockModel extends BlockModel {
                   }
                 >
                   {this.mapSubModels('actions', (action) => {
-                    if (!isRenderableActionModel(action) || (action.hidden && !isConfigMode)) {
+                    if (
+                      !isRenderableActionModel(action) ||
+                      !isEntryActionAvailable(action) ||
+                      (action.hidden && !isConfigMode)
+                    ) {
                       return;
                     }
                     const { icon = 'SettingOutlined', color = token.colorPrimary, title } = action.props;

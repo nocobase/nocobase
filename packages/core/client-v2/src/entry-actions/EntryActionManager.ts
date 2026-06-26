@@ -101,8 +101,9 @@ export class EntryActionManager {
         .then((response) => {
           return normalizeAppPortalsPayload((response?.data as { data?: unknown })?.data ?? response?.data);
         })
-        .finally(() => {
+        .catch((error) => {
           this.appPortalsRequest = undefined;
+          throw error;
         });
     }
     return this.appPortalsRequest;
