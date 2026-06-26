@@ -246,6 +246,36 @@ function normalizePnpmGlobalNodeModulesRoot(pnpmGlobalRoot: string): string {
     : path.join(normalizedGlobalRoot, 'node_modules');
 }
 
+function readSiblingPnpmGlobalNodeModulesRoots(pnpmGlobalRoot: string): string[] {
+  const globalNodeModulesDir = normalizePnpmGlobalNodeModulesRoot(pnpmGlobalRoot);
+  const globalProjectDir = path.dirname(globalNodeModulesDir);
+  let entries: string[];
+
+  try {
+    entries = fs.readdirSync(globalProjectDir);
+  } catch {
+    return [];
+  }
+
+  return entries
+    .filter((entry) => {
+      if (entry === path.basename(globalNodeModulesDir)) {
+        return false;
+      }
+
+      try {
+        return fs.statSync(path.join(globalProjectDir, entry)).isDirectory();
+      } catch {
+        return false;
+      }
+    })
+    .map((entry) => path.join(globalProjectDir, entry, 'node_modules'));
+}
+
+function readPnpmGlobalNodeModulesRoots(pnpmGlobalRoot: string): string[] {
+  return [normalizePnpmGlobalNodeModulesRoot(pnpmGlobalRoot), ...readSiblingPnpmGlobalNodeModulesRoots(pnpmGlobalRoot)];
+}
+
 function packageNameToPath(packageName: string): string[] {
   return packageName.split('/').filter(Boolean);
 }
@@ -279,9 +309,8 @@ function isPnpmGlobalRootPath(pnpmGlobalRoot: string, packageRoot: string): bool
 }
 
 function isPnpmGlobalPackagePath(pnpmGlobalRoot: string, packageRoot: string, packageName: string): boolean {
-  return isSameRealPath(
-    path.join(normalizePnpmGlobalNodeModulesRoot(pnpmGlobalRoot), ...packageNameToPath(packageName)),
-    packageRoot,
+  return readPnpmGlobalNodeModulesRoots(pnpmGlobalRoot).some((pnpmGlobalNodeModulesRoot) =>
+    isSameRealPath(path.join(pnpmGlobalNodeModulesRoot, ...packageNameToPath(packageName)), packageRoot),
   );
 }
 
@@ -300,7 +329,7 @@ function isPnpmGlobalBinProjectPath(pnpmGlobalBin: string, packageRoot: string, 
   }
 
   return entries.some((entry) => {
-    const pnpmGlobalRoot = path.join(globalDir, entry, 'node_modules');
+    const pnpmGlobalRoot = path.join(globalDir, entry);
     return (
       isPnpmGlobalRootPath(pnpmGlobalRoot, packageRoot)
       || isPnpmGlobalPackagePath(pnpmGlobalRoot, packageRoot, packageName)

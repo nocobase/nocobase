@@ -316,6 +316,63 @@ test('inspectSelfInstall recognizes pnpm-global installs when the package resolv
   }
 });
 
+test('inspectSelfInstall recognizes pnpm-global installs from hashed global project roots when pnpm bin is unavailable', async () => {
+  const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'nocobase-cli-self-pnpm-global-project-'));
+  const pnpmHome = path.join(dir, '.local', 'share', 'pnpm');
+  const pnpmGlobalRoot = path.join(pnpmHome, 'global', 'v11');
+  const pnpmGlobalProjectRoot = path.join(pnpmGlobalRoot, '42d4-19f0115472f');
+  const packageRoot = path.join(
+    pnpmHome,
+    'store',
+    'v11',
+    'links',
+    '@nocobase',
+    'cli',
+    '2.1.11-test.10',
+    'mock-hash',
+    'node_modules',
+    '@nocobase',
+    'cli',
+  );
+  const globalPackageLink = path.join(pnpmGlobalProjectRoot, 'node_modules', '@nocobase', 'cli');
+
+  try {
+    await fsp.mkdir(path.dirname(globalPackageLink), { recursive: true });
+    await fsp.mkdir(packageRoot, { recursive: true });
+    await fsp.symlink(packageRoot, globalPackageLink, process.platform === 'win32' ? 'junction' : 'dir');
+
+    const commandOutputFn = vi.fn(async (name: string, args: string[]) => {
+      const command = args.join(' ');
+      if (name === 'npm' && command === 'prefix -g') {
+        return '/usr/local';
+      }
+      if (name === 'pnpm' && command === 'bin -g') {
+        throw new Error('pnpm bin exited with code 1');
+      }
+      if (name === 'pnpm' && command === 'root -g') {
+        return pnpmGlobalRoot;
+      }
+      if (name === 'yarn' && command === 'global dir') {
+        return MOCK_YARN_GLOBAL_DIR;
+      }
+      if (name === 'yarn' && command === 'global bin') {
+        return MOCK_YARN_GLOBAL_BIN;
+      }
+
+      throw new Error(`unexpected command: ${name} ${command}`);
+    });
+
+    const install = await inspectSelfInstall({
+      packageRoot,
+      commandOutputFn: commandOutputFn as any,
+    });
+
+    expect(install.installMethod).toBe('pnpm-global');
+  } finally {
+    await fsp.rm(dir, { recursive: true, force: true });
+  }
+});
+
 test('inspectSelfInstall ignores stale install-method cache files', async () => {
   if (!process.env.NB_CLI_ROOT) {
     throw new Error('NB_CLI_ROOT is not set');
