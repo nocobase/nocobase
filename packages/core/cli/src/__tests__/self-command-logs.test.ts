@@ -10,6 +10,7 @@
 import { beforeEach, expect, test, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
+  confirm: vi.fn(),
   inspectSelfStatus: vi.fn(),
   updateSelf: vi.fn(),
   printInfo: vi.fn(),
@@ -26,6 +27,10 @@ const mocks = vi.hoisted(() => ({
 vi.mock('../lib/self-manager.js', () => ({
   inspectSelfStatus: mocks.inspectSelfStatus,
   updateSelf: mocks.updateSelf,
+}));
+
+vi.mock('../lib/inquirer.ts', () => ({
+  confirm: mocks.confirm,
 }));
 
 vi.mock('../lib/skills-manager.js', () => ({
@@ -151,6 +156,57 @@ test('self update logs detailed messages in verbose mode', async () => {
   expect(command.log).toHaveBeenLastCalledWith(
     'Updated NocoBase CLI from 2.1.0-beta.23 using @nocobase/cli@beta (latest beta resolves to 2.1.0-beta.25).',
   );
+});
+
+test('self update confirmation defaults to yes', async () => {
+  const { default: SelfUpdate } = await import('../commands/self/update.js');
+
+  const command = Object.assign(Object.create(SelfUpdate.prototype), {
+    parse: vi.fn(async () => ({
+      flags: {
+        channel: 'auto',
+        yes: false,
+        json: false,
+        skills: false,
+        verbose: false,
+      },
+    })),
+    log: vi.fn(),
+    error: (message: string) => {
+      throw new Error(message);
+    },
+  });
+
+  mocks.inspectSelfStatus.mockResolvedValue({
+    packageName: '@nocobase/cli',
+    packageRoot: '/usr/local/lib/node_modules/@nocobase/cli',
+    currentVersion: '2.1.0-beta.23',
+    latestVersion: '2.1.0-beta.25',
+    channel: 'beta',
+    updateAvailable: true,
+    installMethod: 'npm-global',
+    updatable: true,
+  });
+  mocks.confirm.mockResolvedValue(true);
+  mocks.updateSelf.mockResolvedValue({
+    action: 'updated',
+    status: {
+      currentVersion: '2.1.0-beta.23',
+      channel: 'beta',
+    },
+    targetVersion: '2.1.0-beta.25',
+  });
+
+  await SelfUpdate.prototype.run.call(command);
+
+  expect(mocks.confirm).toHaveBeenCalledWith({
+    message: 'Update @nocobase/cli from 2.1.0-beta.23 to 2.1.0-beta.25?',
+    default: true,
+  });
+  expect(mocks.updateSelf).toHaveBeenCalledWith({
+    channel: 'auto',
+    verbose: false,
+  });
 });
 
 test('self update optionally refreshes skills and logs both results', async () => {

@@ -10,7 +10,7 @@ Mengelola nilai konfigurasi default CLI. Kunci yang saat ini didukung secara umu
 
 - CLI itu sendiri: `locale`, `update.policy`, `license.pkg-url`
 - Runtime Docker: `docker.network`, `docker.container-prefix`
-- Executable eksternal: `bin.docker`, `bin.caddy`, `bin.git`, `bin.nginx`, `bin.yarn`
+- Executable eksternal: `bin.docker`, `bin.caddy`, `bin.git`, `bin.nginx`, `bin.pnpm`, `bin.yarn`
 - Pembuatan proxy: `proxy.nb-cli-root`, `proxy.upstream-host`, `proxy.nginx-driver`, `proxy.caddy-driver`
 
 Sebagian besar proyek hanya membutuhkan beberapa kunci saja. Dalam praktiknya, yang paling umum adalah:
@@ -34,6 +34,7 @@ Sebagian besar proyek hanya membutuhkan beberapa kunci saja. Dalam praktiknya, y
 | `bin.caddy` | `caddy` | Menimpa path executable Caddy |
 | `bin.git` | `git` | Menimpa path executable Git |
 | `bin.nginx` | `nginx` | Menimpa path executable Nginx |
+| `bin.pnpm` | `pnpm` | Menimpa path executable pnpm |
 | `bin.yarn` | `yarn` | Menimpa path executable Yarn |
 | `proxy.nb-cli-root` | root CLI, biasanya direktori home pengguna saat ini | Menimpa root path yang terlihat oleh konfigurasi proxy yang dihasilkan ketika proses proxy dan CLI tidak melihat root filesystem yang sama |
 | `proxy.upstream-host` | `127.0.0.1` | Menimpa host yang digunakan proxy untuk meneruskan trafik kembali ke aplikasi NocoBase |
@@ -70,12 +71,14 @@ nb config get docker.network
 nb config set docker.network nocobase
 nb config set bin.nginx /usr/sbin/nginx
 nb config set bin.git /usr/bin/git
+nb config set bin.pnpm /usr/local/bin/pnpm
 nb config delete docker.container-prefix
 ```
 
 ## Catatan
 
 - `bin.nginx` dan `bin.caddy` hanya memengaruhi driver `local` untuk `nb proxy nginx` dan `nb proxy caddy`
+- `bin.pnpm` digunakan saat perintah perlu menjalankan pnpm secara langsung, misalnya saat memperbarui instalasi CLI global yang dikelola pnpm dengan `nb self update`
 - `proxy.nginx-driver` dan `proxy.caddy-driver` menyimpan driver default yang digunakan oleh masing-masing provider
 - `proxy.nb-cli-root` dan `proxy.upstream-host` adalah override proxy tingkat lanjut. Untuk sebagian besar env `local` atau `docker` yang dikelola CLI, nilai default sudah cukup
 - Jika kamu hanya ingin mengganti driver proxy aktif, menggunakan `nb proxy nginx use` atau `nb proxy caddy use` biasanya lebih jelas daripada mengatur kunci konfigurasi secara manual
