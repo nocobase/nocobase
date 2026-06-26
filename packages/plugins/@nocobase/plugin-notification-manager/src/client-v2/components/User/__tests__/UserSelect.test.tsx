@@ -13,6 +13,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const holder = vi.hoisted(() => ({
   ctx: null as any,
+  variableInput: vi.fn(),
 }));
 
 const workflow = vi.hoisted(() => ({
@@ -30,6 +31,7 @@ vi.mock('@nocobase/flow-engine', async (importOriginal) => {
     ...actual,
     useFlowContext: () => holder.ctx,
     VariableInput: (props: any) => {
+      holder.variableInput(props);
       const path = props.converters?.resolvePathFromValue?.(props.value);
       const ConstantComponent =
         path?.[0] === 'constant' ? props.converters?.renderInputComponent?.({ paths: ['constant'] }) : null;
@@ -49,6 +51,7 @@ import { UserSelect } from '../UserSelect';
 describe('UserSelect', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    workflow.useWorkflowVariableOptions.mockReturnValue([]);
   });
 
   it('renders a users dropdown for the empty constant receiver mode', async () => {
@@ -92,6 +95,109 @@ describe('UserSelect', () => {
     expect(isUserKeyField({ collectionName: 'users', name: 'nickname' })).toBe(false);
     expect(isUserKeyField({ isForeignKey: true, target: 'users' })).toBe(true);
     expect(isUserKeyField({ isForeignKey: true, target: 'roles' })).toBe(false);
+  });
+
+  it('aligns the receiver variable menu roots with the workflow picker order', () => {
+    workflow.useWorkflowVariableOptions.mockReturnValue([
+      {
+        name: '$context',
+        title: 'Trigger variables',
+        type: '',
+        paths: ['$context'],
+        children: [{ name: 'data', title: 'Trigger data', type: '', paths: ['$context', 'data'] }],
+      },
+      {
+        name: '$system',
+        title: 'System variables',
+        type: '',
+        paths: ['$system'],
+        children: [{ name: 'now', title: 'System time', type: '', paths: ['$system', 'now'] }],
+      },
+      {
+        name: '$env',
+        title: 'Variables and secrets',
+        type: '',
+        paths: ['$env'],
+        children: async () => [],
+      },
+    ]);
+    holder.ctx = {
+      api: {
+        resource: () => ({
+          list: vi.fn().mockResolvedValue({ data: { data: [] } }),
+        }),
+      },
+    };
+
+    render(<UserSelect value="{{ $context.data }}" onChange={() => undefined} />);
+
+    const metaTree = holder.variableInput.mock.calls[0]?.[0]?.metaTree;
+    expect(metaTree.map((node) => node.title)).toEqual([
+      'Constant',
+      'Scope variables',
+      'Node result',
+      'Trigger variables',
+      'System variables',
+      'Variables and secrets',
+    ]);
+    expect(metaTree[0]).toEqual(expect.objectContaining({ name: 'constant', paths: ['constant'] }));
+    expect(metaTree[1]).toEqual(expect.objectContaining({ name: '$scopes', disabled: true, paths: ['$scopes'] }));
+    expect(metaTree[2]).toEqual(
+      expect.objectContaining({ name: '$jobsMapByNodeKey', disabled: true, paths: ['$jobsMapByNodeKey'] }),
+    );
+    expect(metaTree[3]).toEqual(expect.objectContaining({ name: '$context' }));
+    expect(metaTree[3].disabled).toBeUndefined();
+  });
+
+  it('keeps available scope and node-result roots selectable', () => {
+    workflow.useWorkflowVariableOptions.mockReturnValue([
+      {
+        name: '$context',
+        title: 'Trigger variables',
+        type: '',
+        paths: ['$context'],
+        children: [{ name: 'data', title: 'Trigger data', type: '', paths: ['$context', 'data'] }],
+      },
+      {
+        name: '$jobsMapByNodeKey',
+        title: 'Node result',
+        type: '',
+        paths: ['$jobsMapByNodeKey'],
+        children: [
+          {
+            name: 'n1',
+            title: 'Previous node',
+            type: '',
+            paths: ['$jobsMapByNodeKey', 'n1'],
+          },
+        ],
+      },
+      {
+        name: '$scopes',
+        title: 'Scope variables',
+        type: '',
+        paths: ['$scopes'],
+        children: [{ name: 'loop', title: 'Loop item', type: '', paths: ['$scopes', 'loop'] }],
+      },
+    ]);
+    holder.ctx = {
+      api: {
+        resource: () => ({
+          list: vi.fn().mockResolvedValue({ data: { data: [] } }),
+        }),
+      },
+    };
+
+    render(<UserSelect value="{{ $context.data }}" onChange={() => undefined} />);
+
+    const metaTree = holder.variableInput.mock.calls[0]?.[0]?.metaTree;
+    expect(metaTree.map((node) => node.name)).toEqual(['constant', '$scopes', '$jobsMapByNodeKey', '$context']);
+    expect(metaTree[1]).toEqual(expect.objectContaining({ name: '$scopes' }));
+    expect(metaTree[1].disabled).toBeUndefined();
+    expect(metaTree[1].children).toEqual([expect.objectContaining({ name: 'loop', paths: ['$scopes', 'loop'] })]);
+    expect(metaTree[2]).toEqual(expect.objectContaining({ name: '$jobsMapByNodeKey' }));
+    expect(metaTree[2].disabled).toBeUndefined();
+    expect(metaTree[2].children).toEqual([expect.objectContaining({ name: 'n1', paths: ['$jobsMapByNodeKey', 'n1'] })]);
   });
 
   it('uses the workflow variable-aware filter for query receiver mode', () => {

@@ -34,6 +34,14 @@ type WorkflowFieldLike = {
   target?: string;
 };
 
+const WORKFLOW_VARIABLE_ROOTS = {
+  scopes: '$scopes',
+  nodeResult: '$jobsMapByNodeKey',
+  trigger: '$context',
+  system: '$system',
+  env: '$env',
+} as const;
+
 function isUserKeyField(field: WorkflowFieldLike) {
   if (field.isForeignKey) {
     return field.target === 'users';
@@ -55,6 +63,29 @@ function parseWorkflowValueToPath(value?: string) {
     return undefined;
   }
   return match[1].split('.');
+}
+
+function createDisabledVariableRoot(name: string, title: string): MetaTreeNode {
+  return {
+    name,
+    title,
+    type: '',
+    paths: [name],
+    disabled: true,
+  };
+}
+
+function normalizeWorkflowVariableOptions(options: MetaTreeNode[], t: (key: string) => string): MetaTreeNode[] {
+  const optionByName = new Map(options.map((option) => [option.name, option]));
+  return [
+    optionByName.get(WORKFLOW_VARIABLE_ROOTS.scopes) ??
+      createDisabledVariableRoot(WORKFLOW_VARIABLE_ROOTS.scopes, t('Scope variables')),
+    optionByName.get(WORKFLOW_VARIABLE_ROOTS.nodeResult) ??
+      createDisabledVariableRoot(WORKFLOW_VARIABLE_ROOTS.nodeResult, t('Node result')),
+    optionByName.get(WORKFLOW_VARIABLE_ROOTS.trigger),
+    optionByName.get(WORKFLOW_VARIABLE_ROOTS.system),
+    optionByName.get(WORKFLOW_VARIABLE_ROOTS.env),
+  ].filter(Boolean) as MetaTreeNode[];
 }
 
 function UserPickerInput(props: { value?: string; onChange?: (next: string) => void }) {
@@ -79,19 +110,20 @@ function UserPickerInput(props: { value?: string; onChange?: (next: string) => v
 function WorkflowUserSelectInput(props: { value?: string | null; onChange?: (next: string) => void }) {
   const { value, onChange } = props;
   const { t } = useNotificationTranslation();
+  const ctx = useFlowContext();
   const workflowVariableOptions = useWorkflowVariableOptions({ types: [isUserKeyField] });
-  const metaTree = useMemo<MetaTreeNode[]>(
-    () => [
+  const metaTree = useMemo<MetaTreeNode[]>(() => {
+    const translateWorkflowLabel = (key: string) => ctx?.t?.(key, { ns: 'workflow', nsMode: 'fallback' }) ?? t(key);
+    return [
       {
         name: 'constant',
-        title: t('Select users'),
+        title: translateWorkflowLabel('Constant'),
         type: 'string',
         paths: ['constant'],
       },
-      ...workflowVariableOptions,
-    ],
-    [t, workflowVariableOptions],
-  );
+      ...normalizeWorkflowVariableOptions(workflowVariableOptions, translateWorkflowLabel),
+    ];
+  }, [ctx, t, workflowVariableOptions]);
 
   const converters = useMemo(
     () => ({
