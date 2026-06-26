@@ -1,0 +1,20 @@
+{
+  "name": "@nocobase/plugin-comments-flexible",
+  "version": "2.2.0-beta.6",
+  "displayName": "Record comments",
+  "displayName.zh-CN": "记录评论",
+  "description": "Adds a v2 comments block that works with any collection through field mapping.",
+  "description.zh-CN": "提供评论数据表模板和区块，支持任意数据表创建区块。",
+  "keywords": [
+    "Block",
+    "Comments"
+  ],
+  "main": "dist/server/index.js",
+  "dependencies": {},
+  "peerDependencies": {
+    "@nocobase/client": "2.x",
+    "@nocobase/client-v2": "2.x",
+    "@nocobase/server": "2.x",
+    "@nocobase/test": "2.x"
+  }
+}
