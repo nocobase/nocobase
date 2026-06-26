@@ -232,6 +232,14 @@ export class JSBlockModel extends BlockModel {
       );
     }
 
+    const cardProps = {
+      ...rest,
+      height,
+      style,
+      ...(beforeContent === undefined ? {} : { beforeContent }),
+      ...(afterContent === undefined ? {} : { afterContent }),
+    };
+
     return (
       <BlockItemCard
         id={`model-${this.uid}`}
@@ -239,11 +247,7 @@ export class JSBlockModel extends BlockModel {
         title={title}
         description={description}
         heightMode={heightMode}
-        height={height}
-        style={style}
-        {...rest}
-        {...(beforeContent === undefined ? {} : { beforeContent })}
-        {...(afterContent === undefined ? {} : { afterContent })}
+        {...cardProps}
       >
         <div ref={this.context.ref} />
       </BlockItemCard>
