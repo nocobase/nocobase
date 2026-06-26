@@ -718,6 +718,7 @@ export const AdminLayoutComponent = observer((props: any) => {
                       <ConfigProvider theme={isMobile ? mobileTheme : theme}>
                         <GlobalStyle />
                         <AdminLayoutContent
+                          designable={designable}
                           layout={adminLayoutModel?.layout}
                           onContentElementChange={handleLayoutContentElementChange}
                         />

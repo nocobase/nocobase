@@ -10,7 +10,7 @@ Manage default CLI configuration values. The currently supported keys are mainly
 
 - CLI itself: `locale`, `update.policy`, `license.pkg-url`
 - Docker runtime: `docker.network`, `docker.container-prefix`
-- External executables: `bin.docker`, `bin.caddy`, `bin.git`, `bin.nginx`, `bin.yarn`
+- External executables: `bin.docker`, `bin.caddy`, `bin.git`, `bin.nginx`, `bin.pnpm`, `bin.yarn`
 - Proxy generation: `proxy.nb-cli-root`, `proxy.upstream-host`, `proxy.nginx-driver`, `proxy.caddy-driver`
 
 Most projects only need a few of these keys. In practice, the most common ones are:
@@ -34,6 +34,7 @@ Most projects only need a few of these keys. In practice, the most common ones a
 | `bin.caddy` | `caddy` | Override the Caddy executable path |
 | `bin.git` | `git` | Override the Git executable path |
 | `bin.nginx` | `nginx` | Override the Nginx executable path |
+| `bin.pnpm` | `pnpm` | Override the pnpm executable path |
 | `bin.yarn` | `yarn` | Override the Yarn executable path |
 | `proxy.nb-cli-root` | CLI root, usually the current user's home directory | Override the root path visible to the generated proxy config when the proxy process and CLI do not see the same filesystem root |
 | `proxy.upstream-host` | `127.0.0.1` | Override the host used when the proxy forwards traffic back to the NocoBase app |
@@ -70,12 +71,14 @@ nb config get docker.network
 nb config set docker.network nocobase
 nb config set bin.nginx /usr/sbin/nginx
 nb config set bin.git /usr/bin/git
+nb config set bin.pnpm /usr/local/bin/pnpm
 nb config delete docker.container-prefix
 ```
 
 ## Notes
 
 - `bin.nginx` and `bin.caddy` only affect the `local` driver for `nb proxy nginx` and `nb proxy caddy`
+- `bin.pnpm` is used when commands need to run pnpm directly, such as updating a pnpm-managed global CLI install with `nb self update`
 - `proxy.nginx-driver` and `proxy.caddy-driver` store the default driver used by each provider
 - `proxy.nb-cli-root` and `proxy.upstream-host` are advanced proxy overrides. Most CLI-managed `local` or `docker` envs can use the defaults directly
 - If you only want to switch the active proxy driver, using `nb proxy nginx use` or `nb proxy caddy use` is usually clearer than setting the config key manually

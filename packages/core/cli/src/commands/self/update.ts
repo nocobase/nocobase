@@ -40,7 +40,7 @@ function formatSkillsUpdateMessage(result: SkillsUpdateResult, verbose: boolean)
 export default class SelfUpdate extends Command {
   static override summary = 'Update the globally installed NocoBase CLI';
   static override description =
-    'Update the current NocoBase CLI install when it is managed by a standard global npm install.';
+    'Update the current NocoBase CLI install when it is managed by a standard global npm, pnpm, or yarn install.';
   static override examples = [
     '<%= config.bin %> <%= command.id %>',
     '<%= config.bin %> <%= command.id %> --yes',
@@ -97,7 +97,7 @@ export default class SelfUpdate extends Command {
           message: flags.skills
             ? `Update ${status.packageName} from ${status.currentVersion} to ${status.latestVersion} and refresh the globally installed NocoBase AI coding skills?`
             : `Update ${status.packageName} from ${status.currentVersion} to ${status.latestVersion}?`,
-          default: false,
+          default: true,
         });
       } catch {
         return;
