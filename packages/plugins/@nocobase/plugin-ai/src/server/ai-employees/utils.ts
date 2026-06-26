@@ -10,16 +10,19 @@
 import { AIMessage, HumanMessage, ToolMessage } from 'langchain';
 import { AIMessageContent, AIMessageInput } from '../types';
 import { AIEmployee } from './ai-employee';
+import { LLMProvider } from '../llm-providers/provider';
 
 export const convertAIMessage = ({
   aiEmployee,
   providerName: provider,
+  provider: providerInstance,
   llmService,
   model,
   aiMessage,
 }: {
   aiEmployee: AIEmployee;
   providerName: string;
+  provider: LLMProvider;
   llmService?: string;
   model: string;
   aiMessage: AIMessage;
@@ -87,6 +90,8 @@ export const convertAIMessage = ({
   if (aiMessage.additional_kwargs) {
     values.metadata.additional_kwargs = aiMessage.additional_kwargs;
   }
+
+  providerInstance.reshapeAIMessage({ aiMessage, values });
 
   return values;
 };

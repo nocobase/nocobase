@@ -148,6 +148,7 @@ const providerDescriptions: Record<string, string> = {
   xai: 'Grok models by xAI',
   ollama: 'Local models',
   mimo: 'Xiaomi MIMO',
+  mistral: 'Mistral models',
 };
 
 const providerSortOrder: string[] = [
@@ -157,6 +158,7 @@ const providerSortOrder: string[] = [
   'deepseek',
   'dashscope',
   'kimi',
+  'mistral',
   'openai-completions',
   'ollama',
 ];
