@@ -79,7 +79,7 @@ describe('plugin-idp-oauth > device verification', () => {
     expect(provider.DeviceCode.findByUserCode).toHaveBeenCalledWith('XGNBCXRZ', { ignoreExpiration: true });
     expect(ctx.body).toMatchObject({
       status: 'pending',
-      userCode: 'XGNBCXRZ',
+      userCode: 'XGNB-CXRZ',
       clientName: 'Device Client',
     });
   });
@@ -140,7 +140,7 @@ describe('plugin-idp-oauth > device verification', () => {
     expect(code.save).toHaveBeenCalledTimes(1);
     expect(ctx.body).toMatchObject({
       status: 'complete',
-      userCode: 'XGNBCXRZ',
+      userCode: 'XGNB-CXRZ',
     });
   });
 
@@ -177,7 +177,7 @@ describe('plugin-idp-oauth > device verification', () => {
     expect(code.save).toHaveBeenCalledTimes(1);
     expect(ctx.body).toMatchObject({
       status: 'cancelled',
-      userCode: 'XGNBCXRZ',
+      userCode: 'XGNB-CXRZ',
     });
   });
 });

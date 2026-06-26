@@ -43,6 +43,11 @@ function normalizeUserCode(input: unknown) {
     .replace(/\W/g, '');
 }
 
+function formatUserCode(input: unknown) {
+  const userCode = normalizeUserCode(input);
+  return userCode.match(/.{1,4}/g)?.join('-') || '';
+}
+
 function splitScopes(value: unknown) {
   return typeof value === 'string' ? value.split(/\s+/).filter(Boolean) : [];
 }
@@ -111,6 +116,7 @@ function getClientName(client: { clientName?: string; clientId?: string } | unde
 
 async function buildDeviceState(ctx: DeviceVerificationContext, provider: Provider, user?: DeviceVerificationUser) {
   const userCode = getUserCode(ctx);
+  const displayUserCode = formatUserCode(userCode);
   if (!userCode) {
     return {
       status: 'missing_code',
@@ -121,13 +127,13 @@ async function buildDeviceState(ctx: DeviceVerificationContext, provider: Provid
   if (!code) {
     return {
       status: 'not_found',
-      userCode,
+      userCode: displayUserCode,
     };
   }
 
   const client = await getDeviceClient(provider, code);
   const baseState = {
-    userCode,
+    userCode: displayUserCode,
     clientName: getClientName(client),
   };
 
@@ -194,6 +200,7 @@ async function approveDeviceCode(ctx: DeviceVerificationContext, provider: Provi
   }
 
   const userCode = getUserCode(ctx);
+  const displayUserCode = formatUserCode(userCode);
   const code = userCode ? await findDeviceCode(provider, userCode) : undefined;
   if (!code || code.isExpired || code.error || code.accountId || code.inFlight || code.consumed) {
     return buildDeviceState(ctx, provider, user);
@@ -232,13 +239,14 @@ async function approveDeviceCode(ctx: DeviceVerificationContext, provider: Provi
 
   return {
     status: 'complete',
-    userCode,
+    userCode: displayUserCode,
     clientName: getClientName(await getDeviceClient(provider, code)),
   };
 }
 
 async function cancelDeviceCode(ctx: DeviceVerificationContext, provider: Provider) {
   const userCode = getUserCode(ctx);
+  const displayUserCode = formatUserCode(userCode);
   const code = userCode ? await findDeviceCode(provider, userCode) : undefined;
   if (!code || code.isExpired || code.error || code.accountId || code.inFlight || code.consumed) {
     return buildDeviceState(ctx, provider);
@@ -252,7 +260,7 @@ async function cancelDeviceCode(ctx: DeviceVerificationContext, provider: Provid
 
   return {
     status: 'cancelled',
-    userCode,
+    userCode: displayUserCode,
     clientName: getClientName(await getDeviceClient(provider, code)),
   };
 }
