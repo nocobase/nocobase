@@ -20,8 +20,11 @@ import PluginAIClientV2, {
   ModelSwitcher,
   avatars,
   avatarsMap,
+  createModelSettingsForm,
   defaultVectorStorePropForm,
   formatModelLabel,
+  ModelSelect,
+  OptionsFields,
   useAIConfigRepository,
   useChatBoxActions,
   useChatBoxStore,
@@ -36,6 +39,7 @@ import type {
   Conversation,
   LLMServiceItem,
   Message,
+  OptionField,
   SkillSettings,
   Task,
   TriggerTaskOptions,
@@ -54,6 +58,9 @@ describe('plugin-ai client-v2 public API contract', () => {
     expect(ModelSwitcher).toBeDefined();
     expect(avatars).toBeDefined();
     expect(avatarsMap).toBeDefined();
+    expect(createModelSettingsForm).toBeDefined();
+    expect(ModelSelect).toBeDefined();
+    expect(OptionsFields).toBeDefined();
     expect(formatModelLabel).toBeDefined();
     expect(AIConfigRepository).toBeDefined();
     expect(AIPluginFeatureManagerImpl).toBeDefined();
@@ -88,6 +95,7 @@ describe('plugin-ai client-v2 public API contract', () => {
       enabledModels: [{ label: 'GPT-4o', value: 'gpt-4o' }],
     };
     const message: Message = { content: { content: 'Hello' } };
+    const optionField: OptionField = { name: 'temperature', title: 'Temperature' };
     const skillSettings: SkillSettings = { tools: [], skills: [] };
     const task: Task = { title: 'Translate' };
     const triggerTaskOptions: TriggerTaskOptions = { aiEmployee, tasks: [task] };
@@ -101,6 +109,7 @@ describe('plugin-ai client-v2 public API contract', () => {
       conversation,
       llmService,
       message,
+      optionField,
       skillSettings,
       triggerTaskOptions,
       webSearching,

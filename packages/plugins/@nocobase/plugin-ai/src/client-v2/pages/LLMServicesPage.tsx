@@ -322,6 +322,7 @@ const getProviderDescription = (provider: string, t: ReturnType<typeof useT>) =>
     deepseek: 'DeepSeek',
     dashscope: 'Qwen (Tongyi)',
     kimi: 'Kimi',
+    gigachat: 'GigaChat by Sber',
     xai: 'Grok models by xAI',
     ollama: 'Local models',
     mimo: 'Xiaomi MIMO',

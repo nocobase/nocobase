@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { LLMProviderOptions } from '@nocobase/plugin-ai/client';
+import type { LLMProviderOptions } from '@nocobase/plugin-ai/client-v2';
 import { ProviderSettingsForm } from './ProviderSettings';
 import { ModelSettingsForm } from './ModelSettings';
 

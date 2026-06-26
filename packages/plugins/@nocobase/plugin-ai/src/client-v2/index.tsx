@@ -28,6 +28,7 @@ export type {
   WebSearching,
 } from './ai-employees/types';
 export { formatModelLabel } from './llm-services/model-label';
+export { createModelSettingsForm, ModelSelect, OptionsFields, type OptionField } from './llm-providers/forms';
 export { AIConfigRepository, type LLMServiceItem } from './repositories/AIConfigRepository';
 export { AIPluginFeatureManagerImpl } from './manager/ai-feature-manager';
 export { AIManager } from './manager/ai-manager';
