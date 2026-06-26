@@ -71,7 +71,11 @@ html body {
 .ant-dropdown-placement-topLeft,
 .ant-dropdown-placement-bottomLeft,
 .ant-dropdown-menu-submenu-placement-rightTop,
-.ant-dropdown-menu-submenu-placement-rightBottom {
+.ant-dropdown-menu-submenu-placement-rightBottom,
+.ant-select-dropdown-placement-bottomLeft,
+.ant-select-dropdown-placement-topLeft,
+.ant-select-dropdown-placement-bottomRight,
+.ant-select-dropdown-placement-topRight {
   transform: translateX(450px) !important;
 }
 `}
