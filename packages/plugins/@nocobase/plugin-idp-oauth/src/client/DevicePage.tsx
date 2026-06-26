@@ -10,7 +10,7 @@
 import { useAPIClient, useApp } from '@nocobase/client';
 import { Alert, Button, Card, Form, Input, Result, Space, Spin, Typography } from 'antd';
 import React, { useCallback, useEffect, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useT } from './locale';
 
 type DeviceStateStatus =
@@ -38,31 +38,15 @@ function getDevicePath(appName: string, action = '') {
   return `${appPrefix}idpOAuth/device/verification${action}`;
 }
 
-function removeRouterBasename(pathname: string, basename?: string) {
-  if (!basename || basename === '/') {
-    return pathname;
-  }
-
-  const normalizedBasename = basename.replace(/\/$/, '');
-  if (pathname === normalizedBasename) {
-    return '/';
-  }
-
-  if (pathname.startsWith(`${normalizedBasename}/`)) {
-    return pathname.slice(normalizedBasename.length) || '/';
-  }
-
-  return pathname;
-}
-
-function getCurrentDevicePath(userCode?: string, basename?: string) {
-  const search = userCode ? `?user_code=${encodeURIComponent(userCode)}` : window.location.search;
-  return `${removeRouterBasename(window.location.pathname, basename)}${search}`;
+function getCurrentDevicePath(pathname: string, search: string, userCode?: string) {
+  const currentSearch = userCode ? `?user_code=${encodeURIComponent(userCode)}` : search;
+  return `${pathname}${currentSearch}`;
 }
 
 export const DevicePage = () => {
   const api = useAPIClient();
   const app = useApp();
+  const location = useLocation();
   const navigate = useNavigate();
   const t = useT();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -97,7 +81,7 @@ export const DevicePage = () => {
       if (state.status === 'login') {
         navigate(
           `/signin?redirect=${encodeURIComponent(
-            getCurrentDevicePath(state.userCode || userCode, app.router.basename),
+            getCurrentDevicePath(location.pathname, location.search, state.userCode || userCode),
           )}`,
           {
             replace: true,
@@ -110,7 +94,7 @@ export const DevicePage = () => {
     } finally {
       setLoading(false);
     }
-  }, [app.router.basename, navigate, requestDeviceState, t, userCode]);
+  }, [location.pathname, location.search, navigate, requestDeviceState, t, userCode]);
 
   useEffect(() => {
     loadDeviceState();
