@@ -129,6 +129,27 @@ const getCollectionFields = (
   return selectedFieldNames.map((name) => ({ name, title: name }) as CollectionField);
 };
 
+export const getCheckedDatasourceIds = (contextItems?: ContextItem[]) =>
+  (contextItems || []).filter((item) => item.type === 'datasource').map((item) => String(item.uid));
+
+export const addCheckedDatasourceId = (checkedIds: Set<string>, uid: string) => {
+  if (checkedIds.has(uid)) {
+    return checkedIds;
+  }
+  const next = new Set(checkedIds);
+  next.add(uid);
+  return next;
+};
+
+export const removeCheckedDatasourceId = (checkedIds: Set<string>, uid: string) => {
+  if (!checkedIds.has(uid)) {
+    return checkedIds;
+  }
+  const next = new Set(checkedIds);
+  next.delete(uid);
+  return next;
+};
+
 const renderPreviewValue = (value: unknown, field?: CollectionField, t?: (key: string) => string) => {
   if (value == null) {
     return '';
@@ -398,11 +419,12 @@ export const DatasourceSelector: React.FC<DatasourceSelectorProps> = ({ contextI
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [total, setTotal] = useState<number>();
+  const contextItemCheckedIds = useMemo(() => getCheckedDatasourceIds(contextItems), [contextItems]);
+  const [checkedIds, setCheckedIds] = useState<Set<string>>(() => new Set(contextItemCheckedIds));
 
-  const checkedIds = useMemo(
-    () => new Set((contextItems || []).filter((item) => item.type === 'datasource').map((item) => String(item.uid))),
-    [contextItems],
-  );
+  useEffect(() => {
+    setCheckedIds(new Set(contextItemCheckedIds));
+  }, [contextItemCheckedIds]);
 
   const loadRecords = useCallback(async () => {
     setLoading(true);
@@ -439,6 +461,27 @@ export const DatasourceSelector: React.FC<DatasourceSelectorProps> = ({ contextI
       setPreviewing(false);
     });
   }, [selectRecord, selectedRecord]);
+
+  const addDatasource = useCallback(
+    (item: Omit<ContextItem, 'type'>) => {
+      const uid = String(item.uid);
+      setCheckedIds((prev) => {
+        return addCheckedDatasourceId(prev, uid);
+      });
+      onAdd(item);
+    },
+    [onAdd],
+  );
+
+  const removeDatasource = useCallback(
+    (uid: string) => {
+      setCheckedIds((prev) => {
+        return removeCheckedDatasourceId(prev, uid);
+      });
+      onRemove(uid);
+    },
+    [onRemove],
+  );
 
   useEffect(() => {
     let disposed = false;
@@ -494,8 +537,8 @@ export const DatasourceSelector: React.FC<DatasourceSelectorProps> = ({ contextI
                       setPreviewing(false);
                     });
                   }}
-                  onAdd={onAdd}
-                  onRemove={onRemove}
+                  onAdd={addDatasource}
+                  onRemove={removeDatasource}
                   onPageChange={(nextPage, nextPageSize) => {
                     setPage(nextPage);
                     setPageSize(nextPageSize);
