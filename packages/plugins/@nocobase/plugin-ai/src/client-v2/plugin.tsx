@@ -20,6 +20,7 @@ import { AIPluginFeatureManagerImpl } from './manager/ai-feature-manager';
 import { AIConfigRepository } from './repositories/AIConfigRepository';
 import { builtinLLMProviderOptions } from './llm-providers';
 import { registerPluginAIWorkflow } from './workflow/register';
+import { setupAICoding } from './ai-employees/ai-coding/setup';
 
 type AIFlowContext = {
   aiConfigRepository?: AIConfigRepository;
@@ -135,6 +136,7 @@ export class PluginAIClientV2 extends Plugin<object, Application> {
     this.aiManager.registerWorkContext('datasource', DatasourceContext);
     this.aiManager.registerWorkContext('code-editor', CodeEditorContext);
     this.aiManager.registerWorkContext('chart-config', chartConfigWorkContext);
+    setupAICoding();
     this.flowEngine.registerModelLoaders({
       AIEmployeeShortcutModel: {
         loader: () => import('./models/ai-employees'),
