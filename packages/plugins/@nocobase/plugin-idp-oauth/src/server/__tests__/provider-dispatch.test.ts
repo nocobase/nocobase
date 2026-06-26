@@ -177,6 +177,40 @@ describe('plugin-idp-oauth > provider dispatch', () => {
     expect(ctx.body).toContain('action="http://127.0.0.1:13000/api/idpOAuth/device"');
   });
 
+  test('should rewrite public-path interaction cookies to the backend interaction path', async () => {
+    const provider = {
+      issuer: 'http://127.0.0.1:13000/api',
+      callback: vi.fn(() => (_req: any, res: any) => {
+        res.statusCode = 303;
+        res.setHeader('set-cookie', [
+          '_interaction=uid-1; path=/nocobase/idp-oauth/interaction/uid-1; httponly',
+          '_interaction_resume=uid-1; path=/idpOAuth/auth/uid-1; httponly',
+        ]);
+        res.end();
+      }),
+    } as any;
+    const ctx = {
+      method: 'GET',
+      path: '/api/idpOAuth/authorize',
+      headers: {},
+      request: {},
+      get: vi.fn(() => ''),
+      set: vi.fn(),
+      logger: {
+        debug: vi.fn(),
+        warn: vi.fn(),
+      },
+    } as any;
+
+    await dispatchToProvider(ctx, provider, '/idpOAuth/authorize', service);
+
+    expect(ctx.status).toBe(303);
+    expect(ctx.set).toHaveBeenCalledWith('set-cookie', [
+      '_interaction=uid-1; path=/api/idpOAuth/interaction/uid-1; httponly',
+      '_interaction_resume=uid-1; path=/api/idpOAuth/auth/uid-1; httponly',
+    ]);
+  });
+
   test('should reject dynamic registration with reserved app client id prefix', async () => {
     const provider = {
       issuer: 'http://127.0.0.1:13000/api',

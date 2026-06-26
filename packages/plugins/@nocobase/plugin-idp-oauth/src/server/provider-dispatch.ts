@@ -198,12 +198,19 @@ function rewriteDeviceVerificationUrl(ctx: DispatchContext, service: IdpOauthSer
 }
 
 function getFrontendInteractionCookiePath(originalPath: string) {
-  const match = originalPath.match(/^\/(?:apps\/([^/]+)\/)?idp-oauth\/interaction\/([^/]+)$/);
-  if (!match) {
+  const segments = originalPath.split('/').filter(Boolean);
+  const interactionIndex = segments.lastIndexOf('idp-oauth');
+  if (
+    interactionIndex < 0 ||
+    segments[interactionIndex + 1] !== 'interaction' ||
+    !segments[interactionIndex + 2] ||
+    segments.length !== interactionIndex + 3
+  ) {
     return undefined;
   }
 
-  const [, appName, uid] = match;
+  const appName = segments[interactionIndex - 2] === 'apps' ? segments[interactionIndex - 1] : undefined;
+  const uid = segments[interactionIndex + 2];
   return { appName, uid };
 }
 
