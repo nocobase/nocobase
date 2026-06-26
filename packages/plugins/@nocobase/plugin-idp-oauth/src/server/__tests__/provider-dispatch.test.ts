@@ -38,6 +38,28 @@ const service = {
 } as any;
 
 describe('plugin-idp-oauth > provider dispatch', () => {
+  const originalAppPublicPath = process.env.APP_PUBLIC_PATH;
+  const originalModernClientPrefix = process.env.APP_MODERN_CLIENT_PREFIX;
+
+  beforeEach(() => {
+    delete process.env.APP_PUBLIC_PATH;
+    delete process.env.APP_MODERN_CLIENT_PREFIX;
+  });
+
+  afterEach(() => {
+    if (originalAppPublicPath === undefined) {
+      delete process.env.APP_PUBLIC_PATH;
+    } else {
+      process.env.APP_PUBLIC_PATH = originalAppPublicPath;
+    }
+
+    if (originalModernClientPrefix === undefined) {
+      delete process.env.APP_MODERN_CLIENT_PREFIX;
+    } else {
+      process.env.APP_MODERN_CLIENT_PREFIX = originalModernClientPrefix;
+    }
+  });
+
   test('should reject dynamic registration redirect URIs that are not loopback callbacks', async () => {
     const provider = {
       issuer: 'http://127.0.0.1:13000/api',
@@ -96,5 +118,59 @@ describe('plugin-idp-oauth > provider dispatch', () => {
       error_description: 'client_id prefix app: is reserved',
     });
     expect(provider.callback).not.toHaveBeenCalled();
+  });
+
+  test('should rewrite modern frontend interaction cookie paths back to app api routes', async () => {
+    process.env.APP_PUBLIC_PATH = '/nocobase/';
+    process.env.APP_MODERN_CLIENT_PREFIX = 'v2';
+
+    const provider = {
+      issuer: 'http://127.0.0.1:13000/api',
+      callback: vi.fn(() => (_req: any, res: any) => {
+        res.statusCode = 200;
+        res.setHeader('content-type', 'application/json');
+        res.setHeader('set-cookie', [
+          'oidc.interaction=test; Path=/nocobase/v2/apps/demo/idp-oauth/interaction/uid-1; HttpOnly',
+        ]);
+        res.end(JSON.stringify({ ok: true }));
+      }),
+    } as any;
+
+    const ctx = {
+      method: 'GET',
+      path: '/api/idpOAuth/authorize',
+      headers: {},
+      request: {},
+      querystring: '',
+      get: () => '',
+      set: vi.fn(),
+      logger: {
+        debug: vi.fn(),
+        warn: vi.fn(),
+      },
+    } as any;
+
+    const service = {
+      getProviderContext: () => ({
+        appName: 'main',
+        origin: 'http://127.0.0.1:13000',
+        issuer: 'http://127.0.0.1:13000/api',
+        issuerPath: '/api',
+      }),
+      getIssuerPath: (appName: string) => {
+        if (appName === 'demo') {
+          return '/api/__app/demo';
+        }
+        return '/api';
+      },
+    } as any;
+
+    await dispatchToProvider(ctx, provider, '/idpOAuth/authorize', service);
+
+    const setCookieCall = ctx.set.mock.calls.find(([name]: [string]) => name === 'set-cookie');
+    expect(setCookieCall).toBeTruthy();
+    expect(setCookieCall?.[1]).toEqual(
+      expect.arrayContaining([expect.stringContaining('path=/api/__app/demo/idpOAuth/interaction/uid-1')]),
+    );
   });
 });

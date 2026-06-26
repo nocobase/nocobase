@@ -12,29 +12,49 @@ import { createLocalJWKSet, exportJWK, generateKeyPair, SignJWT } from 'jose';
 import { IdpOauthService } from '../service';
 
 describe('plugin-idp-oauth > IdpOauthService', () => {
+  const originalAppPublicPath = process.env.APP_PUBLIC_PATH;
+  const originalModernClientPrefix = process.env.APP_MODERN_CLIENT_PREFIX;
+
+  beforeEach(() => {
+    delete process.env.APP_PUBLIC_PATH;
+    delete process.env.APP_MODERN_CLIENT_PREFIX;
+  });
+
   afterEach(() => {
+    if (originalAppPublicPath === undefined) {
+      delete process.env.APP_PUBLIC_PATH;
+    } else {
+      process.env.APP_PUBLIC_PATH = originalAppPublicPath;
+    }
+
+    if (originalModernClientPrefix === undefined) {
+      delete process.env.APP_MODERN_CLIENT_PREFIX;
+    } else {
+      process.env.APP_MODERN_CLIENT_PREFIX = originalModernClientPrefix;
+    }
+
     vi.restoreAllMocks();
   });
 
-  test('should build frontend interaction paths for main app and sub app in multi-app mode', () => {
+  test('should build modern frontend interaction paths for main app and sub app in multi-app mode', () => {
     const service = new IdpOauthService({} as any, {} as any);
     vi.spyOn(AppSupervisor, 'getInstance').mockReturnValue({
       runningMode: 'multiple',
     } as any);
 
-    expect(service.getFrontendInteractionPath('main', 'uid-1')).toBe('/idp-oauth/interaction/uid-1');
-    expect(service.getFrontendInteractionPath('demo', 'uid-2')).toBe('/apps/demo/idp-oauth/interaction/uid-2');
+    expect(service.getFrontendInteractionPath('main', 'uid-1')).toBe('/v/idp-oauth/interaction/uid-1');
+    expect(service.getFrontendInteractionPath('demo', 'uid-2')).toBe('/v/apps/demo/idp-oauth/interaction/uid-2');
   });
 
-  test('should build frontend paths without apps prefix in single mode', () => {
+  test('should build modern frontend paths without apps prefix in single mode', () => {
     const service = new IdpOauthService({} as any, {} as any);
     vi.spyOn(AppSupervisor, 'getInstance').mockReturnValue({
       runningMode: 'single',
     } as any);
 
-    expect(service.getFrontendErrorPath('main')).toBe('/idp-oauth/error');
-    expect(service.getFrontendErrorPath('demo')).toBe('/idp-oauth/error');
-    expect(service.getFrontendInteractionPath('demo', 'uid-2')).toBe('/idp-oauth/interaction/uid-2');
+    expect(service.getFrontendErrorPath('main')).toBe('/v/idp-oauth/error');
+    expect(service.getFrontendErrorPath('demo')).toBe('/v/idp-oauth/error');
+    expect(service.getFrontendInteractionPath('demo', 'uid-2')).toBe('/v/idp-oauth/interaction/uid-2');
   });
 
   test('should use root api issuer path for custom-domain sub app requests', () => {
@@ -54,8 +74,25 @@ describe('plugin-idp-oauth > IdpOauthService', () => {
     expect(providerContext.issuerPath).toBe('/api');
     expect(providerContext.issuer).toBe('https://subapp.example.com/api');
     expect(service.getFrontendInteractionPath('subapp', 'uid-3', providerContext.issuerPath)).toBe(
-      '/idp-oauth/interaction/uid-3',
+      '/v/idp-oauth/interaction/uid-3',
     );
+  });
+
+  test('should honor APP_PUBLIC_PATH and APP_MODERN_CLIENT_PREFIX for modern frontend paths', () => {
+    process.env.APP_PUBLIC_PATH = '/nocobase/';
+    process.env.APP_MODERN_CLIENT_PREFIX = 'v2';
+
+    const service = new IdpOauthService({} as any, {} as any);
+    vi.spyOn(AppSupervisor, 'getInstance').mockReturnValue({
+      runningMode: 'multiple',
+    } as any);
+
+    expect(service.getFrontendInteractionPath('main', 'uid-1')).toBe('/nocobase/v2/idp-oauth/interaction/uid-1');
+    expect(service.getFrontendErrorPath('main')).toBe('/nocobase/v2/idp-oauth/error');
+    expect(service.getFrontendInteractionPath('demo', 'uid-2')).toBe(
+      '/nocobase/v2/apps/demo/idp-oauth/interaction/uid-2',
+    );
+    expect(service.getFrontendErrorPath('demo')).toBe('/nocobase/v2/apps/demo/idp-oauth/error');
   });
 
   test('should preserve sub app issuer path when original url uses __app prefix', () => {

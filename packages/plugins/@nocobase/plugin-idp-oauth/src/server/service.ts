@@ -8,6 +8,7 @@
  */
 
 import type { Cache } from '@nocobase/cache';
+import { getModernClientPrefix } from '@nocobase/plugin-auth';
 import { defaultTokenPolicyConfig } from '@nocobase/plugin-auth';
 import Application, { AppSupervisor } from '@nocobase/server';
 import fs from 'node:fs';
@@ -187,20 +188,20 @@ export class IdpOauthService {
     return issuerPath !== this.getApiBasePath();
   }
 
-  getFrontendInteractionPath(appName: string, uid: string, issuerPath = this.getIssuerPath(appName)) {
-    if (!this.shouldUseSubAppPublicPrefix(appName, issuerPath)) {
-      return `/idp-oauth/interaction/${uid}`;
-    }
+  private getModernFrontendPrefix(appName: string, issuerPath = this.getIssuerPath(appName)) {
+    const appPublicPath = (process.env.APP_PUBLIC_PATH || '').replace(/\/+$/, '');
+    const modernPrefix = getModernClientPrefix();
+    const subAppSegment = this.shouldUseSubAppPublicPrefix(appName, issuerPath) ? `/apps/${appName}` : '';
 
-    return `/apps/${appName}/idp-oauth/interaction/${uid}`;
+    return normalizeBasePath(`${appPublicPath}/${modernPrefix}${subAppSegment}`);
+  }
+
+  getFrontendInteractionPath(appName: string, uid: string, issuerPath = this.getIssuerPath(appName)) {
+    return `${this.getModernFrontendPrefix(appName, issuerPath)}/idp-oauth/interaction/${uid}`;
   }
 
   getFrontendErrorPath(appName: string, issuerPath = this.getIssuerPath(appName)) {
-    if (!this.shouldUseSubAppPublicPrefix(appName, issuerPath)) {
-      return '/idp-oauth/error';
-    }
-
-    return `/apps/${appName}/idp-oauth/error`;
+    return `${this.getModernFrontendPrefix(appName, issuerPath)}/idp-oauth/error`;
   }
 
   getProviderContext(ctx: any): ProviderContext {

@@ -8,8 +8,10 @@
  */
 
 import inject from 'light-my-request';
+import { getModernClientPrefix } from '@nocobase/plugin-auth';
 import type { IdpOauthService } from './service';
 import { getProviderInternalPath } from './paths';
+import { normalizeBasePath } from './utils';
 
 type Provider = import('oidc-provider').Provider;
 
@@ -172,7 +174,18 @@ export function rewriteProviderLocationHeader(ctx: DispatchContext, service: Idp
 }
 
 function getFrontendInteractionCookiePath(originalPath: string) {
-  const match = originalPath.match(/^\/(?:apps\/([^/]+)\/)?idp-oauth\/interaction\/([^/]+)$/);
+  const appPublicPath = (process.env.APP_PUBLIC_PATH || '').replace(/\/+$/, '');
+  const modernPrefix = normalizeBasePath(`${appPublicPath}/${getModernClientPrefix()}`);
+  let normalizedPath = originalPath;
+
+  if (normalizedPath.startsWith(`${modernPrefix}/`)) {
+    normalizedPath = normalizedPath.slice(modernPrefix.length);
+    if (!normalizedPath.startsWith('/')) {
+      normalizedPath = `/${normalizedPath}`;
+    }
+  }
+
+  const match = normalizedPath.match(/^\/(?:apps\/([^/]+)\/)?idp-oauth\/interaction\/([^/]+)$/);
   if (!match) {
     return undefined;
   }

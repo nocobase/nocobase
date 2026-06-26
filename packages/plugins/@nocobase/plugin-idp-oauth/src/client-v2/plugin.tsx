@@ -7,25 +7,23 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Plugin } from '@nocobase/client';
-import { ErrorPage } from './ErrorPage';
-import { InteractionPage } from './InteractionPage';
-import models from '../client-v2/models';
+import { Plugin } from '@nocobase/client-v2';
+import models from './models';
 
-export class PluginIdpOauthClient extends Plugin {
+export class PluginIdpOauthClientV2 extends Plugin {
   async load() {
     this.app.flowEngine.registerModels(models);
     this.router.add('idp-oauth.interaction', {
       path: '/idp-oauth/interaction/:uid',
-      Component: InteractionPage,
       skipAuthCheck: true,
+      componentLoader: () => import('./pages/InteractionPage'),
     });
     this.router.add('idp-oauth.error', {
       path: '/idp-oauth/error',
-      Component: ErrorPage,
       skipAuthCheck: true,
+      componentLoader: () => import('./pages/ErrorPage'),
     });
   }
 }
 
-export default PluginIdpOauthClient;
+export default PluginIdpOauthClientV2;

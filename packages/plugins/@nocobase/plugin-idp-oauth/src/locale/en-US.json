@@ -1,1 +1,15 @@
-{}
+{
+  "Application": "Application",
+  "Authentication failed": "Authentication failed",
+  "Authorize application": "Authorize application",
+  "Cancel": "Cancel",
+  "Continue": "Continue",
+  "Failed to load interaction": "Failed to load interaction",
+  "Failed to submit interaction": "Failed to submit interaction",
+  "Invalid interaction path": "Invalid interaction path",
+  "Issuer": "Issuer",
+  "Please wait while authorization continues.": "Please wait while authorization continues.",
+  "Redirecting...": "Redirecting...",
+  "Requested permissions": "Requested permissions",
+  "requests access to your account.": "requests access to your account."
+}

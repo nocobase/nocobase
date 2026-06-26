@@ -1,1 +1,15 @@
-{}
+{
+  "Application": "应用",
+  "Authentication failed": "认证失败",
+  "Authorize application": "授权应用",
+  "Cancel": "取消",
+  "Continue": "继续",
+  "Failed to load interaction": "加载授权交互失败",
+  "Failed to submit interaction": "提交授权交互失败",
+  "Invalid interaction path": "无效的授权交互路径",
+  "Issuer": "签发方",
+  "Please wait while authorization continues.": "授权正在继续，请稍候。",
+  "Redirecting...": "正在跳转...",
+  "Requested permissions": "申请的权限",
+  "requests access to your account.": "正在请求访问你的账号。"
+}
