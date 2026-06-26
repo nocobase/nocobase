@@ -265,6 +265,14 @@ function rewriteProviderJsonBody(ctx: DispatchContext, service: IdpOauthService,
     body.registration_client_uri = `${issuer}/idpOAuth/register/${clientId}`;
   }
 
+  if (typeof body.verification_uri === 'string') {
+    body.verification_uri = rewriteProviderUrl(ctx, service, body.verification_uri);
+  }
+
+  if (typeof body.verification_uri_complete === 'string') {
+    body.verification_uri_complete = rewriteProviderUrl(ctx, service, body.verification_uri_complete);
+  }
+
   return body;
 }
 

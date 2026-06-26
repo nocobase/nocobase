@@ -28,6 +28,25 @@ function createContext(body: Record<string, any>) {
   } as any;
 }
 
+function createDeviceAuthorizationContext() {
+  return {
+    method: 'POST',
+    path: '/api/idpOAuth/device/auth',
+    headers: {
+      'content-type': 'application/x-www-form-urlencoded',
+    },
+    request: {
+      body: 'client_id=client-device-1&scope=openid+api',
+    },
+    get: (name: string) => (name.toLowerCase() === 'content-type' ? 'application/x-www-form-urlencoded' : ''),
+    set: vi.fn(),
+    logger: {
+      debug: vi.fn(),
+      warn: vi.fn(),
+    },
+  } as any;
+}
+
 const service = {
   getProviderContext: () => ({
     appName: 'main',
@@ -99,6 +118,33 @@ describe('plugin-idp-oauth > provider dispatch', () => {
       client_id: 'client-device-1',
     });
     expect(provider.callback).toHaveBeenCalledTimes(1);
+  });
+
+  test('should rewrite device verification URLs to the public issuer path', async () => {
+    const provider = {
+      issuer: 'http://127.0.0.1:13000/api',
+      callback: vi.fn(() => (_req: any, res: any) => {
+        res.statusCode = 200;
+        res.setHeader('content-type', 'application/json');
+        res.end(
+          JSON.stringify({
+            device_code: 'device-code-1',
+            user_code: 'XGNB-CXRZ',
+            verification_uri: 'http://127.0.0.1:13000/idpOAuth/device',
+            verification_uri_complete: 'http://127.0.0.1:13000/idpOAuth/device?user_code=XGNB-CXRZ',
+          }),
+        );
+      }),
+    } as any;
+    const ctx = createDeviceAuthorizationContext();
+
+    await dispatchToProvider(ctx, provider, '/idpOAuth/device/auth', service);
+
+    expect(ctx.status).toBe(200);
+    expect(ctx.body).toMatchObject({
+      verification_uri: 'http://127.0.0.1:13000/api/idpOAuth/device',
+      verification_uri_complete: 'http://127.0.0.1:13000/api/idpOAuth/device?user_code=XGNB-CXRZ',
+    });
   });
 
   test('should reject dynamic registration with reserved app client id prefix', async () => {
