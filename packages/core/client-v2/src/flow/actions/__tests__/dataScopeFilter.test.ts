@@ -201,6 +201,64 @@ describe('normalizeDataScopeFilter', () => {
     expect(resource.addFilterGroup).not.toHaveBeenCalled();
   });
 
+  it('dataScope handler preserves current role as server-side variable', async () => {
+    const engine = new FlowEngine();
+    const resource = {
+      addFilterGroup: vi.fn(),
+      removeFilterGroup: vi.fn(),
+    };
+    const ctx = engine.context;
+    ctx.defineProperty('api', { value: { auth: { role: '__union__' } } });
+    ctx.defineProperty('user', {
+      value: {
+        roles: [{ name: 'admin' }, { name: 'member' }],
+      },
+    });
+    ctx.defineProperty('model', {
+      value: {
+        uid: 'table-1',
+        resource,
+      },
+    });
+    const params = {
+      filter: {
+        logic: '$and',
+        items: [{ path: 'roles.name', operator: '$includes', value: '{{ ctx.role }}' }],
+      },
+    };
+
+    await (dataScope as { handler: (ctx: typeof ctx, params: typeof params) => Promise<void> }).handler(ctx, params);
+
+    expect(resource.addFilterGroup).toHaveBeenCalledWith('table-1', {
+      $and: [{ roles: { name: { $includes: '{{$nRole}}' } } }],
+    });
+    expect(resource.removeFilterGroup).not.toHaveBeenCalled();
+  });
+
+  it('setTargetDataScope handler preserves current role as server-side variable', async () => {
+    const resource = {
+      addFilterGroup: vi.fn(),
+      removeFilterGroup: vi.fn(),
+      hasData: vi.fn(() => false),
+      refresh: vi.fn(),
+    };
+    const ctx = createSetTargetDataScopeContext(resource, { resolvedValue: ['admin', 'member'] });
+    const params = {
+      targetBlockUid: 'target-1',
+      filter: {
+        logic: '$and',
+        items: [{ path: 'roles.name', operator: '$includes', value: '{{ctx.role}}' }],
+      },
+    };
+
+    await (setTargetDataScope as any).handler(ctx, params);
+
+    expect(resource.addFilterGroup).toHaveBeenCalledWith('setTargetDataScope_action-1', {
+      $and: [{ roles: { name: { $includes: '{{$nRole}}' } } }],
+    });
+    expect(resource.removeFilterGroup).not.toHaveBeenCalled();
+  });
+
   it('setTargetDataScope handler sends null for empty variable dependencies', async () => {
     const resource = {
       addFilterGroup: vi.fn(),

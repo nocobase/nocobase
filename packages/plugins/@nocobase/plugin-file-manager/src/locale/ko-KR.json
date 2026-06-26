@@ -32,7 +32,7 @@
   "Local storage": "로컬 저장소",
   "MIME type": "MIME 타입",
   "Minimum from 1 byte.": "Minimum from 1 byte.",
-  "Multi-types seperated with comma, for example: \"image/*\", \"image/png\", \"image/*, application/pdf\" etc.": "Multi-types seperated with comma, for example: \"image/*\", \"image/png\", \"image/*, application/pdf\" etc.",
+  "Multi-types separated with comma, for example: \"image/*\", \"image/png\", \"image/*, application/pdf\" etc.": "Multi-types separated with comma, for example: \"image/*\", \"image/png\", \"image/*, application/pdf\" etc.",
   "Path": "경로",
   "PDF preview failed. Please download the file to preview it.": "PDF 미리보기에 실패했습니다. 파일을 다운로드하여 확인하세요.",
   "PDF preview failed to load the file. If the file is stored on another domain, configure CORS for the external storage to allow this site to read the file.": "PDF 미리보기가 파일을 불러오지 못했습니다. 파일이 다른 도메인에 저장되어 있다면 이 사이트가 파일을 읽을 수 있도록 외부 저장소의 CORS를 설정하세요.",

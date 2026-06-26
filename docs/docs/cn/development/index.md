@@ -2,8 +2,8 @@
 pageType: home
 pageName: development
 title: "NocoBase 开发指南"
-description: "NocoBase 开发指南：插件开发、FlowEngine、RunJS、区块/字段/操作扩展、数据源扩展、工作流扩展、认证扩展。"
-keywords: "NocoBase,开发指南,插件开发,FlowEngine,RunJS,NocoBase 扩展"
+description: "NocoBase 开发指南：插件开发、公共组件、FlowEngine、RunJS、区块/字段/操作扩展、数据源扩展、工作流扩展、认证扩展。"
+keywords: "NocoBase,开发指南,插件开发,公共组件,FlowEngine,RunJS,NocoBase 扩展"
 features:
   - title: 核心开发
     details: 掌握 NocoBase 的底层扩展机制与高级开发能力，包括插件系统、AI 辅助、FlowEngine 与 RunJS 环境，构建坚实的开发基础。
@@ -23,6 +23,10 @@ features:
       - title: 前端 RunJS
         details: 用于 JS 区块、JS 字段、JS 操作等场景的 JavaScript 执行环境。
         link: /runjs
+        showOnHome: true
+      - title: 公共组件
+        details: 汇总 NocoBase client v2 内置的表单、筛选、表格和图标等组件，写插件页面时可以直接复用。
+        link: /shared-components
         showOnHome: true
   - title: 插件生态
     details: 通过插件扩展现有插件的能力，构建层次化、模块化的插件生态体系，提升系统的可扩展性与协作能力。

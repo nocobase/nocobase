@@ -26,7 +26,7 @@
   "MIME type": "MIME típus",
   "Minimum from 1 byte, maximum up to 1GB.": "Minimum 1 byte, maximum 1GB-ig.",
   "Minimum from 1 byte.": "Minimum from 1 byte.",
-  "Multi-types seperated with comma, for example: \"image/*\", \"image/png\", \"image/*, application/pdf\" etc.": "Több típus vesszővel elválasztva, például: \"image/*\", \"image/png\", \"image/*, application/pdf\" stb.",
+  "Multi-types separated with comma, for example: \"image/*\", \"image/png\", \"image/*, application/pdf\" etc.": "Több típus vesszővel elválasztva, például: \"image/*\", \"image/png\", \"image/*, application/pdf\" stb.",
   "Path": "Útvonal",
   "PDF preview failed. Please download the file to preview it.": "A PDF előnézete sikertelen. Kérjük, töltse le a fájlt a megtekintéshez.",
   "PDF preview failed to load the file. If the file is stored on another domain, configure CORS for the external storage to allow this site to read the file.": "A PDF előnézete nem tudta betölteni a fájlt. Ha a fájl másik tartományban van tárolva, állítsa be a CORS-t a külső tárhelyen, hogy ez a webhely olvashassa a fájlt.",

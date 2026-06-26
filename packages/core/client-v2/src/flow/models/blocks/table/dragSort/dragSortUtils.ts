@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { Collection } from '@nocobase/flow-engine';
+import type { Collection, CollectionField } from '@nocobase/flow-engine';
 
 /**
  * 从 collection 中获取所有 sort 类型的字段
@@ -22,6 +22,19 @@ export function getSortFields(collection: Collection | undefined) {
   return fields.filter((field) => {
     return !field?.target && field.interface === 'sort';
   });
+}
+
+export function getSortField(
+  collection: Collection | undefined,
+  fieldName?: string | null,
+): CollectionField | undefined {
+  if (!collection || !fieldName) return undefined;
+
+  return getSortFields(collection).find((field) => field.name === fieldName);
+}
+
+export function hasSortField(collection: Collection | undefined, fieldName?: string | null): boolean {
+  return !!getSortField(collection, fieldName);
 }
 
 /**
@@ -39,7 +52,7 @@ export function getFirstSortField(collection: Collection | undefined) {
  * @param fields - 字段数组
  * @returns 选项数组
  */
-export function convertFieldsToOptions(fields: any[]) {
+export function convertFieldsToOptions(fields: CollectionField[]) {
   return fields.map((field) => ({
     label: field?.uiSchema?.title || field?.name,
     value: field?.name,
