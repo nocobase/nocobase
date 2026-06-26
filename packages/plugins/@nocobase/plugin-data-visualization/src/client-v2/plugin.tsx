@@ -9,6 +9,7 @@
 
 import { Plugin } from '@nocobase/client-v2';
 
+import { registerDaraChartSettingsExtension } from './ai/register-dara-chart-settings-extension';
 import { ChartGroup } from './chart';
 import { translateExpr } from './locale';
 
@@ -48,6 +49,8 @@ export class PluginDataVisualizationClient extends Plugin {
   }
 
   async load() {
+    registerDaraChartSettingsExtension();
+
     this.flowEngine.registerModelLoaders({
       ChartBlockModel: {
         loader: () => import('./flow/models/ChartBlockModel'),

@@ -43,7 +43,7 @@ import { ChartRendererToolbar, ChartFilterBlockToolbar, ChartFilterItemToolbar }
 import { ChartCardItem } from './block/CardItem';
 import { Schema } from '@formily/react';
 import { ChartBlockModel } from '../client-v2/flow/models/ChartBlockModel';
-import type PluginAIClient from '@nocobase/plugin-ai/client';
+import { registerDaraChartSettingsExtension } from './ai/register-dara-chart-settings-extension';
 // import { buildChartBlockTool } from './ai/tools';
 
 type fieldInterfaceConfig = {
@@ -84,6 +84,8 @@ class PluginDataVisualiztionClient extends Plugin {
   async load() {
     this.charts.addGroup('antd', { title: 'Ant Design', charts: antd });
     this.charts.addGroup('ant-design-charts', { title: 'Ant Design Charts', charts: g2plot });
+
+    registerDaraChartSettingsExtension();
 
     this.app.flowEngine.registerModels({ ChartBlockModel });
 
