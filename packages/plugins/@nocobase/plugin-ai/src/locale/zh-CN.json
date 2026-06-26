@@ -247,6 +247,7 @@
   "Successfully connected to MCP server": "已成功连接到 MCP 服务器",
   "Tools found": "发现工具",
   "Connection Failed": "连接失败",
+  "Drag to sort": "拖拽排序",
   "Failed to connect to MCP server": "连接 MCP 服务器失败",
   "Tools available for LLM function calling": "可供 LLM 调用的工具",
   "Top P description": "作为调节采样温度的替代方案，模型会考虑前 top_p 概率的 token 的结果。所以 0.1 就意味着只有包括在最高 10% 概率中的 token 会被考虑。",

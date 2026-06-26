@@ -36,13 +36,15 @@ function TriggerTypeDescription({
     return null;
   }
   return (
-    <div style={{ marginBottom: token.marginLG, padding: token.padding, backgroundColor: token.colorFillAlter }}>
-      <Typography.Paragraph>
+    <div style={{ marginBottom: token.marginLG, padding: token.fontSize, backgroundColor: token.colorFillAlter }}>
+      <Typography.Paragraph style={{ marginBlockStart: token.margin, marginBlockEnd: token.margin }}>
         <Typography.Text>{t('Trigger type')}</Typography.Text>
         <Typography.Text>: </Typography.Text>
-        <Tag icon={<ThunderboltOutlined />}>{t(trigger.title)}</Tag>
+        <Tag>{t(trigger.title)}</Tag>
       </Typography.Paragraph>
-      <Typography.Paragraph type="secondary">{t(trigger.description)}</Typography.Paragraph>
+      <Typography.Paragraph type="secondary" style={{ marginBlockStart: token.marginLG, marginBlockEnd: 0 }}>
+        {t(trigger.description)}
+      </Typography.Paragraph>
     </div>
   );
 }

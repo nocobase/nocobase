@@ -124,7 +124,7 @@ describe('AI employee workflow trigger', () => {
     ]);
   });
 
-  it('shows enum options and sorts parameters', async () => {
+  it('shows enum options and renders drag sort handles', async () => {
     const submitted: FormValues[] = [];
 
     render(
@@ -151,23 +151,27 @@ describe('AI employee workflow trigger', () => {
       </FormHarness>,
     );
 
+    const addButton = screen.getByRole('button', { name: 'Add parameter' });
+    const parameterHelp = screen.getByText('The parameters required by the tool');
+    expect(Boolean(addButton.compareDocumentPosition(parameterHelp) & Node.DOCUMENT_POSITION_FOLLOWING)).toBe(true);
+    expect(screen.getAllByLabelText('Drag to sort')).toHaveLength(2);
     fireEvent.click(screen.getAllByLabelText('Edit')[0]);
     expect(await screen.findByText('Options')).toBeInTheDocument();
+    expect(screen.getAllByLabelText('Drag to sort')).toHaveLength(4);
     clickModalSubmit();
-    fireEvent.click(screen.getAllByLabelText('Move down')[0]);
     fireEvent.click(screen.getByRole('button', { name: 'Save' }));
 
     await waitFor(() => expect(submitted).toHaveLength(1));
     expect(submitted[0].config?.parameters).toEqual([
       {
-        name: 'count',
-        type: 'number',
-      },
-      {
         name: 'status',
         type: 'enum',
         enumOptions: ['draft', 'published'],
         required: true,
+      },
+      {
+        name: 'count',
+        type: 'number',
       },
     ]);
   });
