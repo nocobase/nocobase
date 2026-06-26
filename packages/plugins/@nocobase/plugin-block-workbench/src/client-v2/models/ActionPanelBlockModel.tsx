@@ -192,7 +192,7 @@ export class ActionPanelBlockModel extends BlockModel {
               {layout === WorkbenchLayout.Grid ? (
                 <ResponsiveSpace>
                   {this.mapSubModels('actions', (action) => {
-                    if (!isRenderableActionModel(action) || action.hidden) {
+                    if (!isRenderableActionModel(action) || (action.hidden && !isConfigMode)) {
                       return;
                     }
                     const { icon = 'SettingOutlined', color = token.colorPrimary, title } = action.props;
@@ -272,7 +272,7 @@ export class ActionPanelBlockModel extends BlockModel {
                   }
                 >
                   {this.mapSubModels('actions', (action) => {
-                    if (!isRenderableActionModel(action) || action.hidden) {
+                    if (!isRenderableActionModel(action) || (action.hidden && !isConfigMode)) {
                       return;
                     }
                     const { icon = 'SettingOutlined', color = token.colorPrimary, title } = action.props;
