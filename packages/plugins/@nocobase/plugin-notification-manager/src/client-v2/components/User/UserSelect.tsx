@@ -7,10 +7,20 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { QuestionCircleOutlined } from '@ant-design/icons';
 import { RemoteSelect } from '@nocobase/client-v2';
-import { VariableInput, type MetaTreeNode, useFlowContext } from '@nocobase/flow-engine';
-import { theme } from 'antd';
-import React, { useMemo } from 'react';
+import {
+  buildContextSelectorItems,
+  type ContextSelectorItem,
+  loadMetaTreeChildren,
+  type MetaTreeNode,
+  useFlowContext,
+  useResolvedMetaTree,
+  VariableTag,
+} from '@nocobase/flow-engine';
+import { useMemoizedFn } from 'ahooks';
+import { Button, Cascader, Space, theme, Tooltip } from 'antd';
+import React, { useMemo, useState } from 'react';
 import { FilterDynamicComponent, useWorkflowVariableOptions } from '@nocobase/plugin-workflow/client-v2';
 import { useNotificationTranslation } from '../../locale';
 
@@ -18,14 +28,13 @@ type UserOption = { id: number | string; nickname?: string };
 type ReceiverQueryValue = { filter?: Record<string, unknown> };
 type ReceiverValue = string | ReceiverQueryValue;
 type UsersListResponse = { data?: { data?: UserOption[] } };
+type MetaNodeTooltipOptions = { tooltip?: React.ReactNode };
 
 export type UserSelectProps = {
   value?: ReceiverValue | null;
   onChange?: (next: ReceiverValue) => void;
   variableOptions?: MetaTreeNode[];
 };
-
-const WORKFLOW_VARIABLE_REGEXP = /\{\{\s*([^{}]+?)\s*\}\}/g;
 
 type WorkflowFieldLike = {
   collectionName?: string;
@@ -63,6 +72,16 @@ function parseWorkflowValueToPath(value?: string) {
     return undefined;
   }
   return match[1].split('.');
+}
+
+function getMetaNodeTooltip(meta?: MetaTreeNode): React.ReactNode {
+  if (!meta) {
+    return undefined;
+  }
+
+  const metaWithTooltip = meta as MetaTreeNode & MetaNodeTooltipOptions;
+  const options = meta.options as MetaNodeTooltipOptions | undefined;
+  return metaWithTooltip.tooltip ?? options?.tooltip;
 }
 
 function createDisabledVariableRoot(name: string, title: string): MetaTreeNode {
@@ -107,13 +126,135 @@ function UserPickerInput(props: { value?: string; onChange?: (next: string) => v
   );
 }
 
+function WorkflowUserVariableInput(props: {
+  metaTree: MetaTreeNode[];
+  onChange?: (next: string) => void;
+  translate: (key: string) => string;
+  value?: string | null;
+}) {
+  const { metaTree, onChange, translate, value } = props;
+  const { token } = theme.useToken();
+  const { resolvedMetaTree } = useResolvedMetaTree(metaTree);
+  const [updateFlag, setUpdateFlag] = useState(0);
+  const selectedPath = useMemo(() => parseWorkflowValueToPath(value ?? '') ?? ['constant'], [value]);
+  const isVariableValue = selectedPath[0] !== 'constant';
+
+  const renderTooltipIcon = useMemoizedFn((title: React.ReactNode, label: React.ReactNode) => {
+    const labelText = typeof label === 'string' ? label : 'variable';
+    return (
+      <Tooltip title={typeof title === 'string' ? translate(title) : title} placement="right" destroyTooltipOnHide>
+        <QuestionCircleOutlined
+          aria-label={`${labelText} tooltip`}
+          style={{ marginLeft: token.marginXXS, color: token.colorTextDescription }}
+        />
+      </Tooltip>
+    );
+  });
+
+  const buildOptions = useMemoizedFn((nodes: MetaTreeNode[]): ContextSelectorItem[] => {
+    const attachLabels = (items: ContextSelectorItem[]): ContextSelectorItem[] =>
+      items.map((item) => {
+        const meta = item.meta;
+        const disabled = meta ? !!(typeof meta.disabled === 'function' ? meta.disabled() : meta.disabled) : false;
+        const disabledReason = meta
+          ? typeof meta.disabledReason === 'function'
+            ? meta.disabledReason()
+            : meta.disabledReason
+          : undefined;
+        const baseLabel = typeof item.label === 'string' ? translate(item.label) : item.label;
+        const tooltip = getMetaNodeTooltip(meta);
+        const label =
+          tooltip || disabled ? (
+            <span>
+              {baseLabel}
+              {renderTooltipIcon(tooltip || disabledReason || translate('This variable is not available'), baseLabel)}
+            </span>
+          ) : (
+            baseLabel
+          );
+
+        return {
+          ...item,
+          disabled,
+          label,
+          children: Array.isArray(item.children) ? attachLabels(item.children) : item.children,
+        };
+      });
+
+    return attachLabels(buildContextSelectorItems(nodes));
+  });
+
+  const options = useMemo(() => {
+    const refreshSeq = updateFlag;
+    return refreshSeq >= 0 ? buildOptions(resolvedMetaTree ?? []) : [];
+  }, [buildOptions, resolvedMetaTree, updateFlag]);
+
+  const handleLoadData = useMemoizedFn(async (selectedOptions: ContextSelectorItem[]) => {
+    const targetOption = selectedOptions[selectedOptions.length - 1];
+    const targetMetaNode = targetOption?.meta;
+    if (!targetOption || targetOption.children || targetOption.isLeaf || !targetMetaNode?.children) {
+      return;
+    }
+
+    targetOption.loading = true;
+    setUpdateFlag((prev) => prev + 1);
+    try {
+      const childNodes = await loadMetaTreeChildren(targetMetaNode);
+      targetMetaNode.children = childNodes;
+      const childOptions = buildOptions(childNodes);
+      targetOption.children = childOptions;
+      targetOption.isLeaf = !childOptions.length;
+    } finally {
+      targetOption.loading = false;
+      setUpdateFlag((prev) => prev + 1);
+    }
+  });
+
+  const handleVariableSelect = useMemoizedFn(
+    (_selectedValues: Array<string | number>, selectedOptions?: ContextSelectorItem[]) => {
+      const meta = selectedOptions?.[selectedOptions.length - 1]?.meta;
+      if (!meta) {
+        return;
+      }
+      onChange?.(meta.paths?.[0] === 'constant' ? '' : formatWorkflowPathToValue(meta));
+    },
+  );
+
+  const valueNode = isVariableValue ? (
+    <VariableTag
+      value={value ?? ''}
+      onClear={() => onChange?.('')}
+      metaTree={resolvedMetaTree ?? metaTree}
+      style={{ width: '100%', minWidth: 0 }}
+    />
+  ) : (
+    <UserPickerInput value={value ?? ''} onChange={onChange} />
+  );
+
+  return (
+    <Space.Compact style={{ display: 'flex', alignItems: 'flex-start', width: '100%' }}>
+      <div style={{ flex: 1, minWidth: 0 }}>{valueNode}</div>
+      <Cascader<ContextSelectorItem>
+        value={selectedPath}
+        options={options}
+        loadData={handleLoadData}
+        onChange={handleVariableSelect}
+      >
+        <Button type={selectedPath.length ? 'primary' : 'default'}>x</Button>
+      </Cascader>
+    </Space.Compact>
+  );
+}
+
 function WorkflowUserSelectInput(props: { value?: string | null; onChange?: (next: string) => void }) {
   const { value, onChange } = props;
   const { t } = useNotificationTranslation();
   const ctx = useFlowContext();
   const workflowVariableOptions = useWorkflowVariableOptions({ types: [isUserKeyField] });
+  const translateWorkflowLabel = useMemoizedFn(
+    (key: string) => ctx?.t?.(key, { ns: 'workflow', nsMode: 'fallback' }) ?? t(key),
+  );
   const metaTree = useMemo<MetaTreeNode[]>(() => {
-    const translateWorkflowLabel = (key: string) => ctx?.t?.(key, { ns: 'workflow', nsMode: 'fallback' }) ?? t(key);
     return [
       {
         name: 'constant',
@@ -123,45 +264,14 @@ function WorkflowUserSelectInput(props: { value?: string | null; onChange?: (nex
       },
       ...normalizeWorkflowVariableOptions(workflowVariableOptions, translateWorkflowLabel),
     ];
-  }, [ctx, t, workflowVariableOptions]);
-
-  const converters = useMemo(
-    () => ({
-      formatPathToValue(item?: MetaTreeNode) {
-        if (item?.paths?.[0] === 'constant') {
-          return '';
-        }
-        return formatWorkflowPathToValue(item);
-      },
-      parseValueToPath: parseWorkflowValueToPath,
-      variableRegExp: WORKFLOW_VARIABLE_REGEXP,
-      renderInputComponent(meta?: MetaTreeNode) {
-        if (meta?.paths?.[0] === 'constant') {
-          return UserPickerInput;
-        }
-        return null;
-      },
-      resolveValueFromPath(meta?: MetaTreeNode) {
-        if (meta?.paths?.[0] === 'constant') {
-          return '';
-        }
-        return undefined;
-      },
-      resolvePathFromValue(next?: string) {
-        return parseWorkflowValueToPath(next) ?? ['constant'];
-      },
-    }),
-    [],
-  );
+  }, [translateWorkflowLabel, workflowVariableOptions]);
 
   return (
-    <VariableInput
+    <WorkflowUserVariableInput
       value={value ?? ''}
       onChange={onChange}
       metaTree={metaTree}
-      converters={converters}
-      clearValue=""
-      style={{ width: '100%' }}
+      translate={translateWorkflowLabel}
     />
   );
 }

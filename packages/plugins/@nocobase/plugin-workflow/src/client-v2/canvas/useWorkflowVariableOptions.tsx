@@ -54,9 +54,10 @@ const SCOPES_ROOT = '$scopes';
  * A system variable as held by either runtime's `systemVariables` registry.
  * v2 stores `{ key, label(string template) }`; v1 stores
  * `{ key, label(string OR already-rendered JSX), value }` (the JSX bakes in a
- * tooltip icon). `useSystemScope` reduces either to a plain string title.
+ * tooltip icon). `useSystemScope` reduces either to a plain string title and stores
+ * optional tooltip text under the existing `MetaTreeNode.options` bag.
  */
-type SystemVariableLike = { key: string; label: React.ReactNode };
+type SystemVariableLike = { key: string; label: React.ReactNode; tooltip?: React.ReactNode };
 
 /**
  * Coerce a React node to plain text for use as a `MetaTreeNode.title` (which is a
@@ -79,6 +80,25 @@ function reactNodeToPlainText(node: React.ReactNode): string {
     return reactNodeToPlainText((node.props as { children?: React.ReactNode })?.children);
   }
   return '';
+}
+
+function extractTooltipFromReactNode(node: React.ReactNode): string {
+  if (node == null || typeof node === 'boolean') {
+    return '';
+  }
+  if (Array.isArray(node)) {
+    return node.map(extractTooltipFromReactNode).find(Boolean) ?? '';
+  }
+  if (!React.isValidElement(node)) {
+    return '';
+  }
+
+  const props = node.props as { children?: React.ReactNode; title?: React.ReactNode };
+  if (props.title != null && typeof node.type !== 'string') {
+    return reactNodeToPlainText(props.title);
+  }
+
+  return extractTooltipFromReactNode(props.children);
 }
 
 /**
@@ -245,11 +265,17 @@ function useSystemScope(): MetaTreeNode | null {
     // them; v1 labels may be already-rendered JSX — coerce to a plain string for the title (the picker renders
     // strings).
     const label = typeof item.label === 'string' ? t(item.label) : reactNodeToPlainText(item.label);
+    const rawTooltip = item.tooltip ?? extractTooltipFromReactNode(item.label);
+    const tooltip =
+      typeof rawTooltip === 'string' || typeof rawTooltip === 'number'
+        ? t(String(rawTooltip))
+        : reactNodeToPlainText(rawTooltip);
     return {
       name: item.key,
       title: label,
       type: '',
       paths: [SYSTEM_ROOT, item.key],
+      ...(tooltip ? { options: { tooltip } } : {}),
     };
   });
   return {

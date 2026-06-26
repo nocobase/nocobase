@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -48,6 +48,21 @@ vi.mock('../../../locale', () => ({
 
 import { UserSelect } from '../UserSelect';
 
+async function openVariableMenu() {
+  fireEvent.click(await screen.findByRole('button', { name: 'x' }));
+}
+
+function getRootMenuItemTexts() {
+  return Array.from(document.querySelectorAll('.ant-cascader-menu:first-child .ant-cascader-menu-item-content'))
+    .map((item) => item.textContent?.trim())
+    .filter(Boolean);
+}
+
+function getMenuItem(text: string) {
+  const content = screen.getByText(text);
+  return content.closest('.ant-cascader-menu-item') as HTMLElement;
+}
+
 describe('UserSelect', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -73,7 +88,7 @@ describe('UserSelect', () => {
     expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
   });
 
-  it('restricts workflow receiver variables to user id fields', () => {
+  it('restricts workflow receiver variables to user id fields', async () => {
     holder.ctx = {
       api: {
         resource: () => ({
@@ -82,7 +97,8 @@ describe('UserSelect', () => {
       },
     };
 
-    render(<UserSelect value="{{ $jobsMapByNodeKey.n1.userId }}" onChange={() => undefined} variableOptions={[]} />);
+    render(<UserSelect value="" onChange={() => undefined} variableOptions={[]} />);
+    expect(await screen.findByRole('combobox')).toBeInTheDocument();
 
     expect(workflow.useWorkflowVariableOptions).toHaveBeenCalledWith({ types: [expect.any(Function)] });
 
@@ -97,7 +113,7 @@ describe('UserSelect', () => {
     expect(isUserKeyField({ isForeignKey: true, target: 'roles' })).toBe(false);
   });
 
-  it('aligns the receiver variable menu roots with the workflow picker order', () => {
+  it('aligns the receiver variable menu roots with the workflow picker order', async () => {
     workflow.useWorkflowVariableOptions.mockReturnValue([
       {
         name: '$context',
@@ -131,25 +147,24 @@ describe('UserSelect', () => {
 
     render(<UserSelect value="{{ $context.data }}" onChange={() => undefined} />);
 
-    const metaTree = holder.variableInput.mock.calls[0]?.[0]?.metaTree;
-    expect(metaTree.map((node) => node.title)).toEqual([
-      'Constant',
-      'Scope variables',
-      'Node result',
-      'Trigger variables',
-      'System variables',
-      'Variables and secrets',
-    ]);
-    expect(metaTree[0]).toEqual(expect.objectContaining({ name: 'constant', paths: ['constant'] }));
-    expect(metaTree[1]).toEqual(expect.objectContaining({ name: '$scopes', disabled: true, paths: ['$scopes'] }));
-    expect(metaTree[2]).toEqual(
-      expect.objectContaining({ name: '$jobsMapByNodeKey', disabled: true, paths: ['$jobsMapByNodeKey'] }),
-    );
-    expect(metaTree[3]).toEqual(expect.objectContaining({ name: '$context' }));
-    expect(metaTree[3].disabled).toBeUndefined();
+    await openVariableMenu();
+
+    await waitFor(() => {
+      expect(getRootMenuItemTexts()).toEqual([
+        'Constant',
+        'Scope variables',
+        'Node result',
+        'Trigger variables',
+        'System variables',
+        'Variables and secrets',
+      ]);
+    });
+    expect(getMenuItem('Scope variables').className).toContain('ant-cascader-menu-item-disabled');
+    expect(getMenuItem('Node result').className).toContain('ant-cascader-menu-item-disabled');
+    expect(getMenuItem('Trigger variables').className).not.toContain('ant-cascader-menu-item-disabled');
   });
 
-  it('keeps available scope and node-result roots selectable', () => {
+  it('keeps available scope and node-result roots selectable', async () => {
     workflow.useWorkflowVariableOptions.mockReturnValue([
       {
         name: '$context',
@@ -190,14 +205,63 @@ describe('UserSelect', () => {
 
     render(<UserSelect value="{{ $context.data }}" onChange={() => undefined} />);
 
-    const metaTree = holder.variableInput.mock.calls[0]?.[0]?.metaTree;
-    expect(metaTree.map((node) => node.name)).toEqual(['constant', '$scopes', '$jobsMapByNodeKey', '$context']);
-    expect(metaTree[1]).toEqual(expect.objectContaining({ name: '$scopes' }));
-    expect(metaTree[1].disabled).toBeUndefined();
-    expect(metaTree[1].children).toEqual([expect.objectContaining({ name: 'loop', paths: ['$scopes', 'loop'] })]);
-    expect(metaTree[2]).toEqual(expect.objectContaining({ name: '$jobsMapByNodeKey' }));
-    expect(metaTree[2].disabled).toBeUndefined();
-    expect(metaTree[2].children).toEqual([expect.objectContaining({ name: 'n1', paths: ['$jobsMapByNodeKey', 'n1'] })]);
+    await openVariableMenu();
+
+    await waitFor(() => {
+      expect(getRootMenuItemTexts()).toEqual(['Constant', 'Scope variables', 'Node result', 'Trigger variables']);
+    });
+    expect(getMenuItem('Scope variables').className).not.toContain('ant-cascader-menu-item-disabled');
+    expect(getMenuItem('Node result').className).not.toContain('ant-cascader-menu-item-disabled');
+
+    fireEvent.click(screen.getByText('Scope variables'));
+    expect(await screen.findByText('Loop item')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText('Node result'));
+    expect(await screen.findByText('Previous node')).toBeInTheDocument();
+  });
+
+  it('shows system variable tooltip in the receiver menu without changing the saved value', async () => {
+    const onChange = vi.fn();
+    workflow.useWorkflowVariableOptions.mockReturnValue([
+      {
+        name: '$system',
+        title: 'System variables',
+        type: '',
+        paths: ['$system'],
+        children: [
+          {
+            name: 'instanceId',
+            title: 'Instance ID',
+            type: '',
+            paths: ['$system', 'instanceId'],
+            options: { tooltip: 'The ID of current server instance' },
+          },
+        ],
+      },
+    ]);
+    holder.ctx = {
+      t: (key: string) => key,
+      api: {
+        resource: () => ({
+          list: vi.fn().mockResolvedValue({ data: { data: [] } }),
+        }),
+      },
+    };
+
+    render(<UserSelect value="" onChange={onChange} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'x' }));
+    fireEvent.click(await screen.findByText('System variables'));
+
+    expect(await screen.findByText('Instance ID')).toBeInTheDocument();
+    const tooltipIcon = screen.getByLabelText('Instance ID tooltip');
+    expect(tooltipIcon).toBeInTheDocument();
+
+    fireEvent.mouseEnter(tooltipIcon);
+    expect(await screen.findByText('The ID of current server instance')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText('Instance ID'));
+    expect(onChange).toHaveBeenLastCalledWith('{{$system.instanceId}}');
   });
 
   it('uses the workflow variable-aware filter for query receiver mode', () => {
