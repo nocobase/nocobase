@@ -364,6 +364,14 @@ function decodeProviderPayload(payload: unknown) {
   return String(payload ?? '');
 }
 
+function resolveProviderPayloadBody(payload: unknown, payloadText: string) {
+  if (typeof payload === 'string' || Buffer.isBuffer(payload) || payload instanceof Uint8Array) {
+    return payload.length ? payload : undefined;
+  }
+
+  return payloadText || undefined;
+}
+
 export async function dispatchToProvider(
   ctx: DispatchContext,
   provider: Provider,
@@ -437,7 +445,7 @@ export async function dispatchToProvider(
     return;
   }
 
-  ctx.body = payload.length ? payload : undefined;
+  ctx.body = resolveProviderPayloadBody(payload, payloadText);
 }
 
 export async function dispatchCurrentRequestToProvider(

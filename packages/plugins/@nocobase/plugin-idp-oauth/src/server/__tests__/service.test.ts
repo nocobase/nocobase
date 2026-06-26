@@ -243,6 +243,10 @@ describe('plugin-idp-oauth > IdpOauthService', () => {
     expect(configuration.routes.code_verification).toBe('/idpOAuth/device');
     expect(configuration.features.deviceFlow.enabled).toBe(true);
     expect(service.getFrontendDevicePath('main')).toBe('/idpOAuth/device');
+
+    const deviceRenderCtx = {} as any;
+    await configuration.features.deviceFlow.userCodeInputSource(deviceRenderCtx, '<form></form>');
+    expect(deviceRenderCtx.body).toContain('<html lang="en">');
   });
 
   test('should prefer the most specific resource config for nested paths', () => {

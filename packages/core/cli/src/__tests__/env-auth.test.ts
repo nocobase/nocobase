@@ -61,16 +61,16 @@ async function withOauthRetryDelay(delayMs: string, run: () => Promise<void>) {
 }
 
 async function withOauthDevicePollDelay(delayMs: string, run: () => Promise<void>) {
-  const previous = process.env.NOCOBASE_CLI_OAUTH_DEVICE_POLL_INTERVAL_MS;
-  process.env.NOCOBASE_CLI_OAUTH_DEVICE_POLL_INTERVAL_MS = delayMs;
+  const previous = process.env.NB_CLI_OAUTH_DEVICE_POLL_INTERVAL_MS;
+  process.env.NB_CLI_OAUTH_DEVICE_POLL_INTERVAL_MS = delayMs;
 
   try {
     await run();
   } finally {
     if (previous === undefined) {
-      delete process.env.NOCOBASE_CLI_OAUTH_DEVICE_POLL_INTERVAL_MS;
+      delete process.env.NB_CLI_OAUTH_DEVICE_POLL_INTERVAL_MS;
     } else {
-      process.env.NOCOBASE_CLI_OAUTH_DEVICE_POLL_INTERVAL_MS = previous;
+      process.env.NB_CLI_OAUTH_DEVICE_POLL_INTERVAL_MS = previous;
     }
   }
 }

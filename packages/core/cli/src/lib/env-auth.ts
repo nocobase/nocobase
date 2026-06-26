@@ -229,11 +229,11 @@ function getOauthFetchRetryDelays() {
 }
 
 function getDevicePollIntervalMs(intervalSeconds?: number) {
-  const override = process.env.NOCOBASE_CLI_OAUTH_DEVICE_POLL_INTERVAL_MS;
+  const override = process.env.NB_CLI_OAUTH_DEVICE_POLL_INTERVAL_MS;
   if (override !== undefined) {
     const delay = Number(override);
     if (Number.isFinite(delay) && delay >= 0) {
-      return delay;
+      return Math.max(1, delay);
     }
   }
 

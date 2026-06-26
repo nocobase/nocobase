@@ -230,4 +230,43 @@ describe('plugin-idp-oauth > provider dispatch', () => {
     });
     expect(provider.callback).not.toHaveBeenCalled();
   });
+
+  test('should handle provider responses without raw payload', async () => {
+    vi.resetModules();
+    const injectMock = vi.fn(async () => ({
+      statusCode: 204,
+      headers: {},
+      rawPayload: undefined,
+    }));
+    vi.doMock('light-my-request', () => ({
+      default: injectMock,
+    }));
+    const { dispatchToProvider: dispatchWithMockedRequest } = await import('../provider-dispatch');
+    const provider = {
+      issuer: 'http://127.0.0.1:13000/api',
+      callback: vi.fn(() => vi.fn()),
+    } as any;
+    const ctx = {
+      method: 'GET',
+      path: '/api/idpOAuth/device',
+      headers: {},
+      request: {},
+      get: vi.fn(() => ''),
+      set: vi.fn(),
+      logger: {
+        debug: vi.fn(),
+        warn: vi.fn(),
+      },
+    } as any;
+
+    try {
+      await dispatchWithMockedRequest(ctx, provider, '/idpOAuth/device', service);
+    } finally {
+      vi.doUnmock('light-my-request');
+      vi.resetModules();
+    }
+
+    expect(ctx.status).toBe(204);
+    expect(ctx.body).toBeUndefined();
+  });
 });
