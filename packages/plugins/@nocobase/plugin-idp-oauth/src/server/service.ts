@@ -346,6 +346,14 @@ export class IdpOauthService {
     return `/apps/${appName}/idp-oauth/error`;
   }
 
+  getFrontendDevicePath(appName: string, issuerPath = this.getIssuerPath(appName)) {
+    if (!this.shouldUseSubAppPublicPrefix(appName, issuerPath)) {
+      return '/idpOAuth/device';
+    }
+
+    return `/apps/${appName}/idpOAuth/device`;
+  }
+
   getProviderContext(ctx: any): ProviderContext {
     const appName = ctx.app?.name || this.app.name;
     const origin = this.getOrigin(ctx);

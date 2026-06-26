@@ -181,6 +181,22 @@ export function rewriteProviderLocationHeader(ctx: DispatchContext, service: Idp
   return rewriteProviderUrl(ctx, service, location);
 }
 
+function rewriteDeviceVerificationUrl(ctx: DispatchContext, service: IdpOauthService, value: string) {
+  const { appName, origin, issuerPath } = service.getProviderContext(ctx);
+  const publicOriginUrl = new URL(origin);
+  const publicDevicePath = service.getFrontendDevicePath(appName, issuerPath);
+
+  try {
+    const url = value.startsWith('/') ? new URL(value, origin) : new URL(value);
+    url.protocol = publicOriginUrl.protocol;
+    url.host = publicOriginUrl.host;
+    url.pathname = publicDevicePath;
+    return url.toString();
+  } catch (error) {
+    return value;
+  }
+}
+
 function getFrontendInteractionCookiePath(originalPath: string) {
   const match = originalPath.match(/^\/(?:apps\/([^/]+)\/)?idp-oauth\/interaction\/([^/]+)$/);
   if (!match) {
@@ -266,14 +282,25 @@ function rewriteProviderJsonBody(ctx: DispatchContext, service: IdpOauthService,
   }
 
   if (typeof body.verification_uri === 'string') {
-    body.verification_uri = rewriteProviderUrl(ctx, service, body.verification_uri);
+    body.verification_uri = rewriteDeviceVerificationUrl(ctx, service, body.verification_uri);
   }
 
   if (typeof body.verification_uri_complete === 'string') {
-    body.verification_uri_complete = rewriteProviderUrl(ctx, service, body.verification_uri_complete);
+    body.verification_uri_complete = rewriteDeviceVerificationUrl(ctx, service, body.verification_uri_complete);
   }
 
   return body;
+}
+
+function rewriteProviderHtmlBody(ctx: DispatchContext, service: IdpOauthService, html: string) {
+  return html.replace(/\b(action|href)=(["'])(.*?)\2/g, (match, attribute: string, quote: string, value: string) => {
+    const rewritten = rewriteProviderUrl(ctx, service, value);
+    if (rewritten === value) {
+      return match;
+    }
+
+    return `${attribute}=${quote}${rewritten}${quote}`;
+  });
 }
 
 function rewriteProviderResponseHeaders(
@@ -396,6 +423,11 @@ export async function dispatchToProvider(
       });
       // fall through and return raw payload
     }
+  }
+
+  if (payloadText && contentType.includes('text/html')) {
+    ctx.body = rewriteProviderHtmlBody(ctx, service, payloadText);
+    return;
   }
 
   ctx.body = payload.length ? payload : undefined;

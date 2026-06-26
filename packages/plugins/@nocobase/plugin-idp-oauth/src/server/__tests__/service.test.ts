@@ -204,6 +204,7 @@ describe('plugin-idp-oauth > IdpOauthService', () => {
     expect(configuration.routes.device_authorization).toBe('/idpOAuth/device/auth');
     expect(configuration.routes.code_verification).toBe('/idpOAuth/device');
     expect(configuration.features.deviceFlow.enabled).toBe(true);
+    expect(service.getFrontendDevicePath('main')).toBe('/idpOAuth/device');
   });
 
   test('should prefer the most specific resource config for nested paths', () => {

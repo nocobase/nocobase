@@ -54,6 +54,7 @@ const service = {
     issuer: 'http://127.0.0.1:13000/api',
     issuerPath: '/api',
   }),
+  getFrontendDevicePath: () => '/idpOAuth/device',
 } as any;
 
 describe('plugin-idp-oauth > provider dispatch', () => {
@@ -120,7 +121,7 @@ describe('plugin-idp-oauth > provider dispatch', () => {
     expect(provider.callback).toHaveBeenCalledTimes(1);
   });
 
-  test('should rewrite device verification URLs to the public issuer path', async () => {
+  test('should rewrite device verification URLs to the frontend device path', async () => {
     const provider = {
       issuer: 'http://127.0.0.1:13000/api',
       callback: vi.fn(() => (_req: any, res: any) => {
@@ -142,9 +143,38 @@ describe('plugin-idp-oauth > provider dispatch', () => {
 
     expect(ctx.status).toBe(200);
     expect(ctx.body).toMatchObject({
-      verification_uri: 'http://127.0.0.1:13000/api/idpOAuth/device',
-      verification_uri_complete: 'http://127.0.0.1:13000/api/idpOAuth/device?user_code=XGNB-CXRZ',
+      verification_uri: 'http://127.0.0.1:13000/idpOAuth/device',
+      verification_uri_complete: 'http://127.0.0.1:13000/idpOAuth/device?user_code=XGNB-CXRZ',
     });
+  });
+
+  test('should rewrite provider HTML form actions to the public issuer path', async () => {
+    const provider = {
+      issuer: 'http://127.0.0.1:13000/api',
+      callback: vi.fn(() => (_req: any, res: any) => {
+        res.statusCode = 200;
+        res.setHeader('content-type', 'text/html; charset=utf-8');
+        res.end('<form method="post" action="http://localhost:56187/idpOAuth/device"><button>Continue</button></form>');
+      }),
+    } as any;
+    const ctx = {
+      method: 'GET',
+      path: '/api/idpOAuth/device',
+      querystring: 'user_code=XGNB-CXRZ',
+      headers: {},
+      request: {},
+      get: vi.fn(() => ''),
+      set: vi.fn(),
+      logger: {
+        debug: vi.fn(),
+        warn: vi.fn(),
+      },
+    } as any;
+
+    await dispatchToProvider(ctx, provider, '/idpOAuth/device', service);
+
+    expect(ctx.status).toBe(200);
+    expect(ctx.body).toContain('action="http://127.0.0.1:13000/api/idpOAuth/device"');
   });
 
   test('should reject dynamic registration with reserved app client id prefix', async () => {
