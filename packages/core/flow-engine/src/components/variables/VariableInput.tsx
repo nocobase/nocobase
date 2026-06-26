@@ -192,7 +192,7 @@ const VariableInputComponent: React.FC<VariableInputProps> = ({
     };
 
     restoreFromValue();
-  }, [resolvedMetaTree, innerValue, resolvePathFromValue, currentMetaTreeNode]);
+  }, [resolvedMetaTree, innerValue, resolvePathFromValue, currentMetaTreeNode, value]);
 
   const ValueComponent = useMemo(() => {
     const Component = renderInputComponent?.(resolvedMetaTreeNode);
@@ -356,6 +356,7 @@ const VariableInputComponent: React.FC<VariableInputProps> = ({
       <FlowContextSelector
         metaTree={resolvedMetaTree}
         value={innerValue}
+        active={isVariableValue(innerValue)}
         onChange={handleVariableSelect}
         parseValueToPath={resolvePathFromValue}
         formatPathToValue={resolveValueFromPath}

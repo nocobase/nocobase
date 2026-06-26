@@ -67,6 +67,23 @@ describe('FlowContextSelector', () => {
     });
   });
 
+  it('uses explicit active=false to keep the default trigger unhighlighted even when value parses to a path', async () => {
+    const flowContext = createTestFlowContext();
+
+    render(
+      <TestFlowContextWrapper context={flowContext}>
+        <FlowContextSelector
+          metaTree={() => flowContext.getPropertyMetaTree()}
+          value="{{ ctx.user.name }}"
+          active={false}
+        />
+      </TestFlowContextWrapper>,
+    );
+
+    const button = await screen.findByRole('button');
+    expect(button.className).not.toContain('ant-btn-primary');
+  });
+
   it('should support function metaTree loading', async () => {
     const flowContext = createTestFlowContext();
     const metaTreeFn = vi.fn(() => flowContext.getPropertyMetaTree());
@@ -405,10 +422,13 @@ describe('FlowContextSelector', () => {
 
     const clearIcon = document.querySelector('.ant-input-clear-icon') as HTMLElement | null;
     expect(clearIcon).toBeInTheDocument();
+    if (!clearIcon) {
+      throw new Error('Expected inline clear icon to be present');
+    }
 
-    fireEvent.mouseDown(clearIcon!);
-    fireEvent.mouseUp(clearIcon!);
-    fireEvent.click(clearIcon!);
+    fireEvent.mouseDown(clearIcon);
+    fireEvent.mouseUp(clearIcon);
+    fireEvent.click(clearIcon);
 
     await waitFor(() => {
       expect(onChange).toHaveBeenCalledWith('', undefined);

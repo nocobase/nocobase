@@ -64,6 +64,7 @@ describe('TypedVariableInput - constant rendering', () => {
       const item = screen.getByText('True');
       expect(item).toBeInTheDocument();
     });
+    expect(screen.getByRole('button', { name: 'variable-switcher' }).className).not.toContain('ant-btn-primary');
   });
 
   it('renders the Null placeholder when value=null and nullable=true', async () => {
@@ -77,6 +78,7 @@ describe('TypedVariableInput - constant rendering', () => {
     const nullInput = await screen.findByPlaceholderText('<Null>');
     expect(nullInput).toBeInTheDocument();
     expect(nullInput.getAttribute('readonly')).not.toBeNull();
+    expect(screen.getByRole('button', { name: 'variable-switcher' }).className).not.toContain('ant-btn-primary');
   });
 
   it('defaults undefined to the first constant type', async () => {
