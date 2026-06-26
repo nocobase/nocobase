@@ -120,6 +120,81 @@ describe('PluginFormDraftsClient v2', () => {
     expect(db.createObjectStore).toHaveBeenCalledWith('drafts', { keyPath: 'uid' });
   });
 
+  it('saves only runtime user-edited values when runtime is available', async () => {
+    const engine = new FlowEngine();
+    const model = engine.createModel<FlowModel>({ use: 'FlowModel', uid: 'form-uid' });
+    const ctx = new FlowRuntimeContext(model, 'draftCreateFlow');
+    const draftCreateFlow = FormBlockModel.globalFlowRegistry.getFlow('draftCreateFlow');
+    const draftSaveFlow = FormBlockModel.globalFlowRegistry.getFlow('draftSaveFlow');
+    const formValues = {
+      title: 'Manual title',
+      fixed: 'Fixed auto value',
+      roles: [{ roleName: 'Manual role', fixedRoleName: 'Fixed role' }],
+    };
+    const userEditedValues = {
+      title: 'Manual title',
+      roles: [{ roleName: 'Manual role' }],
+    };
+    const getFieldsValue = vi.fn(() => formValues);
+    const getUserEditedValuesSnapshot = vi.fn(() => userEditedValues);
+
+    Object.assign(model, { formValueRuntime: { getUserEditedValuesSnapshot } });
+    model.context.defineProperty('resource', {
+      value: {
+        getFilterByTk: () => 123,
+      },
+    });
+    model.context.defineProperty('form', {
+      value: {
+        getFieldsValue,
+        resetFields: vi.fn(),
+      },
+    });
+    model.context.defineMethod('setFormValues', vi.fn());
+    model.context.defineMethod('t', (key: string) => key);
+
+    await draftCreateFlow?.steps.createDraft.handler?.(ctx, { enabled: true });
+    await draftSaveFlow?.steps.saveDraft.handler?.(ctx, {});
+
+    expect(getUserEditedValuesSnapshot).toHaveBeenCalled();
+    expect(getFieldsValue).not.toHaveBeenCalled();
+    expect(await ctx.draftRepository.get()).toEqual({ uid: 'form-uid:123', values: userEditedValues });
+  });
+
+  it('saves an empty draft without showing a saved alert when there are no runtime user edits', async () => {
+    const engine = new FlowEngine();
+    const model = engine.createModel<FlowModel>({ use: 'FlowModel', uid: 'form-uid' });
+    const ctx = new FlowRuntimeContext(model, 'draftCreateFlow');
+    const draftCreateFlow = FormBlockModel.globalFlowRegistry.getFlow('draftCreateFlow');
+    const draftSaveFlow = FormBlockModel.globalFlowRegistry.getFlow('draftSaveFlow');
+    const setDecoratorProps = vi.fn();
+    const getFieldsValue = vi.fn(() => ({ fixed: 'Fixed auto value' }));
+    const getUserEditedValuesSnapshot = vi.fn(() => ({}));
+
+    Object.assign(model, { setDecoratorProps, formValueRuntime: { getUserEditedValuesSnapshot } });
+    model.context.defineProperty('resource', {
+      value: {
+        getFilterByTk: () => 123,
+      },
+    });
+    model.context.defineProperty('form', {
+      value: {
+        getFieldsValue,
+        resetFields: vi.fn(),
+      },
+    });
+    model.context.defineMethod('setFormValues', vi.fn());
+    model.context.defineMethod('t', (key: string) => key);
+
+    await draftCreateFlow?.steps.createDraft.handler?.(ctx, { enabled: true });
+    setDecoratorProps.mockClear();
+    await draftSaveFlow?.steps.saveDraft.handler?.(ctx, {});
+
+    expect(await ctx.draftRepository.get()).toEqual({ uid: 'form-uid:123', values: {} });
+    expect(getFieldsValue).not.toHaveBeenCalled();
+    expect(setDecoratorProps).not.toHaveBeenCalled();
+  });
+
   it('restores an existing non-empty draft as user-edited form values', async () => {
     const engine = new FlowEngine();
     const model = engine.createModel<FlowModel>({ use: 'FlowModel', uid: 'form-uid' });

@@ -142,6 +142,39 @@ export class FormValueRuntime {
     return this.getForm().getFieldsValue(true);
   }
 
+  getUserEditedValuesSnapshot(): Record<string, unknown> {
+    const snapshot = this.getFormValuesSnapshot();
+    if (!snapshot || typeof snapshot !== 'object') {
+      return {};
+    }
+
+    const values: Record<string, unknown> = {};
+    const pathKeys = Array.from(this.userEditedSet).sort(
+      (a, b) => pathKeyToNamePath(a).length - pathKeyToNamePath(b).length,
+    );
+
+    for (const pathKey of pathKeys) {
+      const lastWrite = this.findLatestWriteMeta(pathKey);
+      if (lastWrite && lastWrite.source !== 'user') {
+        continue;
+      }
+
+      const namePath = pathKeyToNamePath(pathKey);
+      if (!namePath.length || !_.has(snapshot, namePath as any)) {
+        continue;
+      }
+
+      const value = _.get(snapshot, namePath as any);
+      if (typeof value === 'undefined') {
+        continue;
+      }
+
+      _.set(values, namePath as any, this.toMirrorSnapshot(value));
+    }
+
+    return values;
+  }
+
   private toMirrorSnapshot(value: any) {
     const raw = isObservable(value) ? toJS(value) : value;
     return _.cloneDeepWith(raw, (item) => {
@@ -1451,6 +1484,25 @@ export class FormValueRuntime {
       return key;
     }
     return null;
+  }
+
+  private findLatestWriteMeta(pathKey: string): FormValueWriteMeta | undefined {
+    let latest: FormValueWriteMeta | undefined;
+    const namePath = pathKeyToNamePath(pathKey);
+    const prefix: NamePath = [];
+
+    for (let i = 0; i < namePath.length; i++) {
+      prefix.push(namePath[i]);
+      const meta = this.lastWriteMetaByPathKey.get(namePathToPathKey(prefix as any));
+      if (!meta) {
+        continue;
+      }
+      if (!latest || meta.writeSeq >= latest.writeSeq) {
+        latest = meta;
+      }
+    }
+
+    return latest;
   }
 
   private isDescendantPathKey(candidateKey: string, parentKey: string) {

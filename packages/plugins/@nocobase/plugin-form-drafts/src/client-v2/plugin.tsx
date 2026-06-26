@@ -24,6 +24,7 @@ type DecoratedFormModel = {
   uid: string;
   context: FlowModelContext;
   formValueRuntime?: {
+    getUserEditedValuesSnapshot?: () => FormDraftValues;
     resetAfterFormReset?: () => void;
   };
   setDecoratorProps?: (props: { beforeContent: React.ReactNode | null }) => void;
@@ -177,7 +178,12 @@ FormBlockModel.registerFlow({
         if (draftCtx.draftRepository.disabled) {
           return;
         }
-        await draftCtx.draftRepository.save(draftCtx.form.getFieldsValue());
+        const values =
+          draftCtx.model.formValueRuntime?.getUserEditedValuesSnapshot?.() ?? draftCtx.form.getFieldsValue();
+        await draftCtx.draftRepository.save(values);
+        if (Object.keys(values).length === 0) {
+          return;
+        }
         draftCtx.showDraftAlert(SAVED_DRAFT_MESSAGE);
       },
     },
