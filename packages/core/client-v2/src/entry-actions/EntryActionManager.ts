@@ -41,6 +41,7 @@ type AppPortalsApiClientLike = {
 };
 
 type ProviderRecord = {
+  name: string;
   scope: EntryActionScope;
   provider: EntryActionProvider;
   sort: number;
@@ -60,6 +61,7 @@ export class EntryActionManager {
 
   register(name: string, options: { scope: EntryActionScope; provider: EntryActionProvider; sort?: number }) {
     this.providers.set(name, {
+      name,
       scope: options.scope,
       provider: options.provider,
       sort: options.sort ?? 0,
@@ -75,7 +77,16 @@ export class EntryActionManager {
       const providers = [...this.providers.values()]
         .filter((item) => item.scope === scope)
         .sort((a, b) => a.sort - b.sort);
-      const groups = await Promise.all(providers.map((item) => item.provider(ctx)));
+      const groups = await Promise.all(
+        providers.map(async (item) => {
+          try {
+            return await item.provider(ctx);
+          } catch (error) {
+            console.error(`[NocoBase] Failed to load entry action provider "${item.name}".`, error);
+            return [];
+          }
+        }),
+      );
       return groups.flat();
     };
   }
