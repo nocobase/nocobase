@@ -141,6 +141,28 @@ test('inspectSelfStatus recognizes pnpm-global installs', async () => {
   expect(status.updateBlockedReason).toBeUndefined();
 });
 
+test('inspectSelfStatus recognizes pnpm-global installs from custom global roots', async () => {
+  const customPnpmGlobalRoot = path.join(path.sep, 'opt', 'custom-pnpm-root');
+  const commandOutputFn = createCommandOutputFn({
+    distTags: { latest: '2.1.0', beta: '2.1.0-beta.18' },
+    pnpmGlobalBin: path.join(path.sep, 'opt', 'custom-pnpm-bin'),
+    pnpmGlobalRoot: customPnpmGlobalRoot,
+  });
+
+  const status = await inspectSelfStatus({
+    packageRoot: path.join(customPnpmGlobalRoot, 'node_modules', '@nocobase', 'cli'),
+    currentVersion: '2.1.0-beta.17',
+    channel: 'auto',
+    commandOutputFn,
+  });
+
+  expect(status.installMethod).toBe('pnpm-global');
+  expect(status.latestVersion).toBe('2.1.0-beta.18');
+  expect(status.updateAvailable).toBe(true);
+  expect(status.updatable).toBe(true);
+  expect(status.updateBlockedReason).toBeUndefined();
+});
+
 test('inspectSelfStatus recognizes yarn-global installs', async () => {
   const commandOutputFn = createCommandOutputFn({
     distTags: { latest: '2.1.0', beta: '2.1.0-beta.18' },

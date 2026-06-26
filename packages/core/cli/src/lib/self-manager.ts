@@ -217,6 +217,7 @@ function detectInstallMethod(
     return 'pnpm-global';
   }
 
+  // Best-effort fallback for environments where pnpm probes are unavailable.
   if (isPnpmGlobalPath(packageRoot)) {
     return 'pnpm-global';
   }
