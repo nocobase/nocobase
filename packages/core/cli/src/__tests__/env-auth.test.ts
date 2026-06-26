@@ -24,6 +24,7 @@ import {
   isOauthAccessTokenExpired,
   resolveServerRequestTarget,
   resolveAccessToken,
+  setOauthBrowserOpenerForTests,
 } from '../lib/env-auth.js';
 
 async function withTempCliHome(run: () => Promise<void>) {
@@ -295,6 +296,11 @@ test('authenticateEnvWithOauth uses device flow when the server supports it', as
 
       const originalFetch = globalThis.fetch;
       let tokenAttempts = 0;
+      const openedUrls: string[] = [];
+      setOauthBrowserOpenerForTests(async (url) => {
+        openedUrls.push(url);
+        return { opened: true };
+      });
       globalThis.fetch = (async (input: string | URL | Request, init?: RequestInit) => {
         const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
 
@@ -341,8 +347,8 @@ test('authenticateEnvWithOauth uses device flow when the server supports it', as
             JSON.stringify({
               device_code: 'device-code-1',
               user_code: 'ABCD-EFGH',
-              verification_uri: 'http://localhost:13000/api/idpOAuth/device',
-              verification_uri_complete: 'http://localhost:13000/api/idpOAuth/device?user_code=ABCD-EFGH',
+              verification_uri: 'http://localhost:13000/idpOAuth/device',
+              verification_uri_complete: 'http://localhost:13000/idpOAuth/device?user_code=ABCD-EFGH',
               expires_in: 600,
               interval: 5,
             }),
@@ -392,8 +398,10 @@ test('authenticateEnvWithOauth uses device flow when the server supports it', as
           resource: 'http://localhost:13000/api/',
         });
         expect(tokenAttempts).toBe(2);
+        expect(openedUrls).toEqual(['http://localhost:13000/idpOAuth/device?user_code=ABCD-EFGH']);
       } finally {
         globalThis.fetch = originalFetch;
+        setOauthBrowserOpenerForTests();
       }
     });
   });

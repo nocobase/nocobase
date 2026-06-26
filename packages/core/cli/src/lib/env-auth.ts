@@ -443,6 +443,8 @@ type BrowserOpenTarget = {
   cleanup?: () => Promise<void>;
 };
 
+type BrowserOpener = (url: string) => Promise<{ opened: boolean; cleanup?: () => Promise<void> }>;
+
 function buildOauthPage(options: {
   title: string;
   cardExtra?: string;
@@ -774,6 +776,12 @@ async function maybeOpenBrowser(url: string): Promise<{ opened: boolean; cleanup
     opened: false,
     cleanup,
   };
+}
+
+let browserOpener: BrowserOpener = maybeOpenBrowser;
+
+export function setOauthBrowserOpenerForTests(opener?: BrowserOpener) {
+  browserOpener = opener || maybeOpenBrowser;
 }
 
 async function createLoopbackServer(state: string) {
@@ -1297,58 +1305,71 @@ async function authenticateEnvWithOauthDevice(options: {
   scope?: AuthStoreOptions['scope'];
 }) {
   const resource = getOauthResource(options.metadata.issuer);
+  let cleanupBrowserOpenTarget: (() => Promise<void>) | undefined;
 
-  updateTask(`Preparing device sign-in for "${options.envName}"...`);
-  const registration = await registerOauthClient(options.metadata, undefined, {
-    envName: options.envName,
-    baseUrl: options.baseUrl,
-    deviceFlow: true,
-  });
-  const deviceAuthorization = await requestDeviceAuthorization({
-    metadata: options.metadata,
-    clientId: registration.clientId,
-    scope: DEFAULT_OAUTH_SCOPE,
-    resource,
-    envName: options.envName,
-    baseUrl: options.baseUrl,
-  });
-
-  stopTask();
-  printInfo(`Open this URL to approve device sign-in for "${options.envName}":`);
-  printInfo(deviceAuthorization.verification_uri_complete || deviceAuthorization.verification_uri);
-  printInfo(`Enter code: ${deviceAuthorization.user_code}`);
-  updateTask(`Waiting for you to approve device sign-in for "${options.envName}"...`);
-
-  const tokenResponse = await pollDeviceToken({
-    metadata: options.metadata,
-    clientId: registration.clientId,
-    deviceCode: deviceAuthorization.device_code,
-    expiresIn: deviceAuthorization.expires_in,
-    interval: deviceAuthorization.interval,
-    envName: options.envName,
-    baseUrl: options.baseUrl,
-  });
-
-  if (!tokenResponse.refresh_token) {
-    printWarning(
-      'Sign-in succeeded, but no refresh token was returned. You may need to sign in again when this session expires.',
-    );
-  }
-
-  await setEnvOauthSession(
-    options.envName,
-    {
-      type: 'oauth',
-      accessToken: tokenResponse.access_token,
-      refreshToken: tokenResponse.refresh_token,
-      expiresAt: calculateExpiresAt(tokenResponse.expires_in),
-      scope: tokenResponse.scope || DEFAULT_OAUTH_SCOPE,
-      issuer: options.metadata.issuer,
+  try {
+    updateTask(`Preparing device sign-in for "${options.envName}"...`);
+    const registration = await registerOauthClient(options.metadata, undefined, {
+      envName: options.envName,
+      baseUrl: options.baseUrl,
+      deviceFlow: true,
+    });
+    const deviceAuthorization = await requestDeviceAuthorization({
+      metadata: options.metadata,
       clientId: registration.clientId,
+      scope: DEFAULT_OAUTH_SCOPE,
       resource,
-    },
-    { scope: options.scope },
-  );
+      envName: options.envName,
+      baseUrl: options.baseUrl,
+    });
+
+    stopTask();
+    const verificationUrl = deviceAuthorization.verification_uri_complete || deviceAuthorization.verification_uri;
+    const browser = await browserOpener(verificationUrl);
+    cleanupBrowserOpenTarget = browser.cleanup;
+    if (!browser.opened) {
+      printWarningBlock('We could not open your browser automatically. Open the URL below to approve device sign-in:');
+    } else {
+      printInfo(`Opening device sign-in for "${options.envName}" in your browser.`);
+      printInfo('If the browser does not open automatically, open this URL manually:');
+    }
+    printInfo(verificationUrl);
+    printInfo(`Enter code: ${deviceAuthorization.user_code}`);
+    updateTask(`Waiting for you to approve device sign-in for "${options.envName}"...`);
+
+    const tokenResponse = await pollDeviceToken({
+      metadata: options.metadata,
+      clientId: registration.clientId,
+      deviceCode: deviceAuthorization.device_code,
+      expiresIn: deviceAuthorization.expires_in,
+      interval: deviceAuthorization.interval,
+      envName: options.envName,
+      baseUrl: options.baseUrl,
+    });
+
+    if (!tokenResponse.refresh_token) {
+      printWarning(
+        'Sign-in succeeded, but no refresh token was returned. You may need to sign in again when this session expires.',
+      );
+    }
+
+    await setEnvOauthSession(
+      options.envName,
+      {
+        type: 'oauth',
+        accessToken: tokenResponse.access_token,
+        refreshToken: tokenResponse.refresh_token,
+        expiresAt: calculateExpiresAt(tokenResponse.expires_in),
+        scope: tokenResponse.scope || DEFAULT_OAUTH_SCOPE,
+        issuer: options.metadata.issuer,
+        clientId: registration.clientId,
+        resource,
+      },
+      { scope: options.scope },
+    );
+  } finally {
+    await cleanupBrowserOpenTarget?.().catch(() => undefined);
+  }
 }
 
 async function authenticateEnvWithOauthBrowser(options: {
@@ -1383,7 +1404,7 @@ async function authenticateEnvWithOauthBrowser(options: {
     authorizationUrl.searchParams.set('resource', resource);
 
     updateTask(`Waiting for you to finish signing in for "${options.envName}"...`);
-    const browser = await maybeOpenBrowser(authorizationUrl.toString());
+    const browser = await browserOpener(authorizationUrl.toString());
     cleanupBrowserOpenTarget = browser.cleanup;
     if (!browser.opened) {
       printWarningBlock('We could not open your browser automatically. Open the URL below to continue signing in:');
