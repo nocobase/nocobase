@@ -32,10 +32,7 @@ import { setupDataModeling } from '../client-v2/ai-employees/data-modeling/setup
 import { AIEmployeeInstruction } from './workflow/nodes/employee';
 import { registerPluginAIClientV2BuiltinTools } from '../client-v2/ai-employees/tools';
 import { builtinLLMProviderOptions } from '../client-v2/llm-providers';
-const { ChatBoxLayout } = lazy(
-  () => import('../client-v2/ai-employees/chatbox/components/ChatBoxLayout'),
-  'ChatBoxLayout',
-);
+import { ChatBoxLayout } from '../client-v2/ai-employees/chatbox/components/ChatBoxLayout';
 const Employees = lazy(() => import('../client-v2/pages/EmployeesPage'));
 const LLMServices = lazy(() => import('../client-v2/pages/LLMServicesPage'));
 const MCPSettings = lazy(() => import('../client-v2/pages/MCPSettingsPage'));
