@@ -25,7 +25,7 @@ export function ActionWithoutPermission(props) {
     const dataSourcePrefix = `${t(dataSource.displayName || dataSource.key)} > `;
     const collectionPrefix = collection ? `${t(collection.title) || collection.name || collection.tableName} ` : '';
     return `${dataSourcePrefix}${collectionPrefix}`;
-  }, []);
+  }, [collection, dataSource.displayName, dataSource.key, t]);
   const { actionName } = props?.forbidden || model.forbidden;
   const messageValue = useMemo(() => {
     return t(
@@ -143,10 +143,11 @@ export class ActionModel<T extends DefaultStructure = DefaultStructure> extends 
   renderButton() {
     const { iconOnly, ...props } = this.props;
     const icon = this.getIcon() ? <Icon type={this.getIcon() as any} /> : undefined;
+    const titleContent = iconOnly && icon ? null : props.children || this.getTitle();
 
     return (
       <Button {...props} onClick={this.onClick.bind(this)} icon={icon}>
-        {iconOnly ? null : props.children || this.getTitle()}
+        {titleContent}
       </Button>
     );
   }
@@ -162,11 +163,12 @@ export class ActionModel<T extends DefaultStructure = DefaultStructure> extends 
   renderHiddenInConfig(): React.ReactNode | undefined {
     const { iconOnly, ...props } = this.props;
     const icon = this.getIcon() ? <Icon type={this.getIcon() as any} /> : undefined;
+    const titleContent = iconOnly && icon ? null : props.children || this.getTitle();
     if (this.forbidden) {
       return (
         <ActionWithoutPermission>
           <Button {...props} onClick={this.onClick.bind(this)} icon={icon} style={{ opacity: '0.3' }}>
-            {iconOnly ? null : props.children || this.getTitle()}
+            {titleContent}
           </Button>
         </ActionWithoutPermission>
       );
@@ -174,7 +176,7 @@ export class ActionModel<T extends DefaultStructure = DefaultStructure> extends 
     return (
       <Tooltip title={this.context.t('The button is hidden and only visible when the UI Editor is active')}>
         <Button {...props} onClick={this.onClick.bind(this)} icon={icon} style={{ opacity: '0.3' }}>
-          {iconOnly ? null : props.children || this.getTitle()}
+          {titleContent}
         </Button>
       </Tooltip>
     );
