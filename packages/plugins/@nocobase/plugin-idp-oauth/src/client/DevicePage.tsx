@@ -38,9 +38,26 @@ function getDevicePath(appName: string, action = '') {
   return `${appPrefix}idpOAuth/device/verification${action}`;
 }
 
-function getCurrentDevicePath(userCode?: string) {
+function removeRouterBasename(pathname: string, basename?: string) {
+  if (!basename || basename === '/') {
+    return pathname;
+  }
+
+  const normalizedBasename = basename.replace(/\/$/, '');
+  if (pathname === normalizedBasename) {
+    return '/';
+  }
+
+  if (pathname.startsWith(`${normalizedBasename}/`)) {
+    return pathname.slice(normalizedBasename.length) || '/';
+  }
+
+  return pathname;
+}
+
+function getCurrentDevicePath(userCode?: string, basename?: string) {
   const search = userCode ? `?user_code=${encodeURIComponent(userCode)}` : window.location.search;
-  return `${window.location.pathname}${search}`;
+  return `${removeRouterBasename(window.location.pathname, basename)}${search}`;
 }
 
 export const DevicePage = () => {
@@ -78,9 +95,14 @@ export const DevicePage = () => {
       const state = await requestDeviceState();
       setDeviceState(state);
       if (state.status === 'login') {
-        navigate(`/signin?redirect=${encodeURIComponent(getCurrentDevicePath(state.userCode || userCode))}`, {
-          replace: true,
-        });
+        navigate(
+          `/signin?redirect=${encodeURIComponent(
+            getCurrentDevicePath(state.userCode || userCode, app.router.basename),
+          )}`,
+          {
+            replace: true,
+          },
+        );
         return;
       }
     } catch (error: unknown) {
@@ -88,7 +110,7 @@ export const DevicePage = () => {
     } finally {
       setLoading(false);
     }
-  }, [navigate, requestDeviceState, t, userCode]);
+  }, [app.router.basename, navigate, requestDeviceState, t, userCode]);
 
   useEffect(() => {
     loadDeviceState();
