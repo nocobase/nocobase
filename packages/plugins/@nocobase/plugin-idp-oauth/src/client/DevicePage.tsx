@@ -187,6 +187,11 @@ export const DevicePage = () => {
           status="success"
           title={t('Device sign-in complete')}
           subTitle={t('Authorization is complete. You can return to the terminal.')}
+          extra={
+            <Button type="primary" onClick={() => navigate('/')}>
+              {t('Back to home')}
+            </Button>
+          }
         />
       </div>
     );
