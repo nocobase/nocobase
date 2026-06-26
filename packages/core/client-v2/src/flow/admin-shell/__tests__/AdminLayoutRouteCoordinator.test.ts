@@ -121,6 +121,19 @@ describe('AdminLayoutRouteCoordinator', () => {
     });
   });
 
+  it('passes RunJS openView route state as runtime mode and size during route replay', () => {
+    const { dispatchEvent } = setupRouteReplay({
+      openViewRouteState: { mode: 'dialog', size: 'large' },
+    });
+
+    expect(dispatchEvent.mock.calls[0][1]).toMatchObject({
+      mode: 'dialog',
+      size: 'large',
+      openViewRouteState: { mode: 'dialog', size: 'large' },
+      triggerByRouter: true,
+    });
+  });
+
   it('uses layout content element before route page placeholder as view target', () => {
     const engine = new FlowEngine();
     engine.registerModels({ RouteModel });

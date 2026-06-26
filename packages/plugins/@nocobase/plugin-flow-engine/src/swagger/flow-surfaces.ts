@@ -1683,6 +1683,7 @@ const schemas = {
         },
       },
       example: {},
+      default: {},
       supportsFlowContext: {
         type: 'boolean',
       },

@@ -8,18 +8,16 @@
  */
 
 import fs from 'node:fs';
-import fsp from 'node:fs/promises';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { resolveCliHomeDir } from './cli-home.js';
 import { commandOutput, run } from './run-npm.js';
 
 const DEFAULT_PACKAGE_NAME = '@nocobase/cli';
 const PACKAGE_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
-const INSTALL_METHOD_CACHE_FILE = 'self-install-methods.json';
 
 export type SelfChannel = 'latest' | 'test' | 'beta' | 'alpha';
-export type SelfInstallMethod = 'npm-global' | 'package-local' | 'source' | 'unknown';
+export type SelfInstallMethod = 'npm-global' | 'pnpm-global' | 'yarn-global' | 'package-local' | 'source' | 'unknown';
 
 export type SelfStatus = {
   packageName: string;
@@ -45,6 +43,7 @@ type SelfManagerOptions = {
   channel?: SelfChannel | 'auto';
   commandOutputFn?: typeof commandOutput;
   currentVersion?: string;
+  currentBinPath?: string;
   packageName?: string;
   packageRoot?: string;
 };
@@ -60,15 +59,6 @@ type ParsedVersion = {
   minor: number;
   patch: number;
   prerelease: string[];
-};
-
-type InstallMethodCacheEntry = {
-  installMethod: SelfInstallMethod;
-  globalPrefix?: string;
-};
-
-type InstallMethodCacheState = {
-  entries?: Record<string, InstallMethodCacheEntry>;
 };
 
 function normalizePath(value: string): string {
@@ -191,7 +181,16 @@ function readCurrentVersion(packageRoot: string): string {
   return String(pkg.version ?? '').trim();
 }
 
-function detectInstallMethod(packageRoot: string, globalPrefix?: string): SelfInstallMethod {
+function detectInstallMethod(
+  packageRoot: string,
+  options: {
+    globalPrefix?: string;
+    packageName?: string;
+    pnpmGlobalBin?: string;
+    pnpmGlobalRoot?: string;
+    yarnGlobalDir?: string;
+  } = {},
+): SelfInstallMethod {
   if (
     fs.existsSync(path.join(packageRoot, 'src'))
     && fs.existsSync(path.join(packageRoot, 'tsconfig.json'))
@@ -199,8 +198,28 @@ function detectInstallMethod(packageRoot: string, globalPrefix?: string): SelfIn
     return 'source';
   }
 
-  if (globalPrefix && isSubPath(globalPrefix, packageRoot)) {
+  if (options.globalPrefix && isSubPath(options.globalPrefix, packageRoot)) {
     return 'npm-global';
+  }
+
+  if (options.yarnGlobalDir && isSubPath(options.yarnGlobalDir, packageRoot)) {
+    return 'yarn-global';
+  }
+
+  if (
+    isPnpmGlobalInstallPath({
+      packageName: options.packageName ?? DEFAULT_PACKAGE_NAME,
+      packageRoot,
+      pnpmGlobalBin: options.pnpmGlobalBin,
+      pnpmGlobalRoot: options.pnpmGlobalRoot,
+    })
+  ) {
+    return 'pnpm-global';
+  }
+
+  // Best-effort fallback for environments where pnpm probes are unavailable.
+  if (isPnpmGlobalPath(packageRoot)) {
+    return 'pnpm-global';
   }
 
   if (packageRoot.includes(`${path.sep}node_modules${path.sep}`)) {
@@ -210,48 +229,231 @@ function detectInstallMethod(packageRoot: string, globalPrefix?: string): SelfIn
   return 'unknown';
 }
 
-function getInstallMethodCacheFile(): string {
-  return path.join(resolveCliHomeDir('global'), INSTALL_METHOD_CACHE_FILE);
+function isPnpmGlobalPath(packageRoot: string): boolean {
+  const normalized = normalizePath(packageRoot);
+  const segments = normalized.split(path.sep).filter(Boolean);
+  const globalIndex = segments.findIndex((segment, index) => segment === 'global' && segments[index - 1] === 'pnpm');
+  if (globalIndex === -1) {
+    return false;
+  }
+
+  return segments.slice(globalIndex + 2).includes('node_modules');
 }
 
-function getInstallMethodCacheKey(packageRoot: string): string {
-  return normalizePath(path.join(packageRoot, 'bin', 'run.js'));
+function normalizePnpmGlobalNodeModulesRoot(pnpmGlobalRoot: string): string {
+  const normalizedGlobalRoot = normalizePath(pnpmGlobalRoot);
+  return path.basename(normalizedGlobalRoot) === 'node_modules'
+    ? normalizedGlobalRoot
+    : path.join(normalizedGlobalRoot, 'node_modules');
 }
 
-async function readInstallMethodCache(): Promise<InstallMethodCacheState> {
+function readSiblingPnpmGlobalNodeModulesRoots(pnpmGlobalRoot: string): string[] {
+  const globalNodeModulesDir = normalizePnpmGlobalNodeModulesRoot(pnpmGlobalRoot);
+  const globalProjectDir = path.dirname(globalNodeModulesDir);
+  let entries: string[];
+
   try {
-    const raw = await fsp.readFile(getInstallMethodCacheFile(), 'utf8');
-    return JSON.parse(raw) as InstallMethodCacheState;
+    entries = fs.readdirSync(globalProjectDir);
   } catch {
-    return {};
+    return [];
+  }
+
+  return entries
+    .filter((entry) => {
+      if (entry === path.basename(globalNodeModulesDir)) {
+        return false;
+      }
+
+      try {
+        return fs.statSync(path.join(globalProjectDir, entry)).isDirectory();
+      } catch {
+        return false;
+      }
+    })
+    .map((entry) => path.join(globalProjectDir, entry, 'node_modules'));
+}
+
+function readPnpmGlobalNodeModulesRoots(pnpmGlobalRoot: string): string[] {
+  return [normalizePnpmGlobalNodeModulesRoot(pnpmGlobalRoot), ...readSiblingPnpmGlobalNodeModulesRoots(pnpmGlobalRoot)];
+}
+
+function packageNameToPath(packageName: string): string[] {
+  return packageName.split('/').filter(Boolean);
+}
+
+function isSameRealPath(left: string, right: string): boolean {
+  try {
+    return normalizePath(fs.realpathSync(left)) === normalizePath(fs.realpathSync(right));
+  } catch {
+    return false;
   }
 }
 
-async function writeInstallMethodCache(state: InstallMethodCacheState): Promise<void> {
-  const filePath = getInstallMethodCacheFile();
-  await fsp.mkdir(path.dirname(filePath), { recursive: true });
-  await fsp.writeFile(filePath, JSON.stringify(state, null, 2));
+function isPnpmGlobalRootPath(pnpmGlobalRoot: string, packageRoot: string): boolean {
+  if (isSubPath(pnpmGlobalRoot, packageRoot)) {
+    return true;
+  }
+
+  const globalNodeModulesDir = normalizePnpmGlobalNodeModulesRoot(pnpmGlobalRoot);
+  const globalProjectDir = path.dirname(globalNodeModulesDir);
+  if (!isSubPath(globalProjectDir, packageRoot)) {
+    return false;
+  }
+
+  const segments = normalizePath(packageRoot).split(path.sep).filter(Boolean);
+  const pnpmStoreIndex = segments.indexOf('.pnpm');
+  if (pnpmStoreIndex === -1) {
+    return false;
+  }
+
+  return segments.slice(pnpmStoreIndex + 1).includes('node_modules');
 }
 
-async function readCachedInstallMethod(packageRoot: string): Promise<InstallMethodCacheEntry | undefined> {
-  const state = await readInstallMethodCache();
-  return state.entries?.[getInstallMethodCacheKey(packageRoot)];
+function isPnpmGlobalPackagePath(pnpmGlobalRoot: string, packageRoot: string, packageName: string): boolean {
+  return readPnpmGlobalNodeModulesRoots(pnpmGlobalRoot).some((pnpmGlobalNodeModulesRoot) =>
+    isSameRealPath(path.join(pnpmGlobalNodeModulesRoot, ...packageNameToPath(packageName)), packageRoot),
+  );
 }
 
-async function writeCachedInstallMethod(packageRoot: string, entry: InstallMethodCacheEntry): Promise<void> {
-  const state = await readInstallMethodCache();
-  const entries = {
-    ...(state.entries ?? {}),
-    [getInstallMethodCacheKey(packageRoot)]: entry,
-  };
-  await writeInstallMethodCache({ entries });
+function isPnpmGlobalBinProjectPath(pnpmGlobalBin: string, packageRoot: string, packageName: string): boolean {
+  const pnpmHome = path.dirname(normalizePath(pnpmGlobalBin));
+  const globalDir = path.join(pnpmHome, 'global');
+  if (isSubPath(globalDir, packageRoot)) {
+    return true;
+  }
+
+  let entries: string[];
+  try {
+    entries = fs.readdirSync(globalDir);
+  } catch {
+    return false;
+  }
+
+  return entries.some((entry) => {
+    const pnpmGlobalRoot = path.join(globalDir, entry);
+    return (
+      isPnpmGlobalRootPath(pnpmGlobalRoot, packageRoot)
+      || isPnpmGlobalPackagePath(pnpmGlobalRoot, packageRoot, packageName)
+    );
+  });
+}
+
+function isPnpmGlobalInstallPath(options: {
+  packageName: string;
+  packageRoot: string;
+  pnpmGlobalBin?: string;
+  pnpmGlobalRoot?: string;
+}): boolean {
+  if (options.pnpmGlobalRoot) {
+    const matchedRoot =
+      isPnpmGlobalRootPath(options.pnpmGlobalRoot, options.packageRoot)
+      || isPnpmGlobalPackagePath(options.pnpmGlobalRoot, options.packageRoot, options.packageName);
+    if (matchedRoot) {
+      return true;
+    }
+  }
+
+  if (options.pnpmGlobalBin) {
+    return isPnpmGlobalBinProjectPath(options.pnpmGlobalBin, options.packageRoot, options.packageName);
+  }
+
+  return false;
+}
+
+function readCurrentBinPath(currentBinPath?: string): string | undefined {
+  const candidate = String(currentBinPath ?? process.argv[1] ?? '').trim();
+  if (!candidate) {
+    return undefined;
+  }
+
+  return normalizePath(candidate);
+}
+
+function cleanCommandPath(value: string): string | undefined {
+  const trimmed = value.trim();
+  return trimmed ? trimmed : undefined;
+}
+
+function resolvePackageManagerProbeCwd(): string | undefined {
+  const candidates = [os.homedir(), os.tmpdir(), path.parse(process.cwd()).root];
+
+  for (const candidate of candidates) {
+    if (!candidate) {
+      continue;
+    }
+
+    try {
+      if (fs.statSync(candidate).isDirectory()) {
+        return candidate;
+      }
+    } catch {
+      // Ignore invalid probe cwd candidates and continue to the next one.
+    }
+  }
+
+  return undefined;
 }
 
 async function readGlobalPrefix(commandOutputFn: typeof commandOutput): Promise<string | undefined> {
   try {
-    return (await commandOutputFn('npm', ['prefix', '-g'], {
-      errorName: 'npm prefix',
-    })).trim();
+    return cleanCommandPath(
+      await commandOutputFn('npm', ['prefix', '-g'], {
+        cwd: resolvePackageManagerProbeCwd(),
+        errorName: 'npm prefix',
+      }),
+    );
+  } catch {
+    return undefined;
+  }
+}
+
+async function readPnpmGlobalBin(commandOutputFn: typeof commandOutput): Promise<string | undefined> {
+  try {
+    return cleanCommandPath(
+      await commandOutputFn('pnpm', ['bin', '-g'], {
+        cwd: resolvePackageManagerProbeCwd(),
+        errorName: 'pnpm bin',
+      }),
+    );
+  } catch {
+    return undefined;
+  }
+}
+
+async function readPnpmGlobalRoot(commandOutputFn: typeof commandOutput): Promise<string | undefined> {
+  try {
+    return cleanCommandPath(
+      await commandOutputFn('pnpm', ['root', '-g'], {
+        cwd: resolvePackageManagerProbeCwd(),
+        errorName: 'pnpm root',
+      }),
+    );
+  } catch {
+    return undefined;
+  }
+}
+
+async function readYarnGlobalDir(commandOutputFn: typeof commandOutput): Promise<string | undefined> {
+  try {
+    return cleanCommandPath(
+      await commandOutputFn('yarn', ['global', 'dir'], {
+        cwd: resolvePackageManagerProbeCwd(),
+        errorName: 'yarn global dir',
+      }),
+    );
+  } catch {
+    return undefined;
+  }
+}
+
+async function readYarnGlobalBin(commandOutputFn: typeof commandOutput): Promise<string | undefined> {
+  try {
+    return cleanCommandPath(
+      await commandOutputFn('yarn', ['global', 'bin'], {
+        cwd: resolvePackageManagerProbeCwd(),
+        errorName: 'yarn global bin',
+      }),
+    );
   } catch {
     return undefined;
   }
@@ -272,7 +474,7 @@ function getUnsupportedSelfUpdateReason(installMethod: SelfInstallMethod): strin
   if (installMethod === 'source') {
     return [
       'This CLI is running from source in a repository checkout.',
-      'Automatic self-update is only supported for standard global npm installs.',
+      'Automatic self-update is only supported for standard global npm, pnpm, or yarn installs.',
       'Upgrade this checkout through your repo workflow instead.',
     ].join(' ');
   }
@@ -280,15 +482,15 @@ function getUnsupportedSelfUpdateReason(installMethod: SelfInstallMethod): strin
   if (installMethod === 'package-local') {
     return [
       'This CLI is installed from a local project dependency tree.',
-      'Automatic self-update is only supported for standard global npm installs.',
+      'Automatic self-update is only supported for standard global npm, pnpm, or yarn installs.',
       'Upgrade the parent project dependency that provides this CLI instead.',
     ].join(' ');
   }
 
   if (installMethod === 'unknown') {
     return [
-      'This CLI install could not be recognized as a standard global npm install.',
-      'Automatic self-update is only supported for standard global npm installs.',
+      'This CLI install could not be recognized as a standard global npm, pnpm, or yarn install.',
+      'Automatic self-update is only supported for standard global npm, pnpm, or yarn installs.',
     ].join(' ');
   }
 
@@ -322,25 +524,61 @@ export function getSelfUpdatePackageSpec(status: Pick<SelfStatus, 'packageName' 
   return `${status.packageName}@${status.channel}`;
 }
 
-export async function inspectSelfInstall(options: Pick<SelfManagerOptions, 'packageRoot' | 'commandOutputFn'> = {}): Promise<SelfInstallInfo> {
+export async function inspectSelfInstall(
+  options: Pick<SelfManagerOptions, 'packageRoot' | 'commandOutputFn' | 'currentBinPath' | 'packageName'> = {},
+): Promise<SelfInstallInfo> {
   const packageRoot = options.packageRoot ? normalizePath(options.packageRoot) : PACKAGE_ROOT;
+  const packageName = options.packageName ?? DEFAULT_PACKAGE_NAME;
   const commandOutputFn = options.commandOutputFn ?? commandOutput;
-  const cachedInstallMethod = await readCachedInstallMethod(packageRoot);
-  const globalPrefix = cachedInstallMethod?.globalPrefix ?? await readGlobalPrefix(commandOutputFn);
-  const installMethod = cachedInstallMethod?.installMethod ?? detectInstallMethod(packageRoot, globalPrefix);
-
-  if (!cachedInstallMethod) {
-    await writeCachedInstallMethod(packageRoot, {
-      installMethod,
-      globalPrefix,
-    });
-  }
+  const currentBinPath = readCurrentBinPath(options.currentBinPath);
+  const globalPrefix = await readGlobalPrefix(commandOutputFn);
+  const pnpmGlobalBin = await readPnpmGlobalBin(commandOutputFn);
+  const pnpmGlobalRoot = await readPnpmGlobalRoot(commandOutputFn);
+  const yarnGlobalDir = await readYarnGlobalDir(commandOutputFn);
+  const yarnGlobalBin = await readYarnGlobalBin(commandOutputFn);
+  const installMethod = detectInstallMethodFromSignals({
+    packageRoot,
+    currentBinPath,
+    globalPrefix,
+    packageName,
+    pnpmGlobalBin,
+    pnpmGlobalRoot,
+    yarnGlobalBin,
+    yarnGlobalDir,
+  });
 
   return {
     packageRoot,
     installMethod,
     globalPrefix,
   };
+}
+
+function detectInstallMethodFromSignals(options: {
+  packageRoot: string;
+  currentBinPath?: string;
+  globalPrefix?: string;
+  packageName?: string;
+  pnpmGlobalBin?: string;
+  pnpmGlobalRoot?: string;
+  yarnGlobalBin?: string;
+  yarnGlobalDir?: string;
+}): SelfInstallMethod {
+  if (options.currentBinPath && options.yarnGlobalBin && isSubPath(options.yarnGlobalBin, options.currentBinPath)) {
+    return 'yarn-global';
+  }
+
+  if (options.currentBinPath && options.pnpmGlobalBin && isSubPath(options.pnpmGlobalBin, options.currentBinPath)) {
+    return 'pnpm-global';
+  }
+
+  return detectInstallMethod(options.packageRoot, {
+    globalPrefix: options.globalPrefix,
+    packageName: options.packageName,
+    pnpmGlobalBin: options.pnpmGlobalBin,
+    pnpmGlobalRoot: options.pnpmGlobalRoot,
+    yarnGlobalDir: options.yarnGlobalDir,
+  });
 }
 
 export async function inspectSelfStatus(options: SelfManagerOptions = {}): Promise<SelfStatus> {
@@ -350,6 +588,8 @@ export async function inspectSelfStatus(options: SelfManagerOptions = {}): Promi
   const channel = options.channel && options.channel !== 'auto' ? options.channel : detectChannel(currentVersion);
   const commandOutputFn = options.commandOutputFn ?? commandOutput;
   const { installMethod, globalPrefix } = await inspectSelfInstall({
+    currentBinPath: options.currentBinPath,
+    packageName,
     packageRoot,
     commandOutputFn,
   });
@@ -374,7 +614,7 @@ export async function inspectSelfStatus(options: SelfManagerOptions = {}): Promi
     latestVersion,
     updateAvailable,
     installMethod,
-    updatable: installMethod === 'npm-global',
+    updatable: installMethod === 'npm-global' || installMethod === 'pnpm-global' || installMethod === 'yarn-global',
     updateBlockedReason: getUnsupportedSelfUpdateReason(installMethod),
     globalPrefix,
     registryError,
@@ -384,8 +624,39 @@ export async function inspectSelfStatus(options: SelfManagerOptions = {}): Promi
 export function formatUnsupportedSelfUpdateMessage(status: SelfStatus): string {
   return status.updateBlockedReason
     ?? [
-      'Automatic self-update is only supported for standard global npm installs.',
+      'Automatic self-update is only supported for standard global npm, pnpm, or yarn installs.',
     ].join('\n');
+}
+
+function resolveSelfUpdateInstallCommand(
+  installMethod: SelfInstallMethod,
+  packageSpec: string,
+): {
+  command: 'npm' | 'pnpm' | 'yarn';
+  args: string[];
+  errorName: string;
+} {
+  if (installMethod === 'pnpm-global') {
+    return {
+      command: 'pnpm',
+      args: ['add', '-g', packageSpec],
+      errorName: 'pnpm add',
+    };
+  }
+
+  if (installMethod === 'yarn-global') {
+    return {
+      command: 'yarn',
+      args: ['global', 'add', packageSpec],
+      errorName: 'yarn global add',
+    };
+  }
+
+  return {
+    command: 'npm',
+    args: ['install', '-g', packageSpec],
+    errorName: 'npm install',
+  };
 }
 
 export async function updateSelf(options: SelfUpdateOptions = {}): Promise<{
@@ -414,9 +685,10 @@ export async function updateSelf(options: SelfUpdateOptions = {}): Promise<{
   }
 
   const packageSpec = getSelfUpdatePackageSpec(status);
-  await (options.runFn ?? run)('npm', ['install', '-g', packageSpec], {
+  const installCommand = resolveSelfUpdateInstallCommand(status.installMethod, packageSpec);
+  await (options.runFn ?? run)(installCommand.command, installCommand.args, {
     stdio: options.verbose ? 'inherit' : 'ignore',
-    errorName: 'npm install',
+    errorName: installCommand.errorName,
   });
 
   return {
