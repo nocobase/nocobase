@@ -49,9 +49,19 @@ function isRenderableActionModel(action: unknown): action is ActionModel {
   return typeof candidate.getTitle === 'function' && typeof candidate.onClick === 'function';
 }
 
-function isEntryActionAvailable(action: ActionModel) {
-  const candidate = action as ActionModel & { isEntryActionAvailable?: () => boolean };
-  return typeof candidate.isEntryActionAvailable !== 'function' || candidate.isEntryActionAvailable();
+type EntryActionAvailability = {
+  isEntryActionAvailable?: () => boolean;
+  getEntryActionUnavailableMessage?: () => string | undefined;
+};
+
+function isEntryActionUnavailable(action: ActionModel) {
+  const candidate = action as ActionModel & EntryActionAvailability;
+  return typeof candidate.isEntryActionAvailable === 'function' && !candidate.isEntryActionAvailable();
+}
+
+function getEntryActionUnavailableMessage(action: ActionModel) {
+  const candidate = action as ActionModel & EntryActionAvailability;
+  return candidate.getEntryActionUnavailableMessage?.();
 }
 
 export class AppSwitcherActionPanelModel extends FlowModel<AppSwitcherActionPanelStructure> {
@@ -88,10 +98,10 @@ export class AppSwitcherActionPanelModel extends FlowModel<AppSwitcherActionPane
     );
   }
 
-  private getRenderableActions(options: { includeHidden?: boolean } = {}) {
+  private getRenderableActions(options: { includeHidden?: boolean; includeUnavailable?: boolean } = {}) {
     return this.mapSubModels('actions', (action) => action)
       .filter(isRenderableActionModel)
-      .filter(isEntryActionAvailable)
+      .filter((action) => options.includeUnavailable || !isEntryActionUnavailable(action))
       .filter((action) => options.includeHidden || !action.hidden);
   }
 
@@ -102,7 +112,7 @@ export class AppSwitcherActionPanelModel extends FlowModel<AppSwitcherActionPane
   renderContent() {
     const token = this.context.themeToken;
     const designable = !!this.context.flowSettingsEnabled;
-    const actions = this.getRenderableActions({ includeHidden: designable });
+    const actions = this.getRenderableActions({ includeHidden: designable, includeUnavailable: designable });
     const columnCount = Math.min(Math.max(actions.length || 1, 1), 2);
     const buttonResetClass = css`
       &.ant-btn {
@@ -148,6 +158,7 @@ export class AppSwitcherActionPanelModel extends FlowModel<AppSwitcherActionPane
               {actions.map((action) => {
                 const { icon = 'AppstoreOutlined', color } = action.props;
                 const title = action.getTitle();
+                const entryActionUnavailable = isEntryActionUnavailable(action);
                 const renderActionContent = (compact = false) => (
                   <Card
                     bordered={false}
@@ -200,13 +211,30 @@ export class AppSwitcherActionPanelModel extends FlowModel<AppSwitcherActionPane
                 action.enableEditType = false;
                 action.enableEditIconOnly = false;
                 action.enableEditColor = true;
-                action.renderButton = () => (
-                  <Button className={buttonResetClass} onClick={action.onClick.bind(action)}>
-                    {renderActionContent()}
-                  </Button>
-                );
+                action.renderButton = () => {
+                  if (entryActionUnavailable) {
+                    return (
+                      <Tooltip title={getEntryActionUnavailableMessage(action)}>
+                        <Button className={buttonResetClass} onClick={action.onClick.bind(action)}>
+                          {renderActionContent(true)}
+                        </Button>
+                      </Tooltip>
+                    );
+                  }
+                  return (
+                    <Button className={buttonResetClass} onClick={action.onClick.bind(action)}>
+                      {renderActionContent()}
+                    </Button>
+                  );
+                };
                 action.renderHiddenInConfig = () => (
-                  <Tooltip title={this.context.t('The button is hidden and only visible when the UI Editor is active')}>
+                  <Tooltip
+                    title={
+                      entryActionUnavailable
+                        ? getEntryActionUnavailableMessage(action)
+                        : this.context.t('The button is hidden and only visible when the UI Editor is active')
+                    }
+                  >
                     <Button className={buttonResetClass} onClick={action.onClick.bind(action)}>
                       {renderActionContent(true)}
                     </Button>

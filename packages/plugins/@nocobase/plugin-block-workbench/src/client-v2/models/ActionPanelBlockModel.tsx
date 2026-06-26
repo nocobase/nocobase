@@ -39,9 +39,19 @@ function isRenderableActionModel(action: unknown): action is ActionModel {
   return typeof candidate.onClick === 'function' && !!candidate.props;
 }
 
-function isEntryActionAvailable(action: ActionModel) {
-  const candidate = action as ActionModel & { isEntryActionAvailable?: () => boolean };
-  return typeof candidate.isEntryActionAvailable !== 'function' || candidate.isEntryActionAvailable();
+type EntryActionAvailability = {
+  isEntryActionAvailable?: () => boolean;
+  getEntryActionUnavailableMessage?: () => string | undefined;
+};
+
+function isEntryActionUnavailable(action: ActionModel) {
+  const candidate = action as ActionModel & EntryActionAvailability;
+  return typeof candidate.isEntryActionAvailable === 'function' && !candidate.isEntryActionAvailable();
+}
+
+function getEntryActionUnavailableMessage(action: ActionModel) {
+  const candidate = action as ActionModel & EntryActionAvailability;
+  return candidate.getEntryActionUnavailableMessage?.();
 }
 
 export const WorkbenchLayout = {
@@ -197,9 +207,12 @@ export class ActionPanelBlockModel extends BlockModel {
               {layout === WorkbenchLayout.Grid ? (
                 <ResponsiveSpace>
                   {this.mapSubModels('actions', (action) => {
+                    const entryActionUnavailable = isRenderableActionModel(action)
+                      ? isEntryActionUnavailable(action)
+                      : false;
                     if (
                       !isRenderableActionModel(action) ||
-                      !isEntryActionAvailable(action) ||
+                      (entryActionUnavailable && !isConfigMode) ||
                       (action.hidden && !isConfigMode)
                     ) {
                       return;
@@ -231,6 +244,15 @@ export class ActionPanelBlockModel extends BlockModel {
                     action.enableEditIconOnly = false;
                     action.enableEditColor = true;
                     action.renderButton = () => {
+                      if (entryActionUnavailable) {
+                        return (
+                          <Tooltip title={getEntryActionUnavailableMessage(action)}>
+                            <Button className={buttonResetClass} onClick={action.onClick.bind(action)}>
+                              {renderActionContent(true)}
+                            </Button>
+                          </Tooltip>
+                        );
+                      }
                       return (
                         <Button className={buttonResetClass} onClick={action.onClick.bind(action)}>
                           {renderActionContent()}
@@ -240,7 +262,11 @@ export class ActionPanelBlockModel extends BlockModel {
                     action.renderHiddenInConfig = () => {
                       return (
                         <Tooltip
-                          title={this.context.t('The button is hidden and only visible when the UI Editor is active')}
+                          title={
+                            entryActionUnavailable
+                              ? getEntryActionUnavailableMessage(action)
+                              : this.context.t('The button is hidden and only visible when the UI Editor is active')
+                          }
                         >
                           <Button className={buttonResetClass} onClick={action.onClick.bind(action)}>
                             {renderActionContent(true)}
@@ -281,9 +307,12 @@ export class ActionPanelBlockModel extends BlockModel {
                   }
                 >
                   {this.mapSubModels('actions', (action) => {
+                    const entryActionUnavailable = isRenderableActionModel(action)
+                      ? isEntryActionUnavailable(action)
+                      : false;
                     if (
                       !isRenderableActionModel(action) ||
-                      !isEntryActionAvailable(action) ||
+                      (entryActionUnavailable && !isConfigMode) ||
                       (action.hidden && !isConfigMode)
                     ) {
                       return;
@@ -309,6 +338,15 @@ export class ActionPanelBlockModel extends BlockModel {
                     action.enableEditIconOnly = false;
                     action.enableEditColor = true;
                     action.renderButton = () => {
+                      if (entryActionUnavailable) {
+                        return (
+                          <Tooltip title={getEntryActionUnavailableMessage(action)}>
+                            <Button className={buttonResetClass} onClick={action.onClick.bind(action)}>
+                              {renderActionContent(true)}
+                            </Button>
+                          </Tooltip>
+                        );
+                      }
                       return (
                         <Button className={buttonResetClass} onClick={action.onClick.bind(action)}>
                           {renderActionContent()}
@@ -318,7 +356,11 @@ export class ActionPanelBlockModel extends BlockModel {
                     action.renderHiddenInConfig = () => {
                       return (
                         <Tooltip
-                          title={this.context.t('The button is hidden and only visible when the UI Editor is active')}
+                          title={
+                            entryActionUnavailable
+                              ? getEntryActionUnavailableMessage(action)
+                              : this.context.t('The button is hidden and only visible when the UI Editor is active')
+                          }
                         >
                           <Button className={buttonResetClass} onClick={action.onClick.bind(action)}>
                             {renderActionContent(true)}
