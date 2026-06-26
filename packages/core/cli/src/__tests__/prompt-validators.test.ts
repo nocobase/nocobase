@@ -182,9 +182,11 @@ test('validateApiBaseUrl reports connectivity failures', async () => {
   );
 });
 
-test('validateEnvKey allows only letters and numbers', () => {
+test('validateEnvKey allows letters, numbers, hyphens, and underscores', () => {
   expect(validateEnvKey('local01')).toBe(undefined);
-  expect(validateEnvKey('local-dev') ?? '').toMatch(/letters and numbers only/i);
+  expect(validateEnvKey('local-dev')).toBe(undefined);
+  expect(validateEnvKey('local_dev')).toBe(undefined);
+  expect(validateEnvKey('local.dev') ?? '').toMatch(/letters, numbers, hyphens, and underscores only/i);
 });
 
 test('validateAppPublicPath accepts root and slash-separated slug paths', () => {
@@ -319,7 +321,7 @@ test('init and env add prompts validate apiBaseUrl', async () => {
   expect(appNamePrompt.initialValue).toBe(undefined);
   expect(appNamePrompt.yesInitialValue).toBe(undefined);
   expect(typeof appNamePrompt.validate).toBe('function');
-  expect((await appNamePrompt.validate?.('local-dev', {})) ?? '').toMatch(/letters and numbers only/i);
+  expect(await appNamePrompt.validate?.('local-dev', {})).toBe(undefined);
   expect(initPrompt.type).toBe('text');
   expect(envAddPrompt.type).toBe('text');
   expect(typeof initPrompt.validate).toBe('function');
@@ -436,7 +438,7 @@ test('install prompts expose the expected defaults and validators', () => {
   expect(envPrompt.initialValue).toBe(undefined);
   expect(envPrompt.yesInitialValue).toBe(undefined);
   expect(typeof envPrompt.validate).toBe('function');
-  expect(envPrompt.validate?.('local-dev', {}) ?? '').toMatch(/letters and numbers only/i);
+  expect(envPrompt.validate?.('local-dev', {})).toBe(undefined);
 
   expect(langPrompt.type).toBe('select');
   expect(resolveLocalizedText(langPrompt.message, { locale: 'en-US' })).toBe(
