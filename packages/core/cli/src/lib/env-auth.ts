@@ -62,6 +62,45 @@ function normalizeBaseUrl(baseUrl: string) {
   return baseUrl.replace(/\/+$/, '');
 }
 
+function buildDeviceVerificationPathFromApiBaseUrl(apiBaseUrl: string) {
+  const url = new URL(apiBaseUrl);
+  const subappMatch = url.pathname.match(/^(.*)\/api\/__app\/([^/]+)\/?$/);
+  if (subappMatch) {
+    const publicPath = (subappMatch[1] || '').replace(/\/+$/, '');
+    return `${publicPath}/apps/${subappMatch[2]}/idpOAuth/device`;
+  }
+
+  const appMatch = url.pathname.match(/^(.*)\/api\/?$/);
+  if (appMatch) {
+    const publicPath = (appMatch[1] || '').replace(/\/+$/, '');
+    return `${publicPath}/idpOAuth/device`;
+  }
+
+  return undefined;
+}
+
+export function resolveDeviceVerificationUrlForApiBaseUrl(verificationUrl: string, apiBaseUrl: string) {
+  try {
+    const devicePath = buildDeviceVerificationPathFromApiBaseUrl(apiBaseUrl);
+    if (!devicePath) {
+      return verificationUrl;
+    }
+
+    const originalUrl = new URL(verificationUrl);
+    if (!originalUrl.pathname.endsWith('/idpOAuth/device')) {
+      return verificationUrl;
+    }
+
+    const publicUrl = new URL(apiBaseUrl);
+    publicUrl.pathname = devicePath;
+    publicUrl.search = originalUrl.search;
+    publicUrl.hash = originalUrl.hash;
+    return publicUrl.toString();
+  } catch {
+    return verificationUrl;
+  }
+}
+
 export function getOauthMetadataUrl(baseUrl: string) {
   return `${normalizeBaseUrl(baseUrl)}/.well-known/oauth-authorization-server`;
 }
@@ -1324,7 +1363,10 @@ async function authenticateEnvWithOauthDevice(options: {
     });
 
     stopTask();
-    const verificationUrl = deviceAuthorization.verification_uri_complete || deviceAuthorization.verification_uri;
+    const verificationUrl = resolveDeviceVerificationUrlForApiBaseUrl(
+      deviceAuthorization.verification_uri_complete || deviceAuthorization.verification_uri,
+      options.baseUrl,
+    );
     const browser = await browserOpener(verificationUrl);
     cleanupBrowserOpenTarget = browser.cleanup;
     if (!browser.opened) {
