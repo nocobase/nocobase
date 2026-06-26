@@ -23,7 +23,7 @@ import {
   type SubModelItem,
   type SubModelItemsType,
 } from '@nocobase/flow-engine';
-import { Avatar, Button, Card, Empty, Typography } from 'antd';
+import { Avatar, Button, Card, Empty, Tooltip, Typography } from 'antd';
 import React from 'react';
 
 const defaultIconColors = ['#3d8bff', '#00a8b5', '#35b26b', '#f5a623', '#ff7a45', '#e85d75', '#9254de', '#597ef7'];
@@ -83,10 +83,10 @@ export class AppSwitcherActionPanelModel extends FlowModel<AppSwitcherActionPane
     );
   }
 
-  private getRenderableActions() {
+  private getRenderableActions(options: { includeHidden?: boolean } = {}) {
     return this.mapSubModels('actions', (action) => action)
       .filter(isRenderableActionModel)
-      .filter((action) => !action.hidden);
+      .filter((action) => options.includeHidden || !action.hidden);
   }
 
   hasActions() {
@@ -95,8 +95,8 @@ export class AppSwitcherActionPanelModel extends FlowModel<AppSwitcherActionPane
 
   renderContent() {
     const token = this.context.themeToken;
-    const actions = this.getRenderableActions();
     const designable = !!this.context.flowSettingsEnabled;
+    const actions = this.getRenderableActions({ includeHidden: designable });
     const columnCount = Math.min(Math.max(actions.length || 1, 1), 2);
     const buttonResetClass = css`
       &.ant-btn {
@@ -142,58 +142,69 @@ export class AppSwitcherActionPanelModel extends FlowModel<AppSwitcherActionPane
               {actions.map((action) => {
                 const { icon = 'AppstoreOutlined', color } = action.props;
                 const title = action.getTitle();
+                const renderActionContent = (compact = false) => (
+                  <Card
+                    bordered={false}
+                    className={css`
+                      height: 56px;
+                      border-radius: ${token.borderRadius}px;
+                      box-shadow: none;
+                      opacity: ${compact ? token.opacityLoading : 1};
+
+                      &:hover {
+                        background: ${token.colorBgTextHover};
+                        box-shadow: none;
+                      }
+
+                      .ant-card-body {
+                        height: 100%;
+                        padding: ${token.paddingXS}px;
+                        display: flex;
+                        align-items: center;
+                        gap: ${token.marginXS}px;
+                      }
+                    `}
+                    styles={{ body: { background: 'transparent' } }}
+                  >
+                    <Avatar
+                      size={32}
+                      shape="square"
+                      icon={<Icon type={icon as string} />}
+                      style={{
+                        flex: '0 0 auto',
+                        borderRadius: 6,
+                        background: color || getDefaultIconColor(title),
+                      }}
+                    />
+                    <Typography.Text
+                      ellipsis
+                      title={typeof title === 'string' ? title : undefined}
+                      style={{
+                        minWidth: 0,
+                        color: token.colorText,
+                        fontSize: token.fontSize,
+                        lineHeight: token.lineHeight,
+                      }}
+                    >
+                      {title}
+                    </Typography.Text>
+                  </Card>
+                );
                 action.enableEditDanger = false;
                 action.enableEditType = false;
                 action.enableEditIconOnly = false;
                 action.enableEditColor = true;
                 action.renderButton = () => (
                   <Button className={buttonResetClass} onClick={action.onClick.bind(action)}>
-                    <Card
-                      bordered={false}
-                      className={css`
-                        height: 56px;
-                        border-radius: ${token.borderRadius}px;
-                        box-shadow: none;
-
-                        &:hover {
-                          background: ${token.colorBgTextHover};
-                          box-shadow: none;
-                        }
-
-                        .ant-card-body {
-                          height: 100%;
-                          padding: ${token.paddingXS}px;
-                          display: flex;
-                          align-items: center;
-                          gap: ${token.marginXS}px;
-                        }
-                      `}
-                      styles={{ body: { background: 'transparent' } }}
-                    >
-                      <Avatar
-                        size={32}
-                        shape="square"
-                        icon={<Icon type={icon as string} />}
-                        style={{
-                          flex: '0 0 auto',
-                          borderRadius: 6,
-                          background: color || getDefaultIconColor(title),
-                        }}
-                      />
-                      <Typography.Text
-                        ellipsis
-                        title={typeof title === 'string' ? title : undefined}
-                        style={{
-                          minWidth: 0,
-                          color: token.colorText,
-                          fontSize: token.fontSize,
-                          lineHeight: token.lineHeight,
-                        }}
-                      >
-                        {title}
-                      </Typography.Text>
-                    </Card>
+                    {renderActionContent()}
                   </Button>
+                );
+                action.renderHiddenInConfig = () => (
+                  <Tooltip title={this.context.t('The button is hidden and only visible when the UI Editor is active')}>
+                    <Button className={buttonResetClass} onClick={action.onClick.bind(action)}>
+                      {renderActionContent(true)}
+                    </Button>
+                  </Tooltip>
                 );
 
                 return (
