@@ -31,6 +31,63 @@ vi.mock('../../locale', () => ({
 import { CCTaskCardDetailsAssociationFieldGroupModel } from '../CCTaskCardDetailsAssociationFieldGroupModel';
 
 describe('CCTaskCardDetailsAssociationFieldGroupModel', () => {
+  it('builds CC task association groups when target collections can be resolved', () => {
+    const collection = {
+      dataSourceKey: 'main',
+      name: 'workflowCcTasks',
+      getToOneAssociationFields: () => [
+        {
+          name: 'node',
+          title: 'CC node',
+          target: 'flow_nodes',
+          targetCollection: {
+            getFields: () => [
+              { name: 'title', title: 'Title' },
+              { name: 'type', title: 'Type' },
+              { name: 'workflow', title: 'Workflow', target: 'workflows' },
+            ],
+          },
+        },
+        {
+          name: 'workflow',
+          title: 'Workflow',
+          target: 'workflows',
+          targetCollection: {
+            getFields: () => [
+              { name: 'title', title: 'Name' },
+              { name: 'description', title: 'Description' },
+              { name: 'config', title: 'Config' },
+            ],
+          },
+        },
+      ],
+    };
+
+    const children = CCTaskCardDetailsAssociationFieldGroupModel.defineChildren({ collection } as never);
+
+    expect(children.map((item) => item?.label)).toEqual(['CC node', 'Workflow']);
+    expect(children[0]?.children()).toEqual([
+      expect.objectContaining({
+        key: 'node-children-collectionField',
+        label: 'Display fields',
+        children: [
+          expect.objectContaining({
+            key: 'c-node.title',
+            label: 'Title',
+            useModel: 'CCTaskCardDetailsItemModel',
+          }),
+        ],
+      }),
+    ]);
+    expect(children[0]?.children()[0].children[0].createModelOptions.stepParams.fieldSettings.init).toEqual({
+      associationPathName: 'node',
+      collectionName: 'workflowCcTasks',
+      dataSourceKey: 'main',
+      fieldPath: 'node.title',
+    });
+    expect(children[1]?.children()[0].children.map((item) => item.key)).toEqual(['c-workflow.title']);
+  });
+
   it('skips unavailable association targets without logging runtime errors', () => {
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
     const collection = {

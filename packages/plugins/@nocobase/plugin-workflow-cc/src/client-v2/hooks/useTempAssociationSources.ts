@@ -12,6 +12,19 @@ import { useMemo } from 'react';
 
 import { useWorkflowPluginCompat, type CanvasNodeLike, type WorkflowLike } from '../workflowPluginCompat';
 
+function getWorkflowTempAssociationSource(workflow?: WorkflowLike): TempAssociationSource | null {
+  const collection = workflow?.config?.collection;
+  if (typeof collection !== 'string' || !collection || workflow?.id == null) {
+    return null;
+  }
+  return {
+    collection,
+    nodeId: workflow.id,
+    nodeKey: 'workflow',
+    nodeType: 'workflow',
+  };
+}
+
 export function useTempAssociationSources(workflow?: WorkflowLike, upstreams: CanvasNodeLike[] = []) {
   const workflowPlugin = useWorkflowPluginCompat();
 
@@ -22,9 +35,10 @@ export function useTempAssociationSources(workflow?: WorkflowLike, upstreams: Ca
     const triggerSource = workflowPlugin
       .getTrigger(workflow.type)
       ?.useTempAssociationSource?.(workflow.config, workflow);
+    const workflowSource = triggerSource ? null : getWorkflowTempAssociationSource(workflow);
     const nodeSources = upstreams
       .map((item) => workflowPlugin.getInstruction(item.type)?.useTempAssociationSource?.(item))
       .filter(Boolean) as TempAssociationSource[];
-    return triggerSource ? [triggerSource, ...nodeSources] : nodeSources;
+    return triggerSource || workflowSource ? [triggerSource || workflowSource, ...nodeSources] : nodeSources;
   }, [upstreams, workflow, workflowPlugin]);
 }

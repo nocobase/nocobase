@@ -90,6 +90,16 @@ type TaskCardModelLike = FlowModel & {
   };
 };
 
+type FlowEngineWithPluginManager = ReturnType<typeof useFlowEngine> & {
+  context?: {
+    app?: {
+      pm?: {
+        get?: (name: string) => unknown;
+      };
+    };
+  };
+};
+
 function parseWorkflowCollection(collection?: string): [string, string] {
   if (!collection) {
     return ['main', 'users'];
@@ -260,11 +270,19 @@ async function ensureTaskCardStructure(model: FlowModel) {
 }
 
 async function ensureTaskCardFieldMenuModels(flowEngine: ReturnType<typeof useFlowEngine>) {
-  await Promise.all(
-    ['CCTaskCardDetailsItemModel', 'CCTaskCardDetailsAssociationFieldGroupModel', 'TaskCardCommonItemModel'].map(
-      (modelName) => flowEngine.getModelClassAsync?.(modelName),
-    ),
-  );
+  const modelNames = [
+    'CCTaskCardDetailsItemModel',
+    'CCTaskCardDetailsAssociationFieldGroupModel',
+    'TaskCardCommonItemModel',
+  ];
+  const pluginManager = (flowEngine as FlowEngineWithPluginManager).context?.app?.pm;
+  const hasUiTemplatesPlugin =
+    !!pluginManager?.get?.('ui-templates') || !!pluginManager?.get?.('@nocobase/plugin-ui-templates');
+  if (hasUiTemplatesPlugin) {
+    modelNames.push('SubModelTemplateImporterModel');
+  }
+
+  await Promise.all(modelNames.map((modelName) => flowEngine.getModelClassAsync?.(modelName)));
 }
 
 function FlowModelConfigDialogContent({

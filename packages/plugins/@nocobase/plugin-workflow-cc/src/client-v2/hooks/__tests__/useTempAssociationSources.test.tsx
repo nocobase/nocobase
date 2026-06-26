@@ -53,14 +53,63 @@ afterEach(() => {
 });
 
 describe('useTempAssociationSources', () => {
-  it('returns an empty list when the workflow plugin is not registered', () => {
+  it('returns an empty list when the workflow plugin is not registered and workflow collection is missing', () => {
     setupWorkflowPlugin(undefined);
 
-    const { result } = renderHook(() =>
-      useTempAssociationSources({ config: { collection: 'main.orders' }, id: 1, type: 'approval' }, []),
-    );
+    const { result } = renderHook(() => useTempAssociationSources({ config: {}, id: 1, type: 'approval' }, []));
 
     expect(result.current).toEqual([]);
+  });
+
+  it('falls back to a workflow-level source when the trigger does not provide one', () => {
+    setupWorkflowPlugin({
+      triggers: {
+        get: (type: string) =>
+          type === 'approval'
+            ? {
+                useTempAssociationSource: vi.fn(() => null),
+              }
+            : undefined,
+      },
+    });
+
+    const { result } = renderHook(() =>
+      useTempAssociationSources({ config: { collection: 'main.orders' }, id: 10, type: 'approval' }, []),
+    );
+
+    expect(result.current).toEqual([
+      {
+        collection: 'main.orders',
+        nodeId: 10,
+        nodeKey: 'workflow',
+        nodeType: 'workflow',
+      },
+    ]);
+  });
+
+  it('does not duplicate an existing trigger source with the workflow-level fallback', () => {
+    const triggerSource = {
+      collection: 'main.orders',
+      nodeId: 10,
+      nodeKey: 'workflow',
+      nodeType: 'workflow' as const,
+    };
+    setupWorkflowPlugin({
+      triggers: {
+        get: (type: string) =>
+          type === 'approval'
+            ? {
+                useTempAssociationSource: vi.fn(() => triggerSource),
+              }
+            : undefined,
+      },
+    });
+
+    const { result } = renderHook(() =>
+      useTempAssociationSources({ config: { collection: 'main.orders' }, id: 10, type: 'approval' }, []),
+    );
+
+    expect(result.current).toEqual([triggerSource]);
   });
 
   it('resolves trigger and upstream sources from a v1-style workflow plugin', () => {

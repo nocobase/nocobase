@@ -18,6 +18,7 @@ const holder = vi.hoisted(() => ({
   getModelClassAsync: vi.fn(),
   loadOrCreateModel: vi.fn(),
   modelSave: vi.fn(),
+  pluginManagerGet: vi.fn(),
   randomId: vi.fn(),
   removeModelWithSubModels: vi.fn(),
   viewerDialog: vi.fn(),
@@ -71,6 +72,13 @@ vi.mock('@nocobase/flow-engine', () => ({
     },
   }),
   useFlowEngine: () => ({
+    context: {
+      app: {
+        pm: {
+          get: holder.pluginManagerGet,
+        },
+      },
+    },
     getModelClassAsync: holder.getModelClassAsync,
     loadOrCreateModel: holder.loadOrCreateModel,
     removeModelWithSubModels: holder.removeModelWithSubModels,
@@ -248,5 +256,33 @@ describe('FlowModelConfigInput', () => {
     expect(holder.getModelClassAsync).toHaveBeenCalledWith('CCTaskCardDetailsItemModel');
     expect(holder.getModelClassAsync).toHaveBeenCalledWith('CCTaskCardDetailsAssociationFieldGroupModel');
     expect(holder.getModelClassAsync).toHaveBeenCalledWith('TaskCardCommonItemModel');
+  });
+
+  it('preloads the field-template importer when UI templates are enabled', async () => {
+    holder.pluginManagerGet.mockImplementation((name: string) => (name === 'ui-templates' ? {} : undefined));
+    holder.randomId.mockReturnValue('cc_task_card_generated');
+    const model = createModel('cc_task_card_generated', 'CCTaskCardDetailsModel');
+    holder.loadOrCreateModel.mockResolvedValue(model);
+    holder.viewerDialog.mockImplementation(({ content }) => render(content()));
+
+    renderInput({ configKey: 'taskCardUid', kind: 'taskCard' });
+    fireEvent.click(screen.getByRole('button', { name: 'Go to configure' }));
+
+    await screen.findByTestId('flow-model');
+    expect(holder.getModelClassAsync).toHaveBeenCalledWith('SubModelTemplateImporterModel');
+  });
+
+  it('does not request the optional field-template importer when UI templates are unavailable', async () => {
+    holder.pluginManagerGet.mockReturnValue(undefined);
+    holder.randomId.mockReturnValue('cc_task_card_generated');
+    const model = createModel('cc_task_card_generated', 'CCTaskCardDetailsModel');
+    holder.loadOrCreateModel.mockResolvedValue(model);
+    holder.viewerDialog.mockImplementation(({ content }) => render(content()));
+
+    renderInput({ configKey: 'taskCardUid', kind: 'taskCard' });
+    fireEvent.click(screen.getByRole('button', { name: 'Go to configure' }));
+
+    await screen.findByTestId('flow-model');
+    expect(holder.getModelClassAsync).not.toHaveBeenCalledWith('SubModelTemplateImporterModel');
   });
 });
