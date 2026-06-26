@@ -21,6 +21,8 @@ export type { CanvasNode } from './canvas/contexts';
 export { default as useStyles } from './canvas/style';
 export { WorkflowVariableInput } from './canvas/WorkflowVariableInput';
 export type { WorkflowVariableInputProps } from './canvas/WorkflowVariableInput';
+export { WorkflowVariableSelect } from './canvas/WorkflowVariableSelect';
+export type { WorkflowVariableSelectProps } from './canvas/WorkflowVariableSelect';
 export { WorkflowVariableTextArea } from './canvas/WorkflowVariableTextArea';
 export type { WorkflowVariableTextAreaProps } from './canvas/WorkflowVariableTextArea';
 export { WorkflowVariableJsonTextArea } from './canvas/WorkflowVariableJsonTextArea';
