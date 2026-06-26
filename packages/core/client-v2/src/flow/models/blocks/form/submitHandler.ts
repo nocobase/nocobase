@@ -52,12 +52,13 @@ export async function submitHandler(ctx, params, cb?: (values?: any, filterByTk?
       }
     }
     const data: unknown = cb ? await cb(values) : await resource.save(values, params.requestConfig);
-    const responseRecord = getResponseRecord(data);
+    let responseRecord = getResponseRecord(data);
     if (isEditFormModel) {
       resource.isNewRecord = false;
       // 编辑表单保存成功后，表单应回到“已同步”状态：下一次刷新应允许覆盖为服务端值
       blockModel.resetUserModifiedFields?.();
       await resource.refresh();
+      responseRecord = responseRecord ?? resource.getData?.();
     } else {
       blockModel.form.resetFields();
       blockModel.emitter.emit('onFieldReset');
@@ -78,6 +79,6 @@ export async function submitHandler(ctx, params, cb?: (values?: any, filterByTk?
       ? await cb(values, currentFilterByTk)
       : await resource.update(currentFilterByTk, values, params.requestConfig);
     blockModel.resetUserModifiedFields?.();
-    return getResponseRecord(data);
+    return getResponseRecord(data) ?? blockModel.getCurrentRecord?.();
   }
 }
