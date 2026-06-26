@@ -1046,6 +1046,7 @@ describe('flowSurfaces exportBlueprint', () => {
                 title: 'Runtime banner',
                 description: 'Rendered by JS',
                 settings: {
+                  showBlockCard: false,
                   version: '1.0.0',
                   code: "ctx.render('Ready');",
                 },
@@ -1133,6 +1134,7 @@ describe('flowSurfaces exportBlueprint', () => {
       title: 'Runtime banner',
       description: 'Rendered by JS',
       settings: {
+        showBlockCard: false,
         version: '1.0.0',
         code: "ctx.render('Ready');",
       },
@@ -1161,6 +1163,18 @@ describe('flowSurfaces exportBlueprint', () => {
       values: exported.document,
     });
     expect(replaceRes.status, readErrorMessage(replaceRes)).toBe(200);
+
+    const replacedExportRes = await rootAgent.resource('flowSurfaces').exportBlueprint({
+      values: {
+        target: {
+          pageSchemaUid,
+        },
+      },
+    });
+    expect(replacedExportRes.status, readErrorMessage(replacedExportRes)).toBe(200);
+    const replacedBlocks = getData(replacedExportRes).document.tabs[0].blocks;
+    const replacedJsBlock = replacedBlocks.find((block) => block.key === 'runtimeBanner');
+    expect(replacedJsBlock?.settings?.showBlockCard).toBe(false);
   });
 
   it('should preserve supported kanban public settings and hidden popup display settings', async () => {
