@@ -10,6 +10,7 @@
 import type { Cache } from '@nocobase/cache';
 import { defaultTokenPolicyConfig } from '@nocobase/plugin-auth';
 import Application, { AppSupervisor } from '@nocobase/server';
+import type { ErrorOut, KoaContextWithOIDC } from 'oidc-provider';
 import fs from 'node:fs';
 import inject from 'light-my-request';
 import { AsyncLocalStorage } from 'node:async_hooks';
@@ -85,9 +86,7 @@ const DEVICE_CODE_TTL_SECONDS = 10 * 60;
 type JsonWebKeySet = Awaited<ReturnType<JoseModule['exportJWK']>> extends infer T
   ? { keys: Array<T & { kid?: string; use?: string; alg?: string }> }
   : { keys: Array<Record<string, any>> };
-type DeviceFlowRenderContext = {
-  body?: unknown;
-};
+type DeviceFlowRenderContext = KoaContextWithOIDC;
 
 function policyMillisecondsToSeconds(value: unknown, fallback: number) {
   if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0) {
@@ -189,12 +188,7 @@ function renderDevicePage(options: {
 </html>`;
 }
 
-async function renderDeviceCodeInput(
-  ctx: DeviceFlowRenderContext,
-  form: string,
-  out?: Record<string, unknown>,
-  error?: Error & { userCode?: string },
-) {
+async function renderDeviceCodeInput(ctx: DeviceFlowRenderContext, form: string, out?: ErrorOut, error?: Error) {
   const description =
     error || out?.error
       ? 'The code could not be verified. Check the code from your device and try again.'
@@ -802,7 +796,7 @@ export class IdpOauthService {
     return user;
   }
 
-  private getPublicErrorLocation(appName: string, out: Record<string, any>, issuerPath = this.getIssuerPath(appName)) {
+  private getPublicErrorLocation(appName: string, out: ErrorOut, issuerPath = this.getIssuerPath(appName)) {
     const query = new URLSearchParams();
     for (const [key, value] of Object.entries(out || {})) {
       if (typeof value === 'undefined' || value === null) {
@@ -940,7 +934,7 @@ export class IdpOauthService {
           iss: issuer,
         };
       },
-      renderError: async (ctx: any, out: Record<string, any>) => {
+      renderError: async (ctx: KoaContextWithOIDC, out: ErrorOut) => {
         ctx.status = 302;
         ctx.redirect(this.getPublicErrorLocation(appName, out, issuerPath));
       },

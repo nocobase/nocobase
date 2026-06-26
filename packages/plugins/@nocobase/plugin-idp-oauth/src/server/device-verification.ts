@@ -19,7 +19,7 @@ type DeviceVerificationContext = {
   path: string;
   query?: Record<string, unknown>;
   request: {
-    body?: Record<string, unknown>;
+    body?: unknown;
   };
   status?: number;
   body?: unknown;
@@ -60,8 +60,13 @@ function getStringArray(value: unknown) {
   return typeof value === 'string' && value ? [value] : [];
 }
 
+function isRecordLike(value: unknown): value is Record<string, unknown> {
+  return !!value && typeof value === 'object' && !Array.isArray(value);
+}
+
 function getUserCode(ctx: DeviceVerificationContext) {
-  return normalizeUserCode(ctx.request.body?.user_code || ctx.query?.user_code);
+  const body = isRecordLike(ctx.request.body) ? ctx.request.body : undefined;
+  return normalizeUserCode(body?.user_code || ctx.query?.user_code);
 }
 
 export function getDeviceVerificationAction(pathname: string, apiBasePath: string): DeviceVerificationAction | null {
