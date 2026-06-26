@@ -22,7 +22,6 @@
 import React, { Suspense, lazy, useMemo, useState } from 'react';
 import { App, Button, Form, Skeleton, Space, Tag, Tooltip, theme } from 'antd';
 import { css, cx } from '@emotion/css';
-import isEqual from 'lodash/isEqual';
 import { DrawerFormLayout } from '@nocobase/client-v2';
 import { useFlowContext as useFlowEngineContext, useFlowView } from '@nocobase/flow-engine';
 import { useT } from '../locale';
@@ -95,16 +94,6 @@ function NodeTypeDescription({
   );
 }
 
-function mergeDefaultConfig(defaultConfig: Record<string, unknown>, config: Record<string, unknown>) {
-  const nextConfig = { ...defaultConfig };
-  Object.entries(config).forEach(([key, value]) => {
-    if (typeof value !== 'undefined') {
-      nextConfig[key] = value;
-    }
-  });
-  return nextConfig;
-}
-
 /**
  * Open the node config drawer for a node. Call from a card click handler.
  * `ctx` is the flow-engine context (from `useFlowContext()`).
@@ -146,13 +135,11 @@ function NodeConfigForm({
 }) {
   const ctx = useFlowEngineContext();
   const t = useT();
-  const { message, modal } = App.useApp();
+  const { message } = App.useApp();
   const view = useFlowView();
   const executed = Boolean(workflow?.versionStats?.executed);
   const [form] = Form.useForm();
   const [submitting, setSubmitting] = useState(false);
-  const initialValuesRef = React.useRef<Record<string, unknown>>();
-  const closingConfirmedRef = React.useRef(false);
 
   const Fieldset = useMemo(() => {
     if (instruction?.FieldsetLoader) {
@@ -161,51 +148,11 @@ function NodeConfigForm({
     return null;
   }, [instruction]);
 
-  const initialValues = useMemo(() => {
-    const defaultConfig = instruction?.createDefaultConfig?.() ?? {};
-    const config = data.config && typeof data.config === 'object' && !Array.isArray(data.config) ? data.config : {};
-    return { config: mergeDefaultConfig(defaultConfig, config) };
-  }, [data.config, instruction]);
+  const initialValues = useMemo(() => ({ config: data.config ?? {} }), [data]);
 
   React.useEffect(() => {
     form.setFieldsValue(initialValues);
-    initialValuesRef.current = initialValues;
   }, [form, initialValues]);
-
-  React.useEffect(() => {
-    const previousBeforeClose = view.beforeClose;
-    const beforeClose = async (payload?: { force?: boolean }) => {
-      if (payload?.force || closingConfirmedRef.current) {
-        return previousBeforeClose ? previousBeforeClose(payload) : true;
-      }
-
-      const currentValues = form.getFieldsValue(true);
-      const hasUnsavedChanges = !isEqual(currentValues, initialValuesRef.current);
-      if (!hasUnsavedChanges) {
-        return previousBeforeClose ? previousBeforeClose(payload) : true;
-      }
-
-      return new Promise<boolean>((resolve) => {
-        modal.confirm({
-          title: t('Unsaved changes'),
-          content: t("Are you sure you don't want to save?"),
-          onOk: async () => {
-            closingConfirmedRef.current = true;
-            const allowed = previousBeforeClose ? await previousBeforeClose(payload) : true;
-            resolve(allowed !== false);
-          },
-          onCancel: () => resolve(false),
-        });
-      });
-    };
-    view.beforeClose = beforeClose;
-
-    return () => {
-      if (view.beforeClose === beforeClose) {
-        view.beforeClose = previousBeforeClose;
-      }
-    };
-  }, [form, modal, t, view]);
 
   const onSubmit = async () => {
     const values = await form.validateFields();
@@ -215,7 +162,6 @@ function NodeConfigForm({
         filterByTk: data.id,
         values: { config: values.config ?? {} },
       });
-      initialValuesRef.current = { config: values.config ?? {} };
       onSubmitted?.();
     } catch (err) {
       message.error(t('Failed to save node'));
