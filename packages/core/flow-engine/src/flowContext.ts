@@ -9,7 +9,7 @@
 
 import { ISchema } from '@formily/json-schema';
 import { observable } from '@formily/reactive';
-import { APIClient, RequestOptions } from '@nocobase/sdk';
+import type { APIClient, RequestOptions } from '@nocobase/sdk';
 import type { Router } from '@remix-run/router';
 import axios from 'axios';
 import { MessageInstance } from 'antd/es/message/interface';
@@ -39,9 +39,11 @@ import {
   extractUsedVariablePaths,
   FlowExitException,
   FLOW_ENGINE_NAMESPACE,
+  createOpenViewRouteState,
   isCtxDatePathPrefix,
   isCssFile,
   prepareRunJsCode,
+  RUNJS_OPEN_VIEW_ROUTE_STATE,
   resolveCtxDatePath,
   resolveDefaultParams,
   resolveExpressions,
@@ -51,6 +53,7 @@ import { FlowExitAllException } from './utils/exceptions';
 import { enqueueVariablesResolve, JSONValue } from './utils/params-resolvers';
 import type { RecordRef } from './utils/serverContextParams';
 import { buildServerContextParams as _buildServerContextParams } from './utils/serverContextParams';
+import { getDirtyAwareApiClient } from './utils/dirtyAwareApiClient';
 import { inferRecordRef } from './utils/variablesParams';
 import { FlowView, FlowViewer } from './views/FlowView';
 import { RunJSContextRegistry, getModelClassName, type RunJSVersion } from './runjs-context/registry';
@@ -2909,19 +2912,20 @@ export class FlowContext {
 
     // 静态值
     if ('value' in options) {
-      return options.value;
+      return key === 'api' ? getDirtyAwareApiClient(options.value, currentContext) : options.value;
     }
 
     // get 方法
     if (options.get) {
       if (options.cache === false) {
-        return options.get(currentContext);
+        const value = options.get(currentContext);
+        return key === 'api' ? getDirtyAwareApiClient(value, currentContext) : value;
       }
 
       const cacheKey = options.observable ? '_observableCache' : '_cache';
 
       if (key in this[cacheKey]) {
-        return this[cacheKey][key];
+        return key === 'api' ? getDirtyAwareApiClient(this[cacheKey][key], currentContext) : this[cacheKey][key];
       }
 
       if (this._pending[key]) return this._pending[key];
@@ -2939,7 +2943,7 @@ export class FlowContext {
           (v) => {
             this[cacheKey][key] = v;
             delete this._pending[key];
-            return v;
+            return key === 'api' ? getDirtyAwareApiClient(v, currentContext) : v;
           },
           (err) => {
             delete this._pending[key];
@@ -2951,7 +2955,7 @@ export class FlowContext {
 
       // sync 直接缓存
       this[cacheKey][key] = result;
-      return result;
+      return key === 'api' ? getDirtyAwareApiClient(result, currentContext) : result;
     }
 
     return undefined;
@@ -3074,7 +3078,7 @@ class BaseFlowEngineContext extends FlowContext {
     this.defineMethod('getModel', (modelName: string, searchInPreviousEngines?: boolean) => {
       return this.engine.getModel(modelName, searchInPreviousEngines);
     });
-    this.defineMethod('request', (options: RequestOptions) => {
+    this.defineMethod('request', function (this: FlowContext, options: RequestOptions) {
       const app = this.app as { getApiUrl?: (pathname?: string) => string } | undefined;
       if (typeof options?.url === 'string' && shouldBypassApiClient(options.url, app)) {
         return axios.request(options);
@@ -4600,6 +4604,27 @@ export class FlowRunJSContext extends FlowContext {
     this.defineProperty('ReactDOM', { value: ReactDOMShim });
 
     setupRunJSLibs(this);
+    this.defineMethod('openView', async function (uid: string, options?: Record<PropertyKey, unknown>) {
+      const delegateOpenView = (
+        delegate as FlowContext & {
+          openView?: (uid: string, options?: Record<PropertyKey, unknown>) => Promise<unknown>;
+        }
+      ).openView;
+
+      if (typeof delegateOpenView !== 'function') {
+        throw new Error('ctx.openView is not available in current context.');
+      }
+
+      const routeState = createOpenViewRouteState(options);
+      if (!routeState) {
+        return delegateOpenView(uid, options);
+      }
+
+      return delegateOpenView(uid, {
+        ...(options || {}),
+        [RUNJS_OPEN_VIEW_ROUTE_STATE]: routeState,
+      });
+    });
 
     // Convenience: ctx.render(<App />[, container])
     // - container defaults to ctx.element if available
