@@ -32,6 +32,11 @@ type DecoratedFormModel = {
   };
 };
 
+type DraftValuePatch = {
+  path: Array<string | number>;
+  value: unknown;
+};
+
 type DraftFlowContext = FlowModelContext & {
   model: FlowModelContext['model'] & DecoratedFormModel;
   draftRepository: FormDraftRepository;
@@ -39,7 +44,10 @@ type DraftFlowContext = FlowModelContext & {
     getFieldsValue: () => FormDraftValues;
     resetFields: () => void;
   };
-  setFormValues: (values: FormDraftValues, options?: { triggerEvent?: boolean }) => Promise<void> | void;
+  setFormValues: (
+    values: FormDraftValues | DraftValuePatch[],
+    options?: { source?: 'user'; triggerEvent?: boolean },
+  ) => Promise<void> | void;
   showDraftAlert: (message: string) => void;
   t: (key: string, options?: Record<string, unknown>) => string;
 };
@@ -58,6 +66,24 @@ function setBeforeContent(model: DecoratedFormModel, beforeContent: React.ReactN
   if (model.decoratorProps) {
     model.decoratorProps.beforeContent = beforeContent;
   }
+}
+
+function buildDraftValuePatches(values: FormDraftValues) {
+  const patches: DraftValuePatch[] = [];
+  const visit = (value: unknown, path: Array<string | number>) => {
+    patches.push({ path, value });
+    if (!value || typeof value !== 'object') {
+      return;
+    }
+    if (Array.isArray(value)) {
+      value.forEach((item, index) => visit(item, [...path, index]));
+      return;
+    }
+    Object.entries(value as Record<string, unknown>).forEach(([key, item]) => visit(item, [...path, key]));
+  };
+
+  Object.entries(values).forEach(([key, value]) => visit(value, [key]));
+  return patches;
 }
 
 function DraftAlert({ message, onDelete, t }: DraftAlertProps) {
@@ -134,7 +160,7 @@ FormBlockModel.registerFlow({
           await draftCtx.draftRepository.create();
           return;
         }
-        await draftCtx.setFormValues(draft.values, { triggerEvent: false });
+        await draftCtx.setFormValues(buildDraftValuePatches(draft.values), { source: 'user', triggerEvent: false });
         draftCtx.showDraftAlert(RESTORED_DRAFT_MESSAGE);
       },
     },

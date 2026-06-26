@@ -120,12 +120,12 @@ describe('PluginFormDraftsClient v2', () => {
     expect(db.createObjectStore).toHaveBeenCalledWith('drafts', { keyPath: 'uid' });
   });
 
-  it('restores an existing non-empty draft before rendering the form', async () => {
+  it('restores an existing non-empty draft as user-edited form values', async () => {
     const engine = new FlowEngine();
     const model = engine.createModel<FlowModel>({ use: 'FlowModel', uid: 'form-uid' });
     const ctx = new FlowRuntimeContext(model, 'draftCreateFlow');
     const draftCreateFlow = FormBlockModel.globalFlowRegistry.getFlow('draftCreateFlow');
-    const restoredValues = { title: 'Restored title' };
+    const restoredValues = { title: 'Restored title', roles: [{ roleName: 'Draft role' }] };
     const setDecoratorProps = vi.fn();
     const setFormValues = vi.fn();
     const resetFields = vi.fn();
@@ -149,7 +149,15 @@ describe('PluginFormDraftsClient v2', () => {
 
     await draftCreateFlow?.steps.createDraft.handler?.(ctx, { enabled: true });
 
-    expect(setFormValues).toHaveBeenCalledWith(restoredValues, { triggerEvent: false });
+    expect(setFormValues).toHaveBeenCalledWith(
+      [
+        { path: ['title'], value: 'Restored title' },
+        { path: ['roles'], value: restoredValues.roles },
+        { path: ['roles', 0], value: restoredValues.roles[0] },
+        { path: ['roles', 0, 'roleName'], value: 'Draft role' },
+      ],
+      { source: 'user', triggerEvent: false },
+    );
     expect(setDecoratorProps).toHaveBeenCalledWith({ beforeContent: expect.anything() });
     expect(await ctx.draftRepository.get()).toEqual({ uid: 'form-uid:123', values: restoredValues });
 
