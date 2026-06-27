@@ -26,6 +26,7 @@ import {
   getRecordPrimaryKeyValue,
   getValueByPath,
   isContextVariableValue,
+  normalizeOwnerFilterValue,
   resolveCommentOwnerValue,
   resolveCommentOwnerValueFromFilterByTk,
   toScalarFilterValue,
@@ -104,6 +105,7 @@ export class RecordCommentsBlockModel extends CollectionBlockModel<RecordComment
   static scene = BlockSceneEnum.many;
 
   private readonly resolvedOwnerValue = observable.ref<RecordCommentOwnerValue>(undefined);
+  private readonly loadingLastPage = observable.ref(false);
   private shouldLoadLastPage = true;
 
   static filterCollection(collection: Collection) {
@@ -151,12 +153,29 @@ export class RecordCommentsBlockModel extends CollectionBlockModel<RecordComment
     );
   }
 
-  get ownerValue() {
+  private get rawOwnerValue() {
     if (isContextVariableValue(this.mapping.ownerValueField)) {
       return this.resolvedOwnerValue.value ?? this.getOwnerValueFromViewFilterByTk();
     }
 
     return this.getOwnerValueFromRecord() ?? this.getOwnerValueFromViewFilterByTk();
+  }
+
+  private get ownerFilterValueState() {
+    const ownerValue = this.rawOwnerValue;
+    if (!this.mapping.ownerField || ownerValue === undefined) {
+      return {
+        compatible: true,
+        value: ownerValue,
+      };
+    }
+
+    return normalizeOwnerFilterValue(this.collection, this.mapping.ownerField, ownerValue);
+  }
+
+  get ownerValue() {
+    const ownerFilterValueState = this.ownerFilterValueState;
+    return ownerFilterValueState.compatible ? ownerFilterValueState.value : undefined;
   }
 
   async resolveOwnerValue() {
@@ -173,13 +192,14 @@ export class RecordCommentsBlockModel extends CollectionBlockModel<RecordComment
   }
 
   async applyOwnerFilter() {
-    const ownerValue = await this.resolveOwnerValue();
+    await this.resolveOwnerValue();
+    const ownerFilterValueState = this.ownerFilterValueState;
     this.resource.removeFilterGroup(OWNER_FILTER_GROUP_KEY);
 
-    if (this.mapping.ownerField && ownerValue !== undefined) {
+    if (this.mapping.ownerField && ownerFilterValueState.compatible && ownerFilterValueState.value !== undefined) {
       this.resource.addFilterGroup(
         OWNER_FILTER_GROUP_KEY,
-        createOwnerFieldFilter(this.collection, this.mapping.ownerField, ownerValue),
+        createOwnerFieldFilter(this.collection, this.mapping.ownerField, ownerFilterValueState.value),
       );
     }
   }
@@ -200,11 +220,11 @@ export class RecordCommentsBlockModel extends CollectionBlockModel<RecordComment
     }
 
     if (mapping.ownerField) {
-      const ownerValue = this.ownerValue;
-      if (ownerValue !== undefined) {
+      const ownerFilterValueState = this.ownerFilterValueState;
+      if (ownerFilterValueState.compatible && ownerFilterValueState.value !== undefined) {
         resource.addFilterGroup(
           OWNER_FILTER_GROUP_KEY,
-          createOwnerFieldFilter(this.collection, mapping.ownerField, ownerValue),
+          createOwnerFieldFilter(this.collection, mapping.ownerField, ownerFilterValueState.value),
         );
       }
     }
@@ -221,6 +241,17 @@ export class RecordCommentsBlockModel extends CollectionBlockModel<RecordComment
     return Math.max(Math.ceil(count / pageSize), 1);
   }
 
+  isPreparingLastPageLoad() {
+    if (this.loadingLastPage.value) {
+      return true;
+    }
+
+    const count = this.resource.getCount() || 0;
+    const currentPage = this.resource.getPage() || 1;
+    const lastPage = this.getLastPage();
+    return this.shouldLoadLastPage && count > 0 && currentPage !== lastPage;
+  }
+
   async ensureLastPageLoaded() {
     if (this.resource.loading) {
       return;
@@ -233,7 +264,12 @@ export class RecordCommentsBlockModel extends CollectionBlockModel<RecordComment
       this.shouldLoadLastPage = false;
       this.resource.setPage(lastPage);
       this.resource.loading = true;
-      await this.refresh();
+      this.loadingLastPage.value = true;
+      try {
+        await this.refresh();
+      } finally {
+        this.loadingLastPage.value = false;
+      }
       return;
     }
 
@@ -249,7 +285,12 @@ export class RecordCommentsBlockModel extends CollectionBlockModel<RecordComment
 
     this.resource.setPage(lastPage);
     this.resource.loading = true;
-    await this.refresh();
+    this.loadingLastPage.value = true;
+    try {
+      await this.refresh();
+    } finally {
+      this.loadingLastPage.value = false;
+    }
   }
 
   async handlePageChange(page: number) {
@@ -266,7 +307,7 @@ export class RecordCommentsBlockModel extends CollectionBlockModel<RecordComment
       return (
         <Alert
           message={this.context.t(
-            'Please configure the comment content field, commenter field, comment association field, and comment date field.',
+            'Please configure the comment content field, commenter field, comment owner field, and comment date field.',
             {
               ns: NAMESPACE,
             },
@@ -277,7 +318,24 @@ export class RecordCommentsBlockModel extends CollectionBlockModel<RecordComment
       );
     }
 
-    if (this.ownerValue === undefined) {
+    const ownerFilterValueState = this.ownerFilterValueState;
+
+    if (!ownerFilterValueState.compatible) {
+      return (
+        <Alert
+          message={this.context.t(
+            'The comment owner field value type does not match the comment owner field. Please reconfigure the field mapping.',
+            {
+              ns: NAMESPACE,
+            },
+          )}
+          type="warning"
+          showIcon
+        />
+      );
+    }
+
+    if (ownerFilterValueState.value === undefined) {
       return (
         <Alert
           message={this.context.t('The current record value is empty, so comments cannot be loaded.', {
@@ -337,7 +395,7 @@ RecordCommentsBlockModel.registerFlow({
             ? undefined
             : {
                 type: 'string',
-                title: tExpr('Comment association field'),
+                title: tExpr('Comment owner field'),
                 required: true,
                 'x-decorator': 'FormItem',
                 'x-component': RecordCommentFieldSelect,
@@ -349,7 +407,7 @@ RecordCommentsBlockModel.registerFlow({
             ? undefined
             : {
                 type: 'string',
-                title: tExpr('Comment association field value'),
+                title: tExpr('Comment owner field value'),
                 required: true,
                 'x-decorator': 'FormItem',
                 'x-component': TextAreaWithContextSelector,

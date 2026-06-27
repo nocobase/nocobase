@@ -497,6 +497,8 @@ export const RecordCommentsBlockView = Object.assign(
       const count = resource.getCount() || 0;
       const renderInstanceKey = normalizeForkKeyPart(useId());
       const blockForkKeyPrefix = `${normalizeForkKeyPart(model.uid)}_${renderInstanceKey}`;
+      const preparingLastPageLoad = model.isPreparingLastPageLoad();
+      const visibleDataSource = preparingLastPageLoad ? [] : dataSource;
 
       useEffect(() => {
         void model.ensureLastPageLoaded();
@@ -505,6 +507,7 @@ export const RecordCommentsBlockView = Object.assign(
       return (
         <Space direction="vertical" size={16} style={{ width: '100%' }}>
           <List
+            loading={resource.loading || preparingLastPageLoad}
             pagination={
               count > 0
                 ? {
@@ -519,10 +522,10 @@ export const RecordCommentsBlockView = Object.assign(
             }
           >
             <div style={listStyle}>
-              {dataSource.length ? (
-                dataSource.map((record, index) => {
+              {visibleDataSource.length ? (
+                visibleDataSource.map((record, index) => {
                   const isFirst = index === 0;
-                  const isLast = index === dataSource.length - 1;
+                  const isLast = index === visibleDataSource.length - 1;
                   const recordForkKey = normalizeForkKeyPart(
                     getRecordPrimaryKeyValue(record, model.collection) || index,
                   );
@@ -554,7 +557,7 @@ export const RecordCommentsBlockView = Object.assign(
                     </div>
                   );
                 })
-              ) : (
+              ) : preparingLastPageLoad ? null : (
                 <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('No comments')} />
               )}
             </div>

@@ -47,9 +47,8 @@ export type RecordCommentCollectionField = {
   target?: string;
   primaryKey?: boolean;
   targetKey?: string;
-  targetCollection?: {
+  targetCollection?: RecordCommentCollection & {
     name?: string;
-    filterTargetKey?: string | string[];
   };
   uiSchema?: {
     title?: string;
@@ -321,6 +320,105 @@ export const toScalarFilterValue = (value: unknown): string | number | boolean |
   }
 
   return undefined;
+};
+
+const numericFieldTypes = new Set(['integer', 'bigInt', 'double', 'float', 'decimal', 'real']);
+const booleanFieldTypes = new Set(['boolean']);
+const stringFieldTypes = new Set([
+  'string',
+  'text',
+  'uid',
+  'uuid',
+  'email',
+  'phone',
+  'url',
+  'password',
+  'radioGroup',
+  'select',
+]);
+
+const isNumericField = (field?: RecordCommentCollectionField) => {
+  return Boolean(field && (numericFieldTypes.has(field.type || '') || numericFieldTypes.has(field.interface || '')));
+};
+
+const isBooleanField = (field?: RecordCommentCollectionField) => {
+  return Boolean(field && (booleanFieldTypes.has(field.type || '') || booleanFieldTypes.has(field.interface || '')));
+};
+
+const isStringField = (field?: RecordCommentCollectionField) => {
+  return Boolean(field && (stringFieldTypes.has(field.type || '') || stringFieldTypes.has(field.interface || '')));
+};
+
+const normalizeFilterValueByFieldType = (value: string | number | boolean, field?: RecordCommentCollectionField) => {
+  if (!field) {
+    return {
+      compatible: true,
+      value,
+    };
+  }
+
+  if (isNumericField(field)) {
+    if (typeof value === 'number') {
+      return Number.isFinite(value) ? { compatible: true, value } : { compatible: false };
+    }
+
+    if (typeof value === 'string' && value.trim() !== '') {
+      const numberValue = Number(value);
+      return Number.isFinite(numberValue) ? { compatible: true, value: numberValue } : { compatible: false };
+    }
+
+    return { compatible: false };
+  }
+
+  if (isBooleanField(field)) {
+    if (typeof value === 'boolean') {
+      return { compatible: true, value };
+    }
+
+    if (typeof value === 'string') {
+      const normalizedValue = value.trim().toLowerCase();
+      if (normalizedValue === 'true' || normalizedValue === '1') {
+        return { compatible: true, value: true };
+      }
+
+      if (normalizedValue === 'false' || normalizedValue === '0') {
+        return { compatible: true, value: false };
+      }
+    }
+
+    return { compatible: false };
+  }
+
+  if (isStringField(field)) {
+    return {
+      compatible: true,
+      value: String(value),
+    };
+  }
+
+  return {
+    compatible: true,
+    value,
+  };
+};
+
+const getOwnerTargetField = (collection: unknown, ownerFieldName: string) => {
+  const ownerField = getCollectionField(collection, ownerFieldName);
+  if (!isBelongsToField(ownerField)) {
+    return undefined;
+  }
+
+  const targetKey =
+    ownerField?.targetKey || normalizeFilterTargetKey(ownerField?.targetCollection?.filterTargetKey) || 'id';
+  return getCollectionField(ownerField?.targetCollection, targetKey);
+};
+
+export const normalizeOwnerFilterValue = (
+  collection: unknown,
+  ownerFieldName: string,
+  ownerValue: string | number | boolean,
+) => {
+  return normalizeFilterValueByFieldType(ownerValue, getOwnerTargetField(collection, ownerFieldName));
 };
 
 const extractCurrentRecordVariablePath = (value?: unknown) => {

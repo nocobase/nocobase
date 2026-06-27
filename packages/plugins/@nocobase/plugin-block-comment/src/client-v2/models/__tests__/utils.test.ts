@@ -21,6 +21,7 @@ import {
   isContextVariableExpression,
   isContextVariablePath,
   isContextVariableValue,
+  normalizeOwnerFilterValue,
   resolveCommentOwnerValue,
   resolveCommentOwnerValueFromFilterByTk,
 } from '../utils';
@@ -317,6 +318,78 @@ describe('record comments owner value utils', () => {
           $eq: 'task-1',
         },
       },
+    });
+  });
+
+  it('normalizes owner values by the owner field target key type', () => {
+    expect(
+      normalizeOwnerFilterValue(
+        {
+          fields: [
+            {
+              name: 'task',
+              type: 'belongsTo',
+              interface: 'm2o',
+              targetCollection: {
+                fields: [{ name: 'id', type: 'bigInt', interface: 'integer' }],
+              },
+            },
+          ],
+        },
+        'task',
+        '123',
+      ),
+    ).toEqual({
+      compatible: true,
+      value: 123,
+    });
+  });
+
+  it('detects incompatible owner values for numeric owner field target keys', () => {
+    expect(
+      normalizeOwnerFilterValue(
+        {
+          fields: [
+            {
+              name: 'task',
+              type: 'belongsTo',
+              interface: 'm2o',
+              targetCollection: {
+                fields: [{ name: 'id', type: 'bigInt', interface: 'integer' }],
+              },
+            },
+          ],
+        },
+        'task',
+        'not-a-number',
+      ),
+    ).toEqual({
+      compatible: false,
+    });
+  });
+
+  it('normalizes owner values to strings for string owner field target keys', () => {
+    expect(
+      normalizeOwnerFilterValue(
+        {
+          fields: [
+            {
+              name: 'role',
+              type: 'belongsTo',
+              interface: 'm2o',
+              targetKey: 'name',
+              targetCollection: {
+                fields: [{ name: 'name', type: 'string', interface: 'input' }],
+              },
+            },
+          ],
+        },
+        'role',
+        456,
+      ),
+    ).toEqual({
+      compatible: true,
+      value: '456',
     });
   });
 });
