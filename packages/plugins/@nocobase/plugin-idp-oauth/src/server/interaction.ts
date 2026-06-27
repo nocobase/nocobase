@@ -21,6 +21,7 @@ type InteractionUser = {
 type InteractionContext = {
   req: any;
   res: any;
+  status?: number;
   throw: (...args: any[]) => never;
   request: {
     body?: Record<string, any>;
@@ -54,6 +55,31 @@ function shouldSkipConsent(clientId: string) {
 
 function getClientId(details: Interaction) {
   return String(details.params.client_id || '');
+}
+
+function isInteractionSessionNotFound(error: unknown) {
+  return (
+    error instanceof Error &&
+    error.name === 'SessionNotFound' &&
+    (error as { error?: unknown }).error === 'invalid_request'
+  );
+}
+
+async function getInteractionDetails(ctx: InteractionContext, provider: Provider) {
+  try {
+    return await provider.interactionDetails(ctx.req, ctx.res);
+  } catch (error) {
+    if (!isInteractionSessionNotFound(error)) {
+      throw error;
+    }
+
+    ctx.status = 400;
+    ctx.body = {
+      error: 'invalid_request',
+      error_description: 'The authorization request has expired or is no longer available.',
+    };
+    return null;
+  }
 }
 
 async function getInteractionRedirect(
@@ -167,7 +193,11 @@ export async function handleInteractionGet(
   user: InteractionUser | undefined,
   service: IdpOauthService,
 ) {
-  const details = await provider.interactionDetails(ctx.req, ctx.res);
+  const details = await getInteractionDetails(ctx, provider);
+  if (!details) {
+    return;
+  }
+
   const interactionUser = user || (await service.resolveInteractionSessionUser(details.session?.accountId));
 
   if (details.prompt.name === 'login') {
@@ -214,7 +244,11 @@ export async function handleInteractionPost(
   user: InteractionUser | undefined,
   service: IdpOauthService,
 ) {
-  const details = await provider.interactionDetails(ctx.req, ctx.res);
+  const details = await getInteractionDetails(ctx, provider);
+  if (!details) {
+    return;
+  }
+
   const interactionUser = user || (await service.resolveInteractionSessionUser(details.session?.accountId));
 
   if (ctx.request.body?.cancel) {
