@@ -156,6 +156,44 @@ const getCommenterCreatePayload = (model: RecordCommentsBlockModel) => {
   };
 };
 
+const getDateCreatePayload = (model: RecordCommentsBlockModel) => {
+  const dateField = model.mapping.dateField;
+  const dateCollectionField = getCollectionField(model.collection, dateField);
+  const fieldType = dateCollectionField?.interface || dateCollectionField?.type;
+
+  if (
+    !dateField ||
+    dateField === 'createdAt' ||
+    dateField === 'updatedAt' ||
+    dateCollectionField?.interface === 'createdAt' ||
+    dateCollectionField?.interface === 'updatedAt'
+  ) {
+    return {};
+  }
+
+  if (fieldType === 'unixTimestamp') {
+    return {
+      [dateField]: dayjs().unix(),
+    };
+  }
+
+  if (fieldType === 'dateOnly') {
+    return {
+      [dateField]: dayjs().format('YYYY-MM-DD'),
+    };
+  }
+
+  if (fieldType === 'time') {
+    return {
+      [dateField]: dayjs().format('HH:mm:ss'),
+    };
+  }
+
+  return {
+    [dateField]: dayjs().toISOString(),
+  };
+};
+
 const getCommenterDisplayName = (
   record: RecordCommentRecord,
   mapping: RecordCommentsBlockModel['mapping'],
@@ -238,11 +276,17 @@ const SubmitBox = observer(({ model, forkKeyPrefix }: { model: RecordCommentsBlo
 
     setSubmitting(true);
     try {
-      await model.resource.create({
-        [mapping.contentField]: content,
-        [mapping.ownerField]: model.ownerValue,
-        ...getCommenterCreatePayload(model),
-      } as RecordCommentRecord);
+      await model.resource.create(
+        {
+          [mapping.contentField]: content,
+          [mapping.ownerField]: model.ownerValue,
+          ...getCommenterCreatePayload(model),
+          ...getDateCreatePayload(model),
+        } as RecordCommentRecord,
+        {
+          refresh: false,
+        },
+      );
       setContent('');
       const count = model.resource.getCount() || 0;
       const pageSize = model.resource.getPageSize() || 10;
@@ -501,7 +545,15 @@ export const RecordCommentsBlockView = Object.assign(
       const visibleDataSource = preparingLastPageLoad ? [] : dataSource;
 
       useEffect(() => {
-        void model.ensureLastPageLoaded();
+        async function ensureLastPageLoaded() {
+          try {
+            await model.ensureLastPageLoaded();
+          } catch {
+            // Keep the current page visible if the last-page refresh fails.
+          }
+        }
+
+        ensureLastPageLoaded();
       }, [count, model, page, pageSize, resource.loading]);
 
       return (

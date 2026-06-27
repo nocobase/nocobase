@@ -21,6 +21,7 @@ export class DeleteRecordCommentActionModel extends RecordCommentActionModel {
 
   defaultProps: ButtonProps = {
     type: 'link',
+    style: { padding: 0, height: 'auto' },
     title: tExpr('Delete'),
   };
 
@@ -61,7 +62,6 @@ DeleteRecordCommentActionModel.registerFlow({
 
         try {
           await resource.destroy(recordKey);
-          await resource.refresh();
           ctx.message.success(ctx.t('Record deleted successfully'));
         } catch (error) {
           ctx.message.error(getErrorMessage(error, ctx.t('Failed to delete comment')));

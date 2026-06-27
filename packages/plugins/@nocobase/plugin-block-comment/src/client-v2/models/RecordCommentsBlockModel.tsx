@@ -379,6 +379,9 @@ RecordCommentsBlockModel.registerFlow({
             required: true,
             'x-decorator': 'FormItem',
             'x-component': RecordCommentFieldSelect,
+            'x-component-props': {
+              fieldFilter: 'content',
+            },
           },
           commenterField: {
             type: 'string',
@@ -424,6 +427,9 @@ RecordCommentsBlockModel.registerFlow({
             required: true,
             'x-decorator': 'FormItem',
             'x-component': RecordCommentFieldSelect,
+            'x-component-props': {
+              fieldFilter: 'date',
+            },
           },
         };
       },

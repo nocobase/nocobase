@@ -13,12 +13,18 @@ import type { SelectProps } from 'antd';
 import React, { useMemo } from 'react';
 
 import { useT } from '../../locale';
-import { getCollectionFieldOptions, getCommentOwnerFieldOptions, getCommentUserFieldOptions } from '../utils';
+import {
+  getCollectionFieldOptions,
+  getCommentContentFieldOptions,
+  getCommentDateFieldOptions,
+  getCommentOwnerFieldOptions,
+  getCommentUserFieldOptions,
+} from '../utils';
 
 type RecordCommentFieldSelectProps = Omit<SelectProps<string | string[]>, 'options'> & {
   value?: string | string[];
   onChange?: (value: string | string[] | undefined) => void;
-  fieldFilter?: 'belongsTo' | 'user';
+  fieldFilter?: 'belongsTo' | 'content' | 'date' | 'user';
 };
 
 export const RecordCommentFieldSelect = observer((props: RecordCommentFieldSelectProps) => {
@@ -30,6 +36,14 @@ export const RecordCommentFieldSelect = observer((props: RecordCommentFieldSelec
   const options = useMemo(() => {
     if (fieldFilter === 'belongsTo') {
       return getCommentOwnerFieldOptions(collection);
+    }
+
+    if (fieldFilter === 'content') {
+      return getCommentContentFieldOptions(collection);
+    }
+
+    if (fieldFilter === 'date') {
+      return getCommentDateFieldOptions(collection);
     }
 
     if (fieldFilter === 'user') {

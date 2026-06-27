@@ -119,6 +119,61 @@ export const getCollectionFieldOptions = (collection?: unknown) => {
     }));
 };
 
+const contentFieldTypes = new Set(['string', 'text']);
+const contentFieldInterfaces = new Set(['input', 'markdown', 'richText', 'text', 'textarea']);
+const dateFieldTypes = new Set(['date', 'dateOnly', 'datetime', 'time', 'unixTimestamp']);
+const dateFieldInterfaces = new Set([
+  'createdAt',
+  'date',
+  'dateOnly',
+  'datetime',
+  'time',
+  'unixTimestamp',
+  'updatedAt',
+]);
+
+export const isCommentContentField = (field?: RecordCommentCollectionField) => {
+  if (!field) {
+    return false;
+  }
+
+  if (field.interface) {
+    return contentFieldInterfaces.has(field.interface);
+  }
+
+  return contentFieldTypes.has(field.type || '');
+};
+
+export const isCommentDateField = (field?: RecordCommentCollectionField) => {
+  if (!field) {
+    return false;
+  }
+
+  if (field.interface) {
+    return dateFieldInterfaces.has(field.interface);
+  }
+
+  return dateFieldTypes.has(field.type || '');
+};
+
+export const getCommentContentFieldOptions = (collection?: unknown) => {
+  return getCollectionFields(collection)
+    .filter((field) => field.name && isCommentContentField(field))
+    .map((field) => ({
+      label: field.title || field.uiSchema?.title || field.name,
+      value: field.name,
+    }));
+};
+
+export const getCommentDateFieldOptions = (collection?: unknown) => {
+  return getCollectionFields(collection)
+    .filter((field) => field.name && isCommentDateField(field))
+    .map((field) => ({
+      label: field.title || field.uiSchema?.title || field.name,
+      value: field.name,
+    }));
+};
+
 export const isBelongsToField = (field?: RecordCommentCollectionField) => {
   return field?.type === 'belongsTo' || field?.interface === 'm2o';
 };

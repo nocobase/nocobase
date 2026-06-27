@@ -15,9 +15,11 @@ import {
   createOwnerFieldFilter,
   getAssociationRecordCommentFieldMapping,
   getAssociationSourceCollectionName,
-  getDefaultRecordCommentFieldMapping,
+  getCommentContentFieldOptions,
+  getCommentDateFieldOptions,
   getCommentOwnerFieldOptions,
   getCommentUserFieldOptions,
+  getDefaultRecordCommentFieldMapping,
   isContextVariableExpression,
   isContextVariablePath,
   isContextVariableValue,
@@ -300,6 +302,41 @@ describe('record comments owner value utils', () => {
     ).toEqual([
       { label: 'Creator', value: 'creator' },
       { label: 'Assignee', value: 'assignee' },
+    ]);
+  });
+
+  it('only exposes text-like fields as comment content field options', () => {
+    expect(
+      getCommentContentFieldOptions({
+        fields: [
+          { name: 'title', type: 'string', interface: 'input', title: 'Title' },
+          { name: 'content', type: 'text', interface: 'textarea', title: 'Content' },
+          { name: 'body', type: 'text', interface: 'markdown', title: 'Body' },
+          { name: 'status', type: 'string', interface: 'select', title: 'Status' },
+          { name: 'post', type: 'belongsTo', interface: 'm2o', title: 'Post' },
+        ],
+      }),
+    ).toEqual([
+      { label: 'Title', value: 'title' },
+      { label: 'Content', value: 'content' },
+      { label: 'Body', value: 'body' },
+    ]);
+  });
+
+  it('only exposes date-like fields as comment date field options', () => {
+    expect(
+      getCommentDateFieldOptions({
+        fields: [
+          { name: 'createdAt', type: 'date', interface: 'createdAt', title: 'Created at' },
+          { name: 'commentedAt', type: 'datetime', interface: 'datetime', title: 'Commented at' },
+          { name: 'timestamp', type: 'unixTimestamp', interface: 'unixTimestamp', title: 'Timestamp' },
+          { name: 'title', type: 'string', interface: 'input', title: 'Title' },
+        ],
+      }),
+    ).toEqual([
+      { label: 'Created at', value: 'createdAt' },
+      { label: 'Commented at', value: 'commentedAt' },
+      { label: 'Timestamp', value: 'timestamp' },
     ]);
   });
 

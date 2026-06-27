@@ -7,17 +7,63 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ActionGroupModel, ActionModel, ActionSceneEnum, JSActionModel, JSItemActionModel } from '@nocobase/client-v2';
+import {
+  ActionGroupModel,
+  ActionModel,
+  ActionSceneEnum,
+  CollectionActionGroupModel,
+  JSActionModel,
+  JSItemActionModel,
+  RecordActionGroupModel,
+} from '@nocobase/client-v2';
 import { buildSubModelItem, type FlowModelContext } from '@nocobase/flow-engine';
 
 import { tExpr } from '../../locale';
 
 const ALLOWED_RECORD_COMMENT_SUBMIT_ACTIONS = ['AIEmployeeActionModel', 'JSItemActionModel', 'JSActionModel'];
+const ALLOWED_RECORD_COMMENT_RECORD_ACTIONS = ['AIEmployeeActionModel'];
+
+const getRecordCommentActionModelClass = (
+  modelName: string,
+  ctx: FlowModelContext,
+  actionGroupModel: typeof ActionGroupModel,
+) =>
+  (ctx.engine.getModelClass(modelName) ||
+    actionGroupModel.models.get(modelName) ||
+    CollectionActionGroupModel.models.get(modelName) ||
+    RecordActionGroupModel.models.get(modelName)) as typeof ActionModel | undefined;
 
 export class RecordCommentActionModel extends ActionModel {}
 
 export class RecordCommentActionGroupModel extends ActionGroupModel {
   static baseClass = RecordCommentActionModel;
+
+  static async defineChildren(ctx: FlowModelContext) {
+    const items = await super.defineChildren(ctx);
+
+    for (const modelName of ALLOWED_RECORD_COMMENT_RECORD_ACTIONS) {
+      const ModelClass = getRecordCommentActionModelClass(modelName, ctx, this);
+      if (!ModelClass) {
+        continue;
+      }
+      if (items.some((item) => item.useModel === ModelClass.name)) {
+        continue;
+      }
+      if (!this.isActionModelVisible(ModelClass, ctx)) {
+        continue;
+      }
+      if (!ModelClass._isScene?.(ActionSceneEnum.record)) {
+        continue;
+      }
+
+      const item = await buildSubModelItem(ModelClass, ctx);
+      if (item) {
+        items.push(item);
+      }
+    }
+
+    return items.sort((a, b) => (a.sort ?? 1000) - (b.sort ?? 1000));
+  }
 }
 
 export class RecordCommentSubmitActionGroupModel extends ActionGroupModel {
@@ -25,17 +71,11 @@ export class RecordCommentSubmitActionGroupModel extends ActionGroupModel {
     const items = [];
 
     for (const modelName of ALLOWED_RECORD_COMMENT_SUBMIT_ACTIONS) {
-      const ModelClass = (ctx.engine.getModelClass(modelName) || this.models.get(modelName)) as
-        | typeof ActionModel
-        | undefined;
-
+      const ModelClass = getRecordCommentActionModelClass(modelName, ctx, this);
       if (!ModelClass) {
         continue;
       }
       if (!this.isActionModelVisible(ModelClass, ctx)) {
-        continue;
-      }
-      if (!ModelClass._isScene?.(ActionSceneEnum.all)) {
         continue;
       }
 

@@ -18,6 +18,7 @@ export class EditRecordCommentActionModel extends RecordCommentActionModel {
 
   defaultProps: ButtonProps = {
     type: 'link',
+    style: { padding: 0, height: 'auto' },
     title: tExpr('Edit'),
   };
 

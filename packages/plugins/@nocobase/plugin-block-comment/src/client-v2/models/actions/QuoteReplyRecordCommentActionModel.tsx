@@ -20,6 +20,7 @@ export class QuoteReplyRecordCommentActionModel extends RecordCommentActionModel
 
   defaultProps: ButtonProps = {
     type: 'link',
+    style: { padding: 0, height: 'auto' },
     title: tExpr('Quote reply'),
   };
 

@@ -8,7 +8,7 @@
  */
 
 import React, { useRef } from 'react';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { App } from 'antd';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -141,5 +141,64 @@ describe('RecordCommentsBlockView.Item', () => {
 
     expect(Number(screen.getByTestId('render-count').textContent)).toBeLessThanOrEqual(5);
     expect(renderSpy.mock.calls.length).toBeLessThanOrEqual(3);
+  });
+});
+
+describe('RecordCommentsBlockView', () => {
+  it('includes a custom date field value when creating comments', async () => {
+    const create = vi.fn(async () => undefined);
+    const resource = {
+      loading: false,
+      create,
+      refresh: vi.fn(async () => undefined),
+      setPage: vi.fn(),
+      getPage: vi.fn(() => 1),
+      getPageSize: vi.fn(() => 20),
+      getCount: vi.fn(() => 0),
+    };
+    const model = {
+      uid: 'block-1',
+      mapping: {
+        contentField: 'content',
+        ownerField: 'post',
+        dateField: 'commentedAt',
+      },
+      ownerValue: 12,
+      context: {
+        defineMethod: vi.fn(),
+        flowSettingsEnabled: false,
+      },
+      collection: {
+        fields: [{ name: 'commentedAt', type: 'datetime', interface: 'datetime' }],
+      },
+      resource,
+      isPreparingLastPageLoad: vi.fn(() => false),
+      ensureLastPageLoaded: vi.fn(async () => undefined),
+      mapSubModels: vi.fn(() => []),
+    } as unknown as RecordCommentsBlockModel;
+
+    render(
+      <App>
+        <RecordCommentsBlockView model={model} dataSource={[]} onPageChange={vi.fn()} />
+      </App>,
+    );
+
+    fireEvent.change(screen.getByRole('textbox', { name: 'Comment content' }), {
+      target: { value: 'A new comment' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Comment' }));
+
+    await waitFor(() => {
+      expect(create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          content: 'A new comment',
+          post: 12,
+          commentedAt: expect.any(String),
+        }),
+        {
+          refresh: false,
+        },
+      );
+    });
   });
 });

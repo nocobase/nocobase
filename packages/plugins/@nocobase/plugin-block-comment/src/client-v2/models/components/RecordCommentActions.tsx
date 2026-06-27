@@ -18,6 +18,7 @@ import {
   observer,
   type FlowModel,
 } from '@nocobase/flow-engine';
+import { css } from '@emotion/css';
 import { Space } from 'antd';
 import React, { useEffect } from 'react';
 
@@ -49,6 +50,13 @@ const defaultRecordActionModels = [
   'DeleteRecordCommentActionModel',
   'EditRecordCommentActionModel',
 ];
+
+const recordCommentActionsClassName = css`
+  .ant-btn-link {
+    height: auto;
+    padding: 0;
+  }
+`;
 
 const getModelName = (model: FlowModel) => {
   return (model as FlowModel & { use?: string }).use || model.constructor.name;
@@ -105,7 +113,7 @@ export const RecordCommentActions = observer(
 
     return (
       <DndProvider>
-        <Space size={0} style={{ gap: 0 }}>
+        <Space size={4} className={recordCommentActionsClassName}>
           {itemModel.mapSubModels('actions', (action, index) => {
             const forkKey = [forkKeyPrefix, recordKey || 'record', action.uid, index]
               .map(normalizeForkKeyPart)
