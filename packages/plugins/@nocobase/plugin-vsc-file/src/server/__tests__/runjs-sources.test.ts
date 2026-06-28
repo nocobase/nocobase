@@ -10,10 +10,11 @@
 import { MockServer, createMockServer } from '@nocobase/test';
 import { vi } from 'vitest';
 
+import { maxFileSize, maxFilesPerRepo, maxRepoTextSize } from '../../shared/constants';
 import { VscError } from '../../shared/errors';
 import type { RunJSRuntimeArtifact, RunJSSourceAdapterContext } from '../../shared/runjs-source-types';
 import PluginVscFileServer from '../plugin';
-import { runJSSourceActionNames } from '../runjs-sources';
+import { assertRunJSCompileInputLimits, runJSSourceActionNames } from '../runjs-sources';
 import { VscFileService } from '../services/VscFileService';
 
 describe('runJSSources resource', () => {
@@ -370,6 +371,270 @@ describe('runJSSources resource', () => {
     expect(rootDiff.body.data.diff.summary.added).toBe(1);
   });
 
+  it('replaces RunJS draft files instead of merging stale draft-only paths', async () => {
+    const locator = {
+      kind: 'flowModel.step' as const,
+      modelUid: 'fm_replace_draft',
+      flowKey: 'settings',
+      stepKey: 'runjs',
+      paramPath: ['code'],
+    };
+
+    getPlugin().registerRunJSSourceAdapter({
+      kind: 'flowModel.step',
+      assertCanRead: () => {},
+      assertCanWrite: () => {},
+      getFingerprint: () => 'owner:replace-draft:v1',
+      writePublished: () => ({
+        ownerFingerprint: 'owner:replace-draft:v2',
+      }),
+      readLegacy: () => ({
+        label: 'JS block / Replace draft',
+        code: 'ctx.render("legacy");',
+        version: 'v2',
+        entryPath: 'src/main.tsx',
+        ownerFingerprint: 'owner:replace-draft:v1',
+        surfaceStyle: 'render',
+        language: 'typescript',
+      }),
+    });
+
+    const open = await agent.resource('runJSSources').open({
+      values: {
+        locator,
+      },
+    });
+    expect(open.status).toBe(200);
+
+    const withHelper = await agent.resource('runJSSources').saveDraft({
+      values: {
+        locator,
+        repoId: open.body.data.repository.id,
+        baseCommitId: open.body.data.repository.publishedCommitId,
+        files: [
+          {
+            path: 'src/helper.ts',
+            operation: 'upsert',
+            content: 'export const helper = true;',
+            language: 'typescript',
+          },
+        ],
+      },
+    });
+    expect(withHelper.status).toBe(200);
+    expect(withHelper.body.data.files.map((file) => file.path)).toEqual(['src/helper.ts']);
+
+    const withoutHelper = await agent.resource('runJSSources').saveDraft({
+      values: {
+        locator,
+        repoId: open.body.data.repository.id,
+        baseCommitId: open.body.data.repository.publishedCommitId,
+        files: [
+          {
+            path: 'src/main.tsx',
+            operation: 'upsert',
+            content: 'ctx.render("changed");',
+            language: 'typescript',
+          },
+        ],
+      },
+    });
+    expect(withoutHelper.status).toBe(200);
+    expect(withoutHelper.body.data.files.map((file) => file.path)).toEqual(['src/main.tsx']);
+
+    const cleared = await agent.resource('runJSSources').saveDraft({
+      values: {
+        locator,
+        repoId: open.body.data.repository.id,
+        baseCommitId: open.body.data.repository.publishedCommitId,
+        files: [],
+      },
+    });
+    expect(cleared.status).toBe(200);
+    expect(cleared.body.data.files).toEqual([]);
+  });
+
+  it('rejects disallowed RunJS workspace file paths on direct resource calls', async () => {
+    const locator = {
+      kind: 'flowModel.step' as const,
+      modelUid: 'fm_path_guard',
+      flowKey: 'settings',
+      stepKey: 'runjs',
+      paramPath: ['code'],
+    };
+
+    getPlugin().registerRunJSSourceAdapter({
+      kind: 'flowModel.step',
+      assertCanRead: () => {},
+      assertCanWrite: () => {},
+      getFingerprint: () => 'owner:path-guard:v1',
+      writePublished: () => ({
+        ownerFingerprint: 'owner:path-guard:v2',
+      }),
+      readLegacy: () => ({
+        label: 'JS block / Path guard',
+        code: 'ctx.render("legacy");',
+        version: 'v2',
+        entryPath: 'src/main.tsx',
+        ownerFingerprint: 'owner:path-guard:v1',
+        surfaceStyle: 'render',
+        language: 'typescript',
+      }),
+    });
+
+    const open = await agent.resource('runJSSources').open({
+      values: {
+        locator,
+      },
+    });
+    expect(open.status).toBe(200);
+
+    const invalidFile = {
+      path: 'src/.hidden/file.ts',
+      operation: 'upsert' as const,
+      content: 'ctx.render("hidden");',
+      language: 'typescript',
+    };
+    const commonValues = {
+      locator,
+      repoId: open.body.data.repository.id,
+      baseCommitId: open.body.data.repository.publishedCommitId,
+    };
+    const cases = [
+      {
+        action: 'saveDraft',
+        run: () =>
+          agent.resource('runJSSources').saveDraft({
+            values: {
+              ...commonValues,
+              files: [invalidFile],
+            },
+          }),
+      },
+      {
+        action: 'rebaseDraft',
+        run: () =>
+          agent.resource('runJSSources').rebaseDraft({
+            values: {
+              ...commonValues,
+              files: [invalidFile],
+            },
+          }),
+      },
+      {
+        action: 'diffDraft',
+        run: () =>
+          agent.resource('runJSSources').diffDraft({
+            values: {
+              ...commonValues,
+              files: [invalidFile],
+            },
+          }),
+      },
+      {
+        action: 'compilePreview',
+        run: () =>
+          agent.resource('runJSSources').compilePreview({
+            values: {
+              locator,
+              entryPath: 'src/main.tsx',
+              files: [invalidFile],
+            },
+          }),
+      },
+      {
+        action: 'publish',
+        run: () =>
+          agent.resource('runJSSources').publish({
+            values: {
+              ...commonValues,
+              basePublishedCommitId: open.body.data.repository.publishedCommitId,
+              baseOwnerFingerprint: 'owner:path-guard:v1',
+              message: 'Update guarded source',
+              files: [invalidFile],
+            },
+          }),
+      },
+    ];
+
+    for (const testCase of cases) {
+      const response = await testCase.run();
+      expect(response.status, testCase.action).toBe(400);
+      expect(response.body.errors[0], testCase.action).toMatchObject({
+        code: 'PATH_INVALID',
+        status: 400,
+        details: {
+          reason: 'hiddenDirectory',
+        },
+      });
+    }
+
+    const invalidEntry = await agent.resource('runJSSources').compilePreview({
+      values: {
+        locator,
+        entryPath: '../outside.ts',
+        files: [
+          {
+            path: 'src/main.tsx',
+            operation: 'upsert',
+            content: 'ctx.render("ok");',
+            language: 'typescript',
+          },
+        ],
+      },
+    });
+
+    expect(invalidEntry.status).toBe(400);
+    expect(invalidEntry.body.errors[0]).toMatchObject({
+      code: 'PATH_INVALID',
+      status: 400,
+    });
+  });
+
+  it('rejects disallowed legacy RunJS entry paths when initializing a source repository', async () => {
+    const locator = {
+      kind: 'flowModel.step' as const,
+      modelUid: 'fm_legacy_path_guard',
+      flowKey: 'settings',
+      stepKey: 'runjs',
+      paramPath: ['code'],
+    };
+
+    getPlugin().registerRunJSSourceAdapter({
+      kind: 'flowModel.step',
+      assertCanRead: () => {},
+      assertCanWrite: () => {},
+      getFingerprint: () => 'owner:legacy-path:v1',
+      writePublished: () => ({
+        ownerFingerprint: 'owner:legacy-path:v2',
+      }),
+      readLegacy: () => ({
+        label: 'JS block / Legacy path guard',
+        code: 'ctx.render("legacy");',
+        version: 'v2',
+        entryPath: 'scripts/main.ts',
+        ownerFingerprint: 'owner:legacy-path:v1',
+        surfaceStyle: 'render',
+        language: 'typescript',
+      }),
+    });
+
+    const open = await agent.resource('runJSSources').open({
+      values: {
+        locator,
+      },
+    });
+
+    expect(open.status).toBe(400);
+    expect(open.body.errors[0]).toMatchObject({
+      code: 'PATH_INVALID',
+      status: 400,
+      details: {
+        reason: 'outsideWorkspace',
+      },
+    });
+  });
+
   it('reports publish permission separately from draft write permission', async () => {
     const locator = {
       kind: 'flowModel.step' as const,
@@ -422,6 +687,63 @@ describe('runJSSources resource', () => {
       canWrite: true,
       canPublish: false,
     });
+  });
+
+  it('opens an existing RunJS repository when create permission is denied', async () => {
+    const locator = {
+      kind: 'flowModel.step' as const,
+      modelUid: 'fm_read_only_existing',
+      flowKey: 'settings',
+      stepKey: 'runjs',
+      paramPath: ['code'],
+    };
+
+    getPlugin().registerRunJSSourceAdapter({
+      kind: 'flowModel.step',
+      assertCanRead: () => {},
+      assertCanWrite: () => {},
+      getFingerprint: () => 'owner:read-only:v1',
+      writePublished: () => ({
+        ownerFingerprint: 'owner:read-only:v2',
+      }),
+      readLegacy: () => ({
+        label: 'JS block / Existing read-only',
+        code: 'ctx.render("existing");',
+        version: 'v2',
+        entryPath: 'src/main.tsx',
+        ownerFingerprint: 'owner:read-only:v1',
+        surfaceStyle: 'render',
+        language: 'typescript',
+      }),
+    });
+
+    const firstOpen = await agent.resource('runJSSources').open({
+      values: {
+        locator,
+      },
+    });
+    expect(firstOpen.status).toBe(200);
+
+    getPlugin().registerPermissionHook((input) => {
+      return input.action === 'createRepository' ? false : true;
+    });
+
+    const reopened = await agent.resource('runJSSources').open({
+      values: {
+        locator,
+      },
+    });
+
+    expect(reopened.status).toBe(200);
+    expect(reopened.body.data.repository.repoId).toBe(firstOpen.body.data.repository.repoId);
+    expect(reopened.body.data.files).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: 'src/main.tsx',
+          content: 'ctx.render("existing");',
+        }),
+      ]),
+    );
   });
 
   it('rejects publish compile errors before creating a VSC commit or writing the owner', async () => {
@@ -481,6 +803,158 @@ describe('runJSSources resource', () => {
     });
     await expect(app.db.getRepository('vscFileCommits').count()).resolves.toBe(commitCountBeforePublish);
     expect(writePublishedCalled).toBe(false);
+  });
+
+  it('validates RunJS compile inputs against VSC size limits before compiling', () => {
+    expect(() =>
+      assertRunJSCompileInputLimits(
+        Array.from({ length: maxFilesPerRepo + 1 }, (_, index) => ({
+          path: `src/file-${String(index).padStart(3, '0')}.ts`,
+          operation: 'upsert' as const,
+          content: '',
+        })),
+      ),
+    ).toThrowError(expect.objectContaining({ code: 'REPO_LIMIT_EXCEEDED' }));
+
+    expect(() =>
+      assertRunJSCompileInputLimits([
+        {
+          path: 'src/main.tsx',
+          operation: 'upsert',
+          content: 'x'.repeat(maxFileSize + 1),
+        },
+      ]),
+    ).toThrowError(expect.objectContaining({ code: 'FILE_TOO_LARGE' }));
+
+    expect(() =>
+      assertRunJSCompileInputLimits(
+        Array.from({ length: Math.floor(maxRepoTextSize / maxFileSize) + 1 }, (_, index) => ({
+          path: `src/large-${String(index).padStart(2, '0')}.ts`,
+          operation: 'upsert' as const,
+          content: 'x'.repeat(maxFileSize),
+        })),
+      ),
+    ).toThrowError(expect.objectContaining({ code: 'REPO_LIMIT_EXCEEDED' }));
+  });
+
+  it('rejects RunJS compile preview inputs guarded by VSC file validation', async () => {
+    const locator = {
+      kind: 'flowModel.step' as const,
+      modelUid: 'fm_compile_limits',
+      flowKey: 'settings',
+      stepKey: 'runjs',
+      paramPath: ['code'],
+    };
+
+    getPlugin().registerRunJSSourceAdapter({
+      kind: 'flowModel.step',
+      assertCanRead: () => {},
+      assertCanWrite: () => {},
+      getFingerprint: () => 'owner:compile-limits:v1',
+      writePublished: () => ({
+        ownerFingerprint: 'owner:compile-limits:v2',
+      }),
+      readLegacy: () => ({
+        label: 'JS block / Compile limits',
+        code: 'return limited;',
+        version: 'v2',
+        entryPath: 'src/main.tsx',
+        ownerFingerprint: 'owner:compile-limits:v1',
+        surfaceStyle: 'value',
+        language: 'typescript',
+      }),
+    });
+
+    const tooManyFiles = await agent.resource('runJSSources').compilePreview({
+      values: {
+        locator,
+        files: [
+          {
+            path: 'src/Main.tsx',
+            operation: 'upsert',
+            content: 'export const value = 1;',
+            language: 'typescript',
+          },
+          {
+            path: 'src/main.tsx',
+            operation: 'upsert',
+            content: 'export const value = 2;',
+            language: 'typescript',
+          },
+        ],
+        entryPath: 'src/Main.tsx',
+      },
+    });
+    expect(tooManyFiles.status).toBe(400);
+    expect(tooManyFiles.body.errors[0]).toMatchObject({
+      code: 'PATH_INVALID',
+      status: 400,
+    });
+  });
+
+  it('rejects invalid RunJS publish inputs before creating a commit or writing the owner', async () => {
+    const publishedArtifacts: RunJSRuntimeArtifact[] = [];
+
+    getPlugin().registerRunJSSourceAdapter({
+      kind: 'flowModel.step',
+      assertCanRead: () => {},
+      assertCanWrite: () => {},
+      getFingerprint: () => 'owner:publish-limits:v1',
+      readLegacy: () => ({
+        label: 'JS block / Publish limits',
+        code: 'return limited;',
+        version: 'v2',
+        entryPath: 'src/main.tsx',
+        ownerFingerprint: 'owner:publish-limits:v1',
+        surfaceStyle: 'value',
+        language: 'typescript',
+      }),
+      writePublished: ({ artifact }) => {
+        publishedArtifacts.push(artifact);
+        return {
+          ownerFingerprint: 'owner:publish-limits:v2',
+        };
+      },
+    });
+    const commitCountBeforePublish = await app.db.getRepository('vscFileCommits').count();
+
+    const response = await agent.resource('runJSSources').publish({
+      values: {
+        locator: {
+          kind: 'flowModel.step',
+          modelUid: 'fm_publish_limits',
+          flowKey: 'settings',
+          stepKey: 'runjs',
+          paramPath: ['code'],
+        },
+        baseCommitId: null,
+        basePublishedCommitId: null,
+        baseOwnerFingerprint: 'owner:publish-limits:v1',
+        message: 'Reject invalid RunJS files',
+        files: [
+          {
+            path: 'src/Main.tsx',
+            operation: 'upsert',
+            content: 'export const value = 1;',
+            language: 'typescript',
+          },
+          {
+            path: 'src/main.tsx',
+            operation: 'upsert',
+            content: 'export const value = 2;',
+            language: 'typescript',
+          },
+        ],
+      },
+    });
+
+    expect(response.status).toBe(400);
+    expect(response.body.errors[0]).toMatchObject({
+      code: 'PATH_INVALID',
+      status: 400,
+    });
+    await expect(app.db.getRepository('vscFileCommits').count()).resolves.toBe(commitCountBeforePublish);
+    expect(publishedArtifacts).toHaveLength(0);
   });
 
   it('restores a previous version as draft without changing commits or published ref', async () => {
@@ -619,6 +1093,125 @@ describe('runJSSources resource', () => {
       filterByTk: restore.body.data.files[0].blobHash,
     });
     expect(draftBlob?.get('content')).toBe('ctx.render("legacy");');
+  });
+
+  it('rebases an existing stale active draft onto the latest published base', async () => {
+    let ownerFingerprint = 'owner:rebase:v1';
+    const locator = {
+      kind: 'flowModel.step' as const,
+      modelUid: 'fm_rebase',
+      flowKey: 'settings',
+      stepKey: 'runjs',
+      paramPath: ['code'],
+    };
+
+    getPlugin().registerRunJSSourceAdapter({
+      kind: 'flowModel.step',
+      assertCanRead: () => {},
+      assertCanWrite: () => {},
+      getFingerprint: () => ownerFingerprint,
+      readLegacy: () => ({
+        label: 'JS block / Rebase',
+        code: 'ctx.render("legacy");',
+        version: 'v2',
+        entryPath: 'src/main.tsx',
+        ownerFingerprint,
+        surfaceStyle: 'render',
+        language: 'typescript',
+      }),
+      writePublished: () => {
+        ownerFingerprint = 'owner:rebase:v2';
+        return {
+          ownerFingerprint,
+        };
+      },
+    });
+
+    const open = await agent.resource('runJSSources').open({
+      values: {
+        locator,
+      },
+    });
+    const initialCommitId = open.body.data.repository.publishedCommitId;
+
+    const staleDraft = await agent.resource('runJSSources').saveDraft({
+      values: {
+        locator,
+        repoId: open.body.data.repository.id,
+        baseCommitId: initialCommitId,
+        files: [
+          {
+            path: 'src/main.tsx',
+            operation: 'upsert',
+            content: 'ctx.render("local draft");',
+            language: 'typescript',
+          },
+        ],
+      },
+    });
+    expect(staleDraft.status).toBe(200);
+
+    const publish = await agent.resource('runJSSources').publish({
+      values: {
+        locator,
+        repoId: open.body.data.repository.id,
+        baseCommitId: initialCommitId,
+        basePublishedCommitId: initialCommitId,
+        baseOwnerFingerprint: 'owner:rebase:v1',
+        message: 'Publish remote change',
+        files: [
+          {
+            path: 'src/main.tsx',
+            operation: 'upsert',
+            content: 'ctx.render("remote");',
+            language: 'typescript',
+          },
+          {
+            path: 'src/remote.ts',
+            operation: 'upsert',
+            content: 'export const remote = true;',
+            language: 'typescript',
+          },
+        ],
+      },
+    });
+    expect(publish.status).toBe(200);
+
+    const rebase = await agent.resource('runJSSources').rebaseDraft({
+      values: {
+        locator,
+        repoId: open.body.data.repository.id,
+        baseCommitId: publish.body.data.commit.id,
+        files: [
+          {
+            path: 'src/main.tsx',
+            operation: 'upsert',
+            content: 'ctx.render("local draft");',
+            language: 'typescript',
+          },
+        ],
+      },
+    });
+
+    expect(rebase.status).toBe(200);
+    expect(rebase.body.data.draft).toMatchObject({
+      baseCommitId: publish.body.data.commit.id,
+      status: 'active',
+    });
+    expect(rebase.body.data.files.map((file) => file.path)).toEqual(['src/main.tsx']);
+    expect(rebase.body.data.files[0]).toMatchObject({
+      content: 'ctx.render("local draft");',
+    });
+
+    const reopened = await agent.resource('runJSSources').open({
+      values: {
+        locator,
+      },
+    });
+    expect(reopened.body.data.draft).toMatchObject({
+      baseCommitId: publish.body.data.commit.id,
+    });
+    expect(reopened.body.data.files.map((file) => file.path)).toEqual(['src/main.tsx', 'src/remote.ts']);
   });
 
   it('rolls back publish when owner write or published ref update fails', async () => {
@@ -824,9 +1417,34 @@ describe('runJSSources resource', () => {
       commitId: publishResponse.body.data.commit.id,
     });
     expect(publishResponse.body.data.artifact.filesHash).not.toBe('forged-files-hash');
+    const persistedCommit = await app.db.getRepository('vscFileCommits').findOne({
+      filterByTk: publishResponse.body.data.commit.id,
+    });
+    expect(persistedCommit?.get('metadata')).toMatchObject({
+      ownerFingerprint: 'owner:fingerprint:v2',
+      baseOwnerFingerprint: 'owner:fingerprint:v1',
+    });
 
     const commitCountAfterPublish = await app.db.getRepository('vscFileCommits').count();
     ownerFingerprint = 'owner:fingerprint:external';
+
+    const staleOpen = await agent.resource('runJSSources').open({
+      values: {
+        locator: {
+          kind: 'flowModel.step',
+          modelUid: 'fm_1',
+          flowKey: 'settings',
+          stepKey: 'runjs',
+          paramPath: ['code'],
+        },
+      },
+    });
+
+    expect(staleOpen.status).toBe(409);
+    expect(staleOpen.body.errors[0]).toMatchObject({
+      code: 'RUNJS_SOURCE_OWNER_OUTDATED',
+      status: 409,
+    });
 
     const staleResponse = await agent.resource('runJSSources').publish({
       values: {

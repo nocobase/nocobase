@@ -8,3 +8,5 @@
  */
 
 export * from './RunJSStudioProvider';
+export * from './types';
+export * from './useRunJSSourceResource';
