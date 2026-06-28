@@ -130,25 +130,37 @@ type FlowEngineWithPluginManager = ReturnType<typeof useFlowEngine> & {
 type ThemeToken = ReturnType<typeof theme.useToken>['token'];
 
 function getDialogWidth(kind: FlowModelConfigKind, token: ThemeToken) {
+  if (kind === 'taskCard') {
+    return 800;
+  }
+
   const responsiveInset = token.marginXXL * 2;
-  const targetWidth =
-    kind === 'taskCard'
-      ? token.screenLG + token.marginXXL * 2 - token.paddingXXS
-      : token.screenLG + token.marginXXL * 2;
+  const targetWidth = token.screenLG + token.marginXXL * 2;
   return `min(${targetWidth}px, calc(100vw - ${responsiveInset}px))`;
 }
 
-function getDialogBodyStyle(kind: FlowModelConfigKind, token: ThemeToken) {
+function getDialogStyles(kind: FlowModelConfigKind, token: ThemeToken) {
   if (kind === 'taskCard') {
     return {
-      padding: `${token.padding}px ${token.paddingLG}px ${token.paddingLG}px`,
-      backgroundColor: 'var(--nb-box-bg)',
+      body: {
+        padding: 0,
+        backgroundColor: 'var(--nb-box-bg)',
+      },
     };
   }
 
   return {
-    padding: token.paddingLG,
-    backgroundColor: 'var(--nb-box-bg)',
+    body: {
+      padding: token.paddingLG,
+      backgroundColor: 'var(--nb-box-bg)',
+    },
+    content: {
+      padding: 0,
+    },
+    header: {
+      padding: `${token.padding}px ${token.paddingLG}px`,
+      marginBottom: 0,
+    },
   };
 }
 
@@ -803,16 +815,7 @@ export function FlowModelConfigInput({
         closable: true,
         onClose: releaseDialogGeneratedUidPending,
         title,
-        styles: {
-          body: getDialogBodyStyle(kind, token),
-          content: {
-            padding: 0,
-          },
-          header: {
-            padding: `${token.padding}px ${token.paddingLG}px`,
-            marginBottom: 0,
-          },
-        },
+        styles: getDialogStyles(kind, token),
         content: () => (
           <FlowModelConfigDialogContent
             disabled={disabled}

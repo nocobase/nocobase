@@ -224,7 +224,7 @@ afterEach(() => {
 });
 
 const tokenDerivedInterfaceDialogWidth = 'min(1088px, calc(100vw - 96px))';
-const tokenDerivedTaskCardDialogWidth = 'min(1084px, calc(100vw - 96px))';
+const approvalTaskCardDialogWidth = 800;
 const tokenDerivedInterfaceDialogStyles = {
   body: {
     padding: 24,
@@ -240,15 +240,8 @@ const tokenDerivedInterfaceDialogStyles = {
 };
 const tokenDerivedTaskCardDialogStyles = {
   body: {
-    padding: '16px 24px 24px',
-    backgroundColor: 'var(--nb-box-bg)',
-  },
-  content: {
     padding: 0,
-  },
-  header: {
-    padding: '16px 24px',
-    marginBottom: 0,
+    backgroundColor: 'var(--nb-box-bg)',
   },
 };
 
@@ -827,7 +820,7 @@ describe('FlowModelConfigInput', () => {
       expect.objectContaining({
         styles: tokenDerivedTaskCardDialogStyles,
         title: 'Task card',
-        width: tokenDerivedTaskCardDialogWidth,
+        width: approvalTaskCardDialogWidth,
       }),
     );
     expect(holder.loadOrCreateModel).toHaveBeenCalledWith(
