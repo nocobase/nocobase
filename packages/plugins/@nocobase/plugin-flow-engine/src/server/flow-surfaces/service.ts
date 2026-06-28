@@ -1292,6 +1292,7 @@ type FlowSurfaceApplyBlueprintResponse = {
 };
 
 const DEFAULT_ADMIN_UI_LAYOUT_UID = 'admin-layout-model';
+const MOBILE_UI_LAYOUT_TYPE = 'mobile';
 
 export class FlowSurfacesService {
   constructor(private readonly plugin: Plugin) {}
@@ -1553,12 +1554,12 @@ export class FlowSurfacesService {
     });
   }
 
-  private async findMenuGroupRoutesByTitle(title: string, transaction?: any) {
+  private async findMenuGroupRoutesByTitle(title: string, transaction?: any, layoutUid?: string | string[]) {
     const normalizedTitle = String(title || '').trim();
     if (!normalizedTitle) {
       return [];
     }
-    return _.castArray(
+    const routes = _.castArray(
       await this.db.getRepository('desktopRoutes').find({
         filter: {
           type: 'group',
@@ -1567,6 +1568,19 @@ export class FlowSurfacesService {
         transaction,
       }),
     );
+    const layoutUidFilter = await this.resolveDesktopRouteLayoutUidFilter(layoutUid, transaction);
+    if (!layoutUidFilter.length || !this.hasDesktopRouteUiLayoutsRelation()) {
+      return routes;
+    }
+
+    const matchedRoutes: any[] = [];
+    for (const route of routes) {
+      const routeLayoutUids = await this.readDesktopRouteUiLayoutUids(this.readRouteField(route, 'id'), transaction);
+      if (_.intersection(routeLayoutUids, layoutUidFilter).length) {
+        matchedRoutes.push(route);
+      }
+    }
+    return matchedRoutes;
   }
 
   private routeParentIdMatches(routeParentId: any, parentId: any) {
@@ -1580,28 +1594,48 @@ export class FlowSurfacesService {
     parentId: string | number | null,
     title: string,
     transaction?: any,
+    layoutUid?: string | string[],
   ) {
-    const routes = await this.findMenuGroupRoutesByTitle(title, transaction);
+    const routes = await this.findMenuGroupRoutesByTitle(title, transaction, layoutUid);
     return routes.filter((route: any) =>
       this.routeParentIdMatches(this.readRouteField(route, 'parentId') ?? null, parentId),
     );
   }
 
-  private async findFlowPageRoutesByParentIdAndTitle(parentId: string | number, title: string, transaction?: any) {
+  private async findFlowPageRoutesByParentIdAndTitle(
+    parentId: string | number | null,
+    title: string,
+    transaction?: any,
+    layoutUid?: string | string[],
+  ) {
     const normalizedTitle = String(title || '').trim();
-    const normalizedParentId = String(parentId ?? '').trim();
-    if (!normalizedTitle || !normalizedParentId) {
+    if (!normalizedTitle) {
       return [];
     }
-    return _.castArray(
+    const routes = _.castArray(
       await this.db.getRepository('desktopRoutes').find({
-        filter: {
+        filter: buildDefinedPayload({
           type: 'flowPage',
           title: normalizedTitle,
-          parentId: normalizedParentId,
-        },
+          parentId: _.isNil(parentId) ? undefined : String(parentId),
+        }),
         transaction,
       }),
+    );
+    const layoutUidFilter = await this.resolveDesktopRouteLayoutUidFilter(layoutUid, transaction);
+    const layoutMatchedRoutes: any[] = [];
+    if (!layoutUidFilter.length || !this.hasDesktopRouteUiLayoutsRelation()) {
+      layoutMatchedRoutes.push(...routes);
+    } else {
+      for (const route of routes) {
+        const routeLayoutUids = await this.readDesktopRouteUiLayoutUids(this.readRouteField(route, 'id'), transaction);
+        if (_.intersection(routeLayoutUids, layoutUidFilter).length) {
+          layoutMatchedRoutes.push(route);
+        }
+      }
+    }
+    return layoutMatchedRoutes.filter((route: any) =>
+      this.routeParentIdMatches(this.readRouteField(route, 'parentId') ?? null, parentId),
     );
   }
 
@@ -1725,6 +1759,31 @@ export class FlowSurfacesService {
     return defaultLayout ? [DEFAULT_ADMIN_UI_LAYOUT_UID] : [];
   }
 
+  private async findDesktopRouteUiLayoutByUid(layoutUid: string, transaction?: any) {
+    const normalizedLayoutUid = this.normalizeExplicitDesktopRouteLayoutUid(layoutUid);
+    if (!normalizedLayoutUid || !this.hasDesktopRouteUiLayoutsRelation()) {
+      return null;
+    }
+    return this.db.getRepository('uiLayouts').findOne({
+      filter: {
+        uid: normalizedLayoutUid,
+      },
+      transaction,
+    });
+  }
+
+  private async getDesktopRouteUiLayoutTypeByUid(layoutUid: string, transaction?: any) {
+    const uiLayout = await this.findDesktopRouteUiLayoutByUid(layoutUid, transaction);
+    return String(uiLayout?.get?.('layoutType') || uiLayout?.layoutType || '').trim() || undefined;
+  }
+
+  private async isMobileDesktopRouteUiLayoutUid(layoutUid: string | undefined, transaction?: any) {
+    if (!layoutUid) {
+      return false;
+    }
+    return (await this.getDesktopRouteUiLayoutTypeByUid(layoutUid, transaction)) === MOBILE_UI_LAYOUT_TYPE;
+  }
+
   private async resolveInheritedDesktopRouteUiLayoutUids(parentRoute: any, transaction?: any): Promise<string[]> {
     const parentRouteId = this.readRouteField(parentRoute, 'id');
     if (!_.isNil(parentRouteId)) {
@@ -1735,6 +1794,112 @@ export class FlowSurfacesService {
     }
 
     return this.resolveDefaultDesktopRouteUiLayoutUids(transaction);
+  }
+
+  private normalizeExplicitDesktopRouteLayoutUid(value: unknown): string | undefined {
+    const normalized = String(value || '').trim();
+    return normalized || undefined;
+  }
+
+  private normalizeDesktopRouteLayoutUidFilter(value: unknown): string[] {
+    return _.uniq(
+      _.castArray(value)
+        .map((item) => this.normalizeExplicitDesktopRouteLayoutUid(item))
+        .filter(Boolean) as string[],
+    );
+  }
+
+  private async resolveDesktopRouteLayoutUidFilter(value: unknown, transaction?: any): Promise<string[]> {
+    const explicitLayoutUids = this.normalizeDesktopRouteLayoutUidFilter(value);
+    if (explicitLayoutUids.length) {
+      return explicitLayoutUids;
+    }
+    return this.resolveDefaultDesktopRouteUiLayoutUids(transaction);
+  }
+
+  private async assertEnabledDesktopRouteUiLayoutUid(
+    layoutUid: string,
+    actionName: string,
+    path: string,
+    transaction?: any,
+  ) {
+    if (!this.hasDesktopRouteUiLayoutsRelation()) {
+      throwBadRequest(`flowSurfaces ${actionName} ${path} requires plugin-ui-layout desktop route relation support`, {
+        ruleId: 'navigation-layout-unsupported',
+        path,
+        details: {
+          layoutUid,
+        },
+      });
+    }
+
+    const uiLayout = await this.db.getRepository('uiLayouts').findOne({
+      filter: {
+        uid: layoutUid,
+        enabled: true,
+      },
+      transaction,
+    });
+    if (!uiLayout) {
+      throwBadRequest(`flowSurfaces ${actionName} ${path} must reference an enabled ui layout`, {
+        ruleId: 'navigation-layout-not-found',
+        path,
+        details: {
+          layoutUid,
+        },
+      });
+    }
+  }
+
+  private async assertDesktopRouteBelongsToUiLayout(
+    actionName: string,
+    route: any,
+    layoutUid: string | undefined,
+    path: string,
+    transaction?: any,
+  ) {
+    const normalizedLayoutUid = this.normalizeExplicitDesktopRouteLayoutUid(layoutUid);
+    if (!normalizedLayoutUid || !route) {
+      return;
+    }
+    const routeId = this.readRouteField(route, 'id');
+    const routeLayoutUids = await this.readDesktopRouteUiLayoutUids(routeId, transaction);
+    if (routeLayoutUids.includes(normalizedLayoutUid)) {
+      return;
+    }
+    throwBadRequest(`flowSurfaces ${actionName} ${path} does not belong to ui layout '${normalizedLayoutUid}'`, {
+      ruleId: 'navigation-route-layout-mismatch',
+      path,
+      details: {
+        routeId,
+        layoutUid: normalizedLayoutUid,
+        routeLayoutUids,
+      },
+    });
+  }
+
+  private async resolveRequestedDesktopRouteUiLayoutUids(
+    values: Record<string, any>,
+    parentRoute: any,
+    actionName: string,
+    transaction?: any,
+  ): Promise<string[]> {
+    const layoutUid = this.normalizeExplicitDesktopRouteLayoutUid(values.layoutUid);
+    if (layoutUid) {
+      await this.assertEnabledDesktopRouteUiLayoutUid(layoutUid, actionName, 'values.layoutUid', transaction);
+      if (parentRoute) {
+        await this.assertDesktopRouteBelongsToUiLayout(
+          actionName,
+          parentRoute,
+          layoutUid,
+          'values.parentMenuRouteId',
+          transaction,
+        );
+      }
+      return [layoutUid];
+    }
+
+    return this.resolveInheritedDesktopRouteUiLayoutUids(parentRoute, transaction);
   }
 
   private async setDesktopRouteUiLayouts(routeId: unknown, uiLayoutUids: string[], transaction?: any) {
@@ -1859,8 +2024,19 @@ export class FlowSurfacesService {
   private async createFlowMenuGroup(values: Record<string, any>, transaction?: any) {
     const parentRoute = await this.assertMenuParentIsGroup(values.parentMenuRouteId, transaction);
     const parentId = this.readRouteField(parentRoute, 'id') ?? null;
+    const routeUiLayoutUids = await this.resolveRequestedDesktopRouteUiLayoutUids(
+      values,
+      parentRoute,
+      'createMenu',
+      transaction,
+    );
     const title = String(values.title || '').trim();
-    const existingGroups = await this.findMenuGroupRoutesByParentIdAndTitle(parentId, title, transaction);
+    const existingGroups = await this.findMenuGroupRoutesByParentIdAndTitle(
+      parentId,
+      title,
+      transaction,
+      routeUiLayoutUids,
+    );
     if (existingGroups.length === 1) {
       return this.buildMenuResult(existingGroups[0]);
     }
@@ -1902,7 +2078,7 @@ export class FlowSurfacesService {
     });
     await this.attachDesktopRouteUiLayoutsToRouteAndChildren(
       this.readRouteField(route, 'id'),
-      await this.resolveInheritedDesktopRouteUiLayoutUids(parentRoute, transaction),
+      routeUiLayoutUids,
       transaction,
     );
     return this.buildMenuResult(route);
@@ -1910,6 +2086,12 @@ export class FlowSurfacesService {
 
   private async createFlowMenuItem(values: Record<string, any>, transaction?: any) {
     const parentRoute = await this.assertMenuParentIsGroup(values.parentMenuRouteId, transaction);
+    const routeUiLayoutUids = await this.resolveRequestedDesktopRouteUiLayoutUids(
+      values,
+      parentRoute,
+      'createMenu',
+      transaction,
+    );
     this.assertVisibleNavigationIcon('createMenu', 'values', values);
     const pageSchemaUid = values.pageSchemaUid || uid();
     const menuSchemaUid = uid();
@@ -1957,7 +2139,7 @@ export class FlowSurfacesService {
     });
     await this.attachDesktopRouteUiLayoutsToRouteAndChildren(
       this.readRouteField(createdRoute, 'id'),
-      await this.resolveInheritedDesktopRouteUiLayoutUids(parentRoute, transaction),
+      routeUiLayoutUids,
       transaction,
     );
 
@@ -1998,7 +2180,7 @@ export class FlowSurfacesService {
   }
 
   private sanitizePublicCreateMenuValues(values: Record<string, any>) {
-    return _.pick(values, ['title', 'type', 'icon', 'tooltip', 'hideInMenu', 'parentMenuRouteId']);
+    return _.pick(values, ['title', 'type', 'layoutUid', 'icon', 'tooltip', 'hideInMenu', 'parentMenuRouteId']);
   }
 
   private async loadRouteBackedPageStructure(route: any, transaction?: any) {
@@ -4582,7 +4764,13 @@ export class FlowSurfacesService {
       return document;
     }
 
-    const matchedRoutes = await this.findMenuGroupRoutesByParentIdAndTitle(null, groupTitle, transaction);
+    const layoutUid = this.normalizeExplicitDesktopRouteLayoutUid(document.navigation.layoutUid);
+    const matchedRoutes = await this.findMenuGroupRoutesByParentIdAndTitle(
+      null,
+      groupTitle,
+      transaction,
+      layoutUid || (await this.resolveDefaultDesktopRouteUiLayoutUids(transaction)),
+    );
     if (!matchedRoutes.length) {
       return document;
     }
@@ -4610,6 +4798,65 @@ export class FlowSurfacesService {
     };
   }
 
+  private async normalizeApplyBlueprintCreateMobileNavigation(
+    document: FlowSurfaceApplyBlueprintDocument,
+    transaction?: any,
+  ): Promise<FlowSurfaceApplyBlueprintDocument> {
+    if (document.mode !== 'create') {
+      return document;
+    }
+    const layoutUid = this.normalizeExplicitDesktopRouteLayoutUid(document.navigation?.layoutUid);
+    if (!(await this.isMobileDesktopRouteUiLayoutUid(layoutUid, transaction))) {
+      return document;
+    }
+
+    return {
+      ...document,
+      navigation: buildDefinedPayload({
+        ...document.navigation,
+        layoutUid,
+        group: undefined,
+      }),
+    };
+  }
+
+  private async assertApplyBlueprintCreateNavigationLayout(
+    document: FlowSurfaceApplyBlueprintDocument,
+    transaction?: any,
+  ) {
+    if (document.mode !== 'create') {
+      return;
+    }
+    const layoutUid = this.normalizeExplicitDesktopRouteLayoutUid(document.navigation?.layoutUid);
+    if (!layoutUid) {
+      return;
+    }
+
+    await this.assertEnabledDesktopRouteUiLayoutUid(
+      layoutUid,
+      'applyBlueprint',
+      'values.navigation.layoutUid',
+      transaction,
+    );
+
+    if (await this.isMobileDesktopRouteUiLayoutUid(layoutUid, transaction)) {
+      return;
+    }
+
+    const groupRouteId = document.navigation?.group?.routeId;
+    if (_.isNil(groupRouteId) || groupRouteId === '') {
+      return;
+    }
+    const groupRoute = await this.assertMenuParentIsGroup(groupRouteId, transaction);
+    await this.assertDesktopRouteBelongsToUiLayout(
+      'applyBlueprint',
+      groupRoute,
+      layoutUid,
+      'values.navigation.group.routeId',
+      transaction,
+    );
+  }
+
   private async resolveApplyBlueprintCreatePageIdentity(
     document: FlowSurfaceApplyBlueprintDocument,
     transaction?: any,
@@ -4619,25 +4866,42 @@ export class FlowSurfacesService {
     }
 
     const groupRouteId = document.navigation?.group?.routeId;
+    const layoutUid = this.normalizeExplicitDesktopRouteLayoutUid(document.navigation?.layoutUid);
     const pageTitle = String(document.page?.title || document.navigation?.item?.title || '').trim();
-    if (_.isNil(groupRouteId) || groupRouteId === '' || !pageTitle) {
+    const hasGroupRouteId = !_.isNil(groupRouteId) && groupRouteId !== '';
+    if (!pageTitle || (!hasGroupRouteId && !layoutUid)) {
       return document;
     }
+    const groupRoute = hasGroupRouteId ? await this.findMenuRouteById(groupRouteId, transaction) : null;
+    const layoutUidFilter =
+      layoutUid ||
+      (groupRoute ? await this.resolveInheritedDesktopRouteUiLayoutUids(groupRoute, transaction) : undefined);
 
-    const matchedPages = await this.findFlowPageRoutesByParentIdAndTitle(groupRouteId, pageTitle, transaction);
+    const matchedPages = await this.findFlowPageRoutesByParentIdAndTitle(
+      hasGroupRouteId ? groupRouteId : null,
+      pageTitle,
+      transaction,
+      layoutUidFilter,
+    );
     if (!matchedPages.length) {
       return document;
     }
     if (matchedPages.length > 1) {
+      const locationLabel = hasGroupRouteId
+        ? `under navigation.group.routeId '${groupRouteId}'`
+        : `at the root of ui layout '${layoutUid}'`;
       throwBadRequest(
-        `flowSurfaces applyBlueprint navigation.group.routeId '${groupRouteId}' already has ${matchedPages.length} flow pages titled '${pageTitle}'; pass target.pageSchemaUid explicitly before applyBlueprint`,
+        `flowSurfaces applyBlueprint ${locationLabel} already has ${matchedPages.length} flow pages titled '${pageTitle}'; pass target.pageSchemaUid explicitly before applyBlueprint`,
       );
     }
 
     const pageSchemaUid = String(this.readRouteField(matchedPages[0], 'schemaUid') || '').trim();
     if (!pageSchemaUid) {
+      const locationLabel = hasGroupRouteId
+        ? `under navigation.group.routeId '${groupRouteId}'`
+        : `at the root of ui layout '${layoutUid}'`;
       throwBadRequest(
-        `flowSurfaces applyBlueprint existing flow page '${pageTitle}' under navigation.group.routeId '${groupRouteId}' is missing schemaUid; pass target.pageSchemaUid explicitly before applyBlueprint`,
+        `flowSurfaces applyBlueprint existing flow page '${pageTitle}' ${locationLabel} is missing schemaUid; pass target.pageSchemaUid explicitly before applyBlueprint`,
       );
     }
 
@@ -4657,7 +4921,15 @@ export class FlowSurfacesService {
     createdKanbanSortFields?: FlowSurfaceApplyBlueprintKanbanCreatedSortField[],
   ): Promise<FlowSurfaceApplyBlueprintProgram> {
     const initialDocument = prepareFlowSurfaceApplyBlueprintDocument(values);
-    const groupResolvedDocument = await this.resolveApplyBlueprintCreateNavigationGroup(initialDocument, transaction);
+    await this.assertApplyBlueprintCreateNavigationLayout(initialDocument, transaction);
+    const mobileNormalizedDocument = await this.normalizeApplyBlueprintCreateMobileNavigation(
+      initialDocument,
+      transaction,
+    );
+    const groupResolvedDocument = await this.resolveApplyBlueprintCreateNavigationGroup(
+      mobileNormalizedDocument,
+      transaction,
+    );
     const document = await this.resolveApplyBlueprintCreatePageIdentity(groupResolvedDocument, transaction);
     await this.prepareApplyBlueprintKanbanBlocks(document, transaction, createdKanbanSortFields);
     const replaceTarget =
@@ -5455,7 +5727,9 @@ export class FlowSurfacesService {
     await assertFlowSurfaceAuthoringPayload('applyBlueprint', values, {
       transaction: options.transaction,
       enabledPackages,
-      findMenuGroupRoutesByTitle: (title, transaction) => this.findMenuGroupRoutesByTitle(title, transaction),
+      findMenuGroupRoutesByTitle: (title, transaction, layoutUid) =>
+        this.findMenuGroupRoutesByTitle(title, transaction, layoutUid),
+      getUiLayoutTypeByUid: (layoutUid, transaction) => this.getDesktopRouteUiLayoutTypeByUid(layoutUid, transaction),
       getCollection: (dataSourceKey, collectionName) =>
         this.getCollection(dataSourceKey || 'main', collectionName || ''),
     });
@@ -8064,6 +8338,11 @@ export class FlowSurfacesService {
     const pageSchemaUid = this.readRouteField(route, 'schemaUid');
     const structure = await this.loadRouteBackedPageStructure(route, transaction);
     let tabRoute = structure.tabRoutes[0];
+    const layoutUid = this.normalizeExplicitDesktopRouteLayoutUid(values.layoutUid);
+    if (layoutUid) {
+      await this.assertEnabledDesktopRouteUiLayoutUid(layoutUid, 'createPage', 'values.layoutUid', transaction);
+      await this.assertDesktopRouteBelongsToUiLayout('createPage', route, layoutUid, 'values.menuRouteId', transaction);
+    }
     const routeUiLayoutUids = await this.ensureDesktopRouteUiLayouts(route, transaction);
     const routeOptions = this.readRouteOptions(route);
     if (!routeOptions[FLOW_SURFACE_MENU_BINDABLE_OPTION_KEY]) {
