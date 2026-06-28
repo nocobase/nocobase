@@ -20,8 +20,10 @@
     "ses": "^1.14.0"
   },
   "peerDependencies": {
+    "@nocobase/acl": "2.x",
     "@nocobase/client": "2.x",
     "@nocobase/database": "2.x",
+    "@nocobase/plugin-vsc-file": "2.x",
     "@nocobase/server": "2.x",
     "@nocobase/test": "2.x",
     "@nocobase/utils": "2.x"

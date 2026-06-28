@@ -9,7 +9,7 @@
 
 import { VscError } from './errors';
 import { sha256Hex } from './hash';
-import type { VscRepositoryIdentity, VscTreeEntryInput } from './types';
+import type { VscCommitRecord, VscFileChange, VscRefRecord, VscRepositoryIdentity, VscRepositoryRecord } from './types';
 
 export type RunJSSourceLocator =
   | {
@@ -29,13 +29,6 @@ export type RunJSSourceLocator =
       scene: string;
     }
   | {
-      kind: 'flowModel.flowRegistry.runjs';
-      modelUid: string;
-      flowKey: string;
-      stepKey: string;
-      sourcePath: string[];
-    }
-  | {
       kind: 'workflow.javascript';
       nodeId: string | number;
     }
@@ -50,53 +43,125 @@ export type RunJSSourceLocator =
 
 export type RunJSSourceKind = RunJSSourceLocator['kind'];
 
-export type RunJSSurfaceStyle = 'render' | 'action' | 'value' | 'workflow' | 'chartOption' | 'chartEvents';
+export type RunJSSurfaceStyle = 'render' | 'action' | 'value' | 'workflow';
+
+export type RunJSLanguage = 'typescript' | 'javascript' | 'tsx' | 'jsx';
+
+export interface RunJSSourcePermissionCheck {
+  resource: string;
+  action: string;
+  rawResourceName?: string;
+}
+
+export interface RunJSSourcePermissionResult {
+  params?: {
+    filter?: unknown;
+    whitelist?: string[];
+    blacklist?: string[];
+    fields?: string[];
+    [key: string]: unknown;
+  };
+}
 
 export interface RunJSSourceAdapterContext {
   userId?: string | null;
   request?: Record<string, unknown>;
+  state?: Record<string, unknown>;
+  currentUser?: unknown;
+  timezone?: string;
   transaction?: unknown;
+  can?: (input: RunJSSourcePermissionCheck) => RunJSSourcePermissionResult | null;
 }
 
-export interface RunJSLegacySourceSnapshot {
-  label?: string;
-  code?: string;
-  version?: string;
-  files?: VscTreeEntryInput[];
-  entry?: string;
-  ownerFingerprint?: string;
-  surfaceStyle?: RunJSSurfaceStyle;
-  metadata?: Record<string, unknown>;
-}
-
-export interface RunJSPublishedArtifact {
+export interface RunJSLegacySource {
   code: string;
-  version?: string;
-  files?: VscTreeEntryInput[];
+  version: string;
+  label: string;
+  surfaceStyle: RunJSSurfaceStyle;
+  language: RunJSLanguage;
+  entryPath?: string;
   entry?: string;
-  artifactHash?: string;
+  ownerFingerprint: string;
   metadata?: Record<string, unknown>;
 }
 
-export interface RunJSSourceAdapter {
-  kind: RunJSSourceKind;
-  readLegacy: (
-    locator: RunJSSourceLocator,
-    ctx: RunJSSourceAdapterContext,
-  ) => Promise<RunJSLegacySourceSnapshot> | RunJSLegacySourceSnapshot;
-  writePublished?: (
-    locator: RunJSSourceLocator,
-    artifact: RunJSPublishedArtifact,
-    ctx: RunJSSourceAdapterContext,
-  ) => Promise<void> | void;
+export interface RunJSCompileDiagnostic {
+  message: string;
+  severity?: 'error' | 'warning' | 'info';
+  path?: string;
+  line?: number;
+  column?: number;
+}
+
+export interface RunJSRuntimeArtifact {
+  code: string;
+  version: string;
+  sourceMap?: string;
+  diagnostics: RunJSCompileDiagnostic[];
+  filesHash: string;
+  entryPath?: string;
+  metadata?: Record<string, unknown>;
+}
+
+export interface RunJSPublishedWriteResult {
+  ownerFingerprint?: string;
+  metadata?: Record<string, unknown>;
+}
+
+export interface RunJSSourceAdapter<TLocator extends RunJSSourceLocator = RunJSSourceLocator> {
+  kind: TLocator['kind'];
+  readLegacy(input: {
+    locator: TLocator;
+    ctx: RunJSSourceAdapterContext;
+  }): Promise<RunJSLegacySource> | RunJSLegacySource;
+  writePublished(input: {
+    locator: TLocator;
+    artifact: RunJSRuntimeArtifact;
+    commitId: string;
+    baseOwnerFingerprint: string;
+    ctx: RunJSSourceAdapterContext;
+  }): Promise<RunJSPublishedWriteResult> | RunJSPublishedWriteResult;
+  getFingerprint(input: { locator: TLocator; ctx: RunJSSourceAdapterContext }): Promise<string> | string;
+  assertCanRead(input: { locator: TLocator; ctx: RunJSSourceAdapterContext }): Promise<void> | void;
+  assertCanWrite(input: { locator: TLocator; ctx: RunJSSourceAdapterContext }): Promise<void> | void;
 }
 
 export interface RunJSSourceOpenResult {
   locator: RunJSSourceLocator;
   locatorKind: RunJSSourceKind;
   repositoryIdentity: VscRepositoryIdentity;
-  legacy: RunJSLegacySourceSnapshot;
-  ownerFingerprint: string | null;
+  legacy: RunJSLegacySource;
+  ownerFingerprint: string;
+}
+
+export interface RunJSSourcePublishResult {
+  locator: RunJSSourceLocator;
+  locatorKind: RunJSSourceKind;
+  repository: VscRepositoryRecord;
+  commit: VscCommitRecord;
+  publishedRef: VscRefRecord;
+  artifact: {
+    entryPath: string | null;
+    filesHash: string;
+    runtimeCodeHash: string;
+    diagnostics: RunJSCompileDiagnostic[];
+  };
+  ownerFingerprint: string;
+  writeResult: RunJSPublishedWriteResult;
+}
+
+export interface RunJSSourcePublishInput {
+  locator: RunJSSourceLocator;
+  repoId?: string;
+  baseCommitId: string | null;
+  basePublishedCommitId: string | null;
+  baseOwnerFingerprint: string;
+  message: string;
+  files: VscFileChange[];
+  artifact?: Partial<RunJSRuntimeArtifact>;
+  draftId?: string;
+  entryPath?: string;
+  version?: string;
 }
 
 export function normalizeRunJSSourceLocator(value: unknown): RunJSSourceLocator {
@@ -125,16 +190,6 @@ export function normalizeRunJSSourceLocator(value: unknown): RunJSSourceLocator 
     };
   }
 
-  if (kind === 'flowModel.flowRegistry.runjs') {
-    return {
-      kind,
-      modelUid: requireString(input.modelUid, 'modelUid'),
-      flowKey: requireString(input.flowKey, 'flowKey'),
-      stepKey: requireString(input.stepKey, 'stepKey'),
-      sourcePath: requireStringArray(input.sourcePath, 'sourcePath'),
-    };
-  }
-
   if (kind === 'workflow.javascript') {
     return {
       kind,
@@ -147,6 +202,15 @@ export function normalizeRunJSSourceLocator(value: unknown): RunJSSourceLocator 
       kind,
       modelUid: requireString(input.modelUid, 'modelUid'),
     };
+  }
+
+  if (typeof kind === 'string' && kind.trim()) {
+    const unsupportedKind = kind.trim();
+    throw new VscError('RUNJS_SOURCE_KIND_UNSUPPORTED', `RunJS source kind "${unsupportedKind}" is not supported`, {
+      details: {
+        kind: unsupportedKind,
+      },
+    });
   }
 
   throw new VscError('RUNJS_SOURCE_LOCATOR_INVALID', 'RunJS source locator kind is invalid', {
@@ -173,6 +237,30 @@ export function getRunJSSourceOwnerId(locator: RunJSSourceLocator): string {
   return `runjs:${locator.kind}:${stableOwnerId}:${sourcePathHash}`;
 }
 
+export function buildRunJSOwnerFingerprint(input: {
+  locator: RunJSSourceLocator;
+  ownerUpdatedAt?: unknown;
+  selectedLegacyValue: unknown;
+  selectedVersion: unknown;
+}): string {
+  return sha256Hex(
+    stableSerialize({
+      locator: input.locator,
+      ownerUpdatedAt: input.ownerUpdatedAt ?? null,
+      selectedLegacyValue: input.selectedLegacyValue ?? null,
+      selectedVersion: input.selectedVersion ?? null,
+    }),
+  );
+}
+
+export function buildRunJSFilesHash(files: VscFileChange[]): string {
+  return sha256Hex(stableSerialize(files));
+}
+
+export function buildRunJSRuntimeCodeHash(code: string): string {
+  return sha256Hex(code);
+}
+
 function getStableOwnerId(locator: RunJSSourceLocator): string {
   if (locator.kind === 'workflow.javascript') {
     return `node_${locator.nodeId}`;
@@ -197,10 +285,6 @@ function getSourcePathSegments(
     ]);
   }
 
-  if (locator.kind === 'flowModel.flowRegistry.runjs') {
-    return toTypedPathSegments([locator.flowKey, locator.stepKey, ...locator.sourcePath]);
-  }
-
   if (locator.kind === 'workflow.javascript') {
     return toTypedPathSegments(['content']);
   }
@@ -215,6 +299,21 @@ function toTypedPathSegments(
     type: typeof value === 'number' ? 'number' : 'string',
     value,
   }));
+}
+
+function stableSerialize(value: unknown): string {
+  if (Array.isArray(value)) {
+    return `[${value.map((item) => stableSerialize(item)).join(',')}]`;
+  }
+  if (value && typeof value === 'object') {
+    const record = value as Record<string, unknown>;
+    return `{${Object.keys(record)
+      .sort()
+      .map((key) => `${JSON.stringify(key)}:${stableSerialize(record[key])}`)
+      .join(',')}}`;
+  }
+
+  return JSON.stringify(value);
 }
 
 function toRecord(value: unknown): Record<string, unknown> {

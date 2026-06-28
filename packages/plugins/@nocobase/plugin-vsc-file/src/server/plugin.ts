@@ -44,7 +44,9 @@ export class PluginVscFileServer extends Plugin {
 
   async load() {
     this.app.resourceManager.define(createVscFileResource(this.db, this.permissionHooks));
-    this.app.resourceManager.define(createRunJSSourcesResource(this.db, this.runJSSourceAdapters));
+    this.app.resourceManager.define(
+      createRunJSSourcesResource(this.db, this.runJSSourceAdapters, this.permissionHooks),
+    );
     this.app.acl.allow('vscFile', [...vscFileActionNames], 'loggedIn');
     this.app.acl.allow('runJSSources', [...runJSSourceActionNames], 'loggedIn');
     this.app.auditManager.registerActions(createVscFileAuditActions(this.db));

@@ -142,7 +142,7 @@ describe('vsc-file shared utilities', () => {
     try {
       normalizeRunJSSourceLocator({ kind: 'unknown' });
     } catch (error) {
-      expect(error).toMatchObject({ code: 'RUNJS_SOURCE_LOCATOR_INVALID' });
+      expect(error).toMatchObject({ code: 'RUNJS_SOURCE_KIND_UNSUPPORTED' });
     }
   });
 });

@@ -10,5 +10,6 @@
 export * from './permissions';
 export * from './config';
 export * from './runjs-sources';
+export * from '../shared/errors';
 export * from '../shared/runjs-source-types';
 export { default } from './plugin';

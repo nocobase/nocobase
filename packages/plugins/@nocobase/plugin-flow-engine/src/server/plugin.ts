@@ -11,6 +11,7 @@ import { SequelizeCollectionManager } from '@nocobase/data-source-manager';
 import type { ResourcerContext } from '@nocobase/resourcer';
 import { parseLiquidContext, transformSQL } from '@nocobase/utils';
 import { registerFlowSurfacesResource } from './flow-surfaces';
+import { registerFlowModelRunJSSourceAdapters } from './runjs-sources';
 import PluginUISchemaStorageServer from './server';
 import { JSONValue } from './template/resolver';
 import { resolveVariablesBatch, resolveVariablesTemplate } from './variables/resolve';
@@ -50,6 +51,7 @@ export class PluginFlowEngineServer extends PluginUISchemaStorageServer {
   async load() {
     await super.load();
     registerFlowSurfacesResource(this);
+    registerFlowModelRunJSSourceAdapters(this);
     this.app.auditManager.registerAction('flowSql:save');
     this.app.auditManager.registerAction('flowModels:save');
     this.app.auditManager.registerAction('flowModels:duplicate');
