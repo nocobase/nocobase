@@ -27,30 +27,86 @@ type CollectionContextParams = {
 
 function createCCGridRenderOptions(parentId: string): CreateModelOptions {
   return {
-    parentId,
-    subKey: 'grid',
     async: true,
+    parentId,
     subType: 'object',
+    subKey: 'grid',
     use: 'CCBlockGridModel',
   };
+}
+
+type TabModelWithGrid = FlowModel & {
+  setSubModel?: (subKey: string, model: FlowModel) => FlowModel;
+  subModels?: {
+    grid?: FlowModel;
+  };
+};
+
+type WorkflowCcConfigDialogInputArgs = {
+  workflowCcConfigDialog?: boolean;
+};
+
+function hasGridContent(model?: FlowModel | null) {
+  const items = (model as { subModels?: { items?: unknown[] } } | null | undefined)?.subModels?.items;
+  return Array.isArray(items) && items.length > 0;
+}
+
+function isWorkflowCcConfigDialog(ctx: FlowModelContext) {
+  return Boolean((ctx.view?.inputArgs as WorkflowCcConfigDialogInputArgs | undefined)?.workflowCcConfigDialog);
+}
+
+function enableConfigDialogGridContext(ctx: FlowModelContext, model: FlowModel) {
+  if (!isWorkflowCcConfigDialog(ctx)) {
+    return;
+  }
+  model.context.defineProperty('disableBlockGridPadding', {
+    get: () => true,
+    cache: false,
+  });
+}
+
+function attachGridToTab(ctx: FlowModelContext, model: FlowModel) {
+  const tab = ctx.model as TabModelWithGrid;
+  if (tab.subModels?.grid !== model) {
+    tab.setSubModel?.('grid', model);
+  }
+  if (model.parent?.uid !== tab.uid) {
+    model.context.addDelegate(ctx);
+  }
+  enableConfigDialogGridContext(ctx, model);
+  return model;
 }
 
 function PageTabChildrenRenderer({ ctx, options }: { ctx: FlowModelContext; options: CreateModelOptions }) {
   const flowEngine = useFlowEngine();
   const { data: model, loading } = useRequest(
     async () => {
+      const existingGrid = (ctx.model as TabModelWithGrid).subModels?.grid;
+      if (hasGridContent(existingGrid)) {
+        enableConfigDialogGridContext(ctx, existingGrid);
+        return existingGrid;
+      }
       registerWorkflowCcModelLoaders(flowEngine);
       await flowEngine.getModelClassAsync?.('CCBlockGridModel');
-      const nextModel = (await flowEngine.loadOrCreateModel(options, {
-        skipSave: false,
-      })) as FlowModel | null;
-      if (nextModel?.parent?.uid !== ctx.model.uid) {
-        nextModel?.context.addDelegate(ctx);
+      const nextModel = (await flowEngine.loadModel?.({
+        parentId: options.parentId,
+        refresh: true,
+        subKey: options.subKey,
+      })) as FlowModel | null | undefined;
+      if (nextModel?.uid) {
+        return attachGridToTab(ctx, nextModel);
       }
-      return nextModel;
+      if (existingGrid?.uid) {
+        enableConfigDialogGridContext(ctx, existingGrid);
+        return existingGrid;
+      }
+      const fallbackModel = (await flowEngine.loadOrCreateModel?.(options, {
+        skipSave: true,
+      })) as FlowModel | null | undefined;
+      return fallbackModel?.uid ? attachGridToTab(ctx, fallbackModel) : null;
     },
     {
-      refreshDeps: [ctx.model.uid, flowEngine],
+      refreshDeps: [ctx.model.uid, (ctx.model as TabModelWithGrid).subModels?.grid?.uid, flowEngine],
     },
   );
   const margin = ctx?.isMobileLayout ? 8 : ctx?.themeToken?.marginBlock;

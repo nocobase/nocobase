@@ -19,6 +19,10 @@ function labelWithColon(label: string) {
   return `${label}:`;
 }
 
+function HiddenConfigValue() {
+  return null;
+}
+
 export function CCFieldset() {
   const t = useT();
   const node = useNodeContext();
@@ -51,6 +55,9 @@ export function CCFieldset() {
       </Form.Item>
       <Form.Item name={['config', 'taskCardUid']} label={labelWithColon(t('Task card'))}>
         <FlowModelConfigInput configKey="taskCardUid" kind="taskCard" />
+      </Form.Item>
+      <Form.Item hidden name={['config', 'tempAssociationFields']} noStyle>
+        <HiddenConfigValue />
       </Form.Item>
       <Form.Item
         label={labelWithColon(t('Task title'))}

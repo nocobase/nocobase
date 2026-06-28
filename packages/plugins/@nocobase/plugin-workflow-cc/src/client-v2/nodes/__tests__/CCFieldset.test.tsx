@@ -8,12 +8,13 @@
  */
 
 import { render, screen } from '@testing-library/react';
-import { Form } from 'antd';
+import { Form, type FormInstance } from 'antd';
 import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const holder = vi.hoisted(() => ({
   flowModelConfigInput: vi.fn(),
+  form: undefined as FormInstance | undefined,
   node: {
     title: 'CC',
   },
@@ -61,6 +62,7 @@ import { CCFieldset } from '../components/cc';
 function renderFieldset(initialValues?: Record<string, unknown>) {
   function Wrapper() {
     const [form] = Form.useForm();
+    holder.form = form;
     return (
       <Form form={form} initialValues={initialValues}>
         <CCFieldset />
@@ -74,6 +76,7 @@ function renderFieldset(initialValues?: Record<string, unknown>) {
 describe('CCFieldset', () => {
   beforeEach(() => {
     holder.flowModelConfigInput.mockClear();
+    holder.form = undefined;
     holder.recipientsInput.mockClear();
     holder.workflowVariableInput.mockClear();
     holder.node.title = 'CC';
@@ -127,5 +130,23 @@ describe('CCFieldset', () => {
       2,
       expect.objectContaining({ configKey: 'taskCardUid', kind: 'taskCard' }),
     );
+  });
+
+  it('registers temporary association fields so parent drawer submit keeps them', async () => {
+    const tempAssociationFields = [{ nodeId: 1, nodeKey: 'trigger-node', nodeType: 'node' }];
+    renderFieldset({
+      config: {
+        taskCardUid: 'cc_task_card_existing',
+        tempAssociationFields,
+        users: ['1'],
+      },
+    });
+
+    await expect(holder.form?.validateFields()).resolves.toMatchObject({
+      config: {
+        taskCardUid: 'cc_task_card_existing',
+        tempAssociationFields,
+      },
+    });
   });
 });
