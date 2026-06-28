@@ -7,19 +7,16 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { tExpr as _tExpr, useFlowEngine } from '@nocobase/flow-engine';
-import { useCallback } from 'react';
-// @ts-ignore
-import pkg from './../../package.json';
+import { tExpr as flowTExpr, useFlowEngine } from '@nocobase/flow-engine';
+
+export const NAMESPACE = '@nocobase/plugin-form-drafts';
 
 export function useT() {
   const engine = useFlowEngine();
-  return useCallback(
-    (str: string, options?: Record<string, unknown>) => engine.context.t(str, { ns: [pkg.name, 'client'], ...options }),
-    [engine],
-  );
+  return (key: string, options?: Record<string, unknown>) =>
+    engine.context.t(key, { ns: [NAMESPACE, 'form-drafts', 'client'], nsMode: 'fallback', ...options });
 }
 
 export function tExpr(key: string) {
-  return _tExpr(key, { ns: [pkg.name, 'client'] });
+  return flowTExpr(key, { ns: [NAMESPACE, 'form-drafts', 'client'] });
 }
