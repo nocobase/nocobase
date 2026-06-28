@@ -233,7 +233,7 @@ const tokenDerivedDialogStyles = {
     padding: 0,
   },
   header: {
-    padding: 24,
+    padding: '16px 24px',
     marginBottom: 0,
   },
 };

@@ -787,7 +787,7 @@ export function FlowModelConfigInput({
             padding: 0,
           },
           header: {
-            padding: token.paddingLG,
+            padding: `${token.padding}px ${token.paddingLG}px`,
             marginBottom: 0,
           },
         },
