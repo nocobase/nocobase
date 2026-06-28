@@ -216,27 +216,28 @@ function preserveTrailingSlash(originalPathname: string, value: string) {
 }
 
 export function normalizeV2RedirectPath(app: AppLike, target?: string | null, fallbackPath = '/admin/') {
-  const rawTarget = isSafeRootRelativePath(target) ? target : fallbackPath;
-  const { pathname, search, hash } = splitPathLike(rawTarget);
+  // In a v2 sub-app, publicPath can be `/v/` while the active router
+  // basename is `/v/apps/a/`. Redirects must resolve under the basename.
   const basePath = trimTrailingSlashes(getV2EffectiveBasePath(app)) || '/';
-  const normalizedPathname = normalizePathname(pathname);
+  const fallbackTarget = isSafeRootRelativePath(fallbackPath) ? fallbackPath : '/admin/';
+  const rawTarget = isSafeRootRelativePath(target) ? target : fallbackTarget;
+  let { pathname, search, hash } = splitPathLike(rawTarget);
+  let normalizedPathname = normalizePathname(pathname);
 
+  // Already under the current v2 runtime, e.g. `/v/apps/a/admin/`.
   if (basePath === '/' || normalizedPathname === basePath || normalizedPathname.startsWith(`${basePath}/`)) {
     return `${preserveTrailingSlash(pathname, normalizedPathname)}${normalizeSearch(search)}${normalizeHash(hash)}`;
   }
 
   const publicPath = trimTrailingSlashes(getV2PublicPath(app)) || '/';
+  // Under v2 publicPath but outside the current basename, e.g. `/v/admin/`
+  // inside `/v/apps/a/`; use fallback so it lands on `/v/apps/a/admin/`.
   if (publicPath !== '/' && (normalizedPathname === publicPath || normalizedPathname.startsWith(`${publicPath}/`))) {
-    const fallbackTarget = isSafeRootRelativePath(fallbackPath) ? fallbackPath : '/admin/';
-    const { pathname: fallbackPathname, search: fallbackSearch, hash: fallbackHash } = splitPathLike(fallbackTarget);
-    const joinedFallbackPathname = preserveTrailingSlash(
-      fallbackPathname,
-      joinRootRelativePath(basePath, normalizePathname(fallbackPathname)),
-    );
-
-    return `${joinedFallbackPathname}${normalizeSearch(fallbackSearch)}${normalizeHash(fallbackHash)}`;
+    ({ pathname, search, hash } = splitPathLike(fallbackTarget));
+    normalizedPathname = normalizePathname(pathname);
   }
 
+  // Basename-relative target, e.g. `/admin/`, becomes `/v/apps/a/admin/`.
   const joinedPathname = preserveTrailingSlash(pathname, joinRootRelativePath(basePath, normalizedPathname));
   return `${joinedPathname}${normalizeSearch(search)}${normalizeHash(hash)}`;
 }
