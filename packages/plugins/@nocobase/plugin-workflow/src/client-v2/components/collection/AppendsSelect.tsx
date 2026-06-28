@@ -9,8 +9,7 @@
 
 import { useFlowEngine } from '@nocobase/flow-engine';
 import { useMemoizedFn } from 'ahooks';
-import { Tag, TreeSelect } from 'antd';
-import type { LegacyDataNode } from 'rc-tree-select/lib/interface';
+import { Tag, TreeSelect, type TreeSelectProps } from 'antd';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useT } from '../../locale';
 import {
@@ -22,38 +21,40 @@ import {
   type CollectionTriggerField,
 } from './utils';
 
-type AppendsTreeNode = LegacyDataNode & {
-  pId: string | null;
+type AssociationCollectionTriggerField = CollectionTriggerField & { name: string; target: string };
+
+type AppendsTreeNode = {
+  field: AssociationCollectionTriggerField;
+  fullTitle: string[];
   id: string;
+  isLeaf: boolean;
+  key: string;
+  loadChildren: ((option: AppendsTreeNode) => AppendsTreeNode[]) | null;
+  pId: string | null;
   title: string;
   value: string;
-  key: string;
-  isLeaf: boolean;
-  field: CollectionTriggerField & { name: string };
-  fullTitle: string[];
-  loadChildren: ((option: AppendsTreeNode) => AppendsTreeNode[]) | null;
 };
-type CollectionFieldGetter = (collectionName?: string) => Array<CollectionTriggerField & { name: string }>;
+
+type CollectionFieldGetter = (collectionName?: string) => CollectionTriggerField[];
 type AppendsTreeScope = {
   compile: (value: string) => string;
   getCollectionFields: CollectionFieldGetter;
 };
 
-function isAssociation(field: CollectionTriggerField) {
-  return isAssociationField(field) && Boolean(field.target) && Boolean(field.interface);
+type TreeSelectValue = { label?: React.ReactNode; value: string };
+type AppendsTreeSelectProps = TreeSelectProps<TreeSelectValue[], AppendsTreeNode>;
+
+function isAssociation(field: CollectionTriggerField): field is AssociationCollectionTriggerField {
+  return hasFieldName(field) && isAssociationField(field) && Boolean(field.target) && Boolean(field.interface);
 }
 
-function getFieldTitle(compile: (value: string) => string, field: CollectionTriggerField & { name: string }) {
+function getFieldTitle(compile: (value: string) => string, field: AssociationCollectionTriggerField) {
   return field.uiSchema?.title ? compile(field.uiSchema.title) : field.name;
 }
 
 function loadChildren(this: AppendsTreeScope, option: AppendsTreeNode) {
   const result = getCollectionFieldOptions.call(this, option.field.target, option);
-  if (result.length) {
-    if (!result.some((item) => isAssociation(item.field))) {
-      option.isLeaf = true;
-    }
-  } else {
+  if (!result.length || !result.some((item) => isAssociation(item.field))) {
     option.isLeaf = true;
   }
   return result;
@@ -70,24 +71,61 @@ function getCollectionFieldOptions(
   return fields.filter(isAssociation).map((field) => {
     const key = parentNode ? `${parentNode.value ? `${parentNode.value}.` : ''}${field.name}` : field.name;
     const title = getFieldTitle(this.compile, field);
-    const isLeaf = !this.getCollectionFields(field.target).filter(isAssociation).length;
+    const isLeaf = !this.getCollectionFields(field.target).some(isAssociation);
 
     return {
-      props: undefined,
-      pId: parentNode?.key ?? null,
-      id: key,
-      key,
-      value: key,
-      title,
-      isLeaf,
-      loadChildren: isLeaf ? null : boundLoadChildren,
       field,
       fullTitle: parentNode ? [...parentNode.fullTitle, title] : [title],
+      id: key,
+      isLeaf,
+      key,
+      loadChildren: isLeaf ? null : boundLoadChildren,
+      pId: parentNode?.key ?? null,
+      title,
+      value: key,
     };
   });
 }
 
-type TreeSelectValue = { value: string; label?: React.ReactNode };
+function mapTreeNodes(nodes: AppendsTreeNode[]) {
+  return nodes.reduce<Record<string, AppendsTreeNode>>((result, item) => {
+    result[item.value] = item;
+    return result;
+  }, {});
+}
+
+function extractSelectedValues(value: unknown): string[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+  return value
+    .map((item) => {
+      if (typeof item === 'string') {
+        return item;
+      }
+      if (typeof item === 'object' && item !== null && 'value' in item) {
+        const selectedValue = (item as { value?: unknown }).value;
+        return typeof selectedValue === 'string' ? selectedValue : undefined;
+      }
+      return undefined;
+    })
+    .filter((item): item is string => Boolean(item));
+}
+
+function addParentPaths(valueSet: Set<string>, path: string) {
+  const segments = path.split('.');
+  for (let index = 1; index <= segments.length; index += 1) {
+    valueSet.add(segments.slice(0, index).join('.'));
+  }
+}
+
+function getOptionByTreeNode(
+  dataNode: Parameters<NonNullable<AppendsTreeSelectProps['loadData']>>[0] | undefined,
+  optionsMap: Record<string, AppendsTreeNode>,
+) {
+  const { value } = dataNode ?? {};
+  return typeof value === 'string' ? optionsMap[value] : undefined;
+}
 
 export function AppendsSelect({
   collection,
@@ -111,8 +149,8 @@ export function AppendsSelect({
     () =>
       (value ?? [])
         .map((item) => optionsMap[item])
-        .filter(Boolean)
-        .map((item) => ({ value: item.value, label: item.value })),
+        .filter((item): item is AppendsTreeNode => Boolean(item))
+        .map((item) => ({ label: item.value, value: item.value })),
     [optionsMap, value],
   );
   const valueKeys = value ?? [];
@@ -126,9 +164,7 @@ export function AppendsSelect({
       ? targetCollectionName
       : joinCollectionName(dataSourceKey || 'main', targetCollectionName);
 
-    return getCollectionFields(flowEngine.context.dataSourceManager, resolvedCollection).filter(hasFieldName) as Array<
-      CollectionTriggerField & { name: string }
-    >;
+    return getCollectionFields(flowEngine.context.dataSourceManager, resolvedCollection);
   });
 
   useEffect(() => {
@@ -137,15 +173,11 @@ export function AppendsSelect({
       return;
     }
 
-    const options: AppendsTreeNode[] = getCollectionFieldOptions.call(
+    const options = getCollectionFieldOptions.call(
       { compile, getCollectionFields: getCollectionFieldsByName },
       collectionName,
     );
-    const nextOptionsMap = options.reduce<Record<string, AppendsTreeNode>>((result, item) => {
-      result[item.value] = item;
-      return result;
-    }, {});
-    setOptionsMap(nextOptionsMap);
+    setOptionsMap(mapTreeNodes(options));
   }, [collectionName, compile, getCollectionFieldsByName]);
 
   useEffect(() => {
@@ -159,58 +191,54 @@ export function AppendsSelect({
       const paths = item.split('.');
       let option = optionsMap[paths[0]];
 
-      for (let i = 1; i < paths.length; i++) {
+      for (let index = 1; index < paths.length; index += 1) {
         if (!option) {
           break;
         }
 
-        const nextPath = paths.slice(0, i + 1).join('.');
+        const nextPath = paths.slice(0, index + 1).join('.');
         if (optionsMap[nextPath]) {
           option = optionsMap[nextPath];
           continue;
         }
 
-        if (!option.isLeaf && option.loadChildren) {
-          const children = option.loadChildren(option);
-          if (children?.length) {
-            loaded.push(...children);
-            option = children.find((child) => child.value === nextPath);
-          }
+        if (option.isLeaf || !option.loadChildren) {
+          break;
         }
+
+        const children = option.loadChildren(option);
+        if (!children.length) {
+          break;
+        }
+
+        loaded.push(...children);
+        option = children.find((child) => child.value === nextPath);
       }
     });
 
-    if (!loaded.length) {
+    const nextLoaded = loaded.filter((item) => !optionsMap[item.value]);
+    if (nextLoaded.length) {
+      setOptionsMap((current) => ({ ...current, ...mapTreeNodes(nextLoaded) }));
+    }
+  }, [optionsMap, value]);
+
+  const loadData: NonNullable<AppendsTreeSelectProps['loadData']> = useMemoizedFn(async (dataNode) => {
+    const option = getOptionByTreeNode(dataNode, optionsMap);
+    if (!option || option.isLeaf || !option.loadChildren) {
       return;
     }
 
-    setOptionsMap((prev) => {
-      const next = { ...prev };
-      loaded.forEach((item) => {
-        next[item.value] = item;
-      });
-      return next;
-    });
-  }, [optionsMap, treeData.length, value]);
-
-  const loadData = useMemoizedFn(async (dataNode: LegacyDataNode) => {
-    const option = dataNode as AppendsTreeNode;
-    if (!option.isLeaf && option.loadChildren) {
-      const children = option.loadChildren(option);
-      setOptionsMap((prev) => {
-        const next = { ...prev };
-        children.forEach((item) => {
-          next[item.value] = item;
-        });
-        return next;
-      });
+    const children = option.loadChildren(option);
+    if (!children.length) {
+      return;
     }
+
+    setOptionsMap((current) => ({ ...current, ...mapTreeNodes(children) }));
   });
 
-  const handleChange = useMemoizedFn((next: TreeSelectValue | TreeSelectValue[] | undefined) => {
-    const nextItems = Array.isArray(next) ? next : next ? [next] : [];
-    const nextValues = nextItems.map((item) => item.value).filter(Boolean) as string[];
-    const valueSet = new Set(nextValues);
+  const handleChange = useMemoizedFn((nextValue: unknown) => {
+    const selectedValues = extractSelectedValues(nextValue);
+    const valueSet = new Set(selectedValues);
     const removedValue = (value ?? []).find((item) => !valueSet.has(item));
 
     if (removedValue) {
@@ -221,26 +249,27 @@ export function AppendsSelect({
         }
       });
     } else {
-      nextValues.forEach((item) => {
-        const paths = item.split('.');
-        for (let i = 1; i <= paths.length; i++) {
-          valueSet.add(paths.slice(0, i).join('.'));
-        }
-      });
+      selectedValues.forEach((item) => addParentPaths(valueSet, item));
     }
 
     onChange?.(Array.from(valueSet));
   });
 
   const tagRender = useMemoizedFn(
-    (props: { value?: string; closable?: boolean; onClose?: (event?: React.MouseEvent<HTMLElement>) => void }) => {
-      const node = props.value ? optionsMap[props.value] : undefined;
-      if (!node) {
+    (props: {
+      closable?: boolean;
+      disabled?: boolean;
+      onClose?: (event?: React.MouseEvent<HTMLElement>) => void;
+      value?: string;
+    }) => {
+      const { closable, disabled, onClose, value: tagValue } = props;
+      if (!tagValue) {
         return null;
       }
+
       return (
-        <Tag closable={props.closable} onClose={props.onClose}>
-          {node.fullTitle.join(' / ')}
+        <Tag closable={closable && !disabled} onClose={onClose}>
+          {optionsMap[tagValue]?.fullTitle?.join(' / ') ?? tagValue}
         </Tag>
       );
     },
@@ -248,19 +277,19 @@ export function AppendsSelect({
 
   return (
     <TreeSelect
-      treeData={treeData}
-      value={treeValue}
-      treeDataSimpleMode
-      loadData={loadData}
-      onChange={handleChange}
-      treeCheckable
-      treeCheckStrictly
-      showCheckedStrategy={TreeSelect.SHOW_ALL}
-      treeDefaultExpandedKeys={valueKeys}
-      placeholder={t('Preload associations')}
-      treeNodeFilterProp="title"
-      tagRender={tagRender}
       allowClear
+      loadData={loadData}
+      onChange={handleChange as AppendsTreeSelectProps['onChange']}
+      placeholder={t('Select field')}
+      showCheckedStrategy={TreeSelect.SHOW_ALL}
+      tagRender={tagRender as AppendsTreeSelectProps['tagRender']}
+      treeCheckStrictly
+      treeCheckable
+      treeData={treeData}
+      treeDataSimpleMode
+      treeDefaultExpandedKeys={valueKeys}
+      treeNodeFilterProp="title"
+      value={treeValue}
     />
   );
 }

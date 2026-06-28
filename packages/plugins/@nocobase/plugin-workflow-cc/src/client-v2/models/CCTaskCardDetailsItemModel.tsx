@@ -7,12 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { DetailsItemModel, parseCollectionName } from '@nocobase/client';
-import { Collection, CollectionField, FlowModelContext, tExpr } from '@nocobase/flow-engine';
-import { NAMESPACE } from '../../common/constants';
-import { buildTempAssociationFieldName, TEMP_ASSOCIATION_PREFIX } from '../../common/tempAssociation';
+import { DetailsItemModel } from '@nocobase/client-v2';
+import { parseCollectionName } from '@nocobase/plugin-workflow/client-v2';
+import { CollectionField, type Collection, type FlowEngine, type FlowModelContext } from '@nocobase/flow-engine';
 
-// 排除的字段
+import { buildTempAssociationFieldName, TEMP_ASSOCIATION_PREFIX } from '../../common/tempAssociation';
+import { NAMESPACE, tExpr } from '../locale';
+
 const EXCLUDED_FIELDS = ['node', 'job', 'workflow', 'execution', 'user'];
 
 class CCTaskCardTempAssociationField extends CollectionField {
@@ -25,9 +26,9 @@ class CCTaskCardTempAssociationField extends CollectionField {
 }
 
 type CCTaskAssociationContext = {
-  flowEngine: FlowModelContext['model']['flowEngine'];
-  workflow?: any;
-  nodes?: any[];
+  flowEngine: FlowEngine;
+  nodes?: Array<{ id?: number | string; title?: string }>;
+  workflow?: { id?: number | string; title?: string };
 };
 
 type TempAssociationSource = {
@@ -44,27 +45,31 @@ export type CCTaskTempAssociationFieldConfig = {
 };
 
 type CCTaskAssociationMetadata = CCTaskTempAssociationFieldConfig & {
-  fieldName: string;
-  title?: string;
   dataSourceKey: string;
+  fieldName: string;
   target: string;
+  title?: string;
 };
 
 export const getEligibleTempAssociationSources = (sources: TempAssociationSource[] = [], collection?: Collection) => {
   const unique = new Map<string, CCTaskAssociationMetadata>();
   sources.forEach((source) => {
     const fieldName = buildTempAssociationFieldName(source.nodeType, source.nodeKey);
-    if (unique.has(fieldName) || collection?.getField(fieldName)) return;
-    const [dataSourceKey, target] = parseCollectionName(source.collection);
-    if (!target) return;
+    if (unique.has(fieldName) || collection?.getField(fieldName)) {
+      return;
+    }
+    const [dataSourceKey, target] = parseCollectionName(source.collection) as [string, string];
+    if (!target) {
+      return;
+    }
     unique.set(fieldName, {
+      dataSourceKey: dataSourceKey || 'main',
       fieldName,
       nodeId: source.nodeId,
       nodeKey: source.nodeKey,
       nodeType: source.nodeType,
-      title: source.nodeKey,
-      dataSourceKey: dataSourceKey || 'main',
       target,
+      title: source.nodeKey,
     });
   });
   return Array.from(unique.values());
@@ -72,22 +77,25 @@ export const getEligibleTempAssociationSources = (sources: TempAssociationSource
 
 export const updateWorkflowCcTaskAssociationFields = ({
   flowEngine,
-  workflow,
   nodes,
   tempAssociationSources,
+  workflow,
 }: CCTaskAssociationContext & { tempAssociationSources?: TempAssociationSource[] }) => {
-  if (!flowEngine) return;
+  if (!flowEngine) {
+    return;
+  }
   const collection = flowEngine.dataSourceManager.getCollection('main', 'workflowCcTasks');
-  if (!collection) return;
+  if (!collection) {
+    return;
+  }
   const associations = getEligibleTempAssociationSources(tempAssociationSources || [], collection);
-
   if (!associations.length) {
     return;
   }
 
   associations
     .map((item) => {
-      const title = [workflow, ...(nodes || [])].find((node) => node.id === item.nodeId)?.title;
+      const title = [workflow, ...(nodes || [])].find((node) => node?.id === item.nodeId)?.title;
       return {
         ...item,
         title: title || item.nodeKey,
@@ -117,10 +125,9 @@ export class CCTaskCardDetailsItemModel extends DetailsItemModel {
       .getFields()
       .map((field) => {
         const binding = this.getDefaultBindingByField(ctx, field, { fallbackToTargetTitleField: true });
-        if (!binding) return null;
-        if (EXCLUDED_FIELDS.includes(field.name)) return null;
-        if (field.name.startsWith(TEMP_ASSOCIATION_PREFIX)) return null;
-        const fieldModel = binding.modelName;
+        if (!binding || EXCLUDED_FIELDS.includes(field.name) || field.name.startsWith(TEMP_ASSOCIATION_PREFIX)) {
+          return null;
+        }
         const fullName = ctx.prefixFieldPath ? `${ctx.prefixFieldPath}.${field.name}` : field.name;
         return {
           key: fullName,
@@ -137,14 +144,14 @@ export class CCTaskCardDetailsItemModel extends DetailsItemModel {
               fieldSettings: {
                 init: {
                   dataSourceKey: collection.dataSourceKey,
-                  collectionName: ctx.model.context.blockModel.collection.name,
+                  collectionName: ctx.model.context.blockModel?.collection?.name ?? collection.name,
                   fieldPath: fullName,
                 },
               },
             },
             subModels: {
               field: {
-                use: fieldModel,
+                use: binding.modelName,
                 props:
                   typeof binding.defaultProps === 'function' ? binding.defaultProps(ctx, field) : binding.defaultProps,
               },
@@ -155,7 +162,7 @@ export class CCTaskCardDetailsItemModel extends DetailsItemModel {
       .filter(Boolean);
   }
 
-  onInit(options: any): void {
+  onInit(options: Parameters<DetailsItemModel['onInit']>[0]): void {
     super.onInit(options);
     this.context.defineProperty('collectionField', {
       get: () => {
@@ -171,10 +178,9 @@ export class CCTaskCardDetailsItemModel extends DetailsItemModel {
             nodes: this.context.nodes,
             tempAssociationSources: this.context.tempAssociationSources,
           });
-          const refreshedField = this.context.dataSourceManager.getCollectionField(
+          return this.context.dataSourceManager.getCollectionField(
             `${params.dataSourceKey}.${params.collectionName}.${params.fieldPath}`,
           ) as CollectionField;
-          return refreshedField;
         }
 
         return collectionField;
@@ -188,3 +194,5 @@ CCTaskCardDetailsItemModel.define({
   label: tExpr('CC information', { ns: NAMESPACE }),
   sort: 100,
 });
+
+export default CCTaskCardDetailsItemModel;

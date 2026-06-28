@@ -41,8 +41,8 @@ import { useTempAssociationSources } from './hooks/useTempAssociationSources';
 import { NAMESPACE, TASK_STATUS, TASK_TYPE_CC } from '../common/constants';
 import { useTranslation } from 'react-i18next';
 import { lang } from './locale';
-import { RemoteFlowModelRenderer } from './flow/RemoteFlowModelRenderer';
-import { CCTaskCardDetailsModel } from './models/CCTaskCardDetailsModel';
+import { RemoteFlowModelRenderer } from '../client-v2/flow/RemoteFlowModelRenderer';
+import { CCTaskCardDetailsModel } from '../client-v2/models/CCTaskCardDetailsModel';
 
 function useDetailsBlockProps() {
   const { form } = useFormBlockContext();

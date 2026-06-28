@@ -30,6 +30,7 @@ export class PluginNotificationInAppMessageClientV2 extends Plugin<Record<string
         type: IN_APP_TYPE,
         title: tExpr('In-app message'),
         components: {
+          ContentConfigFormLoader: () => import('./components/ContentConfigForm'),
           MessageConfigFormLoader: () => import('./components/MessageConfigForm'),
         },
         meta: {

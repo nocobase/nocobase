@@ -8,16 +8,13 @@
  */
 
 import { SettingOutlined } from '@ant-design/icons';
-import { DetailsGridModel } from '@nocobase/client';
+import { DetailsGridModel } from '@nocobase/client-v2';
 import { AddSubModelButton, FlowSettingsButton } from '@nocobase/flow-engine';
 import React from 'react';
-import type { CCTaskTempAssociationFieldConfig } from './CCTaskCardDetailsItemModel';
-import { getEligibleTempAssociationSources } from './CCTaskCardDetailsItemModel';
-import { TEMP_ASSOCIATION_PREFIX } from '../../common/tempAssociation';
 
-/**
- * 抄送任务卡片详情的字段网格
- */
+import { TEMP_ASSOCIATION_PREFIX } from '../../common/tempAssociation';
+import { getEligibleTempAssociationSources, type CCTaskTempAssociationFieldConfig } from './CCTaskCardDetailsItemModel';
+
 export class CCTaskCardGridModel extends DetailsGridModel {
   private lastTempAssociationSnapshot?: string;
   private readonly tempAssociationSyncHandler = () => {
@@ -39,9 +36,13 @@ export class CCTaskCardGridModel extends DetailsGridModel {
   private getTempAssociationFieldNames() {
     const fieldNames = this.mapSubModels('items', (item) => {
       const fieldPath = item.getStepParams('fieldSettings', 'init')?.fieldPath;
-      if (!fieldPath) return null;
+      if (!fieldPath) {
+        return null;
+      }
       const baseField = fieldPath.split('.')[0];
-      if (!baseField.startsWith(TEMP_ASSOCIATION_PREFIX)) return null;
+      if (!baseField.startsWith(TEMP_ASSOCIATION_PREFIX)) {
+        return null;
+      }
       return baseField;
     }).filter(Boolean) as string[];
 
@@ -49,11 +50,15 @@ export class CCTaskCardGridModel extends DetailsGridModel {
   }
 
   private syncTempAssociationFields() {
-    if (!this.context.flowSettingsEnabled) return;
+    if (!this.context.flowSettingsEnabled) {
+      return;
+    }
     const sync = this.context.ccTaskTempAssociationSync as
       | ((fields: CCTaskTempAssociationFieldConfig[]) => void)
       | undefined;
-    if (typeof sync !== 'function') return;
+    if (typeof sync !== 'function') {
+      return;
+    }
 
     const associationMetadata = getEligibleTempAssociationSources(this.context.tempAssociationSources || []);
     const metadataMap = new Map(associationMetadata.map((association) => [association.fieldName, association]));
@@ -68,7 +73,9 @@ export class CCTaskCardGridModel extends DetailsGridModel {
       }))
       .sort((a, b) => a.nodeKey.localeCompare(b.nodeKey));
     const snapshot = JSON.stringify(configs);
-    if (snapshot === this.lastTempAssociationSnapshot) return;
+    if (snapshot === this.lastTempAssociationSnapshot) {
+      return;
+    }
     this.lastTempAssociationSnapshot = snapshot;
     sync(configs);
   }
@@ -81,7 +88,7 @@ export class CCTaskCardGridModel extends DetailsGridModel {
     return (
       <AddSubModelButton
         model={this}
-        subModelKey={'items'}
+        subModelKey="items"
         subModelBaseClasses={[
           this.context.getModelClassName('CCTaskCardDetailsItemModel'),
           this.context.getModelClassName('CCTaskCardDetailsAssociationFieldGroupModel'),
@@ -95,7 +102,13 @@ export class CCTaskCardGridModel extends DetailsGridModel {
   }
 
   render() {
-    this.props.heightMode = 'defaultHeight'; // 强制使用 defaultHeight 模式，避免出现滚动条
+    this.props.heightMode = 'defaultHeight';
     return super.render();
   }
 }
+
+CCTaskCardGridModel.define({
+  hide: true,
+});
+
+export default CCTaskCardGridModel;
