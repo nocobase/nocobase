@@ -60,6 +60,7 @@
   "Other blocks": "其他区块",
   "Previous step": "上一步",
   "Render failed": "渲染失败",
+  "Response record": "响应结果记录",
   "Step configuration": "步骤配置",
   "Step parameter configuration": "步骤参数配置",
   "Step with key {{stepKey}} not found": "未找到key为 {{stepKey}} 的步骤",

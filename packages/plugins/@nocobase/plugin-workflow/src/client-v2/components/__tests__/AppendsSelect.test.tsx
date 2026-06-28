@@ -7,9 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { act, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { describe, expect, it, vi } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
 import { AppendsSelect } from '../collection/AppendsSelect';
 
 type TreeSelectNodeSnapshot = {
@@ -21,8 +21,8 @@ type TreeSelectNodeSnapshot = {
 };
 
 type TreeSelectPropsSnapshot = {
-  loadData?: (option: TreeSelectNodeSnapshot) => void | Promise<void>;
-  onChange?: (value: Array<{ value?: string }>) => void;
+  loadData?: (option?: TreeSelectNodeSnapshot) => void | Promise<void>;
+  onChange?: (value: Array<{ label?: React.ReactNode; value?: string }>) => void;
   placeholder?: string;
   showCheckedStrategy?: string;
   tagRender?: (props: {
@@ -35,6 +35,7 @@ type TreeSelectPropsSnapshot = {
   treeCheckStrictly?: boolean;
   treeData?: TreeSelectNodeSnapshot[];
   treeDataSimpleMode?: boolean;
+  value?: Array<{ label?: React.ReactNode; value?: string }>;
 };
 
 const treeSelectState = vi.hoisted(() => ({
@@ -60,38 +61,68 @@ vi.mock('@nocobase/flow-engine', () => ({
       dataSourceManager: {
         getDataSource: () => ({
           collectionManager: {
-            getCollection: (name: string) => {
+            getCollection: (collectionName: string) => {
               const fields: Record<string, Array<Record<string, unknown>>> = {
-                users: [
+                profiles: [],
+                roles: [
                   {
-                    name: 'roles',
-                    type: 'belongsToMany',
-                    interface: 'm2m',
-                    target: 'roles',
-                    uiSchema: { title: '{{t("Roles")}}' },
+                    options: {
+                      interface: 'm2o',
+                      name: 'createdBy',
+                      target: 'users',
+                      type: 'belongsTo',
+                      uiSchema: { title: '{{t("Created by")}}' },
+                    },
                   },
                 ],
-                roles: [],
                 root: [
                   {
-                    name: 'createdBy',
-                    type: 'belongsTo',
                     interface: 'm2o',
+                    name: 'createdBy',
                     target: 'users',
+                    type: 'belongsTo',
                     uiSchema: { title: '{{t("Created by")}}' },
                   },
                   {
-                    name: 'profile',
-                    type: 'hasOne',
                     interface: 'oho',
+                    name: 'profile',
                     target: 'profiles',
+                    type: 'hasOne',
                     uiSchema: { title: '{{t("Profile")}}' },
                   },
                 ],
-                profiles: [],
+                users: [
+                  {
+                    options: {
+                      interface: 'm2o',
+                      name: 'createdBy',
+                      target: 'users',
+                      type: 'belongsTo',
+                      uiSchema: { title: '{{t("Created by")}}' },
+                    },
+                  },
+                  {
+                    options: {
+                      interface: 'm2o',
+                      name: 'role',
+                      target: 'roles',
+                      type: 'belongsTo',
+                      uiSchema: { title: '{{t("Role")}}' },
+                    },
+                  },
+                  {
+                    options: {
+                      interface: 'm2m',
+                      name: 'roles',
+                      target: 'roles',
+                      type: 'belongsToMany',
+                      uiSchema: { title: '{{t("Roles")}}' },
+                    },
+                  },
+                ],
               };
               return {
-                getFields: () => fields[name] ?? [],
+                getFields: () => fields[collectionName] ?? [],
               };
             },
           },
@@ -131,16 +162,6 @@ describe('AppendsSelect', () => {
     ]);
   });
 
-  it('stores selected child associations together with their parent paths', () => {
-    const onChange = vi.fn();
-
-    render(<AppendsSelect collection="root" value={[]} onChange={onChange} />);
-
-    treeSelectState.props?.onChange?.([{ value: 'createdBy.roles' }]);
-
-    expect(onChange).toHaveBeenCalledWith(expect.arrayContaining(['createdBy', 'createdBy.roles']));
-  });
-
   it('preloads saved child paths and renders full path tags', async () => {
     render(<AppendsSelect collection="root" value={['createdBy.roles']} />);
 
@@ -159,5 +180,84 @@ describe('AppendsSelect', () => {
     render(<>{tag}</>);
 
     expect(screen.getByText('Created by / Roles')).toBeInTheDocument();
+  });
+
+  it('uses strict tree checking and full-path tag rendering to match v1 appends behavior', async () => {
+    render(<AppendsSelect collection="users" value={['createdBy.role']} />);
+
+    expect(treeSelectState.props?.treeCheckStrictly).toBe(true);
+    expect(treeSelectState.props?.showCheckedStrategy).toBe('SHOW_ALL');
+
+    await waitFor(() => {
+      expect(treeSelectState.props?.value).toMatchObject([{ label: 'createdBy.role', value: 'createdBy.role' }]);
+    });
+
+    const tag = treeSelectState.props?.tagRender?.({
+      closable: true,
+      onClose: vi.fn(),
+      value: 'createdBy.role',
+    });
+    const { container } = render(<>{tag}</>);
+    expect(container).toHaveTextContent('Created by / Role');
+  });
+
+  it('adds parent paths when a child node is selected', () => {
+    const onChange = vi.fn();
+    render(<AppendsSelect collection="users" value={[]} onChange={onChange} />);
+
+    treeSelectState.props?.onChange?.([{ label: 'createdBy.role', value: 'createdBy.role' }]);
+    expect(onChange).toHaveBeenCalledWith(['createdBy.role', 'createdBy']);
+  });
+
+  it('removes descendants when a selected parent node is unselected', () => {
+    const onChange = vi.fn();
+    render(<AppendsSelect collection="users" value={['createdBy', 'createdBy.role']} onChange={onChange} />);
+
+    treeSelectState.props?.onChange?.([{ label: 'createdBy.role', value: 'createdBy.role' }]);
+    expect(onChange).toHaveBeenCalledWith([]);
+  });
+
+  it('continues loading deeper association levels on demand', async () => {
+    render(<AppendsSelect collection="users" value={[]} />);
+
+    await act(async () => {
+      await treeSelectState.props?.loadData?.(
+        treeSelectState.props?.treeData?.find((item) => item.value === 'createdBy'),
+      );
+    });
+
+    await waitFor(() => {
+      expect(treeSelectState.props?.treeData).toEqual(
+        expect.arrayContaining([expect.objectContaining({ value: 'createdBy.createdBy' })]),
+      );
+    });
+
+    await act(async () => {
+      await treeSelectState.props?.loadData?.(
+        treeSelectState.props?.treeData?.find((item) => item.value === 'createdBy.createdBy'),
+      );
+    });
+
+    await waitFor(() => {
+      expect(treeSelectState.props?.treeData).toEqual(
+        expect.arrayContaining([expect.objectContaining({ value: 'createdBy.createdBy.createdBy' })]),
+      );
+    });
+  });
+
+  it('preloads nested value paths so deep selections can be displayed', async () => {
+    render(<AppendsSelect collection="users" value={['createdBy.createdBy.role']} />);
+
+    await waitFor(() => {
+      expect(treeSelectState.props?.value).toMatchObject([{ value: 'createdBy.createdBy.role' }]);
+    });
+
+    const tag = treeSelectState.props?.tagRender?.({
+      closable: true,
+      onClose: vi.fn(),
+      value: 'createdBy.createdBy.role',
+    });
+    const { container } = render(<>{tag}</>);
+    expect(container).toHaveTextContent('Created by / Created by / Role');
   });
 });

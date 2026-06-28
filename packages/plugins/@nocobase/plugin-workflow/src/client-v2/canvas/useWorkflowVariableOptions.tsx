@@ -114,11 +114,40 @@ function useWorkflowPlugin(): WorkflowVariablePlugin | undefined {
   return flowEngine.context.app.pm.get('workflow') as WorkflowVariablePlugin | undefined;
 }
 
+function prefixMetaTreeNodePaths(node: MetaTreeNode, prefix: string[]): MetaTreeNode {
+  const { children } = node;
+  const nextNode: MetaTreeNode = {
+    ...node,
+    paths: [...prefix, ...(node.paths ?? [String(node.name ?? '')])],
+  };
+
+  if (Array.isArray(children)) {
+    nextNode.children = children.map((child) => prefixMetaTreeNodePaths(child, prefix));
+  } else if (typeof children === 'function') {
+    nextNode.children = async () => {
+      const loaded = await children();
+      return loaded.map((child) => prefixMetaTreeNodePaths(child, prefix));
+    };
+  }
+
+  return nextNode;
+}
+
+function isMetaTreeNodeArray(value: unknown): value is MetaTreeNode[] {
+  return Array.isArray(value) && value.every((item) => item && typeof item === 'object' && 'paths' in item);
+}
+
 export type UseWorkflowVariableOptions = {
   types?: any[];
   fieldNames?: { label?: string; value?: string; children?: string };
   appends?: string[] | null;
   depth?: number;
+  /**
+   * Include the `$scopes` root. Scope providers (loop / parallel) building
+   * their own local variables must disable this when they call back into the
+   * workflow aggregator, otherwise the scope chain recursively nests itself.
+   */
+  includeScopes?: boolean;
 };
 
 /**
@@ -297,11 +326,25 @@ function useScopeVariablesScope(options: UseWorkflowVariableOptions): MetaTreeNo
   const current = useNodeContext();
   const scopes = useUpstreamScopes(current);
 
+  if (options.includeScopes === false) {
+    return null;
+  }
+
   const children: MetaTreeNode[] = [];
   scopes.forEach((node: any) => {
     const instruction = plugin?.instructions?.get(node.type);
-    const subOptions = instruction?.useScopeVariables?.(node, options);
+    const subOptions = instruction?.useScopeVariables?.(node, { ...options, includeScopes: false });
     if (!subOptions) {
+      return;
+    }
+    if (isMetaTreeNodeArray(subOptions)) {
+      children.push({
+        name: node.key,
+        title: node.title ?? `#${node.id}`,
+        type: '',
+        paths: [SCOPES_ROOT, node.key],
+        children: subOptions.map((item) => prefixMetaTreeNodePaths(item, [SCOPES_ROOT, node.key])),
+      });
       return;
     }
     // Each scope node hangs under $scopes.<nodeKey>, its variables beneath it.
@@ -362,7 +405,9 @@ export function useWorkflowVariableOptions(options: UseWorkflowVariableOptions =
   const scopeKeys = useUpstreamScopes(current)
     .map((n: any) => n.key)
     .join(',');
-  const signature = `${current?.key ?? ''}|${upstreamKeys}|${scopeKeys}|${workflow?.id ?? ''}|${workflow?.type ?? ''}`;
+  const signature = `${current?.key ?? ''}|${upstreamKeys}|${options.includeScopes === false ? '' : scopeKeys}|${
+    workflow?.id ?? ''
+  }|${workflow?.type ?? ''}|${options.includeScopes === false ? 'no-scopes' : 'with-scopes'}`;
 
   /* eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally keyed
      on the structural `signature`, not the scope objects (which are fresh each

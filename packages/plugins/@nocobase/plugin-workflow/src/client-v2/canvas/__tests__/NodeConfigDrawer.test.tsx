@@ -96,4 +96,30 @@ describe('openNodeConfigDrawer', () => {
 
     expect(await screen.findByTestId('legacy-workflow-collection')).toHaveTextContent('main.posts');
   });
+
+  it('keeps the drawer title weight aligned with the v1 title layout', () => {
+    const drawer = vi.fn();
+
+    holder.ctx = {
+      api: {
+        resource: () => ({ update: vi.fn() }),
+      },
+    };
+
+    openNodeConfigDrawer({
+      ctx: { viewer: { drawer } },
+      data: { id: 9, key: 'node_9', title: 'Webhook response', type: 'update', config: {} },
+      instruction: {
+        title: 'Webhook response',
+      },
+      t: (key: string) => key,
+      workflow: { id: 1, config: {} },
+    });
+
+    const content = drawer.mock.calls[0][0].content as () => React.ReactElement;
+    renderWithApp(content());
+
+    expect(screen.getByText('Webhook response')).toHaveStyle({ fontWeight: 'bold' });
+    expect(screen.getByText('node_9')).toHaveStyle({ fontWeight: 'normal' });
+  });
 });

@@ -10,6 +10,7 @@
 import { FilterGroup, VariableFilterItem, type VariableFilterItemValue } from '@nocobase/client-v2';
 import {
   FlowModel,
+  FlowModelProvider,
   observable,
   randomId,
   reaction,
@@ -276,10 +277,17 @@ export function FilterDynamicComponent({
   collection,
   value,
   onChange,
+  rightAsVariable = true,
 }: {
   collection?: string;
   value?: Record<string, unknown> | null;
   onChange?: (value: Record<string, unknown> | null) => void;
+  /**
+   * Controls whether the filter row's right-hand value editor allows workflow variables.
+   * - `true`: render the RHS as a variable-aware input (constant or workflow variable)
+   * - `false`: render the RHS as a pure typed static input with no variable picker
+   */
+  rightAsVariable?: boolean;
 }) {
   const flowEngine = useFlowEngine();
   const t = useT();
@@ -363,11 +371,18 @@ export function FilterDynamicComponent({
     }
 
     const Component = ({ value }: { value: VariableFilterItemValue }) => (
-      <VariableFilterItem value={value} model={filterModel} rightAsVariable rightMetaTree={rightMetaTree} />
+      <FlowModelProvider model={filterModel}>
+        <VariableFilterItem
+          value={value}
+          model={filterModel}
+          rightAsVariable={rightAsVariable}
+          rightMetaTree={rightMetaTree}
+        />
+      </FlowModelProvider>
     );
     Component.displayName = 'WorkflowVariableFilterItem';
     return Component;
-  }, [filterModel, rightMetaTree]);
+  }, [filterModel, rightAsVariable, rightMetaTree]);
 
   return <FilterGroup value={filterRef.current} FilterItem={FilterItemComponent ?? undefined} />;
 }

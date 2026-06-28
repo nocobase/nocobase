@@ -20,13 +20,10 @@ describe('UpdateInstruction', () => {
     expect(typeof instruction.PresetFieldsetLoader).toBe('function');
   });
 
-  it('preserves the v1 default config shape', () => {
+  it('uses values-only assignment config by default', () => {
     const instruction = new V2UpdateInstruction();
 
-    expect(instruction.createDefaultConfig()).toEqual({
-      usingAssignFormSchema: true,
-      assignFormSchema: {},
-    });
+    expect(instruction.createDefaultConfig()).toEqual({});
   });
 
   it('does not expose updated records as downstream association sources', () => {

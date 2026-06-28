@@ -53,7 +53,7 @@ function CollectionField({ disabled }: { disabled?: boolean }) {
   }
 
   return (
-    <Form.Item name={['config', 'collection']} label={t('Collection')} rules={[{ required: true }]}>
+    <Form.Item name={['config', 'collection']} label={t('Collection', { ns: 'client' })} rules={[{ required: true }]}>
       <CollectionCascader disabled={disabled} />
     </Form.Item>
   );

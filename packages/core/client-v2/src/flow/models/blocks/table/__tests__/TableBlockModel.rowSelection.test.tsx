@@ -26,6 +26,7 @@ function createTableModel() {
     fields: [
       { name: 'id', type: 'integer', interface: 'number' },
       { name: 'title', type: 'string', interface: 'input' },
+      { name: 'sort', type: 'sort', interface: 'sort' },
     ],
   });
 

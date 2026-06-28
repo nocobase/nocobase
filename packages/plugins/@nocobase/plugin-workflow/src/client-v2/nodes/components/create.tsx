@@ -21,10 +21,8 @@ function CreateFields() {
 
   useEffect(() => {
     if (collection) {
-      form.setFieldValue(['config', 'usingAssignFormSchema'], true);
-      if (!form.getFieldValue(['config', 'assignFormSchema'])) {
-        form.setFieldValue(['config', 'assignFormSchema'], {});
-      }
+      form.setFieldValue(['config', 'usingAssignFormSchema'], undefined);
+      form.setFieldValue(['config', 'assignFormSchema'], undefined);
     }
   }, [collection, form]);
 
@@ -64,7 +62,8 @@ export function CreateFieldset() {
         disabled={Boolean(node?.config?.collection)}
         onCollectionChanged={() => {
           form.setFieldValue(['config', 'params'], {});
-          form.setFieldValue(['config', 'assignFormSchema'], {});
+          form.setFieldValue(['config', 'usingAssignFormSchema'], undefined);
+          form.setFieldValue(['config', 'assignFormSchema'], undefined);
         }}
       />
       <CreateFields />

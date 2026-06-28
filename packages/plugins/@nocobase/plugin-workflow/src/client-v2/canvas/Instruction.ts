@@ -29,7 +29,7 @@
 
 import type { ComponentType } from 'react';
 import type { ISchema } from '@formily/react';
-import type { SubModelItem } from '@nocobase/flow-engine';
+import type { MetaTreeNode, SubModelItem } from '@nocobase/flow-engine';
 import type { UseVariableOptions, VariableOption } from './collectionFieldOptions';
 
 /** `() => Promise<{ default: Component }>` loader, matching the trigger `*Loader` convention (doc §9.5). */
@@ -106,7 +106,7 @@ export abstract class Instruction {
     return {};
   }
   useVariables?(node, options?: UseVariableOptions): VariableOption;
-  useScopeVariables?(node, options?): VariableOption[];
+  useScopeVariables?(node, options?): VariableOption[] | MetaTreeNode[];
   /** Legacy block initializer (v1 Schema Initializer). Return type is the
    *  legacy `SchemaInitializerItemType`, kept structural to avoid importing
    *  `@nocobase/client` into client-v2; v1 callers cast as needed. */

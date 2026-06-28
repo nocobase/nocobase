@@ -7,6 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ModelConstructor } from '@nocobase/flow-engine';
-
-export default {} as Record<string, ModelConstructor>;
+export { default } from './plugin';
+export * from './plugin';
+export { default as DelayInstruction } from './DelayInstruction';

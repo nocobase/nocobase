@@ -27,10 +27,7 @@ export default class extends Instruction {
   PresetFieldsetLoader = () => import('./components/update').then((m) => ({ default: m.UpdatePresetFieldset }));
 
   createDefaultConfig() {
-    return {
-      usingAssignFormSchema: true,
-      assignFormSchema: {},
-    };
+    return {};
   }
 
   useTempAssociationSource() {

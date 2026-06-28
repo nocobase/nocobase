@@ -47,10 +47,8 @@ function UpdateFields() {
     if (!collection) {
       return;
     }
-    form.setFieldValue(['config', 'usingAssignFormSchema'], true);
-    if (!form.getFieldValue(['config', 'assignFormSchema'])) {
-      form.setFieldValue(['config', 'assignFormSchema'], {});
-    }
+    form.setFieldValue(['config', 'usingAssignFormSchema'], undefined);
+    form.setFieldValue(['config', 'assignFormSchema'], undefined);
     if (typeof form.getFieldValue(['config', 'params', 'individualHooks']) === 'undefined') {
       form.setFieldValue(['config', 'params', 'individualHooks'], false);
     }
@@ -86,7 +84,8 @@ export function UpdateFieldset() {
         onCollectionChanged={() => {
           form.setFieldValue(['config', 'params', 'filter'], {});
           form.setFieldValue(['config', 'params', 'values'], {});
-          form.setFieldValue(['config', 'assignFormSchema'], {});
+          form.setFieldValue(['config', 'usingAssignFormSchema'], undefined);
+          form.setFieldValue(['config', 'assignFormSchema'], undefined);
         }}
       />
       <UpdateFields />
