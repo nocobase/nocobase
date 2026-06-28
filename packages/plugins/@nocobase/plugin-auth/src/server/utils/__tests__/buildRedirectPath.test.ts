@@ -89,6 +89,12 @@ describe('buildRedirectPath', () => {
       ).toBe('/nocobase/v2/apps/a_u4940c6p189/admin/al5yj9t81of');
     });
 
+    it('does NOT prepend sub-app segment when target already contains it', () => {
+      expect(buildRedirectPath({ appPublicPath: '', subAppSegment: '/apps/sub', target: '/v/apps/sub/admin' })).toBe(
+        '/v/apps/sub/admin',
+      );
+    });
+
     it('does NOT touch a v2 main-app target even when a sub-app segment was supplied', () => {
       // Detection is appPublicPath-only; supplying subAppSegment must not
       // override the v2-detection branch.

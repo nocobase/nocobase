@@ -204,6 +204,36 @@ function getDefaultV2AdminRedirectPath(app: AppLike) {
   return joinRootRelativePath(getV2EffectiveBasePath(app), '/admin');
 }
 
+function isSafeRootRelativePath(value?: string | null) {
+  return !!value && value.startsWith('/') && !value.startsWith('//') && !value.startsWith('/\\');
+}
+
+function preserveTrailingSlash(originalPathname: string, value: string) {
+  if (originalPathname !== '/' && originalPathname.endsWith('/') && !value.endsWith('/')) {
+    return `${value}/`;
+  }
+  return value;
+}
+
+export function normalizeV2RedirectPath(app: AppLike, target?: string | null, fallbackPath = '/admin/') {
+  const rawTarget = isSafeRootRelativePath(target) ? target : fallbackPath;
+  const { pathname, search, hash } = splitPathLike(rawTarget);
+  const basePath = trimTrailingSlashes(getV2EffectiveBasePath(app)) || '/';
+  const normalizedPathname = normalizePathname(pathname);
+
+  if (basePath === '/' || normalizedPathname === basePath || normalizedPathname.startsWith(`${basePath}/`)) {
+    return `${preserveTrailingSlash(pathname, normalizedPathname)}${normalizeSearch(search)}${normalizeHash(hash)}`;
+  }
+
+  const publicPath = trimTrailingSlashes(getV2PublicPath(app)) || '/';
+  if (publicPath !== '/' && (normalizedPathname === publicPath || normalizedPathname.startsWith(`${publicPath}/`))) {
+    return normalizeV2RedirectPath(app, fallbackPath, '/admin/');
+  }
+
+  const joinedPathname = preserveTrailingSlash(pathname, joinRootRelativePath(basePath, normalizedPathname));
+  return `${joinedPathname}${normalizeSearch(search)}${normalizeHash(hash)}`;
+}
+
 /**
  * 将当前 v2 页面地址转换为根相对 redirect 路径。
  *

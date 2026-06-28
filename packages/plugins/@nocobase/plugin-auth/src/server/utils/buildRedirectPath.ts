@@ -61,6 +61,13 @@ export function buildRedirectPath({ appPublicPath, subAppSegment, target }: Buil
     return resolvedTarget;
   }
 
+  if (
+    normalizedSubAppSegment &&
+    (resolvedTarget === normalizedSubAppSegment || resolvedTarget.includes(`${normalizedSubAppSegment}/`))
+  ) {
+    return resolvedTarget;
+  }
+
   return `${normalizedAppPublicPath}${normalizedSubAppSegment}${resolvedTarget}`;
 }
 
