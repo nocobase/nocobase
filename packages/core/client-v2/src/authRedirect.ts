@@ -227,7 +227,14 @@ export function normalizeV2RedirectPath(app: AppLike, target?: string | null, fa
 
   const publicPath = trimTrailingSlashes(getV2PublicPath(app)) || '/';
   if (publicPath !== '/' && (normalizedPathname === publicPath || normalizedPathname.startsWith(`${publicPath}/`))) {
-    return normalizeV2RedirectPath(app, fallbackPath, '/admin/');
+    const fallbackTarget = isSafeRootRelativePath(fallbackPath) ? fallbackPath : '/admin/';
+    const { pathname: fallbackPathname, search: fallbackSearch, hash: fallbackHash } = splitPathLike(fallbackTarget);
+    const joinedFallbackPathname = preserveTrailingSlash(
+      fallbackPathname,
+      joinRootRelativePath(basePath, normalizePathname(fallbackPathname)),
+    );
+
+    return `${joinedFallbackPathname}${normalizeSearch(fallbackSearch)}${normalizeHash(fallbackHash)}`;
   }
 
   const joinedPathname = preserveTrailingSlash(pathname, joinRootRelativePath(basePath, normalizedPathname));
