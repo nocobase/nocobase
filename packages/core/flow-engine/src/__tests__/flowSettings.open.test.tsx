@@ -448,6 +448,33 @@ describe('FlowSettings.open rendering behavior', () => {
           showLegend: { type: 'boolean', 'x-component': 'Switch' },
         },
       },
+      basic: {
+        type: 'object',
+        title: 'Basic',
+        properties: {
+          title: {
+            type: 'string',
+            title: 'Title',
+            default: 'Configurable title',
+            required: true,
+            placeholder: 'Input title',
+          },
+          subtitle: {
+            type: 'text',
+            title: 'Subtitle',
+            default: 'Configurable subtitle',
+          },
+          status: {
+            type: 'select',
+            title: 'Status',
+            default: 'active',
+            options: [
+              { label: 'Active', value: 'active' },
+              { label: 'Paused', value: 'paused' },
+            ],
+          },
+        },
+      },
     });
     flowSettings.commitRuntimeSettingsDeclaration(session);
 
@@ -455,12 +482,42 @@ describe('FlowSettings.open rendering behavior', () => {
       title: 'Orders',
       pageSize: 20,
       display: { title: 'Orders', showLegend: true },
+      basic: {
+        title: 'Configurable title',
+        subtitle: 'Configurable subtitle',
+        status: 'active',
+      },
     });
-    expect(Object.keys(flowSettings.getRuntimeSettingSteps(model, 'jsSettings'))).toEqual([
-      'title',
-      'pageSize',
-      'display',
-    ]);
+    const runtimeSteps = flowSettings.getRuntimeSettingSteps(model, 'jsSettings');
+    expect(Object.keys(runtimeSteps)).toEqual(['title', 'pageSize', 'display', 'basic']);
+    expect(runtimeSteps.basic.uiSchema).toMatchObject({
+      title: {
+        type: 'string',
+        title: 'Title',
+        'x-component': 'Input',
+        'x-component-props': { placeholder: 'Input title' },
+        required: true,
+      },
+      subtitle: {
+        type: 'string',
+        title: 'Subtitle',
+        'x-component': 'Input.TextArea',
+      },
+      status: {
+        type: 'string',
+        title: 'Status',
+        'x-component': 'Select',
+        enum: [
+          { label: 'Active', value: 'active' },
+          { label: 'Paused', value: 'paused' },
+        ],
+      },
+    });
+    expect(runtimeSteps.basic.defaultParams).toEqual({
+      title: 'Configurable title',
+      subtitle: 'Configurable subtitle',
+      status: 'active',
+    });
     expect(model.serialize().flowRegistry).toEqual({});
 
     const setStepParams = vi.spyOn(model as any, 'setStepParams');
@@ -488,6 +545,18 @@ describe('FlowSettings.open rendering behavior', () => {
 
     expect(setStepParams).toHaveBeenCalledWith('jsSettings', 'title', { value: 'Orders' });
     expect(lastDialog.close).toHaveBeenCalled();
+
+    await flowSettings.open({ model, flowKey: 'jsSettings', stepKey: 'basic', uiMode: 'dialog' } as any);
+
+    const basicPrimaryBtn = await findPrimaryButton(lastTree);
+    expect(basicPrimaryBtn).toBeTruthy();
+    await basicPrimaryBtn.props.onClick?.();
+
+    expect(setStepParams).toHaveBeenCalledWith('jsSettings', 'basic', {
+      title: 'Configurable title',
+      subtitle: 'Configurable subtitle',
+      status: 'active',
+    });
   });
 
   it('commits and clears ctx.useSettings declarations during RunJS execution', async () => {

@@ -129,14 +129,35 @@ export type FlowSettingsComponentLoaderMap = Record<string, FlowSettingsComponen
 
 export type UseSettingsPrimitive = string | number | boolean | null;
 
+type UseSettingsFieldType =
+  | 'string'
+  | 'text'
+  | 'number'
+  | 'boolean'
+  | 'select'
+  | 'multiSelect'
+  | 'date'
+  | 'datetime'
+  | 'color'
+  | 'json'
+  | 'object';
+
 export interface UseSettingsObjectDefinition {
   title?: string;
+  description?: string;
   default?: unknown;
-  type?: 'string' | 'number' | 'boolean' | 'object';
+  type?: UseSettingsFieldType;
   component?: string;
   componentProps?: Record<string, unknown>;
   options?: Array<{ label: string; value: unknown }>;
   required?: boolean;
+  placeholder?: string;
+  disabled?: boolean;
+  min?: number;
+  max?: number;
+  step?: number;
+  ui?: string;
+  properties?: Record<string, UseSettingsDefinition>;
   uiSchema?: Record<string, unknown>;
 }
 
@@ -176,7 +197,7 @@ const humanizeRuntimeSettingKey = (key: string) =>
 const getRuntimeSettingType = (
   value: unknown,
   explicitType?: UseSettingsObjectDefinition['type'],
-): 'string' | 'number' | 'boolean' | 'object' => {
+): UseSettingsFieldType => {
   if (explicitType) {
     return explicitType;
   }
@@ -192,10 +213,7 @@ const getRuntimeSettingType = (
   return 'string';
 };
 
-const getRuntimeSettingComponent = (
-  type: 'string' | 'number' | 'boolean' | 'object',
-  definition: UseSettingsObjectDefinition,
-) => {
+const getRuntimeSettingComponent = (type: UseSettingsFieldType, definition: UseSettingsObjectDefinition) => {
   if (definition.component) {
     return definition.component;
   }
@@ -208,7 +226,116 @@ const getRuntimeSettingComponent = (
   if (type === 'boolean') {
     return 'Switch';
   }
+  if (type === 'text') {
+    return 'Input.TextArea';
+  }
+  if (type === 'date' || type === 'datetime') {
+    return 'DatePicker';
+  }
   return 'Input';
+};
+
+const isRuntimeSettingDefinition = (value: unknown): value is UseSettingsObjectDefinition => _.isPlainObject(value);
+
+const getRuntimeSettingComponentProps = (
+  type: UseSettingsFieldType,
+  definition: UseSettingsObjectDefinition,
+): Record<string, unknown> | undefined => {
+  const props: Record<string, unknown> = { ...(definition.componentProps || {}) };
+
+  if (definition.placeholder) {
+    props.placeholder = definition.placeholder;
+  }
+  if (typeof definition.min === 'number') {
+    props.min = definition.min;
+  }
+  if (typeof definition.max === 'number') {
+    props.max = definition.max;
+  }
+  if (typeof definition.step === 'number') {
+    props.step = definition.step;
+  }
+  if (type === 'datetime') {
+    props.showTime = true;
+  }
+  if (type === 'multiSelect') {
+    props.mode = 'multiple';
+  }
+
+  return Object.keys(props).length ? props : undefined;
+};
+
+const toRuntimeSettingValueSchema = (settingKey: string, rawDefinition: UseSettingsDefinition): ISchema => {
+  const isObjectDefinition = isRuntimeSettingDefinition(rawDefinition);
+  const definition = isObjectDefinition ? rawDefinition : {};
+  const defaultValue = isObjectDefinition ? definition.default : rawDefinition;
+  const type = getRuntimeSettingType(defaultValue, definition.type);
+  const title = definition.title || humanizeRuntimeSettingKey(settingKey);
+  const schemaType =
+    type === 'multiSelect'
+      ? 'array'
+      : ['text', 'select', 'date', 'datetime', 'color', 'json'].includes(type)
+        ? 'string'
+        : type;
+  const componentProps = getRuntimeSettingComponentProps(type, definition);
+  const valueSchema: Record<string, unknown> = {
+    type: schemaType,
+    title,
+    'x-decorator': 'FormItem',
+    'x-component': getRuntimeSettingComponent(type, definition),
+  };
+
+  if (definition.description) {
+    valueSchema.description = definition.description;
+  }
+  if (definition.options) {
+    valueSchema.enum = definition.options;
+  }
+  if (componentProps) {
+    valueSchema['x-component-props'] = componentProps;
+  }
+  if (definition.required) {
+    valueSchema.required = true;
+  }
+  if (definition.disabled) {
+    valueSchema['x-disabled'] = true;
+  }
+
+  return valueSchema as ISchema;
+};
+
+const getRuntimeSettingDefaultValue = (rawDefinition: UseSettingsDefinition): unknown => {
+  if (!isRuntimeSettingDefinition(rawDefinition)) {
+    return rawDefinition;
+  }
+  if (_.isPlainObject(rawDefinition.properties)) {
+    const propertyDefaults: Record<string, unknown> = {};
+    Object.entries(rawDefinition.properties).forEach(([propertyKey, propertyDefinition]) => {
+      const propertyDefault = getRuntimeSettingDefaultValue(propertyDefinition);
+      if (typeof propertyDefault !== 'undefined') {
+        propertyDefaults[propertyKey] = propertyDefault;
+      }
+    });
+    return {
+      ...propertyDefaults,
+      ...(_.isPlainObject(rawDefinition.default) ? (rawDefinition.default as Record<string, unknown>) : {}),
+    };
+  }
+  return rawDefinition.default;
+};
+
+const toRuntimeSettingPropertiesSchema = (
+  properties: Record<string, UseSettingsDefinition>,
+): Record<string, ISchema> => {
+  const schema: Record<string, ISchema> = {};
+  Object.entries(properties).forEach(([propertyKey, propertyDefinition]) => {
+    if (!RUNTIME_SETTING_KEY_RE.test(propertyKey)) {
+      console.warn(`ctx.useSettings(config): invalid property key '${propertyKey}' skipped.`);
+      return;
+    }
+    schema[propertyKey] = toRuntimeSettingValueSchema(propertyKey, propertyDefinition);
+  });
+  return schema;
 };
 
 class RuntimeSettingsLiteralParser {
@@ -612,10 +739,10 @@ export class FlowSettings {
         return;
       }
 
-      const isObjectDefinition = _.isPlainObject(rawDefinition);
+      const isObjectDefinition = isRuntimeSettingDefinition(rawDefinition);
       const definition = isObjectDefinition ? (rawDefinition as UseSettingsObjectDefinition) : {};
       const hasDefault = isObjectDefinition ? Object.prototype.hasOwnProperty.call(definition, 'default') : true;
-      const defaultValue = isObjectDefinition ? definition.default : rawDefinition;
+      const defaultValue = getRuntimeSettingDefaultValue(rawDefinition);
       const title = definition.title || humanizeRuntimeSettingKey(settingKey);
       const savedParams = model?.getStepParams(flowKey, settingKey) as Record<string, unknown> | undefined;
       const hasSavedParams = typeof savedParams !== 'undefined';
@@ -631,28 +758,23 @@ export class FlowSettings {
         return;
       }
 
-      const type = getRuntimeSettingType(defaultValue, definition.type);
-      const component = getRuntimeSettingComponent(type, definition);
-      const valueSchema: Record<string, unknown> = {
-        type,
-        title,
-        'x-decorator': 'FormItem',
-        'x-component': component,
-      };
-      if (definition.options) {
-        valueSchema.enum = definition.options;
-      }
-      if (definition.componentProps) {
-        valueSchema['x-component-props'] = definition.componentProps;
-      }
-      if (definition.required) {
-        valueSchema.required = true;
+      if (_.isPlainObject(definition.properties)) {
+        const objectDefaults = _.isPlainObject(defaultValue) ? (defaultValue as Record<string, unknown>) : {};
+        steps[settingKey] = {
+          title,
+          uiSchema: toRuntimeSettingPropertiesSchema(definition.properties),
+          defaultParams: objectDefaults,
+          uiMode: 'dialog',
+        };
+        values[settingKey] = hasSavedParams ? savedParams : objectDefaults;
+        return;
       }
 
+      const valueSchema = toRuntimeSettingValueSchema(settingKey, rawDefinition);
       steps[settingKey] = {
         title,
         uiSchema: {
-          value: valueSchema as ISchema,
+          value: valueSchema,
         },
         defaultParams: hasDefault ? { value: defaultValue } : {},
         uiMode: 'dialog',
