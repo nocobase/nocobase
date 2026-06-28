@@ -12,8 +12,8 @@ import { tExpr as _tExpr, useFlowEngine } from '@nocobase/flow-engine';
 import pkg from '../../package.json';
 
 export function useT() {
-  const engine = useFlowEngine();
-  return (str: string) => engine.context.t(str, { ns: [pkg.name, 'client'] });
+  const engine = useFlowEngine({ throwError: false });
+  return (str: string) => engine?.context?.t?.(str, { ns: [pkg.name, 'client'] }) ?? str;
 }
 
 export function tExpr(key: string) {

@@ -14,7 +14,8 @@ import { useT } from '../../locale';
 import { FunctionOutlined, LineChartOutlined } from '@ant-design/icons';
 import { ChartOptionsBuilder } from './ChartOptionsBuilder';
 import { configStore } from './config-store';
-import { observer, useFlowSettingsContext } from '@nocobase/flow-engine';
+import { observer, useFlowSettingsContext, type RunJSValue } from '@nocobase/flow-engine';
+import type { RunJSSourceLocator } from '@nocobase/plugin-vsc-file';
 import { getFieldOptions } from './QueryBuilder.service';
 import { useCompile } from '../utils';
 
@@ -44,6 +45,13 @@ const setIn = (target: any, path: string[], value: any) => {
     cursor = cursor[key];
   });
   cursor[path[path.length - 1]] = value;
+};
+
+const cloneFormValues = (values: any) => {
+  if (!values || typeof values !== 'object') {
+    return {};
+  }
+  return JSON.parse(JSON.stringify(values));
 };
 
 export const chartOptionDefaultValue = `return {
@@ -114,6 +122,12 @@ export const ChartOptionsPanel: React.FC = observer(() => {
   const mode = formValues?.chart?.option?.mode || 'basic';
   const builderValue = formValues?.chart?.option?.builder;
   const rawValue = formValues?.chart?.option?.raw;
+  const sourceLocator: RunJSSourceLocator | undefined = uid
+    ? {
+        kind: 'chart.option',
+        modelUid: uid,
+      }
+    : undefined;
 
   // 当 raw 尚未初始化时，设置默认值（等效于原先 Field 的 initialValue 行为）
   React.useEffect(() => {
@@ -131,6 +145,13 @@ export const ChartOptionsPanel: React.FC = observer(() => {
   const handleRawChange = async (raw: string) => {
     setIn(getFormValues(ctx), ['chart', 'option', 'raw'], raw);
     forceUpdate((v) => v + 1);
+  };
+
+  const handleRawPreview = async (next: RunJSValue) => {
+    const values = cloneFormValues(getFormValues(ctx));
+    setIn(values, ['chart', 'option', 'mode'], 'custom');
+    setIn(values, ['chart', 'option', 'raw'], next.code);
+    await ctx.model.onPreview(values);
   };
 
   const userId = ctx.auth?.user?.id ?? 'anonymous';
@@ -203,7 +224,13 @@ export const ChartOptionsPanel: React.FC = observer(() => {
         />
       ) : (
         <div>
-          <ChartOptionsEditor value={rawValue ?? chartOptionDefaultValue} onChange={handleRawChange} />
+          <ChartOptionsEditor
+            value={rawValue ?? chartOptionDefaultValue}
+            onChange={handleRawChange}
+            sourceLocator={sourceLocator}
+            sourceLabel={t('Chart option')}
+            onPreview={handleRawPreview}
+          />
         </div>
       )}
     </>

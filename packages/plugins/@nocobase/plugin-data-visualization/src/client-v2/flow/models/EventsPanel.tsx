@@ -12,7 +12,8 @@ import { Button, Radio } from 'antd';
 import EventsEditor from './EventsEditor';
 import { useT } from '../../locale';
 import { FunctionOutlined } from '@ant-design/icons';
-import { observer, useFlowSettingsContext } from '@nocobase/flow-engine';
+import { observer, useFlowSettingsContext, type RunJSValue } from '@nocobase/flow-engine';
+import type { RunJSSourceLocator } from '@nocobase/plugin-vsc-file';
 
 const DEFAULT_EVENTS_RAW = `// chart.off('click');
 // chart.on('click', 'series', function() {
@@ -33,6 +34,13 @@ const setIn = (target: any, path: string[], value: any) => {
     cursor = cursor[key];
   });
   cursor[path[path.length - 1]] = value;
+};
+
+const cloneFormValues = (values: any) => {
+  if (!values || typeof values !== 'object') {
+    return {};
+  }
+  return JSON.parse(JSON.stringify(values));
 };
 
 const OptionsMode: React.FC<{
@@ -64,6 +72,12 @@ export const EventsPanel: React.FC = observer(() => {
   const formValues = getFormValues(ctx);
   const mode = formValues?.chart?.events?.mode || 'custom';
   const rawValue = formValues?.chart?.events?.raw ?? DEFAULT_EVENTS_RAW;
+  const sourceLocator: RunJSSourceLocator | undefined = ctx?.model?.uid
+    ? {
+        kind: 'chart.events',
+        modelUid: ctx.model.uid,
+      }
+    : undefined;
 
   React.useEffect(() => {
     const values = getFormValues(ctx);
@@ -79,6 +93,13 @@ export const EventsPanel: React.FC = observer(() => {
     const values = getFormValues(ctx);
     setIn(values, path, value);
     forceUpdate((v) => v + 1);
+  };
+
+  const handleRawPreview = async (next: RunJSValue) => {
+    const values = cloneFormValues(getFormValues(ctx));
+    setIn(values, ['chart', 'events', 'mode'], 'custom');
+    setIn(values, ['chart', 'events', 'raw'], next.code);
+    await ctx.model.onPreview(values);
   };
 
   return (
@@ -105,7 +126,13 @@ export const EventsPanel: React.FC = observer(() => {
         ) : null}
       </div>
 
-      <EventsEditor value={rawValue} onChange={(value) => updateEventValue(['chart', 'events', 'raw'], value)} />
+      <EventsEditor
+        value={rawValue}
+        onChange={(value) => updateEventValue(['chart', 'events', 'raw'], value)}
+        sourceLocator={sourceLocator}
+        sourceLabel={t('Chart events')}
+        onPreview={handleRawPreview}
+      />
     </>
   );
 });

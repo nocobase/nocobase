@@ -1,0 +1,62 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import { useAPIClient } from '@nocobase/client';
+import { FlowContextProvider, type FlowContext, type RunJSValue } from '@nocobase/flow-engine';
+import type { RunJSEditorProviderRenderProps } from '@nocobase/client-v2';
+import React from 'react';
+
+import { runJSStudioProvider } from '../../client-v2/runjs-studio';
+import { useT } from '../locale';
+import type { LegacyRunJSEditorProvider, LegacyRunJSEditorProviderRenderProps } from './types';
+
+type LegacyFlowContext = {
+  api: ReturnType<typeof useAPIClient>;
+};
+
+export const legacyRunJSStudioProvider: LegacyRunJSEditorProvider = {
+  key: '@nocobase/plugin-vsc-file/legacy-runjs-studio',
+  canHandle: (props) => Boolean(props.locator),
+  renderEditor: (props) => <LegacyRunJSStudioEditorEntry {...props} />,
+};
+
+function LegacyRunJSStudioEditorEntry(props: LegacyRunJSEditorProviderRenderProps) {
+  const api = useAPIClient();
+  const t = useT();
+  const context = React.useMemo<LegacyFlowContext>(
+    () => ({
+      api,
+    }),
+    [api],
+  );
+  const providerProps: RunJSEditorProviderRenderProps = {
+    ...props,
+    t,
+    onChange: (value) => {
+      props.onChange?.(normalizeRunJSValue(value, props.value.version));
+    },
+  };
+
+  return (
+    <FlowContextProvider context={context as unknown as FlowContext}>
+      {runJSStudioProvider.renderEditor(providerProps)}
+    </FlowContextProvider>
+  );
+}
+
+function normalizeRunJSValue(value: RunJSValue | string, fallbackVersion: string): RunJSValue {
+  if (typeof value === 'string') {
+    return {
+      code: value,
+      version: fallbackVersion,
+    };
+  }
+
+  return value;
+}

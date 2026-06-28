@@ -8,8 +8,11 @@
  */
 
 import React from 'react';
+import { RunJSEditorField } from '@nocobase/client-v2';
+import type { RunJSValue } from '@nocobase/flow-engine';
 import { CodeEditor } from '../components/CodeEditor';
 import { CompletionContext } from '@codemirror/autocomplete';
+import type { RunJSSourceLocator } from '@nocobase/plugin-vsc-file';
 
 export const ChartOptionsEditor: React.FC<{
   value?: string;
@@ -17,7 +20,10 @@ export const ChartOptionsEditor: React.FC<{
   disabled?: boolean;
   style?: React.CSSProperties;
   className?: string;
-}> = ({ value, onChange, ...rest }) => {
+  sourceLocator?: RunJSSourceLocator;
+  sourceLabel?: string;
+  onPreview?: (value: RunJSValue) => void | Promise<void>;
+}> = ({ value, onChange, sourceLocator, sourceLabel, onPreview, disabled, style }) => {
   // 保留原有补全提示
   const completions = (context: CompletionContext) => {
     const word = context.matchBefore(/\w*/);
@@ -35,5 +41,25 @@ export const ChartOptionsEditor: React.FC<{
     };
   };
 
-  return <CodeEditor value={value} onChange={onChange} language="javascript" completions={completions} {...rest} />;
+  if (sourceLocator) {
+    return (
+      <RunJSEditorField
+        value={value || ''}
+        onChange={(next) => {
+          onChange?.(typeof next === 'string' ? next : next.code);
+        }}
+        sourceLocator={sourceLocator}
+        label={sourceLabel}
+        sourceLabel={sourceLabel}
+        surfaceStyle="value"
+        scene="chart.option"
+        disabled={disabled}
+        onPreview={onPreview}
+        containerStyle={style}
+        height="240px"
+      />
+    );
+  }
+
+  return <CodeEditor value={value} onChange={onChange} language="javascript" completions={completions} />;
 };

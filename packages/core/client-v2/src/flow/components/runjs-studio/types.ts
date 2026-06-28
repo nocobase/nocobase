@@ -66,6 +66,7 @@ export interface RunJSEditorFieldProps {
   versionPath?: string[];
   label?: string;
   sourceLabel?: string;
+  onPreview?: (value: RunJSValue) => void | Promise<void>;
   scene?: string;
   surfaceStyle?: RunJSSurfaceStyle;
   height?: string | number;

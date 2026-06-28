@@ -10,16 +10,15 @@
 import React, { useRef, useEffect } from 'react';
 import { basicSetup } from 'codemirror';
 import { EditorView } from '@codemirror/view';
-import { EditorState, Compartment } from '@codemirror/state';
+import { Compartment, EditorState } from '@codemirror/state';
 import { javascript } from '@codemirror/lang-javascript';
 // import { linter } from '@codemirror/lint';
-import { useMemoizedFn } from 'ahooks';
 import { createStyles } from 'antd-style';
 
 type Props = {
-  onChange: Function;
-  value: string;
-  disabled: boolean;
+  onChange?: (value: string) => void;
+  value?: string;
+  disabled?: boolean;
 };
 
 const useStyles = createStyles(({ token, css }) => ({
@@ -101,17 +100,22 @@ const enableTheme = EditorView.theme({
 // });
 
 const CodeEditor: React.FC<Props> = ({ onChange, value, disabled }) => {
-  const editorRef = useRef(null);
-  const handleChange = useMemoizedFn((val) => {
-    onChange && onChange(val);
-  });
+  const editorRef = useRef<HTMLDivElement | null>(null);
+  const viewRef = useRef<EditorView | null>(null);
+  const onChangeRef = useRef(onChange);
+  const editableCompartment = useRef(new Compartment()).current;
+  const themeCompartment = useRef(new Compartment()).current;
+  onChangeRef.current = onChange;
 
   const { styles } = useStyles();
 
-  const compartment = new Compartment();
   useEffect(() => {
+    if (!editorRef.current || viewRef.current) {
+      return undefined;
+    }
+
     const state = EditorState.create({
-      doc: value,
+      doc: value || '',
       extensions: [
         basicSetup,
         javascript(),
@@ -119,22 +123,61 @@ const CodeEditor: React.FC<Props> = ({ onChange, value, disabled }) => {
         EditorView.updateListener.of((v) => {
           if (v.docChanged) {
             const content = v.state.doc.toString();
-            handleChange(content);
+            onChangeRef.current?.(content);
           }
         }),
-        EditorView.editable.of(!disabled),
-        disabled ? disableTheme : enableTheme,
+        editableCompartment.of(EditorView.editable.of(!disabled)),
+        themeCompartment.of(disabled ? disableTheme : enableTheme),
       ],
     });
     const editor = new EditorView({
       state,
       parent: editorRef.current,
     });
+    viewRef.current = editor;
 
     return () => {
       editor.destroy();
+      viewRef.current = null;
     };
-  }, [disabled]);
+    // Keep the editor instance stable while typing; prop updates are handled by the effects below.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    const view = viewRef.current;
+    if (!view) {
+      return;
+    }
+
+    view.dispatch({
+      effects: [
+        editableCompartment.reconfigure(EditorView.editable.of(!disabled)),
+        themeCompartment.reconfigure(disabled ? disableTheme : enableTheme),
+      ],
+    });
+  }, [disabled, editableCompartment, themeCompartment]);
+
+  useEffect(() => {
+    const view = viewRef.current;
+    if (!view) {
+      return;
+    }
+
+    const nextValue = value || '';
+    if (view.state.doc.toString() === nextValue) {
+      return;
+    }
+
+    view.dispatch({
+      changes: {
+        from: 0,
+        to: view.state.doc.length,
+        insert: nextValue,
+      },
+    });
+  }, [value]);
+
   return <div ref={editorRef} className={styles.box} />;
 };
 

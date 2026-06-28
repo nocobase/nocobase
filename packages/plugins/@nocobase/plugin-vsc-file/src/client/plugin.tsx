@@ -8,8 +8,14 @@
  */
 import { Plugin } from '@nocobase/client';
 
+import { LegacyRunJSEditorRegistry } from './runjs-studio/contract';
+
 export class PluginVscFileClient extends Plugin {
-  async load() {}
+  async load() {
+    const { legacyRunJSStudioProvider } = await import('./runjs-studio/LegacyRunJSStudioProvider');
+
+    LegacyRunJSEditorRegistry.registerProvider(legacyRunJSStudioProvider);
+  }
 }
 
 export default PluginVscFileClient;

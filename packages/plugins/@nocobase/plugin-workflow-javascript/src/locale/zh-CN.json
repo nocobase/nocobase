@@ -29,5 +29,6 @@
   "The maximum execution time of the script. 0 means no timeout.": "脚本超时时间，0表示不设置超时",
   "Timeout": "超时时间",
   "Try it out": "测试执行",
+  "Workflow JavaScript": "工作流 JavaScript",
   "https://docs.nocobase.com/handbook/workflow-javascript": "https://docs-cn.nocobase.com/handbook/workflow-javascript"
 }

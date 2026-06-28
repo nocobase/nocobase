@@ -212,7 +212,6 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
   const [conflict, setConflict] = useState<ConflictState | null>(null);
   const [consoleHeight, setConsoleHeight] = useState(defaultConsolePanelHeight);
 
-  const sourceLabel = workspace?.source.label || props.label || t('JavaScript');
   const workspaceReadOnly = Boolean(readOnly || disabled || (workspace && !workspace.permissions.canWrite));
   const workspaceEditingDisabled = workspaceReadOnly || publishing;
   const hasUnsavedLocalChanges = hasWorkspaceChanges(savedFiles, files);
@@ -233,6 +232,17 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
   });
   const publishedCommit = findCommit(historyItems, workspace?.repository.publishedCommitId);
   const baseCommit = findCommit(historyItems, baseCommitId);
+  const sourceLabel = workspace?.source.label || props.label || t('JavaScript');
+  const compactTitle = props.label || t('JavaScript');
+  const compactStatus = formatCompactStatus({
+    t,
+    publishedSeq: publishedCommit?.seq,
+    hasDraft: Boolean(workspace?.draft),
+    hasUnsavedLocalChanges,
+    entryPath,
+  });
+  const compactDescription =
+    props.sourceLabel && props.sourceLabel !== compactTitle ? `${props.sourceLabel} · ${compactStatus}` : compactStatus;
   const statusBadges = buildStatusBadges({
     t,
     hasUnsavedLocalChanges,
@@ -550,6 +560,13 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
         snapshotKey: requestSnapshotKey,
       });
       appendDiagnostics(result.artifact.diagnostics, appendConsole);
+      if (!result.artifact.diagnostics.some((diagnostic) => diagnostic.severity === 'error')) {
+        await props.onPreview?.({
+          ...value,
+          code: result.artifact.code,
+          version: result.artifact.version,
+        } as RunJSValue);
+      }
       appendConsole({
         level: result.artifact.diagnostics.some((diagnostic) => diagnostic.severity === 'error') ? 'error' : 'info',
         message: result.artifact.diagnostics.some((diagnostic) => diagnostic.severity === 'error')
@@ -1440,18 +1457,10 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
           <Space direction="vertical" size={2}>
             <Space wrap>
               <CodeOutlined />
-              <Typography.Text strong>{t('JavaScript')}</Typography.Text>
+              <Typography.Text strong>{compactTitle}</Typography.Text>
               <Tag>{sourceLabel}</Tag>
             </Space>
-            <Typography.Text type="secondary">
-              {formatCompactStatus({
-                t,
-                publishedSeq: publishedCommit?.seq,
-                hasDraft: Boolean(workspace?.draft),
-                hasUnsavedLocalChanges,
-                entryPath,
-              })}
-            </Typography.Text>
+            <Typography.Text type="secondary">{compactDescription}</Typography.Text>
           </Space>
           <Space wrap>
             <Button aria-label={t('Open Studio')} icon={<FolderOpenOutlined />} onClick={openStudio}>

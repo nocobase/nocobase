@@ -1528,6 +1528,115 @@ describe('flow-engine RunJS source adapters', () => {
     );
   });
 
+  it('preserves legacy chart settings paths when publishing option and events sources', async () => {
+    await repository.insertModel({
+      uid: 'legacy-chart-runjs-model',
+      use: 'ChartBlockModel',
+      settings: {
+        visual: {
+          raw: 'return { xAxis: { type: "category" } };',
+          keep: 'visual sibling',
+        },
+        events: {
+          raw: 'chart.off("click");',
+          keep: 'events sibling',
+        },
+      },
+    });
+
+    const optionLocator: RunJSSourceLocator = {
+      kind: 'chart.option',
+      modelUid: 'legacy-chart-runjs-model',
+    };
+    const eventsLocator: RunJSSourceLocator = {
+      kind: 'chart.events',
+      modelUid: 'legacy-chart-runjs-model',
+    };
+    const optionOpen = await openSource(optionLocator);
+    const eventsOpen = await openSource(eventsLocator);
+
+    expect(optionOpen.body.data.legacy).toMatchObject({
+      code: 'return { xAxis: { type: "category" } };',
+      surfaceStyle: 'value',
+    });
+    expect(eventsOpen.body.data.legacy).toMatchObject({
+      code: 'chart.off("click");',
+      surfaceStyle: 'action',
+    });
+
+    await expect(
+      publishSource(optionLocator, optionOpen.body.data.ownerFingerprint, 'return { series: [{ type: "bar" }] };'),
+    ).resolves.toHaveProperty('status', 200);
+    await expect(
+      publishSource(eventsLocator, eventsOpen.body.data.ownerFingerprint, 'chart.on("click", function() {});'),
+    ).resolves.toHaveProperty('status', 200);
+
+    const updated = await repository.findModelById('legacy-chart-runjs-model');
+    expect(getAtPath(updated, ['settings', 'visual'])).toMatchObject({
+      raw: 'return { series: [{ type: "bar" }] };',
+      keep: 'visual sibling',
+    });
+    expect(getAtPath(updated, ['settings', 'events'])).toMatchObject({
+      raw: 'chart.on("click", function () { });',
+      keep: 'events sibling',
+    });
+    expect(getAtPath(updated, ['stepParams', 'chartSettings', 'configure', 'chart', 'option', 'raw'])).toBeUndefined();
+    expect(getAtPath(updated, ['stepParams', 'chartSettings', 'configure', 'chart', 'events', 'raw'])).toBeUndefined();
+  });
+
+  it('writes chart sources to the v2 path when no existing raw path is present', async () => {
+    await repository.insertModel({
+      uid: 'new-chart-runjs-model',
+      use: 'ChartBlockModel',
+      stepParams: {
+        chartSettings: {
+          configure: {
+            chart: {
+              option: {
+                mode: 'custom',
+              },
+              events: {},
+            },
+          },
+        },
+      },
+    });
+
+    const optionLocator: RunJSSourceLocator = {
+      kind: 'chart.option',
+      modelUid: 'new-chart-runjs-model',
+    };
+    const eventsLocator: RunJSSourceLocator = {
+      kind: 'chart.events',
+      modelUid: 'new-chart-runjs-model',
+    };
+    const optionOpen = await openSource(optionLocator);
+    const eventsOpen = await openSource(eventsLocator);
+    expect(optionOpen.status).toBe(200);
+    expect(eventsOpen.status).toBe(200);
+    expect(optionOpen.body.data.legacy).toMatchObject({
+      code: expect.stringContaining('return {'),
+      entryPath: 'src/main.ts',
+      entry: 'src/main.ts',
+    });
+    expect(optionOpen.body.data.legacy.code).toContain('series: []');
+    expect(eventsOpen.body.data.legacy).toMatchObject({
+      code: expect.stringContaining('chart.on'),
+      entryPath: 'src/main.ts',
+      entry: 'src/main.ts',
+    });
+
+    const publish = await publishSource(optionLocator, optionOpen.body.data.ownerFingerprint, 'return { yAxis: {} };');
+    expect(publish.status).toBe(200);
+
+    const updated = await repository.findModelById('new-chart-runjs-model');
+    expect(getAtPath(updated, ['stepParams', 'chartSettings', 'configure', 'chart', 'option'])).toMatchObject({
+      mode: 'custom',
+      raw: 'return { yAxis: {} };',
+    });
+    expect(getAtPath(updated, ['settings', 'visual', 'raw'])).toBeUndefined();
+  });
+
   it('uses Flow Engine authoring inspection before publishing browser RunJS artifacts', async () => {
     await repository.insertModel({
       uid: 'chart-runjs-authoring-model',
@@ -1645,6 +1754,8 @@ describe('flow-engine RunJS source adapters', () => {
     code: string,
     requestAgent = agent,
   ) {
+    const entryPath = getRunJSPublishPath(locator);
+
     return requestAgent.resource('runJSSources').publish({
       values: {
         locator,
@@ -1654,7 +1765,7 @@ describe('flow-engine RunJS source adapters', () => {
         message: 'Update RunJS source',
         files: [
           {
-            path: 'src/main.tsx',
+            path: entryPath,
             operation: 'upsert',
             content: code,
             language: 'typescript',
@@ -1662,6 +1773,10 @@ describe('flow-engine RunJS source adapters', () => {
         ],
       },
     });
+  }
+
+  function getRunJSPublishPath(locator: RunJSSourceLocator): string {
+    return locator.kind === 'chart.option' || locator.kind === 'chart.events' ? 'src/main.ts' : 'src/main.tsx';
   }
 });
 

@@ -932,6 +932,39 @@ describe('runJSStudioProvider', () => {
     });
   });
 
+  it('runs the preview callback with compiled code without publishing local form changes', async () => {
+    const onChange = vi.fn();
+    const onPreview = vi.fn();
+
+    render(
+      <>
+        {runJSStudioProvider.renderEditor({
+          value: { code: 'return 1;', version: 'v2' },
+          locator,
+          onChange,
+          onPreview,
+        })}
+      </>,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Open Studio' }));
+    const editor = await screen.findByLabelText('Edit file content');
+    fireEvent.change(editor, {
+      target: {
+        value: 'return preview;',
+      },
+    });
+    fireEvent.click(screen.getAllByRole('button', { name: 'Run Preview' })[1]);
+
+    await waitFor(() => {
+      expect(onPreview).toHaveBeenCalledWith({
+        code: 'return preview;',
+        version: 'v2',
+      });
+    });
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
   it('keeps newer local edits when save draft resolves late', async () => {
     const saveDraft = createDeferred<unknown>();
     mocks.request.mockImplementation(({ url }: { url: string; data?: unknown }) => {

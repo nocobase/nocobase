@@ -100,6 +100,69 @@ describe('workflow-javascript RunJS source adapter', () => {
     });
   });
 
+  it('denies publishing a script node after the workflow version has executed', async () => {
+    const WorkflowModel = app.db.getCollection('workflows').model;
+    const workflow = await WorkflowModel.create({
+      enabled: false,
+      type: 'asyncTrigger',
+    });
+    await workflow.versionStats.update({ executed: 1 });
+    const node = await workflow.createNode({
+      title: 'Executed script',
+      type: 'script',
+      config: {
+        arguments: [{ name: 'score', value: 1 }],
+        content: 'return score + 1;',
+        continue: true,
+        timeout: 1000,
+      },
+    });
+    const locator: RunJSSourceLocator = {
+      kind: 'workflow.javascript',
+      nodeId: node.id,
+    };
+    const adapter = createWorkflowJavaScriptRunJSSourceAdapter(app.db);
+    const adapterCtx = {
+      can: () => ({}),
+    };
+    const legacy = await adapter.readLegacy({
+      locator,
+      ctx: adapterCtx,
+    });
+
+    await expect(
+      app.db.sequelize.transaction(async (transaction) => {
+        await adapter.writePublished({
+          locator,
+          artifact: {
+            code: 'return score + 2;',
+            version: 'workflow-js',
+            diagnostics: [],
+            filesHash: 'test-files-hash',
+            entryPath: 'src/main.js',
+          },
+          commitId: 'vscc_test',
+          baseOwnerFingerprint: legacy.ownerFingerprint,
+          ctx: {
+            ...adapterCtx,
+            transaction,
+          },
+        });
+      }),
+    ).rejects.toMatchObject({
+      code: 'RUNJS_SOURCE_READONLY',
+      status: 403,
+    });
+
+    await node.reload();
+    expect(node.get('config')).toMatchObject({
+      arguments: [{ name: 'score', value: 1 }],
+      content: 'return score + 1;',
+      continue: true,
+      timeout: 1000,
+    });
+  });
+
   it('denies workflow JavaScript source access without node update permission', async () => {
     await app.db.getRepository('roles').create({
       values: {

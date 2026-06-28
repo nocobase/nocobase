@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { ArrayItems } from '@formily/antd-v5';
 import { CodeOutlined } from '@ant-design/icons';
 import { SchemaInitializerItemType } from '@nocobase/client';
@@ -14,7 +23,7 @@ import React, { lazy } from 'react';
 import { NAMESPACE, lang } from '../locale';
 import { SubModelItem } from '@nocobase/flow-engine';
 
-const CodeEditor = lazy(() => import('./CodeEditor'));
+const WorkflowRunJSEditorField = lazy(() => import('./WorkflowRunJSEditorField'));
 
 function useScriptDescription() {
   return (
@@ -95,7 +104,7 @@ export default class extends Instruction {
       title: `{{t("Script content", { ns: "${NAMESPACE}" })}}`,
       description: '{{useScriptDescription()}}',
       'x-decorator': 'FormItem',
-      'x-component': 'CodeEditor',
+      'x-component': 'WorkflowRunJSEditorField',
       default: 'return "Hello world!";',
     },
     timeout: {
@@ -126,7 +135,7 @@ export default class extends Instruction {
   };
   components = {
     ArrayItems,
-    CodeEditor,
+    WorkflowRunJSEditorField,
     WorkflowVariableInput,
     Space,
   };
