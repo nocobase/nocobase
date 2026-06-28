@@ -152,7 +152,7 @@ export const MessageConfigForm = ({ variableOptions }) => {
               },
             },
           },
-          repyTo: {
+          replyTo: {
             type: 'strin',
             required: false,
             title: `{{t("Reply To")}}`,
