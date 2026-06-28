@@ -10,14 +10,20 @@
 import type { Context } from '@nocobase/actions';
 import type { Database } from '@nocobase/database';
 import type { HandlerType, ResourceOptions } from '@nocobase/resourcer';
+import { posix as pathPosix } from 'path';
+import ts from 'typescript';
 
-import { VscError, isVscError } from '../../shared/errors';
+import { VscError, isVscError, type VscErrorCode } from '../../shared/errors';
+import { normalizePath, pathHash } from '../../shared/path';
 import {
   buildRunJSFilesHash,
   buildRunJSRuntimeCodeHash,
   buildRunJSSourceRepositoryIdentity,
   normalizeRunJSSourceLocator,
+  type RunJSCompileDiagnostic,
+  type RunJSLegacySource,
   type RunJSSourceAdapterContext,
+  type RunJSSourceKind,
   type RunJSSourcePermissionResult,
   type RunJSRuntimeArtifact,
   type RunJSSourcePermissionCheck,
@@ -25,12 +31,33 @@ import {
   type RunJSSourcePublishInput,
   type RunJSSourcePublishResult,
 } from '../../shared/runjs-source-types';
-import type { VscFileChange, VscRepositoryIdentity, VscRepositoryRecord } from '../../shared/types';
+import type {
+  VscCommitRecord,
+  VscDraftFileChange,
+  VscDraftFileRecord,
+  VscDraftRecord,
+  VscFileChange,
+  VscRepositoryIdentity,
+  VscRepositoryRecord,
+  VscTreeEntryInput,
+} from '../../shared/types';
 import type { VscPermissionHookRegistry, VscPermissionRequestMetadata } from '../permissions';
-import { VscFileService } from '../services/VscFileService';
+import type { FileDiffResult } from '../services/DiffService';
+import { VscFileService, type PulledFile, type VscServiceContext } from '../services/VscFileService';
 import type { RunJSSourceAdapterRegistry } from './RunJSSourceAdapterRegistry';
 
-export const runJSSourceActionNames = ['open', 'publish'] as const;
+export const runJSSourceActionNames = [
+  'open',
+  'saveDraft',
+  'discardDraft',
+  'diffDraft',
+  'compilePreview',
+  'publish',
+  'listHistory',
+  'getVersion',
+  'diffVersion',
+  'restoreAsDraft',
+] as const;
 
 type RunJSSourceActionName = (typeof runJSSourceActionNames)[number];
 
@@ -71,20 +98,159 @@ type RunJSSourceActionRunner = (
 ) => Promise<unknown>;
 
 const actionRunners: Record<RunJSSourceActionName, RunJSSourceActionRunner> = {
-  open: async (_db, registry, _permissionHooks, input, ctx): Promise<RunJSSourceOpenResult> => {
+  open: async (db, registry, permissionHooks, input, ctx): Promise<RunJSSourceOpenResult> => {
     const locator = normalizeRunJSSourceLocator(input.locator);
     const adapter = registry.require(locator.kind);
+    const service = new VscFileService(db, permissionHooks);
+
+    return db.sequelize.transaction(async (transaction) => {
+      const adapterCtx = createAdapterContext(ctx, transaction);
+      const serviceCtx = createServiceContext(adapterCtx, transaction);
+
+      await adapter.assertCanRead({ locator, ctx: adapterCtx });
+      const legacy = await adapter.readLegacy({ locator, ctx: adapterCtx });
+      const repositoryIdentity = buildRunJSSourceRepositoryIdentity(locator);
+      const repository = await ensureRunJSRepository(service, repositoryIdentity, locator.kind, legacy, serviceCtx);
+      const published = await service.pull(
+        { repoId: repository.id, ref: 'published', includeContent: 'all' },
+        serviceCtx,
+      );
+      const draft = adapterCtx.userId
+        ? await service.getDraft({ repoId: repository.id, userId: adapterCtx.userId, includeContent: true }, serviceCtx)
+        : null;
+      const history = await service.listCommits({ repoId: repository.id }, serviceCtx);
+      const permissions = await getRunJSSourcePermissions(
+        adapter,
+        locator,
+        adapterCtx,
+        permissionHooks,
+        published.repository,
+        serviceCtx,
+      );
+
+      return buildOpenResult({
+        locator,
+        repositoryIdentity,
+        legacy,
+        repository: published.repository,
+        files: published.files || [],
+        draft,
+        history,
+        permissions,
+      });
+    });
+  },
+  saveDraft: async (db, registry, permissionHooks, input, ctx): Promise<RunJSSourceDraftResult> => {
+    const draftInput = normalizeSaveDraftInput(input);
+    const adapter = registry.require(draftInput.locator.kind);
+    const service = new VscFileService(db, permissionHooks);
+
+    return db.sequelize.transaction(async (transaction) => {
+      const adapterCtx = createAdapterContext(ctx, transaction);
+      const serviceCtx = createServiceContext(adapterCtx, transaction);
+      const userId = requireCurrentUserId(adapterCtx);
+
+      await adapter.assertCanWrite({ locator: draftInput.locator, ctx: adapterCtx });
+      const repository = await getRunJSRepository(service, draftInput.repoId, draftInput.locator, serviceCtx);
+      assertDraftBaseCurrent(repository, draftInput.baseCommitId);
+      const draft = await service.saveDraft(
+        {
+          repoId: repository.id,
+          userId,
+          baseCommitId: draftInput.baseCommitId,
+          files: draftInput.files,
+          includeContent: true,
+        },
+        serviceCtx,
+      );
+
+      return {
+        locator: draftInput.locator,
+        locatorKind: draftInput.locator.kind,
+        repository: serializeRepository(repository),
+        draft: serializeDraft(draft),
+        files: draft.files,
+      };
+    });
+  },
+  discardDraft: async (db, registry, permissionHooks, input, ctx): Promise<RunJSSourceDiscardDraftResult> => {
+    const draftInput = normalizeRepoInput(input);
+    const adapter = registry.require(draftInput.locator.kind);
+    const service = new VscFileService(db, permissionHooks);
+
+    return db.sequelize.transaction(async (transaction) => {
+      const adapterCtx = createAdapterContext(ctx, transaction);
+      const serviceCtx = createServiceContext(adapterCtx, transaction);
+      const userId = requireCurrentUserId(adapterCtx);
+
+      await adapter.assertCanWrite({ locator: draftInput.locator, ctx: adapterCtx });
+      const repository = await getRunJSRepository(service, draftInput.repoId, draftInput.locator, serviceCtx);
+      const draft = await service.discardDraft({ repoId: repository.id, userId }, serviceCtx);
+
+      return {
+        locator: draftInput.locator,
+        locatorKind: draftInput.locator.kind,
+        repository: serializeRepository(repository),
+        draft,
+      };
+    });
+  },
+  diffDraft: async (db, registry, permissionHooks, input, ctx): Promise<RunJSSourceDiffDraftResult> => {
+    const diffInput = normalizeDiffDraftInput(input);
+    const adapter = registry.require(diffInput.locator.kind);
+    const service = new VscFileService(db, permissionHooks);
+
+    return db.sequelize.transaction(async (transaction) => {
+      const adapterCtx = createAdapterContext(ctx, transaction);
+      const serviceCtx = createServiceContext(adapterCtx, transaction);
+
+      await adapter.assertCanRead({ locator: diffInput.locator, ctx: adapterCtx });
+      const repository = await getRunJSRepository(service, diffInput.repoId, diffInput.locator, serviceCtx);
+      if (!diffInput.files) {
+        const userId = requireCurrentUserId(adapterCtx);
+
+        return {
+          locator: diffInput.locator,
+          locatorKind: diffInput.locator.kind,
+          repository: serializeRepository(repository),
+          diff: await service.diffDraft({ repoId: repository.id, userId }, serviceCtx),
+        };
+      }
+
+      const baseCommitId = diffInput.baseCommitId ?? repository.publishedCommitId ?? repository.headCommitId;
+      const baseFiles = baseCommitId
+        ? (
+            await service.pullCommit(
+              { repoId: repository.id, commitId: baseCommitId, includeContent: 'all' },
+              serviceCtx,
+            )
+          ).files || []
+        : [];
+
+      return {
+        locator: diffInput.locator,
+        locatorKind: diffInput.locator.kind,
+        repository: serializeRepository(repository),
+        diff: diffWorkspaceFiles(baseFiles, diffInput.files),
+      };
+    });
+  },
+  compilePreview: async (_db, registry, _permissionHooks, input, ctx): Promise<RunJSSourceCompilePreviewResult> => {
+    const previewInput = normalizeCompilePreviewInput(input);
+    const adapter = registry.require(previewInput.locator.kind);
     const adapterCtx = createAdapterContext(ctx);
 
-    await adapter.assertCanRead({ locator, ctx: adapterCtx });
-    const legacy = await adapter.readLegacy({ locator, ctx: adapterCtx });
+    await adapter.assertCanRead({ locator: previewInput.locator, ctx: adapterCtx });
+    const compiled = compileRunJSFiles({
+      files: previewInput.files,
+      entryPath: previewInput.entryPath,
+      version: previewInput.version,
+    });
 
     return {
-      locator,
-      locatorKind: locator.kind,
-      repositoryIdentity: buildRunJSSourceRepositoryIdentity(locator),
-      legacy,
-      ownerFingerprint: legacy.ownerFingerprint,
+      locator: previewInput.locator,
+      locatorKind: previewInput.locator.kind,
+      artifact: compiled.artifact,
     };
   },
   publish: async (db, registry, permissionHooks, input, ctx): Promise<RunJSSourcePublishResult> => {
@@ -122,7 +288,14 @@ const actionRunners: Record<RunJSSourceActionName, RunJSSourceActionRunner> = {
             )
           ).repository;
       assertRepositoryMatchesIdentity(repository, repositoryIdentity, publishInput.locator.kind);
-      const artifact = buildRuntimeArtifact(publishInput);
+      const publishBase = resolvePublishBase(repository, publishInput);
+      const compiled = compileRunJSFiles({
+        files: publishInput.files,
+        entryPath: publishInput.entryPath || publishInput.artifact?.entryPath,
+        version: publishInput.version || publishInput.artifact?.version,
+      });
+      assertRunJSCompileSucceeded(compiled);
+      const artifact = compiled.artifact;
       artifact.metadata = {
         ...artifact.metadata,
         repoId: repository.id,
@@ -130,7 +303,7 @@ const actionRunners: Record<RunJSSourceActionName, RunJSSourceActionRunner> = {
       const pushResult = await service.push(
         {
           repoId: repository.id,
-          baseCommitId: publishInput.baseCommitId,
+          baseCommitId: publishBase.baseCommitId,
           message: publishInput.message,
           files: publishInput.files,
           draftId: publishInput.draftId,
@@ -148,7 +321,7 @@ const actionRunners: Record<RunJSSourceActionName, RunJSSourceActionRunner> = {
           repoId: repository.id,
           name: 'published',
           targetCommitId: pushResult.commit.id,
-          basePublishedCommitId: publishInput.basePublishedCommitId,
+          basePublishedCommitId: publishBase.basePublishedCommitId,
         },
         serviceCtx,
       );
@@ -160,12 +333,10 @@ const actionRunners: Record<RunJSSourceActionName, RunJSSourceActionRunner> = {
         baseOwnerFingerprint: publishInput.baseOwnerFingerprint,
         ctx: adapterCtx,
       });
-      const nextOwnerFingerprint =
-        writeResult.ownerFingerprint ||
-        (await adapter.getFingerprint({
-          locator: publishInput.locator,
-          ctx: adapterCtx,
-        }));
+      const nextOwnerFingerprint = await adapter.getFingerprint({
+        locator: publishInput.locator,
+        ctx: adapterCtx,
+      });
 
       return {
         locator: publishInput.locator,
@@ -187,7 +358,929 @@ const actionRunners: Record<RunJSSourceActionName, RunJSSourceActionRunner> = {
       };
     });
   },
+  listHistory: async (db, registry, permissionHooks, input, ctx): Promise<RunJSSourceHistoryResult> => {
+    const historyInput = normalizeHistoryInput(input);
+    const adapter = registry.require(historyInput.locator.kind);
+    const service = new VscFileService(db, permissionHooks);
+
+    return db.sequelize.transaction(async (transaction) => {
+      const adapterCtx = createAdapterContext(ctx, transaction);
+      const serviceCtx = createServiceContext(adapterCtx, transaction);
+
+      await adapter.assertCanRead({ locator: historyInput.locator, ctx: adapterCtx });
+      const repository = await getRunJSRepository(service, historyInput.repoId, historyInput.locator, serviceCtx);
+      const commits = await service.listCommits(
+        {
+          repoId: repository.id,
+          limit: historyInput.limit,
+          beforeSeq: historyInput.beforeSeq,
+        },
+        serviceCtx,
+      );
+      const items = serializeHistory(commits, repository.publishedCommitId);
+
+      return {
+        locator: historyInput.locator,
+        locatorKind: historyInput.locator.kind,
+        repository: serializeRepository(repository),
+        commits: items,
+        items,
+        nextBeforeSeq: items.length ? items[items.length - 1].seq : null,
+      };
+    });
+  },
+  getVersion: async (db, registry, permissionHooks, input, ctx): Promise<RunJSSourceVersionResult> => {
+    const versionInput = normalizeGetVersionInput(input);
+    const adapter = registry.require(versionInput.locator.kind);
+    const service = new VscFileService(db, permissionHooks);
+
+    return db.sequelize.transaction(async (transaction) => {
+      const adapterCtx = createAdapterContext(ctx, transaction);
+      const serviceCtx = createServiceContext(adapterCtx, transaction);
+
+      await adapter.assertCanRead({ locator: versionInput.locator, ctx: adapterCtx });
+      const repository = await getRunJSRepository(service, versionInput.repoId, versionInput.locator, serviceCtx);
+      const commit = await service.getCommit({ repoId: repository.id, commitId: versionInput.commitId }, serviceCtx);
+      const pull = versionInput.includeFiles
+        ? await service.pullCommit({ repoId: repository.id, commitId: commit.id, includeContent: 'all' }, serviceCtx)
+        : null;
+
+      return {
+        locator: versionInput.locator,
+        locatorKind: versionInput.locator.kind,
+        repository: serializeRepository(repository),
+        commit: markPublishedCommit(commit, repository.publishedCommitId),
+        files: pull?.files || [],
+      };
+    });
+  },
+  diffVersion: async (db, registry, permissionHooks, input, ctx): Promise<RunJSSourceDiffVersionResult> => {
+    const diffInput = normalizeDiffVersionInput(input);
+    const adapter = registry.require(diffInput.locator.kind);
+    const service = new VscFileService(db, permissionHooks);
+
+    return db.sequelize.transaction(async (transaction) => {
+      const adapterCtx = createAdapterContext(ctx, transaction);
+      const serviceCtx = createServiceContext(adapterCtx, transaction);
+
+      await adapter.assertCanRead({ locator: diffInput.locator, ctx: adapterCtx });
+      const repository = await getRunJSRepository(service, diffInput.repoId, diffInput.locator, serviceCtx);
+      const toCommitId = diffInput.toCommitId || diffInput.commitId;
+      const toCommit = await service.getCommit({ repoId: repository.id, commitId: toCommitId }, serviceCtx);
+      const fromCommitId = diffInput.fromCommitId ?? toCommit.parentCommitId;
+      const diff = fromCommitId
+        ? await service.diffCommits({ repoId: repository.id, fromCommitId, toCommitId: toCommit.id }, serviceCtx)
+        : diffWorkspaceFiles(
+            [],
+            (
+              (
+                await service.pullCommit(
+                  { repoId: repository.id, commitId: toCommit.id, includeContent: 'all' },
+                  serviceCtx,
+                )
+              ).files || []
+            ).map(fileChangeFromPulledFile),
+          );
+
+      return {
+        locator: diffInput.locator,
+        locatorKind: diffInput.locator.kind,
+        repository: serializeRepository(repository),
+        fromCommitId,
+        toCommitId: toCommit.id,
+        fromIsPublished: Boolean(fromCommitId && fromCommitId === repository.publishedCommitId),
+        toIsPublished: toCommit.id === repository.publishedCommitId,
+        diff,
+      };
+    });
+  },
+  restoreAsDraft: async (db, registry, permissionHooks, input, ctx): Promise<RunJSSourceDraftResult> => {
+    const restoreInput = normalizeRestoreAsDraftInput(input);
+    const adapter = registry.require(restoreInput.locator.kind);
+    const service = new VscFileService(db, permissionHooks);
+
+    return db.sequelize.transaction(async (transaction) => {
+      const adapterCtx = createAdapterContext(ctx, transaction);
+      const serviceCtx = createServiceContext(adapterCtx, transaction);
+      const userId = requireCurrentUserId(adapterCtx);
+
+      await adapter.assertCanWrite({ locator: restoreInput.locator, ctx: adapterCtx });
+      const repository = await getRunJSRepository(service, restoreInput.repoId, restoreInput.locator, serviceCtx);
+      assertDraftBaseCurrent(repository, restoreInput.baseCommitId);
+
+      const sourceFiles =
+        (
+          await service.pullCommit(
+            {
+              repoId: repository.id,
+              commitId: restoreInput.sourceCommitId,
+              includeContent: 'all',
+            },
+            serviceCtx,
+          )
+        ).files || [];
+      const baseFiles = restoreInput.baseCommitId
+        ? (
+            await service.pullCommit(
+              {
+                repoId: repository.id,
+                commitId: restoreInput.baseCommitId,
+                includeContent: 'all',
+              },
+              serviceCtx,
+            )
+          ).files || []
+        : [];
+      const files = draftChangesFromRestore(sourceFiles, baseFiles);
+      const draft = await service.saveDraft(
+        {
+          repoId: repository.id,
+          userId,
+          baseCommitId: restoreInput.baseCommitId,
+          files,
+          includeContent: true,
+          replaceFiles: true,
+        },
+        serviceCtx,
+      );
+
+      return {
+        locator: restoreInput.locator,
+        locatorKind: restoreInput.locator.kind,
+        repository: serializeRepository(repository),
+        draft: serializeDraft(draft),
+        files: draft.files,
+      };
+    });
+  },
 };
+
+type RunJSSourceLocatorInput = RunJSSourcePublishInput['locator'];
+
+type RunJSSourceRepositoryResponse = VscRepositoryRecord & {
+  repoId: string;
+};
+
+interface RunJSSourceRepoInput {
+  locator: RunJSSourceLocatorInput;
+  repoId: string;
+}
+
+interface RunJSSourceSaveDraftInput extends RunJSSourceRepoInput {
+  baseCommitId: string | null;
+  files: VscDraftFileChange[];
+}
+
+interface RunJSSourceDiffDraftInput extends RunJSSourceRepoInput {
+  baseCommitId?: string | null;
+  files?: VscFileChange[];
+}
+
+interface RunJSSourceCompilePreviewInput {
+  locator: RunJSSourceLocatorInput;
+  files: VscFileChange[];
+  entryPath?: string;
+  version?: string;
+}
+
+interface RunJSSourceHistoryInput extends RunJSSourceRepoInput {
+  limit?: number;
+  beforeSeq?: number;
+}
+
+interface RunJSSourceGetVersionInput extends RunJSSourceRepoInput {
+  commitId: string;
+  includeFiles: boolean;
+}
+
+interface RunJSSourceDiffVersionInput extends RunJSSourceRepoInput {
+  commitId: string;
+  fromCommitId?: string;
+  toCommitId?: string;
+}
+
+interface RunJSSourceRestoreAsDraftInput extends RunJSSourceRepoInput {
+  sourceCommitId: string;
+  baseCommitId: string | null;
+}
+
+interface RunJSSourceDraftResponse {
+  id: string;
+  baseCommitId: string | null;
+  status: VscDraftRecord['status'];
+  files: VscDraftFileRecord[];
+}
+
+interface ActiveDraftLike {
+  draft: VscDraftRecord;
+  files: VscDraftFileRecord[];
+}
+
+interface RunJSSourceDraftResult {
+  locator: RunJSSourceLocatorInput;
+  locatorKind: RunJSSourceKind;
+  repository: RunJSSourceRepositoryResponse;
+  draft: RunJSSourceDraftResponse;
+  files: VscDraftFileRecord[];
+}
+
+interface RunJSSourceDiscardDraftResult {
+  locator: RunJSSourceLocatorInput;
+  locatorKind: RunJSSourceKind;
+  repository: RunJSSourceRepositoryResponse;
+  draft: VscDraftRecord | null;
+}
+
+interface RunJSSourceDiffDraftResult {
+  locator: RunJSSourceLocatorInput;
+  locatorKind: RunJSSourceKind;
+  repository: RunJSSourceRepositoryResponse;
+  diff: FileDiffResult;
+}
+
+interface RunJSSourceCompilePreviewResult {
+  locator: RunJSSourceLocatorInput;
+  locatorKind: RunJSSourceKind;
+  artifact: RunJSRuntimeArtifact;
+}
+
+interface RunJSSourceHistoryItem extends VscCommitRecord {
+  isPublished: boolean;
+}
+
+interface RunJSSourceHistoryResult {
+  locator: RunJSSourceLocatorInput;
+  locatorKind: RunJSSourceKind;
+  repository: RunJSSourceRepositoryResponse;
+  commits: RunJSSourceHistoryItem[];
+  items: RunJSSourceHistoryItem[];
+  nextBeforeSeq: number | null;
+}
+
+interface RunJSSourceVersionResult {
+  locator: RunJSSourceLocatorInput;
+  locatorKind: RunJSSourceKind;
+  repository: RunJSSourceRepositoryResponse;
+  commit: RunJSSourceHistoryItem;
+  files: PulledFile[];
+}
+
+interface RunJSSourceDiffVersionResult {
+  locator: RunJSSourceLocatorInput;
+  locatorKind: RunJSSourceKind;
+  repository: RunJSSourceRepositoryResponse;
+  fromCommitId: string | null;
+  toCommitId: string;
+  fromIsPublished: boolean;
+  toIsPublished: boolean;
+  diff: FileDiffResult;
+}
+
+interface RunJSSourcePermissions {
+  canWrite: boolean;
+  canPublish: boolean;
+}
+
+interface BuildOpenResultInput {
+  locator: RunJSSourceLocatorInput;
+  repositoryIdentity: VscRepositoryIdentity;
+  legacy: RunJSLegacySource;
+  repository: VscRepositoryRecord;
+  files: PulledFile[];
+  draft: ActiveDraftLike | null;
+  history: VscCommitRecord[];
+  permissions: RunJSSourcePermissions;
+}
+
+interface WorkspaceFile {
+  path: string;
+  pathHash: string;
+  content: string;
+  language?: string;
+  mode?: string;
+}
+
+type RunJSCompileFailureCode = Extract<
+  VscErrorCode,
+  'RUNJS_COMPILE_FAILED' | 'RUNJS_ENTRY_NOT_FOUND' | 'RUNJS_IMPORT_NOT_ALLOWED'
+>;
+
+interface CompileRunJSInput {
+  files: VscFileChange[];
+  entryPath?: string;
+  version?: string;
+}
+
+interface CompileRunJSResult {
+  artifact: RunJSRuntimeArtifact;
+  failureCode?: RunJSCompileFailureCode;
+}
+
+interface RunJSContentFile {
+  path: string;
+  content: string;
+}
+
+function createServiceContext(
+  adapterCtx: RunJSSourceAdapterContext,
+  transaction: VscServiceContext['transaction'],
+): VscServiceContext {
+  return {
+    authorId: adapterCtx.userId,
+    request: adapterCtx.request as VscPermissionRequestMetadata | undefined,
+    transaction,
+  };
+}
+
+async function ensureRunJSRepository(
+  service: VscFileService,
+  identity: VscRepositoryIdentity,
+  sourceKind: RunJSSourceKind,
+  legacy: RunJSLegacySource,
+  serviceCtx: VscServiceContext,
+): Promise<VscRepositoryRecord> {
+  const ensured = await service.ensureRepository(
+    {
+      ...identity,
+      initialFiles: [legacyToInitialFile(legacy)],
+      message: 'Initialize RunJS source',
+      authorId: serviceCtx.authorId,
+      metadata: {
+        sourceKind,
+      },
+    },
+    serviceCtx,
+  );
+
+  if (!ensured.initialCommit) {
+    return ensured.repository;
+  }
+
+  return (
+    await service.updateRef(
+      {
+        repoId: ensured.repository.id,
+        name: 'published',
+        targetCommitId: ensured.initialCommit.id,
+        basePublishedCommitId: null,
+      },
+      serviceCtx,
+    )
+  ).repository;
+}
+
+function legacyToInitialFile(legacy: RunJSLegacySource): VscTreeEntryInput {
+  return {
+    path: normalizePath(legacy.entryPath || legacy.entry || 'src/main.tsx'),
+    content: legacy.code,
+    language: legacy.language,
+  };
+}
+
+async function getRunJSRepository(
+  service: VscFileService,
+  repoId: string,
+  locator: RunJSSourceLocatorInput,
+  serviceCtx: VscServiceContext,
+): Promise<VscRepositoryRecord> {
+  const repository = await service.getRepository({ repoId }, serviceCtx);
+  assertRepositoryMatchesIdentity(repository, buildRunJSSourceRepositoryIdentity(locator), locator.kind);
+  return repository;
+}
+
+async function getRunJSSourcePermissions(
+  adapter: ReturnType<RunJSSourceAdapterRegistry['require']>,
+  locator: RunJSSourceLocatorInput,
+  adapterCtx: RunJSSourceAdapterContext,
+  permissionHooks: VscPermissionHookRegistry | undefined,
+  repository: VscRepositoryRecord,
+  serviceCtx: VscServiceContext,
+): Promise<RunJSSourcePermissions> {
+  const canWrite = await canWriteRunJSSource(adapter, locator, adapterCtx, permissionHooks, repository, serviceCtx);
+  const canPublish = await canPublishRunJSSource(adapter, locator, adapterCtx, permissionHooks, repository, serviceCtx);
+
+  return {
+    canWrite,
+    canPublish,
+  };
+}
+
+async function canWriteRunJSSource(
+  adapter: ReturnType<RunJSSourceAdapterRegistry['require']>,
+  locator: RunJSSourceLocatorInput,
+  adapterCtx: RunJSSourceAdapterContext,
+  permissionHooks: VscPermissionHookRegistry | undefined,
+  repository: VscRepositoryRecord,
+  serviceCtx: VscServiceContext,
+): Promise<boolean> {
+  try {
+    await adapter.assertCanWrite({ locator, ctx: adapterCtx });
+    await permissionHooks?.assertAllowed({
+      userId: serviceCtx.authorId ?? null,
+      action: 'saveDraft',
+      repoId: repository.id,
+      repository,
+      request: serviceCtx.request,
+    });
+    return true;
+  } catch (error) {
+    if (isVscError(error)) {
+      return false;
+    }
+    throw error;
+  }
+}
+
+async function canPublishRunJSSource(
+  adapter: ReturnType<RunJSSourceAdapterRegistry['require']>,
+  locator: RunJSSourceLocatorInput,
+  adapterCtx: RunJSSourceAdapterContext,
+  permissionHooks: VscPermissionHookRegistry | undefined,
+  repository: VscRepositoryRecord,
+  serviceCtx: VscServiceContext,
+): Promise<boolean> {
+  try {
+    await adapter.assertCanWrite({ locator, ctx: adapterCtx });
+    await permissionHooks?.assertAllowed({
+      userId: serviceCtx.authorId ?? null,
+      action: 'push',
+      repoId: repository.id,
+      repository,
+      request: serviceCtx.request,
+    });
+    await permissionHooks?.assertAllowed({
+      userId: serviceCtx.authorId ?? null,
+      action: 'updateRef',
+      repoId: repository.id,
+      repository,
+      request: serviceCtx.request,
+      refName: 'published',
+    });
+    return true;
+  } catch (error) {
+    if (isVscError(error)) {
+      return false;
+    }
+    throw error;
+  }
+}
+
+function buildOpenResult(input: BuildOpenResultInput): RunJSSourceOpenResult & Record<string, unknown> {
+  const history = serializeHistory(input.history, input.repository.publishedCommitId);
+
+  return {
+    locator: input.locator,
+    locatorKind: input.locator.kind,
+    repositoryIdentity: input.repositoryIdentity,
+    legacy: input.legacy,
+    ownerFingerprint: input.legacy.ownerFingerprint,
+    source: {
+      label: input.legacy.label,
+      kind: input.locator.kind,
+      surfaceStyle: input.legacy.surfaceStyle,
+      runtimeVersion: input.legacy.version,
+      language: input.legacy.language,
+      ownerFingerprint: input.legacy.ownerFingerprint,
+      metadata: input.legacy.metadata,
+    },
+    repository: serializeRepository(input.repository),
+    files: input.files,
+    draft: input.draft ? serializeDraft(input.draft) : null,
+    permissions: {
+      canRead: true,
+      canWrite: input.permissions.canWrite,
+      canPublish: input.permissions.canPublish,
+    },
+    history: {
+      commits: history,
+      items: history,
+    },
+  };
+}
+
+function serializeRepository(repository: VscRepositoryRecord): RunJSSourceRepositoryResponse {
+  return {
+    ...repository,
+    repoId: repository.id,
+  };
+}
+
+function serializeDraft(input: ActiveDraftLike): RunJSSourceDraftResponse {
+  return {
+    id: input.draft.id,
+    baseCommitId: input.draft.baseCommitId,
+    status: input.draft.status,
+    files: input.files,
+  };
+}
+
+function serializeHistory(commits: VscCommitRecord[], publishedCommitId: string | null): RunJSSourceHistoryItem[] {
+  return commits.map((commit) => markPublishedCommit(commit, publishedCommitId));
+}
+
+function markPublishedCommit(commit: VscCommitRecord, publishedCommitId: string | null): RunJSSourceHistoryItem {
+  return {
+    ...commit,
+    isPublished: commit.id === publishedCommitId,
+  };
+}
+
+function requireCurrentUserId(ctx: RunJSSourceAdapterContext): string {
+  if (ctx.userId) {
+    return ctx.userId;
+  }
+
+  throw new VscError('PERMISSION_DENIED', 'RunJS source action requires a logged-in user');
+}
+
+function assertDraftBaseCurrent(repository: VscRepositoryRecord, baseCommitId: string | null): void {
+  const expectedBaseCommitId = repository.publishedCommitId ?? repository.headCommitId;
+  if (expectedBaseCommitId === baseCommitId) {
+    return;
+  }
+
+  throw new VscError('DRAFT_BASE_OUTDATED', 'RunJS draft base is no longer current', {
+    details: {
+      expected: expectedBaseCommitId,
+      received: baseCommitId,
+    },
+  });
+}
+
+function resolvePublishBase(
+  repository: VscRepositoryRecord,
+  input: RunJSSourcePublishInput,
+): Pick<RunJSSourcePublishInput, 'baseCommitId' | 'basePublishedCommitId'> {
+  if (
+    input.repoId ||
+    input.baseCommitId !== null ||
+    input.basePublishedCommitId !== null ||
+    !repository.headCommitId ||
+    repository.publishedCommitId !== repository.headCommitId
+  ) {
+    return {
+      baseCommitId: input.baseCommitId,
+      basePublishedCommitId: input.basePublishedCommitId,
+    };
+  }
+
+  return {
+    baseCommitId: repository.headCommitId,
+    basePublishedCommitId: repository.publishedCommitId,
+  };
+}
+
+function diffWorkspaceFiles(baseFiles: PulledFile[], changes: VscFileChange[]): FileDiffResult {
+  const baseByPath = new Map(baseFiles.map((file) => [normalizePath(file.path), workspaceFileFromPulledFile(file)]));
+  const nextByPath = new Map(baseByPath);
+
+  for (const change of changes) {
+    const normalizedPath = normalizePath(change.path);
+    const operation = change.operation || 'upsert';
+
+    if (operation === 'delete') {
+      nextByPath.delete(normalizedPath);
+      continue;
+    }
+
+    const current = baseByPath.get(normalizedPath);
+    nextByPath.set(normalizedPath, {
+      path: normalizedPath,
+      pathHash: pathHash(normalizedPath),
+      content: typeof change.content === 'string' ? change.content : current?.content || '',
+      language: change.language || current?.language,
+      mode: change.mode || current?.mode,
+    });
+  }
+
+  return diffWorkspaceFileMaps(baseByPath, nextByPath);
+}
+
+function diffWorkspaceFileMaps(
+  baseByPath: Map<string, WorkspaceFile>,
+  nextByPath: Map<string, WorkspaceFile>,
+): FileDiffResult {
+  const files: FileDiffResult['files'] = [];
+  const paths = Array.from(new Set([...baseByPath.keys(), ...nextByPath.keys()])).sort();
+
+  for (const path of paths) {
+    const base = baseByPath.get(path);
+    const next = nextByPath.get(path);
+    if (base && next && base.content === next.content && base.language === next.language && base.mode === next.mode) {
+      continue;
+    }
+
+    const status = !base ? 'added' : !next ? 'deleted' : 'modified';
+    const lineCounts = countChangedLines(base?.content || '', next?.content || '');
+    files.push({
+      status,
+      path,
+      pathHash: pathHash(path),
+      oldPath: base?.path,
+      oldPathHash: base?.pathHash,
+      language: next?.language,
+      oldLanguage: base?.language,
+      mode: next?.mode,
+      oldMode: base?.mode,
+      size: next ? Buffer.byteLength(next.content) : undefined,
+      oldSize: base ? Buffer.byteLength(base.content) : undefined,
+      additions: lineCounts.additions,
+      deletions: lineCounts.deletions,
+      tooLarge: false,
+    });
+  }
+
+  return {
+    files,
+    summary: {
+      added: files.filter((file) => file.status === 'added').length,
+      modified: files.filter((file) => file.status === 'modified').length,
+      deleted: files.filter((file) => file.status === 'deleted').length,
+      unchanged: 0,
+      renamed: 0,
+    },
+  };
+}
+
+function workspaceFileFromPulledFile(file: PulledFile): WorkspaceFile {
+  const normalizedPath = normalizePath(file.path);
+
+  return {
+    path: normalizedPath,
+    pathHash: file.pathHash || pathHash(normalizedPath),
+    content: file.content || '',
+    language: file.language,
+    mode: file.mode,
+  };
+}
+
+function countChangedLines(oldContent: string, newContent: string): { additions: number; deletions: number } {
+  if (!oldContent) {
+    return {
+      additions: countLines(newContent),
+      deletions: 0,
+    };
+  }
+  if (!newContent) {
+    return {
+      additions: 0,
+      deletions: countLines(oldContent),
+    };
+  }
+
+  return {
+    additions: countLines(newContent),
+    deletions: countLines(oldContent),
+  };
+}
+
+function countLines(content: string): number {
+  if (!content) {
+    return 0;
+  }
+
+  return content.endsWith('\n') ? content.split('\n').length - 1 : content.split('\n').length;
+}
+
+function fileChangeFromPulledFile(file: PulledFile): VscFileChange {
+  return {
+    path: file.path,
+    operation: 'upsert',
+    content: file.content || '',
+    language: file.language,
+    mode: file.mode,
+  };
+}
+
+function draftChangesFromRestore(sourceFiles: PulledFile[], baseFiles: PulledFile[]): VscDraftFileChange[] {
+  const sourcePaths = new Set(sourceFiles.map((file) => normalizePath(file.path)));
+  const changes = sourceFiles.map((file) => ({
+    path: normalizePath(file.path),
+    operation: 'upsert' as const,
+    content: file.content || '',
+    language: file.language,
+    mode: file.mode,
+  }));
+
+  for (const baseFile of baseFiles) {
+    const normalizedPath = normalizePath(baseFile.path);
+    if (!sourcePaths.has(normalizedPath)) {
+      changes.push({
+        path: normalizedPath,
+        operation: 'delete',
+      });
+    }
+  }
+
+  return changes;
+}
+
+function compileRunJSFiles(input: CompileRunJSInput): CompileRunJSResult {
+  const entryPath = normalizePath(input.entryPath || selectEntryPath(input.files));
+  const files = contentFilesFromChanges(input.files);
+  const bundle = bundleRunJSFiles(files, entryPath);
+  const code = bundle.code;
+  const diagnostics = [...bundle.diagnostics, ...collectTypeScriptDiagnostics(code, entryPath)];
+
+  return {
+    artifact: {
+      code,
+      version: input.version || 'v2',
+      diagnostics,
+      filesHash: buildRunJSFilesHash(input.files),
+      entryPath,
+    },
+    failureCode: bundle.failureCode || (hasErrorDiagnostic(diagnostics) ? 'RUNJS_COMPILE_FAILED' : undefined),
+  };
+}
+
+function assertRunJSCompileSucceeded(result: CompileRunJSResult): void {
+  const errorDiagnostics = result.artifact.diagnostics.filter((diagnostic) => diagnostic.severity === 'error');
+  if (!errorDiagnostics.length) {
+    return;
+  }
+
+  throw new VscError(result.failureCode || 'RUNJS_COMPILE_FAILED', 'RunJS source could not be compiled', {
+    details: {
+      diagnostics: errorDiagnostics,
+    },
+  });
+}
+
+function contentFilesFromChanges(files: VscFileChange[]): Map<string, RunJSContentFile> {
+  const contentFiles = new Map<string, RunJSContentFile>();
+
+  for (const file of files) {
+    const normalizedPath = normalizePath(file.path);
+    if (file.operation === 'delete') {
+      contentFiles.delete(normalizedPath);
+      continue;
+    }
+    if (typeof file.content !== 'string') {
+      continue;
+    }
+
+    contentFiles.set(normalizedPath, {
+      path: normalizedPath,
+      content: file.content,
+    });
+  }
+
+  return contentFiles;
+}
+
+function bundleRunJSFiles(
+  files: Map<string, RunJSContentFile>,
+  entryPath: string,
+): { code: string; diagnostics: RunJSCompileDiagnostic[]; failureCode?: RunJSCompileFailureCode } {
+  const diagnostics: RunJSCompileDiagnostic[] = [];
+  const orderedFiles: RunJSContentFile[] = [];
+  const visited = new Set<string>();
+  const visiting = new Set<string>();
+  let failureCode: RunJSCompileFailureCode | undefined;
+
+  const visit = (path: string) => {
+    const file = files.get(path);
+    if (!file) {
+      diagnostics.push({
+        severity: 'error',
+        path,
+        message: `Entry file "${path}" was not found`,
+      });
+      failureCode = failureCode || 'RUNJS_ENTRY_NOT_FOUND';
+      return;
+    }
+    if (visited.has(path)) {
+      return;
+    }
+    if (visiting.has(path)) {
+      diagnostics.push({
+        severity: 'error',
+        path,
+        message: `Circular import involving "${path}" is not supported`,
+      });
+      failureCode = failureCode || 'RUNJS_COMPILE_FAILED';
+      return;
+    }
+
+    visiting.add(path);
+    for (const specifier of collectImportSpecifiers(file.content)) {
+      if (!specifier.startsWith('.')) {
+        diagnostics.push({
+          severity: 'error',
+          path,
+          message: `Import "${specifier}" is not allowed`,
+        });
+        failureCode = failureCode || 'RUNJS_IMPORT_NOT_ALLOWED';
+        continue;
+      }
+
+      const resolved = resolveRelativeRunJSImport(path, specifier, files);
+      if (!resolved) {
+        diagnostics.push({
+          severity: 'error',
+          path,
+          message: `Import "${specifier}" could not be resolved`,
+        });
+        failureCode = failureCode || 'RUNJS_IMPORT_NOT_ALLOWED';
+        continue;
+      }
+      visit(resolved);
+    }
+    visiting.delete(path);
+    visited.add(path);
+    orderedFiles.push(file);
+  };
+
+  visit(entryPath);
+
+  return {
+    code: orderedFiles.map((file) => stripRunJSModuleSyntax(file.content)).join('\n'),
+    diagnostics,
+    failureCode,
+  };
+}
+
+function collectImportSpecifiers(content: string): string[] {
+  const specifiers: string[] = [];
+  const importPattern = /^\s*import(?:\s+type)?(?:[\s\S]*?\sfrom\s*)?['"]([^'"]+)['"];?\s*$/gm;
+  let match = importPattern.exec(content);
+
+  while (match) {
+    specifiers.push(match[1]);
+    match = importPattern.exec(content);
+  }
+
+  return specifiers;
+}
+
+function resolveRelativeRunJSImport(
+  fromPath: string,
+  specifier: string,
+  files: Map<string, RunJSContentFile>,
+): string | null {
+  const directory = pathPosix.dirname(fromPath);
+  const joinedPath = normalizePath(pathPosix.join(directory === '.' ? '' : directory, specifier));
+  const candidates = [
+    joinedPath,
+    `${joinedPath}.ts`,
+    `${joinedPath}.tsx`,
+    `${joinedPath}.js`,
+    `${joinedPath}.jsx`,
+    pathPosix.join(joinedPath, 'index.ts'),
+    pathPosix.join(joinedPath, 'index.tsx'),
+    pathPosix.join(joinedPath, 'index.js'),
+    pathPosix.join(joinedPath, 'index.jsx'),
+  ];
+
+  return candidates.map((candidate) => normalizePath(candidate)).find((candidate) => files.has(candidate)) || null;
+}
+
+function stripRunJSModuleSyntax(content: string): string {
+  return content
+    .replace(/^\s*import(?:[\s\S]*?)from\s+['"][^'"]+['"];?\s*$/gm, '')
+    .replace(/^\s*import\s+['"][^'"]+['"];?\s*$/gm, '')
+    .replace(/^\s*export\s*\{[^}]*\};?\s*$/gm, '')
+    .replace(/\bexport\s+(?=(const|let|var|function|class|async function|type|interface|enum)\b)/g, '')
+    .replace(/\bexport\s+default\s+/g, '');
+}
+
+function collectTypeScriptDiagnostics(code: string, entryPath: string): RunJSCompileDiagnostic[] {
+  if (!code) {
+    return [];
+  }
+
+  const result = ts.transpileModule(code, {
+    compilerOptions: {
+      jsx: ts.JsxEmit.ReactJSX,
+      module: ts.ModuleKind.ESNext,
+      target: ts.ScriptTarget.ES2020,
+    },
+    fileName: entryPath,
+    reportDiagnostics: true,
+  });
+
+  return (result.diagnostics || [])
+    .filter((diagnostic) => diagnostic.category === ts.DiagnosticCategory.Error)
+    .map((diagnostic) => {
+      const position =
+        diagnostic.file && typeof diagnostic.start === 'number'
+          ? diagnostic.file.getLineAndCharacterOfPosition(diagnostic.start)
+          : null;
+
+      return compactObject({
+        severity: 'error',
+        path: diagnostic.file?.fileName || entryPath,
+        line: position ? position.line + 1 : undefined,
+        column: position ? position.character + 1 : undefined,
+        message: ts.flattenDiagnosticMessageText(diagnostic.messageText, ' '),
+      }) as unknown as RunJSCompileDiagnostic;
+    });
+}
+
+function hasErrorDiagnostic(diagnostics: RunJSCompileDiagnostic[]): boolean {
+  return diagnostics.some((diagnostic) => diagnostic.severity === 'error');
+}
 
 async function assertCurrentOwnerFingerprint(
   adapter: ReturnType<RunJSSourceAdapterRegistry['require']>,
@@ -254,12 +1347,88 @@ function createRunJSSourceAction(
   };
 }
 
-function normalizePublishInput(input: ResourceActionInput): RunJSSourcePublishInput {
+function normalizeRepoInput(input: ResourceActionInput): RunJSSourceRepoInput {
   return {
     locator: normalizeRunJSSourceLocator(input.locator),
-    repoId: optionalString(input, 'repoId'),
+    repoId: requireString(input, 'repoId'),
+  };
+}
+
+function normalizeSaveDraftInput(input: ResourceActionInput): RunJSSourceSaveDraftInput {
+  return {
+    ...normalizeRepoInput(input),
     baseCommitId: requireNullableString(input, 'baseCommitId'),
-    basePublishedCommitId: requireNullableString(input, 'basePublishedCommitId'),
+    files: requireArray(input, 'files', normalizeDraftFileChange),
+  };
+}
+
+function normalizeDiffDraftInput(input: ResourceActionInput): RunJSSourceDiffDraftInput {
+  return {
+    ...normalizeRepoInput(input),
+    baseCommitId: optionalNullableString(input, 'baseCommitId'),
+    files: optionalArray(input, 'files', normalizeFileChange),
+  };
+}
+
+function normalizeCompilePreviewInput(input: ResourceActionInput): RunJSSourceCompilePreviewInput {
+  return {
+    locator: normalizeRunJSSourceLocator(input.locator),
+    files: requireArray(input, 'files', normalizePreviewFileChange),
+    entryPath: optionalString(input, 'entry') || optionalString(input, 'entryPath'),
+    version: optionalString(input, 'version'),
+  };
+}
+
+function normalizeHistoryInput(input: ResourceActionInput): RunJSSourceHistoryInput {
+  return {
+    ...normalizeRepoInput(input),
+    limit: optionalNumber(input, 'limit'),
+    beforeSeq: optionalNumber(input, 'beforeSeq'),
+  };
+}
+
+function normalizeGetVersionInput(input: ResourceActionInput): RunJSSourceGetVersionInput {
+  return {
+    ...normalizeRepoInput(input),
+    commitId: requireString(input, 'commitId'),
+    includeFiles: optionalBoolean(input, 'includeFiles') ?? false,
+  };
+}
+
+function normalizeDiffVersionInput(input: ResourceActionInput): RunJSSourceDiffVersionInput {
+  const commitId = optionalString(input, 'commitId');
+  const toCommitId = optionalString(input, 'toCommitId');
+  const targetCommitId = toCommitId || commitId;
+
+  if (!targetCommitId) {
+    throw new VscError('RUNJS_SOURCE_LOCATOR_INVALID', 'RunJS source field "commitId" or "toCommitId" is required');
+  }
+
+  return {
+    ...normalizeRepoInput(input),
+    commitId: targetCommitId,
+    fromCommitId: optionalString(input, 'fromCommitId'),
+    toCommitId,
+  };
+}
+
+function normalizeRestoreAsDraftInput(input: ResourceActionInput): RunJSSourceRestoreAsDraftInput {
+  return {
+    ...normalizeRepoInput(input),
+    sourceCommitId: requireString(input, 'sourceCommitId'),
+    baseCommitId: requireNullableString(input, 'baseCommitId'),
+  };
+}
+
+function normalizePublishInput(input: ResourceActionInput): RunJSSourcePublishInput {
+  const repoId = optionalString(input, 'repoId');
+  const hasExplicitBaseInput = hasOwn(input, 'baseCommitId') || hasOwn(input, 'basePublishedCommitId');
+
+  return {
+    locator: normalizeRunJSSourceLocator(input.locator),
+    repoId,
+    baseCommitId: normalizePublishBaseInput(input, 'baseCommitId', repoId, hasExplicitBaseInput),
+    basePublishedCommitId: normalizePublishBaseInput(input, 'basePublishedCommitId', repoId, hasExplicitBaseInput),
     baseOwnerFingerprint: requireString(input, 'baseOwnerFingerprint'),
     message: requireCommitMessage(input.message),
     files: requireArray(input, 'files', normalizeFileChange),
@@ -268,6 +1437,19 @@ function normalizePublishInput(input: ResourceActionInput): RunJSSourcePublishIn
     entryPath: optionalString(input, 'entryPath'),
     version: optionalString(input, 'version'),
   };
+}
+
+function normalizePublishBaseInput(
+  input: ResourceActionInput,
+  key: 'baseCommitId' | 'basePublishedCommitId',
+  repoId: string | undefined,
+  hasExplicitBaseInput: boolean,
+): string | null {
+  if (repoId || hasExplicitBaseInput) {
+    return requireNullableString(input, key);
+  }
+
+  return null;
 }
 
 function createAdapterContext(ctx: RunJSSourceResourceContext, transaction?: unknown): RunJSSourceAdapterContext {
@@ -303,31 +1485,8 @@ function assertRepositoryMatchesIdentity(
   });
 }
 
-function buildRuntimeArtifact(input: RunJSSourcePublishInput): RunJSRuntimeArtifact {
-  const entryPath = input.entryPath || input.artifact?.entryPath || selectEntryPath(input.files);
-  const code = input.artifact?.code ?? readFileContent(input.files, entryPath) ?? readFirstFileContent(input.files);
-
-  return {
-    code,
-    version: input.artifact?.version || input.version || 'v2',
-    sourceMap: input.artifact?.sourceMap,
-    diagnostics: input.artifact?.diagnostics || [],
-    filesHash: input.artifact?.filesHash || buildRunJSFilesHash(input.files),
-    entryPath,
-    metadata: input.artifact?.metadata,
-  };
-}
-
 function selectEntryPath(files: VscFileChange[]): string {
   return files.find((file) => file.path === 'src/main.tsx')?.path || files[0]?.path || 'src/main.tsx';
-}
-
-function readFileContent(files: VscFileChange[], path: string): string | null {
-  return files.find((file) => file.path === path && typeof file.content === 'string')?.content ?? null;
-}
-
-function readFirstFileContent(files: VscFileChange[]): string {
-  return files.find((file) => typeof file.content === 'string')?.content || '';
 }
 
 function getActionInput(ctx: RunJSSourceResourceContext): ResourceActionInput {
@@ -443,8 +1602,27 @@ function optionalString(input: ResourceActionInput, key: string): string | undef
   throw new VscError('RUNJS_SOURCE_LOCATOR_INVALID', `RunJS source field "${key}" is invalid`);
 }
 
+function hasOwn(input: ResourceActionInput, key: string): boolean {
+  return Object.prototype.hasOwnProperty.call(input, key);
+}
+
 function requireNullableString(input: ResourceActionInput, key: string): string | null {
   const value = input[key];
+  if (value === null) {
+    return null;
+  }
+  if (typeof value === 'string') {
+    return value;
+  }
+
+  throw new VscError('RUNJS_SOURCE_LOCATOR_INVALID', `RunJS source field "${key}" must be a string or null`);
+}
+
+function optionalNullableString(input: ResourceActionInput, key: string): string | null | undefined {
+  const value = input[key];
+  if (value === undefined) {
+    return undefined;
+  }
   if (value === null) {
     return null;
   }
@@ -480,6 +1658,22 @@ function requireArray<T>(
   return value.map((item, index) => normalize(item, `${key}[${index}]`));
 }
 
+function optionalArray<T>(
+  input: ResourceActionInput,
+  key: string,
+  normalize: (value: unknown, label: string) => T,
+): T[] | undefined {
+  const value = input[key];
+  if (value === undefined) {
+    return undefined;
+  }
+  if (!Array.isArray(value)) {
+    throw new VscError('RUNJS_SOURCE_LOCATOR_INVALID', `RunJS source field "${key}" must be an array`);
+  }
+
+  return value.map((item, index) => normalize(item, `${key}[${index}]`));
+}
+
 function normalizeFileChange(value: unknown, label: string): VscFileChange {
   const input = requireRecord(value, label);
 
@@ -492,6 +1686,27 @@ function normalizeFileChange(value: unknown, label: string): VscFileChange {
     language: optionalString(input, 'language'),
     mode: optionalString(input, 'mode'),
   }) as VscFileChange;
+}
+
+function normalizeDraftFileChange(value: unknown, label: string): VscDraftFileChange {
+  const file = normalizeFileChange(value, label);
+
+  return compactObject({
+    path: file.path,
+    operation: file.operation || 'upsert',
+    content: file.content,
+    language: file.language,
+    mode: file.mode,
+  }) as VscDraftFileChange;
+}
+
+function normalizePreviewFileChange(value: unknown, label: string): VscFileChange {
+  const file = normalizeFileChange(value, label);
+
+  return {
+    ...file,
+    operation: file.operation || 'upsert',
+  };
 }
 
 function optionalFileOperation(
@@ -546,6 +1761,18 @@ function optionalNumber(input: ResourceActionInput, key: string): number | undef
   }
 
   throw new VscError('RUNJS_SOURCE_LOCATOR_INVALID', `RunJS source field "${key}" must be a number`);
+}
+
+function optionalBoolean(input: ResourceActionInput, key: string): boolean | undefined {
+  const value = input[key];
+  if (value === undefined) {
+    return undefined;
+  }
+  if (typeof value === 'boolean') {
+    return value;
+  }
+
+  throw new VscError('RUNJS_SOURCE_LOCATOR_INVALID', `RunJS source field "${key}" must be a boolean`);
 }
 
 function optionalRecord(input: ResourceActionInput, key: string): Record<string, unknown> | undefined {

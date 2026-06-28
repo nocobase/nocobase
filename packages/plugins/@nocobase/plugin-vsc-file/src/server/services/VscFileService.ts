@@ -119,6 +119,14 @@ export interface PullInput {
   selectedPaths?: string[];
 }
 
+export interface PullCommitInput {
+  repoId: string;
+  commitId: string;
+  knownTreeHash?: string;
+  includeContent?: IncludeContentMode;
+  selectedPaths?: string[];
+}
+
 export interface PulledFile extends VscNormalizedTreeEntry {
   content?: string;
 }
@@ -346,6 +354,47 @@ export class VscFileService {
     return {
       repository: resolved.repository,
       commit: resolved.commit,
+      tree,
+      unchanged: false,
+      files,
+    };
+  }
+
+  async pullCommit(input: PullCommitInput, ctx: VscServiceContext = {}): Promise<PullResult> {
+    const repository = await this.repositoryService.getRepository(input.repoId, ctx.transaction);
+    await this.assertPermission(
+      {
+        action: 'pull',
+        repository,
+        targetCommitId: input.commitId,
+      },
+      ctx,
+    );
+
+    const commit = await this.commitService.getCommit(input.repoId, input.commitId, ctx.transaction);
+    const tree = await this.commitService.getTree(commit.treeHash, ctx.transaction);
+    if (input.knownTreeHash && input.knownTreeHash === tree.hash) {
+      return {
+        repository,
+        commit,
+        tree,
+        unchanged: true,
+      };
+    }
+
+    const files = await this.loadFiles(
+      tree.hash,
+      {
+        repoId: input.repoId,
+        includeContent: input.includeContent,
+        selectedPaths: input.selectedPaths,
+      },
+      ctx.transaction,
+    );
+
+    return {
+      repository,
+      commit,
       tree,
       unchanged: false,
       files,

@@ -20,6 +20,7 @@ import type {
   VscFileMode,
   VscNormalizedTreeEntry,
   VscRepositoryRecord,
+  VscStoredBlob,
   VscTreeEntryInput,
 } from '../../shared/types';
 import { BlobService } from './BlobService';
@@ -46,11 +47,13 @@ export interface VscDraftServiceContext {
 export interface GetDraftInput {
   repoId: string;
   userId: string;
+  includeContent?: boolean;
 }
 
 export interface SaveDraftInput extends GetDraftInput {
   baseCommitId: string | null;
   files: VscDraftFileChange[];
+  replaceFiles?: boolean;
 }
 
 export type DiscardDraftInput = GetDraftInput;
@@ -105,7 +108,7 @@ export class DraftService {
 
   async getDraft(input: GetDraftInput, ctx: VscDraftServiceContext = {}): Promise<ActiveDraftResult | null> {
     await this.repositoryService.getRepository(input.repoId, ctx.transaction);
-    return this.loadActiveDraft(input.repoId, input.userId, ctx.transaction);
+    return this.loadActiveDraft(input.repoId, input.userId, ctx.transaction, input.includeContent);
   }
 
   async saveDraft(input: SaveDraftInput, ctx: VscDraftServiceContext = {}): Promise<ActiveDraftResult> {
@@ -121,6 +124,14 @@ export class DraftService {
       for (const change of input.files) {
         draftFileValues.push(await this.normalizeDraftFileChange(draft.id, change, transaction));
       }
+      if (input.replaceFiles) {
+        await this.db.getRepository('vscFileDraftFiles').destroy({
+          filter: {
+            draftId: draft.id,
+          },
+          transaction,
+        });
+      }
 
       await this.assertDraftTreeWithinLimits(draft, draftFileValues, transaction);
 
@@ -132,7 +143,7 @@ export class DraftService {
         });
       }
 
-      const saved = await this.loadActiveDraft(input.repoId, input.userId, transaction);
+      const saved = await this.loadActiveDraft(input.repoId, input.userId, transaction, input.includeContent);
       if (!saved) {
         throw new VscError('DRAFT_BASE_OUTDATED', 'Active draft was not found after saving');
       }
@@ -379,13 +390,14 @@ export class DraftService {
     repoId: string,
     userId: string,
     transaction?: Transaction,
+    includeContent = false,
   ): Promise<ActiveDraftResult | null> {
     const draft = await this.findActiveDraftRecord(repoId, userId, transaction);
     if (!draft) {
       return null;
     }
 
-    const files = await this.loadDraftFiles(draft.id, transaction);
+    const files = await this.loadDraftFiles(draft.id, transaction, includeContent);
 
     return {
       draft,
@@ -393,7 +405,11 @@ export class DraftService {
     };
   }
 
-  private async loadDraftFiles(draftId: string, transaction?: Transaction): Promise<VscDraftFileRecord[]> {
+  private async loadDraftFiles(
+    draftId: string,
+    transaction?: Transaction,
+    includeContent = false,
+  ): Promise<VscDraftFileRecord[]> {
     const records = await this.db.getRepository('vscFileDraftFiles').find({
       filter: {
         draftId,
@@ -402,7 +418,34 @@ export class DraftService {
       transaction,
     });
 
-    return records.map(draftFileFromRecord);
+    const files = records.map(draftFileFromRecord);
+    if (!includeContent) {
+      return files;
+    }
+
+    return this.hydrateDraftFileContents(files, transaction);
+  }
+
+  private async hydrateDraftFileContents(
+    files: VscDraftFileRecord[],
+    transaction?: Transaction,
+  ): Promise<VscDraftFileRecord[]> {
+    const hydratedFiles: VscDraftFileRecord[] = [];
+
+    for (const file of files) {
+      if (!file.blobHash || file.operation === 'delete') {
+        hydratedFiles.push(file);
+        continue;
+      }
+
+      const blob = await this.getBlob(file.blobHash, transaction);
+      hydratedFiles.push({
+        ...file,
+        content: blob.content,
+      });
+    }
+
+    return hydratedFiles;
   }
 
   private async findActiveDraftRecord(
@@ -432,6 +475,23 @@ export class DraftService {
     }
 
     return draftFromRecord(record);
+  }
+
+  private async getBlob(blobHash: string, transaction?: Transaction): Promise<VscStoredBlob> {
+    const record = await this.db.getRepository('vscFileBlobs').findOne({
+      filterByTk: blobHash,
+      transaction,
+    });
+
+    if (!record) {
+      throw new VscError('BLOB_NOT_FOUND', `Blob "${blobHash}" was not found`);
+    }
+
+    return {
+      hash: record.get('hash') as string,
+      size: record.get('size') as number,
+      content: record.get('content') as string,
+    };
   }
 
   private async withTransaction<T>(

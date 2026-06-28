@@ -114,6 +114,7 @@ export interface VscDraftFileRecord {
   blobHash: VscSha256Hex | null;
   language: string | null;
   mode: VscFileMode | null;
+  content?: string;
 }
 
 export interface VscDraftFileChange {
