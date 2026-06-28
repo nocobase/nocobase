@@ -10,7 +10,7 @@
 import { Plugin } from '@nocobase/server';
 import { resolve } from 'path';
 
-import { createVscFileAuditActions } from './audit';
+import { createRunJSSourceAuditActions, createVscFileAuditActions } from './audit';
 import type { VscPermissionHook } from './permissions';
 import { VscPermissionHookRegistry } from './permissions';
 import { RunJSSourceAuthoringInspectorRegistry } from './runjs-sources/RunJSSourceAuthoringInspectorRegistry';
@@ -62,6 +62,7 @@ export class PluginVscFileServer extends Plugin {
     this.app.acl.allow('vscFile', [...vscFileActionNames], 'loggedIn');
     this.app.acl.allow('runJSSources', [...runJSSourceActionNames], 'loggedIn');
     this.app.auditManager.registerActions(createVscFileAuditActions(this.db));
+    this.app.auditManager.registerActions(createRunJSSourceAuditActions(this.db));
   }
 
   async install() {}

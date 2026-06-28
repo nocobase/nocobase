@@ -10,6 +10,12 @@
 import type { Context } from '@nocobase/actions';
 import type { Database, Model } from '@nocobase/database';
 
+import {
+  getRunJSSourceOwnerId,
+  normalizeRunJSSourceLocator,
+  type RunJSSourceLocator,
+} from '../shared/runjs-source-types';
+
 export const vscFileAuditActionNames = [
   'createRepository',
   'archiveRepository',
@@ -20,10 +26,24 @@ export const vscFileAuditActionNames = [
   'updateRef',
 ] as const;
 
+export const runJSSourceAuditActionNames = [
+  'saveDraft',
+  'rebaseDraft',
+  'discardDraft',
+  'publish',
+  'restoreAsDraft',
+] as const;
+
 type VscFileAuditActionName = (typeof vscFileAuditActionNames)[number];
+type RunJSSourceAuditActionName = (typeof runJSSourceAuditActionNames)[number];
 
 type VscAuditAction = {
   name: `vscFile:${VscFileAuditActionName}`;
+  getMetaData: (ctx: Context) => Promise<Record<string, unknown>>;
+};
+
+type RunJSSourceAuditAction = {
+  name: `runJSSources:${RunJSSourceAuditActionName}`;
   getMetaData: (ctx: Context) => Promise<Record<string, unknown>>;
 };
 
@@ -45,6 +65,13 @@ export function createVscFileAuditActions(db: Database): VscAuditAction[] {
   return vscFileAuditActionNames.map((actionName) => ({
     name: `vscFile:${actionName}`,
     getMetaData: (ctx) => getVscFileAuditMetadata(db, ctx),
+  }));
+}
+
+export function createRunJSSourceAuditActions(db: Database): RunJSSourceAuditAction[] {
+  return runJSSourceAuditActionNames.map((actionName) => ({
+    name: `runJSSources:${actionName}`,
+    getMetaData: (ctx) => getRunJSSourceAuditMetadata(db, ctx),
   }));
 }
 
@@ -79,6 +106,49 @@ async function getVscFileAuditMetadata(db: Database, ctx: Context): Promise<Reco
     },
     response: {
       body: sanitizeResponseBody(response),
+    },
+  };
+}
+
+async function getRunJSSourceAuditMetadata(db: Database, ctx: Context): Promise<Record<string, unknown>> {
+  const auditCtx = ctx as VscAuditContext;
+  const actionName = auditCtx.action?.actionName;
+  const input = getActionInput(auditCtx);
+  const responseData = unwrapData(auditCtx.body);
+  const response = toRecord(responseData);
+  const locator = normalizeAuditRunJSSourceLocator(input.locator) || normalizeAuditRunJSSourceLocator(response.locator);
+  const responseRepositoryRecord = toRecord(response.repository);
+  const responseRepository = getRepositoryFromResponse(response);
+  const requestedRepoId =
+    toStringValue(responseRepositoryRecord.id) ||
+    toStringValue(responseRepositoryRecord.repoId) ||
+    toStringValue(input.repoId);
+  const repoId = responseRepository?.id || requestedRepoId;
+  const repository = responseRepository || (repoId ? await findRepository(db, repoId) : null);
+  const commit = toRecord(response.commit);
+  const publishedRef = toRecord(response.publishedRef);
+  const draft = toRecord(response.draft);
+  const commitId = toStringValue(commit.id) || toStringValue(publishedRef.commitId);
+
+  return {
+    resource: 'runJSSources',
+    action: actionName,
+    ...compactObject({
+      locatorKind: locator?.kind || toStringValue(response.locatorKind) || toStringValue(input.locatorKind),
+      repoId: repository?.id || repoId,
+      commitId,
+      draftId: toStringValue(draft.id) || toStringValue(input.draftId),
+      draftStatus: toStringValue(draft.status),
+      ownerId: locator ? getRunJSSourceAuditOwnerId(locator) : undefined,
+      repositoryOwnerId: repository?.ownerId || (locator ? getRunJSSourceOwnerId(locator) : undefined),
+      sourceCommitId: toStringValue(input.sourceCommitId),
+      message: actionName === 'publish' ? toStringValue(input.message) : undefined,
+    }),
+    request: {
+      body: sanitizeRunJSSourceRequestBody(actionName, input, locator),
+    },
+    response: {
+      body: sanitizeRunJSSourceResponseBody(response),
     },
   };
 }
@@ -136,6 +206,47 @@ function sanitizeRequestBody(actionName: string | undefined, input: Record<strin
   });
 }
 
+function sanitizeRunJSSourceRequestBody(
+  actionName: string | undefined,
+  input: Record<string, unknown>,
+  locator: RunJSSourceLocator | null,
+): Record<string, unknown> {
+  return compactObject({
+    locatorKind: locator?.kind || toStringValue(input.locatorKind),
+    repoId: toStringValue(input.repoId),
+    baseCommitId: toNullableStringValue(input.baseCommitId),
+    basePublishedCommitId: toNullableStringValue(input.basePublishedCommitId),
+    draftId: toStringValue(input.draftId),
+    sourceCommitId: toStringValue(input.sourceCommitId),
+    message: actionName === 'publish' ? toStringValue(input.message) : undefined,
+    files: sanitizeFileList(input.files),
+    artifact: sanitizeRunJSArtifact(toRecord(input.artifact)),
+  });
+}
+
+function sanitizeRunJSSourceResponseBody(response: Record<string, unknown>): Record<string, unknown> {
+  const repository = getRepositoryFromResponse(response);
+  const commit = toRecord(response.commit);
+  const publishedRef = toRecord(response.publishedRef);
+  const draft = toRecord(response.draft);
+
+  return compactObject({
+    repository: repository
+      ? {
+          id: repository.id,
+          ownerType: repository.ownerType,
+          ownerId: repository.ownerId,
+        }
+      : undefined,
+    commit: sanitizeCommit(commit),
+    publishedRef: sanitizeRef(publishedRef),
+    draft: sanitizeDraft(draft),
+    artifact: sanitizeRunJSArtifact(toRecord(response.artifact)),
+    ownerFingerprint: toStringValue(response.ownerFingerprint),
+    fileCount: countArray(response.files),
+  });
+}
+
 function sanitizeResponseBody(response: Record<string, unknown>): Record<string, unknown> {
   const repository = getRepositoryFromResponse(response);
   const commit = toRecord(response.commit);
@@ -157,6 +268,17 @@ function sanitizeResponseBody(response: Record<string, unknown>): Record<string,
     draft: sanitizeDraft(draft),
     fileCount: countArray(response.files),
   });
+}
+
+function sanitizeRunJSArtifact(artifact: Record<string, unknown>): Record<string, unknown> | undefined {
+  const sanitized = compactObject({
+    entryPath: toNullableStringValue(artifact.entryPath),
+    filesHash: toStringValue(artifact.filesHash),
+    runtimeCodeHash: toStringValue(artifact.runtimeCodeHash),
+    diagnosticsCount: countArray(artifact.diagnostics),
+  });
+
+  return Object.keys(sanitized).length ? sanitized : undefined;
 }
 
 function sanitizeCommit(commit: Record<string, unknown>): Record<string, unknown> | undefined {
@@ -241,6 +363,22 @@ async function findRepository(db: Database, repoId: string): Promise<VscAuditRep
     ownerType,
     ownerId,
   };
+}
+
+function normalizeAuditRunJSSourceLocator(value: unknown): RunJSSourceLocator | null {
+  try {
+    return normalizeRunJSSourceLocator(value);
+  } catch {
+    return null;
+  }
+}
+
+function getRunJSSourceAuditOwnerId(locator: RunJSSourceLocator): string {
+  if (locator.kind === 'workflow.javascript') {
+    return String(locator.nodeId);
+  }
+
+  return locator.modelUid;
 }
 
 function toRecord(value: unknown): Record<string, unknown> {

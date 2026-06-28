@@ -10,7 +10,7 @@
 import type { Context } from '@nocobase/actions';
 import { MockServer, createMockServer } from '@nocobase/test';
 
-import { vscFileAuditActionNames } from '../audit';
+import { runJSSourceAuditActionNames, vscFileAuditActionNames } from '../audit';
 import type { VscPermissionHookInput } from '../permissions';
 import PluginVscFileServer from '../plugin';
 
@@ -196,6 +196,17 @@ describe('vsc-file permission hooks and audit registration', () => {
     }
   });
 
+  it('registers audit manager actions for runJSSources write operations', async () => {
+    for (const actionName of runJSSourceAuditActionNames) {
+      const action = getAuditAction(actionName, 'runJSSources');
+
+      expect(action).toMatchObject({
+        name: `runJSSources:${actionName}`,
+      });
+      expect(typeof action?.getMetaData).toBe('function');
+    }
+  });
+
   it('adds repository owner and target commit or ref fields to audit metadata', async () => {
     const createWithInitialResponse = await agent.resource('vscFile').createRepository({
       values: {
@@ -324,12 +335,135 @@ describe('vsc-file permission hooks and audit registration', () => {
     });
   });
 
+  it('adds RunJS source fields to audit metadata without leaking source code', async () => {
+    const locator = {
+      kind: 'flowModel.step' as const,
+      modelUid: 'fm_audit',
+      flowKey: 'settings',
+      stepKey: 'runjs',
+      paramPath: ['code'],
+    };
+    const metadata = await expectRunJSSourceAuditMetadata(
+      'publish',
+      {
+        values: {
+          locator,
+          repoId: 'repo_audit',
+          baseCommitId: 'commit_base',
+          basePublishedCommitId: 'commit_base',
+          baseOwnerFingerprint: 'owner:v1',
+          message: 'Update JS action',
+          files: [
+            {
+              path: 'src/main.tsx',
+              operation: 'upsert',
+              content: 'ctx.render("request secret");',
+              language: 'typescript',
+            },
+          ],
+          artifact: {
+            code: 'ctx.render("client artifact secret");',
+            sourceMap: 'source-map-secret',
+            filesHash: 'request-files-hash',
+            runtimeCodeHash: 'request-runtime-hash',
+          },
+        },
+      },
+      {
+        data: {
+          locator,
+          locatorKind: 'flowModel.step',
+          repository: {
+            id: 'repo_audit',
+            ownerType: 'runjs-source',
+            ownerId: 'runjs:flowModel.step:fm_audit:source-path-hash',
+          },
+          commit: {
+            id: 'commit_next',
+            repoId: 'repo_audit',
+          },
+          publishedRef: {
+            name: 'published',
+            repoId: 'repo_audit',
+            commitId: 'commit_next',
+          },
+          artifact: {
+            entryPath: 'src/main.tsx',
+            filesHash: 'response-files-hash',
+            runtimeCodeHash: 'response-runtime-hash',
+            code: 'ctx.render("response artifact secret");',
+            diagnostics: [{ message: 'ignored detail' }],
+          },
+          ownerFingerprint: 'owner:v2',
+          files: [
+            {
+              path: 'src/main.tsx',
+              content: 'ctx.render("response file secret");',
+            },
+          ],
+        },
+      },
+      {
+        resource: 'runJSSources',
+        action: 'publish',
+        locatorKind: 'flowModel.step',
+        repoId: 'repo_audit',
+        commitId: 'commit_next',
+        ownerId: 'fm_audit',
+        repositoryOwnerId: 'runjs:flowModel.step:fm_audit:source-path-hash',
+        message: 'Update JS action',
+      },
+    );
+
+    expect(metadata.request?.body).toMatchObject({
+      locatorKind: 'flowModel.step',
+      repoId: 'repo_audit',
+      baseCommitId: 'commit_base',
+      basePublishedCommitId: 'commit_base',
+      message: 'Update JS action',
+      files: [
+        {
+          path: 'src/main.tsx',
+          operation: 'upsert',
+          language: 'typescript',
+        },
+      ],
+      artifact: {
+        filesHash: 'request-files-hash',
+        runtimeCodeHash: 'request-runtime-hash',
+      },
+    });
+    expect(metadata.response?.body).toMatchObject({
+      commit: {
+        id: 'commit_next',
+        repoId: 'repo_audit',
+      },
+      publishedRef: {
+        name: 'published',
+        repoId: 'repo_audit',
+        commitId: 'commit_next',
+      },
+      artifact: {
+        entryPath: 'src/main.tsx',
+        filesHash: 'response-files-hash',
+        runtimeCodeHash: 'response-runtime-hash',
+        diagnosticsCount: 1,
+      },
+      fileCount: 1,
+    });
+    expect(JSON.stringify(metadata)).not.toContain('request secret');
+    expect(JSON.stringify(metadata)).not.toContain('client artifact secret');
+    expect(JSON.stringify(metadata)).not.toContain('source-map-secret');
+    expect(JSON.stringify(metadata)).not.toContain('response artifact secret');
+    expect(JSON.stringify(metadata)).not.toContain('response file secret');
+  });
+
   function getPlugin(): PluginVscFileServer {
     return app.pm.get(PluginVscFileServer) as PluginVscFileServer;
   }
 
-  function getAuditAction(actionName: string): VscAuditActionRegistration | null {
-    return app.auditManager.getAction(actionName, 'vscFile') as VscAuditActionRegistration | null;
+  function getAuditAction(actionName: string, resourceName = 'vscFile'): VscAuditActionRegistration | null {
+    return app.auditManager.getAction(actionName, resourceName) as VscAuditActionRegistration | null;
   }
 
   async function expectAuditMetadata(
@@ -347,6 +481,31 @@ describe('vsc-file permission hooks and audit registration', () => {
     const metadata = await action.getMetaData({
       action: {
         resourceName: 'vscFile',
+        actionName,
+        params,
+      },
+      body,
+    } as unknown as Context);
+
+    expect(metadata).toMatchObject(expected);
+    return metadata;
+  }
+
+  async function expectRunJSSourceAuditMetadata(
+    actionName: string,
+    params: Record<string, unknown>,
+    body: Record<string, unknown>,
+    expected: Record<string, unknown>,
+  ): Promise<Record<string, unknown>> {
+    const action = getAuditAction(actionName, 'runJSSources');
+
+    if (!action?.getMetaData) {
+      throw new Error(`Missing audit metadata resolver for runJSSources:${actionName}`);
+    }
+
+    const metadata = await action.getMetaData({
+      action: {
+        resourceName: 'runJSSources',
         actionName,
         params,
       },
