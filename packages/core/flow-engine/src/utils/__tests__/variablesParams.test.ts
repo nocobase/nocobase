@@ -12,6 +12,7 @@ import {
   collectContextParamsForTemplate,
   createRecordMetaFactory,
   createRecordResolveOnServerWithLocal,
+  extractUsedVariablePaths,
   inferParentRecordRef,
   inferRecordRef,
 } from '../variablesParams';
@@ -34,7 +35,10 @@ describe('variablesParams helpers', () => {
 
   it('inferRecordRef fallback to collection.getFilterByTK when resource has no filterByTk', () => {
     const engine = new FlowEngine();
-    const ds = engine.context.dataSourceManager.getDataSource('main')!;
+    const ds = engine.context.dataSourceManager.getDataSource('main');
+    if (!ds) {
+      throw new Error('main data source is required');
+    }
     ds.addCollection({
       name: 'users',
       filterTargetKey: 'id',
@@ -73,6 +77,11 @@ describe('variablesParams helpers', () => {
     const res = await collectContextParamsForTemplate(ctx, tpl);
     expect(res).toHaveProperty('record');
     expect(res).not.toHaveProperty('user');
+  });
+
+  it('extractUsedVariablePaths keeps dash field names from shared parser', () => {
+    const tpl = { value: '{{ ctx.formValues.roles.a-b }}' } as any;
+    expect(extractUsedVariablePaths(tpl).formValues).toEqual(['roles.a-b']);
   });
 
   it('collectContextParamsForTemplate keeps associationName/sourceId from RecordRef', async () => {

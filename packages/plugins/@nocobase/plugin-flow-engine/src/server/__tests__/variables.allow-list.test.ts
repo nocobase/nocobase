@@ -201,6 +201,48 @@ describe('variables:resolve allow-list authorization', () => {
     expect(result.allowed).toBe(false);
   });
 
+  it('keeps dash field names intact when matching requested keys', async () => {
+    const session = createTokenSession();
+    const modelUid = 'allow-dash-field-name';
+    const ctx = createFakeCtx({
+      token: session.token,
+      models: {
+        [modelUid]: createFlowModel(modelUid, { title: '{{ ctx.view.record.roles.a-b }}' }),
+      },
+    });
+
+    const result = await authorizeVariablesResolve(ctx, {
+      rd: session.rd(modelUid),
+      template: { title: '{{ ctx.view.record.roles.a-b }}' },
+      contextParams: {
+        'view.record': { dataSourceKey: 'main', collection: 'users', filterByTk: 1 },
+      },
+    });
+
+    expect(result.allowed).toBe(true);
+  });
+
+  it('does not authorize dash field paths as their shorter prefix', async () => {
+    const session = createTokenSession();
+    const modelUid = 'reject-dash-field-prefix';
+    const ctx = createFakeCtx({
+      token: session.token,
+      models: {
+        [modelUid]: createFlowModel(modelUid, { title: '{{ ctx.view.record.roles.a }}' }),
+      },
+    });
+
+    const result = await authorizeVariablesResolve(ctx, {
+      rd: session.rd(modelUid),
+      template: { title: '{{ ctx.view.record.roles.a-b }}' },
+      contextParams: {
+        'view.record': { dataSourceKey: 'main', collection: 'users', filterByTk: 1 },
+      },
+    });
+
+    expect(result.allowed).toBe(false);
+  });
+
   it('lets official popup record contextParams skip static source matching', async () => {
     const session = createTokenSession();
     const modelUid = 'popup-official-source-skip';

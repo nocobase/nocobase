@@ -79,12 +79,14 @@ export class PluginFlowEngineServer extends PluginUISchemaStorageServer {
               template: JSONValue;
               contextParams?: Record<string, unknown>;
             }>;
-            const authorizedItems: Array<{
+            type AuthorizedBatchItem = {
               contextParams?: Record<string, unknown>;
               id?: string | number;
               index: number;
               template: JSONValue;
-            }> = [];
+            };
+            const authorizedItems: AuthorizedBatchItem[] = [];
+            const authorizedItemsByIndex = new Map<number, AuthorizedBatchItem>();
             const passthroughResults: Array<{ id?: string | number; data: unknown } | undefined> = [];
 
             for (const [index, item] of batchItems.entries()) {
@@ -96,12 +98,14 @@ export class PluginFlowEngineServer extends PluginUISchemaStorageServer {
               });
 
               if (authorization.allowed) {
-                authorizedItems.push({
+                const authorizedItem = {
                   contextParams: authorization.contextParams,
                   id: item?.id,
                   index,
                   template,
-                });
+                };
+                authorizedItems.push(authorizedItem);
+                authorizedItemsByIndex.set(index, authorizedItem);
               } else {
                 passthroughResults[index] = { id: item?.id, data: template };
               }
@@ -117,7 +121,7 @@ export class PluginFlowEngineServer extends PluginUISchemaStorageServer {
             );
             for (const item of resolvedItems) {
               const index = Number(item.id);
-              const original = authorizedItems.find((candidate) => candidate.index === index);
+              const original = authorizedItemsByIndex.get(index);
               passthroughResults[index] = {
                 id: original?.id,
                 data: item.data,
