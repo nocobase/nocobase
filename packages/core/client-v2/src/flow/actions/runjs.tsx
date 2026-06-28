@@ -15,7 +15,30 @@ import {
   createSafeDocument,
   createSafeNavigator,
 } from '@nocobase/flow-engine';
-import { CodeEditor } from '../components/code-editor';
+import React from 'react';
+import type { RunJSSourceLocator } from '../components/runjs-studio';
+import { RunJSEditorField } from '../components/runjs-studio';
+
+type DynamicEventFlowRunJSCodeEditorProps = {
+  value?: string;
+  onChange?: (value: string) => void;
+  sourceLocator?: RunJSSourceLocator;
+  sourceLabel?: string;
+};
+
+const DynamicEventFlowRunJSCodeEditor: React.FC<DynamicEventFlowRunJSCodeEditorProps> = (props) => {
+  return (
+    <RunJSEditorField
+      value={{ code: props.value || '', version: 'v2' }}
+      onChange={(value) => props.onChange?.(value.code)}
+      scene="eventFlow"
+      height="200px"
+      sourceLocator={props.sourceLocator}
+      sourceLabel={props.sourceLabel}
+      surfaceStyle="action"
+    />
+  );
+};
 
 export const runjs = defineAction({
   name: 'runjs',
@@ -26,12 +49,8 @@ export const runjs = defineAction({
   uiSchema: {
     code: {
       type: 'string',
-      'x-component': CodeEditor,
-      'x-component-props': {
-        enableLinter: true,
-        height: '200px',
-        scene: 'eventFlow',
-      },
+      'x-component': DynamicEventFlowRunJSCodeEditor,
+      'x-component-props': {},
     },
   },
   async handler(ctx, params) {

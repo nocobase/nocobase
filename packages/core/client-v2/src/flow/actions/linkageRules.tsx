@@ -38,7 +38,7 @@ import {
 import { uid } from '@formily/shared';
 import { FilterGroup } from '../components/filter/FilterGroup';
 import { LinkageFilterItem } from '../components/filter';
-import { CodeEditor } from '../components/code-editor';
+import { RunJSValueEditor } from '../components/RunJSValueEditor';
 import { FieldAssignRulesEditor } from '../components/FieldAssignRulesEditor';
 import type { AssignMode, FieldAssignRuleItem } from '../components/FieldAssignRulesEditor';
 import { collectFieldAssignCascaderOptions } from '../components/fieldAssignOptions';
@@ -884,7 +884,68 @@ export const linkageSetDetailsFieldProps = defineAction({
 type ArrayFieldComponentProps = {
   value?: unknown;
   onChange?: (value: unknown) => void;
+  linkageRuleKey?: string | number;
+  linkageRuleIndex?: number;
+  linkageActionKey?: string | number;
+  linkageActionIndex?: number;
 };
+
+function findPersistedArrayItem(items: unknown, key?: string | number, index?: number): unknown {
+  if (!Array.isArray(items)) return undefined;
+  if (typeof key === 'string') {
+    return items.find((item) => Boolean(item) && typeof item === 'object' && (item as { key?: unknown }).key === key);
+  }
+  if (typeof key === 'number') {
+    return items[key];
+  }
+  return typeof index === 'number' ? items[index] : undefined;
+}
+
+function getCurrentStepKey(ctx: FlowContext): string | undefined {
+  const currentStep = (ctx as { currentStep?: { key?: unknown } }).currentStep;
+  return typeof currentStep?.key === 'string' ? currentStep.key : undefined;
+}
+
+function getPersistedLinkageActionParams(
+  ctx: FlowContext,
+  ruleKey?: string | number,
+  ruleIndex?: number,
+  actionKey?: string | number,
+  actionIndex?: number,
+): unknown {
+  if (typeof ctx.flowKey !== 'string') return undefined;
+  const stepKey = getCurrentStepKey(ctx);
+  if (!stepKey) return undefined;
+
+  const persistedValue = ctx.model?.getStepParams?.(ctx.flowKey, stepKey)?.value;
+  const rule = findPersistedArrayItem(persistedValue, ruleKey, ruleIndex);
+  const action = findPersistedArrayItem(_.get(rule, ['actions']), actionKey, actionIndex);
+  return _.get(action, ['params']);
+}
+
+function hasPersistedLinkageAssignItem(
+  ctx: FlowContext,
+  item: FieldAssignRuleItem,
+  index: number,
+  ruleKey?: string | number,
+  ruleIndex?: number,
+  actionKey?: string | number,
+  actionIndex?: number,
+): boolean {
+  const params = getPersistedLinkageActionParams(ctx, ruleKey, ruleIndex, actionKey, actionIndex);
+  return Boolean(findPersistedArrayItem(_.get(params, ['value']), item?.key, index));
+}
+
+function hasPersistedLinkageScriptValue(
+  ctx: FlowContext,
+  ruleKey?: string | number,
+  ruleIndex?: number,
+  actionKey?: string | number,
+  actionIndex?: number,
+): boolean {
+  const params = getPersistedLinkageActionParams(ctx, ruleKey, ruleIndex, actionKey, actionIndex);
+  return typeof _.get(params, ['value', 'script']) === 'string';
+}
 
 const LEGACY_ASSIGN_RULE = { mode: 'assign', valueKey: 'assignValue' } as const;
 const LEGACY_DEFAULT_RULE = { mode: 'default', valueKey: 'initialValue' } as const;
@@ -909,7 +970,8 @@ const FieldAssignRulesActionComponent: React.FC<
     fixedMode?: 'assign' | 'default';
   }
 > = (props) => {
-  const { value, onChange, legacy, fixedMode } = props;
+  const { value, onChange, legacy, fixedMode, linkageRuleKey, linkageRuleIndex, linkageActionKey, linkageActionIndex } =
+    props;
   const ctx = useFlowContext();
 
   const t = React.useCallback((key: string) => ctx.model.translate(key), [ctx.model]);
@@ -933,6 +995,47 @@ const FieldAssignRulesActionComponent: React.FC<
     [onChange],
   );
 
+  const getValueInputProps = React.useCallback(
+    (item: FieldAssignRuleItem, index: number) => {
+      const ruleKey = linkageRuleKey ?? linkageRuleIndex;
+      const actionKey = linkageActionKey ?? linkageActionIndex;
+      const itemKey = item?.key || index;
+      const containerFlowKey = typeof ctx.flowKey === 'string' ? ctx.flowKey : undefined;
+      const containerStepKey = getCurrentStepKey(ctx);
+      const hasSource = hasPersistedLinkageAssignItem(
+        ctx,
+        item,
+        index,
+        ruleKey,
+        linkageRuleIndex,
+        actionKey,
+        linkageActionIndex,
+      );
+
+      return {
+        sourceLocator:
+          ctx.model?.uid &&
+          containerFlowKey &&
+          containerStepKey &&
+          typeof ruleKey !== 'undefined' &&
+          typeof actionKey !== 'undefined' &&
+          hasSource
+            ? {
+                kind: 'flowModel.nestedRunJS' as const,
+                modelUid: ctx.model.uid,
+                containerFlowKey,
+                containerStepKey,
+                valuePath: ['value', ruleKey, 'actions', actionKey, 'params', 'value', itemKey, 'value'],
+                scene: 'formValue',
+              }
+            : undefined,
+        sourceLabel: `${t('Linkage rule')} / ${t('Field assignment')} / ${t('RunJS')}`,
+        surfaceStyle: 'value' as const,
+      };
+    },
+    [ctx, linkageActionIndex, linkageActionKey, linkageRuleIndex, linkageRuleKey, t],
+  );
+
   return (
     <FieldAssignRulesEditor
       t={t}
@@ -941,6 +1044,7 @@ const FieldAssignRulesActionComponent: React.FC<
       value={normalized}
       onChange={handleChange}
       fixedMode={fixedMode}
+      getValueInputProps={getValueInputProps}
       isTitleFieldCandidate={isTitleFieldCandidate}
       onSyncAssociationTitleField={onSyncAssociationTitleField}
       enableDateVariableAsConstant
@@ -958,6 +1062,66 @@ const SubFormLinkageAssignFieldComponent: React.FC<ArrayFieldComponentProps> = (
 
 const SetFieldsDefaultValueComponent: React.FC<ArrayFieldComponentProps> = (props) => {
   return <FieldAssignRulesActionComponent {...props} legacy={LEGACY_DEFAULT_RULE} fixedMode="default" />;
+};
+
+const LinkageRunJSValueComponent: React.FC<ArrayFieldComponentProps> = (props) => {
+  const {
+    value = { script: '' },
+    onChange,
+    linkageRuleKey,
+    linkageRuleIndex,
+    linkageActionKey,
+    linkageActionIndex,
+  } = props;
+  const ctx = useFlowContext();
+  const t = React.useCallback((key: string) => ctx.model.translate(key), [ctx.model]);
+  const scriptValue =
+    typeof (value as { script?: unknown })?.script === 'string' ? (value as { script: string }).script : '';
+  const containerFlowKey = typeof ctx.flowKey === 'string' ? ctx.flowKey : undefined;
+  const containerStepKey = getCurrentStepKey(ctx);
+  const ruleKey = linkageRuleKey ?? linkageRuleIndex;
+  const actionKey = linkageActionKey ?? linkageActionIndex;
+  const hasSource = hasPersistedLinkageScriptValue(ctx, ruleKey, linkageRuleIndex, actionKey, linkageActionIndex);
+
+  const handleScriptChange = (script: string) => {
+    onChange?.({
+      ...(value && typeof value === 'object' ? value : {}),
+      script,
+    });
+  };
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+      <div>
+        <RunJSValueEditor
+          t={t}
+          value={{ code: scriptValue, version: 'v2' }}
+          onChange={(next) => handleScriptChange(next.code)}
+          height="200px"
+          scene="linkage"
+          sourceLocator={
+            ctx.model?.uid &&
+            containerFlowKey &&
+            containerStepKey &&
+            typeof ruleKey !== 'undefined' &&
+            typeof actionKey !== 'undefined' &&
+            hasSource
+              ? {
+                  kind: 'flowModel.nestedRunJS',
+                  modelUid: ctx.model.uid,
+                  containerFlowKey,
+                  containerStepKey,
+                  valuePath: ['value', ruleKey, 'actions', actionKey, 'params', 'value', 'script'],
+                  scene: 'linkage',
+                }
+              : undefined
+          }
+          sourceLabel={`${t('Linkage rule')} / ${t('Execute JavaScript')}`}
+          surfaceStyle="action"
+        />
+      </div>
+    </div>
+  );
 };
 
 export const linkageAssignField = defineAction({
@@ -1351,41 +1515,7 @@ export const linkageRunjs = defineAction({
   uiSchema: {
     value: {
       type: 'object',
-      'x-component': (props) => {
-        const { value = { script: '' }, onChange } = props;
-        const handleScriptChange = (script: string) => {
-          onChange({
-            ...value,
-            script,
-          });
-        };
-
-        return (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {/* <div
-              style={{
-                backgroundColor: '#f6ffed',
-                border: '1px solid #b7eb8f',
-                borderRadius: '6px',
-                padding: '12px',
-              }}
-            >
-              <div style={{ color: '#666', fontSize: '12px', lineHeight: '1.5' }}>
-                预留一个位置，用于显示一些提示信息
-              </div>
-            </div> */}
-            <div>
-              <CodeEditor
-                value={value.script}
-                onChange={handleScriptChange}
-                height="200px"
-                enableLinter={true}
-                scene="linkage"
-              />
-            </div>
-          </div>
-        );
-      },
+      'x-component': LinkageRunJSValueComponent,
     },
   },
   handler: async (ctx, { value }) => {
@@ -1537,6 +1667,25 @@ const LinkageRulesUI = observer(
     // 获取可用的动作类型
     const getActionsDefinition = () => {
       return supportedActions.map((actionName: string) => ctx.getAction(actionName));
+    };
+
+    const withLinkageSourceProps = (
+      uiSchema: any,
+      rule: LinkageRule,
+      ruleIndex: number,
+      action: LinkageRule['actions'][number],
+      actionIndex: number,
+    ) => {
+      if (!uiSchema?.value) return uiSchema;
+      const next = _.cloneDeep(uiSchema);
+      next.value['x-component-props'] = {
+        ...(next.value['x-component-props'] || {}),
+        linkageRuleKey: rule.key || ruleIndex,
+        linkageRuleIndex: ruleIndex,
+        linkageActionKey: action.key || actionIndex,
+        linkageActionIndex: actionIndex,
+      };
+      return next;
     };
 
     // 添加动作
@@ -1739,7 +1888,7 @@ const LinkageRulesUI = observer(
                         </div>
                         <div>
                           {flowEngine.flowSettings.renderStepForm({
-                            uiSchema: actionDef.uiSchema,
+                            uiSchema: withLinkageSourceProps(actionDef.uiSchema, rule, index, action, actionIndex),
                             initialValues: action.params,
                             flowEngine,
                             onFormValuesChange: (form: any) => handleActionValueChange(index, actionIndex, form.values),

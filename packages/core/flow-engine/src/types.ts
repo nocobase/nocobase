@@ -301,6 +301,7 @@ export interface StepDefinition<TModel extends FlowModel = FlowModel>
   sort?: number; // Sort order for step execution, lower numbers execute first
 
   // Step configuration
+  params?: ActionDefinition<TModel, FlowRuntimeContext<TModel>>['defaultParams'];
   // `preset: true` 的 step params 需要在创建时填写，没有标记的可以创建模型后再填写。
   preset?: boolean;
   uiMode?: StepUIMode | ((ctx: FlowRuntimeContext<TModel>) => StepUIMode | Promise<StepUIMode>);

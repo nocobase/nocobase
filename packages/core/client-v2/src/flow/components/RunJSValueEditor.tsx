@@ -9,7 +9,7 @@
 
 import React from 'react';
 import type { RunJSValue } from '@nocobase/flow-engine';
-import { RunJSEditorField, type RunJSSourceLocator } from './runjs-studio';
+import { RunJSEditorField, type RunJSSourceLocator, type RunJSSurfaceStyle } from './runjs-studio';
 
 export interface RunJSValueEditorProps {
   t?: (key: string) => string;
@@ -18,6 +18,9 @@ export interface RunJSValueEditorProps {
   height?: string;
   scene?: string;
   locator?: RunJSSourceLocator;
+  sourceLocator?: RunJSSourceLocator;
+  sourceLabel?: string;
+  surfaceStyle?: RunJSSurfaceStyle;
   containerStyle?: React.CSSProperties;
 }
 
@@ -39,6 +42,9 @@ export const RunJSValueEditor: React.FC<RunJSValueEditorProps> = (props) => {
       height={height}
       scene={scene}
       locator={props.locator}
+      sourceLocator={props.sourceLocator}
+      sourceLabel={props.sourceLabel}
+      surfaceStyle={props.surfaceStyle}
       containerStyle={containerStyle}
     />
   );

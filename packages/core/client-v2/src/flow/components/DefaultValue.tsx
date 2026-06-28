@@ -34,6 +34,7 @@ import { ensureOptionsFromUiSchemaEnumIfAbsent } from '../internal/utils/enumOpt
 import { pickOperatorStyle as pickStyle, resolveOperatorComponent } from '../internal/utils/operatorSchemaHelper';
 import { RunJSValueEditor } from './RunJSValueEditor';
 import { buildDynamicNamePath } from '../models/blocks/form/dynamicNamePath';
+import type { RunJSSourceLocator } from './runjs-studio';
 
 interface Props {
   value: any;
@@ -41,6 +42,8 @@ interface Props {
   metaTree: MetaTreeNode[] | (() => Promise<MetaTreeNode[]>);
   model: FieldModel;
   flags?: Record<string, any>;
+  sourceLocator?: RunJSSourceLocator;
+  sourceLabel?: string;
 }
 
 const snapshotOptions = (input: any): any[] | undefined => {
@@ -175,7 +178,15 @@ function createTempFieldClass(Base: any) {
 }
 
 export const DefaultValue = connect((props: Props) => {
-  const { value, onChange, metaTree: propMetaTree, flags: componentFlags, ...restProps } = props;
+  const {
+    value,
+    onChange,
+    metaTree: propMetaTree,
+    flags: componentFlags,
+    sourceLocator,
+    sourceLabel,
+    ...restProps
+  } = props;
   const flowContext = useFlowContext();
   const { model } = flowContext;
   // no side-effects to original form until confirmed
@@ -658,10 +669,17 @@ export const DefaultValue = connect((props: Props) => {
 
   const RunJSComponent = useMemo(() => {
     const C: React.FC<any> = (inputProps) => (
-      <RunJSValueEditor t={flowContext.t} value={inputProps?.value} onChange={inputProps?.onChange} />
+      <RunJSValueEditor
+        t={flowContext.t}
+        value={inputProps?.value}
+        onChange={inputProps?.onChange}
+        sourceLocator={sourceLocator}
+        sourceLabel={sourceLabel}
+        surfaceStyle="value"
+      />
     );
     return C;
-  }, [flowContext]);
+  }, [flowContext, sourceLabel, sourceLocator]);
   const mergedMetaTree = useMemo<() => Promise<MetaTreeNode[]>>(() => {
     return async () => {
       let base: MetaTreeNode[] = [];

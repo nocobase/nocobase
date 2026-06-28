@@ -123,9 +123,19 @@ describe('vsc-file shared utilities', () => {
         scene: 'defaultValue',
       }),
     );
+    const flowRegistryPath = buildRunJSSourceRepositoryIdentity(
+      normalizeRunJSSourceLocator({
+        kind: 'flowModel.flowRegistry.runjs',
+        modelUid: 'fm_1',
+        flowKey: 'submit',
+        stepKey: 'run',
+        sourcePath: ['defaultParams', 'code'],
+      }),
+    );
 
     expect(dottedA.ownerId).not.toBe(dottedB.ownerId);
     expect(numericPath.ownerId).not.toBe(stringPath.ownerId);
+    expect(flowRegistryPath.ownerId).toMatch(/^runjs:flowModel\.flowRegistry\.runjs:fm_1:[a-f0-9]{16}$/);
   });
 
   it('rejects malformed RunJS source locators', () => {

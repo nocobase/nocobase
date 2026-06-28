@@ -29,6 +29,13 @@ export type RunJSSourceLocator =
       scene: string;
     }
   | {
+      kind: 'flowModel.flowRegistry.runjs';
+      modelUid: string;
+      flowKey: string;
+      stepKey: string;
+      sourcePath: string[];
+    }
+  | {
       kind: 'workflow.javascript';
       nodeId: string | number;
     }
@@ -211,6 +218,16 @@ export function normalizeRunJSSourceLocator(value: unknown): RunJSSourceLocator 
     };
   }
 
+  if (kind === 'flowModel.flowRegistry.runjs') {
+    return {
+      kind,
+      modelUid: requireString(input.modelUid, 'modelUid'),
+      flowKey: requireString(input.flowKey, 'flowKey'),
+      stepKey: requireString(input.stepKey, 'stepKey'),
+      sourcePath: requireStringArray(input.sourcePath, 'sourcePath'),
+    };
+  }
+
   if (kind === 'workflow.javascript') {
     return {
       kind,
@@ -304,6 +321,10 @@ function getSourcePathSegments(
       ...locator.valuePath,
       locator.scene,
     ]);
+  }
+
+  if (locator.kind === 'flowModel.flowRegistry.runjs') {
+    return toTypedPathSegments([locator.flowKey, locator.stepKey, ...locator.sourcePath]);
   }
 
   if (locator.kind === 'workflow.javascript') {

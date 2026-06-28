@@ -23,16 +23,27 @@ import { hasPersistedAssignRulesValue } from '../models/blocks/shared/legacyDefa
 import { getDefaultOperator } from '../models/blocks/filter-manager/utils';
 import { operators } from '../../flow-compat';
 
+function hasPersistedRuleItem(value: unknown, item: FieldAssignRuleItem, index: number): boolean {
+  if (!Array.isArray(value)) return false;
+  if (item?.key) {
+    return value.some(
+      (rule) => Boolean(rule) && typeof rule === 'object' && (rule as { key?: unknown }).key === item.key,
+    );
+  }
+  return Boolean(value[index]);
+}
+
 const FilterFormDefaultValuesUI = observer(
   (props: { value?: FieldAssignRuleItem[]; onChange?: (value: FieldAssignRuleItem[]) => void }) => {
+    const { value: propValue, onChange } = props;
     const ctx = useFlowContext();
     const t = ctx.model.translate.bind(ctx.model);
     const { isTitleFieldCandidate, onSyncAssociationTitleField } = useAssociationTitleFieldSync(t);
-    const canEdit = typeof props.onChange === 'function';
+    const canEdit = typeof onChange === 'function';
 
     const fieldOptions = React.useMemo(() => {
       return collectFieldAssignCascaderOptions({ formBlockModel: ctx.model, t });
-    }, [ctx.model]);
+    }, [ctx.model, t]);
 
     const legacyDefaults = React.useMemo(() => {
       return collectLegacyDefaultValueRulesFromFilterFormModel(ctx.model);
@@ -43,23 +54,41 @@ const FilterFormDefaultValuesUI = observer(
     }, [ctx.model]);
 
     const getValueInputProps = React.useCallback(
-      (item: FieldAssignRuleItem) => {
+      (item: FieldAssignRuleItem, index: number) => {
         const targetPath = item?.targetPath ? String(item.targetPath) : '';
-        if (!targetPath) return {};
+        const ruleKey = item?.key || index;
+        const persistedValue = ctx.model?.getStepParams?.('formFilterBlockModelSettings', 'defaultValues')?.value;
+        const hasSource = ctx.model?.uid && hasPersistedRuleItem(persistedValue, item, index);
+        const sourceProps = {
+          sourceLocator: hasSource
+            ? {
+                kind: 'flowModel.nestedRunJS' as const,
+                modelUid: ctx.model.uid,
+                containerFlowKey: 'formFilterBlockModelSettings',
+                containerStepKey: 'defaultValues',
+                valuePath: ['value', ruleKey, 'value'],
+                scene: 'filterFormDefaultValues',
+              }
+            : undefined,
+          sourceLabel: `${t('Field values')} / ${t('RunJS')}`,
+          surfaceStyle: 'value' as const,
+        };
+        if (!targetPath) return sourceProps;
         const fieldModel: any = findFormItemModelByFieldPath(ctx.model, targetPath);
-        if (!fieldModel) return {};
+        if (!fieldModel) return sourceProps;
         const operator = getDefaultOperator(fieldModel);
         const opList =
           fieldModel?.collectionField?.filterable?.operators ||
           (fieldModel?.context?.filterField?.type ? (operators as any)?.[fieldModel.context.filterField.type] : []) ||
           [];
         return {
+          ...sourceProps,
           operator,
           operatorMetaList: opList,
           preferFormItemFieldModel: true,
         };
       },
-      [ctx.model],
+      [ctx.model, t],
     );
 
     // 兼容：将字段级默认值（filterFormItemSettings.initialValue）合并到表单级 defaultValues 里展示。
@@ -73,15 +102,15 @@ const FilterFormDefaultValuesUI = observer(
     }, []);
 
     const normalizedValue = React.useMemo(() => {
-      return Array.isArray(props.value) ? props.value : [];
-    }, [props.value]);
+      return Array.isArray(propValue) ? propValue : [];
+    }, [propValue]);
 
     const legacyAwareValue = React.useMemo(() => {
       if (hasPersistedValue) {
         return normalizedValue;
       }
-      return mergeAssignRulesWithLegacyDefaults(props.value, legacyDefaults);
-    }, [hasPersistedValue, legacyDefaults, normalizedValue, props.value]);
+      return mergeAssignRulesWithLegacyDefaults(propValue, legacyDefaults);
+    }, [hasPersistedValue, legacyDefaults, normalizedValue, propValue]);
 
     const value = React.useMemo(() => {
       if (!canEdit || !hasInitializedMerge) {
@@ -94,9 +123,9 @@ const FilterFormDefaultValuesUI = observer(
       (next: FieldAssignRuleItem[]) => {
         if (!canEdit) return;
         markInitialized();
-        props.onChange?.(next);
+        onChange?.(next);
       },
-      [canEdit, markInitialized, props.onChange],
+      [canEdit, markInitialized, onChange],
     );
 
     // 仅在首次打开时，把合并结果写回到当前 step 表单状态，后续不再自动合并。
@@ -110,10 +139,10 @@ const FilterFormDefaultValuesUI = observer(
       }
 
       if (!isEqual(normalizedValue, legacyAwareValue)) {
-        props.onChange?.(legacyAwareValue);
+        onChange?.(legacyAwareValue);
       }
       markInitialized();
-    }, [canEdit, hasPersistedValue, legacyAwareValue, markInitialized, normalizedValue, props.onChange]);
+    }, [canEdit, hasPersistedValue, legacyAwareValue, markInitialized, normalizedValue, onChange]);
 
     return (
       <FieldAssignRulesEditor

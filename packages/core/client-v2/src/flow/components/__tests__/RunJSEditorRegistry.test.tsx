@@ -85,6 +85,31 @@ describe('RunJSEditorRegistry', () => {
     expect(screen.queryByText('fallback provider')).toBeNull();
   });
 
+  it('normalizes sourceLocator and sourceLabel aliases before provider selection', () => {
+    RunJSEditorRegistry.registerProvider({
+      key: 'source-locator-provider',
+      canHandle: (props) => props.locator?.kind === 'flowModel.nestedRunJS',
+      renderEditor: (props) => <button type="button">{props.label || props.locator?.kind}</button>,
+    });
+
+    render(
+      <RunJSEditorField
+        sourceLabel="Rule value"
+        sourceLocator={{
+          kind: 'flowModel.nestedRunJS',
+          modelUid: 'fm_1',
+          containerFlowKey: 'settings',
+          containerStepKey: 'rules',
+          valuePath: ['value', 'rule_1', 'value'],
+          scene: 'formValue',
+        }}
+        value={{ code: 'return ctx;', version: 'v2' }}
+      />,
+    );
+
+    expect(screen.getByRole('button', { name: 'Rule value' })).toBeInTheDocument();
+  });
+
   it('removes a provider with the unregister callback', () => {
     const unregister = RunJSEditorRegistry.registerProvider({
       key: 'temporary',

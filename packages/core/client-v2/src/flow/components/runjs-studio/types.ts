@@ -28,6 +28,13 @@ export type RunJSSourceLocator =
       scene: string;
     }
   | {
+      kind: 'flowModel.flowRegistry.runjs';
+      modelUid: string;
+      flowKey: string;
+      stepKey: string;
+      sourcePath: string[];
+    }
+  | {
       kind: 'workflow.javascript';
       nodeId: string | number;
     }
@@ -49,7 +56,9 @@ export interface RunJSEditorFieldProps {
   value?: unknown;
   onChange?: (value: RunJSValue) => void;
   locator?: RunJSSourceLocator;
+  sourceLocator?: RunJSSourceLocator;
   label?: string;
+  sourceLabel?: string;
   scene?: string;
   surfaceStyle?: RunJSSurfaceStyle;
   height?: string;

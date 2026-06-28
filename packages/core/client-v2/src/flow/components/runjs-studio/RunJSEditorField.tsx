@@ -30,9 +30,13 @@ export const RunJSEditorField: React.FC<RunJSEditorFieldProps> = (props) => {
     containerStyle = { flex: 1, minWidth: 0 },
   } = props;
   const current = normalizeEditorValue(value);
+  const locator = props.sourceLocator ?? props.locator;
+  const label = props.sourceLabel ?? props.label;
   const providerProps: RunJSEditorProviderRenderProps = {
     ...props,
     value: current,
+    locator,
+    label,
     height,
     scene,
     readOnly,

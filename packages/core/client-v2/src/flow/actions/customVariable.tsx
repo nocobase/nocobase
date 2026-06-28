@@ -119,6 +119,12 @@ interface VariableEditorProps {
   value?: FlowVariable[];
   onChange?: (value: FlowVariable[]) => void;
   disabled?: boolean;
+  runJSSource?: {
+    modelUid: string;
+    flowKey: string;
+    stepKey: string;
+    persistedVariables?: Array<{ key?: unknown }>;
+  };
 }
 
 interface VariableFormValues {
@@ -137,13 +143,18 @@ const generateVariableKey = () => `var_${uid().slice(0, 4)}`;
 const createDefaultRunJSValue = (): RunJSValue => ({ code: '', version: 'v2' });
 
 function VariableEditor(props: VariableEditorProps) {
-  const { value = [], onChange, disabled } = props;
+  const { value = [], onChange, disabled, runJSSource } = props;
   const ctx = useFlowContext();
   const t = React.useMemo(() => ctx.model.translate.bind(ctx.model), [ctx.model]);
   const [form] = Form.useForm<VariableFormValues>();
+  const variableKey = Form.useWatch('key', form);
   const [modalVisible, setModalVisible] = React.useState(false);
   const [editingIndex, setEditingIndex] = React.useState<number | null>(null);
   const [currentType, setCurrentType] = React.useState<FlowVariableType>('formValue');
+  const hasPersistedRunJSSource = React.useMemo(() => {
+    if (!variableKey) return false;
+    return !!runJSSource?.persistedVariables?.some((variable) => variable?.key === variableKey);
+  }, [runJSSource?.persistedVariables, variableKey]);
 
   const resetForm = React.useCallback(() => {
     form.resetFields();
@@ -389,7 +400,26 @@ function VariableEditor(props: VariableEditorProps) {
                 },
               ]}
             >
-              <RunJSValueEditor t={t} scene="eventFlow" height="240px" containerStyle={{ width: '100%' }} />
+              <RunJSValueEditor
+                t={t}
+                scene="eventFlow"
+                height="240px"
+                containerStyle={{ width: '100%' }}
+                sourceLocator={
+                  runJSSource?.modelUid && variableKey && hasPersistedRunJSSource
+                    ? {
+                        kind: 'flowModel.nestedRunJS',
+                        modelUid: runJSSource.modelUid,
+                        containerFlowKey: runJSSource.flowKey,
+                        containerStepKey: runJSSource.stepKey,
+                        valuePath: ['variables', String(variableKey), 'runjs'],
+                        scene: 'eventFlow',
+                      }
+                    : undefined
+                }
+                sourceLabel={`${t('Custom variable')} / ${t('RunJS')}`}
+                surfaceStyle="value"
+              />
             </Form.Item>
           ) : null}
         </Form>

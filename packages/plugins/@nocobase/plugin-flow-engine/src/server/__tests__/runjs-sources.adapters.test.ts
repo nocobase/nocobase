@@ -197,6 +197,75 @@ describe('flow-engine RunJS source adapters', () => {
     await expect(app.db.getRepository('vscFileCommits').count()).resolves.toBe(commitCountBeforePublish);
   });
 
+  it('checks nested FlowModel source permission before loading the owner model', async () => {
+    await app.db.getRepository('roles').create({
+      values: {
+        name: 'runjs-no-flow-models',
+      },
+    });
+    app.acl.define({
+      role: 'runjs-no-flow-models',
+      actions: {},
+    });
+    const user = await app.db.getRepository('users').create({
+      values: {
+        nickname: 'RunJS no flow models',
+        roles: ['runjs-no-flow-models'],
+      },
+    });
+    const restrictedAgent = (await app.agent().login(user)).set('x-role', 'runjs-no-flow-models');
+
+    await repository.insertModel({
+      uid: 'nested-no-permission-model',
+      use: 'FormModel',
+      stepParams: {
+        eventSettings: {
+          customVariable: {
+            variables: [
+              {
+                key: 'var_total',
+                type: 'runjs',
+                runjs: {
+                  code: 'return 1;',
+                  version: 'v2',
+                },
+              },
+            ],
+          },
+        },
+      },
+    });
+
+    const locator: RunJSSourceLocator = {
+      kind: 'flowModel.nestedRunJS',
+      modelUid: 'nested-no-permission-model',
+      containerFlowKey: 'eventSettings',
+      containerStepKey: 'customVariable',
+      valuePath: ['variables', 'var_total', 'runjs'],
+      scene: 'eventFlow',
+    };
+
+    const existingOpen = await openSource(locator, restrictedAgent);
+    expect(existingOpen.status).toBe(403);
+    expect(existingOpen.body.errors[0]).toMatchObject({
+      code: 'PERMISSION_DENIED',
+      details: {
+        resource: 'flowModels',
+        action: 'findOne',
+      },
+    });
+
+    const missingOwnerOpen = await openSource({ ...locator, modelUid: 'missing-flow-model' }, restrictedAgent);
+    expect(missingOwnerOpen.status).toBe(403);
+    expect(missingOwnerOpen.body.errors[0]).toMatchObject({
+      code: 'PERMISSION_DENIED',
+      details: {
+        resource: 'flowModels',
+        action: 'findOne',
+      },
+    });
+  });
+
   it('denies FlowModel source access outside the flow model permission filter', async () => {
     await app.db.getRepository('roles').create({
       values: {
@@ -233,6 +302,20 @@ describe('flow-engine RunJS source adapters', () => {
             version: 'v2',
           },
         },
+        eventSettings: {
+          customVariable: {
+            variables: [
+              {
+                key: 'var_allowed',
+                type: 'runjs',
+                runjs: {
+                  code: 'return allowedNested;',
+                  version: 'v2',
+                },
+              },
+            ],
+          },
+        },
       },
     });
     await repository.insertModel({
@@ -244,6 +327,20 @@ describe('flow-engine RunJS source adapters', () => {
           runJs: {
             code: 'return blocked;',
             version: 'v2',
+          },
+        },
+        eventSettings: {
+          customVariable: {
+            variables: [
+              {
+                key: 'var_blocked',
+                type: 'runjs',
+                runjs: {
+                  code: 'return blockedNested;',
+                  version: 'v2',
+                },
+              },
+            ],
           },
         },
       },
@@ -274,6 +371,123 @@ describe('flow-engine RunJS source adapters', () => {
 
     expect(blockedOpen.status).toBe(403);
     expect(blockedOpen.body.errors[0]).toMatchObject({
+      code: 'PERMISSION_DENIED',
+      status: 403,
+      details: {
+        resource: 'flowModels',
+      },
+    });
+
+    const allowedNestedOpen = await openSource(
+      {
+        kind: 'flowModel.nestedRunJS',
+        modelUid: 'allowed-flow-model',
+        containerFlowKey: 'eventSettings',
+        containerStepKey: 'customVariable',
+        valuePath: ['variables', 'var_allowed', 'runjs'],
+        scene: 'eventFlow',
+      },
+      scopedAgent,
+    );
+    expect(allowedNestedOpen.status).toBe(200);
+
+    const blockedNestedOpen = await openSource(
+      {
+        kind: 'flowModel.nestedRunJS',
+        modelUid: 'blocked-flow-model',
+        containerFlowKey: 'eventSettings',
+        containerStepKey: 'customVariable',
+        valuePath: ['variables', 'var_blocked', 'runjs'],
+        scene: 'eventFlow',
+      },
+      scopedAgent,
+    );
+    expect(blockedNestedOpen.status).toBe(403);
+    expect(blockedNestedOpen.body.errors[0]).toMatchObject({
+      code: 'PERMISSION_DENIED',
+      status: 403,
+      details: {
+        resource: 'flowModels',
+      },
+    });
+
+    const missingNestedOpen = await openSource(
+      {
+        kind: 'flowModel.nestedRunJS',
+        modelUid: 'missing-flow-model',
+        containerFlowKey: 'eventSettings',
+        containerStepKey: 'customVariable',
+        valuePath: ['variables', 'var_missing', 'runjs'],
+        scene: 'eventFlow',
+      },
+      scopedAgent,
+    );
+    expect(missingNestedOpen.status).toBe(403);
+    expect(missingNestedOpen.body.errors[0]).toMatchObject({
+      code: 'PERMISSION_DENIED',
+      status: 403,
+      details: {
+        resource: 'flowModels',
+      },
+    });
+
+    await app.db.getRepository('roles').create({
+      values: {
+        name: 'flow-model-flow-registry-only-reader',
+      },
+    });
+    app.acl.define({
+      role: 'flow-model-flow-registry-only-reader',
+      actions: {
+        'flowModels:findOne': {
+          whitelist: ['flowRegistry'],
+        },
+      },
+    });
+    const fieldRestrictedUser = await app.db.getRepository('users').create({
+      values: {
+        nickname: 'FlowModel flow registry reader',
+        roles: ['flow-model-flow-registry-only-reader'],
+      },
+    });
+    const fieldRestrictedAgent = (await app.agent().login(fieldRestrictedUser)).set(
+      'x-role',
+      'flow-model-flow-registry-only-reader',
+    );
+
+    const fieldDeniedNestedOpen = await openSource(
+      {
+        kind: 'flowModel.nestedRunJS',
+        modelUid: 'allowed-flow-model',
+        containerFlowKey: 'eventSettings',
+        containerStepKey: 'customVariable',
+        valuePath: ['variables', 'var_allowed', 'runjs'],
+        scene: 'eventFlow',
+      },
+      fieldRestrictedAgent,
+    );
+    expect(fieldDeniedNestedOpen.status).toBe(403);
+    expect(fieldDeniedNestedOpen.body.errors[0]).toMatchObject({
+      code: 'PERMISSION_DENIED',
+      status: 403,
+      details: {
+        resource: 'flowModels',
+      },
+    });
+
+    const missingFieldDeniedNestedOpen = await openSource(
+      {
+        kind: 'flowModel.nestedRunJS',
+        modelUid: 'missing-flow-model',
+        containerFlowKey: 'eventSettings',
+        containerStepKey: 'customVariable',
+        valuePath: ['variables', 'var_allowed', 'runjs'],
+        scene: 'eventFlow',
+      },
+      fieldRestrictedAgent,
+    );
+    expect(missingFieldDeniedNestedOpen.status).toBe(403);
+    expect(missingFieldDeniedNestedOpen.body.errors[0]).toMatchObject({
       code: 'PERMISSION_DENIED',
       status: 403,
       details: {
@@ -412,6 +626,838 @@ describe('flow-engine RunJS source adapters', () => {
       const publish = await publishSource(locator, open.body.data.ownerFingerprint, code);
       expect(publish.status).toBe(200);
     }
+  });
+
+  it('reads and writes nested RunJS sources through keyed arrays', async () => {
+    await repository.insertModel({
+      uid: 'nested-keyed-runjs-model',
+      use: 'FormModel',
+      stepParams: {
+        eventSettings: {
+          linkageRules: {
+            value: [
+              {
+                key: 'rule_1',
+                actions: [
+                  {
+                    key: 'runjs_action',
+                    name: 'linkageRunjs',
+                    params: {
+                      value: {
+                        script: 'ctx.oldLinkage();',
+                        keep: 'script',
+                      },
+                    },
+                  },
+                  {
+                    key: 'assign_action',
+                    name: 'linkageAssignField',
+                    params: {
+                      value: [
+                        {
+                          key: 'assign_rule',
+                          targetPath: 'status',
+                          value: {
+                            code: 'return oldAssign;',
+                            version: 'v2',
+                            keep: 'assign',
+                          },
+                        },
+                      ],
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+          customVariable: {
+            variables: [
+              {
+                key: 'var_total',
+                title: 'Total',
+                type: 'runjs',
+                runjs: {
+                  code: 'return oldVariable;',
+                  version: 'v2',
+                  keep: 'variable',
+                },
+              },
+            ],
+          },
+        },
+      },
+    });
+
+    await publishNested(
+      ['value', 'rule_1', 'actions', 'runjs_action', 'params', 'value', 'script'],
+      'linkage',
+      'ctx.message.info("nextLinkage");',
+    );
+    await publishNested(
+      ['value', 'rule_1', 'actions', 'assign_action', 'params', 'value', 'assign_rule', 'value'],
+      'formValue',
+      'return "nextAssign";',
+    );
+    await publishNested(['variables', 'var_total', 'runjs'], 'eventFlow', 'return 123;');
+
+    const updated = await repository.findModelById('nested-keyed-runjs-model');
+
+    expect(
+      getAtPath(updated, ['stepParams', 'eventSettings', 'linkageRules', 'value', 0, 'actions', 0, 'params', 'value']),
+    ).toMatchObject({
+      script: 'ctx.message.info("nextLinkage");',
+      keep: 'script',
+    });
+    expect(
+      getAtPath(updated, [
+        'stepParams',
+        'eventSettings',
+        'linkageRules',
+        'value',
+        0,
+        'actions',
+        1,
+        'params',
+        'value',
+        0,
+        'value',
+      ]),
+    ).toMatchObject({
+      code: 'return "nextAssign";',
+      version: 'v2',
+      keep: 'assign',
+    });
+    expect(
+      getAtPath(updated, ['stepParams', 'eventSettings', 'customVariable', 'variables', 0, 'runjs']),
+    ).toMatchObject({
+      code: 'return 123;',
+      version: 'v2',
+      keep: 'variable',
+    });
+
+    async function publishNested(valuePath: Array<string | number>, scene: string, code: string) {
+      const locator: RunJSSourceLocator = {
+        kind: 'flowModel.nestedRunJS',
+        modelUid: 'nested-keyed-runjs-model',
+        containerFlowKey: 'eventSettings',
+        containerStepKey: scene === 'eventFlow' ? 'customVariable' : 'linkageRules',
+        valuePath,
+        scene,
+      };
+      const open = await openSource(locator);
+
+      expect(open.status).toBe(200);
+      const publish = await publishSource(locator, open.body.data.ownerFingerprint, code);
+      expect(publish.status).toBe(200);
+    }
+  });
+
+  it('rejects nested keyed RunJS sources when the keyed array container is missing', async () => {
+    await repository.insertModel({
+      uid: 'nested-missing-keyed-container-model',
+      use: 'FormModel',
+      stepParams: {
+        eventSettings: {
+          linkageRules: {},
+        },
+      },
+    });
+
+    const locator: RunJSSourceLocator = {
+      kind: 'flowModel.nestedRunJS',
+      modelUid: 'nested-missing-keyed-container-model',
+      containerFlowKey: 'eventSettings',
+      containerStepKey: 'linkageRules',
+      valuePath: ['value', 'rule_new', 'actions', 'action_new', 'params', 'value', 'script'],
+      scene: 'linkage',
+    };
+
+    const open = await openSource(locator);
+    expect(open.status).toBe(404);
+    expect(open.body.errors[0]).toMatchObject({
+      code: 'RUNJS_SOURCE_NOT_FOUND',
+      details: {
+        key: 'rule_new',
+      },
+    });
+
+    const commitCountBeforePublish = await app.db.getRepository('vscFileCommits').count();
+    const publish = await publishSource(locator, 'missing-owner-fingerprint', 'ctx.message.info("draft");');
+
+    expect(publish.status).toBe(404);
+    expect(publish.body.errors[0]).toMatchObject({
+      code: 'RUNJS_SOURCE_NOT_FOUND',
+      details: {
+        key: 'rule_new',
+      },
+    });
+    await expect(app.db.getRepository('vscFileCommits').count()).resolves.toBe(commitCountBeforePublish);
+
+    const updated = await repository.findModelById('nested-missing-keyed-container-model');
+    expect(getAtPath(updated, ['stepParams', 'eventSettings', 'linkageRules', 'value'])).toBeUndefined();
+  });
+
+  it('rejects nested keyed RunJS sources when the target path under existing keyed rows is missing', async () => {
+    await repository.insertModel({
+      uid: 'nested-missing-keyed-target-model',
+      use: 'FormModel',
+      stepParams: {
+        eventSettings: {
+          linkageRules: {
+            value: [
+              {
+                key: 'rule_1',
+                actions: [
+                  {
+                    key: 'runjs_action',
+                    name: 'linkageRunjs',
+                  },
+                ],
+              },
+            ],
+          },
+        },
+      },
+    });
+
+    const locator: RunJSSourceLocator = {
+      kind: 'flowModel.nestedRunJS',
+      modelUid: 'nested-missing-keyed-target-model',
+      containerFlowKey: 'eventSettings',
+      containerStepKey: 'linkageRules',
+      valuePath: ['value', 'rule_1', 'actions', 'runjs_action', 'params', 'value', 'script'],
+      scene: 'linkage',
+    };
+
+    const open = await openSource(locator);
+    expect(open.status).toBe(404);
+    expect(open.body.errors[0]).toMatchObject({
+      code: 'RUNJS_SOURCE_NOT_FOUND',
+      details: {
+        path: 'value.rule_1.actions.runjs_action.params.value.script',
+      },
+    });
+
+    const commitCountBeforePublish = await app.db.getRepository('vscFileCommits').count();
+    const publish = await publishSource(locator, 'missing-owner-fingerprint', 'ctx.message.info("draft");');
+
+    expect(publish.status).toBe(404);
+    expect(publish.body.errors[0]).toMatchObject({
+      code: 'RUNJS_SOURCE_NOT_FOUND',
+      details: {
+        path: 'value.rule_1.actions.runjs_action.params.value.script',
+      },
+    });
+    await expect(app.db.getRepository('vscFileCommits').count()).resolves.toBe(commitCountBeforePublish);
+
+    const updated = await repository.findModelById('nested-missing-keyed-target-model');
+    expect(
+      getAtPath(updated, ['stepParams', 'eventSettings', 'linkageRules', 'value', 0, 'actions', 0, 'params']),
+    ).toBeUndefined();
+  });
+
+  it('creates RunJSValue objects when publishing missing value-surface leaves', async () => {
+    await repository.insertModel({
+      uid: 'nested-empty-value-surface-model',
+      use: 'FormModel',
+      stepParams: {
+        editItemSettings: {
+          initialValue: {},
+        },
+        fieldSettings: {
+          assignValue: {},
+        },
+      },
+    });
+
+    const defaultLocator: RunJSSourceLocator = {
+      kind: 'flowModel.nestedRunJS',
+      modelUid: 'nested-empty-value-surface-model',
+      containerFlowKey: 'editItemSettings',
+      containerStepKey: 'initialValue',
+      valuePath: ['defaultValue'],
+      scene: 'formValue',
+    };
+    const assignLocator: RunJSSourceLocator = {
+      kind: 'flowModel.nestedRunJS',
+      modelUid: 'nested-empty-value-surface-model',
+      containerFlowKey: 'fieldSettings',
+      containerStepKey: 'assignValue',
+      valuePath: ['value'],
+      scene: 'assignForm',
+    };
+
+    const defaultOpen = await openSource(defaultLocator);
+    expect(defaultOpen.status).toBe(200);
+    await expect(
+      publishSource(defaultLocator, defaultOpen.body.data.ownerFingerprint, 'return "default";'),
+    ).resolves.toHaveProperty('status', 200);
+
+    const assignOpen = await openSource(assignLocator);
+    expect(assignOpen.status).toBe(200);
+    await expect(
+      publishSource(assignLocator, assignOpen.body.data.ownerFingerprint, 'return "assigned";'),
+    ).resolves.toHaveProperty('status', 200);
+
+    const updated = await repository.findModelById('nested-empty-value-surface-model');
+    expect(getAtPath(updated, ['stepParams', 'editItemSettings', 'initialValue', 'defaultValue'])).toEqual({
+      code: 'return "default";',
+      version: 'v2',
+    });
+    expect(getAtPath(updated, ['stepParams', 'fieldSettings', 'assignValue', 'value'])).toEqual({
+      code: 'return "assigned";',
+      version: 'v2',
+    });
+  });
+
+  it('rejects missing nested RunJS owners without creating value-surface paths', async () => {
+    await repository.insertModel({
+      uid: 'nested-missing-owner-model',
+      use: 'FormModel',
+      stepParams: {},
+    });
+
+    const locator: RunJSSourceLocator = {
+      kind: 'flowModel.nestedRunJS',
+      modelUid: 'nested-missing-owner-model',
+      containerFlowKey: 'editItemSettings',
+      containerStepKey: 'initialValue',
+      valuePath: ['defaultValue'],
+      scene: 'formValue',
+    };
+
+    const open = await openSource(locator);
+    expect(open.status).toBe(404);
+    expect(open.body.errors[0]).toMatchObject({
+      code: 'RUNJS_SOURCE_NOT_FOUND',
+      details: {
+        path: 'stepParams.editItemSettings.initialValue',
+      },
+    });
+
+    const commitCountBeforePublish = await app.db.getRepository('vscFileCommits').count();
+    const publish = await publishSource(locator, 'missing-owner-fingerprint', 'return "created";');
+
+    expect(publish.status).toBe(404);
+    expect(publish.body.errors[0]).toMatchObject({
+      code: 'RUNJS_SOURCE_NOT_FOUND',
+      details: {
+        path: 'stepParams.editItemSettings.initialValue',
+      },
+    });
+    await expect(app.db.getRepository('vscFileCommits').count()).resolves.toBe(commitCountBeforePublish);
+
+    const updated = await repository.findModelById('nested-missing-owner-model');
+    expect(getAtPath(updated, ['stepParams', 'editItemSettings'])).toBeUndefined();
+  });
+
+  it('rejects missing nested RunJS intermediate paths without creating value-surface objects', async () => {
+    await repository.insertModel({
+      uid: 'nested-missing-intermediate-model',
+      use: 'FormModel',
+      stepParams: {
+        editItemSettings: {
+          initialValue: {},
+        },
+      },
+    });
+
+    const locator: RunJSSourceLocator = {
+      kind: 'flowModel.nestedRunJS',
+      modelUid: 'nested-missing-intermediate-model',
+      containerFlowKey: 'editItemSettings',
+      containerStepKey: 'initialValue',
+      valuePath: ['missingParent', 'value'],
+      scene: 'formValue',
+    };
+
+    const open = await openSource(locator);
+    expect(open.status).toBe(404);
+    expect(open.body.errors[0]).toMatchObject({
+      code: 'RUNJS_SOURCE_NOT_FOUND',
+      details: {
+        path: 'missingParent',
+      },
+    });
+
+    const commitCountBeforePublish = await app.db.getRepository('vscFileCommits').count();
+    const publish = await publishSource(locator, 'missing-owner-fingerprint', 'return "created";');
+
+    expect(publish.status).toBe(404);
+    expect(publish.body.errors[0]).toMatchObject({
+      code: 'RUNJS_SOURCE_NOT_FOUND',
+      details: {
+        path: 'missingParent',
+      },
+    });
+    await expect(app.db.getRepository('vscFileCommits').count()).resolves.toBe(commitCountBeforePublish);
+
+    const updated = await repository.findModelById('nested-missing-intermediate-model');
+    expect(getAtPath(updated, ['stepParams', 'editItemSettings', 'initialValue', 'missingParent'])).toBeUndefined();
+  });
+
+  it('reads and writes flowRegistry RunJS steps from defaultParams and legacy params paths', async () => {
+    await repository.insertModel({
+      uid: 'flow-registry-runjs-model',
+      use: 'ActionModel',
+      flowRegistry: {
+        submitFlow: {
+          steps: {
+            defaultRun: {
+              use: 'runjs',
+              defaultParams: {
+                code: 'ctx.oldDefault();',
+              },
+            },
+            legacyRun: {
+              use: 'runjs',
+              params: {
+                code: 'ctx.oldLegacy();',
+                keep: 'legacy',
+              },
+            },
+            bothRun: {
+              use: 'runjs',
+              defaultParams: {
+                code: 'ctx.oldDefaultInBoth();',
+                keepDefault: 'default',
+              },
+              params: {
+                code: 'ctx.oldLegacyInBoth();',
+                keepLegacy: 'legacy',
+              },
+            },
+            customVariableRun: {
+              use: 'customVariable',
+              defaultParams: {
+                variables: [
+                  {
+                    key: 'var_total',
+                    title: 'Total',
+                    type: 'runjs',
+                    runjs: {
+                      code: 'return oldTotal;',
+                      version: 'v2',
+                      keep: 'variable',
+                    },
+                  },
+                ],
+              },
+            },
+            customVariableLegacy: {
+              use: 'customVariable',
+              params: {
+                variables: [
+                  {
+                    key: 'var_legacy',
+                    title: 'Legacy',
+                    type: 'runjs',
+                    runjs: {
+                      code: 'return oldLegacyVariable;',
+                      version: 'v2',
+                      keep: 'legacy variable',
+                    },
+                  },
+                ],
+              },
+            },
+            customVariableEmpty: {
+              use: 'customVariable',
+              defaultParams: {},
+            },
+          },
+        },
+      },
+    });
+
+    const defaultLocator: RunJSSourceLocator = {
+      kind: 'flowModel.flowRegistry.runjs',
+      modelUid: 'flow-registry-runjs-model',
+      flowKey: 'submitFlow',
+      stepKey: 'defaultRun',
+      sourcePath: ['defaultParams', 'code'],
+    };
+    const legacyLocator: RunJSSourceLocator = {
+      kind: 'flowModel.flowRegistry.runjs',
+      modelUid: 'flow-registry-runjs-model',
+      flowKey: 'submitFlow',
+      stepKey: 'legacyRun',
+      sourcePath: ['defaultParams', 'code'],
+    };
+    const bothLocator: RunJSSourceLocator = {
+      kind: 'flowModel.flowRegistry.runjs',
+      modelUid: 'flow-registry-runjs-model',
+      flowKey: 'submitFlow',
+      stepKey: 'bothRun',
+      sourcePath: ['defaultParams', 'code'],
+    };
+
+    const defaultOpen = await openSource(defaultLocator);
+    expect(defaultOpen.body.data.legacy).toMatchObject({ code: 'ctx.oldDefault();', surfaceStyle: 'action' });
+    await expect(
+      publishSource(defaultLocator, defaultOpen.body.data.ownerFingerprint, 'ctx.message.info("nextDefault");'),
+    ).resolves.toHaveProperty('status', 200);
+
+    const legacyOpen = await openSource(legacyLocator);
+    expect(legacyOpen.body.data.legacy).toMatchObject({ code: 'ctx.oldLegacy();', surfaceStyle: 'action' });
+    await expect(
+      publishSource(legacyLocator, legacyOpen.body.data.ownerFingerprint, 'ctx.message.info("nextLegacy");'),
+    ).resolves.toHaveProperty('status', 200);
+
+    const bothOpen = await openSource(bothLocator);
+    expect(bothOpen.body.data.legacy).toMatchObject({ code: 'ctx.oldLegacyInBoth();', surfaceStyle: 'action' });
+    await expect(
+      publishSource(bothLocator, bothOpen.body.data.ownerFingerprint, 'ctx.message.info("nextBoth");'),
+    ).resolves.toHaveProperty('status', 200);
+
+    const variableLocator: RunJSSourceLocator = {
+      kind: 'flowModel.nestedRunJS',
+      modelUid: 'flow-registry-runjs-model',
+      containerFlowKey: 'submitFlow',
+      containerStepKey: 'customVariableRun',
+      valuePath: ['variables', 'var_total', 'runjs'],
+      scene: 'eventFlow',
+    };
+    const variableOpen = await openSource(variableLocator);
+    expect(variableOpen.body.data.legacy).toMatchObject({ code: 'return oldTotal;', surfaceStyle: 'value' });
+    const commitCountBeforeBadVariablePublish = await app.db.getRepository('vscFileCommits').count();
+    const badVariablePublish = await publishSource(
+      variableLocator,
+      variableOpen.body.data.ownerFingerprint,
+      'ctx.render(null);',
+    );
+    expect(badVariablePublish.status).toBe(400);
+    expect(badVariablePublish.body.errors[0]).toMatchObject({
+      code: 'RUNJS_COMPILE_FAILED',
+      details: {
+        diagnostics: expect.arrayContaining([
+          expect.objectContaining({
+            ruleId: 'runjs-value-render-forbidden',
+          }),
+        ]),
+      },
+    });
+    await expect(app.db.getRepository('vscFileCommits').count()).resolves.toBe(commitCountBeforeBadVariablePublish);
+    await expect(
+      publishSource(variableLocator, variableOpen.body.data.ownerFingerprint, 'return 456;'),
+    ).resolves.toHaveProperty('status', 200);
+
+    const legacyVariableLocator: RunJSSourceLocator = {
+      ...variableLocator,
+      containerStepKey: 'customVariableLegacy',
+      valuePath: ['variables', 'var_legacy', 'runjs'],
+    };
+    const legacyVariableOpen = await openSource(legacyVariableLocator);
+    expect(legacyVariableOpen.body.data.legacy).toMatchObject({
+      code: 'return oldLegacyVariable;',
+      surfaceStyle: 'value',
+    });
+    await expect(
+      publishSource(legacyVariableLocator, legacyVariableOpen.body.data.ownerFingerprint, 'return 654;'),
+    ).resolves.toHaveProperty('status', 200);
+
+    const missingVariableLocator: RunJSSourceLocator = {
+      ...variableLocator,
+      valuePath: ['variables', 'missing_var', 'runjs'],
+    };
+    const missingOpen = await openSource(missingVariableLocator);
+    expect(missingOpen.status).toBe(404);
+    expect(missingOpen.body.errors[0]).toMatchObject({
+      code: 'RUNJS_SOURCE_NOT_FOUND',
+      details: {
+        key: 'missing_var',
+      },
+    });
+    const commitCountBeforeMissingPublish = await app.db.getRepository('vscFileCommits').count();
+    const missingPublish = await publishSource(missingVariableLocator, 'missing-owner-fingerprint', 'return 789;');
+    expect(missingPublish.status).toBe(404);
+    expect(missingPublish.body.errors[0]).toMatchObject({
+      code: 'RUNJS_SOURCE_NOT_FOUND',
+      details: {
+        key: 'missing_var',
+      },
+    });
+    await expect(app.db.getRepository('vscFileCommits').count()).resolves.toBe(commitCountBeforeMissingPublish);
+
+    const missingVariablesContainerLocator: RunJSSourceLocator = {
+      ...variableLocator,
+      containerStepKey: 'customVariableEmpty',
+      valuePath: ['variables', 'var_new', 'runjs'],
+    };
+    const missingVariablesContainerOpen = await openSource(missingVariablesContainerLocator);
+    expect(missingVariablesContainerOpen.status).toBe(404);
+    expect(missingVariablesContainerOpen.body.errors[0]).toMatchObject({
+      code: 'RUNJS_SOURCE_NOT_FOUND',
+      details: {
+        key: 'var_new',
+      },
+    });
+    const commitCountBeforeMissingContainerPublish = await app.db.getRepository('vscFileCommits').count();
+    const missingVariablesContainerPublish = await publishSource(
+      missingVariablesContainerLocator,
+      'missing-owner-fingerprint',
+      'return 789;',
+    );
+    expect(missingVariablesContainerPublish.status).toBe(404);
+    expect(missingVariablesContainerPublish.body.errors[0]).toMatchObject({
+      code: 'RUNJS_SOURCE_NOT_FOUND',
+      details: {
+        key: 'var_new',
+      },
+    });
+    await expect(app.db.getRepository('vscFileCommits').count()).resolves.toBe(
+      commitCountBeforeMissingContainerPublish,
+    );
+
+    const updated = await repository.findModelById('flow-registry-runjs-model');
+
+    expect(getAtPath(updated, ['flowRegistry', 'submitFlow', 'steps', 'defaultRun', 'defaultParams', 'code'])).toBe(
+      'ctx.message.info("nextDefault");',
+    );
+    expect(getAtPath(updated, ['flowRegistry', 'submitFlow', 'steps', 'legacyRun', 'params'])).toMatchObject({
+      code: 'ctx.message.info("nextLegacy");',
+      keep: 'legacy',
+    });
+    expect(getAtPath(updated, ['flowRegistry', 'submitFlow', 'steps', 'legacyRun', 'defaultParams'])).toBeUndefined();
+    expect(getAtPath(updated, ['flowRegistry', 'submitFlow', 'steps', 'bothRun', 'params'])).toMatchObject({
+      code: 'ctx.message.info("nextBoth");',
+      keepLegacy: 'legacy',
+    });
+    expect(getAtPath(updated, ['flowRegistry', 'submitFlow', 'steps', 'bothRun', 'defaultParams'])).toMatchObject({
+      code: 'ctx.oldDefaultInBoth();',
+      keepDefault: 'default',
+    });
+    expect(
+      getAtPath(updated, [
+        'flowRegistry',
+        'submitFlow',
+        'steps',
+        'customVariableRun',
+        'defaultParams',
+        'variables',
+        0,
+        'runjs',
+      ]),
+    ).toMatchObject({
+      code: 'return 456;',
+      version: 'v2',
+      keep: 'variable',
+    });
+    expect(
+      getAtPath(updated, [
+        'flowRegistry',
+        'submitFlow',
+        'steps',
+        'customVariableLegacy',
+        'params',
+        'variables',
+        0,
+        'runjs',
+      ]),
+    ).toMatchObject({
+      code: 'return 654;',
+      version: 'v2',
+      keep: 'legacy variable',
+    });
+    expect(
+      getAtPath(updated, ['flowRegistry', 'submitFlow', 'steps', 'customVariableLegacy', 'defaultParams']),
+    ).toBeUndefined();
+    expect(
+      (
+        getAtPath(updated, [
+          'flowRegistry',
+          'submitFlow',
+          'steps',
+          'customVariableRun',
+          'defaultParams',
+          'variables',
+        ]) as Array<{ key?: string }>
+      ).some((variable) => variable.key === 'missing_var'),
+    ).toBe(false);
+    expect(
+      getAtPath(updated, ['flowRegistry', 'submitFlow', 'steps', 'customVariableEmpty', 'defaultParams', 'variables']),
+    ).toBeUndefined();
+    expect(getAtPath(updated, ['stepParams', 'submitFlow', 'customVariableRun'])).toBeUndefined();
+  });
+
+  it('rejects flowRegistry RunJS sources for unsupported paths and non-RunJS steps', async () => {
+    await repository.insertModel({
+      uid: 'flow-registry-runjs-guard-model',
+      use: 'ActionModel',
+      flowRegistry: {
+        submitFlow: {
+          steps: {
+            runStep: {
+              use: 'runjs',
+              title: 'Do not overwrite',
+              defaultParams: {
+                code: 'ctx.safe();',
+              },
+            },
+            nonRunJSStep: {
+              use: 'customVariable',
+              defaultParams: {
+                code: 'return notRunJS;',
+              },
+            },
+          },
+        },
+      },
+    });
+
+    const unsupportedPathLocator: RunJSSourceLocator = {
+      kind: 'flowModel.flowRegistry.runjs',
+      modelUid: 'flow-registry-runjs-guard-model',
+      flowKey: 'submitFlow',
+      stepKey: 'runStep',
+      sourcePath: ['title'],
+    };
+    const nonRunJSStepLocator: RunJSSourceLocator = {
+      ...unsupportedPathLocator,
+      stepKey: 'nonRunJSStep',
+      sourcePath: ['defaultParams', 'code'],
+    };
+
+    await expectBlockedLocator(unsupportedPathLocator, 'flowRegistry.submitFlow.steps.runStep.title');
+    await expectBlockedLocator(nonRunJSStepLocator, 'flowRegistry.submitFlow.steps.nonRunJSStep');
+
+    const updated = await repository.findModelById('flow-registry-runjs-guard-model');
+    expect(getAtPath(updated, ['flowRegistry', 'submitFlow', 'steps', 'runStep', 'title'])).toBe('Do not overwrite');
+    expect(getAtPath(updated, ['flowRegistry', 'submitFlow', 'steps', 'nonRunJSStep', 'defaultParams', 'code'])).toBe(
+      'return notRunJS;',
+    );
+
+    async function expectBlockedLocator(locator: RunJSSourceLocator, path: string) {
+      const open = await openSource(locator);
+      expect(open.status).toBe(404);
+      expect(open.body.errors[0]).toMatchObject({
+        code: 'RUNJS_SOURCE_NOT_FOUND',
+        details: {
+          path,
+        },
+      });
+
+      const commitCountBeforePublish = await app.db.getRepository('vscFileCommits').count();
+      const publish = await publishSource(locator, 'missing-owner-fingerprint', 'ctx.message.info("blocked");');
+      expect(publish.status).toBe(404);
+      expect(publish.body.errors[0]).toMatchObject({
+        code: 'RUNJS_SOURCE_NOT_FOUND',
+        details: {
+          path,
+        },
+      });
+      await expect(app.db.getRepository('vscFileCommits').count()).resolves.toBe(commitCountBeforePublish);
+    }
+  });
+
+  it('rejects flowRegistry RunJS sources when the owner flow or step is missing', async () => {
+    await repository.insertModel({
+      uid: 'flow-registry-missing-runjs-model',
+      use: 'ActionModel',
+      flowRegistry: {
+        submitFlow: {
+          steps: {},
+        },
+      },
+    });
+
+    const missingStepLocator: RunJSSourceLocator = {
+      kind: 'flowModel.flowRegistry.runjs',
+      modelUid: 'flow-registry-missing-runjs-model',
+      flowKey: 'submitFlow',
+      stepKey: 'missingRun',
+      sourcePath: ['defaultParams', 'code'],
+    };
+
+    const missingStepOpen = await openSource(missingStepLocator);
+    expect(missingStepOpen.status).toBe(404);
+    expect(missingStepOpen.body.errors[0]).toMatchObject({
+      code: 'RUNJS_SOURCE_NOT_FOUND',
+      details: {
+        path: 'flowRegistry.submitFlow.steps.missingRun',
+      },
+    });
+
+    const commitCountBeforePublish = await app.db.getRepository('vscFileCommits').count();
+    const missingStepPublish = await publishSource(
+      missingStepLocator,
+      'missing-owner-fingerprint',
+      'ctx.message.info("draft");',
+    );
+    expect(missingStepPublish.status).toBe(404);
+    expect(missingStepPublish.body.errors[0]).toMatchObject({
+      code: 'RUNJS_SOURCE_NOT_FOUND',
+      details: {
+        path: 'flowRegistry.submitFlow.steps.missingRun',
+      },
+    });
+    await expect(app.db.getRepository('vscFileCommits').count()).resolves.toBe(commitCountBeforePublish);
+
+    const missingFlowOpen = await openSource({
+      ...missingStepLocator,
+      flowKey: 'missingFlow',
+    });
+    expect(missingFlowOpen.status).toBe(404);
+    expect(missingFlowOpen.body.errors[0]).toMatchObject({
+      code: 'RUNJS_SOURCE_NOT_FOUND',
+      details: {
+        path: 'flowRegistry.missingFlow.steps.missingRun',
+      },
+    });
+
+    const updated = await repository.findModelById('flow-registry-missing-runjs-model');
+    expect(getAtPath(updated, ['flowRegistry', 'submitFlow', 'steps', 'missingRun'])).toBeUndefined();
+    expect(getAtPath(updated, ['flowRegistry', 'missingFlow'])).toBeUndefined();
+  });
+
+  it('uses value-surface authoring validation for nested reaction RunJS values', async () => {
+    await repository.insertModel({
+      uid: 'reaction-runjs-model',
+      use: 'FormModel',
+      stepParams: {
+        reactionSettings: {
+          fieldValues: {
+            value: [
+              {
+                key: 'rule_1',
+                code: 'return oldValue;',
+              },
+            ],
+          },
+        },
+      },
+    });
+
+    const locator: RunJSSourceLocator = {
+      kind: 'flowModel.nestedRunJS',
+      modelUid: 'reaction-runjs-model',
+      containerFlowKey: 'reactionSettings',
+      containerStepKey: 'fieldValues',
+      valuePath: ['value', 'rule_1', 'code'],
+      scene: 'formValue',
+    };
+    const open = await openSource(locator);
+    expect(open.status).toBe(200);
+    const commitCountBeforePublish = await app.db.getRepository('vscFileCommits').count();
+
+    const publish = await publishSource(locator, open.body.data.ownerFingerprint, 'ctx.render(null);');
+
+    expect(publish.status).toBe(400);
+    expect(publish.body.errors[0]).toMatchObject({
+      code: 'RUNJS_COMPILE_FAILED',
+      details: {
+        diagnostics: expect.arrayContaining([
+          expect.objectContaining({
+            ruleId: 'runjs-value-render-forbidden',
+          }),
+        ]),
+      },
+    });
+    await expect(app.db.getRepository('vscFileCommits').count()).resolves.toBe(commitCountBeforePublish);
+    const updated = await repository.findModelById('reaction-runjs-model');
+    expect(getAtPath(updated, ['stepParams', 'reactionSettings', 'fieldValues', 'value', 0, 'code'])).toBe(
+      'return oldValue;',
+    );
   });
 
   it('reads and writes chart option and events raw sources with distinct surface styles', async () => {

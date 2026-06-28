@@ -27,9 +27,15 @@ import FlowModelRepository from '../repository';
 
 type FlowModelStepLocator = Extract<RunJSSourceLocator, { kind: 'flowModel.step' }>;
 type FlowModelNestedLocator = Extract<RunJSSourceLocator, { kind: 'flowModel.nestedRunJS' }>;
+type FlowRegistryRunJSLocator = Extract<RunJSSourceLocator, { kind: 'flowModel.flowRegistry.runjs' }>;
 type ChartLocator = Extract<RunJSSourceLocator, { kind: 'chart.option' | 'chart.events' }>;
 type JsonRecord = Record<string, unknown>;
 type JsonPath = Array<string | number>;
+type FlowModelNestedStorage = {
+  rootKey: 'stepParams' | 'flowRegistry';
+  ownerPath: JsonPath;
+  targetPath: JsonPath;
+};
 
 const RENDER_MODEL_USES = new Set([
   'JSBlockModel',
@@ -55,6 +61,7 @@ export function createFlowModelRunJSSourceAdapters(db: Database): RunJSSourceAda
   return [
     createFlowModelStepAdapter(db),
     createFlowModelNestedRunJSAdapter(db),
+    createFlowRegistryRunJSAdapter(db),
     createChartAdapter(db, 'chart.option'),
     createChartAdapter(db, 'chart.events'),
   ];
@@ -126,12 +133,16 @@ function createFlowModelNestedRunJSAdapter(db: Database): RunJSSourceAdapter<Flo
   return {
     kind: 'flowModel.nestedRunJS',
     async assertCanRead({ locator, ctx }) {
-      await assertFlowModelPermission(db, ctx, locator.modelUid, 'findOne', ['stepParams']);
-      await loadFlowModel(db, locator.modelUid, ctx);
+      const permission = requireFlowModelPermission(ctx, 'findOne');
+      await assertFlowModelRecordPermission(db, ctx, locator.modelUid, permission);
+      const model = await loadFlowModelForNestedSource(db, locator.modelUid, ctx, permission, 'findOne');
+      assertFlowModelPermissionFields(permission, 'findOne', [resolveNestedStorage(model, locator).rootKey]);
     },
     async assertCanWrite({ locator, ctx }) {
-      await assertFlowModelPermission(db, ctx, locator.modelUid, 'save', ['stepParams']);
-      await loadFlowModel(db, locator.modelUid, ctx);
+      const permission = requireFlowModelPermission(ctx, 'save');
+      await assertFlowModelRecordPermission(db, ctx, locator.modelUid, permission);
+      const model = await loadFlowModelForNestedSource(db, locator.modelUid, ctx, permission, 'save');
+      assertFlowModelPermissionFields(permission, 'save', [resolveNestedStorage(model, locator).rootKey]);
     },
     async readLegacy({ locator, ctx }) {
       const model = await loadFlowModel(db, locator.modelUid, ctx);
@@ -153,19 +164,79 @@ function createFlowModelNestedRunJSAdapter(db: Database): RunJSSourceAdapter<Flo
     },
     async writePublished({ locator, artifact, baseOwnerFingerprint, ctx }) {
       const transaction = requireTransaction(ctx);
-      await assertFlowModelPermission(db, ctx, locator.modelUid, 'save', ['stepParams']);
+      const permission = requireFlowModelPermission(ctx, 'save');
+      await assertFlowModelRecordPermission(db, ctx, locator.modelUid, permission);
+      const initialModel = await loadFlowModelForNestedSource(db, locator.modelUid, ctx, permission, 'save');
+      assertFlowModelPermissionFields(permission, 'save', [resolveNestedStorage(initialModel, locator).rootKey]);
       await lockFlowModelForUpdate(db, locator.modelUid, transaction);
-      await assertFlowModelPermission(db, ctx, locator.modelUid, 'save', ['stepParams']);
+      await assertFlowModelRecordPermission(db, ctx, locator.modelUid, permission);
       const model = await loadFlowModel(db, locator.modelUid, ctx);
+      const storage = resolveNestedStorage(model, locator);
+      assertFlowModelPermissionFields(permission, 'save', [storage.rootKey]);
       assertOwnerFingerprintMatches(buildNestedFingerprint(locator, model), baseOwnerFingerprint, locator.kind);
-      const nextStepParams = cloneJsonRecord(getAtPath(model, ['stepParams']));
-      const containerPath = [locator.containerFlowKey, locator.containerStepKey];
-      const targetPath = [...containerPath, ...locator.valuePath];
-      const originalValue = getAtPath(nextStepParams, targetPath);
+      const nextRoot = cloneJsonRecord(getAtPath(model, [storage.rootKey]));
+      const targetPath = storage.targetPath.slice(1);
+      const originalValue = getAtPath(nextRoot, targetPath);
 
-      setAtPath(nextStepParams, targetPath, replaceNestedRunJSValue(originalValue, artifact));
+      setAtPath(nextRoot, targetPath, replaceNestedRunJSValue(originalValue, artifact, locator));
 
-      await getFlowModelRepository(db).patch({ uid: locator.modelUid, stepParams: nextStepParams }, { transaction });
+      await getFlowModelRepository(db).patch({ uid: locator.modelUid, [storage.rootKey]: nextRoot }, { transaction });
+
+      return buildWriteResult(await this.getFingerprint({ locator, ctx }));
+    },
+  };
+}
+
+function createFlowRegistryRunJSAdapter(db: Database): RunJSSourceAdapter<FlowRegistryRunJSLocator> {
+  return {
+    kind: 'flowModel.flowRegistry.runjs',
+    async assertCanRead({ locator, ctx }) {
+      await assertFlowModelPermission(db, ctx, locator.modelUid, 'findOne', ['flowRegistry']);
+      await loadFlowModel(db, locator.modelUid, ctx);
+    },
+    async assertCanWrite({ locator, ctx }) {
+      await assertFlowModelPermission(db, ctx, locator.modelUid, 'save', ['flowRegistry']);
+      await loadFlowModel(db, locator.modelUid, ctx);
+    },
+    async readLegacy({ locator, ctx }) {
+      const model = await loadFlowModel(db, locator.modelUid, ctx);
+      const source = readFlowRegistryRunJSSource(model, locator);
+
+      return {
+        code: source.code,
+        version: 'v2',
+        label: buildFlowModelLabel(model, `${locator.flowKey}.${locator.stepKey}`),
+        surfaceStyle: 'action',
+        language: 'typescript',
+        entryPath: 'src/main.tsx',
+        entry: 'src/main.tsx',
+        ownerFingerprint: buildFlowRegistryRunJSFingerprint(locator, model),
+      };
+    },
+    async getFingerprint({ locator, ctx }) {
+      return buildFlowRegistryRunJSFingerprint(locator, await loadFlowModel(db, locator.modelUid, ctx));
+    },
+    async writePublished({ locator, artifact, baseOwnerFingerprint, ctx }) {
+      const transaction = requireTransaction(ctx);
+      await assertFlowModelPermission(db, ctx, locator.modelUid, 'save', ['flowRegistry']);
+      await lockFlowModelForUpdate(db, locator.modelUid, transaction);
+      await assertFlowModelPermission(db, ctx, locator.modelUid, 'save', ['flowRegistry']);
+      const model = await loadFlowModel(db, locator.modelUid, ctx);
+      assertOwnerFingerprintMatches(
+        buildFlowRegistryRunJSFingerprint(locator, model),
+        baseOwnerFingerprint,
+        locator.kind,
+      );
+      const nextFlowRegistry = cloneJsonRecord(getAtPath(model, ['flowRegistry']));
+      const step = getAtPath(nextFlowRegistry, [locator.flowKey, 'steps', locator.stepKey]);
+      const sourcePath = resolveFlowRegistryRunJSSourcePath(step, locator.sourcePath);
+
+      setAtPath(nextFlowRegistry, [locator.flowKey, 'steps', locator.stepKey, ...sourcePath], artifact.code);
+
+      await getFlowModelRepository(db).patch(
+        { uid: locator.modelUid, flowRegistry: nextFlowRegistry },
+        { transaction },
+      );
 
       return buildWriteResult(await this.getFingerprint({ locator, ctx }));
     },
@@ -257,9 +328,69 @@ async function assertFlowModelPermission(
   action: 'findOne' | 'save',
   fields: string[],
 ): Promise<void> {
-  const permission = requireSourcePermission(ctx, 'flowModels', action);
-  assertPermissionAllowsFields(permission, fields, 'flowModels', action);
+  const permission = requireFlowModelPermission(ctx, action);
+  await assertFlowModelPermissionWithGrant(db, ctx, modelUid, action, fields, permission);
+}
+
+function requireFlowModelPermission(
+  ctx: RunJSSourceAdapterContext,
+  action: 'findOne' | 'save',
+): RunJSSourcePermissionResult {
+  return requireSourcePermission(ctx, 'flowModels', action);
+}
+
+async function assertFlowModelPermissionWithGrant(
+  db: Database,
+  ctx: RunJSSourceAdapterContext,
+  modelUid: string,
+  action: 'findOne' | 'save',
+  fields: string[],
+  permission: RunJSSourcePermissionResult,
+): Promise<void> {
+  assertFlowModelPermissionFields(permission, action, fields);
+  await assertFlowModelRecordPermission(db, ctx, modelUid, permission);
+}
+
+function assertFlowModelPermissionFields(
+  permission: RunJSSourcePermissionResult,
+  action: 'findOne' | 'save',
+  fields: string[],
+): void {
+  if (permissionAllowsFields(permission, fields)) {
+    return;
+  }
+
+  throwFlowModelFieldPermissionDenied(action, fields);
+}
+
+async function assertFlowModelRecordPermission(
+  db: Database,
+  ctx: RunJSSourceAdapterContext,
+  modelUid: string,
+  permission: RunJSSourcePermissionResult,
+): Promise<void> {
   await assertRecordMatchesPermissionFilter(db, ctx, 'flowModels', modelUid, permission);
+}
+
+async function loadFlowModelForNestedSource(
+  db: Database,
+  modelUid: string,
+  ctx: RunJSSourceAdapterContext,
+  permission: RunJSSourcePermissionResult,
+  action: 'findOne' | 'save',
+): Promise<JsonRecord> {
+  try {
+    return await loadFlowModel(db, modelUid, ctx);
+  } catch (error) {
+    if (
+      error instanceof VscError &&
+      error.code === 'RUNJS_SOURCE_NOT_FOUND' &&
+      !permissionAllowsAllNestedRoots(permission)
+    ) {
+      throwFlowModelFieldPermissionDenied(action, ['stepParams', 'flowRegistry']);
+    }
+    throw error;
+  }
 }
 
 function requireSourcePermission(
@@ -349,27 +480,45 @@ function assertPermissionAllowsFields(
   resource: string,
   action: string,
 ): void {
+  if (permissionAllowsFields(permission, fields)) {
+    return;
+  }
+
+  throw new VscError('PERMISSION_DENIED', `RunJS source requires ${resource}:${action} field permission`, {
+    details: {
+      resource,
+      action,
+      fields,
+    },
+  });
+}
+
+function permissionAllowsFields(permission: RunJSSourcePermissionResult, fields: string[]): boolean {
   const whitelist = toStringList(permission.params?.whitelist || permission.params?.fields);
   if (whitelist && fields.some((field) => !whitelist.includes(field))) {
-    throw new VscError('PERMISSION_DENIED', `RunJS source requires ${resource}:${action} field permission`, {
-      details: {
-        resource,
-        action,
-        fields,
-      },
-    });
+    return false;
   }
 
   const blacklist = toStringList(permission.params?.blacklist);
   if (blacklist && fields.some((field) => blacklist.includes(field))) {
-    throw new VscError('PERMISSION_DENIED', `RunJS source requires ${resource}:${action} field permission`, {
-      details: {
-        resource,
-        action,
-        fields,
-      },
-    });
+    return false;
   }
+
+  return true;
+}
+
+function permissionAllowsAllNestedRoots(permission: RunJSSourcePermissionResult): boolean {
+  return permissionAllowsFields(permission, ['stepParams']) && permissionAllowsFields(permission, ['flowRegistry']);
+}
+
+function throwFlowModelFieldPermissionDenied(action: string, fields: string[]): never {
+  throw new VscError('PERMISSION_DENIED', `RunJS source requires flowModels:${action} field permission`, {
+    details: {
+      resource: 'flowModels',
+      action,
+      fields,
+    },
+  });
 }
 
 function toStringList(value: unknown): string[] | null {
@@ -404,6 +553,7 @@ function buildStepFingerprint(locator: FlowModelStepLocator, model: JsonRecord):
 
 function buildNestedFingerprint(locator: FlowModelNestedLocator, model: JsonRecord): string {
   const source = readNestedSource(model, locator);
+  const storage = resolveNestedStorage(model, locator);
 
   return buildRunJSOwnerFingerprint({
     locator,
@@ -413,10 +563,28 @@ function buildNestedFingerprint(locator: FlowModelNestedLocator, model: JsonReco
       containerStepKey: locator.containerStepKey,
       valuePath: locator.valuePath,
       scene: locator.scene,
-      ownerState: getAtPath(model, ['stepParams', locator.containerFlowKey, locator.containerStepKey]),
+      rootKey: storage.rootKey,
+      ownerState: getAtPath(model, storage.ownerPath),
     },
     selectedLegacyValue: source.originalValue,
     selectedVersion: source.version,
+  });
+}
+
+function buildFlowRegistryRunJSFingerprint(locator: FlowRegistryRunJSLocator, model: JsonRecord): string {
+  const source = readFlowRegistryRunJSSource(model, locator);
+
+  return buildRunJSOwnerFingerprint({
+    locator,
+    ownerUpdatedAt: {
+      ...getFlowModelFingerprintOwner(model),
+      flowKey: locator.flowKey,
+      stepKey: locator.stepKey,
+      sourcePath: source.sourcePath,
+      ownerState: getAtPath(model, ['flowRegistry', locator.flowKey, 'steps', locator.stepKey]),
+    },
+    selectedLegacyValue: source.originalValue,
+    selectedVersion: 'v2',
   });
 }
 
@@ -465,13 +633,52 @@ function modelUseMetadata(modelUse: string): JsonRecord | undefined {
   return modelUse ? { modelUse } : undefined;
 }
 
+function readFlowRegistryRunJSSource(model: JsonRecord, locator: FlowRegistryRunJSLocator) {
+  const stepPath: JsonPath = ['flowRegistry', locator.flowKey, 'steps', locator.stepKey];
+  const step = getAtPath(model, stepPath);
+  if (!isRecord(step)) {
+    throwNestedPathNotFound(stepPath);
+  }
+  if (step.use !== 'runjs') {
+    throwNestedPathNotFound(stepPath);
+  }
+  const sourcePath = resolveFlowRegistryRunJSSourcePath(step, locator.sourcePath, stepPath);
+  const value = getAtPath(step, sourcePath);
+  if (typeof value !== 'string') {
+    throwNestedPathNotFound([...stepPath, ...sourcePath]);
+  }
+
+  return {
+    code: value,
+    originalValue: value,
+    sourcePath,
+  };
+}
+
+function resolveFlowRegistryRunJSSourcePath(step: JsonRecord, preferredPath: string[], stepPath: JsonPath): string[] {
+  if (!isFlowRegistryRunJSCodePath(preferredPath)) {
+    throwNestedPathNotFound([...stepPath, ...preferredPath]);
+  }
+  if (typeof getAtPath(step, ['params', 'code']) === 'string') {
+    return ['params', 'code'];
+  }
+  if (typeof getAtPath(step, ['defaultParams', 'code']) === 'string') {
+    return ['defaultParams', 'code'];
+  }
+
+  return ['defaultParams', 'code'];
+}
+
+function isFlowRegistryRunJSCodePath(path: string[]): boolean {
+  return path.length === 2 && (path[0] === 'params' || path[0] === 'defaultParams') && path[1] === 'code';
+}
+
 function readNestedSource(model: JsonRecord, locator: FlowModelNestedLocator) {
-  const value = getAtPath(model, [
-    'stepParams',
-    locator.containerFlowKey,
-    locator.containerStepKey,
-    ...locator.valuePath,
-  ]);
+  const storage = resolveNestedStorage(model, locator);
+  assertNestedKeyedContainersExist(model, storage, locator);
+  assertNestedParentPathExists(model, storage, locator);
+  const value = getExistingNestedValue(model, storage.targetPath);
+  assertNestedTargetExists(value, locator);
 
   if (isRecord(value)) {
     if (typeof value.code === 'string') {
@@ -497,7 +704,140 @@ function readNestedSource(model: JsonRecord, locator: FlowModelNestedLocator) {
   };
 }
 
-function replaceNestedRunJSValue(value: unknown, artifact: RunJSRuntimeArtifact): unknown {
+function resolveNestedStorage(model: JsonRecord, locator: FlowModelNestedLocator): FlowModelNestedStorage {
+  const flowRegistryStepPath: JsonPath = ['flowRegistry', locator.containerFlowKey, 'steps', locator.containerStepKey];
+  const flowRegistryStep = getAtPath(model, flowRegistryStepPath);
+
+  if (typeof flowRegistryStep !== 'undefined') {
+    if (!isRecord(flowRegistryStep)) {
+      throwNestedPathNotFound(flowRegistryStepPath);
+    }
+    const paramsKey = hasNestedPathOwner(getAtPath(flowRegistryStep, ['params']), locator.valuePath)
+      ? 'params'
+      : 'defaultParams';
+    return {
+      rootKey: 'flowRegistry',
+      ownerPath: flowRegistryStepPath,
+      targetPath: [...flowRegistryStepPath, paramsKey, ...locator.valuePath],
+    };
+  }
+
+  const stepParamsOwnerPath: JsonPath = ['stepParams', locator.containerFlowKey, locator.containerStepKey];
+  const stepParamsOwner = getAtPath(model, stepParamsOwnerPath);
+  if (!isRecord(stepParamsOwner)) {
+    throwNestedPathNotFound(stepParamsOwnerPath);
+  }
+
+  return {
+    rootKey: 'stepParams',
+    ownerPath: stepParamsOwnerPath,
+    targetPath: [...stepParamsOwnerPath, ...locator.valuePath],
+  };
+}
+
+function assertNestedKeyedContainersExist(
+  model: JsonRecord,
+  storage: FlowModelNestedStorage,
+  locator: FlowModelNestedLocator,
+): void {
+  const prefixPath = storage.targetPath.slice(0, storage.targetPath.length - locator.valuePath.length);
+  const containers = getNestedKeyedArrayContainers(locator.valuePath);
+
+  for (const { path, key } of containers) {
+    const container = getAtPath(model, [...prefixPath, ...path]);
+    if (!Array.isArray(container) || typeof getChild(container, key) === 'undefined') {
+      throwKeyedArrayItemNotFound(String(key));
+    }
+  }
+}
+
+function getNestedKeyedArrayContainers(valuePath: JsonPath): Array<{ path: JsonPath; key: string | number }> {
+  const containers: Array<{ path: JsonPath; key: string | number }> = [];
+  const addContainer = (containerEndIndex: number, key: string | number) => {
+    containers.push({ path: valuePath.slice(0, containerEndIndex + 1), key });
+  };
+
+  if (valuePath[0] === 'variables' && isPathKey(valuePath[1])) {
+    addContainer(0, valuePath[1]);
+  }
+  if (valuePath[0] === 'value' && isPathKey(valuePath[1])) {
+    addContainer(0, valuePath[1]);
+  }
+
+  for (let index = 0; index < valuePath.length - 1; index += 1) {
+    const key = valuePath[index + 1];
+    if (valuePath[index] === 'actions' && isPathKey(key)) {
+      addContainer(index, key);
+    }
+    if (
+      valuePath[index] === 'value' &&
+      valuePath[index - 1] === 'params' &&
+      valuePath[index + 2] === 'value' &&
+      isPathKey(key)
+    ) {
+      addContainer(index, key);
+    }
+  }
+
+  return containers;
+}
+
+function isPathKey(value: unknown): value is string | number {
+  return typeof value === 'string' || typeof value === 'number';
+}
+
+function assertNestedParentPathExists(
+  model: JsonRecord,
+  storage: FlowModelNestedStorage,
+  locator: FlowModelNestedLocator,
+): void {
+  const parentValuePath = locator.valuePath.slice(0, -1);
+  if (parentValuePath.length === 0) {
+    return;
+  }
+
+  const parent = getAtPath(model, storage.targetPath.slice(0, -1));
+  if (Array.isArray(parent) || isRecord(parent)) {
+    return;
+  }
+
+  const hasKeyedContainers = getNestedKeyedArrayContainers(locator.valuePath).length > 0;
+  throwNestedPathNotFound(hasKeyedContainers ? locator.valuePath : parentValuePath);
+}
+
+function assertNestedTargetExists(value: unknown, locator: FlowModelNestedLocator): void {
+  if (typeof value !== 'undefined' || isNestedRunJSValuePath(locator)) {
+    return;
+  }
+
+  throwNestedPathNotFound(locator.valuePath);
+}
+
+function throwNestedPathNotFound(path: JsonPath): never {
+  throw new VscError('RUNJS_SOURCE_NOT_FOUND', `RunJS source path "${formatPath(path)}" was not found`, {
+    details: {
+      path: formatPath(path),
+    },
+  });
+}
+
+function hasNestedPathOwner(root: unknown, valuePath: JsonPath): boolean {
+  const containers = getNestedKeyedArrayContainers(valuePath);
+  if (containers.length) {
+    return containers.every(({ path, key }) => {
+      const container = getAtPath(root, path);
+      return Array.isArray(container) && typeof getChild(container, key) !== 'undefined';
+    });
+  }
+
+  return typeof getAtPath(root, valuePath) !== 'undefined';
+}
+
+function replaceNestedRunJSValue(
+  value: unknown,
+  artifact: RunJSRuntimeArtifact,
+  locator: FlowModelNestedLocator,
+): unknown {
   if (isRecord(value)) {
     if (typeof value.code === 'string' || Object.prototype.hasOwnProperty.call(value, 'version')) {
       return {
@@ -514,7 +854,19 @@ function replaceNestedRunJSValue(value: unknown, artifact: RunJSRuntimeArtifact)
     }
   }
 
+  if (isNestedRunJSValuePath(locator)) {
+    return {
+      code: artifact.code,
+      version: artifact.version,
+    };
+  }
+
   return artifact.code;
+}
+
+function isNestedRunJSValuePath(locator: FlowModelNestedLocator): boolean {
+  const leaf = locator.valuePath[locator.valuePath.length - 1];
+  return leaf !== 'code' && leaf !== 'script';
 }
 
 function resolveVersionPath(paramPath: string[], versionPath?: string[]): string[] {
@@ -549,6 +901,14 @@ function inferStepSurfaceStyle(model: JsonRecord): RunJSSurfaceStyle {
 }
 
 function inferNestedSurfaceStyle(locator: FlowModelNestedLocator, value: unknown): RunJSSurfaceStyle {
+  const isCustomVariableRunJS =
+    locator.valuePath.length >= 3 &&
+    locator.valuePath[0] === 'variables' &&
+    locator.valuePath[locator.valuePath.length - 1] === 'runjs';
+  if (isCustomVariableRunJS) {
+    return 'value';
+  }
+
   const scene = locator.scene.toLowerCase();
   if (scene.includes('event') || scene.includes('linkage') || (isRecord(value) && typeof value.script === 'string')) {
     return 'action';
@@ -602,16 +962,8 @@ function requireTransaction(ctx: RunJSSourceAdapterContext): Transaction {
 function getAtPath(root: unknown, path: JsonPath): unknown {
   let current = root;
   for (const segment of path) {
-    if (Array.isArray(current) && typeof segment === 'number') {
-      current = current[segment];
-      continue;
-    }
-    if (isRecord(current) && typeof segment === 'string') {
-      current = current[segment];
-      continue;
-    }
-
-    return undefined;
+    current = getChild(current, segment);
+    if (typeof current === 'undefined') return undefined;
   }
 
   return current;
@@ -623,8 +975,15 @@ function setAtPath(root: JsonRecord, path: JsonPath, value: unknown): void {
     const segment = path[index];
     const nextSegment = path[index + 1];
     const nextValue = getChild(current, segment);
-    const replacement =
+    if (Array.isArray(current) && typeof segment === 'string' && typeof nextValue === 'undefined') {
+      throwKeyedArrayItemNotFound(segment);
+    }
+    const rawReplacement =
       Array.isArray(nextValue) || isRecord(nextValue) ? nextValue : typeof nextSegment === 'number' ? [] : {};
+    const replacement =
+      Array.isArray(current) && typeof segment === 'string' && isRecord(rawReplacement)
+        ? { key: segment, ...rawReplacement }
+        : rawReplacement;
 
     setChild(current, segment, replacement);
     current = replacement;
@@ -637,6 +996,9 @@ function getChild(parent: unknown, segment: string | number): unknown {
   if (Array.isArray(parent) && typeof segment === 'number') {
     return parent[segment];
   }
+  if (Array.isArray(parent) && typeof segment === 'string') {
+    return parent.find((item) => isRecord(item) && item.key === segment);
+  }
   if (isRecord(parent) && typeof segment === 'string') {
     return parent[segment];
   }
@@ -647,6 +1009,15 @@ function getChild(parent: unknown, segment: string | number): unknown {
 function setChild(parent: unknown, segment: string | number, value: unknown): void {
   if (Array.isArray(parent) && typeof segment === 'number') {
     parent[segment] = value;
+    return;
+  }
+  if (Array.isArray(parent) && typeof segment === 'string') {
+    const index = parent.findIndex((item) => isRecord(item) && item.key === segment);
+    if (index >= 0) {
+      parent[index] = value;
+    } else {
+      throwKeyedArrayItemNotFound(segment);
+    }
     return;
   }
   if (isRecord(parent) && typeof segment === 'string') {
@@ -664,6 +1035,28 @@ function cloneJsonRecord(value: unknown): JsonRecord {
 
 function isRecord(value: unknown): value is JsonRecord {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+function getExistingNestedValue(root: unknown, path: JsonPath): unknown {
+  let current = root;
+  for (const segment of path) {
+    const next = getChild(current, segment);
+    if (Array.isArray(current) && typeof segment === 'string' && typeof next === 'undefined') {
+      throwKeyedArrayItemNotFound(segment);
+    }
+    current = next;
+    if (typeof current === 'undefined') return undefined;
+  }
+
+  return current;
+}
+
+function throwKeyedArrayItemNotFound(key: string): never {
+  throw new VscError('RUNJS_SOURCE_NOT_FOUND', `RunJS source keyed item "${key}" was not found`, {
+    details: {
+      key,
+    },
+  });
 }
 
 function formatPath(path: JsonPath): string {

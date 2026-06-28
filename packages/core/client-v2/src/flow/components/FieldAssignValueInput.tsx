@@ -36,6 +36,7 @@ import {
   isToManyAssociationField,
 } from '../internal/utils/modelUtils';
 import { RunJSValueEditor } from './RunJSValueEditor';
+import type { RunJSSourceLocator, RunJSSurfaceStyle } from './runjs-studio';
 import { pickOperatorStyle as pickStyle, resolveOperatorComponent } from '../internal/utils/operatorSchemaHelper';
 import { InputFieldModel } from '../models/fields/InputFieldModel';
 import { normalizeFilterValueByOperator } from '../models/blocks/filter-form/valueNormalization';
@@ -342,6 +343,9 @@ interface Props {
    */
   enableDateVariableAsConstant?: boolean;
   maxAssociationFieldDepth?: number;
+  sourceLocator?: RunJSSourceLocator;
+  sourceLabel?: string;
+  surfaceStyle?: RunJSSurfaceStyle;
 }
 
 type ResolvedFieldContext = {
@@ -713,6 +717,9 @@ export const FieldAssignValueInput: React.FC<Props> = ({
   associationFieldNamesOverride,
   enableDateVariableAsConstant = false,
   maxAssociationFieldDepth = 2,
+  sourceLocator,
+  sourceLabel,
+  surfaceStyle,
 }) => {
   const flowCtx = useFlowContext<FlowModelContext>();
   const normalizeEventValue = React.useCallback((eventOrValue: unknown) => {
@@ -1394,10 +1401,17 @@ export const FieldAssignValueInput: React.FC<Props> = ({
 
   const RunJSComponent = React.useMemo(() => {
     const C: React.FC<any> = (inputProps) => (
-      <RunJSValueEditor t={flowCtx.t} value={inputProps?.value} onChange={inputProps?.onChange} />
+      <RunJSValueEditor
+        t={flowCtx.t}
+        value={inputProps?.value}
+        onChange={inputProps?.onChange}
+        sourceLocator={sourceLocator}
+        sourceLabel={sourceLabel}
+        surfaceStyle={surfaceStyle || 'value'}
+      />
     );
     return C;
-  }, [flowCtx]);
+  }, [flowCtx, sourceLabel, sourceLocator, surfaceStyle]);
 
   const ConstantEditor = useDateVariableConstant ? DateVariableConstantEditor : ConstantValueEditor;
 

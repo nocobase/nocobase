@@ -21,16 +21,27 @@ import {
 } from '../models/blocks/form/legacyDefaultValueMigration';
 import { hasPersistedAssignRulesValue } from '../models/blocks/shared/legacyDefaultValueMigrationBase';
 
+function hasPersistedRuleItem(value: unknown, item: FieldAssignRuleItem, index: number): boolean {
+  if (!Array.isArray(value)) return false;
+  if (item?.key) {
+    return value.some(
+      (rule) => Boolean(rule) && typeof rule === 'object' && (rule as { key?: unknown }).key === item.key,
+    );
+  }
+  return Boolean(value[index]);
+}
+
 const FormAssignRulesUI = observer(
   (props: { value?: FieldAssignRuleItem[]; onChange?: (value: FieldAssignRuleItem[]) => void }) => {
+    const { value: propValue, onChange } = props;
     const ctx = useFlowContext();
     const t = ctx.model.translate.bind(ctx.model);
     const { isTitleFieldCandidate, onSyncAssociationTitleField } = useAssociationTitleFieldSync(t);
-    const canEdit = typeof props.onChange === 'function';
+    const canEdit = typeof onChange === 'function';
 
     const fieldOptions = React.useMemo(() => {
       return collectFieldAssignCascaderOptions({ formBlockModel: ctx.model, t });
-    }, [ctx.model]);
+    }, [ctx.model, t]);
 
     const legacyDefaults = React.useMemo(() => {
       return collectLegacyDefaultValueRulesFromFormModel(ctx.model);
@@ -51,16 +62,16 @@ const FormAssignRulesUI = observer(
     }, []);
 
     const normalizedValue = React.useMemo(() => {
-      const base = Array.isArray(props.value) ? props.value : [];
+      const base = Array.isArray(propValue) ? propValue : [];
       return base;
-    }, [props.value]);
+    }, [propValue]);
 
     const legacyAwareValue = React.useMemo(() => {
       if (hasPersistedValue) {
         return normalizedValue;
       }
-      return mergeAssignRulesWithLegacyDefaults(props.value, legacyDefaults);
-    }, [hasPersistedValue, legacyDefaults, normalizedValue, props.value]);
+      return mergeAssignRulesWithLegacyDefaults(propValue, legacyDefaults);
+    }, [hasPersistedValue, legacyDefaults, normalizedValue, propValue]);
 
     const value = React.useMemo(() => {
       if (!canEdit || !hasInitializedMerge) {
@@ -73,9 +84,32 @@ const FormAssignRulesUI = observer(
       (next: FieldAssignRuleItem[]) => {
         if (!canEdit) return;
         markInitialized();
-        props.onChange?.(next);
+        onChange?.(next);
       },
-      [canEdit, markInitialized, props.onChange],
+      [canEdit, markInitialized, onChange],
+    );
+
+    const getValueInputProps = React.useCallback(
+      (item: FieldAssignRuleItem, index: number) => {
+        const ruleKey = item?.key || index;
+        const persistedValue = ctx.model?.getStepParams?.('formModelSettings', 'assignRules')?.value;
+        const hasSource = ctx.model?.uid && hasPersistedRuleItem(persistedValue, item, index);
+        return {
+          sourceLocator: hasSource
+            ? {
+                kind: 'flowModel.nestedRunJS' as const,
+                modelUid: ctx.model.uid,
+                containerFlowKey: 'formModelSettings',
+                containerStepKey: 'assignRules',
+                valuePath: ['value', ruleKey, 'value'],
+                scene: 'formValue',
+              }
+            : undefined,
+          sourceLabel: `${t('Field values')} / ${t('RunJS')}`,
+          surfaceStyle: 'value' as const,
+        };
+      },
+      [ctx.model, t],
     );
 
     // 仅在首次打开时，把合并结果写回到当前 step 表单状态，后续不再自动合并（以免重复添加）。
@@ -89,10 +123,10 @@ const FormAssignRulesUI = observer(
       }
 
       if (!isEqual(normalizedValue, legacyAwareValue)) {
-        props.onChange?.(legacyAwareValue);
+        onChange?.(legacyAwareValue);
       }
       markInitialized();
-    }, [canEdit, hasPersistedValue, legacyAwareValue, markInitialized, normalizedValue, props.onChange]);
+    }, [canEdit, hasPersistedValue, legacyAwareValue, markInitialized, normalizedValue, onChange]);
 
     return (
       <FieldAssignRulesEditor
@@ -102,6 +136,7 @@ const FormAssignRulesUI = observer(
         value={value}
         onChange={handleChange}
         showValueEditorWhenNoField
+        getValueInputProps={getValueInputProps}
         isTitleFieldCandidate={isTitleFieldCandidate}
         onSyncAssociationTitleField={onSyncAssociationTitleField}
         enableDateVariableAsConstant
