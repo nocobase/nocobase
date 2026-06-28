@@ -10,7 +10,7 @@ Gerencia os valores de configuração padrão da CLI. As chaves atualmente supor
 
 - A própria CLI: `locale`, `update.policy`, `license.pkg-url`
 - Runtime do Docker: `docker.network`, `docker.container-prefix`
-- Executáveis externos: `bin.docker`, `bin.caddy`, `bin.git`, `bin.nginx`, `bin.yarn`
+- Executáveis externos: `bin.docker`, `bin.caddy`, `bin.git`, `bin.nginx`, `bin.pnpm`, `bin.yarn`
 - Geração de proxy: `proxy.nb-cli-root`, `proxy.upstream-host`, `proxy.nginx-driver`, `proxy.caddy-driver`
 
 A maioria dos projetos só precisa de algumas dessas chaves. Na prática, as mais comuns são:
@@ -34,6 +34,7 @@ A maioria dos projetos só precisa de algumas dessas chaves. Na prática, as mai
 | `bin.caddy` | `caddy` | Sobrescreve o caminho do executável do Caddy |
 | `bin.git` | `git` | Sobrescreve o caminho do executável do Git |
 | `bin.nginx` | `nginx` | Sobrescreve o caminho do executável do Nginx |
+| `bin.pnpm` | `pnpm` | Sobrescreve o caminho do executável do pnpm |
 | `bin.yarn` | `yarn` | Sobrescreve o caminho do executável do Yarn |
 | `proxy.nb-cli-root` | raiz da CLI, normalmente o diretório home do usuário atual | Sobrescreve o caminho raiz visível para a configuração de proxy gerada quando o processo do proxy e a CLI não enxergam a mesma raiz do sistema de arquivos |
 | `proxy.upstream-host` | `127.0.0.1` | Sobrescreve o host usado pelo proxy para encaminhar tráfego de volta para a aplicação NocoBase |
@@ -70,12 +71,14 @@ nb config get docker.network
 nb config set docker.network nocobase
 nb config set bin.nginx /usr/sbin/nginx
 nb config set bin.git /usr/bin/git
+nb config set bin.pnpm /usr/local/bin/pnpm
 nb config delete docker.container-prefix
 ```
 
 ## Notas
 
 - `bin.nginx` e `bin.caddy` afetam apenas o driver `local` de `nb proxy nginx` e `nb proxy caddy`
+- `bin.pnpm` é usado quando comandos precisam executar pnpm diretamente, por exemplo ao atualizar uma instalação global da CLI gerenciada por pnpm com `nb self update`
 - `proxy.nginx-driver` e `proxy.caddy-driver` armazenam o driver padrão usado por cada provider
 - `proxy.nb-cli-root` e `proxy.upstream-host` são overrides avançados de proxy. Para a maioria dos envs `local` ou `docker` gerenciados pela CLI, os valores padrão já são suficientes
 - Se você só quer trocar o driver ativo do proxy, normalmente é mais claro usar `nb proxy nginx use` ou `nb proxy caddy use` do que definir a chave manualmente

@@ -13,7 +13,7 @@ import type { PromptValue } from './prompt-catalog.ts';
 import { translateCli } from './cli-locale.ts';
 
 const API_BASE_URL_EXAMPLE = 'http://localhost:13000/api';
-const ENV_KEY_PATTERN = /^[A-Za-z0-9]+$/;
+const ENV_KEY_PATTERN = /^[A-Za-z0-9_-]+$/;
 const APP_PUBLIC_PATH_PATTERN = /^\/(?:[A-Za-z0-9_-]+(?:\/[A-Za-z0-9_-]+)*)?\/?$/;
 const TCP_PORT_EXAMPLE = '13000';
 const API_BASE_URL_REQUEST_TIMEOUT_MS = 5_000;

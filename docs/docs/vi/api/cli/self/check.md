@@ -18,8 +18,25 @@ nb self check [flags]
 
 | Tham số | Kiểu | Mô tả |
 | --- | --- | --- |
-| `--channel` | string | Channel phát hành để so sánh, mặc định `auto`; có thể chọn `auto`, `latest`, `beta`, `alpha` |
+| `--channel` | string | Channel phát hành để so sánh, mặc định `auto`; có thể chọn `auto`, `latest`, `test`, `beta`, `alpha` |
 | `--json` | boolean | Đầu ra dạng JSON |
+
+## Phương thức cài đặt
+
+`nb self check` phát hiện phương thức cài đặt hiện tại khi chạy. Lệnh này không dùng cache lịch sử `self-install-methods.json`.
+
+Lệnh có thể báo cáo các phương thức cài đặt sau:
+
+| Phương thức cài đặt | Ý nghĩa |
+| --- | --- |
+| `npm-global` | CLI được cài dưới `npm prefix -g` hiện tại. |
+| `pnpm-global` | CLI được cài trong cây `node_modules` global của pnpm. |
+| `yarn-global` | CLI được khởi chạy từ `yarn global bin` hoặc được cài dưới `yarn global dir`. |
+| `package-local` | CLI được cài trong cây dependency của một dự án cục bộ. |
+| `source` | CLI đang chạy từ checkout repository. |
+| `unknown` | Không thể khớp cài đặt CLI với một phương thức cài đặt được hỗ trợ. |
+
+Tự cập nhật được hỗ trợ cho `npm-global`, `pnpm-global` và `yarn-global`. Với `package-local` hoặc `source`, hãy cập nhật dự án cha hoặc checkout repository tương ứng.
 
 ## Ví dụ
 
