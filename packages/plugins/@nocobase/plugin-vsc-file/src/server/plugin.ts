@@ -13,13 +13,21 @@ import { resolve } from 'path';
 import { createVscFileAuditActions } from './audit';
 import type { VscPermissionHook } from './permissions';
 import { VscPermissionHookRegistry } from './permissions';
+import { RunJSSourceAdapterRegistry, createRunJSSourcesResource, runJSSourceActionNames } from './runjs-sources';
 import { createVscFileResource, vscFileActionNames } from './resources/vscFile';
+import type { RunJSSourceAdapter } from '../shared/runjs-source-types';
 
 export class PluginVscFileServer extends Plugin {
   private readonly permissionHooks = new VscPermissionHookRegistry();
 
+  private readonly runJSSourceAdapters = new RunJSSourceAdapterRegistry();
+
   registerPermissionHook(hook: VscPermissionHook): () => void {
     return this.permissionHooks.register(hook);
+  }
+
+  registerRunJSSourceAdapter(adapter: RunJSSourceAdapter): () => void {
+    return this.runJSSourceAdapters.register(adapter);
   }
 
   async afterAdd() {}
@@ -36,7 +44,9 @@ export class PluginVscFileServer extends Plugin {
 
   async load() {
     this.app.resourceManager.define(createVscFileResource(this.db, this.permissionHooks));
+    this.app.resourceManager.define(createRunJSSourcesResource(this.db, this.runJSSourceAdapters));
     this.app.acl.allow('vscFile', [...vscFileActionNames], 'loggedIn');
+    this.app.acl.allow('runJSSources', [...runJSSourceActionNames], 'loggedIn');
     this.app.auditManager.registerActions(createVscFileAuditActions(this.db));
   }
 

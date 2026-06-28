@@ -7,8 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './permissions';
-export * from './config';
-export * from './runjs-sources';
-export * from '../shared/runjs-source-types';
-export { default } from './plugin';
+export * from './RunJSEditorField';
+export * from './RunJSEditorRegistry';
+export * from './types';

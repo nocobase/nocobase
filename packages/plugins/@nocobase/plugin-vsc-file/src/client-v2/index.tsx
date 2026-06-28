@@ -9,4 +9,5 @@
 
 export * from './components';
 export * from './hooks';
+export * from './runjs-studio';
 export { default } from './plugin';

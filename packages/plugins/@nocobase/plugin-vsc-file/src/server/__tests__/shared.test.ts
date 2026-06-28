@@ -12,6 +12,7 @@ import { maxPathLength } from '../../shared/constants';
 import { VscError } from '../../shared/errors';
 import { sha256Hex } from '../../shared/hash';
 import { normalizePath, pathHash, pathLowerHash } from '../../shared/path';
+import { buildRunJSSourceRepositoryIdentity, normalizeRunJSSourceLocator } from '../../shared/runjs-source-types';
 import { normalizeText } from '../../shared/text';
 
 describe('vsc-file shared utilities', () => {
@@ -58,5 +59,90 @@ describe('vsc-file shared utilities', () => {
 
   it('computes SHA-256 hex digests', () => {
     expect(sha256Hex('abc')).toBe('ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad');
+  });
+
+  it('normalizes RunJS source locators and derives stable repository identity', () => {
+    const locator = normalizeRunJSSourceLocator({
+      kind: 'flowModel.step',
+      modelUid: 'fm_1',
+      flowKey: 'settings',
+      stepKey: 'runjs',
+      paramPath: ['code'],
+      versionPath: ['version'],
+    });
+    const identity = buildRunJSSourceRepositoryIdentity(locator);
+
+    expect(locator).toMatchObject({
+      kind: 'flowModel.step',
+      modelUid: 'fm_1',
+      paramPath: ['code'],
+    });
+    expect(identity).toMatchObject({
+      ownerType: 'runjs-source',
+      name: 'source',
+    });
+    expect(identity.ownerId).toMatch(/^runjs:flowModel\.step:fm_1:[a-f0-9]{16}$/);
+  });
+
+  it('keeps RunJS source path boundaries and segment types in repository identity hashes', () => {
+    const dottedA = buildRunJSSourceRepositoryIdentity(
+      normalizeRunJSSourceLocator({
+        kind: 'flowModel.step',
+        modelUid: 'fm_1',
+        flowKey: 'a.b',
+        stepKey: 'c',
+        paramPath: ['code'],
+      }),
+    );
+    const dottedB = buildRunJSSourceRepositoryIdentity(
+      normalizeRunJSSourceLocator({
+        kind: 'flowModel.step',
+        modelUid: 'fm_1',
+        flowKey: 'a',
+        stepKey: 'b.c',
+        paramPath: ['code'],
+      }),
+    );
+    const numericPath = buildRunJSSourceRepositoryIdentity(
+      normalizeRunJSSourceLocator({
+        kind: 'flowModel.nestedRunJS',
+        modelUid: 'fm_1',
+        containerFlowKey: 'settings',
+        containerStepKey: 'rules',
+        valuePath: ['items', 1],
+        scene: 'defaultValue',
+      }),
+    );
+    const stringPath = buildRunJSSourceRepositoryIdentity(
+      normalizeRunJSSourceLocator({
+        kind: 'flowModel.nestedRunJS',
+        modelUid: 'fm_1',
+        containerFlowKey: 'settings',
+        containerStepKey: 'rules',
+        valuePath: ['items', '1'],
+        scene: 'defaultValue',
+      }),
+    );
+
+    expect(dottedA.ownerId).not.toBe(dottedB.ownerId);
+    expect(numericPath.ownerId).not.toBe(stringPath.ownerId);
+  });
+
+  it('rejects malformed RunJS source locators', () => {
+    expect(() =>
+      normalizeRunJSSourceLocator({
+        kind: 'flowModel.step',
+        modelUid: 'fm_1',
+        flowKey: 'settings',
+        stepKey: 'runjs',
+        paramPath: [],
+      }),
+    ).toThrowError(VscError);
+
+    try {
+      normalizeRunJSSourceLocator({ kind: 'unknown' });
+    } catch (error) {
+      expect(error).toMatchObject({ code: 'RUNJS_SOURCE_LOCATOR_INVALID' });
+    }
   });
 });

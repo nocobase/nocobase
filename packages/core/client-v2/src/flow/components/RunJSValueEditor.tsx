@@ -8,8 +8,8 @@
  */
 
 import React from 'react';
-import { isRunJSValue, normalizeRunJSValue, type RunJSValue } from '@nocobase/flow-engine';
-import { CodeEditor } from './code-editor';
+import type { RunJSValue } from '@nocobase/flow-engine';
+import { RunJSEditorField, type RunJSSourceLocator } from './runjs-studio';
 
 export interface RunJSValueEditorProps {
   t?: (key: string) => string;
@@ -17,6 +17,7 @@ export interface RunJSValueEditorProps {
   onChange?: (value: RunJSValue) => void;
   height?: string;
   scene?: string;
+  locator?: RunJSSourceLocator;
   containerStyle?: React.CSSProperties;
 }
 
@@ -30,21 +31,15 @@ export const RunJSValueEditor: React.FC<RunJSValueEditorProps> = (props) => {
     containerStyle = { flex: 1, minWidth: 0 },
   } = props;
 
-  const current: RunJSValue = isRunJSValue(value) ? normalizeRunJSValue(value) : { code: '', version: 'v2' };
-  const tip = t?.('Use return to output value') ?? 'Use return to output value';
-  const placeholderText = `// ${tip}`;
-
   return (
-    <div style={containerStyle}>
-      <CodeEditor
-        value={current.code}
-        onChange={(code) => onChange?.({ ...current, code })}
-        version={current.version}
-        height={height}
-        enableLinter
-        placeholder={placeholderText}
-        scene={scene}
-      />
-    </div>
+    <RunJSEditorField
+      t={t}
+      value={value}
+      onChange={onChange}
+      height={height}
+      scene={scene}
+      locator={props.locator}
+      containerStyle={containerStyle}
+    />
   );
 };

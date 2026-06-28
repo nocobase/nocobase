@@ -1,0 +1,101 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import React from 'react';
+import { fireEvent, render, screen } from '@testing-library/react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+
+import { RunJSEditorField, RunJSEditorRegistry } from '../runjs-studio';
+
+vi.mock('../code-editor', () => ({
+  CodeEditor: ({
+    value,
+    onChange,
+    placeholder,
+    readonly,
+  }: {
+    value?: string;
+    onChange?: (value: string) => void;
+    placeholder?: string;
+    readonly?: boolean;
+  }) => (
+    <textarea
+      aria-label={placeholder}
+      readOnly={readonly}
+      value={value || ''}
+      onChange={(event) => onChange?.(event.target.value)}
+    />
+  ),
+}));
+
+describe('RunJSEditorRegistry', () => {
+  afterEach(() => {
+    RunJSEditorRegistry.clear();
+  });
+
+  it('falls back to the inline RunJS editor when no provider is registered', () => {
+    const onChange = vi.fn();
+
+    render(<RunJSEditorField value={{ code: 'return 1;', version: 'v2' }} onChange={onChange} />);
+
+    fireEvent.change(screen.getByLabelText('// Use return to output value'), {
+      target: {
+        value: 'return 2;',
+      },
+    });
+
+    expect(onChange).toHaveBeenCalledWith({
+      code: 'return 2;',
+      version: 'v2',
+    });
+  });
+
+  it('uses the latest registered provider that can handle the source locator', () => {
+    RunJSEditorRegistry.registerProvider({
+      key: 'fallback-provider',
+      renderEditor: () => <div>fallback provider</div>,
+    });
+    RunJSEditorRegistry.registerProvider({
+      key: 'flow-step-provider',
+      canHandle: (props) => props.locator?.kind === 'flowModel.step',
+      renderEditor: (props) => <button type="button">{props.label || props.locator?.kind}</button>,
+    });
+
+    render(
+      <RunJSEditorField
+        label="Write JavaScript"
+        locator={{
+          kind: 'flowModel.step',
+          modelUid: 'fm_1',
+          flowKey: 'settings',
+          stepKey: 'runjs',
+          paramPath: ['code'],
+        }}
+        value={{ code: 'return ctx;', version: 'v2' }}
+      />,
+    );
+
+    expect(screen.getByRole('button', { name: 'Write JavaScript' })).toBeInTheDocument();
+    expect(screen.queryByText('fallback provider')).toBeNull();
+  });
+
+  it('removes a provider with the unregister callback', () => {
+    const unregister = RunJSEditorRegistry.registerProvider({
+      key: 'temporary',
+      renderEditor: () => <div>temporary provider</div>,
+    });
+
+    unregister();
+
+    render(<RunJSEditorField value={{ code: '', version: 'v2' }} />);
+
+    expect(screen.queryByText('temporary provider')).toBeNull();
+    expect(screen.getByLabelText('// Use return to output value')).toBeInTheDocument();
+  });
+});

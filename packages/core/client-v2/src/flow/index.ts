@@ -90,6 +90,7 @@ export class PluginFlowEngine<TApp extends BaseApplication<any> = BaseApplicatio
 // Export all models for external use
 export * from './components/filter';
 export * from './components/code-editor';
+export * from './components/runjs-studio';
 export { default as FlowRoute } from './components/FlowRoute';
 export * from './components/TextAreaWithContextSelector';
 export * from './components/SkeletonFallback';

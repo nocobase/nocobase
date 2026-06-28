@@ -12,5 +12,6 @@ export * from './drag-drop';
 export * from './EllipsisWithTooltip';
 export * from './ExpiresRadio';
 export * from './code-editor';
+export * from './runjs-studio';
 export * from './TextAreaWithContextSelector';
 //
