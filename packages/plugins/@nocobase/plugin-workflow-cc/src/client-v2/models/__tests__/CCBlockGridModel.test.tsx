@@ -83,6 +83,25 @@ function renderAddButton(model: CCBlockGridModel) {
   return holder.addSubModelButton.mock.calls.at(-1)?.[0]?.items as Array<Record<string, unknown>>;
 }
 
+function getOriginalApplicationContentItem(items: Array<Record<string, unknown>>) {
+  const dataBlocks = items.find((item) => item.key === 'dataBlocks') as { children: Array<Record<string, unknown>> };
+  const triggers = dataBlocks.children.find((item) => item.key === 'triggers') as {
+    children: Array<Record<string, unknown>>;
+  };
+  return triggers.children.find((item) => item.key === 'originalApplicationContent') as {
+    createModelOptions: {
+      stepParams: {
+        resourceSettings: {
+          init: {
+            collectionName: string;
+            dataSourceKey: string;
+          };
+        };
+      };
+    };
+  };
+}
+
 afterEach(() => {
   vi.clearAllMocks();
   holder.usePluginValue = undefined;
@@ -162,6 +181,89 @@ describe('CCBlockGridModel', () => {
       expect.objectContaining({
         key: 'otherBlocks',
         children: [expect.objectContaining({ key: 'markdown' }), expect.objectContaining({ key: 'jsBlock' })],
+      }),
+    );
+  });
+
+  it.each([
+    ['users', 'main', 'users'],
+    ['main:users', 'main', 'users'],
+    ['external:posts', 'external', 'posts'],
+  ])(
+    'normalizes v1 trigger resource collection "%s"',
+    (collectionName, expectedDataSourceKey, expectedCollectionName) => {
+      const model = createModel({
+        triggers: {
+          get: (type: string) =>
+            type === 'approval'
+              ? {
+                  getCreateModelMenuItem: vi.fn(() => ({
+                    key: 'originalApplicationContent',
+                    label: 'Original application content',
+                    useModel: 'NodeDetailsModel',
+                    createModelOptions: {
+                      use: 'NodeDetailsModel',
+                      stepParams: {
+                        resourceSettings: {
+                          init: {
+                            dataSourceKey: 'main',
+                            collectionName,
+                            dataPath: '$context.data',
+                          },
+                        },
+                      },
+                    },
+                  })),
+                }
+              : undefined,
+        },
+      });
+
+      const item = getOriginalApplicationContentItem(renderAddButton(model));
+
+      expect(item.createModelOptions.stepParams.resourceSettings.init).toEqual(
+        expect.objectContaining({
+          dataSourceKey: expectedDataSourceKey,
+          collectionName: expectedCollectionName,
+          dataPath: '$context.data',
+        }),
+      );
+    },
+  );
+
+  it('keeps v2 trigger resource collection options unchanged', () => {
+    const model = createModel({
+      getTriggerOptions: (type: string) =>
+        type === 'approval'
+          ? {
+              getCreateModelMenuItem: vi.fn(() => ({
+                key: 'originalApplicationContent',
+                label: 'Original application content',
+                useModel: 'NodeDetailsModel',
+                createModelOptions: {
+                  use: 'NodeDetailsModel',
+                  stepParams: {
+                    resourceSettings: {
+                      init: {
+                        dataSourceKey: 'external',
+                        collectionName: 'posts',
+                        dataPath: '$context.data',
+                      },
+                    },
+                  },
+                },
+              })),
+            }
+          : undefined,
+    });
+
+    const item = getOriginalApplicationContentItem(renderAddButton(model));
+
+    expect(item.createModelOptions.stepParams.resourceSettings.init).toEqual(
+      expect.objectContaining({
+        dataSourceKey: 'external',
+        collectionName: 'posts',
+        dataPath: '$context.data',
       }),
     );
   });

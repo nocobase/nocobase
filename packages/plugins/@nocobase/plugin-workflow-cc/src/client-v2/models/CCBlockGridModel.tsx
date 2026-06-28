@@ -19,6 +19,83 @@ function toItems(value: SubModelItem | SubModelItem[] | null | undefined): SubMo
   return Array.isArray(value) ? value.filter(Boolean) : value ? [value] : [];
 }
 
+type ResourceSettingsInit = Record<string, unknown> & {
+  collectionName?: string;
+  dataSourceKey?: string;
+};
+
+type CreateModelOptionsWithResourceSettings = Record<string, unknown> & {
+  stepParams?: Record<string, unknown> & {
+    resourceSettings?: Record<string, unknown> & {
+      init?: ResourceSettingsInit;
+    };
+  };
+};
+
+function parseJointCollectionName(value: string) {
+  const parts = value.split(':');
+  const collectionName = parts.pop();
+  const dataSourceKey = parts[0] || 'main';
+  return collectionName ? { collectionName, dataSourceKey } : null;
+}
+
+function normalizeResourceSettingsInit(init?: ResourceSettingsInit) {
+  const collectionName = init?.collectionName;
+  if (typeof collectionName !== 'string' || !collectionName.includes(':')) {
+    return init;
+  }
+  const parsed = parseJointCollectionName(collectionName);
+  if (!parsed) {
+    return init;
+  }
+  return {
+    ...init,
+    dataSourceKey: parsed.dataSourceKey,
+    collectionName: parsed.collectionName,
+  };
+}
+
+function normalizeCreateModelOptions(createModelOptions: SubModelItem['createModelOptions']) {
+  if (!createModelOptions || typeof createModelOptions === 'function') {
+    return createModelOptions;
+  }
+  const options = createModelOptions as CreateModelOptionsWithResourceSettings;
+  const resourceSettings = options.stepParams?.resourceSettings;
+  const init = resourceSettings?.init;
+  const nextInit = normalizeResourceSettingsInit(init);
+  if (nextInit === init) {
+    return createModelOptions;
+  }
+  return {
+    ...options,
+    stepParams: {
+      ...options.stepParams,
+      resourceSettings: {
+        ...resourceSettings,
+        init: nextInit,
+      },
+    },
+  };
+}
+
+function normalizeSubModelItems(items: SubModelItem[]) {
+  let changed = false;
+  const normalizedItems = items.map((item) => {
+    const createModelOptions = normalizeCreateModelOptions(item.createModelOptions);
+    const children = Array.isArray(item.children) ? normalizeSubModelItems(item.children) : item.children;
+    if (createModelOptions === item.createModelOptions && children === item.children) {
+      return item;
+    }
+    changed = true;
+    return {
+      ...item,
+      children,
+      createModelOptions,
+    };
+  });
+  return changed ? normalizedItems : items;
+}
+
 function CCAddBlockButton({ model }: { model: CCBlockGridModel }) {
   const workflowPlugin = useWorkflowPluginCompat();
   const inputArgs = model.context.view?.inputArgs || {};
@@ -35,16 +112,19 @@ function CCAddBlockButton({ model }: { model: CCBlockGridModel }) {
         workflow,
       }),
     );
+    const normalizedTriggerItems = normalizeSubModelItems(triggerItems);
     if (triggerItems.length) {
       dataBlockChildren.push({
         key: 'triggers',
         label: '{{t("Triggers", { ns: "workflow" })}}',
-        children: triggerItems,
+        children: normalizedTriggerItems,
       });
     }
 
-    const nodeItems = upstreams.flatMap((node) =>
-      toItems(workflowPlugin.getInstruction(node.type)?.getCreateModelMenuItem?.({ node, workflow })),
+    const nodeItems = normalizeSubModelItems(
+      upstreams.flatMap((node) =>
+        toItems(workflowPlugin.getInstruction(node.type)?.getCreateModelMenuItem?.({ node, workflow })),
+      ),
     );
     if (nodeItems.length) {
       dataBlockChildren.push({

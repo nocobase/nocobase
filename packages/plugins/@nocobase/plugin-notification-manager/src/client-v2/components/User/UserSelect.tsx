@@ -143,7 +143,7 @@ function WorkflowUserVariableInput(props: {
   const renderTooltipIcon = useMemoizedFn((title: React.ReactNode, label: React.ReactNode) => {
     const labelText = typeof label === 'string' ? label : 'variable';
     return (
-      <Tooltip title={typeof title === 'string' ? translate(title) : title} placement="right" destroyTooltipOnHide>
+      <Tooltip title={typeof title === 'string' ? translate(title) : title} placement="top" destroyTooltipOnHide>
         <QuestionCircleOutlined
           aria-label={`${labelText} tooltip`}
           style={{ marginLeft: token.marginXXS, color: token.colorTextDescription }}

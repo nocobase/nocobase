@@ -265,7 +265,8 @@ describe('UserSelect', () => {
     expect(tooltipIcon).toBeInTheDocument();
 
     fireEvent.mouseEnter(tooltipIcon);
-    expect(await screen.findByText('The ID of current server instance')).toBeInTheDocument();
+    const tooltip = await screen.findByText('The ID of current server instance');
+    expect(tooltip.closest('.ant-tooltip')).toHaveClass('ant-tooltip-placement-top');
 
     fireEvent.click(screen.getByText('Instance ID'));
     expect(onChange).toHaveBeenLastCalledWith('{{$system.instanceId}}');
