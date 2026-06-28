@@ -12,29 +12,15 @@ import PluginVscFileServer, { type RunJSSourceLocator } from '@nocobase/plugin-v
 
 import FlowModelRepository from '../repository';
 
+const basePlugins = ['field-sort', 'system-settings', 'users', 'auth', 'acl', 'data-source-manager'];
+
 describe('flow-engine RunJS source adapters', () => {
   let app: MockServer;
   let agent: ReturnType<MockServer['agent']>;
   let repository: FlowModelRepository;
 
   beforeEach(async () => {
-    app = await createMockServer({
-      registerActions: true,
-      acl: true,
-      plugins: [
-        'field-sort',
-        'system-settings',
-        'users',
-        'auth',
-        'acl',
-        'data-source-manager',
-        PluginVscFileServer,
-        'flow-engine',
-      ],
-    });
-    const user = await app.db.getRepository('users').findOne();
-    agent = await app.agent().login(user);
-    repository = app.db.getCollection('flowModels').repository as FlowModelRepository;
+    await resetApp([PluginVscFileServer, 'flow-engine']);
   });
 
   afterEach(async () => {
@@ -74,12 +60,12 @@ describe('flow-engine RunJS source adapters', () => {
       language: 'typescript',
     });
 
-    const publish = await publishSource(locator, open.body.data.ownerFingerprint, 'return newValue;');
+    const publish = await publishSource(locator, open.body.data.ownerFingerprint, 'ctx.render("newValue");');
     expect(publish.status).toBe(200);
 
     const updated = await repository.findModelById('js-step-model');
     expect(getAtPath(updated, ['stepParams', 'jsSettings', 'runJs'])).toMatchObject({
-      code: 'return newValue;',
+      code: 'ctx.render("newValue");',
       version: 'v2',
       keep: 'preserved',
       sourceRef: {
@@ -131,7 +117,7 @@ describe('flow-engine RunJS source adapters', () => {
     });
 
     const commitCountBeforePublish = await app.db.getRepository('vscFileCommits').count();
-    const publish = await publishSource(locator, open.body.data.ownerFingerprint, 'return newValue;');
+    const publish = await publishSource(locator, open.body.data.ownerFingerprint, 'ctx.render("newValue");');
 
     expect(publish.status).toBe(409);
     expect(publish.body.errors[0]).toMatchObject({
@@ -192,7 +178,12 @@ describe('flow-engine RunJS source adapters', () => {
     expect(open.status).toBe(200);
 
     const commitCountBeforePublish = await app.db.getRepository('vscFileCommits').count();
-    const publish = await publishSource(locator, open.body.data.ownerFingerprint, 'return denied;', restrictedAgent);
+    const publish = await publishSource(
+      locator,
+      open.body.data.ownerFingerprint,
+      'ctx.render("denied");',
+      restrictedAgent,
+    );
 
     expect(publish.status).toBe(403);
     expect(publish.body.errors[0]).toMatchObject({
@@ -356,36 +347,40 @@ describe('flow-engine RunJS source adapters', () => {
       },
     });
 
-    await publishNested(['values', 0, 'value'], 'defaultValue', 'return nextNested;');
-    await publishNested(['linkage', 'params', 'value'], 'linkageRunjs', 'ctx.nextLinkage();');
-    await publishNested(['eventFlow', 'params', 'code'], 'eventFlow', 'ctx.nextEvent();');
-    await publishNested(['assignForm', 'fieldSettings', 'assignValue', 'value'], 'assignForm', 'return nextAssign;');
+    await publishNested(['values', 0, 'value'], 'defaultValue', 'const nextNested = "nextNested";\nreturn nextNested;');
+    await publishNested(['linkage', 'params', 'value'], 'linkageRunjs', 'ctx.message.info("nextLinkage");');
+    await publishNested(['eventFlow', 'params', 'code'], 'eventFlow', 'ctx.message.info("nextEvent");');
+    await publishNested(
+      ['assignForm', 'fieldSettings', 'assignValue', 'value'],
+      'assignForm',
+      'const nextAssign = "nextAssign";\nreturn nextAssign;',
+    );
     await publishNested(
       ['filterForm', 'formFilterBlockModelSettings', 'defaultValues', 'value', 0, 'value'],
       'filterFormDefaultValues',
-      'return nextFilter;',
+      'const nextFilter = "nextFilter";\nreturn nextFilter;',
     );
 
     const updated = await repository.findModelById('nested-runjs-model');
     const configure = getAtPath(updated, ['stepParams', 'rules', 'configure']);
 
     expect(getAtPath(configure, ['values', 0, 'value'])).toMatchObject({
-      code: 'return nextNested;',
+      code: 'const nextNested = "nextNested";\nreturn nextNested;',
       version: 'v2',
       keep: 'nested',
     });
     expect(getAtPath(configure, ['linkage', 'params', 'value'])).toMatchObject({
-      script: 'ctx.nextLinkage();',
+      script: 'ctx.message.info("nextLinkage");',
       keep: 'script',
     });
     expect(getAtPath(configure, ['eventFlow', 'params'])).toMatchObject({
-      code: 'ctx.nextEvent();',
+      code: 'ctx.message.info("nextEvent");',
       keep: 'event',
     });
     expect(getAtPath(configure, ['assignForm', 'fieldSettings', 'assignValue'])).toMatchObject({
       mode: 'dynamic',
       value: {
-        code: 'return nextAssign;',
+        code: 'const nextAssign = "nextAssign";\nreturn nextAssign;',
         version: 'v2',
         keep: 'assign',
       },
@@ -396,7 +391,7 @@ describe('flow-engine RunJS source adapters', () => {
       field: 'status',
       operator: '$eq',
       value: {
-        code: 'return nextFilter;',
+        code: 'const nextFilter = "nextFilter";\nreturn nextFilter;',
         version: 'v2',
         keep: 'filter',
       },
@@ -464,10 +459,14 @@ describe('flow-engine RunJS source adapters', () => {
     });
 
     await expect(
-      publishSource(optionLocator, optionOpen.body.data.ownerFingerprint, 'return { yAxis: {} };'),
+      publishSource(
+        optionLocator,
+        optionOpen.body.data.ownerFingerprint,
+        'const rows = ctx.data.objects || [];\nreturn { dataset: { source: rows } };',
+      ),
     ).resolves.toHaveProperty('status', 200);
     await expect(
-      publishSource(eventsLocator, eventsOpen.body.data.ownerFingerprint, 'ctx.nextClick();'),
+      publishSource(eventsLocator, eventsOpen.body.data.ownerFingerprint, 'ctx.message.info("nextClick");'),
     ).resolves.toHaveProperty('status', 200);
 
     const updated = await repository.findModelById('chart-runjs-model');
@@ -476,12 +475,115 @@ describe('flow-engine RunJS source adapters', () => {
       builder: {
         type: 'bar',
       },
-      raw: 'return { yAxis: {} };',
+      raw: 'const rows = ctx.data.objects || [];\nreturn { dataset: { source: rows } };',
     });
     expect(getAtPath(updated, ['stepParams', 'chartSettings', 'configure', 'chart', 'events', 'raw'])).toBe(
-      'ctx.nextClick();',
+      'ctx.message.info("nextClick");',
     );
   });
+
+  it('uses Flow Engine authoring inspection before publishing browser RunJS artifacts', async () => {
+    await repository.insertModel({
+      uid: 'chart-runjs-authoring-model',
+      use: 'ChartBlockModel',
+      stepParams: {
+        chartSettings: {
+          configure: {
+            chart: {
+              option: {
+                mode: 'raw',
+                raw: 'return { xAxis: {} };',
+              },
+            },
+          },
+        },
+      },
+    });
+
+    const locator: RunJSSourceLocator = {
+      kind: 'chart.option',
+      modelUid: 'chart-runjs-authoring-model',
+    };
+    const open = await openSource(locator);
+    expect(open.status).toBe(200);
+    const commitCountBeforePublish = await app.db.getRepository('vscFileCommits').count();
+
+    const publish = await publishSource(locator, open.body.data.ownerFingerprint, 'ctx.render(null);');
+
+    expect(publish.status).toBe(400);
+    expect(publish.body.errors[0]).toMatchObject({
+      code: 'RUNJS_COMPILE_FAILED',
+      details: {
+        diagnostics: expect.arrayContaining([
+          expect.objectContaining({
+            ruleId: 'runjs-value-render-forbidden',
+            details: expect.objectContaining({
+              repairClass: 'value-surface-forbids-render',
+            }),
+          }),
+        ]),
+      },
+    });
+    await expect(app.db.getRepository('vscFileCommits').count()).resolves.toBe(commitCountBeforePublish);
+    const updated = await repository.findModelById('chart-runjs-authoring-model');
+    expect(getAtPath(updated, ['stepParams', 'chartSettings', 'configure', 'chart', 'option', 'raw'])).toBe(
+      'return { xAxis: {} };',
+    );
+  });
+
+  it('registers adapters and authoring inspection when Flow Engine loads before VSC File', async () => {
+    await app.destroy();
+    await resetApp(['flow-engine', PluginVscFileServer]);
+
+    await repository.insertModel({
+      uid: 'chart-runjs-reversed-order-model',
+      use: 'ChartBlockModel',
+      stepParams: {
+        chartSettings: {
+          configure: {
+            chart: {
+              option: {
+                mode: 'raw',
+                raw: 'return { xAxis: {} };',
+              },
+            },
+          },
+        },
+      },
+    });
+
+    const locator: RunJSSourceLocator = {
+      kind: 'chart.option',
+      modelUid: 'chart-runjs-reversed-order-model',
+    };
+    const open = await openSource(locator);
+    expect(open.status).toBe(200);
+
+    const publish = await publishSource(locator, open.body.data.ownerFingerprint, 'ctx.render(null);');
+
+    expect(publish.status).toBe(400);
+    expect(publish.body.errors[0]).toMatchObject({
+      code: 'RUNJS_COMPILE_FAILED',
+      details: {
+        diagnostics: expect.arrayContaining([
+          expect.objectContaining({
+            ruleId: 'runjs-value-render-forbidden',
+          }),
+        ]),
+      },
+    });
+  });
+
+  async function resetApp(runJSPlugins: Array<string | typeof PluginVscFileServer>) {
+    app = await createMockServer({
+      registerActions: true,
+      acl: true,
+      plugins: [...basePlugins, ...runJSPlugins],
+    });
+    const user = await app.db.getRepository('users').findOne();
+    agent = await app.agent().login(user);
+    repository = app.db.getCollection('flowModels').repository as FlowModelRepository;
+  }
 
   function openSource(locator: RunJSSourceLocator, requestAgent = agent) {
     return requestAgent.resource('runJSSources').open({

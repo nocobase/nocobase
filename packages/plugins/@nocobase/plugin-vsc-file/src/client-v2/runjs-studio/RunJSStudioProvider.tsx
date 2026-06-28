@@ -509,6 +509,10 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
     try {
       const result = await runJSSourceRequest('compilePreview', {
         locator: props.locator,
+        repoId: currentWorkspace.opened.repository.repoId,
+        baseCommitId:
+          currentWorkspace.opened.draft?.baseCommitId ?? currentWorkspace.opened.repository.publishedCommitId,
+        draftId: currentWorkspace.opened.draft?.id,
         files: buildWorkspaceChanges([], currentWorkspace.currentFiles),
         entryPath: currentWorkspace.entryPath,
         version: value.version,
@@ -790,6 +794,9 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
     try {
       const result = await runJSSourceRequest('compilePreview', {
         locator: props.locator,
+        repoId: workspace.repository.repoId,
+        baseCommitId,
+        draftId: workspace.draft?.id,
         files: buildWorkspaceChanges([], requestFiles),
         entryPath: requestEntryPath,
         version: value.version,

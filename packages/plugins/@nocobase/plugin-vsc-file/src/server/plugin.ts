@@ -13,14 +13,17 @@ import { resolve } from 'path';
 import { createVscFileAuditActions } from './audit';
 import type { VscPermissionHook } from './permissions';
 import { VscPermissionHookRegistry } from './permissions';
+import { RunJSSourceAuthoringInspectorRegistry } from './runjs-sources/RunJSSourceAuthoringInspectorRegistry';
 import { RunJSSourceAdapterRegistry, createRunJSSourcesResource, runJSSourceActionNames } from './runjs-sources';
 import { createVscFileResource, vscFileActionNames } from './resources/vscFile';
-import type { RunJSSourceAdapter } from '../shared/runjs-source-types';
+import type { RunJSSourceAdapter, RunJSSourceAuthoringInspector } from '../shared/runjs-source-types';
 
 export class PluginVscFileServer extends Plugin {
   private readonly permissionHooks = new VscPermissionHookRegistry();
 
   private readonly runJSSourceAdapters = new RunJSSourceAdapterRegistry();
+
+  private readonly runJSSourceAuthoringInspectors = new RunJSSourceAuthoringInspectorRegistry();
 
   registerPermissionHook(hook: VscPermissionHook): () => void {
     return this.permissionHooks.register(hook);
@@ -28,6 +31,10 @@ export class PluginVscFileServer extends Plugin {
 
   registerRunJSSourceAdapter(adapter: RunJSSourceAdapter): () => void {
     return this.runJSSourceAdapters.register(adapter);
+  }
+
+  registerRunJSSourceAuthoringInspector(inspector: RunJSSourceAuthoringInspector): () => void {
+    return this.runJSSourceAuthoringInspectors.register(inspector);
   }
 
   async afterAdd() {}
@@ -45,7 +52,12 @@ export class PluginVscFileServer extends Plugin {
   async load() {
     this.app.resourceManager.define(createVscFileResource(this.db, this.permissionHooks));
     this.app.resourceManager.define(
-      createRunJSSourcesResource(this.db, this.runJSSourceAdapters, this.permissionHooks),
+      createRunJSSourcesResource(
+        this.db,
+        this.runJSSourceAdapters,
+        this.permissionHooks,
+        this.runJSSourceAuthoringInspectors,
+      ),
     );
     this.app.acl.allow('vscFile', [...vscFileActionNames], 'loggedIn');
     this.app.acl.allow('runJSSources', [...runJSSourceActionNames], 'loggedIn');

@@ -2,7 +2,9 @@
   "name": "@nocobase/plugin-vsc-file",
   "version": "2.1.10",
   "main": "dist/server/index.js",
-  "dependencies": {},
+  "dependencies": {
+    "typescript": "^5.x"
+  },
   "peerDependencies": {
     "@nocobase/client": "2.x",
     "@nocobase/client-v2": "2.x",

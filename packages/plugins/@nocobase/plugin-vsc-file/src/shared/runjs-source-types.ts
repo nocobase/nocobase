@@ -88,9 +88,19 @@ export interface RunJSLegacySource {
 export interface RunJSCompileDiagnostic {
   message: string;
   severity?: 'error' | 'warning' | 'info';
+  code?: string;
+  ruleId?: string;
   path?: string;
   line?: number;
   column?: number;
+  details?: Record<string, unknown>;
+}
+
+export interface RunJSSourceAuthoringLegacyInfo {
+  version: string;
+  surfaceStyle: RunJSSurfaceStyle;
+  language: RunJSLanguage;
+  metadata?: Record<string, unknown>;
 }
 
 export interface RunJSRuntimeArtifact {
@@ -125,6 +135,17 @@ export interface RunJSSourceAdapter<TLocator extends RunJSSourceLocator = RunJSS
   assertCanRead(input: { locator: TLocator; ctx: RunJSSourceAdapterContext }): Promise<void> | void;
   assertCanWrite(input: { locator: TLocator; ctx: RunJSSourceAdapterContext }): Promise<void> | void;
 }
+
+export interface RunJSSourceAuthoringInspectionInput {
+  code: string;
+  path: string;
+  runtimeVersion: string;
+  surfaceStyle: Exclude<RunJSSurfaceStyle, 'workflow'>;
+  locator?: RunJSSourceLocator;
+  legacy?: RunJSSourceAuthoringLegacyInfo;
+}
+
+export type RunJSSourceAuthoringInspector = (input: RunJSSourceAuthoringInspectionInput) => RunJSCompileDiagnostic[];
 
 export interface RunJSSourceOpenResult {
   locator: RunJSSourceLocator;

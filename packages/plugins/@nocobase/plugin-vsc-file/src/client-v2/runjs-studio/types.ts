@@ -119,6 +119,9 @@ export interface RunJSSourceDiffDraftResult {
 
 export interface RunJSSourceCompilePreviewInput {
   locator: RunJSSourceLocator;
+  repoId?: string;
+  baseCommitId?: string | null;
+  draftId?: string;
   files: VscFileChange[];
   entryPath?: string;
   entry?: string;

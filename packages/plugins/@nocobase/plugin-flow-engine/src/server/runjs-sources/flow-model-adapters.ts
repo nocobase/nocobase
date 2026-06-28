@@ -90,6 +90,7 @@ function createFlowModelStepAdapter(db: Database): RunJSSourceAdapter<FlowModelS
         entryPath: 'src/main.tsx',
         entry: 'src/main.tsx',
         ownerFingerprint: buildStepFingerprint(locator, model),
+        metadata: modelUseMetadata(readModelUse(model)),
       };
     },
     async getFingerprint({ locator, ctx }) {
@@ -196,6 +197,7 @@ function createChartAdapter(db: Database, kind: ChartLocator['kind']): RunJSSour
         entryPath: 'src/main.tsx',
         entry: 'src/main.tsx',
         ownerFingerprint: buildChartFingerprint(locator, model),
+        metadata: modelUseMetadata(getChartAuthoringModelUse(locator.kind)),
       };
     },
     async getFingerprint({ locator, ctx }) {
@@ -455,6 +457,14 @@ function getFlowModelFingerprintOwner(model: JsonRecord): JsonRecord {
   };
 }
 
+function readModelUse(model: JsonRecord): string {
+  return typeof model.use === 'string' ? model.use : '';
+}
+
+function modelUseMetadata(modelUse: string): JsonRecord | undefined {
+  return modelUse ? { modelUse } : undefined;
+}
+
 function readNestedSource(model: JsonRecord, locator: FlowModelNestedLocator) {
   const value = getAtPath(model, [
     'stepParams',
@@ -564,6 +574,10 @@ function buildFlowModelLabel(model: JsonRecord, fallback: string): string {
 
 function getChartRawPath(kind: ChartLocator['kind']): string[] {
   return kind === 'chart.option' ? CHART_OPTION_RAW_PATH : CHART_EVENTS_RAW_PATH;
+}
+
+function getChartAuthoringModelUse(kind: ChartLocator['kind']): string {
+  return kind === 'chart.option' ? 'ChartOptionModel' : 'ChartEventsModel';
 }
 
 function readMetadataString(artifact: RunJSRuntimeArtifact, key: string): string | null {

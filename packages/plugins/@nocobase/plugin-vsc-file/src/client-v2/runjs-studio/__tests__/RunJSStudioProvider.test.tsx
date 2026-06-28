@@ -800,6 +800,9 @@ describe('runJSStudioProvider', () => {
         method: 'post',
         data: {
           locator,
+          repoId: 'repo-1',
+          baseCommitId: 'commit-1',
+          draftId: undefined,
           files: expect.arrayContaining([
             expect.objectContaining({
               path: '.nocobase/runjs-source.json',

@@ -12,7 +12,13 @@ import { vi } from 'vitest';
 
 import { maxFileSize, maxFilesPerRepo, maxRepoTextSize } from '../../shared/constants';
 import { VscError } from '../../shared/errors';
-import type { RunJSRuntimeArtifact, RunJSSourceAdapterContext } from '../../shared/runjs-source-types';
+import {
+  buildRunJSFilesHash,
+  buildRunJSSourceRepositoryIdentity,
+  type RunJSRuntimeArtifact,
+  type RunJSSourceAdapterContext,
+} from '../../shared/runjs-source-types';
+import { runJSManifestPath } from '../../shared/runjs-workspace-path';
 import PluginVscFileServer from '../plugin';
 import { assertRunJSCompileInputLimits, runJSSourceActionNames } from '../runjs-sources';
 import { VscFileService } from '../services/VscFileService';
@@ -195,12 +201,16 @@ describe('runJSSources resource', () => {
         headSeq: 1,
         headCommitId: firstOpen.body.data.repository.publishedCommitId,
       },
-      files: [
-        {
+      files: expect.arrayContaining([
+        expect.objectContaining({
           path: 'src/main.tsx',
           content: 'ctx.render("legacy");',
-        },
-      ],
+        }),
+        expect.objectContaining({
+          path: runJSManifestPath,
+          content: expect.stringContaining('"entry": "src/main.tsx"'),
+        }),
+      ]),
       draft: null,
       permissions: {
         canRead: true,
@@ -348,12 +358,18 @@ describe('runJSSources resource', () => {
       id: firstOpen.body.data.repository.publishedCommitId,
       isPublished: true,
     });
-    expect(version.body.data.files).toEqual([
-      expect.objectContaining({
-        path: 'src/main.tsx',
-        content: 'ctx.render("legacy");',
-      }),
-    ]);
+    expect(version.body.data.files).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: 'src/main.tsx',
+          content: 'ctx.render("legacy");',
+        }),
+        expect.objectContaining({
+          path: runJSManifestPath,
+          content: expect.stringContaining('"entry": "src/main.tsx"'),
+        }),
+      ]),
+    );
 
     const rootDiff = await agent.resource('runJSSources').diffVersion({
       values: {
@@ -368,7 +384,89 @@ describe('runJSSources resource', () => {
       fromIsPublished: false,
       toIsPublished: true,
     });
-    expect(rootDiff.body.data.diff.summary.added).toBe(1);
+    expect(rootDiff.body.data.diff.summary.added).toBe(2);
+  });
+
+  it('opens an existing pre-manifest RunJS repository with a draft-only default manifest', async () => {
+    const locator = {
+      kind: 'flowModel.step' as const,
+      modelUid: 'fm_manifest_draft',
+      flowKey: 'settings',
+      stepKey: 'runjs',
+      paramPath: ['code'],
+    };
+    const ownerFingerprint = 'owner:manifest-draft:v1';
+    const service = new VscFileService(app.db);
+    const initialized = await service.ensureRepository({
+      ...buildRunJSSourceRepositoryIdentity(locator),
+      initialFiles: [
+        {
+          path: 'src/main.tsx',
+          content: 'ctx.render("legacy");',
+          language: 'typescript',
+        },
+      ],
+      message: 'Legacy RunJS source without manifest',
+      authorId: currentUserId,
+      metadata: {
+        sourceKind: locator.kind,
+        ownerFingerprint,
+      },
+    });
+    if (!initialized.initialCommit) {
+      throw new Error('Expected initial commit');
+    }
+    await service.updateRef({
+      repoId: initialized.repository.id,
+      name: 'published',
+      targetCommitId: initialized.initialCommit.id,
+      basePublishedCommitId: null,
+    });
+
+    getPlugin().registerRunJSSourceAdapter({
+      kind: 'flowModel.step',
+      assertCanRead: () => {},
+      assertCanWrite: () => {},
+      getFingerprint: () => ownerFingerprint,
+      writePublished: () => ({
+        ownerFingerprint: 'owner:manifest-draft:v2',
+      }),
+      readLegacy: () => ({
+        label: 'JS block / Manifest draft',
+        code: 'ctx.render("legacy");',
+        version: 'v2',
+        entryPath: 'src/main.tsx',
+        ownerFingerprint,
+        surfaceStyle: 'render',
+        language: 'typescript',
+      }),
+    });
+
+    const commitCountBeforeOpen = await app.db.getRepository('vscFileCommits').count();
+    const open = await agent.resource('runJSSources').open({
+      values: {
+        locator,
+      },
+    });
+
+    expect(open.status).toBe(200);
+    expect(open.body.data.files).toEqual([
+      expect.objectContaining({
+        path: 'src/main.tsx',
+        content: 'ctx.render("legacy");',
+      }),
+    ]);
+    expect(open.body.data.draft).toMatchObject({
+      baseCommitId: initialized.initialCommit.id,
+      status: 'active',
+      files: [
+        expect.objectContaining({
+          path: runJSManifestPath,
+          content: expect.stringContaining('"entry": "src/main.tsx"'),
+        }),
+      ],
+    });
+    await expect(app.db.getRepository('vscFileCommits').count()).resolves.toBe(commitCountBeforeOpen);
   });
 
   it('replaces RunJS draft files instead of merging stale draft-only paths', async () => {
@@ -805,6 +903,274 @@ describe('runJSSources resource', () => {
     expect(writePublishedCalled).toBe(false);
   });
 
+  it('rejects missing imports before creating a VSC commit or writing the owner', async () => {
+    let writePublishedCalled = false;
+
+    getPlugin().registerRunJSSourceAdapter({
+      kind: 'flowModel.step',
+      assertCanRead: () => {},
+      assertCanWrite: () => {},
+      getFingerprint: () => 'owner:missing-import:v1',
+      readLegacy: () => ({
+        label: 'JS block / Missing import guard',
+        code: 'ctx.render("initial");',
+        version: 'v2',
+        entryPath: 'src/main.tsx',
+        ownerFingerprint: 'owner:missing-import:v1',
+        surfaceStyle: 'render',
+        language: 'typescript',
+      }),
+      writePublished: () => {
+        writePublishedCalled = true;
+        return {
+          ownerFingerprint: 'owner:missing-import:v2',
+        };
+      },
+    });
+
+    const commitCountBeforePublish = await app.db.getRepository('vscFileCommits').count();
+    const response = await agent.resource('runJSSources').publish({
+      values: {
+        locator: {
+          kind: 'flowModel.step',
+          modelUid: 'fm_missing_import',
+          flowKey: 'settings',
+          stepKey: 'runjs',
+          paramPath: ['code'],
+        },
+        baseCommitId: null,
+        basePublishedCommitId: null,
+        baseOwnerFingerprint: 'owner:missing-import:v1',
+        message: 'Broken RunJS import',
+        files: [
+          {
+            path: 'src/main.tsx',
+            operation: 'upsert',
+            content: "import { missing } from './missing';\nctx.render(missing);",
+            language: 'typescript',
+          },
+        ],
+      },
+    });
+
+    expect(response.status).toBe(400);
+    expect(response.body.errors[0]).toMatchObject({
+      code: 'RUNJS_IMPORT_NOT_FOUND',
+      status: 400,
+      details: {
+        diagnostics: expect.arrayContaining([
+          expect.objectContaining({
+            code: 'RUNJS_IMPORT_NOT_FOUND',
+            path: 'src/main.tsx',
+          }),
+        ]),
+      },
+    });
+    await expect(app.db.getRepository('vscFileCommits').count()).resolves.toBe(commitCountBeforePublish);
+    expect(writePublishedCalled).toBe(false);
+  });
+
+  it('publishes patch changes against unchanged imported base files', async () => {
+    let ownerFingerprint = 'owner:patch-compile:v1';
+    const publishedArtifacts: RunJSRuntimeArtifact[] = [];
+    const locator = {
+      kind: 'flowModel.step' as const,
+      modelUid: 'fm_patch_compile',
+      flowKey: 'settings',
+      stepKey: 'runjs',
+      paramPath: ['code'],
+    };
+
+    getPlugin().registerRunJSSourceAdapter({
+      kind: 'flowModel.step',
+      assertCanRead: () => {},
+      assertCanWrite: () => {},
+      getFingerprint: () => ownerFingerprint,
+      readLegacy: () => ({
+        label: 'JS block / Patch compile',
+        code: 'ctx.render("initial");',
+        version: 'v2',
+        entryPath: 'src/main.tsx',
+        ownerFingerprint,
+        surfaceStyle: 'render',
+        language: 'typescript',
+      }),
+      writePublished: ({ artifact }) => {
+        publishedArtifacts.push(artifact);
+        ownerFingerprint = `owner:patch-compile:v${publishedArtifacts.length + 1}`;
+        return {
+          ownerFingerprint,
+        };
+      },
+    });
+
+    const open = await agent.resource('runJSSources').open({
+      values: {
+        locator,
+      },
+    });
+    expect(open.status).toBe(200);
+
+    const firstPublish = await agent.resource('runJSSources').publish({
+      values: {
+        locator,
+        repoId: open.body.data.repository.id,
+        baseCommitId: open.body.data.repository.publishedCommitId,
+        basePublishedCommitId: open.body.data.repository.publishedCommitId,
+        baseOwnerFingerprint: open.body.data.ownerFingerprint,
+        message: 'Add helper module',
+        files: [
+          {
+            path: 'src/main.tsx',
+            operation: 'upsert',
+            content: "import { message } from './helper';\nctx.render(message);",
+            language: 'typescript',
+          },
+          {
+            path: 'src/helper.ts',
+            operation: 'upsert',
+            content: "export const message = 'from helper';",
+            language: 'typescript',
+          },
+        ],
+      },
+    });
+    expect(firstPublish.status).toBe(200);
+
+    const preview = await agent.resource('runJSSources').compilePreview({
+      values: {
+        locator,
+        repoId: open.body.data.repository.id,
+        baseCommitId: firstPublish.body.data.commit.id,
+        entryPath: 'src/main.tsx',
+        files: [
+          {
+            path: 'src/main.tsx',
+            operation: 'upsert',
+            content: "import { message } from './helper';\nctx.render(message.toLowerCase());",
+            language: 'typescript',
+          },
+        ],
+      },
+    });
+    expect(preview.status).toBe(200);
+    expect(preview.body.data.artifact.diagnostics).toEqual([]);
+    expect(preview.body.data.artifact.code).toContain("const message = 'from helper';");
+    expect(preview.body.data.artifact.code).toContain('ctx.render(message.toLowerCase());');
+
+    const secondPublish = await agent.resource('runJSSources').publish({
+      values: {
+        locator,
+        repoId: open.body.data.repository.id,
+        baseCommitId: firstPublish.body.data.commit.id,
+        basePublishedCommitId: firstPublish.body.data.commit.id,
+        baseOwnerFingerprint: firstPublish.body.data.ownerFingerprint,
+        message: 'Update entry only',
+        files: [
+          {
+            path: 'src/main.tsx',
+            operation: 'upsert',
+            content: "import { message } from './helper';\nctx.render(message.toUpperCase());",
+            language: 'typescript',
+          },
+        ],
+      },
+    });
+
+    expect(secondPublish.status).toBe(200);
+    expect(publishedArtifacts).toHaveLength(2);
+    expect(publishedArtifacts[1].code).toContain("const message = 'from helper';");
+    expect(publishedArtifacts[1].code).toContain('ctx.render(message.toUpperCase());');
+  });
+
+  it('publishes RunJS draft blob hashes by compiling the resolved draft content', async () => {
+    let ownerFingerprint = 'owner:draft-blob:v1';
+    const publishedArtifacts: RunJSRuntimeArtifact[] = [];
+    const locator = {
+      kind: 'flowModel.step' as const,
+      modelUid: 'fm_draft_blob',
+      flowKey: 'settings',
+      stepKey: 'runjs',
+      paramPath: ['code'],
+    };
+
+    getPlugin().registerRunJSSourceAdapter({
+      kind: 'flowModel.step',
+      assertCanRead: () => {},
+      assertCanWrite: () => {},
+      getFingerprint: () => ownerFingerprint,
+      readLegacy: () => ({
+        label: 'JS block / Draft blob',
+        code: 'return initial;',
+        version: 'v2',
+        entryPath: 'src/main.tsx',
+        ownerFingerprint,
+        surfaceStyle: 'render',
+        language: 'typescript',
+      }),
+      writePublished: ({ artifact }) => {
+        publishedArtifacts.push(artifact);
+        ownerFingerprint = 'owner:draft-blob:v2';
+        return {
+          ownerFingerprint,
+        };
+      },
+    });
+
+    const open = await agent.resource('runJSSources').open({
+      values: {
+        locator,
+      },
+    });
+    expect(open.status).toBe(200);
+
+    const draft = await agent.resource('runJSSources').saveDraft({
+      values: {
+        locator,
+        repoId: open.body.data.repository.id,
+        baseCommitId: open.body.data.repository.publishedCommitId,
+        files: [
+          {
+            path: 'src/main.tsx',
+            operation: 'upsert',
+            content: 'ctx.render("draft blob");',
+            language: 'typescript',
+          },
+        ],
+      },
+    });
+    expect(draft.status).toBe(200);
+
+    const draftFile = draft.body.data.files.find(
+      (file: { path: string; blobHash?: string | null }) => file.path === 'src/main.tsx',
+    );
+    expect(draftFile?.blobHash).toMatch(/^[a-f0-9]{64}$/);
+
+    const publish = await agent.resource('runJSSources').publish({
+      values: {
+        locator,
+        repoId: open.body.data.repository.id,
+        baseCommitId: open.body.data.repository.publishedCommitId,
+        basePublishedCommitId: open.body.data.repository.publishedCommitId,
+        baseOwnerFingerprint: open.body.data.ownerFingerprint,
+        message: 'Publish draft blob',
+        draftId: draft.body.data.draft.id,
+        files: [
+          {
+            path: 'src/main.tsx',
+            operation: 'upsert',
+            blobHash: draftFile?.blobHash,
+            language: 'typescript',
+          },
+        ],
+      },
+    });
+
+    expect(publish.status).toBe(200);
+    expect(publishedArtifacts).toHaveLength(1);
+    expect(publishedArtifacts[0].code).toContain('ctx.render("draft blob");');
+  });
+
   it('validates RunJS compile inputs against VSC size limits before compiling', () => {
     expect(() =>
       assertRunJSCompileInputLimits(
@@ -1078,8 +1444,9 @@ describe('runJSSources resource', () => {
     });
 
     expect(restore.status).toBe(200);
-    expect(restore.body.data.files.map((file) => file.path)).toEqual(['src/main.tsx']);
-    expect(restore.body.data.files[0]).toMatchObject({
+    expect(restore.body.data.files.map((file) => file.path)).toEqual([runJSManifestPath, 'src/main.tsx']);
+    const restoredMainFile = restore.body.data.files.find((file) => file.path === 'src/main.tsx');
+    expect(restoredMainFile).toMatchObject({
       content: 'ctx.render("legacy");',
     });
     await expect(app.db.getRepository('vscFileCommits').count()).resolves.toBe(commitCountBeforeRestore);
@@ -1090,7 +1457,7 @@ describe('runJSSources resource', () => {
     expect(repository?.get('publishedCommitId')).toBe(publishedCommitId);
 
     const draftBlob = await app.db.getRepository('vscFileBlobs').findOne({
-      filterByTk: restore.body.data.files[0].blobHash,
+      filterByTk: restoredMainFile?.blobHash,
     });
     expect(draftBlob?.get('content')).toBe('ctx.render("legacy");');
   });
@@ -1211,7 +1578,11 @@ describe('runJSSources resource', () => {
     expect(reopened.body.data.draft).toMatchObject({
       baseCommitId: publish.body.data.commit.id,
     });
-    expect(reopened.body.data.files.map((file) => file.path)).toEqual(['src/main.tsx', 'src/remote.ts']);
+    expect(reopened.body.data.files.map((file) => file.path)).toEqual([
+      runJSManifestPath,
+      'src/main.tsx',
+      'src/remote.ts',
+    ]);
   });
 
   it('rolls back publish when owner write or published ref update fails', async () => {
@@ -1377,15 +1748,34 @@ describe('runJSSources resource', () => {
             path: 'src/main.tsx',
             operation: 'upsert',
             content: 'return next;',
+            blobHash: 'b'.repeat(64),
+            size: 999,
             language: 'typescript',
+          },
+          {
+            path: 'src/forged.ts',
+            operation: 'upsert',
+            content: 'return forged;',
+            language: 'typescript',
+          },
+          {
+            path: runJSManifestPath,
+            operation: 'upsert',
+            content: JSON.stringify({
+              schemaVersion: 1,
+              entry: 'src/forged.ts',
+              runtimeVersion: 'v2',
+              surfaceStyle: 'render',
+            }),
+            language: 'json',
           },
         ],
         artifact: {
-          code: 'return forged;',
-          diagnostics: [],
-          entryPath: 'src/main.tsx',
-          filesHash: 'forged-files-hash',
-          version: 'v2',
+          code: { forged: true },
+          diagnostics: 'not-diagnostics',
+          entryPath: '../forged.ts',
+          filesHash: 123,
+          version: ['workflow-js'],
         },
       },
     });
@@ -1416,13 +1806,73 @@ describe('runJSSources resource', () => {
       },
       commitId: publishResponse.body.data.commit.id,
     });
-    expect(publishResponse.body.data.artifact.filesHash).not.toBe('forged-files-hash');
+    const expectedManifestContent = `${JSON.stringify(
+      {
+        schemaVersion: 1,
+        entry: 'src/main.tsx',
+        runtimeVersion: 'v2',
+        surfaceStyle: 'render',
+        compiler: {
+          module: 'virtual-esm',
+          jsx: true,
+        },
+      },
+      null,
+      2,
+    )}\n`;
+    expect(publishResponse.body.data.artifact.filesHash).toBe(
+      buildRunJSFilesHash([
+        {
+          path: runJSManifestPath,
+          operation: 'upsert',
+          content: expectedManifestContent,
+          language: 'json',
+        },
+        {
+          path: 'src/forged.ts',
+          operation: 'upsert',
+          content: 'return forged;',
+          language: 'typescript',
+        },
+        {
+          path: 'src/main.tsx',
+          operation: 'upsert',
+          content: 'return next;',
+          language: 'typescript',
+        },
+      ]),
+    );
+    const publishedVersion = await agent.resource('runJSSources').getVersion({
+      values: {
+        locator: {
+          kind: 'flowModel.step',
+          modelUid: 'fm_1',
+          flowKey: 'settings',
+          stepKey: 'runjs',
+          paramPath: ['code'],
+        },
+        repoId: publishResponse.body.data.repository.id,
+        commitId: publishResponse.body.data.commit.id,
+        includeFiles: true,
+      },
+    });
+    expect(publishedVersion.status).toBe(200);
+    expect(publishedVersion.body.data.files).toContainEqual(
+      expect.objectContaining({
+        path: runJSManifestPath,
+        content: expectedManifestContent,
+      }),
+    );
     const persistedCommit = await app.db.getRepository('vscFileCommits').findOne({
       filterByTk: publishResponse.body.data.commit.id,
     });
     expect(persistedCommit?.get('metadata')).toMatchObject({
       ownerFingerprint: 'owner:fingerprint:v2',
       baseOwnerFingerprint: 'owner:fingerprint:v1',
+      entry: 'src/main.tsx',
+      runtimeVersion: 'v2',
+      surfaceStyle: 'render',
+      runtimeCodeHash: publishResponse.body.data.artifact.runtimeCodeHash,
     });
 
     const commitCountAfterPublish = await app.db.getRepository('vscFileCommits').count();
