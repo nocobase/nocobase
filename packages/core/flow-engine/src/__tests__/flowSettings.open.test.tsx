@@ -431,6 +431,12 @@ describe('FlowSettings.open rendering behavior', () => {
       },
     });
 
+    const jsonConfigDefault = {
+      layout: { columns: 2 },
+      series: [{ field: 'amount', label: 'Amount' }],
+      options: { showLegend: true },
+    };
+    const jsonListDefault = [{ key: 'status', value: 'active' }];
     const session = flowSettings.beginRuntimeSettingsDeclaration(model, `${model.uid}:jsSettings:runJs`, 'jsSettings');
     const values = flowSettings.defineRuntimeSettings(session, {
       title: 'Orders',
@@ -475,6 +481,16 @@ describe('FlowSettings.open rendering behavior', () => {
           },
         },
       },
+      jsonConfig: {
+        type: 'json',
+        title: 'JSON config',
+        default: jsonConfigDefault,
+      },
+      jsonList: {
+        type: 'json',
+        title: 'JSON list',
+        default: jsonListDefault,
+      },
     });
     flowSettings.commitRuntimeSettingsDeclaration(session);
 
@@ -487,9 +503,11 @@ describe('FlowSettings.open rendering behavior', () => {
         subtitle: 'Configurable subtitle',
         status: 'active',
       },
+      jsonConfig: jsonConfigDefault,
+      jsonList: jsonListDefault,
     });
     const runtimeSteps = flowSettings.getRuntimeSettingSteps(model, 'jsSettings');
-    expect(Object.keys(runtimeSteps)).toEqual(['title', 'pageSize', 'display', 'basic']);
+    expect(Object.keys(runtimeSteps)).toEqual(['title', 'pageSize', 'display', 'basic', 'jsonConfig', 'jsonList']);
     expect(runtimeSteps.basic.uiSchema).toMatchObject({
       title: {
         type: 'string',
@@ -513,6 +531,23 @@ describe('FlowSettings.open rendering behavior', () => {
         ],
       },
     });
+    expect(runtimeSteps.jsonConfig.uiSchema).toMatchObject({
+      value: {
+        type: 'object',
+        title: 'JSON config',
+        'x-component': 'JsonTextArea',
+        'x-component-props': { autoSize: { minRows: 4, maxRows: 16 } },
+      },
+    });
+    expect(runtimeSteps.jsonConfig.defaultParams).toEqual({ value: jsonConfigDefault });
+    expect(runtimeSteps.jsonList.uiSchema).toMatchObject({
+      value: {
+        type: 'array',
+        title: 'JSON list',
+        'x-component': 'JsonTextArea',
+      },
+    });
+    expect(runtimeSteps.jsonList.defaultParams).toEqual({ value: jsonListDefault });
     expect(runtimeSteps.basic.defaultParams).toEqual({
       title: 'Configurable title',
       subtitle: 'Configurable subtitle',
@@ -557,6 +592,14 @@ describe('FlowSettings.open rendering behavior', () => {
       subtitle: 'Configurable subtitle',
       status: 'active',
     });
+
+    await flowSettings.open({ model, flowKey: 'jsSettings', stepKey: 'jsonConfig', uiMode: 'dialog' } as any);
+
+    const jsonPrimaryBtn = await findPrimaryButton(lastTree);
+    expect(jsonPrimaryBtn).toBeTruthy();
+    await jsonPrimaryBtn.props.onClick?.();
+
+    expect(setStepParams).toHaveBeenCalledWith('jsSettings', 'jsonConfig', { value: jsonConfigDefault });
   });
 
   it('commits and clears ctx.useSettings declarations during RunJS execution', async () => {

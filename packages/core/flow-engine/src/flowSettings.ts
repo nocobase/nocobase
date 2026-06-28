@@ -232,10 +232,26 @@ const getRuntimeSettingComponent = (type: UseSettingsFieldType, definition: UseS
   if (type === 'date' || type === 'datetime') {
     return 'DatePicker';
   }
+  if (type === 'json') {
+    return 'JsonTextArea';
+  }
   return 'Input';
 };
 
 const isRuntimeSettingDefinition = (value: unknown): value is UseSettingsObjectDefinition => _.isPlainObject(value);
+
+const getRuntimeSettingSchemaType = (type: UseSettingsFieldType, defaultValue: unknown) => {
+  if (type === 'multiSelect') {
+    return 'array';
+  }
+  if (type === 'json') {
+    return Array.isArray(defaultValue) ? 'array' : 'object';
+  }
+  if (['text', 'select', 'date', 'datetime', 'color'].includes(type)) {
+    return 'string';
+  }
+  return type;
+};
 
 const getRuntimeSettingComponentProps = (
   type: UseSettingsFieldType,
@@ -261,6 +277,9 @@ const getRuntimeSettingComponentProps = (
   if (type === 'multiSelect') {
     props.mode = 'multiple';
   }
+  if (type === 'json' && typeof props.autoSize === 'undefined' && typeof props.rows === 'undefined') {
+    props.autoSize = { minRows: 4, maxRows: 16 };
+  }
 
   return Object.keys(props).length ? props : undefined;
 };
@@ -271,12 +290,7 @@ const toRuntimeSettingValueSchema = (settingKey: string, rawDefinition: UseSetti
   const defaultValue = isObjectDefinition ? definition.default : rawDefinition;
   const type = getRuntimeSettingType(defaultValue, definition.type);
   const title = definition.title || humanizeRuntimeSettingKey(settingKey);
-  const schemaType =
-    type === 'multiSelect'
-      ? 'array'
-      : ['text', 'select', 'date', 'datetime', 'color', 'json'].includes(type)
-        ? 'string'
-        : type;
+  const schemaType = getRuntimeSettingSchemaType(type, defaultValue);
   const componentProps = getRuntimeSettingComponentProps(type, definition);
   const valueSchema: Record<string, unknown> = {
     type: schemaType,

@@ -8,6 +8,7 @@
  */
 
 import { FlowModel } from '@nocobase/flow-engine';
+import { JsonTextArea } from '../components/form/JsonTextArea';
 import { IconPicker } from '../flow-compat';
 import { Plugin, type PluginOptions } from '..';
 import type { BaseApplication } from '../BaseApplication';
@@ -41,6 +42,7 @@ export class PluginFlowEngine<TApp extends BaseApplication<any> = BaseApplicatio
     this.flowEngine.flowSettings.registerComponents({
       IconPicker,
       DefaultValue,
+      JsonTextArea,
       FlowSettingsVariableTextArea: TextAreaWithContextSelector,
     });
 
