@@ -54,9 +54,10 @@ const SCOPES_ROOT = '$scopes';
  * A system variable as held by either runtime's `systemVariables` registry.
  * v2 stores `{ key, label(string template) }`; v1 stores
  * `{ key, label(string OR already-rendered JSX), value }` (the JSX bakes in a
- * tooltip icon). `useSystemScope` reduces either to a plain string title.
+ * tooltip icon). `useSystemScope` reduces either to a plain string title and stores
+ * optional tooltip text under the existing `MetaTreeNode.options` bag.
  */
-type SystemVariableLike = { key: string; label: React.ReactNode };
+type SystemVariableLike = { key: string; label: React.ReactNode; tooltip?: React.ReactNode };
 
 /**
  * Coerce a React node to plain text for use as a `MetaTreeNode.title` (which is a
@@ -79,6 +80,25 @@ function reactNodeToPlainText(node: React.ReactNode): string {
     return reactNodeToPlainText((node.props as { children?: React.ReactNode })?.children);
   }
   return '';
+}
+
+function extractTooltipFromReactNode(node: React.ReactNode): string {
+  if (node == null || typeof node === 'boolean') {
+    return '';
+  }
+  if (Array.isArray(node)) {
+    return node.map(extractTooltipFromReactNode).find(Boolean) ?? '';
+  }
+  if (!React.isValidElement(node)) {
+    return '';
+  }
+
+  const props = node.props as { children?: React.ReactNode; title?: React.ReactNode };
+  if (props.title != null && typeof node.type !== 'string') {
+    return reactNodeToPlainText(props.title);
+  }
+
+  return extractTooltipFromReactNode(props.children);
 }
 
 /**
@@ -133,6 +153,16 @@ function prefixMetaTreeNodePaths(node: MetaTreeNode, prefix: string[]): MetaTree
 
 function isMetaTreeNodeArray(value: unknown): value is MetaTreeNode[] {
   return Array.isArray(value) && value.every((item) => item && typeof item === 'object' && 'paths' in item);
+}
+
+function createDisabledWorkflowRoot(name: string, title: string): MetaTreeNode {
+  return {
+    name,
+    title,
+    type: '',
+    paths: [name],
+    disabled: true,
+  };
 }
 
 export type UseWorkflowVariableOptions = {
@@ -245,11 +275,17 @@ function useSystemScope(): MetaTreeNode | null {
     // them; v1 labels may be already-rendered JSX — coerce to a plain string for the title (the picker renders
     // strings).
     const label = typeof item.label === 'string' ? t(item.label) : reactNodeToPlainText(item.label);
+    const rawTooltip = item.tooltip ?? extractTooltipFromReactNode(item.label);
+    const tooltip =
+      typeof rawTooltip === 'string' || typeof rawTooltip === 'number'
+        ? t(String(rawTooltip))
+        : reactNodeToPlainText(rawTooltip);
     return {
       name: item.key,
       title: label,
       type: '',
       paths: [SYSTEM_ROOT, item.key],
+      ...(tooltip ? { options: { tooltip } } : {}),
     };
   });
   return {
@@ -340,6 +376,7 @@ function useScopeVariablesScope(options: UseWorkflowVariableOptions): MetaTreeNo
  * children survive the re-render.
  */
 export function useWorkflowVariableOptions(options: UseWorkflowVariableOptions = {}): MetaTreeNode[] {
+  const flowEngine = useFlowEngine();
   const scopeVars = useScopeVariablesScope(options);
   const nodeResult = useNodeResultScope(options);
   const trigger = useTriggerScope(options);
@@ -361,9 +398,20 @@ export function useWorkflowVariableOptions(options: UseWorkflowVariableOptions =
     workflow?.id ?? ''
   }|${workflow?.type ?? ''}|${options.includeScopes === false ? 'no-scopes' : 'with-scopes'}`;
 
-  /* eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally keyed
-     on the structural `signature`, not the scope objects (which are fresh each
-     render); see the doc comment above. Including them would defeat the memo and
-     reintroduce the lazy-load spinner bug. */
-  return useMemo(() => [scopeVars, nodeResult, trigger, system, env].filter(Boolean) as MetaTreeNode[], [signature]);
+  return useMemo(() => {
+    const roots: Array<MetaTreeNode | null> = [
+      options.includeScopes === false
+        ? null
+        : scopeVars ??
+          createDisabledWorkflowRoot(SCOPES_ROOT, flowEngine.context.t('Scope variables', { ns: NAMESPACE })),
+      nodeResult ??
+        createDisabledWorkflowRoot(NODE_RESULT_ROOT, flowEngine.context.t('Node result', { ns: 'workflow' })),
+      trigger,
+      system,
+      env,
+    ];
+
+    return roots.filter(Boolean) as MetaTreeNode[];
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally keyed on the structural `signature`; including fresh scope objects would defeat the memo and reintroduce the lazy-load spinner bug.
+  }, [signature]);
 }

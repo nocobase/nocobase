@@ -7,6 +7,5 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import CCInstructionV2 from '../../client-v2/nodes/cc';
-
-export default class CCInstruction extends CCInstructionV2 {}
+export { default } from './plugin';
+export { PluginWorkflowCCClientV2 } from './plugin';

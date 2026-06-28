@@ -7,17 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { DetailsAssociationFieldGroupModel } from '@nocobase/client';
-import { Collection, DisplayItemModel, FlowModelContext } from '@nocobase/flow-engine';
-import { NAMESPACE } from '../../common/constants';
+import { DetailsAssociationFieldGroupModel } from '@nocobase/client-v2';
+import { DisplayItemModel, type Collection, type FlowModelContext } from '@nocobase/flow-engine';
 
-// 禁止显示的字段（黑名单）
+import { NAMESPACE, tExpr } from '../locale';
+
 const BLACKLIST = ['job', 'execution', 'user', 'node.*', 'job.*', 'workflow.*', 'execution.*'];
-
-// 允许显示的字段（白名单）
 const WHITELIST = ['workflow.title', 'node.title'];
 
-const isExcluded = (fieldPath: string, { whitelist = [], blacklist = [] } = {}) => {
+const isExcluded = (fieldPath: string, { blacklist = [], whitelist = [] } = {}) => {
   const match = (patterns: string[]) => {
     if (patterns.includes(fieldPath)) {
       return true;
@@ -46,54 +44,41 @@ export class CCTaskCardDetailsAssociationFieldGroupModel extends DetailsAssociat
   static defineChildren(ctx: FlowModelContext) {
     const itemModel = this.itemModelName;
 
-    const displayAssociationFields = (targetCollection: Collection, fieldPath = '', depth = 0) => {
+    const displayAssociationFields = (targetCollection: Collection, fieldPath = '') => {
       return targetCollection
         .getToOneAssociationFields()
         .map((field) => {
           const fPath = fieldPath ? `${fieldPath}.${field.name}` : field.name;
-          if (!field.targetCollection) {
-            console.error(
-              `AssociationFieldGroupModel: target collection ${field.target} not found for field ${field.name}`,
-            );
-            return;
+          if (isExcluded(fPath)) {
+            return null;
           }
 
-          if (isExcluded(fPath)) {
-            return;
+          if (!field.targetCollection) {
+            return null;
           }
 
           return {
             key: `${fPath}-assocationField`,
             label: field.title,
-            children: () => {
-              return [
+            children: () =>
+              [
                 {
                   key: `${fPath}-children-collectionField`,
                   label: 'Display fields',
                   type: 'group',
                   children: field.targetCollection
                     .getFields()
-                    .map((f) => {
-                      const fp = `${fPath}.${f.name}`;
-                      const binding = DisplayItemModel.getDefaultBindingByField(ctx, f, {
+                    .map((targetField) => {
+                      const fp = `${fPath}.${targetField.name}`;
+                      const binding = DisplayItemModel.getDefaultBindingByField(ctx, targetField, {
                         fallbackToTargetTitleField: true,
                       });
-
-                      if (!binding) {
-                        return;
+                      if (!binding || targetField.target || isExcluded(fp)) {
+                        return null;
                       }
-
-                      if (f.target) {
-                        return;
-                      }
-
-                      if (isExcluded(fp)) {
-                        return;
-                      }
-                      const use = binding.modelName;
                       return {
-                        key: `c-${fPath}.${f.name}`,
-                        label: f.title,
+                        key: `c-${fPath}.${targetField.name}`,
+                        label: targetField.title,
                         useModel: itemModel,
                         toggleable: (subModel) => {
                           const fieldPath = subModel.getStepParams('fieldSettings', 'init')?.fieldPath;
@@ -112,7 +97,7 @@ export class CCTaskCardDetailsAssociationFieldGroupModel extends DetailsAssociat
                           },
                           subModels: {
                             field: {
-                              use: use,
+                              use: binding.modelName,
                             },
                           },
                         },
@@ -120,8 +105,7 @@ export class CCTaskCardDetailsAssociationFieldGroupModel extends DetailsAssociat
                     })
                     .filter(Boolean),
                 },
-              ].filter((item) => item.children.length > 0);
-            },
+              ].filter((item) => item.children.length > 0),
           };
         })
         .filter(Boolean);
@@ -132,5 +116,7 @@ export class CCTaskCardDetailsAssociationFieldGroupModel extends DetailsAssociat
 }
 
 CCTaskCardDetailsAssociationFieldGroupModel.define({
-  label: `{{t("Other information", { ns: "${NAMESPACE}" })}}`,
+  label: tExpr('Other information', { ns: NAMESPACE }),
 });
+
+export default CCTaskCardDetailsAssociationFieldGroupModel;

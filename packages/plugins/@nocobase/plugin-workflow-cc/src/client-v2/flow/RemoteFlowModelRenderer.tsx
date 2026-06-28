@@ -7,25 +7,24 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { SkeletonFallback } from '@nocobase/client';
-import { FlowModel, FlowModelRenderer, useFlowEngine, useFlowViewContext } from '@nocobase/flow-engine';
-import _ from 'lodash';
+import { SkeletonFallback } from '@nocobase/client-v2';
+import { FlowModelRenderer, useFlowEngine, useFlowViewContext, type FlowModel } from '@nocobase/flow-engine';
 import React, { useEffect, useRef, useState } from 'react';
 
 export function RemoteFlowModelRenderer({
-  uid,
-  onModelLoaded,
   enableUIConfiguration = false,
-  mapModel = _.identity,
-  useCache = false,
+  mapModel = (model: FlowModel) => model,
+  onModelLoaded,
   reloadKey,
+  uid,
+  useCache = false,
 }: {
-  uid: string;
-  onModelLoaded?: (model: FlowModel) => void;
   enableUIConfiguration?: boolean;
   mapModel?: (model: FlowModel) => FlowModel;
-  useCache?: boolean;
+  onModelLoaded?: (model: FlowModel) => void;
   reloadKey?: string | number;
+  uid: string;
+  useCache?: boolean;
 }) {
   const [model, setModel] = useState<FlowModel>(null);
   const flowEngine = useFlowEngine();
@@ -33,6 +32,7 @@ export function RemoteFlowModelRenderer({
   const onModelLoadedRef = useRef(onModelLoaded);
   const mapModelRef = useRef(mapModel);
   const modelRef = useRef<FlowModel | null>(null);
+  const enableUIConfigurationRef = useRef(enableUIConfiguration);
 
   useEffect(() => {
     onModelLoadedRef.current = onModelLoaded;
@@ -63,7 +63,7 @@ export function RemoteFlowModelRenderer({
         loadedModel.context.addDelegate(viewCtx);
       }
       loadedModel.context.defineProperty('flowSettingsEnabled', {
-        value: enableUIConfiguration,
+        value: enableUIConfigurationRef.current,
       });
       modelRef.current = loadedModel;
       if (!cancelled) {
@@ -75,22 +75,24 @@ export function RemoteFlowModelRenderer({
     return () => {
       cancelled = true;
     };
-  }, [flowEngine, uid, viewCtx, reloadKey]);
+  }, [flowEngine, reloadKey, uid, viewCtx]);
 
   useEffect(() => {
-    if (!modelRef.current) return;
-    modelRef.current.context.defineProperty('flowSettingsEnabled', {
-      value: enableUIConfiguration,
-    });
+    enableUIConfigurationRef.current = enableUIConfiguration;
+    if (modelRef.current) {
+      modelRef.current.context.defineProperty('flowSettingsEnabled', {
+        value: enableUIConfiguration,
+      });
+    }
   }, [enableUIConfiguration]);
 
   return (
     <FlowModelRenderer
-      model={model}
+      fallback={<SkeletonFallback />}
       hideRemoveInSettings
+      model={model}
       showFlowSettings={false}
       useCache={useCache}
-      fallback={<SkeletonFallback />}
     />
   );
 }
