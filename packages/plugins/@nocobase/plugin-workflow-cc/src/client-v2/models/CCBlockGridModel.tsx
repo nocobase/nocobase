@@ -96,6 +96,10 @@ function normalizeSubModelItems(items: SubModelItem[]) {
   return changed ? normalizedItems : items;
 }
 
+function hasMenuChildren(item: SubModelItem) {
+  return Array.isArray(item.children) && item.children.length > 0;
+}
+
 function CCAddBlockButton({ model }: { model: CCBlockGridModel }) {
   const workflowPlugin = useWorkflowPluginCompat();
   const inputArgs = model.context.view?.inputArgs || {};
@@ -164,7 +168,7 @@ function CCAddBlockButton({ model }: { model: CCBlockGridModel }) {
       ],
     };
 
-    return [dataBlocks, otherBlocks].filter((group) => group.children?.length);
+    return [dataBlocks, otherBlocks].filter(hasMenuChildren);
   }, [availableUpstreams, workflow, workflowPlugin]);
 
   return (

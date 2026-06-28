@@ -14,6 +14,7 @@ import {
   useFlowContext as useFlowEngineContext,
   useFlowEngine,
   type CreateModelOptions,
+  type FlowEngineContext,
   type FlowModel,
 } from '@nocobase/flow-engine';
 import {
@@ -83,8 +84,8 @@ type FlowNodeResource = {
   update?: (params: FlowNodeConfigUpdateParams) => Promise<unknown> | unknown;
 };
 
-type FlowContextWithFlowNodeApi = ReturnType<typeof useFlowEngineContext> & {
-  api?: {
+type FlowContextWithFlowNodeApi = Omit<FlowEngineContext, 'api'> & {
+  api: FlowEngineContext['api'] & {
     resource?: (name: string) => FlowNodeResource | undefined;
     request?: (params: { method: string; url: string }) => Promise<unknown>;
   };
@@ -180,8 +181,7 @@ function getExpectedModelUse(options: CreateModelOptions) {
 }
 
 function getModelUseName(model?: FlowModel | null) {
-  const modelUse = model?.use;
-  return typeof modelUse === 'string' ? modelUse : modelUse?.name;
+  return model?.use;
 }
 
 function hasGridContent(model?: FlowModel | null) {

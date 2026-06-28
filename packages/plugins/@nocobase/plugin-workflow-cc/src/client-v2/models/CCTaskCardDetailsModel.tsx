@@ -13,13 +13,11 @@ import React from 'react';
 
 import { tExpr } from '../locale';
 
+type DecoratorPropsModel = {
+  setDecoratorProps: (props: { description?: string; title?: string }) => void;
+};
+
 export class CCTaskCardDetailsModel extends DetailsBlockModel {
-  get hidden() {
-    return false;
-  }
-
-  set hidden(_value) {}
-
   onInit(options: Parameters<DetailsBlockModel['onInit']>[0]): void {
     super.onInit(options);
     this.setDecoratorProps({
@@ -79,7 +77,7 @@ CCTaskCardDetailsModel.registerFlow({
         };
       },
       handler(ctx: FlowModelContext, params: { description?: string; title?: string }) {
-        ctx.model.setDecoratorProps({
+        (ctx.model as unknown as DecoratorPropsModel).setDecoratorProps({
           description: ctx.t(params.description),
           title: ctx.t(params.title),
         });
