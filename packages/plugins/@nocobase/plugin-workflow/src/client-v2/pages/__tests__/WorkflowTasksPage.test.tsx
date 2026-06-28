@@ -202,6 +202,7 @@ describe('WorkflowTasksPage', () => {
 
     fireEvent.click(await screen.findByText('Open me'));
 
+    await screen.findByText('detail:Open me');
     expect(holder.navigate).toHaveBeenCalledWith('/admin/workflow/tasks/demo/pending/9');
   });
 });
