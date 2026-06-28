@@ -34,6 +34,13 @@ nb app start --env local-docker
 Jika Anda memberikan `--env` secara eksplisit dan nilainya berbeda dari env saat ini, CLI akan meminta konfirmasi terlebih dahulu. Pada terminal non-interaktif atau sesi AI agent, tambahkan `--yes` sendiri atau jalankan `nb env use <name>` terlebih dahulu lalu coba lagi.
 
 Secara default, bila berlaku, CLI terlebih dahulu menjalankan `nb license plugins sync --skip-if-no-license` untuk menyinkronkan plugin komersial yang diizinkan oleh lisensi saat ini. Setelah itu, env lokal akan otomatis menyiapkan instalasi atau upgrade yang diperlukan sebelum berjalan di background, sedangkan env Docker akan membuat ulang container aplikasi dari konfigurasi env yang tersimpan. Setiap kali CLI perlu menunggu aplikasi siap, CLI akan memeriksa `__health_check`: pertama menampilkan satu baris waiting, lalu satu baris progress setiap 10 detik sampai aplikasi tersedia atau waktunya habis.
+
+## Script hook
+
+Jika env saat ini menyimpan hook dengan `nb init --hook-script`, `nb app start` menjalankan `afterAppStart(context)` setelah app benar-benar start dan lolos `__health_check`. Env yang sudah terinstal menggunakan `context.phase = 'app-start'` dan `context.command = 'app:start'`. Jika app sudah berjalan, perintah ini tidak menjalankan hook.
+
+Untuk prepared env yang dibuat dengan `--prepare-only`, `nb app start` pertama menjalankan `beforeAppInstall(context)`, menyelesaikan instalasi pertama dan startup, lalu menjalankan `afterAppStart(context)`. Kedua hook menerima `context.phase = 'init'` dan `context.command = 'app:start'`.
+
 ## Perintah Terkait
 
 - [`nb app stop`](./stop.md)

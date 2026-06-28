@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { handleInteractionGet } from '../interaction';
+import { handleInteractionGet, handleInteractionPost } from '../interaction';
 
 describe('plugin-idp-oauth > interaction', () => {
   const createCtx = () =>
@@ -32,6 +32,45 @@ describe('plugin-idp-oauth > interaction', () => {
       }),
       resolveInteractionSessionUser: vi.fn(),
     }) as any;
+
+  const createSessionNotFoundError = () =>
+    Object.assign(new Error('invalid_request'), {
+      name: 'SessionNotFound',
+      error: 'invalid_request',
+      error_description: 'interaction session id cookie not found',
+    });
+
+  test('returns invalid request when interaction session is missing', async () => {
+    const ctx = createCtx();
+    const provider = {
+      interactionDetails: vi.fn().mockRejectedValue(createSessionNotFoundError()),
+    } as any;
+    const service = createService();
+
+    await handleInteractionGet(ctx, provider, { id: 1 }, service);
+
+    expect(ctx.status).toBe(400);
+    expect(ctx.body).toEqual({
+      error: 'invalid_request',
+      error_description: 'The authorization request has expired or is no longer available.',
+    });
+  });
+
+  test('returns invalid request when posting to a missing interaction session', async () => {
+    const ctx = createCtx();
+    const provider = {
+      interactionDetails: vi.fn().mockRejectedValue(createSessionNotFoundError()),
+    } as any;
+    const service = createService();
+
+    await handleInteractionPost(ctx, provider, { id: 1 }, service);
+
+    expect(ctx.status).toBe(400);
+    expect(ctx.body).toEqual({
+      error: 'invalid_request',
+      error_description: 'The authorization request has expired or is no longer available.',
+    });
+  });
 
   test('auto completes consent for reserved app clients', async () => {
     const ctx = createCtx();

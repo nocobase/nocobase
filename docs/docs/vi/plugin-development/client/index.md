@@ -29,6 +29,7 @@ Trong đó:
 1. **[Plugin](./plugin)**: Lớp lối vào của Plugin, đăng ký các tài nguyên như route, model trong các vòng đời như `load()`.
 2. **[Router](./router)**: Đăng ký route trang thông qua `router.add()`, đăng ký trang cài đặt plugin thông qua `pluginSettingsManager`.
 3. **[Component](./component/index.md)**: Cái mà route mount chính là Component React. Mặc định viết bằng React + Antd là được, không khác gì phát triển frontend thông thường.
+| Tìm thành phần biểu mẫu, bộ lọc và bảng có thể tái sử dụng | [Thành phần dùng chung](/shared-components/) |
 4. **[Context](./ctx/index.md)**: Trong Plugin có thể lấy context thông qua `this.context`, trong Component lấy thông qua `useFlowContext()`, để dùng các năng lực mà NocoBase cung cấp — gửi request (`ctx.api`), i18n (`ctx.t`), log (`ctx.logger`), v.v.
 5. **[FlowEngine](./flow-engine/index.md)**: Nếu Component của bạn cần xuất hiện trong menu "Thêm Block / Field / Action", hỗ trợ người dùng cấu hình trực quan, thì cần dùng FlowModel để bọc.
 

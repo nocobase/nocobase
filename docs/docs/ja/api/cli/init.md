@@ -42,7 +42,7 @@ nb init --env app1 --resume
 
 `--prepare-only` は、最初に env を準備し、その後 license を有効化し、最後にアプリをインストールして起動する必要があるフロー向けです。
 
-env 設定を先に保存し、ソースファイルまたはイメージを準備し、データベースも用意しておきたい一方で、実際のアプリインストールと初回起動は後回しにしたい場合は、次のように実行できます:
+env 設定を先に保存し、データベースを準備しつつ、依存関係のダウンロード、実際のアプリインストール、初回起動を後回しにしたい場合は、次のように実行できます:
 
 ```bash
 nb init --env app1 --prepare-only
@@ -67,6 +67,7 @@ nb app start --env app1
 
 ```text
 <app-path>/
+├── .nb/      # この env 用の CLI メタデータ。例: hooks.mjs
 ├── source/   # アプリのソースコードまたはダウンロード内容のデフォルトディレクトリ
 ├── storage/  # ランタイムデータディレクトリ
 └── .env      # オプションのアプリ環境変数ファイル
@@ -74,6 +75,7 @@ nb app start --env app1
 
 通常は次の通りです:
 
+- `.nb/` には CLI が管理するメタデータを保存します。`--hook-script` で渡したスクリプトは `<app-path>/.nb/hooks.mjs` にコピーされ、後続の `nb app upgrade` やローカル source の復元で再利用されます
 - `source/` は主に npm / Git env のローカルアプリディレクトリに対応します。Docker env についても CLI はこのデフォルトのパス導出を維持しますが、ほとんどの場合は手動で気にする必要はありません。アップグレード時には特に注意してください。`source/` ディレクトリは削除されたあと再ダウンロードされるため、保持したいファイルをここに置かないでください
 - `storage/` には、組み込みデータベースのデータ、プラグイン、ログなどのランタイムデータを格納します
 - `.env` はオプションのアプリ環境変数ファイルです。環境変数をカスタマイズしたい場合にのみ `<app-path>/.env` に追加する必要があります。このファイルが存在する場合、Docker、npm、Git の各インストール元はデフォルトでこれを読み取ります
@@ -101,7 +103,7 @@ nb app start --env app1
 | ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `Getting started`         | `--env`、`--yes`、`--ui`、`--locale`、`--verbose`、`--skip-skills`、`--resume`、`--prepare-only`                                                                                                                 |
 | `App environment`         | `--lang`、`--app-path`、`--app-port`、`--force`                                                                                                                                                                   |
-| `App source and version`  | `--source`、`--version`、`--skip-download`、`--git-url`、`--docker-registry`、`--docker-platform`、`--npm-registry`、`--replace`、`--dev-dependencies`、`--output-dir`、`--docker-save`、`--build`、`--build-dts` |
+| `App source and version`  | `--source`、`--version`、`--skip-download`、`--git-url`、`--docker-registry`、`--docker-platform`、`--npm-registry`、`--replace`、`--dev-dependencies`、`--output-dir`、`--docker-save`、`--build`、`--build-dts`、`--hook-script` |
 | `Configure the database`  | `--builtin-db`、`--db-dialect`、`--builtin-db-image`、`--db-host`、`--db-port`、`--db-database`、`--db-user`、`--db-password`、`--db-schema`、`--db-table-prefix`、`--db-underscored`                             |
 | `Create an admin account` | `--root-username`、`--root-email`、`--root-password`、`--root-nickname`                                                                                                                                           |
 | `Remote connection`       | `--api-base-url`、`--auth-type`、`--access-token`、`--username`、`--password`、`--skip-auth`                                                                                                                      |
@@ -184,6 +186,7 @@ nb app start --env app1
 | `--npm-registry`                                     | string  | 空                                                                                             | npm/Git のダウンロードと依存関係インストールで使用する registry                              |
 | `--build` / `--no-build`                             | boolean | `true`                                                                                         | npm/Git 依存関係のインストール後にビルドするかどうか                                         |
 | `--build-dts`                                        | boolean | `false`                                                                                        | npm/Git ビルド時に TypeScript 宣言ファイルを生成するかどうか                                 |
+| `--hook-script`                                      | string  | なし                                                                                           | 指定した hook モジュールを `<app-path>/.nb/hooks.mjs` にコピーして env config に保存します。`beforeDependencyInstall`、`beforeAppInstall`、`afterAppStart` の lifecycle hook をサポートします |
 
 ## 例
 
@@ -232,6 +235,40 @@ nb init --env app1 --yes --source git --version feat/plugin-workflow-timeout
 nb init --env app1 --yes --source git --version latest \
   --git-url https://gitee.com/nocobase/nocobase.git
 ```
+
+### hook スクリプトでインストールフローを拡張する
+
+インストール中に追加コンテンツを準備したい場合は、`--hook-script` でローカル ESM モジュールを渡します:
+
+```bash
+nb init --env app1 --yes --source git --hook-script ./hooks.mjs
+```
+
+CLI はこのファイルを `<app-path>/.nb/hooks.mjs` にコピーし、env config に `hookScript: ".nb/hooks.mjs"` を保存します。後続の `nb app start`、`nb app restart`、`nb app upgrade` はこの場所から再利用します。
+
+hook ファイルはオブジェクトを default export する必要があります。必要なメソッドだけ実装してください:
+
+```js
+export default {
+  beforeDependencyInstall: async (context) => {
+    // Runs after git clone / npm scaffold and before yarn install.
+  },
+  beforeAppInstall: async (context) => {
+    // Runs before the app-level install or upgrade command.
+  },
+  afterAppStart: async (context) => {
+    // Runs after the app actually starts and passes the health check.
+  },
+};
+```
+
+- `beforeDependencyInstall` npm/Git source のみに適用され、実際の `yarn install` の直前に実行されます。Docker source では実行されません
+- `beforeAppInstall` アプリレベルの install または upgrade コマンドの前に実行され、npm/Git/Docker source に適用されます
+- `afterAppStart` アプリが実際に起動し、`__health_check` に通った後に実行されます。`nb app start`、`nb app restart`、`nb app upgrade` で実行される場合があります
+
+`--prepare-only` は env config の保存と hook ファイルのコピーだけを行います。hook は実行されません。後で初回の `nb app start` を実行すると、CLI は初回インストール用 hook を `context.phase` が `init`、`context.command` が `app:start` の状態で実行します。
+
+`context` には `phase`、`command`、`source`、`version`、`appPath`、`sourcePath`、`storagePath`、`hookScript`、`envConfig` などのライフサイクル情報が含まれます。hook がエラーを投げると、現在の CLI コマンドは失敗します。`afterAppStart` は start、restart、upgrade で繰り返し実行される可能性があるため、冪等にしてください。
 
 ### すばやくインストールして basic 認証を使う
 

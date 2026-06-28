@@ -9,6 +9,7 @@
 
 import { APIClient } from '@nocobase/sdk';
 import { FlowContext } from '../flowContext';
+import { getDirtyAwareApiClient } from '../utils/dirtyAwareApiClient';
 import { FlowResource, ResourceError } from './flowResource';
 
 export class APIResource<TData = any> extends FlowResource<TData> {
@@ -33,7 +34,7 @@ export class APIResource<TData = any> extends FlowResource<TData> {
   }
 
   setAPIClient(api: APIClient) {
-    this.api = api;
+    this.api = getDirtyAwareApiClient(api, this.context) as APIClient;
     return this;
   }
 

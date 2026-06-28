@@ -1012,11 +1012,11 @@ function CollectionCreateDrawer(props: {
             { required: true },
             {
               pattern: /^[A-Za-z][A-Za-z0-9_]*$/,
-              message: t('Support letters, numbers and underscores, must start with an letter.'),
+              message: t('Support letters, numbers and underscores, must start with a letter.'),
             },
           ]}
           extra={t(
-            'Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.',
+            'Randomly generated and can be modified. Support letters, numbers and underscores, must start with a letter.',
           )}
         >
           <Input />
@@ -1264,7 +1264,7 @@ function CollectionEditDrawer(props: {
             name="name"
             label={t('Collection name')}
             extra={t(
-              'Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.',
+              'Randomly generated and can be modified. Support letters, numbers and underscores, must start with a letter.',
             )}
           >
             <Input disabled />
@@ -1321,7 +1321,7 @@ function CollectionEditDrawer(props: {
           name="name"
           label={t('Collection name')}
           extra={t(
-            'Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.',
+            'Randomly generated and can be modified. Support letters, numbers and underscores, must start with a letter.',
           )}
         >
           <Input disabled />

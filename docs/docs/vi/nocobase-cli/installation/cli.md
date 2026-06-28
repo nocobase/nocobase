@@ -35,6 +35,8 @@ nb config set update.policy auto
 nb config set update.policy off
 ```
 
+Tự cập nhật chỉ được hỗ trợ khi CLI được quản lý bởi cài đặt global tiêu chuẩn của npm, pnpm hoặc yarn. Nếu đang chạy từ source hoặc từ cây dependency của một dự án cục bộ, hãy dùng [`nb self check`](../../api/cli/self/check.md) để xem phương thức cài đặt được phát hiện rồi cập nhật dự án cha đó.
+
 Nếu bạn định triển khai NocoBase cho máy chủ và muốn mở trình hướng dẫn `nb init --ui` từ trình duyệt từ xa, trước tiên bạn nên thay đổi máy chủ mặc định của CLI thành IP máy chủ hiện tại:
 
 ```bash

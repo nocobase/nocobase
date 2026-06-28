@@ -272,7 +272,7 @@ export class BaseLayoutRouteCoordinator {
           runtime.viewState[getKey(viewItem)]?.destroy?.(true);
           delete runtime.viewState[getKey(viewItem)];
         });
-        updateViewListHidden(viewList);
+        updateViewListHidden(viewList, !!this.layoutContext?.isMobileLayout);
       }
 
       if (viewsToOpen.length) {
@@ -299,7 +299,7 @@ export class BaseLayoutRouteCoordinator {
     }
 
     if (runtime.meta.active) {
-      updateViewListHidden(viewList);
+      updateViewListHidden(viewList, !!this.layoutContext?.isMobileLayout);
       return;
     }
 
@@ -390,6 +390,7 @@ export class BaseLayoutRouteCoordinator {
       openViewParams?.associationName && !hasUsableSourceId(viewItem.params.sourceId)
         ? null
         : openViewParams?.associationName;
+    const openViewRouteState = viewItem.params.openViewRouteState;
     const openerUids = viewList.slice(0, viewItem.index).map((item) => item.params.viewUid);
     const navigation = new ViewNavigation(
       this.flowEngine.context,
@@ -408,6 +409,8 @@ export class BaseLayoutRouteCoordinator {
       deactivateRef,
       openerUids,
       ...viewItem.params,
+      ...(openViewRouteState?.mode ? { mode: openViewRouteState.mode } : {}),
+      ...(openViewRouteState?.size ? { size: openViewRouteState.size } : {}),
       pageActive: runtime.meta.active,
       activationControlledByLayout: true,
       navigation,

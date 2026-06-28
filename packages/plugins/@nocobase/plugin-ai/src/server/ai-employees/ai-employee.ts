@@ -23,6 +23,7 @@ import type { AIEmployee as AIEmployeeType } from '../../collections/ai-employee
 import {
   conversationMiddleware,
   skillToolBindingMiddleware,
+  toolCallSanitizerMiddleware,
   toolCallStatusMiddleware,
   toolInteractionMiddleware,
   workflowHistoryMiddleware,
@@ -39,6 +40,7 @@ import { LLMResult } from '@langchain/core/outputs';
 import { Context } from '@nocobase/actions';
 import { listAccessibleAIEmployees, serializeEmployeeSummary } from '../../ai/tools/sub-agents/shared';
 import { LLMStreamCached } from '../manager/llm-stream-manager';
+import { sanitizeAdditionalKwargsForToolCalls } from './tool-call-sanitizer';
 
 export interface ModelRef {
   llmService: string;
@@ -1288,7 +1290,15 @@ If information is missing, clearly state it in the summary.</Important>`;
         role: 'assistant',
         content,
         tool_calls: msg.toolCalls,
-        additional_kwargs: msg.metadata?.additional_kwargs,
+        additional_kwargs: sanitizeAdditionalKwargsForToolCalls(msg.metadata?.additional_kwargs, msg.toolCalls, {
+          onDiscard: (info) => {
+            this.logger.warn('Discard malformed raw tool calls from AI message', {
+              phase: 'formatMessages',
+              messageId: msg.metadata?.id,
+              ...info,
+            });
+          },
+        }).additionalKwargs,
       });
     }
 
@@ -1353,7 +1363,7 @@ If information is missing, clearly state it in the summary.</Important>`;
     }
     const tools: ToolsEntry[] = await this.listTools({ scope: 'GENERAL' });
     if (this.webSearch === true) {
-      const subAgentWebSearch = await this.toolsManager.getTools(SYSTEM_TOOLS.WEB_SEARCH);
+      const subAgentWebSearch = await this.toolsManager.getTools(SYSTEM_TOOLS.WEB_SEARCH, { ctx: this.ctx });
       tools.push(subAgentWebSearch);
     }
     const generalToolsNameSet = new Set(tools.map((x) => x.definition.name));
@@ -1361,7 +1371,9 @@ If information is missing, clearly state it in the summary.</Important>`;
     const settingsTools = this.employee.skillSettings?.tools ?? [];
     const employeeTools = [...settingsTools, ...this.tools];
     if (await this.plugin.knowledgeBaseManager.isEnabledKnowledgeBase(this.employee.toJSON() as AIEmployeeType)) {
-      const knowledgeBaseRetrieveTool = await this.toolsManager.getTools(SYSTEM_TOOLS.KNOWLEDGE_BASE);
+      const knowledgeBaseRetrieveTool = await this.toolsManager.getTools(SYSTEM_TOOLS.KNOWLEDGE_BASE, {
+        ctx: this.ctx,
+      });
       if (knowledgeBaseRetrieveTool) {
         employeeTools.push({ name: SYSTEM_TOOLS.KNOWLEDGE_BASE });
       }
@@ -1531,6 +1543,7 @@ If information is missing, clearly state it in the summary.</Important>`;
       toolCallStatusMiddleware(this),
       ...(inWorkflow ? [workflowHistoryMiddleware(this, this.db)] : []),
       conversationMiddleware(this, { providerName, llmService, model, messageId, agentThread }),
+      toolCallSanitizerMiddleware({ logger: this.logger }),
     ];
   }
 
@@ -1564,7 +1577,10 @@ If information is missing, clearly state it in the summary.</Important>`;
   }
 
   private listTools(filter?: ToolsFilter) {
-    return this.toolsManager.listTools(filter);
+    return this.toolsManager.listTools({
+      ...filter,
+      ctx: this.ctx,
+    });
   }
 
   private withRunMetadata(config?: any) {

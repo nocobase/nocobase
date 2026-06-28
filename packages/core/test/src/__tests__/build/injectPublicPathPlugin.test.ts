@@ -116,4 +116,5 @@ describe('AutoInjectPublicPathPlugin', () => {
     );
 
     expect(result).toBe('https://example.com/v/static/plugins/@nocobase/plugin-auth/dist/client/');
+  });
 });
