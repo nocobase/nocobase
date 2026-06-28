@@ -38,6 +38,11 @@ type FormBlockModel = FlowModel & {
   getAclActionName?: () => string;
 };
 
+export type FormValuePatch = {
+  path: NamePath;
+  value: unknown;
+};
+
 export class FormValueRuntime {
   private readonly model: FormBlockModel;
   private readonly getForm: () => FormInstance;
@@ -140,6 +145,49 @@ export class FormValueRuntime {
       this.formPatcher.patch(form);
     }
     return this.getForm().getFieldsValue(true);
+  }
+
+  getUserEditedValuePatches(): FormValuePatch[] {
+    const snapshot = this.getFormValuesSnapshot();
+    if (!snapshot || typeof snapshot !== 'object') {
+      return [];
+    }
+
+    const patches: FormValuePatch[] = [];
+    const pathKeys = Array.from(this.userEditedSet).sort(
+      (a, b) => pathKeyToNamePath(a).length - pathKeyToNamePath(b).length,
+    );
+
+    for (const pathKey of pathKeys) {
+      if (!this.isCurrentUserEditedPath(pathKey)) {
+        continue;
+      }
+
+      const namePath = pathKeyToNamePath(pathKey);
+      if (!namePath.length || !_.has(snapshot, namePath as any)) {
+        continue;
+      }
+
+      const value = _.get(snapshot, namePath as any);
+      if (typeof value === 'undefined') {
+        continue;
+      }
+
+      patches.push({
+        path: namePath,
+        value: this.omitNonUserDescendantValues(pathKey, this.toMirrorSnapshot(value)),
+      });
+    }
+
+    return patches;
+  }
+
+  getUserEditedValuesSnapshot(): Record<string, unknown> {
+    const values: Record<string, unknown> = {};
+    for (const patch of this.getUserEditedValuePatches()) {
+      _.set(values, patch.path as any, patch.value);
+    }
+    return values;
   }
 
   private toMirrorSnapshot(value: any) {
@@ -1451,6 +1499,49 @@ export class FormValueRuntime {
       return key;
     }
     return null;
+  }
+
+  private findLatestWriteMeta(pathKey: string): FormValueWriteMeta | undefined {
+    let latest: FormValueWriteMeta | undefined;
+    const namePath = pathKeyToNamePath(pathKey);
+    const prefix: NamePath = [];
+
+    for (let i = 0; i < namePath.length; i++) {
+      prefix.push(namePath[i]);
+      const meta = this.lastWriteMetaByPathKey.get(namePathToPathKey(prefix as any));
+      if (!meta) {
+        continue;
+      }
+      if (!latest || meta.writeSeq >= latest.writeSeq) {
+        latest = meta;
+      }
+    }
+
+    return latest;
+  }
+
+  private isCurrentUserEditedPath(pathKey: string) {
+    const lastWrite = this.findLatestWriteMeta(pathKey);
+    return !lastWrite || lastWrite.source === 'user';
+  }
+
+  private omitNonUserDescendantValues(pathKey: string, value: unknown) {
+    if (!value || typeof value !== 'object') {
+      return value;
+    }
+
+    const namePath = pathKeyToNamePath(pathKey);
+    for (const childKey of this.lastWriteMetaByPathKey.keys()) {
+      if (!this.isDescendantPathKey(childKey, pathKey)) {
+        continue;
+      }
+      if (this.isCurrentUserEditedPath(childKey)) {
+        continue;
+      }
+      _.unset(value as Record<string, unknown>, pathKeyToNamePath(childKey).slice(namePath.length) as any);
+    }
+
+    return value;
   }
 
   private isDescendantPathKey(candidateKey: string, parentKey: string) {

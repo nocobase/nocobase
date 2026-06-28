@@ -20,6 +20,12 @@ export class PluginAIClientV2 extends Plugin {
   features = new AIPluginFeatureManagerImpl();
 
   async load() {
+    this.app.flowEngine.registerModelLoaders({
+      AIEmployeeButtonModel: {
+        loader: () => import('./ai-employees/flow/models/AIEmployeeButtonModel'),
+      },
+    });
+
     const context = this.app.flowEngine.context as AIFlowContext;
     if (!context.aiConfigRepository) {
       context.defineProperty('aiConfigRepository', {
@@ -33,6 +39,7 @@ export default PluginAIClientV2;
 
 export { AIEmployeeProfileCard } from './ai-employees/ProfileCard';
 export { AIEmployeeShortcut } from './ai-employees/AIEmployeeShortcut';
+export { AIEmployeeButtonModel } from './ai-employees/flow/models/AIEmployeeButtonModel';
 export { avatars, avatarsMap } from './ai-employees/avatars';
 export type {
   AIEmployee,

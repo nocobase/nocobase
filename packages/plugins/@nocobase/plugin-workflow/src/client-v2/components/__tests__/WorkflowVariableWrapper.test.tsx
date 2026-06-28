@@ -15,7 +15,7 @@ import { WorkflowVariableWrapper } from '../WorkflowVariableWrapper';
 
 const holder = vi.hoisted(() => ({
   selectorProps: null as null | Record<string, unknown>,
-  variableTagProps: null as null | Record<string, unknown>,
+  workflowVariableTagProps: null as null | Record<string, unknown>,
 }));
 
 vi.mock('@nocobase/flow-engine', () => ({
@@ -27,18 +27,22 @@ vi.mock('@nocobase/flow-engine', () => ({
       </button>
     );
   },
-  VariableTag: (props: any) => {
-    holder.variableTagProps = props;
-    return (
-      <button type="button" aria-label="variable-tag" onClick={() => props.onClear?.()}>
-        {props.value}
-      </button>
-    );
-  },
 }));
 
 vi.mock('../../canvas/useWorkflowVariableOptions', () => ({
   useWorkflowVariableOptions: vi.fn(),
+}));
+
+vi.mock('../../canvas/WorkflowVariableTag', () => ({
+  isWorkflowVariableValue: (value: unknown) => typeof value === 'string' && /^\{\{\s*[^{}]+?\s*\}\}$/.test(value),
+  WorkflowVariableTag: (props: any) => {
+    holder.workflowVariableTagProps = props;
+    return (
+      <button type="button" aria-label="workflow-variable-tag" onClick={() => props.onClear?.()}>
+        {props.value}
+      </button>
+    );
+  },
 }));
 
 describe('WorkflowVariableWrapper', () => {
@@ -82,8 +86,8 @@ describe('WorkflowVariableWrapper', () => {
     );
 
     expect(screen.queryByTestId('wrapped-field')).toBeNull();
-    expect(screen.getByRole('button', { name: 'variable-tag' })).toHaveTextContent('{{$context.user.id}}');
-    expect(holder.variableTagProps?.metaTree).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'workflow-variable-tag' })).toHaveTextContent('{{$context.user.id}}');
+    expect(holder.workflowVariableTagProps?.metaTree).toBeTruthy();
   });
 
   it('clears the selected variable back to null by default', async () => {
@@ -101,9 +105,42 @@ describe('WorkflowVariableWrapper', () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole('button', { name: 'variable-tag' }));
+    fireEvent.click(screen.getByRole('button', { name: 'workflow-variable-tag' }));
 
     expect(handleChange).toHaveBeenCalledWith(null);
+  });
+
+  it('re-renders a saved workflow variable through the workflow-aware tag path on reopen', async () => {
+    const { useWorkflowVariableOptions } = await import('../../canvas/useWorkflowVariableOptions');
+    vi.mocked(useWorkflowVariableOptions).mockReturnValue([
+      {
+        name: '$jobsMapByNodeKey',
+        title: 'Node result',
+        type: 'object',
+        paths: ['$jobsMapByNodeKey'],
+        children: [
+          {
+            name: 'jsonCalc',
+            title: 'JSON calc',
+            type: 'object',
+            paths: ['$jobsMapByNodeKey', 'jsonCalc'],
+            children: [{ name: 'id', title: 'ID', type: 'string', paths: ['$jobsMapByNodeKey', 'jsonCalc', 'id'] }],
+          },
+        ],
+      },
+    ] as any);
+
+    render(
+      <WorkflowVariableWrapper
+        value="{{$jobsMapByNodeKey.jsonCalc.id}}"
+        render={() => <div data-testid="wrapped-field" />}
+      />,
+    );
+
+    expect(screen.getByRole('button', { name: 'workflow-variable-tag' })).toHaveTextContent(
+      '{{$jobsMapByNodeKey.jsonCalc.id}}',
+    );
+    expect(holder.workflowVariableTagProps?.metaTree).toBeTruthy();
   });
 
   it('falls back to the wrapped field when the hide-variable context is enabled', async () => {

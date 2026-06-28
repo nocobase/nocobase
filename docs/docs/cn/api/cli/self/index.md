@@ -19,7 +19,7 @@ nb self <command>
 | 命令 | 说明 |
 | --- | --- |
 | [`nb self check`](./check.md) | 检查当前 CLI 版本和自更新支持情况 |
-| [`nb self update`](./update.md) | 更新全局 npm 安装的 NocoBase CLI |
+| [`nb self update`](./update.md) | 更新全局 npm、pnpm 或 yarn 安装的 NocoBase CLI |
 
 ## 示例
 

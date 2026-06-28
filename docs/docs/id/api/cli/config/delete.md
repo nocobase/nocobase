@@ -31,6 +31,7 @@ nb config delete proxy.nb-cli-root
 nb config delete proxy.upstream-host
 nb config delete bin.nginx
 nb config delete bin.git
+nb config delete bin.pnpm
 ```
 
 ## Perintah terkait
