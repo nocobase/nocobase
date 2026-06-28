@@ -286,8 +286,6 @@ export async function buildSavedDockerRunArgs(
     '-d',
     '--name',
     runtime.containerName,
-    '--restart',
-    'always',
     '--network',
     runtime.workspaceName,
   ];
