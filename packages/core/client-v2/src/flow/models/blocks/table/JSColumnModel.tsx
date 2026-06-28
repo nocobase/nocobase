@@ -27,7 +27,7 @@ import {
 import { Tooltip } from 'antd';
 import React from 'react';
 import { TableCustomColumnModel } from './TableCustomColumnModel';
-import { CodeEditor } from '../../../components/code-editor';
+import { RunJSEditorField } from '../../../components/runjs-studio';
 import { resolveRunJsParams } from '../../utils/resolveRunJsParams';
 
 function getRecordRenderSignature(record: any) {
@@ -231,8 +231,11 @@ JSColumnModel.registerFlow({
         code: {
           type: 'string',
           'x-decorator': 'FormItem',
-          'x-component': CodeEditor,
+          'x-component': RunJSEditorField,
           'x-component-props': {
+            locatorFactory: 'flowModel.step',
+            surfaceStyle: 'render',
+            scene: 'block',
             minHeight: '320px',
             theme: 'light',
             enableLinter: true,

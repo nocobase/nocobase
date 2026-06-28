@@ -38,7 +38,11 @@ export const RunJSValueEditor: React.FC<RunJSValueEditorProps> = (props) => {
     <RunJSEditorField
       t={t}
       value={value}
-      onChange={onChange}
+      onChange={(nextValue) => {
+        if (typeof nextValue !== 'string') {
+          onChange?.(nextValue);
+        }
+      }}
       height={height}
       scene={scene}
       locator={props.locator}

@@ -51,17 +51,28 @@ export type RunJSSourceKind = RunJSSourceLocator['kind'];
 
 export type RunJSSurfaceStyle = 'render' | 'action' | 'value' | 'workflow';
 
+export type RunJSLocatorFactory = 'flowModel.step';
+
 export interface RunJSEditorFieldProps {
   t?: (key: string) => string;
   value?: unknown;
-  onChange?: (value: RunJSValue) => void;
+  onChange?: (value: RunJSValue | string) => void;
   locator?: RunJSSourceLocator;
   sourceLocator?: RunJSSourceLocator;
+  locatorFactory?: RunJSLocatorFactory;
+  flowKey?: string;
+  stepKey?: string;
+  paramPath?: string[];
+  versionPath?: string[];
   label?: string;
   sourceLabel?: string;
   scene?: string;
   surfaceStyle?: RunJSSurfaceStyle;
-  height?: string;
+  height?: string | number;
+  minHeight?: string | number;
+  theme?: 'light' | 'dark';
+  enableLinter?: boolean;
+  wrapperStyle?: React.CSSProperties;
   readOnly?: boolean;
   disabled?: boolean;
   containerStyle?: React.CSSProperties;

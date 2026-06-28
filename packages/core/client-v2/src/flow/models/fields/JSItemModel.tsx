@@ -16,7 +16,7 @@ import {
   tExpr,
 } from '@nocobase/flow-engine';
 import React from 'react';
-import { CodeEditor } from '../../components/code-editor';
+import { RunJSEditorField } from '../../components/runjs-studio';
 import { CommonItemModel } from '../base/CommonItemModel';
 import { resolveRunJsParams } from '../utils/resolveRunJsParams';
 
@@ -105,8 +105,11 @@ JSItemModel.registerFlow({
         code: {
           type: 'string',
           'x-decorator': 'FormItem',
-          'x-component': CodeEditor,
+          'x-component': RunJSEditorField,
           'x-component-props': {
+            locatorFactory: 'flowModel.step',
+            surfaceStyle: 'render',
+            scene: 'block',
             minHeight: '320px',
             theme: 'light',
             enableLinter: true,

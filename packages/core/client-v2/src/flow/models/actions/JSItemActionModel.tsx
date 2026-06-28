@@ -9,7 +9,7 @@
 
 import { ElementProxy, createSafeDocument, createSafeNavigator, createSafeWindow, tExpr } from '@nocobase/flow-engine';
 import React from 'react';
-import { CodeEditor } from '../../components/code-editor';
+import { RunJSEditorField } from '../../components/runjs-studio';
 import { ActionModel, ActionSceneEnum, CollectionActionGroupModel, RecordActionGroupModel } from '../base';
 import { FormActionGroupModel } from '../blocks/form/FormActionGroupModel';
 import { PopupSubTableFormActionGroupModel } from '../fields/AssociationFieldModel/PopupSubTableFieldModel/actions/PopupSubTableFormSubmitActionModel';
@@ -103,8 +103,11 @@ JSItemActionModel.registerFlow({
         code: {
           type: 'string',
           'x-decorator': 'FormItem',
-          'x-component': CodeEditor,
+          'x-component': RunJSEditorField,
           'x-component-props': {
+            locatorFactory: 'flowModel.step',
+            surfaceStyle: 'render',
+            scene: 'block',
             minHeight: '320px',
             theme: 'light',
             enableLinter: true,

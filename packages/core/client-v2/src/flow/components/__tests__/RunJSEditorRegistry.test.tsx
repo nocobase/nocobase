@@ -9,6 +9,7 @@
 
 import React from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
+import { FlowContextProvider, FlowEngine, FlowModel, FlowRuntimeContext, FlowStepContext } from '@nocobase/flow-engine';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { RunJSEditorField, RunJSEditorRegistry } from '../runjs-studio';
@@ -122,5 +123,139 @@ describe('RunJSEditorRegistry', () => {
 
     expect(screen.queryByText('temporary provider')).toBeNull();
     expect(screen.getByLabelText('// Use return to output value')).toBeInTheDocument();
+  });
+
+  it('generates flowModel.step locators from flow settings context and syncs published values locally', () => {
+    const engine = new FlowEngine();
+    const model = new FlowModel({ uid: 'fm_1', flowEngine: engine });
+    const flowContext = new FlowRuntimeContext(model, 'jsSettings', 'settings');
+    const onChange = vi.fn();
+    const rerender = vi.spyOn(model, 'rerender').mockResolvedValue(undefined);
+    let capturedLocator: unknown;
+
+    RunJSEditorRegistry.registerProvider({
+      key: 'flow-model-step-provider',
+      canHandle: (props) => props.locator?.kind === 'flowModel.step',
+      renderEditor: (props) => {
+        capturedLocator = props.locator;
+        return (
+          <button type="button" onClick={() => props.onChange?.({ code: 'return 2;', version: 'v2' })}>
+            {props.locator?.kind}
+          </button>
+        );
+      },
+    });
+
+    render(
+      <FlowContextProvider context={flowContext}>
+        <FlowStepContext.Provider value={{ params: {}, path: 'fm_1_jsSettings_runJs' }}>
+          <RunJSEditorField
+            locatorFactory="flowModel.step"
+            surfaceStyle="render"
+            value={{ code: 'return 1;', version: 'v2' }}
+            onChange={onChange}
+          />
+        </FlowStepContext.Provider>
+      </FlowContextProvider>,
+    );
+
+    expect(capturedLocator).toEqual({
+      kind: 'flowModel.step',
+      modelUid: 'fm_1',
+      flowKey: 'jsSettings',
+      stepKey: 'runJs',
+      paramPath: ['code'],
+      versionPath: ['version'],
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'flowModel.step' }));
+
+    expect(onChange).toHaveBeenCalledWith({ code: 'return 2;', version: 'v2' });
+    expect(model.getStepParams('jsSettings', 'runJs')).toMatchObject({
+      code: 'return 2;',
+      version: 'v2',
+    });
+    expect(rerender).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps inline fallback edits in the form without mutating model params', () => {
+    const engine = new FlowEngine();
+    const model = new FlowModel({ uid: 'fm_1', flowEngine: engine });
+    const flowContext = new FlowRuntimeContext(model, 'jsSettings', 'settings');
+    const onChange = vi.fn();
+    const setStepParams = vi.spyOn(model, 'setStepParams');
+
+    render(
+      <FlowContextProvider context={flowContext}>
+        <FlowStepContext.Provider value={{ params: {}, path: 'fm_1_jsSettings_runJs' }}>
+          <RunJSEditorField
+            locatorFactory="flowModel.step"
+            surfaceStyle="render"
+            value={{ code: 'return 1;', version: 'v2' }}
+            onChange={onChange}
+          />
+        </FlowStepContext.Provider>
+      </FlowContextProvider>,
+    );
+
+    fireEvent.change(screen.getByLabelText('// Use return to output value'), {
+      target: {
+        value: 'return 3;',
+      },
+    });
+
+    expect(onChange).toHaveBeenCalledWith({ code: 'return 3;', version: 'v2' });
+    expect(setStepParams).not.toHaveBeenCalled();
+  });
+
+  it('preserves string-valued code field changes while syncing published model params', () => {
+    const engine = new FlowEngine();
+    const model = new FlowModel({
+      uid: 'fm_1',
+      flowEngine: engine,
+      stepParams: {
+        jsSettings: {
+          runJs: {
+            code: 'return 1;',
+            version: 'v2',
+          },
+        },
+      },
+    });
+    const flowContext = new FlowRuntimeContext(model, 'jsSettings', 'settings');
+    const onChange = vi.fn();
+
+    RunJSEditorRegistry.registerProvider({
+      key: 'flow-model-step-provider',
+      canHandle: (props) => props.locator?.kind === 'flowModel.step',
+      renderEditor: (props) => (
+        <button type="button" onClick={() => props.onChange?.({ code: 'return 4;', version: 'v2' })}>
+          {props.value.code}
+        </button>
+      ),
+    });
+
+    render(
+      <FlowContextProvider context={flowContext}>
+        <FlowStepContext.Provider
+          value={{ params: { code: 'return 1;', version: 'v2' }, path: 'fm_1_jsSettings_runJs' }}
+        >
+          <RunJSEditorField
+            locatorFactory="flowModel.step"
+            surfaceStyle="action"
+            value="return 1;"
+            onChange={onChange}
+          />
+        </FlowStepContext.Provider>
+      </FlowContextProvider>,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'return 1;' }));
+
+    expect(onChange).toHaveBeenCalledWith('return 4;');
+    expect(model.getStepParams('jsSettings', 'runJs')).toMatchObject({
+      code: 'return 4;',
+      version: 'v2',
+    });
   });
 });

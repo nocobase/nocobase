@@ -11,7 +11,7 @@ import { ElementProxy, tExpr, createSafeDocument, createSafeWindow, createSafeNa
 import React, { useEffect, useMemo, useRef } from 'react';
 import { Input } from 'antd';
 import { FieldModel } from '../base/FieldModel';
-import { CodeEditor } from '../../components/code-editor';
+import { RunJSEditorField } from '../../components/runjs-studio';
 import { resolveRunJsParams } from '../utils/resolveRunJsParams';
 
 const DEFAULT_CODE = `
@@ -332,8 +332,11 @@ JSEditableFieldModel.registerFlow({
         code: {
           type: 'string',
           'x-decorator': 'FormItem',
-          'x-component': CodeEditor,
+          'x-component': RunJSEditorField,
           'x-component-props': {
+            locatorFactory: 'flowModel.step',
+            surfaceStyle: 'render',
+            scene: 'formValue',
             minHeight: '320px',
             theme: 'light',
             enableLinter: true,

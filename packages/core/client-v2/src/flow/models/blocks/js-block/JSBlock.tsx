@@ -12,7 +12,7 @@ import React from 'react';
 import { BlockModel } from '../../base';
 import { BlockItemCard } from '../../../components';
 import { resolveRunJsParams } from '../../utils/resolveRunJsParams';
-import { CodeEditor } from '../../../components/code-editor';
+import { RunJSEditorField } from '../../../components/runjs-studio';
 
 const NAMESPACE = 'client';
 
@@ -68,8 +68,11 @@ JSBlockModel.registerFlow({
         code: {
           type: 'string',
           'x-decorator': 'FormItem',
-          'x-component': CodeEditor,
+          'x-component': RunJSEditorField,
           'x-component-props': {
+            locatorFactory: 'flowModel.step',
+            surfaceStyle: 'render',
+            scene: 'block',
             minHeight: '320px',
             theme: 'light',
             enableLinter: true,

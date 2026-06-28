@@ -11,7 +11,7 @@ import { ElementProxy, tExpr, createSafeWindow, createSafeDocument, createSafeNa
 import React, { useEffect } from 'react';
 import { FieldModel } from '../base/FieldModel';
 import { resolveRunJsParams } from '../utils/resolveRunJsParams';
-import { CodeEditor } from '../../components/code-editor';
+import { RunJSEditorField } from '../../components/runjs-studio';
 
 const DEFAULT_CODE = `
 function JsReadonlyField() {
@@ -171,8 +171,11 @@ JSFieldModel.registerFlow({
         code: {
           type: 'string',
           'x-decorator': 'FormItem',
-          'x-component': CodeEditor,
+          'x-component': RunJSEditorField,
           'x-component-props': {
+            locatorFactory: 'flowModel.step',
+            surfaceStyle: 'render',
+            scene: 'block',
             minHeight: '320px',
             theme: 'light',
             enableLinter: true,

@@ -8,7 +8,7 @@
  */
 
 import { createSafeDocument, createSafeWindow, createSafeNavigator, tExpr } from '@nocobase/flow-engine';
-import { CodeEditor } from '../../../components/code-editor';
+import { RunJSEditorField } from '../../../components/runjs-studio';
 import { FilterFormActionModel } from './FilterFormActionModel';
 import { resolveRunJsParams } from '../../utils/resolveRunJsParams';
 
@@ -30,8 +30,11 @@ FilterFormJSActionModel.registerFlow({
       uiSchema: {
         code: {
           type: 'string',
-          'x-component': CodeEditor,
+          'x-component': RunJSEditorField,
           'x-component-props': {
+            locatorFactory: 'flowModel.step',
+            surfaceStyle: 'action',
+            scene: 'eventFlow',
             minHeight: '400px',
             theme: 'light',
             enableLinter: true,

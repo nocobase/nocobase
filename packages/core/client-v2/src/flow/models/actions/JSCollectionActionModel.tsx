@@ -9,7 +9,7 @@
 
 import { createSafeDocument, createSafeWindow, createSafeNavigator, tExpr } from '@nocobase/flow-engine';
 import type { ButtonProps } from 'antd/es/button';
-import { CodeEditor } from '../../components/code-editor';
+import { RunJSEditorField } from '../../components/runjs-studio';
 import { ActionModel, ActionSceneEnum } from '../base';
 import { resolveRunJsParams } from '../utils/resolveRunJsParams';
 
@@ -41,8 +41,11 @@ JSCollectionActionModel.registerFlow({
       uiSchema: {
         code: {
           type: 'string',
-          'x-component': CodeEditor,
+          'x-component': RunJSEditorField,
           'x-component-props': {
+            locatorFactory: 'flowModel.step',
+            surfaceStyle: 'action',
+            scene: 'eventFlow',
             minHeight: '320px',
             theme: 'light',
             enableLinter: true,

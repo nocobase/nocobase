@@ -30,7 +30,7 @@ const DynamicEventFlowRunJSCodeEditor: React.FC<DynamicEventFlowRunJSCodeEditorP
   return (
     <RunJSEditorField
       value={{ code: props.value || '', version: 'v2' }}
-      onChange={(value) => props.onChange?.(value.code)}
+      onChange={(value) => props.onChange?.(typeof value === 'string' ? value : value.code)}
       scene="eventFlow"
       height="200px"
       sourceLocator={props.sourceLocator}
