@@ -8,6 +8,8 @@
  */
 
 import {
+  ArrowDownOutlined,
+  ArrowUpOutlined,
   CodeOutlined,
   CloseOutlined,
   CompressOutlined,
@@ -15,10 +17,12 @@ import {
   DeleteOutlined,
   DiffOutlined,
   FileAddOutlined,
+  FileTextOutlined,
   FolderOpenOutlined,
   PlayCircleOutlined,
   PlusOutlined,
   ReloadOutlined,
+  RollbackOutlined,
   SaveOutlined,
   UploadOutlined,
 } from '@ant-design/icons';
@@ -139,6 +143,8 @@ type DiffViewState = {
   summary: RunJSChangeSummary;
 };
 
+type VersionDetailView = 'diff' | 'files';
+
 type PreviewArtifactState = {
   code: string;
   version: string;
@@ -158,6 +164,7 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
   const saveInFlightRef = useRef(false);
   const latestWorkspaceSnapshotRef = useRef('');
   const latestDiffRequestKeyRef = useRef('');
+  const versionRequestSeqRef = useRef(0);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
   const [workspace, setWorkspace] = useState<RunJSSourceOpenWorkspaceResult | null>(null);
@@ -194,8 +201,12 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
   const [wrapDiffLines, setWrapDiffLines] = useState(true);
   const [selectedVersion, setSelectedVersion] = useState<RunJSSourceVersionResult | null>(null);
   const [selectedVersionDiff, setSelectedVersionDiff] = useState<RunJSSourceDiffVersionResult | null>(null);
+  const [selectedVersionView, setSelectedVersionView] = useState<VersionDetailView>('diff');
   const [versionLoading, setVersionLoading] = useState(false);
   const [historyLoading, setHistoryLoading] = useState(false);
+  const [restoreCommit, setRestoreCommit] = useState<RunJSSourceHistoryItem | null>(null);
+  const [restoringVersion, setRestoringVersion] = useState(false);
+  const [restoredDraftVersion, setRestoredDraftVersion] = useState<string | null>(null);
   const [closeConfirmOpen, setCloseConfirmOpen] = useState(false);
   const [pendingDirtyAction, setPendingDirtyAction] = useState<PendingDirtyAction>('close');
   const [conflict, setConflict] = useState<ConflictState | null>(null);
@@ -228,6 +239,7 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
     hasDraft: Boolean(workspace?.draft),
     previewing,
     publishedSeq: publishedCommit?.seq,
+    restoredDraftVersion,
     conflict: Boolean(conflict),
     compileFailed: previewDiagnostics.some((diagnostic) => diagnostic.severity === 'error'),
   });
@@ -262,6 +274,7 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
     saveInFlightRef.current = false;
     latestWorkspaceSnapshotRef.current = '';
     latestDiffRequestKeyRef.current = '';
+    versionRequestSeqRef.current += 1;
     setWorkspace(null);
     setWorkspaceError(null);
     setLoadingWorkspace(false);
@@ -291,8 +304,12 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
     setSelectedDiffPath(undefined);
     setSelectedVersion(null);
     setSelectedVersionDiff(null);
+    setSelectedVersionView('diff');
     setVersionLoading(false);
     setHistoryLoading(false);
+    setRestoreCommit(null);
+    setRestoringVersion(false);
+    setRestoredDraftVersion(null);
     setCloseConfirmOpen(false);
     setPendingDirtyAction('close');
     setConflict(null);
@@ -396,6 +413,12 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
       setPreviewArtifact(null);
       setSelectedVersion(null);
       setSelectedVersionDiff(null);
+      versionRequestSeqRef.current += 1;
+      setSelectedVersionView('diff');
+      setVersionLoading(false);
+      setRestoreCommit(null);
+      setRestoringVersion(false);
+      setRestoredDraftVersion(null);
 
       return loaded;
     } catch (error) {
@@ -684,6 +707,8 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
         if (latestDiffRequestKeyRef.current !== requestKey) {
           return;
         }
+        setDiffFiles([]);
+        setSelectedDiffPath(undefined);
         setDiffError(error);
       } finally {
         setDiffLoading(false);
@@ -861,9 +886,12 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
       return;
     }
 
+    const requestSeq = versionRequestSeqRef.current + 1;
+    versionRequestSeqRef.current = requestSeq;
     setVersionLoading(true);
     setSelectedVersion(null);
     setSelectedVersionDiff(null);
+    setSelectedVersionView('diff');
     try {
       const version = await runJSSourceRequest('getVersion', {
         locator: props.locator,
@@ -871,20 +899,30 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
         commitId: commit.id,
         includeFiles: true,
       });
+      if (versionRequestSeqRef.current !== requestSeq) {
+        return;
+      }
       const versionDiff = await runJSSourceRequest('diffVersion', {
         locator: props.locator,
         repoId: workspace.repository.repoId,
         commitId: commit.id,
       });
+      if (versionRequestSeqRef.current !== requestSeq) {
+        return;
+      }
       setSelectedVersion(version);
       setSelectedVersionDiff(versionDiff);
     } catch (error) {
-      appendConsole({
-        level: 'error',
-        message: formatVscComponentError(error, t('Failed to load version')),
-      });
+      if (versionRequestSeqRef.current === requestSeq) {
+        appendConsole({
+          level: 'error',
+          message: formatVscComponentError(error, t('Failed to load version')),
+        });
+      }
     } finally {
-      setVersionLoading(false);
+      if (versionRequestSeqRef.current === requestSeq) {
+        setVersionLoading(false);
+      }
     }
   };
 
@@ -894,6 +932,7 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
     }
     const restoreSnapshotKey = latestWorkspaceSnapshotRef.current;
 
+    setRestoringVersion(true);
     try {
       const result = await runJSSourceRequest('restoreAsDraft', {
         locator: props.locator,
@@ -927,16 +966,60 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
       setOpenPaths(nextActivePath ? [nextActivePath] : []);
       setActiveTab('code');
       setDiffView(null);
+      setRestoredDraftVersion(formatVersion(commit.seq));
       invalidatePreview();
       appendConsole({
         level: 'info',
-        message: t('Version restored as draft'),
+        message: `${t('Draft restored from')} ${formatVersion(commit.seq)}`,
       });
     } catch (error) {
       await handleWorkspaceError(error);
       appendConsole({
         level: 'error',
         message: formatVscComponentError(error, t('Failed to restore version')),
+      });
+    } finally {
+      setRestoringVersion(false);
+    }
+  };
+
+  const confirmRestoreAsDraft = async () => {
+    if (!restoreCommit) {
+      return;
+    }
+
+    const commit = restoreCommit;
+    setRestoreCommit(null);
+    await restoreAsDraft(commit);
+  };
+
+  const viewRestoreDiff = async () => {
+    if (!restoreCommit) {
+      return;
+    }
+
+    const commit = restoreCommit;
+    setRestoreCommit(null);
+    setActiveTab('history');
+    await loadVersion(commit);
+  };
+
+  const clearSelectedVersion = () => {
+    versionRequestSeqRef.current += 1;
+    setSelectedVersion(null);
+    setSelectedVersionDiff(null);
+    setSelectedVersionView('diff');
+    setVersionLoading(false);
+  };
+
+  const copyVersionFile = async (file: RunJSWorkspaceFile) => {
+    try {
+      await navigator.clipboard?.writeText(file.content);
+      message.success(t('File copied'));
+    } catch (_) {
+      appendConsole({
+        level: 'warn',
+        message: t('Copy file failed'),
       });
     }
   };
@@ -1533,16 +1616,21 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
                             hasUnsavedLocalChanges={hasUnsavedLocalChanges}
                             historyItems={historyItems}
                             loading={historyLoading}
+                            onBack={clearSelectedVersion}
                             onCopyCode={async (commit) => copyVersionCode(commit)}
+                            onCopyFile={copyVersionFile}
                             onDiscardDraft={discardDraft}
                             onRefresh={refreshHistory}
-                            onRestore={restoreAsDraft}
+                            onRestore={setRestoreCommit}
                             onSelect={loadVersion}
+                            onSelectedVersionViewChange={setSelectedVersionView}
                             onViewDraftDiff={() => setActiveTab('diff')}
                             publishedCommitId={workspace.repository.publishedCommitId}
                             readOnly={workspaceEditingDisabled}
+                            restoringVersion={restoringVersion}
                             selectedVersion={selectedVersion}
                             selectedVersionDiff={selectedVersionDiff}
+                            selectedVersionView={selectedVersionView}
                             t={t}
                             versionLoading={versionLoading}
                           />
@@ -1612,6 +1700,15 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
         onSaveAndClose={saveDraftAndContinue}
         open={closeConfirmOpen}
         saving={savingDraft}
+        t={t}
+      />
+
+      <RestoreAsDraftModal
+        commit={restoreCommit}
+        loading={restoringVersion}
+        onCancel={() => setRestoreCommit(null)}
+        onRestore={confirmRestoreAsDraft}
+        onViewDiff={viewRestoreDiff}
         t={t}
       />
 
@@ -2214,6 +2311,58 @@ function DiffTab(props: {
     t,
     wrapLines,
   } = props;
+  const [selectedChangeKey, setSelectedChangeKey] = useState<string | null>(null);
+  const selectedChangeRef = useRef<HTMLDivElement | null>(null);
+  const changeRows = useMemo(
+    () =>
+      lineDiffRows.filter(
+        (row, index) => row.type !== 'context' && (index === 0 || lineDiffRows[index - 1]?.type === 'context'),
+      ),
+    [lineDiffRows],
+  );
+  const selectedChangeIndex = selectedChangeKey
+    ? changeRows.findIndex((row) => row.key === selectedChangeKey)
+    : changeRows.length
+      ? 0
+      : -1;
+  const activeChangeKey = selectedChangeIndex >= 0 ? changeRows[selectedChangeIndex]?.key : null;
+  const hasPreviousChange = selectedChangeIndex > 0;
+  const hasNextChange = selectedChangeIndex >= 0 && selectedChangeIndex < changeRows.length - 1;
+
+  useEffect(() => {
+    if (!changeRows.length) {
+      if (selectedChangeKey) {
+        setSelectedChangeKey(null);
+      }
+      return;
+    }
+    if (!activeChangeKey) {
+      setSelectedChangeKey(changeRows[0].key);
+    }
+  }, [activeChangeKey, changeRows, selectedChangeKey]);
+
+  useEffect(() => {
+    selectedChangeRef.current?.scrollIntoView?.({ block: 'center' });
+  }, [activeChangeKey]);
+
+  const copyDiffErrorDetails = async () => {
+    if (!diffError) {
+      return;
+    }
+
+    try {
+      await navigator.clipboard?.writeText(formatVscComponentError(diffError, t('Failed to load diff')));
+      message.success(t('Details copied'));
+    } catch (_) {
+      message.error(t('Copy details failed'));
+    }
+  };
+  const selectRelativeChange = (offset: number) => {
+    const next = changeRows[selectedChangeIndex + offset]?.key;
+    if (next) {
+      setSelectedChangeKey(next);
+    }
+  };
 
   return (
     <section aria-label={t('Diff')} style={{ display: 'grid', gridTemplateColumns: '220px minmax(0, 1fr)', gap: 12 }}>
@@ -2265,13 +2414,50 @@ function DiffTab(props: {
           <Checkbox checked={wrapLines} onChange={(event) => onWrapLinesChange(event.target.checked)}>
             {t('Wrap lines')}
           </Checkbox>
+          <Button
+            disabled={!hasPreviousChange}
+            icon={<ArrowUpOutlined />}
+            onClick={() => selectRelativeChange(-1)}
+            size="small"
+          >
+            {t('Previous change')}
+          </Button>
+          <Button
+            disabled={!hasNextChange}
+            icon={<ArrowDownOutlined />}
+            onClick={() => selectRelativeChange(1)}
+            size="small"
+          >
+            {t('Next change')}
+          </Button>
         </Space>
         {diffError ? (
-          <Alert message={formatVscComponentError(diffError, t('Failed to load diff'))} showIcon type="error" />
+          <Alert
+            action={
+              <Space>
+                <Button onClick={onRefresh} size="small">
+                  {t('Retry')}
+                </Button>
+                <Button icon={<CopyOutlined />} onClick={copyDiffErrorDetails} size="small">
+                  {t('Copy details')}
+                </Button>
+              </Space>
+            }
+            message={formatVscComponentError(diffError, t('Failed to load diff'))}
+            showIcon
+            type="error"
+          />
         ) : null}
-        {diffLoading ? <Spin /> : null}
-        {!diffLoading && lineDiffRows.length === 0 ? <Empty description={t('No changes')} /> : null}
-        {lineDiffRows.length > 0 ? (
+        {diffLoading ? (
+          <div aria-live="polite" role="status" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Spin size="small" />
+            <Typography.Text type="secondary">{t('Generating diff...')}</Typography.Text>
+          </div>
+        ) : null}
+        {!diffError && !diffLoading && lineDiffRows.length === 0 ? (
+          <Empty description={t('No changes between draft and published')} />
+        ) : null}
+        {!diffError && lineDiffRows.length > 0 ? (
           <div
             aria-label={t('Diff output')}
             style={{
@@ -2285,11 +2471,13 @@ function DiffTab(props: {
             {lineDiffRows.map((row) => (
               <div
                 key={row.key}
+                ref={row.key === activeChangeKey ? selectedChangeRef : undefined}
                 style={{
                   background: row.type === 'insert' ? '#f6ffed' : row.type === 'delete' ? '#fff1f0' : undefined,
                   display: diffMode === 'split' ? 'grid' : 'flex',
                   gridTemplateColumns: diffMode === 'split' ? '72px 72px minmax(0, 1fr)' : undefined,
                   gap: 8,
+                  outline: row.key === activeChangeKey ? '1px solid #1677ff' : undefined,
                   padding: '2px 8px',
                   whiteSpace: wrapLines ? 'pre-wrap' : 'pre',
                 }}
@@ -2316,16 +2504,21 @@ function HistoryTab(props: {
   hasUnsavedLocalChanges: boolean;
   historyItems: RunJSSourceHistoryItem[];
   loading: boolean;
+  onBack: () => void;
   onCopyCode: (commit: RunJSSourceHistoryItem) => Promise<void>;
+  onCopyFile: (file: RunJSWorkspaceFile) => Promise<void>;
   onDiscardDraft: () => void;
   onRefresh: () => void;
   onRestore: (commit: RunJSSourceHistoryItem) => void;
   onSelect: (commit: RunJSSourceHistoryItem) => void;
+  onSelectedVersionViewChange: (view: VersionDetailView) => void;
   onViewDraftDiff: () => void;
   publishedCommitId?: string | null;
   readOnly: boolean;
+  restoringVersion: boolean;
   selectedVersion: RunJSSourceVersionResult | null;
   selectedVersionDiff: RunJSSourceDiffVersionResult | null;
+  selectedVersionView: VersionDetailView;
   t: (key: string) => string;
   versionLoading: boolean;
 }) {
@@ -2335,19 +2528,27 @@ function HistoryTab(props: {
     hasUnsavedLocalChanges,
     historyItems,
     loading,
+    onBack,
     onCopyCode,
+    onCopyFile,
     onDiscardDraft,
     onRefresh,
     onRestore,
     onSelect,
+    onSelectedVersionViewChange,
     onViewDraftDiff,
     publishedCommitId,
     readOnly,
+    restoringVersion,
     selectedVersion,
     selectedVersionDiff,
+    selectedVersionView,
     t,
     versionLoading,
   } = props;
+  const selectedParent = selectedVersion?.commit.parentCommitId
+    ? historyItems.find((item) => item.id === selectedVersion.commit.parentCommitId)
+    : undefined;
 
   return (
     <section
@@ -2420,31 +2621,89 @@ function HistoryTab(props: {
         />
       </div>
       <aside style={{ borderLeft: '1px solid #f0f0f0', paddingLeft: 12 }}>
-        <Typography.Text strong>{t('Version detail')}</Typography.Text>
+        <Space style={{ justifyContent: 'space-between', width: '100%' }}>
+          <Typography.Text strong>
+            {selectedVersion ? `${t('Commit')} ${formatVersion(selectedVersion.commit.seq)}` : t('Version detail')}
+          </Typography.Text>
+          {selectedVersion ? (
+            <Button onClick={onBack} size="small" type="link">
+              {t('Back to history')}
+            </Button>
+          ) : null}
+        </Space>
         {versionLoading ? <Spin style={{ display: 'block', marginTop: 12 }} /> : null}
         {!versionLoading && !selectedVersion ? <Empty description={t('Select a version')} /> : null}
         {selectedVersion ? (
           <Space direction="vertical" style={{ width: '100%' }}>
-            <Tag>{formatVersion(selectedVersion.commit.seq)}</Tag>
+            <Typography.Text type="secondary">{t('Message')}</Typography.Text>
             <Typography.Text>{selectedVersion.commit.message}</Typography.Text>
+            <Typography.Text type="secondary">{t('Metadata')}</Typography.Text>
+            <Space wrap>
+              <Tag>{`${t('Author')}: ${selectedVersion.commit.authorId || t('Unknown author')}`}</Tag>
+              <Tag>{`${t('Parent')}: ${
+                selectedParent ? formatVersion(selectedParent.seq) : selectedVersion.commit.parentCommitId || '-'
+              }`}</Tag>
+              {selectedVersionDiff ? (
+                <Tag>{formatChangeSummary(summarizeDiffVersion(selectedVersionDiff), t)}</Tag>
+              ) : null}
+            </Space>
+            <Space wrap>
+              <Button
+                icon={<DiffOutlined />}
+                onClick={() => onSelectedVersionViewChange('diff')}
+                size="small"
+                type={selectedVersionView === 'diff' ? 'primary' : 'default'}
+              >
+                {t('View diff')}
+              </Button>
+              <Button
+                icon={<FileTextOutlined />}
+                onClick={() => onSelectedVersionViewChange('files')}
+                size="small"
+                type={selectedVersionView === 'files' ? 'primary' : 'default'}
+              >
+                {t('View files')}
+              </Button>
+              <Button
+                disabled={readOnly || hasUnsavedLocalChanges}
+                icon={<RollbackOutlined />}
+                loading={restoringVersion}
+                onClick={() => onRestore(selectedVersion.commit)}
+                size="small"
+              >
+                {t('Restore as draft')}
+              </Button>
+            </Space>
             {selectedVersionDiff ? (
-              <>
-                <Typography.Text type="secondary">
-                  {formatChangeSummary(summarizeDiffVersion(selectedVersionDiff), t)}
-                </Typography.Text>
-                {selectedVersionDiff.diff.files.map((file) => (
-                  <Typography.Text code ellipsis key={`diff:${file.path}`}>
-                    {`${file.path} +${file.additions} -${file.deletions}`}
+              selectedVersionView === 'diff' ? (
+                <>
+                  <Divider style={{ margin: '8px 0' }} />
+                  <Typography.Text type="secondary">
+                    {formatChangeSummary(summarizeDiffVersion(selectedVersionDiff), t)}
                   </Typography.Text>
+                  {selectedVersionDiff.diff.files.map((file) => (
+                    <Typography.Text code ellipsis key={`diff:${file.path}`}>
+                      {`${file.path} +${file.additions} -${file.deletions}`}
+                    </Typography.Text>
+                  ))}
+                </>
+              ) : null
+            ) : null}
+            {selectedVersionView === 'files' ? (
+              <>
+                <Divider style={{ margin: '8px 0' }} />
+                {selectedVersion.files.map((file) => (
+                  <Space key={`version:${file.path}`} style={{ justifyContent: 'space-between', width: '100%' }}>
+                    <Typography.Text code ellipsis>
+                      {file.path}
+                    </Typography.Text>
+                    <Button icon={<CopyOutlined />} onClick={() => onCopyFile(file)} size="small" type="link">
+                      {t('Copy file')}
+                    </Button>
+                  </Space>
                 ))}
               </>
             ) : null}
-            <Divider style={{ margin: '8px 0' }} />
-            {selectedVersion.files.map((file) => (
-              <Typography.Text code ellipsis key={`version:${file.path}`}>
-                {file.path}
-              </Typography.Text>
-            ))}
           </Space>
         ) : null}
       </aside>
@@ -2764,6 +3023,48 @@ function CloseConfirmModal(props: {
   );
 }
 
+function RestoreAsDraftModal(props: {
+  commit: RunJSSourceHistoryItem | null;
+  loading: boolean;
+  onCancel: () => void;
+  onRestore: () => void;
+  onViewDiff: () => void;
+  t: (key: string) => string;
+}) {
+  const { commit, loading, onCancel, onRestore, onViewDiff, t } = props;
+  const version = commit ? formatVersion(commit.seq) : '';
+
+  return (
+    <Modal
+      footer={[
+        <Button icon={<DiffOutlined />} key="diff" onClick={onViewDiff}>
+          {t('View diff')}
+        </Button>,
+        <Button key="cancel" onClick={onCancel}>
+          {t('Cancel')}
+        </Button>,
+        <Button key="restore" loading={loading} onClick={onRestore} type="primary">
+          {t('Restore as draft')}
+        </Button>,
+      ]}
+      getContainer={false}
+      onCancel={onCancel}
+      open={Boolean(commit)}
+      title={formatRestoreAsDraftTitle(version, t)}
+    >
+      <Space direction="vertical" style={{ width: '100%' }}>
+        <Typography.Text>{t('This will copy files from this version into your current draft.')}</Typography.Text>
+        <Typography.Text>{t('It will not change the published version.')}</Typography.Text>
+        <Typography.Text>{t('You can review and publish after restoring.')}</Typography.Text>
+      </Space>
+    </Modal>
+  );
+}
+
+function formatRestoreAsDraftTitle(version: string, t: (key: string) => string): string {
+  return t('Restore {{version}} as draft?').replace('{{version}}', version);
+}
+
 function ConflictDialog(props: {
   conflict: ConflictState | null;
   onCancel: () => void;
@@ -2826,11 +3127,21 @@ function buildStatusBadges(input: {
   hasDraft: boolean;
   previewing: boolean;
   publishedSeq?: number;
+  restoredDraftVersion?: string | null;
   conflict: boolean;
   compileFailed: boolean;
 }): React.ReactNode[] {
   const badges: React.ReactNode[] = [];
-  const { t, hasUnsavedLocalChanges, hasDraft, previewing, publishedSeq, conflict, compileFailed } = input;
+  const {
+    t,
+    hasUnsavedLocalChanges,
+    hasDraft,
+    previewing,
+    publishedSeq,
+    restoredDraftVersion,
+    conflict,
+    compileFailed,
+  } = input;
 
   if (hasUnsavedLocalChanges) {
     badges.push(
@@ -2842,6 +3153,13 @@ function buildStatusBadges(input: {
     badges.push(
       <Tag color="blue" key="draft">
         {t('Draft saved')}
+      </Tag>,
+    );
+  }
+  if (restoredDraftVersion) {
+    badges.push(
+      <Tag color="blue" key="restored">
+        {`${t('Draft restored from')} ${restoredDraftVersion}`}
       </Tag>,
     );
   }

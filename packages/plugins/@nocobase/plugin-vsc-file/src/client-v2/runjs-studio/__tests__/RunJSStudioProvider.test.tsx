@@ -198,6 +198,37 @@ function buildDraftResponse(files: DraftRequestFile[], draftId = 'draft-1') {
   };
 }
 
+function buildOpenResultWithDraft(baseContent: string, draftContent: string) {
+  const draftFile = {
+    id: 'draft-file-1',
+    draftId: 'draft-1',
+    path: 'src/main.tsx',
+    pathHash: 'path-hash',
+    pathLowerHash: 'path-lower-hash',
+    operation: 'upsert',
+    blobHash: 'blob-2',
+    language: 'typescript',
+    mode: '100644',
+    content: draftContent,
+  };
+
+  return {
+    ...openResult,
+    files: [
+      {
+        ...openResult.files[0],
+        content: baseContent,
+      },
+    ],
+    draft: {
+      id: 'draft-1',
+      baseCommitId: 'commit-1',
+      status: 'active',
+      files: [draftFile],
+    },
+  };
+}
+
 describe('runJSStudioProvider', () => {
   beforeEach(() => {
     mocks.request.mockImplementation(({ url, data }: { url: string; data?: unknown }) => {
@@ -1367,8 +1398,371 @@ describe('runJSStudioProvider', () => {
     fireEvent.click(screen.getByRole('tab', { name: 'History' }));
     fireEvent.click(await screen.findByRole('button', { name: 'View diff' }));
 
-    expect(await screen.findByText('1 file(s) changed, +2 -1')).toBeTruthy();
+    expect((await screen.findAllByText('1 file(s) changed, +2 -1')).length).toBeGreaterThan(0);
     expect(screen.getByText('src/main.tsx +2 -1')).toBeTruthy();
+    expect(screen.getByText('Commit v1')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: /View files/ }));
+    expect(screen.getByRole('button', { name: /Copy file/ })).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Back to history' }));
+    expect(await screen.findByText('Select a version')).toBeTruthy();
+  });
+
+  it('keeps the latest selected history version when an earlier load resolves late', async () => {
+    const firstVersion = createDeferred<unknown>();
+    const newerCommit = {
+      ...latestCommit,
+      parentCommitId: commit.id,
+    };
+    const newerRepository = {
+      ...repository,
+      headCommitId: newerCommit.id,
+      publishedCommitId: newerCommit.id,
+      headSeq: newerCommit.seq,
+    };
+    mocks.request.mockImplementation(({ url, data }: { url: string; data?: unknown }) => {
+      const commitId = (data as { commitId?: string } | undefined)?.commitId;
+      if (url === 'runJSSources:open') {
+        return Promise.resolve({
+          data: {
+            data: {
+              ...openResult,
+              repository: newerRepository,
+              history: {
+                commits: [newerCommit, commit],
+                items: [newerCommit, commit],
+              },
+            },
+          },
+        });
+      }
+      if (url === 'runJSSources:getVersion') {
+        if (commitId === commit.id) {
+          return firstVersion.promise;
+        }
+
+        return Promise.resolve({
+          data: {
+            data: {
+              locator,
+              locatorKind: 'flowModel.step',
+              repository: newerRepository,
+              commit: newerCommit,
+              files: [
+                {
+                  path: 'src/main.tsx',
+                  content: 'return 2;',
+                  language: 'typescript',
+                  mode: '100644',
+                },
+              ],
+            },
+          },
+        });
+      }
+      if (url === 'runJSSources:diffVersion') {
+        return Promise.resolve({
+          data: {
+            data: {
+              locator,
+              locatorKind: 'flowModel.step',
+              repository: newerRepository,
+              fromCommitId: commit.id,
+              toCommitId: newerCommit.id,
+              fromIsPublished: false,
+              toIsPublished: true,
+              diff: {
+                files: [
+                  {
+                    status: 'modified',
+                    path: 'src/main.tsx',
+                    pathHash: 'path-hash',
+                    additions: 1,
+                    deletions: 1,
+                    tooLarge: false,
+                  },
+                ],
+                summary: {
+                  added: 0,
+                  modified: 1,
+                  deleted: 0,
+                  unchanged: 0,
+                  renamed: 0,
+                },
+              },
+            },
+          },
+        });
+      }
+
+      return Promise.resolve({
+        data: {
+          data: {},
+        },
+      });
+    });
+
+    render(
+      <>
+        {runJSStudioProvider.renderEditor({
+          value: { code: 'return 2;', version: 'v2' },
+          locator,
+        })}
+      </>,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Open Studio' }));
+    await screen.findByLabelText('Edit file content');
+    fireEvent.click(screen.getByRole('tab', { name: 'History' }));
+    fireEvent.click(await screen.findByText('v1 Initial import'));
+    fireEvent.click(await screen.findByText('v2 Remote update'));
+
+    expect(await screen.findByText('Commit v2')).toBeTruthy();
+    firstVersion.resolve({
+      data: {
+        data: {
+          locator,
+          locatorKind: 'flowModel.step',
+          repository,
+          commit,
+          files: openResult.files,
+        },
+      },
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('Commit v2')).toBeTruthy();
+      expect(screen.queryByText('Commit v1')).toBeNull();
+    });
+    expect(
+      mocks.request.mock.calls.some(
+        ([input]) => input?.url === 'runJSSources:diffVersion' && input?.data?.commitId === commit.id,
+      ),
+    ).toBe(false);
+  });
+
+  it('clears version loading when workspace refresh cancels a history version load', async () => {
+    const firstVersion = createDeferred<unknown>();
+    mocks.request.mockImplementation(({ url }: { url: string; data?: unknown }) => {
+      if (url === 'runJSSources:open') {
+        return Promise.resolve({
+          data: {
+            data: openResult,
+          },
+        });
+      }
+      if (url === 'runJSSources:getVersion') {
+        return firstVersion.promise;
+      }
+
+      return Promise.resolve({
+        data: {
+          data: {},
+        },
+      });
+    });
+
+    render(
+      <>
+        {runJSStudioProvider.renderEditor({
+          value: { code: 'return 1;', version: 'v2' },
+          locator,
+        })}
+      </>,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Open Studio' }));
+    await screen.findByLabelText('Edit file content');
+    fireEvent.click(screen.getByRole('tab', { name: 'History' }));
+    fireEvent.click(await screen.findByText('v1 Initial import'));
+
+    await waitFor(() => {
+      expect(screen.queryByText('Select a version')).toBeNull();
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Refresh workspace' }));
+    expect(await screen.findByText('Select a version')).toBeTruthy();
+
+    firstVersion.resolve({
+      data: {
+        data: {
+          locator,
+          locatorKind: 'flowModel.step',
+          repository,
+          commit,
+          files: openResult.files,
+        },
+      },
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('Select a version')).toBeTruthy();
+    });
+  });
+
+  it('navigates draft diff changes with previous and next controls', async () => {
+    const openedWithDraft = buildOpenResultWithDraft(
+      'const one = 1;\nconst two = 2;\nconst three = 3;',
+      'const one = 10;\nconst two = 2;\nconst three = 30;',
+    );
+    mocks.request.mockImplementation(({ url }: { url: string; data?: unknown }) => {
+      if (url === 'runJSSources:open') {
+        return Promise.resolve({
+          data: {
+            data: openedWithDraft,
+          },
+        });
+      }
+      if (url === 'runJSSources:diffDraft') {
+        return Promise.resolve({
+          data: {
+            data: {
+              locator,
+              locatorKind: 'flowModel.step',
+              repository,
+              diff: {
+                files: [
+                  {
+                    status: 'modified',
+                    path: 'src/main.tsx',
+                    pathHash: 'path-hash-main',
+                    additions: 2,
+                    deletions: 2,
+                    tooLarge: false,
+                  },
+                ],
+                summary: {
+                  added: 0,
+                  modified: 1,
+                  deleted: 0,
+                  unchanged: 0,
+                  renamed: 0,
+                },
+              },
+            },
+          },
+        });
+      }
+
+      return Promise.resolve({
+        data: {
+          data: {},
+        },
+      });
+    });
+
+    render(
+      <>
+        {runJSStudioProvider.renderEditor({
+          value: { code: 'return 1;', version: 'v2' },
+          locator,
+        })}
+      </>,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Open Studio' }));
+    await screen.findByLabelText('Edit file content');
+    fireEvent.click(screen.getByRole('tab', { name: 'Diff' }));
+
+    const previous = await screen.findByRole('button', { name: /Previous change/ });
+    const next = await screen.findByRole('button', { name: /Next change/ });
+    expect(previous).toBeDisabled();
+    expect(next).not.toBeDisabled();
+
+    fireEvent.click(next);
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /Previous change/ })).not.toBeDisabled();
+    });
+  });
+
+  it('shows only the diff error card when refreshing a previously rendered diff fails', async () => {
+    const openedWithDraft = buildOpenResultWithDraft('return 1;', 'return 2;');
+    let diffRequestCount = 0;
+    mocks.request.mockImplementation(({ url }: { url: string; data?: unknown }) => {
+      if (url === 'runJSSources:open') {
+        return Promise.resolve({
+          data: {
+            data: openedWithDraft,
+          },
+        });
+      }
+      if (url === 'runJSSources:diffDraft') {
+        diffRequestCount += 1;
+        if (diffRequestCount > 1) {
+          return Promise.reject({
+            response: {
+              status: 503,
+              data: {
+                errors: [
+                  {
+                    message: 'Diff service unavailable',
+                    status: 503,
+                  },
+                ],
+              },
+            },
+          });
+        }
+
+        return Promise.resolve({
+          data: {
+            data: {
+              locator,
+              locatorKind: 'flowModel.step',
+              repository,
+              diff: {
+                files: [
+                  {
+                    status: 'modified',
+                    path: 'src/main.tsx',
+                    pathHash: 'path-hash-main',
+                    additions: 1,
+                    deletions: 1,
+                    tooLarge: false,
+                  },
+                ],
+                summary: {
+                  added: 0,
+                  modified: 1,
+                  deleted: 0,
+                  unchanged: 0,
+                  renamed: 0,
+                },
+              },
+            },
+          },
+        });
+      }
+
+      return Promise.resolve({
+        data: {
+          data: {},
+        },
+      });
+    });
+
+    render(
+      <>
+        {runJSStudioProvider.renderEditor({
+          value: { code: 'return 1;', version: 'v2' },
+          locator,
+        })}
+      </>,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Open Studio' }));
+    await screen.findByLabelText('Edit file content');
+    fireEvent.click(screen.getByRole('tab', { name: 'Diff' }));
+    expect(await screen.findByLabelText('Diff output')).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Refresh diff' }));
+
+    await waitFor(() => {
+      expect(mocks.request.mock.calls.filter(([input]) => input?.url === 'runJSSources:diffDraft')).toHaveLength(2);
+    });
+    expect(await screen.findByText('Diff service unavailable')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Retry' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Copy details/ })).toBeTruthy();
+    expect(screen.queryByLabelText('Diff output')).toBeNull();
+    expect(screen.queryByText('No changes between draft and published')).toBeNull();
   });
 
   it('disables history restore while local edits are unsaved', async () => {
@@ -1394,6 +1788,86 @@ describe('runJSStudioProvider', () => {
       expect(screen.getByRole('button', { name: 'Restore as draft' })).toBeDisabled();
     });
     expect(mocks.request.mock.calls.some(([input]) => input?.url === 'runJSSources:restoreAsDraft')).toBe(false);
+  });
+
+  it('restores a history version as draft after confirmation', async () => {
+    mocks.request.mockImplementation(({ url }: { url: string; data?: unknown }) => {
+      if (url === 'runJSSources:open') {
+        return Promise.resolve({
+          data: {
+            data: openResult,
+          },
+        });
+      }
+      if (url === 'runJSSources:restoreAsDraft') {
+        return Promise.resolve(buildDraftResponse([{ path: 'src/main.tsx', content: 'return restored;' }]));
+      }
+      if (url === 'runJSSources:getVersion') {
+        return Promise.resolve({
+          data: {
+            data: {
+              locator,
+              locatorKind: 'flowModel.step',
+              repository,
+              commit,
+              files: openResult.files,
+            },
+          },
+        });
+      }
+      if (url === 'runJSSources:diffVersion') {
+        return Promise.resolve({
+          data: {
+            data: {
+              locator,
+              locatorKind: 'flowModel.step',
+              repository,
+              fromCommitId: null,
+              toCommitId: commit.id,
+              fromIsPublished: false,
+              toIsPublished: true,
+              diff: {
+                files: [],
+                summary: {
+                  added: 0,
+                  modified: 0,
+                  deleted: 0,
+                  unchanged: 1,
+                  renamed: 0,
+                },
+              },
+            },
+          },
+        });
+      }
+
+      return Promise.resolve({
+        data: {
+          data: {},
+        },
+      });
+    });
+
+    render(
+      <>
+        {runJSStudioProvider.renderEditor({
+          value: { code: 'return 1;', version: 'v2' },
+          locator,
+        })}
+      </>,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Open Studio' }));
+    await screen.findByLabelText('Edit file content');
+    fireEvent.click(screen.getByRole('tab', { name: 'History' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Restore as draft' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Restore v1 as draft?' });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Restore as draft' }));
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Edit file content')).toHaveValue('return restored;');
+      expect(screen.getByText('Draft restored from v1')).toBeTruthy();
+    });
   });
 
   it('keeps local edits when history restore resolves late', async () => {
@@ -1468,6 +1942,8 @@ describe('runJSStudioProvider', () => {
     await screen.findByLabelText('Edit file content');
     fireEvent.click(screen.getByRole('tab', { name: 'History' }));
     fireEvent.click(await screen.findByRole('button', { name: 'Restore as draft' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Restore v1 as draft?' });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Restore as draft' }));
     await waitFor(() => {
       const restoreCalls = mocks.request.mock.calls.filter(([input]) => input?.url === 'runJSSources:restoreAsDraft');
       expect(restoreCalls).toHaveLength(1);
