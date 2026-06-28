@@ -42,6 +42,7 @@ type AppendsTreeScope = {
 };
 
 type TreeSelectValue = { label?: React.ReactNode; value: string };
+type AppendsTreeSelectProps = TreeSelectProps<TreeSelectValue[], AppendsTreeNode>;
 
 function isAssociation(field: CollectionTriggerField): field is AssociationCollectionTriggerField {
   return hasFieldName(field) && isAssociationField(field) && Boolean(field.target) && Boolean(field.interface);
@@ -116,6 +117,14 @@ function addParentPaths(valueSet: Set<string>, path: string) {
   for (let index = 1; index <= segments.length; index += 1) {
     valueSet.add(segments.slice(0, index).join('.'));
   }
+}
+
+function getOptionByTreeNode(
+  dataNode: Parameters<NonNullable<AppendsTreeSelectProps['loadData']>>[0] | undefined,
+  optionsMap: Record<string, AppendsTreeNode>,
+) {
+  const { value } = dataNode ?? {};
+  return typeof value === 'string' ? optionsMap[value] : undefined;
 }
 
 export function AppendsSelect({
@@ -213,8 +222,8 @@ export function AppendsSelect({
     }
   }, [optionsMap, value]);
 
-  const loadData: NonNullable<TreeSelectProps['loadData']> = useMemoizedFn(async (dataNode) => {
-    const option = dataNode as AppendsTreeNode | undefined;
+  const loadData: NonNullable<AppendsTreeSelectProps['loadData']> = useMemoizedFn(async (dataNode) => {
+    const option = getOptionByTreeNode(dataNode, optionsMap);
     if (!option || option.isLeaf || !option.loadChildren) {
       return;
     }
@@ -270,10 +279,10 @@ export function AppendsSelect({
     <TreeSelect
       allowClear
       loadData={loadData}
-      onChange={handleChange as TreeSelectProps['onChange']}
+      onChange={handleChange as AppendsTreeSelectProps['onChange']}
       placeholder={t('Select field')}
       showCheckedStrategy={TreeSelect.SHOW_ALL}
-      tagRender={tagRender as TreeSelectProps['tagRender']}
+      tagRender={tagRender as AppendsTreeSelectProps['tagRender']}
       treeCheckStrictly
       treeCheckable
       treeData={treeData}

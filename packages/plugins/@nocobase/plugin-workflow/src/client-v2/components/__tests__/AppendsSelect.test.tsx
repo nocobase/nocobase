@@ -245,6 +245,24 @@ describe('AppendsSelect', () => {
     });
   });
 
+  it('loads children from a legacy tree-select node by value', async () => {
+    render(<AppendsSelect collection="users" value={[]} />);
+
+    await act(async () => {
+      await treeSelectState.props?.loadData?.({
+        key: 'createdBy',
+        title: 'Created by',
+        value: 'createdBy',
+      });
+    });
+
+    await waitFor(() => {
+      expect(treeSelectState.props?.treeData).toEqual(
+        expect.arrayContaining([expect.objectContaining({ value: 'createdBy.createdBy' })]),
+      );
+    });
+  });
+
   it('preloads nested value paths so deep selections can be displayed', async () => {
     render(<AppendsSelect collection="users" value={['createdBy.createdBy.role']} />);
 
