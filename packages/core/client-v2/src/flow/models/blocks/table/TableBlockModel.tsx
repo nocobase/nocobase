@@ -55,6 +55,7 @@ import {
   useDragSortRowComponent,
   dragSortSettings,
   dragSortBySettings,
+  hasSortField,
 } from './dragSort';
 
 const MemoizedTable = React.memo(Table);
@@ -429,9 +430,18 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
     return nextIndex;
   }
 
+  getDragSortFieldName(): string | undefined {
+    const dragSortBy = this.props.dragSortBy;
+    if (!this.props.dragSort || typeof dragSortBy !== 'string' || !hasSortField(this.collection, dragSortBy)) {
+      return undefined;
+    }
+
+    return dragSortBy;
+  }
+
   getLeftAuxiliaryColumn() {
     const showIndex = this.isShowIndexEnabled();
-    const showDragHandle = this.props.dragSort && this.props.dragSortBy;
+    const showDragHandle = !!this.getDragSortFieldName();
     if (!showIndex && !showDragHandle) {
       return null;
     }
@@ -477,7 +487,7 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
     index = this.getRecordIndex(record, index);
     const rowKey = getRowKey(record, this.collection.filterTargetKey);
     const rowKeyString = rowKey == null ? rowKey : String(rowKey);
-    const showDragHandle = this.props.dragSort && this.props.dragSortBy;
+    const showDragHandle = !!this.getDragSortFieldName();
     return (
       <div
         role="button"
@@ -1082,11 +1092,13 @@ const HighPerformanceTable = React.memo(
       };
     }, [rowKeys]);
 
+    const dragSortFieldName = model.getDragSortFieldName();
+
     // 拖拽相关的 Body Wrapper 组件
-    const BodyWrapperComponent = useDragSortBodyWrapper(model, dataSourceRef, getRowKeyFunc);
+    const BodyWrapperComponent = useDragSortBodyWrapper(model, dataSourceRef, getRowKeyFunc, dragSortFieldName);
 
     // 行组件
-    const RowComponent = useDragSortRowComponent(model.props.dragSort);
+    const RowComponent = useDragSortRowComponent(!!dragSortFieldName);
 
     const components = useMemo(() => {
       return {
@@ -1109,15 +1121,14 @@ const HighPerformanceTable = React.memo(
         }
       `;
 
-      const selectionPaddingClass =
-        model.props.dragSort && model.props.dragSortBy
-          ? css`
-              .ant-table-thead > tr > th.ant-table-selection-column,
-              .ant-table-tbody > tr > td.ant-table-selection-column {
-                padding-left: 32px !important;
-              }
-            `
-          : undefined;
+      const selectionPaddingClass = dragSortFieldName
+        ? css`
+            .ant-table-thead > tr > th.ant-table-selection-column,
+            .ant-table-tbody > tr > td.ant-table-selection-column {
+              padding-left: 32px !important;
+            }
+          `
+        : undefined;
 
       const tableBodyMinHeightClass = tableScroll?.y
         ? css`
@@ -1128,7 +1139,7 @@ const HighPerformanceTable = React.memo(
         : undefined;
 
       return classNames(baseClass, selectionPaddingClass, tableBodyMinHeightClass);
-    }, [model.props.dragSort, model.props.dragSortBy, tableScroll?.y]);
+    }, [dragSortFieldName, tableScroll?.y]);
 
     return (
       <MemoizedTable

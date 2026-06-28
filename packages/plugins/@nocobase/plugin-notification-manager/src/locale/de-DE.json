@@ -31,7 +31,7 @@
   "Notification type": "Benachrichtigungstyp",
   "Notification type {{type}} is not registered.": "Benachrichtigungstyp {{type}} ist nicht registriert.",
   "Query users": "Benutzer abfragen",
-  "Randomly generated and can not be modified. Support letters, numbers and underscores, must start with an letter.": "Zufällig generiert und kann nicht geändert werden. Unterstützt Buchstaben, Zahlen und Unterstriche, muss mit einem Buchstaben beginnen.",
+  "Randomly generated and can not be modified. Support letters, numbers and underscores, must start with a letter.": "Zufällig generiert und kann nicht geändert werden. Unterstützt Buchstaben, Zahlen und Unterstriche, muss mit einem Buchstaben beginnen.",
   "Reason": "Grund",
   "Receiver": "Empfänger",
   "Receiver type": "Empfängertyp",

@@ -7,15 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { RemoteSelect, TypedVariableInput, type TypedVariableInputProps } from '@nocobase/client-v2';
+import { useDebounce } from 'ahooks';
+import { RemoteSelect } from '@nocobase/client-v2';
 import { FlowContextSelector, useFlowEngine, type MetaTreeNode } from '@nocobase/flow-engine';
 import {
   parseCollectionName,
   TriggerCollectionRecordSelect,
   useCurrentWorkflowContext,
   useWorkflowVariableOptions,
-  type CollectionTriggerField,
-  type UseWorkflowVariableOptions,
+  WorkflowVariableWrapper,
 } from '@nocobase/plugin-workflow/client-v2';
 import { Alert, Form, Input, Space, Typography } from 'antd';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
@@ -23,6 +23,13 @@ import { CONTEXT_TYPE } from '../../common/constants';
 import { useT } from '../locale';
 
 type RecordValue = Record<string, unknown>;
+type WorkflowField = {
+  isForeignKey?: boolean;
+  type?: string;
+  target?: string;
+  collectionName?: string;
+  name?: string;
+};
 
 function getPrimaryValue(item: RecordValue | string | number | null | undefined, filterTargetKey: string | string[]) {
   if (item == null || typeof item !== 'object') {
@@ -50,14 +57,6 @@ function getLabelValue(item: RecordValue, labelKey: string | string[]) {
       .join(' ');
   }
   return item?.[labelKey];
-}
-
-function WorkflowTypedVariableInput({
-  variableOptions,
-  ...props
-}: TypedVariableInputProps & { variableOptions?: UseWorkflowVariableOptions }) {
-  const metaTree = useWorkflowVariableOptions(variableOptions);
-  return <TypedVariableInput {...props} metaTree={metaTree} />;
 }
 
 function stringifyJsonValue(value: unknown) {
@@ -135,6 +134,75 @@ function WorkflowJsonInput({ value, onChange }: { value?: unknown; onChange?: (v
   );
 }
 
+type SearchableRemoteSelectProps<TRecord extends Record<string, unknown>, TValue extends string | number> = {
+  cacheKey: string;
+  labelKey: keyof TRecord & string;
+  resource: string;
+  value?: TValue | null;
+  valueKey: keyof TRecord & string;
+  onChange?: (value: TValue | null) => void;
+};
+
+function SearchableRemoteSelect<TRecord extends Record<string, unknown>, TValue extends string | number>({
+  cacheKey,
+  labelKey,
+  resource,
+  value,
+  valueKey,
+  onChange,
+}: SearchableRemoteSelectProps<TRecord, TValue>) {
+  const flowEngine = useFlowEngine();
+  const t = useT();
+  const [searchValue, setSearchValue] = useState('');
+  const debouncedSearchValue = useDebounce(searchValue, { wait: 300 });
+
+  return (
+    <RemoteSelect<TRecord, TRecord[], TValue>
+      cacheKey={cacheKey}
+      filterOption={false}
+      value={value == null ? undefined : value}
+      onChange={(nextValue) => onChange?.((nextValue as TValue | undefined) ?? null)}
+      onSearch={(nextValue) => {
+        setSearchValue(nextValue);
+      }}
+      request={async () => {
+        const response = await flowEngine.context.api.resource(resource).list({
+          pageSize: 200,
+          ...(debouncedSearchValue
+            ? {
+                filter: {
+                  [labelKey]: {
+                    $includes: debouncedSearchValue,
+                  },
+                },
+              }
+            : {}),
+        });
+        return response?.data?.data ?? [];
+      }}
+      refreshDeps={[debouncedSearchValue, resource, labelKey]}
+      mapOptions={(item) => {
+        const rawLabel = item[labelKey];
+        const rawValue = item[valueKey];
+        let label: React.ReactNode;
+
+        if (typeof rawLabel === 'string') {
+          label = t(rawLabel);
+        } else if (typeof rawLabel === 'number') {
+          label = rawLabel;
+        } else {
+          label = String(rawValue ?? '');
+        }
+
+        return {
+          label,
+          value: rawValue as TValue,
+        };
+      }}
+    />
+  );
+}
+
 function TriggerCollectionRecordMultiSelect({
   value,
   onChange,
@@ -200,8 +268,18 @@ function TriggerCollectionRecordMultiSelect({
       mapOptions={(item) => {
         const rawLabel =
           getLabelValue(item as RecordValue, labelKey) ?? getPrimaryValue(item as RecordValue, filterTargetKey);
+        let label: React.ReactNode;
+
+        if (typeof rawLabel === 'string') {
+          label = t(rawLabel);
+        } else if (typeof rawLabel === 'number') {
+          label = rawLabel;
+        } else {
+          label = t('Untitled');
+        }
+
         return {
-          label: typeof rawLabel === 'string' ? t(rawLabel) : rawLabel ?? t('Untitled'),
+          label,
           value: getPrimaryValue(item as RecordValue, filterTargetKey),
         };
       }}
@@ -251,39 +329,67 @@ function TriggerDataField() {
   );
 }
 
-const userVariableOptions: UseWorkflowVariableOptions = {
-  types: [
-    (field: CollectionTriggerField) => {
-      if (field.isForeignKey || field.type === 'context') {
-        return field.target === 'users';
-      }
-      return field.collectionName === 'users' && field.name === 'id';
-    },
-  ],
-};
-
-const roleVariableOptions: UseWorkflowVariableOptions = {
-  types: [
-    (field: CollectionTriggerField) => {
-      if (field.isForeignKey) {
-        return field.target === 'roles';
-      }
-      return field.collectionName === 'roles' && field.name === 'name';
-    },
-  ],
-};
-
 export function TriggerCustomActionConfig() {
   const t = useT();
+  const userVariableOptions = useMemo(
+    () => ({
+      types: [
+        (field: WorkflowField) => {
+          if (field.isForeignKey || field.type === 'context') {
+            return field.target === 'users';
+          }
+          return field.collectionName === 'users' && field.name === 'id';
+        },
+      ],
+    }),
+    [],
+  );
+  const roleVariableOptions = useMemo(
+    () => ({
+      types: [
+        (field: WorkflowField) => {
+          if (field.isForeignKey) {
+            return field.target === 'roles';
+          }
+          return field.collectionName === 'roles' && field.name === 'name';
+        },
+      ],
+    }),
+    [],
+  );
 
   return (
     <>
       <TriggerDataField />
       <Form.Item name="userId" label={t('User acted')} rules={[{ required: true }]}>
-        <WorkflowTypedVariableInput types={['number']} nullable={false} variableOptions={userVariableOptions} />
+        <WorkflowVariableWrapper<number>
+          variableOptions={userVariableOptions}
+          render={({ value, onChange }) => (
+            <SearchableRemoteSelect<{ id: number; nickname?: string }, number>
+              cacheKey="workflow-custom-action-trigger:users"
+              resource="users"
+              labelKey="nickname"
+              valueKey="id"
+              value={value ?? null}
+              onChange={onChange}
+            />
+          )}
+        />
       </Form.Item>
       <Form.Item name="roleName" label={t('Role of user acted')}>
-        <WorkflowTypedVariableInput types={['string']} nullable={false} variableOptions={roleVariableOptions} />
+        <WorkflowVariableWrapper<string>
+          variableOptions={roleVariableOptions}
+          render={({ value, onChange }) => (
+            <SearchableRemoteSelect<{ name: string; title?: string }, string>
+              cacheKey="workflow-custom-action-trigger:roles"
+              resource="roles"
+              labelKey="title"
+              valueKey="name"
+              value={value ?? null}
+              onChange={onChange}
+            />
+          )}
+        />
       </Form.Item>
     </>
   );

@@ -309,6 +309,31 @@ describe('flowSurfaces authoring validation unit', () => {
     expect(addBlocksErrors.map((error: any) => error.ruleId)).not.toContain('data-block-visible-fields-minimum');
   });
 
+  it('should mention showBlockCard in JS block authoring repair hints', async () => {
+    const errors = await collectFlowSurfaceAuthoringErrors('applyBlueprint', {
+      mode: 'create',
+      tabs: [
+        {
+          title: 'Overview',
+          blocks: [
+            {
+              type: 'jsBlock',
+              settings: {
+                code: `ctx.render('Summary');`,
+                unsupportedSetting: true,
+              },
+            },
+          ],
+        },
+      ],
+    });
+    const unsupportedSettingError = errors.find((error: any) => error.ruleId === 'jsBlock-settings-unsupported-key');
+
+    expect(unsupportedSettingError?.details?.repairHint).toContain('settings.showBlockCard');
+    expect(unsupportedSettingError?.details?.repairExample?.inlineBlock?.settings?.showBlockCard).toBe(true);
+    expect(unsupportedSettingError?.details?.allowedKeys).toContain('showBlockCard');
+  });
+
   it('should preserve aggregate authoring repair instructions through inline and batch wrappers', () => {
     const aggregate = new FlowSurfaceAggregateError([
       {

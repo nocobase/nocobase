@@ -42,8 +42,35 @@ type ActionTriggerableTrigger = {
 };
 
 type WorkflowPlugin = {
-  getTriggerOptions(type?: string): ActionTriggerableTrigger | undefined;
+  getTriggerOptions?: (type?: string) => ActionTriggerableTrigger | undefined;
+  triggers?: {
+    get(type: string): ActionTriggerableTrigger | undefined;
+  };
 };
+
+type PluginManagerLike = {
+  get(name: string): unknown;
+};
+
+function isWorkflowPlugin(plugin: unknown): plugin is WorkflowPlugin {
+  if (typeof plugin !== 'object' || plugin === null) {
+    return false;
+  }
+  const workflowPlugin = plugin as WorkflowPlugin;
+  return typeof workflowPlugin.getTriggerOptions === 'function' || typeof workflowPlugin.triggers?.get === 'function';
+}
+
+export function getWorkflowPlugin(pm: PluginManagerLike): WorkflowPlugin | undefined {
+  const plugins = [pm.get('workflow'), pm.get('@nocobase/plugin-workflow')];
+  return plugins.find(isWorkflowPlugin);
+}
+
+function getTriggerOptions(plugin: WorkflowPlugin | undefined, type?: string) {
+  if (!type) {
+    return undefined;
+  }
+  return plugin?.getTriggerOptions?.(type) ?? plugin?.triggers?.get(type);
+}
 
 function joinWorkflowCollectionName(dataSourceKey: string | undefined, collectionName: string | undefined) {
   if (!collectionName) {
@@ -109,12 +136,14 @@ function useWorkflowOptions(filter?: Record<string, unknown>) {
   return { options, loading };
 }
 
-export function getWorkflowOptionFilter(plugin: WorkflowPlugin | undefined, currentValue?: string) {
+export function getWorkflowOptionFilter(plugin: unknown, currentValue?: string) {
+  const workflowPlugin = isWorkflowPlugin(plugin) ? plugin : undefined;
+
   return (option: WorkflowOption) => {
     if (option.key && option.key === currentValue) {
       return true;
     }
-    const trigger = option.type ? plugin?.getTriggerOptions(option.type) : undefined;
+    const trigger = getTriggerOptions(workflowPlugin, option.type);
     if (!trigger) {
       return false;
     }
@@ -140,7 +169,18 @@ function WorkflowSelect({
 }) {
   const ctx = useFlowContext();
   const t = useT();
-  const plugin = ctx.app.pm.get('workflow') as WorkflowPlugin | undefined;
+  const plugin = getWorkflowPlugin(ctx.app.pm);
+
+  const p1 = ctx.app.pm.get('workflow');
+  const p2 = ctx.app.pm.get('@nocobase/plugin-workflow');
+
+  console.log({
+    workflow: p1?.constructor?.name,
+    workflowGetTriggerOptions: typeof p1?.getTriggerOptions,
+    workflowTriggersGet: typeof p1?.triggers?.get,
+    packageWorkflow: p2?.constructor?.name,
+    packageGetTriggerOptions: typeof p2?.getTriggerOptions,
+  });
   const { options, loading } = useWorkflowOptions(filter);
   const optionFilter = useMemo(() => getWorkflowOptionFilter(plugin, value), [plugin, value]);
   const selectOptions = useMemo<SelectProps['options']>(

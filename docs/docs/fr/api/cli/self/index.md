@@ -19,7 +19,7 @@ nb self <command>
 | Commande | Description |
 | --- | --- |
 | [`nb self check`](./check.md) | Vérifier la version courante du CLI et la prise en charge de la mise à jour automatique |
-| [`nb self update`](./update.md) | Mettre à jour le NocoBase CLI installé globalement via npm |
+| [`nb self update`](./update.md) | Mettre à jour le NocoBase CLI installé globalement via npm, pnpm ou yarn |
 
 ## Exemples
 

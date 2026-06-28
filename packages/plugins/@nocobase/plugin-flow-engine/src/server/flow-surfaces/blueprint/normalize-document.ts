@@ -132,8 +132,9 @@ function normalizeNavigation(input: any) {
     return undefined;
   }
   assertPlainObject(input, 'flowSurfaces applyBlueprint navigation');
-  assertOnlyAllowedKeys(input, 'flowSurfaces applyBlueprint navigation', ['group', 'item']);
+  assertOnlyAllowedKeys(input, 'flowSurfaces applyBlueprint navigation', ['layoutUid', 'group', 'item']);
   const normalized = buildDefinedPayload({
+    layoutUid: readOptionalString(input.layoutUid),
     group: _.isUndefined(input.group)
       ? undefined
       : (() => {
