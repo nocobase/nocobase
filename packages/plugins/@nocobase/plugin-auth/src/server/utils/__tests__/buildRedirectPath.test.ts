@@ -93,6 +93,15 @@ describe('buildRedirectPath', () => {
       expect(buildRedirectPath({ appPublicPath: '', subAppSegment: '/apps/sub', target: '/v/apps/sub/admin' })).toBe(
         '/v/apps/sub/admin',
       );
+      expect(
+        buildRedirectPath({ appPublicPath: '', subAppSegment: '/apps/sub', target: '/v/apps/sub/admin?tab=x#panel' }),
+      ).toBe('/v/apps/sub/admin?tab=x#panel');
+    });
+
+    it('does NOT treat query strings containing the sub-app segment as an existing sub-app path', () => {
+      expect(
+        buildRedirectPath({ appPublicPath: '', subAppSegment: '/apps/sub', target: '/admin?next=/apps/sub/foo' }),
+      ).toBe('/apps/sub/admin?next=/apps/sub/foo');
     });
 
     it('does NOT touch a v2 main-app target even when a sub-app segment was supplied', () => {
