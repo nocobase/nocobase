@@ -11,6 +11,7 @@ import type { ResourcerContext } from '@nocobase/resourcer';
 import { decodeJwtSessionPayload, getFlowModelRdSessionId, resolveFlowModelUidFromRd } from '@nocobase/utils';
 import FlowModelRepository from '../repository';
 import type { JSONValue } from '../template/resolver';
+import { sanitizeRegisteredVariableContextParams, variables } from './registry';
 
 type RecordParams = {
   associationName?: string;
@@ -684,6 +685,19 @@ function resolveFlowModelUidFromRequestRd(ctx: ResourcerContext, rd?: string | n
   return flowModelUid;
 }
 
+function getVariableNameFromKey(variableKey: string): string {
+  return String(variableKey || '').split('.')[0] || '';
+}
+
+function getRecordEntriesForVariable(
+  entries: Array<{ contextKey: string; params: RecordParams }>,
+  varName: string,
+): Array<{ contextKey: string; params: Record<string, unknown> }> {
+  return entries
+    .filter(({ contextKey }) => contextKey === varName || contextKey.startsWith(`${varName}.`))
+    .map(({ contextKey, params }) => ({ contextKey, params: params as Record<string, unknown> }));
+}
+
 export async function authorizeVariablesResolve(
   ctx: ResourcerContext,
   options: {
@@ -693,34 +707,79 @@ export async function authorizeVariablesResolve(
   },
 ): Promise<AuthorizationResult> {
   const contextParams = options.contextParams || {};
-  const sanitizedContextParams = sanitizeContextParams(contextParams);
-
-  if (await currentRoleAllowsConfigure(ctx)) {
-    return { allowed: true, contextParams };
-  }
+  let sanitizedContextParams = sanitizeContextParams(contextParams);
 
   const flowModelUid = resolveFlowModelUidFromRequestRd(ctx, options.rd);
-  if (!flowModelUid) {
-    return { allowed: false, contextParams: sanitizedContextParams };
+  const { usage } = extractUsedVariablePathsForAllowList(options.template);
+  let recordEntries = collectRecordParamEntries(sanitizedContextParams);
+  const flowModelRequiredVars = new Set<string>();
+  const skipSourceValidationVars = new Set<string>();
+  const skipSourceValidationContextKeys = new Set<string>();
+
+  for (const [varName, usedPaths] of Object.entries(usage)) {
+    const def = variables.get(varName);
+    const validation = await def?.validateContextParams?.({
+      contextParams: sanitizedContextParams,
+      flowModelUid: flowModelUid || undefined,
+      koaCtx: ctx,
+      recordEntries: getRecordEntriesForVariable(recordEntries, varName),
+      usage: usedPaths,
+      varName,
+    });
+
+    sanitizedContextParams = sanitizeContextParams(validation?.contextParams || sanitizedContextParams);
+    recordEntries = collectRecordParamEntries(sanitizedContextParams);
+
+    if (validation?.allowed === false) {
+      return { allowed: false, contextParams: sanitizedContextParams };
+    }
+
+    if (validation?.skipSourceValidation) {
+      skipSourceValidationVars.add(varName);
+    }
+    validation?.skipSourceValidationContextKeys?.forEach((contextKey) => {
+      skipSourceValidationContextKeys.add(normalizeContextKey(contextKey));
+    });
+
+    if (validation?.requireFlowModel === false) {
+      continue;
+    }
+
+    flowModelRequiredVars.add(varName);
+  }
+
+  sanitizedContextParams = sanitizeContextParams(sanitizeRegisteredVariableContextParams(sanitizedContextParams));
+  recordEntries = collectRecordParamEntries(sanitizedContextParams);
+
+  if (await currentRoleAllowsConfigure(ctx)) {
+    return { allowed: true, contextParams: sanitizedContextParams };
   }
 
   const requestedKeys = extractVariableKeys(options.template);
   if (requestedKeys.has(unsupportedVariableKey)) {
-    return { allowed: false, contextParams: sanitizedContextParams, flowModelUid };
+    return { allowed: false, contextParams: sanitizedContextParams };
   }
 
-  const allowList = await getVariableAllowList(ctx, flowModelUid);
-  if (!allowList) {
+  if (flowModelRequiredVars.size > 0 && !flowModelUid) {
+    return { allowed: false, contextParams: sanitizedContextParams };
+  }
+
+  const allowList = flowModelUid ? await getVariableAllowList(ctx, flowModelUid) : null;
+  if (flowModelRequiredVars.size > 0 && !allowList) {
     return { allowed: false, contextParams: sanitizedContextParams, flowModelUid };
   }
 
   for (const key of requestedKeys) {
-    if (!allowList.variables.has(key)) {
+    const varName = getVariableNameFromKey(key);
+    if (!flowModelRequiredVars.has(varName)) {
+      continue;
+    }
+    if (!allowList?.variables.has(key)) {
       return { allowed: false, contextParams: sanitizedContextParams, flowModelUid };
     }
   }
 
-  for (const { contextKey, params } of collectRecordParamEntries(sanitizedContextParams)) {
+  for (const { contextKey, params } of recordEntries) {
     const relevantKeys = getRequestedKeysForContext(requestedKeys, contextKey);
     if (!relevantKeys.length) {
       continue;
@@ -729,6 +788,13 @@ export async function authorizeVariablesResolve(
     const sourceKey = toSourceKey(params);
     const normalizedContextKey = normalizeContextKey(contextKey);
     for (const key of relevantKeys) {
+      const varName = getVariableNameFromKey(key);
+      if (skipSourceValidationVars.has(varName) || skipSourceValidationContextKeys.has(normalizedContextKey)) {
+        continue;
+      }
+      if (!allowList) {
+        return { allowed: false, contextParams: sanitizedContextParams, flowModelUid };
+      }
       const allowedSources = allowList.sourceKeysByContextVariableKey.get(
         makeContextVariableKey(normalizedContextKey, key),
       );

@@ -26,11 +26,37 @@ export interface RequiredParamSpec {
   defaultValue?: any;
 }
 
+export type ContextParamRecordEntry = {
+  contextKey: string;
+  params: Record<string, unknown>;
+};
+
+export type ValidateContextParamsOptions = {
+  contextParams: Record<string, unknown>;
+  flowModelUid?: string;
+  koaCtx: ResourcerContext;
+  recordEntries: ContextParamRecordEntry[];
+  usage: string[];
+  varName: string;
+};
+
+export type ValidateContextParamsResult = {
+  allowed?: boolean;
+  contextParams?: Record<string, unknown>;
+  requireFlowModel?: boolean;
+  skipSourceValidation?: boolean;
+  skipSourceValidationContextKeys?: string[];
+};
+
 export interface VariableDef {
   name: string; // e.g. 'record'
   scope: VarScope;
+  allowGenericRecordContext?: boolean;
   requiredParams?: RequiredParamSpec[]; // for validation
   attach: (ctx: HttpRequestContext, koaCtx: ResourcerContext, params?: any, usage?: VarUsage) => Promise<void> | void;
+  validateContextParams?: (
+    options: ValidateContextParamsOptions,
+  ) => Promise<ValidateContextParamsResult | void> | ValidateContextParamsResult | void;
 }
 
 export type VarUsage = {
@@ -91,7 +117,7 @@ class VariableRegistry {
     }
 
     // After running explicit variable defs, attach generic record-like variables based on contextParams shape.
-    attachGenericRecordVariables(ctx, koaCtx, usage, contextParams);
+    attachGenericRecordVariables(ctx, koaCtx, usage, contextParams, this.vars);
   }
 }
 
@@ -111,6 +137,50 @@ export const variables: VariableRegistry = g[GLOBAL_KEY] as VariableRegistry;
 
 /** 仅测试使用：重置变量注册表为内置默认集 */
 // 注意：测试重置逻辑已迁移至测试工具，避免在实现文件中暴露仅供测试的 API。
+
+export function omitVariableContextParams(
+  contextParams: Record<string, unknown>,
+  varName: string,
+): Record<string, unknown> {
+  if (!contextParams || typeof contextParams !== 'object') return {};
+  const prefix = `${varName}.`;
+  const next: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(contextParams)) {
+    if (key === varName || key.startsWith(prefix)) continue;
+    next[key] = value;
+  }
+  return next;
+}
+
+export function validatePopupContextParams(
+  options: Pick<ValidateContextParamsOptions, 'recordEntries'>,
+): ValidateContextParamsResult {
+  const popupContextParamKeyRe = /^popup\.(?:(?:record|sourceRecord)|parent(?:\.parent)*\.(?:record|sourceRecord))$/;
+  const skipSourceValidationContextKeys = options.recordEntries
+    .map(({ contextKey }) => contextKey)
+    .filter((contextKey) => popupContextParamKeyRe.test(contextKey));
+  return {
+    allowed: true,
+    skipSourceValidationContextKeys,
+  };
+}
+
+export function sanitizeRegisteredVariableContextParams(
+  contextParams: Record<string, unknown>,
+  registry: { get?: (name: string) => VariableDef | undefined; list?: () => VariableDef[] } = variables,
+): Record<string, unknown> {
+  let next = contextParams;
+  const defs =
+    typeof registry.list === 'function'
+      ? registry.list()
+      : ['user'].map((name) => registry.get?.(name)).filter((def): def is VariableDef => !!def);
+  for (const def of defs) {
+    if (def.name === 'user') {
+      next = omitVariableContextParams(next, def.name);
+    }
+  }
+  return next;
+}
 
 /**
  * 从使用路径推断查询所需的 fields 与 appends。
@@ -386,12 +456,15 @@ function attachGenericRecordVariables(
   koaCtx: ResourcerContext,
   usage: VarUsage,
   contextParams: any,
+  explicitVariables: Map<string, VariableDef> = new Map(),
 ) {
   const parseIndexSegment = (segment: string): string | undefined => {
     const m = segment.match(/^\[(\d+)\]$/);
     return m ? m[1] : undefined;
   };
   for (const varName of Object.keys(usage)) {
+    const explicitVariable = explicitVariables.get(varName);
+    if (explicitVariable && !explicitVariable.allowGenericRecordContext) continue;
     const usedPaths = usage[varName] || [];
     const topParams = _.get(contextParams, varName);
 
@@ -703,7 +776,7 @@ function attachGenericRecordVariables(
   }
 }
 
-function registerBuiltInVariables(reg: VariableRegistry) {
+export function registerBuiltInVariables(reg: VariableRegistry) {
   /**
    * Register `user` variable:
    * - No contextParams required or expected from client.
@@ -714,6 +787,11 @@ function registerBuiltInVariables(reg: VariableRegistry) {
     name: 'user',
     scope: 'request',
     // no requiredParams: frontend will not pass context params for user
+    validateContextParams: ({ contextParams }) => ({
+      allowed: true,
+      contextParams: omitVariableContextParams(contextParams, 'user'),
+      skipSourceValidation: true,
+    }),
     attach: (flowCtx, koaCtx, _params, usage) => {
       const paths = usage?.['user'] || [];
       const { generatedAppends, generatedFields } = inferSelectsFromUsage(paths);
@@ -738,6 +816,17 @@ function registerBuiltInVariables(reg: VariableRegistry) {
         },
         cache: true,
       });
+    },
+  });
+
+  reg.register({
+    name: 'popup',
+    scope: 'request',
+    allowGenericRecordContext: true,
+    validateContextParams: validatePopupContextParams,
+    attach: () => {
+      // Generic record-like contextParams attach popup.record,
+      // popup.sourceRecord and popup.parent.* records.
     },
   });
 }
