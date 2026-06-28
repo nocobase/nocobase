@@ -127,6 +127,31 @@ type FlowEngineWithPluginManager = ReturnType<typeof useFlowEngine> & {
   };
 };
 
+type ThemeToken = ReturnType<typeof theme.useToken>['token'];
+
+function getDialogWidth(kind: FlowModelConfigKind, token: ThemeToken) {
+  const responsiveInset = token.marginXXL * 2;
+  const targetWidth =
+    kind === 'taskCard'
+      ? token.screenLG + token.marginXXL * 2 - token.paddingXXS
+      : token.screenLG + token.marginXXL * 2;
+  return `min(${targetWidth}px, calc(100vw - ${responsiveInset}px))`;
+}
+
+function getDialogBodyStyle(kind: FlowModelConfigKind, token: ThemeToken) {
+  if (kind === 'taskCard') {
+    return {
+      padding: `${token.padding}px ${token.paddingLG}px ${token.paddingLG}px`,
+      backgroundColor: 'var(--nb-box-bg)',
+    };
+  }
+
+  return {
+    padding: token.paddingLG,
+    backgroundColor: 'var(--nb-box-bg)',
+  };
+}
+
 function parseWorkflowCollection(collection?: string): [string, string] {
   if (!collection) {
     return ['main', 'users'];
@@ -774,15 +799,12 @@ export function FlowModelConfigInput({
       }
 
       ctx.viewer.dialog({
-        width: `min(${token.screenLG + token.marginXXL * 2}px, calc(100vw - ${token.marginXXL * 2}px))`,
+        width: getDialogWidth(kind, token),
         closable: true,
         onClose: releaseDialogGeneratedUidPending,
         title,
         styles: {
-          body: {
-            padding: token.paddingLG,
-            backgroundColor: 'var(--nb-box-bg)',
-          },
+          body: getDialogBodyStyle(kind, token),
           content: {
             padding: 0,
           },
