@@ -66,11 +66,12 @@ export const WorkbenchItemLayout = {
 
 const ResponsiveSpace = (props) => {
   const isMobileMedia = isMobile();
-  const underMobileCtx = false;
+  const underMobileCtx = props.underMobileCtx;
+  const columns = props.columns || 4;
 
   if (underMobileCtx || isMobileMedia) {
     return (
-      <Grid columns={4} gap={8}>
+      <Grid columns={columns} gap={8}>
         {props.children}
       </Grid>
     );
@@ -124,6 +125,7 @@ export class ActionPanelBlockModel extends BlockModel {
     const buttonResetClass = css`
       &.ant-btn {
         height: auto;
+        width: ${this.context.isMobileLayout && itemLayout === WorkbenchItemLayout.Horizontal ? '100%' : 'auto'};
         padding: 0;
         border: none;
         box-shadow: none;
@@ -143,7 +145,8 @@ export class ActionPanelBlockModel extends BlockModel {
       text-align: center;
     `;
     const gridHorizontalContentClass = css`
-      width: ${token.controlHeightLG * 5}px;
+      width: ${this.context.isMobileLayout ? '100%' : '198px'};
+      box-sizing: border-box;
       display: flex;
       align-items: center;
       gap: ${token.marginXS}px;
@@ -205,7 +208,10 @@ export class ActionPanelBlockModel extends BlockModel {
           <DndProvider>
             <div className="nb-action-panel-warp">
               {layout === WorkbenchLayout.Grid ? (
-                <ResponsiveSpace>
+                <ResponsiveSpace
+                  underMobileCtx={this.context.isMobileLayout}
+                  columns={this.context.isMobileLayout && itemLayout === WorkbenchItemLayout.Horizontal ? 1 : 4}
+                >
                   {this.mapSubModels('actions', (action) => {
                     const entryActionUnavailable = isRenderableActionModel(action)
                       ? isEntryActionUnavailable(action)
