@@ -17,6 +17,8 @@ import {
 import type { VscDraftFileRecord, VscFileChange } from '../../shared/types';
 import type { RunJSChangeSummary, RunJSLineDiffRow, RunJSPathValidationResult, RunJSWorkspaceFile } from './types';
 
+export { runJSManifestPath };
+
 export function compareRunJSPaths(left: string, right: string): number {
   return left.localeCompare(right);
 }

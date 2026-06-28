@@ -11,7 +11,11 @@ import { fireEvent, render, screen, waitFor, within } from '@testing-library/rea
 import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import enUS from '../../../locale/en-US.json';
+import zhCN from '../../../locale/zh-CN.json';
 import { runJSStudioProvider } from '../RunJSStudioProvider';
+import { formatRunJSSourceRequestErrorMessage } from '../useRunJSSourceResource';
+import { runJSManifestPath } from '../workspaceUtils';
 
 const mocks = vi.hoisted(() => ({
   request: vi.fn(),
@@ -229,6 +233,46 @@ function buildOpenResultWithDraft(baseContent: string, draftContent: string) {
   };
 }
 
+const requiredRunJSPolishLocaleKeys = [
+  'Open Studio',
+  'Save draft',
+  'Publish',
+  'Run preview',
+  'Draft saved',
+  'Unsaved changes',
+  'Conflict',
+  'Compile failed',
+  'Restore as draft',
+  'No changes to publish',
+  'Commit message',
+  'Files changed',
+  'Discard draft',
+  'Keep my changes and rebase',
+  'This JavaScript source changed while you were editing.',
+  'No published versions yet',
+  'No changes between draft and published',
+  'No files in this workspace',
+  'You can view this JavaScript source, but you do not have permission to edit it',
+  'You do not have permission to access this JavaScript source.',
+  'This JavaScript source no longer exists',
+  'This JavaScript source could not be located.',
+  'This JavaScript source type is not supported in Studio.',
+  'Copy technical details',
+  'View diagnostics',
+  'A newer version was published while you were editing.',
+  'Your draft is based on an older version.',
+  'Only relative imports inside this workspace are supported.',
+  'Imported file was not found in this workspace.',
+  'Dynamic imports are not supported in RunJS sources.',
+  'The entry file was not found in this workspace.',
+  'Commit message must be between 3 and 200 characters.',
+] as const;
+
+const runJSLocaleMessages = {
+  'en-US': enUS,
+  'zh-CN': zhCN,
+} satisfies Record<string, Record<string, string>>;
+
 describe('runJSStudioProvider', () => {
   beforeEach(() => {
     mocks.request.mockImplementation(({ url, data }: { url: string; data?: unknown }) => {
@@ -437,6 +481,91 @@ describe('runJSStudioProvider', () => {
     vi.clearAllMocks();
   });
 
+  it('keeps the RunJS Studio polish locale keys in sync', () => {
+    expect(runJSManifestPath).toBe('.nocobase/runjs-source.json');
+
+    expect(requiredRunJSPolishLocaleKeys).toMatchInlineSnapshot(`
+      [
+        "Open Studio",
+        "Save draft",
+        "Publish",
+        "Run preview",
+        "Draft saved",
+        "Unsaved changes",
+        "Conflict",
+        "Compile failed",
+        "Restore as draft",
+        "No changes to publish",
+        "Commit message",
+        "Files changed",
+        "Discard draft",
+        "Keep my changes and rebase",
+        "This JavaScript source changed while you were editing.",
+        "No published versions yet",
+        "No changes between draft and published",
+        "No files in this workspace",
+        "You can view this JavaScript source, but you do not have permission to edit it",
+        "You do not have permission to access this JavaScript source.",
+        "This JavaScript source no longer exists",
+        "This JavaScript source could not be located.",
+        "This JavaScript source type is not supported in Studio.",
+        "Copy technical details",
+        "View diagnostics",
+        "A newer version was published while you were editing.",
+        "Your draft is based on an older version.",
+        "Only relative imports inside this workspace are supported.",
+        "Imported file was not found in this workspace.",
+        "Dynamic imports are not supported in RunJS sources.",
+        "The entry file was not found in this workspace.",
+        "Commit message must be between 3 and 200 characters.",
+      ]
+    `);
+
+    for (const [locale, messages] of Object.entries(runJSLocaleMessages)) {
+      const missing = requiredRunJSPolishLocaleKeys.filter((key) => !messages[key]);
+      expect({ locale, missing }).toEqual({ locale, missing: [] });
+    }
+  });
+
+  it('maps common RunJS source request errors to friendly messages', () => {
+    const t = (key: string) => key;
+
+    expect(
+      formatRunJSSourceRequestErrorMessage('BASE_COMMIT_OUTDATED', '409 Active draft base is no longer current', t),
+    ).toBe('A newer version was published while you were editing.');
+    expect(
+      formatRunJSSourceRequestErrorMessage('DRAFT_BASE_OUTDATED', 'RunJS draft base is no longer current', t),
+    ).toBe('Your draft is based on an older version.');
+    expect(
+      formatRunJSSourceRequestErrorMessage('RUNJS_IMPORT_NOT_ALLOWED', 'Import "@nocobase/client" is not allowed', t),
+    ).toBe('Only relative imports inside this workspace are supported.');
+    expect(formatRunJSSourceRequestErrorMessage('RUNJS_IMPORT_NOT_FOUND', 'Cannot resolve "./helper"', t)).toBe(
+      'Imported file was not found in this workspace.',
+    );
+    expect(formatRunJSSourceRequestErrorMessage('RUNJS_DYNAMIC_IMPORT_UNSUPPORTED', 'dynamic import()', t)).toBe(
+      'Dynamic imports are not supported in RunJS sources.',
+    );
+    expect(formatRunJSSourceRequestErrorMessage('RUNJS_ENTRY_NOT_FOUND', 'entry missing', t)).toBe(
+      'The entry file was not found in this workspace.',
+    );
+    expect(formatRunJSSourceRequestErrorMessage('RUNJS_COMMIT_MESSAGE_INVALID', 'message too short', t)).toBe(
+      'Commit message must be between 3 and 200 characters.',
+    );
+    expect(formatRunJSSourceRequestErrorMessage('PERMISSION_DENIED', 'Forbidden', t)).toBe(
+      'You do not have permission to access this JavaScript source.',
+    );
+    expect(formatRunJSSourceRequestErrorMessage('RUNJS_SOURCE_READONLY', 'Readonly', t)).toBe(
+      'You can view this JavaScript source, but you do not have permission to edit it',
+    );
+    expect(formatRunJSSourceRequestErrorMessage('RUNJS_SOURCE_LOCATOR_INVALID', 'invalid locator', t)).toBe(
+      'This JavaScript source could not be located.',
+    );
+    expect(formatRunJSSourceRequestErrorMessage('RUNJS_SOURCE_KIND_UNSUPPORTED', 'unsupported kind', t)).toBe(
+      'This JavaScript source type is not supported in Studio.',
+    );
+    expect(formatRunJSSourceRequestErrorMessage(undefined, 'Fallback message', t)).toBe('Fallback message');
+  });
+
   it('renders a compact entry card and opens the RunJS Studio workspace', async () => {
     render(
       <>
@@ -459,6 +588,371 @@ describe('runJSStudioProvider', () => {
       data: {
         locator,
       },
+    });
+  });
+
+  it('exposes accessible names for main actions and announces console updates politely', async () => {
+    const { container } = render(
+      <>
+        {runJSStudioProvider.renderEditor({
+          value: { code: 'return 1;', version: 'v2' },
+          locator,
+        })}
+      </>,
+    );
+
+    expect(screen.getByRole('button', { name: 'Open Studio' })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Open Studio' }));
+
+    expect(await screen.findByLabelText('Edit file content')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Save Draft' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Publish' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Refresh workspace' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'More actions' })).toBeTruthy();
+
+    const previewButtons = screen.getAllByRole('button', { name: 'Run Preview' });
+    fireEvent.click(previewButtons[previewButtons.length - 1]);
+
+    await waitFor(() => {
+      expect(mocks.request.mock.calls.some(([input]) => input?.url === 'runJSSources:compilePreview')).toBe(true);
+    });
+    expect(container.querySelector('[aria-label="Console"] [aria-live="polite"]')).toBeTruthy();
+  });
+
+  it('shows workspace request errors as friendly inline alert cards', async () => {
+    mocks.request.mockImplementation(({ url }: { url: string }) => {
+      if (url === 'runJSSources:open') {
+        return Promise.reject({
+          response: {
+            status: 404,
+            data: {
+              errors: [
+                {
+                  code: 'RUNJS_SOURCE_NOT_FOUND',
+                  message: '404 runjs source owner lookup failed',
+                  status: 404,
+                },
+              ],
+            },
+          },
+        });
+      }
+
+      return Promise.resolve({
+        data: {
+          data: {},
+        },
+      });
+    });
+
+    render(
+      <>
+        {runJSStudioProvider.renderEditor({
+          value: { code: 'return 1;', version: 'v2' },
+          locator,
+        })}
+      </>,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Open Studio' }));
+
+    const alert = await screen.findByRole('alert');
+    expect(within(alert).getByText('This JavaScript source no longer exists')).toBeTruthy();
+    expect(within(alert).getByRole('button', { name: 'Retry' })).toBeTruthy();
+    expect(within(alert).getByRole('button', { name: 'Copy technical details' })).toBeTruthy();
+    expect(screen.queryByText('404 runjs source owner lookup failed')).toBeNull();
+
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: {
+        writeText,
+      },
+    });
+    fireEvent.click(within(alert).getByRole('button', { name: 'Copy technical details' }));
+
+    await waitFor(() => {
+      expect(writeText).toHaveBeenCalledWith(
+        ['message: 404 runjs source owner lookup failed', 'code: RUNJS_SOURCE_NOT_FOUND', 'status: 404'].join('\n'),
+      );
+    });
+  });
+
+  it('disables publishing when the workspace has no publish permission', async () => {
+    mocks.request.mockImplementation(({ url }: { url: string }) => {
+      if (url === 'runJSSources:open') {
+        return Promise.resolve({
+          data: {
+            data: {
+              ...openResult,
+              permissions: {
+                canRead: true,
+                canWrite: true,
+                canPublish: false,
+              },
+            },
+          },
+        });
+      }
+
+      return Promise.resolve({
+        data: {
+          data: {},
+        },
+      });
+    });
+
+    render(
+      <>
+        {runJSStudioProvider.renderEditor({
+          value: { code: 'return 1;', version: 'v2' },
+          locator,
+        })}
+      </>,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Open Studio' }));
+    await screen.findByLabelText('Edit file content');
+
+    const publishButton = screen.getByRole('button', { name: 'Publish' });
+    expect(publishButton).toBeDisabled();
+    fireEvent.click(publishButton);
+
+    expect(screen.queryByRole('dialog', { name: 'Publish JavaScript' })).toBeNull();
+  });
+
+  it('shows action request failures as inline alert cards with technical details', async () => {
+    mocks.request.mockImplementation(({ url }: { url: string }) => {
+      if (url === 'runJSSources:open') {
+        return Promise.resolve({
+          data: {
+            data: openResult,
+          },
+        });
+      }
+      if (url === 'runJSSources:compilePreview') {
+        return Promise.resolve({
+          data: {
+            data: {
+              locator,
+              locatorKind: 'flowModel.step',
+              artifact: {
+                code: 'return 2;',
+                version: 'v2',
+                diagnostics: [],
+                filesHash: 'files-hash-2',
+                entryPath: 'src/main.tsx',
+              },
+            },
+          },
+        });
+      }
+      if (url === 'runJSSources:publish') {
+        return Promise.reject({
+          response: {
+            status: 400,
+            data: {
+              errors: [
+                {
+                  code: 'RUNJS_COMMIT_MESSAGE_INVALID',
+                  message: 'commit message failed server validation',
+                  status: 400,
+                },
+              ],
+            },
+          },
+        });
+      }
+
+      return Promise.resolve({
+        data: {
+          data: {},
+        },
+      });
+    });
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: {
+        writeText,
+      },
+    });
+
+    render(
+      <>
+        {runJSStudioProvider.renderEditor({
+          value: { code: 'return 1;', version: 'v2' },
+          locator,
+        })}
+      </>,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Open Studio' }));
+    const editor = await screen.findByLabelText('Edit file content');
+    fireEvent.change(editor, {
+      target: {
+        value: 'return 2;',
+      },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Publish' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Publish JavaScript' });
+    fireEvent.change(within(dialog).getByLabelText('Commit message'), {
+      target: {
+        value: 'Update code',
+      },
+    });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Publish' }));
+
+    const alert = await screen.findByRole('alert');
+    expect(within(alert).getByText('Publish failed')).toBeTruthy();
+    expect(within(alert).getByText('Commit message must be between 3 and 200 characters.')).toBeTruthy();
+    fireEvent.click(within(alert).getByRole('button', { name: 'Copy technical details' }));
+
+    await waitFor(() => {
+      expect(writeText).toHaveBeenCalledWith(
+        ['message: commit message failed server validation', 'code: RUNJS_COMMIT_MESSAGE_INVALID', 'status: 400'].join(
+          '\n',
+        ),
+      );
+    });
+  });
+
+  it('offers diagnostics actions when publish preview compilation fails', async () => {
+    mocks.request.mockImplementation(({ url }: { url: string }) => {
+      if (url === 'runJSSources:open') {
+        return Promise.resolve({
+          data: {
+            data: openResult,
+          },
+        });
+      }
+      if (url === 'runJSSources:compilePreview') {
+        return Promise.resolve({
+          data: {
+            data: {
+              locator,
+              locatorKind: 'flowModel.step',
+              artifact: {
+                code: 'return 1;',
+                version: 'v2',
+                diagnostics: [
+                  {
+                    severity: 'error',
+                    message: 'Missing semicolon',
+                    path: 'src/main.tsx',
+                    line: 2,
+                    column: 3,
+                    code: 'TS1005',
+                  },
+                ],
+                filesHash: 'files-hash-2',
+                entryPath: 'src/main.tsx',
+              },
+            },
+          },
+        });
+      }
+
+      return Promise.resolve({
+        data: {
+          data: {},
+        },
+      });
+    });
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: {
+        writeText,
+      },
+    });
+
+    render(
+      <>
+        {runJSStudioProvider.renderEditor({
+          value: { code: 'return 1;', version: 'v2' },
+          locator,
+        })}
+      </>,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Open Studio' }));
+    await screen.findByLabelText('Edit file content');
+    fireEvent.click(screen.getByRole('button', { name: 'Publish' }));
+
+    const dialog = await screen.findByRole('dialog', { name: 'Publish JavaScript' });
+    await within(dialog).findByText('Compile failed');
+    const alert = within(dialog)
+      .getAllByRole('alert')
+      .find((item) => within(item).queryByText('Compile failed'));
+    if (!alert) {
+      throw new Error('Compile failed alert not found');
+    }
+    expect(within(alert).getByText('Compile failed')).toBeTruthy();
+    expect(within(alert).getByRole('button', { name: 'View diagnostics' })).toBeTruthy();
+    fireEvent.click(within(alert).getByRole('button', { name: 'Copy technical details' }));
+
+    await waitFor(() => {
+      expect(writeText).toHaveBeenCalledWith('[error] src/main.tsx:2:3 (TS1005) Missing semicolon');
+    });
+
+    fireEvent.click(within(alert).getByRole('button', { name: 'View diagnostics' }));
+
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog', { name: 'Publish JavaScript' })).toBeNull();
+    });
+    expect(screen.getByText((content) => content.includes('Missing semicolon'))).toBeTruthy();
+  });
+
+  it('focuses the file dialog input and restores focus to the opener on close', async () => {
+    render(
+      <>
+        {runJSStudioProvider.renderEditor({
+          value: { code: 'return 1;', version: 'v2' },
+          locator,
+        })}
+      </>,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Open Studio' }));
+    await screen.findByLabelText('Edit file content');
+
+    const newFileButton = screen.getByLabelText('New file');
+    newFileButton.focus();
+    fireEvent.click(newFileButton);
+    const fileDialog = await screen.findByRole('dialog', { name: 'New file' });
+    await waitFor(() => {
+      expect(within(fileDialog).getByLabelText('File path')).toHaveFocus();
+    });
+    fireEvent.click(within(fileDialog).getByRole('button', { name: 'Cancel' }));
+    await waitFor(() => {
+      expect(newFileButton).toHaveFocus();
+    });
+  });
+
+  it('focuses the publish modal input and restores focus to the opener on close', async () => {
+    render(
+      <>
+        {runJSStudioProvider.renderEditor({
+          value: { code: 'return 1;', version: 'v2' },
+          locator,
+        })}
+      </>,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Open Studio' }));
+    await screen.findByLabelText('Edit file content');
+    const publishButton = screen.getByRole('button', { name: 'Publish' });
+    publishButton.focus();
+    fireEvent.click(publishButton);
+    const publishDialog = await screen.findByRole('dialog', { name: 'Publish JavaScript' });
+    await waitFor(() => {
+      expect(within(publishDialog).getByLabelText('Commit message')).toHaveFocus();
+    });
+    fireEvent.click(within(publishDialog).getByRole('button', { name: 'Cancel' }));
+    await waitFor(() => {
+      expect(publishButton).toHaveFocus();
     });
   });
 
@@ -784,7 +1278,20 @@ describe('runJSStudioProvider', () => {
     fireEvent.click(within(dialog).getByRole('button', { name: 'Create' }));
 
     expect(await screen.findByText('utils')).toBeTruthy();
-    expect(screen.getByRole('tab', { name: /src\/utils\/helper\.ts/ })).toHaveAttribute('aria-selected', 'true');
+    const helperTab = screen.getByRole('tab', { name: /src\/utils\/helper\.ts/ });
+    expect(helperTab).toHaveAttribute('aria-selected', 'true');
+
+    fireEvent.keyDown(helperTab, { key: 'Home' });
+    await waitFor(() => {
+      expect(screen.getByRole('tab', { name: /src\/main\.tsx/ })).toHaveFocus();
+      expect(screen.getByRole('tab', { name: /src\/main\.tsx/ })).toHaveAttribute('aria-selected', 'true');
+    });
+
+    fireEvent.keyDown(screen.getByRole('tab', { name: /src\/main\.tsx/ }), { key: 'ArrowRight' });
+    await waitFor(() => {
+      expect(screen.getByRole('tab', { name: /src\/utils\/helper\.ts/ })).toHaveFocus();
+      expect(screen.getByRole('tab', { name: /src\/utils\/helper\.ts/ })).toHaveAttribute('aria-selected', 'true');
+    });
 
     fireEvent.click(screen.getByRole('button', { name: 'src/main.tsx' }));
 

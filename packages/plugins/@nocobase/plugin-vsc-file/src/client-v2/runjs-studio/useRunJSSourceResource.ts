@@ -37,6 +37,7 @@ export interface RunJSSourceRequestErrorOptions {
   code?: VscErrorCode;
   status?: number;
   message: string;
+  rawMessage?: string;
   details?: VscErrorDetails;
 }
 
@@ -47,6 +48,8 @@ export class RunJSSourceRequestError extends Error {
 
   readonly status?: number;
 
+  readonly rawMessage?: string;
+
   readonly details?: VscErrorDetails;
 
   constructor(options: RunJSSourceRequestErrorOptions) {
@@ -55,6 +58,7 @@ export class RunJSSourceRequestError extends Error {
     this.action = options.action;
     this.code = options.code;
     this.status = options.status;
+    this.rawMessage = options.rawMessage;
     this.details = options.details;
   }
 }
@@ -70,6 +74,8 @@ export interface UseRunJSSourceResourceResult {
   getError(action: RunJSSourceActionName): RunJSSourceRequestError | null;
   clearError(action?: RunJSSourceActionName): void;
 }
+
+type TFunction = (key: string) => string;
 
 interface ResourceResponse<T> {
   data: T;
@@ -136,7 +142,7 @@ export function useRunJSSourceResource(): UseRunJSSourceResourceResult {
 
         return response.data.data;
       } catch (error) {
-        const requestError = normalizeRunJSSourceError(action, error, tRef.current('RunJS source request failed'));
+        const requestError = normalizeRunJSSourceError(action, error, tRef.current);
         if (requestIdsRef.current[action] === requestId) {
           setErrors((current) => ({
             ...current,
@@ -178,21 +184,86 @@ export function useRunJSSourceResource(): UseRunJSSourceResourceResult {
 function normalizeRunJSSourceError(
   action: RunJSSourceActionName,
   error: unknown,
-  fallbackMessage: string,
+  t: TFunction,
 ): RunJSSourceRequestError {
   const response = getRecordProperty(error, 'response');
   const responseData = response ? response.data : undefined;
   const serverError = getFirstServerError(responseData) || getFirstServerError(error);
-  const message = toNonEmptyString(serverError?.message) || fallbackMessage;
   const code = toVscErrorCode(serverError?.code);
+  const rawMessage = toNonEmptyString(serverError?.message);
+  const message = formatRunJSSourceRequestErrorMessage(code, rawMessage || t('RunJS source request failed'), t);
 
   return new RunJSSourceRequestError({
     action,
     code,
     status: toNumber(serverError?.status) ?? toNumber(response?.status),
     message,
+    rawMessage,
     details: toRecord(serverError?.details) || undefined,
   });
+}
+
+export function formatRunJSSourceRequestErrorMessage(
+  code: VscErrorCode | undefined,
+  fallbackMessage: string,
+  t: TFunction,
+): string {
+  switch (code) {
+    case 'BASE_COMMIT_OUTDATED':
+      return t('A newer version was published while you were editing.');
+    case 'DRAFT_BASE_OUTDATED':
+      return t('Your draft is based on an older version.');
+    case 'RUNJS_IMPORT_NOT_ALLOWED':
+      return t('Only relative imports inside this workspace are supported.');
+    case 'RUNJS_IMPORT_NOT_FOUND':
+      return t('Imported file was not found in this workspace.');
+    case 'RUNJS_DYNAMIC_IMPORT_UNSUPPORTED':
+      return t('Dynamic imports are not supported in RunJS sources.');
+    case 'RUNJS_ENTRY_NOT_FOUND':
+      return t('The entry file was not found in this workspace.');
+    case 'RUNJS_SOURCE_KIND_UNSUPPORTED':
+      return t('This JavaScript source type is not supported in Studio.');
+    case 'RUNJS_SOURCE_LOCATOR_INVALID':
+      return t('This JavaScript source could not be located.');
+    case 'RUNJS_SOURCE_NOT_FOUND':
+      return t('This JavaScript source no longer exists');
+    case 'PERMISSION_DENIED':
+      return t('You do not have permission to access this JavaScript source.');
+    case 'RUNJS_SOURCE_READONLY':
+      return t('You can view this JavaScript source, but you do not have permission to edit it');
+    case 'RUNJS_COMPILE_FAILED':
+      return t('Compile failed');
+    case 'RUNJS_PUBLISH_NO_CHANGES':
+      return t('No changes to publish');
+    case 'RUNJS_COMMIT_MESSAGE_INVALID':
+      return t('Commit message must be between 3 and 200 characters.');
+    default:
+      return fallbackMessage;
+  }
+}
+
+export function formatRunJSSourceRequestTechnicalDetails(error: unknown, fallbackMessage: string): string {
+  if (error instanceof RunJSSourceRequestError) {
+    const lines = [`message: ${error.rawMessage || error.message}`];
+
+    if (error.code) {
+      lines.push(`code: ${error.code}`);
+    }
+    if (typeof error.status === 'number') {
+      lines.push(`status: ${error.status}`);
+    }
+    if (error.details) {
+      lines.push(`details: ${JSON.stringify(error.details, null, 2)}`);
+    }
+
+    return lines.join('\n');
+  }
+
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+
+  return fallbackMessage;
 }
 
 function getFirstServerError(value: unknown): Record<string, unknown> | null {

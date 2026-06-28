@@ -51,6 +51,7 @@ import {
   message,
 } from 'antd';
 import type { MenuProps } from 'antd';
+import type { InputRef } from 'antd/es/input';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import type { RunJSCompileDiagnostic } from '../../shared/runjs-source-types';
@@ -67,7 +68,11 @@ import type {
   RunJSSourceVersionResult,
   RunJSWorkspaceFile,
 } from './types';
-import { RunJSSourceRequestError, useRunJSSourceResource } from './useRunJSSourceResource';
+import {
+  RunJSSourceRequestError,
+  formatRunJSSourceRequestTechnicalDetails,
+  useRunJSSourceResource,
+} from './useRunJSSourceResource';
 import {
   applyDraftFiles,
   applyWorkspaceChanges,
@@ -120,6 +125,12 @@ type FileDialogState = {
   sourcePath?: string;
 };
 
+type ActionErrorState = {
+  error: unknown;
+  title: string;
+  retry: () => unknown | Promise<unknown>;
+};
+
 type PendingDirtyAction = 'close' | 'refresh';
 
 type ConflictState = {
@@ -165,10 +176,12 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
   const latestWorkspaceSnapshotRef = useRef('');
   const latestDiffRequestKeyRef = useRef('');
   const versionRequestSeqRef = useRef(0);
+  const dialogTriggerRef = useRef<HTMLElement | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
   const [workspace, setWorkspace] = useState<RunJSSourceOpenWorkspaceResult | null>(null);
   const [workspaceError, setWorkspaceError] = useState<unknown>(null);
+  const [actionError, setActionError] = useState<ActionErrorState | null>(null);
   const [loadingWorkspace, setLoadingWorkspace] = useState(false);
   const [baseFiles, setBaseFiles] = useState<RunJSWorkspaceFile[]>([]);
   const [savedFiles, setSavedFiles] = useState<RunJSWorkspaceFile[]>([]);
@@ -260,7 +273,8 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
 
   const appendConsole = useCallback((entry: Omit<RunJSConsoleEntry, 'id'>) => {
     consoleSeqRef.current += 1;
-    setConsoleEntries((current) => [...current, { ...entry, id: consoleSeqRef.current }]);
+    const id = consoleSeqRef.current;
+    setConsoleEntries((current) => [...current, { ...entry, id }]);
   }, []);
 
   const syncWorkspaceSnapshotRef = useCallback(
@@ -279,6 +293,59 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
     setPreviewDiagnostics([]);
   }, []);
 
+  const rememberDialogTrigger = useCallback(() => {
+    if (typeof document !== 'undefined' && document.activeElement instanceof HTMLElement) {
+      dialogTriggerRef.current = document.activeElement;
+    }
+  }, []);
+
+  const restoreDialogFocus = useCallback(() => {
+    const target = dialogTriggerRef.current;
+    const focus = () => target?.focus();
+
+    if (typeof window !== 'undefined' && typeof window.requestAnimationFrame === 'function') {
+      window.requestAnimationFrame(() => {
+        window.setTimeout(focus, 0);
+      });
+      return;
+    }
+
+    setTimeout(focus, 0);
+  }, []);
+
+  const reportActionError = useCallback((error: unknown, title: string, retry: () => unknown | Promise<unknown>) => {
+    if (isConflictError(error)) {
+      return;
+    }
+
+    setActionError({ error, title, retry });
+  }, []);
+
+  const retryActionError = async () => {
+    const retry = actionError?.retry;
+    if (!retry) {
+      return;
+    }
+
+    setActionError(null);
+    await retry();
+  };
+
+  const copyActionErrorDetails = async () => {
+    if (!actionError) {
+      return;
+    }
+
+    try {
+      await navigator.clipboard?.writeText(
+        formatRunJSSourceRequestTechnicalDetails(actionError.error, actionError.title),
+      );
+      message.success(t('Details copied'));
+    } catch (_) {
+      message.error(t('Copy details failed'));
+    }
+  };
+
   const resetWorkspaceState = useCallback(() => {
     requestSeqRef.current += 1;
     saveInFlightRef.current = false;
@@ -287,6 +354,7 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
     versionRequestSeqRef.current += 1;
     setWorkspace(null);
     setWorkspaceError(null);
+    setActionError(null);
     setLoadingWorkspace(false);
     setBaseFiles([]);
     setSavedFiles([]);
@@ -429,6 +497,7 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
       setRestoreCommit(null);
       setRestoringVersion(false);
       setRestoredDraftVersion(null);
+      setActionError(null);
 
       return loaded;
     } catch (error) {
@@ -444,10 +513,10 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
   }, [openWorkspaceSnapshot, props.locator, value.version]);
 
   useEffect(() => {
-    if (drawerOpen && !workspace && !loadingWorkspace) {
+    if (drawerOpen && !workspace && !loadingWorkspace && !workspaceError) {
       loadWorkspace();
     }
-  }, [drawerOpen, loadWorkspace, loadingWorkspace, workspace]);
+  }, [drawerOpen, loadWorkspace, loadingWorkspace, workspace, workspaceError]);
 
   useEffect(() => {
     if (!drawerOpen) {
@@ -531,6 +600,7 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
     }
 
     clearConsole();
+    setActionError(null);
     setActiveTab('code');
     setPreviewing(true);
     setPreviewDiagnostics([]);
@@ -575,6 +645,7 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
       });
     } catch (error) {
       await handleWorkspaceError(error);
+      reportActionError(error, t('Run Preview failed'), runPreview);
       appendConsole({
         level: 'error',
         message: formatVscComponentError(error, t('Run Preview failed')),
@@ -600,6 +671,7 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
     const requestFiles = normalizeWorkspaceFiles(files);
     const draftFiles = buildChangedWorkspaceFileList(baseFiles, requestFiles);
     saveInFlightRef.current = true;
+    setActionError(null);
     setSavingDraft(true);
     try {
       if (!draftFiles.length) {
@@ -654,6 +726,7 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
       return true;
     } catch (error) {
       await handleWorkspaceError(error);
+      reportActionError(error, t('Failed to save draft'), saveDraft);
       appendConsole({
         level: 'error',
         message: formatVscComponentError(error, t('Failed to save draft')),
@@ -670,6 +743,7 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
       return;
     }
 
+    setActionError(null);
     try {
       await runJSSourceRequest('discardDraft', {
         locator: props.locator,
@@ -682,6 +756,7 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
       await loadWorkspace();
     } catch (error) {
       await handleWorkspaceError(error);
+      reportActionError(error, t('Failed to discard draft'), discardDraft);
       appendConsole({
         level: 'error',
         message: formatVscComponentError(error, t('Failed to discard draft')),
@@ -752,6 +827,11 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
   }, [activeTab, diffView, loadDiff, workspace]);
 
   const openPublishModal = async () => {
+    if (workspaceEditingDisabled || !workspace?.permissions.canPublish) {
+      return;
+    }
+
+    rememberDialogTrigger();
     setCommitMessage('');
     setPublishOpen(true);
     await runPreview();
@@ -767,6 +847,7 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
     }
 
     setPublishing(true);
+    setActionError(null);
     const requestSnapshotKey = currentPreviewSnapshotKey;
     const requestFiles = normalizeWorkspaceFiles(files);
     const requestEntryPath = entryPath;
@@ -814,6 +895,7 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
       setPreviewDiagnostics(result.artifact.diagnostics);
     } catch (error) {
       await handleWorkspaceError(error);
+      reportActionError(error, t('Publish failed'), publish);
       appendConsole({
         level: 'error',
         message: formatVscComponentError(error, t('Publish failed')),
@@ -871,6 +953,7 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
     }
 
     setHistoryLoading(true);
+    setActionError(null);
     try {
       const result = await runJSSourceRequest('listHistory', {
         locator: props.locator,
@@ -889,6 +972,7 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
           : current,
       );
     } catch (error) {
+      reportActionError(error, t('Failed to load history'), refreshHistory);
       appendConsole({
         level: 'error',
         message: formatVscComponentError(error, t('Failed to load history')),
@@ -906,6 +990,7 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
     const requestSeq = versionRequestSeqRef.current + 1;
     versionRequestSeqRef.current = requestSeq;
     setVersionLoading(true);
+    setActionError(null);
     setSelectedVersion(null);
     setSelectedVersionDiff(null);
     setSelectedVersionView('diff');
@@ -931,6 +1016,7 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
       setSelectedVersionDiff(versionDiff);
     } catch (error) {
       if (versionRequestSeqRef.current === requestSeq) {
+        reportActionError(error, t('Failed to load version'), () => loadVersion(commit));
         appendConsole({
           level: 'error',
           message: formatVscComponentError(error, t('Failed to load version')),
@@ -950,6 +1036,7 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
     const restoreSnapshotKey = latestWorkspaceSnapshotRef.current;
 
     setRestoringVersion(true);
+    setActionError(null);
     try {
       const result = await runJSSourceRequest('restoreAsDraft', {
         locator: props.locator,
@@ -991,6 +1078,7 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
       });
     } catch (error) {
       await handleWorkspaceError(error);
+      reportActionError(error, t('Failed to restore version'), () => restoreAsDraft(commit));
       appendConsole({
         level: 'error',
         message: formatVscComponentError(error, t('Failed to restore version')),
@@ -1046,6 +1134,7 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
       return;
     }
 
+    rememberDialogTrigger();
     setFileDialog({
       mode: 'create',
     });
@@ -1057,6 +1146,7 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
     if (!activePath || workspaceEditingDisabled) {
       return;
     }
+    rememberDialogTrigger();
     setFileDialog({
       mode: 'rename',
       sourcePath: activePath,
@@ -1289,6 +1379,7 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
     const rebasedFiles = applyWorkspaceChanges(conflict.latestFiles, userPatch);
     const rebasePatch = buildChangedWorkspaceFileList(conflict.latestFiles, rebasedFiles);
 
+    setActionError(null);
     try {
       if (!rebasePatch.length) {
         await runJSSourceRequest('discardDraft', {
@@ -1356,6 +1447,7 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
       setDiffView(null);
       invalidatePreview();
     } catch (error) {
+      reportActionError(error, t('Failed to rebase draft'), keepChangesAndRebase);
       appendConsole({
         level: 'error',
         message: formatVscComponentError(error, t('Failed to rebase draft')),
@@ -1396,6 +1488,21 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
         latestBaseCommitId,
         latestOwnerFingerprint: latest?.opened.ownerFingerprint || workspace?.ownerFingerprint || '',
       });
+    }
+  };
+
+  const copyWorkspaceErrorDetails = async () => {
+    if (!workspaceError) {
+      return;
+    }
+
+    try {
+      await navigator.clipboard?.writeText(
+        formatRunJSSourceRequestTechnicalDetails(workspaceError, t('Failed to open RunJS source')),
+      );
+      message.success(t('Details copied'));
+    } catch (_) {
+      message.error(t('Copy details failed'));
     }
   };
 
@@ -1509,6 +1616,7 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
             onRunPreview={runPreview}
             onSaveDraft={saveDraft}
             publishedVersion={formatVersion(publishedCommit?.seq)}
+            canPublish={Boolean(workspace?.permissions.canPublish)}
             publishing={publishing}
             readOnly={workspaceEditingDisabled}
             saving={savingDraft}
@@ -1521,11 +1629,47 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
           {workspaceError ? (
             <Alert
               action={
-                <Button icon={<ReloadOutlined />} onClick={loadWorkspace} size="small">
-                  {t('Retry')}
-                </Button>
+                <Space>
+                  <Button aria-label={t('Retry')} icon={<ReloadOutlined />} onClick={loadWorkspace} size="small">
+                    {t('Retry')}
+                  </Button>
+                  <Button
+                    aria-label={t('Copy technical details')}
+                    icon={<CopyOutlined />}
+                    onClick={copyWorkspaceErrorDetails}
+                    size="small"
+                  >
+                    {t('Copy technical details')}
+                  </Button>
+                </Space>
               }
               message={formatVscComponentError(workspaceError, t('Failed to open RunJS source'))}
+              role="alert"
+              showIcon
+              type="error"
+            />
+          ) : null}
+
+          {actionError ? (
+            <Alert
+              action={
+                <Space>
+                  <Button aria-label={t('Retry')} icon={<ReloadOutlined />} onClick={retryActionError} size="small">
+                    {t('Retry')}
+                  </Button>
+                  <Button
+                    aria-label={t('Copy technical details')}
+                    icon={<CopyOutlined />}
+                    onClick={copyActionErrorDetails}
+                    size="small"
+                  >
+                    {t('Copy technical details')}
+                  </Button>
+                </Space>
+              }
+              description={formatVscComponentError(actionError.error, actionError.title)}
+              message={actionError.title}
+              role="alert"
               showIcon
               type="error"
             />
@@ -1540,6 +1684,18 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
 
           {workspace ? (
             <>
+              {!workspace.permissions.canWrite ? (
+                <Alert
+                  action={
+                    <Button icon={<ReloadOutlined />} onClick={requestRefreshWorkspace} size="small">
+                      {t('Refresh workspace')}
+                    </Button>
+                  }
+                  message={t('You can view this JavaScript source, but you do not have permission to edit it')}
+                  showIcon
+                  type="info"
+                />
+              ) : null}
               <div
                 style={{
                   display: 'grid',
@@ -1560,6 +1716,7 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
                   onCreate={createFile}
                   onDelete={deleteActiveFile}
                   onOpen={openFilePath}
+                  onRefresh={requestRefreshWorkspace}
                   onRename={renameActiveFile}
                   onSetEntry={setActiveFileAsEntry}
                   readOnly={workspaceEditingDisabled}
@@ -1677,6 +1834,7 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
       <FileDialog
         error={fileDialogError}
         mode={fileDialog?.mode}
+        onAfterClose={restoreDialogFocus}
         onCancel={() => setFileDialog(null)}
         onChange={setFileDialogPath}
         onSubmit={submitFileDialog}
@@ -1689,9 +1847,14 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
         commitMessage={commitMessage}
         diagnostics={previewDiagnostics}
         loading={previewing || publishing}
+        onAfterClose={restoreDialogFocus}
         onCancel={() => setPublishOpen(false)}
         onCommitMessageChange={setCommitMessage}
         onPublish={publish}
+        onViewDiagnostics={() => {
+          setPublishOpen(false);
+          setActiveTab('code');
+        }}
         onViewDiff={() => {
           setPublishOpen(false);
           setActiveTab('diff');
@@ -1795,6 +1958,7 @@ function buildWorkspaceLoadResult(opened: RunJSSourceOpenWorkspaceResult): Works
 function WorkspaceHeader(props: {
   activePath: string;
   baseVersion: string;
+  canPublish: boolean;
   disabled: boolean;
   entryPath: string;
   lastSavedAt: string;
@@ -1815,6 +1979,7 @@ function WorkspaceHeader(props: {
   const {
     activePath,
     baseVersion,
+    canPublish,
     disabled,
     entryPath,
     lastSavedAt,
@@ -1857,7 +2022,7 @@ function WorkspaceHeader(props: {
         </Space>
       </Space>
       <Space wrap>
-        <Tooltip title={t('Cmd/Ctrl + Enter')}>
+        <Tooltip title={`${t('Run Preview')} (${t('Cmd/Ctrl + Enter')})`}>
           <Button
             aria-label={t('Run Preview')}
             disabled={disabled}
@@ -1867,7 +2032,7 @@ function WorkspaceHeader(props: {
             {t('Run Preview')}
           </Button>
         </Tooltip>
-        <Tooltip title={t('Cmd/Ctrl + S')}>
+        <Tooltip title={`${t('Save draft')} (${t('Cmd/Ctrl + S')})`}>
           <Button
             aria-label={t('Save Draft')}
             disabled={disabled || readOnly || saving}
@@ -1880,7 +2045,7 @@ function WorkspaceHeader(props: {
         </Tooltip>
         <Button
           aria-label={t('Publish')}
-          disabled={disabled || readOnly}
+          disabled={disabled || readOnly || !canPublish}
           icon={<UploadOutlined />}
           loading={publishing}
           onClick={onPublish}
@@ -1968,6 +2133,7 @@ function FilesPanel(props: {
   onCreate: () => void;
   onDelete: () => void;
   onOpen: (path: string) => void;
+  onRefresh: () => void;
   onRename: () => void;
   onSetEntry: () => void;
   readOnly: boolean;
@@ -1983,6 +2149,7 @@ function FilesPanel(props: {
     onCreate,
     onDelete,
     onOpen,
+    onRefresh,
     onRename,
     onSetEntry,
     readOnly,
@@ -2103,7 +2270,22 @@ function FilesPanel(props: {
       </Space>
       <List
         dataSource={treeRows}
-        locale={{ emptyText: <Empty description={t('No files')} /> }}
+        locale={{
+          emptyText: (
+            <Empty description={t('No files in this workspace')}>
+              <Space>
+                <Button icon={<ReloadOutlined />} onClick={onRefresh} size="small">
+                  {t('Refresh workspace')}
+                </Button>
+                {!readOnly ? (
+                  <Button icon={<FileAddOutlined />} onClick={onCreate} size="small" type="primary">
+                    {t('New file')}
+                  </Button>
+                ) : null}
+              </Space>
+            </Empty>
+          ),
+        }}
         rowKey="key"
         size="small"
         style={{ overflow: 'auto' }}
@@ -2249,10 +2431,55 @@ function OpenFileTabs(props: {
   t: (key: string) => string;
 }) {
   const { activePath, entryPath, files, onClose, onOpen, savedFiles, t } = props;
+  const tabButtonRefs = React.useRef(new Map<string, HTMLButtonElement>());
+  const registerTabButton = React.useCallback(
+    (path: string) => (element: HTMLButtonElement | null) => {
+      if (element) {
+        tabButtonRefs.current.set(path, element);
+      } else {
+        tabButtonRefs.current.delete(path);
+      }
+    },
+    [],
+  );
+  const focusTab = React.useCallback((path: string) => {
+    const focus = () => {
+      tabButtonRefs.current.get(path)?.focus();
+    };
+
+    if (typeof window !== 'undefined' && typeof window.requestAnimationFrame === 'function') {
+      window.requestAnimationFrame(focus);
+      return;
+    }
+
+    focus();
+  }, []);
+  const openFileAtIndex = (index: number) => {
+    const next = files[index];
+    if (next) {
+      onOpen(next.path);
+      focusTab(next.path);
+    }
+  };
+  const handleTabKeyDown = (event: React.KeyboardEvent<HTMLElement>, index: number) => {
+    if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
+      event.preventDefault();
+      openFileAtIndex(Math.min(index + 1, files.length - 1));
+    } else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
+      event.preventDefault();
+      openFileAtIndex(Math.max(index - 1, 0));
+    } else if (event.key === 'Home') {
+      event.preventDefault();
+      openFileAtIndex(0);
+    } else if (event.key === 'End') {
+      event.preventDefault();
+      openFileAtIndex(files.length - 1);
+    }
+  };
 
   return (
     <div aria-label={t('Open files')} role="tablist" style={{ display: 'flex', gap: 4, overflowX: 'auto' }}>
-      {files.map((file) => {
+      {files.map((file, index) => {
         const active = file.path === activePath;
         const dirty = isWorkspaceFileDirty(savedFiles, file);
 
@@ -2260,9 +2487,12 @@ function OpenFileTabs(props: {
           <Space.Compact key={file.path}>
             <Button
               aria-selected={active}
+              onKeyDown={(event) => handleTabKeyDown(event, index)}
               onClick={() => onOpen(file.path)}
+              ref={registerTabButton(file.path)}
               role="tab"
               size="small"
+              tabIndex={active ? 0 : -1}
               type={active ? 'primary' : 'default'}
             >
               <Space size={4}>
@@ -2360,7 +2590,9 @@ function DiffTab(props: {
     }
 
     try {
-      await navigator.clipboard?.writeText(formatVscComponentError(diffError, t('Failed to load diff')));
+      await navigator.clipboard?.writeText(
+        formatRunJSSourceRequestTechnicalDetails(diffError, t('Failed to load diff')),
+      );
       message.success(t('Details copied'));
     } catch (_) {
       message.error(t('Copy details failed'));
@@ -2388,7 +2620,15 @@ function DiffTab(props: {
           </Space>
           <List
             dataSource={diffFiles}
-            locale={{ emptyText: <Empty description={t('No changes')} /> }}
+            locale={{
+              emptyText: (
+                <Empty description={t('No changes')}>
+                  <Button icon={<ReloadOutlined />} onClick={onRefresh} size="small">
+                    {t('Refresh diff')}
+                  </Button>
+                </Empty>
+              ),
+            }}
             rowKey="path"
             size="small"
             renderItem={(file) => (
@@ -2453,6 +2693,7 @@ function DiffTab(props: {
               </Space>
             }
             message={formatVscComponentError(diffError, t('Failed to load diff'))}
+            role="alert"
             showIcon
             type="error"
           />
@@ -2464,7 +2705,11 @@ function DiffTab(props: {
           </div>
         ) : null}
         {!diffError && !diffLoading && lineDiffRows.length === 0 ? (
-          <Empty description={t('No changes between draft and published')} />
+          <Empty description={t('No changes between draft and published')}>
+            <Button icon={<ReloadOutlined />} onClick={onRefresh} size="small">
+              {t('Refresh diff')}
+            </Button>
+          </Empty>
         ) : null}
         {!diffError && lineDiffRows.length > 0 ? (
           <div
@@ -2590,7 +2835,15 @@ function HistoryTab(props: {
         <List
           dataSource={historyItems}
           loading={loading}
-          locale={{ emptyText: <Empty description={t('No published versions yet')} /> }}
+          locale={{
+            emptyText: (
+              <Empty description={t('No published versions yet')}>
+                <Button icon={<ReloadOutlined />} loading={loading} onClick={onRefresh} size="small">
+                  {t('Refresh history')}
+                </Button>
+              </Empty>
+            ),
+          }}
           rowKey="id"
           renderItem={(commit) => (
             <List.Item
@@ -2870,7 +3123,7 @@ function ConsolePanel(props: {
           </Button>
         </Space>
       </Space>
-      <div style={{ flex: 1, overflow: 'auto' }}>
+      <div aria-live="polite" style={{ flex: 1, overflow: 'auto' }}>
         {entries.length === 0 ? <Empty description={t('No logs')} /> : null}
         {entries.map((entry) => (
           <button
@@ -2901,6 +3154,7 @@ function ConsolePanel(props: {
 function FileDialog(props: {
   error: string | null;
   mode?: FileDialogMode;
+  onAfterClose: () => void;
   onCancel: () => void;
   onChange: (value: string) => void;
   onSubmit: () => void;
@@ -2908,10 +3162,20 @@ function FileDialog(props: {
   t: (key: string) => string;
   value: string;
 }) {
-  const { error, mode, onCancel, onChange, onSubmit, open, t, value } = props;
+  const { error, mode, onAfterClose, onCancel, onChange, onSubmit, open, t, value } = props;
+  const inputRef = useRef<InputRef>(null);
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    inputRef.current?.focus();
+  }, [open]);
 
   return (
     <Modal
+      afterClose={onAfterClose}
       getContainer={false}
       okText={mode === 'rename' ? t('Rename') : t('Create')}
       onCancel={onCancel}
@@ -2923,6 +3187,7 @@ function FileDialog(props: {
         aria-label={t('File path')}
         onChange={(event) => onChange(event.target.value)}
         onPressEnter={onSubmit}
+        ref={inputRef}
         status={error ? 'error' : undefined}
         value={value}
       />
@@ -2935,9 +3200,11 @@ function PublishModal(props: {
   commitMessage: string;
   diagnostics: RunJSCompileDiagnostic[];
   loading: boolean;
+  onAfterClose: () => void;
   onCancel: () => void;
   onCommitMessageChange: (value: string) => void;
   onPublish: () => void;
+  onViewDiagnostics: () => void;
   onViewDiff: () => void;
   open: boolean;
   readOnly: boolean;
@@ -2948,9 +3215,11 @@ function PublishModal(props: {
     commitMessage,
     diagnostics,
     loading,
+    onAfterClose,
     onCancel,
     onCommitMessageChange,
     onPublish,
+    onViewDiagnostics,
     onViewDiff,
     open,
     readOnly,
@@ -2961,9 +3230,28 @@ function PublishModal(props: {
   const hasCompileErrors = diagnostics.some((diagnostic) => diagnostic.severity === 'error');
   const messageInvalid = trimmed.length < 3 || trimmed.length > 200;
   const disabled = readOnly || summary.files === 0 || hasCompileErrors || messageInvalid;
+  const inputRef = useRef<InputRef>(null);
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    inputRef.current?.focus();
+  }, [open]);
+
+  const copyDiagnostics = async () => {
+    try {
+      await navigator.clipboard?.writeText(formatCompileDiagnostics(diagnostics));
+      message.success(t('Details copied'));
+    } catch (_) {
+      message.error(t('Copy details failed'));
+    }
+  };
 
   return (
     <Modal
+      afterClose={onAfterClose}
       confirmLoading={loading}
       getContainer={false}
       okButtonProps={{ disabled }}
@@ -2977,12 +3265,35 @@ function PublishModal(props: {
         <Typography.Text strong>{t('Changes')}</Typography.Text>
         <Typography.Text>{formatChangeSummary(summary, t)}</Typography.Text>
         {summary.files === 0 ? <Alert message={t('No changes to publish')} showIcon type="info" /> : null}
-        {hasCompileErrors ? <Alert message={t('Compile failed')} showIcon type="error" /> : null}
+        {hasCompileErrors ? (
+          <Alert
+            action={
+              <Space>
+                <Button onClick={onViewDiagnostics} size="small">
+                  {t('View diagnostics')}
+                </Button>
+                <Button
+                  aria-label={t('Copy technical details')}
+                  icon={<CopyOutlined />}
+                  onClick={copyDiagnostics}
+                  size="small"
+                >
+                  {t('Copy technical details')}
+                </Button>
+              </Space>
+            }
+            message={t('Compile failed')}
+            role="alert"
+            showIcon
+            type="error"
+          />
+        ) : null}
         <Input
           aria-label={t('Commit message')}
           maxLength={200}
           onChange={(event) => onCommitMessageChange(event.target.value)}
           placeholder={t('Update chart event handling')}
+          ref={inputRef}
           showCount
           status={commitMessage && messageInvalid ? 'error' : undefined}
           value={commitMessage}
@@ -3088,10 +3399,16 @@ function ConflictDialog(props: {
     <Modal footer={null} getContainer={false} onCancel={onCancel} open={Boolean(conflict)} title={t('Conflict')}>
       {conflict ? (
         <Space direction="vertical" style={{ width: '100%' }}>
-          <Alert message={t('This JavaScript source changed while you were editing.')} showIcon type="warning" />
+          <Alert
+            message={t('This JavaScript source changed while you were editing.')}
+            role="alert"
+            showIcon
+            type="warning"
+          />
           {!conflict.canRebase ? (
             <Alert
               message={t('The source owner changed outside this workspace. Refresh before rebasing.')}
+              role="alert"
               showIcon
               type="error"
             />
@@ -3128,6 +3445,23 @@ function appendDiagnostics(
       column: diagnostic.column,
     });
   }
+}
+
+function formatCompileDiagnostics(diagnostics: RunJSCompileDiagnostic[]): string {
+  return diagnostics
+    .map((diagnostic) => {
+      const location = diagnostic.path
+        ? `${diagnostic.path}${diagnostic.line ? `:${diagnostic.line}` : ''}${
+            diagnostic.column ? `:${diagnostic.column}` : ''
+          }`
+        : '';
+      const code = diagnostic.code || diagnostic.ruleId ? ` (${diagnostic.code || diagnostic.ruleId})` : '';
+      const prefix = `[${diagnostic.severity || 'error'}]${location ? ` ${location}` : ''}${code}`;
+      const details = diagnostic.details ? `\n${JSON.stringify(diagnostic.details, null, 2)}` : '';
+
+      return `${prefix} ${diagnostic.message}${details}`;
+    })
+    .join('\n\n');
 }
 
 function buildStatusBadges(input: {
