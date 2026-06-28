@@ -9,7 +9,7 @@
 
 import { Col, Form, Row } from 'antd';
 import React from 'react';
-import { WorkflowVariableInput } from '../../canvas/WorkflowVariableInput';
+import { WorkflowTypedVariableInput } from '../../canvas/WorkflowTypedVariableInput';
 import { useT } from '../../locale';
 
 export function PaginationFields({
@@ -25,12 +25,12 @@ export function PaginationFields({
     <Row gutter={12}>
       <Col span={12}>
         <Form.Item name={pageName as any} label={t('Page number')} initialValue={1}>
-          <WorkflowVariableInput variableOptions={{ types: ['number'] }} />
+          <WorkflowTypedVariableInput nullable={false} variableOptions={{ types: ['number'] }} />
         </Form.Item>
       </Col>
       <Col span={12}>
         <Form.Item name={pageSizeName as any} label={t('Page size')} initialValue={20}>
-          <WorkflowVariableInput variableOptions={{ types: ['number'] }} />
+          <WorkflowTypedVariableInput nullable={false} variableOptions={{ types: ['number'] }} />
         </Form.Item>
       </Col>
     </Row>

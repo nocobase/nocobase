@@ -14,6 +14,7 @@ import { Alert } from 'antd';
 import React, { useRef, useState } from 'react';
 import { useCurrentWorkflowContext } from '../../canvas/contexts';
 import { useT } from '../../locale';
+import { WorkflowVariableWrapper } from '../WorkflowVariableWrapper';
 import { parseCollectionName } from './utils';
 
 type RecordValue = Record<string, unknown>;
@@ -75,52 +76,60 @@ export function TriggerCollectionRecordSelect({
 
   const filterTargetKey = collection.filterTargetKey;
   const labelKey = collection.titleCollectionField?.name || filterTargetKey;
-  const selectValue = getPrimaryValue(value, filterTargetKey);
 
   if (!filterTargetKey) {
     return null;
   }
 
+  // Mirror v1's `TriggerCollectionRecordSelect`: the constant branch is the record picker, but the field may also hold a
+  // variable from the calling context (e.g. the parent flow when this workflow is invoked as a sub-flow), so wrap the
+  // picker in the workflow variable toggle. The wrapper renders just the picker when no variables are available.
   return (
-    <RemoteSelect
-      value={selectValue}
-      onChange={(nextValue) => {
-        const matched = loadedItemsRef.current.find((item) => getPrimaryValue(item, filterTargetKey) === nextValue);
-        onChange?.(matched ?? nextValue);
-      }}
-      filterOption={false}
-      onSearch={(nextValue) => {
-        setSearchValue(nextValue);
-      }}
-      request={async () => {
-        const response = await flowEngine.context.api
-          .resource(collectionName, null, { 'x-data-source': dataSourceKey })
-          .list({
-            pageSize: 200,
-            ...(debouncedSearchValue
-              ? {
-                  filter: {
-                    [labelKey]: {
-                      $includes: debouncedSearchValue,
-                    },
-                  },
-                }
-              : {}),
-          });
-        return response?.data?.data ?? [];
-      }}
-      refreshDeps={[debouncedSearchValue, dataSourceKey, collectionName, labelKey]}
-      onLoaded={(items) => {
-        loadedItemsRef.current = items as RecordValue[];
-      }}
-      mapOptions={(item) => {
-        const rawLabel = item?.[labelKey] ?? item?.[filterTargetKey];
-        return {
-          label: typeof rawLabel === 'string' ? t(rawLabel) : rawLabel ?? t('Untitled'),
-          value: getPrimaryValue(item as RecordValue, filterTargetKey),
-        };
-      }}
-      cacheKey={`workflow:collection-trigger-records:${dataSourceKey}:${collectionName}`}
+    <WorkflowVariableWrapper<RecordValue | string | number>
+      value={value ?? undefined}
+      onChange={onChange}
+      render={({ value: fieldValue, onChange: setFieldValue }) => (
+        <RemoteSelect
+          value={getPrimaryValue(fieldValue, filterTargetKey)}
+          onChange={(nextValue) => {
+            const matched = loadedItemsRef.current.find((item) => getPrimaryValue(item, filterTargetKey) === nextValue);
+            setFieldValue?.(matched ?? nextValue);
+          }}
+          filterOption={false}
+          onSearch={(nextValue) => {
+            setSearchValue(nextValue);
+          }}
+          request={async () => {
+            const response = await flowEngine.context.api
+              .resource(collectionName, null, { 'x-data-source': dataSourceKey })
+              .list({
+                pageSize: 200,
+                ...(debouncedSearchValue
+                  ? {
+                      filter: {
+                        [labelKey]: {
+                          $includes: debouncedSearchValue,
+                        },
+                      },
+                    }
+                  : {}),
+              });
+            return response?.data?.data ?? [];
+          }}
+          refreshDeps={[debouncedSearchValue, dataSourceKey, collectionName, labelKey]}
+          onLoaded={(items) => {
+            loadedItemsRef.current = items as RecordValue[];
+          }}
+          mapOptions={(item) => {
+            const rawLabel = item?.[labelKey] ?? item?.[filterTargetKey];
+            return {
+              label: typeof rawLabel === 'string' ? t(rawLabel) : rawLabel ?? t('Untitled'),
+              value: getPrimaryValue(item as RecordValue, filterTargetKey),
+            };
+          }}
+          cacheKey={`workflow:collection-trigger-records:${dataSourceKey}:${collectionName}`}
+        />
+      )}
     />
   );
 }

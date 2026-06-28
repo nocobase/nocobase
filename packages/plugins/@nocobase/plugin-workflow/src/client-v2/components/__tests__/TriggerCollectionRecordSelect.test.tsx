@@ -65,6 +65,13 @@ listMock.mockImplementation(async () => ({
   },
 }));
 
+// The variable toggle resolves the workflow variable tree from the full flow-engine context (`context.app.pm`,
+// `getPropertyMetaTree`, …), which this suite does not stub. These tests cover the record-picker branch, so render the
+// wrapper as a pass-through to its constant (non-variable) render path.
+vi.mock('../WorkflowVariableWrapper', () => ({
+  WorkflowVariableWrapper: ({ value, onChange, render }: any) => render({ value: value ?? undefined, onChange }),
+}));
+
 vi.mock('../../canvas/contexts', () => ({
   useCurrentWorkflowContext: () => ({
     config: { collection: 'roles' },

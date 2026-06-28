@@ -16,7 +16,7 @@ export { Instruction, useAvailableUpstreams, useNodeContext } from './canvas/Ins
 export type { LoaderOf, NodeAvailableContext, TempAssociationSource } from './canvas/Instruction';
 export { Branch } from './canvas/Branch';
 export { NodeDefaultView } from './canvas/Node';
-export { useCurrentWorkflowContext, useFlowContext } from './canvas/contexts';
+export { useCurrentWorkflowContext, useFlowContext, WorkflowVariableSourceContext } from './canvas/contexts';
 export type { CanvasNode } from './canvas/contexts';
 export { default as useStyles } from './canvas/style';
 export { WorkflowVariableInput } from './canvas/WorkflowVariableInput';

@@ -12,6 +12,7 @@ import { JsonTextArea, type JsonTextAreaProps } from '@nocobase/client-v2';
 import { Button } from 'antd';
 import { FlowContextSelector } from '@nocobase/flow-engine';
 import React, { useCallback, useMemo, useRef } from 'react';
+import { useHideVariable } from '../components/HideVariableContext';
 import { insertTextAtSelection, setNativeTextAreaValue } from './textAreaInsertion';
 import { formatWorkflowPathToValue } from './workflowVariableConverters';
 import { useWorkflowVariableOptions, type UseWorkflowVariableOptions } from './useWorkflowVariableOptions';
@@ -30,9 +31,11 @@ const selectorButtonClassName = css`
 
 export function WorkflowVariableJsonTextArea(props: WorkflowVariableJsonTextAreaProps) {
   const { variableOptions, style, ...rest } = props;
+  const hideVariable = useHideVariable();
   const wrapperRef = useRef<HTMLDivElement>(null);
   const metaTree = useWorkflowVariableOptions(variableOptions);
   const metaTreeGetter = useMemo(() => () => metaTree, [metaTree]);
+  const hasVariableOptions = !hideVariable && metaTree.length > 0;
 
   const handleVariableSelected = useCallback((selectedValue: string) => {
     if (!selectedValue) {
@@ -61,22 +64,24 @@ export function WorkflowVariableJsonTextArea(props: WorkflowVariableJsonTextArea
   return (
     <div ref={wrapperRef} style={{ position: 'relative', width: '100%', ...style }}>
       <JsonTextArea {...rest} />
-      <div style={{ position: 'absolute', insetInlineEnd: 0, insetBlockStart: 0, lineHeight: 0 }}>
-        <FlowContextSelector
-          metaTree={metaTreeGetter}
-          disabled={rest.disabled}
-          formatPathToValue={(item) => formatWorkflowPathToValue(item) ?? ''}
-          onChange={handleVariableSelected}
-        >
-          <Button
-            type="default"
-            style={{ fontStyle: 'italic', fontFamily: 'New York, Times New Roman, Times, serif' }}
-            className={selectorButtonClassName}
+      {hasVariableOptions ? (
+        <div style={{ position: 'absolute', insetInlineEnd: 0, insetBlockStart: 0, lineHeight: 0 }}>
+          <FlowContextSelector
+            metaTree={metaTreeGetter}
+            disabled={rest.disabled}
+            formatPathToValue={(item) => formatWorkflowPathToValue(item) ?? ''}
+            onChange={handleVariableSelected}
           >
-            x
-          </Button>
-        </FlowContextSelector>
-      </div>
+            <Button
+              type="default"
+              style={{ fontStyle: 'italic', fontFamily: 'New York, Times New Roman, Times, serif' }}
+              className={selectorButtonClassName}
+            >
+              x
+            </Button>
+          </FlowContextSelector>
+        </div>
+      ) : null}
     </div>
   );
 }
