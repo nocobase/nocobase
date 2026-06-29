@@ -251,4 +251,19 @@ describe('FilterDynamicComponent', () => {
       expect(onChange).toHaveBeenCalledWith({ $and: [{ title: { $eq: '{{$jobsMapByNodeKey.n1.body}}' } }] });
     });
   });
+
+  it('can disable right-side variable input for trigger-only filter usage', () => {
+    const { engine } = setupEngine();
+
+    render(
+      <FlowEngineProvider engine={engine}>
+        <FilterDynamicComponent collection="posts" value={{}} onChange={() => undefined} rightAsVariable={false} />
+      </FlowEngineProvider>,
+    );
+
+    fireEvent.click(screen.getByText('Add condition'));
+
+    expect(testState.variableFilterItems).toHaveLength(1);
+    expect(testState.variableFilterItems[0].rightAsVariable).toBe(false);
+  });
 });

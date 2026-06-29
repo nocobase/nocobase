@@ -10,7 +10,7 @@ Quản lý các giá trị cấu hình mặc định của CLI. Các khóa hiệ
 
 - Bản thân CLI: `locale`, `update.policy`, `license.pkg-url`
 - Runtime Docker: `docker.network`, `docker.container-prefix`
-- Tệp thực thi bên ngoài: `bin.docker`, `bin.caddy`, `bin.git`, `bin.nginx`, `bin.yarn`
+- Tệp thực thi bên ngoài: `bin.docker`, `bin.caddy`, `bin.git`, `bin.nginx`, `bin.pnpm`, `bin.yarn`
 - Sinh proxy: `proxy.nb-cli-root`, `proxy.upstream-host`, `proxy.nginx-driver`, `proxy.caddy-driver`
 
 Phần lớn dự án chỉ cần một vài khóa trong số này. Trên thực tế, các khóa được dùng nhiều nhất là:
@@ -34,6 +34,7 @@ Phần lớn dự án chỉ cần một vài khóa trong số này. Trên thực
 | `bin.caddy` | `caddy` | Ghi đè đường dẫn thực thi Caddy |
 | `bin.git` | `git` | Ghi đè đường dẫn thực thi Git |
 | `bin.nginx` | `nginx` | Ghi đè đường dẫn thực thi Nginx |
+| `bin.pnpm` | `pnpm` | Ghi đè đường dẫn thực thi pnpm |
 | `bin.yarn` | `yarn` | Ghi đè đường dẫn thực thi Yarn |
 | `proxy.nb-cli-root` | root của CLI, thường là thư mục home của người dùng hiện tại | Ghi đè root path mà cấu hình proxy được sinh ra nhìn thấy khi tiến trình proxy và CLI không nhìn cùng một root filesystem |
 | `proxy.upstream-host` | `127.0.0.1` | Ghi đè host mà proxy dùng để chuyển tiếp lưu lượng trở lại ứng dụng NocoBase |
@@ -70,12 +71,14 @@ nb config get docker.network
 nb config set docker.network nocobase
 nb config set bin.nginx /usr/sbin/nginx
 nb config set bin.git /usr/bin/git
+nb config set bin.pnpm /usr/local/bin/pnpm
 nb config delete docker.container-prefix
 ```
 
 ## Ghi chú
 
 - `bin.nginx` và `bin.caddy` chỉ ảnh hưởng tới driver `local` của `nb proxy nginx` và `nb proxy caddy`
+- `bin.pnpm` được dùng khi lệnh cần chạy pnpm trực tiếp, chẳng hạn cập nhật cài đặt CLI global do pnpm quản lý bằng `nb self update`
 - `proxy.nginx-driver` và `proxy.caddy-driver` lưu driver mặc định mà từng provider sử dụng
 - `proxy.nb-cli-root` và `proxy.upstream-host` là các thiết lập override proxy nâng cao. Với hầu hết env `local` hoặc `docker` do CLI quản lý, giá trị mặc định là đủ
 - Nếu bạn chỉ muốn đổi driver proxy đang hoạt động, dùng `nb proxy nginx use` hoặc `nb proxy caddy use` thường rõ ràng hơn là tự đặt khóa cấu hình

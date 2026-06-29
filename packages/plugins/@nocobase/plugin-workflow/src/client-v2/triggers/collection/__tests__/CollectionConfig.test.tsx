@@ -15,6 +15,9 @@ import { FlowEngine, FlowEngineProvider } from '@nocobase/flow-engine';
 import CollectionTriggerConfig from '../CollectionConfig';
 
 const workflowState = vi.hoisted(() => ({ sync: true }));
+const conditionFieldState = vi.hoisted(() => ({
+  propsList: [] as any[],
+}));
 
 vi.mock('../../../locale', () => ({
   NAMESPACE: 'workflow',
@@ -28,7 +31,10 @@ vi.mock('../../../components/collection', () => ({
 }));
 
 vi.mock('../../../components/FilterDynamicComponent', () => ({
-  ConditionField: () => <div data-testid="condition-field" />,
+  ConditionField: (props: any) => {
+    conditionFieldState.propsList.push(props);
+    return <div data-testid="condition-field" />;
+  },
 }));
 
 vi.mock('../../../canvas/contexts', () => ({
@@ -38,6 +44,7 @@ vi.mock('../../../canvas/contexts', () => ({
 describe('CollectionTriggerConfig', () => {
   it('consumes extracted shared collection components', () => {
     workflowState.sync = true;
+    conditionFieldState.propsList = [];
     const engine = new FlowEngine();
 
     render(
@@ -52,6 +59,7 @@ describe('CollectionTriggerConfig', () => {
     expect(screen.getByTestId('fields-select')).toBeInTheDocument();
     expect(screen.getByTestId('condition-field')).toBeInTheDocument();
     expect(screen.getByTestId('appends-select')).toBeInTheDocument();
+    expect(conditionFieldState.propsList.at(-1)?.rightAsVariable).toBe(false);
     expect(
       screen.getByText(
         'Synchronous collection event workflows run within the trigger transaction by default. Related data operations automatically use this transaction.',

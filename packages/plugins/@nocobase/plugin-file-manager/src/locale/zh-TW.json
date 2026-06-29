@@ -31,7 +31,7 @@
   "Local storage": "Local storage",
   "MIME type": "MIME type",
   "Minimum from 1 byte.": "Minimum from 1 byte.",
-  "Multi-types seperated with comma, for example: \"image/*\", \"image/png\", \"image/*, application/pdf\" etc.": "Multi-types seperated with comma, for example: \"image/*\", \"image/png\", \"image/*, application/pdf\" etc.",
+  "Multi-types separated with comma, for example: \"image/*\", \"image/png\", \"image/*, application/pdf\" etc.": "Multi-types separated with comma, for example: \"image/*\", \"image/png\", \"image/*, application/pdf\" etc.",
   "Path": "Path",
   "PDF preview failed. Please download the file to preview it.": "PDF 預覽失敗，請下載檔案後查看。",
   "PDF preview failed to load the file. If the file is stored on another domain, configure CORS for the external storage to allow this site to read the file.": "PDF 預覽載入檔案失敗。如果檔案儲存在其他網域，請為外部儲存設定 CORS，允許目前網站讀取檔案。",

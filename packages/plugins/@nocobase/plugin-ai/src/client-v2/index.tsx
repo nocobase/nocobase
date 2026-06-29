@@ -14,6 +14,7 @@ export { AIEmployeeShortcut } from './ai-employees/AIEmployeeShortcut';
 export { AddContextButton } from './ai-employees/AddContextButton';
 export { AISelection } from './ai-employees/AISelection';
 export { AISelectionControl } from './ai-employees/AISelectionControl';
+export { AIEmployeeButtonModel } from './models/ai-employees';
 export { avatars, avatarsMap } from './ai-employees/avatars';
 export type {
   AIEmployee,

@@ -113,8 +113,6 @@ test('builtin postgres db plan uses workspace network and env scoped docker cont
     '-d',
     '--name',
     containerName,
-    '--restart',
-    'always',
     '--network',
     networkName,
     '-e',

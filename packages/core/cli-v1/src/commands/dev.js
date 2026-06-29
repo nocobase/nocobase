@@ -20,6 +20,7 @@ const {
   isPortReachable,
   buildWSURL,
   checkDBDialect,
+  resolveAppClientEntryMode,
 } = require('../util');
 const { getPortPromise } = require('portfinder');
 const chokidar = require('chokidar');
@@ -45,6 +46,25 @@ async function buildBundleStatusHtml() {
 
 function buildAppDevForwardArgs(argv = process.argv) {
   return ['app-dev', ...argv.slice(3)];
+}
+
+function resolveDevRuntimeMode(opts = {}) {
+  const appClientEntryMode = opts.appClientEntryMode || resolveAppClientEntryMode();
+  const useModernOnlyEntryMode = appClientEntryMode === 'modern-only';
+  const clientV2Only = !!opts.clientV2Only;
+  const forceClient = !!opts.client;
+  const forceServer = !!opts.server;
+  const shouldRunClientV2 = clientV2Only || useModernOnlyEntryMode || forceClient || !forceServer;
+  const shouldRunClient = !clientV2Only && !useModernOnlyEntryMode && (forceClient || !forceServer);
+  const shouldRunServer = !clientV2Only && (forceServer || !forceClient || useModernOnlyEntryMode);
+
+  return {
+    appClientEntryMode,
+    useModernOnlyEntryMode,
+    shouldRunClientV2,
+    shouldRunClient,
+    shouldRunServer,
+  };
 }
 
 async function forwardDevToAppDev({ argv = process.argv, runCommand = run } = {}) {
@@ -107,9 +127,9 @@ module.exports = (cli) => {
       nodeCheck();
       await postCheck(opts);
 
-      const shouldRunClientV2 = clientV2Only || client || !server;
-      const shouldRunClient = !clientV2Only && (client || !server);
-      const shouldRunServer = !clientV2Only && (server || !client);
+      const { useModernOnlyEntryMode, shouldRunClientV2, shouldRunClient, shouldRunServer } = resolveDevRuntimeMode(
+        opts,
+      );
       const shouldRunClientWithRsbuild = shouldRunClient && !!rsbuild;
 
       if (shouldRunServer && server) {
@@ -120,10 +140,14 @@ module.exports = (cli) => {
         });
       }
 
-      if (shouldRunClientV2 && !clientV2Only) {
+      if (shouldRunClientV2 && !clientV2Only && !useModernOnlyEntryMode) {
         clientV2Port = await getPortPromise({
           port: 1 * clientPort + 2,
         });
+      }
+
+      if (useModernOnlyEntryMode) {
+        clientV2Port = APP_PORT;
       }
 
       let subprocessClient;
@@ -306,4 +330,5 @@ module.exports = (cli) => {
 module.exports._test = {
   buildAppDevForwardArgs,
   forwardDevToAppDev,
+  resolveDevRuntimeMode,
 };

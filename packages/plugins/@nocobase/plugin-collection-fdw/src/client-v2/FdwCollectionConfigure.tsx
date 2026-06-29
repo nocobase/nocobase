@@ -341,13 +341,13 @@ function DatabaseServerFormModal(props: {
           name="name"
           label={t('Server name')}
           extra={t(
-            'Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.',
+            'Randomly generated and can be modified. Support letters, numbers and underscores, must start with a letter.',
           )}
           rules={[
             { required: true },
             {
               pattern: /^[A-Za-z][A-Za-z0-9_]*$/,
-              message: t('Support letters, numbers and underscores, must start with an letter.'),
+              message: t('Support letters, numbers and underscores, must start with a letter.'),
             },
           ]}
         >

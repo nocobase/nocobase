@@ -1990,7 +1990,7 @@ describe('plugin-ui-layout server', () => {
     });
     const agent = await app.agent().login(rootUser);
     const visibleFilter = {
-      hidden: false,
+      'hidden.$isFalsy': true,
       id: [adminOnlyRoute.get('id'), mobileOnlyRoute.get('id'), sharedRoute.get('id'), hiddenSharedRoute.get('id')],
     };
 

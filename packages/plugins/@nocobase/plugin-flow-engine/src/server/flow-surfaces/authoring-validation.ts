@@ -89,7 +89,8 @@ export interface FlowSurfaceAuthoringValidationContext {
   applyBlueprintScriptAssets?: Record<string, any>;
   getCollection?: (dataSourceKey: string, collectionName: string) => any;
   getDefaultFieldGroups?: (dataSourceKey: string, collectionName: string) => any;
-  findMenuGroupRoutesByTitle?: (title: string, transaction?: any) => Promise<any[]>;
+  findMenuGroupRoutesByTitle?: (title: string, transaction?: any, layoutUid?: string | string[]) => Promise<any[]>;
+  getUiLayoutTypeByUid?: (layoutUid: string, transaction?: any) => Promise<string | undefined>;
   transaction?: any;
   hostBlockType?: string;
   hostCollectionName?: string;
@@ -226,11 +227,18 @@ const TABLE_ALLOWED_SETTINGS_KEYS = new Set([...getConfigureOptionKeysForUse('Ta
 const TABLE_INTERNAL_AUTHORING_KEYS = ['tableSettings', 'defaultSorting', 'stepParams'];
 const TABLE_SETTINGS_REPAIR_HINT =
   'Use public table settings keys such as settings.pageSize, settings.sorting, settings.dataScope, settings.density, settings.showRowNumbers, settings.treeTable, settings.dragSort, and settings.dragSortBy. Do not nest persisted tableSettings/defaultSorting/stepParams payloads.';
-const JS_BLOCK_ALLOWED_SETTINGS_KEYS = new Set(['title', 'description', 'className', 'code', 'version']);
+const JS_BLOCK_ALLOWED_SETTINGS_KEYS = new Set([
+  'title',
+  'description',
+  'className',
+  'showBlockCard',
+  'code',
+  'version',
+]);
 const JS_BLOCK_TOP_LEVEL_JS_KEYS = ['code', 'version'] as const;
 const JS_BLOCK_INTERNAL_AUTHORING_KEYS = ['props', 'decoratorProps', 'flowRegistry', 'stepParams'];
 const JS_BLOCK_REPAIR_HINT =
-  'This is a jsBlock payload shape problem. Repair this jsBlock using inline settings.code/settings.version, or applyBlueprint assets.scripts.<key>.code plus block.script. Do not change this block type to table, chart, actionPanel, gridCard, or another block type.';
+  'This is a jsBlock payload shape problem. Repair this jsBlock using inline settings.code/settings.version/settings.showBlockCard, or applyBlueprint assets.scripts.<key>.code plus block.script with optional settings.showBlockCard. Do not change this block type to table, chart, actionPanel, gridCard, or another block type.';
 const CHART_REPAIR_HINT =
   'This is a chart payload shape problem. Keep using chart and repair this chart using assets.charts.<key>.query/visual plus block.chart, or localized settings.query/settings.visual. Do not change this block type to table, jsBlock, actionPanel, gridCard, or another block type, and do not drop or defer the chart. KPI / summary numbers should use jsBlock; charts are for trends, distributions, rankings, and visual analysis.';
 const REPAIR_ALL_ERRORS_AGENT_INSTRUCTION =
@@ -629,6 +637,9 @@ async function collectNavigationGroupErrors(
   if (actionName !== 'applyBlueprint' || values?.mode !== 'create' || !_.isPlainObject(values?.navigation?.group)) {
     return;
   }
+  if (await isApplyBlueprintMobileCreateNavigation(values, context)) {
+    return;
+  }
   if (!_.isUndefined(values.navigation.group.routeId) || !context.findMenuGroupRoutesByTitle) {
     return;
   }
@@ -636,7 +647,8 @@ async function collectNavigationGroupErrors(
   if (!groupTitle) {
     return;
   }
-  const matchedRoutes = await context.findMenuGroupRoutesByTitle(groupTitle, context.transaction);
+  const layoutUid = String(values?.navigation?.layoutUid || '').trim() || undefined;
+  const matchedRoutes = await context.findMenuGroupRoutesByTitle(groupTitle, context.transaction, layoutUid);
   const rootMatchedRoutes = filterRootMenuGroupRoutes(matchedRoutes);
   if (rootMatchedRoutes.length <= 1) {
     return;
@@ -662,11 +674,13 @@ async function collectNavigationIconErrors(
   if (actionName !== 'applyBlueprint' || values?.mode !== 'create') {
     return;
   }
+  const isMobileCreateNavigation = await isApplyBlueprintMobileCreateNavigation(values, context);
   const group = _.isPlainObject(values?.navigation?.group) ? values.navigation.group : null;
   const groupRouteId = String(group?.routeId || '').trim();
-  if (group && !groupRouteId && group.hideInMenu !== true) {
+  const layoutUid = String(values?.navigation?.layoutUid || '').trim() || undefined;
+  if (!isMobileCreateNavigation && group && !groupRouteId && group.hideInMenu !== true) {
     const groupIcon = String(group.icon || '').trim();
-    if (!groupIcon && (await shouldRequireNewNavigationGroupIcon(group, context))) {
+    if (!groupIcon && (await shouldRequireNewNavigationGroupIcon(group, context, layoutUid))) {
       pushAuthoringError(errors, {
         path: '$.navigation.group.icon',
         ruleId: 'navigation-icon-required',
@@ -686,7 +700,12 @@ async function collectNavigationIconErrors(
         },
       });
     }
-  } else if (group && String(group.icon || '').trim() && !isValidAntDesignIconName(group.icon)) {
+  } else if (
+    !isMobileCreateNavigation &&
+    group &&
+    String(group.icon || '').trim() &&
+    !isValidAntDesignIconName(group.icon)
+  ) {
     pushAuthoringError(errors, {
       path: '$.navigation.group.icon',
       ruleId: 'navigation-icon-unknown',
@@ -723,12 +742,24 @@ async function collectNavigationIconErrors(
   }
 }
 
-async function shouldRequireNewNavigationGroupIcon(group: any, context: FlowSurfaceAuthoringValidationContext) {
+async function isApplyBlueprintMobileCreateNavigation(values: any, context: FlowSurfaceAuthoringValidationContext) {
+  const layoutUid = String(values?.navigation?.layoutUid || '').trim();
+  if (!layoutUid || !context.getUiLayoutTypeByUid) {
+    return false;
+  }
+  return (await context.getUiLayoutTypeByUid(layoutUid, context.transaction)) === 'mobile';
+}
+
+async function shouldRequireNewNavigationGroupIcon(
+  group: any,
+  context: FlowSurfaceAuthoringValidationContext,
+  layoutUid?: string,
+) {
   const groupTitle = String(group?.title || '').trim();
   if (!groupTitle || !context.findMenuGroupRoutesByTitle) {
     return true;
   }
-  const matchedRoutes = await context.findMenuGroupRoutesByTitle(groupTitle, context.transaction);
+  const matchedRoutes = await context.findMenuGroupRoutesByTitle(groupTitle, context.transaction, layoutUid);
   return filterRootMenuGroupRoutes(matchedRoutes).length === 0;
 }
 
@@ -871,6 +902,7 @@ function withJsBlockRepairHint(details: Record<string, any> = {}) {
       inlineBlock: {
         type: 'jsBlock',
         settings: {
+          showBlockCard: true,
           code: 'ctx.render("Replace this with the required rendered UI");',
         },
       },
@@ -885,6 +917,9 @@ function withJsBlockRepairHint(details: Record<string, any> = {}) {
         block: {
           type: 'jsBlock',
           script: 'scriptKey',
+          settings: {
+            showBlockCard: true,
+          },
         },
       },
     },
@@ -4829,7 +4864,7 @@ function collectJsBlockPublicContractErrors(
     pushAuthoringError(errors, {
       path: `${path}.${key}`,
       ruleId: `jsBlock-top-level-${key}-unsupported`,
-      message: `flowSurfaces authoring ${path}.${key} is not accepted on public jsBlock blocks; use ${path}.settings.code and ${path}.settings.version for inline JS code`,
+      message: `flowSurfaces authoring ${path}.${key} is not accepted on public jsBlock blocks; use ${path}.settings.code, ${path}.settings.version, and ${path}.settings.showBlockCard for public JS block settings`,
       details: withJsBlockRepairHint({ key }),
     });
   });
@@ -4841,7 +4876,7 @@ function collectJsBlockPublicContractErrors(
     pushAuthoringError(errors, {
       path: `${path}.${key}`,
       ruleId: key === 'stepParams' ? 'jsBlock-stepParams-unsupported' : 'jsBlock-internal-field-unsupported',
-      message: `flowSurfaces authoring ${path}.${key} is not accepted on public jsBlock blocks; use ${path}.settings.code and ${path}.settings.version instead of internal persisted fields`,
+      message: `flowSurfaces authoring ${path}.${key} is not accepted on public jsBlock blocks; use ${path}.settings.code, ${path}.settings.version, and ${path}.settings.showBlockCard instead of internal persisted fields`,
       details: withJsBlockRepairHint({
         key,
       }),
@@ -4866,7 +4901,7 @@ function collectJsBlockPublicContractErrors(
       pushAuthoringError(errors, {
         path: `${path}.settings.${key}`,
         ruleId: 'jsBlock-settings-unsupported-key',
-        message: `flowSurfaces authoring ${path}.settings.${key} is not part of the public jsBlock contract; use ${path}.settings.code and ${path}.settings.version for inline JS code`,
+        message: `flowSurfaces authoring ${path}.settings.${key} is not part of the public jsBlock contract; use ${path}.settings.code, ${path}.settings.version, and ${path}.settings.showBlockCard for public JS block settings`,
         details: withJsBlockRepairHint({
           key,
           allowedKeys: Array.from(JS_BLOCK_ALLOWED_SETTINGS_KEYS),
@@ -4915,7 +4950,7 @@ function collectJsBlockConfigurePublicContractErrors(changes: any, path: string,
     pushAuthoringError(errors, {
       path: `${path}.${key}`,
       ruleId: key === 'stepParams' ? 'jsBlock-stepParams-unsupported' : 'jsBlock-internal-field-unsupported',
-      message: `flowSurfaces authoring ${path}.${key} is not accepted on public jsBlock configure changes; use ${path}.code and ${path}.version instead of internal persisted fields`,
+      message: `flowSurfaces authoring ${path}.${key} is not accepted on public jsBlock configure changes; use ${path}.code, ${path}.version, and ${path}.showBlockCard instead of internal persisted fields`,
       details: withJsBlockRepairHint({
         key,
       }),
@@ -4953,7 +4988,7 @@ function collectJsBlockConfigurePublicContractErrors(changes: any, path: string,
     pushAuthoringError(errors, {
       path: `${path}.settings`,
       ruleId: 'jsBlock-settings-unsupported-key',
-      message: `flowSurfaces authoring ${path}.settings is not part of the public jsBlock configure contract; use ${path}.code and ${path}.version`,
+      message: `flowSurfaces authoring ${path}.settings is not part of the public jsBlock configure contract; use ${path}.code, ${path}.version, and ${path}.showBlockCard`,
       details: withJsBlockRepairHint(),
     });
     return;

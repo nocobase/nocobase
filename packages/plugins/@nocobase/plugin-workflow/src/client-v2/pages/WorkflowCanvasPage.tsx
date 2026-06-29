@@ -10,7 +10,7 @@
 import { useFlowContext as useFlowEngineContext } from '@nocobase/flow-engine';
 import { useRequest } from 'ahooks';
 import { Spin, theme } from 'antd';
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { WorkflowCanvasHeader } from '../components/WorkflowCanvasHeader';
 import { normalizeRecordResponse, type WorkflowRevision } from '../components/workflowCanvas';
@@ -21,9 +21,11 @@ import { AddNodeContextProvider } from '../canvas/AddNodeContext';
 import { RemoveNodeContextProvider } from '../canvas/RemoveNodeContext';
 import { NodeClipboardContextProvider } from '../canvas/NodeClipboardContext';
 import { NodeDragContextProvider } from '../canvas/NodeDragContext';
+import { useT } from '../locale';
 
 export default function WorkflowCanvasPage() {
   const ctx = useFlowEngineContext();
+  const t = useT();
   const { token } = theme.useToken();
   const params = useParams<{ id?: string }>();
   const workflowId = params.id;
@@ -70,6 +72,14 @@ export default function WorkflowCanvasPage() {
   }, [record]);
 
   const flowContextValue = useMemo(() => ({ workflow: record, nodes, refresh }), [record, nodes, refresh]);
+
+  useEffect(() => {
+    if (!record?.title) {
+      return;
+    }
+
+    document.title = `${t('Workflow')}: ${t(record.title)} - NocoBase`;
+  }, [record?.title, t]);
 
   if (!workflowId) {
     return null;
