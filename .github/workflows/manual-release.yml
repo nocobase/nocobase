@@ -120,7 +120,7 @@ jobs:
         run: |
           npm install -g lerna@4
           if [ -n "${{ inputs.version }}" ]; then
-            yarn lerna version "${{ inputs.version }}" --no-git-tag-version
+            lerna version "${{ inputs.version }}" --no-git-tag-version
           fi
       - name: yarn install and build
         run: |
