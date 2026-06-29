@@ -28,11 +28,11 @@ const isTableColumnFieldSubModel = (model) => {
 
 const syncTableColumnDateTimeFormatProps = (ctx, props) => {
   const model = ctx.model;
-  if (!isTableColumnFieldSubModel(model) || !model?.parent?.collectionField?.isAssociationField?.()) {
+  if (!isTableColumnFieldSubModel(model)) {
     return;
   }
 
-  model.parent.setProps(props);
+  model.parent?.setProps?.(props);
 };
 
 export const dateTimeFormat = defineAction({
