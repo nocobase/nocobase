@@ -214,6 +214,7 @@ test('buildManualEnvProxyNginxBundle derives the websocket path from appPublicPa
     name: 'default',
     appPort: '13000',
     storagePath: runtime.env.storagePath,
+    distRootPath: path.join(runtime.env.storagePath, 'dist-client'),
     runtimeVersion: '2.1.0-beta.44',
     appPublicPath: '/console/',
     upstreamHost: 'host.docker.internal',
@@ -225,6 +226,37 @@ test('buildManualEnvProxyNginxBundle derives the websocket path from appPublicPa
   expect(bundle.appConfigContent).toContain('location = /console/ws {');
   expect(bundle.indexV1Content).toContain(`window['__nocobase_ws_path__'] = "/console/ws";`);
   expect(bundle.indexV2Content).toContain(`window['__nocobase_public_path__'] = "/console/v/";`);
+});
+
+test('buildManualEnvProxyNginxBundle reads versioned index files from distRootPath', async () => {
+  const root = await createTempRoot('nocobase-cli-env-proxy-nginx-manual-dist-root-');
+  process.env.NB_CLI_ROOT = root;
+  const runtime = await createLocalRuntime(root);
+  const distRootPath = path.join(root, 'custom-dist-client');
+  const versionRoot = path.join(distRootPath, '2.1.0-beta.44');
+
+  await mkdir(path.join(versionRoot, 'v'), { recursive: true });
+  await writeFile(
+    path.join(versionRoot, 'index.html'),
+    '<!doctype html><html><head><script>window[\'__nocobase_public_path__\'] = \'/\';</script><script src="/custom/browser-checker.js?v=1"></script><script type="module" src="/custom/assets/runtime.js"></script></head><body></body></html>',
+  );
+  await writeFile(
+    path.join(versionRoot, 'v', 'index.html'),
+    '<!doctype html><html><head><script>window[\'__nocobase_public_path__\'] = window[\'__nocobase_public_path__\'] || "/v/";</script><script src="/custom-v/browser-checker.js?v=1"></script><script type="module" src="/custom-v/assets/runtime.js"></script></head><body></body></html>',
+  );
+
+  const bundle = await buildManualEnvProxyNginxBundle({
+    name: 'default',
+    appPort: '13000',
+    storagePath: runtime.env.storagePath,
+    distRootPath,
+    runtimeVersion: '2.1.0-beta.44',
+    appPublicPath: '/',
+  });
+
+  expect(bundle.appConfigContent).toContain(`alias ${distRootPath}/;`);
+  expect(bundle.indexV1Content).toContain('src="/dist/2.1.0-beta.44/custom/browser-checker.js?v=1"');
+  expect(bundle.indexV2Content).toContain('src="/custom-v/browser-checker.js?v=1"');
 });
 
 test('writeNginxProxyBundle overwrites non-managed app.conf when force is enabled', async () => {

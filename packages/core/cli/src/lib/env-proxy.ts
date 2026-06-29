@@ -124,6 +124,7 @@ export type ManualEnvProxyNginxInput = {
   name: string;
   appPort: string;
   storagePath: string;
+  distRootPath: string;
   runtimeVersion: string;
   appPublicPath?: string;
   upstreamHost?: string;
@@ -197,6 +198,7 @@ type NginxBundleSource = {
   envName: string;
   envFilePath?: string;
   storagePath: string;
+  distRootPath: string;
   settings: ProxyEnvSettings;
   apiPort: string;
   activeVersion: string;
@@ -532,6 +534,7 @@ function normalizeManualNginxInput(input: ManualEnvProxyNginxInput): ManualEnvPr
     name: String(input.name).trim(),
     appPort: String(input.appPort).trim(),
     storagePath: String(input.storagePath).trim(),
+    distRootPath: String(input.distRootPath).trim(),
     runtimeVersion: String(input.runtimeVersion).trim(),
     appPublicPath: trimValue(input.appPublicPath),
     upstreamHost: trimValue(input.upstreamHost),
@@ -866,7 +869,7 @@ async function buildEnvProxyNginxRenderContext(
   const entryDir = resolveEnvProxyEntryDir(source.envName, { scope: options?.scope });
   const publicDir = resolveEnvProxyNginxPublicOutputDir(source.envName, { scope: options?.scope });
   const snippetsDir = resolveEnvProxyNginxSnippetsOutputDir({ scope: options?.scope });
-  const distRootDir = resolveDistClientRoot(source.storagePath);
+  const distRootDir = source.distRootPath;
   const uploadsDir = path.join(source.storagePath, 'uploads');
   const mappedEntryDir = await mapProxyPathFromCliRoot(entryDir, options);
   const mappedPublicDir = await mapProxyPathFromCliRoot(publicDir, options);
@@ -932,6 +935,7 @@ async function resolveRuntimeNginxBundleSource(
     envName: runtime.envName,
     envFilePath,
     storagePath: runtime.env.storagePath,
+    distRootPath: resolveDistClientRoot(runtime.env.storagePath),
     settings,
     apiPort,
     activeVersion,
@@ -945,6 +949,7 @@ async function resolveManualNginxBundleSource(input: ManualEnvProxyNginxInput): 
     envName: normalized.name,
     envFilePath: undefined,
     storagePath: normalized.storagePath,
+    distRootPath: normalized.distRootPath,
     settings: createManualProxyEnvSettings(normalized),
     apiPort: normalized.appPort,
     activeVersion: normalized.runtimeVersion,
@@ -1057,8 +1062,8 @@ async function buildNginxBundleFromSource(
   const context = await buildEnvProxyNginxRenderContext(source, options);
   const appTemplate = await readEnvProxyNginxAssetText('app.conf.tpl');
   const mainTemplate = await readEnvProxyNginxAssetText('nocobase.conf.tpl');
-  const sourceIndexV1Path = path.join(source.storagePath, 'dist-client', context.activeVersion, 'index.html');
-  const sourceIndexV2Path = path.join(source.storagePath, 'dist-client', context.activeVersion, DEFAULT_MODERN_CLIENT_PREFIX, 'index.html');
+  const sourceIndexV1Path = path.join(source.distRootPath, context.activeVersion, 'index.html');
+  const sourceIndexV2Path = path.join(source.distRootPath, context.activeVersion, DEFAULT_MODERN_CLIENT_PREFIX, 'index.html');
   const [sourceIndexV1Content, sourceIndexV2Content] = await Promise.all([
     readFile(sourceIndexV1Path, 'utf8'),
     readFile(sourceIndexV2Path, 'utf8'),

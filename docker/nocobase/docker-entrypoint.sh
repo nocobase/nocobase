@@ -37,7 +37,9 @@ if [ -z "${CDN_BASE_URL:-}" ]; then
   fi
 fi
 
-NGINX_CONF_PATH='/app/nocobase/storage/nocobase.conf'
+NGINX_STORAGE_PATH="${NGINX_STORAGE_PATH:-/app/nocobase/storage}"
+NGINX_CONF_PATH="${NGINX_STORAGE_PATH}/nocobase.conf"
+NGINX_UPSTREAM_HOST="${NGINX_UPSTREAM_HOST:-127.0.0.1}"
 
 cd /app/nocobase && yarn nocobase db:auth
 cd /app/nocobase && yarn nocobase generate-instance-id
@@ -61,10 +63,11 @@ case "${NOCOBASE_EXTRACT_CLIENT_ASSETS:-false}" in
       --manual \
       --name default \
       --app-port "${APP_PORT:-13000}" \
-      --storage-path /app/nocobase/storage \
+      --storage-path "${NGINX_STORAGE_PATH}" \
+      --dist-root-path /app/nocobase/storage/dist-client \
       --runtime-version "${ACTIVE_VERSION}" \
       --app-public-path "${APP_PUBLIC_PATH_VALUE}" \
-      --upstream-host 127.0.0.1
+      --upstream-host "${NGINX_UPSTREAM_HOST}"
     NGINX_CONF_PATH="${NB_CLI_ROOT}/.nocobase/proxy/nginx/nocobase.conf"
     ;;
   *)

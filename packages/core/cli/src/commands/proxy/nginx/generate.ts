@@ -30,7 +30,7 @@ export default class ProxyNginxGenerate extends Command {
     '<%= config.bin %> proxy nginx generate --host app1.example.com',
     '<%= config.bin %> proxy nginx generate --env app1 --host app1.example.com',
     '<%= config.bin %> proxy nginx generate --env app1 --host app1.example.com --port 8080',
-    '<%= config.bin %> proxy nginx generate --manual --name default --app-port 13000 --storage-path /path/to/storage --runtime-version 2.1.0',
+    '<%= config.bin %> proxy nginx generate --manual --name default --app-port 13000 --storage-path /path/to/storage --dist-root-path /path/to/dist-client --runtime-version 2.1.0',
   ];
 
   static override flags = {
@@ -51,8 +51,12 @@ export default class ProxyNginxGenerate extends Command {
     'storage-path': Flags.string({
       description: 'Path to the NocoBase storage directory in manual mode',
     }),
+    'dist-root-path': Flags.string({
+      description:
+        'Path to the dist-client root directory used to generate index-v1.html and index-v2.html in manual mode',
+    }),
     'runtime-version': Flags.string({
-      description: 'Frontend runtime version under storage/dist-client in manual mode',
+      description: 'Frontend runtime version under dist-root-path in manual mode',
     }),
     'app-public-path': Flags.string({
       description: 'Public base path served by the proxied app in manual mode. Defaults to /',
@@ -91,10 +95,13 @@ export default class ProxyNginxGenerate extends Command {
       const name = flags.name?.trim() || undefined;
       const appPort = flags['app-port']?.trim() || undefined;
       const storagePath = flags['storage-path']?.trim() || undefined;
+      const distRootPath = flags['dist-root-path']?.trim() || undefined;
       const runtimeVersion = flags['runtime-version']?.trim() || undefined;
 
-      if (!name || !appPort || !storagePath || !runtimeVersion) {
-        this.error('Manual mode requires `--name`, `--app-port`, `--storage-path`, and `--runtime-version`.');
+      if (!name || !appPort || !storagePath || !distRootPath || !runtimeVersion) {
+        this.error(
+          'Manual mode requires `--name`, `--app-port`, `--storage-path`, `--dist-root-path`, and `--runtime-version`.',
+        );
       }
 
       const driver = await getNginxProxyDriver();
@@ -108,6 +115,7 @@ export default class ProxyNginxGenerate extends Command {
             name,
             appPort,
             storagePath,
+            distRootPath,
             runtimeVersion,
             appPublicPath: flags['app-public-path']?.trim() || undefined,
             upstreamHost: flags['upstream-host']?.trim() || undefined,
