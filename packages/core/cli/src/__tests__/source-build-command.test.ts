@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import path from 'node:path';
 import { beforeEach, expect, test, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
@@ -113,7 +114,9 @@ test('source build syncs targeted plugin workspace entries and forwards --tar', 
     cwd: '/tmp/app/source',
     stdio: 'ignore',
   });
-  expect(mocks.printInfo).toHaveBeenCalledWith('Tarball output directory: /tmp/app/source/storage/tar');
+  expect(mocks.printInfo).toHaveBeenCalledWith(
+    `Tarball output directory: ${path.join('/tmp/app/source', 'storage', 'tar')}`,
+  );
 });
 
 test('source build syncs all top-level plugins when no package is specified', async () => {
@@ -181,7 +184,7 @@ test('source build prints tarball path summary when target package metadata is a
   await SourceBuild.prototype.run.call(command);
 
   expect(mocks.printInfo).toHaveBeenCalledWith(
-    'Tarball created: /tmp/app/source/storage/tar/@my-scope/plugin-a-1.0.0.tgz',
+    `Tarball created: ${path.join('/tmp/app/source', 'storage', 'tar', '@my-scope/plugin-a-1.0.0.tgz')}`,
   );
 });
 
