@@ -26,6 +26,7 @@ import {
   Table as AntdTable,
   Tag,
   Tooltip,
+  Typography,
 } from 'antd';
 import type { MenuProps } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
@@ -386,6 +387,20 @@ function isSyncFieldsVisible(dataSourceKey: string, collection: Record<string, a
   }
 
   return dataSourceKey === 'main';
+}
+
+function getCollectionTemplateFields(collectionTemplate?: Record<string, any>) {
+  const fields = collectionTemplate?.collection?.fields;
+  return typeof fields === 'function' ? fields() : Array.isArray(fields) ? fields : [];
+}
+
+export function isFieldDeleteDisabled(record: Record<string, any>, collectionTemplate?: Record<string, any>) {
+  if (record.deletable === false) {
+    return true;
+  }
+  return getCollectionTemplateFields(collectionTemplate).some(
+    (field: Record<string, any>) => field?.name === record.name && field.deletable === false,
+  );
 }
 
 function isAddFieldVisible(options: {
@@ -926,6 +941,10 @@ export default function FieldsPage(props: FieldsPageProps) {
     }, {});
   }, [databaseDialect, ctx, dataSource?.options?.type, props.collection]);
   const presetFieldInterfaces = useMemo(() => getCollectionPresetFieldInterfaces(ctx), [ctx]);
+  const collectionTemplate = useMemo(() => getCollectionTemplate(ctx, props.collection), [ctx, props.collection]);
+  const currentFieldsByName = useMemo(() => {
+    return new Map((request.data || []).map((field: Record<string, any>) => [String(field.name), field]));
+  }, [request.data]);
 
   const openFieldForm = useCallback(
     (mode: 'create' | 'edit', field?: Record<string, any>, interfaceName?: string) => {
@@ -967,7 +986,6 @@ export default function FieldsPage(props: FieldsPageProps) {
     [fieldInterfaceGroups, openFieldForm, t],
   );
 
-  const collectionTemplate = useMemo(() => getCollectionTemplate(ctx, props.collection), [ctx, props.collection]);
   const TemplateSyncFieldsDrawer = collectionTemplate?.configure?.syncFields?.Component;
 
   const openTemplateSyncFieldsDrawer = useCallback(() => {
@@ -1009,12 +1027,18 @@ export default function FieldsPage(props: FieldsPageProps) {
 
   const handleDelete = useCallback(
     (filterByTk: React.Key | React.Key[]) => {
+      const keys = (Array.isArray(filterByTk) ? filterByTk : [filterByTk]).filter((key) => {
+        const record = currentFieldsByName.get(String(key));
+        return record && !isFieldDeleteDisabled(record, collectionTemplate);
+      });
+      if (!keys.length) {
+        return;
+      }
       modal.confirm({
         title: t('Delete record'),
         content: t('Are you sure you want to delete it?'),
         async onOk() {
           try {
-            const keys = Array.isArray(filterByTk) ? filterByTk : [filterByTk];
             await Promise.all(
               keys.map((key) =>
                 ctx.api.request({
@@ -1035,7 +1059,18 @@ export default function FieldsPage(props: FieldsPageProps) {
         },
       });
     },
-    [ctx.api, ctx.dataSourceManager, modal, notification, props.collection.name, props.dataSourceKey, request, t],
+    [
+      collectionTemplate,
+      ctx.api,
+      ctx.dataSourceManager,
+      currentFieldsByName,
+      modal,
+      notification,
+      props.collection.name,
+      props.dataSourceKey,
+      request,
+      t,
+    ],
   );
 
   const handleFieldInterfaceChange = useCallback(
@@ -1292,7 +1327,14 @@ export default function FieldsPage(props: FieldsPageProps) {
         render: (_, record) => (
           <Space>
             <a onClick={() => openFieldForm('edit', record)}>{t('Edit')}</a>
-            {fieldDeletionVisible ? <a onClick={() => handleDelete(record.name)}>{t('Delete')}</a> : null}
+            {fieldDeletionVisible ? (
+              <Typography.Link
+                disabled={isFieldDeleteDisabled(record, collectionTemplate)}
+                onClick={() => handleDelete(record.name)}
+              >
+                {t('Delete')}
+              </Typography.Link>
+            ) : null}
           </Space>
         ),
       });
@@ -1303,6 +1345,7 @@ export default function FieldsPage(props: FieldsPageProps) {
     allFieldInterfaceGroups,
     configureFieldsDisabled,
     fieldDeletionVisible,
+    collectionTemplate,
     ctx.dataSourceManager,
     dataSourceType,
     fieldInterfacesByName,
@@ -1357,6 +1400,9 @@ export default function FieldsPage(props: FieldsPageProps) {
             ? {
                 selectedRowKeys,
                 onChange: setSelectedRowKeys,
+                getCheckboxProps: (record) => ({
+                  disabled: isFieldDeleteDisabled(record, collectionTemplate),
+                }),
               }
             : undefined
         }

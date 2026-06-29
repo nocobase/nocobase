@@ -8,6 +8,7 @@
  */
 
 import { compileLegacyTemplate } from '../../../utils/compileLegacyTemplate';
+import { isFieldDeleteDisabled } from '../FieldsPage';
 import { getPresetFieldRows } from '../CollectionsPage';
 
 describe('getPresetFieldRows', () => {
@@ -44,5 +45,26 @@ describe('getPresetFieldRows', () => {
     };
 
     expect(compileLegacyTemplate(rows[0].field, t)).toBe('空间');
+  });
+});
+
+describe('field delete helpers', () => {
+  it('disables deleting fields marked as non-deletable by the collection template', () => {
+    const fileTemplate = {
+      collection: {
+        fields: [
+          { name: 'title', deletable: false },
+          { name: 'filename', deletable: false },
+        ],
+      },
+    };
+
+    expect(isFieldDeleteDisabled({ name: 'title' }, fileTemplate)).toBe(true);
+    expect(isFieldDeleteDisabled({ name: 'customName' }, fileTemplate)).toBe(false);
+  });
+
+  it('disables deleting fields whose record metadata is non-deletable', () => {
+    expect(isFieldDeleteDisabled({ name: 'title', deletable: false })).toBe(true);
+    expect(isFieldDeleteDisabled({ name: 'title', deletable: true })).toBe(false);
   });
 });
