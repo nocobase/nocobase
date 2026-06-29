@@ -22,8 +22,15 @@ const workflow = vi.hoisted(() => ({
       {JSON.stringify(props.value ?? {})}
     </div>
   )),
+  WorkflowVariableTag: vi.fn(),
   useWorkflowVariableOptions: vi.fn(() => []),
 }));
+
+type TestMetaNode = {
+  name: string;
+  title?: string;
+  children?: TestMetaNode[];
+};
 
 vi.mock('@nocobase/flow-engine', async (importOriginal) => {
   const actual = (await importOriginal()) as Record<string, unknown>;
@@ -40,7 +47,19 @@ vi.mock('@nocobase/flow-engine', async (importOriginal) => {
   };
 });
 
-vi.mock('@nocobase/plugin-workflow/client-v2', () => workflow);
+vi.mock('@nocobase/plugin-workflow/client-v2', async (importOriginal) => {
+  const actual = (await importOriginal()) as Record<string, unknown>;
+  return {
+    ...actual,
+    FilterDynamicComponent: workflow.FilterDynamicComponent,
+    useWorkflowVariableOptions: workflow.useWorkflowVariableOptions,
+    WorkflowVariableTag: (props: { metaTree?: TestMetaNode[]; onClear?: () => void; value?: string }) => {
+      workflow.WorkflowVariableTag(props);
+      const WorkflowVariableTag = actual.WorkflowVariableTag as React.ComponentType<typeof props>;
+      return <WorkflowVariableTag {...props} />;
+    },
+  };
+});
 
 vi.mock('../../../locale', () => ({
   useNotificationTranslation: () => ({ t: (key: string) => key }),
@@ -270,6 +289,51 @@ describe('UserSelect', () => {
 
     fireEvent.click(screen.getByText('Instance ID'));
     expect(onChange).toHaveBeenLastCalledWith('{{$system.instanceId}}');
+  });
+
+  it('renders selected workflow receiver variables with workflow variable labels', async () => {
+    workflow.useWorkflowVariableOptions.mockReturnValue([
+      {
+        name: '$context',
+        title: 'Trigger variables',
+        type: '',
+        paths: ['$context'],
+        children: [
+          {
+            name: 'data',
+            title: 'Trigger data',
+            type: '',
+            paths: ['$context', 'data'],
+            children: [{ name: 'id', title: 'ID', type: 'string', paths: ['$context', 'data', 'id'] }],
+          },
+        ],
+      },
+    ]);
+    holder.ctx = {
+      api: {
+        resource: () => ({
+          list: vi.fn().mockResolvedValue({ data: { data: [] } }),
+        }),
+      },
+    };
+
+    const onChange = vi.fn();
+    render(<UserSelect value="{{$context.data.id}}" onChange={onChange} />);
+
+    expect(await screen.findByRole('button', { name: 'workflow-variable-tag' })).toHaveTextContent(
+      'Trigger variables / Trigger data / ID',
+    );
+    expect(workflow.WorkflowVariableTag).toHaveBeenCalledWith(
+      expect.objectContaining({
+        value: '{{$context.data.id}}',
+        metaTree: expect.any(Array),
+      }),
+    );
+
+    const clearButton = document.querySelector('[aria-label="workflow-variable-tag-clear"]') as HTMLElement;
+    expect(clearButton).toBeInTheDocument();
+    fireEvent.click(clearButton);
+    expect(onChange).toHaveBeenLastCalledWith('');
   });
 
   it('uses the workflow variable-aware filter for query receiver mode', () => {

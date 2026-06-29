@@ -16,12 +16,15 @@ import {
   type MetaTreeNode,
   useFlowContext,
   useResolvedMetaTree,
-  VariableTag,
 } from '@nocobase/flow-engine';
 import { useMemoizedFn } from 'ahooks';
 import { Button, Cascader, Space, theme, Tooltip } from 'antd';
 import React, { useMemo, useState } from 'react';
-import { FilterDynamicComponent, useWorkflowVariableOptions } from '@nocobase/plugin-workflow/client-v2';
+import {
+  FilterDynamicComponent,
+  WorkflowVariableTag,
+  useWorkflowVariableOptions,
+} from '@nocobase/plugin-workflow/client-v2';
 import { useNotificationTranslation } from '../../locale';
 
 type UserOption = { id: number | string; nickname?: string };
@@ -223,7 +226,7 @@ function WorkflowUserVariableInput(props: {
   );
 
   const valueNode = isVariableValue ? (
-    <VariableTag
+    <WorkflowVariableTag
       value={value ?? ''}
       onClear={() => onChange?.('')}
       metaTree={resolvedMetaTree ?? metaTree}
