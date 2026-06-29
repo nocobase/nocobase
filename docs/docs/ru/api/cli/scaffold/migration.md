@@ -1,12 +1,12 @@
 ---
 title: "nb scaffold migration"
-description: "Справочник по команде nb scaffold migration: генерация миграционного скрипта плагина NocoBase."
+description: "Справочник по команде nb scaffold migration: генерация миграционных скриптов плагина NocoBase."
 keywords: "nb scaffold migration,NocoBase CLI,миграционный скрипт,migration"
 ---
 
 # nb scaffold migration
 
-Генерирует файл миграционного скрипта плагина.
+Генерирует файлы миграционного скрипта плагина.
 
 ## Использование
 
@@ -19,8 +19,8 @@ nb scaffold migration <name> --pkg <pkg> [flags]
 | Параметр | Тип | Описание |
 | --- | --- | --- |
 | `<name>` | string | Имя миграционного скрипта, обязательный параметр |
-| `--pkg` | string | Имя пакета плагина-владельца, обязательный параметр |
-| `--on` | string | Момент выполнения: `beforeLoad`, `afterSync` или `afterLoad` |
+| `--pkg` | string | Имя пакета плагина, обязательный параметр |
+| `--on` | string | Этап выполнения: `beforeLoad`, `afterSync` или `afterLoad` |
 
 ## Примеры
 
