@@ -102,6 +102,24 @@ type CalendarPopupSettingsOptions = {
   preferActionSettings?: boolean;
 };
 
+type CalendarPopupActionKey = 'quickCreateAction' | 'eventViewAction';
+type CalendarPopupTemplateContextFlags = {
+  hasFilterByTk: boolean;
+  hasSourceId: boolean;
+};
+type CalendarPopupTemplateActionScene = 'record' | 'collection' | 'both' | undefined;
+type CalendarPopupTemplateRow = {
+  useModel?: unknown;
+  filterByTk?: unknown;
+  sourceId?: unknown;
+};
+type CalendarPopupSettingsStepKey = 'quickCreatePopupSettings' | 'eventPopupSettings';
+
+const CALENDAR_POPUP_SETTINGS_STEP_ACTIONS: Record<CalendarPopupSettingsStepKey, CalendarPopupActionKey> = {
+  quickCreatePopupSettings: 'quickCreateAction',
+  eventPopupSettings: 'eventViewAction',
+};
+
 const POPUP_TEMPLATE_SETTING_KEYS = [
   'uid',
   'dataSourceKey',
@@ -115,6 +133,87 @@ const POPUP_TEMPLATE_SETTING_KEYS = [
   'popupTemplateHasFilterByTk',
   'popupTemplateHasSourceId',
 ];
+
+const clearPopupTemplateParams = (params: Record<string, any>) => {
+  delete params.popupTemplateUid;
+  delete params.popupTemplateContext;
+  delete params.popupTemplateHasFilterByTk;
+  delete params.popupTemplateHasSourceId;
+  delete params.popupTemplateUseModel;
+  delete params.popupTemplateMode;
+  delete params.associationName;
+  delete params.filterByTk;
+  delete params.sourceId;
+  delete params.uid;
+};
+
+const clearPopupRecordScopeParams = (params: Record<string, any>) => {
+  delete params.filterByTk;
+  delete params.sourceId;
+};
+
+const normalizePopupTemplateString = (value: unknown): string => {
+  if (typeof value === 'string') {
+    return value.trim();
+  }
+  if (typeof value === 'number' || typeof value === 'boolean') {
+    return String(value).trim();
+  }
+  return '';
+};
+
+const resolveCalendarPopupTemplateActionScene = (
+  flowEngine: any,
+  useModel: unknown,
+): CalendarPopupTemplateActionScene => {
+  const useKey = normalizePopupTemplateString(useModel);
+  if (!useKey) {
+    return undefined;
+  }
+  const ModelClass = flowEngine?.getModelClass?.(useKey);
+  const isScene = ModelClass?._isScene;
+  if (typeof isScene !== 'function') {
+    return undefined;
+  }
+
+  const isRecord = !!isScene.call(ModelClass, 'record');
+  const isCollection = !!isScene.call(ModelClass, 'collection');
+  if (isRecord && isCollection) {
+    return 'both';
+  }
+  if (isRecord) {
+    return 'record';
+  }
+  if (isCollection) {
+    return 'collection';
+  }
+  return undefined;
+};
+
+const inferCalendarPopupTemplateContextFlags = (
+  flowEngine: any,
+  template: CalendarPopupTemplateRow,
+): CalendarPopupTemplateContextFlags => {
+  const scene = resolveCalendarPopupTemplateActionScene(flowEngine, template?.useModel);
+  const filterByTk = normalizePopupTemplateString(template?.filterByTk);
+  const sourceId = normalizePopupTemplateString(template?.sourceId);
+  const isCollectionOnly = scene === 'collection';
+  const isRecordOnly = scene === 'record';
+
+  let hasFilterByTk = false;
+  if (filterByTk) {
+    hasFilterByTk = !(isCollectionOnly && filterByTk.includes('ctx.record'));
+  } else if (isRecordOnly) {
+    hasFilterByTk = true;
+  }
+
+  let hasSourceId = false;
+  if (sourceId) {
+    hasSourceId = !(isCollectionOnly && sourceId.includes('ctx.resource'));
+  }
+
+  return { hasFilterByTk, hasSourceId };
+};
 
 const replaceCalendarActionOpenViewParams = (action: any, params: Record<string, any>) => {
   if (!action) {
@@ -334,6 +433,10 @@ export class CalendarBlockModel extends CollectionBlockModel {
     return this.subModels?.eventViewAction as any;
   }
 
+  getPopupAction(actionKey: CalendarPopupActionKey) {
+    return actionKey === 'quickCreateAction' ? this.getQuickCreateAction() : this.getEventViewAction();
+  }
+
   getPopupSettingsDefaults(actionUid?: string) {
     return {
       mode: normalizeEventOpenMode(this.props?.eventOpenMode),
@@ -353,17 +456,80 @@ export class CalendarBlockModel extends CollectionBlockModel {
     return action?.getStepParams?.('popupSettings', 'openView') || {};
   }
 
-  getStoredPopupSettings(actionKey: 'quickCreateAction' | 'eventViewAction') {
+  getRawStoredPopupSettings(actionKey: CalendarPopupActionKey) {
     const propKey = this.getPopupSettingsPropKey(actionKey);
     if (this.props?.[propKey]) {
       return this.props[propKey];
     }
 
     try {
-      return this.getStepParams('calendarSettings', propKey) || {};
+      return super.getStepParams('calendarSettings', propKey) || {};
     } catch {
       return {};
     }
+  }
+
+  getStoredPopupSettings(actionKey: 'quickCreateAction' | 'eventViewAction') {
+    return this.getRawStoredPopupSettings(actionKey);
+  }
+
+  getPopupSettingsStepParams(stepKey: CalendarPopupSettingsStepKey) {
+    const actionKey = CALENDAR_POPUP_SETTINGS_STEP_ACTIONS[stepKey];
+    const action = this.getPopupAction(actionKey);
+    return this.getPopupSettings(action, actionKey, action?.uid);
+  }
+
+  getStepParams(flowKey: string, stepKey: string): any | undefined;
+  getStepParams(flowKey: string): Record<string, any> | undefined;
+  getStepParams(): any;
+  getStepParams(flowKey?: string, stepKey?: string): any {
+    if (flowKey === 'calendarSettings' && stepKey && stepKey in CALENDAR_POPUP_SETTINGS_STEP_ACTIONS) {
+      return this.getPopupSettingsStepParams(stepKey as CalendarPopupSettingsStepKey);
+    }
+
+    if (flowKey === 'calendarSettings' && !stepKey) {
+      const params = super.getStepParams(flowKey) || {};
+      return {
+        ...params,
+        quickCreatePopupSettings: this.getPopupSettingsStepParams('quickCreatePopupSettings'),
+        eventPopupSettings: this.getPopupSettingsStepParams('eventPopupSettings'),
+      };
+    }
+
+    if (flowKey && stepKey) {
+      return super.getStepParams(flowKey, stepKey);
+    }
+    if (flowKey) {
+      return super.getStepParams(flowKey);
+    }
+    return super.getStepParams();
+  }
+
+  async preparePopupSettingsForFlowSettings(flowKey?: string, stepKey?: string) {
+    if (flowKey && flowKey !== 'calendarSettings') {
+      return;
+    }
+
+    const stepKeys =
+      stepKey && stepKey in CALENDAR_POPUP_SETTINGS_STEP_ACTIONS
+        ? [stepKey as CalendarPopupSettingsStepKey]
+        : (Object.keys(CALENDAR_POPUP_SETTINGS_STEP_ACTIONS) as CalendarPopupSettingsStepKey[]);
+
+    for (const currentStepKey of stepKeys) {
+      const actionKey = CALENDAR_POPUP_SETTINGS_STEP_ACTIONS[currentStepKey];
+      const action = await this.ensurePopupAction(actionKey);
+      await this.syncPopupActionSettings(action, actionKey);
+    }
+  }
+
+  async openFlowSettings(options?: Parameters<CollectionBlockModel['openFlowSettings']>[0]) {
+    await this.preparePopupSettingsForFlowSettings(options?.flowKey, options?.stepKey);
+    return super.openFlowSettings(options);
+  }
+
+  async openStepSettingsDialog(flowKey: string, stepKey: string) {
+    await this.preparePopupSettingsForFlowSettings(flowKey, stepKey);
+    return super.openStepSettingsDialog(flowKey, stepKey);
   }
 
   clearStoredPopupSettings(actionKey: 'quickCreateAction' | 'eventViewAction') {
@@ -425,15 +591,7 @@ export class CalendarBlockModel extends CollectionBlockModel {
       (popupTemplateUid === undefined || popupTemplateUid === null || popupTemplateUid === '') &&
       !isCalendarPopupTemplateCopyMode(nextParams)
     ) {
-      delete nextParams.popupTemplateUid;
-      delete nextParams.popupTemplateMode;
-      delete nextParams.popupTemplateContext;
-      delete nextParams.popupTemplateHasFilterByTk;
-      delete nextParams.popupTemplateHasSourceId;
-      delete nextParams.associationName;
-      delete nextParams.filterByTk;
-      delete nextParams.sourceId;
-      delete nextParams.uid;
+      clearPopupTemplateParams(nextParams);
     }
     if (
       popupTemplateUidProvided &&
@@ -444,19 +602,49 @@ export class CalendarBlockModel extends CollectionBlockModel {
     }
 
     // Quick create is collection-scene; keep it isolated from record-scoped template state.
-    if (actionKey === 'quickCreateAction' && nextParams.popupTemplateHasFilterByTk) {
-      delete nextParams.popupTemplateUid;
-      delete nextParams.popupTemplateContext;
-      delete nextParams.popupTemplateHasFilterByTk;
-      delete nextParams.popupTemplateHasSourceId;
-      delete nextParams.popupTemplateMode;
-      delete nextParams.associationName;
-      delete nextParams.filterByTk;
-      delete nextParams.sourceId;
-      delete nextParams.uid;
+    if (
+      actionKey === 'quickCreateAction' &&
+      (nextParams.popupTemplateHasFilterByTk === true || nextParams.popupTemplateHasSourceId === true)
+    ) {
+      clearPopupTemplateParams(nextParams);
+    } else if (actionKey === 'quickCreateAction') {
+      clearPopupRecordScopeParams(nextParams);
     }
 
+    delete nextParams.popupTemplateUseModel;
+
     return nextParams;
+  }
+
+  async normalizeQuickCreatePopupTemplateContext(
+    actionKey: CalendarPopupActionKey,
+    popupSettings?: Record<string, any>,
+    defaultUid?: string,
+  ) {
+    const nextSettings = { ...(popupSettings || {}) };
+    const templateUid =
+      typeof nextSettings.popupTemplateUid === 'string'
+        ? nextSettings.popupTemplateUid.trim()
+        : nextSettings.popupTemplateUid;
+    if (actionKey !== 'quickCreateAction' || !templateUid) {
+      return nextSettings;
+    }
+
+    try {
+      const res = await this.context?.api?.resource?.('flowModelTemplates')?.get?.({ filterByTk: templateUid });
+      const template = res?.data?.data || {};
+      const templateContext = inferCalendarPopupTemplateContextFlags(this.flowEngine, template);
+      if (templateContext.hasFilterByTk || templateContext.hasSourceId) {
+        clearPopupTemplateParams(nextSettings);
+        if (defaultUid) {
+          nextSettings.uid = defaultUid;
+        }
+      }
+    } catch {
+      // Keep current params when template metadata cannot be loaded.
+    }
+
+    return nextSettings;
   }
 
   setPopupSettings(actionKey: 'quickCreateAction' | 'eventViewAction', popupSettings?: Record<string, any>) {
@@ -487,12 +675,21 @@ export class CalendarBlockModel extends CollectionBlockModel {
       collectionName: currentParams.collectionName || defaults.collectionName,
       dataSourceKey: currentParams.dataSourceKey || defaults.dataSourceKey,
     };
+    const normalizeWithDefaults = (settings: Record<string, any>) => {
+      const normalized = this.normalizePopupSettings(actionKey, settings);
+      return {
+        ...normalized,
+        uid: normalized.uid || defaults.uid,
+        collectionName: normalized.collectionName || defaults.collectionName,
+        dataSourceKey: normalized.dataSourceKey || defaults.dataSourceKey,
+      };
+    };
 
     if (options.preferActionSettings === false) {
-      return popupSettings;
+      return normalizeWithDefaults(popupSettings);
     }
 
-    return this.mergePopupTemplateSettings(popupSettings, actionParams);
+    return normalizeWithDefaults(this.mergePopupTemplateSettings(popupSettings, actionParams));
   }
 
   async syncPopupActionSettings(
@@ -507,12 +704,13 @@ export class CalendarBlockModel extends CollectionBlockModel {
     const nextSettings = this.getPopupSettings(action, actionKey, action?.uid, {
       preferActionSettings: !options.persist,
     });
+    const checkedSettings = await this.normalizeQuickCreatePopupTemplateContext(actionKey, nextSettings, action?.uid);
     const currentParams = this.getPopupActionSettings(action);
-    if (JSON.stringify(currentParams) === JSON.stringify(nextSettings)) {
+    if (JSON.stringify(currentParams) === JSON.stringify(checkedSettings)) {
       return;
     }
 
-    await this.setPopupActionSettings(action, actionKey, nextSettings, options);
+    await this.setPopupActionSettings(action, actionKey, checkedSettings, options);
   }
 
   async setPopupActionSettings(
@@ -525,7 +723,8 @@ export class CalendarBlockModel extends CollectionBlockModel {
       return {};
     }
 
-    const nextSettings = this.normalizePopupSettings(actionKey, popupSettings);
+    const normalized = this.normalizePopupSettings(actionKey, popupSettings);
+    const nextSettings = await this.normalizeQuickCreatePopupTemplateContext(actionKey, normalized, action?.uid);
     replaceCalendarActionOpenViewParams(action, nextSettings);
 
     if (options.persist && this.context.flowSettingsEnabled && action?.saveStepParams) {
@@ -956,7 +1155,8 @@ CalendarBlockModel.registerFlow({
       async defaultParams(ctx) {
         const model = ctx.model as CalendarBlockModel;
         const action = await model.ensurePopupAction('quickCreateAction');
-        return model.getPopupSettings(action, 'quickCreateAction', action?.uid);
+        const popupSettings = model.getPopupSettings(action, 'quickCreateAction', action?.uid);
+        return model.normalizeQuickCreatePopupTemplateContext('quickCreateAction', popupSettings, action?.uid);
       },
       async handler(ctx, params) {
         const model = ctx.model as CalendarBlockModel;
