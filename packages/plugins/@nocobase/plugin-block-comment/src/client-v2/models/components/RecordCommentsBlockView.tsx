@@ -131,6 +131,10 @@ type FlowModelWithForkId = FlowModel & {
   forkId?: string | number;
 };
 
+type DetailsGridForkModel = ReturnType<DetailsGridModel['createFork']> & {
+  gridContainerRef: React.RefObject<HTMLDivElement>;
+};
+
 const getFlowModelRenderKey = (model: FlowModel, fallback: string) => {
   const forkId = (model as FlowModelWithForkId).forkId;
   return `${model.uid}:${forkId ?? fallback}`;
@@ -280,7 +284,7 @@ const RecordCommentBodyFields = observer(
       return null;
     }
 
-    const fork = bodyFields.createFork({}, `${forkKeyPrefix}_body_fields`);
+    const fork = bodyFields.createFork({}, `${forkKeyPrefix}_body_fields`) as DetailsGridForkModel;
     fork.gridContainerRef = React.createRef<HTMLDivElement>();
     fork.context.defineProperty('record', {
       get: () => record,
