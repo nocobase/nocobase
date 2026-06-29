@@ -19,23 +19,26 @@ import {
   convertHumanMessage as _convertHumanMessage,
   convertToolMessage as _convertToolMessage,
 } from '../utils';
+import { LLMProvider } from '../../llm-providers/provider';
 
 export const conversationMiddleware = (
   aiEmployee: AIEmployee,
   options: {
     providerName: string;
+    provider: LLMProvider;
     llmService?: string;
     model: string;
     messageId?: string;
     agentThread?: { sessionId: string; thread: number };
   },
 ) => {
-  const { providerName, llmService, model, messageId, agentThread } = options;
+  const { providerName, provider, llmService, model, messageId, agentThread } = options;
 
   const convertAIMessage = (aiMessage: AIMessage): AIMessageInput =>
     _convertAIMessage({
       aiEmployee,
       providerName,
+      provider,
       llmService,
       model,
       aiMessage,
