@@ -25,12 +25,12 @@ export function PaginationFields({
     <Row gutter={12}>
       <Col span={12}>
         <Form.Item name={pageName as any} label={t('Page number')} initialValue={1}>
-          <WorkflowTypedVariableInput nullable={false} variableOptions={{ types: ['number'] }} />
+          <WorkflowTypedVariableInput nullable={false} types={['number']} />
         </Form.Item>
       </Col>
       <Col span={12}>
         <Form.Item name={pageSizeName as any} label={t('Page size')} initialValue={20}>
-          <WorkflowTypedVariableInput nullable={false} variableOptions={{ types: ['number'] }} />
+          <WorkflowTypedVariableInput nullable={false} types={['number']} />
         </Form.Item>
       </Col>
     </Row>
