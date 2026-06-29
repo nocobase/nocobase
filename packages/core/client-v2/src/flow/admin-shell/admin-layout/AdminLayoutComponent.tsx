@@ -634,6 +634,10 @@ export const AdminLayoutComponent = observer((props: any) => {
         z-index: 2000 !important;
       }
 
+      .ant-pro-layout-apps-popover .ant-popover-content {
+        margin-top: 12px;
+      }
+
       .ant-pro-layout-apps-icon {
         color: ${customToken.colorTextHeaderMenu || 'rgba(255, 255, 255, 0.85)'};
       }
