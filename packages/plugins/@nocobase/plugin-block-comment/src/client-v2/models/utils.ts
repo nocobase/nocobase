@@ -120,7 +120,7 @@ export const getCollectionFieldOptions = (collection?: unknown) => {
 };
 
 const contentFieldTypes = new Set(['string', 'text']);
-const contentFieldInterfaces = new Set(['input', 'markdown', 'richText', 'text', 'textarea']);
+const contentFieldInterfaces = new Set(['input', 'markdown', 'richText', 'text', 'textarea', 'vditor']);
 const dateFieldTypes = new Set(['date', 'dateOnly', 'datetime', 'time', 'unixTimestamp']);
 const dateFieldInterfaces = new Set([
   'createdAt',

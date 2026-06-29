@@ -13,6 +13,24 @@ import { COMMENT_OWNER_FILTER_BY_TK_VARIABLE } from '../utils';
 import { RecordCommentsBlockModel } from '../RecordCommentsBlockModel';
 
 describe('RecordCommentsBlockModel field mapping settings', () => {
+  test('creates a body field grid for comment item content configuration', () => {
+    const createModelOptions = RecordCommentsBlockModel.meta.createModelOptions as {
+      subModels?: {
+        items?: Array<{
+          subModels?: {
+            bodyFields?: {
+              use?: string;
+            };
+          };
+        }>;
+      };
+    };
+
+    expect(createModelOptions.subModels?.items?.[0]?.subModels?.bodyFields).toEqual({
+      use: 'DetailsGridModel',
+    });
+  });
+
   test('hides owner mapping fields when the block is created from an association field', () => {
     const flow: any = (RecordCommentsBlockModel as any).globalFlowRegistry.getFlow('recordCommentsSettings');
     const step: any = flow?.steps?.fieldMapping;

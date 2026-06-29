@@ -21,6 +21,27 @@ vi.mock('../../locale', () => ({
   useT: () => (value: string) => value,
 }));
 
+vi.mock('@nocobase/client-v2', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@nocobase/client-v2')>();
+
+  return {
+    ...actual,
+    FormComponent: ({ children }: { children: React.ReactNode }) => <form>{children}</form>,
+  };
+});
+
+vi.mock('@nocobase/flow-engine', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@nocobase/flow-engine')>();
+
+  return {
+    ...actual,
+    FlowModelRenderer: ({ model }: { model: FlowModel }) => {
+      const context = model.context as { record?: { title?: string } };
+      return <div data-testid="body-fields">{context.record?.title}</div>;
+    },
+  };
+});
+
 vi.mock('../components/RecordCommentActions', () => ({
   RecordCommentActions: ({ setEditing }: { setEditing: () => void }) => (
     <button type="button" onClick={setEditing}>
@@ -141,6 +162,57 @@ describe('RecordCommentsBlockView.Item', () => {
 
     expect(Number(screen.getByTestId('render-count').textContent)).toBeLessThanOrEqual(5);
     expect(renderSpy.mock.calls.length).toBeLessThanOrEqual(3);
+  });
+
+  it('renders configured body fields with the current comment record', async () => {
+    const bodyFieldsFork = {
+      gridContainerRef: null,
+      context: {
+        defineProperty(name: string, descriptor: { get?: () => unknown; value?: unknown }) {
+          this[name] = descriptor.get ? descriptor.get() : descriptor.value;
+        },
+      },
+    };
+    const bodyFields = {
+      hasSubModel: vi.fn(() => true),
+      createFork: vi.fn(() => bodyFieldsFork),
+    };
+    const blockModel = {
+      props: {},
+      mapping: {
+        contentField: 'content',
+      },
+      context: {
+        flowSettingsEnabled: false,
+      },
+      resource: {
+        update: vi.fn(),
+      },
+      collection: {
+        filterTargetKey: 'id',
+      },
+    } as unknown as RecordCommentsBlockModel;
+    const itemModel = {
+      uid: 'item-3',
+      subModels: {
+        bodyFields,
+      },
+    } as unknown as FlowModel;
+
+    render(
+      <App>
+        <RecordCommentsBlockView.Item
+          blockModel={blockModel}
+          itemModel={itemModel}
+          record={{ id: 3, content: 'Body field comment', title: 'Configured title' }}
+          forkKeyPrefix="comment_item_3"
+        />
+      </App>,
+    );
+
+    await screen.findByText('Body field comment');
+    expect(screen.getByTestId('body-fields')).toHaveTextContent('Configured title');
+    expect(bodyFields.createFork).toHaveBeenCalledWith({}, 'comment_item_3_body_fields');
   });
 });
 

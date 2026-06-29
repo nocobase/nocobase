@@ -19,6 +19,7 @@ import {
   type FlowModel,
   type MultiRecordResource,
 } from '@nocobase/flow-engine';
+import { FormComponent, type DetailsGridModel } from '@nocobase/client-v2';
 import { dayjs } from '@nocobase/utils/client';
 import { App, Button, Card, Empty, Input, List, Space, Tooltip } from 'antd';
 import React, { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
@@ -79,6 +80,10 @@ const contentStyle: React.CSSProperties = {
   backgroundColor: 'white',
   borderRadius: '0 0 8px 8px',
   minHeight: 24,
+};
+
+const bodyFieldsStyle: React.CSSProperties = {
+  marginTop: 12,
 };
 
 const editorButtonAreaStyle: React.CSSProperties = {
@@ -255,6 +260,62 @@ const DisplayContent = observer(({ value, model }: { value: unknown; model: Reco
 
   return <>{content}</>;
 });
+
+const RecordCommentBodyFields = observer(
+  ({
+    blockModel,
+    itemModel,
+    record,
+    forkKeyPrefix,
+  }: {
+    blockModel: RecordCommentsBlockModel;
+    itemModel: FlowModel;
+    record: RecordCommentRecord;
+    forkKeyPrefix: string;
+  }) => {
+    const bodyFields = itemModel.subModels?.bodyFields as DetailsGridModel | undefined;
+    const isConfigMode = Boolean(blockModel.context.flowSettingsEnabled);
+
+    if (!bodyFields || (!isConfigMode && !bodyFields.hasSubModel('items'))) {
+      return null;
+    }
+
+    const fork = bodyFields.createFork({}, `${forkKeyPrefix}_body_fields`);
+    fork.gridContainerRef = React.createRef<HTMLDivElement>();
+    fork.context.defineProperty('record', {
+      get: () => record,
+      cache: false,
+    });
+    fork.context.defineProperty('currentObject', {
+      get: () => record,
+      cache: false,
+    });
+    fork.context.defineProperty('fieldIndex', {
+      get: () => forkKeyPrefix,
+      cache: false,
+    });
+    fork.context.defineProperty('fieldKey', {
+      get: () => forkKeyPrefix,
+    });
+    fork.context.defineProperty('blockModel', {
+      get: () => blockModel,
+    });
+    fork.context.defineProperty('collection', {
+      get: () => blockModel.collection,
+    });
+    fork.context.defineProperty('resource', {
+      get: () => blockModel.resource,
+    });
+
+    return (
+      <div style={bodyFieldsStyle}>
+        <FormComponent model={blockModel} layoutProps={blockModel.props}>
+          <FlowModelRenderer model={fork} showFlowSettings={false} />
+        </FormComponent>
+      </div>
+    );
+  },
+);
 
 const SubmitBox = observer(({ model, forkKeyPrefix }: { model: RecordCommentsBlockModel; forkKeyPrefix: string }) => {
   const t = useT();
@@ -506,7 +567,15 @@ const RecordCommentItemView = observer(
                 autoSize
               />
             ) : (
-              <DisplayContent value={record[mapping.contentField || '']} model={blockModel} />
+              <>
+                <DisplayContent value={record[mapping.contentField || '']} model={blockModel} />
+                <RecordCommentBodyFields
+                  blockModel={blockModel}
+                  itemModel={itemModel}
+                  record={record}
+                  forkKeyPrefix={forkKeyPrefix}
+                />
+              </>
             )}
             {editing ? (
               <div style={editorButtonAreaStyle}>

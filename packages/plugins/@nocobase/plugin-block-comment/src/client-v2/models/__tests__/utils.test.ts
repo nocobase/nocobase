@@ -312,6 +312,7 @@ describe('record comments owner value utils', () => {
           { name: 'title', type: 'string', interface: 'input', title: 'Title' },
           { name: 'content', type: 'text', interface: 'textarea', title: 'Content' },
           { name: 'body', type: 'text', interface: 'markdown', title: 'Body' },
+          { name: 'vditorContent', type: 'text', interface: 'vditor', title: 'Vditor content' },
           { name: 'status', type: 'string', interface: 'select', title: 'Status' },
           { name: 'post', type: 'belongsTo', interface: 'm2o', title: 'Post' },
         ],
@@ -320,6 +321,7 @@ describe('record comments owner value utils', () => {
       { label: 'Title', value: 'title' },
       { label: 'Content', value: 'content' },
       { label: 'Body', value: 'body' },
+      { label: 'Vditor content', value: 'vditorContent' },
     ]);
   });
 

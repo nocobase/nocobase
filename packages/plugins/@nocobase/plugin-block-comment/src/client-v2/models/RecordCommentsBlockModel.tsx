@@ -8,7 +8,12 @@
  */
 
 import { observable } from '@formily/reactive';
-import { BlockSceneEnum, CollectionBlockModel, TextAreaWithContextSelector } from '@nocobase/client-v2';
+import {
+  BlockSceneEnum,
+  CollectionBlockModel,
+  TextAreaWithContextSelector,
+  type DetailsGridModel,
+} from '@nocobase/client-v2';
 import { FlowModel, MultiRecordResource, type Collection } from '@nocobase/flow-engine';
 import { Alert } from 'antd';
 import React from 'react';
@@ -40,6 +45,13 @@ type RecordCommentsBlockStructure = {
   subModels: {
     items: RecordCommentItemModel[];
     submitActions?: FlowModel[];
+  };
+};
+
+type RecordCommentItemStructure = {
+  subModels: {
+    bodyFields: DetailsGridModel;
+    actions: FlowModel[];
   };
 };
 
@@ -88,7 +100,7 @@ const getFieldMappingDefaults = (
   };
 };
 
-export class RecordCommentItemModel extends FlowModel {
+export class RecordCommentItemModel extends FlowModel<RecordCommentItemStructure> {
   render() {
     return (
       <RecordCommentsBlockView.Item
@@ -103,6 +115,12 @@ export class RecordCommentItemModel extends FlowModel {
 
 export class RecordCommentsBlockModel extends CollectionBlockModel<RecordCommentsBlockStructure> {
   static scene = BlockSceneEnum.many;
+
+  _defaultCustomModelClasses = {
+    DetailsItemModel: 'DetailsItemModel',
+    DetailsAssociationFieldGroupModel: 'DetailsAssociationFieldGroupModel',
+    DetailsCustomItemModel: 'DetailsCustomItemModel',
+  };
 
   private readonly resolvedOwnerValue = observable.ref<RecordCommentOwnerValue>(undefined);
   private readonly loadingLastPage = observable.ref(false);
@@ -514,6 +532,9 @@ RecordCommentsBlockModel.define({
                 use: 'EditRecordCommentActionModel',
               },
             ],
+            bodyFields: {
+              use: 'DetailsGridModel',
+            },
           },
         },
       ],
