@@ -1,12 +1,12 @@
 ---
 title: "nb scaffold migration"
-description: "Справочник по команде nb scaffold migration: генерация миграционных скриптов плагина NocoBase."
+description: "Справочник по команде nb scaffold migration: генерация миграционного скрипта плагина NocoBase."
 keywords: "nb scaffold migration,NocoBase CLI,миграционный скрипт,migration"
 ---
 
 # nb scaffold migration
 
-Генерирует файлы миграционного скрипта плагина.
+Генерирует файл миграционного скрипта плагина.
 
 ## Использование
 
