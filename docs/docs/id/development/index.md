@@ -2,8 +2,8 @@
 pageType: home
 pageName: development
 title: "Panduan Pengembangan NocoBase"
-description: "Panduan pengembangan NocoBase: pengembangan plugin, FlowEngine, RunJS, ekstensi Block/Field/Action, ekstensi data source, ekstensi workflow, ekstensi autentikasi."
-keywords: "NocoBase,panduan pengembangan,pengembangan plugin,FlowEngine,RunJS,ekstensi NocoBase"
+description: "Panduan pengembangan NocoBase: pengembangan plugin, komponen bersama, FlowEngine, RunJS, ekstensi Block/Field/Action, ekstensi data source, ekstensi workflow, ekstensi autentikasi."
+keywords: "NocoBase,panduan pengembangan,pengembangan plugin,komponen bersama,FlowEngine,RunJS,ekstensi NocoBase"
 features:
   - title: Pengembangan Inti
     details: Kuasai mekanisme ekstensi mendasar dan kemampuan pengembangan tingkat lanjut NocoBase, termasuk sistem plugin, bantuan AI, FlowEngine, dan environment RunJS, untuk membangun fondasi pengembangan yang kokoh.
@@ -23,6 +23,10 @@ features:
       - title: Frontend RunJS
         details: Environment eksekusi JavaScript untuk skenario JS Block, JS Field, JS Action, dan lainnya.
         link: /runjs
+        showOnHome: true
+      - title: Komponen bersama
+        details: Gunakan kembali komponen formulir, filter, tabel, dan ikon bawaan NocoBase client v2 saat membangun halaman plugin.
+        link: /shared-components
         showOnHome: true
   - title: Ekosistem Plugin
     details: Perluas kemampuan plugin yang ada melalui plugin, bangun sistem ekosistem plugin yang berlapis dan modular, serta tingkatkan skalabilitas dan kemampuan kolaborasi sistem.
@@ -46,4 +50,7 @@ features:
       - title: Ekstensi Preview File
         details: Perluas kemampuan preview file, mendukung preview dan rendering online untuk lebih banyak format file.
         link: /file-manager/development
+      - title: Ekstensi Knowledge Base
+        details: Hubungkan knowledge base eksternal atau layanan retrieval kustom untuk memperluas sumber retrieval RAG bagi AI employees.
+        link: /ai-employees/knowledge-base/dev/external-knowledge-base
 ---

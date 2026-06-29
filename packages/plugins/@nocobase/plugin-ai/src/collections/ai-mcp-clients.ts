@@ -48,6 +48,11 @@ export default {
       },
     },
     {
+      name: 'useUserContext',
+      type: 'boolean',
+      defaultValue: false,
+    },
+    {
       name: 'command',
       type: 'string',
       interface: 'input',

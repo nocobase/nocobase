@@ -10,6 +10,7 @@
 import { describe, expect, it } from 'vitest';
 import ScheduleTrigger from '../index';
 import ScheduleConfig, { SchedulePresetConfig } from '../ScheduleConfig';
+import { SCHEDULE_MODE } from '../constants';
 
 describe('schedule trigger progressive migration', () => {
   it('loads preset/config fieldsets directly from ScheduleConfig after removing the re-export shim', async () => {
@@ -19,5 +20,22 @@ describe('schedule trigger progressive migration', () => {
 
     expect(presetModule?.default).toBe(SchedulePresetConfig);
     expect(fieldsetModule?.default).toBe(ScheduleConfig);
+  });
+
+  it('uses the parsed data source and collection for trigger data block menu item', () => {
+    const trigger = new ScheduleTrigger();
+
+    expect(
+      trigger.getCreateModelMenuItem({
+        config: {
+          mode: SCHEDULE_MODE.DATE_FIELD,
+          collection: 'external:posts',
+        },
+      })?.createModelOptions.stepParams.resourceSettings.init,
+    ).toEqual({
+      dataSourceKey: 'external',
+      collectionName: 'posts',
+      dataPath: '$context.data',
+    });
   });
 });

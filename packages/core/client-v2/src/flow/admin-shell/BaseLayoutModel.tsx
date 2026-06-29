@@ -8,12 +8,19 @@
  */
 
 import { define, observable } from '@formily/reactive';
-import { parsePathnameToViewParams, type FlowEngine, FlowModel, type ViewParam } from '@nocobase/flow-engine';
+import {
+  decodeOpenViewRouteState,
+  parsePathnameToViewParams,
+  type FlowEngine,
+  FlowModel,
+  type ViewParam,
+} from '@nocobase/flow-engine';
 import {
   BaseLayoutRouteCoordinator,
   type BaseLayoutRouteCoordinatorOptions,
   type RoutePageMeta,
 } from './BaseLayoutRouteCoordinator';
+import { NocoBaseDesktopRouteType } from '../../flow-compat';
 import type { LayoutDefinition } from '../../layout-manager/types';
 import { isLayoutContentRouteName } from '../../layout-manager/utils';
 
@@ -116,20 +123,36 @@ const isStandardLayoutRelativePath = (relativePath: string) => {
   }
 
   let i = 1;
+  let currentViewUid = segments[0];
   while (i < segments.length) {
     const segment = segments[i];
+
     if (segment === 'view') {
       if (!segments[i + 1]) {
+        return false;
+      }
+      currentViewUid = segments[i + 1];
+      i += 2;
+      continue;
+    }
+
+    if (segment === 'opts') {
+      if (!segments[i + 1] || !decodeOpenViewRouteState(currentViewUid, segments[i + 1])) {
         return false;
       }
       i += 2;
       continue;
     }
 
-    if (!isKnownViewParamName(segment) || !segments[i + 1]) {
+    if (isKnownViewParamName(segment) && segments[i + 1]) {
+      i += 2;
+      continue;
+    }
+
+    if (!segments[i + 1]) {
       return false;
     }
-    i += 2;
+    return false;
   }
 
   return true;
@@ -294,6 +317,18 @@ export class BaseLayoutModel<
     if (!pageUid) {
       return {
         type: 'notFound',
+        pathname,
+        basePathname,
+        relativePath,
+      };
+    }
+
+    const routeRepository = this.flowEngine.context.routeRepository;
+    const schemaRoute = routeRepository?.getRouteBySchemaUid?.(pageUid);
+    const route = schemaRoute ? undefined : routeRepository?.getRouteById?.(pageUid);
+    if (!schemaRoute && route?.type === NocoBaseDesktopRouteType.group) {
+      return {
+        type: 'root',
         pathname,
         basePathname,
         relativePath,

@@ -22,6 +22,7 @@ describe('PluginEmbedClientV2', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     window.history.pushState({}, '', '/');
+    window.name = '';
   });
 
   it('registers embed layout through layoutManager instead of manual page routes', async () => {
@@ -73,6 +74,7 @@ describe('PluginEmbedClientV2', () => {
         storage: null,
         createStorage: vi.fn(() => storage),
         auth: {
+          getToken: vi.fn(() => null),
           setToken: vi.fn(),
         },
       },
@@ -85,7 +87,105 @@ describe('PluginEmbedClientV2', () => {
 
     expect(app.apiClient.createStorage).toHaveBeenCalledWith('sessionStorage');
     expect(app.apiClient.storage).toBe(storage);
+    expect(app.apiClient.storagePrefix).toMatch(/^NOCOBASE_EMBED_[0-9A-Z]+_[0-9A-Z]+_$/);
     expect(app.apiClient.auth.setToken).toHaveBeenCalledWith('test-token');
+  });
+
+  it('uses stable embed session storage when refreshing an embed route without token', async () => {
+    const { default: PluginEmbedClientV2 } = await import('../plugin');
+    const storage = {};
+    const app = {
+      router: {
+        getBasename: () => '/v2/apps/app1',
+      },
+      getPublicPath: () => '/v2/',
+      apiClient: {
+        storagePrefix: '',
+        storage: null,
+        createStorage: vi.fn(() => storage),
+        auth: {
+          getToken: vi.fn(() => 'test-token'),
+          setToken: vi.fn(),
+        },
+      },
+    };
+    const plugin = new PluginEmbedClientV2({} as any, app as any);
+
+    window.history.pushState({}, '', '/v2/apps/app1/embed/page-uid?token=test-token');
+    await plugin.beforeLoad();
+    const firstStoragePrefix = app.apiClient.storagePrefix;
+
+    window.history.pushState({}, '', '/v2/apps/app1/embed/page-uid');
+    await plugin.beforeLoad();
+
+    expect(app.apiClient.createStorage).toHaveBeenCalledTimes(2);
+    expect(app.apiClient.storage).toBe(storage);
+    expect(app.apiClient.storagePrefix).toBe(firstStoragePrefix);
+    expect(app.apiClient.auth.setToken).toHaveBeenCalledTimes(1);
+    expect(app.apiClient.auth.setToken).toHaveBeenCalledWith('test-token');
+  });
+
+  it('keeps default storage for embed route without query token or existing embed token', async () => {
+    const { default: PluginEmbedClientV2 } = await import('../plugin');
+    const originalStorage = {};
+    const embedStorage = {};
+    const app = {
+      router: {
+        getBasename: () => '/v2/apps/app1',
+      },
+      getPublicPath: () => '/v2/',
+      apiClient: {
+        storagePrefix: 'NOCOBASE_',
+        storage: originalStorage,
+        createStorage: vi.fn(() => embedStorage),
+        auth: {
+          getToken: vi.fn(() => null),
+          setToken: vi.fn(),
+        },
+      },
+    };
+    const plugin = new PluginEmbedClientV2({} as any, app as any);
+
+    window.history.pushState({}, '', '/v2/apps/app1/embed/page-uid');
+    await plugin.beforeLoad();
+
+    expect(app.apiClient.createStorage).toHaveBeenCalledWith('sessionStorage');
+    expect(app.apiClient.auth.getToken).toHaveBeenCalledTimes(1);
+    expect(app.apiClient.storagePrefix).toBe('NOCOBASE_');
+    expect(app.apiClient.storage).toBe(originalStorage);
+    expect(app.apiClient.auth.setToken).not.toHaveBeenCalled();
+  });
+
+  it('uses different embed storage prefixes for different router basenames', async () => {
+    const { default: PluginEmbedClientV2 } = await import('../plugin');
+    const createApp = (basename: string) => ({
+      router: {
+        getBasename: () => basename,
+      },
+      getPublicPath: () => '/v2/',
+      apiClient: {
+        storagePrefix: '',
+        storage: null,
+        createStorage: vi.fn(() => ({})),
+        auth: {
+          getToken: vi.fn(() => null),
+          setToken: vi.fn(),
+        },
+      },
+    });
+    const app1 = createApp('/v2/apps/app1');
+    const app2 = createApp('/v2/apps/app2');
+
+    window.name = 'embed-frame';
+    window.history.pushState({}, '', '/v2/apps/app1/embed/page-uid?token=test-token');
+    await new PluginEmbedClientV2({} as any, app1 as any).beforeLoad();
+
+    window.history.pushState({}, '', '/v2/apps/app2/embed/page-uid?token=test-token');
+    await new PluginEmbedClientV2({} as any, app2 as any).beforeLoad();
+
+    expect(app1.apiClient.storagePrefix).toMatch(/^NOCOBASE_EMBED_[0-9A-Z]+_[0-9A-Z]+_$/);
+    expect(app2.apiClient.storagePrefix).toMatch(/^NOCOBASE_EMBED_[0-9A-Z]+_[0-9A-Z]+_$/);
+    expect(app1.apiClient.storagePrefix).not.toBe(app2.apiClient.storagePrefix);
   });
 
   it('does not set token for non-embed route under router basename', async () => {

@@ -58,6 +58,8 @@ vi.mock('fs/promises', async (importOriginal) => {
   return {
     ...actual,
     copyFile: vi.fn(),
+    writeFile: vi.fn().mockResolvedValue(undefined),
+    unlink: vi.fn().mockResolvedValue(undefined),
   };
 });
 
@@ -166,6 +168,27 @@ describe('DatabaseAdapter', () => {
       expect(command).toContain(`--schema=test_version_control`);
     });
 
+    it('backup function should exclude owned sequences for excluded tables', async () => {
+      const mockedExec = cp.exec as unknown as Mock;
+      mockedExec.mockClear();
+      mockedExec.mockImplementation((command, _options, callback) => {
+        if (command.includes('pg_depend')) {
+          callback(null, 'public.logs_id_seq\n', '');
+          return;
+        }
+        callback(null, 'done', '');
+      });
+      const adapter = getDBAdapter(dbOpts);
+      const dir = os.tmpdir();
+      await adapter.backup({
+        dir,
+        excludeTables: ['logs'],
+      });
+      const command = mockedExec.mock.lastCall[0];
+      expect(command).toContain(`-T '"logs"'`);
+      expect(command).toContain(`-T '"public"."logs_id_seq"'`);
+    });
+
     it('restore function', async () => {
       const mockedExec = cp.exec as unknown as Mock;
       mockedExec.mockImplementation((_command, _options, callback) => {
@@ -193,6 +216,51 @@ describe('DatabaseAdapter', () => {
       expect(commands.some((command) => command.includes('DROP TABLE IF EXISTS'))).toBe(false);
       expect(commands.some((command) => command.includes('DROP VIEW IF EXISTS'))).toBe(false);
       expect(commands.some((command) => command.includes('DROP TRIGGER IF EXISTS'))).toBe(false);
+    });
+
+    it('restore function should preserve tables and drop views when restoreMode is preserveTables', async () => {
+      const mockedExec = cp.exec as unknown as Mock;
+      const mockedWriteFile = fsPromises.writeFile as Mock;
+      const mockedUnlink = fsPromises.unlink as Mock;
+      mockedExec.mockClear();
+      mockedWriteFile.mockClear();
+      mockedUnlink.mockClear();
+      mockedExec.mockImplementation((command, _options, callback) => {
+        if (String(command).includes('--list')) {
+          callback(null, {
+            stdout: [
+              '; Archive created at 2026-06-18 00:00:00',
+              '123; 2615 2200 SCHEMA - public test',
+              '124; 0 0 COMMENT - SCHEMA public test',
+              '125; 0 0 ACL - SCHEMA public test',
+              '126; 1259 2201 TABLE public users test',
+            ].join('\n'),
+          });
+          return;
+        }
+        callback(null, { stdout: 'done' });
+      });
+      const adapter = getDBAdapter(dbOpts);
+      const filePath = os.tmpdir();
+      await adapter.restore({ filePath, restoreMode: 'preserveTables' });
+
+      const commands = mockedExec.mock.calls.map(([command]) => command);
+      expect(commands).toHaveLength(3);
+      expect(commands[0]).toContain('DROP VIEW IF EXISTS');
+      expect(commands[0]).toContain('DROP MATERIALIZED VIEW IF EXISTS');
+      expect(commands[0]).not.toContain('DROP TABLE IF EXISTS');
+      expect(commands[0]).not.toContain('DROP SEQUENCE IF EXISTS');
+      expect(commands[0]).not.toContain('DROP TRIGGER IF EXISTS');
+      expect(commands[1]).toContain('pg_restore');
+      expect(commands[1]).toContain('--list');
+      expect(commands[2]).toContain('pg_restore');
+      expect(commands[2]).toContain('-L');
+      expect(mockedWriteFile).toHaveBeenCalledTimes(1);
+      expect(mockedWriteFile.mock.calls[0][1]).not.toContain('SCHEMA - public');
+      expect(mockedWriteFile.mock.calls[0][1]).toContain('COMMENT - SCHEMA public');
+      expect(mockedWriteFile.mock.calls[0][1]).toContain('ACL - SCHEMA public');
+      expect(mockedWriteFile.mock.calls[0][1]).toContain('TABLE public users');
+      expect(mockedUnlink).toHaveBeenCalledTimes(1);
     });
 
     it('restore function should sync collection schema metadata when schema is renamed', async () => {
@@ -277,6 +345,88 @@ describe('DatabaseAdapter', () => {
 
       const commands = mockedExec.mock.calls.map(([command]) => command);
       expect(commands.some((command) => command.includes('jsonb_set'))).toBe(false);
+    });
+  });
+
+  describe('KingbaseAdapter', () => {
+    const dbOpts: DatabaseOptions = {
+      dialect: 'kingbase',
+      username: 'test',
+      password: 'secret',
+      database: 'test',
+      host: 'localhost',
+      port: 54321,
+    } as DatabaseOptions;
+
+    it('uses Kingbase client tools by default', async () => {
+      const mockedExec = cp.exec as unknown as Mock;
+      mockedExec.mockClear();
+      mockedExec.mockImplementation((_command, _options, callback) => {
+        callback(null, { stdout: 'done' });
+      });
+      const adapter = getDBAdapter(dbOpts);
+      const dir = os.tmpdir();
+
+      await adapter.backup({ dir });
+      await adapter.restore({ filePath: os.tmpdir(), skipDropAllTables: true });
+
+      expect(adapter.backupToolchain).toBe('kingbase');
+      expect(mockedExec.mock.calls[0][0]).toContain('sys_dump');
+      expect(mockedExec.mock.calls[0][0]).toContain('--schema=public');
+      expect(mockedExec.mock.calls[0][1].env).toEqual(expect.objectContaining({ KINGBASE_PASSWORD: 'secret' }));
+      expect(mockedExec.mock.calls[1][0]).toContain('sys_restore');
+      expect(mockedExec.mock.calls[1][1].env).toEqual(expect.objectContaining({ KINGBASE_PASSWORD: 'secret' }));
+    });
+
+    it('falls back to PostgreSQL client tools when Kingbase tools are missing', async () => {
+      (cp.execSync as Mock).mockImplementation((command) => {
+        if (
+          String(command).includes('sys_dump') ||
+          String(command).includes('sys_restore') ||
+          String(command).includes('ksql')
+        ) {
+          throw new Error('Command not found');
+        }
+        return 'PostgreSQL 16.1';
+      });
+      const mockedExec = cp.exec as unknown as Mock;
+      mockedExec.mockClear();
+      mockedExec.mockImplementation((_command, _options, callback) => {
+        callback(null, { stdout: 'done' });
+      });
+      const adapter = getDBAdapter(dbOpts);
+
+      await adapter.backup({ dir: os.tmpdir() });
+      await adapter.restore({ filePath: os.tmpdir(), skipDropAllTables: true });
+
+      expect(adapter.backupToolchain).toBe('postgres');
+      expect(mockedExec.mock.calls[0][0]).toContain('pg_dump');
+      expect(mockedExec.mock.calls[1][0]).toContain('pg_restore');
+    });
+
+    it('uses sys_restore schema remapping for Kingbase backup toolchain', async () => {
+      (cp.execSync as Mock).mockImplementation(() => 'KingbaseES V009R001C010');
+      const mockedExec = cp.exec as unknown as Mock;
+      mockedExec.mockClear();
+      mockedExec.mockImplementation((_command, _options, callback) => {
+        callback(null, { stdout: 'done' });
+      });
+      const adapter = getDBAdapter({
+        ...dbOpts,
+        schema: 'target_schema',
+      } as DatabaseOptions);
+
+      await adapter.restore({ filePath: os.tmpdir(), schema: 'source_schema', skipDropAllTables: true });
+
+      const commands = mockedExec.mock.calls.map(([command]) => command);
+      expect(commands.some((command) => command.includes('CREATE SCHEMA IF NOT EXISTS \\"target_schema\\"'))).toBe(
+        true,
+      );
+      expect(commands.some((command) => command.includes('sys_restore') && command.includes('-g source_schema'))).toBe(
+        true,
+      );
+      expect(commands.some((command) => command.includes('-G target_schema'))).toBe(true);
+      expect(commands.some((command) => command.includes('jsonb_set'))).toBe(true);
     });
   });
 
@@ -373,6 +523,25 @@ describe('DatabaseAdapter', () => {
       expect(commands[0]).toContain('mysql');
       expect(commands[0]).toContain(` < ${filePath}`);
       expect(commands.some((command) => command.includes('drop_all_tables_and_triggers'))).toBe(false);
+    });
+
+    it('restore function should preserve tables and drop views when restoreMode is preserveTables', async () => {
+      const mockedExec = cp.exec as unknown as Mock;
+      mockedExec.mockClear();
+      mockedExec.mockImplementation((_command, _options, callback) => {
+        callback(null, { stdout: 'done' });
+      });
+      const adapter = getDBAdapter(dbOpts);
+      const filePath = os.tmpdir();
+      await adapter.restore({ filePath, restoreMode: 'preserveTables' });
+
+      const commands = mockedExec.mock.calls.map(([command]) => command);
+      expect(commands).toHaveLength(2);
+      expect(commands[0]).toContain('drop_all_views');
+      expect(commands[0]).toContain('DROP VIEW IF EXISTS');
+      expect(commands[0]).not.toContain('drop_all_tables_and_triggers');
+      expect(commands[1]).toContain('mysql');
+      expect(commands[1]).toContain(` < ${filePath}`);
     });
   });
 
@@ -476,6 +645,25 @@ describe('DatabaseAdapter', () => {
       expect(commands[0]).toContain('mysql');
       expect(commands[0]).toContain(` < ${filePath}`);
       expect(commands.some((command) => command.includes('drop_all_tables_and_triggers'))).toBe(false);
+    });
+
+    it('restore function should preserve tables and drop views when restoreMode is preserveTables', async () => {
+      const mockedExec = cp.exec as unknown as Mock;
+      mockedExec.mockClear();
+      mockedExec.mockImplementation((_command, _options, callback) => {
+        callback(null, { stdout: 'done' });
+      });
+      const adapter = getDBAdapter(dbOpts);
+      const filePath = os.tmpdir();
+      await adapter.restore({ filePath, restoreMode: 'preserveTables' });
+
+      const commands = mockedExec.mock.calls.map(([command]) => command);
+      expect(commands).toHaveLength(2);
+      expect(commands[0]).toContain('drop_all_views');
+      expect(commands[0]).toContain('DROP VIEW IF EXISTS');
+      expect(commands[0]).not.toContain('drop_all_tables_and_triggers');
+      expect(commands[1]).toContain('mysql');
+      expect(commands[1]).toContain(` < ${filePath}`);
     });
   });
 

@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { useAPIClient } from '@nocobase/client';
 import { Button, Input, Modal, Form } from 'antd';
 import React from 'react';
@@ -75,7 +84,7 @@ export const RestoreFromBackup = ({ backup }: { backup: BackupFile }) => {
         ]}
       >
         <Form layout={'vertical'} autoComplete="off">
-          {dialect === 'postgres' && (
+          {['postgres', 'kingbase'].includes(dialect) && (
             <Form.Item
               label={<strong>{t('Confirm the application database schema')}</strong>}
               help={t('Required if application database schema is different with the backup', { currentDbSchemaTips })}

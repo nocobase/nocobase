@@ -11,9 +11,8 @@ import { css } from '@emotion/css';
 import { InputNumber, Select } from 'antd';
 import React, { useState } from 'react';
 
+import { FieldsSelect, isDateField } from '../../components/collection';
 import { useWorkflowTranslation } from '../../locale';
-import { FieldsSelect } from './FieldsSelect';
-import { isDateField } from './collectionUtils';
 
 export type ScheduleOnFieldValue = {
   field?: string;

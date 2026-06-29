@@ -44,9 +44,14 @@ import { getSchemaUidByRouteId } from './utils';
 import { updateRoutesInBatch } from './utils/updateRoutesInBatch';
 
 const VariableTextArea = getVariableComponentWithScope(Variable.TextArea);
+const DEFAULT_ADMIN_UI_LAYOUT_UID = 'admin-layout-model';
 
 export const createRoutesTableSchema = (collectionName: string, basename: string) => {
   const isMobile = collectionName === 'mobileRoutes';
+  const routeListFilter = {
+    'hidden.$ne': true,
+    ...(collectionName === 'desktopRoutes' ? { 'uiLayouts.uid': DEFAULT_ADMIN_UI_LAYOUT_UID } : {}),
+  };
 
   return {
     type: 'void',
@@ -59,9 +64,7 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
       params: {
         sort: ['sort'],
         pageSize: 20,
-        filter: {
-          'hidden.$ne': true,
-        },
+        filter: routeListFilter,
       },
       treeTable: true,
     },

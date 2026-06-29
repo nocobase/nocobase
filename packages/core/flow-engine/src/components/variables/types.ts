@@ -16,6 +16,16 @@ export interface FlowContextSelectorProps
   value?: string;
   onChange?: (value: string, metaTreeNode?: MetaTreeNode) => void;
   children?: CascaderProps<ContextSelectorItem>['children'];
+  /**
+   * Controls whether the default `x` trigger button is rendered as active
+   * (`type="primary"`). When omitted, the selector falls back to its parsed
+   * `value` path (`true` iff a valid variable path is currently selected).
+   *
+   * Use this when callers intentionally feed synthetic paths such as
+   * `['constant']` / `['null']` into the cascader to keep menu state aligned,
+   * but only want real variable references to show the blue active button.
+   */
+  active?: boolean;
   metaTree?: MetaTreeNode[] | (() => MetaTreeNode[] | Promise<MetaTreeNode[]>);
   parseValueToPath?: (value: string) => string[] | undefined;
   formatPathToValue?: (item: MetaTreeNode) => string;

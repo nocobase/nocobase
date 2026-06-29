@@ -31,7 +31,7 @@
   "Local storage": "Stockage local",
   "MIME type": "Type MIME",
   "Minimum from 1 byte.": "Minimum from 1 byte.",
-  "Multi-types seperated with comma, for example: \"image/*\", \"image/png\", \"image/*, application/pdf\" etc.": "Multi-types seperated with comma, for example: \"image/*\", \"image/png\", \"image/*, application/pdf\" etc.",
+  "Multi-types separated with comma, for example: \"image/*\", \"image/png\", \"image/*, application/pdf\" etc.": "Multi-types separated with comma, for example: \"image/*\", \"image/png\", \"image/*, application/pdf\" etc.",
   "Path": "Chemin",
   "PDF preview failed. Please download the file to preview it.": "L'aperçu du PDF a échoué. Veuillez télécharger le fichier pour le consulter.",
   "PDF preview failed to load the file. If the file is stored on another domain, configure CORS for the external storage to allow this site to read the file.": "L'aperçu du PDF n'a pas pu charger le fichier. Si le fichier est stocké sur un autre domaine, configurez CORS pour le stockage externe afin d'autoriser ce site à lire le fichier.",

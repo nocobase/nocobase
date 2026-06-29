@@ -112,8 +112,6 @@ const BackupCron = ({ onChange, value, ...props }: BackupCronProps) => {
   );
 };
 
-const label = (text: string) => <strong>{text}:</strong>;
-
 const BackupSettings = () => {
   const ctx = useFlowContext();
   const t = useT();
@@ -188,7 +186,7 @@ const BackupSettings = () => {
         initialValues={DEFAULT_FORM_VALUES}
         disabled={settingsRequest.loading}
       >
-        <Form.Item label={label(t('Automatic backup'))}>
+        <Form.Item label={t('Automatic backup')}>
           <Space direction="vertical" style={{ width: '100%' }}>
             <Form.Item name="scheduled" valuePropName="checked" noStyle>
               <Checkbox>{t('Run automatic backup on the cron schedule')}</Checkbox>
@@ -205,7 +203,7 @@ const BackupSettings = () => {
 
         <Form.Item
           name="keep"
-          label={label(t('Maximum number of backups'))}
+          label={t('Maximum number of backups')}
           extra={t('The maximum number of backups to keep, older backups are automatically deleted.')}
           required
           rules={[{ required: true, message: t('The field value is required') }]}
@@ -213,17 +211,17 @@ const BackupSettings = () => {
           <InputNumber min={1} style={{ width: '100%' }} />
         </Form.Item>
 
-        <Form.Item name="storageId" label={label(t('Sync backups to cloud storage'))}>
+        <Form.Item name="storageId" label={t('Sync backups to cloud storage')}>
           <Select loading={storagesRequest.loading} options={storageOptions} style={{ width: '100%' }} />
         </Form.Item>
 
-        <Form.Item name="enableFilesBackup" label={label(t('Backup local storage files'))} valuePropName="checked">
+        <Form.Item name="enableFilesBackup" label={t('Backup local storage files')} valuePropName="checked">
           <Switch />
         </Form.Item>
 
         <Form.Item
           name="encryptionPassword"
-          label={label(t('Restore password'))}
+          label={t('Restore password')}
           extra={t('If a restore password is set, it must be entered when restoring the backup.')}
         >
           <Input.Password autoComplete="new-password" style={{ width: '100%' }} />

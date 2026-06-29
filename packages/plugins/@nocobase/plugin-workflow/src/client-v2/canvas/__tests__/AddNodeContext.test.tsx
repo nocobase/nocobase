@@ -17,6 +17,7 @@ import MultiConditionsInstruction from '../../nodes/multi-conditions';
 
 vi.mock('../../locale', () => ({
   NAMESPACE: 'workflow',
+  tExpr: (key: string) => key,
   useT: () => (key: string, options?: Record<string, unknown>) =>
     String(key)
       .replace(/\{\{t\("([^"]+)"(?:,\s*\{[^}]*\})?\)\}\}/g, (_match, text) => text)

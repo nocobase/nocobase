@@ -85,12 +85,6 @@ export function filterVisibleSettings(settings: readonly PluginSettingsPageType[
  */
 export function sortTopLevelSettings(settings: PluginSettingsPageType[] = []) {
   return [...settings].sort((a, b) => {
-    if (a.name === SYSTEM_SETTINGS_SETTING_NAME && b.name !== SYSTEM_SETTINGS_SETTING_NAME) {
-      return -1;
-    }
-    if (b.name === SYSTEM_SETTINGS_SETTING_NAME && a.name !== SYSTEM_SETTINGS_SETTING_NAME) {
-      return 1;
-    }
     if ((a.sort || 0) !== (b.sort || 0)) {
       return (a.sort || 0) - (b.sort || 0);
     }

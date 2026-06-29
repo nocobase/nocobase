@@ -87,6 +87,10 @@ Une fois les règles de champ configurées, les règles de validation correspond
 
 ![20250819201027](https://nocobase-docs.oss-cn-beijing.aliyuncs.com/20250819201027.png)
 
+Lorsque le champ est utilisé dans un formulaire, ses règles de validation apparaissent également dans les paramètres de validation du champ. Ces règles sont affichées sous **Règles de validation des champs côté serveur** et y sont en lecture seule. Si vous devez les modifier, éditez le champ dans Source de données → Configuration de la collection.
+
+Vous pouvez toujours ajouter des règles supplémentaires pour le champ de formulaire actuel sous **Règles de validation côté client**. Ces règles s'appliquent uniquement au composant de champ actuel. Le résultat final de la validation combine les **Règles de validation des champs côté serveur** et les **Règles de validation côté client**.
+
 Les règles de validation s'appliquent également aux composants de sous-tableau et de sous-formulaire :
 
 ![20250819202514](https://nocobase-docs.oss-cn-beijing.aliyuncs.com/20250819202514.png)
@@ -97,14 +101,14 @@ Il est à noter que dans les scénarios de sous-formulaire ou de sous-tableau, l
 
 ![20250819203016](https://nocobase-docs.oss-cn-beijing.aliyuncs.com/20250819203016.png)
 
-## Différences avec la validation des champs côté client
+## Différences entre les règles de validation des champs côté serveur et côté client
 
-La validation des champs côté client et côté serveur s'applique à des scénarios d'utilisation différents. Elles présentent des différences significatives en termes de mise en œuvre et de moment de déclenchement des règles, nécessitant ainsi une gestion distincte.
+Les règles de validation des champs côté serveur et côté client se configurent à des endroits différents et n'ont pas le même périmètre.
 
 ### Différences de méthode de configuration
 
-- **Validation côté client** : Vous configurez les règles directement dans les formulaires d'édition (comme illustré ci-dessous).
-- **Validation des champs côté serveur** : Vous définissez les règles de champ dans **Source de données** → Configuration de la **collection**.
+- **Règles de validation des champs côté serveur** : Vous définissez les règles du champ dans Source de données → Configuration de la collection. Ces règles sont les règles de base du champ.
+- **Règles de validation côté client** : Vous configurez des règles supplémentaires dans les paramètres d'un champ de formulaire. Ces règles affectent uniquement le composant de champ actuel.
 
 ![20250819203836](https://nocobase-docs.oss-cn-beijing.aliyuncs.com/20250819203836.png)
 
@@ -112,7 +116,7 @@ La validation des champs côté client et côté serveur s'applique à des scén
 
 ### Différences de moment de déclenchement de la validation
 
-- **Validation côté client** : Elle se déclenche en temps réel lorsque les utilisateurs remplissent les champs, affichant immédiatement les messages d'erreur.
-- **Validation des champs côté serveur** : Elle est effectuée côté serveur après la soumission des données et avant leur enregistrement. Les messages d'erreur sont renvoyés via les réponses de l'API.
-- **Portée de l'application** : La validation des champs côté serveur prend effet non seulement lors de la soumission de formulaires, mais elle est également déclenchée dans tous les scénarios impliquant l'ajout ou la modification de données, tels que les **flux de travail** et les importations de données.
-- **Messages d'erreur** : La validation côté client prend en charge les messages d'erreur personnalisés, tandis que la validation côté serveur ne les prend pas encore en charge.
+- **Règles de validation des champs côté serveur** : Elles déclenchent une validation côté frontend lorsque le champ est utilisé dans un formulaire, et valident également les données avant leur écriture. Elles s'appliquent aussi aux scénarios qui créent ou mettent à jour des données, comme les workflows et les importations de données.
+- **Règles de validation côté client** : Elles déclenchent la validation côté frontend uniquement dans le champ de formulaire actuel.
+- **Affichage des règles** : Les règles de validation des champs côté serveur sont affichées comme des règles héritées en lecture seule. Les règles de validation côté client sont affichées séparément et peuvent y être modifiées.
+- **Messages d'erreur** : Les règles de validation côté client prennent en charge les messages d'erreur personnalisés, tandis que les règles de validation des champs côté serveur ne les prennent pas encore en charge.

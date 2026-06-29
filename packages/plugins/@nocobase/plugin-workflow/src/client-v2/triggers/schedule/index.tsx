@@ -13,16 +13,16 @@ import {
   type UseVariableOptions,
   type VariableOption,
 } from '../../canvas/collectionFieldOptions';
+import { getCollectionManagerAdapter, parseCollectionName } from '../../components/collection';
 import { NAMESPACE, useT } from '../../locale';
 import { Trigger, type LoaderOf } from '..';
-import { getCollectionManagerAdapter, parseCollectionName } from './collectionUtils';
 import { ScheduleModes, type ScheduleConfigValue } from './ScheduleModes';
 import { SCHEDULE_MODE } from './constants';
 
 function useVariables(config: ScheduleConfigValue, opts?: UseVariableOptions): VariableOption[] {
   const flowEngine = useFlowEngine();
   const t = useT();
-  const [dataSourceName] = parseCollectionName(config.collection) as [string, string];
+  const [dataSourceName, collection] = parseCollectionName(config.collection) as [string, string];
   const collectionManager = getCollectionManagerAdapter(flowEngine.context.dataSourceManager, dataSourceName);
   const options: VariableOption[] = [];
 
@@ -36,10 +36,10 @@ function useVariables(config: ScheduleConfigValue, opts?: UseVariableOptions): V
       ...opts,
       fields: [
         {
-          collectionName: config.collection,
+          collectionName: collection,
           name: 'data',
           type: 'hasOne',
-          target: config.collection,
+          target: collection,
           uiSchema: {
             title: t('Trigger data'),
           },
@@ -84,6 +84,10 @@ export default class ScheduleTrigger extends Trigger {
     if (!config?.collection) {
       return null;
     }
+    const [dataSourceKey, collectionName] = parseCollectionName(config.collection) as [string, string];
+    if (!dataSourceKey || !collectionName) {
+      return null;
+    }
     return {
       key: 'triggerData',
       label: `{{t("Trigger data", { ns: "${NAMESPACE}" })}}`,
@@ -93,8 +97,8 @@ export default class ScheduleTrigger extends Trigger {
         stepParams: {
           resourceSettings: {
             init: {
-              dataSourceKey: 'main',
-              collectionName: config.collection,
+              dataSourceKey,
+              collectionName,
               dataPath: '$context.data',
             },
           },

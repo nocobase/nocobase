@@ -18,6 +18,17 @@ import { commonConditionHandler, ConditionBuilder } from '../../components/Condi
 export { ActionModel, ActionSceneEnum, ActionWithoutPermission, type ActionSceneType } from './ActionModelCore';
 import { ActionModel } from './ActionModelCore';
 
+function getMobileDefaultProps(ctx) {
+  const defaultProps = ctx.model.defaultProps || {};
+  if (ctx.isMobileLayout && defaultProps.icon) {
+    return {
+      ...defaultProps,
+      iconOnly: true,
+    };
+  }
+  return defaultProps;
+}
+
 ActionModel.registerFlow({
   key: 'buttonSettings',
   title: tExpr('Button settings'),
@@ -80,7 +91,7 @@ ActionModel.registerFlow({
         };
       },
       defaultParams(ctx) {
-        const defaultProps = ctx.model.defaultProps || {};
+        const defaultProps = getMobileDefaultProps(ctx);
         if (!ctx.model.enableEditColor) {
           return defaultProps;
         }

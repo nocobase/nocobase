@@ -24,13 +24,32 @@ describe('temp association source hook', () => {
     expect(source).toBeNull();
   });
 
-  it('does not expose query row lock configuration in fieldset schema', () => {
+  it('does not keep the legacy query fieldset schema after v2 migration', () => {
     const instruction = new QueryInstruction();
-    const fieldsetText = JSON.stringify(instruction.fieldset);
 
-    expect(instruction.fieldset).not.toHaveProperty('lock');
-    expect(fieldsetText).not.toContain('FOR UPDATE');
-    expect(fieldsetText).not.toContain('FOR SHARE');
-    expect(fieldsetText).not.toContain('"lock"');
+    expect(instruction.fieldset).toBeUndefined();
+    expect(typeof instruction.FieldsetLoader).toBe('function');
+  });
+
+  it('uses the parsed data source and collection for query-result block menu item', () => {
+    const instruction = new QueryInstruction();
+
+    expect(
+      instruction.getCreateModelMenuItem({
+        node: {
+          id: 1,
+          key: 'n1',
+          title: 'Query post',
+          config: {
+            collection: 'external:posts',
+            multiple: false,
+          },
+        },
+      })?.createModelOptions.stepParams.resourceSettings.init,
+    ).toEqual({
+      dataSourceKey: 'external',
+      collectionName: 'posts',
+      dataPath: '$jobsMapByNodeKey.n1',
+    });
   });
 });

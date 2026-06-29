@@ -119,7 +119,7 @@ function ChannelFormView(props: {
           name="name"
           label={t('Channel name')}
           extra={t(
-            'Randomly generated and can not be modified. Support letters, numbers and underscores, must start with an letter.',
+            'Randomly generated and can not be modified. Support letters, numbers and underscores, must start with a letter.',
           )}
           rules={[{ required: true, message: t('The field value is required') }]}
         >

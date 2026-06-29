@@ -35,6 +35,8 @@ nb config set update.policy auto
 nb config set update.policy off
 ```
 
+Pembaruan mandiri hanya didukung saat CLI dikelola oleh instalasi global npm, pnpm, atau yarn standar. Jika dijalankan dari source atau dari pohon dependency proyek lokal, gunakan [`nb self check`](../../api/cli/self/check.md) untuk melihat metode instalasi yang terdeteksi, lalu perbarui proyek induk tersebut.
+
 Jika Anda akan menyebarkan NocoBase ke server dan ingin membuka wizard `nb init --ui` dari browser jarak jauh, disarankan untuk terlebih dahulu mengubah host default CLI ke IP server saat ini:
 
 ```bash

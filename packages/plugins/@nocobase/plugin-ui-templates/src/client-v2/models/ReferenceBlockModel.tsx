@@ -26,6 +26,7 @@ import {
   getTemplateAvailabilityDisabledReason,
   normalizeStr,
   parseResourceListResponse,
+  tWithNs,
 } from '../utils/templateCompatibility';
 import { bindInfiniteScrollToFormilySelect, defaultSelectOptionComparator } from '../utils/infiniteSelect';
 import { replaceGridLayoutUid } from '../utils/replaceGridLayoutUid';
@@ -43,6 +44,89 @@ const TEMPLATE_FALLBACK_PATCH_ORIGINAL_GET_STEP_PARAMS = Symbol.for(
   'nocobase.referenceBlockTemplateFallback.originalGetStepParams',
 );
 const TARGET_OWN_CONTEXT_MISSING = Symbol.for('nocobase.referenceBlockTargetOwnContextMissing');
+
+function isNonEmptyValue(value: unknown): boolean {
+  return value !== undefined && value !== null && String(value).trim() !== '';
+}
+
+function getViewInputArgs(ctx: any, model: any): Record<string, any> {
+  return model?.context?.view?.inputArgs || ctx?.view?.inputArgs || {};
+}
+
+function getAssociationTemplateDisabledReasonFromCurrentRecordView(
+  ctx: any,
+  model: any,
+  tpl: Record<string, any>,
+): string | undefined {
+  const associationName = normalizeStr(tpl?.associationName);
+  const sourceCollectionName = associationName.includes('.') ? associationName.split('.').filter(Boolean)[0] : '';
+  if (!sourceCollectionName) return undefined;
+
+  const viewArgs = getViewInputArgs(ctx, model);
+  const collectionName = normalizeStr(viewArgs?.collectionName);
+  if (!collectionName) {
+    return getTemplateAvailabilityDisabledReason(
+      ctx,
+      tpl,
+      { associationName: '' },
+      { checkResource: false, associationMatch: 'associationResourceOnly' },
+    );
+  }
+
+  const viewDataSourceKey = normalizeStr(viewArgs?.dataSourceKey) || 'main';
+  const templateDataSourceKey = normalizeStr(tpl?.dataSourceKey);
+  if (templateDataSourceKey && viewDataSourceKey && templateDataSourceKey !== viewDataSourceKey) {
+    return tWithNs(ctx, 'Template data source mismatch', {
+      expected: `${viewDataSourceKey}/${collectionName}`,
+      actual: `${templateDataSourceKey}/${sourceCollectionName}`,
+    });
+  }
+
+  if (sourceCollectionName !== collectionName) {
+    return tWithNs(ctx, 'Template collection mismatch', {
+      expected: collectionName,
+      actual: sourceCollectionName,
+    });
+  }
+
+  const hasRecordAnchor = isNonEmptyValue(viewArgs?.filterByTk) || !!viewArgs?.record;
+  if (!hasRecordAnchor) {
+    return getTemplateAvailabilityDisabledReason(
+      ctx,
+      tpl,
+      { associationName: '' },
+      { checkResource: false, associationMatch: 'associationResourceOnly' },
+    );
+  }
+
+  return undefined;
+}
+
+function isMissingFilterByTk(value: unknown) {
+  return value === undefined || value === null || value === '';
+}
+
+function hasDataSourceKey(value: unknown) {
+  return value !== undefined && value !== null && String(value).trim() !== '';
+}
+
+function shouldTemplateTargetFallbackToList(
+  targetInit: Record<string, unknown>,
+  viewArgs: Record<string, unknown>,
+  referenceInit: Record<string, unknown> = {},
+) {
+  if (isMissingFilterByTk(viewArgs?.filterByTk)) {
+    return true;
+  }
+
+  const collectionName = viewArgs?.collectionName ?? referenceInit?.collectionName;
+  if (collectionName !== targetInit?.collectionName) {
+    return true;
+  }
+
+  const dataSourceKey = viewArgs?.dataSourceKey ?? referenceInit?.dataSourceKey;
+  return hasDataSourceKey(dataSourceKey) && dataSourceKey !== targetInit?.dataSourceKey;
+}
 
 /**
  * ReferenceBlockModel（插件版）
@@ -253,20 +337,8 @@ export class ReferenceBlockModel extends BlockModel {
 
   private _shouldTemplateFallbackToList(init: Record<string, any>): boolean {
     const viewArgs = (this as any)?.context?.view?.inputArgs || {};
-    const filterByTk = viewArgs?.filterByTk;
-    const missingFilterByTk = filterByTk === undefined || filterByTk === null || filterByTk === '';
-    if (missingFilterByTk) {
-      return true;
-    }
-    const collectionMismatch = viewArgs?.collectionName !== init?.collectionName;
-    if (collectionMismatch) {
-      return true;
-    }
-    const viewDataSourceKey = viewArgs?.dataSourceKey;
-    const hasViewDataSourceKey =
-      viewDataSourceKey !== undefined && viewDataSourceKey !== null && String(viewDataSourceKey).trim() !== '';
-    const dataSourceMismatch = hasViewDataSourceKey && viewDataSourceKey !== init?.dataSourceKey;
-    return !!dataSourceMismatch;
+    const referenceInit = (this.getStepParams?.('resourceSettings', 'init') || {}) as Record<string, any>;
+    return shouldTemplateTargetFallbackToList(init, viewArgs, referenceInit);
   }
 
   private _refreshTargetResourceState(target?: FlowModel) {
@@ -687,10 +759,11 @@ ReferenceBlockModel.registerFlow({
             const fromInit = normalizeStr(init?.associationName);
             if (fromInit) return fromInit;
 
-            const assocName = normalizeStr((m as any)?.context?.association?.resourceName);
+            const context = (m as any)?.context || {};
+            const assocName = normalizeStr(context?.association?.resourceName);
             if (assocName) return assocName;
 
-            const resourceCtx = (m as any)?.context?.resource;
+            const resourceCtx = context?.resource;
             if (resourceCtx) {
               const fromResourceAssoc =
                 typeof resourceCtx.getAssociationName === 'function'
@@ -702,10 +775,6 @@ ReferenceBlockModel.registerFlow({
                 typeof resourceCtx.getResourceName === 'function' ? normalizeStr(resourceCtx.getResourceName()) : '';
               if (fromResourceName) return fromResourceName;
             }
-
-            const viewArgs = (m as any)?.context?.view?.inputArgs || {};
-            const fromView = normalizeStr(viewArgs?.associationName);
-            if (fromView) return fromView;
           } catch (_) {
             // ignore
           }
@@ -713,6 +782,9 @@ ReferenceBlockModel.registerFlow({
         };
         const expectedAssociationName = resolveExpectedAssociationName();
         const getTemplateDisabledReason = (tpl: Record<string, any>): string | undefined => {
+          if (!expectedAssociationName) {
+            return getAssociationTemplateDisabledReasonFromCurrentRecordView(ctx, m, tpl);
+          }
           return getTemplateAvailabilityDisabledReason(
             ctx,
             tpl,
@@ -1033,17 +1105,12 @@ ReferenceBlockModel.registerFlow({
           if (isSupported) {
             const init = (duplicated as any)?.stepParams?.resourceSettings?.init;
             if (init && typeof init === 'object' && Object.prototype.hasOwnProperty.call(init, 'filterByTk')) {
-              const viewArgs = ((ctx.model as any)?.context?.view?.inputArgs || {}) as any;
-              const filterByTk = viewArgs?.filterByTk;
-              const missingFilterByTk = filterByTk === undefined || filterByTk === null || filterByTk === '';
-              const collectionMismatch = viewArgs?.collectionName !== init?.collectionName;
-              const viewDataSourceKey = viewArgs?.dataSourceKey;
-              const hasViewDataSourceKey =
-                viewDataSourceKey !== undefined &&
-                viewDataSourceKey !== null &&
-                String(viewDataSourceKey).trim() !== '';
-              const dataSourceMismatch = hasViewDataSourceKey && viewDataSourceKey !== init?.dataSourceKey;
-              if (missingFilterByTk || collectionMismatch || dataSourceMismatch) {
+              const viewArgs = ((ctx.model as any)?.context?.view?.inputArgs || {}) as Record<string, unknown>;
+              const referenceInit = ((ctx.model as any)?.getStepParams?.('resourceSettings', 'init') || {}) as Record<
+                string,
+                unknown
+              >;
+              if (shouldTemplateTargetFallbackToList(init as Record<string, unknown>, viewArgs, referenceInit)) {
                 delete (init as any).filterByTk;
               }
             }
