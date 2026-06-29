@@ -11,7 +11,7 @@
       {
         "type": "custom-link",
         "label": "主数据库",
-        "link": "/data-sources/main/main-database"
+        "link": "/data-sources/main/database"
       },
       {
         "type": "custom-link",
@@ -32,17 +32,17 @@
       {
         "type": "custom-link",
         "label": "外部数据库",
-        "link": "/data-sources/external-database/external-database"
+        "link": "/data-sources/external/database"
       },
       {
         "type": "custom-link",
         "label": "REST API",
-        "link": "/data-sources/rest-api/rest-api"
+        "link": "/data-sources/external/rest-api"
       },
       {
         "type": "custom-link",
         "label": "外部 NocoBase ",
-        "link": "/data-sources/external-nocobase/external-nocobase"
+        "link": "/data-sources/external/nocobase"
       }
     ]
   },
