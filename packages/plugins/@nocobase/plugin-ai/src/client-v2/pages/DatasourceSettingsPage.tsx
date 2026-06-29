@@ -19,7 +19,7 @@ import {
   Form,
   Input,
   InputNumber,
-  List,
+  Pagination,
   Radio,
   Space,
   Spin,
@@ -207,10 +207,15 @@ export const toDatasourceFormValues = (record: AIContextDatasourceRecord): Datas
   sortText: record.sort ? JSON.stringify(record.sort, null, 2) : '',
 });
 
-export async function listContextDatasources(apiClient: APIClientLike): Promise<DatasourceListResult> {
+export async function listContextDatasources(
+  apiClient: APIClientLike,
+  params: { page?: number; pageSize?: number } = {},
+): Promise<DatasourceListResult> {
+  const pageSize = params.pageSize ?? 16;
   const response = await callResourceAction(apiClient, 'aiContextDatasources', 'list', {
     sort: ['-createdAt'],
-    pageSize: 16,
+    ...(params.page == null ? {} : { page: params.page }),
+    pageSize,
   });
   const data = readResponseData(response);
   return {
@@ -880,17 +885,19 @@ export const DatasourceSettingsPage: React.FC = () => {
   const [records, setRecords] = useState<AIContextDatasourceRecord[]>([]);
   const [loading, setLoading] = useState(false);
   const [total, setTotal] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 16;
 
   const refresh = useCallback(async () => {
     setLoading(true);
     try {
-      const result = await listContextDatasources(app.apiClient);
+      const result = await listContextDatasources(app.apiClient, { page: currentPage, pageSize });
       setRecords(result.data);
       setTotal(result.total ?? result.data.length);
     } finally {
       setLoading(false);
     }
-  }, [app.apiClient]);
+  }, [app.apiClient, currentPage]);
 
   useEffect(() => {
     refresh().catch((error: unknown) => {
@@ -944,93 +951,122 @@ export const DatasourceSettingsPage: React.FC = () => {
           </Card>
         </div>
       ) : (
-        <div style={{ width: '100%', overflowX: 'auto', padding: token.paddingXS }}>
-          <Space direction="vertical" size="large" style={{ width: '100%', minWidth: 1200 }}>
+        <div style={{ width: '100%', padding: token.paddingXS }}>
+          <Flex vertical gap="large" style={{ width: '100%', minWidth: 0 }}>
             <Flex justify="flex-end" align="center">
-              <Space>
-                <Button type="primary" icon={<PlusOutlined />} onClick={openCreateDrawer}>
-                  {t('Add datasource')}
-                </Button>
-              </Space>
+              <Button type="primary" icon={<PlusOutlined />} onClick={openCreateDrawer}>
+                {t('Add datasource')}
+              </Button>
             </Flex>
-            <List
-              grid={{ gutter: token.margin, column: 4 }}
-              dataSource={records}
-              loading={loading}
-              pagination={{
-                showSizeChanger: false,
-                total,
-                pageSize: 16,
-              }}
-              renderItem={(record) => (
-                <List.Item>
-                  <Card
-                    hoverable
-                    variant="borderless"
-                    style={{ minWidth: 300, display: 'flex', flexDirection: 'column' }}
-                    onClick={() => openDetailDrawer(record)}
-                  >
-                    <Card.Meta
-                      title={
-                        <Flex justify="space-between" align="center">
-                          <span>{record.title}</span>
-                          <span onClick={(event) => event.stopPropagation()}>
-                            <EnabledSwitch record={record} onUpdated={refresh} />
-                          </span>
-                        </Flex>
-                      }
-                      description={
-                        <Space style={{ fontSize: token.fontSizeSM }}>
-                          <Typography.Text type="secondary">{t('Collection')}</Typography.Text>
-                          <Typography.Text>{`${record.datasource}/${record.collectionName}`}</Typography.Text>
-                          <Divider type="vertical" />
-                          <Typography.Text type="secondary">{t('Limit')}</Typography.Text>
-                          <Typography.Text>{record.limit}</Typography.Text>
-                        </Space>
-                      }
-                    />
-                    <div
-                      style={{
-                        height: 100,
-                        display: 'flex',
-                        flexDirection: 'column',
-                        flex: 1,
-                        paddingTop: token.paddingSM,
+            <Spin spinning={loading}>
+              <div
+                style={{
+                  display: 'grid',
+                  gap: token.margin,
+                  gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
+                }}
+              >
+                {records.map((record) => {
+                  const createdAt = record.createdAt ? dayjs(record.createdAt) : null;
+                  const createdAtText = createdAt
+                    ? `${t('Created at')} ${createdAt.format('YYYY-MM-DD HH:mm:ss')}`
+                    : '';
+
+                  return (
+                    <Card
+                      key={record.id}
+                      hoverable
+                      variant="borderless"
+                      style={{ height: '100%', minWidth: 0 }}
+                      styles={{
+                        body: {
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: token.margin,
+                          height: '100%',
+                          minWidth: 0,
+                        },
                       }}
+                      onClick={() => openDetailDrawer(record)}
                     >
-                      <div style={{ width: '100%', height: 90 }}>
-                        <Typography.Paragraph type="secondary" ellipsis={{ rows: 2 }}>
+                      <Card.Meta
+                        title={
+                          <Flex justify="space-between" align="center" gap="small" style={{ minWidth: 0 }}>
+                            <Typography.Text ellipsis={{ tooltip: record.title }} style={{ flex: 1, minWidth: 0 }}>
+                              {record.title}
+                            </Typography.Text>
+                            <span onClick={(event) => event.stopPropagation()}>
+                              <EnabledSwitch record={record} onUpdated={refresh} />
+                            </span>
+                          </Flex>
+                        }
+                        description={
+                          <Space size={token.marginXS} style={{ flexWrap: 'wrap', fontSize: token.fontSizeSM }}>
+                            <Typography.Text type="secondary">{t('Collection')}</Typography.Text>
+                            <Typography.Text ellipsis={{ tooltip: `${record.datasource}/${record.collectionName}` }}>
+                              {`${record.datasource}/${record.collectionName}`}
+                            </Typography.Text>
+                            <Divider type="vertical" />
+                            <Typography.Text type="secondary">{t('Limit')}</Typography.Text>
+                            <Typography.Text>{record.limit}</Typography.Text>
+                          </Space>
+                        }
+                      />
+                      <div style={{ minHeight: `calc(${token.fontSize}px * ${token.lineHeight} * 2)` }}>
+                        <Typography.Paragraph type="secondary" ellipsis={{ rows: 2 }} style={{ marginBottom: 0 }}>
                           {record.description}
                         </Typography.Paragraph>
                       </div>
-                      <div style={{ marginTop: 'auto' }}>
-                        <Flex justify="space-between" align="center">
-                          <Space style={{ fontSize: token.fontSizeSM - 2 }}>
-                            <Typography.Text type="secondary">
-                              {record.createdAt
-                                ? `${t('Created at')} ${dayjs(record.createdAt).format('YYYY-MM-DD HH:mm:ss')}`
-                                : null}
-                            </Typography.Text>
-                          </Space>
-                          <Tooltip title={t('Delete')}>
-                            <Button
-                              type="link"
-                              icon={<DeleteOutlined />}
-                              aria-label={t('Delete')}
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                handleDelete(record);
-                              }}
-                            />
-                          </Tooltip>
-                        </Flex>
-                      </div>
-                    </div>
-                  </Card>
-                </List.Item>
-              )}
-            />
-          </Space>
+                      <Flex
+                        align="center"
+                        gap="small"
+                        justify="space-between"
+                        style={{ marginTop: 'auto', minWidth: 0 }}
+                      >
+                        <Tooltip title={createdAtText}>
+                          <Typography.Text
+                            aria-label={createdAtText || undefined}
+                            type="secondary"
+                            style={{
+                              flex: 1,
+                              fontSize: token.fontSizeSM,
+                              minWidth: 0,
+                            }}
+                            ellipsis
+                          >
+                            {createdAt ? `${t('Created at')} ${createdAt.format('YYYY-MM-DD')}` : null}
+                          </Typography.Text>
+                        </Tooltip>
+                        <Tooltip title={t('Delete')}>
+                          <Button
+                            type="link"
+                            icon={<DeleteOutlined />}
+                            aria-label={t('Delete')}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              handleDelete(record);
+                            }}
+                          />
+                        </Tooltip>
+                      </Flex>
+                    </Card>
+                  );
+                })}
+              </div>
+            </Spin>
+            {total > pageSize && (
+              <Pagination
+                current={currentPage}
+                pageSize={pageSize}
+                showSizeChanger={false}
+                style={{ display: 'flex', justifyContent: 'flex-end' }}
+                total={total}
+                onChange={(page) => {
+                  setCurrentPage(page);
+                }}
+              />
+            )}
+          </Flex>
         </div>
       )}
     </>
