@@ -132,6 +132,26 @@ export const AdminLayoutEntryGuard: FC<{ children: React.ReactNode; model?: Admi
           }
         }
 
+        const groupRoute = currentRoute ? undefined : routeRepository?.getRouteById?.(pageUid);
+        if (!currentRoute && groupRoute?.type === NocoBaseDesktopRouteType.group) {
+          const target = resolveAdminRouteRuntimeTarget({
+            app,
+            route: groupRoute,
+            layout: layoutRuntime,
+          });
+
+          if (target.runtimePath) {
+            replaceTriggeredRef.current = true;
+            if (target.navigationMode === 'document') {
+              window.location.replace(target.runtimePath);
+              return;
+            }
+
+            navigate(toRouterNavigationPath(target.runtimePath, app.router.getBasename()), { replace: true });
+            return;
+          }
+        }
+
         if (active) {
           setReady(true);
         }
