@@ -13,10 +13,12 @@ import path from 'node:path';
 import { afterEach, expect, test } from 'vitest';
 import type { ManagedAppRuntime } from '../lib/app-runtime.js';
 import { setCliConfigValue } from '../lib/cli-config.js';
+import { writeNginxProxyBundle } from '../lib/proxy-nginx.js';
 import {
   appConfigHasManagedNginxBlock,
   buildEnvProxyAppConfig,
   buildEnvProxyCaddyBundle,
+  buildManualEnvProxyNginxBundle,
   buildEnvProxyConfig,
   buildEnvProxyMainConfig,
   buildEnvProxyNginxBundle,
@@ -197,6 +199,62 @@ test('buildEnvProxyNginxBundle omits the root redirect block for root-mounted ap
   expect(bundle.appConfigContent).toContain('location ^~ /v/ {');
   expect(bundle.appConfigContent).toContain('try_files $uri /index-v1.html =404;');
   expect(bundle.appConfigContent).not.toContain('return 302 /$is_args$args;');
+});
+
+test('buildManualEnvProxyNginxBundle derives the websocket path from appPublicPath', async () => {
+  const root = await createTempRoot('nocobase-cli-env-proxy-nginx-manual-');
+  process.env.NB_CLI_ROOT = root;
+  const runtime = await createLocalRuntime(root, {
+    appPublicPath: '/console/',
+    sourceV1PublicPath: '/nocobase/',
+    sourceV2PublicPath: '/v/',
+  });
+
+  const bundle = await buildManualEnvProxyNginxBundle({
+    name: 'default',
+    appPort: '13000',
+    storagePath: runtime.env.storagePath,
+    runtimeVersion: '2.1.0-beta.44',
+    appPublicPath: '/console/',
+    upstreamHost: 'host.docker.internal',
+  });
+
+  expect(bundle.entryDir).toBe(path.join(root, '.nocobase', 'proxy', 'nginx', 'default'));
+  expect(bundle.wsPath).toBe('/console/ws');
+  expect(bundle.backendUrl).toBe('http://host.docker.internal:13000');
+  expect(bundle.appConfigContent).toContain('location = /console/ws {');
+  expect(bundle.indexV1Content).toContain(`window['__nocobase_ws_path__'] = "/console/ws";`);
+  expect(bundle.indexV2Content).toContain(`window['__nocobase_public_path__'] = "/console/v/";`);
+});
+
+test('writeNginxProxyBundle overwrites non-managed app.conf when force is enabled', async () => {
+  const root = await createTempRoot('nocobase-cli-env-proxy-nginx-force-');
+  process.env.NB_CLI_ROOT = root;
+  const runtime = await createLocalRuntime(root);
+  const bundle = await buildEnvProxyNginxBundle(runtime);
+
+  await mkdir(bundle.entryDir, { recursive: true });
+  await writeFile(bundle.appConfigPath, 'server {\n    listen 9000;\n}\n', 'utf8');
+
+  const result = await writeNginxProxyBundle(
+    runtime,
+    {
+      port: '8080',
+    },
+    {
+      driver: 'local',
+      runtimeCliRoot: root,
+      upstreamHost: '127.0.0.1',
+    },
+    {
+      force: true,
+    },
+  );
+
+  const content = await readFile(bundle.appConfigPath, 'utf8');
+  expect(result.status).toBe('updated');
+  expect(content).toContain('# BEGIN NocoBase managed config');
+  expect(content).toContain('listen 8080;');
 });
 
 test('buildEnvProxyNginxBundle prefers CDN_BASE_URL from the managed env file', async () => {

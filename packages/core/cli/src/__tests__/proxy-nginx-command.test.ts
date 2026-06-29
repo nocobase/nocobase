@@ -15,6 +15,7 @@ const mocks = vi.hoisted(() => ({
   getNginxProxyDriver: vi.fn(),
   resolveNginxProxyRuntimeContext: vi.fn(),
   writeNginxProxyBundle: vi.fn(),
+  writeManualNginxProxyBundle: vi.fn(),
   formatNginxProxyInfoLines: vi.fn(),
   formatNginxProxyStatusLines: vi.fn(),
   resolveNginxProxyContainerName: vi.fn(),
@@ -41,6 +42,7 @@ vi.mock('../lib/proxy-nginx.js', () => ({
   getNginxProxyDriver: mocks.getNginxProxyDriver,
   resolveNginxProxyRuntimeContext: mocks.resolveNginxProxyRuntimeContext,
   writeNginxProxyBundle: mocks.writeNginxProxyBundle,
+  writeManualNginxProxyBundle: mocks.writeManualNginxProxyBundle,
   formatNginxProxyInfoLines: mocks.formatNginxProxyInfoLines,
   formatNginxProxyStatusLines: mocks.formatNginxProxyStatusLines,
   resolveNginxProxyContainerName: mocks.resolveNginxProxyContainerName,
@@ -92,6 +94,13 @@ beforeEach(() => {
   });
   mocks.resolveNginxProxyContainerName.mockResolvedValue('nb-nginx-proxy');
   mocks.resolveNginxProxyImage.mockReturnValue('nginx:latest');
+  mocks.writeManualNginxProxyBundle.mockResolvedValue({
+    status: 'created',
+    bundle: {
+      entryDir: '/Users/chen/test4/.nocobase/proxy/nginx/default',
+      appConfigPath: '/Users/chen/test4/.nocobase/proxy/nginx/default/app.conf',
+    },
+  });
   mocks.startNginxProxy.mockResolvedValue('started');
   mocks.reloadNginxProxy.mockResolvedValue('reloaded');
   mocks.stopNginxProxy.mockResolvedValue('stopped');
@@ -165,6 +174,7 @@ test('proxy nginx generate writes proxy files with the current runtime context',
       flags: {
         env: 'test2',
         host: 'c.local.nocobase.com',
+        force: false,
       },
     })),
   });
@@ -184,9 +194,104 @@ test('proxy nginx generate writes proxy files with the current runtime context',
       runtimeCliRoot: '/Users/chen/test4',
       upstreamHost: '127.0.0.1',
     },
+    {
+      force: false,
+    },
   );
   expect(mocks.succeedTask).toHaveBeenCalledWith(
     'Saved nginx proxy files for env "test2" under /Users/chen/test4/.nocobase/proxy/nginx/test2, and created editable app entry config at /Users/chen/test4/.nocobase/proxy/nginx/test2/app.conf.',
+  );
+});
+
+test('proxy nginx generate defaults to the current env when --env is omitted', async () => {
+  const { default: ProxyNginxGenerate } = await import('../commands/proxy/nginx/generate.js');
+  mocks.resolveManagedAppRuntime.mockResolvedValue({
+    kind: 'local',
+    envName: 'current-env',
+    env: {},
+  });
+  mocks.writeNginxProxyBundle.mockResolvedValue({
+    status: 'created',
+    bundle: {
+      entryDir: '/Users/chen/test4/.nocobase/proxy/nginx/current-env',
+      appConfigPath: '/Users/chen/test4/.nocobase/proxy/nginx/current-env/app.conf',
+    },
+  });
+
+  const command = Object.assign(Object.create(ProxyNginxGenerate.prototype), {
+    parse: vi.fn(async () => ({
+      flags: {
+        host: 'app1.example.com',
+        force: false,
+      },
+    })),
+  });
+
+  await ProxyNginxGenerate.prototype.run.call(command);
+
+  expect(mocks.resolveManagedAppRuntime).toHaveBeenCalledWith(undefined);
+  expect(mocks.writeNginxProxyBundle).toHaveBeenCalledWith(
+    expect.objectContaining({ envName: 'current-env' }),
+    {
+      host: 'app1.example.com',
+      port: undefined,
+    },
+    {
+      driver: 'local',
+      runtimeCliRoot: '/Users/chen/test4',
+      upstreamHost: '127.0.0.1',
+    },
+    {
+      force: false,
+    },
+  );
+});
+
+test('proxy nginx generate supports manual mode', async () => {
+  const { default: ProxyNginxGenerate } = await import('../commands/proxy/nginx/generate.js');
+  const command = Object.assign(Object.create(ProxyNginxGenerate.prototype), {
+    parse: vi.fn(async () => ({
+      flags: {
+        manual: true,
+        name: 'default',
+        'app-port': '13000',
+        'storage-path': '/path/to/storage',
+        'runtime-version': '2.1.0',
+        'app-public-path': '/console/',
+        'upstream-host': 'host.docker.internal',
+        port: '8080',
+        force: true,
+      },
+    })),
+  });
+
+  await ProxyNginxGenerate.prototype.run.call(command);
+
+  expect(mocks.resolveManagedAppRuntime).not.toHaveBeenCalled();
+  expect(mocks.writeManualNginxProxyBundle).toHaveBeenCalledWith(
+    {
+      name: 'default',
+      appPort: '13000',
+      storagePath: '/path/to/storage',
+      runtimeVersion: '2.1.0',
+      appPublicPath: '/console/',
+      upstreamHost: 'host.docker.internal',
+    },
+    {
+      host: undefined,
+      port: '8080',
+    },
+    {
+      driver: 'local',
+      runtimeCliRoot: '/Users/chen/test4',
+      upstreamHost: '127.0.0.1',
+    },
+    {
+      force: true,
+    },
+  );
+  expect(mocks.succeedTask).toHaveBeenCalledWith(
+    'Saved nginx proxy files for env "default" under /Users/chen/test4/.nocobase/proxy/nginx/default, and created editable app entry config at /Users/chen/test4/.nocobase/proxy/nginx/default/app.conf.',
   );
 });
 

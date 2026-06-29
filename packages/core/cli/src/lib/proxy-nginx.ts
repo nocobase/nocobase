@@ -29,6 +29,7 @@ import { resolveCliHomeRoot } from './cli-home.js';
 import {
   applyEnvProxyAppEntryOptions,
   appConfigHasManagedNginxBlock,
+  buildManualEnvProxyNginxBundle,
   buildEnvProxyMainConfig,
   buildEnvProxyNginxBundle,
   extractManagedNginxConfigBlock,
@@ -40,6 +41,7 @@ import {
   syncEnvProxyNginxSnippets,
   type EnvProxyAppEntryOptions,
   type EnvProxyNginxBundle,
+  type ManualEnvProxyNginxInput,
 } from './env-proxy.js';
 import { run } from './run-npm.js';
 
@@ -53,6 +55,10 @@ type WritableProxyRuntime = Extract<ManagedAppRuntime, { kind: 'local' | 'docker
 export type NginxProxyWriteResult = {
   bundle: EnvProxyNginxBundle;
   status: 'created' | 'updated';
+};
+
+type NginxProxyWriteOptions = {
+  force?: boolean;
 };
 
 export type NginxProxyRuntimeContext = {
@@ -141,11 +147,33 @@ export async function writeNginxProxyBundle(
   runtime: WritableProxyRuntime,
   appEntryOptions: EnvProxyAppEntryOptions,
   runtimeContext: NginxProxyRuntimeContext,
+  options?: NginxProxyWriteOptions,
 ): Promise<NginxProxyWriteResult> {
   const bundle = await buildEnvProxyNginxBundle(runtime, {
     runtimeCliRoot: runtimeContext.runtimeCliRoot,
     upstreamHost: runtimeContext.upstreamHost,
   });
+  return await writeResolvedNginxProxyBundle(bundle, appEntryOptions, options);
+}
+
+export async function writeManualNginxProxyBundle(
+  input: ManualEnvProxyNginxInput,
+  appEntryOptions: EnvProxyAppEntryOptions,
+  runtimeContext: NginxProxyRuntimeContext,
+  options?: NginxProxyWriteOptions,
+): Promise<NginxProxyWriteResult> {
+  const bundle = await buildManualEnvProxyNginxBundle(input, {
+    runtimeCliRoot: runtimeContext.runtimeCliRoot,
+    upstreamHost: input.upstreamHost || runtimeContext.upstreamHost,
+  });
+  return await writeResolvedNginxProxyBundle(bundle, appEntryOptions, options);
+}
+
+async function writeResolvedNginxProxyBundle(
+  bundle: EnvProxyNginxBundle,
+  appEntryOptions: EnvProxyAppEntryOptions,
+  options?: NginxProxyWriteOptions,
+): Promise<NginxProxyWriteResult> {
   const managedConfigBlock = extractManagedNginxConfigBlock(bundle.appConfigContent);
   if (!managedConfigBlock) {
     throw new Error('Failed to render the managed nginx config block.');
@@ -156,15 +184,17 @@ export async function writeNginxProxyBundle(
   let status: NginxProxyWriteResult['status'] = 'created';
 
   if (currentAppConfigContent) {
-    if (!appConfigHasManagedNginxBlock(currentAppConfigContent)) {
+    if (!appConfigHasManagedNginxBlock(currentAppConfigContent) && !options?.force) {
       throw new Error(buildNginxManagedBlockMissingMessage(bundle.appConfigPath));
     }
 
-    nextAppConfigContent = applyEnvProxyAppEntryOptions(
-      replaceManagedNginxConfigBlock(currentAppConfigContent, managedConfigBlock),
-      'nginx',
-      appEntryOptions,
-    );
+    nextAppConfigContent = appConfigHasManagedNginxBlock(currentAppConfigContent)
+      ? applyEnvProxyAppEntryOptions(
+          replaceManagedNginxConfigBlock(currentAppConfigContent, managedConfigBlock),
+          'nginx',
+          appEntryOptions,
+        )
+      : applyEnvProxyAppEntryOptions(bundle.appConfigContent, 'nginx', appEntryOptions);
     status = 'updated';
   }
 

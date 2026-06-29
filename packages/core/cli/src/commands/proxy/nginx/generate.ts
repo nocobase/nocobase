@@ -17,6 +17,7 @@ import {
   getNginxProxyDriver,
   normalizeProxyListenPort,
   resolveNginxProxyRuntimeContext,
+  writeManualNginxProxyBundle,
   writeNginxProxyBundle,
 } from '../../../lib/proxy-nginx.js';
 import { announceTargetEnv, failTask, startTask, succeedTask } from '../../../lib/ui.js';
@@ -26,15 +27,42 @@ type WritableProxyRuntime = Extract<ManagedAppRuntime, { kind: 'local' | 'docker
 export default class ProxyNginxGenerate extends Command {
   static override summary = 'Generate nginx proxy files for one managed env';
   static override examples = [
+    '<%= config.bin %> proxy nginx generate --host app1.example.com',
     '<%= config.bin %> proxy nginx generate --env app1 --host app1.example.com',
     '<%= config.bin %> proxy nginx generate --env app1 --host app1.example.com --port 8080',
+    '<%= config.bin %> proxy nginx generate --manual --name default --app-port 13000 --storage-path /path/to/storage --runtime-version 2.1.0',
   ];
 
   static override flags = {
     env: Flags.string({
       char: 'e',
-      description: 'CLI env name to generate proxy files for',
-      required: true,
+      description: 'CLI env name to generate proxy files for. Defaults to the current env when omitted',
+    }),
+    manual: Flags.boolean({
+      description: 'Generate proxy files from explicit runtime flags instead of a saved env',
+      default: false,
+    }),
+    name: Flags.string({
+      description: 'Output bundle name used under .nocobase/proxy/nginx in manual mode',
+    }),
+    'app-port': Flags.string({
+      description: 'Upstream NocoBase app port in manual mode',
+    }),
+    'storage-path': Flags.string({
+      description: 'Path to the NocoBase storage directory in manual mode',
+    }),
+    'runtime-version': Flags.string({
+      description: 'Frontend runtime version under storage/dist-client in manual mode',
+    }),
+    'app-public-path': Flags.string({
+      description: 'Public base path served by the proxied app in manual mode. Defaults to /',
+    }),
+    'upstream-host': Flags.string({
+      description: 'Upstream host used by nginx proxy_pass in manual mode',
+    }),
+    force: Flags.boolean({
+      description: 'Overwrite existing app.conf even when the managed block is missing',
+      default: false,
     }),
     host: Flags.string({
       description: 'Host exposed by the nginx entry config, such as example.com or localhost',
@@ -49,9 +77,61 @@ export default class ProxyNginxGenerate extends Command {
     const requestedEnv = flags.env?.trim() || undefined;
     const requestedPort = flags.port?.trim() || undefined;
     const normalizedPort = normalizeProxyListenPort(requestedPort);
+    const manual = Boolean(flags.manual);
 
     if (requestedPort && !normalizedPort) {
       this.error(`Invalid proxy entry port "${requestedPort}". Use an integer between 1 and 65535.`);
+    }
+
+    if (manual && requestedEnv) {
+      this.error('`--manual` cannot be combined with `--env`.');
+    }
+
+    if (manual) {
+      const name = flags.name?.trim() || undefined;
+      const appPort = flags['app-port']?.trim() || undefined;
+      const storagePath = flags['storage-path']?.trim() || undefined;
+      const runtimeVersion = flags['runtime-version']?.trim() || undefined;
+
+      if (!name || !appPort || !storagePath || !runtimeVersion) {
+        this.error('Manual mode requires `--name`, `--app-port`, `--storage-path`, and `--runtime-version`.');
+      }
+
+      const driver = await getNginxProxyDriver();
+      const runtimeContext = await resolveNginxProxyRuntimeContext();
+      announceTargetEnv(name);
+      startTask(`Generating nginx proxy config for env "${name}" with the ${driver} driver...`);
+
+      try {
+        const { bundle, status } = await writeManualNginxProxyBundle(
+          {
+            name,
+            appPort,
+            storagePath,
+            runtimeVersion,
+            appPublicPath: flags['app-public-path']?.trim() || undefined,
+            upstreamHost: flags['upstream-host']?.trim() || undefined,
+          },
+          {
+            host: flags.host?.trim() || undefined,
+            port: normalizedPort,
+          },
+          runtimeContext,
+          {
+            force: flags.force,
+          },
+        );
+        succeedTask(
+          status === 'created'
+            ? `Saved nginx proxy files for env "${name}" under ${bundle.entryDir}, and created editable app entry config at ${bundle.appConfigPath}.`
+            : `Saved nginx proxy files for env "${name}" under ${bundle.entryDir}, and refreshed editable app entry config at ${bundle.appConfigPath}.`,
+        );
+      } catch (error) {
+        failTask(`Failed to generate nginx proxy config for env "${name}".`);
+        this.error(error instanceof Error ? error.message : String(error));
+      }
+
+      return;
     }
 
     const runtime = await resolveManagedAppRuntime(requestedEnv);
@@ -84,6 +164,9 @@ export default class ProxyNginxGenerate extends Command {
           port: normalizedPort,
         },
         runtimeContext,
+        {
+          force: flags.force,
+        },
       );
       succeedTask(
         status === 'created'
