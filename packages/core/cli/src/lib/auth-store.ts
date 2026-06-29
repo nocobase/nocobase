@@ -145,6 +145,7 @@ export interface AuthConfig {
       caddy?: string;
       git?: string;
       nginx?: string;
+      pnpm?: string;
       yarn?: string;
     };
     proxy?: {
@@ -287,6 +288,19 @@ function normalizeAuthConfig(config: AuthConfig & { dockerResourcePrefix?: strin
       ? settings.log.retentionDays
       : undefined;
   const logEnabled = typeof settings.log?.enabled === 'boolean' ? settings.log.enabled : undefined;
+  const hasBinSettings =
+    settings.bin?.docker ||
+    settings.bin?.caddy ||
+    settings.bin?.git ||
+    settings.bin?.nginx ||
+    settings.bin?.pnpm ||
+    settings.bin?.yarn;
+  const hasProxySettings =
+    settings.proxy?.nbCliRoot ||
+    settings.proxy?.caddyDriver ||
+    settings.proxy?.nginxDriver ||
+    settings.proxy?.upstreamHost ||
+    (settings.proxy as { host?: unknown } | undefined)?.host;
   return {
     name: config.name || config.dockerResourcePrefix,
     settings: {
@@ -311,22 +325,19 @@ function normalizeAuthConfig(config: AuthConfig & { dockerResourcePrefix?: strin
             },
           }
         : {}),
-      ...(settings.bin?.docker || settings.bin?.caddy || settings.bin?.git || settings.bin?.nginx || settings.bin?.yarn
+      ...(hasBinSettings
         ? {
             bin: {
               ...(settings.bin?.docker ? { docker: normalizeOptionalString(settings.bin.docker) } : {}),
               ...(settings.bin?.caddy ? { caddy: normalizeOptionalString(settings.bin.caddy) } : {}),
               ...(settings.bin?.git ? { git: normalizeOptionalString(settings.bin.git) } : {}),
               ...(settings.bin?.nginx ? { nginx: normalizeOptionalString(settings.bin.nginx) } : {}),
+              ...(settings.bin?.pnpm ? { pnpm: normalizeOptionalString(settings.bin.pnpm) } : {}),
               ...(settings.bin?.yarn ? { yarn: normalizeOptionalString(settings.bin.yarn) } : {}),
             },
           }
         : {}),
-      ...(settings.proxy?.nbCliRoot ||
-      settings.proxy?.caddyDriver ||
-      settings.proxy?.nginxDriver ||
-      settings.proxy?.upstreamHost ||
-      (settings.proxy as { host?: unknown } | undefined)?.host
+      ...(hasProxySettings
         ? {
             proxy: {
               ...(settings.proxy?.nbCliRoot ? { nbCliRoot: normalizeOptionalString(settings.proxy.nbCliRoot) } : {}),

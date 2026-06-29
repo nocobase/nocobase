@@ -8,6 +8,7 @@
  */
 
 import { Plugin } from '@nocobase/client';
+import { DevicePage } from './DevicePage';
 import { ErrorPage } from './ErrorPage';
 import { InteractionPage } from './InteractionPage';
 import models from './models';
@@ -19,6 +20,11 @@ export class PluginIdpOauthClient extends Plugin {
     plugin.router.add('idp-oauth.interaction', {
       path: '/idp-oauth/interaction/:uid',
       Component: InteractionPage,
+      skipAuthCheck: true,
+    });
+    plugin.router.add('idp-oauth.device', {
+      path: '/idpOAuth/device',
+      Component: DevicePage,
       skipAuthCheck: true,
     });
     plugin.router.add('idp-oauth.error', {
