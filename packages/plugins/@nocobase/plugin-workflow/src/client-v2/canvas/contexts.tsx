@@ -87,6 +87,12 @@ export function useCurrentWorkflowContext() {
   return useContext(CurrentWorkflowContext);
 }
 
+export const WorkflowVariableSourceContext = React.createContext<Partial<WorkflowCanvasRecord> | null>(null);
+
+export function useWorkflowVariableSourceContext() {
+  return useContext(WorkflowVariableSourceContext);
+}
+
 // Default `{}` (not null) to match v1's `NodeContext` default, so existing v1 call sites that read
 // `useNodeContext().config` without guarding are unaffected.
 export const NodeContext = React.createContext<CanvasNode>({} as CanvasNode);

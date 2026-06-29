@@ -15,6 +15,7 @@ import {
   TriggerCollectionRecordSelect,
   useCurrentWorkflowContext,
   useWorkflowVariableOptions,
+  WorkflowVariableJsonTextArea,
   WorkflowVariableWrapper,
 } from '@nocobase/plugin-workflow/client-v2';
 import { Alert, Form, Input, Space, Typography } from 'antd';
@@ -324,7 +325,7 @@ function TriggerDataField() {
       label={t('Trigger data')}
       extra={t('Use JSON as trigger data for custom data context, or choose a record in single record context.')}
     >
-      <WorkflowJsonInput />
+      <WorkflowVariableJsonTextArea />
     </Form.Item>
   );
 }
