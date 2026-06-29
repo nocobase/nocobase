@@ -45,13 +45,16 @@ type WorkflowPluginLike = {
 };
 
 type AssociatedCascaderOption = {
+  appends?: string[] | null;
+  depth?: number;
   key?: string;
   value: string;
   label?: React.ReactNode;
   disabled?: boolean;
   isLeaf?: boolean;
   field?: FieldWithDataSource;
-  loadChildren?: (option: AssociatedCascaderOption) => Promise<void> | void;
+  loadChildren?: ((option: AssociatedCascaderOption) => Promise<void> | void) | null;
+  types?: UseVariableOptions['types'];
   children?: AssociatedCascaderOption[];
 };
 
@@ -107,6 +110,8 @@ function toCascaderOption(
       : undefined;
 
   return {
+    appends: option.appends as string[] | null | undefined,
+    depth: option.depth as number | undefined,
     key: option.key,
     value: getOptionValue(option),
     label: compileLabel(option.label, compile),
@@ -114,6 +119,7 @@ function toCascaderOption(
     isLeaf: Boolean(option.isLeaf),
     field,
     loadChildren,
+    types: option.types as UseVariableOptions['types'] | undefined,
     children: Array.isArray(option.children)
       ? option.children.map((child) => toCascaderOption(child, compile, nextFallbackDataSourceKey))
       : undefined,
@@ -203,9 +209,24 @@ async function loadOptionChildren(option: AssociatedCascaderOption) {
   }
 }
 
+function clearAggregateParams(form: ReturnType<typeof Form.useFormInstance>) {
+  form.setFieldValue(['config', 'params', 'field'], null);
+  form.setFieldValue(['config', 'params', 'filter'], null);
+}
+
+function clearAssociatedSelection(
+  form: ReturnType<typeof Form.useFormInstance>,
+  onChange?: (value: AggregateAssociationConfig) => void,
+) {
+  form.setFieldValue(['config', 'collection'], null);
+  clearAggregateParams(form);
+  onChange?.({});
+}
+
 export function AssociatedConfig({
   value,
   onChange,
+  onDropdownVisibleChange,
   ...props
 }: Omit<
   CascaderProps<AssociatedCascaderOption, 'value', false>,
@@ -221,11 +242,17 @@ export function AssociatedConfig({
   const [options, setOptions] = useState(baseOptions);
   const selectedPath = getAssociatedPath(value);
   const selectedPathSignature = selectedPath.join('.');
+  const [activePath, setActivePath] = useState<string[]>(selectedPath);
 
   useEffect(() => {
     setOptions(baseOptions);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- only reset when the selectable variable tree changes.
   }, [baseOptionsSignature]);
+
+  useEffect(() => {
+    setActivePath(selectedPath);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- selectedPathSignature is the stable value identity.
+  }, [selectedPathSignature]);
 
   useEffect(() => {
     let cancelled = false;
@@ -237,18 +264,27 @@ export function AssociatedConfig({
 
       let currentOptions = options;
       let currentOption: AssociatedCascaderOption | undefined;
+      let resolved = true;
       for (const key of selectedPath) {
         currentOption = currentOptions.find((option) => option.value === key);
         if (!currentOption) {
+          resolved = false;
           break;
         }
         await loadOptionChildren(currentOption);
         currentOptions = currentOption.children ?? [];
       }
 
-      if (!cancelled) {
-        setOptions([...options]);
+      if (cancelled) {
+        return;
       }
+
+      if (resolved && currentOption?.field && !matchToManyField(currentOption.field)) {
+        clearAssociatedSelection(form, onChange);
+        return;
+      }
+
+      setOptions([...options]);
     };
 
     loadSelectedPath();
@@ -261,7 +297,7 @@ export function AssociatedConfig({
   return (
     <Cascader
       {...props}
-      value={selectedPath}
+      value={activePath}
       options={options}
       changeOnSelect
       loadData={async (selectedOptions) => {
@@ -272,10 +308,16 @@ export function AssociatedConfig({
         await loadOptionChildren(option);
         setOptions([...options]);
       }}
+      onDropdownVisibleChange={(open) => {
+        if (!open) {
+          setActivePath(selectedPath);
+        }
+        onDropdownVisibleChange?.(open);
+      }}
       onChange={(path, selectedOptions) => {
+        setActivePath(path as string[]);
         if (!path?.length) {
-          form.setFieldValue(['config', 'collection'], null);
-          onChange?.({});
+          clearAssociatedSelection(form, onChange);
           return;
         }
 
@@ -294,6 +336,7 @@ export function AssociatedConfig({
         );
 
         form.setFieldValue(['config', 'collection'], joinCollectionName(dataSourceKey, field.target));
+        clearAggregateParams(form);
         onChange?.({
           name: field.name,
           associatedKey: `{{${path.slice(0, -1).join('.')}.${primaryKeyName}}}`,
