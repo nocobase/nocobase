@@ -26,7 +26,7 @@ let mockExecImplementation = (command, _options, callback) => {
   callback(null, 'done');
 };
 
-let mockSpawnImplementation = () => {
+let mockSpawnImplementation = (_command?: string, _args?: string[]) => {
   const stdout = Readable.from(['mocked database backup']);
   const stderr = Readable.from([]);
   const stdin = new Writable({
@@ -128,7 +128,21 @@ describe('RestoreManager', () => {
       callback(null, 'done');
     };
 
-    mockSpawnImplementation = () => {
+    mockSpawnImplementation = (command) => {
+      if (
+        ['psql', 'pg_restore', 'ksql', 'sys_restore', 'mysql'].some((restoreCommand) =>
+          String(command).includes(restoreCommand),
+        )
+      ) {
+        // simulate restore side effect: clear the encryption password
+        app.db
+          .getRepository(SETTINGS)
+          .update({
+            values: { encryptionPassword: '' },
+            filter: { id: 1 },
+          })
+          .catch(() => {});
+      }
       const stdout = Readable.from(['mocked database backup']);
       const stderr = Readable.from([]);
       const stdin = new Writable({
@@ -433,8 +447,8 @@ describe('RestoreManager', () => {
         backupClientVersion: 'pg_dump (PostgreSQL) 17.2',
       }),
     );
-    const mockedExec = cp.exec as unknown as Mock;
-    mockedExec.mockClear();
+    const mockedSpawn = cp.spawn as unknown as Mock;
+    mockedSpawn.mockClear();
     const restoreManager = new RestoreManager(createCtx(), {
       dialect: 'kingbase',
       username: 'test',
@@ -448,9 +462,9 @@ describe('RestoreManager', () => {
     await restoreManager.restore(backupFilePath, 'task_id', undefined, true, true);
 
     await vi.waitFor(() => {
-      expect(mockedExec.mock.calls.some(([command]) => command.includes('pg_restore'))).toBe(true);
+      expect(mockedSpawn.mock.calls.some(([command]) => String(command).includes('pg_restore'))).toBe(true);
     });
-    expect(mockedExec.mock.calls.some(([, options]) => options.env?.PGPASSWORD === 'test')).toBe(true);
+    expect(mockedSpawn.mock.calls.some(([, , options]) => options.env?.PGPASSWORD === 'test')).toBe(true);
   });
 
   it('does not ignore dialect mismatch with force schema restore', async () => {
