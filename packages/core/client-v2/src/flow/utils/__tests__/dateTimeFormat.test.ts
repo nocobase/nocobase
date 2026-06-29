@@ -207,6 +207,48 @@ describe('dateTimeFormat', () => {
     expect(save).toHaveBeenCalled();
   });
 
+  it('syncs ordinary table column props when date time format settings are saved', async () => {
+    const setProps = vi.fn();
+    const save = vi.fn();
+    const setParentProps = vi.fn();
+    const model = {
+      context: {
+        collectionField: {
+          type: 'datetime',
+          interface: 'datetime',
+        },
+      },
+      setProps,
+      save,
+      parent: {
+        use: 'TableColumnModel',
+        setProps: setParentProps,
+      },
+    };
+    model.parent['subModels'] = {
+      field: model,
+    };
+
+    await dateTimeFormat.beforeParamsSave(
+      { model },
+      {
+        picker: 'date',
+        dateFormat: 'YYYY-MM-DD',
+        showTime: true,
+        timeFormat: 'HH:mm:ss',
+      },
+    );
+
+    expect(setParentProps).toHaveBeenCalledWith({
+      picker: 'date',
+      dateFormat: 'YYYY-MM-DD',
+      showTime: true,
+      timeFormat: 'HH:mm:ss',
+      format: 'YYYY-MM-DD HH:mm:ss',
+    });
+    expect(save).toHaveBeenCalled();
+  });
+
   it('hides time format for association title date-only fields', () => {
     const ctx = {
       model: {
