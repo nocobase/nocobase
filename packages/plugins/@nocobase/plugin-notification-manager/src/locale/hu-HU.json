@@ -31,7 +31,7 @@
   "Notification type": "Értesítés típusa",
   "Notification type {{type}} is not registered.": "A(z) {{type}} értesítési típus nincs regisztrálva.",
   "Query users": "Felhasználók lekérdezése",
-  "Randomly generated and can not be modified. Support letters, numbers and underscores, must start with an letter.": "Véletlenszerűen generált és nem módosítható. Betűk, számok és aláhúzások támogatottak, betűvel kell kezdődnie.",
+  "Randomly generated and can not be modified. Support letters, numbers and underscores, must start with a letter.": "Véletlenszerűen generált és nem módosítható. Betűk, számok és aláhúzások támogatottak, betűvel kell kezdődnie.",
   "Reason": "Ok",
   "Receiver": "Címzett",
   "Receiver type": "Címzett típusa",

@@ -14,6 +14,8 @@ import { FlowEngine } from '../flowEngine';
 import { FlowModel } from '../models/flowModel';
 import { RunJSContextRegistry } from '../runjs-context/registry';
 import { setupRunJSContexts } from '../runjs-context/setup';
+import { createViewScopedEngine } from '../ViewScopedFlowEngine';
+import { DATA_SOURCE_DIRTY_EVENT } from '../views/viewEvents';
 
 describe('FlowContext properties and methods', () => {
   it('should return static property value', () => {
@@ -1427,6 +1429,92 @@ describe('FlowEngine context', () => {
     const engine = new FlowEngine();
     engine.context.defineProperty('appName', { value: 'NocoBase' });
     expect(engine.context.appName).toBe('NocoBase');
+  });
+
+  it('ctx.api should return a dirty-aware wrapper for static api properties', async () => {
+    const engine = new FlowEngine();
+    const update = vi.fn(async () => ({ data: { data: { id: 1 } } }));
+    const api = {
+      auth: { locale: 'zh-CN' },
+      request: vi.fn(async () => ({ data: { ok: true } })),
+      resource: vi.fn(() => ({ update })),
+    };
+    engine.context.defineProperty('api', { value: api });
+
+    await engine.context.api.resource('posts').update({ filterByTk: 1, values: { title: 't' } });
+
+    expect(update).toHaveBeenCalledTimes(1);
+    expect(engine.getDataSourceDirtyVersion('main', 'posts')).toBe(1);
+    expect(engine.context.api).toBe(engine.context.api);
+  });
+
+  it('ctx.api should stay dirty-aware when resolved from a scoped context delegate', async () => {
+    const root = new FlowEngine();
+    const scoped = createViewScopedEngine(root);
+    const update = vi.fn(async () => ({ data: { data: { id: 1 } } }));
+    root.context.defineProperty('api', {
+      value: {
+        auth: { locale: 'zh-CN' },
+        request: vi.fn(async () => ({ data: { ok: true } })),
+        resource: vi.fn(() => ({ update })),
+      },
+    });
+
+    await scoped.context.api.resource('posts').update({ filterByTk: 1, values: { title: 't' } });
+
+    expect(update).toHaveBeenCalledTimes(1);
+    expect(root.getDataSourceDirtyVersion('main', 'posts')).toBe(1);
+    expect(scoped.context.engine.getDataSourceDirtyVersion('main', 'posts')).toBe(1);
+  });
+
+  it('ctx.request should use the dirty-aware api wrapper', async () => {
+    const engine = new FlowEngine();
+    const request = vi.fn(async () => ({ data: { ok: true } }));
+    engine.context.defineProperty('api', {
+      value: {
+        auth: { locale: 'zh-CN' },
+        request,
+        resource: vi.fn(),
+      },
+    });
+
+    await engine.context.request({
+      resource: 'posts',
+      action: 'update',
+      headers: { 'X-Data-Source': 'analytics' },
+      params: { filterByTk: 1 },
+    } as any);
+
+    expect(request).toHaveBeenCalledTimes(1);
+    expect(engine.getDataSourceDirtyVersion('analytics', 'posts')).toBe(1);
+  });
+
+  it('ctx.request should use the caller context when resolved through a scoped delegate', async () => {
+    const root = new FlowEngine();
+    const scoped = createViewScopedEngine(root);
+    const callerCtx = new FlowContext();
+    const dirtyEvents: Array<{ dataSourceKey: string; resourceNames: string[] }> = [];
+    const request = vi.fn(async () => ({ data: { ok: true } }));
+    root.context.defineProperty('api', {
+      value: {
+        auth: { locale: 'zh-CN' },
+        request,
+        resource: vi.fn(),
+      },
+    });
+    callerCtx.addDelegate(scoped.context);
+    scoped.context.engine.emitter.on(DATA_SOURCE_DIRTY_EVENT, (event) => dirtyEvents.push(event));
+
+    await callerCtx.request({
+      resource: 'posts',
+      action: 'update',
+      params: { filterByTk: 1 },
+    } as any);
+
+    expect(request).toHaveBeenCalledTimes(1);
+    expect(root.getDataSourceDirtyVersion('main', 'posts')).toBe(1);
+    expect(scoped.context.engine.getDataSourceDirtyVersion('main', 'posts')).toBe(1);
+    expect(dirtyEvents).toEqual([{ dataSourceKey: 'main', resourceNames: ['posts'] }]);
   });
 
   it('ctx.sql should resolve template variables from caller context in delegate chain', async () => {

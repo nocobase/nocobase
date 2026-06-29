@@ -8,6 +8,7 @@
  */
 
 import { Plugin } from '@nocobase/server';
+import { handleDeviceVerificationRequest, isProviderDeviceVerificationPage } from './device-verification';
 import { handleInteractionGet, handleInteractionPost } from './interaction';
 import { createIdpOauthPaths } from './paths';
 import { dispatchCurrentRequestToProvider } from './provider-dispatch';
@@ -50,6 +51,19 @@ export class PluginIdpOauthServer extends Plugin {
       async (ctx, next) => {
         if (ctx.path.startsWith(paths.interactionPathPrefix)) {
           await next();
+          return;
+        }
+
+        if (await handleDeviceVerificationRequest(ctx, this.service, paths.apiBasePath)) {
+          return;
+        }
+
+        if (isProviderDeviceVerificationPage(ctx.path, paths.apiBasePath)) {
+          ctx.withoutDataWrapping = true;
+          ctx.status = 404;
+          ctx.body = {
+            error: 'not_found',
+          };
           return;
         }
 

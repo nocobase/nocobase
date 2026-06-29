@@ -68,7 +68,7 @@
       "unreachable": "无法连接到该 API 地址，请检查地址是否正确，并确认服务可访问。详情：{{details}}"
     },
     "envKey": {
-      "invalid": "仅支持字母和数字。"
+      "invalid": "仅支持字母、数字、中划线和下划线。"
     },
     "appPublicPath": {
       "invalid": "请输入 /，或类似 /nocobase/、/foo-bar/baz_2/ 这样的路径。每个路径段仅支持字母、数字、中划线和下划线。"

@@ -41,6 +41,8 @@ nb config set update.policy auto
 nb config set update.policy off
 ```
 
+自更新只支持由标准全局 npm、pnpm 或 yarn 安装管理的 CLI。如果你是从源码仓库运行，或者从本地项目依赖树运行，可以用 [`nb self check`](../../api/cli/self/check.md) 查看当前检测到的安装方式，然后更新对应的父项目。
+
 如果你准备把 NocoBase 部署到服务器上，并且希望从远程浏览器打开 `nb init --ui` 向导，建议先把 CLI 的默认 host 改成当前服务器 IP：
 
 ```bash

@@ -23,6 +23,7 @@ import type { AIEmployee as AIEmployeeType } from '../../collections/ai-employee
 import {
   conversationMiddleware,
   skillToolBindingMiddleware,
+  toolCallSanitizerMiddleware,
   toolCallStatusMiddleware,
   toolInteractionMiddleware,
   workflowHistoryMiddleware,
@@ -39,6 +40,7 @@ import { LLMResult } from '@langchain/core/outputs';
 import { Context } from '@nocobase/actions';
 import { listAccessibleAIEmployees, serializeEmployeeSummary } from '../../ai/tools/sub-agents/shared';
 import { LLMStreamCached } from '../manager/llm-stream-manager';
+import { sanitizeAdditionalKwargsForToolCalls } from './tool-call-sanitizer';
 
 export interface ModelRef {
   llmService: string;
@@ -1290,7 +1292,15 @@ If information is missing, clearly state it in the summary.</Important>`;
         role: 'assistant',
         content,
         tool_calls: msg.toolCalls,
-        additional_kwargs: msg.metadata?.additional_kwargs,
+        additional_kwargs: sanitizeAdditionalKwargsForToolCalls(msg.metadata?.additional_kwargs, msg.toolCalls, {
+          onDiscard: (info) => {
+            this.logger.warn('Discard malformed raw tool calls from AI message', {
+              phase: 'formatMessages',
+              messageId: msg.metadata?.id,
+              ...info,
+            });
+          },
+        }).additionalKwargs,
       });
     }
 
@@ -1536,6 +1546,7 @@ If information is missing, clearly state it in the summary.</Important>`;
       toolCallStatusMiddleware(this),
       ...(inWorkflow ? [workflowHistoryMiddleware(this, this.db)] : []),
       conversationMiddleware(this, { providerName, provider, llmService, model, messageId, agentThread }),
+      toolCallSanitizerMiddleware({ logger: this.logger }),
     ];
   }
 
