@@ -140,6 +140,29 @@ describe('RouteRepository', () => {
     expect(repository.getRouteBySchemaUid('custom-page')).toBeUndefined();
   });
 
+  it('should find nested routes by id', () => {
+    const { repository } = createRouteRepository();
+
+    repository.setRoutes([
+      {
+        id: 1,
+        schemaUid: 'group-1',
+        children: [
+          {
+            id: 11,
+            schemaUid: 'page-1',
+          },
+        ],
+      },
+    ] as NocoBaseDesktopRoute[]);
+
+    expect(repository.getRouteById('11')).toMatchObject({
+      id: 11,
+      schemaUid: 'page-1',
+    });
+    expect(repository.getRouteById('missing')).toBeUndefined();
+  });
+
   it('should notify only subscribers for the changed layout cache', () => {
     const { repository } = createRouteRepository();
     const adminEvents: string[][] = [];

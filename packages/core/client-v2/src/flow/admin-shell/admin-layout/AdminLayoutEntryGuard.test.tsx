@@ -10,8 +10,9 @@
 import { FlowEngine, FlowEngineProvider } from '@nocobase/flow-engine';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
-import { createMemoryRouter, RouterProvider } from 'react-router-dom';
+import { createMemoryRouter, Outlet, RouterProvider } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
+import { NocoBaseDesktopRouteType } from '../../../flow-compat';
 import { RouteRepository } from '../../../RouteRepository';
 import { AdminLayoutEntryGuard } from './AdminLayoutEntryGuard';
 import type { AdminLayoutModel } from './AdminLayoutModel';
@@ -306,5 +307,180 @@ describe('AdminLayoutEntryGuard', () => {
 
     expect(activateLayout).toHaveBeenCalledTimes(2);
     expect(activateLayout).toHaveBeenLastCalledWith(expect.objectContaining({ uid: 'admin-layout-next' }));
+  });
+
+  it('should redirect group id paths to the first v2 landing route', async () => {
+    const modernWindow = window as Window & { __nocobase_modern_client_prefix__?: string };
+    modernWindow.__nocobase_modern_client_prefix__ = 'v2';
+    const engine = new FlowEngine();
+    const request = vi.fn().mockResolvedValue({
+      data: {
+        data: [],
+      },
+    });
+    const routeRepository = new RouteRepository({
+      api: {
+        request,
+        resource: vi.fn(),
+      },
+    } as never);
+    routeRepository.setRoutes([
+      {
+        id: 1,
+        title: 'Group',
+        type: NocoBaseDesktopRouteType.group,
+        children: [
+          {
+            id: 11,
+            title: 'Flow page',
+            schemaUid: 'flow-page-1',
+            type: NocoBaseDesktopRouteType.flowPage,
+          },
+        ],
+      },
+    ]);
+    engine.context.defineProperty('routeRepository', {
+      value: routeRepository,
+    });
+    engine.context.defineProperty('app', {
+      value: {
+        getPublicPath: () => '/apps/demo/v2/',
+        router: {
+          getBasename: () => '/apps/demo/v2',
+        },
+      },
+    });
+
+    const model = {
+      layout: {
+        routeName: 'admin',
+        routePath: '/admin',
+        uid: 'admin-layout-model',
+      },
+    } as AdminLayoutModel;
+    const router = createMemoryRouter(
+      [
+        {
+          path: '/admin',
+          id: 'admin',
+          element: (
+            <FlowEngineProvider engine={engine}>
+              <AdminLayoutEntryGuard model={model}>
+                <Outlet />
+              </AdminLayoutEntryGuard>
+            </FlowEngineProvider>
+          ),
+          children: [
+            {
+              path: ':name',
+              id: 'admin.__page',
+              element: <div>Admin page shell</div>,
+            },
+          ],
+        },
+      ],
+      {
+        initialEntries: ['/admin/1'],
+      },
+    );
+
+    try {
+      render(<RouterProvider router={router} />);
+
+      await waitFor(() => {
+        expect(router.state.location.pathname).toBe('/admin/flow-page-1');
+      });
+      expect(await screen.findByText('Admin page shell')).toBeInTheDocument();
+    } finally {
+      delete modernWindow.__nocobase_modern_client_prefix__;
+    }
+  });
+
+  it('should prefer schema uid routes before resolving numeric group ids', async () => {
+    const modernWindow = window as Window & { __nocobase_modern_client_prefix__?: string };
+    modernWindow.__nocobase_modern_client_prefix__ = 'v2';
+    const engine = new FlowEngine();
+    const routeRepository = {
+      activateLayout: vi.fn(() => vi.fn()),
+      ensureAccessibleLoaded: vi.fn().mockResolvedValue([]),
+      isAccessibleLoaded: vi.fn(() => true),
+      getRouteBySchemaUid: vi.fn((pageUid: string) =>
+        pageUid === '1'
+          ? {
+              schemaUid: '1',
+              type: NocoBaseDesktopRouteType.flowPage,
+            }
+          : undefined,
+      ),
+      getRouteById: vi.fn((routeId: string) =>
+        routeId === '1'
+          ? {
+              id: 1,
+              type: NocoBaseDesktopRouteType.group,
+              children: [
+                {
+                  schemaUid: 'flow-page-1',
+                  type: NocoBaseDesktopRouteType.flowPage,
+                },
+              ],
+            }
+          : undefined,
+      ),
+      listAccessible: vi.fn(() => []),
+    };
+    engine.context.defineProperty('routeRepository', {
+      value: routeRepository,
+    });
+    engine.context.defineProperty('app', {
+      value: {
+        getPublicPath: () => '/apps/demo/v2/',
+        router: {
+          getBasename: () => '/apps/demo/v2',
+        },
+      },
+    });
+
+    const model = {
+      layout: {
+        routeName: 'admin',
+        routePath: '/admin',
+        uid: 'admin-layout-model',
+      },
+    } as AdminLayoutModel;
+    const router = createMemoryRouter(
+      [
+        {
+          path: '/admin',
+          id: 'admin',
+          element: (
+            <FlowEngineProvider engine={engine}>
+              <AdminLayoutEntryGuard model={model}>
+                <Outlet />
+              </AdminLayoutEntryGuard>
+            </FlowEngineProvider>
+          ),
+          children: [
+            {
+              path: ':name',
+              id: 'admin.__page',
+              element: <div>Admin page shell</div>,
+            },
+          ],
+        },
+      ],
+      {
+        initialEntries: ['/admin/1'],
+      },
+    );
+
+    try {
+      render(<RouterProvider router={router} />);
+
+      await screen.findByText('Admin page shell');
+      expect(router.state.location.pathname).toBe('/admin/1');
+      expect(routeRepository.getRouteById).not.toHaveBeenCalled();
+    } finally {
+      delete modernWindow.__nocobase_modern_client_prefix__;
+    }
   });
 });
