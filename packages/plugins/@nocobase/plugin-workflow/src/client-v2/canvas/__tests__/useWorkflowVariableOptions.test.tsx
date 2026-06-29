@@ -32,6 +32,7 @@ const holder = vi.hoisted(() => ({
   engine: null as any,
   currentNode: null as any,
   workflow: null as any,
+  variableSourceWorkflow: null as any,
 }));
 
 // The aggregator reads the engine via `useFlowEngine()`; everything it needs (`context.app.pm.get`, `context.t`,
@@ -50,6 +51,7 @@ vi.mock('../contexts', async (importOriginal) => {
     ...actual,
     useNodeContext: () => holder.currentNode,
     useCurrentWorkflowContext: () => holder.workflow,
+    useWorkflowVariableSourceContext: () => holder.variableSourceWorkflow,
   };
 });
 
@@ -133,6 +135,7 @@ function setupEngine(plugin: any, { propertyTree = [] as any[] } = {}) {
 describe('useWorkflowVariableOptions — runtime-neutral resolution', () => {
   beforeEach(() => {
     holder.workflow = null;
+    holder.variableSourceWorkflow = null;
   });
 
   it('resolves the workflow plugin via the neutral "workflow" alias and reads its registries', () => {
@@ -168,6 +171,19 @@ describe('useWorkflowVariableOptions — runtime-neutral resolution', () => {
     expect(trigger).toBeTruthy();
     // The trigger's `data` output sits under $context, its fields beneath.
     expect(trigger?.children?.map((c: any) => c.name)).toContain('data');
+  });
+
+  it('uses the variable source workflow override for trigger variables', () => {
+    setupEngine(makeV1ShapedPlugin());
+    holder.currentNode = { key: 'n1', type: 'condition', upstream: null };
+    holder.workflow = { id: 8, key: 'child', type: 'custom-action', config: { type: 'global' } };
+    holder.variableSourceWorkflow = { id: 7, key: 'parent', type: 'collection', config: { collection: 'posts' } };
+
+    const { result } = renderHook(() => useWorkflowVariableOptions());
+    const trigger = result.current.find((n) => n.name === '$context');
+    const triggerData = trigger?.children?.find((child: any) => child.name === 'data');
+
+    expect(triggerData?.children?.map((child: any) => child.name)).toContain('title');
   });
 
   it('includes the legacy workflow title context path for saved trigger task titles', () => {

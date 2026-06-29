@@ -62,6 +62,7 @@ vi.mock('@nocobase/plugin-workflow/client-v2', () => ({
     config: { type: 0, collection: 'posts' },
   }),
   useWorkflowVariableOptions: () => [],
+  WorkflowVariableJsonTextArea: () => <textarea aria-label="workflow-variable-json-textarea" />,
   WorkflowVariableWrapper: ({ render, value, onChange }: any) => render({ value, onChange }),
 }));
 

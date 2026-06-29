@@ -40,7 +40,7 @@
 import React, { useMemo } from 'react';
 import type { MetaTreeNode } from '@nocobase/flow-engine';
 import { useFlowEngine } from '@nocobase/flow-engine';
-import { useCurrentWorkflowContext, useNodeContext } from './contexts';
+import { useCurrentWorkflowContext, useNodeContext, useWorkflowVariableSourceContext } from './contexts';
 import { useAvailableUpstreams, useUpstreamScopes, type Instruction } from './Instruction';
 import { adaptVariableOptionToMetaTree, adaptVariableOptionsToMetaTree } from './adaptVariableOptionToMetaTree';
 import { NAMESPACE } from '../locale';
@@ -292,7 +292,9 @@ function appendLegacyWorkflowTitleNode(children: MetaTreeNode[], t: (key: string
 function useTriggerScope(options: UseWorkflowVariableOptions): MetaTreeNode | null {
   const flowEngine = useFlowEngine();
   const plugin = useWorkflowPlugin();
-  const workflow = useCurrentWorkflowContext();
+  const variableSourceWorkflow = useWorkflowVariableSourceContext();
+  const currentWorkflow = useCurrentWorkflowContext();
+  const workflow = variableSourceWorkflow ?? currentWorkflow;
   const t = (key: string) => flowEngine.context.t(key, { ns: NAMESPACE });
   if (!workflow) {
     return null;
@@ -432,7 +434,9 @@ export function useWorkflowVariableOptions(options: UseWorkflowVariableOptions =
   const env = useEnvScope();
 
   const current = useNodeContext();
-  const workflow = useCurrentWorkflowContext();
+  const variableSourceWorkflow = useWorkflowVariableSourceContext();
+  const currentWorkflow = useCurrentWorkflowContext();
+  const workflow = variableSourceWorkflow ?? currentWorkflow;
   // A signature that changes only when the variable tree's *structure* could change — the current node, its upstream
   // chain (node-result), its branching scopes, and the workflow (trigger). Lazy children resolved into the tree by the
   // picker are NOT part of this key, so they persist until the structure itself changes.
