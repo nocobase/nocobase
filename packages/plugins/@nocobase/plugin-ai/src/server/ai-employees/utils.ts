@@ -23,7 +23,7 @@ export const convertAIMessage = ({
 }: {
   aiEmployee: AIEmployee;
   providerName: string;
-  provider?: LLMProvider;
+  provider: LLMProvider;
   llmService?: string;
   model: string;
   aiMessage: AIMessage;
@@ -102,7 +102,7 @@ export const convertAIMessage = ({
     values.metadata.additional_kwargs = additionalKwargs;
   }
 
-  providerInstance?.reshapeAIMessage({ aiMessage, values });
+  providerInstance.reshapeAIMessage({ aiMessage, values });
 
   return values;
 };
