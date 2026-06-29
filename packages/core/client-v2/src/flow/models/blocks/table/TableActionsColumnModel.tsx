@@ -30,10 +30,7 @@ import { getRowKey } from './utils';
 import { FormBlockModel } from '../form/FormBlockModel';
 
 const recordIdentityByFork = new WeakMap<ForkFlowModel<any>, string>();
-const rowActionButtonTypeOptions = [
-  { value: 'link', label: '{{t("Link")}}' },
-  { value: 'text', label: '{{t("Text")}}' },
-];
+
 export const tableRowActionsClassName = css`
   display: flex;
   flex-wrap: wrap;
@@ -59,6 +56,20 @@ export const tableRowActionsClassName = css`
   .nb-table-row-action-button.ant-btn-link > span,
   .nb-table-row-action-button.ant-btn-text > span {
     line-height: inherit;
+  }
+
+  .nb-table-row-action-button.ant-btn-primary,
+  .nb-table-row-action-button.ant-btn-default,
+  .nb-table-row-action-button.ant-btn-dashed {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: auto;
+    min-height: 0;
+    line-height: 1.4;
+    padding-block: var(--ant-padding-xxs);
+    padding-inline: var(--ant-padding-sm);
+    border-radius: var(--ant-border-radius-lg);
   }
 `;
 
@@ -92,7 +103,6 @@ const Columns = observer<any>(({ record, model, index }) => {
             },
             slotKey,
           );
-          (fork as any).buttonTypeOptions = rowActionButtonTypeOptions;
           recordIdentityByFork.set(fork, recordIdentity);
 
           fork.invalidateFlowCache('beforeRender');
