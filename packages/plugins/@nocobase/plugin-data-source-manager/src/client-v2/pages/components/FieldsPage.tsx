@@ -16,6 +16,7 @@ import {
   App,
   Button,
   Cascader,
+  Descriptions,
   Dropdown,
   Form,
   Input,
@@ -76,6 +77,13 @@ type ViewFieldRecord = {
   type?: string;
   uiSchema?: Record<string, any>;
   [key: string]: any;
+};
+
+type InheritedFieldGroup = {
+  collectionName: string;
+  fields: Record<string, any>[];
+  key: string;
+  title?: React.ReactNode;
 };
 
 type ViewFieldsResponse = {
@@ -294,6 +302,30 @@ function EditableFieldDisplayNameCell(props: {
   );
 }
 
+function InheritedFieldDetails(props: { field: Record<string, any>; fieldInterface?: FieldInterfaceOption }) {
+  const t = useT();
+  const field = props.field;
+  const fieldInterfaceTitle = getFieldInterfaceLabel(props.fieldInterface, field.interface);
+
+  return (
+    <Descriptions column={1} bordered size="small">
+      <Descriptions.Item label={t('Field display name')}>
+        {compileLegacyTemplate(getEditableFieldDisplayName(field), t)}
+      </Descriptions.Item>
+      <Descriptions.Item label={t('Field name')}>{field.name}</Descriptions.Item>
+      <Descriptions.Item label={t('Field type')}>
+        <Tag>{field.type}</Tag>
+      </Descriptions.Item>
+      <Descriptions.Item label={t('Field interface')}>
+        <Tag>{compileLegacyTemplate(fieldInterfaceTitle, t)}</Tag>
+      </Descriptions.Item>
+      {field.description ? (
+        <Descriptions.Item label={t('Description')}>{compileLegacyTemplate(field.description, t)}</Descriptions.Item>
+      ) : null}
+    </Descriptions>
+  );
+}
+
 function isReadOnlyFieldInterface(
   record: Record<string, any>,
   options: {
@@ -401,6 +433,68 @@ export function isFieldDeleteDisabled(record: Record<string, any>, collectionTem
   return getCollectionTemplateFields(collectionTemplate).some(
     (field: Record<string, any>) => field?.name === record.name && field.deletable === false,
   );
+}
+
+function normalizeRuntimeField(field: any, collectionName?: string) {
+  const options = field?.options || field || {};
+  return {
+    ...options,
+    collectionName: options.collectionName || field?.collectionName || field?.collection?.name || collectionName,
+  };
+}
+
+function getRuntimeCollectionOwnFields(collection: any) {
+  if (!collection) {
+    return [];
+  }
+  if (collection.fields instanceof Map) {
+    return Array.from(collection.fields.values()).map((field) => normalizeRuntimeField(field, collection.name));
+  }
+  return Array.isArray(collection.fields)
+    ? collection.fields.map((field) => normalizeRuntimeField(field, collection.name))
+    : [];
+}
+
+export function getInheritedFieldGroups(collection: any) {
+  const groups: InheritedFieldGroup[] = [];
+  const visitedCollections = new Set<string>();
+
+  const visitParentCollections = (currentCollection: any) => {
+    const parentCollections =
+      currentCollection?.inherits instanceof Map ? Array.from(currentCollection.inherits.values()) : [];
+    parentCollections.forEach((parentCollection: any) => {
+      if (!parentCollection?.name || visitedCollections.has(parentCollection.name)) {
+        return;
+      }
+      visitedCollections.add(parentCollection.name);
+      groups.push({
+        collectionName: parentCollection.name,
+        fields: getRuntimeCollectionOwnFields(parentCollection),
+        key: parentCollection.name,
+        title: parentCollection.title || parentCollection.options?.title || parentCollection.name,
+      });
+      visitParentCollections(parentCollection);
+    });
+  };
+
+  visitParentCollections(collection);
+  return groups;
+}
+
+export function isInheritedFieldOverridden(
+  record: Record<string, any>,
+  currentCollectionName: string,
+  currentFieldsByName: Map<string, Record<string, any>>,
+) {
+  const currentField = currentFieldsByName.get(record.name);
+  return Boolean(
+    currentField && (!currentField.collectionName || currentField.collectionName === currentCollectionName),
+  );
+}
+
+function getOverrideInitialField(record: Record<string, any>) {
+  const { collectionName, key, sort, uiSchemaUid, ...rest } = record;
+  return rest;
 }
 
 function isAddFieldVisible(options: {
@@ -947,7 +1041,12 @@ export default function FieldsPage(props: FieldsPageProps) {
   }, [request.data]);
 
   const openFieldForm = useCallback(
-    (mode: 'create' | 'edit', field?: Record<string, any>, interfaceName?: string) => {
+    (
+      mode: 'create' | 'edit',
+      field?: Record<string, any>,
+      interfaceName?: string,
+      options?: { override?: boolean },
+    ) => {
       ctx.viewer.drawer({
         width: 800,
         closable: true,
@@ -958,6 +1057,7 @@ export default function FieldsPage(props: FieldsPageProps) {
             collection={props.collection}
             interfaceName={interfaceName}
             field={field}
+            override={options?.override}
             onSubmitted={() => request.refresh()}
           />
         ),
@@ -987,6 +1087,8 @@ export default function FieldsPage(props: FieldsPageProps) {
   );
 
   const TemplateSyncFieldsDrawer = collectionTemplate?.configure?.syncFields?.Component;
+  const runtimeCollection = dataSource?.collectionManager?.getCollection?.(props.collection.name);
+  const inheritedFieldGroups = getInheritedFieldGroups(runtimeCollection);
 
   const openTemplateSyncFieldsDrawer = useCallback(() => {
     if (!TemplateSyncFieldsDrawer) {
@@ -1024,6 +1126,31 @@ export default function FieldsPage(props: FieldsPageProps) {
       ),
     });
   }, [allFieldInterfaceGroups, ctx.viewer, fieldInterfacesByName, props.collection, request]);
+
+  const openInheritedFieldView = useCallback(
+    (record: Record<string, any>, parentTitle?: React.ReactNode) => {
+      const fieldInterface = record.interface ? fieldInterfacesByName[record.interface] : undefined;
+      ctx.viewer.drawer({
+        title: `${compileLegacyTemplate(parentTitle || record.collectionName || props.collection.name, t)} - ${t(
+          'View',
+        )}`,
+        width: 520,
+        closable: true,
+        content: () => <InheritedFieldDetails field={record} fieldInterface={fieldInterface} />,
+      });
+    },
+    [ctx.viewer, fieldInterfacesByName, props.collection.name, t],
+  );
+
+  const openInheritedFieldOverride = useCallback(
+    (record: Record<string, any>) => {
+      if (isInheritedFieldOverridden(record, props.collection.name, currentFieldsByName)) {
+        return;
+      }
+      openFieldForm('create', getOverrideInitialField(record), record.interface, { override: true });
+    },
+    [currentFieldsByName, openFieldForm, props.collection.name],
+  );
 
   const handleDelete = useCallback(
     (filterByTk: React.Key | React.Key[]) => {
@@ -1178,6 +1305,92 @@ export default function FieldsPage(props: FieldsPageProps) {
       }
     },
     [ctx, message, notification, props, t],
+  );
+
+  const inheritedFieldColumns = useMemo<ColumnsType<Record<string, any>>>(
+    () => [
+      {
+        title: t('Field display name'),
+        dataIndex: ['uiSchema', 'title'],
+        width: 240,
+        render: (_, record) => compileLegacyTemplate(getEditableFieldDisplayName(record), t),
+      },
+      { title: t('Field name'), dataIndex: 'name' },
+      { title: t('Field type'), dataIndex: 'type', render: (value) => <Tag>{value}</Tag> },
+      {
+        title: t('Field interface'),
+        dataIndex: 'interface',
+        width: 180,
+        render: (value) => (
+          <Tag>{compileLegacyTemplate(getFieldInterfaceLabel(fieldInterfacesByName[value], value), t)}</Tag>
+        ),
+      },
+      {
+        title: t('Title field'),
+        dataIndex: 'titleField',
+        width: 120,
+        render: (_, record) =>
+          isTitleField(ctx.dataSourceManager, record) ? (
+            <Tooltip title={t('Default title for each record')} placement="right">
+              <Switch
+                aria-label={`switch-title-field-${record.name}`}
+                size="small"
+                disabled={configureFieldsDisabled}
+                loading={record.name === titleFieldLoadingKey}
+                checked={record.name === (titleField || 'id')}
+                onChange={(checked) => handleTitleFieldChange(record, checked)}
+              />
+            </Tooltip>
+          ) : null,
+      },
+      { title: t('Description'), dataIndex: 'description', ellipsis: true },
+      {
+        title: t('Actions'),
+        width: 160,
+        render: (_, record) => {
+          const overridden = isInheritedFieldOverridden(record, props.collection.name, currentFieldsByName);
+          return (
+            <Space>
+              {configureFieldsDisabled ? null : (
+                <Typography.Link disabled={overridden} onClick={() => openInheritedFieldOverride(record)}>
+                  {t('Override')}
+                </Typography.Link>
+              )}
+              <Typography.Link onClick={() => openInheritedFieldView(record, record.__parentTitle)}>
+                {t('View')}
+              </Typography.Link>
+            </Space>
+          );
+        },
+      },
+    ],
+    [
+      configureFieldsDisabled,
+      ctx.dataSourceManager,
+      currentFieldsByName,
+      fieldInterfacesByName,
+      handleTitleFieldChange,
+      openInheritedFieldOverride,
+      openInheritedFieldView,
+      props.collection.name,
+      t,
+      titleField,
+      titleFieldLoadingKey,
+    ],
+  );
+
+  const inheritedGroupColumns = useMemo<ColumnsType<InheritedFieldGroup>>(
+    () => [
+      {
+        dataIndex: 'title',
+        render: (_, record) => (
+          <strong>
+            {t('Inherited fields')} - {compileLegacyTemplate(record.title || record.collectionName, t)}
+          </strong>
+        ),
+      },
+    ],
+    [t],
   );
 
   const handleSyncFields = useCallback(async () => {
@@ -1407,6 +1620,32 @@ export default function FieldsPage(props: FieldsPageProps) {
             : undefined
         }
       />
+      {inheritedFieldGroups.some((group) => group.fields.length) ? (
+        <AntdTable<InheritedFieldGroup>
+          style={{ marginTop: 16 }}
+          rowKey="key"
+          columns={inheritedGroupColumns}
+          dataSource={inheritedFieldGroups.filter((group) => group.fields.length)}
+          pagination={false}
+          showHeader={false}
+          expandable={{
+            defaultExpandAllRows: true,
+            defaultExpandedRowKeys: inheritedFieldGroups.map((group) => group.key),
+            expandedRowRender: (record) => (
+              <AntdTable<Record<string, any>>
+                rowKey="name"
+                columns={inheritedFieldColumns}
+                dataSource={record.fields.map((field) => ({
+                  ...field,
+                  __parentTitle: record.title,
+                }))}
+                pagination={false}
+                showHeader={false}
+              />
+            ),
+          }}
+        />
+      ) : null}
     </>
   );
 }

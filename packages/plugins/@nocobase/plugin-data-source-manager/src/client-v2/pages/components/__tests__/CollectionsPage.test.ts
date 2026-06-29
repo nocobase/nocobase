@@ -8,7 +8,7 @@
  */
 
 import { compileLegacyTemplate } from '../../../utils/compileLegacyTemplate';
-import { isFieldDeleteDisabled } from '../FieldsPage';
+import { getInheritedFieldGroups, isFieldDeleteDisabled, isInheritedFieldOverridden } from '../FieldsPage';
 import { getPresetFieldRows } from '../CollectionsPage';
 
 describe('getPresetFieldRows', () => {
@@ -66,5 +66,43 @@ describe('field delete helpers', () => {
   it('disables deleting fields whose record metadata is non-deletable', () => {
     expect(isFieldDeleteDisabled({ name: 'title', deletable: false })).toBe(true);
     expect(isFieldDeleteDisabled({ name: 'title', deletable: true })).toBe(false);
+  });
+});
+
+describe('inherited field helpers', () => {
+  function createCollection(name: string, fields: Array<Record<string, unknown>>, inherits: unknown[] = []) {
+    return {
+      name,
+      title: name,
+      fields: new Map(fields.map((field) => [field.name, { options: field }])),
+      inherits: new Map(inherits.map((collection: { name: string }) => [collection.name, collection])),
+    };
+  }
+
+  it('returns direct and ancestor inherited field groups using each parent collection own fields', () => {
+    const grandparent = createCollection('grandparent', [{ name: 'grandparentField', interface: 'input' }]);
+    const parent = createCollection('parent', [{ name: 'parentField', interface: 'input' }], [grandparent]);
+    const child = createCollection('child', [{ name: 'childField', interface: 'input' }], [parent]);
+
+    expect(
+      getInheritedFieldGroups(child).map((group) => ({
+        collectionName: group.collectionName,
+        fields: group.fields.map((field) => field.name),
+      })),
+    ).toEqual([
+      { collectionName: 'parent', fields: ['parentField'] },
+      { collectionName: 'grandparent', fields: ['grandparentField'] },
+    ]);
+  });
+
+  it('treats a same-name current collection field as an overridden inherited field', () => {
+    const currentFieldsByName = new Map([
+      ['title', { name: 'title', collectionName: 'orders-1' }],
+      ['status', { name: 'status', collectionName: 'orders' }],
+    ]);
+
+    expect(isInheritedFieldOverridden({ name: 'title' }, 'orders-1', currentFieldsByName)).toBe(true);
+    expect(isInheritedFieldOverridden({ name: 'status' }, 'orders-1', currentFieldsByName)).toBe(false);
+    expect(isInheritedFieldOverridden({ name: 'amount' }, 'orders-1', currentFieldsByName)).toBe(false);
   });
 });
