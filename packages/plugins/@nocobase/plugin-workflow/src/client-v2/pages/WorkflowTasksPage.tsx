@@ -12,13 +12,14 @@ import { useMobileLayout } from '@nocobase/client-v2';
 import { useMemoizedFn } from 'ahooks';
 import { App, Badge, Drawer, Flex, Layout, List, Menu, Result, Segmented, Tabs, Typography, theme } from 'antd';
 import type { MenuProps } from 'antd';
-import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { getWorkflowTasksPath } from '../constants';
 import {
   TASK_STATUS,
   TASK_STATUS_VALUES,
   WORKFLOW_TASKS_PAGE_SIZE,
+  WorkflowTaskRecordContext,
   getAvailableWorkflowTaskTypeKeys,
   getWorkflowTaskRecordKey,
   getWorkflowTaskRegistry,
@@ -30,7 +31,6 @@ import {
   type TaskTypeOptions,
   type WorkflowTaskFlowContext,
   type WorkflowTaskRecord,
-  type WorkflowTaskRecordContextValue,
   type WorkflowTaskStatus,
 } from '../taskCenter';
 import { useT } from '../locale';
@@ -39,16 +39,6 @@ interface WorkflowTasksRouteParams {
   taskType?: string;
   status?: string;
   popupId?: string;
-}
-
-const WorkflowTaskRecordContext = createContext<WorkflowTaskRecordContextValue | null>(null);
-
-export function useWorkflowTaskRecord() {
-  const context = useContext(WorkflowTaskRecordContext);
-  if (!context) {
-    throw new Error('useWorkflowTaskRecord must be used within WorkflowTaskRecordContext');
-  }
-  return context;
 }
 
 function useWorkflowTasksRoute() {

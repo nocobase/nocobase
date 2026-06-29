@@ -9,7 +9,7 @@
 
 import { useMemoizedFn } from 'ahooks';
 import type { ComponentType } from 'react';
-import { useEffect, useMemo, useState } from 'react';
+import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 
 export const TASK_STATUS = {
   ALL: 'all',
@@ -41,6 +41,16 @@ export interface WorkflowTaskRecordContextValue {
   record: WorkflowTaskRecord;
   openRecord?: (record: WorkflowTaskRecord) => void;
   refresh?: () => Promise<void>;
+}
+
+export const WorkflowTaskRecordContext = createContext<WorkflowTaskRecordContextValue | null>(null);
+
+export function useWorkflowTaskRecord() {
+  const context = useContext(WorkflowTaskRecordContext);
+  if (!context) {
+    throw new Error('useWorkflowTaskRecord must be used within WorkflowTaskRecordContext');
+  }
+  return context;
 }
 
 export interface WorkflowTaskResource {

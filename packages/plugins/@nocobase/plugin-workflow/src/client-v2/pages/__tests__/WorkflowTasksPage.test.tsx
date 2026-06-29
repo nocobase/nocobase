@@ -17,6 +17,7 @@ import type {
   WorkflowTaskRegistry,
   WorkflowTaskResource,
 } from '../../taskCenter';
+import { useWorkflowTaskRecord } from '../../taskCenter';
 
 const holder = vi.hoisted(() => ({
   ctx: null as WorkflowTaskFlowContext | null,
@@ -56,7 +57,7 @@ vi.mock('../../locale', () => ({
   tExpr: (key: string) => key,
 }));
 
-import WorkflowTasksPage, { useWorkflowTaskRecord } from '../WorkflowTasksPage';
+import WorkflowTasksPage from '../WorkflowTasksPage';
 
 function renderWithApp(node: React.ReactNode) {
   return render(<App>{node}</App>);
