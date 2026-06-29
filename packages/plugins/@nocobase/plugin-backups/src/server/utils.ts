@@ -18,6 +18,7 @@ export const RESTORE_TASKS_CACHE_NAME = 'restore-task-results';
 export const RESTORE_TASKS_CACHE_TTL = 24 * 60 * 60 * 1000;
 
 import { Writable, Transform, TransformCallback } from 'stream';
+import archiver from 'archiver';
 import yauzl from 'yauzl';
 import fs from 'fs-extra';
 import path from 'path';
@@ -181,6 +182,33 @@ export class Extractor extends Writable {
   }
 }
 
+export async function compressDirectoryToBackupArchive(sourceDir: string, backupFilePath: string): Promise<void> {
+  const archive = archiver('zip', { zlib: { level: 9 } });
+  const output = fs.createWriteStream(backupFilePath);
+
+  const outputClosed = new Promise<void>((resolve, reject) => {
+    output.on('close', resolve);
+    output.on('error', reject);
+    archive.on('error', reject);
+    archive.on('warning', (error) => {
+      if (error.code === 'ENOENT') {
+        return;
+      }
+      reject(error);
+    });
+  });
+
+  try {
+    archive.pipe(output);
+    archive.directory(sourceDir, false);
+    await archive.finalize();
+    await outputClosed;
+  } catch (error) {
+    await fs.remove(backupFilePath);
+    throw error;
+  }
+}
+
 export function humanFileSize(bytes: number, si = false, dp = 1): string {
   const thresh = si ? 1000 : 1024;
   const units = si
@@ -202,6 +230,7 @@ const dbVersionCommands = {
   mysql: 'select version() as version',
   mariadb: 'select version() as version',
   postgres: 'select version() as version',
+  kingbase: 'select version() as version',
 };
 
 export async function getDBVersion(db: Database): Promise<string> {

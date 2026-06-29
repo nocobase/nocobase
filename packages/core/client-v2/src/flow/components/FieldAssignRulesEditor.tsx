@@ -28,7 +28,7 @@ import { buildFieldAssignCascaderOptionsFromCollection, type FieldAssignCascader
 import { isRunJSValue, isVariableExpression, type MetaTreeNode } from '@nocobase/flow-engine';
 import { isToManyAssociationField } from '../internal/utils/modelUtils';
 
-export type AssignMode = 'default' | 'assign';
+export type AssignMode = 'default' | 'assign' | 'override';
 
 type CollectionFieldLike = {
   name?: unknown;
@@ -89,6 +89,8 @@ export interface FieldAssignRulesEditorProps {
   defaultMode?: AssignMode;
   /** 固定 mode：用于“仅默认值/仅赋值”的场景 */
   fixedMode?: AssignMode;
+  /** 可选 mode 列表；fixedMode 优先级更高 */
+  allowedModes?: AssignMode[];
   /** 是否显示 condition */
   showCondition?: boolean;
   /** 是否显示 enable 开关 */
@@ -109,6 +111,65 @@ export interface FieldAssignRulesEditorProps {
   maxAssociationFieldDepth?: number;
 }
 
+const ALL_ASSIGN_MODES: AssignMode[] = ['default', 'override', 'assign'];
+
+function cloneCascaderOption(option: FieldAssignCascaderOption): FieldAssignCascaderOption {
+  return {
+    ...option,
+    children: option.children?.map((child) => cloneCascaderOption(child)),
+  };
+}
+
+function mergeCascaderOptionInto(options: FieldAssignCascaderOption[], source: FieldAssignCascaderOption) {
+  const value = source?.value ? String(source.value) : '';
+  if (!value) return;
+
+  const existing = options.find((item) => String(item?.value || '') === value);
+  if (!existing) {
+    options.push(cloneCascaderOption(source));
+    return;
+  }
+
+  if (!existing.label && source.label) {
+    existing.label = source.label;
+  }
+  if (source.isLeaf === false || existing.children?.length || source.children?.length) {
+    existing.isLeaf = false;
+  }
+  if (source.loading) {
+    existing.loading = source.loading;
+  }
+  if (source.children?.length) {
+    existing.children = mergeCascaderOptions(existing.children || [], source.children);
+  }
+}
+
+function mergeCascaderOptions(
+  configured: FieldAssignCascaderOption[],
+  allFields: FieldAssignCascaderOption[],
+): FieldAssignCascaderOption[] {
+  const result = (Array.isArray(configured) ? configured : []).map((item) => cloneCascaderOption(item));
+  for (const item of Array.isArray(allFields) ? allFields : []) {
+    mergeCascaderOptionInto(result, item);
+  }
+  return result;
+}
+
+function isAssignMode(mode: unknown): mode is AssignMode {
+  return mode === 'default' || mode === 'override' || mode === 'assign';
+}
+
+function normalizeAssignModes(modes?: AssignMode[]): AssignMode[] {
+  const source = Array.isArray(modes) && modes.length ? modes : ALL_ASSIGN_MODES;
+  const out: AssignMode[] = [];
+  for (const mode of source) {
+    if (!isAssignMode(mode)) continue;
+    if (out.includes(mode)) continue;
+    out.push(mode);
+  }
+  return out.length ? out : ALL_ASSIGN_MODES;
+}
+
 export const FieldAssignRulesEditor: React.FC<FieldAssignRulesEditorProps> = (props) => {
   const {
     t,
@@ -118,6 +179,7 @@ export const FieldAssignRulesEditor: React.FC<FieldAssignRulesEditorProps> = (pr
     onChange,
     defaultMode = 'assign',
     fixedMode,
+    allowedModes: rawAllowedModes,
     showCondition = true,
     showEnable = true,
     showValueEditorWhenNoField = false,
@@ -129,13 +191,43 @@ export const FieldAssignRulesEditor: React.FC<FieldAssignRulesEditorProps> = (pr
   } = props;
 
   const value = React.useMemo(() => (Array.isArray(rawValue) ? rawValue : []), [rawValue]);
-  const [cascaderOptions, setCascaderOptions] = React.useState<FieldAssignCascaderOption[]>(() =>
-    Array.isArray(fieldOptions) ? (fieldOptions as FieldAssignCascaderOption[]) : [],
+  const allowedModes = React.useMemo(
+    () => normalizeAssignModes(fixedMode ? [fixedMode] : rawAllowedModes),
+    [fixedMode, rawAllowedModes],
+  );
+  const getDefaultMode = React.useCallback((): AssignMode => {
+    if (fixedMode) return fixedMode;
+    if (isAssignMode(defaultMode) && allowedModes.includes(defaultMode)) return defaultMode;
+    return allowedModes[0] || 'assign';
+  }, [allowedModes, defaultMode, fixedMode]);
+  const normalizeItemMode = React.useCallback(
+    (item: FieldAssignRuleItem): FieldAssignRuleItem => {
+      const mode = isAssignMode(item?.mode) && allowedModes.includes(item.mode) ? item.mode : getDefaultMode();
+      return item?.mode === mode ? item : { ...item, mode };
+    },
+    [allowedModes, getDefaultMode],
+  );
+  const emitChange = React.useCallback(
+    (next: FieldAssignRuleItem[]) => {
+      onChange?.(next.map((item) => normalizeItemMode(item)));
+    },
+    [normalizeItemMode, onChange],
   );
 
+  const normalizeFieldOptions = React.useCallback((options: FieldAssignRulesEditorProps['fieldOptions']) => {
+    return Array.isArray(options)
+      ? (options as FieldAssignCascaderOption[]).map((option) => cloneCascaderOption(option))
+      : [];
+  }, []);
+  const [cascaderOptions, setCascaderOptions] = React.useState<FieldAssignCascaderOption[]>(() =>
+    normalizeFieldOptions(fieldOptions),
+  );
+  const loadedCascaderOptionsRef = React.useRef<WeakSet<FieldAssignCascaderOption>>(new WeakSet());
+
   React.useEffect(() => {
-    setCascaderOptions(Array.isArray(fieldOptions) ? (fieldOptions as FieldAssignCascaderOption[]) : []);
-  }, [fieldOptions]);
+    loadedCascaderOptionsRef.current = new WeakSet();
+    setCascaderOptions(normalizeFieldOptions(fieldOptions));
+  }, [fieldOptions, normalizeFieldOptions, rootCollection, maxAssociationFieldDepth]);
 
   const getRuleKey = React.useCallback((item: FieldAssignRuleItem, index: number) => item?.key || String(index), []);
   const [titleFieldDraftMap, setTitleFieldDraftMap] = React.useState<Record<string, string | undefined>>({});
@@ -312,7 +404,7 @@ export const FieldAssignRulesEditor: React.FC<FieldAssignRulesEditorProps> = (pr
 
   const patchItem = (index: number, patch: Partial<FieldAssignRuleItem>) => {
     const next = value.map((it, i) => (i === index ? { ...it, ...patch } : it));
-    onChange?.(next);
+    emitChange(next);
   };
 
   const removeItem = (index: number) => {
@@ -334,7 +426,7 @@ export const FieldAssignRulesEditor: React.FC<FieldAssignRulesEditorProps> = (pr
       setSyncingRuleKey(null);
     }
     const next = value.filter((_, i) => i !== index);
-    onChange?.(next);
+    emitChange(next);
   };
 
   const moveItem = (index: number, direction: 'up' | 'down') => {
@@ -343,7 +435,7 @@ export const FieldAssignRulesEditor: React.FC<FieldAssignRulesEditorProps> = (pr
     if (targetIndex < 0 || targetIndex >= next.length) return;
     const [item] = next.splice(index, 1);
     next.splice(targetIndex, 0, item);
-    onChange?.(next);
+    emitChange(next);
   };
 
   const addItem = () => {
@@ -352,29 +444,33 @@ export const FieldAssignRulesEditor: React.FC<FieldAssignRulesEditorProps> = (pr
       {
         key: uid(),
         enable: true,
-        mode: fixedMode || defaultMode,
+        mode: getDefaultMode(),
         condition: { logic: '$and', items: [] },
         targetPath: undefined,
         value: undefined,
       },
     ];
-    onChange?.(next);
+    emitChange(next);
   };
 
   const getEffectiveMode = (item: FieldAssignRuleItem): AssignMode => {
     if (fixedMode) return fixedMode;
-    return item?.mode === 'default' ? 'default' : 'assign';
+    if (isAssignMode(item?.mode) && allowedModes.includes(item.mode)) return item.mode;
+    return getDefaultMode();
   };
 
   const renderAssignModeLabel = React.useCallback(
     (mode: AssignMode) => {
-      const modeText = mode === 'default' ? t('Default value') : t('Fixed value');
+      const modeText =
+        mode === 'default' ? t('Default value') : mode === 'override' ? t('Override value') : t('Fixed value');
       const modeHelpText =
         mode === 'default'
           ? t(
               'A pre-filled value. Editable, for new entries only, and won’t affect existing data (including empty values).',
             )
-          : t('A system-set value. Read-only.');
+          : mode === 'override'
+            ? t('Overrides existing values until the user edits it.')
+            : t('A system-set value. Read-only.');
 
       const preventModeToggle = (e: React.MouseEvent<HTMLElement>) => {
         e.preventDefault();
@@ -551,23 +647,26 @@ export const FieldAssignRulesEditor: React.FC<FieldAssignRulesEditorProps> = (pr
       const opts = selectedOptions || [];
       const target = opts[opts.length - 1];
       if (!target) return;
-      if (target.children && Array.isArray(target.children) && target.children.length) return;
       if (target.isLeaf) return;
+      if (loadedCascaderOptionsRef.current.has(target)) return;
 
       const segments = opts.map((o) => String(o?.value)).filter(Boolean);
       const targetCollection = resolveTargetCollectionBySegments(segments);
       if (!targetCollection) {
-        target.isLeaf = true;
+        target.isLeaf = !(target.children && target.children.length);
+        loadedCascaderOptionsRef.current.add(target);
         setCascaderOptions((prev) => [...prev]);
         return;
       }
 
       const children = buildChildrenFromCollection(targetCollection, segments.length);
       if (!children.length) {
-        target.isLeaf = true;
+        target.isLeaf = !(target.children && target.children.length);
       } else {
-        target.children = children;
+        target.children = mergeCascaderOptions(target.children || [], children);
+        target.isLeaf = false;
       }
+      loadedCascaderOptionsRef.current.add(target);
       setCascaderOptions((prev) => [...prev]);
     },
     [buildChildrenFromCollection, resolveTargetCollectionBySegments],
@@ -583,12 +682,14 @@ export const FieldAssignRulesEditor: React.FC<FieldAssignRulesEditorProps> = (pr
         const hit = options.find((o) => String(o?.value) === seg);
         if (!hit) return;
         selected.push(hit);
+        if (!hit.isLeaf && !loadedCascaderOptionsRef.current.has(hit)) {
+          await loadCascaderData(selected);
+        }
         if (hit.children?.length) {
           options = hit.children;
           continue;
         }
         if (hit.isLeaf) return;
-        await loadCascaderData(selected);
         options = hit.children || [];
       }
     },
@@ -619,7 +720,9 @@ export const FieldAssignRulesEditor: React.FC<FieldAssignRulesEditorProps> = (pr
         await preloadCascaderPath(segs);
       }
     };
-    void run();
+    run().catch((error) => {
+      console.warn('[FieldAssignRulesEditor] Failed to preload cascader path', error);
+    });
     return () => {
       cancelled = true;
     };
@@ -627,7 +730,8 @@ export const FieldAssignRulesEditor: React.FC<FieldAssignRulesEditorProps> = (pr
 
   const renderPanelHeader = (item: FieldAssignRuleItem, index: number) => {
     const mode = getEffectiveMode(item);
-    const modeText = mode === 'default' ? t('Default value') : t('Fixed value');
+    const modeText =
+      mode === 'default' ? t('Default value') : mode === 'override' ? t('Override value') : t('Fixed value');
     const fieldLabel = getFieldLabel(item.targetPath);
     const title = fieldLabel ? String(fieldLabel) : t('Please select field');
 
@@ -935,8 +1039,11 @@ export const FieldAssignRulesEditor: React.FC<FieldAssignRulesEditorProps> = (pr
                 onChange={(event) => patchItem(index, { mode: event.target.value as AssignMode })}
               >
                 <Space size={16}>
-                  <Radio value="default">{renderAssignModeLabel('default')}</Radio>
-                  <Radio value="assign">{renderAssignModeLabel('assign')}</Radio>
+                  {allowedModes.map((allowedMode) => (
+                    <Radio key={allowedMode} value={allowedMode}>
+                      {renderAssignModeLabel(allowedMode)}
+                    </Radio>
+                  ))}
                 </Space>
               </Radio.Group>
             </div>

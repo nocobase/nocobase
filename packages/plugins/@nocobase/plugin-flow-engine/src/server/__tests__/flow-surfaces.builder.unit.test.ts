@@ -136,6 +136,10 @@ describe('flowSurfaces builder action style defaults', () => {
       use: 'EditActionModel',
       containerUse: 'GridCardItemModel',
     });
+    const commentEditAction = buildActionTree({
+      use: 'EditCommentActionModel',
+      containerUse: 'CommentItemModel',
+    });
     const detailsEditAction = buildActionTree({
       use: 'EditActionModel',
       containerUse: 'DetailsBlockModel',
@@ -144,19 +148,63 @@ describe('flowSurfaces builder action style defaults', () => {
     expect(tableEditAction.stepParams?.buttonSettings?.general).toMatchObject({
       type: 'link',
       icon: null,
+      iconOnly: false,
     });
     expect(listEditAction.stepParams?.buttonSettings?.general).toMatchObject({
       type: 'link',
       icon: null,
+      iconOnly: false,
     });
     expect(gridCardEditAction.stepParams?.buttonSettings?.general).toMatchObject({
       type: 'link',
       icon: null,
+      iconOnly: false,
+    });
+    expect(commentEditAction.stepParams?.buttonSettings?.general).toMatchObject({
+      type: 'link',
+      icon: null,
+      iconOnly: false,
     });
     expect(detailsEditAction.stepParams?.buttonSettings?.general).toMatchObject({
       type: 'default',
       icon: 'EditOutlined',
     });
+  });
+
+  it('should preserve explicit icon-only compact record actions', () => {
+    const explicitPropsAction = buildActionTree({
+      use: 'UpdateRecordActionModel',
+      containerUse: 'TableActionsColumnModel',
+      props: {
+        icon: 'StarOutlined',
+        iconOnly: true,
+      },
+    });
+    const explicitStepParamsAction = buildActionTree({
+      use: 'EditActionModel',
+      containerUse: 'ListItemModel',
+      stepParams: {
+        buttonSettings: {
+          general: {
+            iconOnly: true,
+          },
+        },
+      },
+    });
+
+    expect(explicitPropsAction.props).toMatchObject({
+      icon: 'StarOutlined',
+      iconOnly: true,
+    });
+    expect(explicitPropsAction.stepParams?.buttonSettings?.general).toMatchObject({
+      icon: 'StarOutlined',
+      iconOnly: true,
+    });
+    expect(explicitPropsAction.stepParams?.buttonSettings?.general?.title).toBeUndefined();
+    expect(explicitStepParamsAction.stepParams?.buttonSettings?.general).toMatchObject({
+      iconOnly: true,
+    });
+    expect(explicitStepParamsAction.stepParams?.buttonSettings?.general?.title).toBeUndefined();
   });
 });
 

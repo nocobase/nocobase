@@ -76,8 +76,71 @@
         "items": [
           {
             "type": "custom-link",
-            "label": "Grande Modelo de Linguagem",
-            "link": "/ai-employees/workflow/nodes/llm/chat"
+            "label": "Nós de LLM",
+            "items": [
+              {
+                "type": "custom-link",
+                "label": "Chat de texto",
+                "link": "/ai-employees/workflow/nodes/llm/chat"
+              },
+              {
+                "type": "custom-link",
+                "label": "Chat multimodal",
+                "link": "/ai-employees/workflow/nodes/llm/multimodal-chat"
+              },
+              {
+                "type": "custom-link",
+                "label": "Saída estruturada",
+                "link": "/ai-employees/workflow/nodes/llm/structured-output"
+              }
+            ]
+          },
+          {
+            "type": "custom-link",
+            "label": "Nó de funcionário de IA",
+            "items": [
+              {
+                "type": "custom-link",
+                "label": "Configuração do nó",
+                "link": "/ai-employees/workflow/nodes/employee/configuration"
+              },
+              {
+                "type": "custom-link",
+                "label": "Aprovação do nó",
+                "link": "/ai-employees/workflow/nodes/employee/approval"
+              }
+            ]
+          },
+          {
+            "type": "custom-link",
+            "label": "Base de conhecimento de IA",
+            "items": [
+              {
+                "type": "custom-link",
+                "label": "Visão geral",
+                "link": "/ai-employees/workflow/nodes/knowledge/"
+              },
+              {
+                "type": "custom-link",
+                "label": "Criar documento",
+                "link": "/ai-employees/workflow/nodes/knowledge/create-document"
+              },
+              {
+                "type": "custom-link",
+                "label": "Atualizar documento",
+                "link": "/ai-employees/workflow/nodes/knowledge/update-document"
+              },
+              {
+                "type": "custom-link",
+                "label": "Excluir documento",
+                "link": "/ai-employees/workflow/nodes/knowledge/delete-document"
+              },
+              {
+                "type": "custom-link",
+                "label": "Recuperar documento",
+                "link": "/ai-employees/workflow/nodes/knowledge/retrieve-document"
+              }
+            ]
           }
         ]
       },

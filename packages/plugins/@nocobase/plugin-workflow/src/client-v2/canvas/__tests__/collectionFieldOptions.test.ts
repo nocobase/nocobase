@@ -142,4 +142,10 @@ describe('getCollectionFieldOptions (client-v2)', () => {
     getCollectionFieldOptions({ collection: 'main:roles', compile, collectionManager });
     expect(collectionManager.getCollectionAllFields).toHaveBeenCalledWith('roles');
   });
+
+  it('returns an empty field tree when collection is unset', () => {
+    const collectionManager = makeCollectionManager({});
+    expect(getCollectionFieldOptions({ compile, collectionManager })).toEqual([]);
+    expect(collectionManager.getCollectionAllFields).not.toHaveBeenCalled();
+  });
 });

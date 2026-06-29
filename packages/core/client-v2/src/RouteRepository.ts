@@ -9,13 +9,22 @@
 
 import { APIClient } from '@nocobase/sdk';
 import type { NocoBaseDesktopRoute } from './flow-compat';
+import { ADMIN_LAYOUT_MODEL_UID } from './flow/admin-shell/admin-layout/constants';
 
 type RouteSubscriber = () => void;
 type RouteCreateValues = Partial<NocoBaseDesktopRoute>;
 type RouteUpdateValues = Partial<NocoBaseDesktopRoute>;
+type RouteLayoutLike = {
+  uid?: unknown;
+};
 
 type RouteMutationOptions = {
   refreshAfterMutation?: boolean;
+};
+
+type AccessibleRouteCache = {
+  accessibleLoaded: boolean;
+  routes: NocoBaseDesktopRoute[];
 };
 
 type MoveRouteOptions = {
@@ -30,21 +39,47 @@ type MoveRouteOptions = {
 
 export class RouteRepository {
   routes: NocoBaseDesktopRoute[] = [];
-  protected subscribers = new Set<RouteSubscriber>();
-  protected accessibleLoaded = false;
-  protected accessibleLoadingPromise: Promise<NocoBaseDesktopRoute[]> | null = null;
+  protected subscribers = new Map<RouteSubscriber, string>();
+  protected accessibleLoadingPromises = new Map<string, Promise<NocoBaseDesktopRoute[]>>();
+  private layoutActivations: Array<{ token: symbol; uid: string }> = [];
+  private routeCaches = new Map<string, AccessibleRouteCache>();
+  private refreshRequestIds = new Map<string, number>();
+  private notifiedLayoutUid: string | undefined;
 
   constructor(protected ctx: { api?: APIClient }) {}
+
+  activateLayout(layout?: RouteLayoutLike) {
+    const uid = this.normalizeLayoutUid(layout?.uid);
+    const token = Symbol('route-layout');
+
+    this.layoutActivations.push({
+      token,
+      uid,
+    });
+    this.syncRoutesProperty();
+
+    return () => {
+      const index = this.layoutActivations.findIndex((item) => item.token === token);
+      if (index >= 0) {
+        this.layoutActivations.splice(index, 1);
+      }
+      this.syncRoutesProperty();
+    };
+  }
 
   /**
    * 同步当前可访问桌面路由，并通知订阅方刷新。
    *
    * @param routes 最新的桌面路由树
    */
-  setRoutes(routes: NocoBaseDesktopRoute[]) {
-    this.routes = routes;
-    this.accessibleLoaded = true;
-    this.emitChange();
+  setRoutes(routes: NocoBaseDesktopRoute[], layoutUid = this.getCurrentLayoutUid()) {
+    const cache = this.getRouteCache(layoutUid);
+    cache.routes = routes;
+    cache.accessibleLoaded = true;
+    if (layoutUid === this.getCurrentLayoutUid()) {
+      this.routes = routes;
+    }
+    this.emitChange(layoutUid);
   }
 
   /**
@@ -53,7 +88,9 @@ export class RouteRepository {
    * @returns 当前缓存的路由数组
    */
   listAccessible() {
-    return this.routes;
+    const routes = this.getRouteCache(this.getReadableLayoutUid()).routes;
+    this.routes = routes;
+    return routes;
   }
 
   /**
@@ -62,7 +99,7 @@ export class RouteRepository {
    * @returns {boolean} 是否已初始化完成
    */
   isAccessibleLoaded() {
-    return this.accessibleLoaded;
+    return this.getRouteCache().accessibleLoaded;
   }
 
   /**
@@ -71,12 +108,20 @@ export class RouteRepository {
    * @returns 最新的路由数组
    */
   async refreshAccessible() {
+    const layoutUid = this.getCurrentLayoutUid();
+    return this.refreshAccessibleByLayout(layoutUid);
+  }
+
+  private async refreshAccessibleByLayout(layoutUid: string) {
+    const requestId = this.nextRefreshRequestId(layoutUid);
     const response = await this.getAPIClient().request({
       url: '/desktopRoutes:listAccessible',
-      params: { tree: true, sort: 'sort' },
+      params: { tree: true, sort: 'sort', layout: layoutUid },
     });
     const routes = response?.data?.data || [];
-    this.setRoutes(routes);
+    if (requestId === this.getRefreshRequestId(layoutUid)) {
+      this.setRoutes(routes, layoutUid);
+    }
     return routes;
   }
 
@@ -86,19 +131,26 @@ export class RouteRepository {
    * @returns 当前可访问的路由数组
    */
   async ensureAccessibleLoaded() {
-    if (this.accessibleLoaded) {
-      return this.routes;
+    const layoutUid = this.getCurrentLayoutUid();
+    const cache = this.getRouteCache(layoutUid);
+    if (cache.accessibleLoaded) {
+      this.routes = cache.routes;
+      return cache.routes;
     }
 
-    if (this.accessibleLoadingPromise) {
-      return this.accessibleLoadingPromise;
+    const existingLoadingPromise = this.accessibleLoadingPromises.get(layoutUid);
+    if (existingLoadingPromise) {
+      return existingLoadingPromise;
     }
 
-    this.accessibleLoadingPromise = this.refreshAccessible().finally(() => {
-      this.accessibleLoadingPromise = null;
+    const loadingPromise = this.refreshAccessibleByLayout(layoutUid).finally(() => {
+      if (this.accessibleLoadingPromises.get(layoutUid) === loadingPromise) {
+        this.accessibleLoadingPromises.delete(layoutUid);
+      }
     });
+    this.accessibleLoadingPromises.set(layoutUid, loadingPromise);
 
-    return this.accessibleLoadingPromise;
+    return loadingPromise;
   }
 
   /**
@@ -108,7 +160,7 @@ export class RouteRepository {
    * @returns 取消订阅函数
    */
   subscribe(subscriber: RouteSubscriber) {
-    this.subscribers.add(subscriber);
+    this.subscribers.set(subscriber, this.getCurrentLayoutUid());
     return () => {
       this.subscribers.delete(subscriber);
     };
@@ -132,7 +184,10 @@ export class RouteRepository {
    */
   async createRoute(values: RouteCreateValues, options: RouteMutationOptions = {}) {
     const { refreshAfterMutation = true } = options;
-    const res = await this.getResource('desktopRoutes').create({ values });
+    const res = await this.getResource('desktopRoutes').create({
+      values,
+      layout: this.getCurrentLayoutUid(),
+    });
     if (refreshAfterMutation) {
       await this.refreshAccessible();
     }
@@ -210,7 +265,17 @@ export class RouteRepository {
    * @returns 匹配到的路由节点
    */
   getRouteBySchemaUid(schemaUid: string): NocoBaseDesktopRoute | undefined {
-    return this.findRoute(this.routes, schemaUid);
+    return this.findRoute(this.listAccessible(), schemaUid);
+  }
+
+  /**
+   * 通过路由 id 反查对应路由节点。
+   *
+   * @param routeId 桌面路由主键
+   * @returns 匹配到的路由节点
+   */
+  getRouteById(routeId: string | number): NocoBaseDesktopRoute | undefined {
+    return this.findRouteById(this.listAccessible(), routeId);
   }
 
   protected getAPIClient(): APIClient {
@@ -224,10 +289,57 @@ export class RouteRepository {
     return this.getAPIClient().resource(collectionName);
   }
 
-  protected emitChange() {
-    this.subscribers.forEach((subscriber) => {
-      subscriber();
+  protected emitChange(layoutUid = this.getCurrentLayoutUid()) {
+    this.subscribers.forEach((subscriberLayoutUid, subscriber) => {
+      if (subscriberLayoutUid !== layoutUid) {
+        return;
+      }
+      const previousNotifiedLayoutUid = this.notifiedLayoutUid;
+      this.notifiedLayoutUid = layoutUid;
+      try {
+        subscriber();
+      } finally {
+        this.notifiedLayoutUid = previousNotifiedLayoutUid;
+      }
     });
+  }
+
+  private getCurrentLayoutUid() {
+    return this.layoutActivations[this.layoutActivations.length - 1]?.uid || ADMIN_LAYOUT_MODEL_UID;
+  }
+
+  private normalizeLayoutUid(uid: unknown) {
+    return typeof uid === 'string' && uid.trim() ? uid : ADMIN_LAYOUT_MODEL_UID;
+  }
+
+  private getReadableLayoutUid() {
+    return this.notifiedLayoutUid || this.getCurrentLayoutUid();
+  }
+
+  private getRouteCache(layoutUid = this.getCurrentLayoutUid()) {
+    let cache = this.routeCaches.get(layoutUid);
+    if (!cache) {
+      cache = {
+        accessibleLoaded: false,
+        routes: [],
+      };
+      this.routeCaches.set(layoutUid, cache);
+    }
+    return cache;
+  }
+
+  private syncRoutesProperty() {
+    this.routes = this.getRouteCache().routes;
+  }
+
+  private nextRefreshRequestId(layoutUid: string) {
+    const requestId = this.getRefreshRequestId(layoutUid) + 1;
+    this.refreshRequestIds.set(layoutUid, requestId);
+    return requestId;
+  }
+
+  private getRefreshRequestId(layoutUid: string) {
+    return this.refreshRequestIds.get(layoutUid) || 0;
   }
 
   private findRoute(routes: NocoBaseDesktopRoute[], schemaUid: string): NocoBaseDesktopRoute | undefined {
@@ -237,6 +349,21 @@ export class RouteRepository {
       }
       if (route.children) {
         const found = this.findRoute(route.children, schemaUid);
+        if (found) {
+          return found;
+        }
+      }
+    }
+    return undefined;
+  }
+
+  private findRouteById(routes: NocoBaseDesktopRoute[], routeId: string | number): NocoBaseDesktopRoute | undefined {
+    for (const route of routes) {
+      if (route.id != null && String(route.id) === String(routeId)) {
+        return route;
+      }
+      if (route.children) {
+        const found = this.findRouteById(route.children, routeId);
         if (found) {
           return found;
         }

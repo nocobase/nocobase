@@ -33,6 +33,7 @@ nb config set bin.docker /usr/local/bin/docker
 nb config set bin.caddy /opt/homebrew/bin/caddy
 nb config set bin.git /usr/bin/git
 nb config set bin.nginx /usr/sbin/nginx
+nb config set bin.pnpm /usr/local/bin/pnpm
 nb config set proxy.nb-cli-root /workspace
 nb config set proxy.upstream-host host.docker.internal
 nb config set proxy.nginx-driver docker

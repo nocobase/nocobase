@@ -33,7 +33,7 @@ import {
   resolvePathWithinBase,
 } from '../utils';
 
-const BACKUP_METADATA_VERSION = 1;
+const BACKUP_METADATA_VERSION = 2;
 
 export interface BackupSettings {
   storageId?: string;
@@ -42,10 +42,14 @@ export interface BackupSettings {
   keep?: number;
   scheduled: boolean;
   cron: string;
+  /**
+   * @deprecated Prefer excludeTables. includeTables may miss dependent database objects.
+   */
   includeTables?: string[];
   excludeTables?: string[];
   description?: string;
   createdBy?: BackupCreator;
+  metadata?: Record<string, unknown>;
 }
 
 export interface BackupFile {
@@ -122,7 +126,12 @@ export class BackupManager {
 
   async backup(fileBaseName: string, opts?: Partial<BackupSettings>) {
     const contentPath = path.join(this.#tempDir, fileBaseName);
-    return this.#runBackupTask({ ...this.#settings, ...(opts ?? {}) }, fileBaseName, contentPath);
+    const runtimeTables = [...this.app.db.collections.values()]
+      .filter((collection) => collection.dataCategory === 'runtime')
+      .map((collection) => collection.getTableNameWithSchemaAsString());
+    const backupOptions = { ...this.#settings, ...(opts ?? {}) };
+    backupOptions.excludeTables = [...new Set([...(backupOptions.excludeTables ?? []), ...runtimeTables])];
+    return this.#runBackupTask(backupOptions, fileBaseName, contentPath);
   }
 
   async destroy(fileName: string) {
@@ -234,6 +243,7 @@ export class BackupManager {
       });
 
     const metadata = {
+      ...(opts.metadata ?? {}),
       metadataVersion: BACKUP_METADATA_VERSION,
       enableFilesBackup: opts.enableFilesBackup,
       version: await this.app.version.get(),
@@ -241,6 +251,7 @@ export class BackupManager {
       createdBy: opts.createdBy,
       database: {
         dialect,
+        toolchain: this.#dbAdapter.backupToolchain,
         underscored,
         tablePrefix,
         schema,

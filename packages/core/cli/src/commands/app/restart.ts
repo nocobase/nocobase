@@ -11,6 +11,7 @@ import { Command, Flags } from '@oclif/core';
 import { ensureCrossEnvConfirmed, hasExplicitEnvSelection } from '../../lib/env-guard.js';
 import {
   formatMissingManagedAppEnvMessage,
+  type ManagedAppRuntime,
   resolveManagedAppRuntime,
   stopDockerContainer,
 } from '../../lib/app-runtime.js';
@@ -19,6 +20,7 @@ import { recreateSavedDockerApp } from '../../lib/app-managed-resources.js';
 import { resolveAppUrlFromApiBaseUrl } from '../env/shared.js';
 import { run } from '../../lib/run-npm.js';
 import { announceTargetEnv, failTask, startTask, succeedTask } from '../../lib/ui.js';
+import { buildHookContext, resolveHookScriptPath, runHookScriptHook } from '../../lib/hook-script.js';
 
 function argvHasToken(argv: string[], tokens: string[]): boolean {
   return tokens.some((token) => argv.includes(token));
@@ -82,6 +84,43 @@ function resolveDisplayAppUrl(
   }
 
   return formatAppUrl(port, appPublicPath);
+}
+
+async function runDockerAfterAppStartHookIfNeeded(runtime: Extract<ManagedAppRuntime, { kind: 'docker' }>): Promise<void> {
+  const hookScript = runtime.env.config?.hookScript;
+  if (!hookScript) {
+    return;
+  }
+
+  const hookScriptPath = resolveHookScriptPath({
+    appPath: runtime.env.appPath,
+    hookScript,
+  });
+  if (!hookScriptPath) {
+    return;
+  }
+
+  const context = buildHookContext({
+    phase: 'app-start',
+    command: 'app:restart',
+    envName: runtime.envName,
+    source: runtime.source,
+    version: runtime.env.config?.downloadVersion,
+    appPath: runtime.env.appPath,
+    sourcePath: runtime.env.sourcePath,
+    storagePath: runtime.env.storagePath,
+    hookScript: String(hookScript).trim(),
+    envConfig: runtime.env.config,
+  });
+  if (!context) {
+    return;
+  }
+
+  await runHookScriptHook({
+    hookScriptPath,
+    hookName: 'afterAppStart',
+    context,
+  });
 }
 
 export default class AppRestart extends Command {
@@ -244,6 +283,7 @@ export default class AppRestart extends Command {
         logHint: `You can inspect startup logs with \`nb app logs --env ${runtime.envName}\`.`,
         ...(flags.verbose ? { verbose: true } : {}),
       });
+      await runDockerAfterAppStartHookIfNeeded(runtime);
       succeedTask(`NocoBase is running for "${runtime.envName}"${appUrl ? ` at ${appUrl}` : ''}.`);
       return;
     }
@@ -270,6 +310,9 @@ export default class AppRestart extends Command {
     startArgv.push('--no-sync-licensed-plugins');
     if (daemonFlagWasProvided) {
       startArgv.push(flags.daemon === false ? '--no-daemon' : '--daemon');
+    }
+    if (runtime.env.config?.hookScript) {
+      startArgv.push('--hook-command', 'app:restart');
     }
 
     await runWithSuppressedTargetEnvLog(async () => {

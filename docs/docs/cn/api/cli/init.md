@@ -42,7 +42,7 @@ nb init --env app1 --resume
 
 `--prepare-only` 适用于需要先准备 env、再激活 license、最后再安装并启动应用的场景。
 
-如果你想先保存 env 配置、准备源码或镜像，并把数据库准备好，但暂时不执行应用安装和首次启动，可以使用：
+如果你想先保存 env 配置、准备数据库，并暂时不下载依赖、不执行应用安装和首次启动，可以使用：
 
 ```bash
 nb init --env app1 --prepare-only
@@ -67,6 +67,7 @@ nb app start --env app1
 
 ```text
 <app-path>/
+├── .nb/      # CLI 为当前 env 保存的元数据，比如 hooks.mjs
 ├── source/   # 应用源码或下载内容对应的默认目录
 ├── storage/  # 运行时数据目录
 └── .env      # 可选的应用环境变量文件
@@ -74,6 +75,7 @@ nb app start --env app1
 
 通常来说：
 
+- `.nb/` 用来保存 CLI 管理的元数据。通过 `--hook-script` 传入的脚本会复制到 `<app-path>/.nb/hooks.mjs`，后续 `nb app upgrade` 和本地 source 恢复会复用它
 - `source/` 主要对应 npm / Git env 的本地应用目录。对于 Docker env，CLI 也会保留这套默认路径推导，不过大多数时候你不需要手动关心它。需要特别注意的是，升级应用时，`source/` 目录会被删除后重新下载，不要把需要保留的文件放在这里
 - `storage/` 用来放运行时数据，比如内置数据库数据、插件、日志等内容
 - `.env` 是可选的应用环境变量文件。只有当你需要自定义环境变量时，才需要在 `<app-path>/.env` 里添加它；如果这个文件存在，Docker、npm 和 Git 这几种安装来源默认都会读取它
@@ -101,7 +103,7 @@ nb app start --env app1
 | --- | --- |
 | `Getting started` | `--env`、`--yes`、`--ui`、`--locale`、`--verbose`、`--skip-skills`、`--resume` |
 | `App environment` | `--lang`、`--app-path`、`--app-port`、`--force` |
-| `App source and version` | `--source`、`--version`、`--skip-download`、`--git-url`、`--docker-registry`、`--docker-platform`、`--npm-registry`、`--replace`、`--dev-dependencies`、`--output-dir`、`--docker-save`、`--build`、`--build-dts` |
+| `App source and version` | `--source`、`--version`、`--skip-download`、`--git-url`、`--docker-registry`、`--docker-platform`、`--npm-registry`、`--replace`、`--dev-dependencies`、`--output-dir`、`--docker-save`、`--build`、`--build-dts`、`--hook-script` |
 | `Configure the database` | `--builtin-db`、`--db-dialect`、`--builtin-db-image`、`--db-host`、`--db-port`、`--db-database`、`--db-user`、`--db-password`、`--db-schema`、`--db-table-prefix`、`--db-underscored` |
 | `Create an admin account` | `--root-username`、`--root-email`、`--root-password`、`--root-nickname` |
 | `Remote connection` | `--api-base-url`、`--auth-type`、`--access-token`、`--username`、`--password`、`--skip-auth` |
@@ -184,6 +186,7 @@ nb app start --env app1
 | `--npm-registry` | string | 空 | npm/Git 下载和依赖安装使用的 registry |
 | `--build` / `--no-build` | boolean | `true` | npm/Git 依赖安装后是否构建 |
 | `--build-dts` | boolean | `false` | npm/Git 构建时是否生成 TypeScript 声明文件 |
+| `--hook-script` | string | 无 | 将指定的 hook 模块复制到 `<app-path>/.nb/hooks.mjs` 并保存到 env config；支持 `beforeDependencyInstall`、`beforeAppInstall` 和 `afterAppStart` 生命周期 |
 
 ## 示例
 
@@ -247,6 +250,42 @@ nb init --env app1 --yes --source git --version feat/plugin-workflow-timeout
 nb init --env app1 --yes --source git --version latest \
   --git-url https://gitee.com/nocobase/nocobase.git
 ```
+
+### 使用 hook 脚本扩展安装流程
+
+如果你需要在安装流程里准备额外内容，可以通过 `--hook-script` 传入一个本地 ESM 模块：
+
+```bash
+nb init --env app1 --yes --source git --hook-script ./hooks.mjs
+```
+
+CLI 会把这个文件复制到 `<app-path>/.nb/hooks.mjs`，并在 env config 中保存 `hookScript: ".nb/hooks.mjs"`。后续 `nb app start`、`nb app restart` 和 `nb app upgrade` 会从这个位置复用它。
+
+hook 文件需要默认导出对象。通常来说可以按需实现下面几个方法：
+
+```js
+export default {
+  beforeDependencyInstall: async (context) => {
+    // 在 git clone / npm scaffold 之后、yarn install 之前执行。
+  },
+  beforeAppInstall: async (context) => {
+    // 在应用安装或升级命令执行前运行。
+  },
+  afterAppStart: async (context) => {
+    // 在应用真正启动，并通过 health check 后运行。
+  },
+};
+```
+
+其中：
+
+- `beforeDependencyInstall` 只对 npm/Git source 生效，在真正执行 `yarn install` 前运行；Docker source 不会执行它
+- `beforeAppInstall` 会在应用级安装或升级命令前运行，npm/Git/Docker source 都可以使用
+- `afterAppStart` 会在应用真正启动并通过 `__health_check` 后运行，`nb app start`、`nb app restart` 和 `nb app upgrade` 都可能触发它
+
+`--prepare-only` 只会保存 env config 并复制 hook 文件，不会执行 hook。后续第一次运行 `nb app start` 时，CLI 才会执行首次安装相关的 hook，此时 `context.phase` 是 `init`，`context.command` 是 `app:start`。
+
+`context` 会包含当前生命周期信息，比如 `phase`、`command`、`source`、`version`、`appPath`、`sourcePath`、`storagePath`、`hookScript` 和 `envConfig`。如果 hook 抛出错误，当前 CLI 命令会失败。由于 `afterAppStart` 可能在 start、restart 和 upgrade 中重复运行，建议把它写成可重复执行的逻辑。
 
 ### 快速安装并使用 basic 认证
 

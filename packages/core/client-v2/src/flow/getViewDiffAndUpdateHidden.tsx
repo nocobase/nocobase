@@ -33,6 +33,7 @@ export const getKey = (viewItem: ViewItem) => {
     stableStringify(params.viewUid),
     stableStringify(params.sourceId),
     stableStringify(params.filterByTk),
+    stableStringify(params.openViewRouteState),
     String(index),
   ];
 

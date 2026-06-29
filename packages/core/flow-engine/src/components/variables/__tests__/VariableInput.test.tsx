@@ -8,6 +8,7 @@
  */
 
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { Input } from 'antd';
 import React from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import type { ContextSelectorItem } from '../types';
@@ -112,6 +113,50 @@ describe('VariableInput', () => {
     expect(selectorButton).toBeInTheDocument();
   });
 
+  it('should not highlight the selector button for synthetic constant/null paths', async () => {
+    const flowContext = createTestFlowContext();
+
+    render(
+      <TestFlowContextWrapper context={flowContext}>
+        <VariableInput
+          value=""
+          metaTree={[
+            { name: 'constant', title: 'Constant', type: 'string', paths: ['constant'] },
+            { name: 'null', title: 'Null', type: 'object', paths: ['null'] },
+            ...flowContext.getPropertyMetaTree(),
+          ]}
+          converters={{
+            renderInputComponent: (meta) => {
+              const first = meta?.paths?.[0];
+              if (first === 'constant') {
+                return (props: any) => <input aria-label="constant-value" {...props} />;
+              }
+              if (first === 'null') {
+                return () => <Input placeholder="<Null>" readOnly />;
+              }
+              return null;
+            },
+            resolveValueFromPath: (meta) => {
+              const first = meta?.paths?.[0];
+              if (first === 'constant') return '';
+              if (first === 'null') return null;
+              return undefined;
+            },
+            resolvePathFromValue: (currentValue) => {
+              if (currentValue === null) return ['null'];
+              const trimmed = typeof currentValue === 'string' ? currentValue.trim() : currentValue;
+              if (trimmed === '') return ['constant'];
+              return undefined;
+            },
+          }}
+        />
+      </TestFlowContextWrapper>,
+    );
+
+    const selectorButton = await screen.findByRole('button');
+    expect(selectorButton.className).not.toContain('ant-btn-primary');
+  });
+
   it('should handle onChange from Input', async () => {
     const onChange = vi.fn();
     const flowContext = createTestFlowContext();
@@ -195,20 +240,21 @@ describe('VariableInput', () => {
 
     const selectElement = container.querySelector('.ant-select');
     expect(selectElement).toBeInTheDocument();
+    if (!selectElement) {
+      throw new Error('Expected variable tag select wrapper to be present');
+    }
 
     // 触发鼠标悬停以显示清除按钮
-    fireEvent.mouseEnter(selectElement!);
+    fireEvent.mouseEnter(selectElement);
 
     // 尝试触发清除功能
     // 方法1: 直接触发 Select 组件的 onClear 事件
-    const selectInstance = selectElement as any;
-
     // 尝试通过键盘事件触发清除
-    fireEvent.keyDown(selectElement!, { key: 'Backspace', code: 'Backspace' });
+    fireEvent.keyDown(selectElement, { key: 'Backspace', code: 'Backspace' });
 
     // 或者尝试触发自定义的清除逻辑
     const clearEvents = new CustomEvent('clear');
-    selectElement!.dispatchEvent(clearEvents);
+    selectElement.dispatchEvent(clearEvents);
 
     // 检查是否调用了清除功能（可能需要调整期望）
     // 如果清除按钮不能直接测试，我们验证组件支持清除功能

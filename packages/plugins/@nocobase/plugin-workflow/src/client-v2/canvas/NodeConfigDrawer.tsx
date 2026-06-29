@@ -25,7 +25,7 @@ import { css, cx } from '@emotion/css';
 import { DrawerFormLayout } from '@nocobase/client-v2';
 import { useFlowContext as useFlowEngineContext, useFlowView } from '@nocobase/flow-engine';
 import { useT } from '../locale';
-import { CurrentWorkflowContext, NodeContext } from './contexts';
+import { CurrentWorkflowContext, FlowContext, NodeContext } from './contexts';
 import { TestRunButton } from '../components/TestRunButton';
 import type { Instruction } from './Instruction';
 
@@ -101,8 +101,8 @@ function NodeTypeDescription({
  * `workflow` is threaded in explicitly because the drawer renders at the React
  * root (`ctx.viewer.drawer`), OUTSIDE the canvas `FlowContext.Provider` — so the
  * config form can't read the workflow from the canvas tree. It is re-provided via
- * `CurrentWorkflowContext` so the variable aggregator's trigger scope (and the
- * `executed` read-only state) resolve correctly.
+ * `CurrentWorkflowContext`, and the legacy canvas `FlowContext` is mirrored with
+ * the same workflow so reused v1 hooks still resolve inside migrated drawers.
  */
 export function openNodeConfigDrawer(opts: {
   ctx: any;
@@ -198,36 +198,38 @@ function NodeConfigForm({
 
   return (
     <CurrentWorkflowContext.Provider value={workflow}>
-      <NodeContext.Provider value={data}>
-        <DrawerFormLayout
-          title={
-            // `justify-content: space-between` pushes the node-key tag to the drawer's far right (mirrors v1's flex
-            // title), the native close X sitting just left of the title.
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-              <strong>{data.title ?? typeTitle}</strong>
-              <Tooltip title={t('Variable key of node')}>
-                <Tag style={{ marginInlineEnd: 0 }}>
-                  <code>{data.key}</code>
-                </Tag>
-              </Tooltip>
-            </div>
-          }
-          footer={footer}
-        >
-          <Form form={form} layout="vertical" disabled={executed}>
-            {instruction ? <NodeTypeDescription instruction={instruction} t={t} /> : null}
-            {Fieldset ? (
-              <Suspense fallback={<Skeleton active paragraph={{ rows: 4 }} />}>
-                <Fieldset />
-              </Suspense>
-            ) : (
-              <div style={{ padding: '2em 0', textAlign: 'center', color: 'var(--colorTextTertiary, #999)' }}>
-                {t("This node's configuration has not been migrated to the new canvas yet.")}
+      <FlowContext.Provider value={{ workflow, refresh: onSubmitted }}>
+        <NodeContext.Provider value={data}>
+          <DrawerFormLayout
+            title={
+              // `justify-content: space-between` pushes the node-key tag to the drawer's far right (mirrors v1's flex
+              // title), the native close X sitting just left of the title.
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                <strong style={{ fontWeight: 'bold' }}>{data.title ?? typeTitle}</strong>
+                <Tooltip title={t('Variable key of node')}>
+                  <Tag style={{ marginInlineEnd: 0 }}>
+                    <code style={{ fontWeight: 'normal' }}>{data.key}</code>
+                  </Tag>
+                </Tooltip>
               </div>
-            )}
-          </Form>
-        </DrawerFormLayout>
-      </NodeContext.Provider>
+            }
+            footer={footer}
+          >
+            <Form form={form} layout="vertical" disabled={executed}>
+              {instruction ? <NodeTypeDescription instruction={instruction} t={t} /> : null}
+              {Fieldset ? (
+                <Suspense fallback={<Skeleton active paragraph={{ rows: 4 }} />}>
+                  <Fieldset />
+                </Suspense>
+              ) : (
+                <div style={{ padding: '2em 0', textAlign: 'center', color: 'var(--colorTextTertiary, #999)' }}>
+                  {t("This node's configuration has not been migrated to the new canvas yet.")}
+                </div>
+              )}
+            </Form>
+          </DrawerFormLayout>
+        </NodeContext.Provider>
+      </FlowContext.Provider>
     </CurrentWorkflowContext.Provider>
   );
 }

@@ -18,6 +18,10 @@ features:
         details: Entorno de ejecución de JavaScript para escenarios como bloques JS, campos JS y acciones JS.
         link: /runjs
         showOnHome: true
+      - title: Componentes compartidos
+        details: Reutilice los componentes integrados de formularios, filtros, tablas e iconos de NocoBase client v2 al crear páginas de plugins.
+        link: /shared-components
+        showOnHome: true
   - title: Interfaz e interacción
     details: Aprenda a extender y personalizar la interfaz frontend, construya componentes, campos y lógica de acciones que cumplan con los requisitos del negocio, y mejore la experiencia visual e interactiva del sistema.
     items:
@@ -56,5 +60,7 @@ features:
       - title: Extensión de vista previa de archivos
         details: Extienda las capacidades de vista previa de archivos para admitir la vista previa y el renderizado en línea de más formatos de archivo.
         link: /file-manager/development
+      - title: Extensión de base de conocimiento
+        details: Conecte bases de conocimiento externas o servicios de recuperación personalizados para ampliar las fuentes RAG de AI employees.
+        link: /ai-employees/knowledge-base/dev/external-knowledge-base
 ---
-

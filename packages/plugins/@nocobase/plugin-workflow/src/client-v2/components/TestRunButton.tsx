@@ -34,6 +34,7 @@ import { parse } from '@nocobase/utils/client';
 import { useT } from '../locale';
 import { CurrentWorkflowContext, NodeContext, useCurrentWorkflowContext } from '../canvas/contexts';
 import { WorkflowVariableInput } from '../canvas/WorkflowVariableInput';
+import { formatResultForDisplay } from './formatResultForDisplay';
 
 // Replacement values accept any literal, matching v1's
 // `useTypedConstant={['string','number','boolean','date','object']}`.
@@ -185,7 +186,7 @@ function TestRunDialog({ data }: { data: any }) {
         />
       ) : null}
       <Input.TextArea
-        value={result == null ? '' : JSON.stringify(result.result ?? null, null, 2)}
+        value={result == null ? '' : formatResultForDisplay(result.result)}
         readOnly
         autoSize={{ minRows: 5, maxRows: 20 }}
         style={{ whiteSpace: 'pre', cursor: 'text', fontFamily: 'monospace', fontSize: '80%' }}

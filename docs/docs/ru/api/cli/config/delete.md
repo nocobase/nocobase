@@ -33,6 +33,7 @@ nb config delete proxy.nginx-driver
 nb config delete proxy.caddy-driver
 nb config delete bin.nginx
 nb config delete bin.git
+nb config delete bin.pnpm
 ```
 
 ## Связанные команды

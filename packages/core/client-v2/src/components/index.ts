@@ -13,6 +13,7 @@ export * from './category-tabs';
 export * from './form/table/dnd';
 export * from './form';
 export * from './Icon';
+export * from './KeepAlive';
 export * from './PoweredBy';
 export * from './RouterContextCleaner';
 export * from './SwitchLanguage';

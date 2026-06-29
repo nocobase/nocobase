@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-workflow-javascript",
-  "version": "2.2.0-alpha.1",
+  "version": "2.2.0-alpha.3",
   "displayName": "Workflow: JavaScript",
   "displayName.zh-CN": "工作流：JavaScript 节点",
   "description": "Execute a piece of JavaScript in an isolated Node.js environment.",
@@ -15,6 +15,8 @@
   },
   "peerDependencies": {
     "@nocobase/client": "2.x",
+    "@nocobase/client-v2": "2.x",
+    "@nocobase/flow-engine": "2.x",
     "@nocobase/plugin-workflow": "2.x",
     "@nocobase/server": "2.x",
     "@nocobase/test": "2.x"

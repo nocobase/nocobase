@@ -18,6 +18,7 @@ import {
 } from './constants';
 import type { Instruction } from './canvas/Instruction';
 import type { Trigger } from './triggers';
+import './models/triggerWorkflows';
 
 // Core node instructions — one file per node under `nodes/`, mirroring v1's `client/nodes/` layout. Each
 // default-exports its Instruction class.
@@ -74,6 +75,10 @@ export class PluginWorkflowClientV2 extends Plugin {
    */
   registerSystemVariable(option: SystemVariableOption) {
     this.systemVariables.register(option.key, option);
+  }
+
+  isWorkflowSync(workflow) {
+    return this.triggers.get(workflow?.type)?.sync ?? workflow?.sync;
   }
 
   /**

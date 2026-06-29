@@ -31,10 +31,9 @@ import React, { createContext, useCallback, useContext } from 'react';
 import { Trans } from 'react-i18next';
 import { useT, useWorkflowTranslation, NAMESPACE } from '../locale';
 import { useWorkflowVariableOptions } from '../canvas/useWorkflowVariableOptions';
+import { WORKFLOW_TYPED_CONSTANT_TYPES } from '../canvas/WorkflowTypedVariableInput';
 
-// Constant types a calculation operand accepts. v1 uses bare `useTypedConstant` (= all types), whose constant submenu
-// includes JSON — so include `object`.
-const OPERAND_TYPES: TypedConstantSpec[] = ['string', 'number', 'boolean', 'date', 'object'];
+const OPERAND_TYPES: TypedConstantSpec[] = WORKFLOW_TYPED_CONSTANT_TYPES;
 
 // v1 relied on a global FormItem `.auto-width` rule to shrink the operator Select to its content; v2 has no such global
 // rule, so scope it locally (same pattern as the core `FileSizeInput`). Without this the antd Select defaults to
@@ -100,7 +99,12 @@ function useOperandMetaTree(): MetaTreeNode[] {
 
 function Calculation({ calculator, operands = [], onChange }: any) {
   const compile = useT();
-  const metaTree = useOperandMetaTree();
+  // Keep the left/right operands on separate meta-tree instances. `TypedVariableInput`
+  // lazily resolves relation children by mutating its `metaTree` in place; sharing one
+  // tree between both sides can leave the other cascader stuck on a stale loading column
+  // when both operands walk the same workflow-variable branch.
+  const leftMetaTree = useOperandMetaTree();
+  const rightMetaTree = useOperandMetaTree();
   const leftOperandOnChange = useCallback(
     (v: unknown) => onChange({ calculator, operands: [v, operands[1]] }),
     [calculator, onChange, operands],
@@ -128,7 +132,7 @@ function Calculation({ calculator, operands = [], onChange }: any) {
           matches v1's single-row [operand · operator · operand] layout. */}
       <TypedVariableInput
         types={OPERAND_TYPES}
-        metaTree={metaTree}
+        metaTree={leftMetaTree}
         value={operands[0]}
         onChange={leftOperandOnChange}
         style={{ flex: 1, minWidth: 0 }}
@@ -159,7 +163,7 @@ function Calculation({ calculator, operands = [], onChange }: any) {
       </Select>
       <TypedVariableInput
         types={OPERAND_TYPES}
-        metaTree={metaTree}
+        metaTree={rightMetaTree}
         value={operands[1]}
         onChange={rightOperandOnChange}
         style={{ flex: 1, minWidth: 0 }}

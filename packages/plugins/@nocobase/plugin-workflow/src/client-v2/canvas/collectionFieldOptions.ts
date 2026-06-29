@@ -36,6 +36,7 @@ import type React from 'react';
 // importing the concrete `CollectionManager` from `@nocobase/client` (iron rule).
 export type FieldTreeCollectionManager = {
   getCollectionAllFields(collection: string): any[];
+  getCollection?(collection: string): { template?: string } | undefined;
 };
 
 export type VariableOption = {
@@ -184,6 +185,9 @@ function filterTypedFields({ fields, types, appends, depth = 1, compile, collect
 function getNormalizedFields(collectionName, { compile, collectionManager }) {
   // NOTE: for compatibility with legacy version
   const [, collection] = parseCollectionName(collectionName);
+  if (!collection) {
+    return [];
+  }
   // NOTE: `dataSourceName` will be ignored in new version
   const fields = collectionManager.getCollectionAllFields(collection);
   const fkFields: any[] = [];

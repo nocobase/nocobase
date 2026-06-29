@@ -19,6 +19,7 @@ export const DEFAULT_DOCKER_BIN = 'docker';
 export const DEFAULT_CADDY_BIN = 'caddy';
 export const DEFAULT_GIT_BIN = 'git';
 export const DEFAULT_NGINX_BIN = 'nginx';
+export const DEFAULT_PNPM_BIN = 'pnpm';
 export const PROXY_PROVIDER_OPTIONS = ['nginx', 'caddy'] as const;
 export type ProxyProvider = (typeof PROXY_PROVIDER_OPTIONS)[number];
 export const DEFAULT_PROXY_PROVIDER: ProxyProvider = 'nginx';
@@ -48,6 +49,7 @@ export const SUPPORTED_CLI_CONFIG_KEYS = [
   'bin.caddy',
   'bin.git',
   'bin.nginx',
+  'bin.pnpm',
   'proxy.nb-cli-root',
   'proxy.caddy-driver',
   'proxy.nginx-driver',
@@ -168,6 +170,7 @@ function pruneSettings(config: AuthConfig): void {
     !trimValue(bin.caddy) &&
     !trimValue(bin.git) &&
     !trimValue(bin.nginx) &&
+    !trimValue(bin.pnpm) &&
     !trimValue(bin.yarn)
   ) {
     delete config.settings?.bin;
@@ -228,6 +231,8 @@ export function getExplicitCliConfigValue(config: AuthConfig, key: SupportedCliC
       return trimValue(config.settings?.bin?.git);
     case 'bin.nginx':
       return trimValue(config.settings?.bin?.nginx);
+    case 'bin.pnpm':
+      return trimValue(config.settings?.bin?.pnpm);
     case 'proxy.nb-cli-root':
       return trimValue(config.settings?.proxy?.nbCliRoot);
     case 'proxy.caddy-driver':
@@ -276,6 +281,8 @@ export function getEffectiveCliConfigValue(config: AuthConfig, key: SupportedCli
       return DEFAULT_GIT_BIN;
     case 'bin.nginx':
       return DEFAULT_NGINX_BIN;
+    case 'bin.pnpm':
+      return DEFAULT_PNPM_BIN;
     case 'proxy.nb-cli-root':
       return explicit ?? resolveCliHomeRoot();
     case 'proxy.caddy-driver':
@@ -458,6 +465,12 @@ export async function setCliConfigValue(
         nginx: normalized,
       };
       break;
+    case 'bin.pnpm':
+      config.settings.bin = {
+        ...(config.settings.bin ?? {}),
+        pnpm: normalized,
+      };
+      break;
     case 'proxy.nb-cli-root':
       config.settings.proxy = {
         ...(config.settings.proxy ?? {}),
@@ -574,6 +587,11 @@ export async function deleteCliConfigValue(
         delete config.settings.bin.nginx;
       }
       break;
+    case 'bin.pnpm':
+      if (config.settings.bin) {
+        delete config.settings.bin.pnpm;
+      }
+      break;
     case 'proxy.nb-cli-root':
       if (config.settings.proxy) {
         delete config.settings.proxy.nbCliRoot;
@@ -641,6 +659,7 @@ const CONFIGURABLE_COMMAND_KEYS = {
   caddy: 'bin.caddy',
   git: 'bin.git',
   nginx: 'bin.nginx',
+  pnpm: 'bin.pnpm',
   yarn: 'bin.yarn',
 } as const;
 

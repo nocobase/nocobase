@@ -375,12 +375,15 @@ export class PageModel extends FlowModel<PageModelStructure> {
           tabBarStyle={this.props.tabBarStyle}
           items={this.mapTabs()}
           onChange={(activeKey) => {
+            const previousActiveKey = this.props.tabActiveKey || this.getActiveTabKey();
             this.context.view.navigation?.changeTo?.({
               tabUid: activeKey,
             });
 
             this.invokeTabModelLifecycleMethod(activeKey, 'onActive');
-            this.invokeTabModelLifecycleMethod(this.props.tabActiveKey, 'onInactive');
+            if (previousActiveKey && previousActiveKey !== activeKey) {
+              this.invokeTabModelLifecycleMethod(previousActiveKey, 'onInactive');
+            }
             this.setProps('tabActiveKey', activeKey);
           }}
           // destroyInactiveTabPane

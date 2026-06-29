@@ -312,6 +312,10 @@ export class PluginFileManagerClientV2 extends Plugin<Record<string, never>, App
     const { file, storageType, storageId, storageRules, dataSourceKey, query = {} } = options;
     const fileCollectionName = options.fileCollectionName || 'attachments';
     const storageTypeObject = this.getStorageType(storageType);
+    const uploadQuery = {
+      ...query,
+      ...(dataSourceKey && dataSourceKey !== 'main' ? { uploadDataSourceKey: dataSourceKey } : {}),
+    };
 
     if (storageTypeObject?.upload) {
       return await storageTypeObject.upload({
@@ -322,7 +326,7 @@ export class PluginFileManagerClientV2 extends Plugin<Record<string, never>, App
         storageRules,
         dataSourceKey,
         fileCollectionName,
-        query,
+        query: uploadQuery,
       });
     }
 
@@ -331,7 +335,7 @@ export class PluginFileManagerClientV2 extends Plugin<Record<string, never>, App
       formData.append('file', file);
 
       const queryString = new URLSearchParams(
-        Object.entries(query).map(([key, value]) => [key, String(value)]),
+        Object.entries(uploadQuery).map(([key, value]) => [key, String(value)]),
       ).toString();
       const url = queryString ? `${fileCollectionName}:create?${queryString}` : `${fileCollectionName}:create`;
 
@@ -339,7 +343,6 @@ export class PluginFileManagerClientV2 extends Plugin<Record<string, never>, App
         url,
         method: 'post',
         data: formData,
-        headers: dataSourceKey && dataSourceKey !== 'main' ? { 'x-data-source': dataSourceKey } : {},
       });
 
       return { data: response.data?.data };
