@@ -8,9 +8,11 @@
  */
 
 import { PlusOutlined } from '@ant-design/icons';
-import { BlockGridModel } from '@nocobase/client';
-import { AddSubModelButton, FlowSettingsButton, SubModelItem, tExpr } from '@nocobase/flow-engine';
+import { BlockGridModel } from '@nocobase/client-v2';
+import { AddSubModelButton, FlowSettingsButton, type SubModelItem } from '@nocobase/flow-engine';
 import React from 'react';
+
+import { tExpr } from '../locale';
 
 export class CCTriggerBlockGridModel extends BlockGridModel {
   renderAddSubModelButton() {
@@ -51,3 +53,9 @@ export class CCTriggerBlockGridModel extends BlockGridModel {
     );
   }
 }
+
+CCTriggerBlockGridModel.define({
+  hide: true,
+});
+
+export default CCTriggerBlockGridModel;

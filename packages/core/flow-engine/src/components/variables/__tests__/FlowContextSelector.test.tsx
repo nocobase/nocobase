@@ -284,6 +284,43 @@ describe('FlowContextSelector', () => {
     });
   });
 
+  it('shows enabled variable item tooltip above the menu item', async () => {
+    const flowContext = createTestFlowContext();
+    const metaTree: MetaTreeNode[] = [
+      {
+        name: '$system',
+        title: 'System variables',
+        type: '',
+        paths: ['$system'],
+        children: [
+          {
+            name: 'instanceId',
+            title: 'Instance ID',
+            type: '',
+            paths: ['$system', 'instanceId'],
+            options: { tooltip: 'The ID of current server instance' },
+          },
+        ],
+      },
+    ];
+
+    render(
+      <TestFlowContextWrapper context={flowContext}>
+        <FlowContextSelector metaTree={metaTree} />
+      </TestFlowContextWrapper>,
+    );
+
+    fireEvent.click(screen.getByRole('button'));
+    fireEvent.click(await screen.findByText('System variables'));
+
+    expect(await screen.findByText('Instance ID')).toBeInTheDocument();
+    const tooltipIcon = screen.getByLabelText('Instance ID tooltip');
+    fireEvent.mouseEnter(tooltipIcon);
+
+    const tooltip = await screen.findByText('The ID of current server instance');
+    expect(tooltip.closest('.ant-tooltip')).toHaveClass('ant-tooltip-placement-top');
+  });
+
   it('should support inline search input when children is null and keep lazy expand', async () => {
     const flowContext = createTestFlowContext();
     const loadOrgChildren = vi.fn(async () => [

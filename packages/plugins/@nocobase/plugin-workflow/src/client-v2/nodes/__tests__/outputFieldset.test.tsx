@@ -24,7 +24,6 @@ vi.mock('../../canvas/WorkflowTypedVariableInput', () => ({
       data-testid="workflow-typed-variable-input"
       data-value={props.value ?? ''}
       data-placeholder={props.placeholder ?? ''}
-      data-nullable={String(props.nullable)}
       data-default-to-first={String(props.defaultToFirstConstantTypeWhenUndefined)}
       data-types={JSON.stringify(props.types)}
     />
@@ -46,7 +45,6 @@ describe('OutputFieldset', () => {
     const input = screen.getByTestId('workflow-typed-variable-input');
     expect(input).toHaveAttribute('data-value', 'nested-config-value');
     expect(input).toHaveAttribute('data-placeholder', 'Input workflow result');
-    expect(input).toHaveAttribute('data-nullable', 'false');
     expect(input).toHaveAttribute('data-default-to-first', 'true');
     expect(input).toHaveAttribute('data-types', '["string","number","boolean","date","object"]');
   });
