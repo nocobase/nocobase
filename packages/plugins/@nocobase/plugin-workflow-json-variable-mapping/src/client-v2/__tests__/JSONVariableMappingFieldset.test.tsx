@@ -18,6 +18,13 @@ vi.mock('../locale', () => ({
 }));
 
 vi.mock('@nocobase/plugin-workflow/client-v2', () => ({
+  WorkflowTypedVariableInput: (props: { value?: string; onChange?: (value: string) => void }) => (
+    <input
+      aria-label="workflow-typed-variable-input"
+      value={props.value ?? ''}
+      onChange={(event) => props.onChange?.(event.target.value)}
+    />
+  ),
   WorkflowVariableSelect: (props: { value?: string; onChange?: (value: string) => void }) => (
     <input
       aria-label="workflow-variable-select"
