@@ -1307,6 +1307,16 @@ export default function FieldsPage(props: FieldsPageProps) {
     [ctx, message, notification, props, t],
   );
 
+  const syncFieldsVisible = isSyncFieldsVisible(props.dataSourceKey, props.collection, ctx);
+  const configureFieldsDisabled = Boolean(dataSourceType?.disableConfigureFields);
+  const fieldDeletionVisible = isMainDataSource && !configureFieldsDisabled;
+  const addFieldVisible = isAddFieldVisible({
+    collection: props.collection,
+    ctx,
+    dataSourceType: dataSource?.options?.type,
+    fieldInterfaceGroups,
+  });
+
   const inheritedFieldColumns = useMemo<ColumnsType<Record<string, any>>>(
     () => [
       {
@@ -1434,16 +1444,6 @@ export default function FieldsPage(props: FieldsPageProps) {
     TemplateSyncFieldsDrawer,
     t,
   ]);
-
-  const syncFieldsVisible = isSyncFieldsVisible(props.dataSourceKey, props.collection, ctx);
-  const configureFieldsDisabled = Boolean(dataSourceType?.disableConfigureFields);
-  const fieldDeletionVisible = isMainDataSource && !configureFieldsDisabled;
-  const addFieldVisible = isAddFieldVisible({
-    collection: props.collection,
-    ctx,
-    dataSourceType: dataSource?.options?.type,
-    fieldInterfaceGroups,
-  });
 
   useEffect(() => {
     if (!fieldDeletionVisible) {
