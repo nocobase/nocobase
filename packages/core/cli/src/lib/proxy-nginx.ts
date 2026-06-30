@@ -58,6 +58,7 @@ export type NginxProxyWriteResult = {
 };
 
 type NginxProxyWriteOptions = {
+  cdnBaseUrl?: string;
   force?: boolean;
 };
 
@@ -150,6 +151,7 @@ export async function writeNginxProxyBundle(
   options?: NginxProxyWriteOptions,
 ): Promise<NginxProxyWriteResult> {
   const bundle = await buildEnvProxyNginxBundle(runtime, {
+    cdnBaseUrl: options?.cdnBaseUrl,
     runtimeCliRoot: runtimeContext.runtimeCliRoot,
     upstreamHost: runtimeContext.upstreamHost,
   });
@@ -163,6 +165,7 @@ export async function writeManualNginxProxyBundle(
   options?: NginxProxyWriteOptions,
 ): Promise<NginxProxyWriteResult> {
   const bundle = await buildManualEnvProxyNginxBundle(input, {
+    cdnBaseUrl: options?.cdnBaseUrl,
     runtimeCliRoot: runtimeContext.runtimeCliRoot,
     upstreamHost: runtimeContext.upstreamHost,
   });

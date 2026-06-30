@@ -64,6 +64,9 @@ export default class ProxyNginxGenerate extends Command {
     'upstream-host': Flags.string({
       description: 'Upstream host used by nginx proxy_pass in manual mode',
     }),
+    'cdn-base-url': Flags.string({
+      description: 'Client asset CDN base URL used when generating runtime HTML',
+    }),
     force: Flags.boolean({
       description: 'Overwrite existing app.conf even when the managed block is missing',
       default: false,
@@ -124,6 +127,7 @@ export default class ProxyNginxGenerate extends Command {
             runtimeVersion,
             appPublicPath: flags['app-public-path']?.trim() || undefined,
             upstreamHost: flags['upstream-host']?.trim() || undefined,
+            cdnBaseUrl: flags['cdn-base-url']?.trim() || undefined,
           },
           {
             host: flags.host?.trim() || undefined,
@@ -178,6 +182,7 @@ export default class ProxyNginxGenerate extends Command {
         },
         runtimeContext,
         {
+          cdnBaseUrl: flags['cdn-base-url']?.trim() || undefined,
           force: flags.force,
         },
       );

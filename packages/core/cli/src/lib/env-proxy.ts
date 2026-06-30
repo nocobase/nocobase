@@ -128,6 +128,7 @@ export type ManualEnvProxyNginxInput = {
   runtimeVersion: string;
   appPublicPath?: string;
   upstreamHost?: string;
+  cdnBaseUrl?: string;
 };
 
 export type EnvProxyCaddyBundle = {
@@ -188,6 +189,7 @@ type EnvProxyProviderOptions = {
   provider?: ProxyProvider;
   runtimeCliRoot?: string;
   upstreamHost?: string;
+  cdnBaseUrl?: string;
 };
 
 type EnvProxyBuildOptions = EnvProxyProviderOptions & {
@@ -474,6 +476,7 @@ function toCaddyPathMatcher(prefixPath: string): string {
 
 export async function loadEnvProxySettings(
   runtime: Extract<ManagedAppRuntime, { kind: 'local' | 'docker' }>,
+  options?: { cdnBaseUrl?: string },
 ): Promise<{ envFilePath?: string; settings: ProxyEnvSettings }> {
   const { envFilePath, envValues } = await readManagedRuntimeEnvValues(runtime);
   const appPublicPath = resolveAppPublicPath(runtime.env.config.appPublicPath || envValues.APP_PUBLIC_PATH || DEFAULT_APP_PUBLIC_PATH);
@@ -494,7 +497,10 @@ export async function loadEnvProxySettings(
         { trailingSlash: true },
       ),
       modernClientPrefix: normalizeModernClientPrefix(envValues.APP_MODERN_CLIENT_PREFIX),
-      cdnBaseUrl: trimValue(runtime.env.envVars?.CDN_BASE_URL) ?? trimValue(envValues.CDN_BASE_URL),
+      cdnBaseUrl:
+        trimValue(options?.cdnBaseUrl) ??
+        trimValue(runtime.env.envVars?.CDN_BASE_URL) ??
+        trimValue(envValues.CDN_BASE_URL),
       apiClientStoragePrefix: trimValue(envValues.API_CLIENT_STORAGE_PREFIX) ?? DEFAULT_API_CLIENT_STORAGE_PREFIX,
       apiClientStorageType: trimValue(envValues.API_CLIENT_STORAGE_TYPE) ?? DEFAULT_API_CLIENT_STORAGE_TYPE,
       apiClientShareToken,
@@ -519,7 +525,7 @@ function createManualProxyEnvSettings(input: ManualEnvProxyNginxInput): ProxyEnv
       trailingSlash: true,
     }),
     modernClientPrefix: DEFAULT_MODERN_CLIENT_PREFIX,
-    cdnBaseUrl: undefined,
+    cdnBaseUrl: trimValue(input.cdnBaseUrl),
     apiClientStoragePrefix: DEFAULT_API_CLIENT_STORAGE_PREFIX,
     apiClientStorageType: DEFAULT_API_CLIENT_STORAGE_TYPE,
     apiClientShareToken: false,
@@ -538,6 +544,7 @@ function normalizeManualNginxInput(input: ManualEnvProxyNginxInput): ManualEnvPr
     runtimeVersion: String(input.runtimeVersion).trim(),
     appPublicPath: trimValue(input.appPublicPath),
     upstreamHost: trimValue(input.upstreamHost),
+    cdnBaseUrl: trimValue(input.cdnBaseUrl),
   };
 }
 
@@ -910,6 +917,7 @@ async function buildEnvProxyNginxRenderContext(
 
 async function resolveRuntimeNginxBundleSource(
   runtime: Extract<ManagedAppRuntime, { kind: 'local' | 'docker' }>,
+  options?: { cdnBaseUrl?: string },
 ): Promise<NginxBundleSource> {
   const apiPort = trimValue(runtime.env.appPort ?? runtime.env.config.appPort);
   if (!apiPort) {
@@ -929,7 +937,7 @@ async function resolveRuntimeNginxBundleSource(
     );
   }
 
-  const { envFilePath, settings } = await loadEnvProxySettings(runtime);
+  const { envFilePath, settings } = await loadEnvProxySettings(runtime, options);
 
   return {
     envName: runtime.envName,
@@ -1049,7 +1057,7 @@ export async function buildEnvProxyNginxBundle(
   runtime: Extract<ManagedAppRuntime, { kind: 'local' | 'docker' }>,
   options?: EnvProxyProviderOptions,
 ): Promise<EnvProxyNginxBundle> {
-  return await buildNginxBundleFromSource(await resolveRuntimeNginxBundleSource(runtime), options);
+  return await buildNginxBundleFromSource(await resolveRuntimeNginxBundleSource(runtime, options), options);
 }
 
 export async function buildManualEnvProxyNginxBundle(

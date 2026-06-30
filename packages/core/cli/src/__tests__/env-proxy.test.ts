@@ -229,6 +229,30 @@ test('buildManualEnvProxyNginxBundle derives the websocket path from appPublicPa
   expect(bundle.indexV2Content).toContain(`window['__nocobase_public_path__'] = "/console/v/";`);
 });
 
+test('buildManualEnvProxyNginxBundle uses an explicit CDN base url override', async () => {
+  const root = await createTempRoot('nocobase-cli-env-proxy-nginx-manual-cdn-');
+  process.env.NB_CLI_ROOT = root;
+  const runtime = await createLocalRuntime(root, {
+    appPublicPath: '/console/',
+    sourceV1PublicPath: '/nocobase/',
+    sourceV2PublicPath: '/v/',
+  });
+
+  const bundle = await buildManualEnvProxyNginxBundle({
+    name: 'default',
+    appPort: '13000',
+    storagePath: runtime.env.storagePath,
+    distRootPath: path.join(runtime.env.storagePath, 'dist-client'),
+    runtimeVersion: '2.1.0-beta.44',
+    appPublicPath: '/console/',
+    cdnBaseUrl: 'https://cdn.example.com/ui/',
+  });
+
+  expect(bundle.cdnBaseUrl).toBe('https://cdn.example.com/ui/');
+  expect(bundle.indexV1Content).toContain('src="https://cdn.example.com/ui/browser-checker.js?v=1"');
+  expect(bundle.indexV2Content).toContain('src="https://cdn.example.com/ui/v/browser-checker.js?v=1"');
+});
+
 test('buildManualEnvProxyNginxBundle reads versioned index files from distRootPath', async () => {
   const root = await createTempRoot('nocobase-cli-env-proxy-nginx-manual-dist-root-');
   process.env.NB_CLI_ROOT = root;
@@ -330,6 +354,29 @@ test('buildEnvProxyNginxBundle prefers saved CDN_BASE_URL over the managed env f
   expect(bundle.cdnBaseUrl).toBe('https://cdn-from-config.example.com/ui/');
   expect(bundle.indexV1Content).toContain('src="https://cdn-from-config.example.com/ui/browser-checker.js?v=1"');
   expect(bundle.indexV2Content).toContain('src="https://cdn-from-config.example.com/ui/v/browser-checker.js?v=1"');
+});
+
+test('buildEnvProxyNginxBundle prefers an explicit CDN base url override over saved env values', async () => {
+  const root = await createTempRoot('nocobase-cli-env-proxy-nginx-explicit-cdn-');
+  process.env.NB_CLI_ROOT = root;
+  const runtime = await createLocalRuntime(root, {
+    appPublicPath: '/console/',
+    cdnBaseUrl: 'https://cdn-from-env-file.example.com/ui/',
+    sourceV1PublicPath: '/nocobase/',
+    sourceV2PublicPath: '/v/',
+  });
+  runtime.env.envVars = {
+    ...runtime.env.envVars,
+    CDN_BASE_URL: 'https://cdn-from-config.example.com/ui/',
+  };
+
+  const bundle = await buildEnvProxyNginxBundle(runtime, {
+    cdnBaseUrl: 'https://cdn-from-command.example.com/ui/',
+  });
+
+  expect(bundle.cdnBaseUrl).toBe('https://cdn-from-command.example.com/ui/');
+  expect(bundle.indexV1Content).toContain('src="https://cdn-from-command.example.com/ui/browser-checker.js?v=1"');
+  expect(bundle.indexV2Content).toContain('src="https://cdn-from-command.example.com/ui/v/browser-checker.js?v=1"');
 });
 
 test('buildEnvProxyNginxBundle avoids duplicating a dist prefix already present in asset urls', async () => {

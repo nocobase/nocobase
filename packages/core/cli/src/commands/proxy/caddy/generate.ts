@@ -64,6 +64,9 @@ export default class ProxyCaddyGenerate extends Command {
     'upstream-host': Flags.string({
       description: 'Upstream host used by caddy reverse_proxy in manual mode',
     }),
+    'cdn-base-url': Flags.string({
+      description: 'Client asset CDN base URL used when generating runtime HTML',
+    }),
     host: Flags.string({
       description: 'Host exposed by the caddy site block, such as example.com or localhost',
     }),
@@ -120,12 +123,16 @@ export default class ProxyCaddyGenerate extends Command {
             runtimeVersion,
             appPublicPath: flags['app-public-path']?.trim() || undefined,
             upstreamHost: flags['upstream-host']?.trim() || undefined,
+            cdnBaseUrl: flags['cdn-base-url']?.trim() || undefined,
           },
           {
             host: flags.host?.trim() || undefined,
             port: normalizedPort,
           },
           runtimeContext,
+          {
+            cdnBaseUrl: flags['cdn-base-url']?.trim() || undefined,
+          },
         );
         succeedTask(
           status === 'created'
@@ -170,6 +177,9 @@ export default class ProxyCaddyGenerate extends Command {
           port: normalizedPort,
         },
         runtimeContext,
+        {
+          cdnBaseUrl: flags['cdn-base-url']?.trim() || undefined,
+        },
       );
       succeedTask(
         status === 'created'

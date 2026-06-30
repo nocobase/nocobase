@@ -51,6 +51,10 @@ export type CaddyProxyWriteResult = {
   status: 'created' | 'updated';
 };
 
+type CaddyProxyWriteOptions = {
+  cdnBaseUrl?: string;
+};
+
 export type CaddyProxyRuntimeContext = {
   driver: CaddyProxyDriver;
   runtimeCliRoot: string;
@@ -130,8 +134,10 @@ export async function writeCaddyProxyBundle(
   runtime: WritableProxyRuntime,
   appEntryOptions: EnvProxyAppEntryOptions,
   runtimeContext: CaddyProxyRuntimeContext,
+  options?: CaddyProxyWriteOptions,
 ): Promise<CaddyProxyWriteResult> {
   const bundle = await buildEnvProxyCaddyBundle(runtime, {
+    cdnBaseUrl: options?.cdnBaseUrl,
     runtimeCliRoot: runtimeContext.runtimeCliRoot,
     upstreamHost: runtimeContext.upstreamHost,
   });
@@ -157,8 +163,10 @@ export async function writeManualCaddyProxyBundle(
   input: ManualEnvProxyNginxInput,
   appEntryOptions: EnvProxyAppEntryOptions,
   runtimeContext: CaddyProxyRuntimeContext,
+  options?: CaddyProxyWriteOptions,
 ): Promise<CaddyProxyWriteResult> {
   const bundle = await buildManualEnvProxyCaddyBundle(input, {
+    cdnBaseUrl: options?.cdnBaseUrl,
     runtimeCliRoot: runtimeContext.runtimeCliRoot,
     upstreamHost: input.upstreamHost || runtimeContext.upstreamHost,
   });

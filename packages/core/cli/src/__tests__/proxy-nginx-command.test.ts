@@ -174,6 +174,7 @@ test('proxy nginx generate writes proxy files with the current runtime context',
       flags: {
         env: 'test2',
         host: 'c.local.nocobase.com',
+        'cdn-base-url': 'https://cdn.example.com/ui/',
         force: false,
       },
     })),
@@ -195,6 +196,7 @@ test('proxy nginx generate writes proxy files with the current runtime context',
       upstreamHost: '127.0.0.1',
     },
     {
+      cdnBaseUrl: 'https://cdn.example.com/ui/',
       force: false,
     },
   );
@@ -260,6 +262,7 @@ test('proxy nginx generate supports manual mode', async () => {
         'runtime-version': '2.1.0',
         'app-public-path': '/console/',
         'upstream-host': 'host.docker.internal',
+        'cdn-base-url': 'https://cdn.example.com/ui/',
         port: '8080',
         force: true,
       },
@@ -278,6 +281,7 @@ test('proxy nginx generate supports manual mode', async () => {
       runtimeVersion: '2.1.0',
       appPublicPath: '/console/',
       upstreamHost: 'host.docker.internal',
+      cdnBaseUrl: 'https://cdn.example.com/ui/',
     },
     {
       host: undefined,

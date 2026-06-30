@@ -176,6 +176,7 @@ test('proxy caddy generate writes proxy files with the current runtime context',
       flags: {
         env: 'test2',
         host: 'c.local.nocobase.com',
+        'cdn-base-url': 'https://cdn.example.com/ui/',
       },
     })),
   });
@@ -193,6 +194,9 @@ test('proxy caddy generate writes proxy files with the current runtime context',
       driver: 'local',
       runtimeCliRoot: '/Users/chen/test4',
       upstreamHost: '127.0.0.1',
+    },
+    {
+      cdnBaseUrl: 'https://cdn.example.com/ui/',
     },
   );
   expect(mocks.succeedTask).toHaveBeenCalledWith(
@@ -237,6 +241,9 @@ test('proxy caddy generate defaults to the current env when --env is omitted', a
       runtimeCliRoot: '/Users/chen/test4',
       upstreamHost: '127.0.0.1',
     },
+    {
+      cdnBaseUrl: undefined,
+    },
   );
 });
 
@@ -253,6 +260,7 @@ test('proxy caddy generate supports manual mode', async () => {
         'runtime-version': '2.1.0',
         'app-public-path': '/console/',
         'upstream-host': 'host.docker.internal',
+        'cdn-base-url': 'https://cdn.example.com/ui/',
         port: '8080',
       },
     })),
@@ -270,6 +278,7 @@ test('proxy caddy generate supports manual mode', async () => {
       runtimeVersion: '2.1.0',
       appPublicPath: '/console/',
       upstreamHost: 'host.docker.internal',
+      cdnBaseUrl: 'https://cdn.example.com/ui/',
     },
     {
       host: undefined,
@@ -279,6 +288,9 @@ test('proxy caddy generate supports manual mode', async () => {
       driver: 'local',
       runtimeCliRoot: '/Users/chen/test4',
       upstreamHost: '127.0.0.1',
+    },
+    {
+      cdnBaseUrl: 'https://cdn.example.com/ui/',
     },
   );
   expect(mocks.succeedTask).toHaveBeenCalledWith(
