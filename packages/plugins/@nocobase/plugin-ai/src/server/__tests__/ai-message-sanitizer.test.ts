@@ -11,8 +11,13 @@ import { AIMessage } from '@langchain/core/messages';
 import { describe, expect, it, vi } from 'vitest';
 import { sanitizeAdditionalKwargsForToolCalls, sanitizeLangChainAIMessage } from '../ai-employees/tool-call-sanitizer';
 import { convertAIMessage } from '../ai-employees/utils';
+import type { LLMProvider } from '../llm-providers/provider';
 
 describe('AI message tool call sanitizer', () => {
+  const provider = {
+    reshapeAIMessage: () => {},
+  } as unknown as LLMProvider;
+
   const rawToolCall = {
     id: 'call_bad',
     type: 'function',
@@ -40,6 +45,7 @@ describe('AI message tool call sanitizer', () => {
         logger,
       } as never,
       providerName: 'deepseek',
+      provider,
       model: 'deepseek-v4-flash',
       aiMessage,
     });

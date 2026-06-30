@@ -278,6 +278,7 @@ export function FilterDynamicComponent({
   value,
   onChange,
   rightAsVariable = true,
+  maxAssociationFieldDepth = 2,
 }: {
   collection?: string;
   value?: Record<string, unknown> | null;
@@ -288,6 +289,11 @@ export function FilterDynamicComponent({
    * - `false`: render the RHS as a pure typed static input with no variable picker
    */
   rightAsVariable?: boolean;
+  /**
+   * Maximum association depth allowed in the left-side field picker.
+   * Defaults to `2` to match the legacy v1 workflow filter behaviour.
+   */
+  maxAssociationFieldDepth?: number;
 }) {
   const flowEngine = useFlowEngine();
   const t = useT();
@@ -377,12 +383,13 @@ export function FilterDynamicComponent({
           model={filterModel}
           rightAsVariable={rightAsVariable}
           rightMetaTree={rightMetaTree}
+          maxAssociationFieldDepth={maxAssociationFieldDepth}
         />
       </FlowModelProvider>
     );
     Component.displayName = 'WorkflowVariableFilterItem';
     return Component;
-  }, [filterModel, rightAsVariable, rightMetaTree]);
+  }, [filterModel, maxAssociationFieldDepth, rightAsVariable, rightMetaTree]);
 
   return <FilterGroup value={filterRef.current} FilterItem={FilterItemComponent ?? undefined} />;
 }

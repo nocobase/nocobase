@@ -10,6 +10,9 @@ on:
       is_feat:
         description: 'is feat'
         type: boolean
+      version:
+        description: 'specific a version'
+        type: 'string'
 
 jobs:
   get-plugins:
@@ -113,13 +116,17 @@ jobs:
           git config --global user.name '${{ steps.app-token.outputs.app-slug }}[bot]'
           git config --global user.email '${{ steps.get-user-id.outputs.user-id }}+${{ steps.app-token.outputs.app-slug }}[bot]@users.noreply.github.com>'
           echo "packages/pro-plugins" >> .git/info/exclude
+      - name: Install Lerna
+        run: |
+          npm install -g lerna@4
+          if [ -n "${{ inputs.version }}" ]; then
+            lerna version "${{ inputs.version }}" --yes --no-git-tag-version
+          fi
       - name: yarn install and build
         run: |
           yarn config set registry https://registry.npmjs.org/
           yarn install
           yarn build
-      - name: Install Lerna
-        run: npm install -g lerna@4
       - name: Run release.sh
         shell: bash
         run: |

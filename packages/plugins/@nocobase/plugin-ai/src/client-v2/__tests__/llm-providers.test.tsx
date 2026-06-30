@@ -30,6 +30,7 @@ const V1_REGISTERED_PROVIDERS = [
   'kimi',
   'xai',
   'mimo',
+  'mistral',
 ];
 
 describe('plugin-ai client-v2 LLM providers', () => {
@@ -76,6 +77,16 @@ describe('plugin-ai client-v2 LLM providers', () => {
       'topP',
       'topK',
       'numPredict',
+    ]);
+    expect(getBuiltinLLMProviderModelOptionFields('mistral').map((field) => field.name)).toEqual([
+      'temperature',
+      'topP',
+      'maxTokens',
+      'frequencyPenalty',
+      'presencePenalty',
+      'responseFormat',
+      'timeout',
+      'maxRetries',
     ]);
     expect(getBuiltinLLMProviderModelOptionFields('unknown')).toEqual([]);
   });

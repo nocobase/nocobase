@@ -32,6 +32,7 @@ const holder = vi.hoisted(() => ({
   engine: null as any,
   currentNode: null as any,
   workflow: null as any,
+  variableSourceWorkflow: null as any,
 }));
 
 // The aggregator reads the engine via `useFlowEngine()`; everything it needs (`context.app.pm.get`, `context.t`,
@@ -50,6 +51,7 @@ vi.mock('../contexts', async (importOriginal) => {
     ...actual,
     useNodeContext: () => holder.currentNode,
     useCurrentWorkflowContext: () => holder.workflow,
+    useWorkflowVariableSourceContext: () => holder.variableSourceWorkflow,
   };
 });
 
@@ -133,6 +135,7 @@ function setupEngine(plugin: any, { propertyTree = [] as any[] } = {}) {
 describe('useWorkflowVariableOptions — runtime-neutral resolution', () => {
   beforeEach(() => {
     holder.workflow = null;
+    holder.variableSourceWorkflow = null;
   });
 
   it('resolves the workflow plugin via the neutral "workflow" alias and reads its registries', () => {
@@ -170,26 +173,49 @@ describe('useWorkflowVariableOptions — runtime-neutral resolution', () => {
     expect(trigger?.children?.map((c: any) => c.name)).toContain('data');
   });
 
-  it('includes the legacy workflow title context path for saved trigger task titles', () => {
+  it('uses the variable source workflow override for trigger variables', () => {
     setupEngine(makeV1ShapedPlugin());
     holder.currentNode = { key: 'n1', type: 'condition', upstream: null };
-    holder.workflow = { id: 7, type: 'approval', config: {} };
+    holder.workflow = { id: 8, key: 'child', type: 'custom-action', config: { type: 'global' } };
+    holder.variableSourceWorkflow = { id: 7, key: 'parent', type: 'collection', config: { collection: 'posts' } };
+
+    const { result } = renderHook(() => useWorkflowVariableOptions());
+    const trigger = result.current.find((n) => n.name === '$context');
+    const triggerData = trigger?.children?.find((child: any) => child.name === 'data');
+
+    expect(triggerData?.children?.map((child: any) => child.name)).toContain('title');
+  });
+
+  it('does not add the legacy workflow title context path to trigger variables', () => {
+    setupEngine(makeV1ShapedPlugin());
+    holder.currentNode = { key: 'n1', type: 'condition', upstream: null };
+    holder.workflow = { id: 7, type: 'collection', config: { collection: 'posts' } };
 
     const { result } = renderHook(() => useWorkflowVariableOptions());
     const trigger = result.current.find((n) => n.name === '$context');
     const workflow = trigger?.children?.find((c: any) => c.name === 'workflow');
-    const title = workflow?.children?.find((c: any) => c.name === 'title');
 
     expect(trigger?.title).toBe('Trigger variables');
-    expect(workflow?.title).toBe('Workflow');
-    expect(title?.title).toBe('Workflow title');
-    expect(title?.paths).toEqual(['useFlowContext()', 'workflow', 'title']);
+    expect(trigger?.children?.map((child: any) => child.name)).toEqual(['data']);
+    expect(workflow).toBeUndefined();
   });
 
   it('omits the trigger scope when no workflow is in context (drawer without workflow)', () => {
     setupEngine(makeV1ShapedPlugin());
     holder.currentNode = { key: 'n1', type: 'condition', upstream: null };
     holder.workflow = null;
+
+    const { result } = renderHook(() => useWorkflowVariableOptions());
+    expect(result.current.find((n) => n.name === '$context')).toBeUndefined();
+  });
+
+  it('omits the trigger scope when trigger variables are empty', () => {
+    setupEngine({
+      ...makeV1ShapedPlugin(),
+      triggers: { get: () => ({ useVariables: () => [] }) },
+    });
+    holder.currentNode = { key: 'n1', type: 'condition', upstream: null };
+    holder.workflow = { id: 7, type: 'collection', config: { collection: 'posts' } };
 
     const { result } = renderHook(() => useWorkflowVariableOptions());
     expect(result.current.find((n) => n.name === '$context')).toBeUndefined();

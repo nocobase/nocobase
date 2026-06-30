@@ -16,11 +16,18 @@ import { Button, Dropdown, Empty, Form } from 'antd';
 import type { MenuProps } from 'antd';
 import { useWorkflowVariableOptions } from '../../canvas/useWorkflowVariableOptions';
 import { useT } from '../../locale';
-import { getCollection, getCollectionFields, hasFieldName, parseCollectionName } from './utils';
+import {
+  getCollection,
+  getCollectionFields,
+  hasFieldName,
+  parseCollectionName,
+  type CollectionTriggerField,
+} from './utils';
 
 type AssignedValues = Record<string, unknown>;
 type AssignedField = ReturnType<typeof getCollectionFields>[number] & { name: string };
 type WorkflowVariableTree = ReturnType<typeof useWorkflowVariableOptions>;
+export type AssignedFieldFilter = (field: AssignedField) => boolean;
 
 const fieldItemClassName = css`
   position: relative;
@@ -81,26 +88,35 @@ function getFieldTitle(field: AssignedField, t: (key: string) => string) {
   return t(field.uiSchema?.title ?? field.name);
 }
 
+function defaultFieldFilter(_field: CollectionTriggerField) {
+  return true;
+}
+
 export function AssignedFieldsEditor({
   collection,
   value,
   onChange,
+  fieldFilter = defaultFieldFilter,
+  pruneFilteredValues,
 }: {
   collection?: string;
   value?: AssignedValues;
   onChange?: (value: AssignedValues) => void;
+  fieldFilter?: AssignedFieldFilter;
+  pruneFilteredValues?: boolean;
 }) {
   const flowEngine = useFlowEngine();
   const t = useT();
   const workflowVariableTree = useWorkflowVariableOptions();
   const contextModel = useCollectionContextModel(collection, workflowVariableTree);
-  const fields = useMemo(
+  const allFields = useMemo(
     () =>
       getCollectionFields(flowEngine.context.dataSourceManager, collection)
         .filter(hasFieldName)
         .filter((field) => !field.hidden && Boolean(field.uiSchema)) as AssignedField[],
     [collection, flowEngine],
   );
+  const fields = useMemo(() => allFields.filter(fieldFilter), [allFields, fieldFilter]);
   const normalizedValue = useMemo(() => normalizeAssignedValues(value), [value]);
   const assignedFields = useMemo(() => {
     const fieldsByName = new Map(fields.map((field) => [field.name, field]));
@@ -112,6 +128,21 @@ export function AssignedFieldsEditor({
     () => fields.filter((field) => !Object.prototype.hasOwnProperty.call(normalizedValue, field.name)),
     [fields, normalizedValue],
   );
+
+  useEffect(() => {
+    if (!pruneFilteredValues) {
+      return;
+    }
+
+    const fieldNames = new Set(fields.map((field) => field.name));
+    const entries = Object.entries(normalizedValue);
+    const nextEntries = entries.filter(([fieldName]) => fieldNames.has(fieldName));
+    if (nextEntries.length === entries.length) {
+      return;
+    }
+
+    onChange?.(Object.fromEntries(nextEntries));
+  }, [fields, normalizedValue, onChange, pruneFilteredValues]);
 
   const updateValue = (fieldName: string, nextValue: unknown) => {
     onChange?.({ ...normalizedValue, [fieldName]: nextValue === undefined ? '' : nextValue });

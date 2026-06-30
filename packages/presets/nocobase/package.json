@@ -22,6 +22,7 @@
     "@nocobase/plugin-auth-sms": "2.2.0-alpha.3",
     "@nocobase/plugin-backup-restore": "2.2.0-alpha.3",
     "@nocobase/plugin-backups": "2.2.0-alpha.3",
+    "@nocobase/plugin-block-comment": "2.2.0-alpha.3",
     "@nocobase/plugin-block-grid-card": "2.2.0-alpha.3",
     "@nocobase/plugin-block-iframe": "2.2.0-alpha.3",
     "@nocobase/plugin-block-list": "2.2.0-alpha.3",
@@ -111,6 +112,7 @@
   "deprecated": [
     "@nocobase/plugin-audit-logs",
     "@nocobase/plugin-charts",
+    "@nocobase/plugin-comments",
     "@nocobase/plugin-mobile-client",
     "@nocobase/plugin-snapshot-field"
   ],
@@ -129,6 +131,7 @@
     "@nocobase/plugin-api-doc",
     "@nocobase/plugin-api-keys",
     "@nocobase/plugin-backups",
+    "@nocobase/plugin-block-comment",
     "@nocobase/plugin-block-iframe",
     "@nocobase/plugin-block-workbench",
     "@nocobase/plugin-block-list",

@@ -9,7 +9,7 @@
 
 import { AppendsSelect, CollectionCascader } from '@nocobase/plugin-workflow/client-v2';
 import { Checkbox, Form, Radio, Space } from 'antd';
-import React, { useEffect, useMemo, useRef } from 'react';
+import React, { useMemo } from 'react';
 
 import { COLLECTION_TRIGGER_ACTION } from './ActionTrigger';
 import { useT } from './locale';
@@ -25,23 +25,8 @@ export function ActionTriggerPresetConfig() {
 
 export default function ActionTriggerConfig() {
   const t = useT();
-  const form = Form.useFormInstance();
   const collection = Form.useWatch(['config', 'collection']);
   const global = Form.useWatch(['config', 'global']);
-  const previousCollectionRef = useRef(collection);
-  const initializedRef = useRef(false);
-
-  useEffect(() => {
-    if (!initializedRef.current) {
-      initializedRef.current = true;
-      previousCollectionRef.current = collection;
-      return;
-    }
-    if (previousCollectionRef.current !== collection) {
-      form.setFieldValue(['config', 'appends'], []);
-    }
-    previousCollectionRef.current = collection;
-  }, [collection, form]);
 
   const actionOptions = useMemo(
     () => [

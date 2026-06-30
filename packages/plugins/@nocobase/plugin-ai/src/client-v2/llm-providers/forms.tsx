@@ -338,6 +338,69 @@ export const xAICompletionFields: OptionField[] = [
   },
 ];
 
+export const mistralCompletionFields: OptionField[] = [
+  {
+    name: 'temperature',
+    title: 'Temperature',
+    description: 'Temperature description',
+    defaultValue: 0.7,
+    step: 0.1,
+    min: 0,
+    max: 2,
+  },
+  {
+    name: 'topP',
+    title: 'Top P',
+    description: 'Top P description',
+    defaultValue: 1,
+    step: 0.1,
+    min: 0,
+    max: 1,
+  },
+  {
+    name: 'maxTokens',
+    title: 'Max tokens',
+    description: 'Maximum number of tokens to generate',
+    defaultValue: -1,
+    min: -1,
+  },
+  {
+    name: 'frequencyPenalty',
+    title: 'Frequency penalty',
+    description: 'Frequency penalty description',
+    defaultValue: 0,
+    step: 0.1,
+    min: -2,
+    max: 2,
+  },
+  {
+    name: 'presencePenalty',
+    title: 'Presence penalty',
+    description: 'Presence penalty description',
+    defaultValue: 0,
+    step: 0.1,
+    min: -2,
+    max: 2,
+  },
+  {
+    name: 'responseFormat',
+    title: 'Response format',
+    description: 'Response format description',
+    defaultValue: 'text',
+    options: responseFormatOptions,
+  },
+  {
+    name: 'timeout',
+    title: 'Timeout (ms)',
+    defaultValue: 60000,
+  },
+  {
+    name: 'maxRetries',
+    title: 'Max retries',
+    defaultValue: 1,
+  },
+];
+
 export const googleGenAICompletionFields: OptionField[] = baseCompletionFields.map((field) => {
   if (field.name === 'maxCompletionTokens') {
     return {

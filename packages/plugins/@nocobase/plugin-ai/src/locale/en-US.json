@@ -164,6 +164,7 @@
   "Message content": "Message content",
   "Message type": "Message type",
   "Messages": "Messages",
+  "Mistral models": "Mistral models",
   "Model": "Model",
   "Model settings": "Model settings",
   "Missing knowledge base configuration for keys: {{keys}}. Create knowledge bases with the same keys to enable this employee normally.": "Missing knowledge base configuration for keys: {{keys}}. Create knowledge bases with the same keys to enable this employee normally.",

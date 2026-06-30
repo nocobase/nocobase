@@ -306,6 +306,7 @@ const getProviderSortIndex = (value: string) => {
     'deepseek',
     'dashscope',
     'kimi',
+    'mistral',
     'openai-completions',
     'ollama',
   ];
@@ -326,6 +327,7 @@ const getProviderDescription = (provider: string, t: ReturnType<typeof useT>) =>
     xai: 'Grok models by xAI',
     ollama: 'Local models',
     mimo: 'Xiaomi MIMO',
+    mistral: 'Mistral models',
   };
   return descriptions[provider] ? t(descriptions[provider]) : '';
 };

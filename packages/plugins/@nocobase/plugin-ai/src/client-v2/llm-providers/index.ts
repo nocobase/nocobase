@@ -13,6 +13,7 @@ import {
   deepSeekCompletionFields,
   EmptyProviderSettingsForm,
   googleGenAICompletionFields,
+  mistralCompletionFields,
   ollamaCompletionFields,
   openAICompletionFields,
   openAIResponsesFields,
@@ -65,6 +66,8 @@ export const xaiProviderOptions = createProviderOptions(createModelSettingsForm(
 
 export const mimoProviderOptions = createProviderOptions(createModelSettingsForm(openAICompletionFields));
 
+export const mistralProviderOptions = createProviderOptions(createModelSettingsForm(mistralCompletionFields));
+
 export const ollamaProviderOptions = createProviderOptions(createModelSettingsForm(ollamaCompletionFields), {
   ProviderSettingsForm: EmptyProviderSettingsForm,
 });
@@ -80,6 +83,7 @@ export const builtinLLMProviderOptions: Array<[string, LLMProviderOptions]> = [
   ['kimi', kimiProviderOptions],
   ['xai', xaiProviderOptions],
   ['mimo', mimoProviderOptions],
+  ['mistral', mistralProviderOptions],
 ];
 
 const builtinLLMProviderModelOptionFields = new Map<string, OptionField[]>([
@@ -93,6 +97,7 @@ const builtinLLMProviderModelOptionFields = new Map<string, OptionField[]>([
   ['kimi', qwenCompletionFields],
   ['xai', xAICompletionFields],
   ['mimo', openAICompletionFields],
+  ['mistral', mistralCompletionFields],
 ]);
 
 export const getBuiltinLLMProviderModelOptionFields = (provider?: string): OptionField[] =>
