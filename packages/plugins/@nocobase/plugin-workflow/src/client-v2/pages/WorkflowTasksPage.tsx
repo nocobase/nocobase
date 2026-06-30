@@ -287,7 +287,7 @@ function WorkflowTaskList(props: {
         loading={loading}
         rowKey={(record) => String(getWorkflowTaskRecordKey(record) ?? '')}
         locale={{ emptyText: t('No data yet') }}
-        style={{ flex: '1 1 0%', minHeight: 0 }}
+        style={{ background: token.colorBgLayout, flex: '1 1 0%', minHeight: 0 }}
         renderItem={(record) => (
           <WorkflowTaskRecordContext.Provider value={{ record, openRecord: onOpenRecord, refresh }}>
             <List.Item
@@ -300,7 +300,7 @@ function WorkflowTaskList(props: {
                 padding: mobile
                   ? `0.5em 0.5em ${token.lineWidth}px`
                   : `${token.paddingXS}px ${token.paddingLG}px ${token.paddingXXS}px`,
-                background: token.colorBgContainer,
+                background: token.colorBgLayout,
               }}
             >
               <div data-testid="workflow-task-list-item-content" style={{ width: '100%' }}>
@@ -655,7 +655,7 @@ function WorkflowTasksPageContent() {
           <div
             data-testid="workflow-task-list-region"
             style={{
-              background: token.colorBgContainer,
+              background: token.colorBgLayout,
               display: 'flex',
               flex: '1 1 0%',
               flexDirection: 'column',

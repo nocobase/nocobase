@@ -429,6 +429,7 @@ describe('WorkflowTasksPage', () => {
     expect(container.querySelector('.ant-pagination-item-active')).not.toBeInTheDocument();
     expect(container.querySelector('.ant-pagination-options')).toBeInTheDocument();
     expect(screen.getByTestId('workflow-task-list-region')).toHaveStyle({
+      background: '#f5f5f5',
       display: 'flex',
       flex: '1 1 0%',
       minHeight: '0',
@@ -559,6 +560,7 @@ describe('WorkflowTasksPage', () => {
     expect(screen.queryByText('Workflow tasks')).not.toBeInTheDocument();
     expect(screen.getByTestId('workflow-task-type-menu')).toHaveStyle({ height: '42px', minHeight: '42px' });
     expect(screen.getByTestId('workflow-task-list-region')).toHaveStyle({
+      background: '#f5f5f5',
       display: 'flex',
       flex: '1 1 0%',
       minHeight: '0',
