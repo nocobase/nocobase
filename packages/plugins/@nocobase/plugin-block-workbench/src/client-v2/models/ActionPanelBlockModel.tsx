@@ -157,10 +157,8 @@ export class ActionPanelBlockModel extends BlockModel {
       padding: ${token.paddingSM}px ${token.padding}px;
       border-radius: ${token.borderRadiusLG}px;
       background: ${token.colorBgContainer};
-      box-shadow: ${token.boxShadowTertiary};
-      transition:
-        background ${token.motionDurationMid},
-        box-shadow ${token.motionDurationMid};
+      box-shadow: none;
+      transition: background ${token.motionDurationMid};
 
       &:hover {
         background: ${token.colorBgTextHover};

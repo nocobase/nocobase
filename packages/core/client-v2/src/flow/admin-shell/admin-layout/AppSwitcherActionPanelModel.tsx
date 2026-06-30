@@ -23,7 +23,7 @@ import {
   type SubModelItem,
   type SubModelItemsType,
 } from '@nocobase/flow-engine';
-import { Avatar, Button, Card, Empty, Tooltip, Typography } from 'antd';
+import { Avatar, Button, Card, Tooltip, Typography } from 'antd';
 import React from 'react';
 
 const defaultIconColors = ['#3d8bff', '#00a8b5', '#35b26b', '#f5a623', '#ff7a45', '#e85d75', '#9254de', '#597ef7'];
@@ -165,12 +165,12 @@ export class AppSwitcherActionPanelModel extends FlowModel<AppSwitcherActionPane
                     className={css`
                       height: 56px;
                       border-radius: ${token.borderRadius}px;
-                      box-shadow: none;
+                      box-shadow: none !important;
                       opacity: ${compact ? token.opacityLoading : 1};
 
                       &:hover {
                         background: ${token.colorBgTextHover};
-                        box-shadow: none;
+                        box-shadow: none !important;
                       }
 
                       .ant-card-body {
@@ -266,11 +266,7 @@ export class AppSwitcherActionPanelModel extends FlowModel<AppSwitcherActionPane
             </ul>
           </DndProvider>
         ) : (
-          <Empty
-            image={Empty.PRESENTED_IMAGE_SIMPLE}
-            description={this.context.t('No configured entries')}
-            style={{ width: 260, margin: `${token.marginXS}px 0` }}
-          />
+          <div style={{ width: 260, minHeight: token.marginXS }} />
         )}
         {designable && <div style={{ marginTop: token.marginXS }}>{this.renderConfigureActions()}</div>}
       </div>
