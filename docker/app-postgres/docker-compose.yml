@@ -1,65 +1,29 @@
+version: "3"
 networks:
   nocobase:
     driver: bridge
-
 services:
   app:
-    image: registry.cn-beijing.aliyuncs.com/nocobase/nocobase:pr-9943
-    restart: always
-    platform: linux/amd64
+    image: nocobase/nocobase:latest
     networks:
       - nocobase
+    environment:
+      - APP_KEY=your-secret-key # Replace it with your own app key
+      - ENCRYPTION_FIELD_KEY=your-secret-key # Replace it with your own app key
+      - DB_DIALECT=postgres
+      - DB_HOST=postgres
+      - DB_DATABASE=nocobase
+      - DB_USER=nocobase
+      - DB_PASSWORD=nocobase
+    volumes:
+      - ./storage:/app/nocobase/storage
+    ports:
+      - "13000:80"
     depends_on:
       - postgres
-    environment:
-      # Application key, used to generate user tokens, etc.
-      # If APP_KEY is changed, old tokens will become invalid
-      # Can be any random string, and ensure it is not leaked
-      - APP_KEY=your-secret-key
-      # Database type, supports postgres, mysql, mariadb
-      - DB_DIALECT=postgres
-      # Database host, can be replaced with an existing database server IP
-      - DB_HOST=postgres
-      # Database port
-      - DB_PORT=5432
-      # Database name
-      - DB_DATABASE=nocobase
-      # Database user
-      - DB_USER=nocobase
-      # Database password
-      - DB_PASSWORD=nocobase
-      # Timezone, please change it to your local timezone, e.g., America/New_York
-      - TZ=Etc/UTC
-      # Extract client assets and generate proxy config during container startup.
-      - NOCOBASE_EXTRACT_CLIENT_ASSETS=true
-      # Choose which proxy config to generate. Use nginx when pairing with the nginx service below.
-      - NOCOBASE_PROXY_PROVIDER=${NOCOBASE_PROXY_PROVIDER:-nginx}
-      # Keep the generated proxy config and mounted storage path aligned inside the containers.
-      - NOCOBASE_PROXY_STORAGE_PATH=${NOCOBASE_PROXY_STORAGE_PATH:-/app/nocobase/storage}
-      # Override the app host used by the generated proxy config.
-      - NOCOBASE_PROXY_UPSTREAM_HOST=${NOCOBASE_PROXY_UPSTREAM_HOST:-app}
-    volumes:
-      - ./storage:${NOCOBASE_PROXY_STORAGE_PATH:-/app/nocobase/storage}
-    # init: true
-    expose:
-      - 13000
-
-  nginx:
-    image: nginx:latest
-    restart: always
-    depends_on:
-      - app
-    networks:
-      - nocobase
-    volumes:
-      - ./storage:${NOCOBASE_PROXY_STORAGE_PATH:-/app/nocobase/storage}:ro
-      - ./storage/.nocobase/proxy/nginx/nocobase.conf:/etc/nginx/conf.d/default.conf:ro
-    ports:
-      - '33000:80'
-
-  # If you use an existing database service, you can skip starting postgres
+    init: true
   postgres:
-    image: postgres:16
+    image: postgres:10
     restart: always
     command: postgres -c wal_level=logical
     environment:
