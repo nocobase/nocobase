@@ -8,7 +8,10 @@
  */
 
 import { AppSupervisor } from '@nocobase/server';
-import type { AppModel } from '@nocobase/server';
+import type { AppModel, AppStatus } from '@nocobase/server';
+
+export type AppPortalAppStatus = AppStatus | Record<string, AppStatus> | null;
+type AppPortalAppStatusesResult = Record<string, AppPortalAppStatus>;
 
 export type AppPortalAppItem = {
   name: string;
@@ -17,6 +20,7 @@ export type AppPortalAppItem = {
   cname?: string | null;
   ssoEnabled?: boolean;
   target?: string;
+  status?: AppPortalAppStatus;
 };
 
 export type AppPortalItem = {
@@ -67,8 +71,8 @@ function getAppName(appModel: AppModel) {
   return typeof appModel.name === 'string' && appModel.name ? appModel.name : null;
 }
 
-function shouldShowApp(appModel: AppModel) {
-  return appModel.options?.hidden !== true;
+function getAppStatus(appName: string, statuses: AppPortalAppStatusesResult): AppPortalAppStatus {
+  return statuses[appName] ?? null;
 }
 
 function shouldUseCnameVisitUrl(options: { cname?: string | null; ssoEnabled?: boolean; ssoCnameEnabled?: boolean }) {
@@ -82,7 +86,7 @@ function toAppPortalAppItem(
   target: string | undefined,
 ): AppPortalAppItem | null {
   const name = getAppName(appModel);
-  if (!name || name === MAIN_APP_NAME || !shouldShowApp(appModel)) {
+  if (!name || name === MAIN_APP_NAME) {
     return null;
   }
 
@@ -174,6 +178,11 @@ export async function listAppPortals(ctx: AppPortalsContextLike) {
       title: 'Main',
       icon: null,
     });
+  }
+
+  const appStatuses = await supervisor.getAppsStatuses(Array.from(appNames));
+  for (const app of apps.values()) {
+    app.status = getAppStatus(app.name, appStatuses);
   }
 
   const manifests = await supervisor.getAppManifests<StoredAppPortalItem>(
