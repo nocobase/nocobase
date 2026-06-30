@@ -30,6 +30,7 @@ export * from './layout-manager';
 export * from './hooks';
 export { default as languageCodes } from './locale/languageCodes';
 export * from './nocobase-buildin-plugin';
+export * from './utils';
 export * from './collection-field-interface/CollectionFieldInterface';
 export * from './collection-field-interface/CollectionFieldInterfaceManager';
 export * from './collection-manager/field-configure';
