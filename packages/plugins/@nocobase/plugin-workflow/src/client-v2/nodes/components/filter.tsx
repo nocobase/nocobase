@@ -18,11 +18,13 @@ export function NodeFilterField({
   label,
   name = ['config', 'params', 'filter'],
   required = true,
+  maxAssociationFieldDepth = 2,
 }: {
   collection?: string;
   label?: string;
   name?: Array<string | number>;
   required?: boolean;
+  maxAssociationFieldDepth?: number;
 }) {
   const t = useT();
 
@@ -45,7 +47,7 @@ export function NodeFilterField({
           : undefined
       }
     >
-      <FilterDynamicComponent collection={collection} />
+      <FilterDynamicComponent collection={collection} maxAssociationFieldDepth={maxAssociationFieldDepth} />
     </Form.Item>
   );
 }

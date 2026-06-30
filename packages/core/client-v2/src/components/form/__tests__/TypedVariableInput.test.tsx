@@ -201,6 +201,58 @@ describe('TypedVariableInput - variable rendering', () => {
     fireEvent.click(clear as HTMLButtonElement);
     expect(handleChange).toHaveBeenCalledWith(0);
   });
+
+  it('treats types=[] as variable-only mode with a readonly placeholder before selection', async () => {
+    const ctx = createContextWithEnv();
+    renderWithCtx(
+      ctx,
+      <TypedVariableInput
+        value={undefined}
+        types={[]}
+        namespaces={['$env']}
+        placeholder="Select variable"
+        onChange={() => undefined}
+      />,
+    );
+
+    const input = await screen.findByPlaceholderText('Select variable');
+    expect(input).toBeInTheDocument();
+    expect(input).toHaveAttribute('readonly');
+    expect(screen.queryByRole('button', { name: 'variable-switcher' })).toBeInTheDocument();
+  });
+
+  it('clears a variable-only selection back to null', async () => {
+    const ctx = createContextWithEnv();
+    const handleChange = vi.fn();
+    const { container } = renderWithCtx(
+      ctx,
+      <TypedVariableInput value="{{$env.SMTP_PORT}}" types={[]} namespaces={['$env']} onChange={handleChange} />,
+    );
+
+    const clear = container.querySelector('button.clear-button') as HTMLButtonElement | null;
+    expect(clear).not.toBeNull();
+    fireEvent.click(clear as HTMLButtonElement);
+    expect(handleChange).toHaveBeenCalledWith(null);
+  });
+
+  it('hides the variable switcher when hideVariable=true in variable-only mode', async () => {
+    const ctx = createContextWithEnv();
+    renderWithCtx(
+      ctx,
+      <TypedVariableInput
+        value="{{$env.SMTP_PORT}}"
+        types={[]}
+        namespaces={['$env']}
+        hideVariable
+        onChange={() => undefined}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'variable-tag' })).toBeInTheDocument();
+    });
+    expect(screen.queryByRole('button', { name: 'variable-switcher' })).toBeNull();
+  });
 });
 
 describe('TypedVariableInput - object / JSON constant', () => {

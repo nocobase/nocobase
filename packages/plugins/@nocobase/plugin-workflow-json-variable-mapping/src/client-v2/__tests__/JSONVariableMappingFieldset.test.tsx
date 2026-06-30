@@ -25,13 +25,6 @@ vi.mock('@nocobase/plugin-workflow/client-v2', () => ({
       onChange={(event) => props.onChange?.(event.target.value)}
     />
   ),
-  WorkflowVariableSelect: (props: { value?: string; onChange?: (value: string) => void }) => (
-    <input
-      aria-label="workflow-variable-select"
-      value={props.value ?? ''}
-      onChange={(event) => props.onChange?.(event.target.value)}
-    />
-  ),
 }));
 
 import { JSONVariableMappingFieldset } from '../components/JSONVariableMappingFieldset';

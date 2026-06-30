@@ -189,6 +189,41 @@ describe('FilterDynamicComponent', () => {
     expect(testState.variableFilterItems).toHaveLength(1);
   });
 
+  it('defaults maxAssociationFieldDepth to 2 for v1-compatible workflow filters', () => {
+    const { engine } = setupEngine();
+
+    render(
+      <FlowEngineProvider engine={engine}>
+        <FilterDynamicComponent
+          collection="posts"
+          value={{ $and: [{ title: { $eq: 'foo' } }] }}
+          onChange={() => undefined}
+        />
+      </FlowEngineProvider>,
+    );
+
+    expect(testState.variableFilterItems.length).toBeGreaterThan(0);
+    expect(testState.variableFilterItems.at(-1)?.maxAssociationFieldDepth).toBe(2);
+  });
+
+  it('passes through a custom maxAssociationFieldDepth when consumers override it', () => {
+    const { engine } = setupEngine();
+
+    render(
+      <FlowEngineProvider engine={engine}>
+        <FilterDynamicComponent
+          collection="posts"
+          value={{ $and: [{ title: { $eq: 'foo' } }] }}
+          onChange={() => undefined}
+          maxAssociationFieldDepth={3}
+        />
+      </FlowEngineProvider>,
+    );
+
+    expect(testState.variableFilterItems.length).toBeGreaterThan(0);
+    expect(testState.variableFilterItems.at(-1)?.maxAssociationFieldDepth).toBe(3);
+  });
+
   it('provides the filter model context to nested value editors', () => {
     const { engine } = setupEngine();
     function Wrapper() {

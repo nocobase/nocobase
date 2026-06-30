@@ -52,7 +52,9 @@ export interface TypedVariableInputProps {
    * Allowed constant types. The `Constant` switcher entry always exposes a
    * typed submenu (matching v1 `Variable.Input`) so users can see what type
    * the constant is, even when only one type is permitted. Default: all four
-   * supported types.
+   * supported types. Passing `[]` switches the component into a variable-only
+   * mode: constants/null are hidden, the empty state becomes a readonly
+   * placeholder, and clearing a selected variable resets to `null`.
    */
   types?: TypedConstantSpec[];
   /**
@@ -89,6 +91,12 @@ export interface TypedVariableInputProps {
   defaultToFirstConstantTypeWhenUndefined?: boolean;
   /** Variable-token delimiters. Default `['{{', '}}']` — see `VariableInput`. */
   delimiters?: VariableDelimiters;
+  /**
+   * Hide variable choices from the switcher. In variable-only mode this hides
+   * the selector button entirely; in mixed constant/variable mode it keeps the
+   * null/constant choices but removes variable entries.
+   */
+  hideVariable?: boolean;
   disabled?: boolean;
   placeholder?: string;
   style?: React.CSSProperties;
@@ -400,6 +408,7 @@ export function TypedVariableInput(props: TypedVariableInputProps) {
     nullable = true,
     defaultToFirstConstantTypeWhenUndefined = true,
     delimiters,
+    hideVariable = false,
     disabled,
     placeholder,
     style,
@@ -418,13 +427,14 @@ export function TypedVariableInput(props: TypedVariableInputProps) {
   const formatVariablePath = useMemo(() => makeFormatVariablePath(delimiters), [delimiters]);
 
   const normalizedTypes = useMemo(() => normalizeTypes(types), [types]);
+  const variableOnly = normalizedTypes.length === 0;
   const defaultedValue = useMemo(() => {
-    if (!defaultToFirstConstantTypeWhenUndefined || value !== undefined) {
+    if (variableOnly || !defaultToFirstConstantTypeWhenUndefined || value !== undefined) {
       return undefined;
     }
     const firstType = normalizedTypes[0];
     return firstType ? defaultValueFor(firstType.type) : undefined;
-  }, [defaultToFirstConstantTypeWhenUndefined, normalizedTypes, value]);
+  }, [defaultToFirstConstantTypeWhenUndefined, normalizedTypes, value, variableOnly]);
   const effectiveValue = value === undefined && defaultedValue !== undefined ? defaultedValue : value;
   const detected = useMemo(() => detectMode(effectiveValue, parseVariablePath), [effectiveValue, parseVariablePath]);
 
@@ -481,13 +491,13 @@ export function TypedVariableInput(props: TypedVariableInputProps) {
     // `updateFlag` is read so this recomputes (with fresh option references) after a lazy load mutates the meta tree.
     void updateFlag;
     const items: SwitcherOption[] = [];
-    if (nullable) {
+    if (!variableOnly && nullable) {
       items.push({ value: NULL_KEY, label: t('Null'), isLeaf: true });
     }
     // Always render Constant with a typed submenu — even when only one type is
     // allowed. Matches v1 `Variable.Input`, where clicking 常量 reveals 数字 /
     // 逻辑值 / etc. so the user can see what type the constant actually is.
-    if (normalizedTypes.length > 0) {
+    if (!variableOnly && normalizedTypes.length > 0) {
       items.push({
         value: CONST_KEY,
         label: t('Constant'),
@@ -498,9 +508,11 @@ export function TypedVariableInput(props: TypedVariableInputProps) {
         })),
       });
     }
-    items.push(...buildContextSelectorItems(metaTree).map(fromContextItem));
+    if (!hideVariable) {
+      items.push(...buildContextSelectorItems(metaTree).map(fromContextItem));
+    }
     return items;
-  }, [nullable, normalizedTypes, metaTree, updateFlag, t]);
+  }, [hideVariable, metaTree, normalizedTypes, nullable, t, updateFlag, variableOnly]);
 
   const onSwitcherChange = useCallback<NonNullable<CascaderProps<SwitcherOption>['onChange']>>(
     (path, selectedOptions) => {
@@ -530,6 +542,10 @@ export function TypedVariableInput(props: TypedVariableInputProps) {
   );
 
   const onClearVariable = useCallback(() => {
+    if (variableOnly) {
+      onChange?.(null);
+      return;
+    }
     const first = normalizedTypes[0];
     if (first) {
       onChange?.(defaultValueFor(first.type));
@@ -538,7 +554,7 @@ export function TypedVariableInput(props: TypedVariableInputProps) {
     if (nullable) {
       onChange?.(null);
     }
-  }, [nullable, normalizedTypes, onChange]);
+  }, [nullable, normalizedTypes, onChange, variableOnly]);
 
   const constantTypeForRendering: TypedConstantType = useMemo(() => {
     const m = detected.mode;
@@ -553,6 +569,7 @@ export function TypedVariableInput(props: TypedVariableInputProps) {
 
   const isVariable = detected.mode === 'variable';
   const isNull = detected.mode === 'null';
+  const showSwitcher = switcherOptions.length > 0 && !(hideVariable && isVariable);
 
   const variableLabels = useMemo(() => {
     // `updateFlag` is read so this recomputes after the preload effect below resolves a lazy level in the tree (same
@@ -565,11 +582,14 @@ export function TypedVariableInput(props: TypedVariableInputProps) {
     if (isVariable && detected.variablePath?.length) {
       return detected.variablePath;
     }
+    if (variableOnly) {
+      return undefined;
+    }
     if (isNull) {
       return [NULL_KEY];
     }
     return [CONST_KEY, constantTypeForRendering];
-  }, [constantTypeForRendering, detected.variablePath, isNull, isVariable]);
+  }, [constantTypeForRendering, detected.variablePath, isNull, isVariable, variableOnly]);
 
   // Preload a saved variable's label path across lazy levels. `resolveVariableLabels` can only read already-loaded
   // `children`; when a saved reference points below a node whose children are still a lazy thunk (e.g. a relation field
@@ -678,8 +698,8 @@ export function TypedVariableInput(props: TypedVariableInputProps) {
                 minHeight: token.controlHeight,
                 border: `1px solid ${token.colorBorder}`,
                 borderRadius: token.borderRadius,
-                borderTopRightRadius: 0,
-                borderBottomRightRadius: 0,
+                borderTopRightRadius: showSwitcher ? 0 : token.borderRadius,
+                borderBottomRightRadius: showSwitcher ? 0 : token.borderRadius,
                 background: disabled ? token.colorBgContainerDisabled : token.colorBgContainer,
                 overflow: 'hidden',
               }}
@@ -712,6 +732,8 @@ export function TypedVariableInput(props: TypedVariableInputProps) {
                 />
               ) : null}
             </div>
+          ) : variableOnly ? (
+            <Input placeholder={placeholder} readOnly disabled={disabled} style={{ width: '100%' }} />
           ) : isNull ? (
             // v1 used the `placeholder` slot (not `value`) so the antd default placeholder colour applies — keeps the
             // field looking visibly empty/inactive rather than holding a real text value.
@@ -726,31 +748,33 @@ export function TypedVariableInput(props: TypedVariableInputProps) {
             })
           )}
         </div>
-        <Cascader<SwitcherOption>
-          options={switcherOptions}
-          value={switcherValue}
-          onChange={onSwitcherChange}
-          loadData={loadData}
-          disabled={disabled}
-          changeOnSelect
-        >
-          <Button
-            aria-label="variable-switcher"
+        {showSwitcher ? (
+          <Cascader<SwitcherOption>
+            options={switcherOptions}
+            value={switcherValue}
+            onChange={onSwitcherChange}
+            loadData={loadData}
             disabled={disabled}
-            type={isVariable ? 'primary' : 'default'}
-            style={{
-              flexShrink: 0,
-              // `height: auto` (instead of antd's fixed control height) lets the button stretch to the value
-              // component's height under the compact row's default `align-items: stretch` — so it stays joined to a
-              // tall JSON textarea. Mirrors v1's `.ant-btn { height: auto }`.
-              height: 'auto',
-              fontStyle: 'italic',
-              fontFamily: '"New York", "Times New Roman", Times, serif',
-            }}
+            changeOnSelect
           >
-            x
-          </Button>
-        </Cascader>
+            <Button
+              aria-label="variable-switcher"
+              disabled={disabled}
+              type={isVariable ? 'primary' : 'default'}
+              style={{
+                flexShrink: 0,
+                // `height: auto` (instead of antd's fixed control height) lets the button stretch to the value
+                // component's height under the compact row's default `align-items: stretch` — so it stays joined to a
+                // tall JSON textarea. Mirrors v1's `.ant-btn { height: auto }`.
+                height: 'auto',
+                fontStyle: 'italic',
+                fontFamily: '"New York", "Times New Roman", Times, serif',
+              }}
+            >
+              x
+            </Button>
+          </Cascader>
+        ) : null}
       </Space.Compact>
       {jsonError ? (
         <div style={{ marginTop: token.marginXXS, color: token.colorError, fontSize: token.fontSizeSM }}>
