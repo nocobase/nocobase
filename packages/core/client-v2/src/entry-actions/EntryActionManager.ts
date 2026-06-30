@@ -7,7 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { FlowModelContext, SubModelItem, SubModelItemsType } from '@nocobase/flow-engine';
+import {
+  define,
+  observable,
+  type FlowModelContext,
+  type SubModelItem,
+  type SubModelItemsType,
+} from '@nocobase/flow-engine';
 
 export type EntryActionScope = 'action-panel' | 'app-switcher' | string;
 
@@ -57,7 +63,20 @@ function normalizeAppPortalsPayload(value: unknown): AppPortalsPayload {
 
 export class EntryActionManager {
   private readonly providers = new Map<string, ProviderRecord>();
+  appPortalsPayload: AppPortalsPayload = normalizeAppPortalsPayload(null);
+  appPortalsLoading = false;
+  appPortalsVersion = 0;
+  private appPortalsLoaded = false;
   private appPortalsRequest?: Promise<AppPortalsPayload>;
+  private appPortalsRequestId = 0;
+
+  constructor() {
+    define(this, {
+      appPortalsPayload: observable.ref,
+      appPortalsLoading: observable.ref,
+      appPortalsVersion: observable.ref,
+    });
+  }
 
   register(name: string, options: { scope: EntryActionScope; provider: EntryActionProvider; sort?: number }) {
     this.providers.set(name, {
@@ -92,18 +111,46 @@ export class EntryActionManager {
   }
 
   loadAppPortals(apiClient: AppPortalsApiClientLike): Promise<AppPortalsPayload> {
-    if (!this.appPortalsRequest) {
+    if (this.appPortalsLoaded && !this.appPortalsRequest) {
+      return Promise.resolve(this.appPortalsPayload);
+    }
+
+    return this.requestAppPortals(apiClient);
+  }
+
+  reloadAppPortals(apiClient: AppPortalsApiClientLike): Promise<AppPortalsPayload> {
+    return this.requestAppPortals(apiClient, { force: true });
+  }
+
+  private requestAppPortals(
+    apiClient: AppPortalsApiClientLike,
+    options: { force?: boolean } = {},
+  ): Promise<AppPortalsPayload> {
+    if (!this.appPortalsRequest || options.force) {
+      const requestId = ++this.appPortalsRequestId;
+      this.appPortalsLoading = true;
       this.appPortalsRequest = (apiClient.silent?.() || apiClient)
         .request({
           url: 'app:getPortals',
           skipNotify: true,
         })
         .then((response) => {
-          return normalizeAppPortalsPayload((response?.data as { data?: unknown })?.data ?? response?.data);
+          const payload = normalizeAppPortalsPayload((response?.data as { data?: unknown })?.data ?? response?.data);
+          if (requestId === this.appPortalsRequestId) {
+            this.appPortalsPayload = payload;
+            this.appPortalsLoaded = true;
+            this.appPortalsVersion += 1;
+          }
+          return payload;
         })
         .catch((error) => {
-          this.appPortalsRequest = undefined;
           throw error;
+        })
+        .finally(() => {
+          if (requestId === this.appPortalsRequestId) {
+            this.appPortalsLoading = false;
+            this.appPortalsRequest = undefined;
+          }
         });
     }
     return this.appPortalsRequest;

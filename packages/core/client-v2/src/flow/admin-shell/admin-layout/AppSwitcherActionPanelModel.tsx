@@ -20,6 +20,7 @@ import {
   FlowModelRenderer,
   FlowSettingsButton,
   mergeSubModelItems,
+  observer,
   type SubModelItem,
   type SubModelItemsType,
 } from '@nocobase/flow-engine';
@@ -65,7 +66,7 @@ function getEntryActionUnavailableMessage(action: ActionModel) {
 }
 
 export class AppSwitcherActionPanelModel extends FlowModel<AppSwitcherActionPanelStructure> {
-  private getConfigureActionsItems(): SubModelItemsType {
+  getConfigureActionsItems(): SubModelItemsType {
     const linkAction: SubModelItem = {
       key: 'app-switcher:link',
       label: this.context.t('Link'),
@@ -85,17 +86,7 @@ export class AppSwitcherActionPanelModel extends FlowModel<AppSwitcherActionPane
   }
 
   renderConfigureActions() {
-    return (
-      <AddSubModelButton
-        key="app-switcher-add-actions"
-        model={this}
-        items={this.getConfigureActionsItems()}
-        subModelKey="actions"
-        keepDropdownOpen
-      >
-        <FlowSettingsButton icon={<SettingOutlined />}>{this.context.t('Actions')}</FlowSettingsButton>
-      </AddSubModelButton>
-    );
+    return <AppSwitcherConfigureActionsButton model={this} />;
   }
 
   private getRenderableActions(options: { includeHidden?: boolean; includeUnavailable?: boolean } = {}) {
@@ -280,4 +271,19 @@ AppSwitcherActionPanelModel.define({
   createModelOptions: {
     use: 'AppSwitcherActionPanelModel',
   },
+});
+
+const AppSwitcherConfigureActionsButton = observer(({ model }: { model: AppSwitcherActionPanelModel }) => {
+  const appPortalsVersion = model.context.app.entryActionManager.appPortalsVersion;
+  return (
+    <AddSubModelButton
+      key={`app-switcher-add-actions-${appPortalsVersion}`}
+      model={model}
+      items={model.getConfigureActionsItems()}
+      subModelKey="actions"
+      keepDropdownOpen
+    >
+      <FlowSettingsButton icon={<SettingOutlined />}>{model.context.t('Actions')}</FlowSettingsButton>
+    </AddSubModelButton>
+  );
 });
