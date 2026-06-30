@@ -274,10 +274,10 @@ AppSwitcherActionPanelModel.define({
 });
 
 const AppSwitcherConfigureActionsButton = observer(({ model }: { model: AppSwitcherActionPanelModel }) => {
-  const appPortalsVersion = model.context.app.entryActionManager.appPortalsVersion;
+  const entryActionsRevision = model.context.app.entryActionManager.revision;
   return (
     <AddSubModelButton
-      key={`app-switcher-add-actions-${appPortalsVersion}`}
+      key={`app-switcher-add-actions-${entryActionsRevision}`}
       model={model}
       items={model.getConfigureActionsItems()}
       subModelKey="actions"

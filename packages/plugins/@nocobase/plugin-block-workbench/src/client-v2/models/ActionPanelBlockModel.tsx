@@ -15,6 +15,7 @@ import {
   DragHandler,
   FlowModelRenderer,
   DndProvider,
+  observer,
   type SubModelItem,
   type SubModelItemsType,
 } from '@nocobase/flow-engine';
@@ -85,7 +86,7 @@ const ResponsiveSpace = (props) => {
 };
 
 export class ActionPanelBlockModel extends BlockModel {
-  private getConfigureActionsItems(): SubModelItemsType {
+  getConfigureActionsItems(): SubModelItemsType {
     return async (ctx) => {
       const baseItems = await buildItems(this.getModelClassName('ActionPanelGroupActionModel'))(ctx);
       const entryItems = await this.context.app.entryActionManager.getItems('action-panel')(ctx);
@@ -104,16 +105,7 @@ export class ActionPanelBlockModel extends BlockModel {
   }
 
   renderConfigureActions() {
-    return (
-      <AddSubModelButton
-        key={'action-panel-add-actions'}
-        model={this}
-        items={this.getConfigureActionsItems()}
-        subModelKey="actions"
-      >
-        <FlowSettingsButton icon={<SettingOutlined />}>{this.translate('Actions')}</FlowSettingsButton>
-      </AddSubModelButton>
-    );
+    return <ActionPanelConfigureActionsButton model={this} />;
   }
 
   renderComponent() {
@@ -407,6 +399,20 @@ export class ActionPanelBlockModel extends BlockModel {
     );
   }
 }
+
+const ActionPanelConfigureActionsButton = observer(({ model }: { model: ActionPanelBlockModel }) => {
+  const entryActionsRevision = model.context.app.entryActionManager.revision;
+  return (
+    <AddSubModelButton
+      key={`action-panel-add-actions-${entryActionsRevision}`}
+      model={model}
+      items={model.getConfigureActionsItems()}
+      subModelKey="actions"
+    >
+      <FlowSettingsButton icon={<SettingOutlined />}>{model.translate('Actions')}</FlowSettingsButton>
+    </AddSubModelButton>
+  );
+});
 
 ActionPanelBlockModel.define({
   label: tExpr('Action panel'),
