@@ -1,6 +1,5 @@
 # Обзор платформы управления проектами
 
-<iframe  width="800" height="436" src="https://player.bilibili.com/player.html?isOutside=true&aid=113799067601555&bvid=BV1WyrkYMEgZ&cid=27784316077&p=1" scrolling="no" border="0" frameborder="no" framespacing="0" allowfullscreen="true"></iframe>
 
 ## Введение
 
@@ -9,10 +8,10 @@
 ## Уже достигнуто
 
 - Создана базовая функциональность управления данными задач
-- Используются разные блоки для отображения данных ([таблица](https://docs-cn.nocobase.com/handbook/ui/blocks/data-blocks/table), [канбан](https://docs-cn.nocobase.com/handbook/block-kanban), [календарь](https://docs-cn.nocobase.com/handbook/calendar), [диаграмма Ганта](https://docs-cn.nocobase.com/handbook/block-gantt))
-- Настроены [уведомления](https://docs-cn.nocobase.com/handbook/notification-in-app-message) о смене ответственного
+- Используются разные блоки для отображения данных ([таблица](https://docs.nocobase.com/handbook/ui/blocks/data-blocks/table), [канбан](https://docs.nocobase.com/handbook/block-kanban), [календарь](https://docs.nocobase.com/handbook/calendar), [диаграмма Ганта](https://docs.nocobase.com/handbook/block-gantt))
+- Настроены [уведомления](https://docs.nocobase.com/handbook/notification-in-app-message) о смене ответственного
 
-![](https://static-docs.nocobase.com/project-management-ch.drawio.svg)
+![](https://static-docs.nocobase.com/project-management-en.drawio.svg)
 
 ## Дорожная карта развития
 
@@ -20,7 +19,7 @@
 
 Представьте, что у Вашей команды накапливается множество документов, опыта и знаний. Как эффективно ими управлять? Мы построим многофункциональный центр управления знаниями:
 
-- Древовидная структура документов для упорядоченности[(древовидная таблица)](https://docs.nocobase.com/handbook/collection-tree)
+- Древовидная структура документов для упорядоченности [(древовидная коллекция)](https://docs.nocobase.com/handbook/collection-tree)
 - Поддержка разных типов документов: техническая документация, командный wiki, объявления
 - Гибкий контроль прав, обеспечивающий безопасность информации (права, статусы, правила)
 
@@ -29,7 +28,7 @@
 Каждый человек уникален и нуждается в своём пространстве:
 
 - Зона фокусировки: важные и срочные задачи (фильтр и подсветка)
-- Графики статистики: наглядное отображение хода работы [(графики)](https://docs-cn.nocobase.com/handbook/data-visualization/user/chart-block)
+- Графики статистики: наглядное отображение хода работы [(графики)](https://docs.nocobase.com/handbook/data-visualization/user/chart-block)
 - Персональные блоки информации: настраиваемые материалы (база документов / объявления)
 
 ### 3. Управление подзадачами
@@ -71,8 +70,8 @@
 
 Готовы к этому увлекательному путешествию? Тогда вперёд!
 
-[**Следующая глава**](https://www.nocobase.com/cn/tutorials/project-tutorial-knowledge-base): начнём с базы знаний и научимся выстраивать понятную и удобную систему управления документами.
+[**Следующая глава**](https://www.nocobase.com/ru/tutorials/project-tutorial-knowledge-base): начнём с базы знаний и научимся выстраивать понятную и удобную систему управления документами.
 
 ---
 
-Продолжайте экспериментировать! Если возникнут вопросы — не забывайте о [официальной документации NocoBase](https://docs-cn.nocobase.com/) и [сообществе NocoBase](https://forum.nocobase.com/).
+Продолжайте экспериментировать! Если возникнут вопросы — не забывайте о [официальной документации NocoBase](https://docs.nocobase.com/) и [сообществе NocoBase](https://forum.nocobase.com/).

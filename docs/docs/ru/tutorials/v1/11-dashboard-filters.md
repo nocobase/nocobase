@@ -1,6 +1,6 @@
 # Глава 10: Фильтры и условия панелей
 
-<iframe width="800" height="436" src="https://player.bilibili.com/player.html?isOutside=true&aid=114031331442969&bvid=BV1pnAreHEME&cid=28477164740&p=1" scrolling="no" border="0" frameborder="no" framespacing="0" allowfullscreen="true"></iframe>
+<iframe width="800" height="436" src="https://www.youtube.com/embed/TyV-9HHE4e8?si=e6zBGmmYVu4ms-4Q" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 
 В этой главе мы шаг за шагом достроим панель задач. Если возникнут вопросы — обращайтесь на форум.
 
@@ -28,17 +28,17 @@
 
 #### 10.1.2 Добавление множественного поля «Ответственный»
 
-1. **Создание [пользовательского поля](https://docs-cn.nocobase.com/handbook/data-visualization/user/filter#%E8%87%AA%E5%AE%9A%E4%B9%89%E5%AD%97%E6%AE%B5)**: создаём поле «Ответственный» множественного выбора и заполняем псевдонимы (или имена пользователей), чтобы быстро выбирать сотрудников при назначении задач.
+1. **Создание [пользовательского поля](https://docs.nocobase.com/handbook/data-visualization/user/filter#%E8%87%AA%E5%AE%9A%E4%B9%89%E5%AD%97%E6%AE%B5)**: создаём поле «Ответственный» множественного выбора и заполняем псевдонимы (или имена пользователей), чтобы быстро выбирать сотрудников при назначении задач.
 
-![](https://static-docs.nocobase.com/nocobase_tutorials_zh/202412192339318.png)
+![](https://static-docs.nocobase.com/Solution/441734278924202416000812.png)
 
 2. **В настройке отчёта**: установите условие «Ответственный/Псевдоним содержит Текущий фильтр/Ответственный». Это позволит быстро находить задачи, относящиеся к выбранному ответственному.
 
-![](https://static-docs.nocobase.com/nocobase_tutorials_zh/202412192339382.png)
+![](https://static-docs.nocobase.com/Solution/291734279089202416001112.png)
 
 Несколько раз протестируйте фильтр, чтобы убедиться в его работе.
 
-![](https://static-docs.nocobase.com/nocobase_tutorials_zh/202412192359351.png)
+![](https://static-docs.nocobase.com/Solution/431734279283202416001412.png)
 
 ---
 
@@ -48,13 +48,13 @@
 
 1. **Установите значение по умолчанию для поля «Ответственный» — «Текущий пользователь/Псевдоним»**: так система автоматически отобразит задачи, связанные с текущим пользователем, повышая удобство работы.
 
-![](https://static-docs.nocobase.com/nocobase_tutorials_zh/202412192340770.png)
+![](https://static-docs.nocobase.com/Solution/441734279344202416001512.png)
 
-![](https://static-docs.nocobase.com/nocobase_tutorials_zh/202412192341604.png)
+![](https://static-docs.nocobase.com/Solution/101734279430202416001712.png)
 
 2. **После обновления страницы**: панель автоматически загрузит данные, связанные с авторизованным пользователем. (Не забудьте добавить условие фильтрации по пользователю к нужным графикам.)
 
-![](https://static-docs.nocobase.com/nocobase_tutorials_zh/202412192341915.png)
+![](https://static-docs.nocobase.com/Solution/191734279499202416001812.png)
 
 ---
 
@@ -68,23 +68,23 @@
 
 1. **Уберите фильтр по диапазону данных**: чтобы статус не блокировался, и Вы могли гибко менять условия фильтрации.
 
-![](https://static-docs.nocobase.com/nocobase_tutorials_zh/202412192342837.png)
+![](https://static-docs.nocobase.com/Solution/591734279599202416001912.png)
 
 2. **Настройте значение по умолчанию для блока фильтра-формы.**
 
-Помните наш [блок фильтра](https://docs-cn.nocobase.com/handbook/ui/blocks/filter-blocks/form)?
+Помните наш [блок фильтра](https://docs.nocobase.com/handbook/ui/blocks/filter-blocks/form)?
 
 Создайте новый блок-форму для фильтрации задач, добавьте поле **Статус** и другие нужные поля — будем использовать их для подстановки значений из URL. (Не забудьте соединить блок фильтра с целевым блоком задач.)
 
 - Установите значение по умолчанию для поля «Статус» — `URL search params/task_status`.
 
-![](https://static-docs.nocobase.com/nocobase_tutorials_zh/202412192342708.png)
+![](https://static-docs.nocobase.com/Solution/521734279772202416002212.png)
 
-![](https://static-docs.nocobase.com/nocobase_tutorials_zh/202412192343402.png)
+![](https://static-docs.nocobase.com/Solution/331734279873202416002412.png)
 
 3. **Тестирование новой фильтрации**: меняйте статус сколько угодно, всё переключается свободно.
 
-![](https://static-docs.nocobase.com/nocobase_tutorials_zh/202412192343943.gif)
+![](https://static-docs.nocobase.com/Solution/201734280160202416002912.png)
 
 - **Опционально**: чтобы каждый пользователь видел только свои задачи, установите для поля «Ответственный» значение по умолчанию — «Текущий пользователь».
 
@@ -99,53 +99,55 @@
 - News: фокус на динамике проекта, достижениях, вехах
 - Временные объявления и напоминания
 
-#### 10.4.1 Горячая информация (News)
+#### 10.4.1 Горячая информация
 
-1. **Добавьте поле «Горячая информация»**: в таблицу документов добавьте чекбокс «Горячая информация», отмечающий, является ли документ важной новостью.
+1. **Добавьте поле «Горячая информация»**: в коллекцию документов добавьте чекбокс «Горячая информация», отмечающий, является ли документ важной новостью.
 
-![](https://static-docs.nocobase.com/nocobase_tutorials_zh/202412192343408.png)
+![](https://static-docs.nocobase.com/Solution/demoE3v1-50.gif)
 
 2. **Отметка документа как новости**: выберите любой документ, в форме редактирования добавьте поле «Горячая информация» и поставьте галочку.
 
-![](https://static-docs.nocobase.com/nocobase_tutorials_zh/202412192344181.png)
+![](https://static-docs.nocobase.com/Solution/081734280628202416003712.png)
 
-3. **Создание блока «Список»**: вернитесь на панель и создайте [блок «Список»](https://docs-cn.nocobase.com/handbook/ui/blocks/data-blocks/list) > выберите таблицу документов.
+3. **Создание блока «Список»**: вернитесь на панель и создайте [блок «Список»](https://docs.nocobase.com/handbook/ui/blocks/data-blocks/list) > выберите коллекцию документов.
 
-![](https://static-docs.nocobase.com/nocobase_tutorials_zh/202412192344092.png)
+![](https://static-docs.nocobase.com/Solution/331734280773202416003912.png)
 
 Перетащите блок вправо, выведите «Дата создания» и «Заголовок», подгоните ширину полей и отключите «Показывать заголовок».
 
-![](https://static-docs.nocobase.com/nocobase_tutorials_zh/202412192344920.png)
+![](https://static-docs.nocobase.com/Solution/361734280836202416004012.png)
 
 4. **Отображение горячей информации**:
 
 Чтобы подчеркнуть актуальность, можно одновременно отображать время.
 
-![](https://static-docs.nocobase.com/nocobase_tutorials_zh/202412192345763.png)
+![](https://static-docs.nocobase.com/Solution/011734281041202416004412.png)
 
-![](https://static-docs.nocobase.com/nocobase_tutorials_zh/202412192345055.png)
+![](https://static-docs.nocobase.com/Solution/021734281102202416004512.png)
 
 Сортируем по дате создания в обратном порядке — показываем самые свежие новости.
 
-![](https://static-docs.nocobase.com/nocobase_tutorials_zh/202412192345348.png)
+![](https://static-docs.nocobase.com/Solution/131734281173202416004612.png)
 
-![](https://static-docs.nocobase.com/nocobase_tutorials_zh/202412192346268.png)
+![](https://static-docs.nocobase.com/Solution/551734281335202416004812.png)
+
+![](https://static-docs.nocobase.com/Solution/291734281369202416004912.png)
 
 Простое горячее новостное окно готово — участники команды могут следить за важными событиями проекта в любое время!
 
-![](https://static-docs.nocobase.com/nocobase_tutorials_zh/202412192346930.png)
+![](https://static-docs.nocobase.com/Solution/301734281430202416005012.png)
 
 #### 10.4.2 Объявления
 
 Теперь добавим простое публичное объявление: уверены, Вы видели его в нашем онлайн-Demo. Такие временные уведомления не нужно показывать долго и фиксировать в отчётах — это короткие напоминания и сообщения.
 
-1. **Создайте [блок Markdown](https://docs-cn.nocobase.com/handbook/ui/blocks/other-blocks/markdown)**: на свободной области панели добавьте блок Markdown с текстом объявления.
+1. **Создайте [блок Markdown](https://docs.nocobase.com/handbook/ui/blocks/other-blocks/markdown)**: на свободной области панели добавьте блок Markdown с текстом объявления.
 
-![](https://static-docs.nocobase.com/nocobase_tutorials_zh/202412192346846.png)
+![](https://static-docs.nocobase.com/Solution/231734281783202416005612.png)
 
-Подробнее о Markdown — в нашем официальном Demo, документации или [учебнике «Лёгкая документация»](https://www.nocobase.com/cn/tutorials).
+Подробнее о Markdown — в нашем официальном Demo, документации или [учебнике «Лёгкая документация»](https://www.nocobase.com/ru/tutorials).
 
-В качестве простого примера ниже — «Эффектное объявление» на HTML, чтобы продемонстрировать возможности [блока Markdown](https://docs-cn.nocobase.com/handbook/ui/blocks/other-blocks/markdown).
+В качестве простого примера ниже — «Эффектное объявление» на HTML, чтобы продемонстрировать возможности [блока Markdown](https://docs.nocobase.com/handbook/ui/blocks/other-blocks/markdown).
 
 - Пример кода:
 
@@ -160,7 +162,7 @@
 </div>
 ```
 
-![](https://static-docs.nocobase.com/nocobase_tutorials_zh/202412192347259.png)
+![](https://static-docs.nocobase.com/Solution/011734282061202416010112.png)
 
 ### 10.5 Итог
 
@@ -168,8 +170,8 @@
 
 Фильтрация по статусам и ответственным, настройка горячих новостей — всё это направлено на улучшение пользовательского опыта, повышение удобства и гибкости системы.
 
-Персонализированная панель готова — пробуйте, дорабатывайте под свои задачи и переходите в [следующую главу](https://www.nocobase.com/cn/tutorials/project-tutorial-subtasks-and-work-hours-calculation)!
+Персонализированная панель готова — пробуйте, дорабатывайте под свои задачи и переходите в [следующую главу](https://www.nocobase.com/ru/tutorials/project-tutorial-subtasks-and-work-hours-calculation)!
 
 ---
 
-Продолжайте экспериментировать! Если возникнут вопросы — не забывайте о [официальной документации NocoBase](https://docs-cn.nocobase.com/) и [сообществе NocoBase](https://forum.nocobase.com/).
+Продолжайте экспериментировать! Если возникнут вопросы — не забывайте о [официальной документации NocoBase](https://docs.nocobase.com/) и [сообществе NocoBase](https://forum.nocobase.com/).
