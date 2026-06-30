@@ -15,7 +15,6 @@ import { FileSizeField } from './FileSizeField';
 import { FileStoragePane } from './FileStorage';
 import { useAttachmentFieldProps, useFileCollectionStorageRules } from './hooks';
 import { useStorageCfg } from './hooks/useStorageUploadProps';
-import { AttachmentFieldInterface } from './interfaces/attachment';
 import { NAMESPACE } from './locale';
 import { DisplayPreviewFieldModel } from '../client-v2/models/DisplayPreviewFieldModel';
 import { UploadFieldModel } from '../client-v2/models/UploadFieldModel';
@@ -72,7 +71,6 @@ export class PluginFileManagerClient extends Plugin {
   storageTypes = new Map();
 
   async load() {
-    this.app.dataSourceManager.addFieldInterfaces([AttachmentFieldInterface]);
     this.app.dataSourceManager.addCollectionTemplates([FileCollectionTemplate]);
 
     this.app.use(FileManagerProvider);

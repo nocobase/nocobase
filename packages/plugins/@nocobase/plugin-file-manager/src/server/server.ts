@@ -91,6 +91,20 @@ export class PluginFileManagerServer extends Plugin {
     }
   };
 
+  rejectAttachmentFieldInterface = (field: Model) => {
+    if (field.get('interface') !== 'attachment') {
+      return;
+    }
+    if (!field.isNewRecord && !field.changed('interface')) {
+      return;
+    }
+    throw new Error(
+      this.t(
+        'The attachment field type is no longer supported. Please use a many-to-many field to the attachments collection instead.',
+      ) as string,
+    );
+  };
+
   registerStorageType(type: string, Type: StorageClassType) {
     this.storageTypes.register(type, Type);
   }
@@ -233,6 +247,8 @@ export class PluginFileManagerServer extends Plugin {
 
   async load() {
     this.db.on('afterDestroy', this.afterDestroy);
+    this.db.on('fields.beforeCreate', this.rejectAttachmentFieldInterface);
+    this.db.on('fields.beforeUpdate', this.rejectAttachmentFieldInterface);
 
     this.storageTypes.register(STORAGE_TYPE_LOCAL, StorageTypeLocal);
     this.storageTypes.register(STORAGE_TYPE_ALI_OSS, StorageTypeAliOss);
@@ -280,7 +296,7 @@ export class PluginFileManagerServer extends Plugin {
 
     initActions(this);
 
-    this.app.acl.allow('attachments', ['upload', 'create'], 'loggedIn');
+    this.app.acl.allow('attachments', 'upload', 'loggedIn');
     this.app.acl.allow('storages', 'getBasicInfo', 'loggedIn');
     this.app.acl.allow('storages', 'check', 'loggedIn');
 
