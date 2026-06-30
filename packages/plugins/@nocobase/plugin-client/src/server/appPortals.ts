@@ -7,6 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { AppSupervisor } from '@nocobase/server';
+import type { AppModel } from '@nocobase/server';
+
 export type AppPortalAppItem = {
   name: string;
   title?: string | null;
@@ -24,35 +27,11 @@ export type AppPortalItem = {
   defaultPortal?: boolean;
 };
 
-export type AppPortalsPayload = {
-  apps?: AppPortalAppItem[];
-  portals?: AppPortalItem[];
-};
-
-type AppPortalsContextLike = {
-  app?: {
-    name?: string;
-  };
-  db?: unknown;
-  [key: string]: unknown;
-};
-
-type AppPortalsAppLike = {
-  name?: string;
-  logger?: {
-    warn?: (message: string, meta?: Record<string, unknown>) => void;
-  };
-};
-
-export type AppPortalsProviderContext = {
-  ctx: AppPortalsContextLike;
-  app: AppPortalsAppLike;
-};
-
-export type AppPortalsProvider = (context: AppPortalsProviderContext) => AppPortalsPayload | Promise<AppPortalsPayload>;
+export type StoredAppPortalItem = Omit<AppPortalItem, 'appName' | 'defaultPortal'>;
 
 const MAIN_APP_NAME = 'main';
-const DEFAULT_PORTALS = [
+const MULTI_PORTAL_MANIFEST_NAMESPACE = 'multi-portal';
+const DEFAULT_PORTALS: Array<Omit<AppPortalItem, 'appName'>> = [
   {
     uid: '__default_admin__',
     title: 'Admin',
@@ -71,95 +50,154 @@ const DEFAULT_PORTALS = [
   },
 ];
 
-function isValidAppItem(item: AppPortalAppItem | null | undefined): item is AppPortalAppItem {
-  return !!item?.name && typeof item.name === 'string';
+type AppPortalsContextLike = {
+  app?: {
+    name?: string;
+  };
+};
+
+function normalizeCname(cname?: string | null) {
+  if (!cname) {
+    return null;
+  }
+  const trimmed = cname.trim().replace(/\/+$/, '');
+  if (!trimmed) {
+    return null;
+  }
+  return /^https?:\/\//i.test(trimmed) || trimmed.startsWith('//') ? trimmed : `//${trimmed}`;
 }
 
-function isValidPortalItem(item: AppPortalItem | null | undefined): item is AppPortalItem {
-  return !!item?.appName && typeof item.appName === 'string' && !!item.routePath && typeof item.routePath === 'string';
+function joinUrl(base: string, path: string) {
+  return `${base.replace(/\/+$/, '')}/${path.replace(/^\/+/, '')}`;
 }
 
-export class AppPortalsService {
-  private readonly providers = new Map<string, AppPortalsProvider>();
+function getAppName(appModel: AppModel) {
+  return typeof appModel.name === 'string' && appModel.name ? appModel.name : null;
+}
 
-  constructor(private readonly app: AppPortalsAppLike) {}
+function shouldShowApp(appModel: AppModel) {
+  return appModel.options?.hidden !== true;
+}
 
-  registerProvider(name: string, provider: AppPortalsProvider) {
-    this.providers.set(name, provider);
+async function getAppUrl(appModel: AppModel) {
+  const cnameUrl = normalizeCname(appModel.cname);
+  if (cnameUrl) {
+    return cnameUrl;
   }
 
-  unregisterProvider(name: string) {
-    this.providers.delete(name);
+  const appName = getAppName(appModel);
+  const environment = appModel.environment || appModel.environments?.[0];
+  if (!appName || !environment) {
+    return null;
   }
 
-  async list(ctx: AppPortalsContextLike): Promise<{ apps: AppPortalAppItem[]; portals: AppPortalItem[] }> {
-    const apps = new Map<string, AppPortalAppItem>();
-    const portals = new Map<string, AppPortalItem>();
+  const envInfo = await AppSupervisor.getInstance().getEnvironment(environment);
+  const baseUrl = envInfo?.proxyUrl || envInfo?.url;
+  return baseUrl ? joinUrl(baseUrl, `/apps/${encodeURIComponent(appName)}`) : null;
+}
 
-    for (const [name, provider] of this.providers) {
-      try {
-        const payload = await provider({ ctx, app: this.app });
-        for (const item of payload.apps || []) {
-          if (isValidAppItem(item)) {
-            apps.set(item.name, {
-              ...apps.get(item.name),
-              ...item,
-            });
-          }
-        }
-        for (const item of payload.portals || []) {
-          if (isValidPortalItem(item)) {
-            portals.set(this.getPortalKey(item), item);
-          }
-        }
-      } catch (error) {
-        this.app.logger?.warn?.(`failed to collect app portals from provider "${name}"`, { error });
-      }
-    }
-
-    this.addDefaultPortals(apps, portals);
-
-    return {
-      apps: [...apps.values()],
-      portals: [...portals.values()],
-    };
+async function toAppPortalAppItem(appModel: AppModel): Promise<AppPortalAppItem | null> {
+  const name = getAppName(appModel);
+  if (!name || name === MAIN_APP_NAME || !shouldShowApp(appModel)) {
+    return null;
   }
 
-  private addDefaultPortals(apps: Map<string, AppPortalAppItem>, portals: Map<string, AppPortalItem>) {
-    const appNames = new Set<string>([MAIN_APP_NAME]);
+  return {
+    name,
+    title: appModel.title || name,
+    icon: appModel.icon || null,
+    appUrl: await getAppUrl(appModel),
+  };
+}
 
-    for (const appName of apps.keys()) {
-      appNames.add(appName);
-    }
+function getPortalKey(item: AppPortalItem) {
+  return item.uid ? `${item.appName}:${item.uid}` : `${item.appName}:${item.routePath}`;
+}
 
-    for (const portal of portals.values()) {
-      appNames.add(portal.appName);
-    }
+function addPortal(portals: Map<string, AppPortalItem>, item: AppPortalItem) {
+  if (!item.appName || !item.routePath) {
+    return;
+  }
+  portals.set(getPortalKey(item), item);
+}
 
-    if (appNames.size > 1 && !apps.has(MAIN_APP_NAME)) {
-      apps.set(MAIN_APP_NAME, {
-        name: MAIN_APP_NAME,
-        title: 'Main',
-        icon: null,
-        appUrl: null,
+function addDefaultPortals(portals: Map<string, AppPortalItem>, appNames: Set<string>) {
+  for (const appName of appNames) {
+    for (const portal of DEFAULT_PORTALS) {
+      addPortal(portals, {
+        ...portal,
+        appName,
       });
     }
+  }
+}
 
-    for (const appName of appNames) {
-      for (const portal of DEFAULT_PORTALS) {
-        const item: AppPortalItem = {
-          ...portal,
-          appName,
-        };
-        const key = this.getPortalKey(item);
-        if (!portals.has(key)) {
-          portals.set(key, item);
-        }
-      }
+function addStoredPortals(
+  portals: Map<string, AppPortalItem>,
+  appName: string,
+  storedPortals: StoredAppPortalItem[] | null | undefined,
+) {
+  if (!Array.isArray(storedPortals)) {
+    return;
+  }
+
+  for (const portal of storedPortals) {
+    if (!portal || typeof portal.routePath !== 'string' || !portal.routePath) {
+      continue;
     }
+    addPortal(portals, {
+      uid: typeof portal.uid === 'string' ? portal.uid : null,
+      appName,
+      title: typeof portal.title === 'string' ? portal.title : null,
+      icon: typeof portal.icon === 'string' ? portal.icon : null,
+      routePath: portal.routePath,
+      layout: typeof portal.layout === 'string' ? portal.layout : null,
+    });
+  }
+}
+
+export async function listAppPortals(ctx: AppPortalsContextLike) {
+  const supervisor = AppSupervisor.getInstance();
+  const appModels = await supervisor.listAppModels();
+  const appItems = await Promise.all(appModels.map((appModel) => toAppPortalAppItem(appModel)));
+  const apps = new Map<string, AppPortalAppItem>();
+  const appNames = new Set<string>([MAIN_APP_NAME]);
+  const currentAppName = ctx.app?.name;
+
+  if (currentAppName) {
+    appNames.add(currentAppName);
   }
 
-  private getPortalKey(item: AppPortalItem) {
-    return item.uid ? `${item.appName}:${item.uid}` : `${item.appName}:${item.routePath}`;
+  for (const app of appItems) {
+    if (!app) {
+      continue;
+    }
+    apps.set(app.name, app);
+    appNames.add(app.name);
   }
+
+  if (appNames.size > 1 && !apps.has(MAIN_APP_NAME)) {
+    apps.set(MAIN_APP_NAME, {
+      name: MAIN_APP_NAME,
+      title: 'Main',
+      icon: null,
+      appUrl: null,
+    });
+  }
+
+  const manifests = await supervisor.getAppManifests<StoredAppPortalItem>(
+    MULTI_PORTAL_MANIFEST_NAMESPACE,
+    Array.from(appNames),
+  );
+  const portals = new Map<string, AppPortalItem>();
+
+  addDefaultPortals(portals, appNames);
+  for (const appName of appNames) {
+    addStoredPortals(portals, appName, manifests[appName]);
+  }
+
+  return {
+    apps: [...apps.values()],
+    portals: [...portals.values()],
+  };
 }

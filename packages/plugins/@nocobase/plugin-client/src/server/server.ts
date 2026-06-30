@@ -13,7 +13,7 @@ import { tval } from '@nocobase/utils';
 import _ from 'lodash';
 import * as process from 'node:process';
 import { resolve } from 'path';
-import { AppPortalsService, type AppPortalsProvider } from './appPortals';
+import { listAppPortals } from './appPortals';
 import { getAntdLocale } from './antd';
 import { getCronLocale } from './cron';
 import { getCronstrueLocale } from './cronstrue';
@@ -34,17 +34,7 @@ async function getLang(ctx) {
 }
 
 export class PluginClientServer extends Plugin {
-  readonly appPortals = new AppPortalsService(this.app);
-
   async beforeLoad() {}
-
-  registerAppPortalsProvider(name: string, provider: AppPortalsProvider) {
-    this.appPortals.registerProvider(name, provider);
-  }
-
-  unregisterAppPortalsProvider(name: string) {
-    this.appPortals.unregisterProvider(name);
-  }
 
   async install() {
     // const uiSchemas = this.db.getRepository<any>('uiSchemas');
@@ -133,7 +123,7 @@ export class PluginClientServer extends Plugin {
           await next();
         },
         getPortals: async (ctx, next) => {
-          ctx.body = await this.appPortals.list(ctx);
+          ctx.body = await listAppPortals(ctx);
           await next();
         },
         async clearCache(ctx, next) {
