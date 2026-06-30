@@ -18,12 +18,13 @@
  * `FlowContext` directly, and the pure graph walks from the relocated modules.
  */
 
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { App, Checkbox } from 'antd';
 import { useFlowContext as useFlowEngineContext } from '@nocobase/flow-engine';
 
 import { useFlowContext, useWorkflowCanvasExecuted, type CanvasNode } from './contexts';
 import { useT, useWorkflowTranslation } from '../locale';
+import { getWorkflowSingleton } from '../contextSingleton';
 import useStyles from './style';
 import { useWorkflowPlugin } from './useWorkflowInstruction';
 import type { Instruction } from './Instruction';
@@ -112,7 +113,9 @@ export type NodeDragContextValue = {
   consumeClick: () => boolean;
 };
 
-const NodeDragContext = createContext<NodeDragContextValue | null>(null);
+const NodeDragContext = getWorkflowSingleton('NodeDragContext', () =>
+  React.createContext<NodeDragContextValue | null>(null),
+);
 
 export function useNodeDragContext() {
   return useContext(NodeDragContext);

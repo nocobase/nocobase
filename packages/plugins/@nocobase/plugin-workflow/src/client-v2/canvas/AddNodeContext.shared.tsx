@@ -7,7 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { createContext, useContext } from 'react';
+import React, { useContext } from 'react';
+import { getWorkflowSingleton } from '../contextSingleton';
 
 export type SharedAddNodeAnchor = {
   upstream?: any;
@@ -28,7 +29,9 @@ export type SharedAddNodeContextValue = {
   setCreating?: (value: any) => void;
 };
 
-export const AddNodeContext = createContext<SharedAddNodeContextValue | null>(null);
+export const AddNodeContext = getWorkflowSingleton('AddNodeContext', () =>
+  React.createContext<SharedAddNodeContextValue | null>(null),
+);
 
 export function useAddNodeContext() {
   return useContext(AddNodeContext);

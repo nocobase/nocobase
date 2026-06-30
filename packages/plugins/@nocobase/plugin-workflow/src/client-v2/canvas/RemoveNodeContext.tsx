@@ -22,11 +22,12 @@
  * provider and pass its own runtime (the allowed v1 → v2 direction).
  */
 
-import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
+import React, { useCallback, useContext, useMemo, useState } from 'react';
 import { App, Modal, Radio, Select, Space } from 'antd';
 import { useFlowEngine } from '@nocobase/flow-engine';
 import { useFlowContext } from './contexts';
 import { useT } from '../locale';
+import { getWorkflowSingleton } from '../contextSingleton';
 import { PluginWorkflowClientV2 } from '../plugin';
 import { collectBranchNodes, findNodesReferencing } from './removeNodeUtils';
 
@@ -60,7 +61,9 @@ function useModernCanvasRuntime(): CanvasRemoveRuntime {
   };
 }
 
-const RemoveNodeContext = createContext<RemoveNodeContextValue | null>(null);
+const RemoveNodeContext = getWorkflowSingleton('RemoveNodeContext', () =>
+  React.createContext<RemoveNodeContextValue | null>(null),
+);
 
 export function useRemoveNodeContext() {
   return useContext(RemoveNodeContext);

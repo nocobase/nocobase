@@ -25,6 +25,7 @@
 
 import React, { useContext } from 'react';
 import type { WorkflowCanvasRecord, WorkflowRevision } from '../components/workflowCanvas';
+import { getWorkflowSingleton } from '../contextSingleton';
 
 /**
  * A canvas node — the live linked-list element produced by `linkNodes`: the flat
@@ -73,7 +74,9 @@ export type WorkflowCanvasFlowContextValue = {
   userJob?: Record<string, any> | null;
 };
 
-export const FlowContext = React.createContext<WorkflowCanvasFlowContextValue>({});
+export const FlowContext = getWorkflowSingleton('FlowContext', () =>
+  React.createContext<WorkflowCanvasFlowContextValue>({}),
+);
 
 export function useFlowContext() {
   return useContext(FlowContext);
@@ -81,13 +84,17 @@ export function useFlowContext() {
 
 // Holds the bare workflow record (v1's split from FlowContext). Default `{}` (not null) preserves v1's behavior, so
 // unguarded `.type`/`.config` reads at existing call sites stay safe; `Partial` makes the empty default assignable.
-export const CurrentWorkflowContext = React.createContext<Partial<WorkflowCanvasRecord>>({});
+export const CurrentWorkflowContext = getWorkflowSingleton('CurrentWorkflowContext', () =>
+  React.createContext<Partial<WorkflowCanvasRecord>>({}),
+);
 
 export function useCurrentWorkflowContext() {
   return useContext(CurrentWorkflowContext);
 }
 
-export const WorkflowVariableSourceContext = React.createContext<Partial<WorkflowCanvasRecord> | null>(null);
+export const WorkflowVariableSourceContext = getWorkflowSingleton('WorkflowVariableSourceContext', () =>
+  React.createContext<Partial<WorkflowCanvasRecord> | null>(null),
+);
 
 export function useWorkflowVariableSourceContext() {
   return useContext(WorkflowVariableSourceContext);
@@ -95,7 +102,7 @@ export function useWorkflowVariableSourceContext() {
 
 // Default `{}` (not null) to match v1's `NodeContext` default, so existing v1 call sites that read
 // `useNodeContext().config` without guarding are unaffected.
-export const NodeContext = React.createContext<CanvasNode>({} as CanvasNode);
+export const NodeContext = getWorkflowSingleton('NodeContext', () => React.createContext<CanvasNode>({} as CanvasNode));
 
 export function useNodeContext() {
   return useContext(NodeContext);

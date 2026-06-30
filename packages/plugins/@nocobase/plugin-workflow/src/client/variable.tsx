@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { createContext, useCallback, useContext } from 'react';
+import React, { useCallback } from 'react';
 
 import { Variable, useApp, useCompile, useGlobalVariable, usePlugin } from '@nocobase/client';
 
@@ -27,6 +27,7 @@ import {
   type VariableOption,
   type UseVariableOptions,
 } from '../client-v2/canvas/collectionFieldOptions';
+import { HideVariableContext, useHideVariable } from '../client-v2/components/HideVariableContext';
 
 export const nodesOptions = {
   label: `{{t("Node result", { ns: "${NAMESPACE}" })}}`,
@@ -171,14 +172,4 @@ export function WorkflowVariableWrapper(props): JSX.Element {
   return render?.(others);
 }
 
-/**
- * @experimental
- */
-export const HideVariableContext = createContext(false);
-
-/**
- * @experimental
- */
-export function useHideVariable() {
-  return useContext(HideVariableContext);
-}
+export { HideVariableContext, useHideVariable };

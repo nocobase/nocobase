@@ -7,9 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { createContext, useContext } from 'react';
+import React, { useContext } from 'react';
+import { getWorkflowSingleton } from '../contextSingleton';
 
-export const HideVariableContext = createContext(false);
+export const HideVariableContext = getWorkflowSingleton('HideVariableContext', () => React.createContext(false));
 
 export function useHideVariable() {
   return useContext(HideVariableContext);
