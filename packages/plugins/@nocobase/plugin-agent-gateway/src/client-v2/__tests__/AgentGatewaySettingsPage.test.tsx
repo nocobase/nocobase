@@ -13,6 +13,9 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import { App as AntdApp } from 'antd';
 import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import AgentGatewayDispatchBindingsPage from '../pages/AgentGatewayDispatchBindingsPage';
+import AgentGatewayPromptTemplatesPage from '../pages/AgentGatewayPromptTemplatesPage';
+import AgentGatewayRunsPage from '../pages/AgentGatewayRunsPage';
 import AgentGatewaySettingsPage from '../pages/AgentGatewaySettingsPage';
 import PluginAgentGatewayClientV2 from '../plugin';
 
@@ -24,13 +27,14 @@ interface RequestConfig {
   url: string;
   method: 'get' | 'post';
   data?: Record<string, unknown>;
+  params?: Record<string, unknown>;
 }
 
 function setFlowContextValue(app: Application, key: string, value: unknown) {
   (app.flowEngine.context as unknown as FlowContextWithDefineProperty).defineProperty(key, { value });
 }
 
-function renderSettingsPage(request: (config: RequestConfig) => Promise<unknown>) {
+function renderAgentGatewayPage(Page: React.ComponentType, request: (config: RequestConfig) => Promise<unknown>) {
   const app = new Application();
   setFlowContextValue(app, 'api', {
     request,
@@ -43,10 +47,14 @@ function renderSettingsPage(request: (config: RequestConfig) => Promise<unknown>
   render(
     <FlowEngineProvider engine={app.flowEngine}>
       <AntdApp>
-        <AgentGatewaySettingsPage />
+        <Page />
       </AntdApp>
     </FlowEngineProvider>,
   );
+}
+
+function renderSettingsPage(request: (config: RequestConfig) => Promise<unknown>) {
+  renderAgentGatewayPage(AgentGatewaySettingsPage, request);
 }
 
 describe('PluginAgentGatewayClientV2', () => {
@@ -90,6 +98,24 @@ describe('PluginAgentGatewayClientV2', () => {
       expect.objectContaining({
         menuKey: 'agent-gateway',
         key: 'index',
+      }),
+    );
+    expect(addPageTabItem).toHaveBeenCalledWith(
+      expect.objectContaining({
+        menuKey: 'agent-gateway',
+        key: 'runs',
+      }),
+    );
+    expect(addPageTabItem).toHaveBeenCalledWith(
+      expect.objectContaining({
+        menuKey: 'agent-gateway',
+        key: 'prompt-templates',
+      }),
+    );
+    expect(addPageTabItem).toHaveBeenCalledWith(
+      expect.objectContaining({
+        menuKey: 'agent-gateway',
+        key: 'dispatch-bindings',
       }),
     );
   });
@@ -151,6 +177,19 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
+      if (config.url === 'agent-gateway/nodes:update/node-id-1') {
+        return {
+          data: {
+            data: {
+              id: 'node-id-1',
+              nodeKey: 'node-1',
+              displayName: 'Local fake runner',
+              status: 'disabled',
+            },
+          },
+        };
+      }
+
       return { data: { data: [] } };
     });
 
@@ -177,6 +216,19 @@ describe('PluginAgentGatewayClientV2', () => {
         method: 'get',
       }),
     );
+
+    fireEvent.click(screen.getByLabelText('Toggle node status'));
+    await waitFor(() => {
+      expect(request).toHaveBeenCalledWith(
+        expect.objectContaining({
+          url: 'agent-gateway/nodes:update/node-id-1',
+          method: 'post',
+          data: {
+            status: 'disabled',
+          },
+        }),
+      );
+    });
   });
 
   it('creates an invitation and clears the one-time register command when the modal closes', async () => {
@@ -271,7 +323,7 @@ describe('PluginAgentGatewayClientV2', () => {
       return { data: { data: [] } };
     });
 
-    renderSettingsPage(request);
+    renderAgentGatewayPage(AgentGatewayPromptTemplatesPage, request);
 
     expect(await screen.findByText('Prompt Templates')).toBeTruthy();
     expect(await screen.findByText('ticket-summary')).toBeTruthy();
@@ -324,5 +376,305 @@ describe('PluginAgentGatewayClientV2', () => {
         }),
       }),
     );
+  });
+
+  it('lists runs, shows observation details, and requests cancel for active runs', async () => {
+    const request = vi.fn(async (config: RequestConfig) => {
+      if (config.url === 'agent-gateway/runs:list') {
+        return {
+          data: {
+            data: [
+              {
+                id: 'run-id-1',
+                runCode: 'run-build-1',
+                status: 'running',
+                nodeId: 'node-id-1',
+                agentProfileId: 'profile-id-1',
+                sourceType: 'record-action',
+                sourceCollection: 'tickets',
+                sourceRecordId: '1',
+                requestedAt: '2026-06-30T10:00:00.000Z',
+              },
+              {
+                id: 'run-id-2',
+                runCode: 'run-done-1',
+                status: 'succeeded',
+              },
+            ],
+          },
+        };
+      }
+
+      if (config.url === 'agent-gateway/runs/run-id-1/cancel') {
+        return {
+          data: {
+            data: {
+              id: 'run-id-1',
+              runCode: 'run-build-1',
+              status: 'canceling',
+            },
+          },
+        };
+      }
+
+      if (config.url === 'agent-gateway/runs:get/run-id-1') {
+        return {
+          data: {
+            data: {
+              id: 'run-id-1',
+              runCode: 'run-build-1',
+              status: 'running',
+              nodeId: 'node-id-1',
+              agentProfileId: 'profile-id-1',
+              promptSnapshot: {
+                text: 'must-not-render',
+              },
+              executionPayloadJson: {
+                command: 'must-not-render',
+                cwd: '/tmp/must-not-render',
+                env: {
+                  SECRET: 'must-not-render',
+                },
+              },
+              resultSummaryJson: {
+                command: 'must-not-render',
+                cwd: '/tmp/must-not-render',
+                env: {
+                  SECRET: 'must-not-render',
+                },
+                safe: 'visible summary',
+              },
+              errorSummary: 'command=must-not-render cwd=/tmp/must-not-render env.SECRET=must-not-render',
+              requestedAt: '2026-06-30T10:00:00.000Z',
+              startedAt: '2026-06-30T10:01:00.000Z',
+            },
+          },
+        };
+      }
+
+      if (config.url === 'agent-gateway/runs/run-id-1/events:list') {
+        return {
+          data: {
+            data: [
+              {
+                id: 'event-id-1',
+                source: 'stdout',
+                sequence: 1,
+                level: 'info',
+                eventType: 'log',
+                message: 'build started',
+                emittedAt: '2026-06-30T10:01:01.000Z',
+              },
+            ],
+          },
+        };
+      }
+
+      if (config.url === 'agent-gateway/runs/run-id-1/artifacts:list') {
+        return {
+          data: {
+            data: [
+              {
+                id: 'artifact-id-1',
+                artifactKey: 'stdout',
+                artifactType: 'log',
+                mimeType: 'text/plain',
+                contentText: 'inline artifact text',
+                metadataJson: {
+                  externalUrl: 'https://daemon.example/artifact',
+                },
+              },
+            ],
+          },
+        };
+      }
+
+      if (config.url === 'agent-gateway/runs/run-id-1/snapshots:list') {
+        return {
+          data: {
+            data: [
+              {
+                id: 'snapshot-id-1',
+                snapshotType: 'workspace',
+                snapshotJson: {
+                  files: ['a.ts'],
+                },
+              },
+            ],
+          },
+        };
+      }
+
+      if (config.url === 'agent-gateway/runs/run-id-1/api-call-logs:list') {
+        return {
+          data: {
+            data: [
+              {
+                id: 'api-log-id-1',
+                method: 'POST',
+                path: '/api/agent-gateway/runs/run-id-1/events:append',
+                statusCode: 200,
+                durationMs: 12,
+                requestSummaryJson: {
+                  action: 'events:append',
+                },
+                responseSummaryJson: {
+                  statusCode: 200,
+                },
+              },
+            ],
+          },
+        };
+      }
+
+      return { data: { data: [] } };
+    });
+
+    renderAgentGatewayPage(AgentGatewayRunsPage, request);
+
+    expect(await screen.findByText('run-build-1')).toBeTruthy();
+    expect(await screen.findByText('run-done-1')).toBeTruthy();
+
+    const cancelButtons = await screen.findAllByLabelText('Cancel run');
+    expect(cancelButtons).toHaveLength(1);
+    fireEvent.click(cancelButtons[0]);
+    await waitFor(() => {
+      expect(request).toHaveBeenCalledWith(
+        expect.objectContaining({
+          url: 'agent-gateway/runs/run-id-1/cancel',
+          method: 'post',
+        }),
+      );
+    });
+
+    const detailButtons = await screen.findAllByLabelText('View run details');
+    fireEvent.click(detailButtons[0]);
+
+    expect(await screen.findByText('Run summary')).toBeTruthy();
+    expect(await screen.findByText('build started')).toBeTruthy();
+    expect(await screen.findByText('inline artifact text')).toBeTruthy();
+    expect(await screen.findByText(/visible summary/)).toBeTruthy();
+    expect(await screen.findByText(/"files":/)).toBeTruthy();
+    expect(await screen.findByText('/api/agent-gateway/runs/run-id-1/events:append')).toBeTruthy();
+    expect(screen.queryByText(/must-not-render/)).toBeNull();
+    expect(screen.queryByText(/https:\/\/daemon\.example\/artifact/)).toBeNull();
+  });
+
+  it('lists, creates, and toggles dispatch bindings through Agent Gateway APIs', async () => {
+    const bindings: Array<Record<string, unknown>> = [
+      {
+        id: 'binding-id-1',
+        bindingKey: 'ticket-dispatch',
+        collectionName: 'tickets',
+        outputAgentRunField: 'agentRun',
+        promptTemplateId: 'template-id-1',
+        enabled: true,
+        priority: 0,
+        fieldMappingsJson: {
+          title: 'title',
+        },
+        skillFieldsJson: {},
+      },
+    ];
+    const request = vi.fn(async (config: RequestConfig) => {
+      if (config.url === 'agent-gateway/dispatch-bindings:list') {
+        return {
+          data: {
+            data: bindings,
+          },
+        };
+      }
+
+      if (config.url === 'agent-gateway/prompt-templates:list') {
+        return {
+          data: {
+            data: [
+              {
+                id: 'template-id-1',
+                templateKey: 'ticket-summary',
+                displayName: 'Ticket summary',
+              },
+            ],
+          },
+        };
+      }
+
+      if (config.url === 'agent-gateway/dispatch-bindings:create') {
+        const createdBinding = {
+          id: 'binding-id-2',
+          bindingKey: String(config.data?.bindingKey),
+          collectionName: String(config.data?.collectionName),
+          outputAgentRunField: String(config.data?.outputAgentRunField),
+          promptTemplateId: String(config.data?.promptTemplateId),
+          enabled: true,
+          priority: Number(config.data?.priority || 0),
+        };
+        bindings.push(createdBinding);
+        return {
+          data: {
+            data: createdBinding,
+          },
+        };
+      }
+
+      if (config.url === 'agent-gateway/dispatch-bindings:update/binding-id-1') {
+        return {
+          data: {
+            data: {
+              ...bindings[0],
+              enabled: config.data?.enabled,
+            },
+          },
+        };
+      }
+
+      return { data: { data: [] } };
+    });
+
+    renderAgentGatewayPage(AgentGatewayDispatchBindingsPage, request);
+
+    expect(await screen.findByText('ticket-dispatch')).toBeTruthy();
+
+    fireEvent.click(screen.getByText('New binding'));
+    fireEvent.change(screen.getByPlaceholderText('ticket-dispatch'), {
+      target: { value: 'new-ticket-dispatch' },
+    });
+    fireEvent.change(screen.getByPlaceholderText('tickets'), {
+      target: { value: 'tickets' },
+    });
+    fireEvent.change(screen.getByPlaceholderText('agentRun'), {
+      target: { value: 'agentRun' },
+    });
+    fireEvent.mouseDown(screen.getByLabelText('Prompt template'));
+    fireEvent.click(await screen.findByText('Ticket summary'));
+    fireEvent.click(screen.getByText('Save'));
+
+    await waitFor(() => {
+      expect(request).toHaveBeenCalledWith(
+        expect.objectContaining({
+          url: 'agent-gateway/dispatch-bindings:create',
+          method: 'post',
+          data: expect.objectContaining({
+            bindingKey: 'new-ticket-dispatch',
+            collectionName: 'tickets',
+            outputAgentRunField: 'agentRun',
+            promptTemplateId: 'template-id-1',
+          }),
+        }),
+      );
+    });
+
+    fireEvent.click(screen.getAllByLabelText('Toggle dispatch binding status')[0]);
+    await waitFor(() => {
+      expect(request).toHaveBeenCalledWith(
+        expect.objectContaining({
+          url: 'agent-gateway/dispatch-bindings:update/binding-id-1',
+          method: 'post',
+          data: {
+            enabled: false,
+          },
+        }),
+      );
+    });
   });
 });

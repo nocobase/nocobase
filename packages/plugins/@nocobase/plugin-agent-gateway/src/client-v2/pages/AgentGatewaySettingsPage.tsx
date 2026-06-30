@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { CopyOutlined, EditOutlined, EyeOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons';
+import { CopyOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons';
 import { useFlowContext } from '@nocobase/flow-engine';
 import { useRequest } from 'ahooks';
 import {
@@ -22,35 +22,19 @@ import {
   Space,
   Switch,
   Table,
-  Tag,
-  Tooltip,
   Typography,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import React, { useCallback, useMemo, useState } from 'react';
 import { useT } from '../locale';
-
-interface AgentGatewayApiResponse<T> {
-  data?: {
-    data?: T;
-  };
-}
-
-interface AgentGatewayApi {
-  request<T>(config: {
-    url: string;
-    method: 'get' | 'post';
-    data?: Record<string, unknown>;
-  }): Promise<AgentGatewayApiResponse<T>>;
-}
-
-interface AgentGatewayContext {
-  api: AgentGatewayApi;
-  message?: {
-    success(content: string): void;
-    error(content: string): void;
-  };
-}
+import {
+  AgentGatewayContext,
+  JsonPreview,
+  getRequiredResponseData,
+  getResponseData,
+  formatDateTime,
+  statusTag,
+} from './AgentGatewayPageUtils';
 
 interface NodeRecord {
   id: string;
@@ -67,6 +51,7 @@ interface NodeRecord {
   };
   registeredAt?: string;
   lastHeartbeatAt?: string;
+  disabledAt?: string | null;
 }
 
 interface AgentProfileRecord {
@@ -94,114 +79,13 @@ interface InvitationResult {
   tokenLast4?: string;
 }
 
-interface PromptTemplateRecord {
-  id: string;
-  templateKey: string;
-  displayName?: string;
-  description?: string;
-  status?: string;
-  templateText?: string;
-}
-
-interface PromptTemplateFormValues {
-  templateKey: string;
-  displayName?: string;
-  description?: string;
-  templateText: string;
-}
-
-interface PromptPreviewFormValues {
-  collectionName: string;
-  recordId: string;
-}
-
-interface PromptPreviewResult {
-  templateId: string | null;
-  templateKey?: string;
-  renderedPrompt: string;
-  variables?: Array<{
-    expression: string;
-    value: string;
-  }>;
-}
-
-function getResponseData<T>(response: AgentGatewayApiResponse<T>, fallback: T) {
-  return response.data?.data ?? fallback;
-}
-
-function getRequiredResponseData<T>(response: AgentGatewayApiResponse<T>, message: string) {
-  const data = response.data?.data;
-  if (data === undefined || data === null) {
-    throw new Error(message);
-  }
-  return data;
-}
-
-function getObjectRecord(value: unknown) {
-  return value && typeof value === 'object' ? (value as Record<string, unknown>) : {};
-}
-
-function getApiErrorMessage(error: unknown, fallback: string) {
-  const response = getObjectRecord(getObjectRecord(error).response);
-  const data = getObjectRecord(response.data);
-  const errors = Array.isArray(data.errors) ? data.errors : [];
-  const firstError = getObjectRecord(errors[0]);
-  const message = firstError.message;
-  if (typeof message === 'string' && message) {
-    return message;
-  }
-
-  return error instanceof Error && error.message ? error.message : fallback;
-}
-
-function formatDateTime(value?: string) {
-  if (!value) {
-    return '-';
-  }
-
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return value;
-  }
-
-  return date.toLocaleString();
-}
-
-function formatJson(value?: Record<string, unknown>) {
-  if (!value || Object.keys(value).length === 0) {
-    return '-';
-  }
-
-  return JSON.stringify(value, null, 2);
-}
-
-function statusTag(value?: string) {
-  const status = value || 'unknown';
-  const colorByStatus: Record<string, string> = {
-    active: 'green',
-    inactive: 'default',
-    disabled: 'red',
-    pending: 'orange',
-  };
-
-  return <Tag color={colorByStatus[status] || 'default'}>{status}</Tag>;
-}
-
 export default function AgentGatewaySettingsPage() {
   const t = useT();
   const ctx = useFlowContext() as unknown as AgentGatewayContext;
   const [form] = Form.useForm<InvitationFormValues>();
-  const [templateForm] = Form.useForm<PromptTemplateFormValues>();
-  const [previewForm] = Form.useForm<PromptPreviewFormValues>();
   const [selectedNodeId, setSelectedNodeId] = useState<string>();
   const [invitationOpen, setInvitationOpen] = useState(false);
   const [invitationResult, setInvitationResult] = useState<InvitationResult | null>(null);
-  const [templateModalOpen, setTemplateModalOpen] = useState(false);
-  const [editingTemplate, setEditingTemplate] = useState<PromptTemplateRecord | null>(null);
-  const [previewModalOpen, setPreviewModalOpen] = useState(false);
-  const [previewTemplate, setPreviewTemplate] = useState<PromptTemplateRecord | null>(null);
-  const [previewResult, setPreviewResult] = useState<PromptPreviewResult | null>(null);
-  const [previewError, setPreviewError] = useState('');
 
   const nodesRequest = useRequest(
     async () => {
@@ -263,103 +147,25 @@ export default function AgentGatewaySettingsPage() {
     },
   );
 
-  const templatesRequest = useRequest(async () => {
-    const response = await ctx.api.request<PromptTemplateRecord[]>({
-      url: 'agent-gateway/prompt-templates:list',
-      method: 'get',
-    });
-    return getResponseData(response, []);
-  });
-
-  const saveTemplateRequest = useRequest(
-    async (values: PromptTemplateFormValues) => {
-      const payload = {
-        templateKey: values.templateKey,
-        displayName: values.displayName,
-        description: values.description,
-        templateText: values.templateText,
-        status: editingTemplate?.status || 'active',
-      };
-
-      if (editingTemplate) {
-        const response = await ctx.api.request<PromptTemplateRecord>({
-          url: `agent-gateway/prompt-templates:update/${encodeURIComponent(editingTemplate.id)}`,
-          method: 'post',
-          data: payload,
-        });
-        return getRequiredResponseData(response, t('Failed to save template'));
-      }
-
-      const response = await ctx.api.request<PromptTemplateRecord>({
-        url: 'agent-gateway/prompt-templates:create',
-        method: 'post',
-        data: payload,
-      });
-      return getRequiredResponseData(response, t('Failed to save template'));
-    },
-    {
-      manual: true,
-      onSuccess() {
-        setTemplateModalOpen(false);
-        setEditingTemplate(null);
-        templateForm.resetFields();
-        templatesRequest.refresh();
-        ctx.message?.success(t('Template saved'));
-      },
-      onError(error) {
-        ctx.message?.error(getApiErrorMessage(error, t('Failed to save template')));
-      },
-    },
-  );
-
-  const updateTemplateStatusRequest = useRequest(
-    async (template: PromptTemplateRecord, enabled: boolean) => {
-      const response = await ctx.api.request<PromptTemplateRecord>({
-        url: `agent-gateway/prompt-templates:update/${encodeURIComponent(template.id)}`,
+  const updateNodeStatusRequest = useRequest(
+    async (node: NodeRecord, enabled: boolean) => {
+      const response = await ctx.api.request<NodeRecord>({
+        url: `agent-gateway/nodes:update/${encodeURIComponent(node.id)}`,
         method: 'post',
         data: {
           status: enabled ? 'active' : 'disabled',
         },
       });
-      return getRequiredResponseData(response, t('Failed to update template status'));
+      return getRequiredResponseData(response, t('Failed to update node status'));
     },
     {
       manual: true,
       onSuccess() {
-        templatesRequest.refresh();
+        nodesRequest.refresh();
+        profilesRequest.refresh();
       },
-      onError(error) {
-        ctx.message?.error(getApiErrorMessage(error, t('Failed to update template status')));
-      },
-    },
-  );
-
-  const previewTemplateRequest = useRequest(
-    async (values: PromptPreviewFormValues) => {
-      if (!previewTemplate) {
-        throw new Error(t('No template selected'));
-      }
-
-      const response = await ctx.api.request<PromptPreviewResult>({
-        url: 'agent-gateway/prompt-templates:preview',
-        method: 'post',
-        data: {
-          templateId: previewTemplate.id,
-          collectionName: values.collectionName,
-          recordId: values.recordId,
-        },
-      });
-      return getRequiredResponseData(response, t('Preview failed'));
-    },
-    {
-      manual: true,
-      onSuccess(result) {
-        setPreviewError('');
-        setPreviewResult(result);
-      },
-      onError(error) {
-        setPreviewResult(null);
-        setPreviewError(getApiErrorMessage(error, t('Preview failed')));
+      onError() {
+        ctx.message?.error(t('Failed to update node status'));
       },
     },
   );
@@ -374,67 +180,6 @@ export default function AgentGatewaySettingsPage() {
     const values = await form.validateFields();
     createInvitationRequest.run(values);
   }, [createInvitationRequest, form]);
-
-  const openCreateTemplateModal = useCallback(() => {
-    setEditingTemplate(null);
-    templateForm.resetFields();
-    templateForm.setFieldsValue({
-      templateKey: '',
-      displayName: '',
-      description: '',
-      templateText: '',
-    });
-    setTemplateModalOpen(true);
-  }, [templateForm]);
-
-  const openEditTemplateModal = useCallback(
-    (template: PromptTemplateRecord) => {
-      setEditingTemplate(template);
-      templateForm.setFieldsValue({
-        templateKey: template.templateKey,
-        displayName: template.displayName,
-        description: template.description,
-        templateText: template.templateText || '',
-      });
-      setTemplateModalOpen(true);
-    },
-    [templateForm],
-  );
-
-  const closeTemplateModal = useCallback(() => {
-    setTemplateModalOpen(false);
-    setEditingTemplate(null);
-    templateForm.resetFields();
-  }, [templateForm]);
-
-  const submitTemplate = useCallback(async () => {
-    const values = await templateForm.validateFields();
-    saveTemplateRequest.run(values);
-  }, [saveTemplateRequest, templateForm]);
-
-  const openPreviewModal = useCallback(
-    (template: PromptTemplateRecord) => {
-      setPreviewTemplate(template);
-      setPreviewResult(null);
-      setPreviewError('');
-      previewForm.resetFields();
-      setPreviewModalOpen(true);
-    },
-    [previewForm],
-  );
-
-  const closePreviewModal = useCallback(() => {
-    setPreviewModalOpen(false);
-    setPreviewTemplate(null);
-    setPreviewResult(null);
-    setPreviewError('');
-    previewForm.resetFields();
-  }, [previewForm]);
-
-  const submitPreview = useCallback(async () => {
-    const values = await previewForm.validateFields();
-    previewTemplateRequest.run(values);
-  }, [previewForm, previewTemplateRequest]);
 
   const refreshNodes = useCallback(() => {
     nodesRequest.refresh();
@@ -478,8 +223,23 @@ export default function AgentGatewaySettingsPage() {
         key: 'lastHeartbeatAt',
         render: (value: string | undefined) => formatDateTime(value),
       },
+      {
+        title: t('Enabled'),
+        key: 'enabled',
+        width: 120,
+        render: (_value: unknown, record) => (
+          <Switch
+            aria-label={t('Toggle node status')}
+            checked={(record.status || 'active') !== 'disabled'}
+            checkedChildren={t('Enabled')}
+            unCheckedChildren={t('Disabled')}
+            loading={updateNodeStatusRequest.loading}
+            onChange={(checked) => updateNodeStatusRequest.run(record, checked)}
+          />
+        ),
+      },
     ],
-    [t],
+    [t, updateNodeStatusRequest],
   );
 
   const profileColumns = useMemo<ColumnsType<AgentProfileRecord>>(
@@ -515,73 +275,14 @@ export default function AgentGatewaySettingsPage() {
         title: t('Capabilities'),
         dataIndex: 'capabilitiesJson',
         key: 'capabilitiesJson',
-        render: (value: Record<string, unknown> | undefined) => (
-          <Typography.Text code style={{ whiteSpace: 'pre-wrap' }}>
-            {formatJson(value)}
-          </Typography.Text>
-        ),
+        render: (value: Record<string, unknown> | undefined) => <JsonPreview value={value} />,
       },
     ],
     [t],
   );
 
-  const templateColumns = useMemo<ColumnsType<PromptTemplateRecord>>(
-    () => [
-      {
-        title: t('Template key'),
-        dataIndex: 'templateKey',
-        key: 'templateKey',
-      },
-      {
-        title: t('Display name'),
-        dataIndex: 'displayName',
-        key: 'displayName',
-        render: (value: string | undefined, record) => value || record.templateKey,
-      },
-      {
-        title: t('Status'),
-        dataIndex: 'status',
-        key: 'status',
-        render: (value: string | undefined, record) => (
-          <Switch
-            aria-label={t('Toggle template status')}
-            checked={(value || 'active') === 'active'}
-            checkedChildren={t('Enabled')}
-            unCheckedChildren={t('Disabled')}
-            loading={updateTemplateStatusRequest.loading}
-            onChange={(checked) => updateTemplateStatusRequest.run(record, checked)}
-          />
-        ),
-      },
-      {
-        title: t('Actions'),
-        key: 'actions',
-        width: 112,
-        render: (_value: unknown, record) => (
-          <Space>
-            <Tooltip title={t('Edit template')}>
-              <Button
-                aria-label={t('Edit template')}
-                icon={<EditOutlined />}
-                onClick={() => openEditTemplateModal(record)}
-              />
-            </Tooltip>
-            <Tooltip title={t('Preview template')}>
-              <Button
-                aria-label={t('Preview template')}
-                icon={<EyeOutlined />}
-                onClick={() => openPreviewModal(record)}
-              />
-            </Tooltip>
-          </Space>
-        ),
-      },
-    ],
-    [openEditTemplateModal, openPreviewModal, t, updateTemplateStatusRequest],
-  );
-
   return (
-    <section aria-label={t('Agent Gateway')}>
+    <section aria-label={t('Agent Gateway Nodes')}>
       <Space direction="vertical" size={16} style={{ width: '100%' }}>
         <Space wrap style={{ justifyContent: 'space-between', width: '100%' }}>
           <Typography.Title level={3} style={{ margin: 0 }}>
@@ -627,10 +328,11 @@ export default function AgentGatewaySettingsPage() {
             <Descriptions.Item label={t('Last heartbeat')} span={2}>
               {formatDateTime(selectedNode.lastHeartbeatAt)}
             </Descriptions.Item>
+            <Descriptions.Item label={t('Disabled at')} span={2}>
+              {formatDateTime(selectedNode.disabledAt || undefined)}
+            </Descriptions.Item>
             <Descriptions.Item label={t('Capabilities')} span={2}>
-              <Typography.Text code style={{ whiteSpace: 'pre-wrap' }}>
-                {formatJson(selectedNode.capabilitiesJson)}
-              </Typography.Text>
+              <JsonPreview value={selectedNode.capabilitiesJson} />
             </Descriptions.Item>
           </Descriptions>
         ) : null}
@@ -645,31 +347,6 @@ export default function AgentGatewaySettingsPage() {
           }}
           pagination={false}
           title={() => t('Agent profiles')}
-        />
-
-        <Space wrap style={{ justifyContent: 'space-between', width: '100%' }}>
-          <Typography.Title level={4} style={{ margin: 0 }}>
-            {t('Prompt Templates')}
-          </Typography.Title>
-          <Space>
-            <Button icon={<ReloadOutlined />} onClick={templatesRequest.refresh}>
-              {t('Refresh')}
-            </Button>
-            <Button type="primary" icon={<PlusOutlined />} onClick={openCreateTemplateModal}>
-              {t('New template')}
-            </Button>
-          </Space>
-        </Space>
-
-        <Table<PromptTemplateRecord>
-          columns={templateColumns}
-          dataSource={templatesRequest.data || []}
-          loading={templatesRequest.loading}
-          rowKey="id"
-          locale={{
-            emptyText: <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('No prompt templates yet')} />,
-          }}
-          pagination={false}
         />
       </Space>
 
@@ -720,101 +397,6 @@ export default function AgentGatewaySettingsPage() {
                     {t('Expires at')}: {formatDateTime(invitationResult.expiresAt)}
                   </Typography.Text>
                 </Space>
-              }
-            />
-          ) : null}
-        </Space>
-      </Modal>
-
-      <Modal
-        title={editingTemplate ? t('Edit template') : t('Create template')}
-        open={templateModalOpen}
-        onCancel={closeTemplateModal}
-        onOk={submitTemplate}
-        confirmLoading={saveTemplateRequest.loading}
-        okText={t('Save')}
-        cancelText={t('Close')}
-        destroyOnClose
-      >
-        <Form<PromptTemplateFormValues> form={templateForm} layout="vertical">
-          <Form.Item
-            label={t('Template key')}
-            name="templateKey"
-            rules={[
-              { required: true, message: t('Template key is required') },
-              {
-                pattern: /^[A-Za-z][A-Za-z0-9_.:-]*$/,
-                message: t('Template key format is invalid'),
-              },
-            ]}
-          >
-            <Input placeholder="ticket-summary" />
-          </Form.Item>
-          <Form.Item label={t('Display name')} name="displayName">
-            <Input placeholder={t('Ticket summary')} />
-          </Form.Item>
-          <Form.Item label={t('Description')} name="description">
-            <Input.TextArea rows={2} />
-          </Form.Item>
-          <Form.Item
-            label={t('Template text')}
-            name="templateText"
-            rules={[{ required: true, message: t('Template text is required') }]}
-          >
-            <Input.TextArea rows={8} placeholder="Summarize {{record.title}}" />
-          </Form.Item>
-        </Form>
-      </Modal>
-
-      <Modal
-        title={t('Preview template')}
-        open={previewModalOpen}
-        onCancel={closePreviewModal}
-        footer={[
-          <Button key="close" onClick={closePreviewModal}>
-            {t('Close')}
-          </Button>,
-          <Button
-            key="preview"
-            type="primary"
-            icon={<EyeOutlined />}
-            loading={previewTemplateRequest.loading}
-            onClick={submitPreview}
-          >
-            {t('Preview')}
-          </Button>,
-        ]}
-        destroyOnClose
-      >
-        <Space direction="vertical" size={16} style={{ width: '100%' }}>
-          <Typography.Text type="secondary">{previewTemplate?.templateKey || '-'}</Typography.Text>
-          <Form<PromptPreviewFormValues> form={previewForm} layout="vertical">
-            <Form.Item
-              label={t('Collection name')}
-              name="collectionName"
-              rules={[{ required: true, message: t('Collection name is required') }]}
-            >
-              <Input placeholder="posts" />
-            </Form.Item>
-            <Form.Item
-              label={t('Record ID')}
-              name="recordId"
-              rules={[{ required: true, message: t('Record ID is required') }]}
-            >
-              <Input />
-            </Form.Item>
-          </Form>
-
-          {previewError ? <Alert type="error" showIcon message={previewError} /> : null}
-          {previewResult ? (
-            <Alert
-              type="success"
-              showIcon
-              message={t('Rendered prompt')}
-              description={
-                <Typography.Paragraph style={{ margin: 0, whiteSpace: 'pre-wrap' }}>
-                  {previewResult.renderedPrompt}
-                </Typography.Paragraph>
               }
             />
           ) : null}

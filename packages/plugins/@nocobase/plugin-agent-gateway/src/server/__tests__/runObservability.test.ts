@@ -142,10 +142,15 @@ describe('agent gateway run observability APIs', () => {
       sourceType: 'test',
       agentProfileId: runner.profileId,
       promptSnapshot: {
-        prompt: 'Prompt that should not appear in API logs',
+        prompt: 'Prompt that should not appear in management read APIs or API logs',
       },
       executionPayload: {
         task: 'observe',
+        command: 'must-not-render',
+        cwd: '/tmp/must-not-render',
+        env: {
+          SECRET: 'must-not-render',
+        },
       },
     });
     expect(runResponse.status).toBe(200);
@@ -190,6 +195,23 @@ describe('agent gateway run observability APIs', () => {
     };
   }
 
+  async function createUserAgent(username: string, snippets: string[]) {
+    const roleName = `${username}-role`;
+    await app.db.getRepository('roles').create({
+      values: {
+        name: roleName,
+        snippets,
+      },
+    });
+    const user = await app.db.getRepository('users').create({
+      values: {
+        username,
+        roles: [roleName],
+      },
+    });
+    return await app.agent().login(user);
+  }
+
   it('appends events idempotently and enforces source sequence monotonicity', async () => {
     const runner = await registerRunner();
     const { run, claim } = await createAndClaimRun(runner);
@@ -203,9 +225,15 @@ describe('agent gateway run observability APIs', () => {
         sequence: 1,
         eventType: 'log',
         level: 'info',
-        message: 'small event\nAuthorization: Bearer EVENT_MESSAGE_SECRET',
+        message:
+          'small event\nAuthorization: Bearer EVENT_MESSAGE_SECRET\ncommand=EVENT_COMMAND_SECRET cwd=/tmp/EVENT_CWD_SECRET env.SECRET=EVENT_ENV_SECRET',
         payload: {
           token: 'EVENT_SECRET',
+          command: 'EVENT_PAYLOAD_COMMAND_SECRET',
+          cwd: '/tmp/EVENT_PAYLOAD_CWD_SECRET',
+          env: {
+            SECRET: 'EVENT_PAYLOAD_ENV_SECRET',
+          },
         },
       }),
     );
@@ -214,6 +242,9 @@ describe('agent gateway run observability APIs', () => {
     expect(event.idempotent).toBe(false);
     expect(String(event.message)).toContain('Authorization: [REDACTED]');
     expect(String(event.message)).not.toContain('EVENT_MESSAGE_SECRET');
+    expect(String(event.message)).not.toContain('EVENT_COMMAND_SECRET');
+    expect(String(event.message)).not.toContain('EVENT_CWD_SECRET');
+    expect(String(event.message)).not.toContain('EVENT_ENV_SECRET');
 
     const retryResponse = await daemonRunPost(
       runner,
@@ -266,7 +297,13 @@ describe('agent gateway run observability APIs', () => {
     expect(events).toHaveLength(1);
     expect(events[0].get('payloadJson')).toMatchObject({
       token: '[REDACTED]',
+      command: '[REDACTED]',
+      cwd: '[REDACTED]',
+      env: '[REDACTED]',
     });
+    expect(JSON.stringify(events[0].get('payloadJson'))).not.toContain('EVENT_PAYLOAD_COMMAND_SECRET');
+    expect(JSON.stringify(events[0].get('payloadJson'))).not.toContain('EVENT_PAYLOAD_CWD_SECRET');
+    expect(JSON.stringify(events[0].get('payloadJson'))).not.toContain('EVENT_PAYLOAD_ENV_SECRET');
     expect(String(events[0].get('message'))).toContain('Authorization: [REDACTED]');
     expect(String(events[0].get('message'))).not.toContain('EVENT_MESSAGE_SECRET');
     expect(await app.db.getRepository('agRunEvents').count({ filter: { runId: run.id } })).toBe(1);
@@ -284,9 +321,20 @@ describe('agent gateway run observability APIs', () => {
         artifactKey: 'stdout-main',
         artifactType: 'stdout',
         mimeType: 'text/plain',
-        contentText: 'visible line\nAuthorization: Bearer ARTIFACT_SECRET\n',
+        contentText:
+          'visible line\nAuthorization: Bearer ARTIFACT_SECRET\ncommand=ARTIFACT_COMMAND_SECRET cwd=/tmp/ARTIFACT_CWD_SECRET env.SECRET=ARTIFACT_ENV_SECRET\n',
         metadata: {
           externalUrl: 'https://daemon.example/artifacts/stdout-main',
+          downloadUrl: 'https://daemon.example/download/stdout-main',
+          nested: {
+            href: 'https://daemon.example/href/stdout-main',
+            note: 'see https://daemon.example/inline/stdout-main',
+          },
+          command: 'ARTIFACT_METADATA_COMMAND_SECRET',
+          cwd: '/tmp/ARTIFACT_METADATA_CWD_SECRET',
+          env: {
+            SECRET: 'ARTIFACT_METADATA_ENV_SECRET',
+          },
           password: 'METADATA_SECRET',
         },
       }),
@@ -314,11 +362,27 @@ describe('agent gateway run observability APIs', () => {
       filterByTk: artifact.id,
     });
     expect(String(storedArtifact.get('contentText'))).not.toContain('ARTIFACT_SECRET');
+    expect(String(storedArtifact.get('contentText'))).not.toContain('ARTIFACT_COMMAND_SECRET');
+    expect(String(storedArtifact.get('contentText'))).not.toContain('ARTIFACT_CWD_SECRET');
+    expect(String(storedArtifact.get('contentText'))).not.toContain('ARTIFACT_ENV_SECRET');
     expect(String(storedArtifact.get('contentText'))).toContain('Authorization: [REDACTED]');
     expect(storedArtifact.get('metadataJson')).toMatchObject({
-      externalUrl: 'https://daemon.example/artifacts/stdout-main',
+      externalUrl: '[REDACTED]',
+      downloadUrl: '[REDACTED]',
+      nested: {
+        href: '[REDACTED]',
+        note: 'see [REDACTED]',
+      },
+      command: '[REDACTED]',
+      cwd: '[REDACTED]',
+      env: '[REDACTED]',
       password: '[REDACTED]',
     });
+    const serializedMetadata = JSON.stringify(storedArtifact.get('metadataJson'));
+    expect(serializedMetadata).not.toContain('daemon.example');
+    expect(serializedMetadata).not.toContain('ARTIFACT_METADATA_COMMAND_SECRET');
+    expect(serializedMetadata).not.toContain('ARTIFACT_METADATA_CWD_SECRET');
+    expect(serializedMetadata).not.toContain('ARTIFACT_METADATA_ENV_SECRET');
   });
 
   it('registers snapshots with nested secret redaction', async () => {
@@ -333,12 +397,22 @@ describe('agent gateway run observability APIs', () => {
         snapshotType: 'workspace',
         snapshot: {
           files: ['a.ts'],
+          command: 'SNAPSHOT_COMMAND_SECRET',
+          cwd: '/tmp/SNAPSHOT_CWD_SECRET',
+          env: {
+            SECRET: 'SNAPSHOT_ENV_SECRET',
+          },
           nested: {
             apiKey: 'SNAPSHOT_SECRET',
           },
         },
         metadata: {
           authorization: 'Bearer SNAPSHOT_METADATA_SECRET',
+          command: 'SNAPSHOT_METADATA_COMMAND_SECRET',
+          cwd: '/tmp/SNAPSHOT_METADATA_CWD_SECRET',
+          env: {
+            SECRET: 'SNAPSHOT_METADATA_ENV_SECRET',
+          },
         },
       }),
     );
@@ -349,13 +423,26 @@ describe('agent gateway run observability APIs', () => {
       filterByTk: snapshot.id,
     });
     expect(storedSnapshot.get('snapshotJson')).toMatchObject({
+      command: '[REDACTED]',
+      cwd: '[REDACTED]',
+      env: '[REDACTED]',
       nested: {
         apiKey: '[REDACTED]',
       },
     });
     expect(storedSnapshot.get('metadataJson')).toMatchObject({
       authorization: '[REDACTED]',
+      command: '[REDACTED]',
+      cwd: '[REDACTED]',
+      env: '[REDACTED]',
     });
+    const serializedSnapshot = JSON.stringify(storedSnapshot.toJSON());
+    expect(serializedSnapshot).not.toContain('SNAPSHOT_COMMAND_SECRET');
+    expect(serializedSnapshot).not.toContain('SNAPSHOT_CWD_SECRET');
+    expect(serializedSnapshot).not.toContain('SNAPSHOT_ENV_SECRET');
+    expect(serializedSnapshot).not.toContain('SNAPSHOT_METADATA_COMMAND_SECRET');
+    expect(serializedSnapshot).not.toContain('SNAPSHOT_METADATA_CWD_SECRET');
+    expect(serializedSnapshot).not.toContain('SNAPSHOT_METADATA_ENV_SECRET');
   });
 
   it('rejects oversized snapshot and metadata bodies without duplicating them in API logs', async () => {
@@ -503,5 +590,141 @@ describe('agent gateway run observability APIs', () => {
     expect(serializedLogs).not.toContain(malformedRunId);
     expect(serializedLogs).toContain('"omitted":true');
     expect(serializedLogs).toContain('[REDACTED]');
+  });
+
+  it('lists runs and observation details through read-only management APIs', async () => {
+    const runner = await registerRunner();
+    const { run, claim } = await createAndClaimRun(runner);
+    const runId = expectString(run.id);
+    expect(run).not.toHaveProperty('promptSnapshot');
+    expect(run).not.toHaveProperty('executionPayloadJson');
+
+    await daemonRunPost(
+      runner,
+      runId,
+      'events:append',
+      leaseValues(claim, {
+        source: 'stdout',
+        sequence: 1,
+        eventType: 'log',
+        level: 'info',
+        message: 'observable event',
+        payload: {
+          token: 'EVENT_READ_SECRET',
+        },
+      }),
+    );
+    await daemonRunPost(
+      runner,
+      runId,
+      'artifacts:register',
+      leaseValues(claim, {
+        artifactKey: 'stdout',
+        artifactType: 'log',
+        mimeType: 'text/plain',
+        contentText: 'inline artifact',
+        metadata: {
+          externalUrl: 'https://daemon.example/artifacts/stdout',
+        },
+      }),
+    );
+    await daemonRunPost(
+      runner,
+      runId,
+      'snapshots:register',
+      leaseValues(claim, {
+        snapshotType: 'workspace',
+        snapshot: {
+          files: ['a.ts'],
+        },
+      }),
+    );
+
+    const listResponse = await rootAgent.get(
+      `/api/agent-gateway/runs:list?status=claimed&nodeId=${runner.nodeId}&agentProfileId=${runner.profileId}`,
+    );
+    expect(listResponse.status).toBe(200);
+    const runs = listResponse.body.data as Array<Record<string, unknown>>;
+    expect(runs).toHaveLength(1);
+    expect(runs[0].id).toBe(runId);
+    expect(runs[0]).not.toHaveProperty('claimTokenHash');
+    expect(runs[0]).not.toHaveProperty('promptSnapshot');
+    expect(runs[0]).not.toHaveProperty('executionPayloadJson');
+    expect(JSON.stringify(runs[0])).not.toContain('must-not-render');
+
+    const getResponse = await rootAgent.get(`/api/agent-gateway/runs:get/${runId}`);
+    expect(getResponse.status).toBe(200);
+    expect(getData(getResponse).id).toBe(runId);
+    expect(getData(getResponse)).not.toHaveProperty('claimTokenHash');
+    expect(getData(getResponse)).not.toHaveProperty('promptSnapshot');
+    expect(getData(getResponse)).not.toHaveProperty('executionPayloadJson');
+    expect(JSON.stringify(getData(getResponse))).not.toContain('must-not-render');
+
+    const eventsResponse = await rootAgent.get(`/api/agent-gateway/runs/${runId}/events:list`);
+    expect(eventsResponse.status).toBe(200);
+    const events = eventsResponse.body.data as Array<Record<string, unknown>>;
+    expect(events[0].message).toBe('observable event');
+    expect(events[0].payloadJson).toMatchObject({
+      token: '[REDACTED]',
+    });
+
+    const artifactsResponse = await rootAgent.get(`/api/agent-gateway/runs/${runId}/artifacts:list`);
+    expect(artifactsResponse.status).toBe(200);
+    const artifacts = artifactsResponse.body.data as Array<Record<string, unknown>>;
+    expect(artifacts[0].contentText).toBe('inline artifact');
+    expect(artifacts[0].metadataJson).toMatchObject({
+      externalUrl: '[REDACTED]',
+    });
+    expect(JSON.stringify(artifacts[0])).not.toContain('https://daemon.example/artifacts/stdout');
+
+    const snapshotsResponse = await rootAgent.get(`/api/agent-gateway/runs/${runId}/snapshots:list`);
+    expect(snapshotsResponse.status).toBe(200);
+    const snapshots = snapshotsResponse.body.data as Array<Record<string, unknown>>;
+    expect(snapshots[0].snapshotJson).toMatchObject({
+      files: ['a.ts'],
+    });
+
+    const apiLogsResponse = await rootAgent.get(`/api/agent-gateway/runs/${runId}/api-call-logs:list`);
+    expect(apiLogsResponse.status).toBe(200);
+    const apiLogs = apiLogsResponse.body.data as Array<Record<string, unknown>>;
+    expect(apiLogs.length).toBeGreaterThan(0);
+    expect(JSON.stringify(apiLogs)).not.toContain('EVENT_READ_SECRET');
+
+    const readRunAgent = await createUserAgent('agent-gateway-run-reader', ['agentGateway.readRun']);
+    expect((await readRunAgent.get('/api/agent-gateway/runs:list')).status).toBe(200);
+    const standardRunListResponse = await readRunAgent.get('/agRuns:list');
+    expect(standardRunListResponse.status).toBe(200);
+    const standardRuns = standardRunListResponse.body.data as Array<Record<string, unknown>>;
+    expect(standardRuns[0]).not.toHaveProperty('promptSnapshot');
+    expect(standardRuns[0]).not.toHaveProperty('executionPayloadJson');
+    expect(JSON.stringify(standardRuns[0])).not.toContain('must-not-render');
+
+    const standardRunGetResponse = await readRunAgent.get(`/agRuns:get/${runId}`);
+    expect(standardRunGetResponse.status).toBe(200);
+    expect(getData(standardRunGetResponse)).not.toHaveProperty('promptSnapshot');
+    expect(getData(standardRunGetResponse)).not.toHaveProperty('executionPayloadJson');
+    expect(JSON.stringify(getData(standardRunGetResponse))).not.toContain('must-not-render');
+    expect((await readRunAgent.get(`/api/agent-gateway/runs/${runId}/events:list`)).status).toBe(403);
+
+    const readRunDetailsAgent = await createUserAgent('agent-gateway-run-details-reader', [
+      'agentGateway.readRunDetails',
+    ]);
+    expect((await readRunDetailsAgent.get(`/api/agent-gateway/runs/${runId}/events:list`)).status).toBe(200);
+    expect((await readRunDetailsAgent.get(`/api/agent-gateway/runs/${runId}/artifacts:list`)).status).toBe(200);
+    expect((await readRunDetailsAgent.get(`/api/agent-gateway/runs/${runId}/snapshots:list`)).status).toBe(200);
+    expect((await readRunDetailsAgent.get(`/api/agent-gateway/runs/${runId}/api-call-logs:list`)).status).toBe(200);
+    expect((await readRunDetailsAgent.get('/agRunEvents:list')).status).toBe(403);
+    expect((await readRunDetailsAgent.get('/agRunArtifacts:list')).status).toBe(403);
+    expect((await readRunDetailsAgent.get('/agRunSnapshots:list')).status).toBe(403);
+    expect((await readRunDetailsAgent.get('/agApiCallLogs:list')).status).toBe(403);
+
+    const memberUser = await app.db.getRepository('users').create({
+      values: {
+        username: 'agent-gateway-observer-member',
+        roles: ['member'],
+      },
+    });
+    const memberAgent = await app.agent().login(memberUser);
+    expect((await memberAgent.get('/api/agent-gateway/runs:list')).status).toBe(403);
   });
 });

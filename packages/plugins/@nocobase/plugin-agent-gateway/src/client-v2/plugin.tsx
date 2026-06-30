@@ -32,8 +32,29 @@ export class PluginAgentGatewayClientV2 extends Plugin {
     this.pluginSettingsManager.addPageTabItem({
       menuKey: NAMESPACE,
       key: 'index',
-      title: this.t('Overview'),
+      title: this.t('Nodes'),
       componentLoader: () => import('./pages/AgentGatewaySettingsPage'),
+    });
+
+    this.pluginSettingsManager.addPageTabItem({
+      menuKey: NAMESPACE,
+      key: 'runs',
+      title: this.t('Runs'),
+      componentLoader: () => import('./pages/AgentGatewayRunsPage'),
+    });
+
+    this.pluginSettingsManager.addPageTabItem({
+      menuKey: NAMESPACE,
+      key: 'prompt-templates',
+      title: this.t('Prompt Templates'),
+      componentLoader: () => import('./pages/AgentGatewayPromptTemplatesPage'),
+    });
+
+    this.pluginSettingsManager.addPageTabItem({
+      menuKey: NAMESPACE,
+      key: 'dispatch-bindings',
+      title: this.t('Dispatch Bindings'),
+      componentLoader: () => import('./pages/AgentGatewayDispatchBindingsPage'),
     });
   }
 }

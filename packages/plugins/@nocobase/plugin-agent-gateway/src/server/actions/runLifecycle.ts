@@ -17,6 +17,8 @@ import {
   AGENT_GATEWAY_ACTIONS,
   createClaimToken,
   extractNodeToken,
+  redactRunErrorSummary,
+  redactRunResultSummary,
   toStoredTokenFields,
   verifyClaimToken,
   verifyNodeToken,
@@ -26,6 +28,7 @@ import {
   JsonRecord,
   ModelRecord,
   getBodyValues,
+  getDate,
   getModelJson,
   getModelNumber,
   getModelString,
@@ -126,7 +129,60 @@ function getMaxConcurrency(capabilities: JsonRecord, fallback = DEFAULT_MAX_CONC
 function serializeRun(run: ModelRecord) {
   const json = getModelJson(run);
   delete json.claimTokenHash;
+  delete json.promptSnapshot;
+  delete json.executionPayloadJson;
   return json;
+}
+
+function getQueryValue(ctx: Context, key: string) {
+  const value = getRecord(ctx.query)[key];
+  return Array.isArray(value) ? value[0] : value;
+}
+
+function getQueryString(ctx: Context, key: string) {
+  return getString(getQueryValue(ctx, key));
+}
+
+function getQueryLimit(ctx: Context) {
+  const value = Number(getQueryValue(ctx, 'limit') || 50);
+  if (!Number.isInteger(value) || value <= 0) {
+    return 50;
+  }
+  return Math.min(value, 100);
+}
+
+function getRunListFilter(ctx: Context) {
+  const filter: JsonRecord = {};
+  const status = getQueryString(ctx, 'status');
+  const nodeId = getQueryString(ctx, 'nodeId');
+  const agentProfileId = getQueryString(ctx, 'agentProfileId');
+  const createdAtFrom = getDate(getQueryValue(ctx, 'createdAtFrom'));
+  const createdAtTo = getDate(getQueryValue(ctx, 'createdAtTo'));
+
+  if (status) {
+    filter.status = status.includes(',')
+      ? {
+          $in: status
+            .split(',')
+            .map((item) => item.trim())
+            .filter(Boolean),
+        }
+      : status;
+  }
+  if (nodeId) {
+    filter.nodeId = nodeId;
+  }
+  if (agentProfileId) {
+    filter.agentProfileId = agentProfileId;
+  }
+  if (createdAtFrom || createdAtTo) {
+    filter.createdAt = {
+      ...(createdAtFrom ? { $gte: createdAtFrom } : {}),
+      ...(createdAtTo ? { $lte: createdAtTo } : {}),
+    };
+  }
+
+  return filter;
 }
 
 function respondLeaseLost(ctx: Context, message: string) {
@@ -209,6 +265,31 @@ async function createRun(ctx: Context) {
       dispatchBindingId: getString(values.dispatchBindingId) || null,
     },
   })) as ModelRecord;
+
+  ctx.body = serializeRun(run);
+}
+
+async function listRuns(ctx: Context) {
+  await requireAgentGatewayPermission(ctx, AGENT_GATEWAY_ACTIONS.readRun, 'Agent Gateway run read permission required');
+
+  const runs = (await ctx.db.getRepository('agRuns').find({
+    filter: getRunListFilter(ctx),
+    sort: ['-createdAt'],
+    limit: getQueryLimit(ctx),
+  })) as ModelRecord[];
+
+  ctx.body = runs.map(serializeRun);
+}
+
+async function getRun(ctx: Context, runId: string) {
+  await requireAgentGatewayPermission(ctx, AGENT_GATEWAY_ACTIONS.readRun, 'Agent Gateway run read permission required');
+
+  const run = (await ctx.db.getRepository('agRuns').findOne({
+    filterByTk: runId,
+  })) as ModelRecord | null;
+  if (!run) {
+    ctx.throw(404, 'Run not found');
+  }
 
   ctx.body = serializeRun(run);
 }
@@ -670,7 +751,7 @@ async function completeRun(ctx: Context, nodeId: string, runId: string) {
     runId,
     'succeeded',
     (values, now) => ({
-      resultSummaryJson: getRecord(values.resultSummaryJson || values.resultSummary),
+      resultSummaryJson: getRecord(redactRunResultSummary(values.resultSummaryJson || values.resultSummary)),
       completedAt: now,
     }),
     ['running'],
@@ -684,8 +765,8 @@ async function failRun(ctx: Context, nodeId: string, runId: string) {
     runId,
     'failed',
     (values, now) => ({
-      resultSummaryJson: getRecord(values.resultSummaryJson || values.resultSummary),
-      errorSummary: getString(values.errorSummary) || null,
+      resultSummaryJson: getRecord(redactRunResultSummary(values.resultSummaryJson || values.resultSummary)),
+      errorSummary: getString(values.errorSummary) ? redactRunErrorSummary(getString(values.errorSummary)) : null,
       failedAt: now,
     }),
     ['claimed', 'syncing_skills', 'running'],
@@ -699,7 +780,9 @@ async function timeoutRun(ctx: Context, nodeId: string, runId: string) {
     runId,
     'timeout',
     (values) => ({
-      errorSummary: getString(values.errorSummary) || 'Process timeout confirmed by daemon',
+      errorSummary: getString(values.errorSummary)
+        ? redactRunErrorSummary(getString(values.errorSummary))
+        : 'Process timeout confirmed by daemon',
     }),
     ['running'],
   );
@@ -840,6 +923,17 @@ export function registerRunLifecycleRoutes(plugin: Plugin) {
         /^\/nodes\/([^/]+)\/runs\/([^/]+)\/(heartbeat|complete|fail|timeout|cancel-ack)$/,
       );
       const cancelMatch = routePath.match(/^\/runs\/([^/]+)\/cancel$/);
+      const getRunMatch = routePath.match(/^\/runs:get\/([^/]+)$/);
+
+      if (ctx.method === 'GET' && routePath === '/runs:list') {
+        await listRuns(ctx);
+        return;
+      }
+
+      if (ctx.method === 'GET' && getRunMatch) {
+        await getRun(ctx, getRunMatch[1]);
+        return;
+      }
 
       if (ctx.method === 'POST' && routePath === '/runs:create') {
         await createRun(ctx);

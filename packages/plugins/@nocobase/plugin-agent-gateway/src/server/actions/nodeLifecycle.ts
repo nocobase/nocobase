@@ -108,6 +108,14 @@ function serializeProfile(profile: ModelRecord) {
   return json;
 }
 
+function getNodeStatus(ctx: Context, value: unknown) {
+  const status = getString(value);
+  if (status !== 'active' && status !== 'disabled') {
+    ctx.throw(400, 'Node status must be active or disabled');
+  }
+  return status;
+}
+
 async function createInvitation(ctx: Context) {
   await requireManagePermission(ctx);
 
@@ -388,6 +396,36 @@ async function getNode(ctx: Context, nodeId: string) {
   ctx.body = serializeNode(node);
 }
 
+async function updateNode(ctx: Context, nodeId: string) {
+  await requireManagePermission(ctx);
+
+  const values = getBodyValues(ctx);
+  const status = getNodeStatus(ctx, values.status);
+  const node = (await ctx.db.getRepository('agNodes').findOne({
+    filterByTk: nodeId,
+  })) as ModelRecord | null;
+  if (!node) {
+    ctx.throw(404, 'Node not found');
+  }
+
+  await ctx.db.getRepository('agNodes').update({
+    filterByTk: nodeId,
+    values: {
+      status,
+      disabledAt: status === 'disabled' ? new Date() : null,
+    },
+  });
+
+  const updatedNode = (await ctx.db.getRepository('agNodes').findOne({
+    filterByTk: nodeId,
+  })) as ModelRecord | null;
+  if (!updatedNode) {
+    ctx.throw(404, 'Node not found');
+  }
+
+  ctx.body = serializeNode(updatedNode);
+}
+
 async function listProfiles(ctx: Context, nodeId: string) {
   await requireManagePermission(ctx);
 
@@ -412,6 +450,7 @@ export function registerNodeLifecycleRoutes(plugin: Plugin) {
       const routePath = ctx.path.slice(API_PREFIX.length);
       const heartbeatMatch = routePath.match(/^\/nodes\/([^/]+)\/heartbeat$/);
       const getNodeMatch = routePath.match(/^\/nodes:get\/([^/]+)$/);
+      const updateNodeMatch = routePath.match(/^\/nodes:update\/([^/]+)$/);
       const listProfilesMatch = routePath.match(/^\/nodes\/([^/]+)\/profiles:list$/);
 
       if (ctx.method === 'POST' && routePath === '/node-invitations:create') {
@@ -436,6 +475,11 @@ export function registerNodeLifecycleRoutes(plugin: Plugin) {
 
       if (ctx.method === 'GET' && getNodeMatch) {
         await getNode(ctx, getNodeMatch[1]);
+        return;
+      }
+
+      if (ctx.method === 'POST' && updateNodeMatch) {
+        await updateNode(ctx, updateNodeMatch[1]);
         return;
       }
 

@@ -264,6 +264,8 @@ function serializeBinding(binding: ModelRecord) {
 function serializeRun(run: ModelRecord) {
   const json = getModelJson(run);
   delete json.claimTokenHash;
+  delete json.promptSnapshot;
+  delete json.executionPayloadJson;
   return json;
 }
 

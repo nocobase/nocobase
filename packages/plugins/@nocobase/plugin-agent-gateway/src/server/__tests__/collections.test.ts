@@ -176,6 +176,8 @@ describe('agent gateway collections', () => {
     expect(getField('agNodeInvitations', 'tokenHash')?.hidden).toBe(true);
     expect(getField('agNodes', 'nodeTokenHash')?.hidden).toBe(true);
     expect(getField('agRuns', 'claimTokenHash')?.hidden).toBe(true);
+    expect(getField('agRuns', 'promptSnapshot')?.hidden).toBe(true);
+    expect(getField('agRuns', 'executionPayloadJson')?.hidden).toBe(true);
 
     for (const collectionName of ['agNodeInvitations', 'agNodes', 'agRuns']) {
       expect(fieldNamesOf(collectionName)).not.toEqual(expect.arrayContaining(['token', 'nodeToken', 'claimToken']));

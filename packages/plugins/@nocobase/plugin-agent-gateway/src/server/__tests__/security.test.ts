@@ -19,11 +19,13 @@ import {
   createClaimToken,
   createInvitationToken,
   createNodeToken,
+  redactArtifactMetadata,
   hashNodeToken,
   redactArtifactText,
   redactDaemonErrorSummary,
   redactEventPayload,
   redactJson,
+  redactSnapshotJson,
   redactText,
   registerAgentGatewayAcl,
   toStoredTokenFields,
@@ -233,9 +235,9 @@ describe('agent gateway ACL registration', () => {
     expect(snippets.find((snippet) => snippet.name === AGENT_GATEWAY_PERMISSIONS.readRun)?.actions).toEqual(
       expect.arrayContaining(['agentGateway:readRun', 'agRuns:list', 'agRuns:get']),
     );
-    expect(snippets.find((snippet) => snippet.name === AGENT_GATEWAY_PERMISSIONS.readRunDetails)?.actions).toEqual(
-      expect.arrayContaining(['agRunEvents:list', 'agRunArtifacts:get', 'agApiCallLogs:list']),
-    );
+    expect(snippets.find((snippet) => snippet.name === AGENT_GATEWAY_PERMISSIONS.readRunDetails)?.actions).toEqual([
+      'agentGateway:readRunDetails',
+    ]);
     expect(snippets.find((snippet) => snippet.name === AGENT_GATEWAY_PERMISSIONS.cancelRun)?.actions).toEqual([
       'agentGateway:cancelRun',
     ]);
@@ -297,26 +299,61 @@ describe('agent gateway redaction utilities', () => {
   it('redacts raw Agent Gateway token prefixes from event, artifact, and daemon error text', () => {
     const eventPayload = redactEventPayload({
       output: 'runner received ag_node_EVENT_TOKEN_SECRET',
+      command: 'EVENT_COMMAND_SECRET',
+      cwd: '/tmp/EVENT_CWD_SECRET',
+      env: {
+        SECRET: 'EVENT_ENV_SECRET',
+      },
     });
     const artifactText = redactArtifactText(
-      'artifact contains ag_claim_ARTIFACT_TOKEN_SECRET privateKey=ARTIFACT_PRIVATE_KEY x-api-key=ARTIFACT_API_KEY {"privateKey":"ARTIFACT_JSON_PRIVATE_KEY","x-api-key":"ARTIFACT_JSON_API_KEY","secretAccessKey":"keep \\"ARTIFACT_ESCAPED_SECRET\\" hidden"}',
+      'artifact contains ag_claim_ARTIFACT_TOKEN_SECRET command=ARTIFACT_COMMAND_SECRET cwd=/tmp/ARTIFACT_CWD_SECRET env.SECRET=ARTIFACT_ENV_SECRET privateKey=ARTIFACT_PRIVATE_KEY x-api-key=ARTIFACT_API_KEY {"privateKey":"ARTIFACT_JSON_PRIVATE_KEY","x-api-key":"ARTIFACT_JSON_API_KEY","secretAccessKey":"keep \\"ARTIFACT_ESCAPED_SECRET\\" hidden"}',
     );
+    const artifactMetadata = redactArtifactMetadata({
+      externalUrl: 'https://daemon.example/ARTIFACT_EXTERNAL_URL_SECRET',
+      safeNested: {
+        href: 'https://daemon.example/ARTIFACT_HREF_SECRET',
+        note: 'see https://daemon.example/ARTIFACT_INLINE_URL_SECRET',
+      },
+      commandPath: 'ARTIFACT_COMMAND_PATH_SECRET',
+    });
+    const snapshotJson = redactSnapshotJson({
+      command: 'SNAPSHOT_COMMAND_SECRET',
+      cwd: '/tmp/SNAPSHOT_CWD_SECRET',
+      env: {
+        SECRET: 'SNAPSHOT_ENV_SECRET',
+      },
+    });
     const errorSummary = redactDaemonErrorSummary(
       'daemon failed with ag_inv_ERROR_TOKEN_SECRET secretAccessKey=ERROR_SECRET_ACCESS_KEY AWS_ACCESS_KEY_ID=ERROR_AWS_KEY {"secretAccessKey":"ERROR_JSON_SECRET_ACCESS_KEY","privateKey":"abc\\"ERROR_ESCAPED_PRIVATE_KEY"}',
     );
     const serialized = JSON.stringify({
       eventPayload,
       artifactText,
+      artifactMetadata,
+      snapshotJson,
       errorSummary,
     });
 
     expect(serialized).not.toContain('EVENT_TOKEN_SECRET');
+    expect(serialized).not.toContain('EVENT_COMMAND_SECRET');
+    expect(serialized).not.toContain('EVENT_CWD_SECRET');
+    expect(serialized).not.toContain('EVENT_ENV_SECRET');
     expect(serialized).not.toContain('ARTIFACT_TOKEN_SECRET');
+    expect(serialized).not.toContain('ARTIFACT_COMMAND_SECRET');
+    expect(serialized).not.toContain('ARTIFACT_CWD_SECRET');
+    expect(serialized).not.toContain('ARTIFACT_ENV_SECRET');
     expect(serialized).not.toContain('ARTIFACT_PRIVATE_KEY');
     expect(serialized).not.toContain('ARTIFACT_API_KEY');
     expect(serialized).not.toContain('ARTIFACT_JSON_PRIVATE_KEY');
     expect(serialized).not.toContain('ARTIFACT_JSON_API_KEY');
     expect(serialized).not.toContain('ARTIFACT_ESCAPED_SECRET');
+    expect(serialized).not.toContain('ARTIFACT_EXTERNAL_URL_SECRET');
+    expect(serialized).not.toContain('ARTIFACT_HREF_SECRET');
+    expect(serialized).not.toContain('ARTIFACT_INLINE_URL_SECRET');
+    expect(serialized).not.toContain('ARTIFACT_COMMAND_PATH_SECRET');
+    expect(serialized).not.toContain('SNAPSHOT_COMMAND_SECRET');
+    expect(serialized).not.toContain('SNAPSHOT_CWD_SECRET');
+    expect(serialized).not.toContain('SNAPSHOT_ENV_SECRET');
     expect(serialized).not.toContain('ERROR_TOKEN_SECRET');
     expect(serialized).not.toContain('ERROR_SECRET_ACCESS_KEY');
     expect(serialized).not.toContain('ERROR_AWS_KEY');
@@ -399,6 +436,16 @@ describe('agent gateway redaction utilities', () => {
         ],
         claimToken: 'BODY_CLAIM_TOKEN_SECRET',
         note: longJsonSecretTail,
+        resultSummary: {
+          command: 'BODY_RESULT_COMMAND_SECRET',
+          commandPath: 'BODY_RESULT_COMMAND_PATH_SECRET',
+          cwd: '/tmp/BODY_RESULT_CWD_SECRET',
+          env: {
+            SECRET: 'BODY_RESULT_ENV_SECRET',
+          },
+        },
+        errorSummary:
+          'command=BODY_ERROR_COMMAND_SECRET cwd=/tmp/BODY_ERROR_CWD_SECRET env.SECRET=BODY_ERROR_ENV_SECRET',
         nested: {
           secret: 'BODY_SECRET',
         },
@@ -433,6 +480,13 @@ describe('agent gateway redaction utilities', () => {
     expect(serialized).not.toContain('BODY_MESSAGE_CONTENT_PROMPT_SECRET');
     expect(serialized).not.toContain('BODY_MESSAGE_PROMPT_SECRET');
     expect(serialized).not.toContain('BODY_CLAIM_TOKEN_SECRET');
+    expect(serialized).not.toContain('BODY_RESULT_COMMAND_SECRET');
+    expect(serialized).not.toContain('BODY_RESULT_COMMAND_PATH_SECRET');
+    expect(serialized).not.toContain('BODY_RESULT_CWD_SECRET');
+    expect(serialized).not.toContain('BODY_RESULT_ENV_SECRET');
+    expect(serialized).not.toContain('BODY_ERROR_COMMAND_SECRET');
+    expect(serialized).not.toContain('BODY_ERROR_CWD_SECRET');
+    expect(serialized).not.toContain('BODY_ERROR_ENV_SECRET');
     expect(serialized).not.toContain('LONG_JSON_TRUNCATED_SECRET_TAIL');
     expect(serialized).not.toContain('BODY_SECRET');
     expect(serialized).not.toContain('ERROR_PROMPT_SECRET');

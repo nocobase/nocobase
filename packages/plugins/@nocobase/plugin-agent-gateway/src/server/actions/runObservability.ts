@@ -13,11 +13,13 @@ import { Context, Next } from '@nocobase/actions';
 import { Plugin } from '@nocobase/server';
 
 import {
+  AGENT_GATEWAY_ACTIONS,
   authenticateNodeToken,
+  redactArtifactMetadata,
   redactArtifactText,
   redactEventPayload,
+  redactObservabilityText,
   redactSnapshotJson,
-  redactText,
 } from '../security';
 import {
   API_PREFIX,
@@ -29,6 +31,8 @@ import {
   getModelNumber,
   getRecord,
   getString,
+  requireAgentGatewayPermission,
+  requireManagePermission,
 } from './utils';
 import { validateRunLease } from './runLifecycle';
 
@@ -39,6 +43,8 @@ const MAX_METADATA_JSON_CHARS = 16 * 1024;
 const MAX_SNAPSHOT_JSON_CHARS = 64 * 1024;
 const SUPPORTED_SNAPSHOT_TYPES = new Set(['node', 'agent', 'skill', 'nocobase', 'workspace', 'custom']);
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const STANDARD_OBSERVABILITY_READ_PATTERN =
+  /^\/(agRunEvents|agRunArtifacts|agRunSnapshots|agApiCallLogs):(list|get)(?:\/|$)/;
 
 function getRequiredString(ctx: Context, value: unknown, name: string) {
   const stringValue = getString(value);
@@ -85,6 +91,23 @@ function serializeModel(model: ModelRecord) {
   return getModelJson(model);
 }
 
+async function requireRunDetailsRead(ctx: Context) {
+  await requireAgentGatewayPermission(
+    ctx,
+    AGENT_GATEWAY_ACTIONS.readRunDetails,
+    'Agent Gateway run detail read permission required',
+  );
+}
+
+async function assertRunExists(ctx: Context, runId: string) {
+  const run = (await ctx.db.getRepository('agRuns').findOne({
+    filterByTk: runId,
+  })) as ModelRecord | null;
+  if (!run) {
+    ctx.throw(404, 'Run not found');
+  }
+}
+
 function getRedactedPayload(ctx: Context, payload: unknown) {
   const redactedPayload = redactEventPayload(payload);
   const serializedPayload = JSON.stringify(redactedPayload) || '';
@@ -94,13 +117,19 @@ function getRedactedPayload(ctx: Context, payload: unknown) {
   return redactedPayload;
 }
 
-function getBoundedRedactedJson(ctx: Context, value: unknown, name: string, maxChars: number) {
+function getBoundedRedactedJson(
+  ctx: Context,
+  value: unknown,
+  name: string,
+  maxChars: number,
+  redactValue: (source: unknown) => unknown = redactSnapshotJson,
+) {
   const rawSerializedValue = JSON.stringify(value) || '';
   if (rawSerializedValue.length > maxChars) {
     ctx.throw(413, `${name} is too large`);
   }
 
-  const redactedValue = redactSnapshotJson(value);
+  const redactedValue = redactValue(value);
   const serializedValue = JSON.stringify(redactedValue) || '';
   if (serializedValue.length > maxChars) {
     ctx.throw(413, `${name} is too large`);
@@ -114,7 +143,7 @@ function getEventMessage(ctx: Context, value: unknown) {
   if (message.length > MAX_EVENT_MESSAGE_LENGTH) {
     ctx.throw(413, 'Event message is too large; store large logs as artifacts');
   }
-  return message ? redactText(message) : null;
+  return message ? redactObservabilityText(message) : null;
 }
 
 async function getCurrentNodeId(ctx: Context) {
@@ -250,6 +279,7 @@ async function registerArtifact(ctx: Context, runId: string) {
           getPayloadValue(values, 'metadataJson', 'metadata'),
           'Artifact metadata',
           MAX_METADATA_JSON_CHARS,
+          redactArtifactMetadata,
         ),
       },
       transaction,
@@ -311,9 +341,71 @@ async function registerSnapshot(ctx: Context, runId: string) {
   }
 }
 
+async function listRunEvents(ctx: Context, runId: string) {
+  await requireRunDetailsRead(ctx);
+  await assertRunExists(ctx, runId);
+
+  const events = (await ctx.db.getRepository('agRunEvents').find({
+    filter: {
+      runId,
+    },
+    sort: ['claimAttempt', 'source', 'sequence', 'createdAt'],
+  })) as ModelRecord[];
+
+  ctx.body = events.map(serializeModel);
+}
+
+async function listRunArtifacts(ctx: Context, runId: string) {
+  await requireRunDetailsRead(ctx);
+  await assertRunExists(ctx, runId);
+
+  const artifacts = (await ctx.db.getRepository('agRunArtifacts').find({
+    filter: {
+      runId,
+    },
+    sort: ['claimAttempt', 'artifactKey', 'createdAt'],
+  })) as ModelRecord[];
+
+  ctx.body = artifacts.map(serializeModel);
+}
+
+async function listRunSnapshots(ctx: Context, runId: string) {
+  await requireRunDetailsRead(ctx);
+  await assertRunExists(ctx, runId);
+
+  const snapshots = (await ctx.db.getRepository('agRunSnapshots').find({
+    filter: {
+      runId,
+    },
+    sort: ['capturedAt', 'createdAt'],
+  })) as ModelRecord[];
+
+  ctx.body = snapshots.map(serializeModel);
+}
+
+async function listRunApiCallLogs(ctx: Context, runId: string) {
+  await requireRunDetailsRead(ctx);
+  await assertRunExists(ctx, runId);
+
+  const apiCallLogs = (await ctx.db.getRepository('agApiCallLogs').find({
+    filter: {
+      runId,
+    },
+    sort: ['createdAt'],
+  })) as ModelRecord[];
+
+  ctx.body = apiCallLogs.map(serializeModel);
+}
+
 export function registerRunObservabilityRoutes(plugin: Plugin) {
   plugin.app.use(
     async (ctx: Context, next: Next) => {
+      if (STANDARD_OBSERVABILITY_READ_PATTERN.test(ctx.path)) {
+        await requireManagePermission(ctx);
+        await next();
+        return;
+      }
+
       if (!ctx.path.startsWith(API_PREFIX)) {
         await next();
         return;
@@ -323,6 +415,32 @@ export function registerRunObservabilityRoutes(plugin: Plugin) {
       const observationMatch = routePath.match(
         /^\/runs\/([^/]+)\/(events:append|artifacts:register|snapshots:register)$/,
       );
+      const observationReadMatch = routePath.match(
+        /^\/runs\/([^/]+)\/(events:list|artifacts:list|snapshots:list|api-call-logs:list)$/,
+      );
+      if (ctx.method === 'GET' && observationReadMatch) {
+        const [, runId, action] = observationReadMatch;
+        if (!UUID_PATTERN.test(runId)) {
+          ctx.throw(400, 'runId must be a valid UUID');
+        }
+        if (action === 'events:list') {
+          await listRunEvents(ctx, runId);
+          return;
+        }
+        if (action === 'artifacts:list') {
+          await listRunArtifacts(ctx, runId);
+          return;
+        }
+        if (action === 'snapshots:list') {
+          await listRunSnapshots(ctx, runId);
+          return;
+        }
+        if (action === 'api-call-logs:list') {
+          await listRunApiCallLogs(ctx, runId);
+          return;
+        }
+      }
+
       if (ctx.method === 'POST' && observationMatch) {
         const [, runId, action] = observationMatch;
         if (!UUID_PATTERN.test(runId)) {

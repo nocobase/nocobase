@@ -112,6 +112,11 @@ describe('agent gateway run lifecycle APIs', () => {
       },
       executionPayload: {
         task: runCode,
+        command: 'must-not-render',
+        cwd: '/tmp/must-not-render',
+        env: {
+          SECRET: 'must-not-render',
+        },
       },
       ...values,
     });
@@ -188,12 +193,23 @@ describe('agent gateway run lifecycle APIs', () => {
     expect(run.leaseVersion).toBe(0);
     expect(run.cancelRequested).toBe(false);
     expect(run).not.toHaveProperty('claimTokenHash');
+    expect(run).not.toHaveProperty('promptSnapshot');
+    expect(run).not.toHaveProperty('executionPayloadJson');
+    expect(JSON.stringify(run)).not.toContain('must-not-render');
 
     const storedRun = await app.db.getRepository('agRuns').findOne({
       filterByTk: run.id,
     });
     expect(storedRun.get('promptSnapshot')).toMatchObject({
       text: 'Prompt for run-create-1',
+    });
+    expect(storedRun.get('executionPayloadJson')).toMatchObject({
+      task: 'run-create-1',
+      command: 'must-not-render',
+      cwd: '/tmp/must-not-render',
+      env: {
+        SECRET: 'must-not-render',
+      },
     });
     expect(storedRun.get('queuedAt')).toBeTruthy();
   });
@@ -374,6 +390,92 @@ describe('agent gateway run lifecycle APIs', () => {
     expect(storedRun.get('status')).toBe('running');
     expect(storedRun.get('leaseVersion')).toBe(3);
     expect(storedRun.get('lastRunHeartbeatAt')).toBeTruthy();
+  });
+
+  it('redacts terminal result and error summaries before exposing them to run readers', async () => {
+    const runner = await createRunner();
+    const run = await createRun('run-terminal-redaction-1', {
+      agentProfileId: runner.profileId,
+    });
+    const claim = getData(await claimRun(runner));
+    const heartbeat = getData(
+      await runDaemonAction(runner, run.id, 'heartbeat', {
+        claimToken: claim.claimToken,
+        claimAttempt: claim.claimAttempt,
+        leaseVersion: claim.leaseVersion,
+        status: 'running',
+      }),
+    );
+
+    const completeResponse = await runDaemonAction(runner, run.id, 'complete', {
+      claimToken: claim.claimToken,
+      claimAttempt: claim.claimAttempt,
+      leaseVersion: heartbeat.leaseVersion,
+      resultSummary: {
+        command: 'must-not-render',
+        cwd: '/tmp/must-not-render',
+        env: {
+          SECRET: 'must-not-render',
+        },
+        nested: {
+          token: 'RESULT_TOKEN_SECRET',
+        },
+        safe: 'visible summary',
+      },
+    });
+    expect(completeResponse.status).toBe(200);
+
+    const completedRun = await app.db.getRepository('agRuns').findOne({
+      filterByTk: run.id,
+    });
+    expect(completedRun.get('resultSummaryJson')).toMatchObject({
+      command: '[REDACTED]',
+      cwd: '[REDACTED]',
+      env: '[REDACTED]',
+      nested: {
+        token: '[REDACTED]',
+      },
+      safe: 'visible summary',
+    });
+
+    const completedReadResponse = await rootAgent.get(`/api/agent-gateway/runs:get/${run.id}`);
+    expect(JSON.stringify(getData(completedReadResponse))).not.toContain('must-not-render');
+    expect(JSON.stringify(getData(completedReadResponse))).not.toContain('RESULT_TOKEN_SECRET');
+
+    const completedApiLogsResponse = await rootAgent.get(`/api/agent-gateway/runs/${run.id}/api-call-logs:list`);
+    expect(completedApiLogsResponse.status).toBe(200);
+    const completedApiLogs = JSON.stringify(completedApiLogsResponse.body.data);
+    expect(completedApiLogs).not.toContain('must-not-render');
+    expect(completedApiLogs).not.toContain('RESULT_TOKEN_SECRET');
+    expect(completedApiLogs).toContain('[REDACTED]');
+
+    const failedRun = await createRun('run-terminal-redaction-2', {
+      agentProfileId: runner.profileId,
+    });
+    const failedClaim = getData(await claimRun(runner));
+    const failResponse = await runDaemonAction(runner, failedRun.id, 'fail', {
+      claimToken: failedClaim.claimToken,
+      claimAttempt: failedClaim.claimAttempt,
+      leaseVersion: failedClaim.leaseVersion,
+      resultSummary: {
+        commandPath: 'must-not-render',
+      },
+      errorSummary: 'command=must-not-render cwd=/tmp/must-not-render env.SECRET=must-not-render token=FAIL_SECRET',
+    });
+    expect(failResponse.status).toBe(200);
+
+    const failedReadResponse = await rootAgent.get(`/api/agent-gateway/runs:get/${failedRun.id}`);
+    const failedRead = getData(failedReadResponse);
+    expect(JSON.stringify(failedRead)).not.toContain('must-not-render');
+    expect(JSON.stringify(failedRead)).not.toContain('FAIL_SECRET');
+    expect(String(failedRead.errorSummary)).toContain('[REDACTED]');
+
+    const failedApiLogsResponse = await rootAgent.get(`/api/agent-gateway/runs/${failedRun.id}/api-call-logs:list`);
+    expect(failedApiLogsResponse.status).toBe(200);
+    const failedApiLogs = JSON.stringify(failedApiLogsResponse.body.data);
+    expect(failedApiLogs).not.toContain('must-not-render');
+    expect(failedApiLogs).not.toContain('FAIL_SECRET');
+    expect(failedApiLogs).toContain('[REDACTED]');
   });
 
   it('moves running runs through canceling and only cancels them after daemon ack', async () => {

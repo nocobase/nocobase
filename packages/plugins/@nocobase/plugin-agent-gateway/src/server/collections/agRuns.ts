@@ -80,10 +80,12 @@ export default defineCollection({
     {
       type: 'jsonb',
       name: 'promptSnapshot',
+      hidden: true,
     },
     {
       type: 'jsonb',
       name: 'executionPayloadJson',
+      hidden: true,
     },
     {
       type: 'jsonb',

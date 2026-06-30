@@ -26,7 +26,10 @@ export const DEFAULT_REDACTED_KEYS = [
 
 const API_CALL_LOG_EXTRA_REDACTED_KEYS = ['prompt'];
 const API_CALL_LOG_PROMPT_KEYS = ['messages', 'content', 'input', 'instructions'];
+const EXECUTION_CONFIG_REDACTED_KEYS = ['command', 'commandPath', 'cwd', 'env'];
+const ARTIFACT_METADATA_URL_KEYS = ['externalUrl', 'artifactUrl', 'downloadUrl', 'url', 'href'];
 const AGENT_GATEWAY_TOKEN_PATTERN = /\bag_(?:inv|node|claim)_[A-Za-z0-9._~+/-]+=*/gi;
+const EXTERNAL_URL_PATTERN = /\bhttps?:\/\/[^\s"'<>]+/gi;
 
 export interface RedactionOptions {
   extraKeys?: readonly string[];
@@ -173,25 +176,74 @@ export function redactText(value: string, options: RedactionOptions = {}) {
   );
 }
 
+function redactExternalUrlStrings(value: unknown): unknown {
+  if (typeof value === 'string') {
+    return value.replace(EXTERNAL_URL_PATTERN, REDACTED_VALUE);
+  }
+  if (Array.isArray(value)) {
+    return value.map((item) => redactExternalUrlStrings(item));
+  }
+  if (!value || typeof value !== 'object') {
+    return value;
+  }
+
+  const redacted: Record<string, unknown> = {};
+  for (const [key, entryValue] of Object.entries(value)) {
+    redacted[key] = redactExternalUrlStrings(entryValue);
+  }
+  return redacted;
+}
+
+export function redactObservabilityText(value: string) {
+  return redactText(value, {
+    extraKeys: EXECUTION_CONFIG_REDACTED_KEYS,
+  });
+}
+
 export function redactEventPayload(payload: unknown) {
-  return redactJson(payload);
+  return redactJson(payload, {
+    extraKeys: EXECUTION_CONFIG_REDACTED_KEYS,
+  });
 }
 
 export function redactArtifactText(contentText: string) {
-  return redactText(contentText);
+  return redactObservabilityText(contentText);
+}
+
+export function redactArtifactMetadata(metadata: unknown) {
+  const redactedMetadata = redactJson(metadata, {
+    extraKeys: [...EXECUTION_CONFIG_REDACTED_KEYS, ...ARTIFACT_METADATA_URL_KEYS],
+  });
+  return redactExternalUrlStrings(redactedMetadata);
 }
 
 export function redactSnapshotJson(snapshot: unknown) {
-  return redactJson(snapshot);
+  return redactJson(snapshot, {
+    extraKeys: EXECUTION_CONFIG_REDACTED_KEYS,
+  });
 }
 
 export function redactDaemonErrorSummary(errorSummary: string) {
-  return redactText(errorSummary);
+  return redactText(errorSummary, {
+    extraKeys: EXECUTION_CONFIG_REDACTED_KEYS,
+  });
+}
+
+export function redactRunResultSummary(summary: unknown) {
+  return redactJson(summary, {
+    extraKeys: EXECUTION_CONFIG_REDACTED_KEYS,
+  });
+}
+
+export function redactRunErrorSummary(errorSummary: string) {
+  return redactText(errorSummary, {
+    extraKeys: EXECUTION_CONFIG_REDACTED_KEYS,
+  });
 }
 
 export function createApiCallLogSummary(input: ApiCallLogSummaryInput) {
   const options: RedactionOptions = {
-    extraKeys: [...API_CALL_LOG_EXTRA_REDACTED_KEYS, ...API_CALL_LOG_PROMPT_KEYS],
+    extraKeys: [...API_CALL_LOG_EXTRA_REDACTED_KEYS, ...API_CALL_LOG_PROMPT_KEYS, ...EXECUTION_CONFIG_REDACTED_KEYS],
     maxStringLength: 2000,
   };
 

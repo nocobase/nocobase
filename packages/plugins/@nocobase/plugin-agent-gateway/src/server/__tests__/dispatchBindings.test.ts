@@ -360,6 +360,8 @@ describe('agent gateway dispatch binding APIs', () => {
     const dispatch = getData(dispatchResponse as ResponseLike<DispatchResponse>);
     expect(dispatch.idempotent).toBe(false);
     expect(dispatch.run.status).toBe('queued');
+    expect(dispatch.run).not.toHaveProperty('promptSnapshot');
+    expect(dispatch.run).not.toHaveProperty('executionPayloadJson');
 
     const storedRun = await app.db.getRepository('agRuns').findOne({
       filter: {
@@ -479,12 +481,15 @@ describe('agent gateway dispatch binding APIs', () => {
         idempotencyKey: 'same-click',
       });
     expect(sameKeyResponse.status).toBe(200);
-    expect(getData(sameKeyResponse as ResponseLike<DispatchResponse>)).toMatchObject({
+    const sameKeyDispatch = getData(sameKeyResponse as ResponseLike<DispatchResponse>);
+    expect(sameKeyDispatch).toMatchObject({
       idempotent: true,
       run: {
         id: firstDispatch.run.id,
       },
     });
+    expect(sameKeyDispatch.run).not.toHaveProperty('promptSnapshot');
+    expect(sameKeyDispatch.run).not.toHaveProperty('executionPayloadJson');
 
     const differentKeyResponse = await rootAgent
       .post(`/api/agent-gateway/dispatch-bindings/${binding.bindingKey}:dispatch`)

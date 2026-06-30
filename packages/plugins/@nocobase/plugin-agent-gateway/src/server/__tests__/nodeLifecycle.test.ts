@@ -312,6 +312,43 @@ describe('agent gateway node lifecycle APIs', () => {
     });
   });
 
+  it('enables and disables nodes through management API without exposing token hashes', async () => {
+    const invitation = await createInvitation();
+    const registerResponse = await registerNode(extractInviteToken(invitation.registerCommand));
+    const registration = getData(registerResponse);
+    const nodeId = String(registration.nodeId);
+    const nodeToken = String(registration.nodeToken);
+
+    const disableResponse = await rootAgent.post(`/api/agent-gateway/nodes:update/${nodeId}`).send({
+      status: 'disabled',
+    });
+    const disabledNode = getData(disableResponse);
+    expect(disableResponse.status).toBe(200);
+    expect(disabledNode.status).toBe('disabled');
+    expect(disabledNode.disabledAt).toBeTruthy();
+    expect(disabledNode).not.toHaveProperty('nodeTokenHash');
+
+    const disabledHeartbeatResponse = await app
+      .agent()
+      .post(`/api/agent-gateway/nodes/${nodeId}/heartbeat`)
+      .set('Authorization', `Bearer ${nodeToken}`)
+      .send({});
+    expect(disabledHeartbeatResponse.status).toBe(403);
+
+    const enableResponse = await rootAgent.post(`/api/agent-gateway/nodes:update/${nodeId}`).send({
+      status: 'active',
+    });
+    const enabledNode = getData(enableResponse);
+    expect(enableResponse.status).toBe(200);
+    expect(enabledNode.status).toBe('active');
+    expect(enabledNode.disabledAt).toBeFalsy();
+
+    const invalidStatusResponse = await rootAgent.post(`/api/agent-gateway/nodes:update/${nodeId}`).send({
+      status: 'pending',
+    });
+    expect(invalidStatusResponse.status).toBe(400);
+  });
+
   it('requires management permission for node and invitation management APIs', async () => {
     const invitation = await createInvitation();
     const registerResponse = await registerNode(extractInviteToken(invitation.registerCommand));
@@ -434,6 +471,11 @@ describe('agent gateway node lifecycle APIs', () => {
 
     const getNodeResponse = await memberAgent.get(`/api/agent-gateway/nodes:get/${nodeId}`);
     expect(getNodeResponse.status).toBe(403);
+
+    const updateNodeResponse = await memberAgent.post(`/api/agent-gateway/nodes:update/${nodeId}`).send({
+      status: 'disabled',
+    });
+    expect(updateNodeResponse.status).toBe(403);
 
     const profilesResponse = await memberAgent.get(`/api/agent-gateway/nodes/${nodeId}/profiles:list`);
     expect(profilesResponse.status).toBe(403);
