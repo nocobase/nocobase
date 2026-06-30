@@ -131,16 +131,12 @@ function isPathnameInModernClientRuntimeByPrefix() {
  * `client-v2/constants.ts` when the code can execute in both shells.
  */
 export function isWorkflowV2Runtime() {
-  if (isPathnameInModernClientRuntime()) {
-    return true;
+  if (typeof window === 'undefined') {
+    return hasModernClientPrefix();
   }
 
-  // In normal runtime bootstrap `__nocobase_public_path__` is always injected:
-  // v1 root shell uses `/` or `/app-root/`, while v2 uses `/v/` or
-  // `/app-root/v/`. Once public path is present and did not resolve to the
-  // modern base above, we are running under the legacy shell.
   if (hasConfiguredPublicPath()) {
-    return false;
+    return isPathnameInModernClientRuntime();
   }
 
   // Defensive fallback for incomplete test/mocked environments where public
@@ -149,11 +145,7 @@ export function isWorkflowV2Runtime() {
     return true;
   }
 
-  if (typeof window !== 'undefined' && window.location?.pathname) {
-    return false;
-  }
-
-  return hasModernClientPrefix();
+  return false;
 }
 
 export function getWorkflowCanvasRuntimePath(id: string | number) {
