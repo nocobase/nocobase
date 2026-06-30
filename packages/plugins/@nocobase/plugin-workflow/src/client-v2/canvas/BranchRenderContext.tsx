@@ -7,13 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useContext } from 'react';
-import { getWorkflowSingleton } from '../contextSingleton';
+import React, { createContext, useContext } from 'react';
+import { getWorkflowSingleton } from '../utils/contextSingleton';
 
 export type BranchNodeRenderer = React.ComponentType<{ data: any }>;
 
 export const BranchRenderContext = getWorkflowSingleton('BranchRenderContext', () =>
-  React.createContext<BranchNodeRenderer | null>(null),
+  createContext<BranchNodeRenderer | null>(null),
 );
 
 export function useBranchNodeRenderer() {

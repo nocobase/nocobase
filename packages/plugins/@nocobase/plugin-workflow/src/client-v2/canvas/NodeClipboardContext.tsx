@@ -24,13 +24,13 @@
  * single implementation serves both.
  */
 
-import React, { useCallback, useContext, useMemo, useState } from 'react';
+import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
 import { App, Checkbox } from 'antd';
 import { cloneDeep } from 'lodash';
 import { useFlowContext as useFlowEngineContext } from '@nocobase/flow-engine';
 import { useFlowContext, useWorkflowCanvasExecuted } from './contexts';
 import { useT } from '../locale';
-import { getWorkflowSingleton } from '../contextSingleton';
+import { getWorkflowSingleton } from '../utils/contextSingleton';
 import { collectUpstreams, extractDependencyKeys, stripVariableReferences } from './nodeVariableUtils';
 
 type ClipboardNode = {
@@ -73,7 +73,7 @@ function useModernCanvasRuntime(): CanvasClipboardRuntime {
 }
 
 const NodeClipboardContext = getWorkflowSingleton('NodeClipboardContext', () =>
-  React.createContext<NodeClipboardContextValue | null>(null),
+  createContext<NodeClipboardContextValue | null>(null),
 );
 
 export function useNodeClipboardContext() {

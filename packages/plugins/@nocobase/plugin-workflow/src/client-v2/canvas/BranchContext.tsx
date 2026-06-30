@@ -17,8 +17,8 @@
  * the modern canvas (which doesn't set it) is unaffected.
  */
 
-import React, { useContext } from 'react';
-import { getWorkflowSingleton } from '../contextSingleton';
+import React, { createContext, useContext } from 'react';
+import { getWorkflowSingleton } from '../utils/contextSingleton';
 
 export type BranchContextValue = {
   branchIndex: number | null;
@@ -31,7 +31,7 @@ export type BranchContextValue = {
 // Default `null` (matches v1): every consumer reads through `useBranchContext()?.`, so the absence of a provider is
 // handled the same in both canvases.
 export const BranchContext = getWorkflowSingleton('BranchContext', () =>
-  React.createContext<BranchContextValue | null>(null),
+  createContext<BranchContextValue | null>(null),
 );
 
 export function useBranchContext() {
