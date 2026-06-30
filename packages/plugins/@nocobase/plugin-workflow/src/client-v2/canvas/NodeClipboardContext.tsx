@@ -30,6 +30,7 @@ import { cloneDeep } from 'lodash';
 import { useFlowContext as useFlowEngineContext } from '@nocobase/flow-engine';
 import { useFlowContext, useWorkflowCanvasExecuted } from './contexts';
 import { useT } from '../locale';
+import { getWorkflowSingleton } from '../utils/contextSingleton';
 import { collectUpstreams, extractDependencyKeys, stripVariableReferences } from './nodeVariableUtils';
 
 type ClipboardNode = {
@@ -71,7 +72,9 @@ function useModernCanvasRuntime(): CanvasClipboardRuntime {
   return { workflow, nodes, refresh, executed: Boolean(executed) };
 }
 
-const NodeClipboardContext = createContext<NodeClipboardContextValue | null>(null);
+const NodeClipboardContext = getWorkflowSingleton('NodeClipboardContext', () =>
+  createContext<NodeClipboardContextValue | null>(null),
+);
 
 export function useNodeClipboardContext() {
   return useContext(NodeClipboardContext);

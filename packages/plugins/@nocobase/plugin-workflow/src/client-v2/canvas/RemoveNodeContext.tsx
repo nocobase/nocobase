@@ -27,6 +27,7 @@ import { App, Modal, Radio, Select, Space } from 'antd';
 import { useFlowEngine } from '@nocobase/flow-engine';
 import { useFlowContext } from './contexts';
 import { useT } from '../locale';
+import { getWorkflowSingleton } from '../utils/contextSingleton';
 import { PluginWorkflowClientV2 } from '../plugin';
 import { collectBranchNodes, findNodesReferencing } from './removeNodeUtils';
 
@@ -60,7 +61,9 @@ function useModernCanvasRuntime(): CanvasRemoveRuntime {
   };
 }
 
-const RemoveNodeContext = createContext<RemoveNodeContextValue | null>(null);
+const RemoveNodeContext = getWorkflowSingleton('RemoveNodeContext', () =>
+  createContext<RemoveNodeContextValue | null>(null),
+);
 
 export function useRemoveNodeContext() {
   return useContext(RemoveNodeContext);
