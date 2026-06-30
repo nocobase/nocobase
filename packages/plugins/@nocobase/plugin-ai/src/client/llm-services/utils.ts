@@ -28,7 +28,7 @@ export const normalizeLLMServiceOptions = <T extends LLMServiceOptions | null | 
     return options;
   }
 
-  const nextOptions = { ...options };
+  const nextOptions: LLMServiceOptions = { ...options };
   const baseURL = nextOptions.baseURL;
   if (typeof baseURL === 'string') {
     if (baseURL.trim() === '') {
