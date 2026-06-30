@@ -21,6 +21,37 @@ export type ProviderOption = {
   label: string;
 };
 
+export type LLMServiceOptions = Record<string, unknown>;
+
+export const normalizeLLMServiceOptions = <T extends LLMServiceOptions | null | undefined>(options: T): T => {
+  if (!options || Array.isArray(options)) {
+    return options;
+  }
+
+  const nextOptions = { ...options };
+  const baseURL = nextOptions.baseURL;
+  if (typeof baseURL === 'string') {
+    if (baseURL.trim() === '') {
+      delete nextOptions.baseURL;
+    } else {
+      nextOptions.baseURL = baseURL.trim();
+    }
+  }
+
+  return nextOptions as T;
+};
+
+export const normalizeLLMServiceFormValues = <T extends { options?: LLMServiceOptions | null }>(values: T): T => {
+  if (!values.options || Array.isArray(values.options)) {
+    return values;
+  }
+
+  return {
+    ...values,
+    options: normalizeLLMServiceOptions(values.options),
+  };
+};
+
 export const getServiceByOverride = (services: LLMServiceItem[], override?: { llmService?: string } | null) => {
   if (!override?.llmService) {
     return undefined;
