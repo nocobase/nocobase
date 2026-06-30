@@ -16,14 +16,11 @@
  * For more information, see <https://www.nocobase.com/agreement>
  */
 
-import { canMakeAssociationBlock, Plugin, useCollection, useCollectionManager } from '@nocobase/client';
-import { useMemo } from 'react';
+import { Plugin } from '@nocobase/client';
 import { CommentCollectionTemplate } from './collection-templates/comment';
 import { Comment } from './comment';
 import { commentBlockSettings } from './comment/Comment.Settings';
 import { useCommentBlockDecoratorProps } from './hooks/useCommentBlockDecoratorProps';
-import { generateNTemplate } from './locale';
-import { CommentBlockInitializer } from './schema-initializer/initializers';
 import {
   commentItemActionInitializers,
   QuoteReplyCommentActionButton,
@@ -43,57 +40,7 @@ export class PluginCommentClient extends Plugin {
   // You can get and modify the app instance here
   async load() {
     this.app.dataSourceManager.addCollectionTemplates([CommentCollectionTemplate]);
-    this.app.schemaInitializerManager.addItem('page:addBlock', 'dataBlocks.comment', {
-      title: generateNTemplate('Comment'),
-      Component: 'CommentBlockInitializer',
-      useComponentProps() {
-        return {
-          filterCollections({ collection }) {
-            return collection.template === 'comment';
-          },
-        };
-      },
-    });
-
-    this.app.schemaInitializerManager.addItem('popup:common:addBlock', 'dataBlocks.comment', {
-      title: generateNTemplate('Comment'),
-      Component: 'CommentBlockInitializer',
-      useVisible() {
-        const collection = useCollection();
-        return useMemo(
-          () =>
-            collection.fields.some(
-              (field) => canMakeAssociationBlock(field) && ['hasMany', 'belongsToMany'].includes(field.type),
-            ),
-          [collection.fields],
-        );
-      },
-      useComponentProps() {
-        const cm = useCollectionManager();
-        return {
-          onlyCurrentDataSource: true,
-          filterCollections({ associationField }) {
-            if (associationField) {
-              if (!['hasMany', 'belongsToMany'].includes(associationField.type)) {
-                return false;
-              }
-              const collection = cm.getCollection(associationField.target);
-              return collection?.template === 'comment';
-            }
-            return false;
-          },
-          filterOtherRecordsCollection(collection) {
-            return collection?.template === 'comment';
-          },
-          showAssociationFields: true,
-          hideOtherRecordsInPopup: false,
-          hideSearch: true,
-        };
-      },
-    });
-
     this.app.addComponents({
-      CommentBlockInitializer: CommentBlockInitializer as any,
       Comment,
       UpdateCommentActionInitializer,
       UpdateCommentActionButton,

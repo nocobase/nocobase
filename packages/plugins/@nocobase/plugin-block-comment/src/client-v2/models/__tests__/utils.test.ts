@@ -204,16 +204,22 @@ describe('record comments owner value utils', () => {
     expect(resolveCommentOwnerValueFromFilterByTk(true, 100)).toBe(true);
   });
 
-  it('only exposes many-to-one fields as owner field options', () => {
+  it('exposes scalar fields and excludes association fields as owner field options', () => {
     expect(
       getCommentOwnerFieldOptions({
         fields: [
           { name: 'content', type: 'text', title: 'Content' },
+          { name: 'postId', type: 'bigInt', interface: 'integer', title: 'Post ID' },
           { name: 'task', type: 'belongsTo', interface: 'm2o', title: 'Task' },
+          { name: 'profile', type: 'hasOne', interface: 'oho', title: 'Profile' },
           { name: 'tags', type: 'belongsToMany', interface: 'm2m', title: 'Tags' },
+          { name: 'children', type: 'hasMany', interface: 'o2m', title: 'Children' },
         ],
       }),
-    ).toEqual([{ label: 'Task', value: 'task' }]);
+    ).toEqual([
+      { label: 'Content', value: 'content' },
+      { label: 'Post ID', value: 'postId' },
+    ]);
   });
 
   it('defaults comment owner mapping to the current popup collection relation', () => {
@@ -279,6 +285,30 @@ describe('record comments owner value utils', () => {
     ).toEqual({
       ownerField: 'post',
       ownerValueField: COMMENT_OWNER_FILTER_BY_TK_VARIABLE,
+    });
+  });
+
+  it('defaults comment owner mapping from the selected association foreign key first', () => {
+    expect(
+      getAssociationRecordCommentFieldMapping({
+        associationName: 'posts.comments',
+        sourceId: '{{ ctx.popup.record.uuid }}',
+        association: {
+          collection: {
+            name: 'posts',
+          },
+          foreignKey: 'postId',
+        },
+        collection: {
+          fields: [
+            { name: 'postId', type: 'bigInt', interface: 'integer', title: 'Post ID' },
+            { name: 'post', type: 'belongsTo', interface: 'm2o', title: 'Post', target: 'posts' },
+          ],
+        },
+      }),
+    ).toEqual({
+      ownerField: 'postId',
+      ownerValueField: '{{ ctx.popup.record.uuid }}',
     });
   });
 
@@ -376,6 +406,21 @@ describe('record comments owner value utils', () => {
           ],
         },
         'task',
+        '123',
+      ),
+    ).toEqual({
+      compatible: true,
+      value: 123,
+    });
+  });
+
+  it('normalizes owner values by a scalar owner field type', () => {
+    expect(
+      normalizeOwnerFilterValue(
+        {
+          fields: [{ name: 'postId', type: 'bigInt', interface: 'integer' }],
+        },
+        'postId',
         '123',
       ),
     ).toEqual({

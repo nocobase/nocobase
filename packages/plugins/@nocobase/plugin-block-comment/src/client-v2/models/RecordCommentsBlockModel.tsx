@@ -80,11 +80,13 @@ const getFieldMappingDefaults = (
       : undefined;
   const associationName =
     resourceSettingsInit?.associationName || ctx.view?.inputArgs?.associationName || ctx.inputArgs?.associationName;
+  const sourceId = resourceSettingsInit?.sourceId;
   const association = (model?.context?.association as RecordCommentAssociationLike | undefined) || ctx.association;
   const associationMapping = getAssociationRecordCommentFieldMapping({
     collection: model?.collection || ctx.collection,
     association,
     associationName,
+    sourceId,
   });
 
   if (associationMapping.ownerField) {
@@ -233,8 +235,9 @@ export class RecordCommentsBlockModel extends CollectionBlockModel<RecordComment
 
     resource.setPageSize(this.props.pageSize || DEFAULT_PAGE_SIZE);
 
-    if (mapping.dateField) {
-      resource.setSort([mapping.dateField]);
+    const sort = this.props.globalSort?.length ? this.props.globalSort : mapping.dateField ? [mapping.dateField] : [];
+    if (sort.length) {
+      resource.setSort(sort);
     }
 
     if (mapping.ownerField) {
@@ -259,9 +262,17 @@ export class RecordCommentsBlockModel extends CollectionBlockModel<RecordComment
     return Math.max(Math.ceil(count / pageSize), 1);
   }
 
+  shouldAutoJumpToLastPage() {
+    return this.props.autoJumpToLastPage === true;
+  }
+
   isPreparingLastPageLoad() {
     if (this.loadingLastPage.value) {
       return true;
+    }
+
+    if (!this.shouldAutoJumpToLastPage()) {
+      return false;
     }
 
     const count = this.resource.getCount() || 0;
@@ -288,6 +299,10 @@ export class RecordCommentsBlockModel extends CollectionBlockModel<RecordComment
       } finally {
         this.loadingLastPage.value = false;
       }
+      return;
+    }
+
+    if (!this.shouldAutoJumpToLastPage()) {
       return;
     }
 
@@ -421,7 +436,7 @@ RecordCommentsBlockModel.registerFlow({
                 'x-decorator': 'FormItem',
                 'x-component': RecordCommentFieldSelect,
                 'x-component-props': {
-                  fieldFilter: 'belongsTo',
+                  fieldFilter: 'owner',
                 },
               },
           ownerValueField: shouldHideOwnerMappingFields
@@ -487,11 +502,18 @@ RecordCommentsBlockModel.registerFlow({
     },
     pageSize: {
       title: tExpr('Page size'),
-      uiSchema: {
-        pageSize: {
-          'x-component': 'Select',
-          'x-decorator': 'FormItem',
-          enum: [5, 10, 20, 50, 100].map((value) => ({ label: String(value), value })),
+      uiMode: {
+        type: 'select',
+        key: 'pageSize',
+        props: {
+          options: [
+            { label: '5', value: 5 },
+            { label: '10', value: 10 },
+            { label: '20', value: 20 },
+            { label: '50', value: 50 },
+            { label: '100', value: 100 },
+            { label: '200', value: 200 },
+          ],
         },
       },
       defaultParams: {
@@ -504,7 +526,29 @@ RecordCommentsBlockModel.registerFlow({
           pageSize,
         });
         model.resource.setPageSize(pageSize);
-        model.resource.setPage(model.getLastPage(pageSize));
+        model.resource.setPage(model.shouldAutoJumpToLastPage() ? model.getLastPage(pageSize) : 1);
+      },
+    },
+    dataScope: {
+      use: 'dataScope',
+      title: tExpr('Data scope'),
+    },
+    defaultSorting: {
+      use: 'sortingRule',
+      title: tExpr('Default sorting'),
+    },
+    autoJumpToLastPage: {
+      title: tExpr('Jump to last page by default'),
+      uiMode: { type: 'switch', key: 'autoJumpToLastPage' },
+      defaultParams: {
+        autoJumpToLastPage: false,
+      },
+      handler(ctx, params) {
+        const model = ctx.model as RecordCommentsBlockModel;
+        model.setProps({
+          autoJumpToLastPage: params.autoJumpToLastPage !== false,
+        });
+        model.resource.setPage(params.autoJumpToLastPage === false ? 1 : model.getLastPage());
       },
     },
   },
