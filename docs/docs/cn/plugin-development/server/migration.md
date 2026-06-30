@@ -26,23 +26,24 @@ Migration 的执行时机分为三类：
 
 ## 创建 Migration 文件
 
-Migration 文件放在插件目录下的 `src/server/migrations/*.ts` 中。NocoBase 提供了 `create-migration` 命令快速生成 migration 文件。
+Migration 文件放在插件目录下的 `src/server/migrations/*.ts` 中。NocoBase CLI 提供了 `nb scaffold migration` 命令快速生成 migration 文件。
 
 ```bash
-yarn nocobase create-migration [options] <name>
+nb scaffold migration <name> --pkg <pkg> [--on <timing>]
 ```
 
-可选参数
+参数
 
 | 参数 | 说明 |
 |------|------|
-| `--pkg <pkg>` | 指定插件包名 |
-| `--on [on]`  | 指定执行时机，可选 `beforeLoad`、`afterSync`、`afterLoad` |
+| `<name>` | migration 名称，必填 |
+| `--pkg <pkg>` | 指定插件包名，必填 |
+| `--on <timing>` | 指定执行时机，可选 `beforeLoad`、`afterSync`、`afterLoad` |
 
 示例
 
 ```bash
-$ yarn nocobase create-migration update-ui --pkg=@nocobase/plugin-client
+$ nb scaffold migration update-ui --pkg @nocobase/plugin-client
 ```
 
 生成的 migration 文件路径如下：
@@ -146,10 +147,10 @@ export default class extends Migration {
 
 ## 触发 Migration
 
-Migration 的执行由 `nocobase upgrade` 命令触发：
+Migration 的执行由升级命令触发：
 
 ```bash
-$ yarn nocobase upgrade
+$ nb app upgrade
 ```
 
 升级时，系统会根据 Migration 的类型和 `appVersion` 判断执行顺序。

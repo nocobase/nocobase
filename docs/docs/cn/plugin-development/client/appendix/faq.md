@@ -12,13 +12,13 @@ keywords: "FAQ,常见问题,排错指南,Troubleshooting,NocoBase,构建,部署,
 
 ### 插件创建后在管理器里看不到
 
-确认执行了 `yarn pm create` 而不是手动创建目录。`yarn pm create` 除了生成文件，还会把插件注册到数据库的 `applicationPlugins` 表里。如果手动创建了目录，可以执行 `yarn nocobase upgrade` 重新扫描。
+确认执行了 `nb scaffold plugin` 而不是手动创建目录。`nb scaffold plugin` 除了生成文件，还会把插件注册到数据库的 `applicationPlugins` 表里。如果手动创建了目录，可以执行 `nb app upgrade` 重新扫描。
 
 ### 插件启用后页面没有变化
 
 按以下顺序排查：
 
-1. 确认执行了 `yarn pm enable <pluginName>`
+1. 确认执行了 `nb plugin enable <pluginName>`
 2. 刷新浏览器（有时候需要强制刷新 `Ctrl+Shift+R`）
 3. 检查浏览器控制台有没有报错
 
@@ -30,7 +30,7 @@ keywords: "FAQ,常见问题,排错指南,Troubleshooting,NocoBase,构建,部署,
 | --- | --- |
 | `src/client-v2/` 下的 tsx/ts | 自动热更新，不需要操作 |
 | `src/locale/` 下的翻译文件 | **重启应用** |
-| `src/server/collections/` 下新增或修改 collection | 执行 `yarn nocobase upgrade` |
+| `src/server/collections/` 下新增或修改 collection | 执行 `nb app upgrade` |
 
 如果客户端代码改了但没热更新，先试试刷新浏览器。
 
@@ -220,15 +220,15 @@ this.app.acl.allow('todoItems', ['list', 'get', 'create', 'update', 'destroy'], 
 
 ## 构建和部署相关
 
-### `yarn build --tar` 报错 "no paths specified to add to archive"
+### `nb source build --tar` 报错 "no paths specified to add to archive"
 
-执行 `yarn build <pluginName> --tar` 时报错：
+执行 `nb source build <pluginName> --tar` 时报错：
 
 ```bash
 TypeError: no paths specified to add to archive
 ```
 
-不过单独执行 `yarn build <pluginName>`（不带 `--tar`）是正常的。
+不过单独执行 `nb source build <pluginName>`（不带 `--tar`）是正常的。
 
 这个问题通常是因为插件的 `.npmignore` 里**用了取反语法**（npm 的 `!` 前缀）。`--tar` 打包时，NocoBase 会读取 `.npmignore` 的每一行并在前面加上 `!` 转成 `fast-glob` 的排除模式。如果你的 `.npmignore` 已经用了取反语法，比如：
 

@@ -191,17 +191,17 @@ export default defineCollection({
 
 ## 同步数据库结构
 
-插件首次激活时，系统会自动将 Collection 配置与数据库结构同步。如果插件已安装并正在运行，在新增或修改 Collection 后需要手动执行升级命令：
+插件首次激活时，系统会自动将 Collection 配置与数据库结构同步。如果插件已安装并正在运行，在新增或修改 Collection 后需要执行升级命令来同步数据库结构：
 
 ```bash
-yarn nocobase upgrade
+nb app upgrade
 ```
 
-如果同步过程中出现异常或脏数据，可以通过重新安装应用来重建表结构：
+:::warning 注意
 
-```bash
-yarn nocobase install -f
-```
+如果同步过程中出现异常或脏数据，可以通过重新安装应用来重建表结构。这个操作会清空数据库，请谨慎使用。
+
+:::
 
 如果插件升级时需要对已有数据做迁移——比如重命名字段、拆分表、回填默认值等——应该通过 [Migration 升级脚本](./migration.md) 来处理，而不是手动改数据库。
 

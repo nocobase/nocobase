@@ -10,6 +10,10 @@ AI 开发插件是 NocoBase 提供的 AI 辅助插件开发能力——你可以
 
 AI 开发插件的能力基于 [nocobase-plugin-development](https://github.com/nocobase/skills/tree/main/skills/nocobase-plugin-development) Skill 实现。如果你已经通过 NocoBase CLI 初始化（`nb init`），这个 Skill 会自动安装。
 
+## 在哪里运行 AI Agent
+
+AI 开发插件需要在一个通过 `nb init` 创建的 NocoBase 项目根目录下运行 AI Agent。CLI 支持 npm 和 Git 两种来源——**推荐使用 Git 来源**，这样 AI 可以直接参考 NocoBase 核心源码，开发效果更好。
+
 ## 快速开始
 
 如果你已经安装过 [NocoBase CLI](../ai/quick-start.md)，可以跳过这一步。

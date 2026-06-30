@@ -1,44 +1,38 @@
 ---
 title: "构建与打包"
-description: "NocoBase 插件构建打包：yarn build、yarn nocobase tar、build.config.ts 自定义配置、Rsbuild 客户端打包、tsup 服务端打包。"
-keywords: "插件构建,插件打包,yarn build,tar,build.config.ts,Rsbuild,tsup,@nocobase/build,NocoBase"
+description: "NocoBase 插件构建打包：nb source build、build.config.ts 自定义配置、Rsbuild 客户端打包、tsup 服务端打包。"
+keywords: "插件构建,插件打包,nb source build,tar,build.config.ts,Rsbuild,tsup,@nocobase/build,NocoBase"
 ---
 
 # 构建与打包
 
-插件开发完成后，需要经过构建（编译源码）和打包（生成 `.tar.gz`）两个步骤，才能分发到其他 NocoBase 应用中使用。
+插件开发完成后，需要经过构建（编译源码）和打包（生成 `.tgz`）两个步骤，才能分发到其他 NocoBase 应用中使用。
 
 ## 构建插件
 
 构建会把 `src/` 下的 TypeScript 源码编译为 JavaScript——客户端代码由 Rsbuild 打包，服务端代码由 tsup 打包：
 
 ```bash
-yarn build @my-project/plugin-hello
+nb source build @my-project/plugin-hello
 ```
 
 构建产物会输出到插件根目录的 `dist/` 下。
 
 :::tip 提示
 
-如果插件是在源码仓库中创建的，首次构建会触发整仓库的类型检查，耗时可能较长。建议确保依赖已安装，并保持仓库处于可构建状态。
+首次构建可能会触发整仓库的类型检查，耗时较长。建议确保依赖已安装，并保持仓库处于可构建状态。
 
 :::
 
 ## 打包插件
 
-打包会把构建产物压缩成一个 `.tar.gz` 文件，方便上传到其他环境：
+用 `--tar` 参数可以把构建和打包合成一步，生成 `.tgz` 压缩包：
 
 ```bash
-yarn nocobase tar @my-project/plugin-hello
+nb source build @my-project/plugin-hello --tar
 ```
 
-打包文件默认输出到 `storage/tar/@my-project/plugin-hello.tar.gz`。
-
-你也可以用 `--tar` 参数把构建和打包合成一步：
-
-```bash
-yarn build @my-project/plugin-hello --tar
-```
+打包文件默认输出到 `source/storage/tar/` 目录下，构建完成后命令会打印 tarball 的完整路径。
 
 ## 上传到其他 NocoBase 应用
 
@@ -84,7 +78,7 @@ export default defineConfig({
 ## 相关链接
 
 - [编写第一个插件](./write-your-first-plugin.md) — 从零创建插件，包含完整的构建打包流程
-- [项目目录结构](./project-structure.md) — 了解 `packages/plugins`、`storage/tar` 等目录的作用
+- [项目目录结构](./project-structure.md) — 了解 `plugins/`、`storage/tar` 等目录的作用
 - [依赖管理](./dependency-management.md) — 插件的依赖声明与全局依赖
 - [插件开发概述](./index.md) — 插件开发整体介绍
 - [安装与升级插件](../get-started/install-upgrade-plugins.mdx) — 把打包文件上传到目标环境

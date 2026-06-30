@@ -27,20 +27,31 @@ plugin-hello/
 │  └─ server/            # 服务端源码，可注册资源、事件、命令行等
 ```
 
+## 前置条件
+
+开发插件前，你需要先通过 NocoBase CLI 初始化一个应用。CLI 支持 npm 和 Git 两种来源：
+
+- **npm 来源**（`create-nocobase-app`）：适合快速上手，开箱即用。
+- **Git 来源**（推荐）：克隆 NocoBase 源码仓库，AI 开发时可以直接参考核心源码，效果更好。
+
+详见 [AI Agent 接入指南](../ai/quick-start.mdx) 或 [使用 CLI 安装应用](../nocobase-cli/installation/cli.md)。
+
 ## 目录约定与加载顺序
 
-NocoBase 启动时会扫描以下目录来加载插件：
+通过 `nb init` 创建的应用，目录结构如下：
 
 ```bash
-my-nocobase-app/
-├── packages/
-│   └── plugins/          # 源码开发中的插件（优先级最高）
-└── storage/
-    └── plugins/          # 已编译的插件，例如上传或发布的插件
+<app-path>/
+├── .nb/                  # CLI 为当前 env 保存的元数据
+├── source/               # 应用源码（NocoBase 工程）
+├── storage/              # 运行时数据目录
+│   └── plugins/          # 已编译的插件（上传或导入的）
+├── plugins/              # 你的插件源码（nb scaffold plugin 生成在这里）
+└── .env                  # 应用环境变量文件
 ```
 
-- `packages/plugins`：本地开发的插件目录，支持实时编译与调试。
-- `storage/plugins`：存放已编译好的插件，比如商业版或第三方插件。
+- `plugins/`：你开发的插件源码目录。通过 `nb scaffold plugin` 创建的插件会放在这里，`nb` 会自动将它们同步到 `source/packages/plugins/` 供开发和构建流程使用，你不需要手动操作 `source/` 目录。
+- `storage/plugins/`：存放已编译好的插件，比如商业版或第三方插件。
 
 ## 插件生命周期与状态
 
@@ -63,19 +74,13 @@ my-nocobase-app/
 
 ```bash
 # 1. 创建插件骨架
-yarn pm create @my-project/plugin-hello
+nb scaffold plugin @my-project/plugin-hello
 
-# 2. 拉取插件包（下载或链接）
-yarn pm pull @my-project/plugin-hello
+# 2. 启用插件（首次启用会自动安装）
+nb plugin enable @my-project/plugin-hello
 
-# 3. 启用插件（首次启用会自动安装）
-yarn pm enable @my-project/plugin-hello
-
-# 4. 停用插件
-yarn pm disable @my-project/plugin-hello
-
-# 5. 卸载插件
-yarn pm remove @my-project/plugin-hello
+# 3. 停用插件
+nb plugin disable @my-project/plugin-hello
 ```
 
 ## 插件管理界面
