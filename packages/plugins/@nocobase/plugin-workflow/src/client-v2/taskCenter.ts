@@ -8,7 +8,7 @@
  */
 
 import { useMemoizedFn } from 'ahooks';
-import type { ComponentType } from 'react';
+import type { ComponentType, ReactNode } from 'react';
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 
 export const TASK_STATUS = {
@@ -35,6 +35,15 @@ export type WorkflowTaskCounts = Record<string, WorkflowTaskStats>;
 export interface WorkflowTaskActionsProps {
   onlyIcon?: boolean;
   reload?: () => Promise<void>;
+}
+
+export interface WorkflowTaskDetailModalProps {
+  children?: ReactNode;
+  mobile: boolean;
+  onClose: () => void;
+  record: WorkflowTaskRecord | null;
+  title: ReactNode;
+  type: TaskTypeOptions;
 }
 
 export interface WorkflowTaskRecordContextValue {
@@ -92,6 +101,7 @@ export interface TaskTypeOptions {
   action?: string;
   useActionParams?: (status: WorkflowTaskStatus) => WorkflowTaskRequestParams | undefined;
   Actions?: ComponentType<WorkflowTaskActionsProps>;
+  DetailModal?: ComponentType<WorkflowTaskDetailModalProps>;
   Item: ComponentType;
   Detail: ComponentType;
   getPopupRecord?: (
@@ -192,33 +202,64 @@ export function getAvailableWorkflowTaskTypeKeys(
   });
 }
 
-export function useWorkflowTaskCounts(
-  ctx: WorkflowTaskFlowContext | undefined,
-  taskTypes: WorkflowTaskRegistry | undefined,
+interface WorkflowTaskCountsStore {
+  counts: WorkflowTaskCounts;
+  eventBus?: EventTarget;
+  eventHandler?: EventListener;
+  inflight?: Promise<void>;
+  listeners: Set<() => void>;
+  version: number;
+}
+
+const workflowTaskCountsStoreMap = new WeakMap<WorkflowTaskFlowContext, Map<string, WorkflowTaskCountsStore>>();
+
+function getWorkflowTaskCountsStore(ctx: WorkflowTaskFlowContext, signature: string) {
+  let stores = workflowTaskCountsStoreMap.get(ctx);
+  if (!stores) {
+    stores = new Map<string, WorkflowTaskCountsStore>();
+    workflowTaskCountsStoreMap.set(ctx, stores);
+  }
+
+  let store = stores.get(signature);
+  if (!store) {
+    store = {
+      counts: {},
+      listeners: new Set(),
+      version: 0,
+    };
+    stores.set(signature, store);
+  }
+  return store;
+}
+
+function setWorkflowTaskCountsStore(store: WorkflowTaskCountsStore, counts: WorkflowTaskCounts) {
+  store.version += 1;
+  store.counts = counts;
+  store.listeners.forEach((listener) => listener());
+}
+
+function updateWorkflowTaskCountsStore(
+  store: WorkflowTaskCountsStore,
+  updater: (previous: WorkflowTaskCounts) => WorkflowTaskCounts,
 ) {
-  const [counts, setCounts] = useState<WorkflowTaskCounts>({});
-  const taskTypeKeys = useMemo(() => getWorkflowTaskTypeKeys(taskTypes), [taskTypes]);
-  const taskTypeKeySignature = taskTypeKeys.join('\n');
+  setWorkflowTaskCountsStore(store, updater(store.counts));
+}
 
-  const reload = useMemoizedFn(async () => {
-    if (!ctx?.api || !taskTypeKeys.length) {
-      setCounts({});
-      return;
-    }
-    const listMine = ctx.api.resource('userWorkflowTasks').listMine;
-    if (!listMine) {
-      setCounts({});
-      return;
-    }
-    const response = await listMine({
-      filter: {
-        type: taskTypeKeys,
-      },
-    });
-    setCounts(normalizeWorkflowTaskCountsResponse(response));
-  });
+function syncWorkflowTaskCountsEventBus(store: WorkflowTaskCountsStore, eventBus: EventTarget | undefined) {
+  if (store.eventBus === eventBus) {
+    return;
+  }
+  if (store.eventBus && store.eventHandler) {
+    store.eventBus.removeEventListener('ws:message:workflow:tasks:updated', store.eventHandler);
+  }
+  store.eventBus = eventBus;
+  store.eventHandler = undefined;
 
-  const handleTaskUpdate = useMemoizedFn((event: Event) => {
+  if (!eventBus) {
+    return;
+  }
+
+  const handleTaskUpdate: EventListener = (event) => {
     if (!('detail' in event)) {
       return;
     }
@@ -226,28 +267,112 @@ export function useWorkflowTaskCounts(
     if (!isObjectRecord(detail) || typeof detail.type !== 'string') {
       return;
     }
-    setCounts((previous) => ({
+    updateWorkflowTaskCountsStore(store, (previous) => ({
       ...previous,
       [detail.type]: normalizeStats(detail.stats),
     }));
+  };
+  store.eventHandler = handleTaskUpdate;
+  eventBus.addEventListener('ws:message:workflow:tasks:updated', handleTaskUpdate);
+}
+
+function clearWorkflowTaskCountsEventBus(store: WorkflowTaskCountsStore) {
+  if (store.eventBus && store.eventHandler) {
+    store.eventBus.removeEventListener('ws:message:workflow:tasks:updated', store.eventHandler);
+  }
+  store.eventBus = undefined;
+  store.eventHandler = undefined;
+}
+
+export function useWorkflowTaskCounts(
+  ctx: WorkflowTaskFlowContext | undefined,
+  taskTypes: WorkflowTaskRegistry | undefined,
+) {
+  const taskTypeKeys = useMemo(() => getWorkflowTaskTypeKeys(taskTypes), [taskTypes]);
+  const taskTypeKeySignature = taskTypeKeys.join('\n');
+  const store = useMemo(
+    () => (ctx && taskTypeKeySignature ? getWorkflowTaskCountsStore(ctx, taskTypeKeySignature) : undefined),
+    [ctx, taskTypeKeySignature],
+  );
+  const [counts, setCounts] = useState<WorkflowTaskCounts>(() => store?.counts ?? {});
+
+  const loadCounts = useMemoizedFn(async (dedupeInflight: boolean) => {
+    if (!ctx?.api || !taskTypeKeys.length || !store) {
+      if (store) {
+        setWorkflowTaskCountsStore(store, {});
+      } else {
+        setCounts({});
+      }
+      return;
+    }
+    const listMine = ctx.api.resource('userWorkflowTasks').listMine;
+    if (!listMine) {
+      setWorkflowTaskCountsStore(store, {});
+      return;
+    }
+
+    if (store.inflight) {
+      if (dedupeInflight) {
+        await store.inflight;
+        return;
+      }
+      await store.inflight.catch(() => undefined);
+    }
+
+    const requestVersion = store.version;
+    const promise = listMine({
+      filter: {
+        type: taskTypeKeys,
+      },
+    })
+      .then((response) => {
+        if (store.version === requestVersion) {
+          setWorkflowTaskCountsStore(store, normalizeWorkflowTaskCountsResponse(response));
+        }
+      })
+      .finally(() => {
+        if (store.inflight === promise) {
+          store.inflight = undefined;
+        }
+      });
+    store.inflight = promise;
+    await promise;
+  });
+
+  const reload = useMemoizedFn(async () => {
+    await loadCounts(false);
   });
 
   useEffect(() => {
-    reload().catch((error) => {
+    loadCounts(true).catch((error) => {
       console.error('Failed to load workflow task counts', error);
     });
-  }, [reload, taskTypeKeySignature]);
+  }, [loadCounts, taskTypeKeySignature]);
 
   useEffect(() => {
-    const eventBus = ctx?.app?.eventBus;
-    if (!eventBus) {
+    if (!store) {
+      setCounts({});
       return;
     }
-    eventBus.addEventListener('ws:message:workflow:tasks:updated', handleTaskUpdate);
-    return () => {
-      eventBus.removeEventListener('ws:message:workflow:tasks:updated', handleTaskUpdate);
+    const listener = () => {
+      setCounts(store.counts);
     };
-  }, [ctx?.app?.eventBus, handleTaskUpdate]);
+    store.listeners.add(listener);
+    setCounts(store.counts);
+    return () => {
+      store.listeners.delete(listener);
+      if (store.listeners.size === 0) {
+        clearWorkflowTaskCountsEventBus(store);
+      }
+    };
+  }, [store]);
+
+  useEffect(() => {
+    if (!store) {
+      return;
+    }
+    syncWorkflowTaskCountsEventBus(store, ctx?.app?.eventBus);
+  }, [ctx?.app?.eventBus, store]);
 
   const total = useMemo(() => Object.values(counts).reduce((sum, item) => sum + (item.pending || 0), 0), [counts]);
 

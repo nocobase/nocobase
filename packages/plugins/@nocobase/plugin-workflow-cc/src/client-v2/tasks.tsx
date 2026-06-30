@@ -8,10 +8,13 @@
  */
 
 import { CheckOutlined, ReloadOutlined } from '@ant-design/icons';
-import { useFlowContext } from '@nocobase/flow-engine';
-import type { FlowModel } from '@nocobase/flow-engine';
+import { CollectionFilter } from '@nocobase/client-v2';
+import { useFlowContext, useFlowEngine } from '@nocobase/flow-engine';
+import type { FlowEngine, FlowModel } from '@nocobase/flow-engine';
 import {
   TASK_STATUS as WORKFLOW_TASK_STATUS,
+  getWorkflowTaskRegistry,
+  useWorkflowTaskCounts,
   useWorkflowTaskRecord,
   type TaskTypeOptions,
   type WorkflowTaskApiClient,
@@ -21,13 +24,15 @@ import {
   type WorkflowTaskStatus,
 } from '@nocobase/plugin-workflow/client-v2';
 import { useMemoizedFn } from 'ahooks';
-import { App, Button, Card, Descriptions, Flex, Space, Tag, Tooltip, Typography } from 'antd';
-import React, { useCallback, useMemo } from 'react';
+import { App, Button, Card, Descriptions, Flex, Space, Tag, Tooltip, theme } from 'antd';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 import { TASK_STATUS as CC_TASK_STATUS, TASK_TYPE_CC } from '../common/constants';
 import { RemoteFlowModelRenderer } from './flow/RemoteFlowModelRenderer';
 import { useTempAssociationSources } from './hooks/useTempAssociationSources';
 import { NAMESPACE, useT } from './locale';
+import { registerWorkflowCcCollections } from './utils/registerWorkflowCcCollections';
 import { useWorkflowPluginCompat, type CanvasNodeLike, type WorkflowLike } from './workflowPluginCompat';
 
 type RecordObject = Record<string, unknown>;
@@ -58,6 +63,15 @@ const TASK_LIST_APPENDS = [
 ];
 
 const TASK_POPUP_APPENDS = ['node', 'job', 'workflow', 'workflow.nodes', 'execution', 'execution.jobs'];
+
+const CC_TASK_FILTER_QUERY_KEY = 'workflowCcTasksFilter';
+const DEFAULT_CC_TASK_FILTER = {
+  $and: [{ title: { $includes: '' } }, { 'workflow.title': { $includes: '' } }],
+};
+const MOBILE_FILTER_POPOVER_WIDTH = 312;
+const MOBILE_FILTER_CONTENT_MIN_WIDTH = 288;
+const MOBILE_ACTION_BUTTON_HEIGHT = 28;
+const MOBILE_ACTION_BUTTON_MIN_WIDTH = 44;
 
 const STATUS_FILTER_MAP: Partial<Record<WorkflowTaskStatus, WorkflowTaskRequestParams>> = {
   [WORKFLOW_TASK_STATUS.PENDING]: {
@@ -113,6 +127,90 @@ function getStatusLabel(status: unknown, t: ReturnType<typeof useT>) {
   return status === CC_TASK_STATUS.READ ? t('Read') : t('Unread');
 }
 
+function getStatusColor(status: unknown) {
+  return status === CC_TASK_STATUS.READ ? 'green' : 'gold';
+}
+
+function isEmptyFilterValue(value: unknown): boolean {
+  if (value === undefined || value === null || value === '') {
+    return true;
+  }
+  if (Array.isArray(value)) {
+    return value.every(isEmptyFilterValue);
+  }
+  if (typeof value === 'object') {
+    return Object.values(value as Record<string, unknown>).every(isEmptyFilterValue);
+  }
+  return false;
+}
+
+function isEmptyFilter(filter: unknown) {
+  return !isRecordObject(filter) || isEmptyFilterValue(filter);
+}
+
+function readTaskFilter(): Record<string, unknown> | undefined {
+  if (typeof window === 'undefined') {
+    return undefined;
+  }
+  const raw = new URLSearchParams(window.location.search).get(CC_TASK_FILTER_QUERY_KEY);
+  if (!raw) {
+    return undefined;
+  }
+  try {
+    const filter = JSON.parse(raw);
+    return isRecordObject(filter) && !isEmptyFilter(filter) ? filter : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function getTaskFilterRoute(
+  filter: Record<string, unknown> | undefined,
+  location: { pathname: string; search?: string; hash?: string },
+) {
+  const searchParams = new URLSearchParams(location.search);
+  if (isEmptyFilter(filter)) {
+    searchParams.delete(CC_TASK_FILTER_QUERY_KEY);
+  } else {
+    searchParams.set(CC_TASK_FILTER_QUERY_KEY, JSON.stringify(filter));
+  }
+  const search = searchParams.toString();
+  return `${location.pathname}${search ? `?${search}` : ''}${location.hash ?? ''}`;
+}
+
+function mergeFilters(
+  baseFilter: Record<string, unknown> | undefined,
+  taskFilter: Record<string, unknown> | undefined,
+) {
+  if (isEmptyFilter(baseFilter)) {
+    return taskFilter ?? {};
+  }
+  if (isEmptyFilter(taskFilter)) {
+    return baseFilter ?? {};
+  }
+  return {
+    $and: [baseFilter, taskFilter],
+  };
+}
+
+function padDatePart(value: number) {
+  return String(value).padStart(2, '0');
+}
+
+function formatDateTime(value: unknown) {
+  const text = typeof value === 'string' || typeof value === 'number' ? String(value) : undefined;
+  if (!text) {
+    return '-';
+  }
+  const date = new Date(text);
+  if (Number.isNaN(date.getTime())) {
+    return text;
+  }
+  return `${date.getFullYear()}-${padDatePart(date.getMonth() + 1)}-${padDatePart(date.getDate())} ${padDatePart(
+    date.getHours(),
+  )}:${padDatePart(date.getMinutes())}:${padDatePart(date.getSeconds())}`;
+}
+
 function getUpstreams(currentNode: TaskCanvasNodeLike | undefined, nodes: TaskCanvasNodeLike[]): TaskCanvasNodeLike[] {
   if (!currentNode || !nodes.length) {
     return [];
@@ -146,25 +244,48 @@ function useCcTaskFlowModelContext(record: WorkflowTaskRecord) {
 
 function WorkflowCcTaskStatusTag({ record }: { record: WorkflowTaskRecord }) {
   const t = useT();
-  return <Tag>{getStatusLabel(record.status, t)}</Tag>;
+  return <Tag color={getStatusColor(record.status)}>{getStatusLabel(record.status, t)}</Tag>;
 }
 
 function WorkflowCcTaskFallbackItem() {
   const { record } = useWorkflowTaskRecord();
   const t = useT();
+  const { token } = theme.useToken();
   const title = getTaskTitle(record, t);
   const workflowTitle = getStringValue(record, 'workflow.title');
 
   return (
-    <Card size="small" title={t(title)} extra={workflowTitle ? t(workflowTitle) : undefined}>
+    <Card
+      hoverable
+      size="small"
+      title={title}
+      extra={workflowTitle}
+      style={{ width: '100%' }}
+      styles={{
+        body: {
+          padding: token.paddingSM,
+        },
+        extra: {
+          color: token.colorTextDescription,
+        },
+        header: {
+          minHeight: token.controlHeightLG,
+          paddingInline: token.paddingSM,
+        },
+      }}
+    >
       <Descriptions
         column={1}
-        size="small"
+        styles={{
+          label: {
+            width: '6em',
+          },
+        }}
         items={[
           {
             key: 'createdAt',
             label: t('Created at'),
-            children: getStringValue(record, 'createdAt') ?? '-',
+            children: formatDateTime(record.createdAt),
           },
           {
             key: 'status',
@@ -220,7 +341,7 @@ function WorkflowCcTaskItem() {
 }
 
 function WorkflowCcTaskDetailActions() {
-  const { record, refresh } = useWorkflowTaskRecord();
+  const { record, refresh, openRecord } = useWorkflowTaskRecord();
   const ctx = useFlowContext() as WorkflowTaskFlowContext | undefined;
   const { message } = App.useApp();
   const t = useT();
@@ -228,25 +349,39 @@ function WorkflowCcTaskDetailActions() {
   const action = status === CC_TASK_STATUS.READ ? 'unread' : 'read';
   const title = status === CC_TASK_STATUS.READ ? t('Mark as unread') : t('Mark as read');
   const type = status === CC_TASK_STATUS.READ ? 'default' : 'primary';
+  const submittingRef = useRef(false);
+  const [submitting, setSubmitting] = useState(false);
 
   const handleReadAction = useMemoizedFn(async () => {
+    if (submittingRef.current) {
+      return;
+    }
     const recordId = record.id;
     if (recordId === undefined || recordId === null) {
       return;
     }
+    submittingRef.current = true;
+    setSubmitting(true);
     try {
       await ctx?.api.resource('workflowCcTasks')[action]?.({
         filterByTk: recordId,
+      });
+      openRecord?.({
+        ...record,
+        status: status === CC_TASK_STATUS.READ ? CC_TASK_STATUS.UNREAD : CC_TASK_STATUS.READ,
       });
       await refresh?.();
     } catch (error) {
       console.error('Failed to update workflow CC task status', error);
       message.error(t('Load failed'));
+    } finally {
+      submittingRef.current = false;
+      setSubmitting(false);
     }
   });
 
   return (
-    <Button type={type} onClick={handleReadAction}>
+    <Button type={type} loading={submitting} disabled={submitting} onClick={handleReadAction}>
       {title}
     </Button>
   );
@@ -255,14 +390,9 @@ function WorkflowCcTaskDetailActions() {
 function WorkflowCcTaskFallbackDetail() {
   const { record } = useWorkflowTaskRecord();
   const t = useT();
-  const title = getTaskTitle(record, t);
 
   return (
     <Flex vertical gap="middle">
-      <Flex align="center" justify="space-between" gap="small">
-        <Typography.Title level={5}>{t(title)}</Typography.Title>
-        <WorkflowCcTaskDetailActions />
-      </Flex>
       <Descriptions
         column={1}
         bordered
@@ -290,20 +420,23 @@ function WorkflowCcTaskFallbackDetail() {
           {
             key: 'createdAt',
             label: t('Created at'),
-            children: getStringValue(record, 'createdAt') ?? '-',
+            children: formatDateTime(record.createdAt),
           },
           {
             key: 'updatedAt',
             label: t('Updated at'),
-            children: getStringValue(record, 'updatedAt') ?? '-',
+            children: formatDateTime(record.updatedAt),
           },
           {
             key: 'readAt',
             label: t('Read at'),
-            children: getStringValue(record, 'readAt') ?? '-',
+            children: formatDateTime(record.readAt),
           },
         ]}
       />
+      <Flex justify="end">
+        <WorkflowCcTaskDetailActions />
+      </Flex>
     </Flex>
   );
 }
@@ -349,10 +482,10 @@ function WorkflowCcTaskDetail() {
   if (ccUid && node && workflow) {
     return (
       <Flex vertical gap="middle">
+        <RemoteFlowModelRenderer uid={ccUid} onModelLoaded={handleModelLoaded} />
         <Flex justify="end">
           <WorkflowCcTaskDetailActions />
         </Flex>
-        <RemoteFlowModelRenderer uid={ccUid} onModelLoaded={handleModelLoaded} />
       </Flex>
     );
   }
@@ -360,10 +493,105 @@ function WorkflowCcTaskDetail() {
   return <WorkflowCcTaskFallbackDetail />;
 }
 
+function useWorkflowCcTasksCollection() {
+  const flowEngine = useFlowEngine() as FlowEngine;
+  const getCollection = useMemoizedFn(
+    () => flowEngine.dataSourceManager?.getDataSource?.('main')?.getCollection?.('workflowCcTasks'),
+  );
+  const [collection, setCollection] = useState(() => getCollection());
+
+  useEffect(() => {
+    registerWorkflowCcCollections(flowEngine);
+    setCollection(getCollection());
+  }, [flowEngine, getCollection]);
+
+  return collection;
+}
+
+function useMobileActionButtonProps(onlyIcon?: boolean) {
+  const { token } = theme.useToken();
+
+  return useMemo(
+    () =>
+      onlyIcon
+        ? {
+            style: {
+              height: MOBILE_ACTION_BUTTON_HEIGHT,
+              minWidth: MOBILE_ACTION_BUTTON_MIN_WIDTH,
+              paddingInline: token.paddingSM - token.lineWidth,
+            },
+          }
+        : {},
+    [onlyIcon, token.lineWidth, token.paddingSM],
+  );
+}
+
+function WorkflowCcTaskFilterAction({ onlyIcon }: { onlyIcon?: boolean; reload?: () => Promise<void> }) {
+  const t = useT();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const collection = useWorkflowCcTasksCollection();
+  const filterText = t('Filter');
+  const initialValue = readTaskFilter() ?? DEFAULT_CC_TASK_FILTER;
+  const mobileButtonProps = useMobileActionButtonProps(onlyIcon);
+
+  const handleFilterChange = useMemoizedFn(async (filter: Record<string, unknown> | undefined) => {
+    navigate(getTaskFilterRoute(filter, location), { replace: true });
+  });
+
+  const filter = (
+    <CollectionFilter
+      key={location.search || 'empty-filter'}
+      collection={collection}
+      initialValue={initialValue}
+      onChange={handleFilterChange}
+      t={t}
+      filterableFieldNames={['title', 'workflow']}
+      buttonText={onlyIcon ? '' : undefined}
+      showCount={false}
+      popoverMinWidth={onlyIcon ? MOBILE_FILTER_CONTENT_MIN_WIDTH : undefined}
+      popoverProps={
+        onlyIcon
+          ? {
+              placement: 'bottomRight',
+              styles: {
+                body: {
+                  maxWidth: 'calc(100vw - 32px)',
+                  overflowX: 'auto',
+                  width: MOBILE_FILTER_POPOVER_WIDTH,
+                },
+              },
+            }
+          : undefined
+      }
+      buttonProps={{
+        'aria-label': onlyIcon ? filterText : undefined,
+        ...mobileButtonProps,
+      }}
+    />
+  );
+
+  return onlyIcon ? <Tooltip title={filterText}>{filter}</Tooltip> : filter;
+}
+
 function WorkflowCcTaskActions({ onlyIcon, reload }: { onlyIcon?: boolean; reload?: () => Promise<void> }) {
   const ctx = useFlowContext() as WorkflowTaskFlowContext | undefined;
+  const taskTypes = getWorkflowTaskRegistry(ctx);
+  const { counts, reload: reloadCounts } = useWorkflowTaskCounts(ctx, taskTypes);
   const { message } = App.useApp();
   const t = useT();
+  const mobileButtonProps = useMobileActionButtonProps(onlyIcon);
+  const [readAllSubmitted, setReadAllSubmitted] = useState(false);
+  const [readAllSubmitting, setReadAllSubmitting] = useState(false);
+  const readAllSubmittingRef = useRef(false);
+  const pendingCount = counts[TASK_TYPE_CC]?.pending;
+  const readAllDisabled = readAllSubmitting || readAllSubmitted || pendingCount === 0;
+
+  useEffect(() => {
+    if (typeof pendingCount === 'number' && pendingCount > 0) {
+      setReadAllSubmitted(false);
+    }
+  }, [pendingCount]);
 
   const handleRefresh = useMemoizedFn(async () => {
     try {
@@ -375,29 +603,50 @@ function WorkflowCcTaskActions({ onlyIcon, reload }: { onlyIcon?: boolean; reloa
   });
 
   const handleReadAll = useMemoizedFn(async () => {
+    if (readAllSubmittingRef.current || readAllDisabled) {
+      return;
+    }
+    readAllSubmittingRef.current = true;
+    setReadAllSubmitting(true);
     try {
       await ctx?.api.resource('workflowCcTasks').read?.();
-      await reload?.();
+      setReadAllSubmitted(true);
+      if (reload) {
+        await reload();
+      } else {
+        await reloadCounts();
+      }
     } catch (error) {
       console.error('Failed to mark workflow CC tasks as read', error);
       message.error(t('Load failed'));
+    } finally {
+      readAllSubmittingRef.current = false;
+      setReadAllSubmitting(false);
     }
   });
 
   const refreshButton = (
-    <Button icon={<ReloadOutlined />} onClick={handleRefresh} aria-label={t('Refresh')}>
+    <Button icon={<ReloadOutlined />} onClick={handleRefresh} aria-label={t('Refresh')} {...mobileButtonProps}>
       {onlyIcon ? null : t('Refresh')}
     </Button>
   );
   const readAllButton = (
-    <Button icon={<CheckOutlined />} onClick={handleReadAll} aria-label={t('Mark all as read')}>
+    <Button
+      icon={<CheckOutlined />}
+      onClick={handleReadAll}
+      aria-label={t('Mark all as read')}
+      disabled={readAllDisabled}
+      loading={readAllSubmitting}
+      {...mobileButtonProps}
+    >
       {onlyIcon ? null : t('Mark all as read')}
     </Button>
   );
 
   return (
-    <Space>
+    <Space size="small" wrap>
       {onlyIcon ? <Tooltip title={t('Refresh')}>{refreshButton}</Tooltip> : refreshButton}
+      <WorkflowCcTaskFilterAction onlyIcon={onlyIcon} />
       {onlyIcon ? <Tooltip title={t('Mark all as read')}>{readAllButton}</Tooltip> : readAllButton}
     </Space>
   );
@@ -405,8 +654,10 @@ function WorkflowCcTaskActions({ onlyIcon, reload }: { onlyIcon?: boolean; reloa
 
 export function useCcTaskActionParams(status: WorkflowTaskStatus) {
   const statusParams = STATUS_FILTER_MAP[status] ?? {};
+  const filter = mergeFilters(statusParams.filter as Record<string, unknown> | undefined, readTaskFilter());
   return {
     ...statusParams,
+    filter,
     appends: TASK_LIST_APPENDS,
     except: ['workflow.options', 'execution.context', 'execution.output'],
   };
