@@ -49,8 +49,11 @@ interface RoutePageRuntime {
   meta: RoutePageMeta;
   viewState: Record<string, ViewRuntimeState>;
   prevViewList: ViewItem[];
+  pendingOpenViewKeys: Set<string>;
   hasStepNavigated: boolean;
+  currentPathname?: string;
   forceStop: boolean;
+  viewGeneration: number;
 }
 
 interface RouteLike {
@@ -64,6 +67,10 @@ interface RouteLike {
     pageUid?: string;
     basePathname?: string;
   } | null;
+}
+
+interface SyncRuntimeOptions {
+  skipInitialStepNavigation?: boolean;
 }
 
 const hasUsableSourceId = (sourceId: unknown) => sourceId !== undefined && sourceId !== null && String(sourceId) !== '';
@@ -92,6 +99,7 @@ export class BaseLayoutRouteCoordinator {
   private basePathname: string;
   private readonly runtimes = new Map<string, RoutePageRuntime>();
   private layoutContentElement: HTMLElement | null = null;
+  private lastNonNullLayoutContentElement: HTMLElement | null = null;
 
   constructor(flowEngine: FlowEngine, options: BaseLayoutRouteCoordinatorOptions = {}) {
     this.flowEngine = flowEngine;
@@ -104,7 +112,19 @@ export class BaseLayoutRouteCoordinator {
   }
 
   setLayoutContentElement(element: HTMLElement | null) {
+    const previousTarget = this.layoutContentElement || this.lastNonNullLayoutContentElement;
     this.layoutContentElement = element;
+
+    if (!element) {
+      return;
+    }
+
+    const shouldReplayActiveViews = !!previousTarget && previousTarget !== element;
+    this.lastNonNullLayoutContentElement = element;
+
+    if (shouldReplayActiveViews) {
+      this.replayActiveRuntimeViewsAfterLayoutContentElementChange();
+    }
   }
 
   registerPage(pageUid: string, meta: RoutePageMeta) {
@@ -119,8 +139,10 @@ export class BaseLayoutRouteCoordinator {
       },
       viewState: {},
       prevViewList: [],
+      pendingOpenViewKeys: new Set(),
       hasStepNavigated: false,
       forceStop: false,
+      viewGeneration: 0,
     };
 
     this.ensureRouteModelContext(runtime);
@@ -159,6 +181,7 @@ export class BaseLayoutRouteCoordinator {
       this.runtimes.forEach((runtime) => {
         this.setRuntimeActive(runtime, false);
       });
+      this.invalidatePendingRuntimeViewOpens();
       return;
     }
 
@@ -175,11 +198,16 @@ export class BaseLayoutRouteCoordinator {
     });
 
     if (!activePageUid || !pathname) {
+      this.invalidatePendingRuntimeViewOpens();
       return;
     }
 
     this.runtimes.forEach((runtime) => {
       if (runtime.pageUid !== activePageUid) {
+        if (!runtime.forceStop) {
+          runtime.viewGeneration += 1;
+          runtime.pendingOpenViewKeys.clear();
+        }
         runtime.forceStop = true;
       }
     });
@@ -190,6 +218,11 @@ export class BaseLayoutRouteCoordinator {
     }
 
     runtime.forceStop = false;
+    if (runtime.currentPathname && runtime.currentPathname !== pathname) {
+      runtime.viewGeneration += 1;
+      runtime.pendingOpenViewKeys.clear();
+    }
+    runtime.currentPathname = pathname;
     this.syncRuntimeWithPathname(runtime, pathname);
   }
 
@@ -200,6 +233,8 @@ export class BaseLayoutRouteCoordinator {
     }
 
     runtime.forceStop = true;
+    runtime.viewGeneration += 1;
+    runtime.pendingOpenViewKeys.clear();
     runtime.prevViewList.forEach((viewItem) => {
       this.flowEngine.removeModelWithSubModels(viewItem.params.viewUid);
       runtime.viewState[getKey(viewItem)]?.destroy?.();
@@ -207,6 +242,7 @@ export class BaseLayoutRouteCoordinator {
     });
     runtime.prevViewList = [];
     runtime.hasStepNavigated = false;
+    runtime.currentPathname = undefined;
   }
 
   destroy() {
@@ -249,7 +285,7 @@ export class BaseLayoutRouteCoordinator {
     viewState?.deactivate?.();
   }
 
-  private syncRuntimeWithPathname(runtime: RoutePageRuntime, pathname: string) {
+  private syncRuntimeWithPathname(runtime: RoutePageRuntime, pathname: string, options: SyncRuntimeOptions = {}) {
     try {
       if (!this.basePathname) {
         return;
@@ -258,7 +294,7 @@ export class BaseLayoutRouteCoordinator {
       const viewStack = parsePathnameToViewParams(pathname, { basePath: this.basePathname });
       const viewList = resolveViewParamsToViewList(this.flowEngine, viewStack, runtime.routeModel);
 
-      if (this.shouldStepNavigate(runtime, viewList)) {
+      if (!options.skipInitialStepNavigation && this.shouldStepNavigate(runtime, viewList)) {
         this.stepNavigate(viewList, 0);
         runtime.hasStepNavigated = true;
         this.scheduleInitialDeepLinkReplay(runtime, pathname);
@@ -266,20 +302,32 @@ export class BaseLayoutRouteCoordinator {
       }
 
       const { viewsToClose, viewsToOpen } = getViewDiffAndUpdateHidden(runtime.prevViewList, viewList);
+      const viewsToOpenKeys = new Set(viewsToOpen.map((viewItem) => getKey(viewItem)));
+      const nextViewsToOpen = viewList.filter((viewItem) => {
+        const key = getKey(viewItem);
+        if (runtime.pendingOpenViewKeys.has(key)) {
+          return false;
+        }
+        return viewsToOpenKeys.has(key) || !runtime.viewState[key];
+      });
 
       if (viewsToClose.length) {
         viewsToClose.forEach((viewItem) => {
+          runtime.pendingOpenViewKeys.delete(getKey(viewItem));
           runtime.viewState[getKey(viewItem)]?.destroy?.(true);
           delete runtime.viewState[getKey(viewItem)];
         });
         updateViewListHidden(viewList, !!this.layoutContext?.isMobileLayout);
       }
 
-      if (viewsToOpen.length) {
-        void this.handleOpenViews(runtime, viewList, viewsToOpen);
+      if (nextViewsToOpen.length) {
+        this.markPendingOpenViews(runtime, nextViewsToOpen);
+        this.handleOpenViews(runtime, viewList, nextViewsToOpen, runtime.viewGeneration).catch((error) => {
+          console.error(`[NocoBase] Failed to open route-managed views:`, error);
+        });
       }
 
-      if (viewsToClose.length === 0 && viewsToOpen.length === 0) {
+      if (viewsToClose.length === 0 && nextViewsToOpen.length === 0) {
         const currentViewItem = viewList.at(-1);
         if (currentViewItem) {
           runtime.viewState[getKey(currentViewItem)]?.navigation.setViewStack(viewList.map((item) => item.params));
@@ -313,9 +361,15 @@ export class BaseLayoutRouteCoordinator {
   }
 
   private scheduleInitialDeepLinkReplay(runtime: RoutePageRuntime, pathname: string) {
+    const viewGeneration = runtime.viewGeneration;
     Promise.resolve()
       .then(() => {
-        if (runtime.forceStop || runtime.prevViewList.length > 0) {
+        if (
+          runtime.forceStop ||
+          runtime.viewGeneration !== viewGeneration ||
+          runtime.currentPathname !== pathname ||
+          runtime.prevViewList.length > 0
+        ) {
           return;
         }
 
@@ -349,7 +403,60 @@ export class BaseLayoutRouteCoordinator {
     this.stepNavigate(viewList, index + 1);
   }
 
-  private async handleOpenViews(runtime: RoutePageRuntime, viewList: ViewItem[], viewsToOpen: ViewItem[]) {
+  private replayActiveRuntimeViewsAfterLayoutContentElementChange() {
+    this.runtimes.forEach((runtime) => {
+      if (!runtime.currentPathname || runtime.prevViewList.length === 0) {
+        return;
+      }
+
+      this.resetRuntimeViewStateForLayoutContentElementChange(runtime);
+      if (runtime.meta.active) {
+        this.syncRuntimeWithPathname(runtime, runtime.currentPathname, { skipInitialStepNavigation: true });
+      }
+    });
+  }
+
+  private invalidatePendingRuntimeViewOpens() {
+    this.runtimes.forEach((runtime) => {
+      runtime.forceStop = true;
+      runtime.viewGeneration += 1;
+      runtime.pendingOpenViewKeys.clear();
+    });
+  }
+
+  private resetRuntimeViewStateForLayoutContentElementChange(runtime: RoutePageRuntime) {
+    runtime.viewGeneration += 1;
+    runtime.pendingOpenViewKeys.clear();
+    runtime.prevViewList.forEach((viewItem, index) => {
+      runtime.viewState[getKey(viewItem)]?.destroy?.(true);
+      delete runtime.viewState[getKey(viewItem)];
+
+      if (index > 0) {
+        this.flowEngine.removeModelWithSubModels(viewItem.params.viewUid);
+      }
+    });
+    runtime.prevViewList = [];
+    runtime.hasStepNavigated = false;
+  }
+
+  private markPendingOpenViews(runtime: RoutePageRuntime, viewItems: ViewItem[]) {
+    viewItems.forEach((viewItem) => {
+      runtime.pendingOpenViewKeys.add(getKey(viewItem));
+    });
+  }
+
+  private clearPendingOpenViews(runtime: RoutePageRuntime, viewItems: ViewItem[]) {
+    viewItems.forEach((viewItem) => {
+      runtime.pendingOpenViewKeys.delete(getKey(viewItem));
+    });
+  }
+
+  private async handleOpenViews(
+    runtime: RoutePageRuntime,
+    viewList: ViewItem[],
+    viewsToOpen: ViewItem[],
+    viewGeneration: number,
+  ) {
     const missingModels = viewsToOpen.filter((v) => !v.model);
     if (missingModels.length > 0) {
       await Promise.all(
@@ -363,24 +470,36 @@ export class BaseLayoutRouteCoordinator {
       );
     }
 
-    if (runtime.forceStop) {
+    if (runtime.forceStop || runtime.viewGeneration !== viewGeneration) {
       return;
     }
 
     this.syncViewListVisibility(runtime, viewList);
-    this.openViews(runtime, viewList, viewsToOpen, 0);
+    this.openViews(runtime, viewList, viewsToOpen, 0, viewGeneration);
   }
 
-  private openViews(runtime: RoutePageRuntime, viewList: ViewItem[], viewsToOpen: ViewItem[], index: number) {
+  private openViews(
+    runtime: RoutePageRuntime,
+    viewList: ViewItem[],
+    viewsToOpen: ViewItem[],
+    index: number,
+    viewGeneration: number,
+  ) {
+    if (runtime.forceStop || runtime.viewGeneration !== viewGeneration) {
+      return;
+    }
+
     if (!viewsToOpen[index]) {
       return;
     }
 
     const viewItem = viewsToOpen[index];
     if (!viewItem.model) {
+      this.clearPendingOpenViews(runtime, viewsToOpen.slice(index));
       return;
     }
 
+    const viewKey = getKey(viewItem);
     const destroyRef = React.createRef<(result?: any, force?: boolean) => void>();
     const updateRef = React.createRef<(value: any) => void>();
     const activateRef = React.createRef<(forceRefresh?: boolean) => void>();
@@ -415,20 +534,21 @@ export class BaseLayoutRouteCoordinator {
       activationControlledByLayout: true,
       navigation,
       onOpen: () => {
-        this.openViews(runtime, viewList, viewsToOpen, index + 1);
+        this.openViews(runtime, viewList, viewsToOpen, index + 1, viewGeneration);
       },
       hidden: viewItem.hidden,
       isMobileLayout: !!this.layoutContext?.isMobileLayout,
       triggerByRouter: true,
     });
 
-    runtime.viewState[getKey(viewItem)] = {
+    runtime.viewState[viewKey] = {
       destroy: (_force?: boolean) => destroyRef.current?.(),
       update: (value: any) => updateRef.current?.(value),
       activate: (forceRefresh?: boolean) => activateRef.current?.(forceRefresh),
       deactivate: () => deactivateRef.current?.(),
       navigation,
     };
+    runtime.pendingOpenViewKeys.delete(viewKey);
   }
 
   private ensureRouteModelContext(runtime: RoutePageRuntime) {

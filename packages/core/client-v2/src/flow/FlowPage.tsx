@@ -57,10 +57,37 @@ type FlowPageProps = {
   showFlowSettings?: FlowModelRendererProps['showFlowSettings'];
 };
 
+type FlowPageViewContext = {
+  isMobileLayout?: boolean;
+  view?: {
+    inputArgs?: {
+      isMobileLayout?: unknown;
+    };
+  };
+};
+
+const bindViewLayoutState = (model: FlowModel, ctx?: FlowPageViewContext | null) => {
+  const hasViewMobileLayout = typeof ctx?.view?.inputArgs?.isMobileLayout === 'boolean';
+  const hasContextMobileLayout = typeof ctx?.isMobileLayout === 'boolean';
+  if (!hasViewMobileLayout && !hasContextMobileLayout) {
+    return;
+  }
+
+  model.context.defineProperty('isMobileLayout', {
+    get: () => {
+      if (typeof ctx?.isMobileLayout === 'boolean') {
+        return ctx.isMobileLayout;
+      }
+      return !!ctx?.view?.inputArgs?.isMobileLayout;
+    },
+    cache: false,
+  });
+};
+
 export const FlowPage = React.memo((props: FlowPageProps & Record<string, unknown>) => {
   const { pageModelClass = 'ChildPageModel', parentId, onModelLoaded, defaultTabTitle, ...rest } = props;
   const flowEngine = useFlowEngine();
-  const ctx = useFlowViewContext();
+  const ctx = useFlowViewContext<FlowPageViewContext>();
   const { loading, data, error } = useRequest(
     async () => {
       const ModelClass = await flowEngine.getModelClassAsync(pageModelClass);
@@ -105,6 +132,7 @@ export const FlowPage = React.memo((props: FlowPageProps & Record<string, unknow
       const data = await flowEngine.loadOrCreateModel(options, { skipSave: !flowEngine.context.flowSettingsEnabled });
       if (data?.uid && onModelLoaded) {
         data.context.addDelegate(ctx);
+        bindViewLayoutState(data, ctx);
         data.removeParentDelegate();
         onModelLoaded(data.uid, data);
       }
