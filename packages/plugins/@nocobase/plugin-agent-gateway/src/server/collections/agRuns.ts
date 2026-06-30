@@ -135,6 +135,10 @@ export default defineCollection({
       name: 'canceledAt',
     },
     {
+      type: 'date',
+      name: 'finishedAt',
+    },
+    {
       type: 'belongsTo',
       name: 'node',
       target: 'agNodes',

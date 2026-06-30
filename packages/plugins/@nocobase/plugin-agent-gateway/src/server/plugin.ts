@@ -12,6 +12,7 @@ import { resolve } from 'path';
 import { Plugin } from '@nocobase/server';
 
 import { registerNodeLifecycleRoutes } from './actions/nodeLifecycle';
+import { registerRunLifecycleRoutes } from './actions/runLifecycle';
 import { registerAgentGatewayAcl } from './security/permissions';
 
 export class PluginAgentGatewayServer extends Plugin {
@@ -31,6 +32,7 @@ export class PluginAgentGatewayServer extends Plugin {
 
   async load() {
     registerNodeLifecycleRoutes(this);
+    registerRunLifecycleRoutes(this);
   }
 
   async install() {}

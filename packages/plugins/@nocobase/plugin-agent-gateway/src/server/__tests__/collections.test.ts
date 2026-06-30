@@ -155,6 +155,7 @@ describe('agent gateway collections', () => {
         'executionPayloadJson',
         'resultSummaryJson',
         'errorSummary',
+        'finishedAt',
       ]),
     );
     expectRequiredField('agRuns', 'status');

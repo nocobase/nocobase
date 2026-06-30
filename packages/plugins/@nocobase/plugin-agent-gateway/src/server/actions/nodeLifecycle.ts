@@ -14,8 +14,6 @@ import { Plugin } from '@nocobase/server';
 import { Transaction } from 'sequelize';
 
 import {
-  AGENT_GATEWAY_ACTIONS,
-  AGENT_GATEWAY_RESOURCE,
   authenticateNodeToken,
   createInvitationToken,
   createNodeToken,
@@ -23,116 +21,27 @@ import {
   toStoredTokenFields,
   verifyInvitationToken,
 } from '../security';
+import {
+  API_PREFIX,
+  JsonRecord,
+  ModelRecord,
+  getArray,
+  getBodyValues,
+  getDate,
+  getModelJson,
+  getModelString,
+  getModelTargetKey,
+  getModelValue,
+  getPositiveInteger,
+  getRecord,
+  getString,
+  requireManagePermission,
+} from './utils';
 
-const API_PREFIX = '/api/agent-gateway';
 const DEFAULT_INVITATION_TTL_SECONDS = 24 * 60 * 60;
 const DEFAULT_HEARTBEAT_INTERVAL_SECONDS = 30;
 const DEFAULT_CLAIM_INTERVAL_SECONDS = 10;
 const RAW_PROFILE_CONFIG_KEYS = new Set(['command', 'commandPath', 'cwd', 'env']);
-const UNION_ROLE_KEY = '__union__';
-const SYSTEM_ROLE_MODE_DEFAULT = 'default';
-const SYSTEM_ROLE_MODE_ONLY_USE_UNION = 'only-use-union';
-
-type JsonRecord = Record<string, unknown>;
-
-interface ModelRecord {
-  get(key: string): unknown;
-  toJSON?(): JsonRecord;
-}
-
-interface CollectionLike {
-  hasField?(name: string): boolean;
-}
-
-interface DatabaseWithCollectionLookup {
-  hasCollection?(name: string): boolean;
-  getCollection?(name: string): CollectionLike | undefined;
-}
-
-interface AuthenticatedContext extends Context {
-  auth?: {
-    user?: unknown;
-  };
-  app: Context['app'] & {
-    authManager?: {
-      options?: {
-        authKey?: string;
-        default?: string;
-      };
-      get(
-        name: string,
-        ctx: Context,
-      ): Promise<{
-        user?: unknown;
-        check(): Promise<unknown>;
-      }>;
-    };
-  };
-}
-
-function isRecord(value: unknown): value is JsonRecord {
-  return Object.prototype.toString.call(value) === '[object Object]';
-}
-
-function getBodyValues(ctx: Context): JsonRecord {
-  const body = ctx.request.body;
-  return isRecord(body) ? body : {};
-}
-
-function getString(value: unknown) {
-  return typeof value === 'string' ? value.trim() : '';
-}
-
-function getPositiveInteger(value: unknown, fallback: number) {
-  const numberValue = typeof value === 'number' ? value : Number(value);
-  if (!Number.isInteger(numberValue) || numberValue <= 0) {
-    return fallback;
-  }
-  return numberValue;
-}
-
-function getDate(value: unknown) {
-  const rawValue = getString(value);
-  if (!rawValue) {
-    return null;
-  }
-
-  const date = new Date(rawValue);
-  return Number.isNaN(date.getTime()) ? null : date;
-}
-
-function getRecord(value: unknown): JsonRecord {
-  return isRecord(value) ? value : {};
-}
-
-function hasModelGetter(value: unknown): value is ModelRecord {
-  return typeof (value as { get?: unknown } | null)?.get === 'function';
-}
-
-function getArray(value: unknown): unknown[] {
-  return Array.isArray(value) ? value : [];
-}
-
-function getModelValue(model: ModelRecord, key: string) {
-  return model.get(key);
-}
-
-function getModelString(model: ModelRecord, key: string) {
-  return getString(getModelValue(model, key));
-}
-
-function getModelTargetKey(model: ModelRecord, key: string) {
-  const value = getModelValue(model, key);
-  if (typeof value === 'string' || typeof value === 'number') {
-    return value;
-  }
-
-  throw new Error(`Invalid target key: ${key}`);
-}
-
-function getModelJson(model: ModelRecord) {
-  return model.toJSON ? model.toJSON() : {};
-}
 
 function getServerUrl(ctx: Context, values: JsonRecord) {
   const providedServerUrl = getString(values.serverUrl).replace(/\/$/, '');
@@ -162,223 +71,6 @@ function validateServerUrl(ctx: Context, serverUrl: string) {
 
 function shellQuote(value: string) {
   return `'${value.replace(/'/g, `'\\''`)}'`;
-}
-
-function getCurrentUserId(ctx: Context) {
-  const stateUser = (ctx.state.currentUser || (ctx as AuthenticatedContext).auth?.user) as unknown;
-  if (hasModelGetter(stateUser)) {
-    const modelId = stateUser.get('id');
-    if (typeof modelId === 'string' || typeof modelId === 'number') {
-      return modelId;
-    }
-  }
-
-  const userRecord = getRecord(stateUser);
-  const id = userRecord.id;
-  return typeof id === 'string' || typeof id === 'number' ? id : null;
-}
-
-function getRoleName(role: unknown) {
-  if (typeof role === 'string') {
-    return role;
-  }
-
-  if (hasModelGetter(role)) {
-    return getModelString(role, 'name');
-  }
-
-  return getString(getRecord(role).name);
-}
-
-function getModelOrRecordString(value: unknown, key: string) {
-  if (hasModelGetter(value)) {
-    return getModelString(value, key);
-  }
-
-  return getString(getRecord(value)[key]);
-}
-
-function collectionExists(ctx: Context, name: string) {
-  const db = ctx.db as unknown as DatabaseWithCollectionLookup;
-  if (typeof db.hasCollection === 'function') {
-    return db.hasCollection(name);
-  }
-
-  return Boolean(db.getCollection?.(name));
-}
-
-function collectionHasField(ctx: Context, collectionName: string, fieldName: string) {
-  const db = ctx.db as unknown as DatabaseWithCollectionLookup;
-  return Boolean(db.getCollection?.(collectionName)?.hasField?.(fieldName));
-}
-
-async function getSystemRoleMode(ctx: Context) {
-  const settings = await ctx.db.getRepository('systemSettings').findOne({
-    raw: true,
-  });
-
-  return getModelOrRecordString(settings, 'roleMode') || SYSTEM_ROLE_MODE_DEFAULT;
-}
-
-async function getDefaultRoleName(ctx: Context, userId: string | number) {
-  const defaultRole = await ctx.db.getRepository('rolesUsers').findOne({
-    where: {
-      userId,
-      default: true,
-    },
-  });
-
-  return getModelOrRecordString(defaultRole, 'roleName');
-}
-
-async function getDepartmentRoleNames(ctx: Context, userId: string | number) {
-  if (
-    !collectionExists(ctx, 'departments') ||
-    !collectionExists(ctx, 'departmentsUsers') ||
-    !collectionExists(ctx, 'departmentsRoles') ||
-    !collectionHasField(ctx, 'users', 'departments') ||
-    !collectionHasField(ctx, 'roles', 'departments')
-  ) {
-    return [];
-  }
-
-  const departments = (await ctx.db.getRepository('users.departments', userId).find({
-    raw: true,
-  })) as unknown[];
-  const departmentIds = departments
-    .map((department) => {
-      const id = getRecord(department).id;
-      return typeof id === 'string' || typeof id === 'number' ? id : null;
-    })
-    .filter((id): id is string | number => id !== null);
-
-  if (!departmentIds.length) {
-    return [];
-  }
-
-  const roles = (await ctx.db.getRepository('roles').find({
-    filter: {
-      'departments.id': {
-        $in: departmentIds,
-      },
-    },
-    raw: true,
-  })) as unknown[];
-
-  return roles.map(getRoleName).filter(Boolean);
-}
-
-function mergeRoleNames(attachedRoleNames: string[], directRoleNames: string[]) {
-  const roleNamesMap = new Map<string, string>();
-  for (const roleName of attachedRoleNames) {
-    roleNamesMap.set(roleName, roleName);
-  }
-  for (const roleName of directRoleNames) {
-    roleNamesMap.set(roleName, roleName);
-  }
-
-  return Array.from(roleNamesMap.values());
-}
-
-function setCurrentRoles(ctx: Context, currentRole: string, currentRoles: string[]) {
-  ctx.state.currentRole = currentRole;
-  ctx.state.currentRoles = currentRoles;
-  ctx.headers['x-role'] = currentRole;
-  return currentRoles;
-}
-
-async function getCurrentRoleNames(ctx: Context) {
-  const existingRoles = Array.isArray(ctx.state.currentRoles)
-    ? ctx.state.currentRoles.filter((role): role is string => typeof role === 'string')
-    : [];
-  if (existingRoles.length) {
-    return existingRoles;
-  }
-
-  let selectedRole = getString(ctx.get('X-Role'));
-  if (selectedRole === 'anonymous') {
-    return setCurrentRoles(ctx, selectedRole, [selectedRole]);
-  }
-
-  const userId = getCurrentUserId(ctx);
-  if (!userId) {
-    return [];
-  }
-
-  const roles = (await ctx.db.getRepository('users.roles', userId).find({
-    raw: true,
-  })) as unknown[];
-  const directRoleNames = roles.map(getRoleName).filter(Boolean);
-  const attachedRoleNames = await getDepartmentRoleNames(ctx, userId);
-  const roleNames = mergeRoleNames(attachedRoleNames, directRoleNames);
-  if (!roleNames.length) {
-    ctx.throw(401, 'The current user has no roles');
-  }
-
-  const roleMode = await getSystemRoleMode(ctx);
-
-  if (selectedRole === UNION_ROLE_KEY && roleMode === SYSTEM_ROLE_MODE_DEFAULT) {
-    selectedRole = roleNames[0];
-  } else if (roleMode === SYSTEM_ROLE_MODE_ONLY_USE_UNION) {
-    return setCurrentRoles(ctx, UNION_ROLE_KEY, roleNames);
-  }
-
-  if (selectedRole === UNION_ROLE_KEY) {
-    return setCurrentRoles(ctx, UNION_ROLE_KEY, roleNames);
-  }
-
-  let currentRole: string | undefined;
-  if (selectedRole) {
-    if (!roleNames.includes(selectedRole)) {
-      ctx.throw(401, 'The role does not belong to the user');
-    }
-    currentRole = selectedRole;
-  }
-
-  if (!currentRole) {
-    currentRole = (await getDefaultRoleName(ctx, userId)) || roleNames[0];
-  }
-
-  if (currentRole === UNION_ROLE_KEY) {
-    return setCurrentRoles(ctx, UNION_ROLE_KEY, roleNames);
-  }
-
-  return setCurrentRoles(ctx, currentRole, [currentRole]);
-}
-
-async function requireLoggedIn(ctx: Context) {
-  const authContext = ctx as AuthenticatedContext;
-  if (!authContext.auth?.user && authContext.app.authManager) {
-    const authKey = authContext.app.authManager.options?.authKey || 'X-Authenticator';
-    const authenticatorName = ctx.get(authKey) || authContext.app.authManager.options?.default || 'basic';
-    const auth = await authContext.app.authManager.get(authenticatorName, ctx);
-    const user = await auth.check();
-    if (user) {
-      auth.user = user;
-      authContext.auth = auth;
-      ctx.state.currentUser = ctx.state.currentUser || user;
-    }
-  }
-
-  if (!authContext.auth?.user) {
-    ctx.throw(401, 'Authentication required');
-  }
-  ctx.state.currentUser = ctx.state.currentUser || authContext.auth.user;
-}
-
-async function requireManagePermission(ctx: Context) {
-  await requireLoggedIn(ctx);
-
-  const roles = await getCurrentRoleNames(ctx);
-  const canManage = ctx.app.acl.can({
-    roles,
-    resource: AGENT_GATEWAY_RESOURCE,
-    action: AGENT_GATEWAY_ACTIONS.manage,
-  });
-
-  if (!canManage) {
-    ctx.throw(403, 'Agent Gateway management permission required');
-  }
 }
 
 function getInvitationExpiry(values: JsonRecord) {
