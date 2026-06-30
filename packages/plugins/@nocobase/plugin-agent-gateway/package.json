@@ -9,6 +9,7 @@
   "main": "dist/server/index.js",
   "dependencies": {},
   "peerDependencies": {
+    "@nocobase/acl": "2.x",
     "@nocobase/client": "2.x",
     "@nocobase/client-v2": "2.x",
     "@nocobase/database": "2.x",

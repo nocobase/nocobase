@@ -247,7 +247,7 @@ function setCurrentRoles(ctx: Context, currentRole: string, currentRoles: string
   return currentRoles;
 }
 
-async function getCurrentRoleNames(ctx: Context) {
+export async function getCurrentRoleNames(ctx: Context) {
   const existingRoles = Array.isArray(ctx.state.currentRoles)
     ? ctx.state.currentRoles.filter((role): role is string => typeof role === 'string')
     : [];

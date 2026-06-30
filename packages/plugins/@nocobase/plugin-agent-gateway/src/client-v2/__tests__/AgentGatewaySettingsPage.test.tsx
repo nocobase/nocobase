@@ -220,4 +220,109 @@ describe('PluginAgentGatewayClientV2', () => {
       expect(screen.queryByText(/agent-gateway-daemon register/)).toBeNull();
     });
   });
+
+  it('lists, creates, and previews prompt templates through Agent Gateway APIs', async () => {
+    const templates = [
+      {
+        id: 'template-id-1',
+        templateKey: 'ticket-summary',
+        displayName: 'Ticket summary',
+        status: 'active',
+        templateText: 'Summarize {{record.title}}',
+      },
+    ];
+    const request = vi.fn(async (config: RequestConfig) => {
+      if (config.url === 'agent-gateway/prompt-templates:list') {
+        return {
+          data: {
+            data: templates,
+          },
+        };
+      }
+
+      if (config.url === 'agent-gateway/prompt-templates:create') {
+        templates.push({
+          id: 'template-id-2',
+          templateKey: String(config.data?.templateKey),
+          displayName: String(config.data?.displayName),
+          status: 'active',
+          templateText: String(config.data?.templateText),
+        });
+        return {
+          data: {
+            data: templates[1],
+          },
+        };
+      }
+
+      if (config.url === 'agent-gateway/prompt-templates:preview') {
+        return {
+          data: {
+            data: {
+              templateId: 'template-id-1',
+              templateKey: 'ticket-summary',
+              renderedPrompt: 'Rendered task prompt',
+              variables: [{ expression: 'record.title', value: 'Task title' }],
+            },
+          },
+        };
+      }
+
+      return { data: { data: [] } };
+    });
+
+    renderSettingsPage(request);
+
+    expect(await screen.findByText('Prompt Templates')).toBeTruthy();
+    expect(await screen.findByText('ticket-summary')).toBeTruthy();
+
+    fireEvent.click(screen.getByText('New template'));
+    fireEvent.change(screen.getByPlaceholderText('ticket-summary'), {
+      target: { value: 'new-template' },
+    });
+    fireEvent.change(screen.getByPlaceholderText('Ticket summary'), {
+      target: { value: 'New template' },
+    });
+    fireEvent.change(screen.getByPlaceholderText('Summarize {{record.title}}'), {
+      target: { value: 'Hello {{record.title}}' },
+    });
+    fireEvent.click(screen.getByText('Save'));
+
+    await waitFor(() => {
+      expect(request).toHaveBeenCalledWith(
+        expect.objectContaining({
+          url: 'agent-gateway/prompt-templates:create',
+          method: 'post',
+          data: expect.objectContaining({
+            templateKey: 'new-template',
+            displayName: 'New template',
+            templateText: 'Hello {{record.title}}',
+          }),
+        }),
+      );
+    });
+
+    const previewButtons = await screen.findAllByLabelText('Preview template');
+    fireEvent.click(previewButtons[0]);
+    fireEvent.change(screen.getByLabelText('Collection name'), {
+      target: { value: 'tasks' },
+    });
+    fireEvent.change(screen.getByLabelText('Record ID'), {
+      target: { value: '1' },
+    });
+    fireEvent.click(screen.getByText('Preview'));
+
+    expect(await screen.findByText('Rendered task prompt')).toBeTruthy();
+    expect(request).toHaveBeenCalledWith(
+      expect.objectContaining({
+        url: 'agent-gateway/prompt-templates:preview',
+        method: 'post',
+        data: expect.objectContaining({
+          templateId: 'template-id-1',
+          collectionName: 'tasks',
+          recordId: '1',
+        }),
+      }),
+    );
+  });
 });
