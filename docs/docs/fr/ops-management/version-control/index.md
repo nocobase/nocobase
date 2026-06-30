@@ -1,4 +1,5 @@
 ---
+pkg: '@nocobase/plugin-version-control'
 title: "Gestion des versions"
 description: "Guide du plugin de gestion des versions : enregistrer automatiquement des versions pendant la création avec l'IA, créer et restaurer des versions manuellement, régler la rétention, définir un raccourci et inclure des collections utilisateur."
 keywords: "Gestion des versions,Version control,gestion des opérations,AI Builder,nocobase-revision,nb revision create,créer une version,restaurer une version,NocoBase"
