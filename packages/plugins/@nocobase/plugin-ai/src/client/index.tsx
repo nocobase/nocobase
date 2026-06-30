@@ -36,12 +36,8 @@ import { ChatBoxLayout } from '../client-v2/ai-employees/chatbox/components/Chat
 const Employees = lazy(() => import('../client-v2/pages/EmployeesPage'));
 const LLMServices = lazy(() => import('../client-v2/pages/LLMServicesPage'));
 const MCPSettings = lazy(() => import('../client-v2/pages/MCPSettingsPage'));
-const { MessagesSettings } = lazy(() => import('./chat-settings/Messages'), 'MessagesSettings');
-const { StructuredOutputSettings } = lazy(() => import('./chat-settings/StructuredOutput'), 'StructuredOutputSettings');
 const AdminSettings = lazy(() => import('../client-v2/pages/AdminSettingsPage'));
 const DatasourceSettingPage = lazy(() => import('../client-v2/pages/DatasourceSettingsPage'));
-const { Chat } = lazy(() => import('./llm-providers/components/Chat'), 'Chat');
-const { ModelSelect } = lazy(() => import('./llm-providers/components/ModelSelect'), 'ModelSelect');
 const { AIResourceContextCollector } = lazy(
   () => import('./ai-employees/1.x/selector/AIContextCollector'),
   'AIResourceContextCollector',
@@ -134,14 +130,6 @@ export class PluginAIClient extends Plugin {
     builtinLLMProviderOptions.forEach(([name, options]) => {
       this.aiManager.registerLLMProvider(name, options);
     });
-    this.aiManager.chatSettings.set('messages', {
-      title: tval('Messages'),
-      Component: MessagesSettings,
-    });
-    this.aiManager.chatSettings.set('structured-output', {
-      title: tval('Structured output'),
-      Component: StructuredOutputSettings,
-    });
 
     this.aiManager.registerWorkContext('flow-model', FlowModelsContext);
     this.aiManager.registerWorkContext('datasource', DatasourceContext);
@@ -162,7 +150,6 @@ export class PluginAIClient extends Plugin {
 }
 
 export default PluginAIClient;
-export { ModelSelect, Chat };
 export type { LLMProviderOptions, ToolModalProps, ToolOptions } from '../client-v2/manager/ai-manager';
 export type { AIEmployee, ToolCall } from '../client-v2/ai-employees/types';
 export * from '../client-v2/features';
