@@ -9,9 +9,20 @@
 
 import { Plugin } from '@nocobase/client-v2';
 import { NAMESPACE } from './locale';
+import { AgentGatewayDispatchBindingSelect } from './components/AgentGatewayDispatchBindingSelect';
 
 export class PluginAgentGatewayClientV2 extends Plugin {
   async load() {
+    this.flowEngine.flowSettings.registerComponents({
+      AgentGatewayDispatchBindingSelect,
+    });
+
+    this.flowEngine.registerModelLoaders({
+      AgentGatewayDispatchActionModel: {
+        loader: () => import('./models/AgentGatewayDispatchActionModel'),
+      },
+    });
+
     this.pluginSettingsManager.addMenuItem({
       key: NAMESPACE,
       title: this.t('Agent Gateway'),

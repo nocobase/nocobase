@@ -62,5 +62,14 @@
   "Record ID": "记录 ID",
   "Record ID is required": "请输入记录 ID",
   "Rendered prompt": "渲染后的 Prompt",
+  "Agent Gateway Dispatch": "Agent 网关派发",
+  "Dispatch": "派发",
+  "Dispatch binding": "派发绑定",
+  "Select dispatch binding": "选择派发绑定",
+  "Dispatch binding is required": "请选择派发绑定",
+  "Agent Gateway dispatch is already running": "Agent 网关派发正在执行",
+  "Agent Gateway run dispatched": "Agent 网关运行已派发",
+  "Agent Gateway run already exists": "Agent 网关运行已存在",
+  "Failed to dispatch Agent Gateway run": "派发 Agent 网关运行失败",
   "Save": "保存"
 }

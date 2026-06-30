@@ -44,7 +44,38 @@ export default defineCollection({
     },
     {
       type: 'string',
+      name: 'collectionName',
+      index: true,
+    },
+    {
+      type: 'string',
       name: 'sourceAction',
+    },
+    {
+      type: 'string',
+      name: 'agentProfileField',
+    },
+    {
+      type: 'string',
+      name: 'nodeField',
+    },
+    {
+      type: 'jsonb',
+      name: 'skillFieldsJson',
+    },
+    {
+      type: 'string',
+      name: 'outputAgentRunField',
+    },
+    {
+      type: 'jsonb',
+      name: 'fieldMappingsJson',
+    },
+    {
+      type: 'boolean',
+      name: 'enabled',
+      defaultValue: true,
+      allowNull: false,
     },
     {
       type: 'integer',

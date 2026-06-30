@@ -1,0 +1,133 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import { useFlowContext, useFlowSettingsContext } from '@nocobase/flow-engine';
+import { useRequest } from 'ahooks';
+import { Select } from 'antd';
+import React, { useMemo } from 'react';
+
+import { useT } from '../locale';
+
+export interface DispatchBindingRecord {
+  id: string;
+  bindingKey: string;
+  collectionName?: string;
+  sourceCollection?: string;
+  enabled?: boolean;
+  status?: string;
+}
+
+interface CollectionLike {
+  name?: string;
+}
+
+interface FlowSettingsLike {
+  model?: {
+    collection?: CollectionLike;
+    context?: {
+      collection?: CollectionLike;
+      blockModel?: {
+        collection?: CollectionLike;
+      };
+    };
+  };
+  blockModel?: {
+    collection?: CollectionLike;
+  };
+  collection?: CollectionLike;
+}
+
+interface AgentGatewayApiResponse<T> {
+  data?: {
+    data?: T;
+  };
+}
+
+interface AgentGatewayApi {
+  request<T>(config: { url: string; method: 'get' }): Promise<AgentGatewayApiResponse<T>>;
+}
+
+interface AgentGatewayContext {
+  api: AgentGatewayApi;
+}
+
+export interface AgentGatewayDispatchBindingSelectProps {
+  value?: string;
+  disabled?: boolean;
+  onChange?: (value?: string) => void;
+}
+
+function getResponseData<T>(response: AgentGatewayApiResponse<T>, fallback: T) {
+  return response.data?.data ?? fallback;
+}
+
+function getCollectionNameFromFlowSettings(ctx: FlowSettingsLike | undefined) {
+  return (
+    ctx?.blockModel?.collection?.name ||
+    ctx?.model?.context?.blockModel?.collection?.name ||
+    ctx?.model?.context?.collection?.name ||
+    ctx?.model?.collection?.name ||
+    ctx?.collection?.name ||
+    ''
+  );
+}
+
+export function getDispatchBindingOptions(bindings: DispatchBindingRecord[], collectionName?: string) {
+  return bindings
+    .filter((binding) => binding.enabled !== false && (binding.status || 'active') === 'active')
+    .filter((binding) => {
+      if (!collectionName) {
+        return true;
+      }
+      return (binding.collectionName || binding.sourceCollection) === collectionName;
+    })
+    .map((binding) => {
+      const bindingCollectionName = binding.collectionName || binding.sourceCollection || '-';
+      return {
+        label: `${binding.bindingKey} (${bindingCollectionName})`,
+        value: binding.bindingKey,
+      };
+    });
+}
+
+export function AgentGatewayDispatchBindingSelect(props: AgentGatewayDispatchBindingSelectProps) {
+  const t = useT();
+  const ctx = useFlowContext() as unknown as AgentGatewayContext;
+  const flowSettingsCtx = useFlowSettingsContext() as unknown as FlowSettingsLike | undefined;
+  const collectionName = getCollectionNameFromFlowSettings(flowSettingsCtx);
+  const bindingsRequest = useRequest(async () => {
+    const response = await ctx.api.request<DispatchBindingRecord[]>({
+      url: 'agent-gateway/dispatch-bindings:list',
+      method: 'get',
+    });
+    return getResponseData(response, []);
+  });
+
+  const options = useMemo(
+    () => getDispatchBindingOptions(bindingsRequest.data || [], collectionName),
+    [bindingsRequest.data, collectionName],
+  );
+
+  return (
+    <Select
+      aria-label={t('Dispatch binding')}
+      disabled={props.disabled}
+      loading={bindingsRequest.loading}
+      options={options}
+      placeholder={t('Select dispatch binding')}
+      showSearch
+      value={props.value}
+      optionFilterProp="label"
+      onChange={props.onChange}
+      allowClear
+    />
+  );
+}
+
+export default AgentGatewayDispatchBindingSelect;

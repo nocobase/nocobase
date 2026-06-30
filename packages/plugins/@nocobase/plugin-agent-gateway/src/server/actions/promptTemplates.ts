@@ -12,6 +12,7 @@ import { randomUUID } from 'crypto';
 import { NoPermissionError, checkFilterParams, createUserProvider, parseJsonTemplate } from '@nocobase/acl';
 import { Context, Next } from '@nocobase/actions';
 import { Plugin } from '@nocobase/server';
+import { Transaction } from 'sequelize';
 
 import { REDACTED_VALUE, redactText, shouldRedactKey } from '../security';
 import {
@@ -68,6 +69,7 @@ interface RenderPromptOptions {
   collectionName?: string;
   recordId?: string | number | bigint;
   now?: Date;
+  transaction?: Transaction;
 }
 
 interface CollectionAccess {
@@ -613,6 +615,7 @@ async function getRenderRecord(
   recordId: string | number,
   relationNames: Set<string>,
   access: CollectionAccess,
+  transaction?: Transaction,
 ) {
   const findOptions: JsonRecord = {
     filterByTk: recordId,
@@ -622,6 +625,9 @@ async function getRenderRecord(
   }
   if (relationNames.size) {
     findOptions.appends = Array.from(relationNames);
+  }
+  if (transaction) {
+    findOptions.transaction = transaction;
   }
 
   const record = (await ctx.db.getRepository(collectionName).findOne(findOptions)) as ModelRecord | null;
@@ -637,6 +643,7 @@ async function assertCollectionRecordAllowed(
   access: CollectionAccess,
   recordValue: unknown,
   expression: string,
+  transaction?: Transaction,
 ) {
   if (!hasFilter(access.filter) || !recordValue) {
     return;
@@ -646,6 +653,7 @@ async function assertCollectionRecordAllowed(
   const identityFilter = getCollectionIdentityFilter(ctx, targetCollection, recordValue, expression);
   const allowedCount = await ctx.db.getRepository(access.collectionName).count({
     filter: mergeFilters(identityFilter, access.filter),
+    transaction,
   });
   if (!allowedCount) {
     ctx.throw(403, `No permission to preview template variable: ${expression}`);
@@ -694,6 +702,7 @@ async function getRecordFieldValue(
   record: ModelRecord,
   token: TemplateToken,
   access: RenderAccess,
+  transaction?: Transaction,
 ) {
   const collection = getCollection(ctx, collectionName);
   const recordJson = getModelJson(record);
@@ -718,7 +727,7 @@ async function getRecordFieldValue(
     const values: string[] = [];
     for (const item of relationValue) {
       if (relationAccess) {
-        await assertCollectionRecordAllowed(ctx, relationAccess, item, token.expression);
+        await assertCollectionRecordAllowed(ctx, relationAccess, item, token.expression, transaction);
       }
       values.push(renderFieldValue(leafFieldName, leafField, getRecordLikeValue(item, leafFieldName)));
     }
@@ -726,7 +735,7 @@ async function getRecordFieldValue(
   }
 
   if (relationAccess) {
-    await assertCollectionRecordAllowed(ctx, relationAccess, relationValue, token.expression);
+    await assertCollectionRecordAllowed(ctx, relationAccess, relationValue, token.expression, transaction);
   }
   return renderFieldValue(leafFieldName, leafField, getRecordLikeValue(relationValue, leafFieldName));
 }
@@ -752,7 +761,7 @@ export async function renderPromptTemplate(ctx: Context, options: RenderPromptOp
 
     const relationNames = validateRecordTokens(ctx, collectionName, recordTokens);
     access = await getRenderAccess(ctx, collectionName, recordTokens);
-    record = await getRenderRecord(ctx, collectionName, recordId, relationNames, access.root);
+    record = await getRenderRecord(ctx, collectionName, recordId, relationNames, access.root, options.transaction);
   }
   const userTokens = tokens.filter((token) => token.root === 'user');
   if (userTokens.length) {
@@ -773,7 +782,7 @@ export async function renderPromptTemplate(ctx: Context, options: RenderPromptOp
     } else if (token.root === 'user' && userAccess) {
       value = getCurrentUserFieldValue(ctx, token.path[1], token.expression, userAccess);
     } else if (record) {
-      value = await getRecordFieldValue(ctx, collectionName, record, token, access);
+      value = await getRecordFieldValue(ctx, collectionName, record, token, access, options.transaction);
     }
 
     variables.push({

@@ -62,5 +62,14 @@
   "Record ID": "Record ID",
   "Record ID is required": "Record ID is required",
   "Rendered prompt": "Rendered prompt",
+  "Agent Gateway Dispatch": "Agent Gateway Dispatch",
+  "Dispatch": "Dispatch",
+  "Dispatch binding": "Dispatch binding",
+  "Select dispatch binding": "Select dispatch binding",
+  "Dispatch binding is required": "Dispatch binding is required",
+  "Agent Gateway dispatch is already running": "Agent Gateway dispatch is already running",
+  "Agent Gateway run dispatched": "Agent Gateway run dispatched",
+  "Agent Gateway run already exists": "Agent Gateway run already exists",
+  "Failed to dispatch Agent Gateway run": "Failed to dispatch Agent Gateway run",
   "Save": "Save"
 }

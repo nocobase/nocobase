@@ -12,6 +12,7 @@ import { resolve } from 'path';
 import { Plugin } from '@nocobase/server';
 
 import { registerApiCallLogMiddleware } from './actions/apiCallLogging';
+import { registerDispatchBindingRoutes, registerDispatchBindingValidationHooks } from './actions/dispatchBindings';
 import { registerNodeLifecycleRoutes } from './actions/nodeLifecycle';
 import { registerPromptTemplateRoutes } from './actions/promptTemplates';
 import { registerRunLifecycleRoutes } from './actions/runLifecycle';
@@ -31,6 +32,7 @@ export class PluginAgentGatewayServer extends Plugin {
     });
 
     registerAgentGatewayAcl(this.app.acl);
+    registerDispatchBindingValidationHooks(this);
   }
 
   async load() {
@@ -39,6 +41,7 @@ export class PluginAgentGatewayServer extends Plugin {
     registerRunLifecycleRoutes(this);
     registerRunObservabilityRoutes(this);
     registerPromptTemplateRoutes(this);
+    registerDispatchBindingRoutes(this);
   }
 
   async install() {}
