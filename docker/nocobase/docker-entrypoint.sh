@@ -39,8 +39,8 @@ fi
 
 NOCOBASE_PROXY_PROVIDER="${NOCOBASE_PROXY_PROVIDER:-nginx}"
 NOCOBASE_PROXY_STORAGE_PATH="${NOCOBASE_PROXY_STORAGE_PATH:-/app/nocobase/storage}"
+NOCOBASE_PROXY_UPSTREAM_HOST="${NOCOBASE_PROXY_UPSTREAM_HOST:-${NGINX_UPSTREAM_HOST:-127.0.0.1}}"
 NGINX_CONF_PATH="/app/nocobase/storage/nocobase.conf"
-NGINX_UPSTREAM_HOST="${NGINX_UPSTREAM_HOST:-127.0.0.1}"
 
 cd /app/nocobase && yarn nocobase db:auth
 cd /app/nocobase && yarn nocobase generate-instance-id
@@ -71,7 +71,7 @@ case "${NOCOBASE_EXTRACT_CLIENT_ASSETS:-false}" in
           --dist-root-path /app/nocobase/storage/dist-client \
           --runtime-version "${ACTIVE_VERSION}" \
           --app-public-path "${APP_PUBLIC_PATH_VALUE}" \
-          --upstream-host "${NGINX_UPSTREAM_HOST}"
+          --upstream-host "${NOCOBASE_PROXY_UPSTREAM_HOST}"
         NGINX_CONF_PATH="${NB_CLI_ROOT}/.nocobase/proxy/nginx/nocobase.conf"
         ;;
       caddy)
@@ -84,7 +84,7 @@ case "${NOCOBASE_EXTRACT_CLIENT_ASSETS:-false}" in
           --dist-root-path /app/nocobase/storage/dist-client \
           --runtime-version "${ACTIVE_VERSION}" \
           --app-public-path "${APP_PUBLIC_PATH_VALUE}" \
-          --upstream-host "${NGINX_UPSTREAM_HOST}"
+          --upstream-host "${NOCOBASE_PROXY_UPSTREAM_HOST}"
         ;;
       *)
         echo "Unsupported NOCOBASE_PROXY_PROVIDER: ${NOCOBASE_PROXY_PROVIDER}. Expected 'nginx' or 'caddy'."
