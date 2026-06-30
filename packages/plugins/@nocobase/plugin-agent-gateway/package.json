@@ -1,0 +1,22 @@
+{
+  "name": "@nocobase/plugin-agent-gateway",
+  "displayName": "Agent Gateway",
+  "displayName.zh-CN": "Agent 网关",
+  "description": "Dispatch and observe external AI agent runs from NocoBase.",
+  "description.zh-CN": "从 NocoBase 下发并观测外部 AI Agent 执行。",
+  "version": "2.1.14",
+  "license": "AGPL-3.0",
+  "main": "dist/server/index.js",
+  "dependencies": {},
+  "peerDependencies": {
+    "@nocobase/client": "2.x",
+    "@nocobase/client-v2": "2.x",
+    "@nocobase/server": "2.x",
+    "@nocobase/test": "2.x"
+  },
+  "keywords": [
+    "AI",
+    "Agent",
+    "Gateway"
+  ]
+}
