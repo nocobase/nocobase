@@ -28,12 +28,14 @@ import {
 import { resolveCliHomeRoot } from './cli-home.js';
 import {
   applyEnvProxyAppEntryOptions,
+  buildManualEnvProxyCaddyBundle,
   buildEnvProxyCaddyBundle,
   buildEnvProxyMainConfig,
   mapProxyPathFromCliRoot,
   resolveEnvProxyMainOutputPath,
   type EnvProxyAppEntryOptions,
   type EnvProxyCaddyBundle,
+  type ManualEnvProxyNginxInput,
 } from './env-proxy.js';
 import { run } from './run-npm.js';
 
@@ -132,6 +134,33 @@ export async function writeCaddyProxyBundle(
   const bundle = await buildEnvProxyCaddyBundle(runtime, {
     runtimeCliRoot: runtimeContext.runtimeCliRoot,
     upstreamHost: runtimeContext.upstreamHost,
+  });
+  const currentAppConfigContent = await readOptionalTextFile(bundle.appConfigPath);
+  const nextAppConfigContent = applyEnvProxyAppEntryOptions(bundle.appConfigContent, 'caddy', appEntryOptions);
+  const status: CaddyProxyWriteResult['status'] = currentAppConfigContent ? 'updated' : 'created';
+
+  await Promise.all([mkdir(bundle.entryDir, { recursive: true }), mkdir(bundle.publicDir, { recursive: true })]);
+  await Promise.all([
+    writeFile(bundle.appConfigPath, nextAppConfigContent, 'utf8'),
+    writeFile(bundle.indexV1Path, bundle.indexV1Content, 'utf8'),
+    writeFile(bundle.indexV2Path, bundle.indexV2Content, 'utf8'),
+    writeFile(bundle.mainConfigPath, bundle.mainConfigContent, 'utf8'),
+  ]);
+
+  return {
+    bundle,
+    status,
+  };
+}
+
+export async function writeManualCaddyProxyBundle(
+  input: ManualEnvProxyNginxInput,
+  appEntryOptions: EnvProxyAppEntryOptions,
+  runtimeContext: CaddyProxyRuntimeContext,
+): Promise<CaddyProxyWriteResult> {
+  const bundle = await buildManualEnvProxyCaddyBundle(input, {
+    runtimeCliRoot: runtimeContext.runtimeCliRoot,
+    upstreamHost: input.upstreamHost || runtimeContext.upstreamHost,
   });
   const currentAppConfigContent = await readOptionalTextFile(bundle.appConfigPath);
   const nextAppConfigContent = applyEnvProxyAppEntryOptions(bundle.appConfigContent, 'caddy', appEntryOptions);

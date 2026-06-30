@@ -93,10 +93,15 @@ export default class ProxyNginxGenerate extends Command {
 
     if (manual) {
       const name = flags.name?.trim() || undefined;
-      const appPort = flags['app-port']?.trim() || undefined;
+      const requestedAppPort = flags['app-port']?.trim() || undefined;
+      const appPort = normalizeProxyListenPort(requestedAppPort);
       const storagePath = flags['storage-path']?.trim() || undefined;
       const distRootPath = flags['dist-root-path']?.trim() || undefined;
       const runtimeVersion = flags['runtime-version']?.trim() || undefined;
+
+      if (requestedAppPort && !appPort) {
+        this.error(`Invalid manual app port "${requestedAppPort}". Use an integer between 1 and 65535.`);
+      }
 
       if (!name || !appPort || !storagePath || !distRootPath || !runtimeVersion) {
         this.error(

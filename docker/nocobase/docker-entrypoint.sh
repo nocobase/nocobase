@@ -37,8 +37,9 @@ if [ -z "${CDN_BASE_URL:-}" ]; then
   fi
 fi
 
-NGINX_STORAGE_PATH="${NGINX_STORAGE_PATH:-/app/nocobase/storage}"
-NGINX_CONF_PATH="${NGINX_STORAGE_PATH}/nocobase.conf"
+NOCOBASE_PROXY_PROVIDER="${NOCOBASE_PROXY_PROVIDER:-nginx}"
+NOCOBASE_PROXY_STORAGE_PATH="${NOCOBASE_PROXY_STORAGE_PATH:-/app/nocobase/storage}"
+NGINX_CONF_PATH="/app/nocobase/storage/nocobase.conf"
 NGINX_UPSTREAM_HOST="${NGINX_UPSTREAM_HOST:-127.0.0.1}"
 
 cd /app/nocobase && yarn nocobase db:auth
@@ -47,39 +48,62 @@ cd /app/nocobase && yarn nocobase generate-instance-id
 case "${NOCOBASE_EXTRACT_CLIENT_ASSETS:-false}" in
   1|true|TRUE|yes|YES)
     if [ -z "${ACTIVE_VERSION_FILE:-}" ] || [ ! -f "${ACTIVE_VERSION_FILE}" ]; then
-      echo 'Missing dist-client active-version; cannot generate nginx proxy config from extracted client assets.'
+      echo 'Missing dist-client active-version; cannot generate proxy config from extracted client assets.'
       exit 1
     fi
     ACTIVE_VERSION="$(tr -d '\r\n' < "${ACTIVE_VERSION_FILE}")"
     if [ -z "${ACTIVE_VERSION}" ]; then
-      echo 'dist-client active-version is empty; cannot generate nginx proxy config from extracted client assets.'
+      echo 'dist-client active-version is empty; cannot generate proxy config from extracted client assets.'
       exit 1
     fi
 
     export NB_CLI_ROOT=/app/nocobase/storage
+    export NB_CLI_LOG_DISABLED=1
     APP_PUBLIC_PATH_VALUE="${APP_PUBLIC_PATH:-/}"
-    echo 'NOCOBASE_EXTRACT_CLIENT_ASSETS is enabled; generating nginx proxy config via nb proxy nginx.'
-    cd /app/nocobase && nb proxy nginx generate \
-      --manual \
-      --name default \
-      --app-port "${APP_PORT:-13000}" \
-      --storage-path "${NGINX_STORAGE_PATH}" \
-      --dist-root-path /app/nocobase/storage/dist-client \
-      --runtime-version "${ACTIVE_VERSION}" \
-      --app-public-path "${APP_PUBLIC_PATH_VALUE}" \
-      --upstream-host "${NGINX_UPSTREAM_HOST}"
-    NGINX_CONF_PATH="${NB_CLI_ROOT}/.nocobase/proxy/nginx/nocobase.conf"
+    case "${NOCOBASE_PROXY_PROVIDER}" in
+      nginx)
+        echo 'NOCOBASE_EXTRACT_CLIENT_ASSETS is enabled; generating nginx proxy config via nb proxy nginx.'
+        cd /app/nocobase && nb proxy nginx generate \
+          --manual \
+          --name default \
+          --app-port "${APP_PORT:-13000}" \
+          --storage-path "${NOCOBASE_PROXY_STORAGE_PATH}" \
+          --dist-root-path /app/nocobase/storage/dist-client \
+          --runtime-version "${ACTIVE_VERSION}" \
+          --app-public-path "${APP_PUBLIC_PATH_VALUE}" \
+          --upstream-host "${NGINX_UPSTREAM_HOST}"
+        NGINX_CONF_PATH="${NB_CLI_ROOT}/.nocobase/proxy/nginx/nocobase.conf"
+        ;;
+      caddy)
+        echo 'NOCOBASE_EXTRACT_CLIENT_ASSETS is enabled; generating caddy proxy config only via nb proxy caddy.'
+        cd /app/nocobase && nb proxy caddy generate \
+          --manual \
+          --name default \
+          --app-port "${APP_PORT:-13000}" \
+          --storage-path "${NOCOBASE_PROXY_STORAGE_PATH}" \
+          --dist-root-path /app/nocobase/storage/dist-client \
+          --runtime-version "${ACTIVE_VERSION}" \
+          --app-public-path "${APP_PUBLIC_PATH_VALUE}" \
+          --upstream-host "${NGINX_UPSTREAM_HOST}"
+        ;;
+      *)
+        echo "Unsupported NOCOBASE_PROXY_PROVIDER: ${NOCOBASE_PROXY_PROVIDER}. Expected 'nginx' or 'caddy'."
+        exit 1
+        ;;
+    esac
     ;;
   *)
     cd /app/nocobase && yarn nocobase create-nginx-conf
     ;;
 esac
 
-if command -v nginx >/dev/null 2>&1; then
+if [ "${NOCOBASE_PROXY_PROVIDER}" = "nginx" ] && command -v nginx >/dev/null 2>&1; then
   rm -f /etc/nginx/conf.d/nocobase.conf
   ln -s "${NGINX_CONF_PATH}" /etc/nginx/conf.d/nocobase.conf
   nginx
   echo 'nginx started'
+elif [ "${NOCOBASE_PROXY_PROVIDER}" = "nginx" ]; then
+  echo 'nginx is not installed; generated nginx proxy config only.'
 fi
 
 # run scripts in storage/scripts

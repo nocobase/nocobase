@@ -960,7 +960,14 @@ async function buildEnvProxyCaddyRenderContext(
   runtime: Extract<ManagedAppRuntime, { kind: 'local' | 'docker' }>,
   options?: EnvProxyProviderOptions,
 ): Promise<EnvProxyCaddyRenderContext> {
-  return await buildEnvProxyNginxRenderContext(await resolveRuntimeNginxBundleSource(runtime), {
+  return await buildEnvProxyCaddyRenderContextFromSource(await resolveRuntimeNginxBundleSource(runtime), options);
+}
+
+async function buildEnvProxyCaddyRenderContextFromSource(
+  source: NginxBundleSource,
+  options?: EnvProxyProviderOptions,
+): Promise<EnvProxyCaddyRenderContext> {
+  return await buildEnvProxyNginxRenderContext(source, {
     ...options,
     provider: 'caddy',
   });
@@ -1131,9 +1138,26 @@ export async function buildEnvProxyCaddyBundle(
   runtime: Extract<ManagedAppRuntime, { kind: 'local' | 'docker' }>,
   options?: EnvProxyProviderOptions,
 ): Promise<EnvProxyCaddyBundle> {
-  const context = await buildEnvProxyCaddyRenderContext(runtime, options);
-  const sourceIndexV1Path = path.join(runtime.env.storagePath, 'dist-client', context.activeVersion, 'index.html');
-  const sourceIndexV2Path = path.join(runtime.env.storagePath, 'dist-client', context.activeVersion, DEFAULT_MODERN_CLIENT_PREFIX, 'index.html');
+  return await buildCaddyBundleFromSource(await resolveRuntimeNginxBundleSource(runtime), options);
+}
+
+export async function buildManualEnvProxyCaddyBundle(
+  input: ManualEnvProxyNginxInput,
+  options?: EnvProxyProviderOptions,
+): Promise<EnvProxyCaddyBundle> {
+  return await buildCaddyBundleFromSource(await resolveManualNginxBundleSource(input), {
+    ...options,
+    upstreamHost: trimValue(input.upstreamHost) ?? options?.upstreamHost,
+  });
+}
+
+async function buildCaddyBundleFromSource(
+  source: NginxBundleSource,
+  options?: EnvProxyProviderOptions,
+): Promise<EnvProxyCaddyBundle> {
+  const context = await buildEnvProxyCaddyRenderContextFromSource(source, options);
+  const sourceIndexV1Path = path.join(source.distRootPath, context.activeVersion, 'index.html');
+  const sourceIndexV2Path = path.join(source.distRootPath, context.activeVersion, DEFAULT_MODERN_CLIENT_PREFIX, 'index.html');
   const [sourceIndexV1Content, sourceIndexV2Content] = await Promise.all([
     readFile(sourceIndexV1Path, 'utf8'),
     readFile(sourceIndexV2Path, 'utf8'),
@@ -1144,9 +1168,9 @@ export async function buildEnvProxyCaddyBundle(
   const sourceV2PublicPath = extractRuntimePublicPath(sourceIndexV2Content);
   const indexV1AssetPublicPath = context.cdnBaseUrl;
   const indexV2AssetPublicPath = `${trimTrailingSlash(context.cdnBaseUrl)}/${DEFAULT_MODERN_CLIENT_PREFIX}/`;
-  const appConfigPath = resolveEnvProxyAppOutputPath(runtime.envName, { scope: options?.scope, provider: 'caddy' });
-  const entryDir = resolveEnvProxyEntryDir(runtime.envName, { scope: options?.scope, provider: 'caddy' });
-  const publicDir = resolveEnvProxyCaddyPublicOutputDir(runtime.envName, { scope: options?.scope });
+  const appConfigPath = resolveEnvProxyAppOutputPath(source.envName, { scope: options?.scope, provider: 'caddy' });
+  const entryDir = resolveEnvProxyEntryDir(source.envName, { scope: options?.scope, provider: 'caddy' });
+  const publicDir = resolveEnvProxyCaddyPublicOutputDir(source.envName, { scope: options?.scope });
   const renderedPublicDir = await mapProxyPathFromCliRoot(publicDir, { ...options, provider: 'caddy' });
   const appConfigContent = renderCaddyAppTemplate(buildCaddySiteAddress(), {
     appPublicPath: context.appPublicPath,
@@ -1163,13 +1187,13 @@ export async function buildEnvProxyCaddyBundle(
   }, renderedPublicDir);
 
   return {
-    envName: runtime.envName,
+    envName: source.envName,
     envFilePath: context.envFilePath,
     entryDir,
     publicDir,
     appConfigPath,
-    indexV1Path: resolveEnvProxyCaddyIndexOutputPath(runtime.envName, 'v1', { scope: options?.scope }),
-    indexV2Path: resolveEnvProxyCaddyIndexOutputPath(runtime.envName, 'v2', { scope: options?.scope }),
+    indexV1Path: resolveEnvProxyCaddyIndexOutputPath(source.envName, 'v1', { scope: options?.scope }),
+    indexV2Path: resolveEnvProxyCaddyIndexOutputPath(source.envName, 'v2', { scope: options?.scope }),
     mainConfigPath: resolveEnvProxyMainOutputPath({ scope: options?.scope, provider: 'caddy' }),
     appPublicPath: context.appPublicPath,
     apiBasePath: context.apiBasePath,

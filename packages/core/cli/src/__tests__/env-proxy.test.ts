@@ -18,6 +18,7 @@ import {
   appConfigHasManagedNginxBlock,
   buildEnvProxyAppConfig,
   buildEnvProxyCaddyBundle,
+  buildManualEnvProxyCaddyBundle,
   buildManualEnvProxyNginxBundle,
   buildEnvProxyConfig,
   buildEnvProxyMainConfig,
@@ -469,6 +470,40 @@ test('buildEnvProxyCaddyBundle renders app.caddy and index HTML files', async ()
   expect(bundle.indexV1Content).toContain(`window['__nocobase_public_path__'] = "/console/";`);
   expect(bundle.indexV2Content).toContain(`window['__nocobase_public_path__'] = "/console/admin/";`);
   expect(bundle.indexV2Content).toContain(`window['__nocobase_modern_client_prefix__'] = "admin";`);
+});
+
+test('buildManualEnvProxyCaddyBundle reads versioned index files from distRootPath', async () => {
+  const root = await createTempRoot('nocobase-cli-env-proxy-caddy-manual-dist-root-');
+  process.env.NB_CLI_ROOT = root;
+  const runtime = await createLocalRuntime(root);
+  const distRootPath = path.join(root, 'custom-caddy-dist-client');
+  const versionRoot = path.join(distRootPath, '2.1.0-beta.44');
+
+  await mkdir(path.join(versionRoot, 'v'), { recursive: true });
+  await writeFile(
+    path.join(versionRoot, 'index.html'),
+    '<!doctype html><html><head><script>window[\'__nocobase_public_path__\'] = \'/\';</script><script src="/caddy-custom/browser-checker.js?v=1"></script><script type="module" src="/caddy-custom/assets/runtime.js"></script></head><body></body></html>',
+  );
+  await writeFile(
+    path.join(versionRoot, 'v', 'index.html'),
+    '<!doctype html><html><head><script>window[\'__nocobase_public_path__\'] = window[\'__nocobase_public_path__\'] || "/v/";</script><script src="/caddy-custom-v/browser-checker.js?v=1"></script><script type="module" src="/caddy-custom-v/assets/runtime.js"></script></head><body></body></html>',
+  );
+
+  const bundle = await buildManualEnvProxyCaddyBundle({
+    name: 'default',
+    appPort: '13000',
+    storagePath: runtime.env.storagePath,
+    distRootPath,
+    runtimeVersion: '2.1.0-beta.44',
+    appPublicPath: '/',
+  });
+
+  expect(bundle.appConfigContent).toContain(
+    `root * ${path.join(root, '.nocobase', 'proxy', 'caddy', 'default', 'public')}`,
+  );
+  expect(bundle.appConfigContent).toContain(`root * ${distRootPath}`);
+  expect(bundle.indexV1Content).toContain('src="/dist/2.1.0-beta.44/caddy-custom/browser-checker.js?v=1"');
+  expect(bundle.indexV2Content).toContain('src="/caddy-custom-v/browser-checker.js?v=1"');
 });
 
 test('buildEnvProxyAppConfig creates an editable Caddy app entry with a managed import block', () => {

@@ -164,7 +164,7 @@ export async function writeManualNginxProxyBundle(
 ): Promise<NginxProxyWriteResult> {
   const bundle = await buildManualEnvProxyNginxBundle(input, {
     runtimeCliRoot: runtimeContext.runtimeCliRoot,
-    upstreamHost: input.upstreamHost || runtimeContext.upstreamHost,
+    upstreamHost: runtimeContext.upstreamHost,
   });
   return await writeResolvedNginxProxyBundle(bundle, appEntryOptions, options);
 }

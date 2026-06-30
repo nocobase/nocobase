@@ -297,6 +297,30 @@ test('proxy nginx generate supports manual mode', async () => {
   );
 });
 
+test('proxy nginx generate rejects invalid manual app port values', async () => {
+  const { default: ProxyNginxGenerate } = await import('../commands/proxy/nginx/generate.js');
+  const command = Object.assign(Object.create(ProxyNginxGenerate.prototype), {
+    parse: vi.fn(async () => ({
+      flags: {
+        manual: true,
+        name: 'default',
+        'app-port': '70000',
+        'storage-path': '/path/to/storage',
+        'dist-root-path': '/path/to/dist-client',
+        'runtime-version': '2.1.0',
+      },
+    })),
+    error: vi.fn((message: string) => {
+      throw new Error(message);
+    }),
+  });
+
+  await expect(ProxyNginxGenerate.prototype.run.call(command)).rejects.toThrow(
+    'Invalid manual app port "70000". Use an integer between 1 and 65535.',
+  );
+  expect(mocks.writeManualNginxProxyBundle).not.toHaveBeenCalled();
+});
+
 test('proxy nginx info prints derived runtime information', async () => {
   const { default: ProxyNginxInfo } = await import('../commands/proxy/nginx/info.js');
   const command = Object.assign(Object.create(ProxyNginxInfo.prototype), {
