@@ -52,6 +52,10 @@ export default defineCollection({
       hidden: true,
     },
     {
+      type: 'string',
+      name: 'claimTokenLast4',
+    },
+    {
       type: 'date',
       name: 'claimExpiresAt',
     },

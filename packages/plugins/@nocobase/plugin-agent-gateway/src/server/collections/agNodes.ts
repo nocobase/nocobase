@@ -46,6 +46,15 @@ export default defineCollection({
       name: 'authMode',
     },
     {
+      type: 'string',
+      name: 'nodeTokenHash',
+      hidden: true,
+    },
+    {
+      type: 'string',
+      name: 'tokenLast4',
+    },
+    {
       type: 'jsonb',
       name: 'capabilitiesJson',
     },

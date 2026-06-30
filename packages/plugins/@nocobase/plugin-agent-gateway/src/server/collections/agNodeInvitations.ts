@@ -41,6 +41,10 @@ export default defineCollection({
     },
     {
       type: 'string',
+      name: 'tokenLast4',
+    },
+    {
+      type: 'string',
       name: 'expectedNodeKey',
     },
     {

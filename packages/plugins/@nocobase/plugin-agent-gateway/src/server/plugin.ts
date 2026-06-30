@@ -7,12 +7,26 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { resolve } from 'path';
+
 import { Plugin } from '@nocobase/server';
+
+import { registerAgentGatewayAcl } from './security/permissions';
 
 export class PluginAgentGatewayServer extends Plugin {
   async afterAdd() {}
 
-  async beforeLoad() {}
+  async beforeLoad() {
+    this.db.addMigrations({
+      namespace: this.name,
+      directory: resolve(__dirname, './migrations'),
+      context: {
+        plugin: this,
+      },
+    });
+
+    registerAgentGatewayAcl(this.app.acl);
+  }
 
   async load() {}
 

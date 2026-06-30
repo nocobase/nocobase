@@ -145,6 +145,7 @@ describe('agent gateway collections', () => {
         'claimAttempt',
         'leaseVersion',
         'claimTokenHash',
+        'claimTokenLast4',
         'claimExpiresAt',
         'lastRunHeartbeatAt',
         'cancelRequested',
@@ -164,6 +165,20 @@ describe('agent gateway collections', () => {
     expect(fieldNamesOf('agRunArtifacts')).toEqual(
       expect.arrayContaining(['contentText', 'artifactType', 'mimeType', 'sizeBytes', 'metadataJson']),
     );
+  });
+
+  it('keeps token persistence fields hash-only with last-four fingerprints', () => {
+    expect(fieldNamesOf('agNodeInvitations')).toEqual(expect.arrayContaining(['tokenHash', 'tokenLast4']));
+    expect(fieldNamesOf('agNodes')).toEqual(expect.arrayContaining(['nodeTokenHash', 'tokenLast4']));
+    expect(fieldNamesOf('agRuns')).toEqual(expect.arrayContaining(['claimTokenHash', 'claimTokenLast4']));
+
+    expect(getField('agNodeInvitations', 'tokenHash')?.hidden).toBe(true);
+    expect(getField('agNodes', 'nodeTokenHash')?.hidden).toBe(true);
+    expect(getField('agRuns', 'claimTokenHash')?.hidden).toBe(true);
+
+    for (const collectionName of ['agNodeInvitations', 'agNodes', 'agRuns']) {
+      expect(fieldNamesOf(collectionName)).not.toEqual(expect.arrayContaining(['token', 'nodeToken', 'claimToken']));
+    }
   });
 
   it('defines retention defaults', () => {
