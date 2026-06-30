@@ -44,6 +44,7 @@ import { DocumentLoaders } from './document-loader';
 import type PluginFileManagerServer from '@nocobase/plugin-file-manager';
 import { CheckpointCleaner, SequelizeCollectionSaver } from './ai-employees/checkpoints';
 import { mimoProviderOptions } from './llm-providers/mimo';
+import { mistralProviderOptions } from './llm-providers/mistral';
 import { SubAgentsDispatcher } from './ai-employees/sub-agents';
 import {
   AIEmployeeInstruction,
@@ -174,6 +175,7 @@ export class PluginAIServer extends Plugin {
     this.aiManager.registerLLMProvider('dashscope', dashscopeProviderOptions);
     this.aiManager.registerLLMProvider('kimi', kimiProviderOptions);
     this.aiManager.registerLLMProvider('mimo', mimoProviderOptions);
+    this.aiManager.registerLLMProvider('mistral', mistralProviderOptions);
     this.aiManager.registerLLMProvider('ollama', ollamaProviderOptions);
     this.aiManager.registerLLMProvider('openai-completions', openaiCompletionsProviderOptions);
     this.aiManager.registerLLMProvider('kimi', kimiProviderOptions);
