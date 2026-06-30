@@ -14,7 +14,9 @@ export type AppPortalAppItem = {
   name: string;
   title?: string | null;
   icon?: string | null;
-  appUrl?: string | null;
+  cname?: string | null;
+  ssoEnabled?: boolean;
+  target?: string;
 };
 
 export type AppPortalItem = {
@@ -56,19 +58,9 @@ type AppPortalsContextLike = {
   };
 };
 
-function normalizeCname(cname?: string | null) {
-  if (!cname) {
-    return null;
-  }
-  const trimmed = cname.trim().replace(/\/+$/, '');
-  if (!trimmed) {
-    return null;
-  }
-  return /^https?:\/\//i.test(trimmed) || trimmed.startsWith('//') ? trimmed : `//${trimmed}`;
-}
-
-function joinUrl(base: string, path: string) {
-  return `${base.replace(/\/+$/, '')}/${path.replace(/^\/+/, '')}`;
+function getCname(cname?: string | null) {
+  const trimmed = cname?.trim();
+  return trimmed || null;
 }
 
 function getAppName(appModel: AppModel) {
@@ -79,34 +71,32 @@ function shouldShowApp(appModel: AppModel) {
   return appModel.options?.hidden !== true;
 }
 
-async function getAppUrl(appModel: AppModel) {
-  const cnameUrl = normalizeCname(appModel.cname);
-  if (cnameUrl) {
-    return cnameUrl;
-  }
-
-  const appName = getAppName(appModel);
-  const environment = appModel.environment || appModel.environments?.[0];
-  if (!appName || !environment) {
-    return null;
-  }
-
-  const envInfo = await AppSupervisor.getInstance().getEnvironment(environment);
-  const baseUrl = envInfo?.proxyUrl || envInfo?.url;
-  return baseUrl ? joinUrl(baseUrl, `/apps/${encodeURIComponent(appName)}`) : null;
+function shouldUseCnameVisitUrl(options: { cname?: string | null; ssoEnabled?: boolean; ssoCnameEnabled?: boolean }) {
+  const { cname, ssoEnabled, ssoCnameEnabled } = options;
+  return Boolean(cname && (!ssoEnabled || ssoCnameEnabled));
 }
 
-async function toAppPortalAppItem(appModel: AppModel): Promise<AppPortalAppItem | null> {
+function toAppPortalAppItem(
+  appModel: AppModel,
+  appSsoIssuer: string | null | undefined,
+  target: string | undefined,
+): AppPortalAppItem | null {
   const name = getAppName(appModel);
   if (!name || name === MAIN_APP_NAME || !shouldShowApp(appModel)) {
     return null;
   }
 
+  const cname = getCname(appModel.cname);
+  const ssoEnabled = appModel.options?.sso?.enabled === true;
+  const ssoCnameEnabled = Boolean(appModel.options?.sso?.issuer || appSsoIssuer);
+
   return {
     name,
     title: appModel.title || name,
     icon: appModel.icon || null,
-    appUrl: await getAppUrl(appModel),
+    cname: shouldUseCnameVisitUrl({ cname, ssoEnabled, ssoCnameEnabled }) ? cname : null,
+    ssoEnabled,
+    target,
   };
 }
 
@@ -159,10 +149,12 @@ function addStoredPortals(
 export async function listAppPortals(ctx: AppPortalsContextLike) {
   const supervisor = AppSupervisor.getInstance();
   const appModels = await supervisor.listAppModels();
-  const appItems = await Promise.all(appModels.map((appModel) => toAppPortalAppItem(appModel)));
   const apps = new Map<string, AppPortalAppItem>();
   const appNames = new Set<string>([MAIN_APP_NAME]);
   const currentAppName = ctx.app?.name;
+  const target = currentAppName === MAIN_APP_NAME ? '_blank' : undefined;
+  const appSsoIssuer = supervisor.getAppSsoIssuer();
+  const appItems = appModels.map((appModel) => toAppPortalAppItem(appModel, appSsoIssuer, target));
 
   if (currentAppName) {
     appNames.add(currentAppName);
@@ -181,7 +173,6 @@ export async function listAppPortals(ctx: AppPortalsContextLike) {
       name: MAIN_APP_NAME,
       title: 'Main',
       icon: null,
-      appUrl: null,
     });
   }
 
