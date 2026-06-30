@@ -50,6 +50,7 @@ vi.mock('child_process', async (importOriginal) => {
   return {
     ...actual,
     execSync: vi.fn(),
+    spawnSync: vi.fn().mockReturnValue({ status: 0, stdout: 'PostgreSQL 16.1', stderr: '' }),
     exec: vi
       .fn()
       .mockImplementation((command, options, callback) => mockExecImplementation(command, options, callback)),
