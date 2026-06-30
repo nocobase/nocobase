@@ -75,6 +75,7 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
   private commandAdapterName: string;
   private appDbCreator = new ConditionalRegistry<AppDbCreatorOptions, void>();
   private appConditions = new Map<string, AppCondition>();
+  private appSsoIssuer?: string;
   public appOptionsFactory: AppOptionsFactory = appOptionsFactory;
 
   private environmentHeartbeatInterval = 2 * 60 * 1000;
@@ -294,6 +295,17 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
 
   setAppOptionsFactory(factory: AppOptionsFactory) {
     this.appOptionsFactory = factory ?? appOptionsFactory;
+  }
+
+  setAppSsoIssuer(issuer?: string) {
+    const normalized = String(issuer || '')
+      .trim()
+      .replace(/\/+$/, '');
+    this.appSsoIssuer = normalized || undefined;
+  }
+
+  getAppSsoIssuer() {
+    return this.appSsoIssuer;
   }
 
   async bootstrapApp(appName: string) {
