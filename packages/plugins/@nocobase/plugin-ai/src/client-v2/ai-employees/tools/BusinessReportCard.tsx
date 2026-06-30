@@ -16,7 +16,6 @@ import { useT } from '../../locale';
 import { useChat } from '../chatbox/hooks/useChat';
 import { useChatConversationsStore } from '../chatbox/stores/chat-conversations';
 import { useChatToolsStore } from '../chatbox/stores/chat-tools';
-import { isCurrentLiveMessage } from '../chatbox/utils';
 import { BusinessReport, BusinessReportRenderState, normalizeBusinessReport } from './business-report-utils';
 
 class BoundedSet<T> {
@@ -61,7 +60,6 @@ export const BusinessReportCard: React.FC<ToolsUIProperties<BusinessReport>> = (
   const { token } = theme.useToken();
   const currentConversation = useChatConversationsStore.use.currentConversation();
   const chat = useChat(currentConversation);
-  const messages = chat.use.messages();
   const responseLoading = chat.use.responseLoading();
   const setOpen = useChatToolsStore.use.setOpenToolModal();
   const setActiveTool = useChatToolsStore.use.setActiveTool();
@@ -72,9 +70,9 @@ export const BusinessReportCard: React.FC<ToolsUIProperties<BusinessReport>> = (
   );
   const isGenerating = !['done', 'confirmed'].includes(toolCall.invokeStatus);
   const isReady = toolCall.status === 'success' && ['done', 'confirmed'].includes(toolCall.invokeStatus);
-  const latestMessageId = messages[messages.length - 1]?.content?.messageId;
   const hasLiveContent = !!(report?.title || report?.summary || report?.markdown?.trim() || report?.charts?.length);
   const lastStableContentRef = useRef<Partial<BusinessReportRenderState>>({});
+  const generatingStateRef = useRef<{ toolCallId?: string; wasGenerating: boolean }>({ wasGenerating: false });
 
   const loadingBarClass = useMemo(
     () =>
@@ -104,26 +102,36 @@ export const BusinessReportCard: React.FC<ToolsUIProperties<BusinessReport>> = (
   }, [messageId, setActiveMessageId, setActiveTool, setOpen, toolCall]);
 
   useEffect(() => {
-    if (!responseLoading || !isCurrentLiveMessage(latestMessageId, messageId, toolCall.messageId)) {
+    if (generatingStateRef.current.toolCallId !== toolCall.id) {
+      generatingStateRef.current = { toolCallId: toolCall.id, wasGenerating: false };
+    }
+
+    if (responseLoading && isGenerating) {
+      generatingStateRef.current.wasGenerating = true;
       return;
     }
+
+    if (!generatingStateRef.current.wasGenerating) {
+      return;
+    }
+
     if (!(toolCall.status === 'success' && toolCall.invokeStatus === 'done')) {
       return;
     }
+
     const autoOpenKey = `${currentConversation || 'global'}:${toolCall.id}`;
     if (autoOpenedToolIds.has(autoOpenKey)) {
       return;
     }
     autoOpenedToolIds.add(autoOpenKey);
+    generatingStateRef.current.wasGenerating = false;
     openModal();
   }, [
     currentConversation,
-    latestMessageId,
-    messageId,
+    isGenerating,
     openModal,
     responseLoading,
     toolCall.id,
-    toolCall.messageId,
     toolCall.status,
     toolCall.invokeStatus,
   ]);
