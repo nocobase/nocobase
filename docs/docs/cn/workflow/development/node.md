@@ -245,44 +245,73 @@ type InstructionResult = IJob | Promise<IJob> | Promise<void> | Promise<null> | 
 
 所有的指令都需要派生自 `Instruction` 基类，相关属性和方法用于对节点的配置和使用。
 
-例如我们需要为上面在服务端定义的随机数字符串类型（`randomString`）的节点提供配置界面，其中有一个配置项是 `digit` 代表随机数的位数，在配置表单中我们使用一个数字输入框来接收用户输入。
+例如我们需要为上面在服务端定义的随机数字符串类型（`randomString`）的节点提供配置界面，其中有一个配置项是 `digit` 代表随机数的位数。
 
-```tsx pure
-import WorkflowPlugin, { Instruction, VariableOption } from '@nocobase/workflow/client';
+```ts
+import { Instruction } from '@nocobase/plugin-workflow/client-v2';
 
-class MyInstruction extends Instruction {
+class RandomStringInstruction extends Instruction {
   title = 'Random number string';
   type = 'randomString';
   group = 'extended';
-  fieldset = {
-    'digit': {
-      type: 'number',
-      title: 'Digit',
-      name: 'digit',
-      'x-decorator': 'FormItem',
-      'x-component': 'InputNumber',
-      'x-component-props': {
-        min: 1,
-        max: 10,
-      },
-      default: 6,
-    },
-  };
-  useVariables(node, options): VariableOption {
-    return {
-      value: node.key,
-      label: node.title,
-    };
+
+  // 节点配置表单（懒加载组件）
+  FieldsetLoader = () => import('./components/RandomStringConfig');
+
+  useVariables(node, options) {
+    return { value: node.key, label: node.title };
   }
 }
+```
 
-export default class MyPlugin extends Plugin {
-  load() {
-    // get workflow plugin instance
-    const workflowPlugin = this.app.getPlugin<WorkflowPlugin>(WorkflowPlugin);
+其中 `FieldsetLoader` 是一个返回 `Promise<{ default: ComponentType }>` 的函数，通过动态 `import()` 实现懒加载。它指向的组件是一个标准的 React 函数组件，使用 antd 的 `Form.Item` 构建表单：
 
-    // register instruction
-    workflowPlugin.registerInstruction('log', LogInstruction);
+```tsx
+// components/RandomStringConfig.tsx
+import { Form, InputNumber } from 'antd';
+
+export default function RandomStringConfig() {
+  return (
+    <Form.Item
+      name={['config', 'digit']}
+      label="Digit"
+      initialValue={6}
+      rules={[{ required: true }]}
+    >
+      <InputNumber min={1} max={10} />
+    </Form.Item>
+  );
+}
+```
+
+注意表单字段的 `name` 使用嵌套数组格式 `['config', '字段名']`，这是 antd Form 的标准写法。
+
+### 多个配置界面
+
+节点可以提供多个配置界面，分别用于不同的场景：
+
+- `FieldsetLoader` — 节点配置抽屉表单（最常用）
+- `PresetFieldsetLoader` — 创建节点时的预设表单（通常只包含必填项）
+- `ComponentLoader` — 画布上自定义节点渲染（用于分支节点等需要特殊渲染的情况）
+
+当 Loader 需要指向文件中的命名导出（而非默认导出）时，使用 `.then()` 重映射：
+
+```ts
+FieldsetLoader = () => import('./components/MyNodeConfig').then((m) => ({ default: m.MyFieldset }));
+```
+
+### 注册节点
+
+在扩展的插件内向工作流插件实例注册节点类型：
+
+```ts
+import { Plugin } from '@nocobase/client-v2';
+import RandomStringInstruction from './RandomStringInstruction';
+
+export default class extends Plugin {
+  async load() {
+    const workflow = this.app.pm.get('workflow');
+    workflow.registerInstruction('randomString', RandomStringInstruction);
   }
 }
 ```
@@ -306,9 +335,9 @@ export type VariableOption = {
 };
 ```
 
-核心是 `value` 属性，代表变量名的分段路径值，`label` 用于显示在界面上，`children` 用于表示多层级的变量结构，当节点的结果是一个深层对象是会使用。
+核心是 `value` 属性，代表变量名的分段路径值，`label` 用于显示在界面上，`children` 用于表示多层级的变量结构，当节点的结果是一个深层对象时会使用。
 
-一个可使用的变量在系统内部的表达是一个通过 `.` 分隔的路径模板字符串，例如 `{{jobsMapByNodeKey.2dw92cdf.abc}}`。其中 `$jobsMapByNodeKey` 表示的是所有节点的结果集（已内部定义，无需处理），`2dw92cdf` 是节点的 `key`，`abc` 是节点的结果对象中的某个自定义属性。
+一个可使用的变量在系统内部的表达是一个通过 `.` 分隔的路径模板字符串，例如 `{{$jobsMapByNodeKey.2dw92cdf.abc}}`。其中 `$jobsMapByNodeKey` 表示的是所有节点的结果集（已内部定义，无需处理），`2dw92cdf` 是节点的 `key`，`abc` 是节点的结果对象中的某个自定义属性。
 
 另外，由于节点的结果也可能是一个简单值，所以要求提供节点变量时，第一层**必须**是节点本身的描述：
 
@@ -319,7 +348,7 @@ export type VariableOption = {
 }
 ```
 
-即第一层是节点的 `key` 和标题。例如运算节点的[代码参考](https://github.com/nocobase/nocobase/blob/main/packages/plugins/%40nocobase/plugin-workflow/src/client/nodes/calculation.tsx#L77)，则在使用运算节点的结果时，界面的选项如下：
+即第一层是节点的 `key` 和标题。例如运算节点的[代码参考](https://github.com/nocobase/nocobase/blob/develop/packages/plugins/%40nocobase/plugin-workflow/src/client-v2/nodes/calculation.tsx)，则在使用运算节点的结果时，界面的选项如下：
 
 ![运算节点的结果](https://static-docs.nocobase.com/20240514230014.png)
 
@@ -330,7 +359,7 @@ export type VariableOption = {
   "message": "ok",
   "data": {
     "id": 1,
-    "name": "test",
+    "name": "test"
   }
 }
 ```
@@ -338,7 +367,7 @@ export type VariableOption = {
 则可以通过如下的 `useVariables` 方法返回：
 
 ```ts
-useVariables(node, options): VariableOption {
+useVariables(node, options) {
   return {
     value: node.key,
     label: node.title,
@@ -379,11 +408,6 @@ useVariables(node, options): VariableOption {
 默认情况下，工作流中可以任意添加节点。但在某些情况下，节点在一些特定类型的工作流或者分支内是不适用的，这时可以通过 `isAvailable` 来配置节点的可用性：
 
 ```ts
-// 类型定义
-export abstract class Instruction {
-  isAvailable?(ctx: NodeAvailableContext): boolean;
-}
-
 export type NodeAvailableContext = {
   // 工作流插件实例
   engine: WorkflowPlugin;
@@ -401,11 +425,17 @@ export type NodeAvailableContext = {
 在没有特殊需求的情况下，不需要实现 `isAvailable` 方法，节点默认是可用的。最常见需要配置的情况，是节点可能是一个高耗时的操作，不适合在同步流程中执行，可以通过 `isAvailable` 方法来限制节点的使用。例如：
 
 ```ts
-isAvailable({ engine, workflow, upstream, branchIndex }) {
+isAvailable({ engine, workflow }) {
   return !engine.isWorkflowSync(workflow);
 }
 ```
 
 ### 了解更多
 
-定义节点类型的各个参数定义见工作流 API 参考部分。
+实际项目中的完整示例可参考：[CalculationInstruction 源码](https://github.com/nocobase/nocobase/blob/develop/packages/plugins/%40nocobase/plugin-workflow/src/client-v2/nodes/calculation.tsx)
+
+定义节点类型的各个参数定义见 [工作流 API 参考](./api) 部分。
+
+:::info{title=提示}
+如果你之前使用的是旧版（v1）的客户端代码，想迁移到 v2 新版的话，可以参考 [v1 到 v2 迁移指南](./migration)。
+:::
