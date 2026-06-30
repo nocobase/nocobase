@@ -18,6 +18,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useACLRoleContext } from '../../../acl';
 import type { BaseApplication } from '../../../BaseApplication';
 import type { PluginSettingsPageType } from '../../../PluginSettingsManager';
+import { shouldOpenAdminRouteInNewWindow } from '../../../RouterManager';
 import { useApp } from '../../../hooks/useApp';
 import {
   filterRenderableSettings,
@@ -65,7 +66,10 @@ const topbarActionTriggerClassName = css`
   height: 100%;
 `;
 
-type TopbarSettingsAppLike = Pick<BaseApplication<any>, 'name' | 'router' | 'getPublicPath' | 'getHref'>;
+type TopbarSettingsAppLike = Pick<
+  BaseApplication<any>,
+  'name' | 'router' | 'getPublicPath' | 'getHref' | 'layoutManager'
+>;
 
 const normalizeTopbarPath = (pathname?: string) => {
   const trimmed = pathname?.trim();
@@ -146,6 +150,14 @@ const isAdminRuntimePath = (pathname: string) => {
   return pathname === '/admin' || pathname.startsWith('/admin/');
 };
 
+const getTopbarAdminRoutePath = (app: TopbarSettingsAppLike | undefined) => {
+  try {
+    return app?.layoutManager?.getLayout?.('admin')?.routePath;
+  } catch {
+    return undefined;
+  }
+};
+
 const buildTopbarDocumentHref = (targetPath: string, basename?: string) => {
   const normalizedTarget = normalizeTopbarPath(targetPath);
   const normalizedBase = normalizeTopbarBasePath(basename);
@@ -181,7 +193,23 @@ function TopbarInternalSettingsLabel(props: { title: React.ReactNode; path?: str
   const targetPathInCurrentApp = prependTopbarAppPath(stripTopbarRouterBasePath(targetPath, basename), currentAppPath);
 
   if (currentAppPath) {
-    return <a href={buildTopbarDocumentHref(targetPathInCurrentApp, basename)}>{props.title}</a>;
+    const href = buildTopbarDocumentHref(targetPathInCurrentApp, basename);
+    const shouldOpenInNewWindow = shouldOpenAdminRouteInNewWindow({
+      currentPathname: currentPath,
+      targetPathname: targetPathInCurrentApp,
+      basePath: basename,
+      adminRoutePath: getTopbarAdminRoutePath(app),
+    });
+
+    return (
+      <a
+        href={href}
+        target={shouldOpenInNewWindow ? '_blank' : undefined}
+        rel={shouldOpenInNewWindow ? 'noopener noreferrer' : undefined}
+      >
+        {props.title}
+      </a>
+    );
   }
 
   if (isAdminRuntimePath(currentRoutePath)) {
