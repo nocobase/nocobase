@@ -32,13 +32,9 @@ type ShortcutStyle = {
   mask?: boolean;
 };
 
-type PersistedShortcutTask = Task & {
-  prompt?: string;
-};
-
 export type AIEmployeeShortcutModelProps = {
   aiEmployee: Pick<AIEmployee, 'username'> & Partial<AIEmployee>;
-  tasks?: PersistedShortcutTask[];
+  tasks?: Task[];
   showNotice?: boolean;
   builtIn?: boolean;
   style?: ShortcutStyle;
@@ -46,29 +42,6 @@ export type AIEmployeeShortcutModelProps = {
     workContext?: ContextItem[];
   };
   auto?: boolean;
-};
-
-const normalizeShortcutTasks = (
-  tasks: PersistedShortcutTask[] | undefined,
-  workContext: ContextItem[] | undefined,
-): Task[] | undefined => {
-  if (!tasks?.length) {
-    return tasks;
-  }
-
-  return tasks.map(({ prompt, ...task }) => {
-    const message = task.message || {};
-    const nextMessage = {
-      ...message,
-      ...(message.user || !prompt ? {} : { user: prompt }),
-      ...(message.workContext?.length || !workContext?.length ? {} : { workContext }),
-    };
-
-    return {
-      ...task,
-      message: Object.keys(nextMessage).length ? nextMessage : undefined,
-    };
-  });
 };
 
 export class AIEmployeeShortcutModel extends FlowModel {
@@ -83,9 +56,7 @@ export class AIEmployeeShortcutModel extends FlowModel {
 export class AIEmployeeButtonModel extends AIEmployeeShortcutModel {
   render() {
     const { style, ...props } = this.props;
-    const stepTasks = this.getStepParams('shortcutSettings', 'editTasks')?.tasks as PersistedShortcutTask[] | undefined;
-    const tasks = normalizeShortcutTasks(stepTasks || props.tasks, props.context?.workContext);
-    return <AIEmployeeShortcut {...props} tasks={tasks} size={style?.size ?? 40} mask={style?.mask ?? false} />;
+    return <AIEmployeeShortcut {...props} size={style?.size ?? 40} mask={style?.mask ?? false} />;
   }
 }
 
