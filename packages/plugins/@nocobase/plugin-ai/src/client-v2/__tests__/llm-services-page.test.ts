@@ -191,7 +191,7 @@ describe('LLMServicesPage request helpers', () => {
   it('loads provider models with skipNotify', async () => {
     const listProviderModelsAction = vi.fn().mockResolvedValue({
       data: {
-        data: [{ id: 'gpt-4o' }, { name: 'invalid' }],
+        data: [{ id: 'gpt-4o' }, { id: 'gpt-4o' }, { name: 'invalid' }],
       },
     });
     const apiClient = {

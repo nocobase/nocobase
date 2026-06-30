@@ -279,7 +279,7 @@ export async function listProviderModels(
     { skipNotify: true },
   );
   const data = readResponseData(response);
-  return Array.isArray(data) ? data.filter(isModelItem).map((item) => item.id) : [];
+  return Array.isArray(data) ? Array.from(new Set(data.filter(isModelItem).map((item) => item.id))) : [];
 }
 
 export async function testLLMServiceFlight(
