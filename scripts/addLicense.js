@@ -1,5 +1,6 @@
 const fs = require('fs/promises');
 const { exec } = require('child_process');
+const path = require('path');
 
 const commercialLicense = `
 /**
@@ -27,11 +28,12 @@ function getLicenseText(packageDir) {
 }
 
 async function addLicenseToFile(filePath) {
-  const licenseText = getLicenseText(filePath);
+  const licenseText = getLicenseText(path.resolve(filePath));
 
   const data = await fs.readFile(filePath, 'utf8');
 
   if (data.startsWith(licenseText)) return false;
+  if (data.startsWith(commercialLicense) || data.startsWith(openSourceLicense)) return false;
 
   // 添加授权信息到文件内容的顶部
   const newData = licenseText + '\n\n' + data;

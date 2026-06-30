@@ -51,6 +51,14 @@ function getJoseModule() {
   return joseModulePromise;
 }
 
+function getHeaderValue(value: unknown) {
+  const raw = Array.isArray(value) ? value[0] : value;
+  if (typeof raw !== 'string') {
+    return undefined;
+  }
+  return raw.split(',')[0]?.trim() || undefined;
+}
+
 export type ResourceServerConfig = {
   path?: string;
   identifier?: string;
@@ -255,8 +263,8 @@ export class IdpOauthService {
   }
 
   getOrigin(ctx: any) {
-    const protocol = ctx.headers?.['x-forwarded-proto'] || ctx.protocol || 'http';
-    const host = ctx.headers?.['x-forwarded-host'] || ctx.host || '';
+    const protocol = getHeaderValue(ctx.headers?.['x-forwarded-proto']) || ctx.protocol || 'http';
+    const host = getHeaderValue(ctx.headers?.['x-forwarded-host']) || ctx.host || '';
     return process.env.APP_PUBLIC_ORIGIN || `${protocol}://${host}`;
   }
 
@@ -644,7 +652,7 @@ export class IdpOauthService {
     ctx.cookies?.set?.(provider.cookieName('session'), null, {
       httpOnly: true,
       sameSite: 'lax',
-      secure: (ctx.headers?.['x-forwarded-proto'] || ctx.protocol) === 'https',
+      secure: (getHeaderValue(ctx.headers?.['x-forwarded-proto']) || ctx.protocol) === 'https',
     });
   }
 

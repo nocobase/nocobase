@@ -12,10 +12,10 @@ import { Model } from '@nocobase/database';
 import { AttachmentModel, PluginFileManagerServer } from '@nocobase/plugin-file-manager';
 import { Application } from '@nocobase/server';
 import { checkUrlAgainstWhitelist, serverRequest } from '@nocobase/utils';
-import { AIChatContext } from '../types/ai-chat-conversation.type';
+import { AIChatContext, AIMessageInput } from '../types/ai-chat-conversation.type';
 import { buildTool, encodeFile, parseResponseMessage, stripToolCallTags } from '../utils';
 import { EmbeddingsInterface } from '@langchain/core/embeddings';
-import { AIMessageChunk } from '@langchain/core/messages';
+import { AIMessage, AIMessageChunk } from '@langchain/core/messages';
 import { Context } from '@nocobase/actions';
 import '@langchain/core/utils/stream';
 import { LLMResult } from '@langchain/core/outputs';
@@ -362,6 +362,8 @@ export abstract class LLMProvider {
   parseResponseError(err) {
     return err?.message ?? 'Unexpected LLM service error';
   }
+
+  reshapeAIMessage(_options: { aiMessage: AIMessage; values: AIMessageInput }) {}
 
   protected get documentLoader(): CachedDocumentLoader {
     return this.aiPlugin.documentLoaders.cached;

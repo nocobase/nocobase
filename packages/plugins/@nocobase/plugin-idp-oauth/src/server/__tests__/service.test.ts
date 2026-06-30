@@ -96,6 +96,27 @@ describe('plugin-idp-oauth > IdpOauthService', () => {
     );
   });
 
+  test('should use the first forwarded header value when proxies append duplicates', () => {
+    const service = new IdpOauthService({} as any, {} as any);
+    vi.spyOn(AppSupervisor, 'getInstance').mockReturnValue({
+      runningMode: 'multiple',
+    } as any);
+
+    const providerContext = service.getProviderContext({
+      app: { name: 'subapp' },
+      path: '/api/app:getLang',
+      protocol: 'http',
+      host: '127.0.0.1:13001',
+      headers: {
+        'x-forwarded-proto': 'http,http',
+        'x-forwarded-host': 'app.noco.local',
+      },
+    });
+
+    expect(providerContext.origin).toBe('http://app.noco.local');
+    expect(providerContext.issuer).toBe('http://app.noco.local/api');
+  });
+
   test('should preserve sub app issuer path when original url uses __app prefix', () => {
     const service = new IdpOauthService({} as any, {} as any);
     vi.spyOn(AppSupervisor, 'getInstance').mockReturnValue({

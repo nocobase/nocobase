@@ -268,6 +268,16 @@ export class RouteRepository {
     return this.findRoute(this.listAccessible(), schemaUid);
   }
 
+  /**
+   * 通过路由 id 反查对应路由节点。
+   *
+   * @param routeId 桌面路由主键
+   * @returns 匹配到的路由节点
+   */
+  getRouteById(routeId: string | number): NocoBaseDesktopRoute | undefined {
+    return this.findRouteById(this.listAccessible(), routeId);
+  }
+
   protected getAPIClient(): APIClient {
     if (!this.ctx?.api) {
       throw new Error('[NocoBase] RouteRepository requires context.api.');
@@ -339,6 +349,21 @@ export class RouteRepository {
       }
       if (route.children) {
         const found = this.findRoute(route.children, schemaUid);
+        if (found) {
+          return found;
+        }
+      }
+    }
+    return undefined;
+  }
+
+  private findRouteById(routes: NocoBaseDesktopRoute[], routeId: string | number): NocoBaseDesktopRoute | undefined {
+    for (const route of routes) {
+      if (route.id != null && String(route.id) === String(routeId)) {
+        return route;
+      }
+      if (route.children) {
+        const found = this.findRouteById(route.children, routeId);
         if (found) {
           return found;
         }
