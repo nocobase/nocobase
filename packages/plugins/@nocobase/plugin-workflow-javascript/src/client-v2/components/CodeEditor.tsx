@@ -29,6 +29,8 @@ export default function CodeEditor({ value = '', onChange, disabled = false }: C
   const readOnlyCompartmentRef = useRef(new Compartment());
   const themeCompartmentRef = useRef(new Compartment());
   const onChangeRef = useRef(onChange);
+  const initialValueRef = useRef(value);
+  const initialDisabledRef = useRef(disabled);
 
   onChangeRef.current = onChange;
 
@@ -84,6 +86,7 @@ export default function CodeEditor({ value = '', onChange, disabled = false }: C
       }),
     [disabled, token.colorBgContainer, token.colorBgContainerDisabled, token.fontFamilyCode, token.fontSize],
   );
+  const initialEditorThemeRef = useRef(editorTheme);
 
   useEffect(() => {
     if (!containerRef.current || editorRef.current) {
@@ -92,13 +95,13 @@ export default function CodeEditor({ value = '', onChange, disabled = false }: C
 
     const editor = new EditorView({
       state: EditorState.create({
-        doc: value,
+        doc: initialValueRef.current,
         extensions: [
           basicSetup,
           javascript(),
-          editableCompartmentRef.current.of(EditorView.editable.of(!disabled)),
-          readOnlyCompartmentRef.current.of(EditorState.readOnly.of(disabled)),
-          themeCompartmentRef.current.of(editorTheme),
+          editableCompartmentRef.current.of(EditorView.editable.of(!initialDisabledRef.current)),
+          readOnlyCompartmentRef.current.of(EditorState.readOnly.of(initialDisabledRef.current)),
+          themeCompartmentRef.current.of(initialEditorThemeRef.current),
           EditorView.updateListener.of((update) => {
             if (!update.docChanged) {
               return;
@@ -116,7 +119,7 @@ export default function CodeEditor({ value = '', onChange, disabled = false }: C
       editor.destroy();
       editorRef.current = null;
     };
-  }, [disabled, editorTheme, value]);
+  }, []);
 
   useEffect(() => {
     const editor = editorRef.current;

@@ -14,7 +14,7 @@
  * Plus the top-level (already-loaded) and not-in-tree (raw-token fallback) cases.
  */
 
-import { render, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { VariableHybridInput, type VariableHybridInputConverters } from '../VariableHybridInput';
@@ -174,5 +174,39 @@ describe('VariableHybridInput — saved reference labels', () => {
       const tag = document.querySelector(TAG_SELECTOR);
       expect(tag?.textContent).toBe('{{$missing.field}}');
     });
+  });
+
+  it('keeps the selector enabled when only the editor is read-only', async () => {
+    const flowContext = createTestFlowContext();
+    const onChange = vi.fn();
+    const metaTree: MetaTreeNode[] = [
+      {
+        name: '$user',
+        title: 'User',
+        type: '',
+        paths: ['$user'],
+        children: [{ name: 'name', title: 'Name', type: 'string', paths: ['$user', 'name'] }],
+      },
+    ];
+
+    render(
+      <TestFlowContextWrapper context={flowContext}>
+        <VariableHybridInput
+          readOnly
+          value=""
+          onChange={onChange}
+          metaTree={metaTree}
+          converters={workflowConverters}
+        />
+      </TestFlowContextWrapper>,
+    );
+
+    const editor = screen.getByRole('textbox');
+    expect(editor).toHaveAttribute('contenteditable', 'false');
+    expect(editor).toHaveAttribute('aria-readonly', 'true');
+
+    fireEvent.input(editor, { currentTarget: { textContent: 'manual' } });
+    expect(onChange).not.toHaveBeenCalled();
+    expect(screen.getByRole('button')).not.toBeDisabled();
   });
 });

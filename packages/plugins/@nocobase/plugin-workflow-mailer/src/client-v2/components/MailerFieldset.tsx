@@ -87,6 +87,14 @@ function SortableRow({ children, disabled, id }: { children: React.ReactNode; di
   );
 }
 
+function ArrayAddButton({ children, onClick }: { children: React.ReactNode; onClick: () => void }) {
+  return (
+    <Button block icon={<PlusOutlined />} onClick={onClick} type="dashed">
+      {children}
+    </Button>
+  );
+}
+
 function AddressListField({ name, label, required }: { name: NamePath; label: React.ReactNode; required?: boolean }) {
   const t = useT();
   const form = Form.useFormInstance();
@@ -136,34 +144,34 @@ function AddressListField({ name, label, required }: { name: NamePath; label: Re
 
           return (
             <Space direction="vertical" style={{ width: '100%' }}>
-              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                <SortableContext items={items} strategy={verticalListSortingStrategy}>
-                  <Space direction="vertical" style={{ width: '100%' }}>
-                    {fields.map((field) => (
-                      <SortableRow key={field.key} id={String(field.key)} disabled={fields.length < 2}>
-                        <Col>
-                          <SortHandle disabled={fields.length < 2} />
-                        </Col>
-                        <Col flex="auto">
-                          <Form.Item name={field.name} noStyle>
-                            <WorkflowTypedVariableInput types={EMAIL_VALUE_TYPES} placeholder={t('Email address')} />
-                          </Form.Item>
-                        </Col>
-                        <Col>
-                          <Button
-                            aria-label={t('Delete')}
-                            icon={<DeleteOutlined />}
-                            onClick={() => remove(field.name)}
-                          />
-                        </Col>
-                      </SortableRow>
-                    ))}
-                  </Space>
-                </SortableContext>
-              </DndContext>
-              <Button
-                block
-                icon={<PlusOutlined />}
+              {fields.length ? (
+                <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                  <SortableContext items={items} strategy={verticalListSortingStrategy}>
+                    <Space direction="vertical" style={{ width: '100%' }}>
+                      {fields.map((field) => (
+                        <SortableRow key={field.key} id={String(field.key)} disabled={fields.length < 2}>
+                          <Col>
+                            <SortHandle disabled={fields.length < 2} />
+                          </Col>
+                          <Col flex="auto">
+                            <Form.Item name={field.name} noStyle>
+                              <WorkflowTypedVariableInput types={EMAIL_VALUE_TYPES} placeholder={t('Email address')} />
+                            </Form.Item>
+                          </Col>
+                          <Col>
+                            <Button
+                              aria-label={t('Delete')}
+                              icon={<DeleteOutlined />}
+                              onClick={() => remove(field.name)}
+                            />
+                          </Col>
+                        </SortableRow>
+                      ))}
+                    </Space>
+                  </SortableContext>
+                </DndContext>
+              ) : null}
+              <ArrayAddButton
                 onClick={() => {
                   skipNextEmptyValidation();
                   add('');
@@ -171,7 +179,7 @@ function AddressListField({ name, label, required }: { name: NamePath; label: Re
                 }}
               >
                 {t('Add email address')}
-              </Button>
+              </ArrayAddButton>
               <Form.ErrorList errors={errors} />
             </Space>
           );
@@ -211,34 +219,38 @@ function AttachmentListField() {
 
           return (
             <Space direction="vertical" style={{ width: '100%' }}>
-              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                <SortableContext items={items} strategy={verticalListSortingStrategy}>
-                  <Space direction="vertical" style={{ width: '100%' }}>
-                    {fields.map((field) => (
-                      <SortableRow key={field.key} id={String(field.key)} disabled={fields.length < 2}>
-                        <Col>
-                          <SortHandle disabled={fields.length < 2} />
-                        </Col>
-                        <Col flex="auto">
-                          <Form.Item name={field.name} noStyle>
-                            <WorkflowVariableInput variableOptions={variableOptions} placeholder={t('File record')} />
-                          </Form.Item>
-                        </Col>
-                        <Col>
-                          <Button
-                            aria-label={t('Delete')}
-                            icon={<DeleteOutlined />}
-                            onClick={() => remove(field.name)}
-                          />
-                        </Col>
-                      </SortableRow>
-                    ))}
-                  </Space>
-                </SortableContext>
-              </DndContext>
-              <Button block icon={<PlusOutlined />} onClick={() => add(null)}>
-                {t('Add attachment')}
-              </Button>
+              {fields.length ? (
+                <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                  <SortableContext items={items} strategy={verticalListSortingStrategy}>
+                    <Space direction="vertical" style={{ width: '100%' }}>
+                      {fields.map((field) => (
+                        <SortableRow key={field.key} id={String(field.key)} disabled={fields.length < 2}>
+                          <Col>
+                            <SortHandle disabled={fields.length < 2} />
+                          </Col>
+                          <Col flex="auto">
+                            <Form.Item name={field.name} noStyle>
+                              <WorkflowVariableInput
+                                readOnly
+                                variableOptions={variableOptions}
+                                placeholder={t('File record')}
+                              />
+                            </Form.Item>
+                          </Col>
+                          <Col>
+                            <Button
+                              aria-label={t('Delete')}
+                              icon={<DeleteOutlined />}
+                              onClick={() => remove(field.name)}
+                            />
+                          </Col>
+                        </SortableRow>
+                      ))}
+                    </Space>
+                  </SortableContext>
+                </DndContext>
+              ) : null}
+              <ArrayAddButton onClick={() => add(null)}>{t('Add attachment')}</ArrayAddButton>
             </Space>
           );
         }}
