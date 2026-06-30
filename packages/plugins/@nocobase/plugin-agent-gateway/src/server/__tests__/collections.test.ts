@@ -119,7 +119,7 @@ describe('agent gateway collections', () => {
     expectRequiredField('agRunArtifacts', 'claimAttempt');
     expectRequiredForeignKey('agRunSnapshots', 'runId');
     expectRequiredField('agRunSnapshots', 'claimAttempt');
-    expectRequiredForeignKey('agApiCallLogs', 'runId');
+    expect(getField('agApiCallLogs', 'runId')).toBeTruthy();
   });
 
   it('keeps agent profiles free of raw execution configuration fields', () => {
@@ -215,10 +215,11 @@ describe('agent gateway collections', () => {
         ['agRunArtifacts', 'claimAttempt'],
         ['agRunSnapshots', 'runId'],
         ['agRunSnapshots', 'claimAttempt'],
-        ['agApiCallLogs', 'runId'],
       ]) {
         expect(db.getCollection(collectionName).model.rawAttributes[fieldName].allowNull).toBe(false);
       }
+
+      expect(db.getCollection('agApiCallLogs').model.rawAttributes.runId.allowNull).toBe(true);
 
       const node = await db.getCollection('agNodes').model.create({
         nodeKey: 'node-1',
@@ -343,11 +344,10 @@ describe('agent gateway collections', () => {
           snapshotType: 'progress',
         }),
       ).rejects.toThrow();
-      await expect(
-        db.getCollection('agApiCallLogs').model.create({
-          direction: 'inbound',
-        }),
-      ).rejects.toThrow();
+      const nodeLevelApiCallLog = await db.getCollection('agApiCallLogs').model.create({
+        direction: 'inbound',
+      });
+      expect(nodeLevelApiCallLog.get('runId')).toBeFalsy();
     } finally {
       await db?.close();
     }

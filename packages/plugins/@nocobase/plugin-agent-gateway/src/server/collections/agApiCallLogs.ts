@@ -25,7 +25,6 @@ export default defineCollection({
       type: 'uuid',
       name: 'runId',
       autoFill: false,
-      allowNull: false,
     },
     {
       type: 'belongsTo',

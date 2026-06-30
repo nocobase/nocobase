@@ -50,7 +50,7 @@ type ActiveRunStatus = (typeof ACTIVE_RUN_STATUSES)[number];
 type TerminalRunStatus = (typeof TERMINAL_RUN_STATUSES)[number];
 type HeartbeatRunStatus = (typeof HEARTBEAT_RUN_STATUSES)[number];
 
-interface RunLease {
+export interface RunLease {
   run: ModelRecord;
   claimAttempt: number;
   leaseVersion: number;
@@ -67,6 +67,15 @@ function getOptionalTargetKey(model: ModelRecord, key: string) {
 }
 
 function getRequiredInteger(ctx: Context, value: unknown, name: string) {
+  if (
+    value === undefined ||
+    value === null ||
+    typeof value === 'boolean' ||
+    (typeof value === 'string' && !value.trim())
+  ) {
+    ctx.throw(400, `${name} is required`);
+  }
+
   const numberValue = typeof value === 'number' ? value : Number(value);
   if (!Number.isInteger(numberValue) || numberValue < 0) {
     ctx.throw(400, `${name} is required`);
@@ -469,7 +478,7 @@ async function claimRun(ctx: Context, nodeId: string) {
   ctx.body = claimResult;
 }
 
-async function validateRunLease(
+export async function validateRunLease(
   ctx: Context,
   nodeId: string,
   runId: string,

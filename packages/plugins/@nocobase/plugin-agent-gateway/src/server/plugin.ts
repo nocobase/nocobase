@@ -11,8 +11,10 @@ import { resolve } from 'path';
 
 import { Plugin } from '@nocobase/server';
 
+import { registerApiCallLogMiddleware } from './actions/apiCallLogging';
 import { registerNodeLifecycleRoutes } from './actions/nodeLifecycle';
 import { registerRunLifecycleRoutes } from './actions/runLifecycle';
+import { registerRunObservabilityRoutes } from './actions/runObservability';
 import { registerAgentGatewayAcl } from './security/permissions';
 
 export class PluginAgentGatewayServer extends Plugin {
@@ -31,8 +33,10 @@ export class PluginAgentGatewayServer extends Plugin {
   }
 
   async load() {
+    registerApiCallLogMiddleware(this);
     registerNodeLifecycleRoutes(this);
     registerRunLifecycleRoutes(this);
+    registerRunObservabilityRoutes(this);
   }
 
   async install() {}
