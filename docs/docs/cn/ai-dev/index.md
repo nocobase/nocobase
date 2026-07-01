@@ -14,6 +14,19 @@ AI 开发插件的能力基于 [nocobase-plugin-development](https://github.com/
 
 AI 开发插件需要在一个通过 `nb init` 创建的 NocoBase 项目根目录下运行 AI Agent。CLI 支持 npm 和 Git 两种来源——**推荐使用 Git 来源**，这样 AI 可以直接参考 NocoBase 核心源码，开发效果更好。
 
+`nb init` 创建的项目目录结构如下（即 `<app-path>`）：
+
+```bash
+<app-path>/
+├── .nb/                  # CLI 为当前 env 保存的元数据
+├── source/               # 应用源码工程（NocoBase 核心 + 内置插件）
+├── storage/              # 运行时数据目录
+├── plugins/              # 你的插件源码（nb scaffold plugin 生成在这里）
+└── .env                  # 应用环境变量文件
+```
+
+打开 AI Agent（如 Claude Code、Codex、Cursor 等）时，将工作目录切换到 `<app-path>` 即可开始开发插件。
+
 ## 快速开始
 
 如果你已经安装过 [NocoBase CLI](../ai/quick-start.md)，可以跳过这一步。
