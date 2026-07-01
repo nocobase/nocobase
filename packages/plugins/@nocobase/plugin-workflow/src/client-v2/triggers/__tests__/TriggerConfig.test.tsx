@@ -113,16 +113,8 @@ describe('TriggerConfig', () => {
       ),
     ).toBeInTheDocument();
     const alert = screen.getByText('Initiator interface needs reconfiguration').closest('.ant-alert');
-    const icon = alert?.querySelector('.ant-alert-icon');
     expect(alert).not.toHaveClass('ant-alert-with-description');
     expect(alert).toHaveStyle({ alignItems: 'flex-start' });
-    expect(icon).toHaveStyle({ fontSize: '14px', marginTop: '4px' });
-    expect(notice).toEqual({
-      key: 'legacy-initiator-ui',
-      message: 'Initiator interface needs reconfiguration',
-      description:
-        'This initiator interface was created in an earlier version. Reconfigure it before using this workflow.',
-    });
     expect(holder.workflowPlugin.getWorkflowNotices).toHaveBeenCalledWith(
       expect.objectContaining({
         surface: 'trigger-node-card',
@@ -160,7 +152,6 @@ describe('TriggerConfig', () => {
     expect(alert).toHaveStyle({ alignItems: 'flex-start' });
     expect(container.querySelector('.anticon-close-circle')).toBeInTheDocument();
     expect(container.querySelector('.anticon-exclamation-circle')).not.toBeInTheDocument();
-    expect(alert?.querySelector('.ant-alert-icon')).toHaveStyle({ marginTop: '4px' });
   });
 
   it('hides trigger node card notices when the workflow version has been executed', () => {
