@@ -263,7 +263,7 @@
         "version": {
           "message": "你想使用哪个版本？",
           "latestLabel": "latest",
-          "latestHint": "稳定版。适合生产环境和希望获得稳定体验的场景。当前暂不可用。",
+          "latestHint": "稳定版。适合生产环境和希望获得稳定体验的场景。",
           "betaLabel": "beta",
           "betaHint": "测试版。包含即将发布的新功能，适合提前体验和反馈。",
           "alphaLabel": "alpha",
