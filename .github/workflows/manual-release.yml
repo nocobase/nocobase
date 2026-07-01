@@ -13,6 +13,10 @@ on:
       version:
         description: 'specific a version'
         type: 'string'
+      skip_install_build:
+        description: 'skip yarn install and build'
+        type: boolean
+        default: false
 
 jobs:
   get-plugins:
@@ -119,10 +123,15 @@ jobs:
       - name: Install Lerna
         run: |
           npm install -g lerna@4
-          if [ -n "${{ inputs.version }}" ]; then
-            lerna version "${{ inputs.version }}" --yes --no-git-tag-version
-          fi
+      - name: Apply version with release.sh
+        shell: bash
+        run: |
+          bash release.sh --lerna-version-only $VERSION $IS_FEAT
+        env:
+          VERSION: ${{ inputs.version && format('--version {0}', inputs.version) || '' }}
+          IS_FEAT: ${{ inputs.is_feat && '--is-feat' || '' }}
       - name: yarn install and build
+        if: ${{ !inputs.skip_install_build }}
         run: |
           yarn config set registry https://registry.npmjs.org/
           yarn install
@@ -130,11 +139,10 @@ jobs:
       - name: Run release.sh
         shell: bash
         run: |
-          bash release.sh $IS_FEAT
+          bash release.sh --commit-tag-only
         env:
           PRO_PLUGIN_REPOS: ${{ needs.get-plugins.outputs.rc-plugins }}
           CUSTOM_PRO_PLUGIN_REPOS: ${{ needs.get-plugins.outputs.custom-plugins }}
-          IS_FEAT: ${{ inputs.is_feat && '--is-feat' || '' }}
       - name: Push and merge into next
         run: |
           for repo in ${{ join(fromJSON(needs.get-plugins.outputs.rc-plugins), ' ') }} ${{ join(fromJSON(needs.get-plugins.outputs.custom-plugins), ' ') }}

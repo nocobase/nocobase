@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-block-comment",
-  "version": "2.2.0-alpha.3",
+  "version": "2.2.0-alpha.4",
   "displayName": "Block: Comment",
   "displayName.zh-CN": "区块：评论",
   "description": "Add a comment block that allows users to create and view comments.",
@@ -10,7 +10,6 @@
     "Comments"
   ],
   "main": "dist/server/index.js",
-  "dependencies": {},
   "peerDependencies": {
     "@nocobase/client": "2.x",
     "@nocobase/client-v2": "2.x",
