@@ -24,7 +24,9 @@ vi.mock('@nocobase/client', () => ({
 
 describe('PluginVscFileClient', () => {
   afterEach(async () => {
+    const { RunJSEditorRegistry } = await import('@nocobase/client-v2');
     const { LegacyRunJSEditorRegistry } = await import('../runjs-studio');
+    RunJSEditorRegistry.clear();
     LegacyRunJSEditorRegistry.clear();
   });
 
@@ -38,12 +40,22 @@ describe('PluginVscFileClient', () => {
   });
 
   it('registers the legacy RunJS Studio provider', async () => {
-    const [{ default: PluginVscFileClient }, { LegacyRunJSEditorRegistry, legacyRunJSStudioProvider }] =
-      await Promise.all([import('../plugin'), import('../runjs-studio')]);
+    const [
+      { default: PluginVscFileClient },
+      { RunJSEditorRegistry },
+      { LegacyRunJSEditorRegistry, legacyRunJSStudioProvider },
+      { runJSStudioProvider },
+    ] = await Promise.all([
+      import('../plugin'),
+      import('@nocobase/client-v2'),
+      import('../runjs-studio'),
+      import('../../client-v2/runjs-studio'),
+    ]);
     const plugin = new PluginVscFileClient({ packageName: '@nocobase/plugin-vsc-file' } as never, {} as never);
 
     await plugin.load();
 
+    expect(RunJSEditorRegistry.getProviders()).toContain(runJSStudioProvider);
     expect(LegacyRunJSEditorRegistry.getProviders()).toContain(legacyRunJSStudioProvider);
   });
 });

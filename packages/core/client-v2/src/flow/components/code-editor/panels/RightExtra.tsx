@@ -18,8 +18,17 @@ export const RightExtra: React.FC<{
   scene?: string | string[];
   extraEditorRef: EditorRef;
   onActionCountChange?: (count: number) => void;
+  leftContent?: React.ReactNode;
   extraContent?: React.ReactNode;
-}> = ({ name = 'code', language = 'javascript', scene, extraEditorRef, onActionCountChange, extraContent }) => {
+}> = ({
+  name = 'code',
+  language = 'javascript',
+  scene,
+  extraEditorRef,
+  onActionCountChange,
+  leftContent,
+  extraContent,
+}) => {
   const extras = CodeEditorExtension.getRightExtras();
   const [activeCount, setActiveCount] = useState<{ [key: string]: boolean }>({});
   const setActive = useCallback(
@@ -39,8 +48,8 @@ export const RightExtra: React.FC<{
     const hasActive = Object.values(activeCount).some(Boolean);
     const hasRight = Array.isArray(extras) && extras.length > 0;
     const hasExtra = !!extraContent;
-    return { visible: hasActive || hasRight || hasExtra };
-  }, [activeCount, extras, extraContent]);
+    return { visible: hasActive || hasRight || hasExtra || !!leftContent };
+  }, [activeCount, extras, extraContent, leftContent]);
 
   useEffect(() => {
     // Avoid side-effect during render; update ref after render pass
@@ -49,7 +58,8 @@ export const RightExtra: React.FC<{
 
   if (!visible) return null;
   return (
-    <Flex gap="middle" justify="flex-end" align="center" style={baseStyle}>
+    <Flex gap="middle" justify={leftContent ? 'space-between' : 'flex-end'} align="center" style={baseStyle}>
+      {leftContent ? <div style={{ minWidth: 0 }}>{leftContent}</div> : null}
       <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
         {extraContent}
         {extras.map((extra) => {

@@ -116,4 +116,29 @@ describe('RunJS FlowModel surfaces', () => {
       scene: spec.scene,
     });
   });
+
+  it('JSBlockModel keeps the default embed size and header while the RunJS provider owns the footer', () => {
+    const flow = JSBlockModel.globalFlowRegistry.getFlow('jsSettings');
+    const step = flow?.getStep('runJs');
+    const codeSchema = getRunJsCodeSchema(surfaces[0]);
+
+    expect(codeSchema['x-component-props']?.wrapperStyle).toBeUndefined();
+    expect(codeSchema['x-component-props']?.containerStyle).toMatchObject({
+      height: '100%',
+      minHeight: 0,
+      minWidth: 0,
+    });
+    const props = (step?.serialize() as any)?.uiMode?.props;
+    expect(props).toMatchObject({
+      footer: null,
+      styles: {
+        body: {
+          transform: 'translateX(0)',
+        },
+      },
+    });
+    expect(props).not.toHaveProperty('title');
+    expect(props).not.toHaveProperty('width');
+    expect(props).not.toHaveProperty('maxWidth');
+  });
 });

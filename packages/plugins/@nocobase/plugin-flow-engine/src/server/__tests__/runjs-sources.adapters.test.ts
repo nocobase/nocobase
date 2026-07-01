@@ -77,6 +77,44 @@ describe('flow-engine RunJS source adapters', () => {
     });
   });
 
+  it('does not run Flow Surface authoring validation for FlowModel step RunJS sources', async () => {
+    await repository.insertModel({
+      uid: 'js-step-user-runjs-model',
+      title: 'User JS block',
+      use: 'JSBlockModel',
+      stepParams: {
+        jsSettings: {
+          runJs: {
+            code: 'ctx.render("oldValue");',
+            version: 'v2',
+          },
+        },
+      },
+    });
+
+    const locator: RunJSSourceLocator = {
+      kind: 'flowModel.step',
+      modelUid: 'js-step-user-runjs-model',
+      flowKey: 'jsSettings',
+      stepKey: 'runJs',
+      paramPath: ['code'],
+    };
+    const open = await openSource(locator);
+    expect(open.status).toBe(200);
+
+    const publish = await publishSource(
+      locator,
+      open.body.data.ownerFingerprint,
+      "ctx.request({ url: 'users:list' });\nctx.render('newValue');",
+    );
+
+    expect(publish.status).toBe(200);
+    const updated = await repository.findModelById('js-step-user-runjs-model');
+    expect(getAtPath(updated, ['stepParams', 'jsSettings', 'runJs', 'code'])).toBe(
+      "ctx.request({ url: 'users:list' });\nctx.render('newValue');",
+    );
+  });
+
   it('rejects FlowModel publish when sibling owner settings changed after open', async () => {
     await repository.insertModel({
       uid: 'js-step-stale-model',

@@ -208,9 +208,12 @@ export const EditorCore: React.FC<{
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value]);
 
+  const editorContainerMinHeight =
+    typeof minHeight === 'undefined' ? 120 : typeof minHeight === 'string' ? minHeight : `${minHeight}px`;
+
   return (
     <>
-      <div style={{ flex: 1, minHeight: 120 }} ref={editorRef} />
+      <div style={{ flex: 1, minHeight: editorContainerMinHeight, minWidth: 0, overflow: 'hidden' }} ref={editorRef} />
     </>
   );
 };

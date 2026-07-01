@@ -900,7 +900,7 @@ export class FlowSettings {
 
     openView({
       // 默认标题与宽度可被传入的 props 覆盖
-      title: modeProps.title || getTitle(),
+      title: Object.prototype.hasOwnProperty.call(modeProps, 'title') ? modeProps.title : getTitle(),
       width: modeProps.width ?? 600,
       destroyOnClose: true,
       onClose: () => dispose.value(),

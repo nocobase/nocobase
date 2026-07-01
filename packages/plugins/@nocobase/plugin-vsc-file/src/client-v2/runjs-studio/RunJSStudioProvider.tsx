@@ -8,54 +8,39 @@
  */
 
 import {
-  ArrowDownOutlined,
-  ArrowUpOutlined,
-  CodeOutlined,
   CloseOutlined,
-  CompressOutlined,
   CopyOutlined,
   DeleteOutlined,
   DiffOutlined,
   FileAddOutlined,
   FileTextOutlined,
   FolderOpenOutlined,
-  PlayCircleOutlined,
-  PlusOutlined,
   ReloadOutlined,
-  RollbackOutlined,
-  SaveOutlined,
-  UploadOutlined,
+  UserOutlined,
 } from '@ant-design/icons';
 import { CodeEditor, type RunJSEditorProvider, type RunJSEditorProviderRenderProps } from '@nocobase/client-v2';
-import type { RunJSValue } from '@nocobase/flow-engine';
+import { useFlowContext, type FlowEngineContext, type RunJSValue } from '@nocobase/flow-engine';
 import {
   Alert,
+  Avatar,
   Badge,
   Button,
-  Checkbox,
-  Divider,
-  Drawer,
-  Dropdown,
   Empty,
   Input,
   List,
   Modal,
   Popconfirm,
-  Segmented,
   Space,
   Spin,
-  Tabs,
   Tag,
   Tooltip,
   Typography,
   message,
 } from 'antd';
-import type { MenuProps } from 'antd';
 import type { InputRef } from 'antd/es/input';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import type { RunJSCompileDiagnostic } from '../../shared/runjs-source-types';
-import type { VscFileChange } from '../../shared/types';
 import { formatVscComponentError } from '../components/utils';
 import { useT } from '../locale';
 import type {
@@ -63,9 +48,7 @@ import type {
   RunJSConsoleEntry,
   RunJSLineDiffRow,
   RunJSSourceHistoryItem,
-  RunJSSourceDiffVersionResult,
   RunJSSourceOpenWorkspaceResult,
-  RunJSSourceVersionResult,
   RunJSWorkspaceFile,
 } from './types';
 import {
@@ -99,10 +82,8 @@ import {
   validateRunJSWorkspacePath,
 } from './workspaceUtils';
 
-const drawerWidth = 'min(1440px, 86vw)';
 const defaultEntryPath = 'src/main.tsx';
 const defaultConsolePanelHeight = 180;
-const maxConsolePanelHeight = '50%';
 const minConsolePanelHeight = 80;
 
 export const runJSStudioProvider: RunJSEditorProvider = {
@@ -150,11 +131,7 @@ type ConflictState = {
 type DiffViewState = {
   baseFiles: RunJSWorkspaceFile[];
   files: RunJSWorkspaceFile[];
-  diffFiles: VscFileChange[];
-  summary: RunJSChangeSummary;
 };
-
-type VersionDetailView = 'diff' | 'files';
 
 type PreviewArtifactState = {
   code: string;
@@ -162,23 +139,25 @@ type PreviewArtifactState = {
   snapshotKey: string;
 };
 
+type ClosableView = {
+  close?: () => boolean | void | Promise<boolean | void>;
+  beforeClose?: (options?: unknown) => boolean | void | Promise<boolean | void>;
+  destroy?: () => void;
+};
+
 function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
   const { t: hostT, value, onChange, scene = 'formValue', readOnly, disabled, containerStyle } = props;
   const pluginT = useT();
   const t = hostT || pluginT;
   const resource = useRunJSSourceResource();
+  const flowCtx = useFlowContext<FlowEngineContext | null>();
   const runJSSourceRequest = resource.request;
   const locatorKey = useMemo(() => JSON.stringify(props.locator || null), [props.locator]);
   const previousLocatorKeyRef = useRef(locatorKey);
   const requestSeqRef = useRef(0);
   const consoleSeqRef = useRef(0);
-  const saveInFlightRef = useRef(false);
   const latestWorkspaceSnapshotRef = useRef('');
-  const latestDiffRequestKeyRef = useRef('');
-  const versionRequestSeqRef = useRef(0);
   const dialogTriggerRef = useRef<HTMLElement | null>(null);
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const [fullscreen, setFullscreen] = useState(false);
   const [workspace, setWorkspace] = useState<RunJSSourceOpenWorkspaceResult | null>(null);
   const [workspaceError, setWorkspaceError] = useState<unknown>(null);
   const [actionError, setActionError] = useState<ActionErrorState | null>(null);
@@ -190,36 +169,22 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
   const [activePath, setActivePath] = useState<string | undefined>();
   const [openPaths, setOpenPaths] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState('code');
-  const [filesCollapsed, setFilesCollapsed] = useState(false);
-  const [contextCollapsed, setContextCollapsed] = useState(false);
+  const [filesCollapsed, setFilesCollapsed] = useState(true);
   const [consoleEntries, setConsoleEntries] = useState<RunJSConsoleEntry[]>([]);
   const [fileDialog, setFileDialog] = useState<FileDialogState | null>(null);
   const [fileDialogPath, setFileDialogPath] = useState('');
   const [fileDialogError, setFileDialogError] = useState<string | null>(null);
   const [publishOpen, setPublishOpen] = useState(false);
   const [commitMessage, setCommitMessage] = useState('');
-  const [savingDraft, setSavingDraft] = useState(false);
   const [previewing, setPreviewing] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [previewDiagnostics, setPreviewDiagnostics] = useState<RunJSCompileDiagnostic[]>([]);
   const [previewArtifact, setPreviewArtifact] = useState<PreviewArtifactState | null>(null);
-  const [diffLoading, setDiffLoading] = useState(false);
-  const [diffError, setDiffError] = useState<unknown>(null);
-  const [diffFiles, setDiffFiles] = useState<VscFileChange[]>([]);
   const [diffView, setDiffView] = useState<DiffViewState | null>(null);
-  const [loadedDiffKey, setLoadedDiffKey] = useState<string | null>(null);
   const [selectedDiffPath, setSelectedDiffPath] = useState<string | undefined>();
-  const [diffMode, setDiffMode] = useState<'split' | 'unified'>('split');
-  const [ignoreWhitespace, setIgnoreWhitespace] = useState(false);
-  const [wrapDiffLines, setWrapDiffLines] = useState(true);
-  const [selectedVersion, setSelectedVersion] = useState<RunJSSourceVersionResult | null>(null);
-  const [selectedVersionDiff, setSelectedVersionDiff] = useState<RunJSSourceDiffVersionResult | null>(null);
-  const [selectedVersionView, setSelectedVersionView] = useState<VersionDetailView>('diff');
-  const [versionLoading, setVersionLoading] = useState(false);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [restoreCommit, setRestoreCommit] = useState<RunJSSourceHistoryItem | null>(null);
   const [restoringVersion, setRestoringVersion] = useState(false);
-  const [restoredDraftVersion, setRestoredDraftVersion] = useState<string | null>(null);
   const [closeConfirmOpen, setCloseConfirmOpen] = useState(false);
   const [pendingDirtyAction, setPendingDirtyAction] = useState<PendingDirtyAction>('close');
   const [conflict, setConflict] = useState<ConflictState | null>(null);
@@ -230,46 +195,24 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
   const hasUnsavedLocalChanges = hasWorkspaceChanges(savedFiles, files);
   const publishSummary = summarizeWorkspaceChanges(baseFiles, files);
   const currentPreviewSnapshotKey = buildWorkspaceSnapshotKey(files, entryPath, value.version);
+  const showDiff = activeTab === 'diff';
   const effectiveDiffBaseFiles = diffView?.baseFiles || baseFiles;
   const effectiveDiffFiles = diffView?.files || files;
-  const effectiveDiffSummary = diffView?.summary || publishSummary;
-  const effectiveDiffFileList = diffView?.diffFiles || diffFiles;
   const activeFile = activePath ? files.find((file) => file.path === activePath) : undefined;
   const historyItems = workspace?.history?.items || [];
   const baseCommitId = workspace?.draft?.baseCommitId ?? workspace?.repository?.publishedCommitId ?? null;
-  const diffRequestKey = JSON.stringify({
-    baseCommitId,
-    draftId: workspace?.draft?.id || null,
-    current: currentPreviewSnapshotKey,
-    saved: buildWorkspaceSnapshotKey(savedFiles, entryPath, value.version),
-  });
-  const publishedCommit = findCommit(historyItems, workspace?.repository.publishedCommitId);
   const baseCommit = findCommit(historyItems, baseCommitId);
-  const sourceLabel = workspace?.source.label || props.label || t('JavaScript');
-  const compactTitle = props.label || t('JavaScript');
-  const compactStatus = formatCompactStatus({
-    t,
-    publishedSeq: publishedCommit?.seq,
-    hasDraft: Boolean(workspace?.draft),
-    hasUnsavedLocalChanges,
-    entryPath,
-  });
-  const compactDescription =
-    props.sourceLabel && props.sourceLabel !== compactTitle ? `${props.sourceLabel} · ${compactStatus}` : compactStatus;
-  const statusBadges = buildStatusBadges({
-    t,
-    hasUnsavedLocalChanges,
-    hasDraft: Boolean(workspace?.draft),
-    previewing,
-    publishedSeq: publishedCommit?.seq,
-    restoredDraftVersion,
-    conflict: Boolean(conflict),
-    compileFailed: previewDiagnostics.some((diagnostic) => diagnostic.severity === 'error'),
-  });
+  const footerStatus = hasUnsavedLocalChanges ? t('Unsaved changes') : t('Code saved');
   const lineDiffRows = useMemo(
-    () => buildLineDiff(effectiveDiffBaseFiles, effectiveDiffFiles, selectedDiffPath, ignoreWhitespace),
-    [effectiveDiffBaseFiles, effectiveDiffFiles, ignoreWhitespace, selectedDiffPath],
+    () => buildLineDiff(effectiveDiffBaseFiles, effectiveDiffFiles, selectedDiffPath, false),
+    [effectiveDiffBaseFiles, effectiveDiffFiles, selectedDiffPath],
   );
+
+  useEffect(() => {
+    if (showDiff && activePath) {
+      setSelectedDiffPath(activePath);
+    }
+  }, [activePath, showDiff]);
 
   const appendConsole = useCallback((entry: Omit<RunJSConsoleEntry, 'id'>) => {
     consoleSeqRef.current += 1;
@@ -348,10 +291,7 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
 
   const resetWorkspaceState = useCallback(() => {
     requestSeqRef.current += 1;
-    saveInFlightRef.current = false;
     latestWorkspaceSnapshotRef.current = '';
-    latestDiffRequestKeyRef.current = '';
-    versionRequestSeqRef.current += 1;
     setWorkspace(null);
     setWorkspaceError(null);
     setActionError(null);
@@ -369,25 +309,15 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
     setFileDialogError(null);
     setPublishOpen(false);
     setCommitMessage('');
-    setSavingDraft(false);
     setPreviewing(false);
     setPublishing(false);
     setPreviewDiagnostics([]);
     setPreviewArtifact(null);
-    setDiffLoading(false);
-    setDiffError(null);
-    setDiffFiles([]);
     setDiffView(null);
-    setLoadedDiffKey(null);
     setSelectedDiffPath(undefined);
-    setSelectedVersion(null);
-    setSelectedVersionDiff(null);
-    setSelectedVersionView('diff');
-    setVersionLoading(false);
     setHistoryLoading(false);
     setRestoreCommit(null);
     setRestoringVersion(false);
-    setRestoredDraftVersion(null);
     setCloseConfirmOpen(false);
     setPendingDirtyAction('close');
     setConflict(null);
@@ -405,10 +335,6 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
   useEffect(() => {
     latestWorkspaceSnapshotRef.current = currentPreviewSnapshotKey;
   }, [currentPreviewSnapshotKey]);
-
-  useEffect(() => {
-    latestDiffRequestKeyRef.current = diffRequestKey;
-  }, [diffRequestKey]);
 
   const openFilePath = useCallback((path: string | undefined) => {
     if (!path) {
@@ -434,6 +360,7 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
   );
 
   const replaceOpenFilePath = useCallback((fromPath: string, toPath: string) => {
+    setActivePath((current) => (current === fromPath ? toPath : current));
     setOpenPaths((current) => {
       const next = current.map((path) => (path === fromPath ? toPath : path));
       return next.includes(toPath) ? Array.from(new Set(next)) : next;
@@ -485,18 +412,11 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
       setActivePath(nextActivePath);
       setOpenPaths([nextActivePath]);
       setDiffView(null);
-      setLoadedDiffKey(null);
       setSelectedDiffPath(undefined);
       setPreviewDiagnostics([]);
       setPreviewArtifact(null);
-      setSelectedVersion(null);
-      setSelectedVersionDiff(null);
-      versionRequestSeqRef.current += 1;
-      setSelectedVersionView('diff');
-      setVersionLoading(false);
       setRestoreCommit(null);
       setRestoringVersion(false);
-      setRestoredDraftVersion(null);
       setActionError(null);
 
       return loaded;
@@ -513,16 +433,12 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
   }, [openWorkspaceSnapshot, props.locator, value.version]);
 
   useEffect(() => {
-    if (drawerOpen && !workspace && !loadingWorkspace && !workspaceError) {
+    if (!workspace && !loadingWorkspace && !workspaceError) {
       loadWorkspace();
     }
-  }, [drawerOpen, loadWorkspace, loadingWorkspace, workspace, workspaceError]);
+  }, [loadWorkspace, loadingWorkspace, workspace, workspaceError]);
 
   useEffect(() => {
-    if (!drawerOpen) {
-      return undefined;
-    }
-
     const handleKeyDown = (event: KeyboardEvent) => {
       const primary = event.metaKey || event.ctrlKey;
       if (!primary) {
@@ -531,7 +447,7 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
 
       if (event.key.toLowerCase() === 's') {
         event.preventDefault();
-        saveDraft();
+        openPublishModal();
         return;
       }
 
@@ -561,13 +477,7 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
   });
 
   useEffect(() => {
-    if (drawerOpen && typeof window !== 'undefined' && window.innerWidth < 1120) {
-      setFullscreen(true);
-    }
-  }, [drawerOpen]);
-
-  useEffect(() => {
-    if (!drawerOpen || !hasUnsavedLocalChanges || typeof window === 'undefined') {
+    if (!hasUnsavedLocalChanges || typeof window === 'undefined') {
       return undefined;
     }
 
@@ -582,14 +492,7 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
-  }, [drawerOpen, hasUnsavedLocalChanges]);
-
-  const openStudio = async () => {
-    setDrawerOpen(true);
-    if (!workspace) {
-      await loadWorkspace();
-    }
-  };
+  }, [hasUnsavedLocalChanges]);
 
   const runPreview = async () => {
     const currentWorkspace = workspace
@@ -641,100 +544,17 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
         level: result.artifact.diagnostics.some((diagnostic) => diagnostic.severity === 'error') ? 'error' : 'info',
         message: result.artifact.diagnostics.some((diagnostic) => diagnostic.severity === 'error')
           ? t('Compile failed')
-          : t('Run Preview completed'),
+          : t('Run completed'),
       });
     } catch (error) {
       await handleWorkspaceError(error);
-      reportActionError(error, t('Run Preview failed'), runPreview);
+      reportActionError(error, t('Run failed'), runPreview);
       appendConsole({
         level: 'error',
-        message: formatVscComponentError(error, t('Run Preview failed')),
+        message: formatVscComponentError(error, t('Run failed')),
       });
     } finally {
       setPreviewing(false);
-    }
-  };
-
-  const saveDraft = async (): Promise<boolean> => {
-    if (
-      !workspace ||
-      !props.locator ||
-      workspaceReadOnly ||
-      publishing ||
-      !hasUnsavedLocalChanges ||
-      saveInFlightRef.current
-    ) {
-      return false;
-    }
-
-    const requestSnapshotKey = currentPreviewSnapshotKey;
-    const requestFiles = normalizeWorkspaceFiles(files);
-    const draftFiles = buildChangedWorkspaceFileList(baseFiles, requestFiles);
-    saveInFlightRef.current = true;
-    setActionError(null);
-    setSavingDraft(true);
-    try {
-      if (!draftFiles.length) {
-        await runJSSourceRequest('discardDraft', {
-          locator: props.locator,
-          repoId: workspace.repository.repoId,
-        });
-        setWorkspace((current) =>
-          current
-            ? {
-                ...current,
-                draft: null,
-              }
-            : current,
-        );
-        setSavedFiles(requestFiles);
-        if (latestWorkspaceSnapshotRef.current === requestSnapshotKey) {
-          setFiles(requestFiles);
-          latestWorkspaceSnapshotRef.current = buildWorkspaceSnapshotKey(requestFiles, entryPath, value.version);
-        }
-        appendConsole({
-          level: 'info',
-          message: t('Draft cleared'),
-        });
-        return true;
-      }
-
-      const result = await runJSSourceRequest('saveDraft', {
-        locator: props.locator,
-        repoId: workspace.repository.repoId,
-        baseCommitId,
-        files: draftFiles,
-      });
-      const nextSavedFiles = applyDraftFiles(baseFiles, result.files);
-      setWorkspace((current) =>
-        current
-          ? {
-              ...current,
-              draft: result.draft,
-            }
-          : current,
-      );
-      setSavedFiles(nextSavedFiles);
-      if (latestWorkspaceSnapshotRef.current === requestSnapshotKey) {
-        setFiles(nextSavedFiles);
-        latestWorkspaceSnapshotRef.current = buildWorkspaceSnapshotKey(nextSavedFiles, entryPath, value.version);
-      }
-      appendConsole({
-        level: 'info',
-        message: t('Draft saved'),
-      });
-      return true;
-    } catch (error) {
-      await handleWorkspaceError(error);
-      reportActionError(error, t('Failed to save draft'), saveDraft);
-      appendConsole({
-        level: 'error',
-        message: formatVscComponentError(error, t('Failed to save draft')),
-      });
-      return false;
-    } finally {
-      saveInFlightRef.current = false;
-      setSavingDraft(false);
     }
   };
 
@@ -763,68 +583,6 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
       });
     }
   };
-
-  const loadDiff = useCallback(
-    async (options?: { force?: boolean }) => {
-      if (!workspace || !props.locator) {
-        return;
-      }
-      if (!options?.force && (diffLoading || loadedDiffKey === diffRequestKey)) {
-        return;
-      }
-
-      setDiffLoading(true);
-      setDiffError(null);
-      setDiffView(null);
-      setLoadedDiffKey(diffRequestKey);
-      const requestKey = diffRequestKey;
-      try {
-        const hasLocal = hasWorkspaceChanges(savedFiles, files);
-        const result = await runJSSourceRequest('diffDraft', {
-          locator: props.locator,
-          repoId: workspace.repository.repoId,
-          baseCommitId,
-          files: hasLocal || !workspace.draft ? buildWorkspaceChanges(baseFiles, files) : undefined,
-        });
-        if (latestDiffRequestKeyRef.current !== requestKey) {
-          return;
-        }
-        const changes = result.diff.files.map((file) => ({
-          path: file.path,
-          operation: file.status === 'deleted' ? ('delete' as const) : ('upsert' as const),
-        }));
-        setDiffFiles(changes);
-        setSelectedDiffPath((current) => current || changes[0]?.path);
-      } catch (error) {
-        if (latestDiffRequestKeyRef.current !== requestKey) {
-          return;
-        }
-        setDiffFiles([]);
-        setSelectedDiffPath(undefined);
-        setDiffError(error);
-      } finally {
-        setDiffLoading(false);
-      }
-    },
-    [
-      baseCommitId,
-      baseFiles,
-      diffLoading,
-      diffRequestKey,
-      files,
-      loadedDiffKey,
-      props.locator,
-      runJSSourceRequest,
-      savedFiles,
-      workspace,
-    ],
-  );
-
-  useEffect(() => {
-    if (activeTab === 'diff' && workspace && !diffView) {
-      loadDiff();
-    }
-  }, [activeTab, diffView, loadDiff, workspace]);
 
   const openPublishModal = async () => {
     if (workspaceEditingDisabled || !workspace?.permissions.canPublish) {
@@ -877,14 +635,14 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
       if (latestWorkspaceSnapshotRef.current !== requestSnapshotKey) {
         appendConsole({
           level: 'info',
-          message: t('Published successfully'),
+          message: t('Saved successfully'),
         });
         return;
       }
       setPublishOpen(false);
       appendConsole({
         level: 'info',
-        message: t('Published successfully'),
+        message: t('Saved successfully'),
       });
       onChange?.({
         ...value,
@@ -893,12 +651,13 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
       } as RunJSValue);
       await loadWorkspace();
       setPreviewDiagnostics(result.artifact.diagnostics);
+      await closeEditorView();
     } catch (error) {
       await handleWorkspaceError(error);
-      reportActionError(error, t('Publish failed'), publish);
+      reportActionError(error, t('Save failed'), publish);
       appendConsole({
         level: 'error',
-        message: formatVscComponentError(error, t('Publish failed')),
+        message: formatVscComponentError(error, t('Save failed')),
       });
     } finally {
       setPublishing(false);
@@ -982,53 +741,6 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
     }
   };
 
-  const loadVersion = async (commit: RunJSSourceHistoryItem) => {
-    if (!workspace || !props.locator) {
-      return;
-    }
-
-    const requestSeq = versionRequestSeqRef.current + 1;
-    versionRequestSeqRef.current = requestSeq;
-    setVersionLoading(true);
-    setActionError(null);
-    setSelectedVersion(null);
-    setSelectedVersionDiff(null);
-    setSelectedVersionView('diff');
-    try {
-      const version = await runJSSourceRequest('getVersion', {
-        locator: props.locator,
-        repoId: workspace.repository.repoId,
-        commitId: commit.id,
-        includeFiles: true,
-      });
-      if (versionRequestSeqRef.current !== requestSeq) {
-        return;
-      }
-      const versionDiff = await runJSSourceRequest('diffVersion', {
-        locator: props.locator,
-        repoId: workspace.repository.repoId,
-        commitId: commit.id,
-      });
-      if (versionRequestSeqRef.current !== requestSeq) {
-        return;
-      }
-      setSelectedVersion(version);
-      setSelectedVersionDiff(versionDiff);
-    } catch (error) {
-      if (versionRequestSeqRef.current === requestSeq) {
-        reportActionError(error, t('Failed to load version'), () => loadVersion(commit));
-        appendConsole({
-          level: 'error',
-          message: formatVscComponentError(error, t('Failed to load version')),
-        });
-      }
-    } finally {
-      if (versionRequestSeqRef.current === requestSeq) {
-        setVersionLoading(false);
-      }
-    }
-  };
-
   const restoreAsDraft = async (commit: RunJSSourceHistoryItem) => {
     if (!workspace || !props.locator || workspaceEditingDisabled || hasUnsavedLocalChanges) {
       return;
@@ -1070,11 +782,10 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
       setOpenPaths(nextActivePath ? [nextActivePath] : []);
       setActiveTab('code');
       setDiffView(null);
-      setRestoredDraftVersion(formatVersion(commit.seq));
       invalidatePreview();
       appendConsole({
         level: 'info',
-        message: `${t('Draft restored from')} ${formatVersion(commit.seq)}`,
+        message: `${t('Restored from')} ${formatVersion(commit.seq)}`,
       });
     } catch (error) {
       await handleWorkspaceError(error);
@@ -1096,37 +807,6 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
     const commit = restoreCommit;
     setRestoreCommit(null);
     await restoreAsDraft(commit);
-  };
-
-  const viewRestoreDiff = async () => {
-    if (!restoreCommit) {
-      return;
-    }
-
-    const commit = restoreCommit;
-    setRestoreCommit(null);
-    setActiveTab('history');
-    await loadVersion(commit);
-  };
-
-  const clearSelectedVersion = () => {
-    versionRequestSeqRef.current += 1;
-    setSelectedVersion(null);
-    setSelectedVersionDiff(null);
-    setSelectedVersionView('diff');
-    setVersionLoading(false);
-  };
-
-  const copyVersionFile = async (file: RunJSWorkspaceFile) => {
-    try {
-      await navigator.clipboard?.writeText(file.content);
-      message.success(t('File copied'));
-    } catch (_) {
-      appendConsole({
-        level: 'warn',
-        message: t('Copy file failed'),
-      });
-    }
   };
 
   const createFile = () => {
@@ -1295,22 +975,6 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
     updateActiveFileContent(content);
   };
 
-  const copyActiveFile = async () => {
-    if (!activeFile) {
-      return;
-    }
-
-    try {
-      await navigator.clipboard?.writeText(activeFile.content);
-      message.success(t('File copied'));
-    } catch (_) {
-      appendConsole({
-        level: 'warn',
-        message: t('Copy file failed'),
-      });
-    }
-  };
-
   const copyLogs = async () => {
     const text = consoleEntries.map((entry) => `[${entry.level}] ${entry.message}`).join('\n');
     try {
@@ -1324,14 +988,33 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
     }
   };
 
-  const requestClose = () => {
+  const closeEditorView = useCallback(async () => {
+    const view = flowCtx?.view as ClosableView | undefined;
+    if (!view) {
+      return;
+    }
+
+    if (typeof view.close === 'function') {
+      await view.close();
+      return;
+    }
+
+    const allowed = await view.beforeClose?.({});
+    if (allowed === false) {
+      return;
+    }
+
+    view.destroy?.();
+  }, [flowCtx?.view]);
+
+  const requestClose = async () => {
     if (hasUnsavedLocalChanges) {
       setPendingDirtyAction('close');
       setCloseConfirmOpen(true);
       return;
     }
 
-    setDrawerOpen(false);
+    await closeEditorView();
   };
 
   const requestRefreshWorkspace = () => {
@@ -1344,21 +1027,6 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
     loadWorkspace();
   };
 
-  const saveDraftAndContinue = async () => {
-    const saved = await saveDraft();
-    if (!saved) {
-      return;
-    }
-
-    setCloseConfirmOpen(false);
-    if (pendingDirtyAction === 'refresh') {
-      await loadWorkspace();
-      return;
-    }
-
-    setDrawerOpen(false);
-  };
-
   const discardLocalAndContinue = async () => {
     setFiles(savedFiles);
     setCloseConfirmOpen(false);
@@ -1367,7 +1035,7 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
       return;
     }
 
-    setDrawerOpen(false);
+    await closeEditorView();
   };
 
   const keepChangesAndRebase = async () => {
@@ -1506,314 +1174,193 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
     }
   };
 
-  const moreMenuItems: MenuProps['items'] = [
-    {
-      key: 'format',
-      label: t('Format file'),
-      disabled: workspaceEditingDisabled || !activeFile,
-    },
-    {
-      key: 'copy',
-      label: t('Copy file'),
-      disabled: !activeFile,
-    },
-    {
-      key: 'discard',
-      label: t('Discard draft'),
-      disabled: workspaceEditingDisabled || (!workspace?.draft && !hasUnsavedLocalChanges),
-    },
-    {
-      key: 'history',
-      label: t('Restore from history'),
-    },
-    {
-      key: 'fullscreen',
-      label: fullscreen ? t('Exit fullscreen') : t('Open fullscreen'),
-    },
-  ];
-
-  const handleMoreMenuClick: MenuProps['onClick'] = ({ key }) => {
-    if (key === 'format') {
-      formatActiveFile();
-    } else if (key === 'copy') {
-      copyActiveFile();
-    } else if (key === 'discard') {
-      discardDraft();
-    } else if (key === 'history') {
-      setActiveTab('history');
-    } else if (key === 'fullscreen') {
-      setFullscreen((current) => !current);
+  const toggleDiff = () => {
+    if (showDiff) {
+      setActiveTab('code');
+      return;
     }
+
+    setSelectedDiffPath(activePath || entryPath);
+    setActiveTab('diff');
+  };
+
+  const editorStyle: React.CSSProperties = {
+    background: '#fff',
+    boxSizing: 'border-box',
+    display: 'flex',
+    flexDirection: 'column',
+    height: '100%',
+    letterSpacing: 0,
+    minHeight: 0,
+    minWidth: 0,
+    textAlign: 'left',
+    wordSpacing: 'normal',
+    ...(containerStyle || {}),
+    ...(props.wrapperStyle || {}),
   };
 
   return (
-    <div style={containerStyle || { flex: 1, minWidth: 0 }}>
-      <section
-        aria-label={t('JavaScript')}
+    <div style={editorStyle}>
+      <div
         style={{
-          border: '1px solid #d9d9d9',
-          borderRadius: 8,
-          padding: 12,
           display: 'flex',
           flexDirection: 'column',
-          gap: 10,
-          background: '#fff',
+          gap: 8,
+          padding: workspaceError || actionError ? 12 : 0,
         }}
       >
-        <Space align="start" style={{ justifyContent: 'space-between', width: '100%' }}>
-          <Space direction="vertical" size={2}>
-            <Space wrap>
-              <CodeOutlined />
-              <Typography.Text strong>{compactTitle}</Typography.Text>
-              <Tag>{sourceLabel}</Tag>
-            </Space>
-            <Typography.Text type="secondary">{compactDescription}</Typography.Text>
-          </Space>
-          <Space wrap>
-            <Button aria-label={t('Open Studio')} icon={<FolderOpenOutlined />} onClick={openStudio}>
-              {t('Open Studio')}
-            </Button>
-            <Button
-              aria-label={t('Run Preview')}
-              icon={<PlayCircleOutlined />}
-              loading={previewing}
-              onClick={runPreview}
-            >
-              {t('Run Preview')}
-            </Button>
-          </Space>
-        </Space>
-      </section>
-
-      <Drawer
-        destroyOnClose={false}
-        getContainer={false}
-        onClose={requestClose}
-        open={drawerOpen}
-        placement="right"
-        rootStyle={{ position: 'fixed' }}
-        title={null}
-        width={fullscreen ? '100vw' : drawerWidth}
-      >
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            minWidth: fullscreen ? 0 : 960,
-            height: 'calc(100vh - 48px)',
-            gap: 12,
-          }}
-        >
-          <WorkspaceHeader
-            activePath={activePath || entryPath}
-            baseVersion={formatVersion(baseCommit?.seq)}
-            disabled={!workspace || loadingWorkspace}
-            entryPath={entryPath}
-            lastSavedAt={workspace?.draft ? t('Draft saved') : t('Not saved')}
-            onMoreMenuClick={handleMoreMenuClick}
-            onPublish={openPublishModal}
-            onRefresh={requestRefreshWorkspace}
-            onRunPreview={runPreview}
-            onSaveDraft={saveDraft}
-            publishedVersion={formatVersion(publishedCommit?.seq)}
-            canPublish={Boolean(workspace?.permissions.canPublish)}
-            publishing={publishing}
-            readOnly={workspaceEditingDisabled}
-            saving={savingDraft}
-            sourceLabel={sourceLabel}
-            statusBadges={statusBadges}
-            t={t}
-            moreMenuItems={moreMenuItems}
+        {workspaceError ? (
+          <Alert
+            action={
+              <Space>
+                <Button aria-label={t('Retry')} icon={<ReloadOutlined />} onClick={loadWorkspace} size="small">
+                  {t('Retry')}
+                </Button>
+                <Button
+                  aria-label={t('Copy technical details')}
+                  icon={<CopyOutlined />}
+                  onClick={copyWorkspaceErrorDetails}
+                  size="small"
+                >
+                  {t('Copy technical details')}
+                </Button>
+              </Space>
+            }
+            message={formatVscComponentError(workspaceError, t('Failed to open RunJS source'))}
+            role="alert"
+            showIcon
+            type="error"
           />
+        ) : null}
 
-          {workspaceError ? (
+        {actionError ? (
+          <Alert
+            action={
+              <Space>
+                <Button aria-label={t('Retry')} icon={<ReloadOutlined />} onClick={retryActionError} size="small">
+                  {t('Retry')}
+                </Button>
+                <Button
+                  aria-label={t('Copy technical details')}
+                  icon={<CopyOutlined />}
+                  onClick={copyActionErrorDetails}
+                  size="small"
+                >
+                  {t('Copy technical details')}
+                </Button>
+              </Space>
+            }
+            description={formatVscComponentError(actionError.error, actionError.title)}
+            message={actionError.title}
+            role="alert"
+            showIcon
+            type="error"
+          />
+        ) : null}
+      </div>
+
+      {loadingWorkspace && !workspace ? (
+        <div aria-live="polite" role="status" style={{ padding: 48, textAlign: 'center' }}>
+          <Spin />
+          <Typography.Text style={{ display: 'block', marginTop: 12 }}>{t('Loading workspace')}</Typography.Text>
+        </div>
+      ) : null}
+
+      {workspace ? (
+        <>
+          {!workspace.permissions.canWrite ? (
             <Alert
               action={
-                <Space>
-                  <Button aria-label={t('Retry')} icon={<ReloadOutlined />} onClick={loadWorkspace} size="small">
-                    {t('Retry')}
-                  </Button>
-                  <Button
-                    aria-label={t('Copy technical details')}
-                    icon={<CopyOutlined />}
-                    onClick={copyWorkspaceErrorDetails}
-                    size="small"
-                  >
-                    {t('Copy technical details')}
-                  </Button>
-                </Space>
+                <Button icon={<ReloadOutlined />} onClick={requestRefreshWorkspace} size="small">
+                  {t('Refresh workspace')}
+                </Button>
               }
-              message={formatVscComponentError(workspaceError, t('Failed to open RunJS source'))}
-              role="alert"
+              message={t('You can view this JavaScript source, but you do not have permission to edit it')}
               showIcon
-              type="error"
+              style={{ marginBottom: 8 }}
+              type="info"
             />
           ) : null}
-
-          {actionError ? (
-            <Alert
-              action={
-                <Space>
-                  <Button aria-label={t('Retry')} icon={<ReloadOutlined />} onClick={retryActionError} size="small">
-                    {t('Retry')}
-                  </Button>
-                  <Button
-                    aria-label={t('Copy technical details')}
-                    icon={<CopyOutlined />}
-                    onClick={copyActionErrorDetails}
-                    size="small"
-                  >
-                    {t('Copy technical details')}
-                  </Button>
-                </Space>
-              }
-              description={formatVscComponentError(actionError.error, actionError.title)}
-              message={actionError.title}
-              role="alert"
-              showIcon
-              type="error"
-            />
-          ) : null}
-
-          {loadingWorkspace && !workspace ? (
-            <div aria-live="polite" role="status" style={{ padding: 48, textAlign: 'center' }}>
-              <Spin />
-              <Typography.Text style={{ display: 'block', marginTop: 12 }}>{t('Loading workspace')}</Typography.Text>
-            </div>
-          ) : null}
-
-          {workspace ? (
-            <>
-              {!workspace.permissions.canWrite ? (
-                <Alert
-                  action={
-                    <Button icon={<ReloadOutlined />} onClick={requestRefreshWorkspace} size="small">
-                      {t('Refresh workspace')}
-                    </Button>
-                  }
-                  message={t('You can view this JavaScript source, but you do not have permission to edit it')}
-                  showIcon
-                  type="info"
-                />
-              ) : null}
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: `${filesCollapsed ? '44px' : '220px'} minmax(0, 1fr) ${
-                    contextCollapsed ? '44px' : '280px'
-                  }`,
-                  gap: 12,
-                  minHeight: 0,
-                  flex: 1,
-                }}
-              >
-                <FilesPanel
-                  activePath={activePath}
-                  collapsed={filesCollapsed}
-                  entryPath={entryPath}
-                  files={files}
-                  onCollapseChange={setFilesCollapsed}
-                  onCreate={createFile}
-                  onDelete={deleteActiveFile}
-                  onOpen={openFilePath}
-                  onRefresh={requestRefreshWorkspace}
-                  onRename={renameActiveFile}
-                  onSetEntry={setActiveFileAsEntry}
-                  readOnly={workspaceEditingDisabled}
-                  savedFiles={savedFiles}
+          <div
+            style={{
+              background: '#fff',
+              display: 'grid',
+              flex: 1,
+              gridTemplateColumns: `${filesCollapsed ? '52px' : '260px'} minmax(0, 1fr)`,
+              minHeight: 0,
+              overflow: 'hidden',
+            }}
+          >
+            <div style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+              <FilesPanel
+                activePath={activePath}
+                collapsed={filesCollapsed}
+                entryPath={entryPath}
+                files={files}
+                onCollapseChange={setFilesCollapsed}
+                onCreate={createFile}
+                onDelete={deleteActiveFile}
+                onOpen={openFilePath}
+                onRefresh={requestRefreshWorkspace}
+                onRename={renameActiveFile}
+                onSetEntry={setActiveFileAsEntry}
+                readOnly={workspaceEditingDisabled}
+                savedFiles={savedFiles}
+                t={t}
+              />
+              {!filesCollapsed ? (
+                <VersionHistoryDock
+                  baseVersion={formatVersion(baseCommit?.seq)}
+                  hasDraft={Boolean(workspace.draft)}
+                  hasUnsavedLocalChanges={hasUnsavedLocalChanges}
+                  height={220}
+                  historyItems={historyItems}
+                  loading={historyLoading}
+                  onRefresh={refreshHistory}
+                  onSelect={setRestoreCommit}
+                  onViewDraftDiff={toggleDiff}
+                  publishedCommitId={workspace.repository.publishedCommitId}
                   t={t}
                 />
+              ) : null}
+            </div>
 
-                <main style={{ minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-                  <Tabs
-                    activeKey={activeTab}
-                    items={[
-                      {
-                        key: 'code',
-                        label: t('Code'),
-                        children: (
-                          <CodeTab
-                            activeFile={activeFile}
-                            activePath={activePath}
-                            entryPath={entryPath}
-                            onChange={updateActiveFileContent}
-                            onCloseFile={closeOpenFile}
-                            onOpenFile={openFilePath}
-                            openPaths={openPaths}
-                            readOnly={workspaceEditingDisabled}
-                            savedFiles={savedFiles}
-                            scene={scene}
-                            t={t}
-                            version={value.version}
-                            workspaceFiles={files}
-                          />
-                        ),
-                      },
-                      {
-                        key: 'diff',
-                        label: t('Diff'),
-                        children: (
-                          <DiffTab
-                            diffError={diffError}
-                            diffFiles={effectiveDiffFileList}
-                            diffLoading={diffLoading}
-                            diffMode={diffMode}
-                            ignoreWhitespace={ignoreWhitespace}
-                            lineDiffRows={lineDiffRows}
-                            onDiffModeChange={setDiffMode}
-                            onIgnoreWhitespaceChange={setIgnoreWhitespace}
-                            onRefresh={() => loadDiff({ force: true })}
-                            onSelectedPathChange={setSelectedDiffPath}
-                            onWrapLinesChange={setWrapDiffLines}
-                            selectedPath={selectedDiffPath}
-                            summary={effectiveDiffSummary}
-                            t={t}
-                            wrapLines={wrapDiffLines}
-                          />
-                        ),
-                      },
-                      {
-                        key: 'history',
-                        label: t('History'),
-                        children: (
-                          <HistoryTab
-                            baseVersion={formatVersion(baseCommit?.seq)}
-                            hasDraft={Boolean(workspace.draft)}
-                            hasUnsavedLocalChanges={hasUnsavedLocalChanges}
-                            historyItems={historyItems}
-                            loading={historyLoading}
-                            onBack={clearSelectedVersion}
-                            onCopyCode={async (commit) => copyVersionCode(commit)}
-                            onCopyFile={copyVersionFile}
-                            onDiscardDraft={discardDraft}
-                            onRefresh={refreshHistory}
-                            onRestore={setRestoreCommit}
-                            onSelect={loadVersion}
-                            onSelectedVersionViewChange={setSelectedVersionView}
-                            onViewDraftDiff={() => setActiveTab('diff')}
-                            publishedCommitId={workspace.repository.publishedCommitId}
-                            readOnly={workspaceEditingDisabled}
-                            restoringVersion={restoringVersion}
-                            selectedVersion={selectedVersion}
-                            selectedVersionDiff={selectedVersionDiff}
-                            selectedVersionView={selectedVersionView}
-                            t={t}
-                            versionLoading={versionLoading}
-                          />
-                        ),
-                      },
-                    ]}
-                    onChange={setActiveTab}
-                  />
-                </main>
-
-                <ContextPanel collapsed={contextCollapsed} onCollapseChange={setContextCollapsed} t={t} />
+            <main
+              style={{
+                display: 'flex',
+                flex: 1,
+                flexDirection: 'column',
+                minHeight: 0,
+                minWidth: 0,
+              }}
+            >
+              <div style={{ flex: 1, minHeight: 0, minWidth: 0, overflow: 'hidden', padding: 12 }}>
+                <CodeTab
+                  activeFile={activeFile}
+                  activePath={activePath}
+                  diffText={formatLineDiffText(lineDiffRows)}
+                  entryPath={entryPath}
+                  isDiff={showDiff}
+                  onChange={updateActiveFileContent}
+                  onCloseFile={closeOpenFile}
+                  onDiffToggle={toggleDiff}
+                  onOpenFile={openFilePath}
+                  onRunPreview={runPreview}
+                  openPaths={openPaths}
+                  previewing={previewing}
+                  readOnly={workspaceEditingDisabled}
+                  savedFiles={savedFiles}
+                  scene={scene}
+                  t={t}
+                  version={value.version}
+                  workspaceFiles={files}
+                />
               </div>
 
               <ConsolePanel
                 entries={consoleEntries}
                 height={consoleHeight}
-                maxHeight={maxConsolePanelHeight}
+                maxHeight="40%"
                 minHeight={minConsolePanelHeight}
                 onClear={clearConsole}
                 onCopy={copyLogs}
@@ -1826,10 +1373,43 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
                 onResize={setConsoleHeight}
                 t={t}
               />
-            </>
-          ) : null}
-        </div>
-      </Drawer>
+            </main>
+          </div>
+
+          <footer
+            style={{
+              alignItems: 'center',
+              background: '#fff',
+              borderTop: '1px solid #f0f0f0',
+              display: 'flex',
+              justifyContent: 'space-between',
+              padding: '10px 16px',
+            }}
+          >
+            <Space wrap>
+              <Tag color={hasUnsavedLocalChanges ? 'gold' : 'green'}>{footerStatus}</Tag>
+              <Typography.Text type="secondary">{activePath || entryPath}</Typography.Text>
+            </Space>
+            <Space wrap>
+              <Button style={{ whiteSpace: 'nowrap' }} onClick={requestClose}>
+                {t('Cancel')}
+              </Button>
+              <Button
+                aria-label={t('Save')}
+                disabled={
+                  !workspace || loadingWorkspace || workspaceEditingDisabled || !workspace.permissions.canPublish
+                }
+                loading={publishing || previewing}
+                onClick={openPublishModal}
+                style={{ whiteSpace: 'nowrap' }}
+                type="primary"
+              >
+                {t('Save')}
+              </Button>
+            </Space>
+          </footer>
+        </>
+      ) : null}
 
       <FileDialog
         error={fileDialogError}
@@ -1855,10 +1435,6 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
           setPublishOpen(false);
           setActiveTab('code');
         }}
-        onViewDiff={() => {
-          setPublishOpen(false);
-          setActiveTab('diff');
-        }}
         open={publishOpen}
         readOnly={workspaceEditingDisabled || !workspace?.permissions.canPublish}
         summary={publishSummary}
@@ -1869,9 +1445,7 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
         onCancel={() => setCloseConfirmOpen(false)}
         intent={pendingDirtyAction}
         onCloseWithoutSaving={discardLocalAndContinue}
-        onSaveAndClose={saveDraftAndContinue}
         open={closeConfirmOpen}
-        saving={savingDraft}
         t={t}
       />
 
@@ -1880,7 +1454,6 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
         loading={restoringVersion}
         onCancel={() => setRestoreCommit(null)}
         onRestore={confirmRestoreAsDraft}
-        onViewDiff={viewRestoreDiff}
         t={t}
       />
 
@@ -1900,8 +1473,6 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
             setDiffView({
               baseFiles: conflict.latestFiles,
               files: rebasedFiles,
-              diffFiles: conflictDiffFiles,
-              summary: summarizeWorkspaceChanges(conflict.latestFiles, rebasedFiles),
             });
             setSelectedDiffPath(conflictDiffFiles[0]?.path);
             setActiveTab('diff');
@@ -1912,32 +1483,6 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
       />
     </div>
   );
-
-  async function copyVersionCode(commit: RunJSSourceHistoryItem) {
-    if (!workspace || !props.locator) {
-      return;
-    }
-
-    try {
-      const version = await runJSSourceRequest('getVersion', {
-        locator: props.locator,
-        repoId: workspace.repository.repoId,
-        commitId: commit.id,
-        includeFiles: true,
-      });
-      const file = version.files.find((item) => item.path === entryPath) || version.files[0];
-      if (!file) {
-        return;
-      }
-      await navigator.clipboard?.writeText(file.content);
-      message.success(t('Code copied'));
-    } catch (error) {
-      appendConsole({
-        level: 'error',
-        message: formatVscComponentError(error, t('Copy code failed')),
-      });
-    }
-  }
 }
 
 function buildWorkspaceLoadResult(opened: RunJSSourceOpenWorkspaceResult): WorkspaceLoadResult {
@@ -1953,113 +1498,6 @@ function buildWorkspaceLoadResult(opened: RunJSSourceOpenWorkspaceResult): Works
     currentFiles: nextCurrentFiles,
     entryPath: nextEntryPath,
   };
-}
-
-function WorkspaceHeader(props: {
-  activePath: string;
-  baseVersion: string;
-  canPublish: boolean;
-  disabled: boolean;
-  entryPath: string;
-  lastSavedAt: string;
-  moreMenuItems: MenuProps['items'];
-  onMoreMenuClick: MenuProps['onClick'];
-  onPublish: () => void;
-  onRefresh: () => void;
-  onRunPreview: () => void;
-  onSaveDraft: () => void;
-  publishedVersion: string;
-  publishing: boolean;
-  readOnly: boolean;
-  saving: boolean;
-  sourceLabel: string;
-  statusBadges: React.ReactNode[];
-  t: (key: string) => string;
-}) {
-  const {
-    activePath,
-    baseVersion,
-    canPublish,
-    disabled,
-    entryPath,
-    lastSavedAt,
-    moreMenuItems,
-    onMoreMenuClick,
-    onPublish,
-    onRefresh,
-    onRunPreview,
-    onSaveDraft,
-    publishedVersion,
-    publishing,
-    readOnly,
-    saving,
-    sourceLabel,
-    statusBadges,
-    t,
-  } = props;
-
-  return (
-    <header
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        gap: 12,
-        borderBottom: '1px solid #f0f0f0',
-        paddingBottom: 12,
-      }}
-    >
-      <Space direction="vertical" size={4} style={{ minWidth: 0 }}>
-        <Space wrap>
-          <Typography.Text strong>{sourceLabel}</Typography.Text>
-          <Typography.Text type="secondary">{activePath || entryPath}</Typography.Text>
-        </Space>
-        <Space wrap>
-          {statusBadges}
-          <Tag>{`${t('Based on')} ${baseVersion}`}</Tag>
-          <Tag>{`${t('Published')} ${publishedVersion}`}</Tag>
-          <Typography.Text type="secondary">{lastSavedAt}</Typography.Text>
-        </Space>
-      </Space>
-      <Space wrap>
-        <Tooltip title={`${t('Run Preview')} (${t('Cmd/Ctrl + Enter')})`}>
-          <Button
-            aria-label={t('Run Preview')}
-            disabled={disabled}
-            icon={<PlayCircleOutlined />}
-            onClick={onRunPreview}
-          >
-            {t('Run Preview')}
-          </Button>
-        </Tooltip>
-        <Tooltip title={`${t('Save draft')} (${t('Cmd/Ctrl + S')})`}>
-          <Button
-            aria-label={t('Save Draft')}
-            disabled={disabled || readOnly || saving}
-            icon={<SaveOutlined />}
-            loading={saving}
-            onClick={onSaveDraft}
-          >
-            {t('Save Draft')}
-          </Button>
-        </Tooltip>
-        <Button
-          aria-label={t('Publish')}
-          disabled={disabled || readOnly || !canPublish}
-          icon={<UploadOutlined />}
-          loading={publishing}
-          onClick={onPublish}
-          type="primary"
-        >
-          {t('Publish')}
-        </Button>
-        <Button aria-label={t('Refresh workspace')} icon={<ReloadOutlined />} onClick={onRefresh} />
-        <Dropdown menu={{ items: moreMenuItems, onClick: onMoreMenuClick }} trigger={['click']}>
-          <Button aria-label={t('More actions')}>{t('More')}</Button>
-        </Dropdown>
-      </Space>
-    </header>
-  );
 }
 
 type FileTreeFolderRow = {
@@ -2222,12 +1660,22 @@ function FilesPanel(props: {
 
   if (collapsed) {
     return (
-      <aside style={{ borderRight: '1px solid #f0f0f0' }}>
-        <Tooltip title={t('Files')}>
+      <aside
+        style={{
+          alignItems: 'flex-start',
+          background: '#fafafa',
+          borderRight: '1px solid #f0f0f0',
+          display: 'flex',
+          justifyContent: 'center',
+          paddingTop: 8,
+        }}
+      >
+        <Tooltip title={t('File resource manager')}>
           <Button
             aria-label={t('Expand files')}
             icon={<FolderOpenOutlined />}
             onClick={() => onCollapseChange(false)}
+            size="small"
           />
         </Tooltip>
       </aside>
@@ -2236,18 +1684,21 @@ function FilesPanel(props: {
 
   return (
     <aside
-      aria-label={t('Files')}
+      aria-label={t('File resource manager')}
       style={{
+        background: '#fafafa',
         borderRight: '1px solid #f0f0f0',
         display: 'flex',
         flexDirection: 'column',
         gap: 8,
         minHeight: 0,
-        paddingRight: 8,
+        padding: 12,
       }}
     >
-      <Space style={{ justifyContent: 'space-between' }}>
-        <Typography.Text strong>{t('Files')}</Typography.Text>
+      <Space style={{ justifyContent: 'space-between', width: '100%' }}>
+        <Typography.Text strong style={{ whiteSpace: 'nowrap' }}>
+          {t('File resource manager')}
+        </Typography.Text>
         <Space size={4}>
           <Tooltip title={t('New file')}>
             <Button
@@ -2259,12 +1710,9 @@ function FilesPanel(props: {
             />
           </Tooltip>
           <Tooltip title={t('Collapse files')}>
-            <Button
-              aria-label={t('Collapse files')}
-              icon={<CompressOutlined />}
-              onClick={() => onCollapseChange(true)}
-              size="small"
-            />
+            <Button aria-label={t('Collapse files')} onClick={() => onCollapseChange(true)} size="small">
+              «
+            </Button>
           </Tooltip>
         </Space>
       </Space>
@@ -2312,11 +1760,17 @@ function FilesPanel(props: {
                 onKeyDown={(event) => handleFileKeyDown(event, row.path)}
                 onClick={() => onOpen(row.path)}
                 ref={registerFileButton(row.path)}
-                style={{ justifyContent: 'flex-start', minWidth: 0 }}
-                type={isActive ? 'primary' : 'text'}
+                style={{
+                  background: isActive ? '#e6f4ff' : undefined,
+                  color: isActive ? '#1677ff' : undefined,
+                  justifyContent: 'flex-start',
+                  minWidth: 0,
+                }}
+                type="text"
               >
                 <Space size={6} style={{ minWidth: 0 }}>
-                  <Typography.Text ellipsis style={{ maxWidth: 128 }}>
+                  <FileTextOutlined />
+                  <Typography.Text ellipsis style={{ maxWidth: 152 }}>
                     {row.name}
                     {dirty ? ' *' : ''}
                   </Typography.Text>
@@ -2358,11 +1812,16 @@ function FilesPanel(props: {
 function CodeTab(props: {
   activeFile?: RunJSWorkspaceFile;
   activePath?: string;
+  diffText: string;
   entryPath: string;
+  isDiff: boolean;
   onChange: (content: string) => void;
   onCloseFile: (path: string) => void;
+  onDiffToggle: () => void;
   onOpenFile: (path: string) => void;
+  onRunPreview: () => void;
   openPaths: string[];
+  previewing: boolean;
   readOnly: boolean;
   savedFiles: RunJSWorkspaceFile[];
   scene: string;
@@ -2373,11 +1832,16 @@ function CodeTab(props: {
   const {
     activeFile,
     activePath,
+    diffText,
     entryPath,
+    isDiff,
     onChange,
     onCloseFile,
+    onDiffToggle,
     onOpenFile,
+    onRunPreview,
     openPaths,
+    previewing,
     readOnly,
     savedFiles,
     scene,
@@ -2393,29 +1857,65 @@ function CodeTab(props: {
     return <Empty description={t('Select a file')} />;
   }
 
+  const editorValue = isDiff
+    ? diffText || t('No changes between current editor and published version')
+    : activeFile.content;
+
   return (
-    <section aria-label={t('Code')} style={{ display: 'flex', flexDirection: 'column', gap: 8, minHeight: 0 }}>
-      <OpenFileTabs
-        activePath={activePath}
-        entryPath={entryPath}
-        files={openFiles.length ? openFiles : [activeFile]}
-        onClose={onCloseFile}
-        onOpen={onOpenFile}
-        savedFiles={savedFiles}
-        t={t}
-      />
+    <section
+      aria-label={t('Code')}
+      style={{
+        display: 'flex',
+        flex: 1,
+        flexDirection: 'column',
+        gap: 8,
+        height: '100%',
+        minHeight: 0,
+        overflow: 'hidden',
+      }}
+    >
       <CodeEditor
         enableLinter
-        height="calc(100vh - 360px)"
-        language={activeFile.language || inferLanguageFromPath(activeFile.path)}
+        height="100%"
+        language={isDiff ? 'diff' : activeFile.language || inferLanguageFromPath(activeFile.path)}
+        minHeight={0}
         name={activeFile.path}
-        onChange={onChange}
+        onChange={isDiff ? undefined : onChange}
         placeholder={t('Edit file content')}
-        readonly={readOnly}
+        readonly={readOnly || isDiff}
+        runButton={
+          <Button disabled={isDiff} loading={previewing} onClick={onRunPreview} size="small">
+            {t('Run')}
+          </Button>
+        }
         scene={scene}
         showLogs={false}
-        value={activeFile.content}
+        toolbarLeftExtra={
+          <Space size={8} style={{ minWidth: 0 }}>
+            <OpenFileTabs
+              activePath={activePath}
+              entryPath={entryPath}
+              files={openFiles.length ? openFiles : [activeFile]}
+              onClose={onCloseFile}
+              onOpen={onOpenFile}
+              savedFiles={savedFiles}
+              t={t}
+            />
+            <Tooltip title={isDiff ? t('Back to editor') : t('Diff')}>
+              <Button
+                aria-label={t('Diff')}
+                icon={isDiff ? <CloseOutlined /> : <DiffOutlined />}
+                onClick={onDiffToggle}
+                size="small"
+                type={isDiff ? 'primary' : 'default'}
+              />
+            </Tooltip>
+            <Avatar icon={<UserOutlined />} size={28} />
+          </Space>
+        }
+        value={editorValue}
         version={version}
+        wrapperStyle={{ flex: 1, height: '100%', minHeight: 0, minWidth: 0, overflow: 'hidden' }}
       />
     </section>
   );
@@ -2482,27 +1982,31 @@ function OpenFileTabs(props: {
       {files.map((file, index) => {
         const active = file.path === activePath;
         const dirty = isWorkspaceFileDirty(savedFiles, file);
+        const fileName = file.path.split('/').pop() || file.path;
 
         return (
           <Space.Compact key={file.path}>
-            <Button
-              aria-selected={active}
-              onKeyDown={(event) => handleTabKeyDown(event, index)}
-              onClick={() => onOpen(file.path)}
-              ref={registerTabButton(file.path)}
-              role="tab"
-              size="small"
-              tabIndex={active ? 0 : -1}
-              type={active ? 'primary' : 'default'}
-            >
-              <Space size={4}>
-                <Typography.Text style={{ color: active ? 'inherit' : undefined }}>
-                  {file.path}
-                  {dirty ? ' *' : ''}
-                </Typography.Text>
-                {file.path === entryPath ? <Badge count={t('Entry')} size="small" /> : null}
-              </Space>
-            </Button>
+            <Tooltip title={file.path}>
+              <Button
+                aria-label={file.path}
+                aria-selected={active}
+                onKeyDown={(event) => handleTabKeyDown(event, index)}
+                onClick={() => onOpen(file.path)}
+                ref={registerTabButton(file.path)}
+                role="tab"
+                size="small"
+                tabIndex={active ? 0 : -1}
+                type={active ? 'primary' : 'default'}
+              >
+                <Space size={4}>
+                  <Typography.Text style={{ color: active ? 'inherit' : undefined }}>
+                    {fileName}
+                    {dirty ? ' *' : ''}
+                  </Typography.Text>
+                  {file.path === entryPath ? <Badge count={t('Entry')} size="small" /> : null}
+                </Space>
+              </Button>
+            </Tooltip>
             <Button
               aria-label={`${t('Close file')} ${file.path}`}
               icon={<CloseOutlined />}
@@ -2516,513 +2020,115 @@ function OpenFileTabs(props: {
   );
 }
 
-function DiffTab(props: {
-  diffError: unknown;
-  diffFiles: VscFileChange[];
-  diffLoading: boolean;
-  diffMode: 'split' | 'unified';
-  ignoreWhitespace: boolean;
-  lineDiffRows: RunJSLineDiffRow[];
-  onDiffModeChange: (mode: 'split' | 'unified') => void;
-  onIgnoreWhitespaceChange: (value: boolean) => void;
-  onRefresh: () => void;
-  onSelectedPathChange: (path: string) => void;
-  onWrapLinesChange: (value: boolean) => void;
-  selectedPath?: string;
-  summary: RunJSChangeSummary;
-  t: (key: string) => string;
-  wrapLines: boolean;
-}) {
-  const {
-    diffError,
-    diffFiles,
-    diffLoading,
-    diffMode,
-    ignoreWhitespace,
-    lineDiffRows,
-    onDiffModeChange,
-    onIgnoreWhitespaceChange,
-    onRefresh,
-    onSelectedPathChange,
-    onWrapLinesChange,
-    selectedPath,
-    summary,
-    t,
-    wrapLines,
-  } = props;
-  const [selectedChangeKey, setSelectedChangeKey] = useState<string | null>(null);
-  const selectedChangeRef = useRef<HTMLDivElement | null>(null);
-  const changeRows = useMemo(
-    () =>
-      lineDiffRows.filter(
-        (row, index) => row.type !== 'context' && (index === 0 || lineDiffRows[index - 1]?.type === 'context'),
-      ),
-    [lineDiffRows],
-  );
-  const selectedChangeIndex = selectedChangeKey
-    ? changeRows.findIndex((row) => row.key === selectedChangeKey)
-    : changeRows.length
-      ? 0
-      : -1;
-  const activeChangeKey = selectedChangeIndex >= 0 ? changeRows[selectedChangeIndex]?.key : null;
-  const hasPreviousChange = selectedChangeIndex > 0;
-  const hasNextChange = selectedChangeIndex >= 0 && selectedChangeIndex < changeRows.length - 1;
+function formatLineDiffText(rows: RunJSLineDiffRow[]): string {
+  const changedRows = rows.filter((row) => row.type !== 'context');
+  if (!changedRows.length) {
+    return '';
+  }
 
-  useEffect(() => {
-    if (!changeRows.length) {
-      if (selectedChangeKey) {
-        setSelectedChangeKey(null);
-      }
-      return;
-    }
-    if (!activeChangeKey) {
-      setSelectedChangeKey(changeRows[0].key);
-    }
-  }, [activeChangeKey, changeRows, selectedChangeKey]);
-
-  useEffect(() => {
-    selectedChangeRef.current?.scrollIntoView?.({ block: 'center' });
-  }, [activeChangeKey]);
-
-  const copyDiffErrorDetails = async () => {
-    if (!diffError) {
-      return;
-    }
-
-    try {
-      await navigator.clipboard?.writeText(
-        formatRunJSSourceRequestTechnicalDetails(diffError, t('Failed to load diff')),
-      );
-      message.success(t('Details copied'));
-    } catch (_) {
-      message.error(t('Copy details failed'));
-    }
-  };
-  const selectRelativeChange = (offset: number) => {
-    const next = changeRows[selectedChangeIndex + offset]?.key;
-    if (next) {
-      setSelectedChangeKey(next);
-    }
-  };
-
-  return (
-    <section aria-label={t('Diff')} style={{ display: 'grid', gridTemplateColumns: '220px minmax(0, 1fr)', gap: 12 }}>
-      <aside style={{ borderRight: '1px solid #f0f0f0', paddingRight: 8 }}>
-        <Space direction="vertical" style={{ width: '100%' }}>
-          <Space style={{ justifyContent: 'space-between', width: '100%' }}>
-            <Typography.Text strong>{formatChangeSummary(summary, t)}</Typography.Text>
-            <Button
-              aria-label={t('Refresh diff')}
-              icon={<ReloadOutlined />}
-              loading={diffLoading}
-              onClick={onRefresh}
-            />
-          </Space>
-          <List
-            dataSource={diffFiles}
-            locale={{
-              emptyText: (
-                <Empty description={t('No changes')}>
-                  <Button icon={<ReloadOutlined />} onClick={onRefresh} size="small">
-                    {t('Refresh diff')}
-                  </Button>
-                </Empty>
-              ),
-            }}
-            rowKey="path"
-            size="small"
-            renderItem={(file) => (
-              <List.Item style={{ paddingInline: 0 }}>
-                <Button
-                  block
-                  icon={<DiffOutlined />}
-                  onClick={() => onSelectedPathChange(file.path)}
-                  style={{ justifyContent: 'flex-start' }}
-                  type={selectedPath === file.path ? 'primary' : 'text'}
-                >
-                  {file.path}
-                </Button>
-              </List.Item>
-            )}
-          />
-        </Space>
-      </aside>
-      <div style={{ minWidth: 0 }}>
-        <Space wrap style={{ marginBottom: 8 }}>
-          <Segmented
-            onChange={(value) => onDiffModeChange(value as 'split' | 'unified')}
-            options={[
-              { label: t('Split'), value: 'split' },
-              { label: t('Unified'), value: 'unified' },
-            ]}
-            value={diffMode}
-          />
-          <Checkbox checked={ignoreWhitespace} onChange={(event) => onIgnoreWhitespaceChange(event.target.checked)}>
-            {t('Ignore whitespace')}
-          </Checkbox>
-          <Checkbox checked={wrapLines} onChange={(event) => onWrapLinesChange(event.target.checked)}>
-            {t('Wrap lines')}
-          </Checkbox>
-          <Button
-            disabled={!hasPreviousChange}
-            icon={<ArrowUpOutlined />}
-            onClick={() => selectRelativeChange(-1)}
-            size="small"
-          >
-            {t('Previous change')}
-          </Button>
-          <Button
-            disabled={!hasNextChange}
-            icon={<ArrowDownOutlined />}
-            onClick={() => selectRelativeChange(1)}
-            size="small"
-          >
-            {t('Next change')}
-          </Button>
-        </Space>
-        {diffError ? (
-          <Alert
-            action={
-              <Space>
-                <Button onClick={onRefresh} size="small">
-                  {t('Retry')}
-                </Button>
-                <Button icon={<CopyOutlined />} onClick={copyDiffErrorDetails} size="small">
-                  {t('Copy details')}
-                </Button>
-              </Space>
-            }
-            message={formatVscComponentError(diffError, t('Failed to load diff'))}
-            role="alert"
-            showIcon
-            type="error"
-          />
-        ) : null}
-        {diffLoading ? (
-          <div aria-live="polite" role="status" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <Spin size="small" />
-            <Typography.Text type="secondary">{t('Generating diff...')}</Typography.Text>
-          </div>
-        ) : null}
-        {!diffError && !diffLoading && lineDiffRows.length === 0 ? (
-          <Empty description={t('No changes between draft and published')}>
-            <Button icon={<ReloadOutlined />} onClick={onRefresh} size="small">
-              {t('Refresh diff')}
-            </Button>
-          </Empty>
-        ) : null}
-        {!diffError && lineDiffRows.length > 0 ? (
-          <div
-            aria-label={t('Diff output')}
-            style={{
-              border: '1px solid #d9d9d9',
-              borderRadius: 6,
-              fontFamily: 'monospace',
-              maxHeight: 'calc(100vh - 380px)',
-              overflow: 'auto',
-            }}
-          >
-            {lineDiffRows.map((row) => (
-              <div
-                key={row.key}
-                ref={row.key === activeChangeKey ? selectedChangeRef : undefined}
-                style={{
-                  background: row.type === 'insert' ? '#f6ffed' : row.type === 'delete' ? '#fff1f0' : undefined,
-                  display: diffMode === 'split' ? 'grid' : 'flex',
-                  gridTemplateColumns: diffMode === 'split' ? '72px 72px minmax(0, 1fr)' : undefined,
-                  gap: 8,
-                  outline: row.key === activeChangeKey ? '1px solid #1677ff' : undefined,
-                  padding: '2px 8px',
-                  whiteSpace: wrapLines ? 'pre-wrap' : 'pre',
-                }}
-              >
-                {diffMode === 'split' ? (
-                  <>
-                    <Typography.Text type="secondary">{row.oldLineNumber || ''}</Typography.Text>
-                    <Typography.Text type="secondary">{row.newLineNumber || ''}</Typography.Text>
-                  </>
-                ) : null}
-                <span>{`${row.type === 'insert' ? '+' : row.type === 'delete' ? '-' : ' '} ${row.content}`}</span>
-              </div>
-            ))}
-          </div>
-        ) : null}
-      </div>
-    </section>
-  );
+  return changedRows
+    .map((row) => {
+      const sign = row.type === 'insert' ? '+' : row.type === 'delete' ? '-' : ' ';
+      const oldLine = row.oldLineNumber ? String(row.oldLineNumber).padStart(4, ' ') : '    ';
+      const newLine = row.newLineNumber ? String(row.newLineNumber).padStart(4, ' ') : '    ';
+      return `${sign} ${oldLine} ${newLine} ${row.content}`;
+    })
+    .join('\n')
+    .trimEnd();
 }
 
-function HistoryTab(props: {
+function VersionHistoryDock(props: {
   baseVersion: string;
   hasDraft: boolean;
   hasUnsavedLocalChanges: boolean;
+  height: number;
   historyItems: RunJSSourceHistoryItem[];
   loading: boolean;
-  onBack: () => void;
-  onCopyCode: (commit: RunJSSourceHistoryItem) => Promise<void>;
-  onCopyFile: (file: RunJSWorkspaceFile) => Promise<void>;
-  onDiscardDraft: () => void;
   onRefresh: () => void;
-  onRestore: (commit: RunJSSourceHistoryItem) => void;
   onSelect: (commit: RunJSSourceHistoryItem) => void;
-  onSelectedVersionViewChange: (view: VersionDetailView) => void;
   onViewDraftDiff: () => void;
   publishedCommitId?: string | null;
-  readOnly: boolean;
-  restoringVersion: boolean;
-  selectedVersion: RunJSSourceVersionResult | null;
-  selectedVersionDiff: RunJSSourceDiffVersionResult | null;
-  selectedVersionView: VersionDetailView;
   t: (key: string) => string;
-  versionLoading: boolean;
 }) {
   const {
     baseVersion,
     hasDraft,
     hasUnsavedLocalChanges,
+    height,
     historyItems,
     loading,
-    onBack,
-    onCopyCode,
-    onCopyFile,
-    onDiscardDraft,
     onRefresh,
-    onRestore,
     onSelect,
-    onSelectedVersionViewChange,
     onViewDraftDiff,
     publishedCommitId,
-    readOnly,
-    restoringVersion,
-    selectedVersion,
-    selectedVersionDiff,
-    selectedVersionView,
     t,
-    versionLoading,
   } = props;
-  const selectedParent = selectedVersion?.commit.parentCommitId
-    ? historyItems.find((item) => item.id === selectedVersion.commit.parentCommitId)
-    : undefined;
 
   return (
     <section
-      aria-label={t('History')}
-      style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 280px', gap: 12 }}
-    >
-      <div>
-        <Space style={{ justifyContent: 'space-between', marginBottom: 8, width: '100%' }}>
-          <Typography.Text strong>{t('History')}</Typography.Text>
-          <Button aria-label={t('Refresh history')} icon={<ReloadOutlined />} loading={loading} onClick={onRefresh} />
-        </Space>
-        {hasDraft || hasUnsavedLocalChanges ? (
-          <div style={{ border: '1px solid #f0f0f0', borderRadius: 6, marginBottom: 8, padding: 8 }}>
-            <Space direction="vertical">
-              <Typography.Text strong>{t('Current draft')}</Typography.Text>
-              <Typography.Text type="secondary">
-                {hasUnsavedLocalChanges ? t('Unsaved changes') : t('Draft saved')} · {`${t('Based on')} ${baseVersion}`}
-              </Typography.Text>
-              <Space>
-                <Button onClick={onViewDraftDiff} size="small" type="link">
-                  {t('View diff')}
-                </Button>
-                <Button disabled={readOnly} onClick={onDiscardDraft} size="small" type="link">
-                  {t('Discard draft')}
-                </Button>
-              </Space>
-            </Space>
-          </div>
-        ) : null}
-        <List
-          dataSource={historyItems}
-          loading={loading}
-          locale={{
-            emptyText: (
-              <Empty description={t('No published versions yet')}>
-                <Button icon={<ReloadOutlined />} loading={loading} onClick={onRefresh} size="small">
-                  {t('Refresh history')}
-                </Button>
-              </Empty>
-            ),
-          }}
-          rowKey="id"
-          renderItem={(commit) => (
-            <List.Item
-              actions={[
-                <Button key="diff" onClick={() => onSelect(commit)} size="small" type="link">
-                  {t('View diff')}
-                </Button>,
-                <Button
-                  disabled={readOnly || hasUnsavedLocalChanges}
-                  key="restore"
-                  onClick={() => onRestore(commit)}
-                  size="small"
-                  type="link"
-                >
-                  {t('Restore as draft')}
-                </Button>,
-                <Button key="copy" onClick={() => onCopyCode(commit)} size="small" type="link">
-                  {t('Copy code')}
-                </Button>,
-              ]}
-              onClick={() => onSelect(commit)}
-              style={{ cursor: 'pointer' }}
-            >
-              <List.Item.Meta
-                description={
-                  <Space wrap>
-                    {commit.isPublished || commit.id === publishedCommitId ? (
-                      <Tag color="green">{t('Published')}</Tag>
-                    ) : null}
-                    <Typography.Text type="secondary">{commit.authorId || t('Unknown author')}</Typography.Text>
-                  </Space>
-                }
-                title={`${formatVersion(commit.seq)} ${commit.message}`}
-              />
-            </List.Item>
-          )}
-        />
-      </div>
-      <aside style={{ borderLeft: '1px solid #f0f0f0', paddingLeft: 12 }}>
-        <Space style={{ justifyContent: 'space-between', width: '100%' }}>
-          <Typography.Text strong>
-            {selectedVersion ? `${t('Commit')} ${formatVersion(selectedVersion.commit.seq)}` : t('Version detail')}
-          </Typography.Text>
-          {selectedVersion ? (
-            <Button onClick={onBack} size="small" type="link">
-              {t('Back to history')}
-            </Button>
-          ) : null}
-        </Space>
-        {versionLoading ? <Spin style={{ display: 'block', marginTop: 12 }} /> : null}
-        {!versionLoading && !selectedVersion ? <Empty description={t('Select a version')} /> : null}
-        {selectedVersion ? (
-          <Space direction="vertical" style={{ width: '100%' }}>
-            <Typography.Text type="secondary">{t('Message')}</Typography.Text>
-            <Typography.Text>{selectedVersion.commit.message}</Typography.Text>
-            <Typography.Text type="secondary">{t('Metadata')}</Typography.Text>
-            <Space wrap>
-              <Tag>{`${t('Author')}: ${selectedVersion.commit.authorId || t('Unknown author')}`}</Tag>
-              <Tag>{`${t('Parent')}: ${
-                selectedParent ? formatVersion(selectedParent.seq) : selectedVersion.commit.parentCommitId || '-'
-              }`}</Tag>
-              {selectedVersionDiff ? (
-                <Tag>{formatChangeSummary(summarizeDiffVersion(selectedVersionDiff), t)}</Tag>
-              ) : null}
-            </Space>
-            <Space wrap>
-              <Button
-                icon={<DiffOutlined />}
-                onClick={() => onSelectedVersionViewChange('diff')}
-                size="small"
-                type={selectedVersionView === 'diff' ? 'primary' : 'default'}
-              >
-                {t('View diff')}
-              </Button>
-              <Button
-                icon={<FileTextOutlined />}
-                onClick={() => onSelectedVersionViewChange('files')}
-                size="small"
-                type={selectedVersionView === 'files' ? 'primary' : 'default'}
-              >
-                {t('View files')}
-              </Button>
-              <Button
-                disabled={readOnly || hasUnsavedLocalChanges}
-                icon={<RollbackOutlined />}
-                loading={restoringVersion}
-                onClick={() => onRestore(selectedVersion.commit)}
-                size="small"
-              >
-                {t('Restore as draft')}
-              </Button>
-            </Space>
-            {selectedVersionDiff ? (
-              selectedVersionView === 'diff' ? (
-                <>
-                  <Divider style={{ margin: '8px 0' }} />
-                  <Typography.Text type="secondary">
-                    {formatChangeSummary(summarizeDiffVersion(selectedVersionDiff), t)}
-                  </Typography.Text>
-                  {selectedVersionDiff.diff.files.map((file) => (
-                    <Typography.Text code ellipsis key={`diff:${file.path}`}>
-                      {`${file.path} +${file.additions} -${file.deletions}`}
-                    </Typography.Text>
-                  ))}
-                </>
-              ) : null
-            ) : null}
-            {selectedVersionView === 'files' ? (
-              <>
-                <Divider style={{ margin: '8px 0' }} />
-                {selectedVersion.files.map((file) => (
-                  <Space key={`version:${file.path}`} style={{ justifyContent: 'space-between', width: '100%' }}>
-                    <Typography.Text code ellipsis>
-                      {file.path}
-                    </Typography.Text>
-                    <Button icon={<CopyOutlined />} onClick={() => onCopyFile(file)} size="small" type="link">
-                      {t('Copy file')}
-                    </Button>
-                  </Space>
-                ))}
-              </>
-            ) : null}
-          </Space>
-        ) : null}
-      </aside>
-    </section>
-  );
-}
-
-function ContextPanel(props: {
-  collapsed: boolean;
-  onCollapseChange: (collapsed: boolean) => void;
-  t: (key: string) => string;
-}) {
-  const { collapsed, onCollapseChange, t } = props;
-
-  if (collapsed) {
-    return (
-      <aside style={{ borderLeft: '1px solid #f0f0f0', paddingLeft: 8 }}>
-        <Tooltip title={t('Context')}>
-          <Button aria-label={t('Expand context')} icon={<PlusOutlined />} onClick={() => onCollapseChange(false)} />
-        </Tooltip>
-      </aside>
-    );
-  }
-
-  return (
-    <aside
-      aria-label={t('Context')}
+      aria-label={t('Commit history')}
       style={{
-        borderLeft: '1px solid #f0f0f0',
+        borderRight: '1px solid #f0f0f0',
         display: 'flex',
         flexDirection: 'column',
-        gap: 12,
-        paddingLeft: 12,
+        gap: 8,
+        height,
+        minHeight: minConsolePanelHeight,
+        overflow: 'hidden',
+        padding: 12,
       }}
     >
       <Space style={{ justifyContent: 'space-between' }}>
-        <Typography.Text strong>{t('Context')}</Typography.Text>
-        <Button
-          aria-label={t('Collapse context')}
-          icon={<CompressOutlined />}
-          onClick={() => onCollapseChange(true)}
-          size="small"
-        />
+        <Typography.Text strong>{t('History')}</Typography.Text>
+        <Button aria-label={t('Refresh history')} icon={<ReloadOutlined />} loading={loading} onClick={onRefresh} />
       </Space>
-      <section>
-        <Typography.Text strong>{t('Snippets')}</Typography.Text>
-        <Typography.Paragraph type="secondary">
-          {t('Use the editor snippets menu for scene-aware examples.')}
-        </Typography.Paragraph>
-      </section>
-      <section>
-        <Typography.Text strong>{t('Help')}</Typography.Text>
-        <Typography.Paragraph type="secondary">
-          {t('Preview compiles the current workspace before publish.')}
-        </Typography.Paragraph>
-      </section>
-    </aside>
+      {hasDraft || hasUnsavedLocalChanges ? (
+        <div style={{ border: '1px solid #f0f0f0', borderRadius: 6, padding: 8 }}>
+          <Space direction="vertical" size={2}>
+            <Typography.Text strong>{t('Current changes')}</Typography.Text>
+            <Typography.Text type="secondary">
+              {hasUnsavedLocalChanges ? t('Unsaved changes') : t('Saved changes')} · {`${t('Based on')} ${baseVersion}`}
+            </Typography.Text>
+            <Button onClick={onViewDraftDiff} size="small" type="link">
+              {t('View diff')}
+            </Button>
+          </Space>
+        </div>
+      ) : null}
+      <div style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
+        {historyItems.length === 0 ? <Empty description={t('No published versions yet')} /> : null}
+        {historyItems.slice(0, 5).map((commit) => (
+          <button
+            key={commit.id}
+            onClick={() => onSelect(commit)}
+            style={{
+              background: 'transparent',
+              border: 0,
+              borderRadius: 6,
+              cursor: 'pointer',
+              display: 'block',
+              padding: '6px 4px',
+              textAlign: 'left',
+              width: '100%',
+            }}
+            type="button"
+          >
+            <Space direction="vertical" size={0} style={{ width: '100%' }}>
+              <Space size={6}>
+                <Typography.Text strong>{formatVersion(commit.seq)}</Typography.Text>
+                {commit.isPublished || commit.id === publishedCommitId ? (
+                  <Tag color="green">{t('Published')}</Tag>
+                ) : null}
+              </Space>
+              <Typography.Text ellipsis type="secondary">
+                {commit.message}
+              </Typography.Text>
+              <Typography.Text type="secondary">{t('Click to restore')}</Typography.Text>
+            </Space>
+          </button>
+        ))}
+      </div>
+    </section>
   );
 }
 
@@ -3085,12 +2191,18 @@ function ConsolePanel(props: {
       aria-label={t('Console')}
       style={{
         borderTop: '1px solid #f0f0f0',
+        background: '#fff',
+        boxSizing: 'border-box',
         display: 'flex',
         flexDirection: 'column',
+        flexShrink: 0,
         height,
         maxHeight,
         minHeight,
+        overflow: 'hidden',
         paddingTop: 8,
+        position: 'relative',
+        zIndex: 1,
       }}
     >
       <div
@@ -3113,7 +2225,7 @@ function ConsolePanel(props: {
         tabIndex={0}
       />
       <Space style={{ justifyContent: 'space-between', marginBottom: 8 }}>
-        <Typography.Text strong>{t('Console')}</Typography.Text>
+        <Typography.Text strong>{t('Console logs')}</Typography.Text>
         <Space>
           <Button onClick={onClear} size="small">
             {t('Clear')}
@@ -3123,7 +2235,7 @@ function ConsolePanel(props: {
           </Button>
         </Space>
       </Space>
-      <div aria-live="polite" style={{ flex: 1, overflow: 'auto' }}>
+      <div aria-live="polite" style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
         {entries.length === 0 ? <Empty description={t('No logs')} /> : null}
         {entries.map((entry) => (
           <button
@@ -3138,6 +2250,8 @@ function ConsolePanel(props: {
               fontFamily: 'monospace',
               padding: '2px 0',
               textAlign: 'left',
+              whiteSpace: 'pre-wrap',
+              wordBreak: 'break-word',
               width: '100%',
             }}
             type="button"
@@ -3176,7 +2290,6 @@ function FileDialog(props: {
   return (
     <Modal
       afterClose={onAfterClose}
-      getContainer={false}
       okText={mode === 'rename' ? t('Rename') : t('Create')}
       onCancel={onCancel}
       onOk={onSubmit}
@@ -3205,7 +2318,6 @@ function PublishModal(props: {
   onCommitMessageChange: (value: string) => void;
   onPublish: () => void;
   onViewDiagnostics: () => void;
-  onViewDiff: () => void;
   open: boolean;
   readOnly: boolean;
   summary: RunJSChangeSummary;
@@ -3220,7 +2332,6 @@ function PublishModal(props: {
     onCommitMessageChange,
     onPublish,
     onViewDiagnostics,
-    onViewDiff,
     open,
     readOnly,
     summary,
@@ -3228,7 +2339,7 @@ function PublishModal(props: {
   } = props;
   const trimmed = commitMessage.trim();
   const hasCompileErrors = diagnostics.some((diagnostic) => diagnostic.severity === 'error');
-  const messageInvalid = trimmed.length < 3 || trimmed.length > 200;
+  const messageInvalid = trimmed.length === 0 || trimmed.length > 200;
   const disabled = readOnly || summary.files === 0 || hasCompileErrors || messageInvalid;
   const inputRef = useRef<InputRef>(null);
 
@@ -3253,18 +2364,17 @@ function PublishModal(props: {
     <Modal
       afterClose={onAfterClose}
       confirmLoading={loading}
-      getContainer={false}
       okButtonProps={{ disabled }}
-      okText={t('Publish')}
+      okText={t('Save')}
       onCancel={onCancel}
       onOk={onPublish}
       open={open}
-      title={t('Publish JavaScript')}
+      title={t('Commit message')}
     >
       <Space direction="vertical" style={{ width: '100%' }}>
         <Typography.Text strong>{t('Changes')}</Typography.Text>
         <Typography.Text>{formatChangeSummary(summary, t)}</Typography.Text>
-        {summary.files === 0 ? <Alert message={t('No changes to publish')} showIcon type="info" /> : null}
+        {summary.files === 0 ? <Alert message={t('No changes to save')} showIcon type="info" /> : null}
         {hasCompileErrors ? (
           <Alert
             action={
@@ -3292,15 +2402,12 @@ function PublishModal(props: {
           aria-label={t('Commit message')}
           maxLength={200}
           onChange={(event) => onCommitMessageChange(event.target.value)}
-          placeholder={t('Update chart event handling')}
+          placeholder={t('Describe this change')}
           ref={inputRef}
           showCount
           status={commitMessage && messageInvalid ? 'error' : undefined}
           value={commitMessage}
         />
-        <Button icon={<DiffOutlined />} onClick={onViewDiff}>
-          {t('View diff')}
-        </Button>
       </Space>
     </Modal>
   );
@@ -3310,30 +2417,24 @@ function CloseConfirmModal(props: {
   intent: PendingDirtyAction;
   onCancel: () => void;
   onCloseWithoutSaving: () => void;
-  onSaveAndClose: () => void;
   open: boolean;
-  saving: boolean;
   t: (key: string) => string;
 }) {
-  const { intent, onCancel, onCloseWithoutSaving, onSaveAndClose, open, saving, t } = props;
-  const saveLabel = intent === 'refresh' ? t('Save draft and refresh') : t('Save draft and close');
-  const discardLabel = intent === 'refresh' ? t('Refresh without saving') : t('Close without saving');
-  const message = intent === 'refresh' ? t('Save your draft before refreshing?') : t('Save your draft before closing?');
+  const { intent, onCancel, onCloseWithoutSaving, open, t } = props;
+  const discardLabel = intent === 'refresh' ? t('Discard changes and refresh') : t('Discard changes');
+  const message =
+    intent === 'refresh' ? t('Discard your changes before refreshing?') : t('Discard your changes before closing?');
 
   return (
     <Modal
       footer={[
-        <Button disabled={saving} key="save" loading={saving} onClick={onSaveAndClose} type="primary">
-          {saveLabel}
-        </Button>,
-        <Button key="discard" onClick={onCloseWithoutSaving}>
+        <Button danger key="discard" onClick={onCloseWithoutSaving} type="primary">
           {discardLabel}
         </Button>,
         <Button key="cancel" onClick={onCancel}>
           {t('Cancel')}
         </Button>,
       ]}
-      getContainer={false}
       onCancel={onCancel}
       open={open}
       title={t('Unsaved changes')}
@@ -3348,41 +2449,36 @@ function RestoreAsDraftModal(props: {
   loading: boolean;
   onCancel: () => void;
   onRestore: () => void;
-  onViewDiff: () => void;
   t: (key: string) => string;
 }) {
-  const { commit, loading, onCancel, onRestore, onViewDiff, t } = props;
+  const { commit, loading, onCancel, onRestore, t } = props;
   const version = commit ? formatVersion(commit.seq) : '';
 
   return (
     <Modal
       footer={[
-        <Button icon={<DiffOutlined />} key="diff" onClick={onViewDiff}>
-          {t('View diff')}
-        </Button>,
         <Button key="cancel" onClick={onCancel}>
           {t('Cancel')}
         </Button>,
         <Button key="restore" loading={loading} onClick={onRestore} type="primary">
-          {t('Restore as draft')}
+          {t('Restore')}
         </Button>,
       ]}
-      getContainer={false}
       onCancel={onCancel}
       open={Boolean(commit)}
-      title={formatRestoreAsDraftTitle(version, t)}
+      title={formatRestoreTitle(version, t)}
     >
       <Space direction="vertical" style={{ width: '100%' }}>
-        <Typography.Text>{t('This will copy files from this version into your current draft.')}</Typography.Text>
+        <Typography.Text>{t('This will copy files from this version into the editor.')}</Typography.Text>
         <Typography.Text>{t('It will not change the published version.')}</Typography.Text>
-        <Typography.Text>{t('You can review and publish after restoring.')}</Typography.Text>
+        <Typography.Text>{t('You can review and save after restoring.')}</Typography.Text>
       </Space>
     </Modal>
   );
 }
 
-function formatRestoreAsDraftTitle(version: string, t: (key: string) => string): string {
-  return t('Restore {{version}} as draft?').replace('{{version}}', version);
+function formatRestoreTitle(version: string, t: (key: string) => string): string {
+  return t('Restore {{version}}?').replace('{{version}}', version);
 }
 
 function ConflictDialog(props: {
@@ -3396,7 +2492,7 @@ function ConflictDialog(props: {
   const { conflict, onCancel, onDiscard, onRebase, onViewChanges, t } = props;
 
   return (
-    <Modal footer={null} getContainer={false} onCancel={onCancel} open={Boolean(conflict)} title={t('Conflict')}>
+    <Modal footer={null} onCancel={onCancel} open={Boolean(conflict)} title={t('Conflict')}>
       {conflict ? (
         <Space direction="vertical" style={{ width: '100%' }}>
           <Alert
@@ -3464,110 +2560,12 @@ function formatCompileDiagnostics(diagnostics: RunJSCompileDiagnostic[]): string
     .join('\n\n');
 }
 
-function buildStatusBadges(input: {
-  t: (key: string) => string;
-  hasUnsavedLocalChanges: boolean;
-  hasDraft: boolean;
-  previewing: boolean;
-  publishedSeq?: number;
-  restoredDraftVersion?: string | null;
-  conflict: boolean;
-  compileFailed: boolean;
-}): React.ReactNode[] {
-  const badges: React.ReactNode[] = [];
-  const {
-    t,
-    hasUnsavedLocalChanges,
-    hasDraft,
-    previewing,
-    publishedSeq,
-    restoredDraftVersion,
-    conflict,
-    compileFailed,
-  } = input;
-
-  if (hasUnsavedLocalChanges) {
-    badges.push(
-      <Tag color="orange" key="unsaved">
-        {t('Unsaved changes')}
-      </Tag>,
-    );
-  } else if (hasDraft) {
-    badges.push(
-      <Tag color="blue" key="draft">
-        {t('Draft saved')}
-      </Tag>,
-    );
-  }
-  if (restoredDraftVersion) {
-    badges.push(
-      <Tag color="blue" key="restored">
-        {`${t('Draft restored from')} ${restoredDraftVersion}`}
-      </Tag>,
-    );
-  }
-  if (previewing) {
-    badges.push(
-      <Tag color="processing" key="preview">
-        {t('Running preview')}
-      </Tag>,
-    );
-  }
-  if (publishedSeq) {
-    badges.push(<Tag color="green" key="published">{`${t('Published as')} v${publishedSeq}`}</Tag>);
-  }
-  if (conflict) {
-    badges.push(
-      <Tag color="red" key="conflict">
-        {t('Conflict')}
-      </Tag>,
-    );
-  }
-  if (compileFailed) {
-    badges.push(
-      <Tag color="red" key="compile">
-        {t('Compile failed')}
-      </Tag>,
-    );
-  }
-
-  return badges;
-}
-
-function formatCompactStatus(input: {
-  t: (key: string) => string;
-  publishedSeq?: number;
-  hasDraft: boolean;
-  hasUnsavedLocalChanges: boolean;
-  entryPath: string;
-}): string {
-  const { t, publishedSeq, hasDraft, hasUnsavedLocalChanges, entryPath } = input;
-  const version = publishedSeq ? `${t('Published')} v${publishedSeq}` : t('No published versions yet');
-  const draft = hasUnsavedLocalChanges ? t('Unsaved changes') : hasDraft ? t('Draft saved') : t('No draft');
-  return `${version} · ${draft} · ${entryPath}`;
-}
-
 function findCommit(items: RunJSSourceHistoryItem[], commitId?: string | null): RunJSSourceHistoryItem | undefined {
   if (!commitId) {
     return undefined;
   }
 
   return items.find((item) => item.id === commitId);
-}
-
-function summarizeDiffVersion(diffVersion: RunJSSourceDiffVersionResult): RunJSChangeSummary {
-  return diffVersion.diff.files.reduce(
-    (summary, file) => ({
-      files: summary.files + 1,
-      additions: summary.additions + file.additions,
-      deletions: summary.deletions + file.deletions,
-    }),
-    {
-      files: 0,
-      additions: 0,
-      deletions: 0,
-    },
-  );
 }
 
 function canPublish(
@@ -3580,7 +2578,7 @@ function canPublish(
   return (
     !readOnly &&
     summary.files > 0 &&
-    length >= 3 &&
+    length > 0 &&
     length <= 200 &&
     diagnostics.every((item) => item.severity !== 'error')
   );

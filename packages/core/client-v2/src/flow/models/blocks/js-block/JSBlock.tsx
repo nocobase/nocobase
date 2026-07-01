@@ -297,9 +297,10 @@ JSBlockModel.registerFlow({
             minHeight: '320px',
             theme: 'light',
             enableLinter: true,
-            wrapperStyle: {
-              position: 'fixed',
-              inset: 8,
+            containerStyle: {
+              height: '100%',
+              minHeight: 0,
+              minWidth: 0,
             },
           },
         },
@@ -307,6 +308,7 @@ JSBlockModel.registerFlow({
       uiMode: {
         type: 'embed',
         props: {
+          footer: null,
           styles: {
             body: {
               transform: 'translateX(0)',

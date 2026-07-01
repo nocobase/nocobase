@@ -42,6 +42,8 @@ interface CodeEditorProps {
   language?: string;
   scene?: string | string[];
   RightExtra?: React.FC<any>;
+  toolbarLeftExtra?: React.ReactNode;
+  runButton?: React.ReactNode;
   showLogs?: boolean;
 }
 
@@ -65,6 +67,8 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
   language,
   scene,
   RightExtra,
+  toolbarLeftExtra,
+  runButton,
   showLogs = true,
 }) => {
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -219,6 +223,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
         language={language}
         scene={resolvedScene}
         extraEditorRef={extraEditorRef.current}
+        leftContent={toolbarLeftExtra}
         extraContent={
           <>
             {RightExtra ? (
@@ -228,11 +233,11 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
                 <Button size="small" onClick={() => setSnippetOpen(true)}>
                   {tr('Snippets')}
                 </Button>
-                <>
+                {runButton ?? (
                   <Button size="small" loading={running} onClick={runCurrentCode}>
                     {tr('Run')}
                   </Button>
-                </>
+                )}
               </div>
             )}
             {fullscreenButton}

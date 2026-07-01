@@ -131,6 +131,10 @@ function isRunJSSourceAuthoringInspectorRegistrar(value: unknown): value is RunJ
 const inspectFlowEngineRunJSSourceAuthoring: RunJSSourceAuthoringInspector = (
   input: RunJSSourceAuthoringInspectionInput,
 ) => {
+  if (input.locator?.kind === 'flowModel.step') {
+    return [];
+  }
+
   return inspectRunJsAuthoringCode({
     code: input.code,
     path: input.path,

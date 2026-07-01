@@ -1117,6 +1117,8 @@ describe('FlowSettings.open rendering behavior', () => {
     const onCloseSpy = vi.fn();
     const embed = vi.fn((opts: any) => {
       expect(opts.target).toBe(mockTarget);
+      expect(opts.title).toBeNull();
+      expect(opts.footer).toBeNull();
       expect(opts.width).toBe('60%');
       expect(opts.maxWidth).toBe('900px');
       expect(typeof opts.onOpen).toBe('function');
@@ -1151,8 +1153,10 @@ describe('FlowSettings.open rendering behavior', () => {
       uiMode: {
         type: 'embed',
         props: {
+          title: null,
           width: '60%',
           maxWidth: '900px',
+          footer: null,
           onOpen: onOpenSpy,
           onClose: onCloseSpy,
         },
