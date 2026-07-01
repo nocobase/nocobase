@@ -11,6 +11,7 @@ import { BaseInterface } from '@nocobase/database';
 import { createMockServer, MockServer } from '@nocobase/test';
 import { uid } from '@nocobase/utils';
 import fs from 'fs';
+import JSZip from 'jszip';
 import moment from 'moment';
 import path from 'path';
 import { XlsxExporter } from '../services/xlsx-exporter';
@@ -19,6 +20,17 @@ import { Workbook } from 'exceljs';
 function getXlsxData(worksheet) {
   const data = worksheet.getSheetValues()[2];
   return data.slice(1);
+}
+
+async function readWorksheetXml(filePath: string) {
+  const zip = await JSZip.loadAsync(await fs.promises.readFile(filePath));
+  const worksheetFile = zip.file('xl/worksheets/sheet1.xml');
+
+  if (!worksheetFile) {
+    throw new Error('worksheet XML not found');
+  }
+
+  return worksheetFile.async('string');
 }
 
 describe('export to xlsx with preset', () => {
@@ -474,6 +486,232 @@ describe('export to xlsx with preset', () => {
       'https://nocobase.oss-cn-beijing.aliyuncs.com/test1.png,/storage/uploads/682e5ad037dd02a0fe4800a3e91c283b.png',
     );
     exporter.cleanOutputFile();
+  });
+
+  it('should escape formula injection for exported text-like field values', async () => {
+    const payloads = {
+      input: '=SUM(1,1)',
+      textarea: '+SUM(1,1)',
+      richText: '-SUM(1,1)',
+      markdown: '@SUM(1,1)',
+      vditor: '=VDITOR(1)',
+      code: '=CODE(1)',
+      url: '=HYPERLINK("https://example.com","open")',
+      email: '=EMAIL(1)',
+      phone: '=PHONE(1)',
+      attachmentUrl: '=ATTACHMENTURL(1)',
+      color: '=COLOR(1)',
+      icon: '=ICON(1)',
+      select: '=HYPERLINK(1,1)',
+      radio: '=RADIO(1)',
+      radioGroup: '=RADIOGROUP(1)',
+      multipleSelect: '=WEBSERVICE(1)',
+      checkboxGroup: '=CHECKBOXGROUP(1)',
+      checkboxes: '=CHECKBOXES(1)',
+      formulaString: '=FORMULA(1)',
+      relation: '=DDE(1,1)',
+    };
+
+    const Category = app.db.collection({
+      name: 'formula_injection_categories',
+      fields: [{ type: 'string', name: 'name', interface: 'input' }],
+    });
+
+    const Post = app.db.collection({
+      name: 'formula_injection_posts',
+      fields: [
+        { name: 'id', type: 'bigInt', interface: 'number', primaryKey: true, autoIncrement: true },
+        { type: 'string', name: 'inputField', interface: 'input' },
+        { type: 'text', name: 'textareaField', interface: 'textarea' },
+        { type: 'text', name: 'richTextField', interface: 'richText' },
+        { type: 'text', name: 'markdownField', interface: 'markdown' },
+        { type: 'text', name: 'vditorField', interface: 'vditor' },
+        { type: 'text', name: 'codeField', interface: 'code' },
+        { type: 'text', name: 'urlField', interface: 'url' },
+        { type: 'string', name: 'emailField', interface: 'email' },
+        { type: 'string', name: 'phoneField', interface: 'phone' },
+        { type: 'string', name: 'attachmentUrlField', interface: 'attachmentURL' },
+        { type: 'string', name: 'colorField', interface: 'color' },
+        { type: 'string', name: 'iconField', interface: 'icon' },
+        {
+          type: 'string',
+          name: 'selectField',
+          interface: 'select',
+          uiSchema: {
+            enum: [{ value: 'malicious', label: payloads.select }],
+          },
+        },
+        {
+          type: 'string',
+          name: 'radioField',
+          interface: 'radio',
+          uiSchema: {
+            enum: [{ value: 'malicious', label: payloads.radio }],
+          },
+        },
+        {
+          type: 'string',
+          name: 'radioGroupField',
+          interface: 'radioGroup',
+          uiSchema: {
+            enum: [{ value: 'malicious', label: payloads.radioGroup }],
+          },
+        },
+        {
+          type: 'array',
+          name: 'multipleSelectField',
+          interface: 'multipleSelect',
+          uiSchema: {
+            enum: [
+              { value: 'malicious', label: payloads.multipleSelect },
+              { value: 'safe', label: 'safe' },
+            ],
+          },
+        },
+        {
+          type: 'array',
+          name: 'checkboxGroupField',
+          interface: 'checkboxGroup',
+          uiSchema: {
+            enum: [
+              { value: 'malicious', label: payloads.checkboxGroup },
+              { value: 'safe', label: 'safe' },
+            ],
+          },
+        },
+        {
+          type: 'array',
+          name: 'checkboxesField',
+          interface: 'checkboxes',
+          uiSchema: {
+            enum: [
+              { value: 'malicious', label: payloads.checkboxes },
+              { value: 'safe', label: 'safe' },
+            ],
+          },
+        },
+        { type: 'string', name: 'formulaSourceField', interface: 'input' },
+        {
+          type: 'formula',
+          name: 'formulaStringField',
+          expression: '{{formulaSourceField}}',
+          engine: 'formula.js',
+          dataType: 'string',
+        },
+        { type: 'dateOnly', name: 'dateField', interface: 'date' },
+        {
+          type: 'belongsTo',
+          name: 'category',
+          target: 'formula_injection_categories',
+        },
+      ],
+    });
+
+    await app.db.sync();
+
+    const category = await Category.repository.create({
+      values: {
+        name: payloads.relation,
+      },
+    });
+
+    await Post.repository.create({
+      values: {
+        inputField: payloads.input,
+        textareaField: payloads.textarea,
+        richTextField: payloads.richText,
+        markdownField: payloads.markdown,
+        vditorField: payloads.vditor,
+        codeField: payloads.code,
+        urlField: payloads.url,
+        emailField: payloads.email,
+        phoneField: payloads.phone,
+        attachmentUrlField: payloads.attachmentUrl,
+        colorField: payloads.color,
+        iconField: payloads.icon,
+        selectField: 'malicious',
+        radioField: 'malicious',
+        radioGroupField: 'malicious',
+        multipleSelectField: ['malicious', 'safe'],
+        checkboxGroupField: ['malicious', 'safe'],
+        checkboxesField: ['malicious', 'safe'],
+        formulaSourceField: payloads.formulaString,
+        dateField: '2024-05-10',
+        category: {
+          id: category.get('id'),
+        },
+      },
+    });
+
+    const xlsxFilePath = path.resolve(__dirname, `t_${uid()}.xlsx`);
+    const exporter = new XlsxExporter({
+      collectionManager: app.mainDataSource.collectionManager,
+      collection: Post,
+      chunkSize: 10,
+      columns: [
+        { dataIndex: ['id'], defaultTitle: 'ID' },
+        { dataIndex: ['inputField'], defaultTitle: 'Input' },
+        { dataIndex: ['textareaField'], defaultTitle: 'Textarea' },
+        { dataIndex: ['richTextField'], defaultTitle: 'Rich text' },
+        { dataIndex: ['markdownField'], defaultTitle: 'Markdown' },
+        { dataIndex: ['vditorField'], defaultTitle: 'Vditor' },
+        { dataIndex: ['codeField'], defaultTitle: 'Code' },
+        { dataIndex: ['urlField'], defaultTitle: 'URL' },
+        { dataIndex: ['emailField'], defaultTitle: 'Email' },
+        { dataIndex: ['phoneField'], defaultTitle: 'Phone' },
+        { dataIndex: ['attachmentUrlField'], defaultTitle: 'Attachment URL' },
+        { dataIndex: ['colorField'], defaultTitle: 'Color' },
+        { dataIndex: ['iconField'], defaultTitle: 'Icon' },
+        { dataIndex: ['selectField'], defaultTitle: 'Select' },
+        { dataIndex: ['radioField'], defaultTitle: 'Radio' },
+        { dataIndex: ['radioGroupField'], defaultTitle: 'Radio group' },
+        { dataIndex: ['multipleSelectField'], defaultTitle: 'Multiple select' },
+        { dataIndex: ['checkboxGroupField'], defaultTitle: 'Checkbox group' },
+        { dataIndex: ['checkboxesField'], defaultTitle: 'Checkboxes' },
+        { dataIndex: ['formulaStringField'], defaultTitle: 'String formula' },
+        { dataIndex: ['dateField'], defaultTitle: 'Date' },
+        { dataIndex: ['category', 'name'], defaultTitle: 'Association field' },
+      ],
+      outputPath: xlsxFilePath,
+    });
+
+    await exporter.run();
+
+    try {
+      const worksheetXml = await readWorksheetXml(xlsxFilePath);
+      const workbook = new Workbook();
+      await workbook.xlsx.readFile(xlsxFilePath);
+      const worksheet = workbook.getWorksheet(1);
+
+      expect(worksheet.getCell('A2').value).toBe('1');
+      expect(worksheetXml).toContain('<c r="A2" t="str"><v>1</v></c>');
+      expect(worksheet.getCell('B2').value).toBe(`'${payloads.input}`);
+      expect(worksheet.getCell('C2').value).toBe(`'${payloads.textarea}`);
+      expect(worksheet.getCell('D2').value).toBe(`'${payloads.richText}`);
+      expect(worksheet.getCell('E2').value).toBe(`'${payloads.markdown}`);
+      expect(worksheet.getCell('F2').value).toBe(`'${payloads.vditor}`);
+      expect(worksheet.getCell('G2').value).toBe(`'${payloads.code}`);
+      expect(worksheet.getCell('H2').value).toBe(`'${payloads.url}`);
+      expect(worksheet.getCell('I2').value).toBe(`'${payloads.email}`);
+      expect(worksheet.getCell('J2').value).toBe(`'${payloads.phone}`);
+      expect(worksheet.getCell('K2').value).toBe(`'${payloads.attachmentUrl}`);
+      expect(worksheet.getCell('L2').value).toBe(`'${payloads.color}`);
+      expect(worksheet.getCell('M2').value).toBe(`'${payloads.icon}`);
+      expect(worksheet.getCell('N2').value).toBe(`'${payloads.select}`);
+      expect(worksheet.getCell('O2').value).toBe(`'${payloads.radio}`);
+      expect(worksheet.getCell('P2').value).toBe(`'${payloads.radioGroup}`);
+      expect(worksheet.getCell('Q2').value).toBe(`'${payloads.multipleSelect},safe`);
+      expect(worksheet.getCell('R2').value).toBe(`'${payloads.checkboxGroup},safe`);
+      expect(worksheet.getCell('S2').value).toBe(`'${payloads.checkboxes},safe`);
+      expect(worksheet.getCell('T2').value).toBe(`'${payloads.formulaString}`);
+      expect(worksheet.getCell('U2').value).toBe('2024-05-10');
+      expect(worksheet.getCell('V2').value).toBe(`'${payloads.relation}`);
+      expect(worksheetXml).not.toContain(`<v>${payloads.input}</v>`);
+      expect(worksheetXml).toContain(`<v>&apos;${payloads.input}</v>`);
+      expect(worksheetXml).not.toContain('&apos;2024-05-10');
+    } finally {
+      exporter.cleanOutputFile();
+    }
   });
 
   it('should export with china region field', async () => {

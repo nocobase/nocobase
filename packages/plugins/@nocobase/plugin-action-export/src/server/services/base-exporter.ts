@@ -25,6 +25,57 @@ import _ from 'lodash';
 import { Field, RelationField } from '@nocobase/database';
 import { storagePathJoin } from '@nocobase/utils';
 
+const TEXT_EXPORT_INTERFACES = new Set([
+  'attachmentURL',
+  'chinaRegion',
+  'code',
+  'input',
+  'textarea',
+  'richText',
+  'richtext',
+  'markdown',
+  'vditor',
+  'select',
+  'radio',
+  'radioGroup',
+  'multipleSelect',
+  'checkboxGroup',
+  'checkboxes',
+  'url',
+  'email',
+  'phone',
+  'password',
+  'color',
+  'icon',
+  'attachment',
+]);
+
+const IDENTIFIER_EXPORT_INTERFACES = new Set(['id', 'uuid', 'nanoid', 'snowflakeId', 'tableoid']);
+const NON_TEXT_EXPORT_INTERFACES = new Set([
+  'boolean',
+  'checkbox',
+  'createdAt',
+  'date',
+  'datetime',
+  'datetimeNoTz',
+  'formula',
+  'integer',
+  'json',
+  'number',
+  'percent',
+  'time',
+  'unixTimestamp',
+  'updatedAt',
+  'sort',
+  'point',
+  'circle',
+  'polygon',
+  'lineString',
+]);
+
+const TEXT_EXPORT_TYPES = new Set(['string', 'text', 'uid', 'uuid', 'nanoid', 'password']);
+const FORMULA_INJECTION_PREFIX_RE = /^\s*[=+\-@]/;
+
 export type ExportOptions = {
   collectionManager: ICollectionManager;
   collection: ICollection;
@@ -227,7 +278,9 @@ abstract class BaseExporter<T extends ExportOptions = ExportOptions> extends Eve
   protected getFieldRenderer(field?: IField, ctx?): (value) => any {
     const InterfaceClass = this.options.collectionManager.getFieldInterface(field?.options?.interface);
     if (!InterfaceClass) {
-      return this.renderRawValue;
+      return (value) => {
+        return this.normalizeRenderedValue(this.renderRawValue(value), field);
+      };
     }
     const fieldInterface = new InterfaceClass(field?.options);
     return (value) => {
@@ -255,6 +308,10 @@ abstract class BaseExporter<T extends ExportOptions = ExportOptions> extends Eve
   }
 
   protected normalizeRenderedValue(value: any, field?: IField) {
+    if (this.shouldExportAsText(field)) {
+      return this.normalizeTextCellValue(value);
+    }
+
     if (!this.options.collectionManager.isNumericField(field)) {
       return value;
     }
@@ -276,6 +333,41 @@ abstract class BaseExporter<T extends ExportOptions = ExportOptions> extends Eve
     }
 
     return value;
+  }
+
+  protected shouldExportAsText(field?: IField) {
+    const fieldInterface = field?.options?.interface;
+    const fieldType = field?.options?.type;
+    const formulaDataType = field?.options?.dataType;
+
+    if (field?.options?.primaryKey || field?.options?.name === 'id') {
+      return true;
+    }
+
+    if (fieldType === 'formula') {
+      return formulaDataType === 'string';
+    }
+
+    if (typeof fieldInterface === 'string') {
+      if (TEXT_EXPORT_INTERFACES.has(fieldInterface) || IDENTIFIER_EXPORT_INTERFACES.has(fieldInterface)) {
+        return true;
+      }
+
+      if (NON_TEXT_EXPORT_INTERFACES.has(fieldInterface)) {
+        return false;
+      }
+    }
+
+    return typeof fieldType === 'string' && TEXT_EXPORT_TYPES.has(fieldType);
+  }
+
+  protected normalizeTextCellValue(value: any) {
+    if (value == null || value === '') {
+      return value;
+    }
+
+    const text = String(value);
+    return FORMULA_INJECTION_PREFIX_RE.test(text) ? `'${text}` : text;
   }
 
   public generateOutputPath(prefix = 'export', ext = '', destination = storagePathJoin('tmp')): string {
