@@ -185,6 +185,10 @@ class MyTrigger extends Trigger {
 
 触发器基类，用于扩展自定义触发器类型。
 
+```ts
+import { Trigger } from '@nocobase/plugin-workflow';
+```
+
 | 参数          | 类型                                                        | 说明                   |
 | ------------- | ----------------------------------------------------------- | ---------------------- |
 | `constructor` | `(public readonly workflow: PluginWorkflowServer): Trigger` | 构造函数               |
@@ -196,6 +200,10 @@ class MyTrigger extends Trigger {
 ### `Instruction`
 
 指令类型基类，用于扩展自定义指令类型。
+
+```ts
+import { Instruction } from '@nocobase/plugin-workflow';
+```
 
 | 参数          | 类型                                                            | 说明                               |
 | ------------- | --------------------------------------------------------------- | ---------------------------------- |
@@ -236,6 +244,10 @@ export class Instruction {
 
 工作流执行计划状态的常量表，用于标识对应执行计划的当前状态。
 
+```ts
+import { EXECUTION_STATUS } from '@nocobase/plugin-workflow';
+```
+
 | 常量名                          | 含义                 |
 | ------------------------------- | -------------------- |
 | `EXECUTION_STATUS.QUEUEING`     | 排队中               |
@@ -253,6 +265,10 @@ export class Instruction {
 ### `JOB_STATUS`
 
 工作流节点任务状态的常量表，用于标识对应节点任务的当前状态，节点产生的状态同时也会影响整个执行计划的状态。
+
+```ts
+import { JOB_STATUS } from '@nocobase/plugin-workflow';
+```
 
 | 常量名                    | 含义                                     |
 | ------------------------- | ---------------------------------------- |
@@ -419,7 +435,16 @@ export type NodeAvailableContext = {
 
 ### 变量输入组件
 
-工作流提供了一组变量输入组件，用于在节点/触发器配置表单中让用户选择工作流变量。这些组件都从 `@nocobase/plugin-workflow/client-v2` 导出。
+工作流提供了一组变量输入组件，用于在节点/触发器配置表单中让用户选择工作流变量。
+
+```ts
+import {
+  WorkflowVariableInput,
+  WorkflowVariableTextArea,
+  WorkflowTypedVariableInput,
+  WorkflowVariableWrapper,
+} from '@nocobase/plugin-workflow/client-v2';
+```
 
 #### `WorkflowVariableInput`
 
@@ -432,6 +457,8 @@ import { WorkflowVariableInput } from '@nocobase/plugin-workflow/client-v2';
   <WorkflowVariableInput />
 </Form.Item>
 ```
+
+![WorkflowVariableInput](https://static-docs.nocobase.com/20260701160110.png)
 
 **Props**
 
@@ -455,6 +482,8 @@ import { WorkflowVariableTextArea } from '@nocobase/plugin-workflow/client-v2';
 </Form.Item>
 ```
 
+![WorkflowVariableTextArea](https://static-docs.nocobase.com/20260701160242.png)
+
 **Props**
 
 | 参数 | 类型 | 说明 |
@@ -465,18 +494,6 @@ import { WorkflowVariableTextArea } from '@nocobase/plugin-workflow/client-v2';
 | `delimiters?` | `readonly [string, string]` | 变量定界符，默认 `['{{', '}}']` |
 
 继承 antd `TextArea` 的其他 Props（如 `autoSize`、`placeholder` 等）。
-
-#### `WorkflowVariableJsonTextArea`
-
-JSON 文本区域，支持插入变量引用。适用于需要输入 JSON 数据并混合变量的场景。
-
-```tsx
-import { WorkflowVariableJsonTextArea } from '@nocobase/plugin-workflow/client-v2';
-
-<Form.Item name={['config', 'data']} label="Data">
-  <WorkflowVariableJsonTextArea autoSize={{ minRows: 10 }} />
-</Form.Item>
-```
 
 #### `WorkflowTypedVariableInput`
 
@@ -489,6 +506,8 @@ import { WorkflowTypedVariableInput } from '@nocobase/plugin-workflow/client-v2'
   <WorkflowTypedVariableInput />
 </Form.Item>
 ```
+
+![WorkflowTypedVariableInput](https://static-docs.nocobase.com/20260701160608.png)
 
 **Props**
 
@@ -526,7 +545,17 @@ import { WorkflowVariableWrapper } from '@nocobase/plugin-workflow/client-v2';
 
 ### 集合相关组件
 
-工作流还提供了一组集合相关的辅助组件，从 `@nocobase/plugin-workflow/client-v2` 导出：
+工作流还提供了一组集合相关的辅助组件：
+
+```ts
+import {
+  CollectionCascader,
+  AppendsSelect,
+  FieldsSelect,
+  SortFieldsInput,
+  PaginationFields,
+} from '@nocobase/plugin-workflow/client-v2';
+```
 
 - `CollectionCascader` — 数据源感知的集合选择器（级联选择）
 - `AppendsSelect` — 关联字段预加载选择器（树选择）
