@@ -56,12 +56,6 @@ const DEFAULT_PORTALS: Array<Omit<AppPortalItem, 'appName'>> = [
   },
 ];
 
-type AppPortalsContextLike = {
-  app?: {
-    name?: string;
-  };
-};
-
 function getCname(cname?: string | null) {
   const trimmed = cname?.trim();
   return trimmed || null;
@@ -150,12 +144,11 @@ function addStoredPortals(
   }
 }
 
-export async function listAppPortals(ctx: AppPortalsContextLike) {
+export async function listAppPortals(currentAppName?: string | null) {
   const supervisor = AppSupervisor.getInstance();
   const appModels = await supervisor.listAppModels();
   const apps = new Map<string, AppPortalAppItem>();
   const appNames = new Set<string>([MAIN_APP_NAME]);
-  const currentAppName = ctx.app?.name;
   const target = currentAppName === MAIN_APP_NAME ? '_blank' : undefined;
   const appSsoIssuer = supervisor.getAppSsoIssuer();
   const appItems = appModels.map((appModel) => toAppPortalAppItem(appModel, appSsoIssuer, target));

@@ -35,11 +35,7 @@ describe('listAppPortals', () => {
       ]),
     } as unknown as AppSupervisor);
 
-    const result = await listAppPortals({
-      app: {
-        name: 'main',
-      },
-    });
+    const result = await listAppPortals('main');
 
     expect(result.apps).toEqual([
       {

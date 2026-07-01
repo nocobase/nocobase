@@ -123,7 +123,7 @@ export class PluginClientServer extends Plugin {
           await next();
         },
         getPortals: async (ctx, next) => {
-          ctx.body = await listAppPortals(ctx);
+          ctx.body = await listAppPortals(ctx.app?.name);
           await next();
         },
         async clearCache(ctx, next) {
