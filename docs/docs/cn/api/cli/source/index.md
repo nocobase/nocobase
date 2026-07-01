@@ -6,7 +6,7 @@ keywords: "nb source,NocoBase CLI,源码,download,dev,build,test"
 
 # nb source
 
-管理本地 NocoBase 源码工程。npm/Git env 使用本地源码目录；Docker env 通常只需要使用 [`nb app`](../app/index.md) 管理运行态。
+管理本地 NocoBase 源码工程。`nb source` 下的命令需要在源码目录（`<app-path>/source/`）下执行。npm/Git env 使用本地源码目录；Docker env 通常只需要使用 [`nb app`](../app/index.md) 管理运行态。
 
 ## 用法
 

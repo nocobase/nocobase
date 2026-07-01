@@ -10,9 +10,10 @@ keywords: "插件构建,插件打包,nb source build,tar,build.config.ts,Rsbuild
 
 ## 构建插件
 
-构建会把 `src/` 下的 TypeScript 源码编译为 JavaScript——客户端代码由 Rsbuild 打包，服务端代码由 tsup 打包：
+在源码目录（`<app-path>/source/`）下执行构建命令。构建会把 `src/` 下的 TypeScript 源码编译为 JavaScript——客户端代码由 Rsbuild 打包，服务端代码由 tsup 打包：
 
 ```bash
+cd <app-path>/source
 nb source build @my-project/plugin-hello
 ```
 
@@ -26,9 +27,10 @@ nb source build @my-project/plugin-hello
 
 ## 打包插件
 
-用 `--tar` 参数可以把构建和打包合成一步，生成 `.tgz` 压缩包：
+同样在源码目录（`<app-path>/source/`）下执行。用 `--tar` 参数可以把构建和打包合成一步，生成 `.tgz` 压缩包：
 
 ```bash
+cd <app-path>/source
 nb source build @my-project/plugin-hello --tar
 ```
 

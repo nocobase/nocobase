@@ -58,11 +58,13 @@ nb init --ui
 
 ## 从一句话到一个完整插件
 
-安装完成后，你可以直接用自然语言告诉 AI 你想开发什么插件。下面是几个真实场景，感受一下 AI 开发插件的能力。
+安装完成后，在项目根目录（`<app-path>`）下打开 AI Agent，就可以直接用自然语言告诉 AI 你想开发什么插件。下面是几个真实场景，感受一下 AI 开发插件的能力。
 
 ### 一句话开发水印插件
 
 一句提示词，AI 就能帮你生成一个完整的水印插件——包括前端渲染逻辑、防篡改检测、后端设置存储 API 和插件设置页面。
+
+在 `<app-path>` 下把以下提示词发给 AI：
 
 ```
 帮我用 nocobase-plugin-development skill 开发一个 NocoBase 的水印插件，
@@ -81,6 +83,8 @@ nb init --ui
 ### 一句话做一个自定义字段组件
 
 想让 integer 字段显示成星星评分？告诉 AI 你想要的展示效果，它会帮你生成自定义的 FieldModel，替换默认的字段渲染组件。
+
+同样在 `<app-path>` 下把以下提示词发给 AI：
 
 ```
 请你用 nocobase-plugin-development skill 帮我开发一个 NocoBase 插件，名叫 @my-scope/plugin-rating，

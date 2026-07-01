@@ -6,7 +6,7 @@ keywords: "nb source build,NocoBase CLI,构建,源码"
 
 # nb source build
 
-构建本地 NocoBase 源码工程。对于 CLI 管理的 source app，构建前会自动同步 `plugins/` 目录下的插件到 `source/packages/plugins/`。
+构建本地 NocoBase 源码工程。需要在源码目录（`<app-path>/source/`）下执行。对于 CLI 管理的 source app，构建前会自动同步 `plugins/` 目录下的插件到 `source/packages/plugins/`。
 
 ## 用法
 

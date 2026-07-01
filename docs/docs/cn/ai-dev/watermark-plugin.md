@@ -29,8 +29,19 @@ keywords: "AI 开发,水印插件,NocoBase 插件,实战案例,AI 编程"
 
 确保你已经：
 
-1. 有一个跑起来的 NocoBase 开发环境（NocoBase CLI 初始化时会自动安装 NocoBase Skills）
-2. 打开了支持 AI Agent 的编辑器（比如 Claude Code、Codex、Cursor 等）
+1. 通过 `nb init` 创建了一个 NocoBase 项目（推荐使用 Git 来源），并且应用已经跑起来
+2. 打开了支持 AI Agent 的编辑器（比如 Claude Code、Codex、Cursor 等），工作目录设为项目根目录（`<app-path>`）
+
+`nb init` 创建的项目目录结构如下：
+
+```bash
+<app-path>/
+├── .nb/                  # CLI 为当前 env 保存的元数据
+├── source/               # 应用源码工程（NocoBase 核心 + 内置插件）
+├── storage/              # 运行时数据目录
+├── plugins/              # 你的插件源码（nb scaffold plugin 生成在这里）
+└── .env                  # 应用环境变量文件
+```
 
 :::warning 注意
 
