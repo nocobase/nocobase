@@ -46,11 +46,15 @@ export const AGENT_GATEWAY_ACTIONS = {
 } as const;
 
 const RUN_DETAIL_READ_ACTIONS = [
+  `${AGENT_GATEWAY_RESOURCE}:${AGENT_GATEWAY_ACTIONS.readRun}`,
+  `${AGENT_GATEWAY_RESOURCE}:${AGENT_GATEWAY_ACTIONS.readRuns}`,
   `${AGENT_GATEWAY_RESOURCE}:${AGENT_GATEWAY_ACTIONS.readRunDetails}`,
   `${AGENT_GATEWAY_RESOURCE}:${AGENT_GATEWAY_ACTIONS.readSessionMessages}`,
   `${AGENT_GATEWAY_RESOURCE}:${AGENT_GATEWAY_ACTIONS.readTerminal}`,
   `${AGENT_GATEWAY_RESOURCE}:${AGENT_GATEWAY_ACTIONS.readArtifacts}`,
   `${AGENT_GATEWAY_RESOURCE}:${AGENT_GATEWAY_ACTIONS.readRawLogs}`,
+  'agRuns:list',
+  'agRuns:get',
 ] as const;
 
 const RUN_CONTROL_ACTIONS = [
@@ -75,6 +79,7 @@ export const AGENT_GATEWAY_PERMISSION_DEFINITIONS = [
       'agAgentProfiles:*',
       'agAgentSessions:*',
       'agAgentActionAudits:*',
+      'agAgentConversationEvents:*',
       'agSkills:*',
       'agSkillVersions:*',
       'agNodeSkillInstalls:*',

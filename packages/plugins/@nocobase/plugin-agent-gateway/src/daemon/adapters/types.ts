@@ -53,6 +53,9 @@ export interface ProviderEventInput {
 export interface NormalizedAgentEvent {
   eventType: string;
   level: 'debug' | 'info' | 'warn' | 'error';
+  providerEventId?: string | null;
+  correlationId?: string | null;
+  confidence?: number | null;
   message?: string | null;
   payloadJson?: JsonRecord;
 }

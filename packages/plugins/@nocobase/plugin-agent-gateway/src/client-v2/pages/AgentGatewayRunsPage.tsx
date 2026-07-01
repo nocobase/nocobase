@@ -20,6 +20,7 @@ import { useRequest } from 'ahooks';
 import {
   Alert,
   Button,
+  Collapse,
   DatePicker,
   Descriptions,
   Drawer,
@@ -37,6 +38,7 @@ import {
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { AgentTimeline, AgentTimelineEventRecord } from '../components/AgentTimeline';
 import { useT } from '../locale';
 import {
   AgentGatewayContext,
@@ -139,6 +141,7 @@ interface TerminalSnapshot {
 
 interface RunDetails {
   run: RunRecord;
+  conversationEvents: AgentTimelineEventRecord[];
   events: RunEventRecord[];
   artifacts: RunArtifactRecord[];
   snapshots: RunSnapshotRecord[];
@@ -147,10 +150,17 @@ interface RunDetails {
 }
 
 interface RunDetailsWarnings {
+  conversationEvents?: string;
   events?: string;
   artifacts?: string;
   snapshots?: string;
   apiCallLogs?: string;
+}
+
+interface ConversationEventsState {
+  runId: string;
+  events: AgentTimelineEventRecord[];
+  warning?: string;
 }
 
 interface DateLike {
@@ -180,6 +190,7 @@ const RUN_STATUS_OPTIONS = [
 ];
 
 const CANCELABLE_STATUSES = new Set(['queued', 'claimed', 'syncing_skills', 'running']);
+const LEGACY_TIMELINE_FALLBACK_STATUSES = new Set(['succeeded']);
 
 const terminalOutputStyle: React.CSSProperties = {
   minHeight: 420,
@@ -198,6 +209,31 @@ const terminalOutputStyle: React.CSSProperties = {
 
 function isCancelableRun(run: RunRecord) {
   return CANCELABLE_STATUSES.has(run.status);
+}
+
+function canUseLegacyTimelineFallback(run: RunRecord | undefined, eventCount: number, hasWarning: boolean) {
+  if (!run || eventCount > 0 || hasWarning) {
+    return false;
+  }
+  return (
+    LEGACY_TIMELINE_FALLBACK_STATUSES.has(run.status) &&
+    !run.agentSessionId &&
+    !run.agentSessionProvider &&
+    !run.agentSessionProviderId
+  );
+}
+
+function mergeConversationEventsState(
+  previous: ConversationEventsState | null,
+  next: ConversationEventsState,
+): ConversationEventsState {
+  if (previous?.runId !== next.runId) {
+    return next;
+  }
+  if (previous.events.length > next.events.length) {
+    return previous;
+  }
+  return next;
 }
 
 function normalizeRunFilters(values: RunFilterFormValues) {
@@ -497,6 +533,8 @@ export default function AgentGatewayRunsPage() {
   const [runFilters, setRunFilters] = useState<Record<string, unknown>>({});
   const [detailOpen, setDetailOpen] = useState(false);
   const [selectedRunId, setSelectedRunId] = useState<string>();
+  const [conversationEventsState, setConversationEventsState] = useState<ConversationEventsState | null>(null);
+  const [conversationEventsWarning, setConversationEventsWarning] = useState<string>();
 
   const runsRequest = useRequest(
     async () => {
@@ -511,6 +549,7 @@ export default function AgentGatewayRunsPage() {
       refreshDeps: [runFilters],
     },
   );
+  const { refresh: refreshRuns } = runsRequest;
 
   const runDetailsRequest = useRequest(
     async () => {
@@ -523,48 +562,59 @@ export default function AgentGatewayRunsPage() {
         method: 'get',
       });
       const run = getRequiredResponseData(runResponse, t('Failed to load run details'));
-      const [eventsResult, artifactsResult, snapshotsResult, apiCallLogsResult] = await Promise.all([
-        getOptionalDetails<RunEventRecord[]>({
-          request: ctx.api.request<RunEventRecord[]>({
-            url: `agent-gateway/runs/${encodeURIComponent(selectedRunId)}/events:list`,
-            method: 'get',
+      const [conversationEventsResult, eventsResult, artifactsResult, snapshotsResult, apiCallLogsResult] =
+        await Promise.all([
+          getOptionalDetails<AgentTimelineEventRecord[]>({
+            request: ctx.api.request<AgentTimelineEventRecord[]>({
+              url: `agent-gateway/runs/${encodeURIComponent(selectedRunId)}/conversation-events:list`,
+              method: 'get',
+            }),
+            fallback: [],
+            fallbackMessage: t('Agent timeline unavailable'),
           }),
-          fallback: [],
-          fallbackMessage: t('Events unavailable'),
-        }),
-        getOptionalDetails<RunArtifactRecord[]>({
-          request: ctx.api.request<RunArtifactRecord[]>({
-            url: `agent-gateway/runs/${encodeURIComponent(selectedRunId)}/artifacts:list`,
-            method: 'get',
+          getOptionalDetails<RunEventRecord[]>({
+            request: ctx.api.request<RunEventRecord[]>({
+              url: `agent-gateway/runs/${encodeURIComponent(selectedRunId)}/events:list`,
+              method: 'get',
+            }),
+            fallback: [],
+            fallbackMessage: t('Events unavailable'),
           }),
-          fallback: [],
-          fallbackMessage: t('Artifacts unavailable'),
-        }),
-        getOptionalDetails<RunSnapshotRecord[]>({
-          request: ctx.api.request<RunSnapshotRecord[]>({
-            url: `agent-gateway/runs/${encodeURIComponent(selectedRunId)}/snapshots:list`,
-            method: 'get',
+          getOptionalDetails<RunArtifactRecord[]>({
+            request: ctx.api.request<RunArtifactRecord[]>({
+              url: `agent-gateway/runs/${encodeURIComponent(selectedRunId)}/artifacts:list`,
+              method: 'get',
+            }),
+            fallback: [],
+            fallbackMessage: t('Artifacts unavailable'),
           }),
-          fallback: [],
-          fallbackMessage: t('Snapshots unavailable'),
-        }),
-        getOptionalDetails<ApiCallLogRecord[]>({
-          request: ctx.api.request<ApiCallLogRecord[]>({
-            url: `agent-gateway/runs/${encodeURIComponent(selectedRunId)}/api-call-logs:list`,
-            method: 'get',
+          getOptionalDetails<RunSnapshotRecord[]>({
+            request: ctx.api.request<RunSnapshotRecord[]>({
+              url: `agent-gateway/runs/${encodeURIComponent(selectedRunId)}/snapshots:list`,
+              method: 'get',
+            }),
+            fallback: [],
+            fallbackMessage: t('Snapshots unavailable'),
           }),
-          fallback: [],
-          fallbackMessage: t('API logs unavailable'),
-        }),
-      ]);
+          getOptionalDetails<ApiCallLogRecord[]>({
+            request: ctx.api.request<ApiCallLogRecord[]>({
+              url: `agent-gateway/runs/${encodeURIComponent(selectedRunId)}/api-call-logs:list`,
+              method: 'get',
+            }),
+            fallback: [],
+            fallbackMessage: t('API logs unavailable'),
+          }),
+        ]);
 
       return {
         run,
+        conversationEvents: conversationEventsResult.data,
         events: eventsResult.data,
         artifacts: artifactsResult.data,
         snapshots: snapshotsResult.data,
         apiCallLogs: apiCallLogsResult.data,
         warnings: {
+          conversationEvents: conversationEventsResult.warning,
           events: eventsResult.warning,
           artifacts: artifactsResult.warning,
           snapshots: snapshotsResult.warning,
@@ -574,11 +624,28 @@ export default function AgentGatewayRunsPage() {
     },
     {
       refreshDeps: [selectedRunId, detailOpen],
+      onSuccess(data) {
+        if (!data?.run?.id || data.run.id !== selectedRunId) {
+          return;
+        }
+        if (data.warnings.conversationEvents) {
+          setConversationEventsWarning(data.warnings.conversationEvents);
+          return;
+        }
+        setConversationEventsState((previous) =>
+          mergeConversationEventsState(previous, {
+            runId: data.run.id,
+            events: data.conversationEvents,
+          }),
+        );
+        setConversationEventsWarning(undefined);
+      },
       onError(error) {
         ctx.message?.error(getApiErrorMessage(error, t('Failed to load run details')));
       },
     },
   );
+  const { refresh: refreshRunDetails } = runDetailsRequest;
 
   const terminalSnapshotRequest = useRequest(
     async () => {
@@ -599,6 +666,36 @@ export default function AgentGatewayRunsPage() {
     },
   );
   const { run: refreshTerminalSnapshot } = terminalSnapshotRequest;
+
+  const conversationEventsRequest = useRequest(
+    async () => {
+      if (!selectedRunId || !detailOpen) {
+        return null;
+      }
+      const response = await ctx.api.request<AgentTimelineEventRecord[]>({
+        url: `agent-gateway/runs/${encodeURIComponent(selectedRunId)}/conversation-events:list`,
+        method: 'get',
+      });
+      return {
+        runId: selectedRunId,
+        events: getResponseData(response, []),
+      } satisfies ConversationEventsState;
+    },
+    {
+      manual: true,
+      onSuccess(data) {
+        if (!data || data.runId !== selectedRunId) {
+          return;
+        }
+        setConversationEventsState((previous) => mergeConversationEventsState(previous, data));
+        setConversationEventsWarning(undefined);
+      },
+      onError(error) {
+        setConversationEventsWarning(getDetailWarning(error, t('Agent timeline unavailable')));
+      },
+    },
+  );
+  const { run: refreshConversationEvents } = conversationEventsRequest;
 
   const cancelRunRequest = useRequest(
     async (run: RunRecord) => {
@@ -676,13 +773,24 @@ export default function AgentGatewayRunsPage() {
     }
 
     refreshTerminalSnapshot();
-    const timer = window.setInterval(() => {
+    refreshConversationEvents();
+    const realtimeTimer = window.setInterval(() => {
       refreshTerminalSnapshot();
+      refreshConversationEvents();
     }, 2000);
-    return () => window.clearInterval(timer);
-  }, [detailOpen, refreshTerminalSnapshot, selectedRunId]);
+    const summaryTimer = window.setInterval(() => {
+      refreshRuns();
+      refreshRunDetails();
+    }, 5000);
+    return () => {
+      window.clearInterval(realtimeTimer);
+      window.clearInterval(summaryTimer);
+    };
+  }, [detailOpen, refreshConversationEvents, refreshRunDetails, refreshRuns, refreshTerminalSnapshot, selectedRunId]);
 
   const openRunDetails = useCallback((run: RunRecord) => {
+    setConversationEventsState(null);
+    setConversationEventsWarning(undefined);
     setSelectedRunId(run.id);
     setDetailOpen(true);
   }, []);
@@ -690,6 +798,8 @@ export default function AgentGatewayRunsPage() {
   const closeRunDetails = useCallback(() => {
     setDetailOpen(false);
     setSelectedRunId(undefined);
+    setConversationEventsState(null);
+    setConversationEventsWarning(undefined);
   }, []);
 
   const submitFilters = useCallback(
@@ -794,6 +904,16 @@ export default function AgentGatewayRunsPage() {
 
   const selectedRun = runDetailsRequest.data?.run || runsRequest.data?.find((run) => run.id === selectedRunId);
   const terminalSnapshot = terminalSnapshotRequest.data;
+  const latestConversationEvents = conversationEventsState?.runId === selectedRunId ? conversationEventsState : null;
+  const timelineEvents = latestConversationEvents?.events || runDetailsRequest.data?.conversationEvents || [];
+  const timelineWarning =
+    conversationEventsWarning ||
+    (latestConversationEvents ? undefined : runDetailsRequest.data?.warnings.conversationEvents);
+  const useLegacyTimelineFallback = canUseLegacyTimelineFallback(
+    runDetailsRequest.data?.run,
+    timelineEvents.length,
+    Boolean(timelineWarning),
+  );
 
   return (
     <section aria-label={t('Runs')}>
@@ -903,12 +1023,20 @@ export default function AgentGatewayRunsPage() {
               </Descriptions.Item>
             </Descriptions>
 
-            <Tabs
-              defaultActiveKey="terminal"
+            <AgentTimeline
+              t={t}
+              events={timelineEvents}
+              legacyEvents={runDetailsRequest.data.events}
+              useLegacyFallback={useLegacyTimelineFallback}
+              warning={timelineWarning}
+            />
+
+            <Collapse
+              defaultActiveKey={['live-output']}
               items={[
                 {
-                  key: 'terminal',
-                  label: t('Terminal'),
+                  key: 'live-output',
+                  label: t('Live CLI Output'),
                   children: (
                     <TerminalPanel
                       t={t}
@@ -922,6 +1050,12 @@ export default function AgentGatewayRunsPage() {
                     />
                   ),
                 },
+              ]}
+            />
+
+            <Tabs
+              defaultActiveKey="logs"
+              items={[
                 {
                   key: 'logs',
                   label: t('Logs'),

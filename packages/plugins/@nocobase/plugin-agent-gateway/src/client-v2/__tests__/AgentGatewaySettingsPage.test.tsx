@@ -9,7 +9,7 @@
 
 import { Application } from '@nocobase/client-v2';
 import { FlowEngineProvider } from '@nocobase/flow-engine';
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { App as AntdApp } from 'antd';
 import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -76,6 +76,7 @@ describe('PluginAgentGatewayClientV2', () => {
 
   afterEach(() => {
     cleanup();
+    vi.useRealTimers();
     vi.restoreAllMocks();
   });
 
@@ -477,6 +478,26 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
+      if (config.url === 'agent-gateway/runs/run-id-1/conversation-events:list') {
+        return {
+          data: {
+            data: [
+              {
+                id: 'conversation-event-id-1',
+                source: 'codex',
+                sequence: 1,
+                eventType: 'agent.message',
+                contentText: 'timeline says build started',
+                contentJson: {
+                  itemId: 'item-1',
+                },
+                createdAt: '2026-06-30T10:01:01.000Z',
+              },
+            ],
+          },
+        };
+      }
+
       if (config.url === 'agent-gateway/runs/run-id-1/artifacts:list') {
         return {
           data: {
@@ -579,6 +600,10 @@ describe('PluginAgentGatewayClientV2', () => {
     expect(await screen.findByText('Run summary')).toBeTruthy();
     expect(await screen.findAllByText('codex / thread-id-1')).toBeTruthy();
     expect(await screen.findAllByText('session-id-1')).toBeTruthy();
+    expect(await screen.findByText('Agent Timeline')).toBeTruthy();
+    expect(await screen.findByText('Normalized agent activity')).toBeTruthy();
+    expect(await screen.findByText('timeline says build started')).toBeTruthy();
+    expect(await screen.findByText('Live CLI Output')).toBeTruthy();
     expect(await screen.findByText(/agent is building/)).toBeTruthy();
     expect(screen.queryByLabelText('Terminal input')).toBeNull();
     expect(screen.queryByLabelText('Send terminal input')).toBeNull();
@@ -631,6 +656,10 @@ describe('PluginAgentGatewayClientV2', () => {
         throw new Error('403 Forbidden');
       }
 
+      if (config.url === 'agent-gateway/runs/run-id-1/conversation-events:list') {
+        throw new Error('403 Forbidden');
+      }
+
       if (config.url === 'agent-gateway/runs/run-id-1/artifacts:list') {
         return {
           data: {
@@ -680,8 +709,526 @@ describe('PluginAgentGatewayClientV2', () => {
     expect(await screen.findByText('Run summary')).toBeTruthy();
     expect(await screen.findAllByText('codex / thread-id-1')).toBeTruthy();
     expect(await screen.findByText(/agent is still visible/)).toBeTruthy();
+    expect(await screen.findByText(/Agent timeline unavailable/)).toBeTruthy();
     expect(await screen.findByText(/Events unavailable/)).toBeTruthy();
     expect(await screen.findByText(/API logs unavailable/)).toBeTruthy();
+  });
+
+  it('does not promote legacy run events into the primary timeline while a normalized run is active', async () => {
+    const request = vi.fn(async (config: RequestConfig) => {
+      if (config.url === 'agent-gateway/runs:list') {
+        return {
+          data: {
+            data: [
+              {
+                id: 'run-id-1',
+                runCode: 'run-active-empty-timeline',
+                status: 'running',
+                requestedAt: '2026-06-30T10:00:00.000Z',
+                startedAt: '2026-06-30T10:01:00.000Z',
+              },
+            ],
+          },
+        };
+      }
+
+      if (config.url === 'agent-gateway/runs:get/run-id-1') {
+        return {
+          data: {
+            data: {
+              id: 'run-id-1',
+              runCode: 'run-active-empty-timeline',
+              status: 'running',
+              requestedAt: '2026-06-30T10:00:00.000Z',
+              startedAt: '2026-06-30T10:01:00.000Z',
+            },
+          },
+        };
+      }
+
+      if (config.url === 'agent-gateway/runs/run-id-1/events:list') {
+        return {
+          data: {
+            data: [
+              {
+                id: 'legacy-event-id-1',
+                source: 'stdout',
+                sequence: 1,
+                level: 'info',
+                eventType: 'log',
+                message: 'raw legacy event must stay out of timeline',
+                emittedAt: '2026-06-30T10:01:01.000Z',
+              },
+            ],
+          },
+        };
+      }
+
+      if (config.url === 'agent-gateway/runs/run-id-1/terminal:snapshot') {
+        return {
+          data: {
+            data: {
+              backend: 'tmux',
+              sessionName: 'ag-run-run-id-1',
+              terminalStatus: 'active',
+              runStatus: 'running',
+              available: true,
+              output: 'agent output stays visible',
+              capturedAt: '2026-06-30T10:01:02.000Z',
+              inputEnabled: false,
+            },
+          },
+        };
+      }
+
+      return { data: { data: [] } };
+    });
+
+    renderAgentGatewayPage(AgentGatewayRunsPage, request);
+
+    expect(await screen.findByText('run-active-empty-timeline')).toBeTruthy();
+    const detailButtons = await screen.findAllByLabelText('View run details');
+    fireEvent.click(detailButtons[0]);
+
+    expect(await screen.findByText('No timeline activity yet')).toBeTruthy();
+    const timelineHeading = await screen.findByText('Agent Timeline');
+    const timelineRegion = timelineHeading.closest('section');
+    expect(timelineRegion).toBeTruthy();
+    expect(within(timelineRegion as HTMLElement).queryByText('raw legacy event must stay out of timeline')).toBeNull();
+  });
+
+  it('does not promote legacy run events into the primary timeline for a new failed run without a session', async () => {
+    const request = vi.fn(async (config: RequestConfig) => {
+      if (config.url === 'agent-gateway/runs:list') {
+        return {
+          data: {
+            data: [
+              {
+                id: 'run-id-1',
+                runCode: 'run-failed-empty-timeline',
+                status: 'failed',
+                requestedAt: '2026-06-30T10:00:00.000Z',
+                startedAt: '2026-06-30T10:01:00.000Z',
+                finishedAt: '2026-06-30T10:02:00.000Z',
+              },
+            ],
+          },
+        };
+      }
+
+      if (config.url === 'agent-gateway/runs:get/run-id-1') {
+        return {
+          data: {
+            data: {
+              id: 'run-id-1',
+              runCode: 'run-failed-empty-timeline',
+              status: 'failed',
+              requestedAt: '2026-06-30T10:00:00.000Z',
+              startedAt: '2026-06-30T10:01:00.000Z',
+              finishedAt: '2026-06-30T10:02:00.000Z',
+            },
+          },
+        };
+      }
+
+      if (config.url === 'agent-gateway/runs/run-id-1/events:list') {
+        return {
+          data: {
+            data: [
+              {
+                id: 'legacy-event-id-1',
+                source: 'stderr',
+                sequence: 1,
+                level: 'error',
+                eventType: 'log',
+                message: 'new failed raw legacy output must stay out of timeline',
+                emittedAt: '2026-06-30T10:01:01.000Z',
+              },
+            ],
+          },
+        };
+      }
+
+      return { data: { data: [] } };
+    });
+
+    renderAgentGatewayPage(AgentGatewayRunsPage, request);
+
+    expect(await screen.findByText('run-failed-empty-timeline')).toBeTruthy();
+    const detailButtons = await screen.findAllByLabelText('View run details');
+    fireEvent.click(detailButtons[0]);
+
+    expect(await screen.findByText('No timeline activity yet')).toBeTruthy();
+    const timelineHeading = await screen.findByText('Agent Timeline');
+    const timelineRegion = timelineHeading.closest('section');
+    expect(timelineRegion).toBeTruthy();
+    expect(
+      within(timelineRegion as HTMLElement).queryByText('new failed raw legacy output must stay out of timeline'),
+    ).toBeNull();
+  });
+
+  it('marks failed normalized command events as failed in the primary timeline', async () => {
+    const request = vi.fn(async (config: RequestConfig) => {
+      if (config.url === 'agent-gateway/runs:list') {
+        return {
+          data: {
+            data: [
+              {
+                id: 'run-id-1',
+                runCode: 'run-failed-command-timeline',
+                status: 'failed',
+                agentSessionId: 'session-id-1',
+                agentSessionProvider: 'codex',
+                agentSessionProviderId: 'thread-id-1',
+              },
+            ],
+          },
+        };
+      }
+
+      if (config.url === 'agent-gateway/runs:get/run-id-1') {
+        return {
+          data: {
+            data: {
+              id: 'run-id-1',
+              runCode: 'run-failed-command-timeline',
+              status: 'failed',
+              agentSessionId: 'session-id-1',
+              agentSessionProvider: 'codex',
+              agentSessionProviderId: 'thread-id-1',
+              requestedAt: '2026-06-30T10:00:00.000Z',
+              startedAt: '2026-06-30T10:01:00.000Z',
+              finishedAt: '2026-06-30T10:02:00.000Z',
+            },
+          },
+        };
+      }
+
+      if (config.url === 'agent-gateway/runs/run-id-1/conversation-events:list') {
+        return {
+          data: {
+            data: [
+              {
+                id: 'conversation-event-id-1',
+                source: 'codex',
+                sequence: 1,
+                eventType: 'agent.command.completed',
+                contentText: 'Command failed',
+                contentJson: {
+                  status: 'failed',
+                  exitCode: 1,
+                },
+                createdAt: '2026-06-30T10:01:01.000Z',
+              },
+            ],
+          },
+        };
+      }
+
+      return { data: { data: [] } };
+    });
+
+    renderAgentGatewayPage(AgentGatewayRunsPage, request);
+
+    expect(await screen.findByText('run-failed-command-timeline')).toBeTruthy();
+    const detailButtons = await screen.findAllByLabelText('View run details');
+    fireEvent.click(detailButtons[0]);
+
+    const commandText = await screen.findByText('Command failed');
+    const timelineItem = commandText.closest('.ant-timeline-item');
+    expect(timelineItem?.querySelector('.ant-timeline-item-head-red')).toBeTruthy();
+  });
+
+  it('does not clear the normalized timeline when a later poll returns an empty older snapshot', async () => {
+    let conversationEventCallCount = 0;
+    const request = vi.fn(async (config: RequestConfig) => {
+      if (config.url === 'agent-gateway/runs:list') {
+        return {
+          data: {
+            data: [
+              {
+                id: 'run-id-1',
+                runCode: 'run-timeline-empty-regression',
+                status: 'running',
+                agentSessionId: 'session-id-1',
+                agentSessionProvider: 'codex',
+                agentSessionProviderId: 'thread-id-1',
+              },
+            ],
+          },
+        };
+      }
+
+      if (config.url === 'agent-gateway/runs:get/run-id-1') {
+        return {
+          data: {
+            data: {
+              id: 'run-id-1',
+              runCode: 'run-timeline-empty-regression',
+              status: 'running',
+              agentSessionId: 'session-id-1',
+              agentSessionProvider: 'codex',
+              agentSessionProviderId: 'thread-id-1',
+              requestedAt: '2026-06-30T10:00:00.000Z',
+              startedAt: '2026-06-30T10:01:00.000Z',
+            },
+          },
+        };
+      }
+
+      if (config.url === 'agent-gateway/runs/run-id-1/conversation-events:list') {
+        conversationEventCallCount += 1;
+        if (conversationEventCallCount > 1) {
+          return { data: { data: [] } };
+        }
+        return {
+          data: {
+            data: [
+              {
+                id: 'conversation-event-id-1',
+                source: 'codex',
+                sequence: 1,
+                eventType: 'agent.message',
+                contentText: 'stable normalized event after empty poll',
+                createdAt: '2026-06-30T10:01:01.000Z',
+              },
+            ],
+          },
+        };
+      }
+
+      return { data: { data: [] } };
+    });
+
+    renderAgentGatewayPage(AgentGatewayRunsPage, request);
+
+    expect(await screen.findByText('run-timeline-empty-regression')).toBeTruthy();
+    const detailButtons = await screen.findAllByLabelText('View run details');
+    fireEvent.click(detailButtons[0]);
+
+    expect(await screen.findByText('stable normalized event after empty poll')).toBeTruthy();
+    await waitFor(() => expect(conversationEventCallCount).toBeGreaterThan(1));
+    expect(await screen.findByText('stable normalized event after empty poll')).toBeTruthy();
+  });
+
+  it('keeps the last successful normalized timeline when polling temporarily fails', async () => {
+    let conversationEventCallCount = 0;
+    const intervalCallbacks: Array<() => void> = [];
+    vi.spyOn(window, 'setInterval').mockImplementation((handler: TimerHandler) => {
+      if (typeof handler === 'function') {
+        intervalCallbacks.push(() => handler());
+      }
+      return intervalCallbacks.length;
+    });
+    vi.spyOn(window, 'clearInterval').mockImplementation(() => undefined);
+
+    const request = vi.fn(async (config: RequestConfig) => {
+      if (config.url === 'agent-gateway/runs:list') {
+        return {
+          data: {
+            data: [
+              {
+                id: 'run-id-1',
+                runCode: 'run-timeline-retry',
+                status: 'running',
+                agentSessionId: 'session-id-1',
+                agentSessionProvider: 'codex',
+                agentSessionProviderId: 'thread-id-1',
+              },
+            ],
+          },
+        };
+      }
+
+      if (config.url === 'agent-gateway/runs:get/run-id-1') {
+        return {
+          data: {
+            data: {
+              id: 'run-id-1',
+              runCode: 'run-timeline-retry',
+              status: 'running',
+              agentSessionId: 'session-id-1',
+              agentSessionProvider: 'codex',
+              agentSessionProviderId: 'thread-id-1',
+              requestedAt: '2026-06-30T10:00:00.000Z',
+              startedAt: '2026-06-30T10:01:00.000Z',
+            },
+          },
+        };
+      }
+
+      if (config.url === 'agent-gateway/runs/run-id-1/conversation-events:list') {
+        conversationEventCallCount += 1;
+        if (conversationEventCallCount > 1) {
+          throw new Error('temporary timeline outage');
+        }
+        return {
+          data: {
+            data: [
+              {
+                id: 'conversation-event-id-1',
+                source: 'codex',
+                sequence: 1,
+                eventType: 'agent.message',
+                contentText: 'stable normalized event',
+                createdAt: '2026-06-30T10:01:01.000Z',
+              },
+            ],
+          },
+        };
+      }
+
+      if (config.url === 'agent-gateway/runs/run-id-1/events:list') {
+        return {
+          data: {
+            data: [
+              {
+                id: 'legacy-event-id-1',
+                source: 'stdout',
+                sequence: 1,
+                level: 'info',
+                eventType: 'log',
+                message: 'legacy event should not replace normalized event',
+                emittedAt: '2026-06-30T10:01:01.000Z',
+              },
+            ],
+          },
+        };
+      }
+
+      if (config.url === 'agent-gateway/runs/run-id-1/terminal:snapshot') {
+        return {
+          data: {
+            data: {
+              backend: 'tmux',
+              sessionName: 'ag-run-run-id-1',
+              terminalStatus: 'active',
+              runStatus: 'running',
+              available: true,
+              output: 'agent output stays visible',
+              capturedAt: '2026-06-30T10:01:02.000Z',
+              inputEnabled: false,
+            },
+          },
+        };
+      }
+
+      return { data: { data: [] } };
+    });
+
+    renderAgentGatewayPage(AgentGatewayRunsPage, request);
+
+    expect(await screen.findByText('run-timeline-retry')).toBeTruthy();
+    const detailButtons = await screen.findAllByLabelText('View run details');
+    fireEvent.click(detailButtons[0]);
+
+    expect(await screen.findByText('stable normalized event')).toBeTruthy();
+    await act(async () => {
+      for (const callback of intervalCallbacks) {
+        callback();
+      }
+    });
+
+    expect(await screen.findByText('stable normalized event')).toBeTruthy();
+    expect(await screen.findByText(/Agent timeline unavailable/)).toBeTruthy();
+    const timelineHeading = await screen.findByText('Agent Timeline');
+    const timelineRegion = timelineHeading.closest('section');
+    expect(timelineRegion).toBeTruthy();
+    expect(
+      within(timelineRegion as HTMLElement).queryByText('legacy event should not replace normalized event'),
+    ).toBeNull();
+  });
+
+  it('refreshes run summary while the detail drawer remains open', async () => {
+    let runDetailsCallCount = 0;
+    const intervalCallbacks: Array<() => void> = [];
+    vi.spyOn(window, 'setInterval').mockImplementation((handler: TimerHandler) => {
+      if (typeof handler === 'function') {
+        intervalCallbacks.push(() => handler());
+      }
+      return intervalCallbacks.length;
+    });
+    vi.spyOn(window, 'clearInterval').mockImplementation(() => undefined);
+
+    const request = vi.fn(async (config: RequestConfig) => {
+      if (config.url === 'agent-gateway/runs:list') {
+        return {
+          data: {
+            data: [
+              {
+                id: 'run-id-1',
+                runCode: 'run-refresh-1',
+                status: runDetailsCallCount > 1 ? 'succeeded' : 'running',
+                agentSessionId: runDetailsCallCount > 1 ? 'session-id-2' : null,
+                agentSessionProvider: runDetailsCallCount > 1 ? 'codex' : null,
+                agentSessionProviderId: runDetailsCallCount > 1 ? 'thread-id-2' : null,
+              },
+            ],
+          },
+        };
+      }
+
+      if (config.url === 'agent-gateway/runs:get/run-id-1') {
+        runDetailsCallCount += 1;
+        const completed = runDetailsCallCount > 1;
+        return {
+          data: {
+            data: {
+              id: 'run-id-1',
+              runCode: 'run-refresh-1',
+              status: completed ? 'succeeded' : 'running',
+              terminalStatus: completed ? 'closed' : 'active',
+              agentSessionId: completed ? 'session-id-2' : null,
+              agentSessionProvider: completed ? 'codex' : null,
+              agentSessionProviderId: completed ? 'thread-id-2' : null,
+              requestedAt: '2026-06-30T10:00:00.000Z',
+              startedAt: '2026-06-30T10:01:00.000Z',
+              finishedAt: completed ? '2026-06-30T10:02:00.000Z' : null,
+            },
+          },
+        };
+      }
+
+      if (config.url === 'agent-gateway/runs/run-id-1/terminal:snapshot') {
+        return {
+          data: {
+            data: {
+              backend: 'tmux',
+              sessionName: 'ag-run-run-id-1',
+              terminalStatus: runDetailsCallCount > 1 ? 'closed' : 'active',
+              runStatus: runDetailsCallCount > 1 ? 'succeeded' : 'running',
+              available: true,
+              output: 'agent output stays visible',
+              capturedAt: '2026-06-30T10:01:02.000Z',
+              inputEnabled: false,
+            },
+          },
+        };
+      }
+
+      return { data: { data: [] } };
+    });
+
+    renderAgentGatewayPage(AgentGatewayRunsPage, request);
+
+    expect(await screen.findByText('run-refresh-1')).toBeTruthy();
+    const detailButtons = await screen.findAllByLabelText('View run details');
+    fireEvent.click(detailButtons[0]);
+
+    expect(await screen.findByText('Run summary')).toBeTruthy();
+    expect(await screen.findByText('No agent session')).toBeTruthy();
+
+    await act(async () => {
+      for (const callback of intervalCallbacks) {
+        callback();
+      }
+    });
+
+    await waitFor(() => {
+      expect(runDetailsCallCount).toBeGreaterThan(1);
+    });
+    expect(await screen.findByText('codex / thread-id-2')).toBeTruthy();
+    expect(await screen.findByText('session-id-2')).toBeTruthy();
   });
 
   it('lists, creates, and toggles dispatch bindings through Agent Gateway APIs', async () => {

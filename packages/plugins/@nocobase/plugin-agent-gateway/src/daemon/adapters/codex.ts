@@ -46,17 +46,24 @@ function normalizeCommandExecution(event: JsonRecord): NormalizedAgentEvent[] {
     return [];
   }
   const status = getString(item.status);
-  const command = getString(item.command);
-  const output = getString(item.aggregated_output);
   const eventType = event.type === 'item.started' ? 'agent.command.started' : 'agent.command.completed';
+  const itemId = getString(item.id);
+  const message =
+    eventType === 'agent.command.started'
+      ? 'Command started'
+      : status === 'failed'
+        ? 'Command failed'
+        : 'Command completed';
 
   return [
     {
       eventType,
       level: status === 'failed' ? 'error' : 'info',
-      message: output || command || eventType,
+      providerEventId: itemId ? `${getString(event.type)}:${itemId}` : null,
+      correlationId: itemId || null,
+      message,
       payloadJson: {
-        command,
+        command: getString(item.command),
         status,
         exitCode: item.exit_code ?? null,
       },
@@ -73,6 +80,8 @@ function normalizeAgentMessage(event: JsonRecord): NormalizedAgentEvent[] {
     {
       eventType: 'agent.message',
       level: 'info',
+      providerEventId: getString(item.id) ? `${getString(event.type)}:${getString(item.id)}` : null,
+      correlationId: getString(item.id) || null,
       message: getString(item.text) || null,
       payloadJson: {
         itemId: getString(item.id) || null,
@@ -125,6 +134,7 @@ export const codexAdapter: AgentAdapter = {
         {
           eventType: 'agent.session.started',
           level: 'info',
+          providerEventId: getString(event.thread_id) ? `thread.started:${getString(event.thread_id)}` : null,
           message: getString(event.thread_id) || null,
           payloadJson: {
             providerSessionId: getString(event.thread_id) || null,
@@ -137,6 +147,7 @@ export const codexAdapter: AgentAdapter = {
         {
           eventType: event.type === 'turn.started' ? 'agent.turn.started' : 'agent.turn.completed',
           level: 'info',
+          providerEventId: getString(event.id) || null,
           message: event.type,
           payloadJson: event,
         },

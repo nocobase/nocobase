@@ -8,7 +8,9 @@
  */
 
 import path from 'path';
+import { createReadStream } from 'fs';
 import { promises as fs } from 'fs';
+import { createInterface } from 'readline';
 
 import { buildTextArtifactUpload } from './artifactUpload';
 import { getAgentAdapter } from './adapters';
@@ -59,6 +61,7 @@ const DEFAULT_RUN_HEARTBEAT_INTERVAL_MS = 10_000;
 const MAX_PROVIDER_SESSION_SCAN_BYTES = 256 * 1024;
 const PROVIDER_SESSION_UPSERT_MAX_ATTEMPTS = 3;
 const PROVIDER_SESSION_UPSERT_RETRY_DELAY_MS = 250;
+const MAX_CONVERSATION_EVENTS_PER_APPEND = 100;
 
 function isRecord(value: unknown): value is JsonRecord {
   return Object.prototype.toString.call(value) === '[object Object]';
@@ -183,6 +186,28 @@ async function readOutputForProviderSessionDetection(output: ExecDriverResult['s
   }
 }
 
+async function* readOutputLinesForProviderEvents(output: ExecDriverResult['stdout']) {
+  if (output.text) {
+    for (const rawLine of output.text.split(/\r?\n/)) {
+      yield rawLine;
+    }
+    return;
+  }
+  if (!output.artifactPath) {
+    return;
+  }
+
+  const lines = createInterface({
+    input: createReadStream(output.artifactPath, {
+      encoding: 'utf8',
+    }),
+    crlfDelay: Infinity,
+  });
+  for await (const rawLine of lines) {
+    yield rawLine;
+  }
+}
+
 async function detectProviderSessionId(commandKey: string, result: ExecDriverResult) {
   const adapter = getAgentAdapter(commandKey);
   if (!adapter?.capabilities.detectSessionId) {
@@ -209,6 +234,35 @@ async function detectProviderSessionId(commandKey: string, result: ExecDriverRes
   }
 
   return null;
+}
+
+async function collectProviderConversationEvents(commandKey: string, result: ExecDriverResult) {
+  const adapter = getAgentAdapter(commandKey);
+  if (!adapter?.capabilities.structuredEvents) {
+    return [];
+  }
+
+  let sequence = 1;
+  const events: JsonRecord[] = [];
+  for (const outputRecord of [result.stdout, result.stderr]) {
+    for await (const rawLine of readOutputLinesForProviderEvents(outputRecord)) {
+      for (const event of adapter.normalizeEvent({ rawLine, source: commandKey })) {
+        events.push({
+          source: adapter.provider,
+          sequence,
+          eventType: event.eventType,
+          providerEventId: event.providerEventId || undefined,
+          correlationId: event.correlationId || undefined,
+          confidence: event.confidence ?? undefined,
+          contentText: event.message || undefined,
+          contentJson: event.payloadJson || {},
+        });
+        sequence += 1;
+      }
+    }
+  }
+
+  return events;
 }
 
 async function reportProviderSessionIfDetected(options: {
@@ -259,6 +313,16 @@ async function reportProviderSessionAndCollectWarnings(options: {
     await reportProviderSessionIfDetected(options);
   } catch (error) {
     warnings.push(`Agent session upsert failed: ${error instanceof Error ? error.message : String(error)}`);
+  }
+  try {
+    const events = await collectProviderConversationEvents(options.commandKey, options.result);
+    for (let index = 0; index < events.length; index += MAX_CONVERSATION_EVENTS_PER_APPEND) {
+      await options.gateway.appendConversationEvents(options.lease, {
+        events: events.slice(index, index + MAX_CONVERSATION_EVENTS_PER_APPEND),
+      });
+    }
+  } catch (error) {
+    warnings.push(`Agent timeline append failed: ${error instanceof Error ? error.message : String(error)}`);
   }
   return warnings;
 }

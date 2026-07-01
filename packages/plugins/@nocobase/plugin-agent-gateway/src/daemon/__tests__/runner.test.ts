@@ -335,6 +335,22 @@ describe('agent gateway daemon runner', () => {
         resumeWithMessage: true,
       },
     });
+    const conversationCall = requester.calls.find((call) => call.path.endsWith('/conversation-events:append'));
+    expect(conversationCall?.body).toMatchObject({
+      events: expect.arrayContaining([
+        expect.objectContaining({
+          source: 'codex',
+          sequence: 1,
+          eventType: 'agent.session.started',
+          providerEventId: 'thread.started:019f1e72-d75c-7c61-a9ba-cc99c653e0a2',
+        }),
+        expect.objectContaining({
+          source: 'codex',
+          sequence: 2,
+          eventType: 'agent.turn.completed',
+        }),
+      ]),
+    });
   });
 
   it('retries transient Codex provider session upsert failures before completing the run', async () => {
@@ -492,6 +508,168 @@ describe('agent gateway daemon runner', () => {
       provider: 'codex',
       providerSessionId: '019f1e94-8f39-7dc0-b035-61fb2a364d30',
     });
+  });
+
+  it('normalizes Codex timeline events from the full artifact output', async () => {
+    const workspace = path.join(tempDir, 'workspace');
+    await fs.mkdir(workspace, { recursive: true });
+    const stdoutArtifactPath = path.join(tempDir, 'codex-stdout-large.log');
+    const artifactText = [
+      '{"type":"thread.started","thread_id":"019f1f37-25a1-71d0-9cd2-e0b37a2374fb"}',
+      'x'.repeat(300 * 1024),
+      '{"type":"item.completed","item":{"id":"item-tail","type":"agent_message","text":"tail timeline message"}}',
+    ].join('\n');
+    await fs.writeFile(stdoutArtifactPath, artifactText);
+    const requester = new RunnerRequester({
+      claimPayload: {
+        claimed: true,
+        runId: 'run-1',
+        claimToken: 'ag_claim_CLAIM_TOKEN_SECRET',
+        claimAttempt: 1,
+        leaseVersion: 1,
+        run: {
+          id: 'run-1',
+          executionPayloadJson: {
+            commandKey: 'codex',
+            args: ['exec', '--json', 'echo session'],
+            cwd: '.',
+          },
+        },
+      },
+    });
+    const gateway = new AgentGatewayDaemonNodeClient(requester, {
+      serverUrl: 'https://nocobase.example.test',
+      nodeId: 'node-1',
+      nodeKey: 'node-1',
+      nodeToken: 'ag_node_NODE_TOKEN_SECRET',
+      savedAt: new Date().toISOString(),
+    });
+
+    const result = await runDaemonOnce({
+      gateway,
+      allowlist: {
+        codex: {
+          commandKey: 'codex',
+          executable: process.execPath,
+          defaultTimeoutMs: 5000,
+        },
+      },
+      workspaceRoot: workspace,
+      skillsRoot: path.join(tempDir, 'skills'),
+      artifactDir: path.join(tempDir, 'artifacts'),
+      runHeartbeatIntervalMs: 60_000,
+      executeCommand: async () => ({
+        status: 'succeeded',
+        exitCode: 0,
+        signal: null,
+        stdout: {
+          text: null,
+          sizeBytes: Buffer.byteLength(artifactText),
+          artifactPath: stdoutArtifactPath,
+        },
+        stderr: {
+          text: null,
+          sizeBytes: 0,
+        },
+      }),
+      detectOptions: {
+        probeCommand: async (candidates) => ({
+          available: candidates.includes('codex'),
+          command: candidates[0],
+          version: 'codex 1.0.0',
+        }),
+      },
+    });
+
+    expect(result.status).toBe('succeeded');
+    const conversationCall = requester.calls.find((call) => call.path.endsWith('/conversation-events:append'));
+    expect(conversationCall?.body).toMatchObject({
+      events: expect.arrayContaining([
+        expect.objectContaining({
+          eventType: 'agent.message',
+          contentText: 'tail timeline message',
+          providerEventId: 'item.completed:item-tail',
+        }),
+      ]),
+    });
+  });
+
+  it('chunks Codex timeline appends to stay within the server batch limit', async () => {
+    const workspace = path.join(tempDir, 'workspace');
+    await fs.mkdir(workspace, { recursive: true });
+    const timelineLines = [
+      '{"type":"thread.started","thread_id":"019f1f37-25a1-71d0-9cd2-e0b37a2374fb"}',
+      ...Array.from(
+        { length: 105 },
+        (_value, index) =>
+          `{"type":"item.completed","item":{"id":"item-${index}","type":"agent_message","text":"message ${index}"}}`,
+      ),
+    ];
+    const requester = new RunnerRequester({
+      claimPayload: {
+        claimed: true,
+        runId: 'run-1',
+        claimToken: 'ag_claim_CLAIM_TOKEN_SECRET',
+        claimAttempt: 1,
+        leaseVersion: 1,
+        run: {
+          id: 'run-1',
+          executionPayloadJson: {
+            commandKey: 'codex',
+            args: ['exec', '--json', 'echo session'],
+            cwd: '.',
+          },
+        },
+      },
+    });
+    const gateway = new AgentGatewayDaemonNodeClient(requester, {
+      serverUrl: 'https://nocobase.example.test',
+      nodeId: 'node-1',
+      nodeKey: 'node-1',
+      nodeToken: 'ag_node_NODE_TOKEN_SECRET',
+      savedAt: new Date().toISOString(),
+    });
+
+    const result = await runDaemonOnce({
+      gateway,
+      allowlist: {
+        codex: {
+          commandKey: 'codex',
+          executable: process.execPath,
+          defaultTimeoutMs: 5000,
+        },
+      },
+      workspaceRoot: workspace,
+      skillsRoot: path.join(tempDir, 'skills'),
+      artifactDir: path.join(tempDir, 'artifacts'),
+      runHeartbeatIntervalMs: 60_000,
+      executeCommand: async () => ({
+        status: 'succeeded',
+        exitCode: 0,
+        signal: null,
+        stdout: {
+          text: timelineLines.join('\n'),
+          sizeBytes: Buffer.byteLength(timelineLines.join('\n')),
+        },
+        stderr: {
+          text: null,
+          sizeBytes: 0,
+        },
+      }),
+      detectOptions: {
+        probeCommand: async (candidates) => ({
+          available: candidates.includes('codex'),
+          command: candidates[0],
+          version: 'codex 1.0.0',
+        }),
+      },
+    });
+
+    expect(result.status).toBe('succeeded');
+    const conversationCalls = requester.calls.filter((call) => call.path.endsWith('/conversation-events:append'));
+    expect(conversationCalls).toHaveLength(2);
+    expect((conversationCalls[0].body?.events as unknown[] | undefined)?.length).toBe(100);
+    expect((conversationCalls[1].body?.events as unknown[] | undefined)?.length).toBe(6);
   });
 
   it('reports detected Codex provider session ids from full tmux output before the pane tail', async () => {

@@ -13,6 +13,7 @@ import { Plugin } from '@nocobase/server';
 
 import { registerApiCallLogMiddleware } from './actions/apiCallLogging';
 import { registerAgentSessionRoutes } from './actions/agentSessions';
+import { registerConversationEventRoutes } from './actions/conversationEvents';
 import { registerDispatchBindingRoutes, registerDispatchBindingValidationHooks } from './actions/dispatchBindings';
 import { registerNodeLifecycleRoutes } from './actions/nodeLifecycle';
 import { registerPromptTemplateRoutes } from './actions/promptTemplates';
@@ -46,6 +47,7 @@ export class PluginAgentGatewayServer extends Plugin {
     registerSkillVersionRoutes(this);
     registerRunLifecycleRoutes(this);
     registerAgentSessionRoutes(this);
+    registerConversationEventRoutes(this);
     registerRunTerminalRoutes(this);
     registerRunObservabilityRoutes(this);
     registerPromptTemplateRoutes(this);

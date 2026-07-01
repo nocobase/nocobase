@@ -254,11 +254,15 @@ describe('agent gateway ACL registration', () => {
     );
     expect(snippets.find((snippet) => snippet.name === AGENT_GATEWAY_PERMISSIONS.readRunDetails)?.actions).toEqual(
       expect.arrayContaining([
+        'agentGateway:readRun',
+        'agentGateway:readRuns',
         'agentGateway:readRunDetails',
         'agentGateway:readSessionMessages',
         'agentGateway:readTerminal',
         'agentGateway:readArtifacts',
         'agentGateway:readRawLogs',
+        'agRuns:list',
+        'agRuns:get',
       ]),
     );
     expect(snippets.find((snippet) => snippet.name === AGENT_GATEWAY_PERMISSIONS.cancelRun)?.actions).toEqual(

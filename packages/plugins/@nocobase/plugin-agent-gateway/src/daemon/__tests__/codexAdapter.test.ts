@@ -84,7 +84,9 @@ describe('Codex agent adapter', () => {
       {
         eventType: 'agent.command.completed',
         level: 'info',
-        message: 'ok',
+        providerEventId: 'item.completed:item_1',
+        correlationId: 'item_1',
+        message: 'Command completed',
         payloadJson: {
           command: 'echo ok',
           status: 'completed',
@@ -100,9 +102,30 @@ describe('Codex agent adapter', () => {
       {
         eventType: 'agent.message',
         level: 'info',
+        providerEventId: 'item.completed:item_2',
+        correlationId: 'item_2',
         message: 'Done',
         payloadJson: {
           itemId: 'item_2',
+        },
+      },
+    ]);
+    expect(
+      codexAdapter.normalizeEvent({
+        rawLine:
+          '{"type":"item.started","item":{"id":"item_3","type":"command_execution","command":"echo SECRET","aggregated_output":"","exit_code":null,"status":"in_progress"}}',
+      }),
+    ).toEqual([
+      {
+        eventType: 'agent.command.started',
+        level: 'info',
+        providerEventId: 'item.started:item_3',
+        correlationId: 'item_3',
+        message: 'Command started',
+        payloadJson: {
+          command: 'echo SECRET',
+          status: 'in_progress',
+          exitCode: null,
         },
       },
     ]);

@@ -125,6 +125,20 @@ export class AgentGatewayDaemonNodeClient {
     });
   }
 
+  async appendConversationEvents(lease: RunLease, values: JsonRecord) {
+    await this.requester.request({
+      method: 'POST',
+      path: `/api/agent-gateway/runs/${lease.runId}/conversation-events:append`,
+      nodeToken: this.config.nodeToken,
+      body: {
+        claimToken: lease.claimToken,
+        claimAttempt: lease.claimAttempt,
+        leaseVersion: lease.leaseVersion,
+        ...values,
+      },
+    });
+  }
+
   async registerArtifact(lease: RunLease, values: JsonRecord) {
     await this.requester.request({
       method: 'POST',

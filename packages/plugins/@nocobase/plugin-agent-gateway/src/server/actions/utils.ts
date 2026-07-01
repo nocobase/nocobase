@@ -22,6 +22,7 @@ export type JsonRecord = Record<string, unknown>;
 
 export const AGENT_GATEWAY_STANDARD_COLLECTIONS = [
   'agAgentActionAudits',
+  'agAgentConversationEvents',
   'agAgentProfiles',
   'agAgentSessions',
   'agApiCallLogs',

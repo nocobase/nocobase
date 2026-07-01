@@ -11,6 +11,7 @@ import { CollectionOptions, createMockDatabase, Database } from '@nocobase/datab
 
 import { AGENT_GATEWAY_RETENTION_DEFAULTS_DAYS } from '../constants';
 import agAgentActionAudits from '../collections/agAgentActionAudits';
+import agAgentConversationEvents from '../collections/agAgentConversationEvents';
 import agAgentProfiles from '../collections/agAgentProfiles';
 import agAgentSessions, { AG_AGENT_SESSION_PROVIDER_ID_UNIQUE_CONSTRAINT_NOTE } from '../collections/agAgentSessions';
 import agApiCallLogs from '../collections/agApiCallLogs';
@@ -32,6 +33,7 @@ const collections = [
   agAgentProfiles,
   agAgentSessions,
   agAgentActionAudits,
+  agAgentConversationEvents,
   agSkills,
   agSkillVersions,
   agNodeSkillInstalls,
@@ -52,6 +54,7 @@ const requiredCollectionNames = [
   'agAgentProfiles',
   'agAgentSessions',
   'agAgentActionAudits',
+  'agAgentConversationEvents',
   'agSkills',
   'agSkillVersions',
   'agNodeSkillInstalls',
@@ -114,6 +117,8 @@ describe('agent gateway collections', () => {
     expect(getField('agNodes', 'nodeKey')?.unique).toBe(true);
     expect(hasUniqueIndex('agAgentProfiles', ['nodeId', 'profileKey'])).toBe(true);
     expect(hasUniqueIndex('agAgentSessions', ['provider', 'providerSessionId'])).toBe(true);
+    expect(hasUniqueIndex('agAgentConversationEvents', ['runId', 'source', 'providerEventId'])).toBe(true);
+    expect(hasUniqueIndex('agAgentConversationEvents', ['runId', 'source', 'sequence'])).toBe(true);
     expect(hasUniqueIndex('agSkillVersions', ['skillId', 'versionLabel'])).toBe(true);
     expect(hasUniqueIndex('agNodeSkillInstalls', ['nodeId', 'skillVersionId'])).toBe(true);
     expect(getField('agPromptTemplates', 'templateKey')?.unique).toBe(true);
@@ -144,6 +149,9 @@ describe('agent gateway collections', () => {
     expectNullableForeignKey('agAgentSessions', 'latestRunId');
     expectNullableForeignKey('agAgentActionAudits', 'runId');
     expectNullableForeignKey('agAgentActionAudits', 'sessionId');
+    expectRequiredForeignKey('agAgentConversationEvents', 'runId');
+    expectRequiredField('agAgentConversationEvents', 'sequence');
+    expectNullableForeignKey('agAgentConversationEvents', 'sessionId');
   });
 
   it('keeps agent profiles free of raw execution configuration fields', () => {
@@ -236,10 +244,27 @@ describe('agent gateway collections', () => {
         'metadataJson',
       ]),
     );
+    expect(fieldNamesOf('agAgentConversationEvents')).toEqual(
+      expect.arrayContaining([
+        'sessionId',
+        'runId',
+        'sequence',
+        'eventType',
+        'source',
+        'providerEventId',
+        'correlationId',
+        'confidence',
+        'contentText',
+        'contentJson',
+        'createdById',
+      ]),
+    );
     expectRequiredField('agAgentSessions', 'provider');
     expectRequiredField('agAgentActionAudits', 'action');
     expectRequiredField('agAgentActionAudits', 'permissionKey');
     expectRequiredField('agAgentActionAudits', 'resultStatus');
+    expectRequiredField('agAgentConversationEvents', 'eventType');
+    expectRequiredField('agAgentConversationEvents', 'source');
   });
 
   it('keeps token persistence fields hash-only with last-four fingerprints', () => {

@@ -108,7 +108,14 @@ describe('agent gateway permission foundation', () => {
     );
     expect(readRun?.actions).not.toContain('agentGateway:readRawLogs');
     expect(readDetails?.actions).toEqual(
-      expect.arrayContaining(['agentGateway:readTerminal', 'agentGateway:readRawLogs']),
+      expect.arrayContaining([
+        'agentGateway:readRun',
+        'agentGateway:readRuns',
+        'agentGateway:readTerminal',
+        'agentGateway:readRawLogs',
+        'agRuns:list',
+        'agRuns:get',
+      ]),
     );
     expect(cancelRun?.actions).toEqual(
       expect.arrayContaining(['agentGateway:interruptRun', 'agentGateway:terminateRun']),
