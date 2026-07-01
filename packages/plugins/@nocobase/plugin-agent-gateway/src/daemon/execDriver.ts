@@ -227,7 +227,7 @@ function killProcess(child: ReturnType<typeof spawn>) {
   });
 }
 
-function getAllowlistedDefinition(allowlist: ExecCommandAllowlist, commandKey: string) {
+export function getAllowlistedDefinition(allowlist: ExecCommandAllowlist, commandKey: string) {
   const definition = Array.isArray(allowlist)
     ? allowlist.find((item) => item.commandKey === commandKey)
     : allowlist[commandKey];

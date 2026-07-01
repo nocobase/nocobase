@@ -1046,7 +1046,7 @@ async function timeoutRun(ctx: Context, nodeId: string, runId: string) {
   );
 }
 
-async function cancelRun(ctx: Context, runId: string) {
+export async function cancelRun(ctx: Context, runId: string) {
   await requireAgentGatewayPermission(ctx, AGENT_GATEWAY_ACTIONS.cancelRun, 'Agent Gateway cancel permission required');
 
   const updatedRun = await ctx.db.sequelize.transaction(async (transaction) => {

@@ -42,6 +42,13 @@ export class AgentGatewayDaemonNodeClient {
           supportsExecDriver: true,
           supportsArtifacts: true,
           supportsSnapshots: true,
+          terminal: {
+            backend: 'tmux',
+            attach: true,
+            input: true,
+            interrupt: true,
+            terminate: true,
+          },
         },
         profiles: options.profiles,
       },
@@ -86,6 +93,20 @@ export class AgentGatewayDaemonNodeClient {
         claimAttempt: lease.claimAttempt,
         leaseVersion: lease.leaseVersion,
         status,
+      },
+    });
+  }
+
+  async updateRunTerminal(lease: RunLease, values: JsonRecord) {
+    return await this.requester.request({
+      method: 'POST',
+      path: `/api/agent-gateway/nodes/${this.config.nodeId}/runs/${lease.runId}/terminal:update`,
+      nodeToken: this.config.nodeToken,
+      body: {
+        claimToken: lease.claimToken,
+        claimAttempt: lease.claimAttempt,
+        leaseVersion: lease.leaseVersion,
+        ...values,
       },
     });
   }

@@ -201,7 +201,9 @@ async function handleRun(flags: Record<string, string | boolean>) {
     workspaceRoot: path.resolve(getFlagString(flags, 'workspace-root') || process.cwd()),
     skillsRoot: path.resolve(getFlagString(flags, 'skills-root') || getDaemonDataPath('skills')),
     artifactDir: path.resolve(getFlagString(flags, 'artifact-dir') || getDaemonDataPath('artifacts')),
+    terminalBackend: getFlagString(flags, 'terminal-backend') === 'exec' ? ('exec' as const) : ('tmux' as const),
     claimProfileKey: getFlagString(flags, 'profile-key') || undefined,
+    claimRunId: getFlagString(flags, 'run-id') || undefined,
     pollIntervalMs: getFlagNumber(
       flags,
       'poll-interval-ms',
@@ -289,7 +291,7 @@ function printHelp() {
       '  register --server-url <url> --invite-token <token>',
       '  register --server-url <url> --invite-token-stdin',
       '  heartbeat [--config <path>]',
-      '  run [--config <path>] [--once] [--workspace-root <path>]',
+      '  run [--config <path>] [--once] [--workspace-root <path>] [--terminal-backend tmux|exec]',
       '  smoke-opencode --skill-version-id <id> --skill-source-json <json> [--workspace-root <path>]',
       '  detect-profiles',
       '',

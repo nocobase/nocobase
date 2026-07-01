@@ -11,7 +11,12 @@ import path from 'path';
 
 import { buildTextArtifactUpload } from './artifactUpload';
 import { AgentGatewayDaemonNodeClient } from './gateway';
-import { ExecCommandAllowlist, ExecDriverResult, executeAllowlistedCommand } from './execDriver';
+import {
+  ExecCommandAllowlist,
+  ExecDriverResult,
+  executeAllowlistedCommand,
+  getAllowlistedDefinition,
+} from './execDriver';
 import { detectAgentProfiles, DetectAgentProfilesOptions } from './profileDetection';
 import {
   SkillVersionInstallRecord,
@@ -20,6 +25,7 @@ import {
   SyncNodeSkillVersionResult,
 } from './skillSync';
 import { JsonRecord, RunLease } from './types';
+import { executeTmuxCommand, getManagedTmuxSessionName } from './tmuxTerminal';
 
 export interface RunDaemonOnceOptions {
   gateway: AgentGatewayDaemonNodeClient;
@@ -27,8 +33,10 @@ export interface RunDaemonOnceOptions {
   workspaceRoot: string;
   skillsRoot: string;
   artifactDir: string;
+  terminalBackend?: 'exec' | 'tmux';
   detectOptions?: DetectAgentProfilesOptions;
   claimProfileKey?: string;
+  claimRunId?: string;
   runHeartbeatIntervalMs?: number;
   syncSkillVersion?: typeof syncNodeSkillVersion;
   executeCommand?: typeof executeAllowlistedCommand;
@@ -329,6 +337,25 @@ async function terminalizeRun(options: {
   }
 }
 
+async function closeTmuxTerminalQuietly(
+  options: RunDaemonOnceOptions,
+  lease: RunLease,
+  runId: string,
+  exitCode: number | null,
+) {
+  try {
+    await options.gateway.updateRunTerminal(lease, {
+      terminalBackend: 'tmux',
+      terminalSessionName: getManagedTmuxSessionName(runId),
+      terminalStatus: 'closed',
+      terminalEndedAt: new Date().toISOString(),
+      terminalExitCode: exitCode,
+    });
+  } catch {
+    // Terminal metadata is observational; run terminalization remains authoritative.
+  }
+}
+
 export async function executeClaimedRun(
   options: RunDaemonOnceOptions,
   claimedLease: RunLease,
@@ -428,8 +455,17 @@ export async function executeClaimedRun(
   const payload = getPayload(claimedLease);
   const commandKey = getString(payload.commandKey || payload.profileKey);
   const cwd = path.resolve(options.workspaceRoot, getString(payload.cwd) || '.');
+  const terminalBackend = options.terminalBackend || 'exec';
   const cancelController = new AbortController();
   const leaseLostController = new AbortController();
+  if (terminalBackend === 'tmux' && !options.executeCommand) {
+    await options.gateway.updateRunTerminal(activeLease(), {
+      terminalBackend: 'tmux',
+      terminalSessionName: getManagedTmuxSessionName(claimedLease.runId),
+      terminalStatus: 'active',
+      terminalStartedAt: new Date().toISOString(),
+    });
+  }
   let stopHeartbeat: (() => Promise<void>) | null = heartbeatWhileRunPhase({
     gateway: options.gateway,
     getLease: activeLease,
@@ -443,18 +479,32 @@ export async function executeClaimedRun(
   });
 
   try {
-    const result = await (options.executeCommand || executeAllowlistedCommand)({
-      commandKey,
-      allowlist: options.allowlist,
-      args: getStringArray(payload.args),
-      cwd,
-      workspaceRoot: options.workspaceRoot,
-      env: getStringMap(payload.env),
-      timeoutMs: getNumber(payload.timeoutMs),
-      cancelSignal: cancelController.signal,
-      leaseLostSignal: leaseLostController.signal,
-      artifactDir: options.artifactDir,
-    });
+    const result =
+      terminalBackend === 'tmux' && !options.executeCommand
+        ? await executeTmuxCommand({
+            runId: claimedLease.runId,
+            definition: getAllowlistedDefinition(options.allowlist, commandKey),
+            args: getStringArray(payload.args),
+            cwd,
+            workspaceRoot: options.workspaceRoot,
+            env: getStringMap(payload.env),
+            timeoutMs: getNumber(payload.timeoutMs) || DEFAULT_RUN_HEARTBEAT_INTERVAL_MS * 180,
+            cancelSignal: cancelController.signal,
+            leaseLostSignal: leaseLostController.signal,
+            artifactDir: options.artifactDir,
+          })
+        : await (options.executeCommand || executeAllowlistedCommand)({
+            commandKey,
+            allowlist: options.allowlist,
+            args: getStringArray(payload.args),
+            cwd,
+            workspaceRoot: options.workspaceRoot,
+            env: getStringMap(payload.env),
+            timeoutMs: getNumber(payload.timeoutMs),
+            cancelSignal: cancelController.signal,
+            leaseLostSignal: leaseLostController.signal,
+            artifactDir: options.artifactDir,
+          });
     if (stopHeartbeat) {
       await stopHeartbeat();
       stopHeartbeat = null;
@@ -481,11 +531,17 @@ export async function executeClaimedRun(
       };
     }
     if (refreshedLeaseStatus === 'cancel_requested') {
+      if (terminalBackend === 'tmux' && !options.executeCommand) {
+        await closeTmuxTerminalQuietly(options, activeLease(), claimedLease.runId, result.exitCode);
+      }
       await options.gateway.cancelAckRun(activeLease());
       return {
         status: 'canceled',
         runId: claimedLease.runId,
       };
+    }
+    if (terminalBackend === 'tmux' && !options.executeCommand) {
+      await closeTmuxTerminalQuietly(options, activeLease(), claimedLease.runId, result.exitCode);
     }
     const terminalResult: ExecDriverResult =
       cancelController.signal.aborted && result.status === 'succeeded'
@@ -512,6 +568,9 @@ export async function executeClaimedRun(
     if (stopHeartbeat) {
       await stopHeartbeat();
       stopHeartbeat = null;
+    }
+    if (terminalBackend === 'tmux' && !options.executeCommand) {
+      await closeTmuxTerminalQuietly(options, activeLease(), claimedLease.runId, null);
     }
     if (!leaseLostController.signal.aborted) {
       try {
@@ -554,7 +613,10 @@ export async function runDaemonOnce(options: RunDaemonOnceOptions): Promise<Daem
   await options.gateway.heartbeatNode({
     profiles,
   });
-  const claim = await options.gateway.claimRun(options.claimProfileKey);
+  const claim = await options.gateway.claimRun({
+    profileKey: options.claimProfileKey,
+    runId: options.claimRunId,
+  });
   if (claim.claimed === false || !claim.runId) {
     return {
       status: 'idle',

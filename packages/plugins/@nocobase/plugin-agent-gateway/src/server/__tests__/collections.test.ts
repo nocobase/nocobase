@@ -156,6 +156,13 @@ describe('agent gateway collections', () => {
         'resultSummaryJson',
         'errorSummary',
         'finishedAt',
+        'terminalBackend',
+        'terminalSessionName',
+        'terminalStatus',
+        'terminalStartedAt',
+        'terminalEndedAt',
+        'terminalLastActivityAt',
+        'terminalExitCode',
       ]),
     );
     expectRequiredField('agRuns', 'status');

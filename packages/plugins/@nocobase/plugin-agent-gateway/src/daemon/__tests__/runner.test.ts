@@ -183,6 +183,51 @@ describe('agent gateway daemon runner', () => {
     expect(JSON.stringify(requester.calls)).not.toContain('RUNNER_TOKEN_SECRET');
   });
 
+  it('passes directed claim filters to the gateway', async () => {
+    const workspace = path.join(tempDir, 'workspace');
+    await fs.mkdir(workspace, { recursive: true });
+    const requester = new RunnerRequester({
+      claimPayload: {
+        claimed: false,
+        reason: 'no_claimable_run',
+      },
+    });
+    const gateway = new AgentGatewayDaemonNodeClient(requester, {
+      serverUrl: 'https://nocobase.example.test',
+      nodeId: 'node-1',
+      nodeKey: 'node-1',
+      nodeToken: 'ag_node_NODE_TOKEN_SECRET',
+      savedAt: new Date().toISOString(),
+    });
+
+    const result = await runDaemonOnce({
+      gateway,
+      allowlist: {},
+      workspaceRoot: workspace,
+      skillsRoot: path.join(tempDir, 'skills'),
+      artifactDir: path.join(tempDir, 'artifacts'),
+      claimProfileKey: 'codex',
+      claimRunId: 'target-run',
+      detectOptions: {
+        probeCommand: async (candidates) => ({
+          available: candidates.includes('codex'),
+          command: candidates[0],
+          version: 'codex 1.0.0',
+        }),
+      },
+    });
+
+    expect(result).toMatchObject({
+      status: 'idle',
+      reason: 'no_claimable_run',
+    });
+    const claimCall = requester.calls.find((call) => call.path.endsWith('/runs:claim'));
+    expect(claimCall?.body).toMatchObject({
+      profileKey: 'codex',
+      runId: 'target-run',
+    });
+  });
+
   it('truncates multi-megabyte log artifacts and still completes the run', async () => {
     const workspace = path.join(tempDir, 'workspace');
     await fs.mkdir(workspace, { recursive: true });

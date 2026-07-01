@@ -141,6 +141,35 @@ export default defineCollection({
       name: 'finishedAt',
     },
     {
+      type: 'string',
+      name: 'terminalBackend',
+    },
+    {
+      type: 'string',
+      name: 'terminalSessionName',
+    },
+    {
+      type: 'string',
+      name: 'terminalStatus',
+      index: true,
+    },
+    {
+      type: 'date',
+      name: 'terminalStartedAt',
+    },
+    {
+      type: 'date',
+      name: 'terminalEndedAt',
+    },
+    {
+      type: 'date',
+      name: 'terminalLastActivityAt',
+    },
+    {
+      type: 'integer',
+      name: 'terminalExitCode',
+    },
+    {
       type: 'belongsTo',
       name: 'node',
       target: 'agNodes',

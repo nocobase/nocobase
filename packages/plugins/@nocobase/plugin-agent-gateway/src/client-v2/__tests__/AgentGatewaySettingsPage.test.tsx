@@ -527,6 +527,33 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
+      if (config.url === 'agent-gateway/runs/run-id-1/terminal:snapshot') {
+        return {
+          data: {
+            data: {
+              backend: 'tmux',
+              sessionName: 'ag-run-run-id-1',
+              terminalStatus: 'active',
+              runStatus: 'running',
+              available: true,
+              output: 'agent is building',
+              capturedAt: '2026-06-30T10:01:02.000Z',
+              inputEnabled: true,
+            },
+          },
+        };
+      }
+
+      if (config.url === 'agent-gateway/runs/run-id-1/terminal:send') {
+        return {
+          data: {
+            data: {
+              success: true,
+            },
+          },
+        };
+      }
+
       return { data: { data: [] } };
     });
 
@@ -551,6 +578,23 @@ describe('PluginAgentGatewayClientV2', () => {
     fireEvent.click(detailButtons[0]);
 
     expect(await screen.findByText('Run summary')).toBeTruthy();
+    expect(await screen.findByText(/agent is building/)).toBeTruthy();
+    fireEvent.change(screen.getByLabelText('Terminal input'), {
+      target: { value: 'continue' },
+    });
+    fireEvent.click(screen.getByLabelText('Send terminal input'));
+    await waitFor(() => {
+      expect(request).toHaveBeenCalledWith(
+        expect.objectContaining({
+          url: 'agent-gateway/runs/run-id-1/terminal:send',
+          method: 'post',
+          data: {
+            input: 'continue',
+            appendEnter: true,
+          },
+        }),
+      );
+    });
     expect(await screen.findByText('build started')).toBeTruthy();
     expect(await screen.findByText('inline artifact text')).toBeTruthy();
     expect(await screen.findByText(/visible summary/)).toBeTruthy();
