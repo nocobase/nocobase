@@ -14,7 +14,7 @@ import {
   useFlowModelById,
   useFlowViewContext,
 } from '@nocobase/flow-engine';
-import type { FlowModel, FlowModelRendererProps, ModelConstructor } from '@nocobase/flow-engine';
+import type { FlowEngineContext, FlowModel, FlowModelRendererProps, ModelConstructor } from '@nocobase/flow-engine';
 import { useRequest } from 'ahooks';
 import React from 'react';
 import FlowRoute from './components/FlowRoute';
@@ -57,8 +57,7 @@ type FlowPageProps = {
   showFlowSettings?: FlowModelRendererProps['showFlowSettings'];
 };
 
-type FlowPageViewContext = {
-  isMobileLayout?: boolean;
+type FlowPageViewContext = FlowEngineContext & {
   view?: {
     inputArgs?: {
       isMobileLayout?: unknown;
