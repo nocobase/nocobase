@@ -57,6 +57,33 @@ API_BASE_PATH=/api/
 
 ## API_BASE_URL
 
+## SERVER_REQUEST_WHITELIST
+
+Whitelist mục tiêu cho các yêu cầu HTTP gửi ra ngoài do server khởi tạo. Áp dụng cho các yêu cầu phía server từ các tính năng như node HTTP Request của Workflow, custom request và dịch vụ AI.
+
+Khi biến này chưa được cấu hình, NocoBase vẫn cho phép yêu cầu `http` / `https` để giữ tương thích với các deployment hiện có. Tuy nhiên, nếu mục tiêu là địa chỉ loopback, private, link-local, metadata, hoặc domain resolve đến các địa chỉ này, server sẽ ghi warning vào log. Các phiên bản sau có thể dần siết chặt hành vi mặc định. Nếu deployment của bạn cần truy cập dịch vụ nội bộ, hãy cấu hình whitelist rõ ràng từ trước.
+
+Các mục được hỗ trợ:
+
+- Địa chỉ IPv4 chính xác, như `192.168.1.10`
+- Dải CIDR IPv4, như `10.0.0.0/8`
+- Địa chỉ IPv6 chính xác, như `::1`
+- Dải CIDR IPv6, như `fc00::/7`
+- Tên miền chính xác, như `api.example.com`
+- Subdomain wildcard một cấp, như `*.example.com`
+
+Dùng `,` để phân tách nhiều mục tiêu:
+
+```bash
+SERVER_REQUEST_WHITELIST=api.example.com,*.trusted.com,10.0.0.0/8,127.0.0.1
+```
+
+:::warning Note
+
+Nếu cấu hình domain trong whitelist, kiểm tra whitelist sẽ dùng host trong URL của yêu cầu. Nói cách khác, sau khi cấu hình `internal.example.com`, mục tiêu này được xem là đã cho phép rõ ràng ngay cả khi domain resolve đến `127.0.0.1` hoặc địa chỉ private.
+
+:::
+
 ## CLUSTER_MODE
 
 > `v1.6.0+`
