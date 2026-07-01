@@ -263,7 +263,7 @@
         "version": {
           "message": "Which version would you like to use?",
           "latestLabel": "latest",
-          "latestHint": "Stable release. Best for production use and the most predictable experience. Currently unavailable.",
+          "latestHint": "Stable release. Best for production use and the most predictable experience.",
           "betaLabel": "beta",
           "betaHint": "Preview release. Good for trying upcoming features before general release.",
           "alphaLabel": "alpha",
