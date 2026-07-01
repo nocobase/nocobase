@@ -104,6 +104,7 @@ import WorkflowPane from '../WorkflowPane';
 const mockPlugin = {
   triggers: { getEntities: () => [['collection', { title: 'Collection event' }]] },
   getTriggerOptions: (type?: string) => (type === 'collection' ? { title: 'Collection event' } : undefined),
+  getWorkflowNotices: vi.fn(() => []),
 };
 
 function makeCtx(resourceMap: Record<string, any>) {
@@ -121,6 +122,7 @@ function renderWithApp(node: React.ReactNode) {
 describe('WorkflowPane (request layer)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockPlugin.getWorkflowNotices.mockReturnValue([]);
     providerHolder.collections = null;
     providerHolder.workflowTabsClassName = null;
     providerHolder.collectionFilterProps = null;
@@ -351,5 +353,75 @@ describe('WorkflowPane (request layer)', () => {
     });
 
     expect(providerHolder.collectionFilterProps.defaultValue).toEqual(defaultWorkflowFilter);
+  });
+
+  it('requests workflow config and nodes so notice providers can diagnose rows', async () => {
+    const workflows = {
+      list: vi.fn().mockResolvedValue({
+        data: {
+          data: [],
+          meta: { count: 0 },
+        },
+      }),
+    };
+    const workflowCategories = { list: vi.fn().mockResolvedValue({ data: { data: [] } }) };
+    holder.ctx = makeCtx({ workflows, workflowCategories });
+
+    renderWithApp(<WorkflowPane />);
+
+    await waitFor(() => {
+      expect(workflows.list).toHaveBeenCalledTimes(1);
+    });
+
+    expect(workflows.list).toHaveBeenCalledWith(
+      expect.objectContaining({
+        appends: ['categories', 'stats', 'nodes'],
+      }),
+    );
+    expect(workflows.list.mock.calls[0][0].except).toBeUndefined();
+  });
+
+  it('renders workflow row notices returned by the workflow plugin', async () => {
+    const nodes = [{ id: 101, type: 'approval', config: { applyDetail: 'legacy_schema' } }];
+    mockPlugin.getWorkflowNotices.mockReturnValue([
+      {
+        key: 'legacy-ui',
+        message: 'Interface needs reconfiguration',
+        description: 'This workflow contains old interface configurations.',
+      },
+    ]);
+    const workflows = {
+      list: vi.fn().mockResolvedValue({
+        data: {
+          data: [
+            {
+              id: 9,
+              title: 'Row',
+              type: 'approval',
+              sync: false,
+              enabled: false,
+              categories: [],
+              stats: { executed: 0 },
+              config: { applyForm: 'legacy_schema' },
+              nodes,
+            },
+          ],
+          meta: { count: 1 },
+        },
+      }),
+    };
+    const workflowCategories = { list: vi.fn().mockResolvedValue({ data: { data: [] } }) };
+    holder.ctx = makeCtx({ workflows, workflowCategories });
+
+    renderWithApp(<WorkflowPane />);
+
+    expect(await screen.findByText('Interface needs reconfiguration')).toBeInTheDocument();
+    expect(mockPlugin.getWorkflowNotices).toHaveBeenCalledWith(
+      expect.objectContaining({
+        nodes,
+        surface: 'workflow-list-row',
+        workflow: expect.objectContaining({ id: 9 }),
+      }),
+    );
   });
 });

@@ -7,7 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { DeleteOutlined, PlusOutlined, ReloadOutlined, SyncOutlined } from '@ant-design/icons';
+import {
+  DeleteOutlined,
+  ExclamationCircleOutlined,
+  PlusOutlined,
+  ReloadOutlined,
+  SyncOutlined,
+} from '@ant-design/icons';
 import {
   CollectionFilter,
   type CompiledFilter,
@@ -28,6 +34,7 @@ import { SyncModeTag } from '../components/SyncModeTag';
 import { useWorkflowRuntimePaths } from '../hooks/useWorkflowRuntimePaths';
 import { useT, useWorkflowTranslation } from '../locale';
 import PluginWorkflowClientV2 from '../plugin';
+import type { WorkflowNotice } from '../plugin';
 import { ExecutionHistoryDrawer } from './ExecutionHistoryDrawer';
 import { ALL_CATEGORY_KEY, WorkflowCategoryTabs, WorkflowCategory } from './WorkflowCategoryTabs';
 import { WorkflowFormDrawer, WorkflowRecord } from './WorkflowFormDrawer';
@@ -42,6 +49,27 @@ function normalizeListResponse(response: any) {
   const records: WorkflowRecord[] = Array.isArray(payload) ? payload : Array.isArray(payload?.data) ? payload.data : [];
   const meta = body?.meta || payload?.meta || {};
   return { records, total: meta.count || meta.total || records.length };
+}
+
+function WorkflowNoticeTags({ notices }: { notices: WorkflowNotice[] }) {
+  if (!notices.length) {
+    return null;
+  }
+
+  return (
+    <>
+      {notices.map((notice) => (
+        <Tooltip key={notice.key} title={notice.description}>
+          <Tag
+            color={notice.type || 'warning'}
+            icon={notice.type === 'warning' || !notice.type ? <ExclamationCircleOutlined /> : undefined}
+          >
+            {notice.message}
+          </Tag>
+        </Tooltip>
+      ))}
+    </>
+  );
 }
 
 function WorkflowEnabledSwitch({
@@ -195,8 +223,7 @@ function WorkflowPaneInner() {
         page,
         pageSize,
         sort: ['-createdAt'],
-        except: ['config'],
-        appends: ['categories', 'stats'],
+        appends: ['categories', 'stats', 'nodes'],
         filter,
       });
       return normalizeListResponse(response);
@@ -277,7 +304,21 @@ function WorkflowPaneInner() {
 
   const columns = useMemo<ColumnsType<WorkflowRecord>>(
     () => [
-      { title: t('Title'), dataIndex: 'title' },
+      {
+        title: t('Title'),
+        dataIndex: 'title',
+        render: (value, record) => {
+          const nodes = Array.isArray(record.nodes) ? record.nodes : undefined;
+          const notices = plugin.getWorkflowNotices({ nodes, surface: 'workflow-list-row', workflow: record });
+
+          return (
+            <Space size={[8, 4]} wrap>
+              <span>{value}</span>
+              <WorkflowNoticeTags notices={notices} />
+            </Space>
+          );
+        },
+      },
       {
         title: t('Category'),
         dataIndex: 'categories',
@@ -332,7 +373,7 @@ function WorkflowPaneInner() {
       },
     ],
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [handleDelete, openConfigure, openDuplicate, openExecutions, openForm, refresh, resource, t, triggerLabel],
+    [handleDelete, openConfigure, openDuplicate, openExecutions, openForm, plugin, refresh, resource, t, triggerLabel],
   );
 
   return (

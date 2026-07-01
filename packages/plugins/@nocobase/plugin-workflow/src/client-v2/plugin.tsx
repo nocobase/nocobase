@@ -9,6 +9,7 @@
 
 import { Plugin } from '@nocobase/client-v2';
 import { Registry } from '@nocobase/utils/client';
+import type { ReactNode } from 'react';
 import { NAMESPACE } from './locale';
 import {
   WORKFLOW_CANVAS_ROUTE_NAME,
@@ -35,6 +36,36 @@ import CollectionTrigger from './triggers/collection';
 import ScheduleTrigger from './triggers/schedule';
 
 export type InstructionGroup = { key: string; label: string };
+
+/**
+ * UI location where workflow notices are requested.
+ *
+ * This is a rendering context hint for non-blocking UI notices; it is not a validation surface and providers should
+ * not use it to block workflow execution or saving.
+ */
+export type WorkflowNoticeSurface = 'workflow-list-row' | 'trigger-node-card';
+
+export type WorkflowNotice = {
+  /** Extra explanatory content. List rows render this as tooltip content; cards render it inside the compact alert. */
+  description?: ReactNode;
+  /** Stable identity for React rendering and provider-level deduplication. */
+  key: string;
+  /** Short user-facing notice title. */
+  message: ReactNode;
+  /** Visual severity. Providers should keep notices informational and side-effect free. */
+  type?: 'error' | 'info' | 'success' | 'warning';
+};
+
+export type WorkflowNoticeProviderContext = {
+  nodes?: Array<Record<string, unknown>>;
+  /** The UI surface requesting notices so providers can return copy and density suitable for that location. */
+  surface: WorkflowNoticeSurface;
+  workflow?: Record<string, unknown> | null;
+};
+
+export type WorkflowNoticeProvider = (
+  context: WorkflowNoticeProviderContext,
+) => WorkflowNotice | WorkflowNotice[] | null | undefined;
 
 const tpl = (key: string) => `{{t("${key}", { ns: "${NAMESPACE}" })}}`;
 
@@ -67,6 +98,7 @@ export class PluginWorkflowClientV2 extends Plugin {
   instructions = new Registry<Instruction>();
   instructionGroups = new Registry<InstructionGroup>();
   systemVariables = new Registry<SystemVariableOption>();
+  workflowNoticeProviders = new Registry<WorkflowNoticeProvider>();
 
   /**
    * Register a `$system` scope variable. Mirrors v1's `registerSystemVariable`
@@ -115,6 +147,25 @@ export class PluginWorkflowClientV2 extends Plugin {
 
   getTriggerOptions(type?: string) {
     return type ? this.triggers.get(type) : undefined;
+  }
+
+  /**
+   * Register a workflow notice provider. Providers should be pure readers of the supplied context; they are queried by
+   * UI surfaces such as workflow list rows and trigger node cards.
+   */
+  registerWorkflowNoticeProvider(key: string, provider: WorkflowNoticeProvider) {
+    this.workflowNoticeProviders.register(key, provider);
+  }
+
+  /** Collect notices from registered providers for the current UI surface. */
+  getWorkflowNotices(context: WorkflowNoticeProviderContext) {
+    return Array.from(this.workflowNoticeProviders.getEntities()).flatMap(([, provider]) => {
+      const notices = provider(context);
+      if (!notices) {
+        return [];
+      }
+      return Array.isArray(notices) ? notices : [notices];
+    });
   }
 
   async load() {
