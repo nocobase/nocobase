@@ -366,7 +366,7 @@ export class AIEmployee {
       const { threadId } = await this.getCurrentThread();
       const invokeConfig = {
         context: { ctx: this.ctx, decisions: chatContext.decisions, ...context },
-        recursionLimit: 100,
+        recursionLimit: 200,
         configurable: this.from === 'main-agent' ? { thread_id: threadId } : undefined,
         writer,
         signal,
@@ -480,7 +480,7 @@ export class AIEmployee {
           streamMode: ['updates', 'messages', 'custom'],
           configurable: this.from === 'main-agent' ? { thread_id: threadId } : undefined,
           context: { ctx: this.ctx, decisions: chatContext.decisions },
-          recursionLimit: 100,
+          recursionLimit: 200,
           ...config,
         },
         state,
