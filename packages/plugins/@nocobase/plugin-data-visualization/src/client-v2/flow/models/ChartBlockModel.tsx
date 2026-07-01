@@ -14,6 +14,7 @@ import {
   SQLResource,
   useFlowContext,
 } from '@nocobase/flow-engine';
+import type { Collection, CollectionField, FlowEngine } from '@nocobase/flow-engine';
 import React, { createRef } from 'react';
 import _ from 'lodash';
 import { Button, Space } from 'antd';
@@ -42,6 +43,24 @@ type ChartProps = {
     optionRaw?: string;
     Component?: React.FC<any>;
   };
+};
+
+type ChartDirtyTarget = {
+  dataSourceKey: string;
+  collectionName: string;
+};
+
+type ChartQueryForDirtyTracking = {
+  mode?: string;
+  collectionPath?: unknown[];
+  measures?: ChartQueryFieldItem[];
+  dimensions?: ChartQueryFieldItem[];
+  orders?: ChartQueryFieldItem[];
+  filter?: unknown;
+};
+
+type ChartQueryFieldItem = {
+  field?: unknown;
 };
 
 const toFieldPath = (field: string | string[] | undefined) => {
@@ -86,13 +105,175 @@ export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
 
   // 统一管理 refresh 监听引用，便于 off 解绑
   private __onResourceRefresh = () => this.renderChart();
+  private lastSeenDirtyVersion: number | null = null;
+  private lastSeenDirtyTargetKey: string | null = null;
+  private dirtyRefreshing = false;
 
-  onActive() {
-    this.resource.refresh();
+  private getDirtyTargetKey(target: ChartDirtyTarget): string {
+    return `${target.dataSourceKey}:${target.collectionName}`;
   }
 
-  refresh() {
-    return this.resource.refresh();
+  private addDirtyTarget(targets: Map<string, ChartDirtyTarget>, dataSourceKey: string, collectionName: string) {
+    if (!collectionName) return;
+    const target = {
+      dataSourceKey: dataSourceKey || DEFAULT_DATA_SOURCE_KEY,
+      collectionName,
+    };
+    targets.set(this.getDirtyTargetKey(target), target);
+  }
+
+  private normalizeFieldSegments(field: unknown): string[] {
+    if (Array.isArray(field)) {
+      return field.filter((segment): segment is string => typeof segment === 'string' && !!segment);
+    }
+    if (typeof field === 'string') {
+      return field.split('.').filter(Boolean);
+    }
+    return [];
+  }
+
+  private collectFilterFieldSegments(filter: unknown, result: string[][]) {
+    if (!filter) return;
+    if (Array.isArray(filter)) {
+      filter.forEach((item) => this.collectFilterFieldSegments(item, result));
+      return;
+    }
+    if (typeof filter !== 'object') return;
+
+    const item = filter as Record<string, unknown>;
+    const pathSegments = this.normalizeFieldSegments(item.path);
+    if (pathSegments.length) {
+      result.push(pathSegments);
+    }
+
+    this.collectFilterFieldSegments(item.items, result);
+    this.collectFilterFieldSegments(item.$and, result);
+    this.collectFilterFieldSegments(item.$or, result);
+  }
+
+  private collectQueryFieldSegments(query: ChartQueryForDirtyTracking): string[][] {
+    const result: string[][] = [];
+    [query.measures, query.dimensions, query.orders].forEach((items) => {
+      items?.forEach((item) => {
+        const fieldSegments = this.normalizeFieldSegments(item?.field);
+        if (fieldSegments.length) {
+          result.push(fieldSegments);
+        }
+      });
+    });
+    this.collectFilterFieldSegments(query.filter, result);
+    return result;
+  }
+
+  private addRelatedDirtyTargets(
+    targets: Map<string, ChartDirtyTarget>,
+    dataSourceKey: string,
+    collectionName: string,
+    fieldSegments: string[],
+  ) {
+    let collection = this.context.dataSourceManager.getCollection(dataSourceKey, collectionName) as Collection;
+    if (!collection) return;
+
+    for (const fieldName of fieldSegments) {
+      const collectionField = collection.getField(fieldName) as CollectionField | undefined;
+      if (!collectionField) return;
+
+      const targetCollection = collectionField.targetCollection;
+      if (!targetCollection) {
+        continue;
+      }
+
+      this.addDirtyTarget(targets, targetCollection.dataSourceKey || dataSourceKey, targetCollection.name);
+      collection = targetCollection;
+    }
+  }
+
+  private getDirtyTrackingTargets(): ChartDirtyTarget[] | null {
+    const query = this.getResourceSettingsInitParams()?.query as ChartQueryForDirtyTracking | undefined;
+    if (!query || query.mode === 'sql') {
+      return null;
+    }
+
+    const [rawDataSourceKey = DEFAULT_DATA_SOURCE_KEY, rawCollectionName] = query.collectionPath || [];
+    if (typeof rawCollectionName !== 'string' || !rawCollectionName) {
+      return null;
+    }
+
+    const dataSourceKey =
+      typeof rawDataSourceKey === 'string' && rawDataSourceKey ? rawDataSourceKey : DEFAULT_DATA_SOURCE_KEY;
+    const targets = new Map<string, ChartDirtyTarget>();
+    this.addDirtyTarget(targets, dataSourceKey, rawCollectionName);
+    this.collectQueryFieldSegments(query).forEach((fieldSegments) => {
+      this.addRelatedDirtyTargets(targets, dataSourceKey, rawCollectionName, fieldSegments);
+    });
+
+    return Array.from(targets.values()).sort(
+      (a, b) => a.dataSourceKey.localeCompare(b.dataSourceKey) || a.collectionName.localeCompare(b.collectionName),
+    );
+  }
+
+  private getDirtyTrackingVersion(engine: FlowEngine, targets: ChartDirtyTarget[]): number {
+    return targets.reduce(
+      (version, target) => version + engine.getDataSourceDirtyVersion(target.dataSourceKey, target.collectionName),
+      0,
+    );
+  }
+
+  private getDirtyTargetsKey(targets: ChartDirtyTarget[]): string {
+    return targets.map((target) => this.getDirtyTargetKey(target)).join('|');
+  }
+
+  private rememberDirtyVersion(targets = this.getDirtyTrackingTargets()) {
+    if (!targets) {
+      this.lastSeenDirtyVersion = null;
+      this.lastSeenDirtyTargetKey = null;
+      return;
+    }
+
+    const engine = this.context.engine as FlowEngine;
+    this.lastSeenDirtyVersion = this.getDirtyTrackingVersion(engine, targets);
+    this.lastSeenDirtyTargetKey = this.getDirtyTargetsKey(targets);
+  }
+
+  private async refreshAndRememberDirtyVersion(targets: ChartDirtyTarget[] | null): Promise<void> {
+    if (this.dirtyRefreshing) return;
+    this.dirtyRefreshing = true;
+    try {
+      await this.resource.refresh();
+      this.rememberDirtyVersion(targets);
+    } catch {
+      // Keep lastSeenDirtyVersion unchanged so the next activate can retry.
+    } finally {
+      this.dirtyRefreshing = false;
+    }
+  }
+
+  async onActive(forceRefresh = false) {
+    if (this.hidden) return;
+
+    const targets = this.getDirtyTrackingTargets();
+    if (!targets) {
+      await this.refreshAndRememberDirtyVersion(null);
+      return;
+    }
+
+    const engine = this.context.engine as FlowEngine;
+    const currentVersion = this.getDirtyTrackingVersion(engine, targets);
+    const targetKey = this.getDirtyTargetsKey(targets);
+    const shouldRefresh =
+      forceRefresh ||
+      this.lastSeenDirtyVersion === null ||
+      this.lastSeenDirtyTargetKey !== targetKey ||
+      currentVersion !== this.lastSeenDirtyVersion;
+
+    if (!shouldRefresh) return;
+
+    await this.refreshAndRememberDirtyVersion(targets);
+  }
+
+  async refresh() {
+    await this.resource.refresh();
+    this.rememberDirtyVersion();
   }
 
   // 初始化注册 ChartResource | SQLResource
@@ -182,7 +363,7 @@ export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
       const initQuery = initParams?.query;
       if (initQuery) {
         this.applyQuery(await this.buildQueryRequest(initQuery));
-        await this.resource.refresh();
+        await this.refresh();
       }
     } catch (e) {
       const message = (e as any)?.message || String(e);
@@ -476,7 +657,7 @@ export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
       try {
         // 等待确保 stepParams 已更新
         await sleep(200);
-        await this.resource.refresh();
+        await this.refresh();
         this.setDataResult();
       } finally {
         if (isSQL) {
@@ -497,7 +678,7 @@ export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
       // 等待确保 stepParams 已更新
       await sleep(100);
       // 重新请求数据，并刷新图表
-      await this.resource.refresh();
+      await this.refresh();
     }
   }
 }
