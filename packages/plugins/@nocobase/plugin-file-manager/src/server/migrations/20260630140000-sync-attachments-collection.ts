@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Collection, CollectionOptions, FieldOptions } from '@nocobase/database';
+import { Collection, CollectionOptions, FieldOptions, Model } from '@nocobase/database';
 import { CollectionRepository } from '@nocobase/plugin-data-source-main';
 import { Migration } from '@nocobase/server';
 import { uid } from '@nocobase/utils';
@@ -91,12 +91,12 @@ export default class extends Migration {
         });
       }
 
-      const existingFields = await FieldRepo.find({
+      const existingFields = (await FieldRepo.find({
         filter: {
           collectionName: 'attachments',
         },
         transaction,
-      });
+      })) as Model[];
       const existingFieldsMap = new Map(existingFields.map((field) => [field.get('name'), field]));
       const missingFields = [];
 

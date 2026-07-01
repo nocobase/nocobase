@@ -101,7 +101,8 @@ export class PluginFileManagerServer extends Plugin {
     throw new Error(
       this.t(
         'The attachment field type is no longer supported. Please use a many-to-many field to the attachments collection instead.',
-      ) as string,
+        { returnDetails: false },
+      ) as unknown as string,
     );
   };
 
