@@ -197,12 +197,6 @@ export default defineCollection({
 nb app upgrade
 ```
 
-:::warning 注意
-
-如果同步过程中出现异常或脏数据，可以通过重新安装应用来重建表结构。这个操作会清空数据库，请谨慎使用。
-
-:::
-
 如果插件升级时需要对已有数据做迁移——比如重命名字段、拆分表、回填默认值等——应该通过 [Migration 升级脚本](./migration.md) 来处理，而不是手动改数据库。
 
 ## 让 Collection 出现在 UI 数据表列表中

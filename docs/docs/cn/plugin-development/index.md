@@ -34,7 +34,7 @@ plugin-hello/
 - **npm 来源**（`create-nocobase-app`）：适合快速上手，开箱即用。
 - **Git 来源**（推荐）：克隆 NocoBase 源码仓库，AI 开发时可以直接参考核心源码，效果更好。
 
-详见 [AI Agent 接入指南](../ai/quick-start.mdx) 或 [使用 CLI 安装应用](../nocobase-cli/installation/cli.md)。
+详见 [使用 CLI 安装应用](../nocobase-cli/installation/cli.md) 或 [AI Agent 接入指南](../ai/quick-start.mdx)。
 
 ## 目录约定与加载顺序
 
