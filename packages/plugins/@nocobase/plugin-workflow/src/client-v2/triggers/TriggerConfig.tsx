@@ -211,21 +211,14 @@ function isInteractiveClickTarget(target: EventTarget | null): boolean {
 }
 
 function CompactNoticeMessage({
-  description,
-  title,
+  message,
   token,
 }: {
-  description?: React.ReactNode;
-  title: React.ReactNode;
+  message: React.ReactNode;
   token: ReturnType<typeof theme.useToken>['token'];
 }) {
   return (
-    <div style={{ fontSize: token.fontSize, lineHeight: token.lineHeight }}>
-      <div style={{ fontWeight: token.fontWeightStrong }}>{title}</div>
-      {description ? (
-        <div style={{ marginTop: token.marginXXS, color: token.colorTextSecondary }}>{description}</div>
-      ) : null}
-    </div>
+    <span style={{ fontSize: token.fontSize, fontWeight: 'normal', lineHeight: token.lineHeight }}>{message}</span>
   );
 }
 
@@ -338,7 +331,7 @@ export function TriggerConfig() {
             type={notice.type || 'warning'}
             showIcon
             icon={getCompactNoticeIcon(notice.type || 'warning', token)}
-            message={<CompactNoticeMessage description={notice.description} title={notice.message} token={token} />}
+            message={<CompactNoticeMessage message={notice.message} token={token} />}
             style={{ marginTop: token.marginSM, alignItems: 'flex-start' }}
           />
         ))}

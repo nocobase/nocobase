@@ -106,13 +106,14 @@ describe('TriggerConfig', () => {
       </FlowContext.Provider>,
     );
 
-    expect(await screen.findByText('Initiator interface needs reconfiguration')).toBeInTheDocument();
+    const message = await screen.findByText('Initiator interface needs reconfiguration');
+    expect(message).toHaveStyle({ fontWeight: 'normal' });
     expect(
-      screen.getByText(
+      screen.queryByText(
         'This initiator interface was created in an earlier version. Reconfigure it before using this workflow.',
       ),
-    ).toBeInTheDocument();
-    const alert = screen.getByText('Initiator interface needs reconfiguration').closest('.ant-alert');
+    ).not.toBeInTheDocument();
+    const alert = message.closest('.ant-alert');
     expect(alert).not.toHaveClass('ant-alert-with-description');
     expect(alert).toHaveStyle({ alignItems: 'flex-start' });
     expect(holder.workflowPlugin.getWorkflowNotices).toHaveBeenCalledWith(
@@ -145,7 +146,7 @@ describe('TriggerConfig', () => {
     );
 
     expect(await screen.findByText('Invalid trigger interface')).toBeInTheDocument();
-    expect(screen.getByText('The trigger interface is invalid.')).toBeInTheDocument();
+    expect(screen.queryByText('The trigger interface is invalid.')).not.toBeInTheDocument();
     const alert = screen.getByText('Invalid trigger interface').closest('.ant-alert');
     expect(alert).toHaveClass('ant-alert-error');
     expect(alert).not.toHaveClass('ant-alert-with-description');
