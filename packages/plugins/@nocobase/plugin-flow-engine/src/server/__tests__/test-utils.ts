@@ -19,17 +19,20 @@ import { variables, inferSelectsFromUsage } from '../variables/registry';
 export function createFlowEngineMockServer(options: MockServerOptions = {}) {
   const { database, ...restOptions } = options;
   const databaseOptions = isRecord(database) ? database : {};
+  const useConfiguredTestDatabase = Boolean(process.env.DB_DIALECT) && !databaseOptions.dialect;
 
   return createMockServer({
     skipSupervisor: true,
     ...restOptions,
-    database: {
-      dialect: 'sqlite',
-      storage: ':memory:',
-      // CI postgres jobs set DB_SCHEMA; SQLite cannot create schemas.
-      schema: undefined,
-      ...databaseOptions,
-    },
+    database: useConfiguredTestDatabase
+      ? databaseOptions
+      : {
+          dialect: 'sqlite',
+          storage: ':memory:',
+          // CI postgres jobs set DB_SCHEMA; SQLite cannot create schemas.
+          schema: undefined,
+          ...databaseOptions,
+        },
   });
 }
 
