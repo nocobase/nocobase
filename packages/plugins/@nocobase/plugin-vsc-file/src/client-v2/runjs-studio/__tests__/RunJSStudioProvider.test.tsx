@@ -273,6 +273,10 @@ describe('runJSStudioProvider', () => {
       'Discard your changes before closing?',
       'Discard your changes before refreshing?',
       'No changes between current editor and published version',
+      'Back to editor',
+      'Base',
+      'Saved',
+      'No logs yet. Click Run to execute.',
       'Click to restore',
       'Restore {{version}}?',
       'This will copy files from this version into the editor.',
@@ -297,9 +301,13 @@ describe('runJSStudioProvider', () => {
     expect(screen.getByRole('button', { name: 'Save' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Run' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Diff' })).toBeTruthy();
+    expect(screen.queryByText('Entry')).toBeNull();
+    expect(screen.getByLabelText('Open files').style.overflowY).toBe('hidden');
+    expect(screen.getByText('No logs yet. Click Run to execute.')).toBeTruthy();
 
     fireEvent.click(screen.getByRole('button', { name: 'Expand files' }));
     expect(screen.getByRole('button', { name: 'src/main.tsx' })).toBeTruthy();
+    expect(screen.getByLabelText('Commit history').style.marginTop).toBe('auto');
   });
 
   it('toggles the editor area into a diff against the published file', async () => {
@@ -309,9 +317,18 @@ describe('runJSStudioProvider', () => {
     fireEvent.change(editor, { target: { value: 'return 2;' } });
     fireEvent.click(screen.getByRole('button', { name: 'Diff' }));
 
-    expect(editor.readOnly).toBe(true);
-    expect(editor.value).toContain('-    1      return 1;');
-    expect(editor.value).toContain('+         1 return 2;');
+    const diffOutput = screen.getByLabelText('Diff output');
+    expect(within(diffOutput).getByText('Saved')).toBeTruthy();
+    expect(within(diffOutput).getByText('Base')).toBeTruthy();
+    expect(within(diffOutput).getByText('Current draft')).toBeTruthy();
+    expect(within(diffOutput).getByText('Unsaved changes')).toBeTruthy();
+    expect(within(diffOutput).getByText('return 1;')).toBeTruthy();
+    expect(within(diffOutput).getByText('return 2;')).toBeTruthy();
+    expect(screen.queryByLabelText('Edit file content')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Back to editor' })).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Diff' }));
+    expect((screen.getByLabelText('Edit file content') as HTMLTextAreaElement).value).toBe('return 2;');
   });
 
   it('requires a commit message before Save publishes', async () => {

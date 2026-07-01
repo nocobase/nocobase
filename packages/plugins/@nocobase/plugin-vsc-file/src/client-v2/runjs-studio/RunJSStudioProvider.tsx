@@ -16,13 +16,11 @@ import {
   FileTextOutlined,
   FolderOpenOutlined,
   ReloadOutlined,
-  UserOutlined,
 } from '@ant-design/icons';
 import { CodeEditor, type RunJSEditorProvider, type RunJSEditorProviderRenderProps } from '@nocobase/client-v2';
 import { useFlowContext, type FlowEngineContext, type RunJSValue } from '@nocobase/flow-engine';
 import {
   Alert,
-  Avatar,
   Badge,
   Button,
   Empty,
@@ -202,7 +200,6 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
   const historyItems = workspace?.history?.items || [];
   const baseCommitId = workspace?.draft?.baseCommitId ?? workspace?.repository?.publishedCommitId ?? null;
   const baseCommit = findCommit(historyItems, baseCommitId);
-  const footerStatus = hasUnsavedLocalChanges ? t('Unsaved changes') : t('Code saved');
   const lineDiffRows = useMemo(
     () => buildLineDiff(effectiveDiffBaseFiles, effectiveDiffFiles, selectedDiffPath, false),
     [effectiveDiffBaseFiles, effectiveDiffFiles, selectedDiffPath],
@@ -1184,6 +1181,7 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
     setActiveTab('diff');
   };
 
+  const editorMinHeight = props.minHeight || 'min(720px, calc(100vh - 112px))';
   const editorStyle: React.CSSProperties = {
     background: '#fff',
     boxSizing: 'border-box',
@@ -1191,13 +1189,14 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
     flexDirection: 'column',
     height: '100%',
     letterSpacing: 0,
-    minHeight: 0,
     minWidth: 0,
     textAlign: 'left',
     wordSpacing: 'normal',
     ...(containerStyle || {}),
     ...(props.wrapperStyle || {}),
+    minHeight: editorMinHeight,
   };
+  const workspaceGridColumns = filesCollapsed ? 'minmax(0, 1fr)' : 'minmax(220px, 260px) minmax(0, 1fr)';
 
   return (
     <div style={editorStyle}>
@@ -1286,29 +1285,40 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
               background: '#fff',
               display: 'grid',
               flex: 1,
-              gridTemplateColumns: `${filesCollapsed ? '52px' : '260px'} minmax(0, 1fr)`,
+              gridTemplateColumns: workspaceGridColumns,
               minHeight: 0,
               overflow: 'hidden',
             }}
           >
-            <div style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-              <FilesPanel
-                activePath={activePath}
-                collapsed={filesCollapsed}
-                entryPath={entryPath}
-                files={files}
-                onCollapseChange={setFilesCollapsed}
-                onCreate={createFile}
-                onDelete={deleteActiveFile}
-                onOpen={openFilePath}
-                onRefresh={requestRefreshWorkspace}
-                onRename={renameActiveFile}
-                onSetEntry={setActiveFileAsEntry}
-                readOnly={workspaceEditingDisabled}
-                savedFiles={savedFiles}
-                t={t}
-              />
-              {!filesCollapsed ? (
+            {!filesCollapsed ? (
+              <div
+                style={{
+                  background: '#fafafa',
+                  borderRight: '1px solid #f0f0f0',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  height: '100%',
+                  minHeight: 0,
+                  minWidth: 0,
+                  overflow: 'hidden',
+                }}
+              >
+                <FilesPanel
+                  activePath={activePath}
+                  collapsed={filesCollapsed}
+                  entryPath={entryPath}
+                  files={files}
+                  onCollapseChange={setFilesCollapsed}
+                  onCreate={createFile}
+                  onDelete={deleteActiveFile}
+                  onOpen={openFilePath}
+                  onRefresh={requestRefreshWorkspace}
+                  onRename={renameActiveFile}
+                  onSetEntry={setActiveFileAsEntry}
+                  readOnly={workspaceEditingDisabled}
+                  savedFiles={savedFiles}
+                  t={t}
+                />
                 <VersionHistoryDock
                   baseVersion={formatVersion(baseCommit?.seq)}
                   hasDraft={Boolean(workspace.draft)}
@@ -1322,8 +1332,8 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
                   publishedCommitId={workspace.repository.publishedCommitId}
                   t={t}
                 />
-              ) : null}
-            </div>
+              </div>
+            ) : null}
 
             <main
               style={{
@@ -1338,12 +1348,13 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
                 <CodeTab
                   activeFile={activeFile}
                   activePath={activePath}
-                  diffText={formatLineDiffText(lineDiffRows)}
-                  entryPath={entryPath}
+                  diffRows={lineDiffRows}
                   isDiff={showDiff}
+                  filesCollapsed={filesCollapsed}
                   onChange={updateActiveFileContent}
                   onCloseFile={closeOpenFile}
                   onDiffToggle={toggleDiff}
+                  onFilesCollapsedChange={setFilesCollapsed}
                   onOpenFile={openFilePath}
                   onRunPreview={runPreview}
                   openPaths={openPaths}
@@ -1382,14 +1393,13 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
               background: '#fff',
               borderTop: '1px solid #f0f0f0',
               display: 'flex',
-              justifyContent: 'space-between',
+              flexShrink: 0,
+              flexWrap: 'wrap',
+              gap: 8,
+              justifyContent: 'flex-end',
               padding: '10px 16px',
             }}
           >
-            <Space wrap>
-              <Tag color={hasUnsavedLocalChanges ? 'gold' : 'green'}>{footerStatus}</Tag>
-              <Typography.Text type="secondary">{activePath || entryPath}</Typography.Text>
-            </Space>
             <Space wrap>
               <Button style={{ whiteSpace: 'nowrap' }} onClick={requestClose}>
                 {t('Cancel')}
@@ -1687,7 +1697,6 @@ function FilesPanel(props: {
       aria-label={t('File resource manager')}
       style={{
         background: '#fafafa',
-        borderRight: '1px solid #f0f0f0',
         display: 'flex',
         flexDirection: 'column',
         gap: 8,
@@ -1812,12 +1821,13 @@ function FilesPanel(props: {
 function CodeTab(props: {
   activeFile?: RunJSWorkspaceFile;
   activePath?: string;
-  diffText: string;
-  entryPath: string;
+  diffRows: RunJSLineDiffRow[];
+  filesCollapsed: boolean;
   isDiff: boolean;
   onChange: (content: string) => void;
   onCloseFile: (path: string) => void;
   onDiffToggle: () => void;
+  onFilesCollapsedChange: (collapsed: boolean) => void;
   onOpenFile: (path: string) => void;
   onRunPreview: () => void;
   openPaths: string[];
@@ -1832,12 +1842,13 @@ function CodeTab(props: {
   const {
     activeFile,
     activePath,
-    diffText,
-    entryPath,
+    diffRows,
+    filesCollapsed,
     isDiff,
     onChange,
     onCloseFile,
     onDiffToggle,
+    onFilesCollapsedChange,
     onOpenFile,
     onRunPreview,
     openPaths,
@@ -1857,9 +1868,87 @@ function CodeTab(props: {
     return <Empty description={t('Select a file')} />;
   }
 
-  const editorValue = isDiff
-    ? diffText || t('No changes between current editor and published version')
-    : activeFile.content;
+  const fileTabsContent = (
+    <div
+      style={{
+        alignItems: 'center',
+        display: 'flex',
+        gap: 8,
+        minWidth: 0,
+        width: '100%',
+      }}
+    >
+      <Tooltip title={filesCollapsed ? t('Expand files') : t('Collapse files')}>
+        <Button
+          aria-label={filesCollapsed ? t('Expand files') : t('Collapse files')}
+          icon={<FolderOpenOutlined />}
+          onClick={() => onFilesCollapsedChange(!filesCollapsed)}
+          size="small"
+          type={filesCollapsed ? 'default' : 'primary'}
+        />
+      </Tooltip>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <OpenFileTabs
+          activePath={activePath}
+          files={openFiles.length ? openFiles : [activeFile]}
+          onClose={onCloseFile}
+          onOpen={onOpenFile}
+          savedFiles={savedFiles}
+          t={t}
+        />
+      </div>
+    </div>
+  );
+  const runAndDiffActions = (
+    <Space.Compact>
+      <Button disabled={isDiff} loading={previewing} onClick={onRunPreview} size="small">
+        {t('Run')}
+      </Button>
+      <Tooltip title={t('Diff')}>
+        <Button
+          aria-label={t('Diff')}
+          icon={<DiffOutlined />}
+          onClick={onDiffToggle}
+          size="small"
+          type={isDiff ? 'primary' : 'default'}
+        />
+      </Tooltip>
+    </Space.Compact>
+  );
+
+  if (isDiff) {
+    return (
+      <section
+        aria-label={t('Code')}
+        style={{
+          border: '1px solid #d9d9d9',
+          borderRadius: 6,
+          display: 'flex',
+          flex: 1,
+          flexDirection: 'column',
+          height: '100%',
+          minHeight: 0,
+          overflow: 'hidden',
+        }}
+      >
+        <div
+          style={{
+            alignItems: 'center',
+            borderBottom: '1px solid #d9d9d9',
+            display: 'flex',
+            gap: 8,
+            justifyContent: 'space-between',
+            minWidth: 0,
+            padding: 8,
+          }}
+        >
+          <div style={{ flex: 1, minWidth: 0 }}>{fileTabsContent}</div>
+          {runAndDiffActions}
+        </div>
+        <SideBySideDiffView rows={diffRows} t={t} />
+      </section>
+    );
+  }
 
   return (
     <section
@@ -1883,37 +1972,11 @@ function CodeTab(props: {
         onChange={isDiff ? undefined : onChange}
         placeholder={t('Edit file content')}
         readonly={readOnly || isDiff}
-        runButton={
-          <Button disabled={isDiff} loading={previewing} onClick={onRunPreview} size="small">
-            {t('Run')}
-          </Button>
-        }
+        runButton={runAndDiffActions}
         scene={scene}
         showLogs={false}
-        toolbarLeftExtra={
-          <Space size={8} style={{ minWidth: 0 }}>
-            <OpenFileTabs
-              activePath={activePath}
-              entryPath={entryPath}
-              files={openFiles.length ? openFiles : [activeFile]}
-              onClose={onCloseFile}
-              onOpen={onOpenFile}
-              savedFiles={savedFiles}
-              t={t}
-            />
-            <Tooltip title={isDiff ? t('Back to editor') : t('Diff')}>
-              <Button
-                aria-label={t('Diff')}
-                icon={isDiff ? <CloseOutlined /> : <DiffOutlined />}
-                onClick={onDiffToggle}
-                size="small"
-                type={isDiff ? 'primary' : 'default'}
-              />
-            </Tooltip>
-            <Avatar icon={<UserOutlined />} size={28} />
-          </Space>
-        }
-        value={editorValue}
+        toolbarLeftExtra={fileTabsContent}
+        value={activeFile.content}
         version={version}
         wrapperStyle={{ flex: 1, height: '100%', minHeight: 0, minWidth: 0, overflow: 'hidden' }}
       />
@@ -1923,14 +1986,13 @@ function CodeTab(props: {
 
 function OpenFileTabs(props: {
   activePath?: string;
-  entryPath: string;
   files: RunJSWorkspaceFile[];
   onClose: (path: string) => void;
   onOpen: (path: string) => void;
   savedFiles: RunJSWorkspaceFile[];
   t: (key: string) => string;
 }) {
-  const { activePath, entryPath, files, onClose, onOpen, savedFiles, t } = props;
+  const { activePath, files, onClose, onOpen, savedFiles, t } = props;
   const tabButtonRefs = React.useRef(new Map<string, HTMLButtonElement>());
   const registerTabButton = React.useCallback(
     (path: string) => (element: HTMLButtonElement | null) => {
@@ -1978,7 +2040,20 @@ function OpenFileTabs(props: {
   };
 
   return (
-    <div aria-label={t('Open files')} role="tablist" style={{ display: 'flex', gap: 4, overflowX: 'auto' }}>
+    <div
+      aria-label={t('Open files')}
+      role="tablist"
+      style={{
+        alignItems: 'center',
+        display: 'flex',
+        gap: 4,
+        height: 24,
+        minWidth: 0,
+        overflowX: 'auto',
+        overflowY: 'hidden',
+        width: '100%',
+      }}
+    >
       {files.map((file, index) => {
         const active = file.path === activePath;
         const dirty = isWorkspaceFileDirty(savedFiles, file);
@@ -1995,15 +2070,30 @@ function OpenFileTabs(props: {
                 ref={registerTabButton(file.path)}
                 role="tab"
                 size="small"
+                style={{
+                  background: active ? '#fff' : '#f5f5f5',
+                  borderColor: active ? '#91caff' : '#d9d9d9',
+                  boxShadow: active ? 'inset 0 -2px 0 #1677ff' : 'none',
+                  color: '#262626',
+                  maxWidth: 180,
+                }}
                 tabIndex={active ? 0 : -1}
-                type={active ? 'primary' : 'default'}
+                type="default"
               >
-                <Space size={4}>
-                  <Typography.Text style={{ color: active ? 'inherit' : undefined }}>
+                <Space size={4} style={{ minWidth: 0 }}>
+                  <span
+                    style={{
+                      display: 'inline-block',
+                      maxWidth: 112,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      verticalAlign: 'bottom',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
                     {fileName}
                     {dirty ? ' *' : ''}
-                  </Typography.Text>
-                  {file.path === entryPath ? <Badge count={t('Entry')} size="small" /> : null}
+                  </span>
                 </Space>
               </Button>
             </Tooltip>
@@ -2020,21 +2110,193 @@ function OpenFileTabs(props: {
   );
 }
 
-function formatLineDiffText(rows: RunJSLineDiffRow[]): string {
-  const changedRows = rows.filter((row) => row.type !== 'context');
-  if (!changedRows.length) {
-    return '';
+type SideBySideDiffRow = {
+  key: string;
+  type: 'context' | 'delete' | 'insert' | 'change';
+  oldLineNumber?: number;
+  newLineNumber?: number;
+  oldContent?: string;
+  newContent?: string;
+};
+
+function buildSideBySideDiffRows(rows: RunJSLineDiffRow[]): SideBySideDiffRow[] {
+  const result: SideBySideDiffRow[] = [];
+
+  for (let index = 0; index < rows.length; index += 1) {
+    const row = rows[index];
+    const next = rows[index + 1];
+
+    if (
+      row.type === 'delete' &&
+      next?.type === 'insert' &&
+      row.oldLineNumber !== undefined &&
+      row.oldLineNumber === next.newLineNumber
+    ) {
+      result.push({
+        key: `${row.key}:${next.key}`,
+        type: 'change',
+        oldLineNumber: row.oldLineNumber,
+        newLineNumber: next.newLineNumber,
+        oldContent: row.content,
+        newContent: next.content,
+      });
+      index += 1;
+      continue;
+    }
+
+    if (row.type === 'context') {
+      result.push({
+        key: row.key,
+        type: 'context',
+        oldLineNumber: row.oldLineNumber,
+        newLineNumber: row.newLineNumber,
+        oldContent: row.content,
+        newContent: row.content,
+      });
+      continue;
+    }
+
+    if (row.type === 'delete') {
+      result.push({
+        key: row.key,
+        type: 'delete',
+        oldLineNumber: row.oldLineNumber,
+        oldContent: row.content,
+      });
+      continue;
+    }
+
+    result.push({
+      key: row.key,
+      type: 'insert',
+      newLineNumber: row.newLineNumber,
+      newContent: row.content,
+    });
   }
 
-  return changedRows
-    .map((row) => {
-      const sign = row.type === 'insert' ? '+' : row.type === 'delete' ? '-' : ' ';
-      const oldLine = row.oldLineNumber ? String(row.oldLineNumber).padStart(4, ' ') : '    ';
-      const newLine = row.newLineNumber ? String(row.newLineNumber).padStart(4, ' ') : '    ';
-      return `${sign} ${oldLine} ${newLine} ${row.content}`;
-    })
-    .join('\n')
-    .trimEnd();
+  return result;
+}
+
+function DiffCodeLine(props: {
+  content?: string;
+  lineNumber?: number;
+  tone: 'neutral' | 'delete' | 'insert' | 'blank';
+}) {
+  const { content = '', lineNumber, tone } = props;
+  const background =
+    tone === 'delete' ? '#fff1f0' : tone === 'insert' ? '#f6ffed' : tone === 'blank' ? '#fafafa' : '#fff';
+  const borderColor = tone === 'delete' ? '#ffccc7' : tone === 'insert' ? '#b7eb8f' : 'transparent';
+
+  return (
+    <div
+      style={{
+        background,
+        borderLeft: `3px solid ${borderColor}`,
+        display: 'grid',
+        gridTemplateColumns: '48px minmax(0, 1fr)',
+        minHeight: 22,
+      }}
+    >
+      <span
+        style={{
+          color: '#8c8c8c',
+          padding: '2px 8px',
+          textAlign: 'right',
+          userSelect: 'none',
+        }}
+      >
+        {lineNumber ?? ''}
+      </span>
+      <code
+        style={{
+          color: tone === 'blank' ? '#bfbfbf' : '#262626',
+          display: 'block',
+          fontFamily: '"Fira Code", "Monaco", "Menlo", "Ubuntu Mono", monospace',
+          padding: '2px 8px',
+          whiteSpace: 'pre',
+        }}
+      >
+        {content || ' '}
+      </code>
+    </div>
+  );
+}
+
+function SideBySideDiffView(props: { rows: RunJSLineDiffRow[]; t: (key: string) => string }) {
+  const { rows, t } = props;
+  const sideBySideRows = buildSideBySideDiffRows(rows);
+  const hasChanges = rows.some((row) => row.type !== 'context');
+
+  return (
+    <div
+      aria-label={t('Diff output')}
+      style={{
+        display: 'flex',
+        flex: 1,
+        flexDirection: 'column',
+        minHeight: 0,
+        overflow: 'hidden',
+      }}
+    >
+      <div
+        style={{
+          background: '#fafafa',
+          borderBottom: '1px solid #f0f0f0',
+          display: 'grid',
+          gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)',
+        }}
+      >
+        <div style={{ borderRight: '1px solid #f0f0f0', padding: '8px 12px' }}>
+          <Space>
+            <Typography.Text strong>{t('Saved')}</Typography.Text>
+            <Tag>{t('Base')}</Tag>
+          </Space>
+        </div>
+        <div style={{ padding: '8px 12px' }}>
+          <Space>
+            <Typography.Text strong>{t('Current draft')}</Typography.Text>
+            <Tag color="gold">{t('Unsaved changes')}</Tag>
+          </Space>
+        </div>
+      </div>
+      {!hasChanges ? (
+        <div style={{ padding: 24 }}>
+          <Empty description={t('No changes between current editor and published version')} />
+        </div>
+      ) : (
+        <div
+          style={{
+            display: 'grid',
+            flex: 1,
+            gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)',
+            minHeight: 0,
+            overflow: 'auto',
+          }}
+        >
+          <div style={{ borderRight: '1px solid #f0f0f0', minWidth: 0 }}>
+            {sideBySideRows.map((row) => (
+              <DiffCodeLine
+                content={row.oldContent}
+                key={`${row.key}:old`}
+                lineNumber={row.oldLineNumber}
+                tone={row.type === 'insert' ? 'blank' : row.type === 'context' ? 'neutral' : 'delete'}
+              />
+            ))}
+          </div>
+          <div style={{ minWidth: 0 }}>
+            {sideBySideRows.map((row) => (
+              <DiffCodeLine
+                content={row.newContent}
+                key={`${row.key}:new`}
+                lineNumber={row.newLineNumber}
+                tone={row.type === 'delete' ? 'blank' : row.type === 'context' ? 'neutral' : 'insert'}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
 function VersionHistoryDock(props: {
@@ -2068,11 +2330,11 @@ function VersionHistoryDock(props: {
     <section
       aria-label={t('Commit history')}
       style={{
-        borderRight: '1px solid #f0f0f0',
         display: 'flex',
         flexDirection: 'column',
         gap: 8,
         height,
+        marginTop: 'auto',
         minHeight: minConsolePanelHeight,
         overflow: 'hidden',
         padding: 12,
@@ -2224,7 +2486,7 @@ function ConsolePanel(props: {
         }}
         tabIndex={0}
       />
-      <Space style={{ justifyContent: 'space-between', marginBottom: 8 }}>
+      <Space style={{ justifyContent: 'space-between', marginBottom: 8, padding: '0 12px' }}>
         <Typography.Text strong>{t('Console logs')}</Typography.Text>
         <Space>
           <Button onClick={onClear} size="small">
@@ -2235,8 +2497,23 @@ function ConsolePanel(props: {
           </Button>
         </Space>
       </Space>
-      <div aria-live="polite" style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
-        {entries.length === 0 ? <Empty description={t('No logs')} /> : null}
+      <div aria-live="polite" style={{ flex: 1, minHeight: 0, overflow: 'auto', padding: '0 12px 12px' }}>
+        {entries.length === 0 ? (
+          <div
+            style={{
+              alignItems: 'center',
+              border: '1px solid #f0f0f0',
+              borderRadius: 6,
+              color: '#8c8c8c',
+              display: 'flex',
+              fontFamily: 'monospace',
+              justifyContent: 'center',
+              minHeight: 48,
+            }}
+          >
+            {t('No logs yet. Click Run to execute.')}
+          </div>
+        ) : null}
         {entries.map((entry) => (
           <button
             key={entry.id}
