@@ -1,5 +1,5 @@
 [
-  { "type": "file", "name": "index", "label": "Введение в учебник" },
+  { "type": "file", "name": "index", "label": "Введение в учебные материалы" },
   {
     "type": "file",
     "name": "01-getting-started",

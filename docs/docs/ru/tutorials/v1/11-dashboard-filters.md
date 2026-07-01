@@ -145,7 +145,7 @@
 
 ![](https://static-docs.nocobase.com/Solution/231734281783202416005612.png)
 
-Подробнее о Markdown — в нашем официальном Demo, документации или [учебнике «Лёгкая документация»](https://www.nocobase.com/ru/tutorials).
+Подробнее о Markdown — в нашем официальном Demo, документации или [учебных материалах «Лёгкая документация»](https://www.nocobase.com/ru/tutorials).
 
 В качестве простого примера ниже — «Эффектное объявление» на HTML, чтобы продемонстрировать возможности [блока Markdown](https://docs.nocobase.com/handbook/ui/blocks/other-blocks/markdown).
 
