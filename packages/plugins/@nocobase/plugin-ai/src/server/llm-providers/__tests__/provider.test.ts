@@ -73,6 +73,18 @@ describe('LLM provider baseURL guard', () => {
     expect(provider.buildURL('models')).toBe('https://api.example.com/v1/models');
   });
 
+  it('treats blank rendered baseURL as unset for LLM providers', () => {
+    process.env.SERVER_REQUEST_WHITELIST = 'api.example.com';
+
+    const provider = new TestLLMProvider({
+      app: createApp({ baseURL: '  ' }),
+    });
+
+    expect(provider.serviceOptions.baseURL).toBeUndefined();
+    expect(provider.getResolvedURL()).toBe('https://api.example.com/v1');
+    expect(provider.buildURL('models')).toBe('https://api.example.com/v1/models');
+  });
+
   it('validates provider default baseURL against the global whitelist', () => {
     process.env.SERVER_REQUEST_WHITELIST = 'api.example.com';
 
@@ -81,6 +93,16 @@ describe('LLM provider baseURL guard', () => {
     });
 
     expect(provider.getResolvedURL()).toBe('https://api.example.com/v1');
+  });
+
+  it('trims rendered baseURL before validation', () => {
+    process.env.SERVER_REQUEST_WHITELIST = 'api.example.com';
+
+    const provider = new TestLLMProvider({
+      app: createApp({ baseURL: ' https://api.example.com/v1/ ' }),
+    });
+
+    expect(provider.serviceOptions.baseURL).toBe('https://api.example.com/v1');
   });
 
   it('rejects rendered baseURL values blocked by the global whitelist', () => {
@@ -99,6 +121,17 @@ describe('LLM provider baseURL guard', () => {
 
     const provider = new TestEmbeddingProvider({
       app: createApp({ baseURL: 'https://api.example.com/v1/' }),
+      modelOptions: { model: 'text-embedding-3-small' },
+    });
+
+    expect(provider.getResolvedURL()).toBe('https://api.example.com/v1');
+  });
+
+  it('treats blank rendered baseURL as unset for embedding providers', () => {
+    process.env.SERVER_REQUEST_WHITELIST = 'api.example.com';
+
+    const provider = new TestEmbeddingProvider({
+      app: createApp({ baseURL: '' }),
       modelOptions: { model: 'text-embedding-3-small' },
     });
 
