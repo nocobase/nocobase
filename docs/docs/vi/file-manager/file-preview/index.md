@@ -16,3 +16,11 @@ Trong các giao diện có chứa file field (bao gồm cả field attachment), 
 Hiện tại NocoBase cung cấp các plugin preview file:
 
 * [Plugin preview file Office](../file-preview/ms-office.md)
+
+## Preview PDF với storage bên ngoài
+
+NocoBase preview PDF thông qua iframe của trình duyệt. Một số trình duyệt hoặc PDF reader có thể hỗ trợ script, form hoặc nội dung tương tác khác bên trong file PDF. Nếu file được preview đến từ nguồn không đáng tin cậy, hãy chú ý đến ranh giới bảo mật của việc thực thi script.
+
+Chúng tôi khuyến nghị tách domain truy cập file khỏi domain của site NocoBase và domain API. Ví dụ, hãy phục vụ file từ OSS, S3, COS hoặc CDN qua một domain riêng, thay vì dùng chung origin với frontend hoặc API của NocoBase.
+
+Nếu domain file khác với domain API, và API không bật CORS cho domain file, các script chạy trong môi trường preview PDF thường sẽ bị giới hạn bởi same-origin policy của trình duyệt. Chúng không thể đọc trực tiếp trang NocoBase, storage của trình duyệt hoặc response từ API.
