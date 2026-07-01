@@ -424,10 +424,12 @@ describe('WorkflowTasksPage', () => {
     const { container } = renderWithApp(<WorkflowTasksPage />);
 
     await screen.findByText('Task A');
-    await waitFor(() => expect(container.querySelector('.ant-pagination')).toBeInTheDocument());
-    expect(container.querySelector('.ant-pagination-simple')).toBeInTheDocument();
-    expect(container.querySelector('.ant-pagination-item-active')).not.toBeInTheDocument();
-    expect(container.querySelector('.ant-pagination-options')).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByTestId('workflow-task-pagination')).toBeInTheDocument());
+    expect(screen.getByTestId('workflow-task-current-page')).toHaveTextContent('1');
+    expect(container.querySelector('.ant-pagination-simple-pager input')).not.toBeInTheDocument();
+    expect(screen.getByRole('combobox', { name: 'Page size' })).toBeInTheDocument();
+    expect(screen.getByRole('combobox', { name: 'Page size' }).closest('.ant-select')).toHaveStyle({ width: '112px' });
+    expect(screen.getByText('20 / page')).toBeInTheDocument();
     expect(screen.getByTestId('workflow-task-list-region')).toHaveStyle({
       background: '#f5f5f5',
       display: 'flex',
@@ -565,10 +567,10 @@ describe('WorkflowTasksPage', () => {
       flex: '1 1 0%',
       minHeight: '0',
     });
-    expect(container.querySelector('.ant-pagination')).toBeInTheDocument();
-    expect(container.querySelector('.ant-pagination-simple')).toBeInTheDocument();
-    expect(container.querySelector('.ant-pagination-item-active')).not.toBeInTheDocument();
-    expect(container.querySelector('.ant-pagination-options')).not.toBeInTheDocument();
+    expect(screen.getByTestId('workflow-task-pagination')).toBeInTheDocument();
+    expect(screen.getByTestId('workflow-task-current-page')).toHaveTextContent('1');
+    expect(container.querySelector('.ant-pagination-simple-pager input')).not.toBeInTheDocument();
+    expect(screen.queryByRole('combobox', { name: 'Page size' })).not.toBeInTheDocument();
     expect(container.querySelector('.ant-list-item')).toHaveStyle({ padding: '0.5em 0.5em 1px' });
     expect(Actions.mock.calls.some(([props]) => props.onlyIcon === true)).toBe(true);
     expect(screen.getByTestId('workflow-task-status-controls')).toHaveStyle({ flexWrap: 'wrap' });

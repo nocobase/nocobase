@@ -444,5 +444,6 @@ describe('workflow-cc v2 task type', () => {
     const markButton = screen.getByRole('button', { name: 'Mark as read' });
 
     expect(remoteFlowModel.compareDocumentPosition(markButton)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    expect(screen.getByTestId('workflow-cc-detail-content')).toHaveStyle({ gap: '0' });
   });
 });

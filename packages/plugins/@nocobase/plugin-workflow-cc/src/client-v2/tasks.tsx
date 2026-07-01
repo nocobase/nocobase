@@ -481,7 +481,7 @@ function WorkflowCcTaskDetail() {
 
   if (ccUid && node && workflow) {
     return (
-      <Flex vertical gap="middle">
+      <Flex data-testid="workflow-cc-detail-content" vertical gap={0} style={{ gap: 0 }}>
         <RemoteFlowModelRenderer uid={ccUid} onModelLoaded={handleModelLoaded} />
         <Flex justify="end">
           <WorkflowCcTaskDetailActions />

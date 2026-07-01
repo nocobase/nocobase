@@ -9,18 +9,20 @@
 
 import { useFlowContext } from '@nocobase/flow-engine';
 import { useMobileLayout } from '@nocobase/client-v2';
+import { LeftOutlined, RightOutlined } from '@ant-design/icons';
 import { useMemoizedFn } from 'ahooks';
 import {
   App,
   Badge,
+  Button,
   Flex,
   Layout,
   List,
   Menu,
   Modal,
-  Pagination,
   Result,
   Segmented,
+  Select,
   Tabs,
   Typography,
   theme,
@@ -247,6 +249,91 @@ function TaskStatusControls(props: {
   );
 }
 
+function WorkflowTaskPagination(props: {
+  mobile: boolean;
+  page: number;
+  total: number;
+  onPageChange: (page: number) => void;
+}) {
+  const { mobile, onPageChange, page, total } = props;
+  const { token } = theme.useToken();
+  const t = useT();
+  const totalPages = Math.max(1, Math.ceil(Math.max(total, 1) / WORKFLOW_TASKS_PAGE_SIZE));
+  const hasPrevious = page > 1;
+  const hasNext = page < totalPages;
+
+  const handlePrevious = useMemoizedFn(() => {
+    if (hasPrevious) {
+      onPageChange(page - 1);
+    }
+  });
+  const handleNext = useMemoizedFn(() => {
+    if (hasNext) {
+      onPageChange(page + 1);
+    }
+  });
+
+  return (
+    <Flex
+      align="center"
+      className="ant-pagination"
+      data-testid="workflow-task-pagination"
+      gap={mobile ? token.marginXXS : token.marginSM}
+      justify="end"
+      style={{ width: '100%' }}
+    >
+      <Flex align="center" gap={token.marginXXS}>
+        <Button
+          aria-label={t('Previous page')}
+          className={`ant-pagination-prev${hasPrevious ? '' : ' ant-pagination-disabled'}`}
+          disabled={!hasPrevious}
+          icon={<LeftOutlined />}
+          onClick={handlePrevious}
+          size="small"
+          style={{ height: token.controlHeightSM, width: token.controlHeightSM }}
+          type="text"
+        />
+        <Typography.Text
+          data-testid="workflow-task-current-page"
+          style={{
+            lineHeight: `${token.controlHeightSM}px`,
+            minWidth: token.sizeSM,
+            textAlign: 'center',
+          }}
+        >
+          {page}
+        </Typography.Text>
+        <Button
+          aria-label={t('Next page')}
+          className={`ant-pagination-next${hasNext ? '' : ' ant-pagination-disabled'}`}
+          disabled={!hasNext}
+          icon={<RightOutlined />}
+          onClick={handleNext}
+          size="small"
+          style={{ height: token.controlHeightSM, width: token.controlHeightSM }}
+          type="text"
+        />
+      </Flex>
+      {mobile ? null : (
+        <Select
+          aria-label={t('Page size')}
+          className="ant-pagination-options"
+          options={[
+            {
+              label: `${WORKFLOW_TASKS_PAGE_SIZE} / page`,
+              value: WORKFLOW_TASKS_PAGE_SIZE,
+            },
+          ]}
+          popupMatchSelectWidth={false}
+          size="middle"
+          style={{ width: 112 }}
+          value={WORKFLOW_TASKS_PAGE_SIZE}
+        />
+      )}
+    </Flex>
+  );
+}
+
 function WorkflowTaskList(props: {
   records: WorkflowTaskRecord[];
   loading: boolean;
@@ -262,16 +349,6 @@ function WorkflowTaskList(props: {
   const { token } = theme.useToken();
   const t = useT();
   const showPagination = total > 0 || records.length > 0;
-  const pagination = {
-    current: page,
-    hideOnSinglePage: false,
-    pageSize: WORKFLOW_TASKS_PAGE_SIZE,
-    pageSizeOptions: [WORKFLOW_TASKS_PAGE_SIZE],
-    showSizeChanger: !mobile,
-    simple: true,
-    total: Math.max(total, 1),
-    onChange: onPageChange,
-  };
 
   const handleKeyDown = useMemoizedFn((event: React.KeyboardEvent<HTMLElement>, record: WorkflowTaskRecord) => {
     if (event.key === 'Enter' || event.key === ' ') {
@@ -318,7 +395,7 @@ function WorkflowTaskList(props: {
             padding: mobile ? '0.5em' : `0 ${token.paddingLG}px ${token.padding}px`,
           }}
         >
-          <Pagination {...pagination} style={{ justifyContent: 'flex-end', width: '100%' }} />
+          <WorkflowTaskPagination mobile={mobile} onPageChange={onPageChange} page={page} total={total} />
         </Flex>
       ) : null}
     </>
