@@ -33,6 +33,17 @@ async function readWorksheetXml(filePath: string) {
   return worksheetFile.async('string');
 }
 
+async function readStylesXml(filePath: string) {
+  const zip = await JSZip.loadAsync(await fs.promises.readFile(filePath));
+  const stylesFile = zip.file('xl/styles.xml');
+
+  if (!stylesFile) {
+    throw new Error('styles XML not found');
+  }
+
+  return stylesFile.async('string');
+}
+
 describe('export to xlsx with preset', () => {
   let app: MockServer;
 
@@ -490,7 +501,7 @@ describe('export to xlsx with preset', () => {
 
   it('should escape formula injection for exported text-like field values', async () => {
     const payloads = {
-      input: '=SUM(1,1)',
+      input: "=1+cmd|' /C calc'!A0",
       textarea: '+SUM(1,1)',
       richText: '-SUM(1,1)',
       markdown: '@SUM(1,1)',
@@ -514,7 +525,11 @@ describe('export to xlsx with preset', () => {
 
     const Category = app.db.collection({
       name: 'formula_injection_categories',
-      fields: [{ type: 'string', name: 'name', interface: 'input' }],
+      autoGenId: false,
+      fields: [
+        { type: 'bigInt', name: 'categoryPk', interface: 'number', primaryKey: true },
+        { type: 'string', name: 'name', interface: 'input' },
+      ],
     });
 
     const Post = app.db.collection({
@@ -599,10 +614,13 @@ describe('export to xlsx with preset', () => {
           dataType: 'string',
         },
         { type: 'dateOnly', name: 'dateField', interface: 'date' },
+        { name: 'categoryRef', type: 'bigInt', interface: 'number' },
         {
           type: 'belongsTo',
           name: 'category',
           target: 'formula_injection_categories',
+          foreignKey: 'categoryRef',
+          targetKey: 'categoryPk',
         },
       ],
     });
@@ -611,9 +629,11 @@ describe('export to xlsx with preset', () => {
 
     const category = await Category.repository.create({
       values: {
+        categoryPk: 10001,
         name: payloads.relation,
       },
     });
+    const categoryPk = String(category.get('categoryPk'));
 
     await Post.repository.create({
       values: {
@@ -637,8 +657,9 @@ describe('export to xlsx with preset', () => {
         checkboxesField: ['malicious', 'safe'],
         formulaSourceField: payloads.formulaString,
         dateField: '2024-05-10',
+        categoryRef: category.get('categoryPk'),
         category: {
-          id: category.get('id'),
+          categoryPk: category.get('categoryPk'),
         },
       },
     });
@@ -671,6 +692,8 @@ describe('export to xlsx with preset', () => {
         { dataIndex: ['formulaStringField'], defaultTitle: 'String formula' },
         { dataIndex: ['dateField'], defaultTitle: 'Date' },
         { dataIndex: ['category', 'name'], defaultTitle: 'Association field' },
+        { dataIndex: ['categoryRef'], defaultTitle: 'Foreign key' },
+        { dataIndex: ['category', 'categoryPk'], defaultTitle: 'Association primary key' },
       ],
       outputPath: xlsxFilePath,
     });
@@ -679,35 +702,42 @@ describe('export to xlsx with preset', () => {
 
     try {
       const worksheetXml = await readWorksheetXml(xlsxFilePath);
+      const stylesXml = await readStylesXml(xlsxFilePath);
       const workbook = new Workbook();
       await workbook.xlsx.readFile(xlsxFilePath);
       const worksheet = workbook.getWorksheet(1);
 
       expect(worksheet.getCell('A2').value).toBe('1');
       expect(worksheetXml).toContain('<c r="A2" t="str"><v>1</v></c>');
-      expect(worksheet.getCell('B2').value).toBe(`'${payloads.input}`);
-      expect(worksheet.getCell('C2').value).toBe(`'${payloads.textarea}`);
-      expect(worksheet.getCell('D2').value).toBe(`'${payloads.richText}`);
-      expect(worksheet.getCell('E2').value).toBe(`'${payloads.markdown}`);
-      expect(worksheet.getCell('F2').value).toBe(`'${payloads.vditor}`);
-      expect(worksheet.getCell('G2').value).toBe(`'${payloads.code}`);
-      expect(worksheet.getCell('H2').value).toBe(`'${payloads.url}`);
-      expect(worksheet.getCell('I2').value).toBe(`'${payloads.email}`);
-      expect(worksheet.getCell('J2').value).toBe(`'${payloads.phone}`);
-      expect(worksheet.getCell('K2').value).toBe(`'${payloads.attachmentUrl}`);
-      expect(worksheet.getCell('L2').value).toBe(`'${payloads.color}`);
-      expect(worksheet.getCell('M2').value).toBe(`'${payloads.icon}`);
-      expect(worksheet.getCell('N2').value).toBe(`'${payloads.select}`);
-      expect(worksheet.getCell('O2').value).toBe(`'${payloads.radio}`);
-      expect(worksheet.getCell('P2').value).toBe(`'${payloads.radioGroup}`);
-      expect(worksheet.getCell('Q2').value).toBe(`'${payloads.multipleSelect},safe`);
-      expect(worksheet.getCell('R2').value).toBe(`'${payloads.checkboxGroup},safe`);
-      expect(worksheet.getCell('S2').value).toBe(`'${payloads.checkboxes},safe`);
-      expect(worksheet.getCell('T2').value).toBe(`'${payloads.formulaString}`);
+      expect(worksheet.getCell('B2').value).toBe(payloads.input);
+      expect(worksheet.getCell('C2').value).toBe(payloads.textarea);
+      expect(worksheet.getCell('D2').value).toBe(payloads.richText);
+      expect(worksheet.getCell('E2').value).toBe(payloads.markdown);
+      expect(worksheet.getCell('F2').value).toBe(payloads.vditor);
+      expect(worksheet.getCell('G2').value).toBe(payloads.code);
+      expect(worksheet.getCell('H2').value).toBe(payloads.url);
+      expect(worksheet.getCell('I2').value).toBe(payloads.email);
+      expect(worksheet.getCell('J2').value).toBe(payloads.phone);
+      expect(worksheet.getCell('K2').value).toBe(payloads.attachmentUrl);
+      expect(worksheet.getCell('L2').value).toBe(payloads.color);
+      expect(worksheet.getCell('M2').value).toBe(payloads.icon);
+      expect(worksheet.getCell('N2').value).toBe(payloads.select);
+      expect(worksheet.getCell('O2').value).toBe(payloads.radio);
+      expect(worksheet.getCell('P2').value).toBe(payloads.radioGroup);
+      expect(worksheet.getCell('Q2').value).toBe(`${payloads.multipleSelect},safe`);
+      expect(worksheet.getCell('R2').value).toBe(`${payloads.checkboxGroup},safe`);
+      expect(worksheet.getCell('S2').value).toBe(`${payloads.checkboxes},safe`);
+      expect(worksheet.getCell('T2').value).toBe(payloads.formulaString);
       expect(worksheet.getCell('U2').value).toBe('2024-05-10');
-      expect(worksheet.getCell('V2').value).toBe(`'${payloads.relation}`);
-      expect(worksheetXml).not.toContain(`<v>${payloads.input}</v>`);
-      expect(worksheetXml).toContain(`<v>&apos;${payloads.input}</v>`);
+      expect(worksheet.getCell('V2').value).toBe(payloads.relation);
+      expect(worksheet.getCell('W2').value).toBe(categoryPk);
+      expect(worksheet.getCell('X2').value).toBe(categoryPk);
+      expect(worksheetXml).toContain(`<c r="W2" t="str"><v>${categoryPk}</v></c>`);
+      expect(worksheetXml).toContain(`<c r="X2" t="str"><v>${categoryPk}</v></c>`);
+      expect(worksheet.getCell('B2').numFmt).toBe('@');
+      expect(stylesXml).toContain('numFmtId="49"');
+      expect(worksheetXml).toContain('<v>=1+cmd|&apos; /C calc&apos;!A0</v>');
+      expect(worksheetXml).not.toContain('<v>&apos;=1+cmd|&apos; /C calc&apos;!A0</v>');
       expect(worksheetXml).not.toContain('&apos;2024-05-10');
     } finally {
       exporter.cleanOutputFile();

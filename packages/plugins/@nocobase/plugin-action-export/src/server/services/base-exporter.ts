@@ -76,6 +76,11 @@ const NON_TEXT_EXPORT_INTERFACES = new Set([
 const TEXT_EXPORT_TYPES = new Set(['string', 'text', 'uid', 'uuid', 'nanoid', 'password']);
 const FORMULA_INJECTION_PREFIX_RE = /^\s*[=+\-@]/;
 
+type FieldResolution = {
+  field?: IField;
+  collection?: ICollection;
+};
+
 export type ExportOptions = {
   collectionManager: ICollectionManager;
   collection: ICollection;
@@ -249,22 +254,28 @@ abstract class BaseExporter<T extends ExportOptions = ExportOptions> extends Eve
     return findOptions;
   }
 
-  protected findFieldByDataIndex(dataIndex: Array<string>): IField {
+  protected resolveFieldByDataIndex(dataIndex: Array<string>): FieldResolution {
     const { collection } = this.options;
-    let currentField = collection.getField(dataIndex[0]);
+    let currentCollection = collection;
+    let currentField = currentCollection.getField(dataIndex[0]);
     if (dataIndex.length === 1) {
-      return currentField;
+      return { field: currentField, collection: currentCollection };
     }
 
     let targetCollection = (currentField as RelationField).targetCollection();
     for (let i = 1; i < dataIndex.length; i++) {
+      currentCollection = targetCollection;
       currentField = targetCollection.getField(dataIndex[i]);
       const isLast = i === dataIndex.length - 1;
       if (!isLast && currentField instanceof RelationField) {
         targetCollection = currentField.targetCollection();
       }
     }
-    return currentField;
+    return { field: currentField, collection: currentCollection };
+  }
+
+  protected findFieldByDataIndex(dataIndex: Array<string>): IField {
+    return this.resolveFieldByDataIndex(dataIndex).field;
   }
 
   protected renderRawValue(value) {
@@ -275,17 +286,17 @@ abstract class BaseExporter<T extends ExportOptions = ExportOptions> extends Eve
     return value;
   }
 
-  protected getFieldRenderer(field?: IField, ctx?): (value) => any {
+  protected getFieldRenderer(field?: IField, ctx?, dataIndex?: Array<string>): (value) => any {
     const InterfaceClass = this.options.collectionManager.getFieldInterface(field?.options?.interface);
     if (!InterfaceClass) {
       return (value) => {
-        return this.normalizeRenderedValue(this.renderRawValue(value), field);
+        return this.normalizeRenderedValue(this.renderRawValue(value), field, dataIndex);
       };
     }
     const fieldInterface = new InterfaceClass(field?.options);
     return (value) => {
       const renderedValue = fieldInterface.toString(value, ctx);
-      return this.normalizeRenderedValue(renderedValue, field);
+      return this.normalizeRenderedValue(renderedValue, field, dataIndex);
     };
   }
 
@@ -293,7 +304,7 @@ abstract class BaseExporter<T extends ExportOptions = ExportOptions> extends Eve
     rowData = rowData.toJSON();
     const value = rowData[dataIndex[0]];
     const field = this.findFieldByDataIndex(dataIndex);
-    const render = this.getFieldRenderer(field, ctx);
+    const render = this.getFieldRenderer(field, ctx, dataIndex);
 
     if (dataIndex.length > 1) {
       const deepValue = deepGet(rowData, dataIndex);
@@ -307,8 +318,8 @@ abstract class BaseExporter<T extends ExportOptions = ExportOptions> extends Eve
     return render(value);
   }
 
-  protected normalizeRenderedValue(value: any, field?: IField) {
-    if (this.shouldExportAsText(field)) {
+  protected normalizeRenderedValue(value: any, field?: IField, dataIndex?: Array<string>) {
+    if (this.shouldExportAsText(field, dataIndex)) {
       return this.normalizeTextCellValue(value);
     }
 
@@ -335,12 +346,16 @@ abstract class BaseExporter<T extends ExportOptions = ExportOptions> extends Eve
     return value;
   }
 
-  protected shouldExportAsText(field?: IField) {
+  protected shouldExportAsText(field?: IField, dataIndex?: Array<string>) {
     const fieldInterface = field?.options?.interface;
     const fieldType = field?.options?.type;
     const formulaDataType = field?.options?.dataType;
 
-    if (field?.options?.primaryKey || field?.options?.name === 'id') {
+    if (this.isKeyField(field, dataIndex)) {
+      return true;
+    }
+
+    if (this.isForeignKeyField(field)) {
       return true;
     }
 
@@ -361,13 +376,68 @@ abstract class BaseExporter<T extends ExportOptions = ExportOptions> extends Eve
     return typeof fieldType === 'string' && TEXT_EXPORT_TYPES.has(fieldType);
   }
 
+  protected isKeyField(field?: IField, dataIndex?: Array<string>) {
+    const fieldName = field?.options?.name;
+    if (!fieldName) {
+      return false;
+    }
+
+    const fieldCollection = dataIndex
+      ? this.resolveFieldByDataIndex(dataIndex).collection
+      : this.getFieldCollection(field);
+    const primaryKeyAttributes = fieldCollection?.model?.primaryKeyAttributes;
+
+    if (Array.isArray(primaryKeyAttributes) && primaryKeyAttributes.includes(fieldName)) {
+      return true;
+    }
+
+    const filterTargetKey = fieldCollection?.filterTargetKey;
+    if (Array.isArray(filterTargetKey)) {
+      return filterTargetKey.includes(fieldName);
+    }
+
+    if (typeof filterTargetKey === 'string' && filterTargetKey === fieldName) {
+      return true;
+    }
+
+    return field.options?.primaryKey === true;
+  }
+
+  protected getFieldCollection(field?: IField): ICollection | undefined {
+    return (field as Field | undefined)?.collection;
+  }
+
+  protected isForeignKeyField(field?: IField) {
+    const fieldName = field?.options?.name;
+    const fieldCollection = this.getFieldCollection(field);
+    if (!fieldName || !fieldCollection) {
+      return false;
+    }
+
+    return fieldCollection.getFields().some((candidate) => {
+      if (!candidate.isRelationField()) {
+        return false;
+      }
+
+      const relationForeignKey = (candidate as RelationField).foreignKey ?? candidate.options?.foreignKey;
+      return relationForeignKey === fieldName;
+    });
+  }
+
   protected normalizeTextCellValue(value: any) {
     if (value == null || value === '') {
       return value;
     }
 
-    const text = String(value);
-    return FORMULA_INJECTION_PREFIX_RE.test(text) ? `'${text}` : text;
+    return String(value);
+  }
+
+  protected shouldApplyTextCellFormat(value: any, field?: IField, dataIndex?: Array<string>) {
+    if (!this.shouldExportAsText(field, dataIndex) || value == null || value === '') {
+      return false;
+    }
+
+    return FORMULA_INJECTION_PREFIX_RE.test(String(value));
   }
 
   public generateOutputPath(prefix = 'export', ext = '', destination = storagePathJoin('tmp')): string {
