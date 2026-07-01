@@ -20,21 +20,23 @@ case "${NOCOBASE_EXTRACT_CLIENT_ASSETS:-false}" in
     ;;
 esac
 
+ACTIVE_VERSION_FILE='/app/nocobase/storage/dist-client/active-version'
+ACTIVE_VERSION=''
+if [ -f "${ACTIVE_VERSION_FILE}" ]; then
+  ACTIVE_VERSION="$(tr -d '\r\n' < "${ACTIVE_VERSION_FILE}")"
+fi
+
 EXPLICIT_CDN_BASE_URL="${CDN_BASE_URL:-}"
 if [ -z "${CDN_BASE_URL:-}" ]; then
-  ACTIVE_VERSION_FILE='/app/nocobase/storage/dist-client/active-version'
-  if [ -f "${ACTIVE_VERSION_FILE}" ]; then
-    ACTIVE_VERSION="$(tr -d '\r\n' < "${ACTIVE_VERSION_FILE}")"
-    if [ -n "${ACTIVE_VERSION}" ]; then
-      APP_PUBLIC_PATH_VALUE="${APP_PUBLIC_PATH:-/}"
-      case "${APP_PUBLIC_PATH_VALUE}" in
-        /*) ;;
-        *) APP_PUBLIC_PATH_VALUE="/${APP_PUBLIC_PATH_VALUE}" ;;
-      esac
-      APP_PUBLIC_PATH_VALUE="${APP_PUBLIC_PATH_VALUE%/}/"
-      export CDN_BASE_URL="${APP_PUBLIC_PATH_VALUE%/}/dist/${ACTIVE_VERSION}/"
-      echo "CDN_BASE_URL is not set; defaulting to ${CDN_BASE_URL}"
-    fi
+  if [ -n "${ACTIVE_VERSION}" ]; then
+    APP_PUBLIC_PATH_VALUE="${APP_PUBLIC_PATH:-/}"
+    case "${APP_PUBLIC_PATH_VALUE}" in
+      /*) ;;
+      *) APP_PUBLIC_PATH_VALUE="/${APP_PUBLIC_PATH_VALUE}" ;;
+    esac
+    APP_PUBLIC_PATH_VALUE="${APP_PUBLIC_PATH_VALUE%/}/"
+    export CDN_BASE_URL="${APP_PUBLIC_PATH_VALUE%/}/dist/${ACTIVE_VERSION}/"
+    echo "CDN_BASE_URL is not set; defaulting to ${CDN_BASE_URL}"
   fi
 fi
 
@@ -52,7 +54,6 @@ case "${NOCOBASE_EXTRACT_CLIENT_ASSETS:-false}" in
       echo 'Missing dist-client active-version; cannot generate proxy config from extracted client assets.'
       exit 1
     fi
-    ACTIVE_VERSION="$(tr -d '\r\n' < "${ACTIVE_VERSION_FILE}")"
     if [ -z "${ACTIVE_VERSION}" ]; then
       echo 'dist-client active-version is empty; cannot generate proxy config from extracted client assets.'
       exit 1
