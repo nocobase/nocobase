@@ -244,6 +244,7 @@ describe('RecordCommentsBlockView', () => {
         fields: [{ name: 'commentedAt', type: 'datetime', interface: 'datetime' }],
       },
       resource,
+      shouldAutoJumpToLastPage: vi.fn(() => true),
       isPreparingLastPageLoad: vi.fn(() => false),
       ensureLastPageLoaded: vi.fn(async () => undefined),
       mapSubModels: vi.fn(() => []),
@@ -272,5 +273,56 @@ describe('RecordCommentsBlockView', () => {
         },
       );
     });
+  });
+
+  it('does not jump to the last page after creating comments when auto jump is disabled', async () => {
+    const create = vi.fn(async () => undefined);
+    const setPage = vi.fn();
+    const resource = {
+      loading: false,
+      create,
+      refresh: vi.fn(async () => undefined),
+      setPage,
+      getPage: vi.fn(() => 1),
+      getPageSize: vi.fn(() => 20),
+      getCount: vi.fn(() => 41),
+    };
+    const model = {
+      uid: 'block-1',
+      mapping: {
+        contentField: 'content',
+        ownerField: 'post',
+        dateField: 'commentedAt',
+      },
+      ownerValue: 12,
+      context: {
+        defineMethod: vi.fn(),
+        flowSettingsEnabled: false,
+      },
+      collection: {
+        fields: [{ name: 'commentedAt', type: 'datetime', interface: 'datetime' }],
+      },
+      resource,
+      shouldAutoJumpToLastPage: vi.fn(() => false),
+      isPreparingLastPageLoad: vi.fn(() => false),
+      ensureLastPageLoaded: vi.fn(async () => undefined),
+      mapSubModels: vi.fn(() => []),
+    } as unknown as RecordCommentsBlockModel;
+
+    render(
+      <App>
+        <RecordCommentsBlockView model={model} dataSource={[]} onPageChange={vi.fn()} />
+      </App>,
+    );
+
+    fireEvent.change(screen.getByRole('textbox', { name: 'Comment content' }), {
+      target: { value: 'A new comment' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Comment' }));
+
+    await waitFor(() => {
+      expect(create).toHaveBeenCalled();
+    });
+    expect(setPage).not.toHaveBeenCalled();
   });
 });
