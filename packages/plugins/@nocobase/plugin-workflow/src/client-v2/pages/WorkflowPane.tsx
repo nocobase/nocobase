@@ -250,7 +250,7 @@ function WorkflowPaneInner() {
         page,
         pageSize,
         sort: ['-createdAt'],
-        appends: ['categories', 'stats'],
+        appends: ['categories', 'stats', 'legacyApprovalUi'],
         except: ['config'],
         filter,
       });
