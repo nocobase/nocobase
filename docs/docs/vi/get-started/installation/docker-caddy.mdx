@@ -46,8 +46,6 @@ services:
       - NOCOBASE_PROXY_UPSTREAM_HOST=app
     volumes:
       - ./storage:/app/nocobase/storage
-    expose:
-      - "13000"
 
   caddy:
     image: caddy:2
@@ -57,7 +55,7 @@ services:
     networks:
       - nocobase
     volumes:
-      - ./storage:/app/nocobase/storage:ro
+      - ./storage:/app/nocobase/storage
     command: >
       /bin/sh -c '
         while [ ! -f /app/nocobase/storage/.nocobase/proxy/caddy/nocobase.caddy ]; do
@@ -89,9 +87,9 @@ services:
 - `NOCOBASE_EXTRACT_CLIENT_ASSETS=true` dùng để tách tài nguyên client và tạo cấu hình proxy
 - `NOCOBASE_PROXY_PROVIDER=caddy` cho biết cần tạo cấu hình Caddy
 - `NOCOBASE_PROXY_UPSTREAM_HOST=app` cho phép container Caddy truy cập dịch vụ `app` qua mạng Compose
-- `./storage` cần được mount vào cả `app` và `caddy`, còn container proxy nên dùng mount chỉ đọc
+- `./storage` cần được mount vào cả `app` và `caddy` để cùng dùng cấu hình proxy, tài nguyên tĩnh và tệp tải lên
 - Container `caddy` cần chờ `nocobase.caddy` được tạo xong, sau đó dùng `ln -sf` liên kết nó tới `/etc/caddy/Caddyfile`
-- Chỉ cần publish cổng của container Caddy ra host. Dịch vụ `app` chỉ cần `expose: "13000"` trong mạng Compose
+- Chỉ cần publish cổng của container Caddy ra host. Dịch vụ `app` không cần publish cổng ra host
 
 ## Nếu dùng Caddy cài trực tiếp trên máy host
 
@@ -125,10 +123,11 @@ services:
       - NOCOBASE_PROXY_PROVIDER=caddy
       - NOCOBASE_PROXY_STORAGE_PATH=/path/to/your-project/storage
       - NOCOBASE_PROXY_UPSTREAM_HOST=127.0.0.1
+      - NOCOBASE_PROXY_UPSTREAM_PORT=13000
     volumes:
       - ./storage:/app/nocobase/storage
     ports:
-      - "13000:80"
+      - "13000:13000"
 
   postgres:
     image: postgres:16

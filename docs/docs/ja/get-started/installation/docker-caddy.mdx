@@ -46,8 +46,6 @@ services:
       - NOCOBASE_PROXY_UPSTREAM_HOST=app
     volumes:
       - ./storage:/app/nocobase/storage
-    expose:
-      - "13000"
 
   caddy:
     image: caddy:2
@@ -57,7 +55,7 @@ services:
     networks:
       - nocobase
     volumes:
-      - ./storage:/app/nocobase/storage:ro
+      - ./storage:/app/nocobase/storage
     command: >
       /bin/sh -c '
         while [ ! -f /app/nocobase/storage/.nocobase/proxy/caddy/nocobase.caddy ]; do
@@ -89,9 +87,9 @@ services:
 - `NOCOBASE_EXTRACT_CLIENT_ASSETS=true` でクライアントアセットを抽出し、プロキシ設定を生成します
 - `NOCOBASE_PROXY_PROVIDER=caddy` で Caddy 用の設定を生成します
 - `NOCOBASE_PROXY_UPSTREAM_HOST=app` により、Caddy コンテナは Compose ネットワーク経由で `app` サービスへ接続します
-- `./storage` は `app` と `caddy` の両方にマウントし、プロキシ側は読み取り専用にするのが適切です
+- `./storage` は `app` と `caddy` の両方にマウントし、プロキシ設定、静的アセット、アップロードファイルを共有できるようにします
 - `caddy` コンテナは `nocobase.caddy` が生成されるまで待機し、その後 `ln -sf` で `/etc/caddy/Caddyfile` にリンクしてから起動します
-- ホストへ公開するのは Caddy コンテナのポートだけで十分です。`app` サービスは Compose ネットワーク内で `expose: "13000"` のみで構いません
+- ホストへ公開するのは Caddy コンテナのポートだけで十分です。`app` サービスはホストへポートを公開する必要はありません
 
 ## ホストにインストールした Caddy を使う場合
 
@@ -125,10 +123,11 @@ services:
       - NOCOBASE_PROXY_PROVIDER=caddy
       - NOCOBASE_PROXY_STORAGE_PATH=/path/to/your-project/storage
       - NOCOBASE_PROXY_UPSTREAM_HOST=127.0.0.1
+      - NOCOBASE_PROXY_UPSTREAM_PORT=13000
     volumes:
       - ./storage:/app/nocobase/storage
     ports:
-      - "13000:80"
+      - "13000:13000"
 
   postgres:
     image: postgres:16

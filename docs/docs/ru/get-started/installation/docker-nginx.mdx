@@ -46,8 +46,6 @@ services:
       - NOCOBASE_PROXY_UPSTREAM_HOST=app
     volumes:
       - ./storage:/app/nocobase/storage
-    expose:
-      - "13000"
 
   nginx:
     image: nginx:latest
@@ -57,7 +55,7 @@ services:
     networks:
       - nocobase
     volumes:
-      - ./storage:/app/nocobase/storage:ro
+      - ./storage:/app/nocobase/storage
     command: >
       /bin/sh -c '
         while [ ! -f /app/nocobase/storage/.nocobase/proxy/nginx/nocobase.conf ]; do
@@ -90,9 +88,10 @@ services:
 - `NOCOBASE_EXTRACT_CLIENT_ASSETS=true` извлекает клиентские ресурсы и генерирует конфигурацию прокси
 - `NOCOBASE_PROXY_PROVIDER=nginx` указывает, что нужно сгенерировать конфигурацию Nginx
 - `NOCOBASE_PROXY_UPSTREAM_HOST=app` позволяет контейнеру Nginx обращаться к сервису `app` через сеть Compose
-- `./storage` нужно смонтировать и в `app`, и в `nginx`, при этом для прокси-контейнера лучше использовать режим только для чтения
+- `./storage` нужно смонтировать и в `app`, и в `nginx`, чтобы они могли совместно использовать конфигурацию прокси, статические ресурсы и загруженные файлы
 - Контейнер `nginx` должен дождаться создания `nocobase.conf`, а затем с помощью `ln -sf` связать его с `/etc/nginx/conf.d/default.conf`
-- На хост нужно публиковать только порт контейнера Nginx. Для сервиса `app` внутри сети Compose достаточно `expose: "13000"`
+- Если вы используете образ со встроенным Nginx, контейнер `app` сам публикует порт через `ports: "13000:80"`
+- Если вы используете внешний контейнер Nginx, сопоставление порта с хостом должен обрабатывать контейнер `nginx`, а сервису `app` не нужно публиковать порт на хост
 
 ## Если используется локальный Nginx на хосте
 
@@ -126,10 +125,11 @@ services:
       - NOCOBASE_PROXY_PROVIDER=nginx
       - NOCOBASE_PROXY_STORAGE_PATH=/path/to/your-project/storage
       - NOCOBASE_PROXY_UPSTREAM_HOST=127.0.0.1
+      - NOCOBASE_PROXY_UPSTREAM_PORT=13000
     volumes:
       - ./storage:/app/nocobase/storage
     ports:
-      - "13000:80"
+      - "13000:13000"
 
   postgres:
     image: postgres:16

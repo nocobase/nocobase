@@ -46,8 +46,6 @@ services:
       - NOCOBASE_PROXY_UPSTREAM_HOST=app
     volumes:
       - ./storage:/app/nocobase/storage
-    expose:
-      - "13000"
 
   caddy:
     image: caddy:2
@@ -57,7 +55,7 @@ services:
     networks:
       - nocobase
     volumes:
-      - ./storage:/app/nocobase/storage:ro
+      - ./storage:/app/nocobase/storage
     command: >
       /bin/sh -c '
         while [ ! -f /app/nocobase/storage/.nocobase/proxy/caddy/nocobase.caddy ]; do
@@ -89,9 +87,9 @@ services:
 - `NOCOBASE_EXTRACT_CLIENT_ASSETS=true` extrait les ressources client et génère la configuration du proxy
 - `NOCOBASE_PROXY_PROVIDER=caddy` indique que la configuration Caddy doit être générée
 - `NOCOBASE_PROXY_UPSTREAM_HOST=app` permet au conteneur Caddy d'accéder au service `app` via le réseau Compose
-- `./storage` doit être monté dans `app` et `caddy`, et le conteneur proxy devrait utiliser un montage en lecture seule
+- `./storage` doit être monté dans `app` et `caddy` afin de partager la configuration du proxy, les ressources statiques et les fichiers téléversés
 - Le conteneur `caddy` doit attendre que `nocobase.caddy` soit généré, puis créer un lien vers `/etc/caddy/Caddyfile` avec `ln -sf`
-- Exposez uniquement le port du conteneur Caddy à l'hôte. Le service `app` n'a besoin que de `expose: "13000"` dans le réseau Compose
+- Exposez uniquement le port du conteneur Caddy à l'hôte. Le service `app` n'a pas besoin d'exposer son port à l'hôte
 
 ## Si vous utilisez un Caddy local sur l'hôte
 
@@ -125,10 +123,11 @@ services:
       - NOCOBASE_PROXY_PROVIDER=caddy
       - NOCOBASE_PROXY_STORAGE_PATH=/path/to/your-project/storage
       - NOCOBASE_PROXY_UPSTREAM_HOST=127.0.0.1
+      - NOCOBASE_PROXY_UPSTREAM_PORT=13000
     volumes:
       - ./storage:/app/nocobase/storage
     ports:
-      - "13000:80"
+      - "13000:13000"
 
   postgres:
     image: postgres:16

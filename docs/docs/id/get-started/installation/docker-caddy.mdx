@@ -46,8 +46,6 @@ services:
       - NOCOBASE_PROXY_UPSTREAM_HOST=app
     volumes:
       - ./storage:/app/nocobase/storage
-    expose:
-      - "13000"
 
   caddy:
     image: caddy:2
@@ -57,7 +55,7 @@ services:
     networks:
       - nocobase
     volumes:
-      - ./storage:/app/nocobase/storage:ro
+      - ./storage:/app/nocobase/storage
     command: >
       /bin/sh -c '
         while [ ! -f /app/nocobase/storage/.nocobase/proxy/caddy/nocobase.caddy ]; do
@@ -89,9 +87,9 @@ services:
 - `NOCOBASE_EXTRACT_CLIENT_ASSETS=true` mengekstrak aset klien dan membuat konfigurasi proxy
 - `NOCOBASE_PROXY_PROVIDER=caddy` menandakan bahwa konfigurasi Caddy harus dibuat
 - `NOCOBASE_PROXY_UPSTREAM_HOST=app` memungkinkan kontainer Caddy mengakses layanan `app` melalui jaringan Compose
-- `./storage` harus dimount ke `app` dan `caddy`, dan mount di kontainer proxy sebaiknya read-only
+- `./storage` harus dimount ke `app` dan `caddy` agar konfigurasi proxy, aset statis, dan file unggahan bisa dipakai bersama
 - Kontainer `caddy` perlu menunggu sampai `nocobase.caddy` dibuat, lalu menautkannya ke `/etc/caddy/Caddyfile` dengan `ln -sf`
-- Ekspos hanya port kontainer Caddy ke host. Layanan `app` hanya membutuhkan `expose: "13000"` di dalam jaringan Compose
+- Ekspos hanya port kontainer Caddy ke host. Layanan `app` tidak perlu membuka port ke host
 
 ## Jika menggunakan Caddy lokal di host
 
@@ -125,10 +123,11 @@ services:
       - NOCOBASE_PROXY_PROVIDER=caddy
       - NOCOBASE_PROXY_STORAGE_PATH=/path/to/your-project/storage
       - NOCOBASE_PROXY_UPSTREAM_HOST=127.0.0.1
+      - NOCOBASE_PROXY_UPSTREAM_PORT=13000
     volumes:
       - ./storage:/app/nocobase/storage
     ports:
-      - "13000:80"
+      - "13000:13000"
 
   postgres:
     image: postgres:16

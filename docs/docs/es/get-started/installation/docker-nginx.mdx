@@ -46,8 +46,6 @@ services:
       - NOCOBASE_PROXY_UPSTREAM_HOST=app
     volumes:
       - ./storage:/app/nocobase/storage
-    expose:
-      - "13000"
 
   nginx:
     image: nginx:latest
@@ -57,7 +55,7 @@ services:
     networks:
       - nocobase
     volumes:
-      - ./storage:/app/nocobase/storage:ro
+      - ./storage:/app/nocobase/storage
     command: >
       /bin/sh -c '
         while [ ! -f /app/nocobase/storage/.nocobase/proxy/nginx/nocobase.conf ]; do
@@ -90,9 +88,10 @@ services:
 - `NOCOBASE_EXTRACT_CLIENT_ASSETS=true` extrae los recursos del cliente y genera la configuración del proxy
 - `NOCOBASE_PROXY_PROVIDER=nginx` indica que debe generarse la configuración de Nginx
 - `NOCOBASE_PROXY_UPSTREAM_HOST=app` permite que el contenedor de Nginx acceda al servicio `app` mediante la red de Compose
-- `./storage` debe montarse tanto en `app` como en `nginx`, y el contenedor proxy debería usar un montaje de solo lectura
+- `./storage` debe montarse tanto en `app` como en `nginx` para compartir la configuración del proxy, los recursos estáticos y los archivos subidos
 - El contenedor `nginx` debe esperar a que se genere `nocobase.conf` y luego enlazarlo a `/etc/nginx/conf.d/default.conf` con `ln -sf`
-- Expón al host solo el puerto del contenedor de Nginx. El servicio `app` solo necesita `expose: "13000"` dentro de la red de Compose
+- Si usas la imagen con Nginx integrado, el propio contenedor `app` expone el puerto con `ports: "13000:80"`
+- Si usas un contenedor Nginx externo, deja que el contenedor `nginx` gestione el mapeo del puerto al host y no expongas el puerto del servicio `app` al host
 
 ## Si usas Nginx local en el host
 
@@ -126,10 +125,11 @@ services:
       - NOCOBASE_PROXY_PROVIDER=nginx
       - NOCOBASE_PROXY_STORAGE_PATH=/path/to/your-project/storage
       - NOCOBASE_PROXY_UPSTREAM_HOST=127.0.0.1
+      - NOCOBASE_PROXY_UPSTREAM_PORT=13000
     volumes:
       - ./storage:/app/nocobase/storage
     ports:
-      - "13000:80"
+      - "13000:13000"
 
   postgres:
     image: postgres:16

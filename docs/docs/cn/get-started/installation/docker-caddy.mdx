@@ -16,7 +16,7 @@ keywords: "Docker,NocoBase,Caddy,安装,反向代理"
 
 ## docker-compose.yml 示例
 
-如果你需要 `full` 镜像，把 `latest-no-nginx` 替换为 `latest-full-no-nginx` 即可。
+下面的示例使用镜像：`nocobase/nocobase:latest-full-no-nginx`。
 
 ```yml
 networks:
@@ -25,7 +25,7 @@ networks:
 
 services:
   app:
-    image: nocobase/nocobase:latest-no-nginx
+    image: nocobase/nocobase:latest-full-no-nginx
     restart: always
     depends_on:
       - postgres
@@ -46,8 +46,6 @@ services:
       - NOCOBASE_PROXY_UPSTREAM_HOST=app
     volumes:
       - ./storage:/app/nocobase/storage
-    expose:
-      - "13000"
 
   caddy:
     image: caddy:2
@@ -57,7 +55,7 @@ services:
     networks:
       - nocobase
     volumes:
-      - ./storage:/app/nocobase/storage:ro
+      - ./storage:/app/nocobase/storage
     command: >
       /bin/sh -c '
         while [ ! -f /app/nocobase/storage/.nocobase/proxy/caddy/nocobase.caddy ]; do
@@ -89,9 +87,9 @@ services:
 - `NOCOBASE_EXTRACT_CLIENT_ASSETS=true` 用于提取前端静态资源，并生成代理配置
 - `NOCOBASE_PROXY_PROVIDER=caddy` 表示生成 Caddy 配置
 - `NOCOBASE_PROXY_UPSTREAM_HOST=app` 表示让 Caddy 容器通过 Compose 网络访问 `app` 服务
-- `./storage` 需要同时挂载到 `app` 和 `caddy` 容器，其中代理容器建议只读挂载
+- `./storage` 需要同时挂载到 `app` 和 `caddy` 容器，方便共享代理配置、静态资源和上传文件
 - `caddy` 容器启动前需要等待 `nocobase.caddy` 生成，再通过 `ln -sf` 链接到 `/etc/caddy/Caddyfile`
-- 只需要对外暴露 Caddy 容器端口，`app` 服务保留 `expose: "13000"` 即可
+- 只需要对外暴露 Caddy 容器端口，`app` 服务不需要对宿主机暴露端口
 
 ## 如果使用宿主机本地 Caddy
 
@@ -106,7 +104,7 @@ networks:
 
 services:
   app:
-    image: nocobase/nocobase:latest-no-nginx
+    image: nocobase/nocobase:latest-full-no-nginx
     restart: always
     depends_on:
       - postgres
@@ -125,10 +123,11 @@ services:
       - NOCOBASE_PROXY_PROVIDER=caddy
       - NOCOBASE_PROXY_STORAGE_PATH=/path/to/your-project/storage
       - NOCOBASE_PROXY_UPSTREAM_HOST=127.0.0.1
+      - NOCOBASE_PROXY_UPSTREAM_PORT=13000
     volumes:
       - ./storage:/app/nocobase/storage
     ports:
-      - "13000:80"
+      - "13000:13000"
 
   postgres:
     image: postgres:16

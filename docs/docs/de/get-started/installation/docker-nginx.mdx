@@ -46,8 +46,6 @@ services:
       - NOCOBASE_PROXY_UPSTREAM_HOST=app
     volumes:
       - ./storage:/app/nocobase/storage
-    expose:
-      - "13000"
 
   nginx:
     image: nginx:latest
@@ -57,7 +55,7 @@ services:
     networks:
       - nocobase
     volumes:
-      - ./storage:/app/nocobase/storage:ro
+      - ./storage:/app/nocobase/storage
     command: >
       /bin/sh -c '
         while [ ! -f /app/nocobase/storage/.nocobase/proxy/nginx/nocobase.conf ]; do
@@ -90,9 +88,10 @@ services:
 - `NOCOBASE_EXTRACT_CLIENT_ASSETS=true` extrahiert die Client-Assets und erzeugt die Proxy-Konfiguration
 - `NOCOBASE_PROXY_PROVIDER=nginx` legt fest, dass eine Nginx-Konfiguration erzeugt wird
 - `NOCOBASE_PROXY_UPSTREAM_HOST=app` ermöglicht dem Nginx-Container den Zugriff auf den Dienst `app` über das Compose-Netzwerk
-- `./storage` muss sowohl in `app` als auch in `nginx` gemountet werden, und der Proxy-Container sollte den Mount nur lesend verwenden
+- `./storage` muss sowohl in `app` als auch in `nginx` gemountet werden, damit Proxy-Konfiguration, statische Dateien und Uploads gemeinsam genutzt werden können
 - Der `nginx`-Container sollte warten, bis `nocobase.conf` erzeugt wurde, und die Datei dann mit `ln -sf` nach `/etc/nginx/conf.d/default.conf` verlinken
-- Nach außen sollte nur der Port des Nginx-Containers freigegeben werden. Der Dienst `app` braucht innerhalb des Compose-Netzwerks nur `expose: "13000"`
+- Wenn du das Image mit integriertem Nginx verwendest, gibt der `app`-Container den Port selbst mit `ports: "13000:80"` nach außen frei
+- Wenn du einen externen Nginx-Container verwendest, sollte der `nginx`-Container die Portzuordnung zum Host übernehmen, und der Dienst `app` muss keinen Port zum Host veröffentlichen
 
 ## Wenn du ein lokales Nginx auf dem Host verwendest
 
@@ -126,10 +125,11 @@ services:
       - NOCOBASE_PROXY_PROVIDER=nginx
       - NOCOBASE_PROXY_STORAGE_PATH=/path/to/your-project/storage
       - NOCOBASE_PROXY_UPSTREAM_HOST=127.0.0.1
+      - NOCOBASE_PROXY_UPSTREAM_PORT=13000
     volumes:
       - ./storage:/app/nocobase/storage
     ports:
-      - "13000:80"
+      - "13000:13000"
 
   postgres:
     image: postgres:16

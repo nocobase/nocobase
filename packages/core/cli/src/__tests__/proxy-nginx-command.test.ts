@@ -256,12 +256,12 @@ test('proxy nginx generate supports manual mode', async () => {
       flags: {
         manual: true,
         name: 'default',
-        'app-port': '13000',
         'storage-path': '/path/to/storage',
         'dist-root-path': '/path/to/dist-client',
         'runtime-version': '2.1.0',
         'app-public-path': '/console/',
         'upstream-host': 'host.docker.internal',
+        'upstream-port': '14000',
         'cdn-base-url': 'https://cdn.example.com/ui/',
         port: '8080',
         force: true,
@@ -275,12 +275,12 @@ test('proxy nginx generate supports manual mode', async () => {
   expect(mocks.writeManualNginxProxyBundle).toHaveBeenCalledWith(
     {
       name: 'default',
-      appPort: '13000',
       storagePath: '/path/to/storage',
       distRootPath: '/path/to/dist-client',
       runtimeVersion: '2.1.0',
       appPublicPath: '/console/',
       upstreamHost: 'host.docker.internal',
+      upstreamPort: '14000',
       cdnBaseUrl: 'https://cdn.example.com/ui/',
     },
     {
@@ -301,17 +301,17 @@ test('proxy nginx generate supports manual mode', async () => {
   );
 });
 
-test('proxy nginx generate rejects invalid manual app port values', async () => {
+test('proxy nginx generate rejects invalid manual upstream port values', async () => {
   const { default: ProxyNginxGenerate } = await import('../commands/proxy/nginx/generate.js');
   const command = Object.assign(Object.create(ProxyNginxGenerate.prototype), {
     parse: vi.fn(async () => ({
       flags: {
         manual: true,
         name: 'default',
-        'app-port': '70000',
         'storage-path': '/path/to/storage',
         'dist-root-path': '/path/to/dist-client',
         'runtime-version': '2.1.0',
+        'upstream-port': '70000',
       },
     })),
     error: vi.fn((message: string) => {
@@ -320,7 +320,7 @@ test('proxy nginx generate rejects invalid manual app port values', async () => 
   });
 
   await expect(ProxyNginxGenerate.prototype.run.call(command)).rejects.toThrow(
-    'Invalid manual app port "70000". Use an integer between 1 and 65535.',
+    'Invalid manual upstream port "70000". Use an integer between 1 and 65535.',
   );
   expect(mocks.writeManualNginxProxyBundle).not.toHaveBeenCalled();
 });
