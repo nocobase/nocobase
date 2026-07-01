@@ -1,8 +1,14 @@
+---
+title: "Расширение типов узлов"
+description: "Расширение типов узлов: разработка пользовательских узлов, настройка узлов, логика выполнения, API и жизненный цикл."
+keywords: "рабочий процесс,расширение узлов,пользовательские узлы,разработка узлов,NocoBase"
+---
+
 # Расширение типов узлов
 
 Тип узла по сути является операционной инструкцией. Разные инструкции представляют разные операции, выполняемые в рабочем процессе.
 
-Как и в случае с триггером, расширение типов узлов также делится на две части: серверную и клиентскую. На сервере нужно реализовать логику зарегистрированной инструкции, а на клиенте — предоставить интерфейсную настройку параметров узла, в котором используется эта инструкция.
+Как и в случае с триггерами, расширение типов узлов также делится на две части: серверную и клиентскую. На сервере нужно реализовать логику зарегистрированной инструкции, а на клиенте — предоставить интерфейсную настройку параметров узла, в котором используется эта инструкция.
 
 ## Серверная часть
 
@@ -30,10 +36,10 @@ export class MyInstruction extends Instruction {
 ```ts
 export default class MyPlugin extends Plugin {
   load() {
-    // получение экземпляра плагина рабочего процесса
+    // get workflow plugin instance
     const workflowPlugin = this.app.getPlugin<WorkflowPlugin>(WorkflowPlugin);
 
-    // регистрация инструкции
+    // register instruction
     workflowPlugin.registerInstruction('my-instruction', MyInstruction);
   }
 }
@@ -50,7 +56,7 @@ import { Instruction, JOB_STATUS } from '@nocobase/plugin-workflow';
 
 export class RandomStringInstruction extends Instruction {
   run(node, input, processor) {
-    // пользовательская конфигурация из узла
+    // customized config from node
     const { digit = 1 } = node.config;
     const result = `${Math.round(10 ** digit * Math.random())}`.padStart(
       digit,
@@ -91,7 +97,7 @@ export const errorInstruction = {
 
 ### Асинхронные узлы
 
-Если узлу нужно дождаться завершения внешней операции перед продолжением рабочего процесса, например HTTP-запроса, колбэка от платёжной системы или другой длительной операции, задачу сначала нужно сохранить со статусом `JOB_STATUS.PENDING`. Это приостанавливает текущее выполнение. После завершения внешней операции выполнение возобновляется через метод `resume`.Любой тип узла, использующий механизм приостановки выполнения, должен также реализовывать метод `resume`. Без него рабочий процесс не сможет продолжить выполнение.
+Если узлу нужно дождаться завершения внешней операции перед продолжением рабочего процесса (например, HTTP-запроса, колбэка от платёжной системы или другой длительной операции, результат которой не возвращается немедленно), задачу сначала нужно сохранить со статусом `JOB_STATUS.PENDING`, чтобы приостановить текущее выполнение, а затем возобновить его через метод `resume` после завершения операции. Любая инструкция, использующая логику приостановки, также должна реализовывать метод `resume`; иначе рабочий процесс не сможет возобновиться.
 
 Рекомендуемая схема реализации:
 
@@ -100,7 +106,7 @@ import { Instruction, JOB_STATUS, FlowNodeModel, IJob } from '@nocobase/plugin-w
 
 export class AsyncInstruction extends Instruction {
   async run(node: FlowNodeModel, prevJob, processor) {
-    // 1. Сохраняем задачу в статусе ожидания и запоминаем её id
+    // 1. Save the pending task and record its id
     const { id } = processor.saveJob({
       status: JOB_STATUS.PENDING,
       nodeId: node.id,
@@ -108,10 +114,10 @@ export class AsyncInstruction extends Instruction {
       upstreamId: prevJob?.id ?? null,
     });
 
-    // 2. Явно вызываем exit(), чтобы записать задачу в БД и зафиксировать транзакцию
+    // 2. Explicitly call exit() to flush the task to the database and commit the transaction
     await processor.exit();
 
-    // 3. Запускаем асинхронную операцию (транзакция уже зафиксирована, соединение с БД не удерживается)
+    // 3. Initiate the async operation (transaction is now committed, no longer holding the DB connection)
     const jobDone: IJob = { status: JOB_STATUS.PENDING };
     try {
       const result = await someAsyncOperation(node.config);
@@ -121,20 +127,20 @@ export class AsyncInstruction extends Instruction {
       jobDone.status = JOB_STATUS.FAILED;
       jobDone.result = { message: error.message };
     } finally {
-      // 4. Повторно получаем задачу из БД; не используем объект из памяти
+      // 4. Re-query the task from the database; do not use the cached in-memory object
       const job = await this.workflow.app.db.getRepository('jobs').findOne({
         filterByTk: id,
       });
       job.set(jobDone);
 
-      // 5. Сообщаем движку рабочего процесса, что выполнение можно возобновить
+      // 5. Notify the workflow engine to resume execution, entering the resume flow
       this.workflow.resume(job);
     }
-    // 6. Ничего не возвращаем (void); исполнитель немедленно завершится
+    // 6. Return nothing (void); the executor will exit immediately
   }
 
   async resume(node: FlowNodeModel, job, processor) {
-    // Задача уже получила финальный статус в run(), просто возвращаем её
+    // The job already has its final status set in run(), just return it
     return job;
   }
 }
@@ -142,11 +148,11 @@ export class AsyncInstruction extends Instruction {
 
 Несколько важных деталей:
 
-**Почему нужно явно вызывать `processor.exit()`, а не возвращать задачу со статусом ожидания**  
-`return { status: PENDING }` немедленно завершает функцию `run`, поэтому код после него уже не выполнится. Вызов `await processor.exit()` лишь фиксирует транзакцию и выходит из контекста базы данных, тогда как сама функция продолжает выполняться. Это позволяет дождаться длительной операции в том же теле функции и вызвать `resume` после её завершения. Если пропустить `exit()` и напрямую использовать `await` для длительной операции перед возвратом, транзакция базы данных будет удерживаться долгое время. Это может привести к конкуренции блокировок, а запись задачи не будет сохранена до фиксации транзакции после завершения операции.
+**Почему нужно явно вызывать `processor.exit()`, а не возвращать объект задачи со статусом ожидания?**  
+`return { status: PENDING }` немедленно завершает функцию `run`, поэтому код после него уже не выполнится. Вызов `await processor.exit()` лишь фиксирует транзакцию и выходит из контекста базы данных, тогда как сама функция продолжает выполняться. Это позволяет дождаться длительной операции в том же теле функции и вызвать `resume` после её завершения. Если пропустить `exit()` и напрямую использовать `await` для длительной операции перед возвратом, транзакция базы данных будет удерживаться долгое время, что может привести к конкуренции блокировок, а запись задачи не будет сохранена до фиксации транзакции после завершения операции.
 
 **Почему нужно повторно получать задачу, а не использовать объект, возвращённый `saveJob`?**  
-Объект, возвращённый `saveJob`, — это экземпляр модели в памяти, привязанный к исходной транзакции. После вызова `processor.exit()` эта транзакция зафиксирована и закрыта. Прямое изменение этого экземпляра и вызов `resume` могут привести к некорректному состоянию ORM: устаревшим ссылкам на транзакцию, несогласованности состояния и другим проблемам. Повторный запрос задачи из базы данных по `id` гарантирует получение чистого экземпляра, не привязанного ни к какой транзакции.
+Объект, возвращённый `saveJob`, — это экземпляр модели в памяти, привязанный к исходной транзакции. После вызова `processor.exit()` эта транзакция зафиксирована и закрыта. Прямое изменение этого экземпляра и вызов `resume` могут привести к некорректному состоянию ORM (устаревшим ссылкам на транзакцию, несогласованности состояния и т.д.). Повторный запрос задачи из базы данных по `id` гарантирует получение чистого экземпляра, не привязанного ни к какой транзакции.
 
 **Почему функция `run` ничего не возвращает (`void`)?**  
 `processor.exit()` уже был вызван вручную. Когда исполнитель получает `void`, он вызывает `exit(true)` и немедленно завершается без лишней обработки. Если в этот момент вернуть `IJob`, исполнитель попытается повторно сохранить данные и зафиксировать транзакцию, что приведёт к ошибкам. Подробнее см. раздел о типах возвращаемых значений `run`/`resume`.
@@ -169,7 +175,7 @@ export class AsyncInstruction extends Instruction {
 
 Если любой узел после выполнения возвращает статус «ожидание», весь процесс выполнения временно прерывается и приостанавливается, ожидая событие, определённое соответствующим узлом, которое возобновит рабочий процесс. Например, узел «Ручная обработка» при выполнении остановится на этом узле со статусом «ожидание», ожидая ручного решения об одобрении. Если вручную введён статус одобрения, выполнение последующих узлов продолжится; иначе применится логика ошибки, описанная выше.
 
-О других статусах возврата инструкции см. [Справочник API](./api.md).
+О других статусах возврата инструкции см. раздел «Справочник API».
 
 ### Типы возвращаемых значений `run`/`resume` и поведение исполнителя
 
@@ -215,7 +221,7 @@ type InstructionResult = IJob | Promise<IJob> | Promise<void> | Promise<null> | 
 - [ConditionInstruction.ts#L67](https://github.com/nocobase/nocobase/blob/main/packages/plugins/%40nocobase/plugin-workflow/src/server/instructions/ConditionInstruction.ts#L67): При наличии ветки вручную вызывает `processor.run(branchNode, savedJob)`, затем функция завершается, неявно возвращая `void`
 - [ParallelInstruction.ts#L108](https://github.com/nocobase/nocobase/blob/main/packages/plugins/%40nocobase/plugin-workflow-parallel/src/server/ParallelInstruction.ts#L108): Перебирает все ветки и вызывает `processor.run(branch, job)` для каждой, затем функция завершается, неявно возвращая `void`
 
-:::warn{title=Предупреждение}
+:::warn{title=Примечание}
 Если перед возвратом `void` был вызван `processor.saveJob()`, эти записи задач не будут записаны в базу данных текущим исполнителем. Они временно хранятся в списке задач исполнителя (в памяти) и будут сброшены в базу данных через `exit()`, вызванный при завершении подвыполнения, запущенного `processor.run()`. Поэтому при использовании данного паттерна необходимо убедиться, что существует путь подвыполнения, который завершается в штатном режиме для сохранения этих записей. Планирование ветвящихся рабочих процессов обладает определённой сложностью; требует тщательного проектирования и всестороннего тестирования.
 :::
 
@@ -229,54 +235,88 @@ type InstructionResult = IJob | Promise<IJob> | Promise<void> | Promise<null> | 
 
 ### Дополнительно
 
-Определения различных параметров для задания типов узлов см. в [Справочнике API](./api.md).
+Определения различных параметров для задания типов узлов см. в разделе «Справочник API».
 
 ## Клиентская часть
 
-Как и для триггера, форму настройки для инструкции (типа узла) нужно реализовать на клиенте.
+Как и для триггеров, форму настройки для инструкции (типа узла) нужно реализовать на клиенте.
 
 ### Самая простая инструкция узла
 
 Все инструкции должны наследоваться от базового класса `Instruction`. Его свойства и методы используются для настройки и использования узла.
 
-Например, если нужно предоставить интерфейс настройки для узла «строка случайного числа» (`randomString`), определённого выше на сервере, у которого есть параметр `digit` (количество цифр), в форме настройки можно использовать поле числового ввода для приёма значения от пользователя.
+Например, если нужно предоставить интерфейс настройки для узла «строка случайного числа» (`randomString`), определённого выше на сервере, у которого есть параметр `digit` (количество цифр):
 
-```tsx pure
-import WorkflowPlugin, { Instruction, VariableOption } from '@nocobase/workflow/client';
+```ts
+import { Instruction } from '@nocobase/plugin-workflow/client-v2';
 
-class MyInstruction extends Instruction {
+class RandomStringInstruction extends Instruction {
   title = 'Random number string';
   type = 'randomString';
   group = 'extended';
-  fieldset = {
-    'digit': {
-      type: 'number',
-      title: 'Digit',
-      name: 'digit',
-      'x-decorator': 'FormItem',
-      'x-component': 'InputNumber',
-      'x-component-props': {
-        min: 1,
-        max: 10,
-      },
-      default: 6,
-    },
-  };
-  useVariables(node, options): VariableOption {
-    return {
-      value: node.key,
-      label: node.title,
-    };
+
+  // Node config form (lazy-loaded component)
+  FieldsetLoader = () => import('./components/RandomStringConfig');
+
+  useVariables(node, options) {
+    return { value: node.key, label: node.title };
   }
 }
+```
 
-export default class MyPlugin extends Plugin {
-  load() {
-    // получение экземпляра плагина рабочего процесса
-    const workflowPlugin = this.app.getPlugin<WorkflowPlugin>(WorkflowPlugin);
+Здесь `FieldsetLoader` — функция, возвращающая `Promise<{ default: ComponentType }>`, реализующая отложенную загрузку через динамический `import()`. Компонент, на который она указывает, — стандартный функциональный React-компонент, строящий форму с помощью `Form.Item` из antd:
 
-    // регистрация инструкции
-    workflowPlugin.registerInstruction('randomString', MyInstruction);
+```tsx
+// components/RandomStringConfig.tsx
+import { Form, InputNumber } from 'antd';
+
+export default function RandomStringConfig() {
+  return (
+    <Form.Item
+      name={['config', 'digit']}
+      label="Digit"
+      initialValue={6}
+      rules={[{ required: true }]}
+    >
+      <InputNumber min={1} max={10} />
+    </Form.Item>
+  );
+}
+```
+
+Обратите внимание, что поле формы `name` использует формат вложенного массива `['config', 'fieldName']` — стандартное соглашение antd Form.
+
+### Несколько интерфейсов настройки
+
+Узел может предоставлять несколько интерфейсов настройки для различных сценариев:
+
+- `FieldsetLoader` — форма настройки узла в панели (наиболее часто используется)
+![FieldsetLoader](https://static-docs.nocobase.com/20260701153106.png)
+
+- `PresetFieldsetLoader` — предустановленная форма при создании узла (обычно содержит только обязательные поля)
+![PresetFieldsetLoader](https://static-docs.nocobase.com/20260701153041.png)
+
+- `ComponentLoader` — пользовательский рендеринг узла на холсте (используется для узлов с ветвлением и других случаев, требующих особого отображения)
+![ComponentLoader](https://static-docs.nocobase.com/20260701153139.png)
+
+Когда Loader должен указывать на именованный экспорт (а не экспорт по умолчанию) файла, используйте `.then()` для переназначения:
+
+```ts
+FieldsetLoader = () => import('./components/MyNodeConfig').then((m) => ({ default: m.MyFieldset }));
+```
+
+### Регистрация узла
+
+Зарегистрируйте тип узла в экземпляре плагина рабочего процесса внутри расширяющего плагина:
+
+```ts
+import { Plugin } from '@nocobase/client-v2';
+import RandomStringInstruction from './RandomStringInstruction';
+
+export default class extends Plugin {
+  async load() {
+    const workflow = this.app.pm.get('workflow');
+    workflow.registerInstruction('randomString', RandomStringInstruction);
   }
 }
 ```
@@ -287,7 +327,7 @@ export default class MyPlugin extends Plugin {
 
 ### Предоставление результатов узла как переменных
 
-В приведённом выше примере используется метод `useVariables`. Если нужно использовать результат узла (часть `result`) как переменную в последующих узлах, нужно реализовать этот метод в унаследованном классе инструкции и вернуть объект, соответствующий типу `VariableOption`. Этот объект задаёт структуру результата выполнения узла и сопоставление имён переменных для выбора и использования в следующих узлах.
+В приведённом выше примере используется метод `useVariables`. Если нужно использовать результат узла (часть `result`) как переменную в последующих узлах, нужно реализовать этот метод в унаследованном классе инструкции и вернуть объект, соответствующий типу `VariableOption`. Этот объект задаёт структурное описание результата выполнения узла и сопоставление имён переменных для выбора и использования в следующих узлах.
 
 Тип `VariableOption` определяется так:
 
@@ -302,7 +342,7 @@ export type VariableOption = {
 
 Ключевым является свойство `value`: это сегментированный путь имени переменной. Свойство `label` задаёт подпись в интерфейсе, а `children` — многоуровневую структуру переменных, когда результат узла — глубоко вложенный объект.
 
-Используемая переменная внутри системы задаётся как строка шаблона пути, разделённого точкой, например `{{jobsMapByNodeKey.2dw92cdf.abc}}`. Здесь `jobsMapByNodeKey` — набор результатов всех узлов (внутреннее определение, отдельно обрабатывать не нужно), `2dw92cdf` — `key` узла, а `abc` — пользовательское свойство в объекте результата узла.
+Используемая переменная внутри системы задаётся как строка шаблона пути, разделённого точкой, например `{{$jobsMapByNodeKey.2dw92cdf.abc}}`. Здесь `$jobsMapByNodeKey` — набор результатов всех узлов (внутреннее определение, отдельно обрабатывать не нужно), `2dw92cdf` — `key` узла, а `abc` — пользовательское свойство в объекте результата узла.
 
 Кроме того, поскольку результат узла может быть и простым значением, при предоставлении переменных узла первый уровень **обязательно** должен быть описанием самого узла:
 
@@ -313,7 +353,7 @@ export type VariableOption = {
 }
 ```
 
-То есть первый уровень — это `key` и заголовок узла. Например, в [исходном коде узла «Вычисление»](https://github.com/nocobase/nocobase/blob/main/packages/plugins/%40nocobase/plugin-workflow/src/client/nodes/calculation.tsx#L77) при использовании результата узла «Вычисление» в интерфейсе отображаются такие варианты:
+То есть первый уровень — это `key` и заголовок узла. Например, в [исходном коде узла «Вычисление»](https://github.com/nocobase/nocobase/blob/develop/packages/plugins/%40nocobase/plugin-workflow/src/client-v2/nodes/calculation.tsx) при использовании результата узла «Вычисление» в интерфейсе отображаются такие варианты:
 
 ![Результат узла вычисления](https://static-docs.nocobase.com/20240514230014.png)
 
@@ -324,7 +364,7 @@ export type VariableOption = {
   "message": "ok",
   "data": {
     "id": 1,
-    "name": "test",
+    "name": "test"
   }
 }
 ```
@@ -332,7 +372,7 @@ export type VariableOption = {
 Тогда через метод `useVariables` можно вернуть описание так:
 
 ```ts
-useVariables(node, options): VariableOption {
+useVariables(node, options) {
   return {
     value: node.key,
     label: node.title,
@@ -365,7 +405,7 @@ useVariables(node, options): VariableOption {
 ![Сопоставленные переменные результата](https://static-docs.nocobase.com/20240514230103.png)
 
 :::info{title="Примечание"}
-Когда структура результата является массивом глубоко вложенных объектов, путь также можно описывать через `children`, но без индексов массива. Это связано с тем, что в обработке переменных NocoBase в рабочем процессе описание пути для массива объектов автоматически разворачивается в массив вложенных значений, и обратиться к конкретному значению по индексу нельзя.
+Когда структура результата является массивом глубоко вложенных объектов, путь также можно описывать через `children`, но без индексов массива. Это связано с тем, что в обработке переменных рабочего процесса NocoBase описание пути для массива объектов автоматически разворачивается в массив вложенных значений, и обратиться к конкретному значению по индексу нельзя.
 :::
 
 ### Доступность узла
@@ -373,19 +413,14 @@ useVariables(node, options): VariableOption {
 По умолчанию в рабочий процесс можно добавить любой узел. Однако в некоторых случаях узел может быть неприменим для определённых типов рабочего процесса или ветвей. Тогда можно задать доступность узла через `isAvailable`:
 
 ```ts
-// определение типа
-export abstract class Instruction {
-  isAvailable?(ctx: NodeAvailableContext): boolean;
-}
-
 export type NodeAvailableContext = {
-  // экземпляр плагина рабочего процесса
+  // Workflow plugin instance
   engine: WorkflowPlugin;
-  // экземпляр рабочего процесса
+  // Workflow instance
   workflow: object;
-  // вышестоящий узел
+  // Upstream node
   upstream: object;
-  // ветвящийся узел (номер ветви)
+  // Whether it is a branch node (branch index)
   branchIndex: number;
 };
 ```
@@ -395,11 +430,17 @@ export type NodeAvailableContext = {
 Если особых требований нет, метод `isAvailable` можно не реализовывать: узлы по умолчанию доступны. Частый сценарий — узел выполняет длительную операцию и не подходит для синхронного рабочего процесса; тогда ограничение задают через `isAvailable`. Например:
 
 ```ts
-isAvailable({ engine, workflow, upstream, branchIndex }) {
+isAvailable({ engine, workflow }) {
   return !engine.isWorkflowSync(workflow);
 }
 ```
 
 ### Дополнительно
 
-Описание параметров типов узлов см. в [Справочнике API](./api.md).
+Полный пример из реального проекта: [исходный код CalculationInstruction](https://github.com/nocobase/nocobase/blob/develop/packages/plugins/%40nocobase/plugin-workflow/src/client-v2/nodes/calculation.tsx)
+
+Описание параметров типов узлов см. в разделе [Справочник API](./api).
+
+:::info{title=Примечание}
+Если вы ранее использовали устаревший клиентский код (v1) и хотите перейти на новую версию v2, обратитесь к [Руководству по миграции с v1 на v2](./migration).
+:::
