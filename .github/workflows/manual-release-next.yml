@@ -16,6 +16,10 @@ on:
       version:
         description: 'specific a version'
         type: 'string'
+      skip_install_build:
+        description: 'skip yarn install and build'
+        type: boolean
+        default: false
 
 jobs:
   get-plugins:
@@ -130,6 +134,7 @@ jobs:
           IS_FEAT: ${{ inputs.is_feat && '--is-feat' || '' }}
           ADD_MINOR: ${{ inputs.add_minor && '--add-minor' || '' }}
       - name: yarn install and build
+        if: ${{ !inputs.skip_install_build }}
         run: |
           yarn config set registry https://registry.npmjs.org/
           yarn install
