@@ -38,6 +38,47 @@ function getAssignFieldValuesBeforeParamsSave(action: BulkUpdateActionModel): As
 }
 
 describe('BulkUpdateActionModel apply action', () => {
+  it('exposes collection action metadata and assign form sub model options', async () => {
+    const engine = new FlowEngine();
+    engine.registerModels({ BulkUpdateActionModel });
+    const action = engine.createModel<BulkUpdateActionModel>({
+      use: 'BulkUpdateActionModel',
+      uid: 'bulk-update-action-meta',
+    });
+    const createModelOptions = BulkUpdateActionModel.meta?.createModelOptions;
+
+    expect(action.getAclActionName()).toBe('update');
+    expect(BulkUpdateActionModel.scene).toBe('collection');
+    expect(BulkUpdateActionModel.capabilityActionName).toBe('updateMany');
+    expect(action.defaultProps).toMatchObject({
+      icon: 'EditOutlined',
+    });
+    expect(typeof createModelOptions).toBe('function');
+    expect(
+      createModelOptions?.({
+        collection: {
+          name: 'posts',
+          dataSourceKey: 'main',
+        },
+      } as never),
+    ).toMatchObject({
+      subModels: {
+        assignForm: {
+          async: true,
+          use: 'AssignFormModel',
+          stepParams: {
+            resourceSettings: {
+              init: {
+                collectionName: 'posts',
+                dataSourceKey: 'main',
+              },
+            },
+          },
+        },
+      },
+    });
+  });
+
   it('reuses assignFieldValues step and saves assignedValues from AssignForm', async () => {
     const engine = new FlowEngine();
     engine.registerModels({ BulkUpdateActionModel, AssignFormModel: TestAssignFormModel });
@@ -167,5 +208,376 @@ describe('BulkUpdateActionModel apply action', () => {
     expect(setProps).toHaveBeenNthCalledWith(2, { loading: false });
     expect(refresh).not.toHaveBeenCalled();
     expect(ctx.message.success).not.toHaveBeenCalled();
+  });
+
+  it('returns saved assigned values as apply default params', async () => {
+    const engine = new FlowEngine();
+    engine.registerModels({ BulkUpdateActionModel });
+    const action = engine.createModel<BulkUpdateActionModel>({
+      use: 'BulkUpdateActionModel',
+      uid: 'bulk-update-action-default-params',
+    });
+    action.setStepParams('assignSettings', 'assignFieldValues', {
+      assignedValues: {
+        status: 'published',
+      },
+    });
+    const defaultParams = action.getFlow('apply')?.getStep('apply')?.serialize().defaultParams;
+
+    await expect(defaultParams?.({ model: action } as never)).resolves.toEqual({
+      assignedValues: {
+        status: 'published',
+      },
+    });
+  });
+
+  it('updates selected records and refreshes the source block', async () => {
+    const engine = new FlowEngine();
+    const model = new BulkUpdateActionModel({ uid: 'bulk-update-selected-action', flowEngine: engine } as never);
+    const update = vi.fn<() => Promise<void>>().mockResolvedValue(undefined);
+    const refresh = vi.fn();
+    const setProps = vi.fn();
+    const handler = model.getFlow('apply')?.getStep('apply')?.serialize().handler;
+    const ctx = {
+      model: {
+        getStepParams: vi.fn((_flowKey: string, stepKey: string) => {
+          if (stepKey === 'confirm') {
+            return { enable: true, title: 'Confirm' };
+          }
+          if (stepKey === 'updateMode') {
+            return { value: 'selected' };
+          }
+          return undefined;
+        }),
+        setProps,
+      },
+      runAction: vi.fn<() => Promise<void>>().mockResolvedValue(undefined),
+      collection: {
+        name: 'posts',
+        dataSourceKey: 'main',
+        filterTargetKey: 'uid',
+        getPrimaryKey: vi.fn(() => 'id'),
+        getFilterByTK: vi.fn((record: { uid?: string | null }) => record.uid),
+      },
+      blockModel: {
+        resource: {
+          getSelectedRows: vi.fn(() => [{ uid: 'p1' }, { uid: null }, { uid: 'p2' }]),
+          refresh,
+        },
+      },
+      api: {
+        resource: vi.fn(() => ({ update })),
+      },
+      message: {
+        success: vi.fn(),
+        warning: vi.fn(),
+        error: vi.fn(),
+      },
+      t: (value: string) => value,
+    };
+
+    await handler?.(ctx as never, { assignedValues: { status: 'published' } } as never);
+
+    expect(ctx.runAction).toHaveBeenCalledWith('confirm', { enable: true, title: 'Confirm' });
+    expect(ctx.api.resource).toHaveBeenCalledWith('posts', null, {
+      'x-data-source': 'main',
+    });
+    expect(update).toHaveBeenCalledWith({
+      filter: {
+        $and: [
+          {
+            uid: {
+              $in: ['p1', 'p2'],
+            },
+          },
+        ],
+      },
+      values: {
+        status: 'published',
+      },
+    });
+    expect(setProps).toHaveBeenNthCalledWith(1, { loading: true });
+    expect(setProps).toHaveBeenNthCalledWith(2, { loading: false });
+    expect(refresh).toHaveBeenCalledTimes(1);
+    expect(ctx.message.success).toHaveBeenCalledWith('Saved successfully');
+  });
+
+  it('updates all records with forceUpdate when the mode is all', async () => {
+    const engine = new FlowEngine();
+    const model = new BulkUpdateActionModel({ uid: 'bulk-update-all-action', flowEngine: engine } as never);
+    const update = vi.fn<() => Promise<void>>().mockResolvedValue(undefined);
+    const setProps = vi.fn();
+    const handler = model.getFlow('apply')?.getStep('apply')?.serialize().handler;
+    const ctx = {
+      model: {
+        getStepParams: vi.fn((_flowKey: string, stepKey: string) => {
+          if (stepKey === 'updateMode') {
+            return { value: 'all' };
+          }
+          return undefined;
+        }),
+        setProps,
+      },
+      runAction: vi.fn<() => Promise<void>>().mockResolvedValue(undefined),
+      collection: {
+        name: 'posts',
+        dataSourceKey: 'main',
+      },
+      blockModel: {
+        resource: {
+          refresh: vi.fn(),
+        },
+      },
+      api: {
+        resource: vi.fn(() => ({ update })),
+      },
+      message: {
+        success: vi.fn(),
+        warning: vi.fn(),
+        error: vi.fn(),
+      },
+      t: (value: string) => value,
+    };
+
+    await handler?.(ctx as never, { assignedValues: { status: 'archived' } } as never);
+
+    expect(ctx.runAction).toHaveBeenCalledWith('confirm', { enable: false });
+    expect(update).toHaveBeenCalledWith({
+      values: {
+        status: 'archived',
+      },
+      forceUpdate: true,
+    });
+    expect(setProps).toHaveBeenNthCalledWith(1, { loading: true });
+    expect(setProps).toHaveBeenNthCalledWith(2, { loading: false });
+    expect(ctx.blockModel.resource.refresh).toHaveBeenCalledTimes(1);
+    expect(ctx.message.success).toHaveBeenCalledWith('Saved successfully');
+  });
+
+  it('exits early when assigned values are empty or collection metadata is missing', async () => {
+    const engine = new FlowEngine();
+    const model = new BulkUpdateActionModel({ uid: 'bulk-update-early-return-action', flowEngine: engine } as never);
+    const update = vi.fn();
+    const handler = model.getFlow('apply')?.getStep('apply')?.serialize().handler;
+    const ctx = {
+      model: {
+        getStepParams: vi.fn(() => undefined),
+        setProps: vi.fn(),
+      },
+      runAction: vi.fn<() => Promise<void>>().mockResolvedValue(undefined),
+      collection: {
+        name: 'posts',
+      },
+      blockModel: {
+        resource: {
+          getSelectedRows: vi.fn(() => [{ id: 1 }]),
+          refresh: vi.fn(),
+        },
+      },
+      api: {
+        resource: vi.fn(() => ({ update })),
+      },
+      message: {
+        success: vi.fn(),
+        warning: vi.fn(),
+        error: vi.fn(),
+      },
+      t: (value: string) => value,
+    };
+
+    await handler?.(ctx as never, { assignedValues: {} } as never);
+
+    expect(ctx.message.warning).toHaveBeenCalledWith('No assigned fields configured');
+    expect(update).not.toHaveBeenCalled();
+    expect(ctx.blockModel.resource.refresh).not.toHaveBeenCalled();
+
+    ctx.message.warning.mockClear();
+    ctx.collection.name = '';
+
+    await handler?.(ctx as never, { assignedValues: { status: 'published' } } as never);
+
+    expect(ctx.message.error).toHaveBeenCalledWith('Collection is required to perform this action');
+    expect(update).not.toHaveBeenCalled();
+  });
+
+  it('exits early when runjs assigned values fail to resolve', async () => {
+    const engine = new FlowEngine();
+    const model = new BulkUpdateActionModel({ uid: 'bulk-update-runjs-error-action', flowEngine: engine } as never);
+    const update = vi.fn();
+    const handler = model.getFlow('apply')?.getStep('apply')?.serialize().handler;
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const ctx = {
+      model: {
+        getStepParams: vi.fn(() => undefined),
+        setProps: vi.fn(),
+      },
+      runAction: vi.fn<() => Promise<void>>().mockResolvedValue(undefined),
+      collection: {
+        name: 'posts',
+      },
+      api: {
+        resource: vi.fn(() => ({ update })),
+      },
+      message: {
+        success: vi.fn(),
+        warning: vi.fn(),
+        error: vi.fn(),
+      },
+      t: (value: string) => value,
+    };
+
+    await handler?.(ctx as never, { assignedValues: { status: { code: 'return "published"' } } } as never);
+
+    expect(ctx.message.error).toHaveBeenCalledWith('RunJS execution failed');
+    expect(update).not.toHaveBeenCalled();
+    expect(ctx.model.setProps).not.toHaveBeenCalled();
+    consoleError.mockRestore();
+  });
+
+  it('exits early when default selected mode has no selected rows', async () => {
+    const engine = new FlowEngine();
+    const model = new BulkUpdateActionModel({ uid: 'bulk-update-no-selected-action', flowEngine: engine } as never);
+    const update = vi.fn();
+    const handler = model.getFlow('apply')?.getStep('apply')?.serialize().handler;
+    const ctx = {
+      model: {
+        getStepParams: vi.fn(() => undefined),
+        setProps: vi.fn(),
+      },
+      runAction: vi.fn<() => Promise<void>>().mockResolvedValue(undefined),
+      collection: {
+        name: 'posts',
+      },
+      api: {
+        resource: vi.fn(() => ({ update })),
+      },
+      message: {
+        success: vi.fn(),
+        warning: vi.fn(),
+        error: vi.fn(),
+      },
+      t: (value: string) => value,
+    };
+
+    await handler?.(ctx as never, { assignedValues: { status: 'published' } } as never);
+
+    expect(ctx.message.error).toHaveBeenCalledWith('Please select the records to be updated');
+    expect(update).not.toHaveBeenCalled();
+    expect(ctx.model.setProps).not.toHaveBeenCalled();
+  });
+
+  it('uses filterTargetKey as primary key fallback when getPrimaryKey is unavailable', async () => {
+    const engine = new FlowEngine();
+    const model = new BulkUpdateActionModel({
+      uid: 'bulk-update-filter-target-key-action',
+      flowEngine: engine,
+    } as never);
+    const update = vi.fn<() => Promise<void>>().mockResolvedValue(undefined);
+    const handler = model.getFlow('apply')?.getStep('apply')?.serialize().handler;
+    const ctx = {
+      model: {
+        getStepParams: vi.fn((_flowKey: string, stepKey: string) => {
+          if (stepKey === 'updateMode') {
+            return { value: 'selected' };
+          }
+          return undefined;
+        }),
+        setProps: vi.fn(),
+      },
+      runAction: vi.fn<() => Promise<void>>().mockResolvedValue(undefined),
+      collection: {
+        name: 'posts',
+        filterTargetKey: 'slug',
+        getFilterByTK: vi.fn((record: { slug: string }) => record.slug),
+      },
+      blockModel: {
+        resource: {
+          getSelectedRows: vi.fn(() => [{ slug: 'post-1' }]),
+          refresh: vi.fn(),
+        },
+      },
+      api: {
+        resource: vi.fn(() => ({ update })),
+      },
+      message: {
+        success: vi.fn(),
+        warning: vi.fn(),
+        error: vi.fn(),
+      },
+      t: (value: string) => value,
+    };
+
+    await handler?.(ctx as never, { assignedValues: { status: 'published' } } as never);
+
+    expect(update).toHaveBeenCalledWith({
+      filter: {
+        $and: [
+          {
+            slug: {
+              $in: ['post-1'],
+            },
+          },
+        ],
+      },
+      values: {
+        status: 'published',
+      },
+    });
+  });
+
+  it('uses id as the final primary key fallback', async () => {
+    const engine = new FlowEngine();
+    const model = new BulkUpdateActionModel({ uid: 'bulk-update-id-fallback-action', flowEngine: engine } as never);
+    const update = vi.fn<() => Promise<void>>().mockResolvedValue(undefined);
+    const handler = model.getFlow('apply')?.getStep('apply')?.serialize().handler;
+    const ctx = {
+      model: {
+        getStepParams: vi.fn((_flowKey: string, stepKey: string) => {
+          if (stepKey === 'updateMode') {
+            return { value: 'selected' };
+          }
+          return undefined;
+        }),
+        setProps: vi.fn(),
+      },
+      runAction: vi.fn<() => Promise<void>>().mockResolvedValue(undefined),
+      collection: {
+        name: 'posts',
+        getPrimaryKey: vi.fn(() => undefined),
+        getFilterByTK: vi.fn((record: { id: number }) => record.id),
+      },
+      blockModel: {
+        resource: {
+          getSelectedRows: vi.fn(() => [{ id: 1 }]),
+          refresh: vi.fn(),
+        },
+      },
+      api: {
+        resource: vi.fn(() => ({ update })),
+      },
+      message: {
+        success: vi.fn(),
+        warning: vi.fn(),
+        error: vi.fn(),
+      },
+      t: (value: string) => value,
+    };
+
+    await handler?.(ctx as never, { assignedValues: { status: 'published' } } as never);
+
+    expect(update).toHaveBeenCalledWith({
+      filter: {
+        $and: [
+          {
+            id: {
+              $in: [1],
+            },
+          },
+        ],
+      },
+      values: {
+        status: 'published',
+      },
+    });
   });
 });
