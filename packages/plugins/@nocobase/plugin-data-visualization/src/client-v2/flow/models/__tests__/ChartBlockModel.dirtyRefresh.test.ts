@@ -134,6 +134,34 @@ describe('ChartBlockModel onActive dirty refresh', () => {
     expect(resource.refreshCalls).toBe(0);
   });
 
+  it('refreshes builder charts when the query changes for the same collection', async () => {
+    const { model, resource } = setupModel({
+      mode: 'builder',
+      collectionPath: ['main', 'orders'],
+      measures: [{ field: ['amount'] }],
+    });
+
+    await model.refresh();
+    resource.refreshCalls = 0;
+    model.setStepParams('chartSettings', 'configure', {
+      query: {
+        mode: 'builder',
+        collectionPath: ['main', 'orders'],
+        measures: [{ field: ['id'] }],
+        filter: {
+          logic: '$and',
+          items: [{ path: 'amount', operator: '$gt', value: 100 }],
+        },
+        orders: [{ field: ['amount'] }],
+      },
+    });
+
+    await model.onActive();
+    await model.onActive();
+
+    expect(resource.refreshCalls).toBe(1);
+  });
+
   it('refreshes builder charts when a dimension reads a dirty associated collection', async () => {
     const { engine, model, resource } = setupModel({
       mode: 'builder',

@@ -14,7 +14,6 @@ import {
   SQLResource,
   useFlowContext,
 } from '@nocobase/flow-engine';
-import type { Collection, CollectionField, FlowEngine } from '@nocobase/flow-engine';
 import React, { createRef } from 'react';
 import _ from 'lodash';
 import { Button, Space } from 'antd';
@@ -29,6 +28,11 @@ import { configStore } from './config-store';
 import PluginDataVisualizationClient from '../../plugin';
 import { DaraButton } from '../components/DaraButton';
 import { useChatBoxStore, useChatMessagesStore } from '@nocobase/plugin-ai/client-v2';
+import {
+  getChartDirtyRefreshSnapshot,
+  shouldRefreshChartOnActive,
+  type ChartDirtyRefreshSnapshot,
+} from './chartDirtyTracking';
 
 const NO_PREVIEW_SNAPSHOT = Symbol('NO_PREVIEW_SNAPSHOT');
 
@@ -43,24 +47,6 @@ type ChartProps = {
     optionRaw?: string;
     Component?: React.FC<any>;
   };
-};
-
-type ChartDirtyTarget = {
-  dataSourceKey: string;
-  collectionName: string;
-};
-
-type ChartQueryForDirtyTracking = {
-  mode?: string;
-  collectionPath?: unknown[];
-  measures?: ChartQueryFieldItem[];
-  dimensions?: ChartQueryFieldItem[];
-  orders?: ChartQueryFieldItem[];
-  filter?: unknown;
-};
-
-type ChartQueryFieldItem = {
-  field?: unknown;
 };
 
 const toFieldPath = (field: string | string[] | undefined) => {
@@ -105,144 +91,29 @@ export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
 
   // 统一管理 refresh 监听引用，便于 off 解绑
   private __onResourceRefresh = () => this.renderChart();
-  private lastSeenDirtyVersion: number | null = null;
-  private lastSeenDirtyTargetKey: string | null = null;
+  private lastRefreshSnapshot: ChartDirtyRefreshSnapshot | null = null;
   private dirtyRefreshing = false;
 
-  private getDirtyTargetKey(target: ChartDirtyTarget): string {
-    return `${target.dataSourceKey}:${target.collectionName}`;
-  }
-
-  private addDirtyTarget(targets: Map<string, ChartDirtyTarget>, dataSourceKey: string, collectionName: string) {
-    if (!collectionName) return;
-    const target = {
-      dataSourceKey: dataSourceKey || DEFAULT_DATA_SOURCE_KEY,
-      collectionName,
-    };
-    targets.set(this.getDirtyTargetKey(target), target);
-  }
-
-  private normalizeFieldSegments(field: unknown): string[] {
-    if (Array.isArray(field)) {
-      return field.filter((segment): segment is string => typeof segment === 'string' && !!segment);
-    }
-    if (typeof field === 'string') {
-      return field.split('.').filter(Boolean);
-    }
-    return [];
-  }
-
-  private collectFilterFieldSegments(filter: unknown, result: string[][]) {
-    if (!filter) return;
-    if (Array.isArray(filter)) {
-      filter.forEach((item) => this.collectFilterFieldSegments(item, result));
-      return;
-    }
-    if (typeof filter !== 'object') return;
-
-    const item = filter as Record<string, unknown>;
-    const pathSegments = this.normalizeFieldSegments(item.path);
-    if (pathSegments.length) {
-      result.push(pathSegments);
-    }
-
-    this.collectFilterFieldSegments(item.items, result);
-    this.collectFilterFieldSegments(item.$and, result);
-    this.collectFilterFieldSegments(item.$or, result);
-  }
-
-  private collectQueryFieldSegments(query: ChartQueryForDirtyTracking): string[][] {
-    const result: string[][] = [];
-    [query.measures, query.dimensions, query.orders].forEach((items) => {
-      items?.forEach((item) => {
-        const fieldSegments = this.normalizeFieldSegments(item?.field);
-        if (fieldSegments.length) {
-          result.push(fieldSegments);
-        }
-      });
+  private getCurrentRefreshSnapshot(): ChartDirtyRefreshSnapshot | null {
+    return getChartDirtyRefreshSnapshot({
+      engine: this.context.engine,
+      dataSourceManager: this.context.dataSourceManager,
+      query: this.getResourceSettingsInitParams()?.query,
     });
-    this.collectFilterFieldSegments(query.filter, result);
-    return result;
   }
 
-  private addRelatedDirtyTargets(
-    targets: Map<string, ChartDirtyTarget>,
-    dataSourceKey: string,
-    collectionName: string,
-    fieldSegments: string[],
-  ) {
-    let collection = this.context.dataSourceManager.getCollection(dataSourceKey, collectionName) as Collection;
-    if (!collection) return;
-
-    for (const fieldName of fieldSegments) {
-      const collectionField = collection.getField(fieldName) as CollectionField | undefined;
-      if (!collectionField) return;
-
-      const targetCollection = collectionField.targetCollection;
-      if (!targetCollection) {
-        continue;
-      }
-
-      this.addDirtyTarget(targets, targetCollection.dataSourceKey || dataSourceKey, targetCollection.name);
-      collection = targetCollection;
-    }
+  private rememberRefreshSnapshot() {
+    this.lastRefreshSnapshot = this.getCurrentRefreshSnapshot();
   }
 
-  private getDirtyTrackingTargets(): ChartDirtyTarget[] | null {
-    const query = this.getResourceSettingsInitParams()?.query as ChartQueryForDirtyTracking | undefined;
-    if (!query || query.mode === 'sql') {
-      return null;
-    }
-
-    const [rawDataSourceKey = DEFAULT_DATA_SOURCE_KEY, rawCollectionName] = query.collectionPath || [];
-    if (typeof rawCollectionName !== 'string' || !rawCollectionName) {
-      return null;
-    }
-
-    const dataSourceKey =
-      typeof rawDataSourceKey === 'string' && rawDataSourceKey ? rawDataSourceKey : DEFAULT_DATA_SOURCE_KEY;
-    const targets = new Map<string, ChartDirtyTarget>();
-    this.addDirtyTarget(targets, dataSourceKey, rawCollectionName);
-    this.collectQueryFieldSegments(query).forEach((fieldSegments) => {
-      this.addRelatedDirtyTargets(targets, dataSourceKey, rawCollectionName, fieldSegments);
-    });
-
-    return Array.from(targets.values()).sort(
-      (a, b) => a.dataSourceKey.localeCompare(b.dataSourceKey) || a.collectionName.localeCompare(b.collectionName),
-    );
-  }
-
-  private getDirtyTrackingVersion(engine: FlowEngine, targets: ChartDirtyTarget[]): number {
-    return targets.reduce(
-      (version, target) => version + engine.getDataSourceDirtyVersion(target.dataSourceKey, target.collectionName),
-      0,
-    );
-  }
-
-  private getDirtyTargetsKey(targets: ChartDirtyTarget[]): string {
-    return targets.map((target) => this.getDirtyTargetKey(target)).join('|');
-  }
-
-  private rememberDirtyVersion(targets = this.getDirtyTrackingTargets()) {
-    if (!targets) {
-      this.lastSeenDirtyVersion = null;
-      this.lastSeenDirtyTargetKey = null;
-      return;
-    }
-
-    const engine = this.context.engine as FlowEngine;
-    this.lastSeenDirtyVersion = this.getDirtyTrackingVersion(engine, targets);
-    this.lastSeenDirtyTargetKey = this.getDirtyTargetsKey(targets);
-  }
-
-  private async refreshAndRememberDirtyVersion(targets: ChartDirtyTarget[] | null): Promise<void> {
+  private async refreshAndRememberSnapshot(): Promise<void> {
     if (this.dirtyRefreshing) return;
     this.dirtyRefreshing = true;
     try {
       await this.resource.refresh();
-      this.rememberDirtyVersion(targets);
+      this.rememberRefreshSnapshot();
     } catch {
-      // Keep lastSeenDirtyVersion unchanged so the next activate can retry.
+      // Keep lastRefreshSnapshot unchanged so the next activate can retry.
     } finally {
       this.dirtyRefreshing = false;
     }
@@ -251,29 +122,17 @@ export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
   async onActive(forceRefresh = false) {
     if (this.hidden) return;
 
-    const targets = this.getDirtyTrackingTargets();
-    if (!targets) {
-      await this.refreshAndRememberDirtyVersion(null);
+    const currentSnapshot = this.getCurrentRefreshSnapshot();
+    if (!shouldRefreshChartOnActive({ forceRefresh, currentSnapshot, lastSnapshot: this.lastRefreshSnapshot })) {
       return;
     }
 
-    const engine = this.context.engine as FlowEngine;
-    const currentVersion = this.getDirtyTrackingVersion(engine, targets);
-    const targetKey = this.getDirtyTargetsKey(targets);
-    const shouldRefresh =
-      forceRefresh ||
-      this.lastSeenDirtyVersion === null ||
-      this.lastSeenDirtyTargetKey !== targetKey ||
-      currentVersion !== this.lastSeenDirtyVersion;
-
-    if (!shouldRefresh) return;
-
-    await this.refreshAndRememberDirtyVersion(targets);
+    await this.refreshAndRememberSnapshot();
   }
 
   async refresh() {
     await this.resource.refresh();
-    this.rememberDirtyVersion();
+    this.rememberRefreshSnapshot();
   }
 
   // 初始化注册 ChartResource | SQLResource
