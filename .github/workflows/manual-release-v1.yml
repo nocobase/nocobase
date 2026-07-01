@@ -20,6 +20,11 @@ on:
         type: boolean
         required: false
         default: false
+      skip_install_build:
+        description: 'skip yarn install and build'
+        type: boolean
+        required: false
+        default: false
 
 jobs:
   get-plugins:
@@ -192,7 +197,7 @@ jobs:
           IS_FEAT: ${{ inputs.is_feat && '--is-feat' || '' }}
 
       - name: yarn install and build
-        if: ${{ !inputs.dry_run }}
+        if: ${{ !inputs.dry_run && !inputs.skip_install_build }}
         run: |
           yarn config set registry https://registry.npmjs.org/
           yarn install
