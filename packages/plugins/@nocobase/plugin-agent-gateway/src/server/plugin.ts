@@ -22,9 +22,12 @@ import { registerRunObservabilityRoutes } from './actions/runObservability';
 import { registerRunTerminalRoutes } from './actions/runTerminal';
 import { registerSkillInstallRoutes } from './actions/skillInstalls';
 import { registerSkillVersionRoutes } from './actions/skillVersions';
+import { TerminalStreamBroker, registerTerminalStreamBroker } from './actions/terminalStreamBroker';
 import { registerAgentGatewayAcl } from './security/permissions';
 
 export class PluginAgentGatewayServer extends Plugin {
+  private terminalStreamBroker?: TerminalStreamBroker;
+
   async afterAdd() {}
 
   async beforeLoad() {
@@ -52,13 +55,17 @@ export class PluginAgentGatewayServer extends Plugin {
     registerRunObservabilityRoutes(this);
     registerPromptTemplateRoutes(this);
     registerDispatchBindingRoutes(this);
+    this.terminalStreamBroker = registerTerminalStreamBroker(this);
   }
 
   async install() {}
 
   async afterEnable() {}
 
-  async afterDisable() {}
+  async afterDisable() {
+    this.terminalStreamBroker?.unregister();
+    this.terminalStreamBroker = undefined;
+  }
 
   async remove() {}
 }

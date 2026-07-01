@@ -39,6 +39,7 @@ import {
 import type { ColumnsType } from 'antd/es/table';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { AgentTimeline, AgentTimelineEventRecord } from '../components/AgentTimeline';
+import { TerminalStreamSmokePanel, isTerminalStreamSmokeEnabled } from '../components/TerminalStreamSmokePanel';
 import { useT } from '../locale';
 import {
   AgentGatewayContext,
@@ -914,6 +915,7 @@ export default function AgentGatewayRunsPage() {
     timelineEvents.length,
     Boolean(timelineWarning),
   );
+  const showTerminalStreamSmoke = isTerminalStreamSmokeEnabled();
 
   return (
     <section aria-label={t('Runs')}>
@@ -1030,6 +1032,8 @@ export default function AgentGatewayRunsPage() {
               useLegacyFallback={useLegacyTimelineFallback}
               warning={timelineWarning}
             />
+
+            {showTerminalStreamSmoke ? <TerminalStreamSmokePanel runId={runDetailsRequest.data.run.id} /> : null}
 
             <Collapse
               defaultActiveKey={['live-output']}

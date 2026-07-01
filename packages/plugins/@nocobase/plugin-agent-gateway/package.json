@@ -10,7 +10,9 @@
   "bin": {
     "agent-gateway-daemon": "./daemon.js"
   },
-  "dependencies": {},
+  "dependencies": {
+    "ws": "^8.13.0"
+  },
   "peerDependencies": {
     "@nocobase/acl": "2.x",
     "@nocobase/client": "2.x",

@@ -1,0 +1,286 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import {
+  TERMINAL_PROTOCOL,
+  TERMINAL_STREAM_WS_PATH,
+  TerminalErrorCode,
+  TerminalFrame,
+  decodeTerminalPayload,
+  parseTerminalFrame,
+} from '../../shared/terminalStreamProtocol';
+
+export type TerminalStreamConnectionState = 'connecting' | 'live' | 'reconnecting' | 'closed' | 'error';
+
+export interface TerminalStreamClientState {
+  connectionState: TerminalStreamConnectionState;
+  currentOffset: number;
+  previewText: string;
+  lastErrorCode?: TerminalErrorCode;
+}
+
+export interface TerminalStreamClientOptions {
+  runId: string;
+  token: string;
+  authenticator?: string;
+  role?: string;
+  lastOffset?: number;
+  baseUrl?: string;
+  reconnectDelayMs?: number;
+  maxReconnectAttempts?: number;
+  createWebSocket?: (url: string) => TerminalStreamWebSocket;
+  onStateChange?: (state: TerminalStreamClientState) => void;
+}
+
+export interface TerminalStreamWebSocket {
+  readyState: number;
+  send(data: string): void;
+  close(): void;
+  addEventListener(type: string, listener: (event: TerminalStreamWebSocketEvent) => void): void;
+  removeEventListener(type: string, listener: (event: TerminalStreamWebSocketEvent) => void): void;
+}
+
+export interface TerminalStreamWebSocketEvent {
+  data?: string;
+}
+
+const DEFAULT_PREVIEW_LIMIT = 4000;
+const DEFAULT_RECONNECT_DELAY_MS = 1000;
+const DEFAULT_MAX_RECONNECT_ATTEMPTS = 3;
+
+function getDefaultBaseUrl() {
+  if (typeof window === 'undefined') {
+    return 'ws://127.0.0.1';
+  }
+  return `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}`;
+}
+
+export function buildTerminalStreamUrl(options: {
+  token: string;
+  authenticator?: string;
+  role?: string;
+  baseUrl?: string;
+}) {
+  const baseUrl = options.baseUrl || getDefaultBaseUrl();
+  const url = new URL(TERMINAL_STREAM_WS_PATH, baseUrl);
+  url.protocol = url.protocol === 'https:' ? 'wss:' : url.protocol === 'http:' ? 'ws:' : url.protocol;
+  url.searchParams.set('token', options.token);
+  url.searchParams.set('authenticator', options.authenticator || 'basic');
+  if (options.role) {
+    url.searchParams.set('role', options.role);
+  }
+  return url.toString();
+}
+
+export class TerminalStreamClient {
+  private ws?: TerminalStreamWebSocket;
+  private readonly state: TerminalStreamClientState;
+  private requestId = '';
+  private reconnectTimer?: ReturnType<typeof setTimeout>;
+  private reconnectAttempts = 0;
+  private closedByClient = false;
+  private terminalEnded = false;
+
+  constructor(private readonly options: TerminalStreamClientOptions) {
+    this.state = {
+      connectionState: 'closed',
+      currentOffset: options.lastOffset || 0,
+      previewText: '',
+    };
+  }
+
+  getState() {
+    return { ...this.state };
+  }
+
+  connect() {
+    if (!this.options.token) {
+      this.updateState({
+        connectionState: 'error',
+        lastErrorCode: 'TERMINAL_AUTH_FAILED',
+      });
+      return;
+    }
+
+    this.closedByClient = false;
+    this.terminalEnded = false;
+    this.reconnectAttempts = 0;
+    this.openSocket('connecting');
+  }
+
+  close() {
+    this.closedByClient = true;
+    this.clearReconnectTimer();
+    this.detachSocket(true);
+    this.updateState({ connectionState: 'closed' });
+  }
+
+  private openSocket(connectionState: TerminalStreamConnectionState) {
+    this.detachSocket(false);
+    this.updateState({ connectionState });
+    const ws = this.createWebSocket();
+    this.ws = ws;
+    ws.addEventListener('open', this.handleOpen);
+    ws.addEventListener('message', this.handleMessage);
+    ws.addEventListener('close', this.handleClose);
+    ws.addEventListener('error', this.handleSocketError);
+  }
+
+  private detachSocket(closeSocket: boolean) {
+    const ws = this.ws;
+    if (!ws) {
+      return;
+    }
+    ws.removeEventListener('open', this.handleOpen);
+    ws.removeEventListener('message', this.handleMessage);
+    ws.removeEventListener('close', this.handleClose);
+    ws.removeEventListener('error', this.handleSocketError);
+    this.ws = undefined;
+    if (closeSocket) {
+      ws.close();
+    }
+  }
+
+  private clearReconnectTimer() {
+    if (!this.reconnectTimer) {
+      return;
+    }
+    clearTimeout(this.reconnectTimer);
+    this.reconnectTimer = undefined;
+  }
+
+  private createWebSocket() {
+    const url = buildTerminalStreamUrl({
+      token: this.options.token,
+      authenticator: this.options.authenticator,
+      role: this.options.role,
+      baseUrl: this.options.baseUrl,
+    });
+    return this.options.createWebSocket ? this.options.createWebSocket(url) : new WebSocket(url);
+  }
+
+  private readonly handleOpen = () => {
+    this.requestId = `browser-subscribe-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    this.ws?.send(
+      JSON.stringify({
+        type: 'browser.subscribe',
+        protocol: TERMINAL_PROTOCOL,
+        requestId: this.requestId,
+        runId: this.options.runId,
+        lastOffset: this.state.currentOffset,
+      }),
+    );
+  };
+
+  private readonly handleMessage = (event: TerminalStreamWebSocketEvent) => {
+    if (!event.data) {
+      return;
+    }
+    let payload: unknown;
+    try {
+      payload = JSON.parse(event.data) as unknown;
+    } catch {
+      this.updateState({
+        connectionState: 'error',
+        lastErrorCode: 'TERMINAL_PROTOCOL_ERROR',
+      });
+      return;
+    }
+    const parsed = parseTerminalFrame(payload);
+    if (parsed.ok === false) {
+      this.updateState({
+        connectionState: 'error',
+        lastErrorCode: parsed.error.code,
+      });
+      return;
+    }
+    this.consumeFrame(parsed.frame);
+  };
+
+  private readonly handleClose = () => {
+    this.detachSocket(false);
+    if (this.closedByClient || this.terminalEnded || this.state.connectionState === 'error') {
+      this.updateState({
+        connectionState: this.state.connectionState === 'error' ? 'error' : 'closed',
+      });
+      return;
+    }
+    this.scheduleReconnect();
+  };
+
+  private readonly handleSocketError = () => {
+    this.updateState({
+      connectionState: 'error',
+      lastErrorCode: 'TERMINAL_DAEMON_UNAVAILABLE',
+    });
+  };
+
+  private consumeFrame(frame: TerminalFrame) {
+    if (frame.type === 'ack' && frame.requestId === this.requestId) {
+      this.updateState({ connectionState: 'live' });
+      return;
+    }
+    if (frame.type === 'terminal.data' || frame.type === 'terminal.snapshot') {
+      if (frame.offsetEnd <= this.state.currentOffset) {
+        return;
+      }
+      if (frame.offsetStart > this.state.currentOffset) {
+        this.updateState({
+          connectionState: 'error',
+          lastErrorCode: 'TERMINAL_OFFSET_GAP',
+        });
+        return;
+      }
+      const nextText = `${this.state.previewText}${decodeTerminalPayload(frame.payload)}`;
+      this.updateState({
+        connectionState: 'live',
+        currentOffset: frame.offsetEnd,
+        previewText: nextText.slice(-DEFAULT_PREVIEW_LIMIT),
+      });
+      return;
+    }
+    if (frame.type === 'terminal.end') {
+      this.terminalEnded = true;
+      this.updateState({
+        connectionState: 'closed',
+        currentOffset: Math.max(this.state.currentOffset, frame.offsetEnd),
+      });
+      return;
+    }
+    if (frame.type === 'error') {
+      this.updateState({
+        connectionState: 'error',
+        lastErrorCode: frame.code,
+      });
+    }
+  }
+
+  private scheduleReconnect() {
+    const maxReconnectAttempts = this.options.maxReconnectAttempts ?? DEFAULT_MAX_RECONNECT_ATTEMPTS;
+    if (this.reconnectAttempts >= maxReconnectAttempts) {
+      this.updateState({ connectionState: 'closed' });
+      return;
+    }
+    this.reconnectAttempts += 1;
+    this.updateState({ connectionState: 'reconnecting' });
+    this.clearReconnectTimer();
+    this.reconnectTimer = setTimeout(() => {
+      this.reconnectTimer = undefined;
+      if (this.closedByClient || this.terminalEnded) {
+        return;
+      }
+      this.openSocket('reconnecting');
+    }, this.options.reconnectDelayMs ?? DEFAULT_RECONNECT_DELAY_MS);
+  }
+
+  private updateState(nextState: Partial<TerminalStreamClientState>) {
+    Object.assign(this.state, nextState);
+    this.options.onStateChange?.(this.getState());
+  }
+}

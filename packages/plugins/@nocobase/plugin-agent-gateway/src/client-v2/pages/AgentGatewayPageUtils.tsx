@@ -17,6 +17,12 @@ export interface AgentGatewayApiResponse<T> {
 }
 
 export interface AgentGatewayApi {
+  auth?: {
+    token?: string;
+    authenticator?: string;
+    role?: string;
+    getAuthenticator?(): string;
+  };
   request<T>(config: {
     url: string;
     method: 'get' | 'post';
