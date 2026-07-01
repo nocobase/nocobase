@@ -1,12 +1,12 @@
 ---
 title: "nb proxy nginx stop"
-description: "Справка по команде nb proxy nginx stop: останавливает proxy Nginx с текущим driver."
+description: "Справочник по команде nb proxy nginx stop: остановка прокси Nginx с текущим драйвером."
 keywords: "nb proxy nginx stop,NocoBase CLI,nginx,stop"
 ---
 
 # nb proxy nginx stop
 
-Останавливает proxy Nginx с текущим driver.
+Останавливает прокси Nginx с текущим драйвером.
 
 ## Использование
 
@@ -22,9 +22,9 @@ nb proxy nginx stop
 
 ## Примечания
 
-- С driver `local` эта команда останавливает локальный процесс Nginx
-- С driver `docker` эта команда останавливает контейнер proxy
-- Если proxy уже остановлен, команда сообщит об этом
+- С драйвером `local` команда останавливает локальный процесс Nginx
+- С драйвером `docker` команда останавливает контейнер прокси
+- Если прокси уже остановлен, команда сообщит об этом
 
 ## Связанные команды
 

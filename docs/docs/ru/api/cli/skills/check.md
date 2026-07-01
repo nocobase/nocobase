@@ -1,12 +1,12 @@
 ---
 title: "nb skills check"
-description: "Справочник по команде nb skills check: проверка глобальных AI coding Skills NocoBase."
-keywords: "nb skills check,NocoBase CLI,проверка Skills"
+description: "Справочник по команде nb skills check: проверка глобальных навыков ИИ-разработки NocoBase."
+keywords: "nb skills check,NocoBase CLI,проверка навыков"
 ---
 
 # nb skills check
 
-Проверяет глобальные AI coding Skills NocoBase и сообщает, управляются ли они CLI и доступны ли обновления.
+Проверяет глобальные навыки ИИ-разработки NocoBase и сообщает, управляет ли ими CLI и доступны ли обновления.
 
 ## Использование
 
