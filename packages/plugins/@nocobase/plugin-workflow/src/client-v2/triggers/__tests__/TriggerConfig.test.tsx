@@ -91,7 +91,7 @@ describe('TriggerConfig', () => {
       key: 'legacy-initiator-ui',
       message: 'Initiator interface needs reconfiguration',
       description:
-        'This interface configuration was created in an earlier version. Reconfigure the initiator interface before using this workflow.',
+        'This initiator interface was created in an earlier version. Reconfigure it before using this workflow.',
     };
     holder.workflowPlugin.getWorkflowNotices.mockReturnValue([notice]);
 
@@ -109,7 +109,7 @@ describe('TriggerConfig', () => {
     expect(await screen.findByText('Initiator interface needs reconfiguration')).toBeInTheDocument();
     expect(
       screen.getByText(
-        'This interface configuration was created in an earlier version. Reconfigure the initiator interface before using this workflow.',
+        'This initiator interface was created in an earlier version. Reconfigure it before using this workflow.',
       ),
     ).toBeInTheDocument();
     const alert = screen.getByText('Initiator interface needs reconfiguration').closest('.ant-alert');
@@ -121,7 +121,7 @@ describe('TriggerConfig', () => {
       key: 'legacy-initiator-ui',
       message: 'Initiator interface needs reconfiguration',
       description:
-        'This interface configuration was created in an earlier version. Reconfigure the initiator interface before using this workflow.',
+        'This initiator interface was created in an earlier version. Reconfigure it before using this workflow.',
     });
     expect(holder.workflowPlugin.getWorkflowNotices).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -137,7 +137,7 @@ describe('TriggerConfig', () => {
         key: 'legacy-initiator-ui',
         message: 'Initiator interface needs reconfiguration',
         description:
-          'This interface configuration was created in an earlier version. Reconfigure the initiator interface before using this workflow.',
+          'This initiator interface was created in an earlier version. Reconfigure it before using this workflow.',
       },
     ]);
 
@@ -160,7 +160,7 @@ describe('TriggerConfig', () => {
     expect(screen.queryByText('Initiator interface needs reconfiguration')).not.toBeInTheDocument();
     expect(
       screen.queryByText(
-        'This interface configuration was created in an earlier version. Reconfigure the initiator interface before using this workflow.',
+        'This initiator interface was created in an earlier version. Reconfigure it before using this workflow.',
       ),
     ).not.toBeInTheDocument();
   });

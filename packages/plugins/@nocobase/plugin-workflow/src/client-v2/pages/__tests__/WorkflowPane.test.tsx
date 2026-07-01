@@ -386,8 +386,9 @@ describe('WorkflowPane (request layer)', () => {
     mockPlugin.getWorkflowNotices.mockReturnValue([
       {
         key: 'legacy-ui',
-        message: 'Interface needs reconfiguration',
-        description: 'This workflow contains old interface configurations.',
+        message: 'Approval interface needs reconfiguration',
+        description:
+          'This workflow contains approval interfaces created in an earlier version. Reconfigure the approval interfaces before using this workflow.',
       },
     ]);
     const workflows = {
@@ -415,7 +416,7 @@ describe('WorkflowPane (request layer)', () => {
 
     renderWithApp(<WorkflowPane />);
 
-    expect(await screen.findByText('Interface needs reconfiguration')).toBeInTheDocument();
+    expect(await screen.findByText('Approval interface needs reconfiguration')).toBeInTheDocument();
     expect(mockPlugin.getWorkflowNotices).toHaveBeenCalledWith(
       expect.objectContaining({
         nodes,
