@@ -412,7 +412,6 @@ export default class MailerInstruction extends Instruction {
       }
       if (!aborted && execution.status === EXECUTION_STATUS.STARTED && job.status === JOB_STATUS.PENDING) {
         job.set(jobDone);
-        job.execution = execution;
         this.workflow.resume(job);
       } else {
         processor.logger.warn(
