@@ -8,9 +8,62 @@
  */
 
 import { Plugin } from '@nocobase/client';
+import { tval } from '@nocobase/utils/client';
+
+import { AgentGatewayDispatchBindingSelect } from '../client-v2/components/AgentGatewayDispatchBindingSelect';
+
+const AGENT_GATEWAY_SETTINGS_KEY = 'agent-gateway';
 
 export class PluginAgentGatewayClient extends Plugin {
-  async load() {}
+  async load() {
+    this.flowEngine.flowSettings.registerComponents({
+      AgentGatewayDispatchBindingSelect,
+    });
+
+    this.flowEngine.registerModelLoaders({
+      AgentGatewayDispatchActionModel: {
+        loader: () => import('../client-v2/models/AgentGatewayDispatchActionModel'),
+      },
+    });
+
+    this.pluginSettingsManager.add(AGENT_GATEWAY_SETTINGS_KEY, {
+      icon: 'ApiOutlined',
+      title: tval('Agent Gateway', { ns: AGENT_GATEWAY_SETTINGS_KEY }),
+      aclSnippet: `pm.${AGENT_GATEWAY_SETTINGS_KEY}`,
+    });
+
+    this.pluginSettingsManager.add(`${AGENT_GATEWAY_SETTINGS_KEY}.nodes`, {
+      icon: 'ApiOutlined',
+      title: tval('Nodes', { ns: AGENT_GATEWAY_SETTINGS_KEY }),
+      aclSnippet: `pm.${AGENT_GATEWAY_SETTINGS_KEY}.nodes`,
+      componentLoader: () => import('../client-v2/pages/AgentGatewaySettingsPage'),
+      sort: 10,
+    });
+
+    this.pluginSettingsManager.add(`${AGENT_GATEWAY_SETTINGS_KEY}.runs`, {
+      icon: 'PlayCircleOutlined',
+      title: tval('Runs', { ns: AGENT_GATEWAY_SETTINGS_KEY }),
+      aclSnippet: `pm.${AGENT_GATEWAY_SETTINGS_KEY}.runs`,
+      componentLoader: () => import('../client-v2/pages/AgentGatewayRunsPage'),
+      sort: 20,
+    });
+
+    this.pluginSettingsManager.add(`${AGENT_GATEWAY_SETTINGS_KEY}.prompt-templates`, {
+      icon: 'FileTextOutlined',
+      title: tval('Prompt Templates', { ns: AGENT_GATEWAY_SETTINGS_KEY }),
+      aclSnippet: `pm.${AGENT_GATEWAY_SETTINGS_KEY}.prompt-templates`,
+      componentLoader: () => import('../client-v2/pages/AgentGatewayPromptTemplatesPage'),
+      sort: 30,
+    });
+
+    this.pluginSettingsManager.add(`${AGENT_GATEWAY_SETTINGS_KEY}.dispatch-bindings`, {
+      icon: 'BranchesOutlined',
+      title: tval('Dispatch Bindings', { ns: AGENT_GATEWAY_SETTINGS_KEY }),
+      aclSnippet: `pm.${AGENT_GATEWAY_SETTINGS_KEY}.dispatch-bindings`,
+      componentLoader: () => import('../client-v2/pages/AgentGatewayDispatchBindingsPage'),
+      sort: 40,
+    });
+  }
 }
 
 export default PluginAgentGatewayClient;
