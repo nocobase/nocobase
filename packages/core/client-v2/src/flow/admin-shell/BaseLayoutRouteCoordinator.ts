@@ -517,29 +517,35 @@ export class BaseLayoutRouteCoordinator {
       { basePath: this.basePathname },
     );
 
-    viewItem.model.dispatchEvent('click', {
-      target: this.layoutContentElement || runtime.meta.layoutContentElement,
-      collectionName: openViewParams?.collectionName,
-      associationName,
-      dataSourceKey: openViewParams?.dataSourceKey,
-      destroyRef,
-      updateRef,
-      activateRef,
-      deactivateRef,
-      openerUids,
-      ...viewItem.params,
-      ...(openViewRouteState?.mode ? { mode: openViewRouteState.mode } : {}),
-      ...(openViewRouteState?.size ? { size: openViewRouteState.size } : {}),
-      pageActive: runtime.meta.active,
-      activationControlledByLayout: true,
-      navigation,
-      onOpen: () => {
-        this.openViews(runtime, viewList, viewsToOpen, index + 1, viewGeneration);
-      },
-      hidden: viewItem.hidden,
-      isMobileLayout: !!this.layoutContext?.isMobileLayout,
-      triggerByRouter: true,
-    });
+    try {
+      viewItem.model.dispatchEvent('click', {
+        target: this.layoutContentElement || runtime.meta.layoutContentElement,
+        collectionName: openViewParams?.collectionName,
+        associationName,
+        dataSourceKey: openViewParams?.dataSourceKey,
+        destroyRef,
+        updateRef,
+        activateRef,
+        deactivateRef,
+        openerUids,
+        ...viewItem.params,
+        ...(openViewRouteState?.mode ? { mode: openViewRouteState.mode } : {}),
+        ...(openViewRouteState?.size ? { size: openViewRouteState.size } : {}),
+        pageActive: runtime.meta.active,
+        activationControlledByLayout: true,
+        navigation,
+        onOpen: () => {
+          this.openViews(runtime, viewList, viewsToOpen, index + 1, viewGeneration);
+        },
+        hidden: viewItem.hidden,
+        isMobileLayout: !!this.layoutContext?.isMobileLayout,
+        triggerByRouter: true,
+      });
+    } catch (error) {
+      this.clearPendingOpenViews(runtime, viewsToOpen.slice(index));
+      console.error(`[NocoBase] Failed to dispatch route-managed view open:`, error);
+      return;
+    }
 
     runtime.viewState[viewKey] = {
       destroy: (_force?: boolean) => destroyRef.current?.(),

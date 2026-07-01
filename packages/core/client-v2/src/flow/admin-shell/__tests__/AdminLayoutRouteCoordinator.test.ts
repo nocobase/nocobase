@@ -615,6 +615,60 @@ describe('AdminLayoutRouteCoordinator', () => {
     expect(popupDispatchEvent).toHaveBeenCalledTimes(1);
   });
 
+  it('clears pending route view opens when dispatchEvent throws synchronously', async () => {
+    const engine = new FlowEngine();
+    engine.registerModels({ RouteModel });
+    engine.context.defineProperty('route', {
+      value: {},
+    });
+    engine.context.defineProperty('routeRepository', {
+      value: {
+        getRouteBySchemaUid: vi.fn(() => ({})),
+      },
+    });
+
+    const dispatchError = new Error('open failed');
+    const dispatchEvent = createDispatchEventMock((_eventName, payload) => {
+      if (dispatchEvent.mock.calls.length === 1) {
+        throw dispatchError;
+      }
+
+      payload.destroyRef.current = vi.fn();
+      return Promise.resolve();
+    });
+    const viewItem = createViewItem('test-route', dispatchEvent);
+    mockResolveViewParamsToViewList.mockReturnValue([viewItem]);
+    mockGetViewDiffAndUpdateHidden.mockImplementation((prevViewList, currentViewList) => ({
+      viewsToClose: prevViewList.filter((prevViewItem) => !currentViewList.includes(prevViewItem)),
+      viewsToOpen: currentViewList.filter((currentViewItem) => !prevViewList.includes(currentViewItem)),
+    }));
+    mockGetOpenViewStepParams.mockReturnValue({
+      collectionName: '',
+      dataSourceKey: '',
+    });
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const coordinator = new BaseLayoutRouteCoordinator(engine, { basePathname: '/admin' });
+    coordinator.setLayoutContentElement(document.createElement('div'));
+    coordinator.registerPage('test-route', {
+      active: true,
+      layoutContentElement: document.createElement('div'),
+    });
+    coordinator.syncRoute({
+      pageUid: 'test-route',
+      pathname: '/admin/test-route',
+    });
+    await nextTick();
+
+    coordinator.syncRoute({
+      pageUid: 'test-route',
+      pathname: '/admin/test-route',
+    });
+
+    expect(dispatchEvent).toHaveBeenCalledTimes(2);
+    consoleErrorSpy.mockRestore();
+  });
+
   it('ignores stale initial deep-link replay after the pathname changes before a view opens', async () => {
     const engine = new FlowEngine();
     engine.registerModels({ RouteModel });
