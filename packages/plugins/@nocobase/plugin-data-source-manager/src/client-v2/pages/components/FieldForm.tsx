@@ -66,6 +66,7 @@ interface FieldFormProps {
   collection: Record<string, any>;
   interfaceName?: string;
   field?: Record<string, any>;
+  override?: boolean;
   onSubmitted: () => void;
 }
 
@@ -1811,9 +1812,11 @@ export function FieldForm(props: FieldFormProps) {
       createMainOnly: props.mode === 'create' && props.dataSourceKey === 'main',
       disabledJSONB: props.mode === 'edit',
       isDialect: (dialect: string) => databaseDialect === dialect,
+      isOverride: !!props.override,
+      override: !!props.override,
       primaryKeyOnly: false,
     }),
-    [databaseDialect, props.dataSourceKey, props.mode],
+    [databaseDialect, props.dataSourceKey, props.mode, props.override],
   );
   const previousWatchedValuesRef = useRef<Record<string, any>>();
   const pendingInitialValuesRef = useRef<Record<string, any>>();
@@ -2047,7 +2050,9 @@ export function FieldForm(props: FieldFormProps) {
   ]);
 
   const collectionTitle = compileLegacyTemplateText(get(props.collection, 'title') || props.collection.name, t);
-  const title = `${collectionTitle} - ${props.mode === 'create' ? t('Add field') : t('Edit field')}`;
+  const title = `${collectionTitle} - ${
+    props.override ? t('Override field') : props.mode === 'create' ? t('Add field') : t('Edit field')
+  }`;
   const existingFieldNames = new Set((props.collection.fields || []).map((field: Record<string, any>) => field.name));
 
   return (
@@ -2102,7 +2107,10 @@ export function FieldForm(props: FieldFormProps) {
           ]}
           extra={t(fieldNameDescription)}
         >
-          <Input autoComplete="off" disabled={props.mode === 'edit' || interfaceName === 'tableoid'} />
+          <Input
+            autoComplete="off"
+            disabled={props.mode === 'edit' || props.override || interfaceName === 'tableoid'}
+          />
         </Form.Item>
         <FieldConfigureItemsRenderer
           items={mainConfigureItems}

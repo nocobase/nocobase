@@ -198,6 +198,48 @@ const useFieldPermissionMessage = (model, allowEdit) => {
   return messageValue;
 };
 
+const recordSelectClassName = css`
+  min-width: 0;
+
+  .ant-select-selector {
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .ant-select-selection-search,
+  .ant-select-selection-item,
+  .ant-select-selection-placeholder,
+  .ant-select-selection-overflow,
+  .ant-select-selection-overflow-item {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .ant-select-selection-item,
+  .ant-select-selection-item-content {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+`;
+
+const recordSelectLabelClassName = css`
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  * {
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap !important;
+  }
+`;
+
 const LazySelect = (props: Readonly<LazySelectProps>) => {
   const {
     fieldNames,
@@ -210,6 +252,7 @@ const LazySelect = (props: Readonly<LazySelectProps>) => {
     onChange,
     allowCreate = true,
     allowEdit = true,
+    className,
     ...others
   } = props;
   const model: any = useFlowModel();
@@ -317,6 +360,7 @@ const LazySelect = (props: Readonly<LazySelectProps>) => {
       <Select
         style={{ width: '100%' }}
         {...others}
+        className={[recordSelectClassName, className].filter(Boolean).join(' ')}
         allowClear
         showSearch
         maxTagCount="responsive"
@@ -409,19 +453,7 @@ const LazySelect = (props: Readonly<LazySelectProps>) => {
         }}
         popupMatchSelectWidth
         labelRender={(data) => {
-          return (
-            <div
-              className={css`
-                div {
-                  white-space: nowrap !important;
-                  overflow: hidden;
-                  text-overflow: ellipsis;
-                }
-              `}
-            >
-              {data.label}
-            </div>
-          );
+          return <div className={recordSelectLabelClassName}>{data.label}</div>;
         }}
         dropdownRender={(menu) => {
           const isFullMatch = realOptions.some((v) => v[normalizedFieldNames.label] === others.searchText);
