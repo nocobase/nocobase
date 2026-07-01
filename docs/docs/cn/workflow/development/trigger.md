@@ -117,8 +117,13 @@ export default function IntervalConfig() {
 触发器可以提供多个配置界面，分别用于不同的场景：
 
 - `PresetFieldsetLoader` — 创建工作流时的预设表单（通常只包含必填项）
+![PresetFieldsetLoader](https://static-docs.nocobase.com/20260701152711.png)
+
 - `FieldsetLoader` — 触发器完整配置表单（在配置抽屉中显示）
+![FieldsetLoader](https://static-docs.nocobase.com/20260701152822.png)
+
 - `TriggerFieldsetLoader` — 手动执行时的输入表单
+![FieldsetLoader](https://static-docs.nocobase.com/20260701152846.png)
 
 当 Loader 需要指向文件中的命名导出（而非默认导出）时，使用 `.then()` 重映射：
 

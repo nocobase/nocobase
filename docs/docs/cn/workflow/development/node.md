@@ -227,11 +227,11 @@ type InstructionResult = IJob | Promise<IJob> | Promise<void> | Promise<null> | 
 
 三种返回值的对比汇总：
 
-| 返回值 | 执行器行为 | 典型适用场景 |
-|--------|-----------|------------|
-| `IJob` | 保存任务，根据 `status` 继续/结束/挂起流程 | 节点正常执行，含结果和状态 |
-| `null` | 保存待写任务并提交事务，不更新执行状态 | 分支仍在等待，暂时退出当前执行上下文 |
-| `void` | 立即返回，不做任何 DB 操作 | 节点已自行调度子流程，让子流程接管后续处理 |
+| 返回值 | 执行器行为                                 | 典型适用场景                               |
+| ------ | ------------------------------------------ | ------------------------------------------ |
+| `IJob` | 保存任务，根据 `status` 继续/结束/挂起流程 | 节点正常执行，含结果和状态                 |
+| `null` | 保存待写任务并提交事务，不更新执行状态     | 分支仍在等待，暂时退出当前执行上下文       |
+| `void` | 立即返回，不做任何 DB 操作                 | 节点已自行调度子流程，让子流程接管后续处理 |
 
 ### 了解更多
 
@@ -291,8 +291,13 @@ export default function RandomStringConfig() {
 节点可以提供多个配置界面，分别用于不同的场景：
 
 - `FieldsetLoader` — 节点配置抽屉表单（最常用）
+![FieldsetLoader](https://static-docs.nocobase.com/20260701153106.png)
+
 - `PresetFieldsetLoader` — 创建节点时的预设表单（通常只包含必填项）
+![PresetFieldsetLoader](https://static-docs.nocobase.com/20260701153041.png)
+
 - `ComponentLoader` — 画布上自定义节点渲染（用于分支节点等需要特殊渲染的情况）
+![ComponentLoader](https://static-docs.nocobase.com/20260701153139.png)
 
 当 Loader 需要指向文件中的命名导出（而非默认导出）时，使用 `.then()` 重映射：
 
