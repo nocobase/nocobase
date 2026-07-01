@@ -13,7 +13,6 @@ import {
   PoweroffOutlined,
   ReloadOutlined,
   SearchOutlined,
-  SendOutlined,
   StopOutlined,
 } from '@ant-design/icons';
 import { useFlowContext } from '@nocobase/flow-engine';
@@ -41,6 +40,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useT } from '../locale';
 import {
   AgentGatewayContext,
+  AgentGatewayApiResponse,
   JsonPreview,
   JsonRecord,
   formatDateTime,
@@ -71,6 +71,12 @@ interface RunRecord {
   terminalEndedAt?: string;
   terminalLastActivityAt?: string;
   terminalExitCode?: number | null;
+  agentSessionId?: string | null;
+  parentRunId?: string | null;
+  resumedFromRunId?: string | null;
+  continuationReason?: string | null;
+  agentSessionProvider?: string | null;
+  agentSessionProviderId?: string | null;
   requestedAt?: string;
   queuedAt?: string;
   claimedAt?: string;
@@ -137,6 +143,14 @@ interface RunDetails {
   artifacts: RunArtifactRecord[];
   snapshots: RunSnapshotRecord[];
   apiCallLogs: ApiCallLogRecord[];
+  warnings: RunDetailsWarnings;
+}
+
+interface RunDetailsWarnings {
+  events?: string;
+  artifacts?: string;
+  snapshots?: string;
+  apiCallLogs?: string;
 }
 
 interface DateLike {
@@ -210,30 +224,59 @@ function EmptyInline({ description }: { description: string }) {
   return <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={description} />;
 }
 
+function RunSessionSummary({ run, t }: { run: RunRecord; t: TFunction }) {
+  const providerSummary = [run.agentSessionProvider, run.agentSessionProviderId].filter(Boolean).join(' / ');
+  if (providerSummary || run.agentSessionId) {
+    return (
+      <Space direction="vertical" size={0}>
+        <Typography.Text>{providerSummary || t('Agent session')}</Typography.Text>
+        {run.agentSessionId ? <Typography.Text type="secondary">{run.agentSessionId}</Typography.Text> : null}
+      </Space>
+    );
+  }
+
+  return <Typography.Text type="secondary">{t('Legacy run')}</Typography.Text>;
+}
+
+function getDetailWarning(error: unknown, fallback: string) {
+  const detail = getApiErrorMessage(error, '');
+  return detail ? `${fallback}: ${detail}` : fallback;
+}
+
+async function getOptionalDetails<T>(options: {
+  request: Promise<AgentGatewayApiResponse<T>>;
+  fallback: T;
+  fallbackMessage: string;
+}) {
+  try {
+    const response = await options.request;
+    return {
+      data: getResponseData(response, options.fallback),
+    };
+  } catch (error) {
+    return {
+      data: options.fallback,
+      warning: getDetailWarning(error, options.fallbackMessage),
+    };
+  }
+}
+
 function TerminalPanel({
   t,
   snapshot,
   loading,
-  terminalInput,
-  sending,
   interrupting,
   terminating,
-  onInputChange,
   onRefresh,
-  onSend,
   onInterrupt,
   onTerminate,
 }: {
   t: TFunction;
   snapshot: TerminalSnapshot | null | undefined;
   loading: boolean;
-  terminalInput: string;
-  sending: boolean;
   interrupting: boolean;
   terminating: boolean;
-  onInputChange(value: string): void;
   onRefresh(): void;
-  onSend(): void;
   onInterrupt(): void;
   onTerminate(): void;
 }) {
@@ -284,26 +327,6 @@ function TerminalPanel({
       <pre aria-label={t('Terminal output')} style={terminalOutputStyle}>
         {output || t('No terminal output yet')}
       </pre>
-
-      <Space.Compact style={{ width: '100%' }}>
-        <Input.TextArea
-          aria-label={t('Terminal input')}
-          value={terminalInput}
-          autoSize={{ minRows: 2, maxRows: 4 }}
-          disabled={!inputEnabled}
-          onChange={(event) => onInputChange(event.target.value)}
-        />
-        <Button
-          aria-label={t('Send terminal input')}
-          type="primary"
-          icon={<SendOutlined />}
-          loading={sending}
-          disabled={!inputEnabled || !terminalInput.trim()}
-          onClick={onSend}
-        >
-          {t('Send')}
-        </Button>
-      </Space.Compact>
     </Space>
   );
 }
@@ -312,13 +335,18 @@ function LogsPanel({
   t,
   events,
   apiCallLogs,
+  eventsWarning,
+  apiCallLogsWarning,
 }: {
   t: TFunction;
   events: RunEventRecord[];
   apiCallLogs: ApiCallLogRecord[];
+  eventsWarning?: string;
+  apiCallLogsWarning?: string;
 }) {
   return (
     <Space direction="vertical" size={16} style={{ width: '100%' }}>
+      {eventsWarning ? <Alert type="warning" showIcon message={eventsWarning} /> : null}
       {events.length ? (
         <Table<RunEventRecord>
           columns={[
@@ -356,6 +384,7 @@ function LogsPanel({
       <Typography.Title level={5} style={{ margin: 0 }}>
         {t('API logs')}
       </Typography.Title>
+      {apiCallLogsWarning ? <Alert type="warning" showIcon message={apiCallLogsWarning} /> : null}
       {apiCallLogs.length ? (
         <Table<ApiCallLogRecord>
           columns={[
@@ -398,13 +427,18 @@ function ArtifactsPanel({
   t,
   artifacts,
   snapshots,
+  artifactsWarning,
+  snapshotsWarning,
 }: {
   t: TFunction;
   artifacts: RunArtifactRecord[];
   snapshots: RunSnapshotRecord[];
+  artifactsWarning?: string;
+  snapshotsWarning?: string;
 }) {
   return (
     <Space direction="vertical" size={16} style={{ width: '100%' }}>
+      {artifactsWarning ? <Alert type="warning" showIcon message={artifactsWarning} /> : null}
       {artifacts.length ? (
         <List
           dataSource={artifacts}
@@ -434,6 +468,7 @@ function ArtifactsPanel({
       <Typography.Title level={5} style={{ margin: 0 }}>
         {t('Snapshots')}
       </Typography.Title>
+      {snapshotsWarning ? <Alert type="warning" showIcon message={snapshotsWarning} /> : null}
       {snapshots.length ? (
         <List
           dataSource={snapshots}
@@ -462,7 +497,6 @@ export default function AgentGatewayRunsPage() {
   const [runFilters, setRunFilters] = useState<Record<string, unknown>>({});
   const [detailOpen, setDetailOpen] = useState(false);
   const [selectedRunId, setSelectedRunId] = useState<string>();
-  const [terminalInput, setTerminalInput] = useState('');
 
   const runsRequest = useRequest(
     async () => {
@@ -484,36 +518,58 @@ export default function AgentGatewayRunsPage() {
         return null;
       }
 
-      const [runResponse, eventsResponse, artifactsResponse, snapshotsResponse, apiCallLogsResponse] =
-        await Promise.all([
-          ctx.api.request<RunRecord>({
-            url: `agent-gateway/runs:get/${encodeURIComponent(selectedRunId)}`,
-            method: 'get',
-          }),
-          ctx.api.request<RunEventRecord[]>({
+      const runResponse = await ctx.api.request<RunRecord>({
+        url: `agent-gateway/runs:get/${encodeURIComponent(selectedRunId)}`,
+        method: 'get',
+      });
+      const run = getRequiredResponseData(runResponse, t('Failed to load run details'));
+      const [eventsResult, artifactsResult, snapshotsResult, apiCallLogsResult] = await Promise.all([
+        getOptionalDetails<RunEventRecord[]>({
+          request: ctx.api.request<RunEventRecord[]>({
             url: `agent-gateway/runs/${encodeURIComponent(selectedRunId)}/events:list`,
             method: 'get',
           }),
-          ctx.api.request<RunArtifactRecord[]>({
+          fallback: [],
+          fallbackMessage: t('Events unavailable'),
+        }),
+        getOptionalDetails<RunArtifactRecord[]>({
+          request: ctx.api.request<RunArtifactRecord[]>({
             url: `agent-gateway/runs/${encodeURIComponent(selectedRunId)}/artifacts:list`,
             method: 'get',
           }),
-          ctx.api.request<RunSnapshotRecord[]>({
+          fallback: [],
+          fallbackMessage: t('Artifacts unavailable'),
+        }),
+        getOptionalDetails<RunSnapshotRecord[]>({
+          request: ctx.api.request<RunSnapshotRecord[]>({
             url: `agent-gateway/runs/${encodeURIComponent(selectedRunId)}/snapshots:list`,
             method: 'get',
           }),
-          ctx.api.request<ApiCallLogRecord[]>({
+          fallback: [],
+          fallbackMessage: t('Snapshots unavailable'),
+        }),
+        getOptionalDetails<ApiCallLogRecord[]>({
+          request: ctx.api.request<ApiCallLogRecord[]>({
             url: `agent-gateway/runs/${encodeURIComponent(selectedRunId)}/api-call-logs:list`,
             method: 'get',
           }),
-        ]);
+          fallback: [],
+          fallbackMessage: t('API logs unavailable'),
+        }),
+      ]);
 
       return {
-        run: getRequiredResponseData(runResponse, t('Failed to load run details')),
-        events: getResponseData(eventsResponse, []),
-        artifacts: getResponseData(artifactsResponse, []),
-        snapshots: getResponseData(snapshotsResponse, []),
-        apiCallLogs: getResponseData(apiCallLogsResponse, []),
+        run,
+        events: eventsResult.data,
+        artifacts: artifactsResult.data,
+        snapshots: snapshotsResult.data,
+        apiCallLogs: apiCallLogsResult.data,
+        warnings: {
+          events: eventsResult.warning,
+          artifacts: artifactsResult.warning,
+          snapshots: snapshotsResult.warning,
+          apiCallLogs: apiCallLogsResult.warning,
+        },
       } satisfies RunDetails;
     },
     {
@@ -561,35 +617,6 @@ export default function AgentGatewayRunsPage() {
       },
       onError(error) {
         ctx.message?.error(getApiErrorMessage(error, t('Failed to cancel run')));
-      },
-    },
-  );
-
-  const sendTerminalRequest = useRequest(
-    async () => {
-      if (!selectedRunId) {
-        return null;
-      }
-      await ctx.api.request({
-        url: `agent-gateway/runs/${encodeURIComponent(selectedRunId)}/terminal:send`,
-        method: 'post',
-        data: {
-          input: terminalInput,
-          appendEnter: true,
-        },
-      });
-      return true;
-    },
-    {
-      manual: true,
-      onSuccess() {
-        setTerminalInput('');
-        refreshTerminalSnapshot();
-        runDetailsRequest.refresh();
-        ctx.message?.success(t('Terminal input sent'));
-      },
-      onError(error) {
-        ctx.message?.error(getApiErrorMessage(error, t('Failed to send terminal input')));
       },
     },
   );
@@ -663,7 +690,6 @@ export default function AgentGatewayRunsPage() {
   const closeRunDetails = useCallback(() => {
     setDetailOpen(false);
     setSelectedRunId(undefined);
-    setTerminalInput('');
   }, []);
 
   const submitFilters = useCallback(
@@ -717,6 +743,12 @@ export default function AgentGatewayRunsPage() {
             <Typography.Text type="secondary">{record.agentProfileId || '-'}</Typography.Text>
           </Space>
         ),
+      },
+      {
+        title: t('Session'),
+        key: 'session',
+        width: 220,
+        render: (_value: unknown, record) => <RunSessionSummary run={record} t={t} />,
       },
       {
         title: t('Source'),
@@ -845,6 +877,21 @@ export default function AgentGatewayRunsPage() {
               <Descriptions.Item label={t('Terminal status')}>
                 {runDetailsRequest.data.run.terminalStatus ? statusTag(runDetailsRequest.data.run.terminalStatus) : '-'}
               </Descriptions.Item>
+              <Descriptions.Item label={t('Agent session')} span={2}>
+                <RunSessionSummary run={runDetailsRequest.data.run} t={t} />
+                {!runDetailsRequest.data.run.agentSessionId &&
+                !runDetailsRequest.data.run.agentSessionProvider &&
+                !runDetailsRequest.data.run.agentSessionProviderId ? (
+                  <Typography.Text type="secondary" style={{ display: 'block' }}>
+                    {t('No agent session')}
+                  </Typography.Text>
+                ) : null}
+              </Descriptions.Item>
+              <Descriptions.Item label={t('Continuation')} span={2}>
+                {[runDetailsRequest.data.run.continuationReason, runDetailsRequest.data.run.parentRunId]
+                  .filter(Boolean)
+                  .join(' / ') || '-'}
+              </Descriptions.Item>
               <Descriptions.Item label={t('Last terminal activity')}>
                 {formatDateTime(runDetailsRequest.data.run.terminalLastActivityAt)}
               </Descriptions.Item>
@@ -867,13 +914,9 @@ export default function AgentGatewayRunsPage() {
                       t={t}
                       snapshot={terminalSnapshot}
                       loading={terminalSnapshotRequest.loading}
-                      terminalInput={terminalInput}
-                      sending={sendTerminalRequest.loading}
                       interrupting={interruptTerminalRequest.loading}
                       terminating={terminateTerminalRequest.loading}
-                      onInputChange={setTerminalInput}
                       onRefresh={refreshTerminalSnapshot}
-                      onSend={sendTerminalRequest.run}
                       onInterrupt={interruptTerminalRequest.run}
                       onTerminate={terminateTerminalRequest.run}
                     />
@@ -888,6 +931,8 @@ export default function AgentGatewayRunsPage() {
                       t={t}
                       events={runDetailsRequest.data.events}
                       apiCallLogs={runDetailsRequest.data.apiCallLogs}
+                      eventsWarning={runDetailsRequest.data.warnings.events}
+                      apiCallLogsWarning={runDetailsRequest.data.warnings.apiCallLogs}
                     />
                   ),
                 },
@@ -900,6 +945,8 @@ export default function AgentGatewayRunsPage() {
                       t={t}
                       artifacts={runDetailsRequest.data.artifacts}
                       snapshots={runDetailsRequest.data.snapshots}
+                      artifactsWarning={runDetailsRequest.data.warnings.artifacts}
+                      snapshotsWarning={runDetailsRequest.data.warnings.snapshots}
                     />
                   ),
                 },

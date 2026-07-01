@@ -176,6 +176,23 @@ describe('agent gateway run terminal APIs', () => {
       .slice(0, 32)}`;
   }
 
+  async function createUserAgent(username: string, snippets: string[]) {
+    const roleName = `${username}-role`;
+    await app.db.getRepository('roles').create({
+      values: {
+        name: roleName,
+        snippets,
+      },
+    });
+    const user = await app.db.getRepository('users').create({
+      values: {
+        username,
+        roles: [roleName],
+      },
+    });
+    return await app.agent().login(user);
+  }
+
   it('lets daemon nodes update terminal metadata and users read snapshots', async () => {
     const runner = await createRunner();
     const { run, claim } = await createAndClaimRun(runner);
@@ -209,6 +226,130 @@ describe('agent gateway run terminal APIs', () => {
       available: false,
       inputEnabled: false,
     });
+
+    const audits = await app.db.getRepository('agAgentActionAudits').find({
+      filter: {
+        runId: run.id,
+      },
+    });
+    expect(audits.map((audit) => audit.toJSON())).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          action: 'readTerminal',
+          permissionKey: 'agentGateway.readTerminal',
+          resultStatus: 'succeeded',
+          metadataJson: expect.objectContaining({
+            available: false,
+          }),
+        }),
+      ]),
+    );
+  });
+
+  it('enforces split terminal permissions before terminal state checks', async () => {
+    const runId = '11111111-1111-4111-8111-111111111111';
+    const cancelOnlyAgent = await createUserAgent('agent-gateway-terminal-cancel-only', ['agentGateway.cancelRun']);
+    const readRunsOnlyAgent = await createUserAgent('agent-gateway-terminal-read-runs-only', ['agentGateway.readRuns']);
+    const rawSnippetAgent = await createUserAgent('agent-gateway-terminal-raw-snippet', [
+      'agentGateway.writeTerminalRaw',
+    ]);
+    const managerAgent = await createUserAgent('agent-gateway-terminal-manager', ['agentGateway.manage']);
+    const interruptAgent = await createUserAgent('agent-gateway-terminal-interrupt', ['agentGateway.interruptRun']);
+    const terminateAgent = await createUserAgent('agent-gateway-terminal-terminate', ['agentGateway.terminateRun']);
+
+    expect(
+      (
+        await cancelOnlyAgent.post(`/api/agent-gateway/runs/${runId}/terminal:send`).send({
+          input: 'must-not-write',
+        })
+      ).status,
+    ).toBe(403);
+    expect(
+      (
+        await rawSnippetAgent.post(`/api/agent-gateway/runs/${runId}/terminal:send`).send({
+          input: 'must-not-write',
+        })
+      ).status,
+    ).toBe(403);
+    expect(
+      (
+        await managerAgent.post(`/api/agent-gateway/runs/${runId}/terminal:send`).send({
+          input: 'must-not-write',
+        })
+      ).status,
+    ).toBe(403);
+    expect((await readRunsOnlyAgent.get(`/api/agent-gateway/runs/${runId}/terminal:snapshot`)).status).toBe(403);
+    expect((await readRunsOnlyAgent.post(`/api/agent-gateway/runs/${runId}/terminal:interrupt`).send({})).status).toBe(
+      403,
+    );
+    expect((await readRunsOnlyAgent.post(`/api/agent-gateway/runs/${runId}/terminal:terminate`).send({})).status).toBe(
+      403,
+    );
+
+    const runner = await createRunner();
+    const { run: controlRun } = await createAndClaimRun(runner);
+    expect(
+      (await interruptAgent.post(`/api/agent-gateway/runs/${controlRun.id}/terminal:interrupt`).send({})).status,
+    ).toBe(409);
+    const terminateResponse = await terminateAgent
+      .post(`/api/agent-gateway/runs/${controlRun.id}/terminal:terminate`)
+      .send({});
+    expect(terminateResponse.status).toBe(200);
+    expect(getData(terminateResponse).terminalTerminated).toBe(false);
+
+    const audits = await app.db.getRepository('agAgentActionAudits').find();
+    expect(audits.map((audit) => audit.toJSON())).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          action: 'readTerminal',
+          runId,
+          permissionKey: 'agentGateway.readTerminal',
+          resultStatus: 'denied',
+        }),
+        expect.objectContaining({
+          action: 'rawTerminalWriteDenied',
+          runId,
+          permissionKey: 'agentGateway.writeTerminalRaw',
+          resultStatus: 'denied',
+        }),
+        expect.objectContaining({
+          action: 'interrupt',
+          runId,
+          permissionKey: 'agentGateway.interruptRun',
+          resultStatus: 'denied',
+        }),
+        expect.objectContaining({
+          action: 'terminate',
+          runId,
+          permissionKey: 'agentGateway.terminateRun',
+          resultStatus: 'denied',
+        }),
+        expect.objectContaining({
+          action: 'interrupt',
+          runId: controlRun.id,
+          permissionKey: 'agentGateway.interruptRun',
+          resultStatus: 'accepted',
+        }),
+        expect.objectContaining({
+          action: 'interrupt',
+          runId: controlRun.id,
+          permissionKey: 'agentGateway.interruptRun',
+          resultStatus: 'failed',
+        }),
+        expect.objectContaining({
+          action: 'terminate',
+          runId: controlRun.id,
+          permissionKey: 'agentGateway.terminateRun',
+          resultStatus: 'accepted',
+        }),
+        expect.objectContaining({
+          action: 'terminate',
+          runId: controlRun.id,
+          permissionKey: 'agentGateway.terminateRun',
+          resultStatus: 'succeeded',
+        }),
+      ]),
+    );
   });
 
   it('controls a managed tmux terminal session for an active run', async () => {

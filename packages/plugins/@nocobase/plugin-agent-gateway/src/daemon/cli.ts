@@ -192,7 +192,16 @@ async function handleHeartbeat(flags: Record<string, string | boolean>) {
 }
 
 async function handleRun(flags: Record<string, string | boolean>) {
-  const config = await readDaemonConfig(getFlagString(flags, 'config') || undefined);
+  const baseConfig = await readDaemonConfig(getFlagString(flags, 'config') || undefined);
+  const config = {
+    ...baseConfig,
+    serverUrl: getFlagString(flags, 'server-url') || baseConfig.serverUrl,
+    nodeId: getFlagString(flags, 'node-id') || baseConfig.nodeId,
+    nodeToken: getFlagString(flags, 'node-token') || baseConfig.nodeToken,
+    tokenLast4: getFlagString(flags, 'node-token')
+      ? getFlagString(flags, 'node-token').slice(-4)
+      : baseConfig.tokenLast4,
+  };
   const requester = new AgentGatewayApiClient(config.serverUrl, getFlagNumber(flags, 'request-timeout-ms', 30_000));
   const gateway = new AgentGatewayDaemonNodeClient(requester, config);
   const runOptions = {

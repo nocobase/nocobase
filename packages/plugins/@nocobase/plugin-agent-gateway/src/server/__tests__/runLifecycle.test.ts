@@ -184,6 +184,23 @@ describe('agent gateway run lifecycle APIs', () => {
       .send(values);
   }
 
+  async function createUserAgent(username: string, snippets: string[]) {
+    const roleName = `${username}-role`;
+    await app.db.getRepository('roles').create({
+      values: {
+        name: roleName,
+        snippets,
+      },
+    });
+    const user = await app.db.getRepository('users').create({
+      values: {
+        username,
+        roles: [roleName],
+      },
+    });
+    return await app.agent().login(user);
+  }
+
   it('creates queued runs without exposing claim token hashes', async () => {
     const run = await createRun('run-create-1');
 
@@ -213,6 +230,42 @@ describe('agent gateway run lifecycle APIs', () => {
       },
     });
     expect(storedRun.get('queuedAt')).toBeTruthy();
+  });
+
+  it('ignores session and continuation lineage fields when dispatch creates queued runs', async () => {
+    const parentRun = await seedQueuedRun('run-parent-for-continuation');
+    const continuationRequestedAt = '2026-07-01T00:00:00.000Z';
+
+    const run = await createRun('run-continuation-create-1', {
+      agentSessionId: '11111111-1111-4111-8111-111111111111',
+      parentRunId: parentRun.get('id'),
+      resumedFromRunId: parentRun.get('id'),
+      continuationReason: 'user-message',
+      continuationMessagePreview: 'Continue from last result',
+      continuationMessageHash: 'sha256-preview',
+      continuationIdempotencyKey: 'idem-1',
+      continuationRequestKey: 'request-1',
+      continuationRequestedById: '1',
+      continuationRequestedAt,
+      agentSessionProvider: 'codex',
+      agentSessionProviderId: 'thread-create-1',
+    });
+
+    const storedRun = await app.db.getRepository('agRuns').findOne({
+      filterByTk: run.id,
+    });
+    expect(storedRun.get('agentSessionId')).toBeFalsy();
+    expect(storedRun.get('parentRunId')).toBeFalsy();
+    expect(storedRun.get('resumedFromRunId')).toBeFalsy();
+    expect(storedRun.get('continuationReason')).toBeFalsy();
+    expect(storedRun.get('continuationMessagePreview')).toBeFalsy();
+    expect(storedRun.get('continuationMessageHash')).toBeFalsy();
+    expect(storedRun.get('continuationIdempotencyKey')).toBeFalsy();
+    expect(storedRun.get('continuationRequestKey')).toBeFalsy();
+    expect(storedRun.get('continuationRequestedById')).toBeFalsy();
+    expect(storedRun.get('continuationRequestedAt')).toBeFalsy();
+    expect(storedRun.get('agentSessionProvider')).toBeFalsy();
+    expect(storedRun.get('agentSessionProviderId')).toBeFalsy();
   });
 
   it('claims a queued run once and enforces persisted node/profile concurrency', async () => {
@@ -856,6 +909,9 @@ describe('agent gateway run lifecycle APIs', () => {
       }),
     );
 
+    const readOnlyAgent = await createUserAgent('agent-gateway-cancel-read-only', ['agentGateway.readRuns']);
+    expect((await readOnlyAgent.post(`/api/agent-gateway/runs/${run.id}/cancel`).send({})).status).toBe(403);
+
     const cancelResponse = await rootAgent.post(`/api/agent-gateway/runs/${run.id}/cancel`).send({});
     const cancel = getData(cancelResponse);
     expect(cancelResponse.status).toBe(200);
@@ -890,6 +946,35 @@ describe('agent gateway run lifecycle APIs', () => {
     expect(storedRun.get('cancelAckAt')).toBeTruthy();
     expect(storedRun.get('canceledAt')).toBeTruthy();
     expect(storedRun.get('finishedAt')).toBeTruthy();
+
+    const cancelAudits = await app.db.getRepository('agAgentActionAudits').find({
+      filter: {
+        runId: run.id,
+        action: 'cancel',
+      },
+    });
+    expect(cancelAudits.map((audit) => audit.toJSON())).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          permissionKey: 'agentGateway.cancelRun',
+          resultStatus: 'denied',
+        }),
+        expect.objectContaining({
+          permissionKey: 'agentGateway.cancelRun',
+          resultStatus: 'accepted',
+          metadataJson: expect.objectContaining({
+            previousStatus: 'running',
+          }),
+        }),
+        expect.objectContaining({
+          permissionKey: 'agentGateway.cancelRun',
+          resultStatus: 'succeeded',
+          metadataJson: expect.objectContaining({
+            status: 'canceling',
+          }),
+        }),
+      ]),
+    );
 
     const failAfterCancelResponse = await runDaemonAction(runner, run.id, 'fail', {
       claimToken: claim.claimToken,

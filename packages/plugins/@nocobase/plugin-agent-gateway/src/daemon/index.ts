@@ -8,6 +8,7 @@
  */
 
 export * from './apiClient';
+export * from './adapters';
 export * from './cli';
 export * from './config';
 export * from './execDriver';

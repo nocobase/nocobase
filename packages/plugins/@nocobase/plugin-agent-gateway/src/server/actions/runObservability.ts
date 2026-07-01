@@ -14,6 +14,7 @@ import { Plugin } from '@nocobase/server';
 
 import {
   AGENT_GATEWAY_ACTIONS,
+  AGENT_GATEWAY_PERMISSIONS,
   authenticateNodeToken,
   redactArtifactMetadata,
   redactArtifactText,
@@ -21,20 +22,25 @@ import {
   redactObservabilityText,
   redactSnapshotJson,
 } from '../security';
+import { auditReadAgentAction } from '../audit/agentActionAudit';
 import {
   API_PREFIX,
   JsonRecord,
   ModelRecord,
   getBodyValues,
+  getCurrentUserId,
   getDate,
   getModelJson,
   getModelNumber,
+  getModelString,
   getRecord,
   getString,
+  matchStandardCollectionAction,
   requireAgentGatewayPermission,
   requireManagePermission,
 } from './utils';
 import { validateRunLease } from './runLifecycle';
+import { auditAgentActionBestEffort } from '../audit/agentActionAudit';
 
 const MAX_EVENT_MESSAGE_LENGTH = 4000;
 const MAX_EVENT_PAYLOAD_CHARS = 16000;
@@ -43,8 +49,13 @@ const MAX_METADATA_JSON_CHARS = 16 * 1024;
 const MAX_SNAPSHOT_JSON_CHARS = 64 * 1024;
 const SUPPORTED_SNAPSHOT_TYPES = new Set(['node', 'agent', 'skill', 'nocobase', 'workspace', 'custom']);
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-const STANDARD_OBSERVABILITY_READ_PATTERN =
-  /^\/(agRunEvents|agRunArtifacts|agRunSnapshots|agApiCallLogs):(list|get)(?:\/|$)/;
+const STANDARD_OBSERVABILITY_COLLECTIONS = [
+  'agRunEvents',
+  'agRunArtifacts',
+  'agRunSnapshots',
+  'agApiCallLogs',
+  'agAgentActionAudits',
+] as const;
 
 function getRequiredString(ctx: Context, value: unknown, name: string) {
   const stringValue = getString(value);
@@ -91,12 +102,32 @@ function serializeModel(model: ModelRecord) {
   return getModelJson(model);
 }
 
-async function requireRunDetailsRead(ctx: Context) {
-  await requireAgentGatewayPermission(
-    ctx,
-    AGENT_GATEWAY_ACTIONS.readRunDetails,
-    'Agent Gateway run detail read permission required',
-  );
+async function requireObservabilityRead(
+  ctx: Context,
+  action: string,
+  message: string,
+  audit: {
+    runId: string;
+    auditAction: 'readArtifacts' | 'readRawLogs';
+    permissionKey: string;
+    routeAction: string;
+  },
+) {
+  try {
+    await requireAgentGatewayPermission(ctx, action, message);
+  } catch (error) {
+    await auditAgentActionBestEffort(ctx, {
+      action: audit.auditAction,
+      runId: audit.runId,
+      operatorId: getCurrentUserId(ctx) || undefined,
+      permissionKey: audit.permissionKey,
+      resultStatus: 'denied',
+      metadataJson: {
+        routeAction: audit.routeAction,
+      },
+    });
+    throw error;
+  }
 }
 
 async function assertRunExists(ctx: Context, runId: string) {
@@ -106,6 +137,27 @@ async function assertRunExists(ctx: Context, runId: string) {
   if (!run) {
     ctx.throw(404, 'Run not found');
   }
+  return run;
+}
+
+async function auditObservationRead(
+  ctx: Context,
+  run: ModelRecord,
+  action: 'readArtifacts' | 'readRawLogs',
+  permissionKey: string,
+  routeAction: string,
+) {
+  await auditReadAgentAction(ctx, {
+    action,
+    runId: getModelString(run, 'id'),
+    sessionId: getModelString(run, 'agentSessionId') || undefined,
+    operatorId: getCurrentUserId(ctx) || undefined,
+    permissionKey,
+    resultStatus: 'succeeded',
+    metadataJson: {
+      routeAction,
+    },
+  });
 }
 
 function getRedactedPayload(ctx: Context, payload: unknown) {
@@ -342,8 +394,18 @@ async function registerSnapshot(ctx: Context, runId: string) {
 }
 
 async function listRunEvents(ctx: Context, runId: string) {
-  await requireRunDetailsRead(ctx);
-  await assertRunExists(ctx, runId);
+  await requireObservabilityRead(
+    ctx,
+    AGENT_GATEWAY_ACTIONS.readRawLogs,
+    'Agent Gateway raw log read permission required',
+    {
+      runId,
+      auditAction: 'readRawLogs',
+      permissionKey: AGENT_GATEWAY_PERMISSIONS.readRawLogs,
+      routeAction: 'events:list',
+    },
+  );
+  const run = await assertRunExists(ctx, runId);
 
   const events = (await ctx.db.getRepository('agRunEvents').find({
     filter: {
@@ -353,11 +415,22 @@ async function listRunEvents(ctx: Context, runId: string) {
   })) as ModelRecord[];
 
   ctx.body = events.map(serializeModel);
+  await auditObservationRead(ctx, run, 'readRawLogs', AGENT_GATEWAY_PERMISSIONS.readRawLogs, 'events:list');
 }
 
 async function listRunArtifacts(ctx: Context, runId: string) {
-  await requireRunDetailsRead(ctx);
-  await assertRunExists(ctx, runId);
+  await requireObservabilityRead(
+    ctx,
+    AGENT_GATEWAY_ACTIONS.readArtifacts,
+    'Agent Gateway artifact read permission required',
+    {
+      runId,
+      auditAction: 'readArtifacts',
+      permissionKey: AGENT_GATEWAY_PERMISSIONS.readArtifacts,
+      routeAction: 'artifacts:list',
+    },
+  );
+  const run = await assertRunExists(ctx, runId);
 
   const artifacts = (await ctx.db.getRepository('agRunArtifacts').find({
     filter: {
@@ -367,11 +440,22 @@ async function listRunArtifacts(ctx: Context, runId: string) {
   })) as ModelRecord[];
 
   ctx.body = artifacts.map(serializeModel);
+  await auditObservationRead(ctx, run, 'readArtifacts', AGENT_GATEWAY_PERMISSIONS.readArtifacts, 'artifacts:list');
 }
 
 async function listRunSnapshots(ctx: Context, runId: string) {
-  await requireRunDetailsRead(ctx);
-  await assertRunExists(ctx, runId);
+  await requireObservabilityRead(
+    ctx,
+    AGENT_GATEWAY_ACTIONS.readArtifacts,
+    'Agent Gateway artifact read permission required',
+    {
+      runId,
+      auditAction: 'readArtifacts',
+      permissionKey: AGENT_GATEWAY_PERMISSIONS.readArtifacts,
+      routeAction: 'snapshots:list',
+    },
+  );
+  const run = await assertRunExists(ctx, runId);
 
   const snapshots = (await ctx.db.getRepository('agRunSnapshots').find({
     filter: {
@@ -381,11 +465,22 @@ async function listRunSnapshots(ctx: Context, runId: string) {
   })) as ModelRecord[];
 
   ctx.body = snapshots.map(serializeModel);
+  await auditObservationRead(ctx, run, 'readArtifacts', AGENT_GATEWAY_PERMISSIONS.readArtifacts, 'snapshots:list');
 }
 
 async function listRunApiCallLogs(ctx: Context, runId: string) {
-  await requireRunDetailsRead(ctx);
-  await assertRunExists(ctx, runId);
+  await requireObservabilityRead(
+    ctx,
+    AGENT_GATEWAY_ACTIONS.readRawLogs,
+    'Agent Gateway raw log read permission required',
+    {
+      runId,
+      auditAction: 'readRawLogs',
+      permissionKey: AGENT_GATEWAY_PERMISSIONS.readRawLogs,
+      routeAction: 'api-call-logs:list',
+    },
+  );
+  const run = await assertRunExists(ctx, runId);
 
   const apiCallLogs = (await ctx.db.getRepository('agApiCallLogs').find({
     filter: {
@@ -395,12 +490,13 @@ async function listRunApiCallLogs(ctx: Context, runId: string) {
   })) as ModelRecord[];
 
   ctx.body = apiCallLogs.map(serializeModel);
+  await auditObservationRead(ctx, run, 'readRawLogs', AGENT_GATEWAY_PERMISSIONS.readRawLogs, 'api-call-logs:list');
 }
 
 export function registerRunObservabilityRoutes(plugin: Plugin) {
   plugin.app.use(
     async (ctx: Context, next: Next) => {
-      if (STANDARD_OBSERVABILITY_READ_PATTERN.test(ctx.path)) {
+      if (matchStandardCollectionAction(ctx.path, STANDARD_OBSERVABILITY_COLLECTIONS)) {
         await requireManagePermission(ctx);
         await next();
         return;

@@ -8,8 +8,10 @@
  */
 
 import path from 'path';
+import { promises as fs } from 'fs';
 
 import { buildTextArtifactUpload } from './artifactUpload';
+import { getAgentAdapter } from './adapters';
 import { AgentGatewayDaemonNodeClient } from './gateway';
 import {
   ExecCommandAllowlist,
@@ -54,6 +56,9 @@ export interface DaemonRunOnceResult {
 }
 
 const DEFAULT_RUN_HEARTBEAT_INTERVAL_MS = 10_000;
+const MAX_PROVIDER_SESSION_SCAN_BYTES = 256 * 1024;
+const PROVIDER_SESSION_UPSERT_MAX_ATTEMPTS = 3;
+const PROVIDER_SESSION_UPSERT_RETRY_DELAY_MS = 250;
 
 function isRecord(value: unknown): value is JsonRecord {
   return Object.prototype.toString.call(value) === '[object Object]';
@@ -156,6 +161,106 @@ async function reportExecOutputs(gateway: AgentGatewayDaemonNodeClient, lease: R
       });
     }
   }
+}
+
+async function readOutputForProviderSessionDetection(output: ExecDriverResult['stdout']) {
+  if (output.text) {
+    return output.text;
+  }
+  if (!output.artifactPath) {
+    return '';
+  }
+
+  const file = await fs.open(output.artifactPath, 'r');
+  try {
+    const buffer = Buffer.alloc(
+      Math.min(output.sizeBytes || MAX_PROVIDER_SESSION_SCAN_BYTES, MAX_PROVIDER_SESSION_SCAN_BYTES),
+    );
+    const { bytesRead } = await file.read(buffer, 0, buffer.length, 0);
+    return buffer.subarray(0, bytesRead).toString('utf8');
+  } finally {
+    await file.close();
+  }
+}
+
+async function detectProviderSessionId(commandKey: string, result: ExecDriverResult) {
+  const adapter = getAgentAdapter(commandKey);
+  if (!adapter?.capabilities.detectSessionId) {
+    return null;
+  }
+
+  for (const outputRecord of [result.stdout, result.stderr]) {
+    const output = await readOutputForProviderSessionDetection(outputRecord);
+    if (!output) {
+      continue;
+    }
+    for (const rawLine of output.split(/\r?\n/)) {
+      const providerSessionId = adapter.detectSessionId({
+        rawLine,
+        source: commandKey,
+      });
+      if (providerSessionId) {
+        return {
+          adapter,
+          providerSessionId,
+        };
+      }
+    }
+  }
+
+  return null;
+}
+
+async function reportProviderSessionIfDetected(options: {
+  gateway: AgentGatewayDaemonNodeClient;
+  lease: RunLease;
+  commandKey: string;
+  result: ExecDriverResult;
+}) {
+  const detected = await detectProviderSessionId(options.commandKey, options.result);
+  if (!detected) {
+    return null;
+  }
+
+  let lastError: unknown;
+  for (let attempt = 1; attempt <= PROVIDER_SESSION_UPSERT_MAX_ATTEMPTS; attempt += 1) {
+    try {
+      await options.gateway.upsertAgentSession(options.lease, {
+        provider: detected.adapter.provider,
+        providerSessionId: detected.providerSessionId,
+        status: 'active',
+        capabilities: detected.adapter.capabilities,
+        metadata: {
+          detectedFrom: 'exec-jsonl',
+          commandKey: options.commandKey,
+          upsertAttempt: attempt,
+        },
+      });
+      return detected.providerSessionId;
+    } catch (error) {
+      lastError = error;
+      if (attempt < PROVIDER_SESSION_UPSERT_MAX_ATTEMPTS) {
+        await delay(PROVIDER_SESSION_UPSERT_RETRY_DELAY_MS);
+      }
+    }
+  }
+
+  throw lastError instanceof Error ? lastError : new Error(String(lastError));
+}
+
+async function reportProviderSessionAndCollectWarnings(options: {
+  gateway: AgentGatewayDaemonNodeClient;
+  lease: RunLease;
+  commandKey: string;
+  result: ExecDriverResult;
+}) {
+  const warnings: string[] = [];
+  try {
+    await reportProviderSessionIfDetected(options);
+  } catch (error) {
+    warnings.push(`Agent session upsert failed: ${error instanceof Error ? error.message : String(error)}`);
+  }
+  return warnings;
 }
 
 function dedupeSkillVersions(skillVersions: SkillVersionInstallRecord[]) {
@@ -281,8 +386,9 @@ async function terminalizeRun(options: {
   cancelController: AbortController;
   leaseLostController: AbortController;
   result: ExecDriverResult;
+  observationWarnings?: string[];
 }) {
-  const observationWarnings: string[] = [];
+  const observationWarnings: string[] = [...(options.observationWarnings || [])];
   try {
     await reportExecOutputs(options.gateway, options.getLease(), options.result);
   } catch (error) {
@@ -534,6 +640,12 @@ export async function executeClaimedRun(
       if (terminalBackend === 'tmux' && !options.executeCommand) {
         await closeTmuxTerminalQuietly(options, activeLease(), claimedLease.runId, result.exitCode);
       }
+      await reportProviderSessionAndCollectWarnings({
+        gateway: options.gateway,
+        lease: activeLease(),
+        commandKey,
+        result,
+      });
       await options.gateway.cancelAckRun(activeLease());
       return {
         status: 'canceled',
@@ -543,6 +655,12 @@ export async function executeClaimedRun(
     if (terminalBackend === 'tmux' && !options.executeCommand) {
       await closeTmuxTerminalQuietly(options, activeLease(), claimedLease.runId, result.exitCode);
     }
+    const sessionObservationWarnings = await reportProviderSessionAndCollectWarnings({
+      gateway: options.gateway,
+      lease: activeLease(),
+      commandKey,
+      result,
+    });
     const terminalResult: ExecDriverResult =
       cancelController.signal.aborted && result.status === 'succeeded'
         ? {
@@ -559,6 +677,7 @@ export async function executeClaimedRun(
       cancelController,
       leaseLostController,
       result: terminalResult,
+      observationWarnings: sessionObservationWarnings,
     });
     return {
       status,

@@ -1,0 +1,7 @@
+{"type":"thread.started","thread_id":"019f1e72-d75c-7c61-a9ba-cc99c653e0a2"}
+{"type":"item.completed","item":{"id":"item_0","type":"error","message":"`[features].codex_hooks` is deprecated. Use `[features].hooks` instead. (Enable it with `--enable hooks` or `[features].hooks` in config.toml. See https://developers.openai.com/codex/config-basic#feature-flags for details.)"}}
+{"type":"turn.started"}
+{"type":"item.started","item":{"id":"item_1","type":"command_execution","command":"/bin/bash -lc 'echo AGENT_GATEWAY_CODEX_JSONL_CAPTURE'","aggregated_output":"","exit_code":null,"status":"in_progress"}}
+{"type":"item.completed","item":{"id":"item_1","type":"command_execution","command":"/bin/bash -lc 'echo AGENT_GATEWAY_CODEX_JSONL_CAPTURE'","aggregated_output":"AGENT_GATEWAY_CODEX_JSONL_CAPTURE\n","exit_code":0,"status":"completed"}}
+{"type":"item.completed","item":{"id":"item_2","type":"agent_message","text":"AGENT_GATEWAY_CODEX_JSONL_CAPTURE"}}
+{"type":"turn.completed","usage":{"input_tokens":39968,"cached_input_tokens":18176,"output_tokens":144,"reasoning_output_tokens":77}}

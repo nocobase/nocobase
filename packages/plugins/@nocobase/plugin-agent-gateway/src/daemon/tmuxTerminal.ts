@@ -8,9 +8,11 @@
  */
 
 import { execFile, spawn } from 'child_process';
+import { createReadStream, createWriteStream } from 'fs';
 import { promises as fs } from 'fs';
 import os from 'os';
 import path from 'path';
+import { StringDecoder } from 'string_decoder';
 
 import { redactObservabilityText } from '../server/security/redaction';
 import { ExecCommandDefinition, ExecDriverResult, ExecTerminalStatus } from './execDriver';
@@ -53,6 +55,9 @@ const TERMINAL_CAPTURE_LIMIT = 64 * 1024;
 const DEFAULT_CAPTURE_LINES = 2000;
 const TMUX_SESSION_PATTERN = /^ag-run-[a-z0-9-]{8,80}$/i;
 const SHELL_ENV_KEY_PATTERN = /^[A-Za-z_][A-Za-z0-9_]*$/;
+const REDACTION_STREAM_HIGH_WATER_MARK = 16 * 1024;
+const MAX_REDACTION_PENDING_LINE_CHARS = 64 * 1024;
+const REDACTED_OVERSIZED_TERMINAL_LINE = '[REDACTED_OVERSIZED_TERMINAL_LINE]\n';
 
 function execTmux(args: string[], options: { timeoutMs?: number } = {}) {
   return new Promise<{ stdout: string; stderr: string }>((resolve, reject) => {
@@ -120,6 +125,7 @@ function buildShellCommand(options: {
   env?: Record<string, string>;
   exitCodePath: string;
   doneSignalName: string;
+  paneCapturePath: string;
 }) {
   const commandParts = [
     shellQuote(options.definition.executable),
@@ -132,9 +138,13 @@ function buildShellCommand(options: {
   return [
     'tmux set-option -w remain-on-exit on >/dev/null 2>&1 || true;',
     'set +e;',
+    `if [ -n "\${TMUX_PANE:-}" ]; then tmux pipe-pane -o -t "$TMUX_PANE" ${shellQuote(
+      `cat >> ${shellQuote(options.paneCapturePath)}`,
+    )} >/dev/null 2>&1 || true; fi;`,
     ...envLines,
     `${commandParts.join(' ')};`,
     'code=$?;',
+    'if [ -n "${TMUX_PANE:-}" ]; then tmux pipe-pane -t "$TMUX_PANE" >/dev/null 2>&1 || true; fi;',
     `printf '%s' "$code" > ${shellQuote(options.exitCodePath)};`,
     `printf '\\n[agent-gateway] process exited with code %s\\n' "$code";`,
     `tmux wait-for -S ${shellQuote(options.doneSignalName)};`,
@@ -200,6 +210,144 @@ async function writeTextArtifact(artifactDir: string | undefined, fileName: stri
   return artifactPath;
 }
 
+async function writeArtifactChunk(writer: ReturnType<typeof createWriteStream>, content: string) {
+  if (!content) {
+    return;
+  }
+
+  await new Promise<void>((resolve, reject) => {
+    writer.write(content, (error) => {
+      if (error) {
+        reject(error);
+        return;
+      }
+      resolve();
+    });
+  });
+}
+
+async function closeArtifactWriter(writer: ReturnType<typeof createWriteStream>) {
+  await new Promise<void>((resolve, reject) => {
+    writer.once('finish', resolve);
+    writer.once('error', reject);
+    writer.end();
+  });
+}
+
+export async function writeRedactedArtifactFromFile(options: {
+  sourcePath: string;
+  artifactDir: string;
+  fileName: string;
+}) {
+  await fs.mkdir(options.artifactDir, { recursive: true });
+  const artifactPath = path.join(options.artifactDir, options.fileName);
+  const decoder = new StringDecoder('utf8');
+  const reader = createReadStream(options.sourcePath, {
+    highWaterMark: REDACTION_STREAM_HIGH_WATER_MARK,
+  });
+  const writer = createWriteStream(artifactPath, {
+    flags: 'w',
+  });
+  let pendingLineText = '';
+  let droppingOversizedLine = false;
+
+  const writeCompleteLine = async (lineText: string) => {
+    if (lineText.length > MAX_REDACTION_PENDING_LINE_CHARS) {
+      await writeArtifactChunk(writer, REDACTED_OVERSIZED_TERMINAL_LINE);
+      return;
+    }
+    await writeArtifactChunk(writer, redactObservabilityText(lineText));
+  };
+
+  const writeDecodedText = async (decodedText: string) => {
+    let text = decodedText;
+    while (text.length > 0) {
+      if (droppingOversizedLine) {
+        const newlineIndex = text.indexOf('\n');
+        if (newlineIndex === -1) {
+          return;
+        }
+        droppingOversizedLine = false;
+        text = text.slice(newlineIndex + 1);
+        continue;
+      }
+
+      const newlineIndex = text.indexOf('\n');
+      if (newlineIndex === -1) {
+        pendingLineText += text;
+        if (pendingLineText.length > MAX_REDACTION_PENDING_LINE_CHARS) {
+          await writeArtifactChunk(writer, REDACTED_OVERSIZED_TERMINAL_LINE);
+          pendingLineText = '';
+          droppingOversizedLine = true;
+        }
+        return;
+      }
+
+      await writeCompleteLine(pendingLineText + text.slice(0, newlineIndex + 1));
+      pendingLineText = '';
+      text = text.slice(newlineIndex + 1);
+    }
+  };
+
+  try {
+    for await (const chunk of reader) {
+      const chunkBuffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(String(chunk));
+      await writeDecodedText(decoder.write(chunkBuffer));
+    }
+
+    await writeDecodedText(decoder.end());
+    if (!droppingOversizedLine) {
+      await writeArtifactChunk(writer, redactObservabilityText(pendingLineText));
+    }
+  } finally {
+    await closeArtifactWriter(writer);
+  }
+  return artifactPath;
+}
+
+async function buildTmuxStdoutOutput(options: {
+  artifactDir?: string;
+  sessionName: string;
+  paneCapturePath: string;
+  fallbackOutput: string;
+}): Promise<ExecDriverResult['stdout']> {
+  const rawPaneStat = await fs.stat(options.paneCapturePath).catch(() => null);
+  if (rawPaneStat?.size) {
+    if (options.artifactDir) {
+      const artifactPath = await writeRedactedArtifactFromFile({
+        sourcePath: options.paneCapturePath,
+        artifactDir: options.artifactDir,
+        fileName: `${options.sessionName}-terminal.log`,
+      });
+      const artifactStat = await fs.stat(artifactPath);
+      return {
+        text: null,
+        sizeBytes: artifactStat.size,
+        artifactPath,
+      };
+    }
+    const file = await fs.open(options.paneCapturePath, 'r');
+    try {
+      const buffer = Buffer.alloc(Math.min(rawPaneStat.size, TERMINAL_CAPTURE_LIMIT));
+      const { bytesRead } = await file.read(buffer, 0, buffer.length, 0);
+      return {
+        text: redactObservabilityText(buffer.subarray(0, bytesRead).toString('utf8')),
+        sizeBytes: bytesRead,
+      };
+    } finally {
+      await file.close();
+    }
+  }
+
+  const stdoutText = redactObservabilityText(options.fallbackOutput);
+  const artifactPath = await writeTextArtifact(options.artifactDir, `${options.sessionName}-terminal.log`, stdoutText);
+  return {
+    text: artifactPath ? null : stdoutText,
+    sizeBytes: Buffer.byteLength(stdoutText),
+    artifactPath,
+  };
+}
+
 export async function captureTmuxSession(sessionName: string, lines = DEFAULT_CAPTURE_LINES): Promise<TmuxSnapshot> {
   assertManagedSessionName(sessionName);
   const capturedAt = new Date().toISOString();
@@ -259,102 +407,114 @@ export async function executeTmuxCommand(options: TmuxCommandOptions): Promise<E
   const startedAt = new Date().toISOString();
   const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), `${sessionName}-`));
   const exitCodePath = path.join(tempDir, 'exit-code');
+  const paneCapturePath = path.join(tempDir, 'pane-output.raw.log');
   const doneSignalName = getDoneSignalName(sessionName);
   const guardedCwd = await resolveGuardedCwd(options.workspaceRoot, options.cwd);
   let terminalStatus: ExecTerminalStatus | null = null;
   let forceKillTimer: ReturnType<typeof setTimeout> | null = null;
 
-  await killTmuxSessionIfExists(sessionName);
-  const shellCommand = buildShellCommand({
-    definition: options.definition,
-    args: options.args,
-    env: options.env,
-    exitCodePath,
-    doneSignalName,
-  });
-  await execTmux(['new-session', '-d', '-s', sessionName, '-c', guardedCwd, '--', 'sh', '-lc', shellCommand]);
-  await execTmux(['set-option', '-t', sessionName, 'remain-on-exit', 'on']).catch(() => {
-    // Older tmux versions may reject this after a very short-lived process exits.
-  });
-  await options.onSessionStarted?.({
-    backend: 'tmux',
-    sessionName,
-    startedAt,
-  });
-
-  const cancelHandler = () => {
-    terminalStatus = terminalStatus || 'canceled';
-    interruptTmuxSession(sessionName).catch(() => {
-      // The session may have already ended.
+  try {
+    await killTmuxSessionIfExists(sessionName);
+    const shellCommand = buildShellCommand({
+      definition: options.definition,
+      args: options.args,
+      env: options.env,
+      exitCodePath,
+      doneSignalName,
+      paneCapturePath,
     });
-    forceKillTimer = setTimeout(() => {
+    await execTmux(['new-session', '-d', '-s', sessionName, '-c', guardedCwd, '--', 'sh', '-lc', shellCommand]);
+    await execTmux(['set-option', '-t', sessionName, 'remain-on-exit', 'on']).catch(() => {
+      // Older tmux versions may reject this after a very short-lived process exits.
+    });
+    await options.onSessionStarted?.({
+      backend: 'tmux',
+      sessionName,
+      startedAt,
+    });
+
+    const cancelHandler = () => {
+      terminalStatus = terminalStatus || 'canceled';
+      interruptTmuxSession(sessionName).catch(() => {
+        // The session may have already ended.
+      });
+      forceKillTimer = setTimeout(() => {
+        terminateTmuxSession(sessionName).catch(() => {
+          // The session may have already ended.
+        });
+      }, 2000);
+    };
+    const leaseLostHandler = () => {
+      terminalStatus = terminalStatus || 'lease_lost';
       terminateTmuxSession(sessionName).catch(() => {
         // The session may have already ended.
       });
-    }, 2000);
-  };
-  const leaseLostHandler = () => {
-    terminalStatus = terminalStatus || 'lease_lost';
-    terminateTmuxSession(sessionName).catch(() => {
-      // The session may have already ended.
-    });
-  };
-  options.cancelSignal?.addEventListener('abort', cancelHandler, { once: true });
-  options.leaseLostSignal?.addEventListener('abort', leaseLostHandler, { once: true });
-  if (options.cancelSignal?.aborted) {
-    cancelHandler();
-  }
-  if (options.leaseLostSignal?.aborted) {
-    leaseLostHandler();
-  }
-
-  let completed = false;
-  try {
-    completed = (await waitForSignal(doneSignalName, options.timeoutMs)) === 'completed';
-    if (!completed) {
-      terminalStatus = terminalStatus || 'timeout';
-      await terminateTmuxSession(sessionName);
+    };
+    options.cancelSignal?.addEventListener('abort', cancelHandler, { once: true });
+    options.leaseLostSignal?.addEventListener('abort', leaseLostHandler, { once: true });
+    if (options.cancelSignal?.aborted) {
+      cancelHandler();
     }
+    if (options.leaseLostSignal?.aborted) {
+      leaseLostHandler();
+    }
+
+    let completed = false;
+    try {
+      completed = (await waitForSignal(doneSignalName, options.timeoutMs)) === 'completed';
+      if (!completed) {
+        terminalStatus = terminalStatus || 'timeout';
+        await terminateTmuxSession(sessionName);
+      }
+    } finally {
+      if (forceKillTimer) {
+        clearTimeout(forceKillTimer);
+      }
+      options.cancelSignal?.removeEventListener('abort', cancelHandler);
+      options.leaseLostSignal?.removeEventListener('abort', leaseLostHandler);
+    }
+
+    const rawExitCode = await fs.readFile(exitCodePath, 'utf8').catch(() => '');
+    const exitCode = completed ? getExitCode(rawExitCode) : null;
+    const status: ExecTerminalStatus = terminalStatus || (exitCode === 0 ? 'succeeded' : 'failed');
+    const snapshot = await captureTmuxSession(sessionName).catch(() => ({
+      available: false,
+      output: '',
+      sessionName,
+      capturedAt: new Date().toISOString(),
+    }));
+    const stdout = await buildTmuxStdoutOutput({
+      artifactDir: options.artifactDir,
+      sessionName,
+      paneCapturePath,
+      fallbackOutput: snapshot.output,
+    });
+    const endedAt = new Date().toISOString();
+    await options.onSessionEnded?.({
+      backend: 'tmux',
+      sessionName,
+      startedAt,
+      endedAt,
+      exitCode,
+      terminalStatus: status,
+    });
+
+    return {
+      status,
+      exitCode,
+      signal: null,
+      stdout,
+      stderr: {
+        text: null,
+        sizeBytes: 0,
+      },
+    };
   } finally {
+    await fs.rm(tempDir, { recursive: true, force: true }).catch(() => {
+      // The temp directory only contains raw pane capture and exit-code helpers.
+    });
     if (forceKillTimer) {
       clearTimeout(forceKillTimer);
     }
-    options.cancelSignal?.removeEventListener('abort', cancelHandler);
-    options.leaseLostSignal?.removeEventListener('abort', leaseLostHandler);
   }
-
-  const rawExitCode = await fs.readFile(exitCodePath, 'utf8').catch(() => '');
-  const exitCode = completed ? getExitCode(rawExitCode) : null;
-  const status: ExecTerminalStatus = terminalStatus || (exitCode === 0 ? 'succeeded' : 'failed');
-  const snapshot = await captureTmuxSession(sessionName).catch(() => ({
-    available: false,
-    output: '',
-    sessionName,
-    capturedAt: new Date().toISOString(),
-  }));
-  const artifactPath = await writeTextArtifact(options.artifactDir, `${sessionName}-terminal.log`, snapshot.output);
-  const endedAt = new Date().toISOString();
-  await options.onSessionEnded?.({
-    backend: 'tmux',
-    sessionName,
-    startedAt,
-    endedAt,
-    exitCode,
-    terminalStatus: status,
-  });
-
-  return {
-    status,
-    exitCode,
-    signal: null,
-    stdout: {
-      text: artifactPath ? null : snapshot.output,
-      sizeBytes: Buffer.byteLength(snapshot.output),
-      artifactPath,
-    },
-    stderr: {
-      text: null,
-      sizeBytes: 0,
-    },
-  };
 }

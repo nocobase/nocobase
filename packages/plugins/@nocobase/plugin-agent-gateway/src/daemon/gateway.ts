@@ -153,6 +153,20 @@ export class AgentGatewayDaemonNodeClient {
     });
   }
 
+  async upsertAgentSession(lease: RunLease, values: JsonRecord) {
+    await this.requester.request({
+      method: 'POST',
+      path: `/api/agent-gateway/nodes/${this.config.nodeId}/runs/${lease.runId}/agent-session:upsert`,
+      nodeToken: this.config.nodeToken,
+      body: {
+        claimToken: lease.claimToken,
+        claimAttempt: lease.claimAttempt,
+        leaseVersion: lease.leaseVersion,
+        ...values,
+      },
+    });
+  }
+
   async completeRun(lease: RunLease, resultSummary: JsonRecord) {
     await this.requester.request({
       method: 'POST',

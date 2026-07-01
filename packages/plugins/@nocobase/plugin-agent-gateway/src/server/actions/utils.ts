@@ -12,12 +12,31 @@ import { Context } from '@nocobase/actions';
 import { AGENT_GATEWAY_ACTIONS, AGENT_GATEWAY_RESOURCE } from '../security';
 
 export const API_PREFIX = '/api/agent-gateway';
+export const NOCOBASE_API_PREFIX = '/api';
 
 const UNION_ROLE_KEY = '__union__';
 const SYSTEM_ROLE_MODE_DEFAULT = 'default';
 const SYSTEM_ROLE_MODE_ONLY_USE_UNION = 'only-use-union';
 
 export type JsonRecord = Record<string, unknown>;
+
+export const AGENT_GATEWAY_STANDARD_COLLECTIONS = [
+  'agAgentActionAudits',
+  'agAgentProfiles',
+  'agAgentSessions',
+  'agApiCallLogs',
+  'agDispatchBindings',
+  'agNodeInvitations',
+  'agNodeSkillInstalls',
+  'agNodes',
+  'agPromptTemplates',
+  'agRunArtifacts',
+  'agRunEvents',
+  'agRunSnapshots',
+  'agRuns',
+  'agSkillVersions',
+  'agSkills',
+] as const;
 
 export interface ModelRecord {
   get(key: string): unknown;
@@ -65,6 +84,30 @@ export function getBodyValues(ctx: Context): JsonRecord {
 
 export function getString(value: unknown) {
   return typeof value === 'string' ? value.trim() : '';
+}
+
+export function normalizeNocoBaseApiPath(pathname: string) {
+  return pathname.startsWith(`${NOCOBASE_API_PREFIX}/`) ? pathname.slice(NOCOBASE_API_PREFIX.length) : pathname;
+}
+
+export function matchStandardCollectionAction(pathname: string, collectionNames: readonly string[]) {
+  const standardPath = normalizeNocoBaseApiPath(pathname);
+  for (const collectionName of collectionNames) {
+    const prefix = `/${collectionName}:`;
+    if (!standardPath.startsWith(prefix)) {
+      continue;
+    }
+
+    const action = standardPath.slice(prefix.length).split('/')[0];
+    if (action) {
+      return {
+        collectionName,
+        action,
+      };
+    }
+  }
+
+  return null;
 }
 
 export function getPositiveInteger(value: unknown, fallback: number) {
@@ -124,7 +167,7 @@ export function getModelJson(model: ModelRecord) {
   return model.toJSON ? model.toJSON() : {};
 }
 
-function getCurrentUserId(ctx: Context) {
+export function getCurrentUserId(ctx: Context) {
   const stateUser = (ctx.state.currentUser || (ctx as AuthenticatedContext).auth?.user) as unknown;
   if (hasModelGetter(stateUser)) {
     const modelId = stateUser.get('id');

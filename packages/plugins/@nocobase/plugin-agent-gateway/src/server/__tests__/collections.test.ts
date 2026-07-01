@@ -10,7 +10,9 @@
 import { CollectionOptions, createMockDatabase, Database } from '@nocobase/database';
 
 import { AGENT_GATEWAY_RETENTION_DEFAULTS_DAYS } from '../constants';
+import agAgentActionAudits from '../collections/agAgentActionAudits';
 import agAgentProfiles from '../collections/agAgentProfiles';
+import agAgentSessions, { AG_AGENT_SESSION_PROVIDER_ID_UNIQUE_CONSTRAINT_NOTE } from '../collections/agAgentSessions';
 import agApiCallLogs from '../collections/agApiCallLogs';
 import agDispatchBindings from '../collections/agDispatchBindings';
 import agNodeInvitations from '../collections/agNodeInvitations';
@@ -28,6 +30,8 @@ const collections = [
   agNodes,
   agNodeInvitations,
   agAgentProfiles,
+  agAgentSessions,
+  agAgentActionAudits,
   agSkills,
   agSkillVersions,
   agNodeSkillInstalls,
@@ -46,6 +50,8 @@ const requiredCollectionNames = [
   'agNodes',
   'agNodeInvitations',
   'agAgentProfiles',
+  'agAgentSessions',
+  'agAgentActionAudits',
   'agSkills',
   'agSkillVersions',
   'agNodeSkillInstalls',
@@ -77,6 +83,14 @@ const expectRequiredForeignKey = (collectionName: string, fieldName: string) => 
   expect(field?.autoFill).toBe(false);
 };
 
+const expectNullableForeignKey = (collectionName: string, fieldName: string) => {
+  const field = getField(collectionName, fieldName);
+
+  expect(field).toBeTruthy();
+  expect(field?.allowNull).not.toBe(false);
+  expect(field?.autoFill).toBe(false);
+};
+
 const hasUniqueIndex = (collectionName: string, fields: string[]) =>
   collectionByName
     .get(collectionName)
@@ -99,13 +113,16 @@ describe('agent gateway collections', () => {
   it('defines required unique constraints', () => {
     expect(getField('agNodes', 'nodeKey')?.unique).toBe(true);
     expect(hasUniqueIndex('agAgentProfiles', ['nodeId', 'profileKey'])).toBe(true);
+    expect(hasUniqueIndex('agAgentSessions', ['provider', 'providerSessionId'])).toBe(true);
     expect(hasUniqueIndex('agSkillVersions', ['skillId', 'versionLabel'])).toBe(true);
     expect(hasUniqueIndex('agNodeSkillInstalls', ['nodeId', 'skillVersionId'])).toBe(true);
     expect(getField('agPromptTemplates', 'templateKey')?.unique).toBe(true);
     expect(getField('agRuns', 'runCode')?.unique).toBe(true);
+    expect(getField('agRuns', 'continuationRequestKey')?.unique).toBe(true);
     expect(hasUniqueIndex('agRunEvents', ['runId', 'claimAttempt', 'source', 'sequence'])).toBe(true);
     expect(hasUniqueIndex('agRunArtifacts', ['runId', 'claimAttempt', 'artifactKey'])).toBe(true);
     expect(AG_RUN_ARTIFACT_UNIQUE_CONSTRAINT_NOTE).toContain('artifactKey is present');
+    expect(AG_AGENT_SESSION_PROVIDER_ID_UNIQUE_CONSTRAINT_NOTE).toContain('providerSessionId is present');
   });
 
   it('marks required relation keys and claim attempts as non-nullable', () => {
@@ -120,6 +137,13 @@ describe('agent gateway collections', () => {
     expectRequiredForeignKey('agRunSnapshots', 'runId');
     expectRequiredField('agRunSnapshots', 'claimAttempt');
     expect(getField('agApiCallLogs', 'runId')).toBeTruthy();
+    expectNullableForeignKey('agRuns', 'agentSessionId');
+    expectNullableForeignKey('agRuns', 'parentRunId');
+    expectNullableForeignKey('agRuns', 'resumedFromRunId');
+    expectNullableForeignKey('agAgentSessions', 'rootRunId');
+    expectNullableForeignKey('agAgentSessions', 'latestRunId');
+    expectNullableForeignKey('agAgentActionAudits', 'runId');
+    expectNullableForeignKey('agAgentActionAudits', 'sessionId');
   });
 
   it('keeps agent profiles free of raw execution configuration fields', () => {
@@ -163,6 +187,18 @@ describe('agent gateway collections', () => {
         'terminalEndedAt',
         'terminalLastActivityAt',
         'terminalExitCode',
+        'agentSessionId',
+        'parentRunId',
+        'resumedFromRunId',
+        'continuationReason',
+        'continuationMessagePreview',
+        'continuationMessageHash',
+        'continuationIdempotencyKey',
+        'continuationRequestKey',
+        'continuationRequestedById',
+        'continuationRequestedAt',
+        'agentSessionProvider',
+        'agentSessionProviderId',
       ]),
     );
     expectRequiredField('agRuns', 'status');
@@ -173,6 +209,37 @@ describe('agent gateway collections', () => {
     expect(fieldNamesOf('agRunArtifacts')).toEqual(
       expect.arrayContaining(['contentText', 'artifactType', 'mimeType', 'sizeBytes', 'metadataJson']),
     );
+    expect(fieldNamesOf('agAgentSessions')).toEqual(
+      expect.arrayContaining([
+        'provider',
+        'providerSessionId',
+        'rootRunId',
+        'latestRunId',
+        'status',
+        'capabilitiesJson',
+        'metadataJson',
+        'createdById',
+      ]),
+    );
+    expect(fieldNamesOf('agAgentActionAudits')).toEqual(
+      expect.arrayContaining([
+        'action',
+        'runId',
+        'sessionId',
+        'operatorId',
+        'redactedPreview',
+        'contentHash',
+        'contentSize',
+        'permissionKey',
+        'resultStatus',
+        'provider',
+        'metadataJson',
+      ]),
+    );
+    expectRequiredField('agAgentSessions', 'provider');
+    expectRequiredField('agAgentActionAudits', 'action');
+    expectRequiredField('agAgentActionAudits', 'permissionKey');
+    expectRequiredField('agAgentActionAudits', 'resultStatus');
   });
 
   it('keeps token persistence fields hash-only with last-four fingerprints', () => {
@@ -299,6 +366,40 @@ describe('agent gateway collections', () => {
         runCode: 'run-1',
       });
       const runId = run.get('id');
+      expect(run.get('agentSessionId')).toBeFalsy();
+      expect(run.get('parentRunId')).toBeFalsy();
+      expect(run.get('resumedFromRunId')).toBeFalsy();
+      const agentSession = await db.getCollection('agAgentSessions').model.create({
+        provider: 'codex',
+        providerSessionId: 'thread-1',
+        rootRunId: runId,
+        latestRunId: runId,
+      });
+      await expect(
+        db.getCollection('agAgentSessions').model.create({
+          provider: 'codex',
+          providerSessionId: 'thread-1',
+        }),
+      ).rejects.toThrow();
+      await db.getCollection('agRuns').model.update(
+        {
+          agentSessionId: agentSession.get('id'),
+          agentSessionProvider: 'codex',
+          agentSessionProviderId: 'thread-1',
+          continuationRequestKey: 'continue-once',
+        },
+        {
+          where: {
+            id: runId,
+          },
+        },
+      );
+      await expect(
+        db.getCollection('agRuns').model.create({
+          runCode: 'run-2',
+          continuationRequestKey: 'continue-once',
+        }),
+      ).rejects.toThrow();
 
       await db.getCollection('agRunEvents').model.create({
         runId,
@@ -357,6 +458,14 @@ describe('agent gateway collections', () => {
         direction: 'inbound',
       });
       expect(nodeLevelApiCallLog.get('runId')).toBeFalsy();
+      const audit = await db.getCollection('agAgentActionAudits').model.create({
+        action: 'readTerminal',
+        permissionKey: 'agentGateway.readTerminal',
+        resultStatus: 'succeeded',
+        provider: 'codex',
+      });
+      expect(audit.get('runId')).toBeFalsy();
+      expect(audit.get('sessionId')).toBeFalsy();
     } finally {
       await db?.close();
     }

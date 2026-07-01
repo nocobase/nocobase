@@ -170,6 +170,91 @@ export default defineCollection({
       name: 'terminalExitCode',
     },
     {
+      type: 'uuid',
+      name: 'agentSessionId',
+      autoFill: false,
+      index: true,
+    },
+    {
+      type: 'belongsTo',
+      name: 'agentSession',
+      target: 'agAgentSessions',
+      foreignKey: 'agentSessionId',
+      onDelete: 'SET NULL',
+    },
+    {
+      type: 'uuid',
+      name: 'parentRunId',
+      autoFill: false,
+      index: true,
+    },
+    {
+      type: 'belongsTo',
+      name: 'parentRun',
+      target: 'agRuns',
+      foreignKey: 'parentRunId',
+      onDelete: 'SET NULL',
+    },
+    {
+      type: 'uuid',
+      name: 'resumedFromRunId',
+      autoFill: false,
+      index: true,
+    },
+    {
+      type: 'belongsTo',
+      name: 'resumedFromRun',
+      target: 'agRuns',
+      foreignKey: 'resumedFromRunId',
+      onDelete: 'SET NULL',
+    },
+    {
+      type: 'string',
+      name: 'continuationReason',
+    },
+    {
+      type: 'text',
+      name: 'continuationMessagePreview',
+      length: 'medium',
+    },
+    {
+      type: 'string',
+      name: 'continuationMessageHash',
+    },
+    {
+      type: 'string',
+      name: 'continuationIdempotencyKey',
+    },
+    {
+      type: 'string',
+      name: 'continuationRequestKey',
+      unique: true,
+    },
+    {
+      type: 'bigInt',
+      name: 'continuationRequestedById',
+    },
+    {
+      type: 'belongsTo',
+      name: 'continuationRequestedBy',
+      target: 'users',
+      foreignKey: 'continuationRequestedById',
+      onDelete: 'SET NULL',
+    },
+    {
+      type: 'date',
+      name: 'continuationRequestedAt',
+    },
+    {
+      type: 'string',
+      name: 'agentSessionProvider',
+      index: true,
+    },
+    {
+      type: 'string',
+      name: 'agentSessionProviderId',
+    },
+    {
       type: 'belongsTo',
       name: 'node',
       target: 'agNodes',

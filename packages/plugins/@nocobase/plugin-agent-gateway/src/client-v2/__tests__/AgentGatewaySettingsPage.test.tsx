@@ -390,6 +390,9 @@ describe('PluginAgentGatewayClientV2', () => {
                 status: 'running',
                 nodeId: 'node-id-1',
                 agentProfileId: 'profile-id-1',
+                agentSessionId: 'session-id-1',
+                agentSessionProvider: 'codex',
+                agentSessionProviderId: 'thread-id-1',
                 sourceType: 'record-action',
                 sourceCollection: 'tickets',
                 sourceRecordId: '1',
@@ -426,6 +429,10 @@ describe('PluginAgentGatewayClientV2', () => {
               status: 'running',
               nodeId: 'node-id-1',
               agentProfileId: 'profile-id-1',
+              agentSessionId: 'session-id-1',
+              agentSessionProvider: 'codex',
+              agentSessionProviderId: 'thread-id-1',
+              continuationReason: 'initial-run',
               promptSnapshot: {
                 text: 'must-not-render',
               },
@@ -544,16 +551,6 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/runs/run-id-1/terminal:send') {
-        return {
-          data: {
-            data: {
-              success: true,
-            },
-          },
-        };
-      }
-
       return { data: { data: [] } };
     });
 
@@ -561,6 +558,8 @@ describe('PluginAgentGatewayClientV2', () => {
 
     expect(await screen.findByText('run-build-1')).toBeTruthy();
     expect(await screen.findByText('run-done-1')).toBeTruthy();
+    expect(await screen.findByText('codex / thread-id-1')).toBeTruthy();
+    expect(await screen.findByText('Legacy run')).toBeTruthy();
 
     const cancelButtons = await screen.findAllByLabelText('Cancel run');
     expect(cancelButtons).toHaveLength(1);
@@ -578,23 +577,11 @@ describe('PluginAgentGatewayClientV2', () => {
     fireEvent.click(detailButtons[0]);
 
     expect(await screen.findByText('Run summary')).toBeTruthy();
+    expect(await screen.findAllByText('codex / thread-id-1')).toBeTruthy();
+    expect(await screen.findAllByText('session-id-1')).toBeTruthy();
     expect(await screen.findByText(/agent is building/)).toBeTruthy();
-    fireEvent.change(screen.getByLabelText('Terminal input'), {
-      target: { value: 'continue' },
-    });
-    fireEvent.click(screen.getByLabelText('Send terminal input'));
-    await waitFor(() => {
-      expect(request).toHaveBeenCalledWith(
-        expect.objectContaining({
-          url: 'agent-gateway/runs/run-id-1/terminal:send',
-          method: 'post',
-          data: {
-            input: 'continue',
-            appendEnter: true,
-          },
-        }),
-      );
-    });
+    expect(screen.queryByLabelText('Terminal input')).toBeNull();
+    expect(screen.queryByLabelText('Send terminal input')).toBeNull();
     expect(await screen.findByText('build started')).toBeTruthy();
     expect(await screen.findByText('inline artifact text')).toBeTruthy();
     expect(await screen.findByText(/visible summary/)).toBeTruthy();
@@ -602,6 +589,99 @@ describe('PluginAgentGatewayClientV2', () => {
     expect(await screen.findByText('/api/agent-gateway/runs/run-id-1/events:append')).toBeTruthy();
     expect(screen.queryByText(/must-not-render/)).toBeNull();
     expect(screen.queryByText(/https:\/\/daemon\.example\/artifact/)).toBeNull();
+  });
+
+  it('keeps run details visible when optional observation streams are forbidden', async () => {
+    const request = vi.fn(async (config: RequestConfig) => {
+      if (config.url === 'agent-gateway/runs:list') {
+        return {
+          data: {
+            data: [
+              {
+                id: 'run-id-1',
+                runCode: 'run-build-1',
+                status: 'running',
+                agentSessionId: 'session-id-1',
+                agentSessionProvider: 'codex',
+                agentSessionProviderId: 'thread-id-1',
+              },
+            ],
+          },
+        };
+      }
+
+      if (config.url === 'agent-gateway/runs:get/run-id-1') {
+        return {
+          data: {
+            data: {
+              id: 'run-id-1',
+              runCode: 'run-build-1',
+              status: 'running',
+              agentSessionId: 'session-id-1',
+              agentSessionProvider: 'codex',
+              agentSessionProviderId: 'thread-id-1',
+              requestedAt: '2026-06-30T10:00:00.000Z',
+              startedAt: '2026-06-30T10:01:00.000Z',
+            },
+          },
+        };
+      }
+
+      if (config.url === 'agent-gateway/runs/run-id-1/events:list') {
+        throw new Error('403 Forbidden');
+      }
+
+      if (config.url === 'agent-gateway/runs/run-id-1/artifacts:list') {
+        return {
+          data: {
+            data: [],
+          },
+        };
+      }
+
+      if (config.url === 'agent-gateway/runs/run-id-1/snapshots:list') {
+        return {
+          data: {
+            data: [],
+          },
+        };
+      }
+
+      if (config.url === 'agent-gateway/runs/run-id-1/api-call-logs:list') {
+        throw new Error('403 Forbidden');
+      }
+
+      if (config.url === 'agent-gateway/runs/run-id-1/terminal:snapshot') {
+        return {
+          data: {
+            data: {
+              backend: 'tmux',
+              sessionName: 'ag-run-run-id-1',
+              terminalStatus: 'active',
+              runStatus: 'running',
+              available: true,
+              output: 'agent is still visible',
+              capturedAt: '2026-06-30T10:01:02.000Z',
+              inputEnabled: false,
+            },
+          },
+        };
+      }
+
+      return { data: { data: [] } };
+    });
+
+    renderAgentGatewayPage(AgentGatewayRunsPage, request);
+
+    expect(await screen.findByText('run-build-1')).toBeTruthy();
+    const detailButtons = await screen.findAllByLabelText('View run details');
+    fireEvent.click(detailButtons[0]);
+
+    expect(await screen.findByText('Run summary')).toBeTruthy();
+    expect(await screen.findAllByText('codex / thread-id-1')).toBeTruthy();
+    expect(await screen.findByText(/agent is still visible/)).toBeTruthy();
+    expect(await screen.findByText(/Events unavailable/)).toBeTruthy();
+    expect(await screen.findByText(/API logs unavailable/)).toBeTruthy();
   });
 
   it('lists, creates, and toggles dispatch bindings through Agent Gateway APIs', async () => {

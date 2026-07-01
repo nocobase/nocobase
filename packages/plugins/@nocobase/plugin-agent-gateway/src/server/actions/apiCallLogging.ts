@@ -181,6 +181,15 @@ function matchDaemonRoute(ctx: Context): MatchedDaemonRoute | null {
     };
   }
 
+  const agentSessionUpsertMatch = routePath.match(/^\/nodes\/([^/]+)\/runs\/([^/]+)\/agent-session:upsert$/);
+  if (agentSessionUpsertMatch) {
+    return {
+      action: 'agent-session:upsert',
+      nodeId: agentSessionUpsertMatch[1],
+      runId: agentSessionUpsertMatch[2],
+    };
+  }
+
   const runNodeActionMatch = routePath.match(
     /^\/nodes\/([^/]+)\/runs\/([^/]+)\/(heartbeat|complete|fail|timeout|cancel-ack)$/,
   );

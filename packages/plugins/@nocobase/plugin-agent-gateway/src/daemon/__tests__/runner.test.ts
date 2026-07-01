@@ -7,19 +7,43 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { execFile } from 'child_process';
 import { promises as fs } from 'fs';
 import os from 'os';
 import path from 'path';
 
 import { AgentGatewayDaemonNodeClient } from '../gateway';
 import { runDaemonOnce } from '../runner';
+import { terminateTmuxSession } from '../tmuxTerminal';
 import { GatewayRequestOptions, GatewayRequester, JsonRecord } from '../types';
+
+function execTmux(args: string[]) {
+  return new Promise<void>((resolve, reject) => {
+    execFile('tmux', args, (error) => {
+      if (error) {
+        reject(error);
+        return;
+      }
+      resolve();
+    });
+  });
+}
+
+async function hasTmux() {
+  try {
+    await execTmux(['-V']);
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 class RunnerRequester implements GatewayRequester {
   calls: GatewayRequestOptions[] = [];
   private leaseVersion = 1;
   private runHeartbeatCount = 0;
   private failCompleteOnce: boolean;
+  private failAgentSessionUpsertOnce: boolean;
 
   constructor(
     private readonly options: {
@@ -28,9 +52,11 @@ class RunnerRequester implements GatewayRequester {
       enforceTerminalLeaseVersion?: boolean;
       cancelOnRunHeartbeatCall?: number;
       failCompleteOnce?: boolean;
+      failAgentSessionUpsertOnce?: boolean;
     } = {},
   ) {
     this.failCompleteOnce = Boolean(options.failCompleteOnce);
+    this.failAgentSessionUpsertOnce = Boolean(options.failAgentSessionUpsertOnce);
   }
 
   private getDefaultClaimPayload() {
@@ -84,6 +110,10 @@ class RunnerRequester implements GatewayRequester {
     if (this.failCompleteOnce && options.path.endsWith('/complete')) {
       this.failCompleteOnce = false;
       throw new Error('Run is canceling');
+    }
+    if (this.failAgentSessionUpsertOnce && options.path.endsWith('/agent-session:upsert')) {
+      this.failAgentSessionUpsertOnce = false;
+      throw new Error('transient session upsert failure');
     }
     if (this.options.enforceTerminalLeaseVersion && /\/(complete|fail|timeout|cancel-ack)$/.test(options.path)) {
       const body = (options.body || {}) as JsonRecord;
@@ -226,6 +256,317 @@ describe('agent gateway daemon runner', () => {
       profileKey: 'codex',
       runId: 'target-run',
     });
+  });
+
+  it('reports detected Codex provider session ids back to NocoBase', async () => {
+    const workspace = path.join(tempDir, 'workspace');
+    await fs.mkdir(workspace, { recursive: true });
+    const requester = new RunnerRequester({
+      claimPayload: {
+        claimed: true,
+        runId: 'run-1',
+        claimToken: 'ag_claim_CLAIM_TOKEN_SECRET',
+        claimAttempt: 1,
+        leaseVersion: 1,
+        run: {
+          id: 'run-1',
+          executionPayloadJson: {
+            commandKey: 'codex',
+            args: ['exec', '--json', 'echo session'],
+            cwd: '.',
+          },
+        },
+      },
+    });
+    const gateway = new AgentGatewayDaemonNodeClient(requester, {
+      serverUrl: 'https://nocobase.example.test',
+      nodeId: 'node-1',
+      nodeKey: 'node-1',
+      nodeToken: 'ag_node_NODE_TOKEN_SECRET',
+      savedAt: new Date().toISOString(),
+    });
+
+    const result = await runDaemonOnce({
+      gateway,
+      allowlist: {
+        codex: {
+          commandKey: 'codex',
+          executable: process.execPath,
+          defaultTimeoutMs: 5000,
+        },
+      },
+      workspaceRoot: workspace,
+      skillsRoot: path.join(tempDir, 'skills'),
+      artifactDir: path.join(tempDir, 'artifacts'),
+      runHeartbeatIntervalMs: 60_000,
+      executeCommand: async () => ({
+        status: 'succeeded',
+        exitCode: 0,
+        signal: null,
+        stdout: {
+          text: [
+            '{"type":"thread.started","thread_id":"019f1e72-d75c-7c61-a9ba-cc99c653e0a2"}',
+            '{"type":"turn.completed"}',
+          ].join('\n'),
+          sizeBytes: 120,
+        },
+        stderr: {
+          text: null,
+          sizeBytes: 0,
+        },
+      }),
+      detectOptions: {
+        probeCommand: async (candidates) => ({
+          available: candidates.includes('codex'),
+          command: candidates[0],
+          version: 'codex 1.0.0',
+        }),
+      },
+    });
+
+    expect(result.status).toBe('succeeded');
+    const upsertCall = requester.calls.find((call) => call.path.endsWith('/agent-session:upsert'));
+    expect(upsertCall).toBeTruthy();
+    expect(upsertCall?.body).toMatchObject({
+      provider: 'codex',
+      providerSessionId: '019f1e72-d75c-7c61-a9ba-cc99c653e0a2',
+      capabilities: {
+        detectSessionId: true,
+        resumeWithMessage: true,
+      },
+    });
+  });
+
+  it('retries transient Codex provider session upsert failures before completing the run', async () => {
+    const workspace = path.join(tempDir, 'workspace');
+    await fs.mkdir(workspace, { recursive: true });
+    const requester = new RunnerRequester({
+      failAgentSessionUpsertOnce: true,
+      claimPayload: {
+        claimed: true,
+        runId: 'run-1',
+        claimToken: 'ag_claim_CLAIM_TOKEN_SECRET',
+        claimAttempt: 1,
+        leaseVersion: 1,
+        run: {
+          id: 'run-1',
+          executionPayloadJson: {
+            commandKey: 'codex',
+            args: ['exec', '--json', 'echo session'],
+            cwd: '.',
+          },
+        },
+      },
+    });
+    const gateway = new AgentGatewayDaemonNodeClient(requester, {
+      serverUrl: 'https://nocobase.example.test',
+      nodeId: 'node-1',
+      nodeKey: 'node-1',
+      nodeToken: 'ag_node_NODE_TOKEN_SECRET',
+      savedAt: new Date().toISOString(),
+    });
+
+    const result = await runDaemonOnce({
+      gateway,
+      allowlist: {
+        codex: {
+          commandKey: 'codex',
+          executable: process.execPath,
+          defaultTimeoutMs: 5000,
+        },
+      },
+      workspaceRoot: workspace,
+      skillsRoot: path.join(tempDir, 'skills'),
+      artifactDir: path.join(tempDir, 'artifacts'),
+      runHeartbeatIntervalMs: 60_000,
+      executeCommand: async () => ({
+        status: 'succeeded',
+        exitCode: 0,
+        signal: null,
+        stdout: {
+          text: '{"type":"thread.started","thread_id":"019f1ea4-0ea4-7ef4-a911-f9f986f377e5"}',
+          sizeBytes: 84,
+        },
+        stderr: {
+          text: null,
+          sizeBytes: 0,
+        },
+      }),
+      detectOptions: {
+        probeCommand: async (candidates) => ({
+          available: candidates.includes('codex'),
+          command: candidates[0],
+          version: 'codex 1.0.0',
+        }),
+      },
+    });
+
+    expect(result.status).toBe('succeeded');
+    const upsertCalls = requester.calls.filter((call) => call.path.endsWith('/agent-session:upsert'));
+    expect(upsertCalls).toHaveLength(2);
+    expect(upsertCalls[1]?.body).toMatchObject({
+      provider: 'codex',
+      providerSessionId: '019f1ea4-0ea4-7ef4-a911-f9f986f377e5',
+      metadata: {
+        upsertAttempt: 2,
+      },
+    });
+    expect(requester.calls.some((call) => call.path.endsWith('/complete'))).toBe(true);
+  });
+
+  it('reports detected Codex provider session ids from artifact-only output', async () => {
+    const workspace = path.join(tempDir, 'workspace');
+    await fs.mkdir(workspace, { recursive: true });
+    const stdoutArtifactPath = path.join(tempDir, 'codex-stdout.log');
+    await fs.writeFile(
+      stdoutArtifactPath,
+      [
+        '{"type":"thread.started","thread_id":"019f1e94-8f39-7dc0-b035-61fb2a364d30"}',
+        '{"type":"turn.completed"}',
+      ].join('\n'),
+    );
+    const requester = new RunnerRequester({
+      claimPayload: {
+        claimed: true,
+        runId: 'run-1',
+        claimToken: 'ag_claim_CLAIM_TOKEN_SECRET',
+        claimAttempt: 1,
+        leaseVersion: 1,
+        run: {
+          id: 'run-1',
+          executionPayloadJson: {
+            commandKey: 'codex',
+            args: ['exec', '--json', 'echo session'],
+            cwd: '.',
+          },
+        },
+      },
+    });
+    const gateway = new AgentGatewayDaemonNodeClient(requester, {
+      serverUrl: 'https://nocobase.example.test',
+      nodeId: 'node-1',
+      nodeKey: 'node-1',
+      nodeToken: 'ag_node_NODE_TOKEN_SECRET',
+      savedAt: new Date().toISOString(),
+    });
+
+    const result = await runDaemonOnce({
+      gateway,
+      allowlist: {
+        codex: {
+          commandKey: 'codex',
+          executable: process.execPath,
+          defaultTimeoutMs: 5000,
+        },
+      },
+      workspaceRoot: workspace,
+      skillsRoot: path.join(tempDir, 'skills'),
+      artifactDir: path.join(tempDir, 'artifacts'),
+      runHeartbeatIntervalMs: 60_000,
+      executeCommand: async () => ({
+        status: 'succeeded',
+        exitCode: 0,
+        signal: null,
+        stdout: {
+          text: null,
+          sizeBytes: 120,
+          artifactPath: stdoutArtifactPath,
+        },
+        stderr: {
+          text: null,
+          sizeBytes: 0,
+        },
+      }),
+      detectOptions: {
+        probeCommand: async (candidates) => ({
+          available: candidates.includes('codex'),
+          command: candidates[0],
+          version: 'codex 1.0.0',
+        }),
+      },
+    });
+
+    expect(result.status).toBe('succeeded');
+    const upsertCall = requester.calls.find((call) => call.path.endsWith('/agent-session:upsert'));
+    expect(upsertCall?.body).toMatchObject({
+      provider: 'codex',
+      providerSessionId: '019f1e94-8f39-7dc0-b035-61fb2a364d30',
+    });
+  });
+
+  it('reports detected Codex provider session ids from full tmux output before the pane tail', async () => {
+    if (!(await hasTmux())) {
+      return;
+    }
+
+    const workspace = path.join(tempDir, 'workspace');
+    await fs.mkdir(workspace, { recursive: true });
+    const requester = new RunnerRequester({
+      claimPayload: {
+        claimed: true,
+        runId: 'run-1',
+        claimToken: 'ag_claim_CLAIM_TOKEN_SECRET',
+        claimAttempt: 1,
+        leaseVersion: 1,
+        run: {
+          id: 'run-1',
+          executionPayloadJson: {
+            commandKey: 'codex',
+            args: [
+              '-e',
+              [
+                'process.stdout.write(\'{"type":"thread.started","thread_id":"019f1eb9-2c3a-7f77-9004-8c81f7abf7b1"}\\n\');',
+                'process.stdout.write("x".repeat(66 * 1024));',
+              ].join(''),
+            ],
+            cwd: '.',
+          },
+        },
+      },
+    });
+    const gateway = new AgentGatewayDaemonNodeClient(requester, {
+      serverUrl: 'https://nocobase.example.test',
+      nodeId: 'node-1',
+      nodeKey: 'node-1',
+      nodeToken: 'ag_node_NODE_TOKEN_SECRET',
+      savedAt: new Date().toISOString(),
+    });
+
+    try {
+      const result = await runDaemonOnce({
+        gateway,
+        allowlist: {
+          codex: {
+            commandKey: 'codex',
+            executable: process.execPath,
+            defaultTimeoutMs: 5000,
+          },
+        },
+        workspaceRoot: workspace,
+        skillsRoot: path.join(tempDir, 'skills'),
+        artifactDir: path.join(tempDir, 'artifacts'),
+        terminalBackend: 'tmux',
+        runHeartbeatIntervalMs: 60_000,
+        detectOptions: {
+          probeCommand: async (candidates) => ({
+            available: candidates.includes('codex'),
+            command: candidates[0],
+            version: 'codex 1.0.0',
+          }),
+        },
+      });
+
+      expect(result.status).toBe('succeeded');
+      const upsertCall = requester.calls.find((call) => call.path.endsWith('/agent-session:upsert'));
+      expect(upsertCall?.body).toMatchObject({
+        provider: 'codex',
+        providerSessionId: '019f1eb9-2c3a-7f77-9004-8c81f7abf7b1',
+      });
+    } finally {
+      await terminateTmuxSession('ag-run-run-1').catch(() => {
+        // The completed session may already have been removed.
+      });
+    }
   });
 
   it('truncates multi-megabyte log artifacts and still completes the run', async () => {
@@ -420,6 +761,84 @@ describe('agent gateway daemon runner', () => {
     });
     expect(requester.calls.some((call) => call.path.endsWith('/cancel-ack'))).toBe(true);
     expect(requester.calls.some((call) => call.path.endsWith('/complete'))).toBe(false);
+  });
+
+  it('reports detected Codex provider session ids before acknowledging cancellation after command exit', async () => {
+    const workspace = path.join(tempDir, 'workspace');
+    await fs.mkdir(workspace, { recursive: true });
+    const requester = new RunnerRequester({
+      cancelOnRunHeartbeatCall: 3,
+      claimPayload: {
+        claimed: true,
+        runId: 'run-1',
+        claimToken: 'ag_claim_CLAIM_TOKEN_SECRET',
+        claimAttempt: 1,
+        leaseVersion: 1,
+        run: {
+          id: 'run-1',
+          executionPayloadJson: {
+            commandKey: 'codex',
+            args: ['exec', '--json', 'echo session'],
+            cwd: '.',
+          },
+        },
+      },
+    });
+    const gateway = new AgentGatewayDaemonNodeClient(requester, {
+      serverUrl: 'https://nocobase.example.test',
+      nodeId: 'node-1',
+      nodeKey: 'node-1',
+      nodeToken: 'ag_node_NODE_TOKEN_SECRET',
+      savedAt: new Date().toISOString(),
+    });
+
+    const result = await runDaemonOnce({
+      gateway,
+      allowlist: {
+        codex: {
+          commandKey: 'codex',
+          executable: process.execPath,
+          defaultTimeoutMs: 5000,
+        },
+      },
+      workspaceRoot: workspace,
+      skillsRoot: path.join(tempDir, 'skills'),
+      artifactDir: path.join(tempDir, 'artifacts'),
+      runHeartbeatIntervalMs: 60_000,
+      executeCommand: async () => ({
+        status: 'succeeded',
+        exitCode: 0,
+        signal: null,
+        stdout: {
+          text: '{"type":"thread.started","thread_id":"019f1ed9-c5f6-7505-af97-24f968db949f"}',
+          sizeBytes: 84,
+        },
+        stderr: {
+          text: null,
+          sizeBytes: 0,
+        },
+      }),
+      detectOptions: {
+        probeCommand: async (candidates) => ({
+          available: candidates.includes('codex'),
+          command: candidates[0],
+          version: 'codex 1.0.0',
+        }),
+      },
+    });
+
+    expect(result).toMatchObject({
+      status: 'canceled',
+      runId: 'run-1',
+    });
+    const upsertIndex = requester.calls.findIndex((call) => call.path.endsWith('/agent-session:upsert'));
+    const cancelAckIndex = requester.calls.findIndex((call) => call.path.endsWith('/cancel-ack'));
+    expect(upsertIndex).toBeGreaterThanOrEqual(0);
+    expect(cancelAckIndex).toBeGreaterThan(upsertIndex);
+    expect(requester.calls[upsertIndex]?.body).toMatchObject({
+      provider: 'codex',
+      providerSessionId: '019f1ed9-c5f6-7505-af97-24f968db949f',
+    });
   });
 
   it('keeps the run lease alive while Skill sync is still running', async () => {

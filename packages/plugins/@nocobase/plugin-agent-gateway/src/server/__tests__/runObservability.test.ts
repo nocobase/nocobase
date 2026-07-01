@@ -195,6 +195,14 @@ describe('agent gateway run observability APIs', () => {
     };
   }
 
+  function registerTestSnippet(name: string, actions: string[]) {
+    app.acl.registerSnippet({
+      name,
+      actions,
+    });
+    return name;
+  }
+
   async function createUserAgent(username: string, snippets: string[]) {
     const roleName = `${username}-role`;
     await app.db.getRepository('roles').create({
@@ -690,6 +698,48 @@ describe('agent gateway run observability APIs', () => {
     expect(apiLogs.length).toBeGreaterThan(0);
     expect(JSON.stringify(apiLogs)).not.toContain('EVENT_READ_SECRET');
 
+    const readAudits = await app.db.getRepository('agAgentActionAudits').find({
+      filter: {
+        runId,
+      },
+    });
+    expect(readAudits.map((audit) => audit.toJSON())).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          action: 'readRawLogs',
+          permissionKey: 'agentGateway.readRawLogs',
+          resultStatus: 'succeeded',
+          metadataJson: expect.objectContaining({
+            routeAction: 'events:list',
+          }),
+        }),
+        expect.objectContaining({
+          action: 'readRawLogs',
+          permissionKey: 'agentGateway.readRawLogs',
+          resultStatus: 'succeeded',
+          metadataJson: expect.objectContaining({
+            routeAction: 'api-call-logs:list',
+          }),
+        }),
+        expect.objectContaining({
+          action: 'readArtifacts',
+          permissionKey: 'agentGateway.readArtifacts',
+          resultStatus: 'succeeded',
+          metadataJson: expect.objectContaining({
+            routeAction: 'artifacts:list',
+          }),
+        }),
+        expect.objectContaining({
+          action: 'readArtifacts',
+          permissionKey: 'agentGateway.readArtifacts',
+          resultStatus: 'succeeded',
+          metadataJson: expect.objectContaining({
+            routeAction: 'snapshots:list',
+          }),
+        }),
+      ]),
+    );
+
     const readRunAgent = await createUserAgent('agent-gateway-run-reader', ['agentGateway.readRun']);
     expect((await readRunAgent.get('/api/agent-gateway/runs:list')).status).toBe(200);
     const standardRunListResponse = await readRunAgent.get('/agRuns:list');
@@ -706,6 +756,38 @@ describe('agent gateway run observability APIs', () => {
     expect(JSON.stringify(getData(standardRunGetResponse))).not.toContain('must-not-render');
     expect((await readRunAgent.get(`/api/agent-gateway/runs/${runId}/events:list`)).status).toBe(403);
 
+    const readRunsAgent = await createUserAgent('agent-gateway-runs-list-reader', ['agentGateway.readRuns']);
+    expect((await readRunsAgent.get('/api/agent-gateway/runs:list')).status).toBe(200);
+    expect((await readRunsAgent.get(`/api/agent-gateway/runs:get/${runId}`)).status).toBe(403);
+    expect((await readRunsAgent.get(`/agRuns:get/${runId}`)).status).toBe(403);
+
+    const rawRunsSnippet = registerTestSnippet('agentGateway.test.rawRunsCollection', ['agRuns:list', 'agRuns:get']);
+    const rawRunsAgent = await createUserAgent('agent-gateway-raw-runs-reader', [rawRunsSnippet]);
+    expect((await rawRunsAgent.get('/api/agRuns:list')).status).toBe(403);
+    expect((await rawRunsAgent.get(`/api/agRuns:get/${runId}`)).status).toBe(403);
+
+    const rawRunMutationSnippet = registerTestSnippet('agentGateway.test.rawRunsMutationCollection', [
+      'agRuns:create',
+      'agRuns:update',
+      'agRuns:destroy',
+    ]);
+    const rawRunMutationAgent = await createUserAgent('agent-gateway-raw-runs-mutator', [rawRunMutationSnippet]);
+    expect(
+      (
+        await rawRunMutationAgent.post('/api/agRuns:create').send({
+          runCode: 'raw-run-create-must-not-bypass',
+        })
+      ).status,
+    ).toBe(403);
+    expect(
+      (
+        await rawRunMutationAgent.post(`/api/agRuns:update/${runId}`).send({
+          status: 'succeeded',
+        })
+      ).status,
+    ).toBe(403);
+    expect((await rawRunMutationAgent.post(`/api/agRuns:destroy/${runId}`).send({})).status).toBe(403);
+
     const readRunDetailsAgent = await createUserAgent('agent-gateway-run-details-reader', [
       'agentGateway.readRunDetails',
     ]);
@@ -717,6 +799,88 @@ describe('agent gateway run observability APIs', () => {
     expect((await readRunDetailsAgent.get('/agRunArtifacts:list')).status).toBe(403);
     expect((await readRunDetailsAgent.get('/agRunSnapshots:list')).status).toBe(403);
     expect((await readRunDetailsAgent.get('/agApiCallLogs:list')).status).toBe(403);
+
+    const rawEventsSnippet = registerTestSnippet('agentGateway.test.rawRunEventsCollection', ['agRunEvents:list']);
+    const rawEventsAgent = await createUserAgent('agent-gateway-raw-events-reader', [rawEventsSnippet]);
+    expect((await rawEventsAgent.get('/api/agRunEvents:list')).status).toBe(403);
+
+    const rawSessionCollectionsSnippet = registerTestSnippet('agentGateway.test.rawSessionCollections', [
+      'agAgentSessions:list',
+      'agAgentActionAudits:list',
+    ]);
+    const rawSessionCollectionsAgent = await createUserAgent('agent-gateway-raw-session-reader', [
+      rawSessionCollectionsSnippet,
+    ]);
+    expect((await rawSessionCollectionsAgent.get('/api/agAgentSessions:list')).status).toBe(403);
+    expect((await rawSessionCollectionsAgent.get('/api/agAgentActionAudits:list')).status).toBe(403);
+
+    const rawCoreCollectionsSnippet = registerTestSnippet('agentGateway.test.rawCoreCollections', [
+      'agNodes:list',
+      'agAgentProfiles:list',
+      'agNodeInvitations:list',
+    ]);
+    const rawCoreCollectionsAgent = await createUserAgent('agent-gateway-raw-core-reader', [rawCoreCollectionsSnippet]);
+    expect((await rawCoreCollectionsAgent.get('/api/agNodes:list')).status).toBe(403);
+    expect((await rawCoreCollectionsAgent.get('/api/agAgentProfiles:list')).status).toBe(403);
+    expect((await rawCoreCollectionsAgent.get('/api/agNodeInvitations:list')).status).toBe(403);
+
+    const readArtifactsAgent = await createUserAgent('agent-gateway-artifacts-reader', ['agentGateway.readArtifacts']);
+    expect((await readArtifactsAgent.get(`/api/agent-gateway/runs/${runId}/artifacts:list`)).status).toBe(200);
+    expect((await readArtifactsAgent.get(`/api/agent-gateway/runs/${runId}/snapshots:list`)).status).toBe(200);
+    expect((await readArtifactsAgent.get(`/api/agent-gateway/runs/${runId}/events:list`)).status).toBe(403);
+    expect((await readArtifactsAgent.get(`/api/agent-gateway/runs/${runId}/api-call-logs:list`)).status).toBe(403);
+
+    const readRawLogsAgent = await createUserAgent('agent-gateway-raw-logs-reader', ['agentGateway.readRawLogs']);
+    expect((await readRawLogsAgent.get(`/api/agent-gateway/runs/${runId}/events:list`)).status).toBe(200);
+    expect((await readRawLogsAgent.get(`/api/agent-gateway/runs/${runId}/api-call-logs:list`)).status).toBe(200);
+    expect((await readRawLogsAgent.get(`/api/agent-gateway/runs/${runId}/artifacts:list`)).status).toBe(403);
+    expect((await readRawLogsAgent.get(`/api/agent-gateway/runs/${runId}/snapshots:list`)).status).toBe(403);
+
+    const deniedReadAudits = await app.db.getRepository('agAgentActionAudits').find({
+      filter: {
+        runId,
+        resultStatus: 'denied',
+      },
+    });
+    expect(deniedReadAudits.map((audit) => audit.toJSON())).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          action: 'readRawLogs',
+          permissionKey: 'agentGateway.readRawLogs',
+          metadataJson: expect.objectContaining({
+            routeAction: 'events:list',
+          }),
+        }),
+        expect.objectContaining({
+          action: 'readRawLogs',
+          permissionKey: 'agentGateway.readRawLogs',
+          metadataJson: expect.objectContaining({
+            routeAction: 'api-call-logs:list',
+          }),
+        }),
+        expect.objectContaining({
+          action: 'readArtifacts',
+          permissionKey: 'agentGateway.readArtifacts',
+          metadataJson: expect.objectContaining({
+            routeAction: 'artifacts:list',
+          }),
+        }),
+        expect.objectContaining({
+          action: 'readArtifacts',
+          permissionKey: 'agentGateway.readArtifacts',
+          metadataJson: expect.objectContaining({
+            routeAction: 'snapshots:list',
+          }),
+        }),
+      ]),
+    );
+
+    const managerAgent = await createUserAgent('agent-gateway-observer-manager', ['agentGateway.manage']);
+    expect((await managerAgent.get(`/api/agent-gateway/runs/${runId}/events:list`)).status).toBe(200);
+    expect((await managerAgent.get(`/api/agent-gateway/runs/${runId}/artifacts:list`)).status).toBe(200);
+    expect((await managerAgent.get(`/api/agent-gateway/runs/${runId}/snapshots:list`)).status).toBe(200);
+    expect((await managerAgent.get(`/api/agent-gateway/runs/${runId}/api-call-logs:list`)).status).toBe(200);
+    expect((await managerAgent.get('/agRuns:list')).status).toBe(200);
 
     const memberUser = await app.db.getRepository('users').create({
       values: {

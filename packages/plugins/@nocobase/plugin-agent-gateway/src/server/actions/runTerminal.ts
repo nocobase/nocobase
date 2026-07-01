@@ -20,12 +20,14 @@ import {
   sendTmuxInput,
   terminateTmuxSession,
 } from '../../daemon/tmuxTerminal';
-import { AGENT_GATEWAY_ACTIONS } from '../security';
+import { AGENT_GATEWAY_ACTIONS, AGENT_GATEWAY_PERMISSIONS } from '../security';
+import { auditAgentActionBestEffort, auditMutatingAgentAction, auditReadAgentAction } from '../audit/agentActionAudit';
 import {
   API_PREFIX,
   JsonRecord,
   ModelRecord,
   getBodyValues,
+  getCurrentUserId,
   getDate,
   getModelJson,
   getModelNumber,
@@ -83,20 +85,49 @@ function serializeRun(run: ModelRecord) {
   return json;
 }
 
-async function requireRunDetailsRead(ctx: Context) {
-  await requireAgentGatewayPermission(
-    ctx,
-    AGENT_GATEWAY_ACTIONS.readRunDetails,
-    'Agent Gateway run detail read permission required',
-  );
+async function requireTerminalRead(ctx: Context, runId: string) {
+  try {
+    await requireAgentGatewayPermission(
+      ctx,
+      AGENT_GATEWAY_ACTIONS.readTerminal,
+      'Agent Gateway terminal read permission required',
+    );
+  } catch (error) {
+    await auditAgentActionBestEffort(ctx, {
+      action: 'readTerminal',
+      runId,
+      operatorId: getCurrentUserId(ctx) || undefined,
+      permissionKey: AGENT_GATEWAY_PERMISSIONS.readTerminal,
+      resultStatus: 'denied',
+    });
+    throw error;
+  }
 }
 
-async function requireTerminalControl(ctx: Context) {
-  await requireAgentGatewayPermission(
-    ctx,
-    AGENT_GATEWAY_ACTIONS.cancelRun,
-    'Agent Gateway terminal control permission required',
-  );
+async function requireTerminalAction(
+  ctx: Context,
+  action: string,
+  message: string,
+  deniedAudit?: {
+    runId: string;
+    permissionKey: string;
+    action: 'interrupt' | 'rawTerminalWriteDenied' | 'terminate';
+  },
+) {
+  try {
+    await requireAgentGatewayPermission(ctx, action, message);
+  } catch (error) {
+    if (deniedAudit) {
+      await auditAgentActionBestEffort(ctx, {
+        action: deniedAudit.action,
+        runId: deniedAudit.runId,
+        operatorId: getCurrentUserId(ctx) || undefined,
+        permissionKey: deniedAudit.permissionKey,
+        resultStatus: 'denied',
+      });
+    }
+    throw error;
+  }
 }
 
 async function findRun(ctx: Context, runId: string, transaction?: Transaction) {
@@ -144,6 +175,47 @@ function getTerminalSnapshotBody(run: ModelRecord, snapshot: Awaited<ReturnType<
   };
 }
 
+function getRunAuditFields(ctx: Context, run: ModelRecord) {
+  return {
+    runId: getModelString(run, 'id'),
+    sessionId: getModelString(run, 'agentSessionId') || undefined,
+    operatorId: getCurrentUserId(ctx) || undefined,
+    provider: getModelString(run, 'agentSessionProvider') || undefined,
+  };
+}
+
+async function auditTerminalRead(ctx: Context, run: ModelRecord, metadataJson: JsonRecord) {
+  await auditReadAgentAction(ctx, {
+    action: 'readTerminal',
+    ...getRunAuditFields(ctx, run),
+    permissionKey: AGENT_GATEWAY_PERMISSIONS.readTerminal,
+    resultStatus: 'succeeded',
+    metadataJson,
+  });
+}
+
+async function auditTerminalMutation(
+  ctx: Context,
+  run: ModelRecord,
+  action: 'interrupt' | 'rawTerminalWrite' | 'terminate',
+  permissionKey: string,
+  resultStatus: 'accepted' | 'failed' | 'succeeded',
+  metadataJson: JsonRecord = {},
+) {
+  const input = {
+    action,
+    ...getRunAuditFields(ctx, run),
+    permissionKey,
+    resultStatus,
+    metadataJson,
+  };
+  if (resultStatus === 'accepted') {
+    await auditMutatingAgentAction(ctx, input);
+    return;
+  }
+  await auditAgentActionBestEffort(ctx, input);
+}
+
 async function updateTerminalLastActivity(ctx: Context, runId: string) {
   await ctx.db.getRepository('agRuns').update({
     filterByTk: runId,
@@ -186,16 +258,25 @@ async function appendTerminalControlEvent(ctx: Context, run: ModelRecord, eventT
 }
 
 async function snapshotTerminal(ctx: Context, runId: string) {
-  await requireRunDetailsRead(ctx);
+  await requireTerminalRead(ctx, runId);
   const run = await findRun(ctx, runId);
   const sessionName = getTerminalSessionName(ctx, run);
+  const lines = getCaptureLines(ctx);
   if (getModelString(run, 'terminalBackend') !== 'tmux' || !sessionName) {
     ctx.body = getTerminalSnapshotBody(run, null);
+    await auditTerminalRead(ctx, run, {
+      available: false,
+      lines,
+    });
     return;
   }
 
-  const snapshot = await captureTmuxSession(sessionName, getCaptureLines(ctx));
+  const snapshot = await captureTmuxSession(sessionName, lines);
   ctx.body = getTerminalSnapshotBody(run, snapshot);
+  await auditTerminalRead(ctx, run, {
+    available: Boolean(snapshot.available),
+    lines,
+  });
 }
 
 function getTerminalInput(ctx: Context, values: JsonRecord) {
@@ -212,7 +293,16 @@ function getTerminalInput(ctx: Context, values: JsonRecord) {
 }
 
 async function sendTerminalInput(ctx: Context, runId: string) {
-  await requireTerminalControl(ctx);
+  await requireTerminalAction(
+    ctx,
+    AGENT_GATEWAY_ACTIONS.writeTerminalRaw,
+    'Agent Gateway raw terminal write permission required',
+    {
+      runId,
+      permissionKey: AGENT_GATEWAY_PERMISSIONS.writeTerminalRaw,
+      action: 'rawTerminalWriteDenied',
+    },
+  );
   const values = getBodyValues(ctx);
   const input = getTerminalInput(ctx, values);
   const appendEnter = values.appendEnter === undefined ? true : getBoolean(values.appendEnter);
@@ -221,51 +311,107 @@ async function sendTerminalInput(ctx: Context, runId: string) {
   }
 
   const run = await findRun(ctx, runId);
-  const sessionName = getTerminalSessionName(ctx, run);
-  if (!sessionName || !isTerminalInputEnabled(run)) {
-    ctx.throw(409, 'Run terminal is not accepting input');
-  }
-
-  await sendTmuxInput(sessionName, input, appendEnter);
-  await updateTerminalLastActivity(ctx, runId);
-  await appendTerminalControlEvent(ctx, run, 'terminal.input.sent', {
-    sizeBytes: Buffer.byteLength(input),
+  const metadataJson = {
     appendEnter,
-  });
-  ctx.body = {
-    success: true,
+    sizeBytes: Buffer.byteLength(input),
   };
+  await auditTerminalMutation(
+    ctx,
+    run,
+    'rawTerminalWrite',
+    AGENT_GATEWAY_PERMISSIONS.writeTerminalRaw,
+    'accepted',
+    metadataJson,
+  );
+
+  try {
+    const sessionName = getTerminalSessionName(ctx, run);
+    if (!sessionName || !isTerminalInputEnabled(run)) {
+      ctx.throw(409, 'Run terminal is not accepting input');
+    }
+
+    await sendTmuxInput(sessionName, input, appendEnter);
+    await updateTerminalLastActivity(ctx, runId);
+    await appendTerminalControlEvent(ctx, run, 'terminal.input.sent', metadataJson);
+    ctx.body = {
+      success: true,
+    };
+    await auditTerminalMutation(
+      ctx,
+      run,
+      'rawTerminalWrite',
+      AGENT_GATEWAY_PERMISSIONS.writeTerminalRaw,
+      'succeeded',
+      metadataJson,
+    );
+  } catch (error) {
+    await auditTerminalMutation(
+      ctx,
+      run,
+      'rawTerminalWrite',
+      AGENT_GATEWAY_PERMISSIONS.writeTerminalRaw,
+      'failed',
+      metadataJson,
+    );
+    throw error;
+  }
 }
 
 async function interruptTerminal(ctx: Context, runId: string) {
-  await requireTerminalControl(ctx);
+  await requireTerminalAction(ctx, AGENT_GATEWAY_ACTIONS.interruptRun, 'Agent Gateway interrupt permission required', {
+    runId,
+    permissionKey: AGENT_GATEWAY_PERMISSIONS.interruptRun,
+    action: 'interrupt',
+  });
   const run = await findRun(ctx, runId);
-  const sessionName = getTerminalSessionName(ctx, run);
-  if (!sessionName || !isTerminalInputEnabled(run)) {
-    ctx.throw(409, 'Run terminal is not active');
-  }
+  await auditTerminalMutation(ctx, run, 'interrupt', AGENT_GATEWAY_PERMISSIONS.interruptRun, 'accepted');
 
-  await interruptTmuxSession(sessionName);
-  await updateTerminalLastActivity(ctx, runId);
-  await appendTerminalControlEvent(ctx, run, 'terminal.interrupt.sent', {});
-  ctx.body = {
-    success: true,
-  };
+  try {
+    const sessionName = getTerminalSessionName(ctx, run);
+    if (!sessionName || !isTerminalInputEnabled(run)) {
+      ctx.throw(409, 'Run terminal is not active');
+    }
+
+    await interruptTmuxSession(sessionName);
+    await updateTerminalLastActivity(ctx, runId);
+    await appendTerminalControlEvent(ctx, run, 'terminal.interrupt.sent', {});
+    ctx.body = {
+      success: true,
+    };
+    await auditTerminalMutation(ctx, run, 'interrupt', AGENT_GATEWAY_PERMISSIONS.interruptRun, 'succeeded');
+  } catch (error) {
+    await auditTerminalMutation(ctx, run, 'interrupt', AGENT_GATEWAY_PERMISSIONS.interruptRun, 'failed');
+    throw error;
+  }
 }
 
 async function terminateTerminal(ctx: Context, runId: string) {
-  await requireTerminalControl(ctx);
+  await requireTerminalAction(ctx, AGENT_GATEWAY_ACTIONS.terminateRun, 'Agent Gateway terminate permission required', {
+    runId,
+    permissionKey: AGENT_GATEWAY_PERMISSIONS.terminateRun,
+    action: 'terminate',
+  });
   const run = await findRun(ctx, runId);
-  const sessionName = getTerminalSessionName(ctx, run);
-  await cancelRun(ctx, runId);
-  if (sessionName) {
-    await terminateTmuxSession(sessionName);
-    await appendTerminalControlEvent(ctx, run, 'terminal.terminate.sent', {});
+  await auditTerminalMutation(ctx, run, 'terminate', AGENT_GATEWAY_PERMISSIONS.terminateRun, 'accepted');
+
+  try {
+    const sessionName = getTerminalSessionName(ctx, run);
+    await cancelRun(ctx, runId, { requirePermission: false });
+    if (sessionName) {
+      await terminateTmuxSession(sessionName);
+      await appendTerminalControlEvent(ctx, run, 'terminal.terminate.sent', {});
+    }
+    ctx.body = {
+      run: ctx.body,
+      terminalTerminated: Boolean(sessionName),
+    };
+    await auditTerminalMutation(ctx, run, 'terminate', AGENT_GATEWAY_PERMISSIONS.terminateRun, 'succeeded', {
+      terminalTerminated: Boolean(sessionName),
+    });
+  } catch (error) {
+    await auditTerminalMutation(ctx, run, 'terminate', AGENT_GATEWAY_PERMISSIONS.terminateRun, 'failed');
+    throw error;
   }
-  ctx.body = {
-    run: ctx.body,
-    terminalTerminated: Boolean(sessionName),
-  };
 }
 
 function getTerminalUpdateValues(ctx: Context, values: JsonRecord) {

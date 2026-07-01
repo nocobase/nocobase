@@ -15,6 +15,7 @@ import { Transaction } from 'sequelize';
 
 import {
   AGENT_GATEWAY_ACTIONS,
+  AGENT_GATEWAY_PERMISSIONS,
   createClaimToken,
   extractNodeToken,
   redactRunErrorSummary,
@@ -24,10 +25,12 @@ import {
   verifyNodeToken,
 } from '../security';
 import {
+  AGENT_GATEWAY_STANDARD_COLLECTIONS,
   API_PREFIX,
   JsonRecord,
   ModelRecord,
   getBodyValues,
+  getCurrentUserId,
   getDate,
   getModelJson,
   getModelNumber,
@@ -36,10 +39,12 @@ import {
   getModelValue,
   getRecord,
   getString,
+  matchStandardCollectionAction,
   requireAgentGatewayPermission,
   requireManagePermission,
 } from './utils';
 import { serializeSkillVersionSourceForNode } from './skillVersions';
+import { auditAgentActionBestEffort, auditMutatingAgentAction } from '../audit/agentActionAudit';
 
 const DEFAULT_CLAIM_LEASE_SECONDS = 60;
 const DEFAULT_MAX_CONCURRENCY = 1;
@@ -406,7 +411,11 @@ async function createRun(ctx: Context) {
 }
 
 async function listRuns(ctx: Context) {
-  await requireAgentGatewayPermission(ctx, AGENT_GATEWAY_ACTIONS.readRun, 'Agent Gateway run read permission required');
+  await requireAgentGatewayPermission(
+    ctx,
+    AGENT_GATEWAY_ACTIONS.readRuns,
+    'Agent Gateway run read permission required',
+  );
 
   const runs = (await ctx.db.getRepository('agRuns').find({
     filter: getRunListFilter(ctx),
@@ -418,7 +427,11 @@ async function listRuns(ctx: Context) {
 }
 
 async function getRun(ctx: Context, runId: string) {
-  await requireAgentGatewayPermission(ctx, AGENT_GATEWAY_ACTIONS.readRun, 'Agent Gateway run read permission required');
+  await requireAgentGatewayPermission(
+    ctx,
+    AGENT_GATEWAY_ACTIONS.readRunDetails,
+    'Agent Gateway run detail read permission required',
+  );
 
   const run = (await ctx.db.getRepository('agRuns').findOne({
     filterByTk: runId,
@@ -1046,53 +1059,115 @@ async function timeoutRun(ctx: Context, nodeId: string, runId: string) {
   );
 }
 
-export async function cancelRun(ctx: Context, runId: string) {
-  await requireAgentGatewayPermission(ctx, AGENT_GATEWAY_ACTIONS.cancelRun, 'Agent Gateway cancel permission required');
+function getCancelAuditFields(ctx: Context, run: ModelRecord | null, runId: string) {
+  return {
+    action: 'cancel' as const,
+    runId: run ? getModelString(run, 'id') : runId,
+    sessionId: run ? getModelString(run, 'agentSessionId') || undefined : undefined,
+    operatorId: getCurrentUserId(ctx) || undefined,
+    permissionKey: AGENT_GATEWAY_PERMISSIONS.cancelRun,
+    provider: run ? getModelString(run, 'agentSessionProvider') || undefined : undefined,
+  };
+}
 
-  const updatedRun = await ctx.db.sequelize.transaction(async (transaction) => {
-    const now = new Date();
-    const run = (await ctx.db.getRepository('agRuns').findOne({
-      filterByTk: runId,
-      transaction,
-      lock: transaction.LOCK.UPDATE,
-    })) as ModelRecord | null;
-    if (!run) {
-      ctx.throw(404, 'Run not found');
+async function auditCancelRun(
+  ctx: Context,
+  run: ModelRecord | null,
+  runId: string,
+  resultStatus: 'accepted' | 'denied' | 'failed' | 'succeeded',
+  metadataJson: JsonRecord = {},
+) {
+  const input = {
+    ...getCancelAuditFields(ctx, run, runId),
+    resultStatus,
+    metadataJson,
+  };
+  if (resultStatus === 'accepted') {
+    await auditMutatingAgentAction(ctx, input);
+    return;
+  }
+  await auditAgentActionBestEffort(ctx, input);
+}
+
+export async function cancelRun(ctx: Context, runId: string, options: { requirePermission?: boolean } = {}) {
+  const shouldAudit = options.requirePermission !== false;
+  if (options.requirePermission !== false) {
+    try {
+      await requireAgentGatewayPermission(
+        ctx,
+        AGENT_GATEWAY_ACTIONS.cancelRun,
+        'Agent Gateway cancel permission required',
+      );
+    } catch (error) {
+      await auditCancelRun(ctx, null, runId, 'denied');
+      throw error;
     }
+  }
 
-    const status = getModelString(run, 'status');
-    if (isTerminalRunStatus(status)) {
-      ctx.throw(409, `Run is already ${status}`);
-    }
+  let auditRun: ModelRecord | null = null;
+  try {
+    const updatedRun = await ctx.db.sequelize.transaction(async (transaction) => {
+      const now = new Date();
+      const run = (await ctx.db.getRepository('agRuns').findOne({
+        filterByTk: runId,
+        transaction,
+        lock: transaction.LOCK.UPDATE,
+      })) as ModelRecord | null;
+      if (!run) {
+        ctx.throw(404, 'Run not found');
+      }
+      auditRun = run;
 
-    const values: JsonRecord = {
-      cancelRequested: true,
-      cancelRequestedAt: getModelValue(run, 'cancelRequestedAt') || now,
-    };
-    if (status === CLAIMABLE_RUN_STATUS) {
-      values.status = 'canceled';
-      values.canceledAt = now;
-      values.finishedAt = now;
-      values.claimExpiresAt = null;
-    } else if (isActiveRunStatus(status)) {
-      values.status = 'canceling';
-    } else {
-      ctx.throw(409, `Run cannot be canceled from ${status}`);
-    }
+      const status = getModelString(run, 'status');
+      if (isTerminalRunStatus(status)) {
+        ctx.throw(409, `Run is already ${status}`);
+      }
 
-    await ctx.db.getRepository('agRuns').update({
-      filterByTk: runId,
-      values,
-      transaction,
+      if (shouldAudit) {
+        await auditCancelRun(ctx, run, runId, 'accepted', {
+          previousStatus: status,
+        });
+      }
+
+      const values: JsonRecord = {
+        cancelRequested: true,
+        cancelRequestedAt: getModelValue(run, 'cancelRequestedAt') || now,
+      };
+      if (status === CLAIMABLE_RUN_STATUS) {
+        values.status = 'canceled';
+        values.canceledAt = now;
+        values.finishedAt = now;
+        values.claimExpiresAt = null;
+      } else if (isActiveRunStatus(status)) {
+        values.status = 'canceling';
+      } else {
+        ctx.throw(409, `Run cannot be canceled from ${status}`);
+      }
+
+      await ctx.db.getRepository('agRuns').update({
+        filterByTk: runId,
+        values,
+        transaction,
+      });
+
+      return (await ctx.db.getRepository('agRuns').findOne({
+        filterByTk: runId,
+        transaction,
+        lock: transaction.LOCK.UPDATE,
+      })) as ModelRecord;
     });
-
-    return (await ctx.db.getRepository('agRuns').findOne({
-      filterByTk: runId,
-      transaction,
-      lock: transaction.LOCK.UPDATE,
-    })) as ModelRecord;
-  });
-  ctx.body = serializeRun(updatedRun);
+    ctx.body = serializeRun(updatedRun);
+    if (shouldAudit) {
+      await auditCancelRun(ctx, updatedRun, runId, 'succeeded', {
+        status: getModelString(updatedRun, 'status'),
+      });
+    }
+  } catch (error) {
+    if (shouldAudit) {
+      await auditCancelRun(ctx, auditRun, runId, 'failed');
+    }
+    throw error;
+  }
 }
 
 async function ackCancelRun(ctx: Context, nodeId: string, runId: string) {
@@ -1170,6 +1245,27 @@ async function expireLeases(ctx: Context) {
 export function registerRunLifecycleRoutes(plugin: Plugin) {
   plugin.app.use(
     async (ctx: Context, next: Next) => {
+      const standardCollectionAction = matchStandardCollectionAction(ctx.path, AGENT_GATEWAY_STANDARD_COLLECTIONS);
+      if (standardCollectionAction?.collectionName === 'agRuns') {
+        if (standardCollectionAction.action === 'list') {
+          await requireAgentGatewayPermission(
+            ctx,
+            AGENT_GATEWAY_ACTIONS.readRuns,
+            'Agent Gateway run read permission required',
+          );
+        } else if (standardCollectionAction.action === 'get') {
+          await requireAgentGatewayPermission(
+            ctx,
+            AGENT_GATEWAY_ACTIONS.readRun,
+            'Agent Gateway run standard get permission required',
+          );
+        } else {
+          await requireManagePermission(ctx);
+        }
+      } else if (standardCollectionAction) {
+        await requireManagePermission(ctx);
+      }
+
       if (!ctx.path.startsWith(API_PREFIX)) {
         await next();
         return;
