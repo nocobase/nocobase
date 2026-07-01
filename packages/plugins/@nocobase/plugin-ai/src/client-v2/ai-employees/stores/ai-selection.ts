@@ -9,6 +9,7 @@
 
 import { observable } from '@nocobase/flow-engine';
 import type { Selector } from '../types';
+import { getOrCreateGlobalStore } from './global-store';
 
 type AISelectionState = {
   selectable: string;
@@ -17,15 +18,17 @@ type AISelectionState = {
   stopSelect: () => void;
 };
 
-export const aiSelection = observable<AISelectionState>({
-  selectable: '',
-  selector: null,
-  startSelect(selectType: string, selector?: Selector) {
-    this.selectable = selectType;
-    this.selector = selector;
-  },
-  stopSelect() {
-    this.selectable = '';
-    this.selector = null;
-  },
-});
+export const aiSelection = getOrCreateGlobalStore('@nocobase/plugin-ai/ai-selection', () =>
+  observable<AISelectionState>({
+    selectable: '',
+    selector: null,
+    startSelect(selectType: string, selector?: Selector) {
+      this.selectable = selectType;
+      this.selector = selector;
+    },
+    stopSelect() {
+      this.selectable = '';
+      this.selector = null;
+    },
+  }),
+);

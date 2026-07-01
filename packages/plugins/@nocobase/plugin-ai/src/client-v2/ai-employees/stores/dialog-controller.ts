@@ -8,6 +8,7 @@
  */
 
 import { observable } from '@nocobase/flow-engine';
+import { getOrCreateGlobalStore } from './global-store';
 
 type DialogController = {
   shouldHide: boolean;
@@ -15,12 +16,14 @@ type DialogController = {
   resume: () => void;
 };
 
-export const dialogController = observable<DialogController>({
-  shouldHide: false,
-  hide() {
-    this.shouldHide = true;
-  },
-  resume() {
-    this.shouldHide = false;
-  },
-});
+export const dialogController = getOrCreateGlobalStore('@nocobase/plugin-ai/dialog-controller', () =>
+  observable<DialogController>({
+    shouldHide: false,
+    hide() {
+      this.shouldHide = true;
+    },
+    resume() {
+      this.shouldHide = false;
+    },
+  }),
+);

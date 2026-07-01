@@ -7,7 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { createObservableStore, createSelectors } from './create-selectors';
+import { getOrCreateGlobalStore } from '../../stores/global-store';
+import { createObservableStore } from './create-selectors';
 
 export type WorkflowTask = {
   id: string;
@@ -101,63 +102,63 @@ const normalizeWorkflowTask = (workflowTask: WorkflowTask): WorkflowTask => {
   };
 };
 
-const store = createObservableStore<WorkflowTasksState & WorkflowTasksActions>((set) => ({
-  workflowTasks: [],
-  currentWorkflowTask: undefined,
-  unreadCount: 0,
-  loading: false,
-  keyword: '',
-  selectedJobStatus: undefined,
+export const useWorkflowTasksStore = getOrCreateGlobalStore('@nocobase/plugin-ai/workflow-tasks-store', () =>
+  createObservableStore<WorkflowTasksState & WorkflowTasksActions>((set) => ({
+    workflowTasks: [],
+    currentWorkflowTask: undefined,
+    unreadCount: 0,
+    loading: false,
+    keyword: '',
+    selectedJobStatus: undefined,
 
-  setWorkflowTasks: (workflowTasks) =>
-    set((state) => {
-      const nextWorkflowTasks =
-        typeof workflowTasks === 'function' ? workflowTasks(state.workflowTasks) : workflowTasks;
-      return {
-        workflowTasks: nextWorkflowTasks.map(normalizeWorkflowTask),
-      };
-    }),
-
-  setCurrentWorkflowTask: (currentWorkflowTask) =>
-    set((state) => ({
-      currentWorkflowTask:
-        typeof currentWorkflowTask === 'function'
-          ? currentWorkflowTask(state.currentWorkflowTask)
-          : currentWorkflowTask,
-    })),
-
-  setUnreadCount: (unreadCount) =>
-    set((state) => ({
-      unreadCount: typeof unreadCount === 'function' ? unreadCount(state.unreadCount) : unreadCount,
-    })),
-
-  markWorkflowTaskRead: (sessionId) =>
-    set((state) => {
-      const target = state.workflowTasks.find((item) => item.sessionId === sessionId);
-      if (!target || target.read) {
+    setWorkflowTasks: (workflowTasks) =>
+      set((state) => {
+        const nextWorkflowTasks =
+          typeof workflowTasks === 'function' ? workflowTasks(state.workflowTasks) : workflowTasks;
         return {
-          workflowTasks: state.workflowTasks,
-          unreadCount: state.unreadCount,
+          workflowTasks: nextWorkflowTasks.map(normalizeWorkflowTask),
         };
-      }
-      return {
-        workflowTasks: state.workflowTasks.map((item) =>
-          item.sessionId === sessionId
-            ? {
-                ...item,
-                read: true,
-              }
-            : item,
-        ),
-        unreadCount: Math.max(0, state.unreadCount - 1),
-      };
-    }),
+      }),
 
-  setLoading: (loading) => set({ loading }),
+    setCurrentWorkflowTask: (currentWorkflowTask) =>
+      set((state) => ({
+        currentWorkflowTask:
+          typeof currentWorkflowTask === 'function'
+            ? currentWorkflowTask(state.currentWorkflowTask)
+            : currentWorkflowTask,
+      })),
 
-  setKeyword: (keyword) => set({ keyword }),
+    setUnreadCount: (unreadCount) =>
+      set((state) => ({
+        unreadCount: typeof unreadCount === 'function' ? unreadCount(state.unreadCount) : unreadCount,
+      })),
 
-  setSelectedJobStatus: (selectedJobStatus) => set({ selectedJobStatus }),
-}));
+    markWorkflowTaskRead: (sessionId) =>
+      set((state) => {
+        const target = state.workflowTasks.find((item) => item.sessionId === sessionId);
+        if (!target || target.read) {
+          return {
+            workflowTasks: state.workflowTasks,
+            unreadCount: state.unreadCount,
+          };
+        }
+        return {
+          workflowTasks: state.workflowTasks.map((item) =>
+            item.sessionId === sessionId
+              ? {
+                  ...item,
+                  read: true,
+                }
+              : item,
+          ),
+          unreadCount: Math.max(0, state.unreadCount - 1),
+        };
+      }),
 
-export const useWorkflowTasksStore = createSelectors(store);
+    setLoading: (loading) => set({ loading }),
+
+    setKeyword: (keyword) => set({ keyword }),
+
+    setSelectedJobStatus: (selectedJobStatus) => set({ selectedJobStatus }),
+  })),
+);

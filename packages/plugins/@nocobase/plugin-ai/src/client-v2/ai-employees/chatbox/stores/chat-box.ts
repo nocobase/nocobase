@@ -10,7 +10,8 @@
 import type { Bubble, Sender } from '@ant-design/x';
 import type { GetProp, GetRef } from 'antd';
 import type { AIEmployee } from '../../types';
-import { createObservableStore, createSelectors } from './create-selectors';
+import { getOrCreateGlobalStore } from '../../stores/global-store';
+import { createObservableStore } from './create-selectors';
 
 type RolesType = GetProp<typeof Bubble.List, 'roles'>;
 
@@ -77,64 +78,64 @@ interface ChatBoxActions {
   setShowSenderHint: (show: boolean) => void;
 }
 
-const store = createObservableStore<ChatBoxState & ChatBoxActions>((set) => ({
-  open: false,
-  expanded: false,
-  collapsed: false,
-  showConversations: false,
-  minimize: false,
+export const useChatBoxStore = getOrCreateGlobalStore('@nocobase/plugin-ai/chat-box-store', () =>
+  createObservableStore<ChatBoxState & ChatBoxActions>((set) => ({
+    open: false,
+    expanded: false,
+    collapsed: false,
+    showConversations: false,
+    minimize: false,
 
-  currentEmployee: null,
-  senderValue: '',
-  senderPlaceholder: '',
-  taskVariables: {},
-  roles: {},
+    currentEmployee: null,
+    senderValue: '',
+    senderPlaceholder: '',
+    taskVariables: {},
+    roles: {},
 
-  isEditingMessage: false,
-  editingMessageId: null,
+    isEditingMessage: false,
+    editingMessageId: null,
 
-  chatBoxRef: {
-    current: null,
-  },
-  senderRef: {
-    current: null,
-  },
-  showCodeHistory: false,
-  model: null,
-  showDebugPanel: false,
-  readonly: false,
-  isShowSenderHint: false,
+    chatBoxRef: {
+      current: null,
+    },
+    senderRef: {
+      current: null,
+    },
+    showCodeHistory: false,
+    model: null,
+    showDebugPanel: false,
+    readonly: false,
+    isShowSenderHint: false,
 
-  setOpen: (open) => set({ open, ...(open ? {} : { collapsed: false }) }),
-  setExpanded: (expanded) => set({ expanded, ...(expanded ? { collapsed: false } : {}) }),
-  setCollapsed: (collapsed) => set({ collapsed }),
-  setShowConversations: (show) => set({ showConversations: show }),
-  setMinimize: (minus) => set({ minimize: minus }),
+    setOpen: (open) => set({ open, ...(open ? {} : { collapsed: false }) }),
+    setExpanded: (expanded) => set({ expanded, ...(expanded ? { collapsed: false } : {}) }),
+    setCollapsed: (collapsed) => set({ collapsed }),
+    setShowConversations: (show) => set({ showConversations: show }),
+    setMinimize: (minus) => set({ minimize: minus }),
 
-  setCurrentEmployee: (employee: AIEmployee | ((prev: AIEmployee) => AIEmployee)) =>
-    set((state) => ({
-      currentEmployee: typeof employee === 'function' ? employee(state.currentEmployee) : employee,
-    })),
-  setSenderValue: (val) => set({ senderValue: val }),
-  setSenderPlaceholder: (val) => set({ senderPlaceholder: val }),
-  setTaskVariables: (vars) => set({ taskVariables: vars }),
+    setCurrentEmployee: (employee: AIEmployee | ((prev: AIEmployee) => AIEmployee)) =>
+      set((state) => ({
+        currentEmployee: typeof employee === 'function' ? employee(state.currentEmployee) : employee,
+      })),
+    setSenderValue: (val) => set({ senderValue: val }),
+    setSenderPlaceholder: (val) => set({ senderPlaceholder: val }),
+    setTaskVariables: (vars) => set({ taskVariables: vars }),
 
-  setRoles: (roles: RolesType | ((prev: RolesType) => RolesType)) =>
-    set((state) => ({
-      roles: typeof roles === 'function' ? (roles as (prev: RolesType) => RolesType)(state.roles) : roles,
-    })),
-  addRole: (name, role) => set((state) => ({ roles: { ...state.roles, [name]: role } })),
+    setRoles: (roles: RolesType | ((prev: RolesType) => RolesType)) =>
+      set((state) => ({
+        roles: typeof roles === 'function' ? (roles as (prev: RolesType) => RolesType)(state.roles) : roles,
+      })),
+    addRole: (name, role) => set((state) => ({ roles: { ...state.roles, [name]: role } })),
 
-  setIsEditingMessage: (isEditing) => set({ isEditingMessage: isEditing }),
-  setEditingMessageId: (id) => set({ editingMessageId: id }),
+    setIsEditingMessage: (isEditing) => set({ isEditingMessage: isEditing }),
+    setEditingMessageId: (id) => set({ editingMessageId: id }),
 
-  setChatBoxRef: (ref) => set({ chatBoxRef: ref }),
-  setSenderRef: (ref) => set({ senderRef: ref }),
-  setShowCodeHistory: (show) => set({ showCodeHistory: show }),
-  setModel: (model) => set({ model }),
-  setShowDebugPanel: (show) => set({ showDebugPanel: show }),
-  setReadonly: (readonly) => set({ readonly }),
-  setShowSenderHint: (isShowSenderHint) => set({ isShowSenderHint }),
-}));
-
-export const useChatBoxStore = createSelectors(store);
+    setChatBoxRef: (ref) => set({ chatBoxRef: ref }),
+    setSenderRef: (ref) => set({ senderRef: ref }),
+    setShowCodeHistory: (show) => set({ showCodeHistory: show }),
+    setModel: (model) => set({ model }),
+    setShowDebugPanel: (show) => set({ showDebugPanel: show }),
+    setReadonly: (readonly) => set({ readonly }),
+    setShowSenderHint: (isShowSenderHint) => set({ isShowSenderHint }),
+  })),
+);
