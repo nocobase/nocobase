@@ -423,7 +423,7 @@ export type NodeAvailableContext = {
 
 #### `WorkflowVariableInput`
 
-变量选择器，只能选择变量，不能在选择后继续输入。适用于需要精确选择某个变量值的场景。
+变量输入框，支持选择变量后继续输入内容。适用于需要混合变量引用和自由文本的单行输入场景。
 
 ```tsx
 import { WorkflowVariableInput } from '@nocobase/plugin-workflow/client-v2';
@@ -480,7 +480,7 @@ import { WorkflowVariableJsonTextArea } from '@nocobase/plugin-workflow/client-v
 
 #### `WorkflowTypedVariableInput`
 
-带类型切换的输入，可切换「常量」和「变量引用」两种模式。常量模式下支持 `string`、`number`、`boolean`、`date`、`object` 五种类型。
+带类型切换的输入，可切换「常量」和「变量引用」两种模式。变量模式下只能选择变量，不能在选择后继续输入。常量模式下支持 `string`、`number`、`boolean`、`date`、`object` 五种类型。
 
 ```tsx
 import { WorkflowTypedVariableInput } from '@nocobase/plugin-workflow/client-v2';
