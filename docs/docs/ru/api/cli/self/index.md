@@ -1,7 +1,7 @@
 ---
 title: "nb self"
 description: "Справочник по команде nb self: проверка или обновление установленного NocoBase CLI."
-keywords: "nb self,NocoBase CLI,автообновление,проверка версии"
+keywords: "nb self,NocoBase CLI,самообновление,проверка версии"
 ---
 
 # nb self
@@ -18,8 +18,8 @@ nb self <command>
 
 | Команда | Описание |
 | --- | --- |
-| [`nb self check`](./check.md) | Проверяет текущую версию CLI и поддержку автообновления |
-| [`nb self update`](./update.md) | Обновляет NocoBase CLI, глобально установленный через npm, pnpm или yarn |
+| [`nb self check`](./check.md) | Проверить текущую версию CLI и поддержку самообновления |
+| [`nb self update`](./update.md) | Обновить NocoBase CLI, глобально установленный через npm, pnpm или yarn |
 
 ## Примеры
 
