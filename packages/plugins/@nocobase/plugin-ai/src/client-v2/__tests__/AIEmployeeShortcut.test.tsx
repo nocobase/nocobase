@@ -14,6 +14,7 @@ import type { AIEmployee, Task } from '../ai-employees/types';
 import { AIEmployeeShortcut } from '../ai-employees/AIEmployeeShortcut';
 
 const triggerTask = vi.fn().mockResolvedValue(undefined);
+const clear = vi.fn();
 const addContextItems = vi.fn();
 const syncContextAttachments = vi.fn();
 
@@ -67,6 +68,7 @@ vi.mock('@nocobase/flow-engine', async () => {
 
 vi.mock('../ai-employees/chatbox/hooks/useChatBoxActions', () => ({
   useChatBoxActions: () => ({
+    clear,
     triggerTask,
   }),
 }));
@@ -94,6 +96,7 @@ vi.mock('../ai-employees/chatbox/stores/chat-conversations', () => ({
 describe('AIEmployeeShortcut', () => {
   beforeEach(() => {
     triggerTask.mockClear();
+    clear.mockClear();
     addContextItems.mockClear();
     syncContextAttachments.mockClear();
   });
@@ -116,5 +119,28 @@ describe('AIEmployeeShortcut', () => {
     expect(addContextItems).toHaveBeenCalledWith(workContext);
     expect(syncContextAttachments).toHaveBeenCalledWith(workContext);
     expect(addContextItems.mock.invocationCallOrder[0]).toBeLessThan(triggerTask.mock.invocationCallOrder[0]);
+  });
+
+  it('syncs attachments but clears the draft composer after auto-sending the default task', async () => {
+    const task: Task = { title: 'Analyze record', autoSend: true };
+    const workContext = [{ type: 'flow-model' as const, uid: 'block-1' }];
+
+    const { container } = render(<AIEmployeeShortcut aiEmployee={employee} tasks={[task]} context={{ workContext }} />);
+
+    const shortcut = container.querySelector('.ant-avatar');
+    expect(shortcut).toBeTruthy();
+    fireEvent.click(shortcut);
+
+    await waitFor(() => {
+      expect(triggerTask).toHaveBeenCalledWith({
+        aiEmployee: employee,
+        tasks: [task],
+        auto: undefined,
+      });
+    });
+    expect(addContextItems).toHaveBeenCalledWith(workContext);
+    expect(syncContextAttachments).toHaveBeenCalledWith(workContext);
+    expect(clear).toHaveBeenCalledWith(undefined, undefined);
+    expect(addContextItems.mock.invocationCallOrder[0]).toBeLessThan(clear.mock.invocationCallOrder[0]);
   });
 });

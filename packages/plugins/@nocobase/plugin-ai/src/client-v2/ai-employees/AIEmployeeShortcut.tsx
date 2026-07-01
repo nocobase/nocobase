@@ -58,7 +58,7 @@ export const AIEmployeeShortcut: React.FC<{
   });
   const currentConversation = useChatConversationsStore.use.currentConversation();
   const chat = useChat(currentConversation);
-  const { triggerTask } = useChatBoxActions();
+  const { clear, triggerTask } = useChatBoxActions();
   const { syncContextAttachments } = useChatMessageActions();
   const resolvedAIEmployee = useMemo(() => {
     return aiEmployees.find((item) => item.username === aiEmployee?.username);
@@ -119,10 +119,14 @@ export const AIEmployeeShortcut: React.FC<{
         return;
       }
       const resolvedTasks = taskOptions ?? tasks;
+      const shouldClearShortcutContext = resolvedTasks?.length === 1 && auto !== false && resolvedTasks[0]?.autoSend;
       await triggerTask({ aiEmployee: resolvedAIEmployee, tasks: resolvedTasks, auto });
       syncShortcutContext();
+      if (shouldClearShortcutContext) {
+        clear(undefined, undefined);
+      }
     },
-    [auto, resolvedAIEmployee, syncShortcutContext, tasks, triggerTask],
+    [auto, clear, resolvedAIEmployee, syncShortcutContext, tasks, triggerTask],
   );
 
   const handleTaskClick = useCallback(
