@@ -8,6 +8,7 @@
  */
 
 import { MockServer, createMockServer } from '@nocobase/test';
+import { randomUUID } from 'crypto';
 
 import PluginAgentGatewayServer from '../plugin';
 import { createNodeToken, toStoredTokenFields } from '../security';
@@ -238,6 +239,16 @@ describe('agent gateway run lifecycle APIs', () => {
     expect(claim.profileCapabilities).toMatchObject({
       maxConcurrency: 1,
     });
+    expect(claim.run).toMatchObject({
+      id: firstRun.id,
+      promptSnapshot: {
+        text: 'Prompt for run-claim-1',
+      },
+      executionPayloadJson: {
+        task: 'run-claim-1',
+      },
+    });
+    expect(String(JSON.stringify(claim.run))).toContain('must-not-render');
 
     const claimedRun = await app.db.getRepository('agRuns').findOne({
       filterByTk: firstRun.id,
@@ -255,6 +266,358 @@ describe('agent gateway run lifecycle APIs', () => {
       claimed: false,
       reason: 'node_concurrency_full',
     });
+  });
+
+  it('enriches dispatch resolved Skill selections with solidified sources for node claims', async () => {
+    const runner = await createRunner();
+    const skill = await app.db.getRepository('agSkills').create({
+      values: {
+        id: randomUUID(),
+        skillKey: 'dispatch-selected-skill',
+        displayName: 'Dispatch selected Skill',
+        status: 'active',
+      },
+    });
+    const skillVersion = await app.db.getRepository('agSkillVersions').create({
+      values: {
+        id: randomUUID(),
+        skillId: skill.get('id'),
+        versionLabel: 'v1',
+        status: 'active',
+        metadataJson: {
+          source: {
+            type: 'github',
+            repoUrl: 'https://github.com/example/skills',
+            commitSha: '0123456789abcdef0123456789abcdef01234567',
+            archiveUrl: 'https://github.com/example/skills/archive/0123456789abcdef0123456789abcdef01234567.zip',
+            sha256: 'solidified-archive-sha256',
+          },
+        },
+      },
+    });
+    const run = await seedQueuedRun('run-claim-dispatch-skill', {
+      nodeId: runner.nodeId,
+      agentProfileId: runner.profileId,
+      executionPayloadJson: {
+        commandKey: 'opencode',
+        skillVersion: {
+          skillVersionId: skillVersion.get('id'),
+          versionLabel: 'evil-inline',
+          source: {
+            type: 'zip',
+            archiveUrl: 'https://evil.example.test/inline.zip',
+            sha256: 'evil-inline-sha256',
+          },
+        },
+        skillVersions: [
+          {
+            skillVersionId: skillVersion.get('id'),
+            versionLabel: 'evil-list',
+            source: {
+              type: 'zip',
+              archiveUrl: 'https://evil.example.test/list.zip',
+              sha256: 'evil-list-sha256',
+            },
+          },
+          {
+            skillVersionId: '99999999-9999-4999-8999-999999999999',
+            versionLabel: 'evil-extra',
+            source: {
+              type: 'zip',
+              archiveUrl: 'https://evil.example.test/extra.zip',
+              sha256: 'evil-extra-sha256',
+            },
+          },
+        ],
+        resolvedSkills: {
+          selectedSkill: [
+            {
+              skillVersionId: skillVersion.get('id'),
+              versionLabel: 'v1',
+              installStatus: 'installed',
+              source: {
+                type: 'zip',
+                archiveUrl: 'https://evil.example.test/resolved.zip',
+                sha256: 'evil-resolved-sha256',
+              },
+            },
+          ],
+        },
+      },
+    });
+
+    const claimResponse = await claimRun(runner);
+    const claim = getData(claimResponse);
+
+    expect(claimResponse.status).toBe(200);
+    expect(claim.runId).toBe(run.get('id'));
+    expect(claim.run).toMatchObject({
+      executionPayloadJson: {
+        commandKey: 'opencode',
+        skillVersions: [
+          {
+            skillVersionId: skillVersion.get('id'),
+            versionLabel: 'v1',
+            status: 'active',
+            source: {
+              type: 'github',
+              repoUrl: 'https://github.com/example/skills',
+              archiveUrl: 'https://github.com/example/skills/archive/0123456789abcdef0123456789abcdef01234567.zip',
+              sha256: 'solidified-archive-sha256',
+            },
+          },
+        ],
+      },
+    });
+    expect(JSON.stringify(claim.run)).not.toContain('evil.example.test');
+    expect(claim.run.executionPayloadJson.skillVersion).toBeUndefined();
+    expect(claim.run.executionPayloadJson.resolvedSkills.selectedSkill[0].source).toBeUndefined();
+  });
+
+  it('serializes uploaded ZIP Skill sources as node-token archive URLs for claims', async () => {
+    const runner = await createRunner();
+    const skill = await app.db.getRepository('agSkills').create({
+      values: {
+        id: randomUUID(),
+        skillKey: 'uploaded-zip-skill',
+        displayName: 'Uploaded ZIP Skill',
+        status: 'active',
+      },
+    });
+    const skillVersion = await app.db.getRepository('agSkillVersions').create({
+      values: {
+        id: randomUUID(),
+        skillId: skill.get('id'),
+        versionLabel: 'zip-v1',
+        status: 'active',
+        metadataJson: {
+          source: {
+            type: 'zip',
+            archivePath: '/server-only/agent-gateway/uploaded.zip',
+            sha256: 'uploaded-zip-sha256',
+            sizeBytes: 1024,
+            uploadedAt: '2026-07-01T00:00:00.000Z',
+          },
+        },
+      },
+    });
+    await seedQueuedRun('run-claim-uploaded-zip-skill', {
+      nodeId: runner.nodeId,
+      agentProfileId: runner.profileId,
+      executionPayloadJson: {
+        commandKey: 'opencode',
+        resolvedSkills: {
+          selectedSkill: [
+            {
+              skillVersionId: skillVersion.get('id'),
+              versionLabel: 'zip-v1',
+            },
+          ],
+        },
+      },
+    });
+
+    const claimResponse = await claimRun(runner);
+    const claim = getData(claimResponse);
+
+    expect(claimResponse.status).toBe(200);
+    expect(claim.run.executionPayloadJson.skillVersions).toEqual([
+      expect.objectContaining({
+        skillVersionId: skillVersion.get('id'),
+        source: expect.objectContaining({
+          type: 'zip',
+          archiveUrl: expect.stringContaining(
+            `/api/agent-gateway/skill-versions/${skillVersion.get('id')}/archive:download`,
+          ),
+          auth: 'node-token',
+          sha256: 'uploaded-zip-sha256',
+          sizeBytes: 1024,
+        }),
+      }),
+    ]);
+    expect(JSON.stringify(claim.run)).not.toContain('/server-only/agent-gateway/uploaded.zip');
+  });
+
+  it('lets the matching node token upsert Skill install status without allowing node impersonation', async () => {
+    const runner = await createRunner();
+    const otherRunner = await createRunner({
+      nodeKey: 'node-skill-other',
+    });
+    const skill = await app.db.getRepository('agSkills').create({
+      values: {
+        id: randomUUID(),
+        skillKey: 'skill-sync-test',
+        displayName: 'Skill sync test',
+        status: 'active',
+      },
+    });
+    const skillVersion = await app.db.getRepository('agSkillVersions').create({
+      values: {
+        id: randomUUID(),
+        skillId: skill.get('id'),
+        versionLabel: 'v1',
+        status: 'active',
+        metadataJson: {
+          source: {
+            type: 'zip',
+          },
+        },
+      },
+    });
+
+    const forbiddenResponse = await app
+      .agent()
+      .post(`/api/agent-gateway/nodes/${runner.nodeId}/skill-installs:upsert`)
+      .set('Authorization', `Bearer ${otherRunner.nodeToken}`)
+      .send({
+        skillVersionId: skillVersion.get('id'),
+        status: 'installed',
+      });
+    expect(forbiddenResponse.status).toBe(403);
+
+    const installResponse = await app
+      .agent()
+      .post(`/api/agent-gateway/nodes/${runner.nodeId}/skill-installs:upsert`)
+      .set('Authorization', `Bearer ${runner.nodeToken}`)
+      .send({
+        skillVersionId: skillVersion.get('id'),
+        status: 'installed',
+        capabilitiesSnapshot: {
+          skillRootPath: '/workspace/skills/v1',
+        },
+        settingsSnapshot: {
+          versionLabel: 'v1',
+        },
+      });
+    const install = getData(installResponse);
+    expect(installResponse.status).toBe(200);
+    expect(install).toMatchObject({
+      nodeId: runner.nodeId,
+      skillVersionId: skillVersion.get('id'),
+      status: 'installed',
+      idempotent: false,
+    });
+
+    const updateResponse = await app
+      .agent()
+      .post(`/api/agent-gateway/nodes/${runner.nodeId}/skill-installs:upsert`)
+      .set('Authorization', `Bearer ${runner.nodeToken}`)
+      .send({
+        skillVersionId: skillVersion.get('id'),
+        status: 'installed',
+        capabilitiesSnapshot: {
+          skillRootPath: '/workspace/skills/v1',
+        },
+      });
+    expect(updateResponse.status).toBe(200);
+    expect(await app.db.getRepository('agNodeSkillInstalls').count()).toBe(1);
+  });
+
+  it('lets node tokens create directed OpenCode smoke runs and terminally skip queued smoke runs', async () => {
+    const runner = await createRunner({
+      nodeKey: 'node-smoke',
+      maxConcurrency: 2,
+    });
+    const olderRun = await seedQueuedRun('run-smoke-older', {
+      nodeId: runner.nodeId,
+      agentProfileId: runner.profileId,
+    });
+
+    const smokeCreateResponse = await app
+      .agent()
+      .post(`/api/agent-gateway/nodes/${runner.nodeId}/smoke-runs:create`)
+      .set('Authorization', `Bearer ${runner.nodeToken}`)
+      .send({
+        profileKey: 'fake-success',
+        promptSnapshot: {
+          text: 'Run OpenCode smoke token=SMOKE_CREATE_SECRET',
+        },
+        executionPayload: {
+          driver: 'exec',
+          skillVersionId: '66666666-6666-4666-8666-666666666666',
+        },
+      });
+    const smokeRun = getData(smokeCreateResponse);
+    expect(smokeCreateResponse.status).toBe(200);
+    expect(smokeRun).toMatchObject({
+      status: 'queued',
+      nodeId: runner.nodeId,
+      agentProfileId: runner.profileId,
+    });
+
+    const storedSmokeRun = await app.db.getRepository('agRuns').findOne({
+      filterByTk: smokeRun.runId,
+    });
+    expect(storedSmokeRun.get('sourceType')).toBe('opencode-smoke');
+    expect(storedSmokeRun.get('executionPayloadJson')).toMatchObject({
+      driver: 'exec',
+      profileKey: 'fake-success',
+      skillVersionId: '66666666-6666-4666-8666-666666666666',
+    });
+
+    const directedClaimResponse = await claimRun(runner, {
+      profileKey: 'fake-success',
+      runId: smokeRun.runId,
+    });
+    const directedClaim = getData(directedClaimResponse);
+    expect(directedClaimResponse.status).toBe(200);
+    expect(directedClaim.runId).toBe(smokeRun.runId);
+    expect(directedClaim.runId).not.toBe(olderRun.get('id'));
+
+    const skipCreateResponse = await app
+      .agent()
+      .post(`/api/agent-gateway/nodes/${runner.nodeId}/smoke-runs:create`)
+      .set('Authorization', `Bearer ${runner.nodeToken}`)
+      .send({
+        profileKey: 'fake-success',
+        promptSnapshot: {
+          text: 'Skip OpenCode smoke',
+        },
+        executionPayload: {
+          driver: 'exec',
+        },
+      });
+    const skipRun = getData(skipCreateResponse);
+    const skipResponse = await app
+      .agent()
+      .post(`/api/agent-gateway/nodes/${runner.nodeId}/runs/${skipRun.runId}/skip`)
+      .set('Authorization', `Bearer ${runner.nodeToken}`)
+      .send({
+        reason: 'missing_dependency token=SMOKE_SKIP_SECRET',
+        resultSummary: {
+          reason: 'missing_dependency',
+        },
+      });
+    expect(skipResponse.status).toBe(200);
+    expect(getData(skipResponse)).toMatchObject({
+      status: 'failed',
+      skipped: true,
+    });
+
+    const skippedRun = await app.db.getRepository('agRuns').findOne({
+      filterByTk: skipRun.runId,
+    });
+    expect(skippedRun.get('status')).toBe('failed');
+    expect(skippedRun.get('resultSummaryJson')).toMatchObject({
+      reason: 'missing_dependency',
+      skipped: true,
+    });
+    expect(String(skippedRun.get('errorSummary'))).toContain('[REDACTED]');
+    expect(skippedRun.get('finishedAt')).toBeTruthy();
+
+    const normalRun = await seedQueuedRun('run-smoke-normal', {
+      nodeId: runner.nodeId,
+      agentProfileId: runner.profileId,
+      sourceType: 'test',
+    });
+    const forbiddenSkipResponse = await app
+      .agent()
+      .post(`/api/agent-gateway/nodes/${runner.nodeId}/runs/${normalRun.get('id')}/skip`)
+      .set('Authorization', `Bearer ${runner.nodeToken}`)
+      .send({
+        reason: 'must not skip normal runs',
+      });
+    expect(forbiddenSkipResponse.status).toBe(403);
   });
 
   it('filters claim candidates by persisted node and profile eligibility before pagination', async () => {

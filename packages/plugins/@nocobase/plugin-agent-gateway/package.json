@@ -7,6 +7,9 @@
   "version": "2.1.14",
   "license": "AGPL-3.0",
   "main": "dist/server/index.js",
+  "bin": {
+    "agent-gateway-daemon": "./daemon.js"
+  },
   "dependencies": {},
   "peerDependencies": {
     "@nocobase/acl": "2.x",

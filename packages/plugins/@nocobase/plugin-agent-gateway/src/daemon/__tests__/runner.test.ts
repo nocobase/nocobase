@@ -1,0 +1,562 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import { promises as fs } from 'fs';
+import os from 'os';
+import path from 'path';
+
+import { AgentGatewayDaemonNodeClient } from '../gateway';
+import { runDaemonOnce } from '../runner';
+import { GatewayRequestOptions, GatewayRequester, JsonRecord } from '../types';
+
+class RunnerRequester implements GatewayRequester {
+  calls: GatewayRequestOptions[] = [];
+  private leaseVersion = 1;
+  private runHeartbeatCount = 0;
+  private failCompleteOnce: boolean;
+
+  constructor(
+    private readonly options: {
+      claimPayload?: JsonRecord;
+      heartbeatDelayMs?: number;
+      enforceTerminalLeaseVersion?: boolean;
+      cancelOnRunHeartbeatCall?: number;
+      failCompleteOnce?: boolean;
+    } = {},
+  ) {
+    this.failCompleteOnce = Boolean(options.failCompleteOnce);
+  }
+
+  private getDefaultClaimPayload() {
+    return {
+      claimed: true,
+      runId: 'run-1',
+      claimToken: 'ag_claim_CLAIM_TOKEN_SECRET',
+      claimAttempt: 1,
+      leaseVersion: 1,
+      run: {
+        id: 'run-1',
+        executionPayloadJson: {
+          commandKey: 'node',
+          args: ['-e', 'process.stdout.write("runner complete token=RUNNER_TOKEN_SECRET")'],
+          cwd: '.',
+          skillVersions: [
+            {
+              skillVersionId: '55555555-5555-4555-8555-555555555555',
+              versionLabel: 'v1',
+              source: {
+                type: 'zip',
+                archivePath: '/skills/opencode.zip',
+                sha256: 'solidified-sha256',
+              },
+            },
+          ],
+        },
+      },
+    };
+  }
+
+  async request<T extends JsonRecord = JsonRecord>(options: GatewayRequestOptions): Promise<T> {
+    this.calls.push(options);
+    if (options.path.endsWith('/heartbeat') && options.path.includes('/runs/')) {
+      if (this.options.heartbeatDelayMs) {
+        await new Promise((resolve) => setTimeout(resolve, this.options.heartbeatDelayMs));
+      }
+      this.runHeartbeatCount += 1;
+      this.leaseVersion += 1;
+      return {
+        runId: 'run-1',
+        claimToken: 'ag_claim_CLAIM_TOKEN_SECRET',
+        claimAttempt: 1,
+        leaseVersion: this.leaseVersion,
+        cancelRequested: this.options.cancelOnRunHeartbeatCall === this.runHeartbeatCount,
+      } as T;
+    }
+    if (options.path.endsWith('/runs:claim')) {
+      return (this.options.claimPayload || this.getDefaultClaimPayload()) as T;
+    }
+    if (this.failCompleteOnce && options.path.endsWith('/complete')) {
+      this.failCompleteOnce = false;
+      throw new Error('Run is canceling');
+    }
+    if (this.options.enforceTerminalLeaseVersion && /\/(complete|fail|timeout|cancel-ack)$/.test(options.path)) {
+      const body = (options.body || {}) as JsonRecord;
+      if (body.leaseVersion !== this.leaseVersion) {
+        throw new Error(`stale lease version: ${String(body.leaseVersion)} !== ${this.leaseVersion}`);
+      }
+    }
+    return {
+      ok: true,
+    } as T;
+  }
+}
+
+describe('agent gateway daemon runner', () => {
+  let tempDir: string;
+
+  beforeEach(async () => {
+    tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'ag-daemon-runner-'));
+  });
+
+  afterEach(async () => {
+    await fs.rm(tempDir, { recursive: true, force: true });
+  });
+
+  it('claims, syncs the selected Skill version, executes through allowlist, and terminalizes the run', async () => {
+    const workspace = path.join(tempDir, 'workspace');
+    await fs.mkdir(workspace, { recursive: true });
+    const requester = new RunnerRequester();
+    const gateway = new AgentGatewayDaemonNodeClient(requester, {
+      serverUrl: 'https://nocobase.example.test',
+      nodeId: 'node-1',
+      nodeKey: 'node-1',
+      nodeToken: 'ag_node_NODE_TOKEN_SECRET',
+      savedAt: new Date().toISOString(),
+    });
+
+    const result = await runDaemonOnce({
+      gateway,
+      allowlist: {
+        node: {
+          commandKey: 'node',
+          executable: process.execPath,
+          defaultTimeoutMs: 5000,
+        },
+      },
+      workspaceRoot: workspace,
+      skillsRoot: path.join(tempDir, 'skills'),
+      artifactDir: path.join(tempDir, 'artifacts'),
+      claimProfileKey: 'opencode',
+      runHeartbeatIntervalMs: 60_000,
+      detectOptions: {
+        probeCommand: async (candidates) => ({
+          available: candidates.includes('opencode'),
+          command: candidates[0],
+          version: 'opencode 1.0.0',
+        }),
+      },
+      syncSkillVersion: async (options) => {
+        await options.writeInstallStatus?.({
+          nodeId: options.nodeId,
+          skillVersionId: options.skillVersion.skillVersionId,
+          status: 'installed',
+          installedAt: new Date().toISOString(),
+          lastSeenAt: new Date().toISOString(),
+          capabilitiesSnapshotJson: {
+            skillRootPath: path.join(tempDir, 'skills', options.skillVersion.skillVersionId),
+          },
+          settingsSnapshotJson: {
+            versionLabel: options.skillVersion.versionLabel,
+          },
+        });
+        return {
+          skillVersionId: options.skillVersion.skillVersionId,
+          installPath: path.join(tempDir, 'skills', options.skillVersion.skillVersionId),
+          idempotent: false,
+          status: 'installed',
+          sourceDigest: 'solidified-sha256',
+        };
+      },
+    });
+
+    expect(result).toMatchObject({
+      status: 'succeeded',
+      runId: 'run-1',
+    });
+    const paths = requester.calls.map((call) => call.path);
+    expect(paths).toEqual(
+      expect.arrayContaining([
+        '/api/agent-gateway/nodes/node-1/heartbeat',
+        '/api/agent-gateway/nodes/node-1/runs:claim',
+        '/api/agent-gateway/nodes/node-1/skill-installs:upsert',
+        '/api/agent-gateway/runs/run-1/events:append',
+        '/api/agent-gateway/runs/run-1/snapshots:register',
+        '/api/agent-gateway/nodes/node-1/runs/run-1/complete',
+      ]),
+    );
+    expect(JSON.stringify(requester.calls)).not.toContain('RUNNER_TOKEN_SECRET');
+  });
+
+  it('truncates multi-megabyte log artifacts and still completes the run', async () => {
+    const workspace = path.join(tempDir, 'workspace');
+    await fs.mkdir(workspace, { recursive: true });
+    const largeLogPath = path.join(tempDir, 'large-stdout.log');
+    await fs.writeFile(largeLogPath, Buffer.alloc(1100 * 1024, 65));
+    const requester = new RunnerRequester({
+      claimPayload: {
+        claimed: true,
+        runId: 'run-1',
+        claimToken: 'ag_claim_CLAIM_TOKEN_SECRET',
+        claimAttempt: 1,
+        leaseVersion: 1,
+        run: {
+          id: 'run-1',
+          executionPayloadJson: {
+            commandKey: 'node',
+            args: ['-e', 'process.stdout.write("unused")'],
+            cwd: '.',
+          },
+        },
+      },
+    });
+    const gateway = new AgentGatewayDaemonNodeClient(requester, {
+      serverUrl: 'https://nocobase.example.test',
+      nodeId: 'node-1',
+      nodeKey: 'node-1',
+      nodeToken: 'ag_node_NODE_TOKEN_SECRET',
+      savedAt: new Date().toISOString(),
+    });
+
+    const result = await runDaemonOnce({
+      gateway,
+      allowlist: {
+        node: {
+          commandKey: 'node',
+          executable: process.execPath,
+          defaultTimeoutMs: 15000,
+        },
+      },
+      workspaceRoot: workspace,
+      skillsRoot: path.join(tempDir, 'skills'),
+      artifactDir: path.join(tempDir, 'artifacts'),
+      runHeartbeatIntervalMs: 60_000,
+      executeCommand: async () => ({
+        status: 'succeeded',
+        exitCode: 0,
+        signal: null,
+        stdout: {
+          text: null,
+          sizeBytes: 1100 * 1024,
+          artifactPath: largeLogPath,
+        },
+        stderr: {
+          text: null,
+          sizeBytes: 0,
+        },
+      }),
+      detectOptions: {
+        probeCommand: async (candidates) => ({
+          available: candidates.includes('opencode'),
+          command: candidates[0],
+          version: 'opencode 1.0.0',
+        }),
+      },
+    });
+
+    expect(result.status).toBe('succeeded');
+    const artifactCall = requester.calls.find((call) => call.path.endsWith('/artifacts:register'));
+    expect(artifactCall).toBeTruthy();
+    const artifactBody = (artifactCall?.body || {}) as JsonRecord;
+    expect(String(artifactBody.contentText).length).toBeLessThan(1024 * 1024);
+    expect(artifactBody.metadata).toMatchObject({
+      originalSizeBytes: 1100 * 1024,
+      truncated: true,
+    });
+    expect(requester.calls.some((call) => call.path.endsWith('/complete'))).toBe(true);
+  });
+
+  it('drains in-flight run heartbeats before terminalizing with the latest lease version', async () => {
+    const workspace = path.join(tempDir, 'workspace');
+    await fs.mkdir(workspace, { recursive: true });
+    const requester = new RunnerRequester({
+      heartbeatDelayMs: 20,
+      enforceTerminalLeaseVersion: true,
+      claimPayload: {
+        claimed: true,
+        runId: 'run-1',
+        claimToken: 'ag_claim_CLAIM_TOKEN_SECRET',
+        claimAttempt: 1,
+        leaseVersion: 1,
+        run: {
+          id: 'run-1',
+          executionPayloadJson: {
+            commandKey: 'node',
+            args: ['-e', 'setTimeout(() => process.stdout.write("done"), 50)'],
+            cwd: '.',
+          },
+        },
+      },
+    });
+    const gateway = new AgentGatewayDaemonNodeClient(requester, {
+      serverUrl: 'https://nocobase.example.test',
+      nodeId: 'node-1',
+      nodeKey: 'node-1',
+      nodeToken: 'ag_node_NODE_TOKEN_SECRET',
+      savedAt: new Date().toISOString(),
+    });
+
+    const result = await runDaemonOnce({
+      gateway,
+      allowlist: {
+        node: {
+          commandKey: 'node',
+          executable: process.execPath,
+          defaultTimeoutMs: 5000,
+        },
+      },
+      workspaceRoot: workspace,
+      skillsRoot: path.join(tempDir, 'skills'),
+      artifactDir: path.join(tempDir, 'artifacts'),
+      runHeartbeatIntervalMs: 1,
+      detectOptions: {
+        probeCommand: async (candidates) => ({
+          available: candidates.includes('opencode'),
+          command: candidates[0],
+          version: 'opencode 1.0.0',
+        }),
+      },
+    });
+
+    expect(result.status).toBe('succeeded');
+    const completeCall = requester.calls.find((call) => call.path.endsWith('/complete'));
+    expect(completeCall).toBeTruthy();
+  });
+
+  it('acknowledges cancellation observed after command exit before terminal completion', async () => {
+    const workspace = path.join(tempDir, 'workspace');
+    await fs.mkdir(workspace, { recursive: true });
+    const requester = new RunnerRequester({
+      cancelOnRunHeartbeatCall: 3,
+      claimPayload: {
+        claimed: true,
+        runId: 'run-1',
+        claimToken: 'ag_claim_CLAIM_TOKEN_SECRET',
+        claimAttempt: 1,
+        leaseVersion: 1,
+        run: {
+          id: 'run-1',
+          executionPayloadJson: {
+            commandKey: 'node',
+            args: ['-e', 'process.stdout.write("done")'],
+            cwd: '.',
+          },
+        },
+      },
+    });
+    const gateway = new AgentGatewayDaemonNodeClient(requester, {
+      serverUrl: 'https://nocobase.example.test',
+      nodeId: 'node-1',
+      nodeKey: 'node-1',
+      nodeToken: 'ag_node_NODE_TOKEN_SECRET',
+      savedAt: new Date().toISOString(),
+    });
+
+    const result = await runDaemonOnce({
+      gateway,
+      allowlist: {
+        node: {
+          commandKey: 'node',
+          executable: process.execPath,
+          defaultTimeoutMs: 5000,
+        },
+      },
+      workspaceRoot: workspace,
+      skillsRoot: path.join(tempDir, 'skills'),
+      artifactDir: path.join(tempDir, 'artifacts'),
+      runHeartbeatIntervalMs: 60_000,
+      detectOptions: {
+        probeCommand: async (candidates) => ({
+          available: candidates.includes('opencode'),
+          command: candidates[0],
+          version: 'opencode 1.0.0',
+        }),
+      },
+    });
+
+    expect(result).toMatchObject({
+      status: 'canceled',
+      runId: 'run-1',
+    });
+    expect(requester.calls.some((call) => call.path.endsWith('/cancel-ack'))).toBe(true);
+    expect(requester.calls.some((call) => call.path.endsWith('/complete'))).toBe(false);
+  });
+
+  it('keeps the run lease alive while Skill sync is still running', async () => {
+    const workspace = path.join(tempDir, 'workspace');
+    await fs.mkdir(workspace, { recursive: true });
+    const requester = new RunnerRequester();
+    const gateway = new AgentGatewayDaemonNodeClient(requester, {
+      serverUrl: 'https://nocobase.example.test',
+      nodeId: 'node-1',
+      nodeKey: 'node-1',
+      nodeToken: 'ag_node_NODE_TOKEN_SECRET',
+      savedAt: new Date().toISOString(),
+    });
+
+    const result = await runDaemonOnce({
+      gateway,
+      allowlist: {
+        node: {
+          commandKey: 'node',
+          executable: process.execPath,
+          defaultTimeoutMs: 5000,
+        },
+      },
+      workspaceRoot: workspace,
+      skillsRoot: path.join(tempDir, 'skills'),
+      artifactDir: path.join(tempDir, 'artifacts'),
+      runHeartbeatIntervalMs: 5,
+      syncSkillVersion: async (options) => {
+        await new Promise((resolve) => setTimeout(resolve, 30));
+        return {
+          skillVersionId: options.skillVersion.skillVersionId,
+          installPath: path.join(tempDir, 'skills', options.skillVersion.skillVersionId),
+          idempotent: false,
+          status: 'installed',
+          sourceDigest: 'solidified-sha256',
+        };
+      },
+      executeCommand: async () => ({
+        status: 'succeeded',
+        exitCode: 0,
+        signal: null,
+        stdout: {
+          text: 'done',
+          sizeBytes: 4,
+        },
+        stderr: {
+          text: null,
+          sizeBytes: 0,
+        },
+      }),
+      detectOptions: {
+        probeCommand: async (candidates) => ({
+          available: candidates.includes('opencode'),
+          command: candidates[0],
+          version: 'opencode 1.0.0',
+        }),
+      },
+    });
+
+    expect(result.status).toBe('succeeded');
+    const syncHeartbeats = requester.calls.filter((call) => {
+      const body = (call.body || {}) as JsonRecord;
+      return call.path.endsWith('/heartbeat') && body.status === 'syncing_skills';
+    });
+    expect(syncHeartbeats.length).toBeGreaterThan(1);
+  });
+
+  it('acknowledges cancellation observed while Skill sync is still running', async () => {
+    const workspace = path.join(tempDir, 'workspace');
+    await fs.mkdir(workspace, { recursive: true });
+    const requester = new RunnerRequester({
+      cancelOnRunHeartbeatCall: 2,
+    });
+    const gateway = new AgentGatewayDaemonNodeClient(requester, {
+      serverUrl: 'https://nocobase.example.test',
+      nodeId: 'node-1',
+      nodeKey: 'node-1',
+      nodeToken: 'ag_node_NODE_TOKEN_SECRET',
+      savedAt: new Date().toISOString(),
+    });
+
+    const result = await runDaemonOnce({
+      gateway,
+      allowlist: {
+        node: {
+          commandKey: 'node',
+          executable: process.execPath,
+          defaultTimeoutMs: 5000,
+        },
+      },
+      workspaceRoot: workspace,
+      skillsRoot: path.join(tempDir, 'skills'),
+      artifactDir: path.join(tempDir, 'artifacts'),
+      runHeartbeatIntervalMs: 5,
+      syncSkillVersion: async (options) => {
+        await new Promise((resolve) => setTimeout(resolve, 30));
+        return {
+          skillVersionId: options.skillVersion.skillVersionId,
+          installPath: path.join(tempDir, 'skills', options.skillVersion.skillVersionId),
+          idempotent: false,
+          status: 'installed',
+          sourceDigest: 'solidified-sha256',
+        };
+      },
+      executeCommand: async () => {
+        throw new Error('canceled sync should not execute command');
+      },
+      detectOptions: {
+        probeCommand: async (candidates) => ({
+          available: candidates.includes('opencode'),
+          command: candidates[0],
+          version: 'opencode 1.0.0',
+        }),
+      },
+    });
+
+    expect(result).toMatchObject({
+      status: 'canceled',
+      runId: 'run-1',
+      reason: 'skill_sync_canceled',
+    });
+    expect(requester.calls.some((call) => call.path.endsWith('/cancel-ack'))).toBe(true);
+    expect(requester.calls.some((call) => call.path.endsWith('/complete'))).toBe(false);
+  });
+
+  it('acknowledges cancellation that arrives after final refresh before terminal completion', async () => {
+    const workspace = path.join(tempDir, 'workspace');
+    await fs.mkdir(workspace, { recursive: true });
+    const requester = new RunnerRequester({
+      cancelOnRunHeartbeatCall: 4,
+      failCompleteOnce: true,
+      claimPayload: {
+        claimed: true,
+        runId: 'run-1',
+        claimToken: 'ag_claim_CLAIM_TOKEN_SECRET',
+        claimAttempt: 1,
+        leaseVersion: 1,
+        run: {
+          id: 'run-1',
+          executionPayloadJson: {
+            commandKey: 'node',
+            args: ['-e', 'process.stdout.write("done")'],
+            cwd: '.',
+          },
+        },
+      },
+    });
+    const gateway = new AgentGatewayDaemonNodeClient(requester, {
+      serverUrl: 'https://nocobase.example.test',
+      nodeId: 'node-1',
+      nodeKey: 'node-1',
+      nodeToken: 'ag_node_NODE_TOKEN_SECRET',
+      savedAt: new Date().toISOString(),
+    });
+
+    const result = await runDaemonOnce({
+      gateway,
+      allowlist: {
+        node: {
+          commandKey: 'node',
+          executable: process.execPath,
+          defaultTimeoutMs: 5000,
+        },
+      },
+      workspaceRoot: workspace,
+      skillsRoot: path.join(tempDir, 'skills'),
+      artifactDir: path.join(tempDir, 'artifacts'),
+      runHeartbeatIntervalMs: 60_000,
+      detectOptions: {
+        probeCommand: async (candidates) => ({
+          available: candidates.includes('opencode'),
+          command: candidates[0],
+          version: 'opencode 1.0.0',
+        }),
+      },
+    });
+
+    expect(result).toMatchObject({
+      status: 'canceled',
+      runId: 'run-1',
+    });
+    expect(requester.calls.some((call) => call.path.endsWith('/complete'))).toBe(true);
+    expect(requester.calls.some((call) => call.path.endsWith('/cancel-ack'))).toBe(true);
+  });
+});

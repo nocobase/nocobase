@@ -17,6 +17,8 @@ import { registerNodeLifecycleRoutes } from './actions/nodeLifecycle';
 import { registerPromptTemplateRoutes } from './actions/promptTemplates';
 import { registerRunLifecycleRoutes } from './actions/runLifecycle';
 import { registerRunObservabilityRoutes } from './actions/runObservability';
+import { registerSkillInstallRoutes } from './actions/skillInstalls';
+import { registerSkillVersionRoutes } from './actions/skillVersions';
 import { registerAgentGatewayAcl } from './security/permissions';
 
 export class PluginAgentGatewayServer extends Plugin {
@@ -38,6 +40,8 @@ export class PluginAgentGatewayServer extends Plugin {
   async load() {
     registerApiCallLogMiddleware(this);
     registerNodeLifecycleRoutes(this);
+    registerSkillInstallRoutes(this);
+    registerSkillVersionRoutes(this);
     registerRunLifecycleRoutes(this);
     registerRunObservabilityRoutes(this);
     registerPromptTemplateRoutes(this);

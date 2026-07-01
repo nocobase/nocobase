@@ -165,6 +165,22 @@ function matchDaemonRoute(ctx: Context): MatchedDaemonRoute | null {
     };
   }
 
+  const smokeCreateMatch = routePath.match(/^\/nodes\/([^/]+)\/smoke-runs:create$/);
+  if (smokeCreateMatch) {
+    return {
+      action: 'smoke-runs:create',
+      nodeId: smokeCreateMatch[1],
+    };
+  }
+
+  const skillInstallMatch = routePath.match(/^\/nodes\/([^/]+)\/skill-installs:upsert$/);
+  if (skillInstallMatch) {
+    return {
+      action: 'skill-installs:upsert',
+      nodeId: skillInstallMatch[1],
+    };
+  }
+
   const runNodeActionMatch = routePath.match(
     /^\/nodes\/([^/]+)\/runs\/([^/]+)\/(heartbeat|complete|fail|timeout|cancel-ack)$/,
   );
@@ -173,6 +189,15 @@ function matchDaemonRoute(ctx: Context): MatchedDaemonRoute | null {
       action: `run-${runNodeActionMatch[3]}`,
       nodeId: runNodeActionMatch[1],
       runId: runNodeActionMatch[2],
+    };
+  }
+
+  const runSkipMatch = routePath.match(/^\/nodes\/([^/]+)\/runs\/([^/]+)\/skip$/);
+  if (runSkipMatch) {
+    return {
+      action: 'run-skip',
+      nodeId: runSkipMatch[1],
+      runId: runSkipMatch[2],
     };
   }
 

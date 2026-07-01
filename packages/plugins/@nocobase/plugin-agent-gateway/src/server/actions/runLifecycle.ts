@@ -39,6 +39,7 @@ import {
   requireAgentGatewayPermission,
   requireManagePermission,
 } from './utils';
+import { serializeSkillVersionSourceForNode } from './skillVersions';
 
 const DEFAULT_CLAIM_LEASE_SECONDS = 60;
 const DEFAULT_MAX_CONCURRENCY = 1;
@@ -48,6 +49,7 @@ const ACTIVE_RUN_STATUSES = ['claimed', 'syncing_skills', 'running', 'canceling'
 const CLAIMABLE_RUN_STATUS = 'queued';
 const TERMINAL_RUN_STATUSES = ['succeeded', 'failed', 'canceled', 'timeout', 'abandoned'] as const;
 const HEARTBEAT_RUN_STATUSES = ['claimed', 'syncing_skills', 'running'] as const;
+const NODE_OWNED_INLINE_SKILL_SOURCE_TYPES = new Set(['opencode-smoke']);
 
 type ActiveRunStatus = (typeof ACTIVE_RUN_STATUSES)[number];
 type TerminalRunStatus = (typeof TERMINAL_RUN_STATUSES)[number];
@@ -62,6 +64,14 @@ export interface RunLease {
 interface ClaimCandidate {
   run: ModelRecord;
   profile: ModelRecord;
+}
+
+interface SkillVersionPayload extends JsonRecord {
+  skillVersionId: string;
+  skillId?: string;
+  versionLabel: string;
+  status: string;
+  source: JsonRecord;
 }
 
 function getOptionalTargetKey(model: ModelRecord, key: string) {
@@ -132,6 +142,128 @@ function serializeRun(run: ModelRecord) {
   delete json.promptSnapshot;
   delete json.executionPayloadJson;
   return json;
+}
+
+function isRecordWithValues(value: JsonRecord) {
+  return Object.keys(value).length > 0;
+}
+
+function collectResolvedSkillVersionIds(value: unknown, result = new Set<string>()) {
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      collectResolvedSkillVersionIds(item, result);
+    }
+    return result;
+  }
+  const record = getRecord(value);
+  if (!isRecordWithValues(record)) {
+    return result;
+  }
+  const skillVersionId = getString(record.skillVersionId);
+  if (skillVersionId) {
+    result.add(skillVersionId);
+  }
+  for (const entryValue of Object.values(record)) {
+    if (typeof entryValue === 'object' && entryValue !== null) {
+      collectResolvedSkillVersionIds(entryValue, result);
+    }
+  }
+  return result;
+}
+
+function serializeSkillVersionPayload(ctx: Context, skillVersion: ModelRecord): SkillVersionPayload | null {
+  const metadata = getRecord(getModelValue(skillVersion, 'metadataJson'));
+  const skillVersionId = String(getModelTargetKey(skillVersion, 'id'));
+  const source = serializeSkillVersionSourceForNode(ctx, skillVersionId, getRecord(metadata.source));
+  if (!source || !isRecordWithValues(source)) {
+    return null;
+  }
+
+  return {
+    skillVersionId,
+    skillId: getOptionalTargetKey(skillVersion, 'skillId') || undefined,
+    versionLabel: getModelString(skillVersion, 'versionLabel'),
+    status: getModelString(skillVersion, 'status'),
+    source,
+  };
+}
+
+async function getClaimSkillVersionPayloads(ctx: Context, payload: JsonRecord, transaction: Transaction) {
+  const skillVersionIds = Array.from(collectResolvedSkillVersionIds(payload.resolvedSkills));
+  if (!skillVersionIds.length) {
+    return [];
+  }
+
+  const skillVersions = (await ctx.db.getRepository('agSkillVersions').find({
+    filter: {
+      id: {
+        $in: skillVersionIds,
+      },
+    },
+    transaction,
+  })) as ModelRecord[];
+
+  return skillVersions
+    .map((skillVersion) => serializeSkillVersionPayload(ctx, skillVersion))
+    .filter((skillVersion): skillVersion is SkillVersionPayload => Boolean(skillVersion));
+}
+
+function stripInlineSkillVersionSources(payload: JsonRecord) {
+  const sanitizedPayload = {
+    ...payload,
+  };
+  delete sanitizedPayload.skillVersion;
+  delete sanitizedPayload.skillVersions;
+  if (sanitizedPayload.resolvedSkills !== undefined) {
+    sanitizedPayload.resolvedSkills = stripResolvedSkillSources(sanitizedPayload.resolvedSkills);
+  }
+  return sanitizedPayload;
+}
+
+function stripResolvedSkillSources(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.map((item) => stripResolvedSkillSources(item));
+  }
+  const record = getRecord(value);
+  if (!isRecordWithValues(record)) {
+    return value;
+  }
+
+  const sanitizedRecord: JsonRecord = {
+    ...record,
+  };
+  if (getString(sanitizedRecord.skillVersionId)) {
+    delete sanitizedRecord.source;
+  }
+  for (const [key, entryValue] of Object.entries(sanitizedRecord)) {
+    if (typeof entryValue === 'object' && entryValue !== null) {
+      sanitizedRecord[key] = stripResolvedSkillSources(entryValue);
+    }
+  }
+  return sanitizedRecord;
+}
+
+function canPreserveInlineSkillVersionSources(run: ModelRecord) {
+  return NODE_OWNED_INLINE_SKILL_SOURCE_TYPES.has(getModelString(run, 'sourceType'));
+}
+
+async function serializeRunForNodeClaim(ctx: Context, run: ModelRecord, transaction: Transaction) {
+  const json = serializeRun(run);
+  const executionPayloadJson = getRecord(getModelValue(run, 'executionPayloadJson'));
+  const skillVersions = await getClaimSkillVersionPayloads(ctx, executionPayloadJson, transaction);
+  const baseExecutionPayloadJson = canPreserveInlineSkillVersionSources(run)
+    ? executionPayloadJson
+    : stripInlineSkillVersionSources(executionPayloadJson);
+  return {
+    ...json,
+    promptSnapshot: getRecord(getModelValue(run, 'promptSnapshot')),
+    executionPayloadJson: skillVersions.length
+      ? {
+          ...baseExecutionPayloadJson,
+          skillVersions,
+        }
+      : baseExecutionPayloadJson,
+  };
 }
 
 function getQueryValue(ctx: Context, key: string) {
@@ -244,6 +376,10 @@ async function createRun(ctx: Context) {
   );
 
   const values = getBodyValues(ctx);
+  const sourceType = getString(values.sourceType) || 'manual';
+  if (NODE_OWNED_INLINE_SKILL_SOURCE_TYPES.has(sourceType)) {
+    ctx.throw(400, `${sourceType} runs must be created by the Agent Gateway node smoke API`);
+  }
   const now = new Date();
   const run = (await ctx.db.getRepository('agRuns').create({
     values: {
@@ -254,7 +390,7 @@ async function createRun(ctx: Context) {
       cancelRequested: false,
       promptSnapshot: getRecord(values.promptSnapshot),
       executionPayloadJson: getRecord(values.executionPayloadJson || values.executionPayload),
-      sourceType: getString(values.sourceType) || 'manual',
+      sourceType,
       sourceCollection: getString(values.sourceCollection) || null,
       sourceRecordId: getString(values.sourceRecordId) || null,
       requestedAt: now,
@@ -375,8 +511,9 @@ async function hasProfileCapacity(
   return hasCapacity;
 }
 
-function getClaimableRunFilter(nodeId: string, profileIds: string[]) {
+function getClaimableRunFilter(nodeId: string, profileIds: string[], runId?: string) {
   return {
+    ...(runId ? { id: runId } : {}),
     status: CLAIMABLE_RUN_STATUS,
     cancelRequested: false,
     $and: [
@@ -439,11 +576,12 @@ async function findClaimableCandidate(
   profiles: ModelRecord[],
   nodeMaxConcurrency: number,
   transaction: Transaction,
+  runId?: string,
 ) {
   const profileIds = profiles.map((profile) => String(getModelTargetKey(profile, 'id')));
   const profileById = new Map(profiles.map((profile) => [String(getModelTargetKey(profile, 'id')), profile]));
   const capacityCache = new Map<string, boolean>();
-  const filter = getClaimableRunFilter(nodeId, profileIds);
+  const filter = getClaimableRunFilter(nodeId, profileIds, runId);
   let offset = 0;
   let profileConcurrencyBlocked = false;
   let hasMoreCandidates = true;
@@ -510,7 +648,15 @@ async function claimRun(ctx: Context, nodeId: string) {
       return ctx.body;
     }
 
-    const { candidate, reason } = await findClaimableCandidate(ctx, nodeId, profiles, nodeMaxConcurrency, transaction);
+    const targetRunId = getString(values.runId);
+    const { candidate, reason } = await findClaimableCandidate(
+      ctx,
+      nodeId,
+      profiles,
+      nodeMaxConcurrency,
+      transaction,
+      targetRunId,
+    );
     if (!candidate) {
       return {
         claimed: false,
@@ -553,10 +699,67 @@ async function claimRun(ctx: Context, nodeId: string) {
       heartbeatIntervalSeconds: Math.min(DEFAULT_CLAIM_LEASE_SECONDS, 30),
       nodeCapabilities: getRecord(getModelValue(node, 'capabilitiesJson')),
       profileCapabilities: getRecord(getModelValue(candidate.profile, 'capabilitiesJson')),
+      run: await serializeRunForNodeClaim(ctx, candidate.run, transaction),
     };
   });
 
   ctx.body = claimResult;
+}
+
+async function findActiveProfileId(ctx: Context, nodeId: string, profileKey: string, transaction: Transaction) {
+  if (!profileKey) {
+    return null;
+  }
+  const profile = (await ctx.db.getRepository('agAgentProfiles').findOne({
+    filter: {
+      nodeId,
+      profileKey,
+      status: 'active',
+    },
+    transaction,
+  })) as ModelRecord | null;
+  return profile ? getModelTargetKey(profile, 'id') : null;
+}
+
+async function createSmokeRun(ctx: Context, nodeId: string) {
+  const values = getBodyValues(ctx);
+  const result = await ctx.db.sequelize.transaction(async (transaction) => {
+    await authenticateNodeForRun(ctx, nodeId, transaction, { lock: false });
+
+    const rawExecutionPayload = getRecord(values.executionPayloadJson || values.executionPayload);
+    const profileKey = getString(values.profileKey || rawExecutionPayload.profileKey) || 'opencode';
+    const agentProfileId = await findActiveProfileId(ctx, nodeId, profileKey, transaction);
+    const now = new Date();
+    const run = (await ctx.db.getRepository('agRuns').create({
+      values: {
+        runCode: getString(values.runCode) || `smoke_${randomUUID()}`,
+        status: CLAIMABLE_RUN_STATUS,
+        claimAttempt: 0,
+        leaseVersion: 0,
+        cancelRequested: false,
+        promptSnapshot: getRecord(values.promptSnapshot),
+        executionPayloadJson: {
+          ...rawExecutionPayload,
+          profileKey,
+        },
+        sourceType: 'opencode-smoke',
+        requestedAt: now,
+        queuedAt: now,
+        nodeId,
+        agentProfileId,
+      },
+      transaction,
+    })) as ModelRecord;
+
+    return {
+      runId: getModelTargetKey(run, 'id'),
+      status: getModelString(run, 'status'),
+      nodeId,
+      agentProfileId,
+    };
+  });
+
+  ctx.body = result;
 }
 
 export async function validateRunLease(
@@ -773,6 +976,61 @@ async function failRun(ctx: Context, nodeId: string, runId: string) {
   );
 }
 
+async function skipSmokeRun(ctx: Context, nodeId: string, runId: string) {
+  const values = getBodyValues(ctx);
+  const result = await ctx.db.sequelize.transaction(async (transaction) => {
+    await authenticateNodeForRun(ctx, nodeId, transaction, { lock: false });
+    const run = (await ctx.db.getRepository('agRuns').findOne({
+      filterByTk: runId,
+      transaction,
+      lock: transaction.LOCK.UPDATE,
+    })) as ModelRecord | null;
+    if (!run) {
+      ctx.throw(404, 'Run not found');
+    }
+    if (getOptionalTargetKey(run, 'nodeId') !== nodeId || getModelString(run, 'sourceType') !== 'opencode-smoke') {
+      ctx.throw(403, 'Only node-owned OpenCode smoke runs can be skipped by daemon nodes');
+    }
+
+    const status = getModelString(run, 'status');
+    if (isTerminalRunStatus(status)) {
+      ctx.throw(409, `Run is already ${status}`);
+    }
+    if (status !== CLAIMABLE_RUN_STATUS) {
+      ctx.throw(409, `Run cannot be skipped from ${status}`);
+    }
+
+    const now = new Date();
+    const reason = getString(values.reason) || 'OpenCode smoke was skipped';
+    await ctx.db.getRepository('agRuns').update({
+      filterByTk: runId,
+      values: {
+        status: 'failed',
+        resultSummaryJson: getRecord(
+          redactRunResultSummary({
+            ...getRecord(values.resultSummary),
+            skipped: true,
+          }),
+        ),
+        errorSummary: redactRunErrorSummary(reason),
+        failedAt: now,
+        finishedAt: now,
+        claimExpiresAt: null,
+      },
+      transaction,
+    });
+
+    return {
+      runId,
+      status: 'failed',
+      skipped: true,
+      finishedAt: now.toISOString(),
+    };
+  });
+
+  ctx.body = result;
+}
+
 async function timeoutRun(ctx: Context, nodeId: string, runId: string) {
   await finishRun(
     ctx,
@@ -918,10 +1176,12 @@ export function registerRunLifecycleRoutes(plugin: Plugin) {
       }
 
       const routePath = ctx.path.slice(API_PREFIX.length);
+      const smokeCreateMatch = routePath.match(/^\/nodes\/([^/]+)\/smoke-runs:create$/);
       const claimMatch = routePath.match(/^\/nodes\/([^/]+)\/runs:claim$/);
       const runNodeActionMatch = routePath.match(
         /^\/nodes\/([^/]+)\/runs\/([^/]+)\/(heartbeat|complete|fail|timeout|cancel-ack)$/,
       );
+      const runSkipMatch = routePath.match(/^\/nodes\/([^/]+)\/runs\/([^/]+)\/skip$/);
       const cancelMatch = routePath.match(/^\/runs\/([^/]+)\/cancel$/);
       const getRunMatch = routePath.match(/^\/runs:get\/([^/]+)$/);
 
@@ -937,6 +1197,11 @@ export function registerRunLifecycleRoutes(plugin: Plugin) {
 
       if (ctx.method === 'POST' && routePath === '/runs:create') {
         await createRun(ctx);
+        return;
+      }
+
+      if (ctx.method === 'POST' && smokeCreateMatch) {
+        await createSmokeRun(ctx, smokeCreateMatch[1]);
         return;
       }
 
@@ -967,6 +1232,11 @@ export function registerRunLifecycleRoutes(plugin: Plugin) {
           await ackCancelRun(ctx, nodeId, runId);
           return;
         }
+      }
+
+      if (ctx.method === 'POST' && runSkipMatch) {
+        await skipSmokeRun(ctx, runSkipMatch[1], runSkipMatch[2]);
+        return;
       }
 
       if (ctx.method === 'POST' && cancelMatch) {
