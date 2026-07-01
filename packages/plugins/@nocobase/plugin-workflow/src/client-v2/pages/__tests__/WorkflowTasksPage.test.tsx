@@ -438,6 +438,65 @@ describe('WorkflowTasksPage', () => {
     });
   });
 
+  it('aligns the desktop header and tabs with the task card column', async () => {
+    const { registry } = createTaskTypes();
+    const demoTasks = {
+      listMine: vi.fn().mockResolvedValue({
+        data: {
+          data: [
+            { id: 1, title: 'Task A' },
+            { id: 2, title: 'Task B' },
+          ],
+          meta: { count: 2 },
+        },
+      }),
+    };
+    const userWorkflowTasks = {
+      listMine: vi.fn().mockResolvedValue({ data: [{ type: 'demo', stats: { pending: 1, all: 1 } }] }),
+    };
+    holder.ctx = makeCtx(registry, { demoTasks, userWorkflowTasks });
+
+    const { container } = renderWithApp(<WorkflowTasksPage />);
+
+    await screen.findByText('Task A');
+    await screen.findByText('Task B');
+
+    const title = screen.getByRole('heading', { name: 'Demo tasks' });
+    const header = title.closest('.ant-flex')?.parentElement;
+    expect(header).toHaveStyle({ padding: '16px 24px 0px' });
+    expect(container.querySelector('.ant-tabs-nav')).toHaveStyle({ marginBottom: '0px' });
+    const listItems = container.querySelectorAll('.ant-list-item');
+    expect(listItems[0]).toHaveStyle({ padding: '24px 24px 4px' });
+    expect(listItems[1]).toHaveStyle({ padding: '8px 24px 4px' });
+  });
+
+  it('does not render extra list or pagination separators', async () => {
+    const { registry } = createTaskTypes();
+    const demoTasks = {
+      listMine: vi.fn().mockResolvedValue({
+        data: {
+          data: [
+            { id: 1, title: 'Task A' },
+            { id: 2, title: 'Task B' },
+          ],
+          meta: { count: 2 },
+        },
+      }),
+    };
+    const userWorkflowTasks = {
+      listMine: vi.fn().mockResolvedValue({ data: [{ type: 'demo', stats: { pending: 1, all: 1 } }] }),
+    };
+    holder.ctx = makeCtx(registry, { demoTasks, userWorkflowTasks });
+
+    const { container } = renderWithApp(<WorkflowTasksPage />);
+
+    await screen.findByText('Task A');
+    await screen.findByText('Task B');
+
+    expect(container.querySelector('.ant-list')).not.toHaveClass('ant-list-split');
+    expect(screen.getByTestId('workflow-task-pagination').parentElement?.style.borderTop).toBe('');
+  });
+
   it('wraps task item content at full list width for nested flow renderers', async () => {
     const { registry } = createTaskTypes();
     const demoTasks = {

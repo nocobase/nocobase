@@ -244,6 +244,7 @@ function TaskStatusControls(props: {
       activeKey={status}
       onChange={handleStatusChange}
       items={statusItems.map(({ key, label }) => ({ key, label }))}
+      tabBarStyle={{ marginBottom: 0 }}
       tabBarExtraContent={Actions ? { right: <Actions reload={reload} /> } : undefined}
     />
   );
@@ -364,8 +365,9 @@ function WorkflowTaskList(props: {
         loading={loading}
         rowKey={(record) => String(getWorkflowTaskRecordKey(record) ?? '')}
         locale={{ emptyText: t('No data yet') }}
+        split={false}
         style={{ background: token.colorBgLayout, flex: '1 1 0%', minHeight: 0 }}
-        renderItem={(record) => (
+        renderItem={(record, index) => (
           <WorkflowTaskRecordContext.Provider value={{ record, openRecord: onOpenRecord, refresh }}>
             <List.Item
               role="button"
@@ -376,7 +378,7 @@ function WorkflowTaskList(props: {
                 cursor: 'pointer',
                 padding: mobile
                   ? `0.5em 0.5em ${token.lineWidth}px`
-                  : `${token.paddingXS}px ${token.paddingLG}px ${token.paddingXXS}px`,
+                  : `${index === 0 ? token.paddingLG : token.paddingXS}px ${token.paddingLG}px ${token.paddingXXS}px`,
                 background: token.colorBgLayout,
               }}
             >
@@ -391,7 +393,6 @@ function WorkflowTaskList(props: {
         <Flex
           justify="end"
           style={{
-            borderTop: `${token.lineWidth}px ${token.lineType} ${token.colorBorderSecondary}`,
             padding: mobile ? '0.5em' : `0 ${token.paddingLG}px ${token.padding}px`,
           }}
         >
@@ -721,7 +722,7 @@ function WorkflowTasksPageContent() {
           {mobile ? null : (
             <div
               style={{
-                padding: `${token.padding}px ${token.padding}px 0`,
+                padding: `${token.padding}px ${token.paddingLG}px 0`,
                 background: token.colorBgContainer,
                 borderBottom: `${token.lineWidth}px ${token.lineType} ${token.colorBorderSecondary}`,
               }}
