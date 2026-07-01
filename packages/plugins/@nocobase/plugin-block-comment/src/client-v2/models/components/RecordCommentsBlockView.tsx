@@ -353,9 +353,11 @@ const SubmitBox = observer(({ model, forkKeyPrefix }: { model: RecordCommentsBlo
         },
       );
       setContent('');
-      const count = model.resource.getCount() || 0;
-      const pageSize = model.resource.getPageSize() || 10;
-      model.resource.setPage(Math.max(Math.ceil((count + 1) / pageSize), 1));
+      if (model.shouldAutoJumpToLastPage()) {
+        const count = model.resource.getCount() || 0;
+        const pageSize = model.resource.getPageSize() || 10;
+        model.resource.setPage(Math.max(Math.ceil((count + 1) / pageSize), 1));
+      }
       await model.resource.refresh();
     } catch (error) {
       message.error(getErrorMessage(error, t('Failed to create comment')));

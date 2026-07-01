@@ -280,27 +280,22 @@ export function RequestFieldset() {
       <RequestBodyField />
 
       <Form.Item name={['config', 'timeout']} label={t('Timeout config')} initialValue={DEFAULT_TIMEOUT}>
-        <InputNumber addonAfter={t('ms')} min={1} step={1000} style={{ width: '100%' }} />
+        <InputNumber addonAfter={t('ms')} min={1} step={1000} />
       </Form.Item>
 
       <Form.Item
         name={['config', 'onlyData']}
-        label={t('Only return response data')}
         valuePropName="checked"
         extra={t(
           'If enabled, only the response data will be saved into result, and the status code and headers will be ignored.',
         )}
         initialValue={true}
       >
-        <Checkbox />
+        <Checkbox>{t('Only return response data')}</Checkbox>
       </Form.Item>
 
-      <Form.Item
-        name={['config', 'ignoreFail']}
-        label={t('Ignore failed request and continue workflow')}
-        valuePropName="checked"
-      >
-        <Checkbox />
+      <Form.Item name={['config', 'ignoreFail']} valuePropName="checked">
+        <Checkbox>{t('Ignore failed request and continue workflow')}</Checkbox>
       </Form.Item>
     </>
   );

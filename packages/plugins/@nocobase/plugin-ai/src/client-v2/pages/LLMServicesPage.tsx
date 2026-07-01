@@ -38,6 +38,7 @@ import { useLocation } from 'react-router-dom';
 import { getRecommendedModels, isRecommendedModel } from '../../common/recommended-models';
 import type { LLMProviderOptions } from '../manager/ai-manager';
 import { formatModelLabel } from '../llm-services/model-label';
+import { normalizeLLMServiceFormValues } from '../llm-services/utils';
 import { useT } from '../locale';
 import { useAIConfigRepository } from '../repositories/hooks/useAIConfigRepository';
 import { RemoteSelect } from '../components/RemoteSelect';
@@ -208,7 +209,7 @@ export async function listLLMServices(apiClient: APIClientLike): Promise<LLMServ
 
 export async function createLLMService(apiClient: APIClientLike, values: LLMServiceFormValues) {
   await callResourceAction(apiClient, 'llmServices', 'create', {
-    values,
+    values: normalizeLLMServiceFormValues(values),
   });
 }
 
@@ -217,7 +218,7 @@ export async function updateLLMService(apiClient: APIClientLike, values: LLMServ
     throw new Error('Missing LLM service name.');
   }
   await callResourceAction(apiClient, 'llmServices', 'update', {
-    values,
+    values: normalizeLLMServiceFormValues(values),
     filterByTk: values.name,
   });
 }
@@ -274,7 +275,7 @@ export async function listProviderModels(
     'ai',
     'listProviderModels',
     {
-      values,
+      values: normalizeLLMServiceFormValues(values),
     },
     { skipNotify: true },
   );
@@ -287,7 +288,7 @@ export async function testLLMServiceFlight(
   values: { provider: string; options?: Record<string, unknown>; model: string },
 ): Promise<{ code?: number; message?: string }> {
   const response = await callResourceAction(apiClient, 'ai', 'testFlight', {
-    values,
+    values: normalizeLLMServiceFormValues(values),
   });
   const data = readResponseData(response);
   return isRecord(data)

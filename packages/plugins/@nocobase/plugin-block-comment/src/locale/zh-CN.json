@@ -1,5 +1,6 @@
 {
   "Actions": "操作",
+  "Auto jump to last page": "自动跳转到最后一页",
   "Are you sure you want to delete it?": "确定要删除吗？",
   "Cancel": "取消",
   "Comment": "评论",
@@ -18,6 +19,7 @@
   "Failed to delete comment": "删除评论失败",
   "Failed to update comment": "更新评论失败",
   "Field mapping": "字段映射",
+  "Jump to last page by default": "默认跳转到最后一页",
   "Record comment action": "评论操作",
   "Comments": "评论",
   "Record comments settings": "区块：评论设置",

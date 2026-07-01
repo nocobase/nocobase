@@ -93,6 +93,10 @@ describe('LLMServicesPage request helpers', () => {
       name: 'v_openai',
       title: 'OpenAI',
       provider: 'openai',
+      options: {
+        apiKey: 'secret',
+        baseURL: '',
+      },
     });
 
     expect(create).toHaveBeenCalledWith(
@@ -101,6 +105,9 @@ describe('LLMServicesPage request helpers', () => {
           name: 'v_openai',
           title: 'OpenAI',
           provider: 'openai',
+          options: {
+            apiKey: 'secret',
+          },
         },
       },
       undefined,
@@ -117,6 +124,10 @@ describe('LLMServicesPage request helpers', () => {
       name: 'v_openai',
       title: 'OpenAI',
       provider: 'openai',
+      options: {
+        apiKey: 'secret',
+        baseURL: ' https://api.example.com/v1/ ',
+      },
     });
 
     expect(update).toHaveBeenCalledWith(
@@ -125,6 +136,10 @@ describe('LLMServicesPage request helpers', () => {
           name: 'v_openai',
           title: 'OpenAI',
           provider: 'openai',
+          options: {
+            apiKey: 'secret',
+            baseURL: 'https://api.example.com/v1/',
+          },
         },
         filterByTk: 'v_openai',
       },
@@ -201,7 +216,7 @@ describe('LLMServicesPage request helpers', () => {
     await expect(
       listProviderModels(apiClient, {
         provider: 'openai',
-        options: { apiKey: '{{ $env.OPENAI_API_KEY }}' },
+        options: { apiKey: '{{ $env.OPENAI_API_KEY }}', baseURL: '   ' },
         model: 'gpt',
       }),
     ).resolves.toEqual(['gpt-4o']);
@@ -233,7 +248,7 @@ describe('LLMServicesPage request helpers', () => {
     await expect(
       testLLMServiceFlight(apiClient, {
         provider: 'openai',
-        options: { apiKey: 'secret' },
+        options: { apiKey: 'secret', baseURL: ' https://api.example.com/v1/ ' },
         model: 'gpt-4o',
       }),
     ).resolves.toEqual({ code: 0, message: 'ok' });
@@ -241,7 +256,7 @@ describe('LLMServicesPage request helpers', () => {
       {
         values: {
           provider: 'openai',
-          options: { apiKey: 'secret' },
+          options: { apiKey: 'secret', baseURL: 'https://api.example.com/v1/' },
           model: 'gpt-4o',
         },
       },

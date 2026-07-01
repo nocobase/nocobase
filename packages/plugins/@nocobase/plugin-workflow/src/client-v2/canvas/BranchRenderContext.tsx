@@ -8,10 +8,13 @@
  */
 
 import React, { createContext, useContext } from 'react';
+import { getWorkflowSingleton } from '../utils/contextSingleton';
 
 export type BranchNodeRenderer = React.ComponentType<{ data: any }>;
 
-export const BranchRenderContext = createContext<BranchNodeRenderer | null>(null);
+export const BranchRenderContext = getWorkflowSingleton('BranchRenderContext', () =>
+  createContext<BranchNodeRenderer | null>(null),
+);
 
 export function useBranchNodeRenderer() {
   return useContext(BranchRenderContext);

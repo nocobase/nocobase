@@ -30,6 +30,8 @@ export * from './layout-manager';
 export * from './hooks';
 export { default as languageCodes } from './locale/languageCodes';
 export * from './nocobase-buildin-plugin';
+export { getRouteRuntimeVersion } from './utils/getRouteRuntimeVersion';
+export type { RouteRuntimeVersion } from './utils/getRouteRuntimeVersion';
 export * from './collection-field-interface/CollectionFieldInterface';
 export * from './collection-field-interface/CollectionFieldInterfaceManager';
 export * from './collection-manager/field-configure';

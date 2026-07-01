@@ -8,8 +8,9 @@
  */
 
 import React, { createContext, useContext } from 'react';
+import { getWorkflowSingleton } from '../utils/contextSingleton';
 
-export const HideVariableContext = createContext(false);
+export const HideVariableContext = getWorkflowSingleton('HideVariableContext', () => createContext(false));
 
 export function useHideVariable() {
   return useContext(HideVariableContext);

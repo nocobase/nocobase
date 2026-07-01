@@ -8,6 +8,7 @@
  */
 
 import React, { createContext, useContext } from 'react';
+import { getWorkflowSingleton } from '../utils/contextSingleton';
 
 export type SharedAddNodeAnchor = {
   upstream?: any;
@@ -28,7 +29,9 @@ export type SharedAddNodeContextValue = {
   setCreating?: (value: any) => void;
 };
 
-export const AddNodeContext = createContext<SharedAddNodeContextValue | null>(null);
+export const AddNodeContext = getWorkflowSingleton('AddNodeContext', () =>
+  createContext<SharedAddNodeContextValue | null>(null),
+);
 
 export function useAddNodeContext() {
   return useContext(AddNodeContext);

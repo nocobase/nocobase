@@ -31,6 +31,7 @@ export type WorkflowVariableInputProps = {
   value?: string;
   onChange?: (value: string) => void;
   disabled?: boolean;
+  readOnly?: boolean;
   placeholder?: string;
   className?: string;
   style?: React.CSSProperties;
