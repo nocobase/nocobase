@@ -131,6 +131,38 @@ describe('TriggerConfig', () => {
     );
   });
 
+  it('uses the notice type to render the compact alert icon and color', async () => {
+    holder.workflowPlugin.getWorkflowNotices.mockReturnValue([
+      {
+        key: 'invalid-trigger-ui',
+        message: 'Invalid trigger interface',
+        description: 'The trigger interface is invalid.',
+        type: 'error',
+      },
+    ]);
+
+    const { container } = render(
+      <FlowContext.Provider
+        value={{
+          workflow: { id: 1, type: 'approval', config: {} },
+          refresh: vi.fn(),
+        }}
+      >
+        <TriggerConfig />
+      </FlowContext.Provider>,
+    );
+
+    expect(await screen.findByText('Invalid trigger interface')).toBeInTheDocument();
+    expect(screen.getByText('The trigger interface is invalid.')).toBeInTheDocument();
+    const alert = screen.getByText('Invalid trigger interface').closest('.ant-alert');
+    expect(alert).toHaveClass('ant-alert-error');
+    expect(alert).not.toHaveClass('ant-alert-with-description');
+    expect(alert).toHaveStyle({ alignItems: 'flex-start' });
+    expect(container.querySelector('.anticon-close-circle')).toBeInTheDocument();
+    expect(container.querySelector('.anticon-exclamation-circle')).not.toBeInTheDocument();
+    expect(alert?.querySelector('.ant-alert-icon')).toHaveStyle({ marginTop: '4px' });
+  });
+
   it('hides trigger node card notices when the workflow version has been executed', () => {
     holder.workflowPlugin.getWorkflowNotices.mockReturnValue([
       {

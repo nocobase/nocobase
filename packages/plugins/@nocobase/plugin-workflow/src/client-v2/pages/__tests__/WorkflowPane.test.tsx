@@ -105,6 +105,7 @@ const mockPlugin = {
   triggers: { getEntities: () => [['collection', { title: 'Collection event' }]] },
   getTriggerOptions: (type?: string) => (type === 'collection' ? { title: 'Collection event' } : undefined),
   getWorkflowNotices: vi.fn(() => []),
+  loadWorkflowListNotices: vi.fn(() => Promise.resolve({})),
 };
 
 function makeCtx(resourceMap: Record<string, any>) {
@@ -123,6 +124,7 @@ describe('WorkflowPane (request layer)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockPlugin.getWorkflowNotices.mockReturnValue([]);
+    mockPlugin.loadWorkflowListNotices.mockResolvedValue({});
     providerHolder.collections = null;
     providerHolder.workflowTabsClassName = null;
     providerHolder.collectionFilterProps = null;
@@ -355,7 +357,7 @@ describe('WorkflowPane (request layer)', () => {
     expect(providerHolder.collectionFilterProps.defaultValue).toEqual(defaultWorkflowFilter);
   });
 
-  it('requests workflow config and nodes so notice providers can diagnose rows', async () => {
+  it('keeps the workflow list request lightweight while list notices load separately', async () => {
     const workflows = {
       list: vi.fn().mockResolvedValue({
         data: {
@@ -375,14 +377,14 @@ describe('WorkflowPane (request layer)', () => {
 
     expect(workflows.list).toHaveBeenCalledWith(
       expect.objectContaining({
-        appends: ['categories', 'stats', 'nodes'],
+        appends: ['categories', 'stats'],
+        except: ['config'],
       }),
     );
-    expect(workflows.list.mock.calls[0][0].except).toBeUndefined();
+    expect(workflows.list.mock.calls[0][0].appends).not.toContain('nodes');
   });
 
-  it('renders workflow row notices returned by the workflow plugin', async () => {
-    const nodes = [{ id: 101, type: 'approval', config: { applyDetail: 'legacy_schema' } }];
+  it('renders synchronous workflow row notices returned by the workflow plugin', async () => {
     mockPlugin.getWorkflowNotices.mockReturnValue([
       {
         key: 'legacy-ui',
@@ -403,8 +405,6 @@ describe('WorkflowPane (request layer)', () => {
               enabled: false,
               categories: [],
               stats: { executed: 0 },
-              config: { applyForm: 'legacy_schema' },
-              nodes,
             },
           ],
           meta: { count: 1 },
@@ -419,10 +419,99 @@ describe('WorkflowPane (request layer)', () => {
     expect(await screen.findByText('Approval interface needs reconfiguration')).toBeInTheDocument();
     expect(mockPlugin.getWorkflowNotices).toHaveBeenCalledWith(
       expect.objectContaining({
-        nodes,
         surface: 'workflow-list-row',
         workflow: expect.objectContaining({ id: 9 }),
       }),
     );
+  });
+
+  it('renders asynchronously loaded workflow list notices for the current page', async () => {
+    mockPlugin.loadWorkflowListNotices.mockResolvedValue({
+      9: [
+        {
+          key: 'legacy-ui',
+          message: 'Approval interface needs reconfiguration',
+          description:
+            'This workflow contains approval interfaces created in an earlier version. Reconfigure the approval interfaces before using this workflow.',
+          type: 'warning',
+        },
+      ],
+    });
+    const workflows = {
+      list: vi.fn().mockResolvedValue({
+        data: {
+          data: [
+            {
+              id: 9,
+              title: 'Row',
+              type: 'approval',
+              sync: false,
+              enabled: false,
+              categories: [],
+              stats: { executed: 0 },
+            },
+          ],
+          meta: { count: 1 },
+        },
+      }),
+    };
+    const workflowCategories = { list: vi.fn().mockResolvedValue({ data: { data: [] } }) };
+    holder.ctx = makeCtx({ workflows, workflowCategories });
+
+    renderWithApp(<WorkflowPane />);
+
+    expect(await screen.findByText('Approval interface needs reconfiguration')).toBeInTheDocument();
+    expect(mockPlugin.loadWorkflowListNotices).toHaveBeenCalledWith(
+      expect.objectContaining({
+        api: holder.ctx.api,
+        surface: 'workflow-list-row',
+        workflows: [expect.objectContaining({ id: 9, type: 'approval' })],
+      }),
+    );
+    expect(workflows.list).toHaveBeenCalledWith(
+      expect.objectContaining({
+        appends: ['categories', 'stats'],
+        except: ['config'],
+      }),
+    );
+  });
+
+  it('maps info workflow row notices to an Ant Design supported tag color', async () => {
+    mockPlugin.loadWorkflowListNotices.mockResolvedValue({
+      9: [
+        {
+          key: 'info-ui',
+          message: 'Info notice',
+          description: 'This notice is informational.',
+          type: 'info',
+        },
+      ],
+    });
+    const workflows = {
+      list: vi.fn().mockResolvedValue({
+        data: {
+          data: [
+            {
+              id: 9,
+              title: 'Row',
+              type: 'approval',
+              sync: false,
+              enabled: false,
+              categories: [],
+              stats: { executed: 0 },
+            },
+          ],
+          meta: { count: 1 },
+        },
+      }),
+    };
+    const workflowCategories = { list: vi.fn().mockResolvedValue({ data: { data: [] } }) };
+    holder.ctx = makeCtx({ workflows, workflowCategories });
+
+    const { container } = renderWithApp(<WorkflowPane />);
+
+    const notice = await screen.findByText('Info notice');
+    expect(notice.closest('.ant-tag')).toHaveClass('ant-tag-blue');
+    expect(container.querySelector('.anticon-info-circle')).toBeInTheDocument();
   });
 });

@@ -63,9 +63,25 @@ export type WorkflowNoticeProviderContext = {
   workflow?: Record<string, unknown> | null;
 };
 
-export type WorkflowNoticeProvider = (
-  context: WorkflowNoticeProviderContext,
-) => WorkflowNotice | WorkflowNotice[] | null | undefined;
+export type WorkflowNoticeResult = WorkflowNotice | WorkflowNotice[] | null | undefined;
+
+export type WorkflowListNoticeProviderContext = {
+  api?: unknown;
+  surface: 'workflow-list-row';
+  workflows: Array<Record<string, unknown>>;
+};
+
+export type WorkflowListNoticeMap = Record<string, WorkflowNotice | WorkflowNotice[] | null | undefined>;
+
+export type WorkflowNoticeProviderFunction = (context: WorkflowNoticeProviderContext) => WorkflowNoticeResult;
+
+export type WorkflowNoticeProviderObject = {
+  getNotices?: (context: WorkflowNoticeProviderContext) => WorkflowNoticeResult;
+  loadWorkflowListNotices?: (context: WorkflowListNoticeProviderContext) => Promise<WorkflowListNoticeMap>;
+  shouldLoadWorkflowListNotices?: (context: WorkflowListNoticeProviderContext) => boolean;
+};
+
+export type WorkflowNoticeProvider = WorkflowNoticeProviderFunction | WorkflowNoticeProviderObject;
 
 const tpl = (key: string) => `{{t("${key}", { ns: "${NAMESPACE}" })}}`;
 
@@ -160,12 +176,45 @@ export class PluginWorkflowClientV2 extends Plugin {
   /** Collect notices from registered providers for the current UI surface. */
   getWorkflowNotices(context: WorkflowNoticeProviderContext) {
     return Array.from(this.workflowNoticeProviders.getEntities()).flatMap(([, provider]) => {
-      const notices = provider(context);
+      const notices = typeof provider === 'function' ? provider(context) : provider.getNotices?.(context);
       if (!notices) {
         return [];
       }
       return Array.isArray(notices) ? notices : [notices];
     });
+  }
+
+  async loadWorkflowListNotices(context: WorkflowListNoticeProviderContext) {
+    const noticeMap: Record<string, WorkflowNotice[]> = {};
+    const providerNoticeMaps = await Promise.all(
+      Array.from(this.workflowNoticeProviders.getEntities()).map(async ([, provider]) => {
+        try {
+          if (typeof provider === 'function' || !provider.loadWorkflowListNotices) {
+            return {};
+          }
+
+          if (provider.shouldLoadWorkflowListNotices && !provider.shouldLoadWorkflowListNotices(context)) {
+            return {};
+          }
+
+          return await provider.loadWorkflowListNotices(context);
+        } catch {
+          return {};
+        }
+      }),
+    );
+
+    providerNoticeMaps.forEach((providerNoticeMap) => {
+      Object.entries(providerNoticeMap || {}).forEach(([workflowId, notices]) => {
+        if (!notices) {
+          return;
+        }
+        const normalizedNotices = Array.isArray(notices) ? notices : [notices];
+        noticeMap[workflowId] = [...(noticeMap[workflowId] || []), ...normalizedNotices];
+      });
+    });
+
+    return noticeMap;
   }
 
   async load() {

@@ -11,7 +11,13 @@ import { css } from '@emotion/css';
 import React, { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import { useMemoizedFn } from 'ahooks';
 import { Alert, App, Form, Input, Skeleton, Tag, Tooltip, Typography, theme } from 'antd';
-import { ExclamationCircleFilled, ThunderboltOutlined } from '@ant-design/icons';
+import {
+  CheckCircleFilled,
+  CloseCircleFilled,
+  ExclamationCircleFilled,
+  InfoCircleFilled,
+  ThunderboltOutlined,
+} from '@ant-design/icons';
 import { DrawerFormLayout } from '@nocobase/client-v2';
 import { useFlowContext as useFlowEngineContext } from '@nocobase/flow-engine';
 import {
@@ -22,6 +28,7 @@ import {
 import useStyles from '../canvas/style';
 import { useT } from '../locale';
 import { PluginWorkflowClientV2 } from '../plugin';
+import type { WorkflowNotice } from '../plugin';
 import { TriggerExecutionButton } from './TriggerExecutionButton';
 import type { Trigger } from '.';
 
@@ -222,6 +229,22 @@ function CompactNoticeMessage({
   );
 }
 
+function getCompactNoticeIcon(type: WorkflowNotice['type'], token: ReturnType<typeof theme.useToken>['token']) {
+  const style = { fontSize: token.fontSize, marginTop: token.marginXXS };
+
+  switch (type) {
+    case 'error':
+      return <CloseCircleFilled style={{ ...style, color: token.colorError }} />;
+    case 'info':
+      return <InfoCircleFilled style={{ ...style, color: token.colorInfo }} />;
+    case 'success':
+      return <CheckCircleFilled style={{ ...style, color: token.colorSuccess }} />;
+    case 'warning':
+    default:
+      return <ExclamationCircleFilled style={{ ...style, color: token.colorWarning }} />;
+  }
+}
+
 export function TriggerConfig() {
   const flowEngine = useFlowEngineContext();
   const t = useT();
@@ -314,11 +337,7 @@ export function TriggerConfig() {
             key={notice.key}
             type={notice.type || 'warning'}
             showIcon
-            icon={
-              <ExclamationCircleFilled
-                style={{ color: token.colorWarning, fontSize: token.fontSize, marginTop: token.marginXXS }}
-              />
-            }
+            icon={getCompactNoticeIcon(notice.type || 'warning', token)}
             message={<CompactNoticeMessage description={notice.description} title={notice.message} token={token} />}
             style={{ marginTop: token.marginSM, alignItems: 'flex-start' }}
           />
