@@ -12,10 +12,100 @@ import PluginWorkflowServer, { EXECUTION_STATUS, JOB_STATUS } from '@nocobase/pl
 
 import ManualInstruction from './ManualInstruction';
 
-function updateJobByManualTask(task) {
+type ManualTaskModel = {
+  id: number | string;
+  userId: number | string;
+  jobId: number | string;
+  status: number;
+  result?: unknown;
+  job: {
+    status: number;
+    result?: unknown;
+    set(values: { status: number; result: unknown }): void;
+    save(): Promise<void>;
+  };
+  node: {
+    config: {
+      mode?: number;
+    };
+  };
+};
+
+type StatusDistribution = {
+  status: number;
+  count: number;
+};
+
+function getSubmittedRatio(tasks: ManualTaskModel[]) {
+  if (!tasks.length) {
+    return 0;
+  }
+  const submitted = tasks.reduce((count, item) => (item.status !== JOB_STATUS.PENDING ? count + 1 : count), 0);
+  return submitted / tasks.length;
+}
+
+function getSingleModeStatus(distribution: StatusDistribution[]) {
+  return distribution.find((item) => item.status !== JOB_STATUS.PENDING && item.count > 0)?.status ?? null;
+}
+
+function getAllModeStatus(distribution: StatusDistribution[], assignees: Array<number | string>) {
+  const resolved = distribution.find((item) => item.status === JOB_STATUS.RESOLVED);
+  if (resolved && resolved.count === assignees.length) {
+    return JOB_STATUS.RESOLVED;
+  }
+  const rejected = distribution.find((item) => item.status < JOB_STATUS.PENDING);
+  if (rejected && rejected.count) {
+    return rejected.status;
+  }
+
+  return null;
+}
+
+function getAnyModeStatus(distribution: StatusDistribution[], assignees: Array<number | string>) {
+  const resolved = distribution.find((item) => item.status === JOB_STATUS.RESOLVED);
+  if (resolved && resolved.count) {
+    return JOB_STATUS.RESOLVED;
+  }
+  const rejectedCount = distribution.reduce(
+    (count, item) => (item.status < JOB_STATUS.PENDING ? count + item.count : count),
+    0,
+  );
+  if (rejectedCount === assignees.length) {
+    return JOB_STATUS.REJECTED;
+  }
+
+  return null;
+}
+
+async function updateJobByManualTask(task: ManualTaskModel, context: Context) {
+  const mode = task.node.config.mode ?? 0;
+  const tasks = (await context.db.getModel('workflowManualTasks').findAll({
+    where: {
+      jobId: task.jobId,
+    },
+  })) as ManualTaskModel[];
+  const assignees: Array<number | string> = [];
+  const distributionMap = new Map<number, number>();
+
+  for (const item of tasks) {
+    distributionMap.set(item.status, (distributionMap.get(item.status) ?? 0) + 1);
+    assignees.push(item.userId);
+  }
+
+  const distribution = Array.from(distributionMap.entries()).map(([status, count]) => ({
+    status,
+    count,
+  }));
+  const status =
+    mode === 1
+      ? getAllModeStatus(distribution, assignees)
+      : mode === -1
+        ? getAnyModeStatus(distribution, assignees)
+        : getSingleModeStatus(distribution);
+
   task.job.set({
-    status: task.status,
-    result: task.result ?? task.job.result,
+    status: status ?? JOB_STATUS.PENDING,
+    result: mode ? getSubmittedRatio(tasks) : task.result ?? task.job.result,
   });
 }
 
@@ -114,7 +204,7 @@ export async function submit(context: Context, next) {
   }
 
   await task.save();
-  updateJobByManualTask(task);
+  await updateJobByManualTask(task as ManualTaskModel, context);
   await task.job.save();
 
   context.body = task;
