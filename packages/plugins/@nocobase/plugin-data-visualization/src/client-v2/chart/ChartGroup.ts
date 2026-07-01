@@ -9,7 +9,7 @@
 
 import { useApp } from '@nocobase/client-v2';
 
-import type PluginDataVisualizationClient from '../plugin';
+import PluginDataVisualizationClient from '../plugin';
 import type { ChartType } from './types';
 
 type Group = {
@@ -100,8 +100,7 @@ export const useChart = (type?: string) => {
 
 const useDataVisualizationPlugin = () => {
   const app = useApp();
-  return (app.pm.get('@nocobase/plugin-data-visualization') ||
-    app.pm.get('data-visualization')) as PluginDataVisualizationClient;
+  return app.pm.get(PluginDataVisualizationClient);
 };
 
 const getDefaultChartType = (charts?: ChartGroup) => {

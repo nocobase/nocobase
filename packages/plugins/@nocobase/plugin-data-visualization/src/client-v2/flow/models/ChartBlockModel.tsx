@@ -12,7 +12,6 @@ import {
   collectContextParamsForTemplate,
   createCollectionContextMeta,
   SQLResource,
-  type FlowSettingsContext,
   useFlowContext,
 } from '@nocobase/flow-engine';
 import React, { createRef } from 'react';
@@ -26,8 +25,9 @@ import { ConfigPanel } from './ConfigPanel';
 import { ChartResource } from '../resources/ChartResource';
 import { genRawByBuilder } from './ChartOptionsBuilder.service';
 import { configStore } from './config-store';
-import { renderChartSettingsHeaderExtra, runChartSettingsCloseHandlers } from './chart-settings-extensions';
-import type PluginDataVisualizationClient from '../../plugin';
+import PluginDataVisualizationClient from '../../plugin';
+import { DaraButton } from '../components/DaraButton';
+import { useChatBoxStore, useChatMessagesStore } from '@nocobase/plugin-ai/client-v2';
 
 const NO_PREVIEW_SNAPSHOT = Symbol('NO_PREVIEW_SNAPSHOT');
 
@@ -340,13 +340,13 @@ export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
 
   getV2DataVisualizationPlugin() {
     const pm = this.context.app?.pm;
-    return (pm?.get('@nocobase/plugin-data-visualization') ||
-      pm?.get('data-visualization')) as PluginDataVisualizationClient;
+    return pm?.get(PluginDataVisualizationClient) as PluginDataVisualizationClient;
   }
 
   getDataVisualizationPlugin() {
     const pm = this.context.app?.pm;
-    return (pm?.get('@nocobase/plugin-data-visualization') ||
+    return (pm?.get(PluginDataVisualizationClient) ||
+      pm?.get('@nocobase/plugin-data-visualization') ||
       pm?.get('data-visualization')) as PluginDataVisualizationClient;
   }
 
@@ -504,7 +504,7 @@ export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
 
 const PreviewButton = () => {
   const t = useT();
-  const ctx = useFlowContext<FlowSettingsContext<any>>();
+  const ctx = useFlowContext();
   return (
     <Button
       color="primary"
@@ -523,7 +523,7 @@ const PreviewButton = () => {
 
 const CancelButton = () => {
   const t = useT();
-  const ctx = useFlowContext<FlowSettingsContext<any>>();
+  const ctx = useFlowContext();
   return (
     <Button
       type="default"
@@ -531,13 +531,21 @@ const CancelButton = () => {
         // 回滚 未保存的 stepParams 并刷新图表
         ctx.model.cancelPreview();
 
-        runChartSettingsCloseHandlers(ctx);
+        closeAssociatedAIChatBox(ctx);
         ctx.view.close();
       }}
     >
       {t('Cancel')}
     </Button>
   );
+};
+
+const closeAssociatedAIChatBox = (ctx: any) => {
+  const aiOpen = useChatBoxStore.getState().open;
+  const associatedUid = useChatMessagesStore.getState().currentEditorRefUid;
+  if (aiOpen && associatedUid === ctx.model.uid) {
+    useChatBoxStore.getState().setOpen(false);
+  }
 };
 
 ChartBlockModel.define({
@@ -554,9 +562,9 @@ ChartBlockModel.registerFlow({
         type: 'embed',
         props: {
           onClose: () => {
-            runChartSettingsCloseHandlers(ctx);
+            closeAssociatedAIChatBox(ctx);
           },
-          header: { extra: renderChartSettingsHeaderExtra(ctx) },
+          header: { extra: <DaraButton ctx={ctx} /> },
           footer: (originNode, { OkBtn }) => (
             <Space>
               <CancelButton />
