@@ -343,7 +343,7 @@
       {
         "type": "custom-link",
         "label": "Обзор",
-        "link": "/workflow/development/index"
+        "link": "/workflow/development/"
       },
       {
         "type": "custom-link",
@@ -359,6 +359,11 @@
         "type": "custom-link",
         "label": "Справочник API",
         "link": "/workflow/development/api"
+      },
+      {
+        "type": "custom-link",
+        "label": "Руководство по миграции с v1 на v2",
+        "link": "/workflow/development/migration"
       }
     ]
   }

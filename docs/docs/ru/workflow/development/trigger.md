@@ -1,3 +1,9 @@
+---
+title: "Расширение типов триггеров"
+description: "Расширение типов триггеров: разработка пользовательских триггеров, интерфейс настройки, логика срабатывания, справочник API."
+keywords: "рабочий процесс,расширение триггеров,пользовательские триггеры,разработка триггеров,NocoBase"
+---
+
 # Расширение типов триггеров
 
 Каждый рабочий процесс должен быть настроен с конкретным триггером — это точка входа для запуска выполнения.
@@ -8,7 +14,8 @@
 
 - `'collection'`: срабатывает при операциях с коллекциями;
 - `'schedule'`: срабатывает по расписанию;
-- `'action'`: срабатывает при событиях **после действия**;
+- `'action'`: срабатывает при событиях после действия;
+
 
 Для добавляемых типов триггеров нужно обеспечивать уникальность идентификаторов. Реализация подписки и отписки регистрируется на сервере, а интерфейс настройки — на клиенте.
 
@@ -25,15 +32,15 @@ class MyTrigger extends Trigger {
   timer: NodeJS.Timeout;
 
   on(workflow) {
-    // регистрация события
+    // register event
     this.timer = setInterval(() => {
-      // запуск рабочего процесса
+      // trigger workflow
       this.workflow.trigger(workflow, { date: new Date() });
     }, workflow.config.interval ?? 60000);
   }
 
   off(workflow) {
-    // отмена регистрации события
+    // unregister event
     clearInterval(this.timer);
   }
 }
@@ -46,10 +53,10 @@ import WorkflowPlugin from '@nocobase/plugin-workflow';
 
 export default class MyPlugin extends Plugin {
   load() {
-    // получение экземпляра плагина рабочего процесса
+    // get workflow plugin instance
     const workflowPlugin = this.app.pm.get(WorkflowPlugin) as WorkflowPlugin;
 
-    // регистрация триггера
+    // register trigger
     workflowPlugin.registerTrigger('interval', MyTrigger);
   }
 }
@@ -61,39 +68,129 @@ export default class MyPlugin extends Plugin {
 
 На клиенте в основном задаётся интерфейс настройки по параметрам, которые требует тип триггера. Каждый тип триггера также должен зарегистрировать свою конфигурацию в плагине «Рабочий процесс».
 
-Например, для триггера периодического запуска, упомянутого выше, в форме настройки задайте обязательный параметр интервала (`interval`):
+Интерфейс настройки триггера определяется через Loader (функцию отложенной загрузки), которая указывает на обычный React-компонент, строящий форму с помощью `Form.Item` из antd.
+
+### Простейший триггер
+
+Например, для триггера периодического запуска, описанного выше, определите в форме настройки параметр интервала (`interval`):
 
 ```ts
-import { Trigger } from '@nocobase/workflow/client';
+import { Trigger } from '@nocobase/plugin-workflow/client-v2';
 
 class MyTrigger extends Trigger {
-  title = 'Interval timer triggerа';
-  // поля настройки триггера
-  fieldset = {
-    interval: {
-      type: 'number',
-      title: 'Interval',
-      name: 'config.interval',
-      'x-decorator': 'FormItem',
-      'x-component': 'InputNumber',
-      default: 60000,
-    },
-  };
+  title = 'Interval timer trigger';
+
+  // Trigger config form (lazy-loaded component)
+  FieldsetLoader = () => import('./IntervalConfig');
+
+  // Config validation
+  validate(config) {
+    return Boolean(config?.interval);
+  }
 }
 ```
 
-После этого зарегистрируйте этот тип триггера в экземпляре плагина рабочего процесса внутри вашего расширяющего плагина:
+Здесь `FieldsetLoader` — функция, возвращающая `Promise<{ default: ComponentType }>`, реализующая отложенную загрузку через динамический `import()`. Компонент, на который она указывает, — стандартный функциональный React-компонент:
+
+```tsx
+// IntervalConfig.tsx
+import { Form, InputNumber } from 'antd';
+
+export default function IntervalConfig() {
+  return (
+    <Form.Item
+      name={['config', 'interval']}
+      label="Interval"
+      initialValue={60000}
+      rules={[{ required: true }]}
+    >
+      <InputNumber min={1000} />
+    </Form.Item>
+  );
+}
+```
+
+Обратите внимание, что поле формы `name` использует формат вложенного массива `['config', 'fieldName']` — стандартное соглашение antd Form.
+
+### Несколько интерфейсов настройки
+
+Триггер может предоставлять несколько интерфейсов настройки для различных сценариев:
+
+- `PresetFieldsetLoader` — предустановленная форма при создании рабочего процесса (обычно содержит только обязательные поля)
+![PresetFieldsetLoader](https://static-docs.nocobase.com/20260701152711.png)
+
+- `FieldsetLoader` — полная форма настройки триггера (отображается в панели настройки)
+![FieldsetLoader](https://static-docs.nocobase.com/20260701152822.png)
+
+- `TriggerFieldsetLoader` — форма ввода для ручного запуска
+![FieldsetLoader](https://static-docs.nocobase.com/20260701152846.png)
+
+Когда Loader должен указывать на именованный экспорт (а не экспорт по умолчанию) файла, используйте `.then()` для переназначения:
 
 ```ts
-import { Plugin } from '@nocobase/client';
-import WorkflowPlugin from '@nocobase/plugin-workflow/client';
+class MyTrigger extends Trigger {
+  title = 'My trigger';
 
+  PresetFieldsetLoader = () =>
+    import('./MyTriggerConfig').then((m) => ({ default: m.MyPresetConfig }));
+  FieldsetLoader = () => import('./MyTriggerConfig');
+  TriggerFieldsetLoader = () => import('./TriggerMyConfig');
+
+  validate(config) {
+    return Boolean(config?.collection && config?.mode);
+  }
+
+  createDefaultConfig() {
+    return { mode: 1 };
+  }
+}
+```
+
+```tsx
+// MyTriggerConfig.tsx
+import { Form, Select } from 'antd';
+import { CollectionCascader } from '@nocobase/plugin-workflow/client-v2';
+
+// Preset form for creation (named export)
+export function MyPresetConfig() {
+  return (
+    <Form.Item name={['config', 'collection']} label="Collection" rules={[{ required: true }]}>
+      <CollectionCascader />
+    </Form.Item>
+  );
+}
+
+// Full config form (default export)
+export default function MyTriggerConfig() {
+  return (
+    <>
+      <Form.Item name={['config', 'collection']} label="Collection">
+        <CollectionCascader disabled />
+      </Form.Item>
+      <Form.Item name={['config', 'mode']} label="Mode">
+        <Select
+          options={[
+            { label: 'Created', value: 1 },
+            { label: 'Updated', value: 2 },
+          ]}
+        />
+      </Form.Item>
+    </>
+  );
+}
+```
+
+### Регистрация триггера
+
+Зарегистрируйте тип триггера в экземпляре плагина рабочего процесса внутри расширяющего плагина:
+
+```ts
+import { Plugin } from '@nocobase/client-v2';
 import MyTrigger from './MyTrigger';
 
 export default class extends Plugin {
-  // здесь доступен экземпляр приложения для чтения и изменения
   async load() {
-    const workflow = this.app.pm.get(WorkflowPlugin) as WorkflowPlugin;
+    const workflow = this.app.pm.get('workflow');
     workflow.registerTrigger('interval', MyTrigger);
   }
 }
@@ -105,4 +202,10 @@ export default class extends Plugin {
 Идентификатор типа триггера, зарегистрированный на клиенте, должен совпадать с идентификатором на сервере, иначе возникнут ошибки.
 :::
 
-Подробнее об определении типов триггеров см. [Справочник API](./api.md).
+Полный пример из реального проекта: [исходный код CollectionTrigger](https://github.com/nocobase/nocobase/blob/develop/packages/plugins/%40nocobase/plugin-workflow/src/client-v2/triggers/collection/index.tsx)
+
+Подробнее об определении типов триггеров см. раздел [Справочник API](./api).
+
+:::info{title=Примечание}
+Если вы ранее использовали устаревший клиентский код (v1) и хотите перейти на новую версию v2, обратитесь к [Руководству по миграции с v1 на v2](./migration).
+:::
