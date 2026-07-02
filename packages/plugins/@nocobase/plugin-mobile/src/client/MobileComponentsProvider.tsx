@@ -7,11 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Action, OpenModeProvider, SchemaComponentOptions, useIsAdminPage, usePopupSettings } from '@nocobase/client';
+import { Action, OpenModeProvider, SchemaComponentOptions, usePopupSettings } from '@nocobase/client';
 import { useMobileLayout } from '@nocobase/client-v2';
 import { createGlobalStyle } from 'antd-style';
 import React, { FC, useEffect } from 'react';
-import { isMobile } from 'react-device-detect';
 import { ActionDrawerUsedInMobile, useToAdaptActionDrawerToMobile } from './adaptor-of-desktop/ActionDrawer';
 import { useToAdaptFilterActionToMobile } from './adaptor-of-desktop/FilterAction';
 import { mobileComponents } from './pages/dynamic-page/MobilePage';
@@ -22,19 +21,12 @@ const ResetScrollbar = createGlobalStyle`
   }
 `;
 
-const useShouldAdaptToMobile = () => {
-  const { isMobileLayout } = useMobileLayout();
-  const isAdminPage = useIsAdminPage();
-
-  return isAdminPage && (isMobileLayout || isMobile);
-};
-
 const CommonDrawer: FC = (props) => {
-  const shouldAdaptToMobile = useShouldAdaptToMobile();
+  const { isMobileLayout } = useMobileLayout();
   const { isPopupVisibleControlledByURL } = usePopupSettings();
 
   // 在移动端布局中，只要弹窗是通过 URL 打开的，都需要显示成子页面的样子
-  if (shouldAdaptToMobile && isPopupVisibleControlledByURL()) {
+  if (isMobileLayout && isPopupVisibleControlledByURL()) {
     return <Action.Page {...props} />;
   }
 
@@ -67,10 +59,10 @@ const MobileAdapter: FC = (props) => {
 };
 
 export const MobileComponentsProvider: FC = (props) => {
-  const shouldAdaptToMobile = useShouldAdaptToMobile();
+  const { isMobileLayout } = useMobileLayout();
 
-  if (!shouldAdaptToMobile) {
-    return <>{props.children}</>;
+  if (!isMobileLayout) {
+    return <>{props.children} </>;
   }
 
   return <MobileAdapter>{props.children}</MobileAdapter>;
