@@ -7,177 +7,57 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { BranchesOutlined, ReloadOutlined, SaveOutlined } from '@ant-design/icons';
+import { BranchesOutlined } from '@ant-design/icons';
 import { Alert, Badge, Button, Empty, Input, List, Space, Tag, Typography } from 'antd';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 
-import type { VscDraftFileChange, VscDraftFileRecord } from '../../shared/types';
+import type { VscFileChange } from '../../shared/types';
 import {
   useVscFileRepo,
-  type VscFileRepoActiveDraftResult,
   type VscFileRepoFileDiffEntry,
-  type VscFileRepoFileDiffResult,
   type VscFileRepoPushInput,
   type VscFileRepoPushResult,
 } from '../hooks';
 import { useT } from '../locale';
-import { compareVscPaths, draftRecordsToPushFileChanges, formatVscComponentError, toPushFileChanges } from './utils';
-
-interface LoadDraftStateOptions {
-  clearCurrent?: boolean;
-}
+import { compareVscPaths, formatVscComponentError, toPushFileChanges } from './utils';
 
 export interface VscSourceControlPanelProps {
   repoId: string;
   baseCommitId: string | null;
-  draftId?: string | null;
-  draftFiles?: VscDraftFileChange[];
-  onDraftSaved?: (draft: VscFileRepoActiveDraftResult) => void;
+  files?: VscFileChange[];
   onCommitted?: (result: VscFileRepoPushResult) => void;
   onDiffSelected?: (file: VscFileRepoFileDiffEntry) => void;
 }
 
 export function VscSourceControlPanel(props: VscSourceControlPanelProps) {
-  const { repoId, baseCommitId, draftId, draftFiles = [], onDraftSaved, onCommitted, onDiffSelected } = props;
+  const { repoId, baseCommitId, files = [], onCommitted, onDiffSelected } = props;
   const t = useT();
-  const draftStateLoadKey = `${repoId}:${baseCommitId || ''}`;
-  const draftStateQueryKey = `${draftStateLoadKey}:${draftId || ''}`;
   const repo = useVscFileRepo();
   const repoRef = useRef(repo);
-  const draftSavedRef = useRef(onDraftSaved);
   const committedRef = useRef(onCommitted);
-  const loadRequestIdRef = useRef(0);
-  const [verifiedDraftId, setVerifiedDraftId] = useState<string | null>(null);
-  const [verifiedDraftLoadKey, setVerifiedDraftLoadKey] = useState<string | null>(null);
-  const [activeDraft, setActiveDraft] = useState<VscFileRepoActiveDraftResult | null>(null);
-  const [diffResult, setDiffResult] = useState<VscFileRepoFileDiffResult | null>(null);
   const [commitMessage, setCommitMessage] = useState('');
-  const [loadingDiff, setLoadingDiff] = useState(false);
-  const [savingDraft, setSavingDraft] = useState(false);
   const [committing, setCommitting] = useState(false);
   const [error, setError] = useState<unknown>(null);
 
   repoRef.current = repo;
-  draftSavedRef.current = onDraftSaved;
   committedRef.current = onCommitted;
 
-  useEffect(() => {
-    setVerifiedDraftId(null);
-    setVerifiedDraftLoadKey(null);
-    setDiffResult(null);
-    setActiveDraft(null);
-  }, [draftStateQueryKey]);
-
-  const loadDraftState = React.useCallback(
-    async (options?: LoadDraftStateOptions) => {
-      const requestId = loadRequestIdRef.current + 1;
-      loadRequestIdRef.current = requestId;
-      const loadKey = draftStateLoadKey;
-      const queryKey = draftStateQueryKey;
-      const shouldClearCurrent = options?.clearCurrent !== false;
-
-      setLoadingDiff(true);
-      setError(null);
-      if (shouldClearCurrent) {
-        setDiffResult(null);
-        setActiveDraft(null);
-      }
-      try {
-        const [nextDiff, nextDraft] = await Promise.all([
-          repoRef.current.diffDraft({ repoId }),
-          repoRef.current.getDraft({ repoId }),
-        ]);
-        if (
-          loadRequestIdRef.current !== requestId ||
-          loadKey !== draftStateLoadKey ||
-          queryKey !== draftStateQueryKey
-        ) {
-          return;
-        }
-        const usableDraft = isActiveDraftForCurrentState(nextDraft, repoId, baseCommitId) ? nextDraft : null;
-        setDiffResult(usableDraft || !nextDraft ? nextDiff : null);
-        setActiveDraft(usableDraft);
-        setVerifiedDraftId(usableDraft?.draft.id || null);
-        setVerifiedDraftLoadKey(usableDraft ? loadKey : null);
-      } catch (nextError) {
-        if (
-          loadRequestIdRef.current !== requestId ||
-          loadKey !== draftStateLoadKey ||
-          queryKey !== draftStateQueryKey
-        ) {
-          return;
-        }
-        setError(nextError);
-        if (shouldClearCurrent) {
-          setDiffResult(null);
-          setActiveDraft(null);
-        }
-      } finally {
-        if (loadRequestIdRef.current === requestId) {
-          setLoadingDiff(false);
-        }
-      }
-    },
-    [baseCommitId, draftStateLoadKey, draftStateQueryKey, repoId],
-  );
-
-  useEffect(() => {
-    loadDraftState();
-  }, [loadDraftState]);
-
-  const localDiffFiles = useMemo<VscFileRepoFileDiffEntry[]>(() => {
-    return draftFiles
-      .map((file) => {
-        const status: VscFileRepoFileDiffEntry['status'] = file.operation === 'delete' ? 'deleted' : 'modified';
-
-        return {
-          status,
+  const commitFiles = useMemo(() => toPushFileChanges(files), [files]);
+  const displayedFiles = useMemo<VscFileRepoFileDiffEntry[]>(
+    () =>
+      commitFiles
+        .map((file) => ({
+          status: file.operation === 'delete' ? ('deleted' as const) : ('modified' as const),
           path: file.path,
           pathHash: file.path,
+          language: file.language,
+          mode: file.mode,
           tooLarge: false,
-        };
-      })
-      .sort((left, right) => compareVscPaths(left.path, right.path));
-  }, [draftFiles]);
-
-  const persistedDraftFiles = activeDraft?.files || [];
-  const displayedFiles = mergeSourceControlFiles(diffResult?.files || [], localDiffFiles);
-  const hasLocalChanges = draftFiles.length > 0;
-  const commitFiles = mergeDraftCommitFiles(persistedDraftFiles, draftFiles);
-  const commitDraftId = verifiedDraftLoadKey === draftStateLoadKey ? verifiedDraftId : null;
-  const hasCommitChanges = commitFiles.length > 0;
-  const commitDisabled = !hasCommitChanges || !commitMessage.trim();
-
-  const saveDraft = async () => {
-    if (!hasLocalChanges) {
-      return;
-    }
-
-    setSavingDraft(true);
-    setError(null);
-    try {
-      const draft = await repoRef.current.saveDraft({
-        repoId,
-        baseCommitId,
-        files: draftFiles,
-      });
-      const currentDraft = isActiveDraftForCurrentState(draft, repoId, baseCommitId) ? draft : null;
-      setActiveDraft(currentDraft);
-      if (currentDraft) {
-        setVerifiedDraftId(draft.draft.id);
-        setVerifiedDraftLoadKey(draftStateLoadKey);
-      } else {
-        setVerifiedDraftId(null);
-        setVerifiedDraftLoadKey(null);
-      }
-      draftSavedRef.current?.(draft);
-      await loadDraftState({ clearCurrent: false });
-    } catch (nextError) {
-      setError(nextError);
-    } finally {
-      setSavingDraft(false);
-    }
-  };
+        }))
+        .sort((left, right) => compareVscPaths(left.path, right.path)),
+    [commitFiles],
+  );
+  const commitDisabled = commitFiles.length === 0 || !commitMessage.trim();
 
   const commitChanges = async () => {
     if (commitDisabled) {
@@ -193,17 +73,9 @@ export function VscSourceControlPanel(props: VscSourceControlPanelProps) {
         message: commitMessage.trim(),
         files: commitFiles,
       };
-      if (commitDraftId) {
-        pushInput.draftId = commitDraftId;
-      }
-
       const result = await repoRef.current.push(pushInput);
       setCommitMessage('');
-      setVerifiedDraftId(null);
-      setVerifiedDraftLoadKey(null);
-      setActiveDraft(null);
       committedRef.current?.(result);
-      await loadDraftState();
     } catch (nextError) {
       setError(nextError);
     } finally {
@@ -219,12 +91,6 @@ export function VscSourceControlPanel(props: VscSourceControlPanelProps) {
           <Typography.Text strong>{t('Source control')}</Typography.Text>
           <Badge count={displayedFiles.length} size="small" />
         </Space>
-        <Button
-          aria-label={t('Refresh changes')}
-          icon={<ReloadOutlined />}
-          loading={loadingDiff}
-          onClick={() => loadDraftState()}
-        />
       </Space>
 
       {error ? (
@@ -232,11 +98,10 @@ export function VscSourceControlPanel(props: VscSourceControlPanelProps) {
       ) : null}
 
       {displayedFiles.length === 0 ? (
-        <Empty description={loadingDiff ? t('Loading changes') : t('No changes')} />
+        <Empty description={t('No changes')} />
       ) : (
         <List
           dataSource={displayedFiles}
-          loading={loadingDiff}
           rowKey={(file) => `${file.status}:${file.path}`}
           size="small"
           renderItem={(file) => (
@@ -248,7 +113,6 @@ export function VscSourceControlPanel(props: VscSourceControlPanelProps) {
               ]}
             >
               <List.Item.Meta
-                description={file.oldPath && file.oldPath !== file.path ? file.oldPath : undefined}
                 title={
                   <Space>
                     <Tag>{t(file.status)}</Tag>
@@ -267,57 +131,9 @@ export function VscSourceControlPanel(props: VscSourceControlPanelProps) {
         placeholder={t('Commit message')}
         value={commitMessage}
       />
-      <Space wrap>
-        <Button
-          aria-label={t('Save draft')}
-          disabled={!hasLocalChanges}
-          icon={<SaveOutlined />}
-          loading={savingDraft}
-          onClick={saveDraft}
-        >
-          {t('Save draft')}
-        </Button>
-        <Button disabled={commitDisabled} loading={committing} onClick={commitChanges} type="primary">
-          {t('Commit')}
-        </Button>
-      </Space>
+      <Button disabled={commitDisabled} loading={committing} onClick={commitChanges} type="primary">
+        {t('Commit')}
+      </Button>
     </section>
   );
-}
-
-function mergeDraftCommitFiles(persistedFiles: VscDraftFileRecord[], localFiles: VscDraftFileChange[]) {
-  const merged = new Map<string, ReturnType<typeof draftRecordsToPushFileChanges>[number]>();
-
-  for (const file of draftRecordsToPushFileChanges(persistedFiles)) {
-    merged.set(file.path, file);
-  }
-  for (const file of toPushFileChanges(localFiles)) {
-    merged.set(file.path, file);
-  }
-
-  return Array.from(merged.values()).sort((left, right) => compareVscPaths(left.path, right.path));
-}
-
-function isActiveDraftForCurrentState(
-  draft: VscFileRepoActiveDraftResult | null | undefined,
-  repoId: string,
-  baseCommitId: string | null,
-): draft is VscFileRepoActiveDraftResult {
-  return Boolean(draft && draft.draft.repoId === repoId && draft.draft.baseCommitId === baseCommitId);
-}
-
-function mergeSourceControlFiles(
-  persistedFiles: VscFileRepoFileDiffEntry[],
-  localFiles: VscFileRepoFileDiffEntry[],
-): VscFileRepoFileDiffEntry[] {
-  const merged = new Map<string, VscFileRepoFileDiffEntry>();
-
-  for (const file of persistedFiles) {
-    merged.set(file.path, file);
-  }
-  for (const file of localFiles) {
-    merged.set(file.path, file);
-  }
-
-  return Array.from(merged.values()).sort((left, right) => compareVscPaths(left.path, right.path));
 }

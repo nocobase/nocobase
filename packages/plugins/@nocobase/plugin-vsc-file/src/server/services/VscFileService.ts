@@ -13,7 +13,6 @@ import { VscError } from '../../shared/errors';
 import { normalizePath, pathHash } from '../../shared/path';
 import type {
   VscCommitRecord,
-  VscDraftRecord,
   VscFileChange,
   VscNormalizedTreeEntry,
   VscRefRecord,
@@ -27,23 +26,8 @@ import type {
 import { BlobService } from './BlobService';
 import type { ListCommitsInput } from './CommitService';
 import { CommitService } from './CommitService';
-import type {
-  DiffCommitsInput,
-  DiffDraftInput,
-  DiffFileEndpoint,
-  DiffFileInput,
-  DiffFileResult,
-  FileDiffResult,
-} from './DiffService';
+import type { DiffCommitsInput, DiffFileEndpoint, DiffFileInput, DiffFileResult, FileDiffResult } from './DiffService';
 import { DiffService } from './DiffService';
-import type {
-  ActiveDraftResult,
-  DiscardDraftInput,
-  GetDraftInput,
-  SaveDraftInput,
-  VscDraftWritePermissionChecker,
-} from './DraftService';
-import { DraftService } from './DraftService';
 import type {
   ListRefsInput,
   RestoreCommitInput,
@@ -67,7 +51,6 @@ export interface VscServiceContext {
   transaction?: Transaction;
   authorId?: string | null;
   request?: VscPermissionRequestMetadata;
-  assertCanWrite?: VscDraftWritePermissionChecker;
 }
 
 export interface CreateRepositoryInput extends VscRepositoryIdentity {
@@ -98,7 +81,6 @@ export interface PushInput {
   message: string;
   files: VscFileChange[];
   allowEmptyCommit?: boolean;
-  draftId?: string;
   authorId?: string | null;
   metadata?: Record<string, unknown>;
 }
@@ -175,8 +157,6 @@ export class VscFileService {
 
   private readonly commitService: CommitService;
 
-  private readonly draftService: DraftService;
-
   private readonly diffService: DiffService;
 
   private readonly refService: RefService;
@@ -189,12 +169,10 @@ export class VscFileService {
     this.treeService = new TreeService(db, this.blobService);
     this.repositoryService = new RepositoryService(db);
     this.commitService = new CommitService(db);
-    this.draftService = new DraftService(db, this.blobService, this.repositoryService);
     this.diffService = new DiffService(
       db,
       this.blobService,
       this.commitService,
-      this.draftService,
       this.repositoryService,
       this.treeService,
     );
@@ -427,28 +405,6 @@ export class VscFileService {
     };
   }
 
-  async getDraft(input: GetDraftInput, ctx: VscServiceContext = {}): Promise<ActiveDraftResult | null> {
-    const repository = await this.repositoryService.getRepository(input.repoId, ctx.transaction);
-    await this.assertPermission({ action: 'getDraft', repository }, ctx);
-    return this.draftService.getDraft(input, ctx);
-  }
-
-  async saveDraft(input: SaveDraftInput, ctx: VscServiceContext = {}): Promise<ActiveDraftResult> {
-    return this.withTransaction(ctx.transaction, async (transaction) => {
-      const repository = await this.repositoryService.getRepository(input.repoId, transaction);
-      await this.assertPermission({ action: 'saveDraft', repository }, ctx);
-      return this.draftService.saveDraft(input, { ...ctx, transaction });
-    });
-  }
-
-  async discardDraft(input: DiscardDraftInput, ctx: VscServiceContext = {}): Promise<VscDraftRecord | null> {
-    return this.withTransaction(ctx.transaction, async (transaction) => {
-      const repository = await this.repositoryService.getRepository(input.repoId, transaction);
-      await this.assertPermission({ action: 'discardDraft', repository }, ctx);
-      return this.draftService.discardDraft(input, { ...ctx, transaction });
-    });
-  }
-
   async diff(input: DiffCommitsInput, ctx: VscServiceContext = {}): Promise<FileDiffResult> {
     const repository = await this.repositoryService.getRepository(input.repoId, ctx.transaction);
     await this.assertPermission(
@@ -475,12 +431,6 @@ export class VscFileService {
       ctx,
     );
     return this.diffService.diffCommits(input, ctx.transaction);
-  }
-
-  async diffDraft(input: DiffDraftInput, ctx: VscServiceContext = {}): Promise<FileDiffResult> {
-    const repository = await this.repositoryService.getRepository(input.repoId, ctx.transaction);
-    await this.assertPermission({ action: 'diffDraft', repository }, ctx);
-    return this.diffService.diffDraft(input, ctx.transaction);
   }
 
   async diffFile(input: DiffFileInput, ctx: VscServiceContext = {}): Promise<DiffFileResult> {
@@ -574,10 +524,6 @@ export class VscFileService {
       const baseCommit = input.baseCommitId
         ? await this.commitService.getCommit(repository.id, input.baseCommitId, transaction)
         : null;
-      if (input.draftId && ctx.authorId) {
-        await this.assertDraftOwner(input.draftId, ctx.authorId, transaction);
-      }
-
       const baseEntries = baseCommit
         ? await this.treeService.loadTreeEntries(baseCommit.treeHash, { transaction })
         : [];
@@ -604,17 +550,6 @@ export class VscFileService {
         transaction,
       );
       const updatedRepository = await this.repositoryService.updateHead(repository, commit.id, commit.seq, transaction);
-
-      if (input.draftId) {
-        await this.draftService.markDraftCommitted(
-          {
-            draftId: input.draftId,
-            repoId: repository.id,
-            baseCommitId: input.baseCommitId,
-          },
-          transaction,
-        );
-      }
 
       return {
         repository: updatedRepository,
@@ -655,38 +590,6 @@ export class VscFileService {
     transaction: Transaction,
   ): Promise<Set<string>> {
     const allowedBlobHashes = new Set(baseEntries.map((entry) => entry.blobHash));
-    if (!input.draftId) {
-      return allowedBlobHashes;
-    }
-
-    const draft = await this.db.getRepository('vscFileDrafts').findOne({
-      filter: {
-        id: input.draftId,
-        repoId: input.repoId,
-        baseCommitId: input.baseCommitId,
-        status: 'active',
-      },
-      fields: ['id'],
-      transaction,
-    });
-    if (!draft) {
-      throw new VscError('DRAFT_BASE_OUTDATED', 'Draft is not active for the pushed repository base');
-    }
-
-    const draftFiles = await this.db.getRepository('vscFileDraftFiles').find({
-      filter: {
-        draftId: input.draftId,
-      },
-      fields: ['blobHash'],
-      transaction,
-    });
-    for (const draftFile of draftFiles) {
-      const blobHash = draftFile.get('blobHash') as string | null;
-      if (blobHash) {
-        allowedBlobHashes.add(blobHash);
-      }
-    }
-
     return allowedBlobHashes;
   }
 
@@ -821,21 +724,6 @@ export class VscFileService {
       size: record.get('size') as number,
       content: record.get('content') as string,
     };
-  }
-
-  private async assertDraftOwner(draftId: string, userId: string, transaction?: Transaction): Promise<void> {
-    const draft = await this.db.getRepository('vscFileDrafts').findOne({
-      filterByTk: draftId,
-      fields: ['id', 'userId'],
-      transaction,
-    });
-
-    if (!draft) {
-      throw new VscError('DRAFT_BASE_OUTDATED', `Draft "${draftId}" was not found`);
-    }
-    if (String(draft.get('userId')) !== userId) {
-      throw new VscError('PERMISSION_DENIED', 'Draft is not owned by the current user');
-    }
   }
 
   private async withTransaction<T>(

@@ -86,6 +86,32 @@ interface RunJSModuleInfo {
   isJson: boolean;
 }
 
+interface RunJSTransformedLineMapping {
+  generatedLine: number;
+  source: string;
+  sourceLine: number;
+  sourceColumn?: number;
+}
+
+interface RunJSTransformedCode {
+  code: string;
+  mappings: RunJSTransformedLineMapping[];
+}
+
+interface RunJSSourceMapPayload {
+  version: 1;
+  kind: 'runjs-line-map';
+  sourceURL: string;
+  entryPath: string;
+  generatedCodeLineOffset: number;
+  mappings: RunJSTransformedLineMapping[];
+}
+
+interface RunJSRuntimeCodeBuildResult {
+  code: string;
+  sourceMap: RunJSSourceMapPayload;
+}
+
 interface SourceFileWithParseDiagnostics extends ts.SourceFile {
   parseDiagnostics?: readonly ts.Diagnostic[];
 }
@@ -111,6 +137,8 @@ const resolvableExtensions = ['.ts', '.tsx', '.js', '.jsx', '.json'];
 const commonJSGlobalHosts = new Set(['globalThis', 'global', 'window']);
 const commonJSRequireHosts = new Set(['globalThis', 'global', 'window', 'module']);
 const runtimeVersionDefault = 'v2';
+const runJSSourceURLPrefix = 'nocobase-runjs://bundle/';
+const jsRunnerGeneratedCodeLineOffset = 2;
 const asyncFunctionConstructor = Object.getPrototypeOf(async function runJSWorkflowSyntaxCheck() {})
   .constructor as AsyncFunctionConstructor;
 
@@ -199,9 +227,16 @@ export function compileRunJSSourceWorkspace(
   visit(entryPath);
   validateImportBindings(modules, diagnostics);
 
+  const filesHash = buildRunJSFilesHash(input.files);
   let code = '';
+  let sourceMap: string | undefined;
   if (!hasErrorDiagnostic(diagnostics)) {
-    code = buildRuntimeCode(orderedPaths, modules, entryPath, diagnostics);
+    const runtimeCode = buildRuntimeCode(orderedPaths, modules, entryPath, diagnostics, {
+      entryPath,
+      sourceURL: buildRunJSSourceURL(filesHash),
+    });
+    code = appendRunJSSourceURL(runtimeCode.code, runtimeCode.sourceMap.sourceURL);
+    sourceMap = JSON.stringify(runtimeCode.sourceMap);
   }
   if (!hasErrorDiagnostic(diagnostics)) {
     collectRuntimeSyntaxDiagnostics(code, entryPath, input.surfaceStyle, diagnostics);
@@ -222,9 +257,10 @@ export function compileRunJSSourceWorkspace(
   return {
     artifact: {
       code,
+      sourceMap,
       version: resolveArtifactVersion(input.surfaceStyle, input.runtimeVersion),
       diagnostics,
-      filesHash: buildRunJSFilesHash(input.files),
+      filesHash,
       entryPath,
       metadata: {
         entry: entryPath,
@@ -695,8 +731,14 @@ function buildRuntimeCode(
   modules: Map<string, RunJSModuleInfo>,
   entryPath: string,
   diagnostics: RunJSCompileDiagnostic[],
-): string {
+  options: {
+    entryPath: string;
+    sourceURL: string;
+  },
+): RunJSRuntimeCodeBuildResult {
   const chunks: string[] = [];
+  const mappings: RunJSTransformedLineMapping[] = [];
+  let nextChunkStartLine = 1;
 
   for (const path of orderedPaths) {
     const moduleInfo = modules.get(path);
@@ -704,24 +746,48 @@ function buildRuntimeCode(
       continue;
     }
     const transformed = transformModuleSource(moduleInfo, modules, path === entryPath);
-    const transpiled = transpileRuntimeCode(transformed, moduleInfo.file.path, diagnostics);
-    chunks.push(transpiled.trim());
+    const transpiled = transpileRuntimeCode(transformed.code, moduleInfo.file.path, diagnostics);
+    const chunk = transpiled.trim();
+    if (!chunk) {
+      continue;
+    }
+    if (chunks.length > 0) {
+      nextChunkStartLine += 1;
+    }
+    for (const mapping of transformed.mappings) {
+      mappings.push({
+        ...mapping,
+        generatedLine: nextChunkStartLine + mapping.generatedLine - 1,
+      });
+    }
+    chunks.push(chunk);
+    nextChunkStartLine += countLines(chunk);
   }
 
-  return chunks.filter(Boolean).join('\n\n');
+  return {
+    code: chunks.filter(Boolean).join('\n\n'),
+    sourceMap: {
+      version: 1,
+      kind: 'runjs-line-map',
+      sourceURL: options.sourceURL,
+      entryPath: options.entryPath,
+      generatedCodeLineOffset: jsRunnerGeneratedCodeLineOffset,
+      mappings,
+    },
+  };
 }
 
 function transformModuleSource(
   moduleInfo: RunJSModuleInfo,
   modules: Map<string, RunJSModuleInfo>,
   isEntry: boolean,
-): string {
+): RunJSTransformedCode {
   if (moduleInfo.isJson) {
     return transformJsonModuleSource(moduleInfo, isEntry);
   }
 
   const sourceFile = moduleInfo.sourceFile as ts.SourceFile;
-  const body: string[] = [createImportAliasDeclarations(moduleInfo, modules)];
+  const body: RunJSTransformedCode[] = [createImportAliasDeclarations(moduleInfo, modules)];
 
   for (const statement of sourceFile.statements) {
     if (
@@ -735,50 +801,118 @@ function transformModuleSource(
   }
 
   if (isEntry) {
-    return body.filter(Boolean).join('\n');
+    return joinTransformedSegments(body);
   }
 
   const exportAssignments = createExportAssignments(moduleInfo);
-  return [
-    `const ${moduleInfo.moduleSymbol} = (() => {`,
-    'const __runjs_exports = {};',
-    indent(body.filter(Boolean).join('\n')),
-    indent(exportAssignments),
-    'return __runjs_exports;',
-    '})();',
-  ]
-    .filter(Boolean)
-    .join('\n');
+  const bodyCode = joinTransformedSegments(body);
+  return joinTransformedSegments([
+    transformedGeneratedCode(`const ${moduleInfo.moduleSymbol} = (() => {`),
+    transformedGeneratedCode('const __runjs_exports = {};'),
+    indentTransformedCode(bodyCode),
+    indentTransformedCode(transformedGeneratedCode(exportAssignments)),
+    transformedGeneratedCode('return __runjs_exports;'),
+    transformedGeneratedCode('})();'),
+  ]);
 }
 
-function transformJsonModuleSource(moduleInfo: RunJSModuleInfo, isEntry: boolean): string {
+function transformJsonModuleSource(moduleInfo: RunJSModuleInfo, isEntry: boolean): RunJSTransformedCode {
   const parsed = JSON.parse(moduleInfo.file.content);
   const jsonLiteral = JSON.stringify(parsed, null, 2);
   const defaultDeclaration = `const ${moduleInfo.defaultExportSymbol} = ${jsonLiteral};`;
   if (isEntry) {
-    return defaultDeclaration;
+    return transformedSourceCode(defaultDeclaration, moduleInfo.file.path, 1, 1);
   }
 
-  return [
-    `const ${moduleInfo.moduleSymbol} = (() => {`,
-    'const __runjs_exports = {};',
-    indent(defaultDeclaration),
-    indent(`__runjs_exports.default = ${moduleInfo.defaultExportSymbol};`),
-    'return __runjs_exports;',
-    '})();',
-  ].join('\n');
+  return joinTransformedSegments([
+    transformedGeneratedCode(`const ${moduleInfo.moduleSymbol} = (() => {`),
+    transformedGeneratedCode('const __runjs_exports = {};'),
+    indentTransformedCode(transformedSourceCode(defaultDeclaration, moduleInfo.file.path, 1, 1)),
+    indentTransformedCode(transformedGeneratedCode(`__runjs_exports.default = ${moduleInfo.defaultExportSymbol};`)),
+    transformedGeneratedCode('return __runjs_exports;'),
+    transformedGeneratedCode('})();'),
+  ]);
 }
 
-function transformStatement(sourceFile: ts.SourceFile, statement: ts.Statement, moduleInfo: RunJSModuleInfo): string {
+function transformedGeneratedCode(code: string): RunJSTransformedCode {
+  return {
+    code,
+    mappings: [],
+  };
+}
+
+function transformedSourceCode(
+  code: string,
+  source: string,
+  sourceLine: number,
+  sourceColumn?: number,
+): RunJSTransformedCode {
+  return {
+    code,
+    mappings: code.split('\n').map((_, index) => ({
+      generatedLine: index + 1,
+      source,
+      sourceLine: Math.max(1, sourceLine + index),
+      sourceColumn: index === 0 ? sourceColumn : 1,
+    })),
+  };
+}
+
+function joinTransformedSegments(segments: RunJSTransformedCode[]): RunJSTransformedCode {
+  const codeParts: string[] = [];
+  const mappings: RunJSTransformedLineMapping[] = [];
+  let nextLine = 1;
+
+  for (const segment of segments) {
+    if (!segment.code) {
+      continue;
+    }
+    codeParts.push(segment.code);
+    for (const mapping of segment.mappings) {
+      mappings.push({
+        ...mapping,
+        generatedLine: nextLine + mapping.generatedLine - 1,
+      });
+    }
+    nextLine += countLines(segment.code);
+  }
+
+  return {
+    code: codeParts.join('\n'),
+    mappings,
+  };
+}
+
+function indentTransformedCode(input: RunJSTransformedCode): RunJSTransformedCode {
+  return {
+    code: indent(input.code),
+    mappings: input.mappings,
+  };
+}
+
+function transformStatement(
+  sourceFile: ts.SourceFile,
+  statement: ts.Statement,
+  moduleInfo: RunJSModuleInfo,
+): RunJSTransformedCode {
+  const sourcePosition = sourceFile.getLineAndCharacterOfPosition(statement.getStart(sourceFile));
   if (ts.isExportAssignment(statement)) {
-    return `const ${moduleInfo.defaultExportSymbol} = ${statement.expression.getText(sourceFile)};`;
+    return transformedSourceCode(
+      `const ${moduleInfo.defaultExportSymbol} = ${statement.expression.getText(sourceFile)};`,
+      moduleInfo.file.path,
+      sourcePosition.line + 1,
+      sourcePosition.character + 1,
+    );
   }
 
+  let code: string;
   if (hasExportModifier(statement)) {
-    return transformExportedStatement(sourceFile, statement, moduleInfo);
+    code = transformExportedStatement(sourceFile, statement, moduleInfo);
+  } else {
+    code = getStatementSource(sourceFile, statement);
   }
 
-  return getStatementSource(sourceFile, statement);
+  return transformedSourceCode(code, moduleInfo.file.path, sourcePosition.line + 1, sourcePosition.character + 1);
 }
 
 function transformExportedStatement(
@@ -817,8 +951,12 @@ function replaceAnonymousDefaultDeclaration(
   return `${text.replace(/^export\s+default\s+class\b/, `const ${defaultExportSymbol} = class`)};`;
 }
 
-function createImportAliasDeclarations(moduleInfo: RunJSModuleInfo, modules: Map<string, RunJSModuleInfo>): string {
-  const aliases: string[] = [];
+function createImportAliasDeclarations(
+  moduleInfo: RunJSModuleInfo,
+  modules: Map<string, RunJSModuleInfo>,
+): RunJSTransformedCode {
+  const aliases: RunJSTransformedCode[] = [];
+  const sourceFile = moduleInfo.sourceFile as ts.SourceFile | undefined;
 
   for (const importBinding of moduleInfo.imports) {
     if (!importBinding.targetPath) {
@@ -828,19 +966,39 @@ function createImportAliasDeclarations(moduleInfo: RunJSModuleInfo, modules: Map
     if (!target) {
       continue;
     }
+    const position =
+      sourceFile && typeof importBinding.start === 'number'
+        ? sourceFile.getLineAndCharacterOfPosition(importBinding.start)
+        : null;
+    const sourceLine = position ? position.line + 1 : 1;
+    const sourceColumn = position ? position.character + 1 : 1;
     if (importBinding.defaultName) {
-      aliases.push(`const ${importBinding.defaultName} = ${target.moduleSymbol}.default;`);
+      aliases.push(
+        transformedSourceCode(
+          `const ${importBinding.defaultName} = ${target.moduleSymbol}.default;`,
+          moduleInfo.file.path,
+          sourceLine,
+          sourceColumn,
+        ),
+      );
     }
     for (const namedImport of importBinding.named) {
       const access =
         target.isJson && namedImport.imported !== 'default'
           ? `${target.moduleSymbol}.default.${namedImport.imported}`
           : `${target.moduleSymbol}.${namedImport.imported}`;
-      aliases.push(`const ${namedImport.local} = ${access};`);
+      aliases.push(
+        transformedSourceCode(
+          `const ${namedImport.local} = ${access};`,
+          moduleInfo.file.path,
+          sourceLine,
+          sourceColumn,
+        ),
+      );
     }
   }
 
-  return aliases.join('\n');
+  return joinTransformedSegments(aliases);
 }
 
 function createExportAssignments(moduleInfo: RunJSModuleInfo): string {
@@ -1281,7 +1439,7 @@ function removeStatementModifiers(
       end: modifier.end,
     }));
 
-  return removeSourceRanges(sourceFile.text, statement.getFullStart(), statement.end, ranges);
+  return removeSourceRanges(sourceFile.text, statement.getStart(sourceFile), statement.end, ranges);
 }
 
 function removeSourceRanges(
@@ -1302,7 +1460,7 @@ function removeSourceRanges(
 }
 
 function getStatementSource(sourceFile: ts.SourceFile, statement: ts.Statement): string {
-  return sourceFile.text.slice(statement.getFullStart(), statement.end);
+  return sourceFile.text.slice(statement.getStart(sourceFile), statement.end);
 }
 
 function diagnosticAt(
@@ -1388,6 +1546,26 @@ function getFailureCode(diagnostics: RunJSCompileDiagnostic[]): RunJSCompileFail
   }
 
   return 'RUNJS_COMPILE_FAILED';
+}
+
+function countLines(content: string): number {
+  if (!content) {
+    return 0;
+  }
+
+  return content.split('\n').length;
+}
+
+function buildRunJSSourceURL(filesHash: string): string {
+  return `${runJSSourceURLPrefix}${sha256Hex(filesHash).slice(0, 16)}.js`;
+}
+
+function appendRunJSSourceURL(code: string, sourceURL: string): string {
+  if (!code) {
+    return code;
+  }
+
+  return `${code}\n//# sourceURL=${sourceURL}`;
 }
 
 function indent(content: string): string {

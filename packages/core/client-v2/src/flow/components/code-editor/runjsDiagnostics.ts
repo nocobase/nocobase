@@ -75,6 +75,7 @@ export type RunJSIssue = {
   type: 'lint' | 'runtime';
   message: string;
   ruleId?: string;
+  sourcePath?: string;
   location?: {
     start?: { line: number; column: number };
   };
@@ -104,6 +105,7 @@ export type PreviewRunJSResult = {
 
 export type RunJSDiagnosticsOptions = {
   version?: string;
+  sourceMap?: string;
 };
 
 export const MAX_MESSAGE_CHARS = 4000;
@@ -112,6 +114,27 @@ const MAX_STACK_CHARS = 1600;
 const MAX_STACK_FRAMES = 1;
 
 const JS_PARSER = javascript({ jsx: true }).language.parser;
+
+type RunJSDebugLineMapping = {
+  generatedLine: number;
+  source: string;
+  sourceLine: number;
+  sourceColumn?: number;
+};
+
+type RunJSDebugSourceMap = {
+  version: 1;
+  kind: 'runjs-line-map';
+  sourceURL?: string;
+  generatedCodeLineOffset?: number;
+  mappings: RunJSDebugLineMapping[];
+};
+
+type MappedRunJSStackFrame = {
+  source: string;
+  line: number;
+  column: number;
+};
 
 const mustacheCtxClosed = /\{\{[^}]*ctx[^}]*\}\}/;
 const mustacheCtxOpen = /\{\{[^}]*ctx[^}]*$/;
@@ -139,6 +162,130 @@ function shortenMiddle(text: string, maxChars: number): string {
   const head = Math.floor((maxChars - 3) / 2);
   const tail = maxChars - 3 - head;
   return `${src.slice(0, head)}...${src.slice(-tail)}`;
+}
+
+function parseRunJSDebugSourceMap(sourceMap?: string): RunJSDebugSourceMap | undefined {
+  if (!sourceMap) {
+    return undefined;
+  }
+
+  try {
+    const parsed = JSON.parse(sourceMap) as Partial<RunJSDebugSourceMap>;
+    if (parsed.kind !== 'runjs-line-map' || !Array.isArray(parsed.mappings)) {
+      return undefined;
+    }
+
+    const mappings = parsed.mappings
+      .map((mapping) => ({
+        generatedLine: Number(mapping?.generatedLine),
+        source: String(mapping?.source || ''),
+        sourceLine: Number(mapping?.sourceLine),
+        sourceColumn: Number(mapping?.sourceColumn || 1),
+      }))
+      .filter(
+        (mapping) =>
+          Number.isFinite(mapping.generatedLine) &&
+          mapping.generatedLine > 0 &&
+          !!mapping.source &&
+          Number.isFinite(mapping.sourceLine) &&
+          mapping.sourceLine > 0,
+      );
+
+    if (!mappings.length) {
+      return undefined;
+    }
+
+    return {
+      version: 1,
+      kind: 'runjs-line-map',
+      sourceURL: typeof parsed.sourceURL === 'string' ? parsed.sourceURL : undefined,
+      generatedCodeLineOffset: Number(parsed.generatedCodeLineOffset || 0),
+      mappings,
+    };
+  } catch (_) {
+    return undefined;
+  }
+}
+
+function findRunJSMapping(
+  sourceMap: RunJSDebugSourceMap | undefined,
+  generatedLine: number,
+): RunJSDebugLineMapping | undefined {
+  if (!sourceMap || !Number.isFinite(generatedLine)) {
+    return undefined;
+  }
+
+  const runtimeLine = Math.max(1, Math.floor(generatedLine - (sourceMap.generatedCodeLineOffset || 0)));
+  return sourceMap.mappings.find((mapping) => mapping.generatedLine === runtimeLine);
+}
+
+function getLastRunJSStackLocation(line: string): { raw: string; line: number; column: number } | undefined {
+  const matches = Array.from(String(line || '').matchAll(/(?:nocobase-runjs:\/\/[^\s)]+|<anonymous>):(\d+):(\d+)/g));
+  const match = matches[matches.length - 1];
+  if (!match) {
+    return undefined;
+  }
+
+  return {
+    raw: match[0],
+    line: Number(match[1]),
+    column: Number(match[2]),
+  };
+}
+
+function mapRunJSStackLine(line: string, sourceMap: RunJSDebugSourceMap | undefined): string {
+  const location = getLastRunJSStackLocation(line);
+  if (!location) {
+    return line;
+  }
+
+  const mapping = findRunJSMapping(sourceMap, location.line);
+  if (!mapping) {
+    return line;
+  }
+
+  const mappedColumn = mapping.sourceColumn || location.column || 1;
+  const mappedLocation = `${mapping.source}:${mapping.sourceLine}:${mappedColumn}`;
+  return String(line).replace(location.raw, mappedLocation);
+}
+
+function mapRunJSStack(raw: string, sourceMap: RunJSDebugSourceMap | undefined): string {
+  if (!sourceMap) {
+    return raw;
+  }
+
+  return String(raw || '')
+    .split('\n')
+    .map((line) => mapRunJSStackLine(line, sourceMap))
+    .join('\n');
+}
+
+function getFirstMappedRunJSStackFrame(
+  raw: string,
+  sourceMap: RunJSDebugSourceMap | undefined,
+): MappedRunJSStackFrame | undefined {
+  if (!sourceMap) {
+    return undefined;
+  }
+
+  for (const line of String(raw || '').split('\n')) {
+    const location = getLastRunJSStackLocation(line);
+    if (!location) {
+      continue;
+    }
+    const mapping = findRunJSMapping(sourceMap, location.line);
+    if (!mapping) {
+      continue;
+    }
+
+    return {
+      source: mapping.source,
+      line: mapping.sourceLine,
+      column: mapping.sourceColumn || location.column || 1,
+    };
+  }
+
+  return undefined;
 }
 
 function shortenStackUrl(url: string): string {
@@ -189,10 +336,10 @@ function simplifyStack(raw: string, maxFrames = MAX_STACK_FRAMES): string {
   return output.join('\n');
 }
 
-function safeStack(err: any, maxChars = MAX_STACK_CHARS): string | undefined {
+function safeStack(err: any, maxChars = MAX_STACK_CHARS, sourceMap?: RunJSDebugSourceMap): string | undefined {
   const raw = err?.stack ? String(err.stack) : '';
   if (!raw) return undefined;
-  const simplified = simplifyStack(raw);
+  const simplified = simplifyStack(mapRunJSStack(raw, sourceMap));
   if (simplified.length <= maxChars) return simplified;
   return `${simplified.slice(0, Math.max(0, maxChars - 16))}\n... (stack truncated)`;
 }
@@ -594,7 +741,7 @@ function collectHeuristicIssues(code: string): RunJSIssue[] {
     const ParserWithJSX = typeof jsx === 'function' ? Parser.extend(jsx()) : Parser;
     ast = ParserWithJSX.parse(src, {
       ecmaVersion: 2022,
-      sourceType: 'script',
+      sourceType: 'module',
       allowAwaitOutsideFunction: true,
       allowReturnOutsideFunction: true,
       locations: true,
@@ -682,6 +829,11 @@ function collectHeuristicIssues(code: string): RunJSIssue[] {
             break;
           case 'ClassDeclaration':
             addId(node.id);
+            break;
+          case 'ImportSpecifier':
+          case 'ImportDefaultSpecifier':
+          case 'ImportNamespaceSpecifier':
+            addId(node.local);
             break;
           default:
             break;
@@ -785,6 +937,9 @@ function collectHeuristicIssues(code: string): RunJSIssue[] {
             (parent.type === 'FunctionExpression' && parent.id === node) ||
             (parent.type === 'ClassDeclaration' && parent.id === node) ||
             (parent.type === 'ClassExpression' && parent.id === node) ||
+            (parent.type === 'ImportSpecifier' && (parent.imported === node || parent.local === node)) ||
+            (parent.type === 'ImportDefaultSpecifier' && parent.local === node) ||
+            (parent.type === 'ImportNamespaceSpecifier' && parent.local === node) ||
             (parent.type === 'Property' && parent.key === node && parent.computed !== true) ||
             (parent.type === 'MemberExpression' && parent.property === node && parent.computed !== true) ||
             (parent.type === 'LabeledStatement' && parent.label === node) ||
@@ -1020,6 +1175,7 @@ export async function diagnoseRunJS(
   const logs: RunJSLog[] = [];
   const issues: RunJSIssue[] = [];
   const version = options?.version;
+  const debugSourceMap = parseRunJSDebugSourceMap(options?.sourceMap);
   const preprocessTemplates = shouldPreprocessRunJSTemplates({ version });
 
   // Lint: multi syntax errors (Lezer) + heuristics (acorn)
@@ -1059,7 +1215,7 @@ export async function diagnoseRunJS(
         type: 'runtime',
         ruleId: looksLikeSyntax ? 'preview-start-failed' : 'internal',
         message: looksLikeSyntax ? msg : `Preview internal failure: ${msg}`,
-        stack: safeStack(e),
+        stack: safeStack(e, MAX_STACK_CHARS, debugSourceMap),
       });
       execution.finished = true;
       execution.timeout = false;
@@ -1070,7 +1226,8 @@ export async function diagnoseRunJS(
     // - FlowRunJSContext / specific RunJSContext
     // - deprecation proxy behavior
     // - libs injection (React/antd/etc)
-    const runner: JSRunner = await (ctx as any).createJSRunner({
+    const previewCtx = createPreviewFlowContext(ctx);
+    const runner: JSRunner = await (previewCtx as any).createJSRunner({
       globals: baseGlobals,
       timeoutMs: PREVIEW_TIMEOUT_MS,
       version,
@@ -1087,21 +1244,41 @@ export async function diagnoseRunJS(
       const err = res?.error;
       const msg = res?.timeout ? 'Execution timed out' : safeToString((err as any)?.message || err || 'Unknown error');
       const isSyntax = err instanceof SyntaxError || /^SyntaxError\b/i.test(String((err as any)?.name || ''));
+      const mappedFrame = getFirstMappedRunJSStackFrame((err as any)?.stack || '', debugSourceMap);
       issues.push({
         type: 'runtime',
         ruleId: res?.timeout ? 'timeout' : isSyntax ? 'preview-start-failed' : 'runtime-error',
         message: msg,
-        stack: safeStack(err),
+        sourcePath: mappedFrame?.source,
+        location: mappedFrame
+          ? {
+              start: {
+                line: mappedFrame.line,
+                column: mappedFrame.column,
+              },
+            }
+          : undefined,
+        stack: safeStack(err, MAX_STACK_CHARS, debugSourceMap),
       });
     }
   } catch (e) {
     execution.finished = true;
     execution.timeout = false;
+    const mappedFrame = getFirstMappedRunJSStackFrame((e as any)?.stack || '', debugSourceMap);
     issues.push({
       type: 'runtime',
       ruleId: 'internal',
       message: `Preview internal failure: ${safeToString((e as any)?.message || e)}`,
-      stack: safeStack(e),
+      sourcePath: mappedFrame?.source,
+      location: mappedFrame
+        ? {
+            start: {
+              line: mappedFrame.line,
+              column: mappedFrame.column,
+            },
+          }
+        : undefined,
+      stack: safeStack(e, MAX_STACK_CHARS, debugSourceMap),
     });
   } finally {
     const endedAt =
@@ -1132,8 +1309,7 @@ export async function previewRunJS(
   ctx: FlowContext,
   options: RunJSDiagnosticsOptions = {},
 ): Promise<PreviewRunJSResult> {
-  const previewCtx = createPreviewFlowContext(ctx);
-  const result = await diagnoseRunJS(code, previewCtx, options);
+  const result = await diagnoseRunJS(code, ctx, options);
   const success = result.issues.length === 0;
   const message = formatRunJSPreviewMessage(result);
   const final = message.length > MAX_MESSAGE_CHARS ? clampText(message, MAX_MESSAGE_CHARS) : message;

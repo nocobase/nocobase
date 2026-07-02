@@ -7,13 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { SaveOutlined } from '@ant-design/icons';
 import { CodeEditor } from '@nocobase/client-v2';
-import { Alert, Button, Empty, Space, Spin, Tabs, Typography } from 'antd';
+import { Alert, Empty, Spin, Tabs, Typography } from 'antd';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 
-import type { VscDraftFileChange } from '../../shared/types';
-import { useVscFileRepo, type VscFileRepoActiveDraftResult } from '../hooks';
+import type { VscFileChange } from '../../shared/types';
+import { useVscFileRepo } from '../hooks';
 import { useT } from '../locale';
 import { compareVscPaths, formatVscComponentError, uniquePaths } from './utils';
 
@@ -25,7 +24,7 @@ interface EditorFileState {
   path: string;
   loadKey: string;
   content: string;
-  draftContent: string;
+  editedContent: string;
   language?: string;
   loading: boolean;
   error?: unknown;
@@ -38,26 +37,20 @@ export interface VscEditorTabsProps {
   refName?: string;
   activePath?: string;
   onActivePathChange?: (path: string) => void;
-  onDirtyFilesChange?: (files: VscDraftFileChange[]) => void;
-  onDraftSaved?: (draft: VscFileRepoActiveDraftResult) => void;
+  onDirtyFilesChange?: (files: VscFileChange[]) => void;
 }
 
 export function VscEditorTabs(props: VscEditorTabsProps) {
-  const { repoId, baseCommitId, openPaths, refName, activePath, onActivePathChange, onDirtyFilesChange, onDraftSaved } =
-    props;
+  const { repoId, baseCommitId, openPaths, refName, activePath, onActivePathChange, onDirtyFilesChange } = props;
   const t = useT();
   const repo = useVscFileRepo();
   const repoRef = useRef(repo);
   const dirtyCallbackRef = useRef(onDirtyFilesChange);
-  const draftSavedRef = useRef(onDraftSaved);
   const requestedLoadKeysRef = useRef<Record<string, string>>({});
   const [files, setFiles] = useState<Record<string, EditorFileState>>({});
-  const [savingError, setSavingError] = useState<unknown>(null);
-  const [saving, setSaving] = useState(false);
 
   repoRef.current = repo;
   dirtyCallbackRef.current = onDirtyFilesChange;
-  draftSavedRef.current = onDraftSaved;
 
   const normalizedOpenPaths = useMemo(() => uniquePaths(openPaths), [openPaths]);
   const currentActivePath =
@@ -99,7 +92,7 @@ export function VscEditorTabs(props: VscEditorTabsProps) {
             path,
             loadKey: fileLoadKey,
             content: '',
-            draftContent: '',
+            editedContent: '',
             loading: true,
           },
         }));
@@ -120,7 +113,7 @@ export function VscEditorTabs(props: VscEditorTabsProps) {
               path,
               loadKey: fileLoadKey,
               content: file.content,
-              draftContent: file.content,
+              editedContent: file.content,
               language: file.language,
               loading: false,
             },
@@ -136,7 +129,7 @@ export function VscEditorTabs(props: VscEditorTabsProps) {
               path,
               loadKey: fileLoadKey,
               content: '',
-              draftContent: '',
+              editedContent: '',
               loading: false,
               error,
             },
@@ -154,12 +147,12 @@ export function VscEditorTabs(props: VscEditorTabsProps) {
 
   const dirtyFiles = useMemo(() => {
     return Object.values(files)
-      .filter((file) => !file.loading && !file.error && file.draftContent !== file.content)
+      .filter((file) => !file.loading && !file.error && file.editedContent !== file.content)
       .sort((left, right) => compareVscPaths(left.path, right.path))
       .map((file) => ({
         path: file.path,
         operation: 'upsert' as const,
-        content: file.draftContent,
+        content: file.editedContent,
       }));
   }, [files]);
 
@@ -178,31 +171,10 @@ export function VscEditorTabs(props: VscEditorTabsProps) {
         ...current,
         [path]: {
           ...file,
-          draftContent: value,
+          editedContent: value,
         },
       };
     });
-  };
-
-  const saveDraft = async () => {
-    if (dirtyFiles.length === 0) {
-      return;
-    }
-
-    setSaving(true);
-    setSavingError(null);
-    try {
-      const draft = await repoRef.current.saveDraft({
-        repoId,
-        baseCommitId,
-        files: dirtyFiles,
-      });
-      draftSavedRef.current?.(draft);
-    } catch (error) {
-      setSavingError(error);
-    } finally {
-      setSaving(false);
-    }
   };
 
   const activeFile = currentActivePath ? files[currentActivePath] : undefined;
@@ -213,29 +185,13 @@ export function VscEditorTabs(props: VscEditorTabsProps) {
 
   return (
     <section aria-label={t('Editor')} style={{ display: 'flex', flexDirection: 'column', gap: 12, minHeight: 0 }}>
-      <Space style={{ justifyContent: 'space-between' }}>
-        <Typography.Text strong>{t('Editor')}</Typography.Text>
-        <Button
-          aria-label={t('Save draft')}
-          disabled={dirtyFiles.length === 0}
-          icon={<SaveOutlined />}
-          loading={saving}
-          onClick={saveDraft}
-          type="primary"
-        >
-          {t('Save draft')}
-        </Button>
-      </Space>
-
-      {savingError ? (
-        <Alert message={formatVscComponentError(savingError, t('Failed to save draft'))} showIcon type="error" />
-      ) : null}
+      <Typography.Text strong>{t('Editor')}</Typography.Text>
 
       <Tabs
         activeKey={currentActivePath}
         items={normalizedOpenPaths.map((path) => {
           const file = files[path];
-          const dirty = Boolean(file && file.draftContent !== file.content);
+          const dirty = Boolean(file && file.editedContent !== file.content);
           return {
             key: path,
             label: dirty ? `${path} *` : path,
@@ -264,7 +220,7 @@ export function VscEditorTabs(props: VscEditorTabsProps) {
           placeholder={t('Edit file content')}
           RightExtra={NoEditorExtras}
           showLogs={false}
-          value={activeFile.draftContent}
+          value={activeFile.editedContent}
         />
       ) : null}
     </section>

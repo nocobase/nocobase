@@ -38,6 +38,51 @@ describe('compileRunJSSourceWorkspace', () => {
     expect(result.artifact.code).not.toContain('export ');
   });
 
+  it('emits a debug line map for runtime stack mapping', () => {
+    const result = compileRunJSSourceWorkspace({
+      entry: 'src/main.tsx',
+      runtimeVersion: 'v2',
+      surfaceStyle: 'render',
+      files: [
+        {
+          path: 'src/main.tsx',
+          content: "import { test } from './helper';\ntest();",
+        },
+        {
+          path: 'src/helper.ts',
+          content: 'export function test() {\n  throw new Error("boom");\n}',
+        },
+      ],
+    });
+
+    expect(result.failureCode).toBeUndefined();
+    expect(result.artifact.sourceMap).toBeTruthy();
+    expect(result.artifact.code).toContain('//# sourceURL=nocobase-runjs://bundle/');
+
+    const sourceMap = JSON.parse(result.artifact.sourceMap || '{}') as {
+      kind?: string;
+      sourceURL?: string;
+      generatedCodeLineOffset?: number;
+      mappings?: Array<{ source: string; sourceLine: number; generatedLine: number }>;
+    };
+    expect(sourceMap.kind).toBe('runjs-line-map');
+    expect(sourceMap.sourceURL).toMatch(/^nocobase-runjs:\/\/bundle\//);
+    expect(sourceMap.generatedCodeLineOffset).toBe(2);
+    expect(sourceMap.mappings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          source: 'src/helper.ts',
+          sourceLine: 2,
+        }),
+      ]),
+    );
+    const throwMapping = sourceMap.mappings?.find(
+      (mapping) => mapping.source === 'src/helper.ts' && mapping.sourceLine === 2,
+    );
+    expect(throwMapping).toBeTruthy();
+    expect(result.artifact.code.split('\n')[(throwMapping?.generatedLine || 1) - 1]).toContain('throw new Error');
+  });
+
   it('compiles default exports and default imports', () => {
     const result = compileRunJSSourceWorkspace({
       entry: 'src/main.ts',

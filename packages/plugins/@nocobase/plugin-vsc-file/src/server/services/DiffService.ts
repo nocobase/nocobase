@@ -12,32 +12,14 @@ import type { Database, Transaction } from '@nocobase/database';
 import { diffMaxFileSize } from '../../shared/constants';
 import { VscError } from '../../shared/errors';
 import { normalizePath, pathHash } from '../../shared/path';
-import type { VscCommitRecord, VscDraftFileRecord, VscNormalizedTreeEntry, VscStoredBlob } from '../../shared/types';
+import type { VscCommitRecord, VscNormalizedTreeEntry, VscStoredBlob } from '../../shared/types';
 import { BlobService } from './BlobService';
 import { CommitService } from './CommitService';
-import { DraftService } from './DraftService';
 import { RepositoryService } from './RepositoryService';
 import { TreeService } from './TreeService';
 
 const maxLineDiffLines = 20000;
 const maxLineDiffComparisons = 1000000;
-const defaultFileMode = '100644';
-
-const languageByExtension: Record<string, string> = {
-  css: 'css',
-  html: 'html',
-  js: 'javascript',
-  jsx: 'javascript',
-  json: 'json',
-  md: 'markdown',
-  mjs: 'javascript',
-  cjs: 'javascript',
-  ts: 'typescript',
-  tsx: 'typescript',
-  yaml: 'yaml',
-  yml: 'yaml',
-};
-
 export type VscFileDiffStatus = 'added' | 'modified' | 'deleted' | 'unchanged' | 'renamed';
 
 export interface DiffCommitsInput {
@@ -46,20 +28,10 @@ export interface DiffCommitsInput {
   toCommitId: string;
 }
 
-export interface DiffDraftInput {
-  repoId: string;
-  userId: string;
-}
-
 export type DiffFileEndpoint =
   | {
       type: 'commit';
       commitId: string;
-      path: string;
-    }
-  | {
-      type: 'draft';
-      userId: string;
       path: string;
     }
   | {
@@ -162,8 +134,6 @@ export class DiffService {
 
   private readonly commitService: CommitService;
 
-  private readonly draftService: DraftService;
-
   private readonly repositoryService: RepositoryService;
 
   private readonly treeService: TreeService;
@@ -172,7 +142,6 @@ export class DiffService {
     private readonly db: Database,
     blobService?: BlobService,
     commitService?: CommitService,
-    draftService?: DraftService,
     repositoryService?: RepositoryService,
     treeService?: TreeService,
   ) {
@@ -180,7 +149,6 @@ export class DiffService {
     this.commitService = commitService || new CommitService(db);
     this.repositoryService = repositoryService || new RepositoryService(db);
     this.treeService = treeService || new TreeService(db, this.blobService);
-    this.draftService = draftService || new DraftService(db, this.blobService, this.repositoryService);
   }
 
   async diffCommits(input: DiffCommitsInput, transaction?: Transaction): Promise<FileDiffResult> {
@@ -190,24 +158,6 @@ export class DiffService {
     const toEntries = await this.loadCommitEntries(toCommit, transaction);
 
     return this.compareEntries(fromEntries, toEntries, transaction);
-  }
-
-  async diffDraft(input: DiffDraftInput, transaction?: Transaction): Promise<FileDiffResult> {
-    await this.repositoryService.getRepository(input.repoId, transaction);
-    const draft = await this.draftService.getDraft(input, { transaction });
-    if (!draft) {
-      return emptyFileDiffResult();
-    }
-
-    const baseEntries = draft.draft.baseCommitId
-      ? await this.loadCommitEntries(
-          await this.commitService.getCommit(input.repoId, draft.draft.baseCommitId, transaction),
-          transaction,
-        )
-      : [];
-    const nextEntries = await this.applyDraftFiles(baseEntries, draft.files, transaction);
-
-    return this.compareEntries(baseEntries, nextEntries, transaction);
   }
 
   async diffFile(input: DiffFileInput, transaction?: Transaction): Promise<DiffFileResult> {
@@ -416,37 +366,6 @@ export class DiffService {
     return (await this.treeService.loadTreeEntries(commit.treeHash, { transaction })).map(comparableEntryFromTreeEntry);
   }
 
-  private async applyDraftFiles(
-    baseEntries: ComparableFileEntry[],
-    draftFiles: VscDraftFileRecord[],
-    transaction?: Transaction,
-  ): Promise<ComparableFileEntry[]> {
-    const entriesByPathHash = new Map(baseEntries.map((entry) => [entry.pathHash, entry]));
-
-    for (const draftFile of draftFiles) {
-      if (draftFile.operation === 'delete') {
-        entriesByPathHash.delete(draftFile.pathHash);
-        continue;
-      }
-      if (!draftFile.blobHash) {
-        throw new VscError('BLOB_NOT_FOUND', `Draft file "${draftFile.path}" does not reference a blob`);
-      }
-
-      const blob = await this.getBlob(draftFile.blobHash, transaction);
-      const baseEntry = entriesByPathHash.get(draftFile.pathHash);
-      entriesByPathHash.set(draftFile.pathHash, {
-        path: draftFile.path,
-        pathHash: draftFile.pathHash,
-        blobHash: draftFile.blobHash,
-        size: blob.size,
-        language: draftFile.language || baseEntry?.language || inferComparableLanguage(draftFile.path),
-        mode: draftFile.mode || baseEntry?.mode || defaultFileMode,
-      });
-    }
-
-    return Array.from(entriesByPathHash.values()).sort(compareComparableEntries);
-  }
-
   private async resolveEndpoint(
     repoId: string,
     endpoint: DiffFileEndpoint | null,
@@ -466,28 +385,7 @@ export class DiffService {
       return this.resolveTreeContent(commit.treeHash, normalizedPath, transaction);
     }
 
-    const draft = await this.draftService.getDraft({ repoId, userId: endpoint.userId }, { transaction });
-    if (!draft) {
-      return emptyContent();
-    }
-
-    const draftFile = draft.files.find((file) => file.pathHash === pathHash(normalizedPath));
-    if (draftFile) {
-      if (draftFile.operation === 'delete') {
-        return emptyContent();
-      }
-      if (!draftFile.blobHash) {
-        throw new VscError('BLOB_NOT_FOUND', `Draft file "${draftFile.path}" does not reference a blob`);
-      }
-      return contentFromBlob(await this.getBlob(draftFile.blobHash, transaction));
-    }
-
-    if (!draft.draft.baseCommitId) {
-      return emptyContent();
-    }
-
-    const baseCommit = await this.commitService.getCommit(repoId, draft.draft.baseCommitId, transaction);
-    return this.resolveTreeContent(baseCommit.treeHash, normalizedPath, transaction);
+    throw new VscError('PATH_INVALID', `Unsupported diff endpoint type "${endpoint.type}"`);
   }
 
   private async resolveTreeContent(
@@ -542,17 +440,6 @@ function isUnchangedEntry(fromEntry: ComparableFileEntry, toEntry: ComparableFil
   );
 }
 
-function inferComparableLanguage(path: string): string {
-  const filename = path.split('/').pop() || path;
-  const extensionIndex = filename.lastIndexOf('.');
-
-  if (extensionIndex <= 0 || extensionIndex === filename.length - 1) {
-    return 'text';
-  }
-
-  return languageByExtension[filename.slice(extensionIndex + 1).toLowerCase()] || 'text';
-}
-
 function groupEntriesByBlobHash(entries: ComparableFileEntry[]): Map<string, ComparableFileEntry[]> {
   const grouped = new Map<string, ComparableFileEntry[]>();
 
@@ -591,19 +478,6 @@ function summarizeFileDiff(files: FileDiffEntry[]): FileDiffSummary {
   }
 
   return summary;
-}
-
-function emptyFileDiffResult(): FileDiffResult {
-  return {
-    files: [],
-    summary: {
-      added: 0,
-      modified: 0,
-      deleted: 0,
-      unchanged: 0,
-      renamed: 0,
-    },
-  };
 }
 
 function contentFromBlob(blob: VscStoredBlob): ResolvedContent {

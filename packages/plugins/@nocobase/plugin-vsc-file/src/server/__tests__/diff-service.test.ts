@@ -23,8 +23,6 @@ const persistedCollections = [
   'vscFileCommits',
   'vscFileRefs',
   'vscFileRepositories',
-  'vscFileDrafts',
-  'vscFileDraftFiles',
 ] as const;
 
 type PersistedCollection = (typeof persistedCollections)[number];
@@ -153,53 +151,6 @@ describe('vsc-file diff service', () => {
     });
   });
 
-  it('diffs an active draft against its base commit', async () => {
-    const { repository, initialCommit } = await service.createRepository({
-      ownerType: 'plugin',
-      ownerId: 'demo',
-      name: 'main',
-      initialFiles: baseFiles(),
-    });
-    if (!initialCommit) {
-      throw new Error('Expected an initial commit');
-    }
-    await service.saveDraft({
-      repoId: repository.id,
-      userId: 'user-1',
-      baseCommitId: initialCommit.id,
-      files: [
-        { path: 'README.md', operation: 'upsert', content: '# Demo\n\nDraft update\n' },
-        { path: 'src/delete.ts', operation: 'delete' },
-        { path: 'src/draft.ts', operation: 'upsert', content: 'export const draft = true;\n' },
-      ],
-    });
-
-    const diff = await service.diffDraft({
-      repoId: repository.id,
-      userId: 'user-1',
-    });
-
-    expect(diff.summary).toEqual({
-      added: 1,
-      modified: 1,
-      deleted: 1,
-      unchanged: 2,
-      renamed: 0,
-    });
-    expect(fileByPath(diff, 'README.md')).toMatchObject({
-      status: 'modified',
-      additions: 2,
-    });
-    expect(fileByPath(diff, 'src/draft.ts')).toMatchObject({
-      status: 'added',
-      additions: 1,
-    });
-    expect(fileByPath(diff, 'src/delete.ts')).toMatchObject({
-      status: 'deleted',
-      deletions: 1,
-    });
-  });
-
   it('returns stable one-line and multi-line file hunks', async () => {
     const { repository } = await service.createRepository({
       ownerType: 'plugin',
@@ -316,7 +267,7 @@ describe('vsc-file diff service', () => {
     ]);
   });
 
-  it('resolves file endpoints from commits and drafts', async () => {
+  it('resolves file endpoints from commits', async () => {
     const { repository, initialCommit } = await service.createRepository({
       ownerType: 'plugin',
       ownerId: 'demo',
@@ -326,17 +277,17 @@ describe('vsc-file diff service', () => {
     if (!initialCommit) {
       throw new Error('Expected an initial commit');
     }
-    await service.saveDraft({
+    const next = await service.push({
       repoId: repository.id,
-      userId: 'user-1',
       baseCommitId: initialCommit.id,
-      files: [{ path: 'README.md', operation: 'upsert', content: '# Demo\n\nDraft update\n' }],
+      message: 'update README',
+      files: [{ path: 'README.md', operation: 'upsert', content: '# Demo\n\nCommit update\n' }],
     });
 
     const diff = await diffService.diffFile({
       repoId: repository.id,
       from: { type: 'commit', commitId: initialCommit.id, path: 'README.md' },
-      to: { type: 'draft', userId: 'user-1', path: 'README.md' },
+      to: { type: 'commit', commitId: next.commit.id, path: 'README.md' },
     });
 
     expect(diff).toMatchObject({
@@ -437,12 +388,6 @@ describe('vsc-file diff service', () => {
       message: 'change files',
       files: changedFiles(),
     });
-    await service.saveDraft({
-      repoId: repository.id,
-      userId: 'user-1',
-      baseCommitId: next.commit.id,
-      files: [{ path: 'README.md', operation: 'upsert', content: '# Demo\n\nDraft update\n' }],
-    });
     const before = await countPersistedRows(db);
 
     await service.diffCommits({
@@ -450,14 +395,10 @@ describe('vsc-file diff service', () => {
       fromCommitId: initialCommit.id,
       toCommitId: next.commit.id,
     });
-    await service.diffDraft({
-      repoId: repository.id,
-      userId: 'user-1',
-    });
     await service.diffFile({
       repoId: repository.id,
-      from: { type: 'commit', commitId: next.commit.id, path: 'README.md' },
-      to: { type: 'draft', userId: 'user-1', path: 'README.md' },
+      from: { type: 'commit', commitId: initialCommit.id, path: 'README.md' },
+      to: { type: 'commit', commitId: next.commit.id, path: 'README.md' },
     });
 
     expect(await countPersistedRows(db)).toEqual(before);

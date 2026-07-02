@@ -12,16 +12,29 @@ import {
   CopyOutlined,
   DeleteOutlined,
   DiffOutlined,
+  DownloadOutlined,
+  DownOutlined,
+  EditOutlined,
   FileAddOutlined,
   FileTextOutlined,
   FolderOpenOutlined,
+  HomeOutlined,
   ReloadOutlined,
+  UploadOutlined,
+  UpOutlined,
 } from '@ant-design/icons';
-import { CodeEditor, type RunJSEditorProvider, type RunJSEditorProviderRenderProps } from '@nocobase/client-v2';
-import { useFlowContext, type FlowEngineContext, type RunJSValue } from '@nocobase/flow-engine';
+import {
+  CodeEditor,
+  diagnoseRunJS,
+  type CodeEditorTypeScriptProject,
+  type DiagnoseRunJSResult,
+  type RunJSImportModuleCompletion,
+  type RunJSEditorProvider,
+  type RunJSEditorProviderRenderProps,
+} from '@nocobase/client-v2';
+import { useFlowContext, type FlowContext, type FlowEngineContext, type RunJSValue } from '@nocobase/flow-engine';
 import {
   Alert,
-  Badge,
   Button,
   Empty,
   Input,
@@ -36,7 +49,7 @@ import {
   message,
 } from 'antd';
 import type { InputRef } from 'antd/es/input';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 import type { RunJSCompileDiagnostic } from '../../shared/runjs-source-types';
 import { formatVscComponentError } from '../components/utils';
@@ -55,7 +68,6 @@ import {
   useRunJSSourceResource,
 } from './useRunJSSourceResource';
 import {
-  applyDraftFiles,
   applyWorkspaceChanges,
   buildChangedWorkspaceFileList,
   buildLineDiff,
@@ -81,8 +93,10 @@ import {
 } from './workspaceUtils';
 
 const defaultEntryPath = 'src/main.tsx';
+const defaultStudioHeight = 'min(720px, calc(100vh - 112px))';
 const defaultConsolePanelHeight = 180;
 const minConsolePanelHeight = 80;
+const importableRunJSFileExtensions = ['.ts', '.tsx', '.js', '.jsx'];
 
 export const runJSStudioProvider: RunJSEditorProvider = {
   key: '@nocobase/plugin-vsc-file/runjs-studio',
@@ -96,6 +110,8 @@ type WorkspaceLoadResult = {
   currentFiles: RunJSWorkspaceFile[];
   entryPath: string;
 };
+
+type OpenWorkspaceAction = 'open' | 'openLatest';
 
 type FileDialogMode = 'create' | 'rename';
 
@@ -131,6 +147,11 @@ type DiffViewState = {
   files: RunJSWorkspaceFile[];
 };
 
+type ExportDownloadState = {
+  fileName: string;
+  url: string;
+};
+
 type PreviewArtifactState = {
   code: string;
   version: string;
@@ -141,6 +162,7 @@ type ClosableView = {
   close?: () => boolean | void | Promise<boolean | void>;
   beforeClose?: (options?: unknown) => boolean | void | Promise<boolean | void>;
   destroy?: () => void;
+  setFooter?: (footer: React.ReactNode) => void;
 };
 
 function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
@@ -156,6 +178,7 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
   const consoleSeqRef = useRef(0);
   const latestWorkspaceSnapshotRef = useRef('');
   const dialogTriggerRef = useRef<HTMLElement | null>(null);
+  const importInputRef = useRef<HTMLInputElement>(null);
   const [workspace, setWorkspace] = useState<RunJSSourceOpenWorkspaceResult | null>(null);
   const [workspaceError, setWorkspaceError] = useState<unknown>(null);
   const [actionError, setActionError] = useState<ActionErrorState | null>(null);
@@ -168,6 +191,7 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
   const [openPaths, setOpenPaths] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState('code');
   const [filesCollapsed, setFilesCollapsed] = useState(true);
+  const [historyCollapsed, setHistoryCollapsed] = useState(false);
   const [consoleEntries, setConsoleEntries] = useState<RunJSConsoleEntry[]>([]);
   const [fileDialog, setFileDialog] = useState<FileDialogState | null>(null);
   const [fileDialogPath, setFileDialogPath] = useState('');
@@ -187,6 +211,7 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
   const [pendingDirtyAction, setPendingDirtyAction] = useState<PendingDirtyAction>('close');
   const [conflict, setConflict] = useState<ConflictState | null>(null);
   const [consoleHeight, setConsoleHeight] = useState(defaultConsolePanelHeight);
+  const [exportDownload, setExportDownload] = useState<ExportDownloadState | null>(null);
 
   const workspaceReadOnly = Boolean(readOnly || disabled || (workspace && !workspace.permissions.canWrite));
   const workspaceEditingDisabled = workspaceReadOnly || publishing;
@@ -198,12 +223,32 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
   const effectiveDiffFiles = diffView?.files || files;
   const activeFile = activePath ? files.find((file) => file.path === activePath) : undefined;
   const historyItems = workspace?.history?.items || [];
-  const baseCommitId = workspace?.draft?.baseCommitId ?? workspace?.repository?.publishedCommitId ?? null;
+  const baseCommitId = workspace?.repository?.headCommitId ?? workspace?.repository?.publishedCommitId ?? null;
   const baseCommit = findCommit(historyItems, baseCommitId);
   const lineDiffRows = useMemo(
     () => buildLineDiff(effectiveDiffBaseFiles, effectiveDiffFiles, selectedDiffPath, false),
     [effectiveDiffBaseFiles, effectiveDiffFiles, selectedDiffPath],
   );
+
+  useLayoutEffect(() => {
+    const view = flowCtx?.view as ClosableView | undefined;
+    view?.setFooter?.(null);
+    const timer = window.setTimeout(() => {
+      view?.setFooter?.(null);
+    }, 0);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [flowCtx?.view]);
+
+  useEffect(() => {
+    return () => {
+      if (exportDownload?.url) {
+        revokeRunJSWorkspaceObjectUrl(exportDownload.url);
+      }
+    };
+  }, [exportDownload?.url]);
 
   useEffect(() => {
     if (showDiff && activePath) {
@@ -364,33 +409,8 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
     });
   }, []);
 
-  const openWorkspaceSnapshot = useCallback(async (): Promise<WorkspaceLoadResult | null> => {
-    if (!props.locator) {
-      return null;
-    }
-
-    const opened = await runJSSourceRequest('open', { locator: props.locator });
-    return buildWorkspaceLoadResult(opened);
-  }, [props.locator, runJSSourceRequest]);
-
-  const loadWorkspace = useCallback(async (): Promise<WorkspaceLoadResult | null> => {
-    if (!props.locator) {
-      return null;
-    }
-
-    const requestSeq = requestSeqRef.current + 1;
-    requestSeqRef.current = requestSeq;
-    setLoadingWorkspace(true);
-    setWorkspaceError(null);
-
-    try {
-      const loaded = await openWorkspaceSnapshot();
-      if (requestSeqRef.current !== requestSeq) {
-        return null;
-      }
-      if (!loaded) {
-        return null;
-      }
+  const applyWorkspaceLoadResult = useCallback(
+    (loaded: WorkspaceLoadResult) => {
       const nextActivePath =
         loaded.currentFiles.find((file) => file.path === loaded.entryPath)?.path ||
         loaded.currentFiles[0]?.path ||
@@ -415,19 +435,95 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
       setRestoreCommit(null);
       setRestoringVersion(false);
       setActionError(null);
+    },
+    [value.version],
+  );
 
-      return loaded;
+  const openWorkspaceSnapshot = useCallback(
+    async (action: OpenWorkspaceAction = 'open'): Promise<WorkspaceLoadResult | null> => {
+      if (!props.locator) {
+        return null;
+      }
+
+      const opened = await runJSSourceRequest(action, { locator: props.locator });
+      return buildWorkspaceLoadResult(opened);
+    },
+    [props.locator, runJSSourceRequest],
+  );
+
+  const loadWorkspaceByAction = useCallback(
+    async (action: OpenWorkspaceAction): Promise<WorkspaceLoadResult | null> => {
+      if (!props.locator) {
+        return null;
+      }
+
+      const requestSeq = requestSeqRef.current + 1;
+      requestSeqRef.current = requestSeq;
+      setLoadingWorkspace(true);
+      setWorkspaceError(null);
+
+      try {
+        const loaded = await openWorkspaceSnapshot(action);
+        if (requestSeqRef.current !== requestSeq) {
+          return null;
+        }
+        if (!loaded) {
+          return null;
+        }
+
+        applyWorkspaceLoadResult(loaded);
+
+        return loaded;
+      } catch (error) {
+        if (requestSeqRef.current === requestSeq) {
+          setWorkspaceError(error);
+        }
+        return null;
+      } finally {
+        if (requestSeqRef.current === requestSeq) {
+          setLoadingWorkspace(false);
+        }
+      }
+    },
+    [applyWorkspaceLoadResult, openWorkspaceSnapshot, props.locator],
+  );
+
+  const loadWorkspace = useCallback(async (): Promise<WorkspaceLoadResult | null> => {
+    return loadWorkspaceByAction('open');
+  }, [loadWorkspaceByAction]);
+
+  const editLatestSavedVersion = useCallback(async (): Promise<void> => {
+    await loadWorkspaceByAction('openLatest');
+  }, [loadWorkspaceByAction]);
+
+  const restoreLatestVersionFromCurrentCode = useCallback(async (): Promise<void> => {
+    if (!props.locator) {
+      return;
+    }
+
+    const requestSeq = requestSeqRef.current + 1;
+    requestSeqRef.current = requestSeq;
+    setLoadingWorkspace(true);
+    setWorkspaceError(null);
+
+    try {
+      const opened = await runJSSourceRequest('restoreFromCode', { locator: props.locator });
+      const loaded = buildWorkspaceLoadResult(opened);
+      if (requestSeqRef.current !== requestSeq) {
+        return;
+      }
+      applyWorkspaceLoadResult(loaded);
+      message.success(t('Recovered latest version from current code'));
     } catch (error) {
       if (requestSeqRef.current === requestSeq) {
         setWorkspaceError(error);
       }
-      return null;
     } finally {
       if (requestSeqRef.current === requestSeq) {
         setLoadingWorkspace(false);
       }
     }
-  }, [openWorkspaceSnapshot, props.locator, value.version]);
+  }, [applyWorkspaceLoadResult, props.locator, runJSSourceRequest, t]);
 
   useEffect(() => {
     if (!workspace && !loadingWorkspace && !workspaceError) {
@@ -514,8 +610,7 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
         locator: props.locator,
         repoId: currentWorkspace.opened.repository.repoId,
         baseCommitId:
-          currentWorkspace.opened.draft?.baseCommitId ?? currentWorkspace.opened.repository.publishedCommitId,
-        draftId: currentWorkspace.opened.draft?.id,
+          currentWorkspace.opened.repository.headCommitId ?? currentWorkspace.opened.repository.publishedCommitId,
         files: buildWorkspaceChanges([], currentWorkspace.currentFiles),
         entryPath: currentWorkspace.entryPath,
         version: value.version,
@@ -530,7 +625,18 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
         snapshotKey: requestSnapshotKey,
       });
       appendDiagnostics(result.artifact.diagnostics, appendConsole);
-      if (!result.artifact.diagnostics.some((diagnostic) => diagnostic.severity === 'error')) {
+      const hasCompileError = result.artifact.diagnostics.some((diagnostic) => diagnostic.severity === 'error');
+      if (!hasCompileError) {
+        if (flowCtx) {
+          const runDiagnostics = await diagnoseRunJS(result.artifact.code, flowCtx as unknown as FlowContext, {
+            sourceMap: result.artifact.sourceMap,
+            version: result.artifact.version,
+          });
+          if (latestWorkspaceSnapshotRef.current !== requestSnapshotKey) {
+            return;
+          }
+          appendRunDiagnostics(runDiagnostics, appendConsole);
+        }
         await props.onPreview?.({
           ...value,
           code: result.artifact.code,
@@ -538,10 +644,8 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
         } as RunJSValue);
       }
       appendConsole({
-        level: result.artifact.diagnostics.some((diagnostic) => diagnostic.severity === 'error') ? 'error' : 'info',
-        message: result.artifact.diagnostics.some((diagnostic) => diagnostic.severity === 'error')
-          ? t('Compile failed')
-          : t('Run completed'),
+        level: hasCompileError ? 'error' : 'info',
+        message: hasCompileError ? t('Compile failed') : t('Run completed'),
       });
     } catch (error) {
       await handleWorkspaceError(error);
@@ -552,32 +656,6 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
       });
     } finally {
       setPreviewing(false);
-    }
-  };
-
-  const discardDraft = async () => {
-    if (!workspace || !props.locator || workspaceEditingDisabled) {
-      return;
-    }
-
-    setActionError(null);
-    try {
-      await runJSSourceRequest('discardDraft', {
-        locator: props.locator,
-        repoId: workspace.repository.repoId,
-      });
-      appendConsole({
-        level: 'info',
-        message: t('Draft discarded'),
-      });
-      await loadWorkspace();
-    } catch (error) {
-      await handleWorkspaceError(error);
-      reportActionError(error, t('Failed to discard draft'), discardDraft);
-      appendConsole({
-        level: 'error',
-        message: formatVscComponentError(error, t('Failed to discard draft')),
-      });
     }
   };
 
@@ -623,9 +701,9 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
         baseCommitId,
         basePublishedCommitId: workspace.repository.publishedCommitId,
         baseOwnerFingerprint: workspace.ownerFingerprint,
+        basePublishedOwnerFingerprint: workspace.publishedOwnerFingerprint || workspace.ownerFingerprint,
         message: commitMessage.trim(),
         files: buildWorkspaceChanges(baseFiles, requestFiles),
-        draftId: workspace.draft?.id,
         entryPath: requestEntryPath,
         version: compiled.version,
       });
@@ -676,7 +754,6 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
         locator: props.locator,
         repoId: workspace.repository.repoId,
         baseCommitId,
-        draftId: workspace.draft?.id,
         files: buildWorkspaceChanges([], requestFiles),
         entryPath: requestEntryPath,
         version: value.version,
@@ -738,7 +815,7 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
     }
   };
 
-  const restoreAsDraft = async (commit: RunJSSourceHistoryItem) => {
+  const loadVersionIntoEditor = async (commit: RunJSSourceHistoryItem) => {
     if (!workspace || !props.locator || workspaceEditingDisabled || hasUnsavedLocalChanges) {
       return;
     }
@@ -747,11 +824,11 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
     setRestoringVersion(true);
     setActionError(null);
     try {
-      const result = await runJSSourceRequest('restoreAsDraft', {
+      const result = await runJSSourceRequest('getVersion', {
         locator: props.locator,
         repoId: workspace.repository.repoId,
-        sourceCommitId: commit.id,
-        baseCommitId,
+        commitId: commit.id,
+        includeFiles: true,
       });
       if (latestWorkspaceSnapshotRef.current !== restoreSnapshotKey) {
         appendConsole({
@@ -760,18 +837,9 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
         });
         return;
       }
-      const nextFiles = applyDraftFiles(baseFiles, result.files);
+      const nextFiles = normalizeWorkspaceFiles(result.files);
       const nextEntryPath = resolveWorkspaceEntryPath(nextFiles, entryPath);
       const nextActivePath = nextFiles.find((file) => file.path === nextEntryPath)?.path || nextFiles[0]?.path;
-      setWorkspace((current) =>
-        current
-          ? {
-              ...current,
-              draft: result.draft,
-            }
-          : current,
-      );
-      setSavedFiles(nextFiles);
       setFiles(nextFiles);
       setEntryPath(nextEntryPath);
       syncWorkspaceSnapshotRef(nextFiles, nextEntryPath);
@@ -786,7 +854,7 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
       });
     } catch (error) {
       await handleWorkspaceError(error);
-      reportActionError(error, t('Failed to restore version'), () => restoreAsDraft(commit));
+      reportActionError(error, t('Failed to restore version'), () => loadVersionIntoEditor(commit));
       appendConsole({
         level: 'error',
         message: formatVscComponentError(error, t('Failed to restore version')),
@@ -796,14 +864,14 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
     }
   };
 
-  const confirmRestoreAsDraft = async () => {
+  const confirmLoadVersion = async () => {
     if (!restoreCommit) {
       return;
     }
 
     const commit = restoreCommit;
     setRestoreCommit(null);
-    await restoreAsDraft(commit);
+    await loadVersionIntoEditor(commit);
   };
 
   const createFile = () => {
@@ -819,16 +887,16 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
     setFileDialogError(null);
   };
 
-  const renameActiveFile = () => {
-    if (!activePath || workspaceEditingDisabled) {
+  const renameFile = (path: string | undefined = activePath) => {
+    if (!path || workspaceEditingDisabled) {
       return;
     }
     rememberDialogTrigger();
     setFileDialog({
       mode: 'rename',
-      sourcePath: activePath,
+      sourcePath: path,
     });
-    setFileDialogPath(activePath);
+    setFileDialogPath(path);
     setFileDialogError(null);
   };
 
@@ -887,9 +955,9 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
     setFileDialog(null);
   };
 
-  const deleteActiveFile = () => {
-    if (!activePath || activePath === entryPath || workspaceEditingDisabled) {
-      if (activePath === entryPath) {
+  const deleteFile = (path: string | undefined = activePath) => {
+    if (!path || path === entryPath || workspaceEditingDisabled) {
+      if (path === entryPath) {
         message.error(t('Entry file cannot be deleted'));
       }
       return;
@@ -898,31 +966,31 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
     invalidatePreview();
     setDiffView(null);
     setFiles((current) => {
-      const nextFiles = removeWorkspaceFile(current, activePath);
+      const nextFiles = removeWorkspaceFile(current, path);
       const nextActivePath = nextFiles[0]?.path;
       syncWorkspaceSnapshotRef(nextFiles, entryPath);
-      setActivePath(nextActivePath);
+      setActivePath((currentPath) => (currentPath === path ? nextActivePath : currentPath));
       setOpenPaths((paths) => {
-        const nextPaths = paths.filter((path) => path !== activePath);
+        const nextPaths = paths.filter((openPath) => openPath !== path);
         return nextPaths.length ? nextPaths : nextActivePath ? [nextActivePath] : [];
       });
       return nextFiles;
     });
   };
 
-  const setActiveFileAsEntry = () => {
-    if (!activePath || workspaceEditingDisabled || activePath === entryPath) {
+  const setFileAsEntry = (path: string | undefined = activePath) => {
+    if (!path || workspaceEditingDisabled || path === entryPath) {
       return;
     }
 
     invalidatePreview();
     setDiffView(null);
     setFiles((current) => {
-      const nextFiles = ensureManifestEntry(current, activePath, true);
-      syncWorkspaceSnapshotRef(nextFiles, activePath);
+      const nextFiles = ensureManifestEntry(current, path, true);
+      syncWorkspaceSnapshotRef(nextFiles, path);
       return nextFiles;
     });
-    setEntryPath(activePath);
+    setEntryPath(path);
   };
 
   const updateActiveFileContent = (content: string) => {
@@ -985,6 +1053,109 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
     }
   };
 
+  const exportWorkspace = async () => {
+    if (!workspace || !props.locator) {
+      return;
+    }
+
+    setActionError(null);
+    setExportDownload(null);
+    try {
+      const exported = await runJSSourceRequest('exportZip', {
+        locator: props.locator,
+        repoId: workspace.repository.repoId,
+      });
+      const fileName = buildRunJSExportFileName(workspace.source.label);
+      const downloaded = downloadRunJSWorkspaceBlob(exported, fileName);
+      if (!downloaded) {
+        const url = createRunJSWorkspaceObjectUrl(exported);
+        if (url) {
+          setExportDownload({ fileName, url });
+        }
+      }
+      appendConsole({
+        level: 'info',
+        message: t('Workspace exported'),
+      });
+    } catch (error) {
+      reportActionError(error, t('Export failed'), exportWorkspace);
+      appendConsole({
+        level: 'error',
+        message: formatVscComponentError(error, t('Export failed')),
+      });
+    }
+  };
+
+  const requestImportWorkspace = () => {
+    if (!workspace || !workspace.permissions.canPublish || workspaceEditingDisabled) {
+      return;
+    }
+
+    if (!hasUnsavedLocalChanges) {
+      importInputRef.current?.click();
+      return;
+    }
+
+    Modal.confirm({
+      cancelText: t('Cancel'),
+      content: (
+        <Space direction="vertical" size={4}>
+          <Typography.Text>
+            {t('Importing will replace the current workspace and publish it immediately.')}
+          </Typography.Text>
+          <Typography.Text>{t('Unsaved editor changes will be discarded.')}</Typography.Text>
+        </Space>
+      ),
+      okText: t('Import'),
+      onOk: () => {
+        importInputRef.current?.click();
+      },
+      title: t('Import workspace'),
+    });
+  };
+
+  const importWorkspaceFile = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+
+    if (!file || !workspace || !props.locator) {
+      return;
+    }
+
+    setActionError(null);
+    try {
+      const zipBase64 = await readFileAsDataUrl(file);
+      const result = await runJSSourceRequest('importZip', {
+        locator: props.locator,
+        repoId: workspace.repository.repoId,
+        baseCommitId,
+        basePublishedCommitId: workspace.repository.publishedCommitId,
+        baseOwnerFingerprint: workspace.ownerFingerprint,
+        basePublishedOwnerFingerprint: workspace.publishedOwnerFingerprint || workspace.ownerFingerprint,
+        message: 'Import RunJS workspace',
+        zipBase64,
+      });
+      appendConsole({
+        level: 'info',
+        message: t('Workspace imported'),
+      });
+      setPreviewDiagnostics(result.artifact.diagnostics);
+      const loaded = await loadWorkspace();
+      onChange?.({
+        ...value,
+        code: loaded?.opened.legacy.code || value.code,
+        version: loaded?.opened.legacy.version || value.version,
+      } as RunJSValue);
+    } catch (error) {
+      await handleWorkspaceError(error);
+      reportActionError(error, t('Import failed'), requestImportWorkspace);
+      appendConsole({
+        level: 'error',
+        message: formatVscComponentError(error, t('Import failed')),
+      });
+    }
+  };
+
   const closeEditorView = useCallback(async () => {
     const view = flowCtx?.view as ClosableView | undefined;
     if (!view) {
@@ -1036,7 +1207,7 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
   };
 
   const keepChangesAndRebase = async () => {
-    if (!conflict || !workspace || !props.locator || !conflict.canRebase) {
+    if (!conflict || !workspace || !conflict.canRebase) {
       return;
     }
 
@@ -1045,84 +1216,38 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
     const rebasePatch = buildChangedWorkspaceFileList(conflict.latestFiles, rebasedFiles);
 
     setActionError(null);
-    try {
-      if (!rebasePatch.length) {
-        await runJSSourceRequest('discardDraft', {
-          locator: props.locator,
-          repoId: workspace.repository.repoId,
-        });
-        const nextFiles = normalizeWorkspaceFiles(conflict.latestFiles);
-        const nextEntryPath = resolveWorkspaceEntryPath(nextFiles, entryPath);
-        const nextActivePath = nextFiles.find((file) => file.path === nextEntryPath)?.path || nextFiles[0]?.path;
-        setSavedFiles(nextFiles);
-        setFiles(nextFiles);
-        setBaseFiles(nextFiles);
-        setEntryPath(nextEntryPath);
-        setActivePath(nextActivePath);
-        setOpenPaths(nextActivePath ? [nextActivePath] : []);
-        setWorkspace((current) =>
-          current
-            ? {
-                ...current,
-                repository: conflict.latestRepository,
-                ownerFingerprint: conflict.latestOwnerFingerprint,
-                history: conflict.latestHistory,
-                draft: null,
-              }
-            : current,
-        );
-        setConflict(null);
-        setDiffView(null);
-        invalidatePreview();
-        appendConsole({
-          level: 'info',
-          message: t('Draft already matches latest version'),
-        });
-        return;
-      }
+    const nextFiles = rebasePatch.length ? rebasedFiles : normalizeWorkspaceFiles(conflict.latestFiles);
+    const nextEntryPath = resolveWorkspaceEntryPath(nextFiles, entryPath);
+    const nextActivePath = nextFiles.find((file) => file.path === nextEntryPath)?.path || nextFiles[0]?.path;
 
-      const result = await runJSSourceRequest('rebaseDraft', {
-        locator: props.locator,
-        repoId: workspace.repository.repoId,
-        baseCommitId: conflict.latestBaseCommitId,
-        files: rebasePatch,
-      });
-      const nextSavedFiles = applyDraftFiles(conflict.latestFiles, result.files);
-      const nextEntryPath = resolveWorkspaceEntryPath(nextSavedFiles, entryPath);
-      const nextActivePath =
-        nextSavedFiles.find((file) => file.path === nextEntryPath)?.path || nextSavedFiles[0]?.path;
-      setSavedFiles(nextSavedFiles);
-      setFiles(nextSavedFiles);
-      setBaseFiles(conflict.latestFiles);
-      setEntryPath(nextEntryPath);
-      setActivePath(nextActivePath);
-      setOpenPaths(nextActivePath ? [nextActivePath] : []);
-      setWorkspace((current) =>
-        current
-          ? {
-              ...current,
-              repository: result.repository,
-              ownerFingerprint: conflict.latestOwnerFingerprint,
-              history: conflict.latestHistory,
-              draft: result.draft,
-            }
-          : current,
-      );
-      setConflict(null);
-      setDiffView(null);
-      invalidatePreview();
-    } catch (error) {
-      reportActionError(error, t('Failed to rebase draft'), keepChangesAndRebase);
-      appendConsole({
-        level: 'error',
-        message: formatVscComponentError(error, t('Failed to rebase draft')),
-      });
-    }
+    setSavedFiles(conflict.latestFiles);
+    setFiles(nextFiles);
+    setBaseFiles(conflict.latestFiles);
+    setEntryPath(nextEntryPath);
+    setActivePath(nextActivePath);
+    setOpenPaths(nextActivePath ? [nextActivePath] : []);
+    setWorkspace((current) =>
+      current
+        ? {
+            ...current,
+            repository: conflict.latestRepository,
+            ownerFingerprint: conflict.latestOwnerFingerprint,
+            history: conflict.latestHistory,
+          }
+        : current,
+    );
+    setConflict(null);
+    setDiffView(null);
+    invalidatePreview();
+    appendConsole({
+      level: 'info',
+      message: rebasePatch.length ? t('Local changes were reapplied to the latest version') : t('Already up to date'),
+    });
   };
 
-  const discardConflictDraft = async () => {
-    await discardDraft();
+  const loadLatestAfterConflict = async () => {
     setConflict(null);
+    await loadWorkspaceByAction('openLatest');
   };
 
   const handleWorkspaceError = async (error: unknown) => {
@@ -1132,7 +1257,7 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
       }
       let latest: WorkspaceLoadResult | null = null;
       try {
-        latest = await openWorkspaceSnapshot();
+        latest = await openWorkspaceSnapshot(error.code === 'RUNJS_SOURCE_OWNER_OUTDATED' ? 'openLatest' : 'open');
       } catch (_) {
         latest = null;
       }
@@ -1181,25 +1306,28 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
     setActiveTab('diff');
   };
 
-  const editorMinHeight = props.minHeight || 'min(720px, calc(100vh - 112px))';
+  const studioSize = resolveStudioSize(props.height, props.minHeight);
   const editorStyle: React.CSSProperties = {
     background: '#fff',
     boxSizing: 'border-box',
     display: 'flex',
     flexDirection: 'column',
-    height: '100%',
     letterSpacing: 0,
     minWidth: 0,
+    overflow: 'hidden',
     textAlign: 'left',
     wordSpacing: 'normal',
     ...(containerStyle || {}),
     ...(props.wrapperStyle || {}),
-    minHeight: editorMinHeight,
+    height: studioSize.height,
+    maxHeight: studioSize.height,
+    minHeight: studioSize.minHeight,
   };
   const workspaceGridColumns = filesCollapsed ? 'minmax(0, 1fr)' : 'minmax(220px, 260px) minmax(0, 1fr)';
+  const ownerOutdatedWorkspaceError = isOwnerOutdatedError(workspaceError);
 
   return (
-    <div style={editorStyle}>
+    <div data-testid="runjs-studio-editor" style={editorStyle}>
       <div
         style={{
           display: 'flex',
@@ -1208,7 +1336,52 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
           padding: workspaceError || actionError ? 12 : 0,
         }}
       >
-        {workspaceError ? (
+        {workspaceError && ownerOutdatedWorkspaceError ? (
+          <Alert
+            description={
+              <Space direction="vertical" size={8} style={{ width: '100%' }}>
+                <Typography.Text>
+                  {t(
+                    'The code stored in this block differs from the latest saved RunJS source. Choose which version to continue with.',
+                  )}
+                </Typography.Text>
+                <Space wrap>
+                  <Button
+                    aria-label={t('Recover latest version from current code')}
+                    icon={<ReloadOutlined />}
+                    loading={resource.isLoading('restoreFromCode')}
+                    onClick={restoreLatestVersionFromCurrentCode}
+                    size="small"
+                    type="primary"
+                  >
+                    {t('Recover latest version from current code')}
+                  </Button>
+                  <Button
+                    aria-label={t('Edit latest saved version')}
+                    icon={<FolderOpenOutlined />}
+                    loading={resource.isLoading('openLatest')}
+                    onClick={editLatestSavedVersion}
+                    size="small"
+                  >
+                    {t('Edit latest saved version')}
+                  </Button>
+                  <Button
+                    aria-label={t('Copy technical details')}
+                    icon={<CopyOutlined />}
+                    onClick={copyWorkspaceErrorDetails}
+                    size="small"
+                  >
+                    {t('Copy technical details')}
+                  </Button>
+                </Space>
+              </Space>
+            }
+            message={t('RunJS source version is out of sync')}
+            role="alert"
+            showIcon
+            type="warning"
+          />
+        ) : workspaceError ? (
           <Alert
             action={
               <Space>
@@ -1256,6 +1429,33 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
             type="error"
           />
         ) : null}
+
+        {exportDownload ? (
+          <Alert
+            action={
+              <Space>
+                <Button
+                  aria-label={t('Download workspace')}
+                  download={exportDownload.fileName}
+                  href={exportDownload.url}
+                  icon={<DownloadOutlined />}
+                  size="small"
+                  type="primary"
+                >
+                  {t('Download workspace')}
+                </Button>
+                <Button onClick={() => setExportDownload(null)} size="small">
+                  {t('Dismiss')}
+                </Button>
+              </Space>
+            }
+            description={t('If the download did not start automatically, click Download workspace.')}
+            message={t('Workspace export is ready')}
+            role="status"
+            showIcon
+            type="success"
+          />
+        ) : null}
       </div>
 
       {loadingWorkspace && !workspace ? (
@@ -1281,10 +1481,11 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
             />
           ) : null}
           <div
+            data-testid="runjs-studio-workspace"
             style={{
               background: '#fff',
               display: 'grid',
-              flex: 1,
+              flex: '1 1 0',
               gridTemplateColumns: workspaceGridColumns,
               minHeight: 0,
               overflow: 'hidden',
@@ -1310,25 +1511,25 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
                   files={files}
                   onCollapseChange={setFilesCollapsed}
                   onCreate={createFile}
-                  onDelete={deleteActiveFile}
+                  onDelete={deleteFile}
                   onOpen={openFilePath}
                   onRefresh={requestRefreshWorkspace}
-                  onRename={renameActiveFile}
-                  onSetEntry={setActiveFileAsEntry}
+                  onRename={renameFile}
+                  onSetEntry={setFileAsEntry}
                   readOnly={workspaceEditingDisabled}
                   savedFiles={savedFiles}
                   t={t}
                 />
                 <VersionHistoryDock
                   baseVersion={formatVersion(baseCommit?.seq)}
-                  hasDraft={Boolean(workspace.draft)}
+                  collapsed={historyCollapsed}
                   hasUnsavedLocalChanges={hasUnsavedLocalChanges}
-                  height={220}
                   historyItems={historyItems}
                   loading={historyLoading}
+                  onCollapsedChange={setHistoryCollapsed}
                   onRefresh={refreshHistory}
                   onSelect={setRestoreCommit}
-                  onViewDraftDiff={toggleDiff}
+                  onViewChanges={toggleDiff}
                   publishedCommitId={workspace.repository.publishedCommitId}
                   t={t}
                 />
@@ -1338,10 +1539,11 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
             <main
               style={{
                 display: 'flex',
-                flex: 1,
+                flex: '1 1 0',
                 flexDirection: 'column',
                 minHeight: 0,
                 minWidth: 0,
+                overflow: 'hidden',
               }}
             >
               <div style={{ flex: 1, minHeight: 0, minWidth: 0, overflow: 'hidden', padding: 12 }}>
@@ -1354,11 +1556,14 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
                   onChange={updateActiveFileContent}
                   onCloseFile={closeOpenFile}
                   onDiffToggle={toggleDiff}
+                  onExportWorkspace={exportWorkspace}
                   onFilesCollapsedChange={setFilesCollapsed}
+                  onImportWorkspace={requestImportWorkspace}
                   onOpenFile={openFilePath}
                   onRunPreview={runPreview}
                   openPaths={openPaths}
                   previewing={previewing}
+                  exporting={resource.isLoading('exportZip')}
                   readOnly={workspaceEditingDisabled}
                   savedFiles={savedFiles}
                   scene={scene}
@@ -1418,6 +1623,14 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
               </Button>
             </Space>
           </footer>
+          <input
+            accept=".zip,application/zip,application/x-zip-compressed"
+            aria-label={t('Import workspace')}
+            onChange={importWorkspaceFile}
+            ref={importInputRef}
+            style={{ display: 'none' }}
+            type="file"
+          />
         </>
       ) : null}
 
@@ -1459,18 +1672,18 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
         t={t}
       />
 
-      <RestoreAsDraftModal
+      <RestoreVersionModal
         commit={restoreCommit}
         loading={restoringVersion}
         onCancel={() => setRestoreCommit(null)}
-        onRestore={confirmRestoreAsDraft}
+        onRestore={confirmLoadVersion}
         t={t}
       />
 
       <ConflictDialog
         conflict={conflict}
         onCancel={() => setConflict(null)}
-        onDiscard={discardConflictDraft}
+        onDiscard={loadLatestAfterConflict}
         onRebase={keepChangesAndRebase}
         onViewChanges={() => {
           if (conflict) {
@@ -1497,7 +1710,7 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
 
 function buildWorkspaceLoadResult(opened: RunJSSourceOpenWorkspaceResult): WorkspaceLoadResult {
   const nextBaseFiles = normalizeWorkspaceFiles(opened.files || []);
-  const nextCurrentFiles = applyDraftFiles(nextBaseFiles, opened.draft?.files);
+  const nextCurrentFiles = normalizeWorkspaceFiles(nextBaseFiles);
   const nextEntryPath = normalizeRunJSWorkspacePath(
     resolveInitialEntryPath(nextCurrentFiles, opened.legacy.entryPath, opened.legacy.entry),
   );
@@ -1507,6 +1720,47 @@ function buildWorkspaceLoadResult(opened: RunJSSourceOpenWorkspaceResult): Works
     baseFiles: nextBaseFiles,
     currentFiles: nextCurrentFiles,
     entryPath: nextEntryPath,
+  };
+}
+
+function isViewportSizedValue(value: string | number | undefined): boolean {
+  if (typeof value !== 'string') {
+    return false;
+  }
+
+  return /(?:\b(?:vh|dvh|svh|lvh)\b|%|calc\()/i.test(value);
+}
+
+function isLegacyCompactHeight(value: string | number | undefined): boolean {
+  if (typeof value === 'number') {
+    return value > 0 && value <= 240;
+  }
+
+  const match = typeof value === 'string' ? value.trim().match(/^(\d+(?:\.\d+)?)px$/i) : null;
+  return Boolean(match && Number(match[1]) > 0 && Number(match[1]) <= 240);
+}
+
+function resolveStudioSize(
+  height: string | number | undefined,
+  minHeight: string | number | undefined,
+): { height: string | number; minHeight: string | number } {
+  if (isViewportSizedValue(minHeight)) {
+    return {
+      height: minHeight as string,
+      minHeight: 0,
+    };
+  }
+
+  if (height && !isLegacyCompactHeight(height)) {
+    return {
+      height,
+      minHeight: minHeight ?? 0,
+    };
+  }
+
+  return {
+    height: defaultStudioHeight,
+    minHeight: minHeight ?? 0,
   };
 }
 
@@ -1572,6 +1826,165 @@ function isWorkspaceFileDirty(savedFiles: RunJSWorkspaceFile[], file: RunJSWorks
   );
 }
 
+function getImportableRunJSExtension(filePath: string): string {
+  return importableRunJSFileExtensions.find((extension) => filePath.endsWith(extension)) || '';
+}
+
+function stripRunJSExtension(filePath: string): string {
+  const extension = getImportableRunJSExtension(filePath);
+  return extension ? filePath.slice(0, -extension.length) : filePath;
+}
+
+function getRunJSDirectory(filePath: string): string {
+  const index = filePath.lastIndexOf('/');
+  return index >= 0 ? filePath.slice(0, index) : '';
+}
+
+function buildRelativeRunJSImportSpecifier(fromPath: string, targetPath: string): string {
+  const fromDirectory = getRunJSDirectory(fromPath);
+  const targetWithoutExtension = stripRunJSExtension(targetPath);
+  const fromParts = fromDirectory ? fromDirectory.split('/').filter(Boolean) : [];
+  const targetParts = targetWithoutExtension.split('/').filter(Boolean);
+  let common = 0;
+
+  while (common < fromParts.length && common < targetParts.length && fromParts[common] === targetParts[common]) {
+    common += 1;
+  }
+
+  const upSegments = fromParts.slice(common).map(() => '..');
+  const downSegments = targetParts.slice(common);
+  const relative = [...upSegments, ...downSegments].join('/');
+  if (!relative) {
+    return './';
+  }
+
+  return relative.startsWith('.') ? relative : `./${relative}`;
+}
+
+function collectRunJSNamedExports(content: string): string[] {
+  const names = new Set<string>();
+  const source = String(content || '');
+  const identifierPattern = '[$_A-Za-z][$_A-Za-z0-9]*';
+  const declarationPattern = new RegExp(
+    `\\bexport\\s+(?:async\\s+)?(?:function|class|enum|interface|type)\\s+(${identifierPattern})`,
+    'g',
+  );
+  const variablePattern = /\bexport\s+(?:const|let|var)\s+([^;\n]+)/g;
+  const namedListPattern = /\bexport\s*\{([^}]+)\}/g;
+
+  for (const match of source.matchAll(declarationPattern)) {
+    if (match[1]) {
+      names.add(match[1]);
+    }
+  }
+
+  for (const match of source.matchAll(variablePattern)) {
+    const declarationList = match[1] || '';
+    for (const part of declarationList.split(',')) {
+      const name = part.trim().match(/^([$_A-Za-z][$_A-Za-z0-9]*)/)?.[1];
+      if (name) {
+        names.add(name);
+      }
+    }
+  }
+
+  for (const match of source.matchAll(namedListPattern)) {
+    const exportList = match[1] || '';
+    for (const part of exportList.split(',')) {
+      const cleaned = part.trim();
+      if (!cleaned) {
+        continue;
+      }
+      const alias = cleaned.match(/\bas\s+([$_A-Za-z][$_A-Za-z0-9]*)$/)?.[1];
+      const direct = cleaned.match(/^([$_A-Za-z][$_A-Za-z0-9]*)/)?.[1];
+      const name = alias || direct;
+      if (name) {
+        names.add(name);
+      }
+    }
+  }
+
+  return Array.from(names).sort();
+}
+
+function buildRunJSImportModuleCompletions(
+  files: RunJSWorkspaceFile[],
+  activePath?: string,
+): RunJSImportModuleCompletion[] {
+  if (!activePath) {
+    return [];
+  }
+
+  return files
+    .filter((file) => file.path !== activePath)
+    .filter((file) => file.path !== runJSManifestPath)
+    .filter((file) => Boolean(getImportableRunJSExtension(file.path)))
+    .map((file) => ({
+      specifier: buildRelativeRunJSImportSpecifier(activePath, file.path),
+      detail: file.path,
+      exports: collectRunJSNamedExports(file.content),
+    }))
+    .sort((a, b) => a.specifier.localeCompare(b.specifier));
+}
+
+function buildRunJSImportModuleCompletionSignature(files: RunJSWorkspaceFile[], activePath?: string): string {
+  if (!activePath) {
+    return '';
+  }
+
+  return files
+    .filter((file) => file.path !== activePath)
+    .filter((file) => file.path !== runJSManifestPath)
+    .filter((file) => Boolean(getImportableRunJSExtension(file.path)))
+    .map((file) => `${file.path}\u0000${file.content}`)
+    .sort()
+    .join('\u0001');
+}
+
+function useRunJSImportModuleCompletions(
+  files: RunJSWorkspaceFile[],
+  activePath?: string,
+): RunJSImportModuleCompletion[] {
+  const signature = buildRunJSImportModuleCompletionSignature(files, activePath);
+  const cacheRef = useRef<{
+    completions: RunJSImportModuleCompletion[];
+    signature: string;
+  }>();
+
+  if (!cacheRef.current || cacheRef.current.signature !== signature) {
+    cacheRef.current = {
+      completions: buildRunJSImportModuleCompletions(files, activePath),
+      signature,
+    };
+  }
+
+  return cacheRef.current.completions;
+}
+
+function isRunJSTypeScriptProjectFile(path: string): boolean {
+  return /\.(?:[cm]?[jt]sx?|d\.ts)$/i.test(path);
+}
+
+function buildRunJSTypeScriptProject(
+  files: RunJSWorkspaceFile[],
+  activeFile?: RunJSWorkspaceFile,
+): CodeEditorTypeScriptProject | undefined {
+  if (!activeFile || !isRunJSTypeScriptProjectFile(activeFile.path)) {
+    return undefined;
+  }
+
+  return {
+    currentFilePath: activeFile.path,
+    files: files
+      .filter((file) => file.path !== runJSManifestPath)
+      .filter((file) => isRunJSTypeScriptProjectFile(file.path))
+      .map((file) => ({
+        content: file.content,
+        path: file.path,
+      })),
+  };
+}
+
 function FilesPanel(props: {
   activePath?: string;
   collapsed: boolean;
@@ -1579,11 +1992,11 @@ function FilesPanel(props: {
   files: RunJSWorkspaceFile[];
   onCollapseChange: (collapsed: boolean) => void;
   onCreate: () => void;
-  onDelete: () => void;
+  onDelete: (path: string) => void;
   onOpen: (path: string) => void;
   onRefresh: () => void;
-  onRename: () => void;
-  onSetEntry: () => void;
+  onRename: (path: string) => void;
+  onSetEntry: (path: string) => void;
   readOnly: boolean;
   savedFiles: RunJSWorkspaceFile[];
   t: (key: string) => string;
@@ -1604,6 +2017,8 @@ function FilesPanel(props: {
     savedFiles,
     t,
   } = props;
+  const [hoveredPath, setHoveredPath] = useState<string | null>(null);
+  const [actionFocusedPath, setActionFocusedPath] = useState<string | null>(null);
   const treeRows = React.useMemo(() => buildFileTreeRows(files), [files]);
   const fileRows = React.useMemo(
     () => treeRows.filter((row): row is FileTreeFileRow => row.type === 'file'),
@@ -1698,9 +2113,12 @@ function FilesPanel(props: {
       style={{
         background: '#fafafa',
         display: 'flex',
+        flex: '0 1 auto',
         flexDirection: 'column',
         gap: 8,
-        minHeight: 0,
+        maxHeight: '80%',
+        minHeight: 140,
+        overflow: 'hidden',
         padding: 12,
       }}
     >
@@ -1745,7 +2163,7 @@ function FilesPanel(props: {
         }}
         rowKey="key"
         size="small"
-        style={{ overflow: 'auto' }}
+        style={{ flex: '1 1 auto', minHeight: 0, overflow: 'auto' }}
         renderItem={(row) => {
           if (row.type === 'folder') {
             return (
@@ -1760,8 +2178,18 @@ function FilesPanel(props: {
 
           const dirty = isWorkspaceFileDirty(savedFiles, row.file);
           const isActive = activePath === row.path;
+          const actionsVisible = hoveredPath === row.path || actionFocusedPath === row.path;
+          const isEntry = row.path === entryPath;
           return (
-            <List.Item style={{ paddingInline: 0, paddingLeft: row.depth * 14 }}>
+            <List.Item
+              onMouseEnter={() => setHoveredPath(row.path)}
+              onMouseLeave={() => setHoveredPath((current) => (current === row.path ? null : current))}
+              style={{
+                paddingInline: 0,
+                paddingLeft: row.depth * 14,
+                position: 'relative',
+              }}
+            >
               <Button
                 aria-label={row.path}
                 aria-pressed={isActive}
@@ -1774,6 +2202,7 @@ function FilesPanel(props: {
                   color: isActive ? '#1677ff' : undefined,
                   justifyContent: 'flex-start',
                   minWidth: 0,
+                  paddingInlineEnd: readOnly ? undefined : 76,
                 }}
                 type="text"
               >
@@ -1783,37 +2212,83 @@ function FilesPanel(props: {
                     {row.name}
                     {dirty ? ' *' : ''}
                   </Typography.Text>
-                  {row.path === entryPath ? <Badge count={t('Entry')} size="small" /> : null}
                 </Space>
               </Button>
+              {!readOnly ? (
+                <Space
+                  size={0}
+                  style={{
+                    background: isActive ? '#e6f4ff' : '#fafafa',
+                    borderRadius: 4,
+                    insetInlineEnd: 2,
+                    opacity: actionsVisible ? 1 : 0,
+                    pointerEvents: actionsVisible ? 'auto' : 'none',
+                    position: 'absolute',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    transition: 'opacity 120ms ease',
+                  }}
+                >
+                  <Tooltip title={t('Rename')} open={actionsVisible ? undefined : false}>
+                    <Button
+                      aria-label={`${t('Rename')} ${row.path}`}
+                      icon={<EditOutlined />}
+                      onBlur={() => setActionFocusedPath((current) => (current === row.path ? null : current))}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        onRename(row.path);
+                      }}
+                      onFocus={() => setActionFocusedPath(row.path)}
+                      size="small"
+                      style={{ height: 20, padding: 0, width: 20 }}
+                      tabIndex={actionsVisible ? 0 : -1}
+                      type="text"
+                    />
+                  </Tooltip>
+                  <Tooltip title={t('Set as entry')} open={actionsVisible && !isEntry ? undefined : false}>
+                    <Button
+                      aria-label={`${t('Set as entry')} ${row.path}`}
+                      disabled={isEntry}
+                      icon={<HomeOutlined />}
+                      onBlur={() => setActionFocusedPath((current) => (current === row.path ? null : current))}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        onSetEntry(row.path);
+                      }}
+                      onFocus={() => setActionFocusedPath(row.path)}
+                      size="small"
+                      style={{ height: 20, padding: 0, width: 20 }}
+                      tabIndex={actionsVisible ? 0 : -1}
+                      type="text"
+                    />
+                  </Tooltip>
+                  <Popconfirm
+                    cancelText={t('Cancel')}
+                    disabled={isEntry}
+                    okText={t('Delete')}
+                    onConfirm={() => onDelete(row.path)}
+                    title={t('Delete this file?')}
+                  >
+                    <Button
+                      aria-label={`${t('Delete')} ${row.path}`}
+                      danger
+                      disabled={isEntry}
+                      icon={<DeleteOutlined />}
+                      onBlur={() => setActionFocusedPath((current) => (current === row.path ? null : current))}
+                      onClick={(event) => event.stopPropagation()}
+                      onFocus={() => setActionFocusedPath(row.path)}
+                      size="small"
+                      style={{ height: 20, padding: 0, width: 20 }}
+                      tabIndex={actionsVisible ? 0 : -1}
+                      type="text"
+                    />
+                  </Popconfirm>
+                </Space>
+              ) : null}
             </List.Item>
           );
         }}
       />
-      <Space wrap>
-        <Button disabled={readOnly || !activePath} onClick={onRename} size="small">
-          {t('Rename')}
-        </Button>
-        <Button disabled={readOnly || !activePath || activePath === entryPath} onClick={onSetEntry} size="small">
-          {t('Set as entry')}
-        </Button>
-        <Popconfirm
-          cancelText={t('Cancel')}
-          disabled={readOnly || !activePath || activePath === entryPath}
-          okText={t('Delete')}
-          onConfirm={onDelete}
-          title={t('Delete this file?')}
-        >
-          <Button
-            danger
-            disabled={readOnly || !activePath || activePath === entryPath}
-            icon={<DeleteOutlined />}
-            size="small"
-          >
-            {t('Delete')}
-          </Button>
-        </Popconfirm>
-      </Space>
     </aside>
   );
 }
@@ -1827,11 +2302,14 @@ function CodeTab(props: {
   onChange: (content: string) => void;
   onCloseFile: (path: string) => void;
   onDiffToggle: () => void;
+  onExportWorkspace: () => void;
   onFilesCollapsedChange: (collapsed: boolean) => void;
+  onImportWorkspace: () => void;
   onOpenFile: (path: string) => void;
   onRunPreview: () => void;
   openPaths: string[];
   previewing: boolean;
+  exporting: boolean;
   readOnly: boolean;
   savedFiles: RunJSWorkspaceFile[];
   scene: string;
@@ -1848,11 +2326,14 @@ function CodeTab(props: {
     onChange,
     onCloseFile,
     onDiffToggle,
+    onExportWorkspace,
     onFilesCollapsedChange,
+    onImportWorkspace,
     onOpenFile,
     onRunPreview,
     openPaths,
     previewing,
+    exporting,
     readOnly,
     savedFiles,
     scene,
@@ -1863,6 +2344,11 @@ function CodeTab(props: {
   const openFiles = openPaths
     .map((path) => workspaceFiles.find((file) => file.path === path))
     .filter((file): file is RunJSWorkspaceFile => Boolean(file));
+  const moduleImportCompletions = useRunJSImportModuleCompletions(workspaceFiles, activeFile?.path);
+  const typescriptProject = useMemo(
+    () => buildRunJSTypeScriptProject(workspaceFiles, activeFile),
+    [activeFile, workspaceFiles],
+  );
 
   if (!activeFile) {
     return <Empty description={t('Select a file')} />;
@@ -1884,7 +2370,7 @@ function CodeTab(props: {
           icon={<FolderOpenOutlined />}
           onClick={() => onFilesCollapsedChange(!filesCollapsed)}
           size="small"
-          type={filesCollapsed ? 'default' : 'primary'}
+          type="default"
         />
       </Tooltip>
       <div style={{ flex: 1, minWidth: 0 }}>
@@ -1901,6 +2387,24 @@ function CodeTab(props: {
   );
   const runAndDiffActions = (
     <Space.Compact>
+      <Tooltip title={t('Export workspace')}>
+        <Button
+          aria-label={t('Export workspace')}
+          icon={<DownloadOutlined />}
+          loading={exporting}
+          onClick={onExportWorkspace}
+          size="small"
+        />
+      </Tooltip>
+      <Tooltip title={t('Import workspace')}>
+        <Button
+          aria-label={t('Import workspace')}
+          disabled={readOnly}
+          icon={<UploadOutlined />}
+          onClick={onImportWorkspace}
+          size="small"
+        />
+      </Tooltip>
       <Button disabled={isDiff} loading={previewing} onClick={onRunPreview} size="small">
         {t('Run')}
       </Button>
@@ -1968,6 +2472,7 @@ function CodeTab(props: {
         height="100%"
         language={isDiff ? 'diff' : activeFile.language || inferLanguageFromPath(activeFile.path)}
         minHeight={0}
+        moduleImportCompletions={moduleImportCompletions}
         name={activeFile.path}
         onChange={isDiff ? undefined : onChange}
         placeholder={t('Edit file content')}
@@ -1976,6 +2481,7 @@ function CodeTab(props: {
         scene={scene}
         showLogs={false}
         toolbarLeftExtra={fileTabsContent}
+        typescriptProject={typescriptProject}
         value={activeFile.content}
         version={version}
         wrapperStyle={{ flex: 1, height: '100%', minHeight: 0, minWidth: 0, overflow: 'hidden' }}
@@ -1993,6 +2499,8 @@ function OpenFileTabs(props: {
   t: (key: string) => string;
 }) {
   const { activePath, files, onClose, onOpen, savedFiles, t } = props;
+  const [hoveredPath, setHoveredPath] = useState<string | null>(null);
+  const [closeFocusedPath, setCloseFocusedPath] = useState<string | null>(null);
   const tabButtonRefs = React.useRef(new Map<string, HTMLButtonElement>());
   const registerTabButton = React.useCallback(
     (path: string) => (element: HTMLButtonElement | null) => {
@@ -2058,9 +2566,20 @@ function OpenFileTabs(props: {
         const active = file.path === activePath;
         const dirty = isWorkspaceFileDirty(savedFiles, file);
         const fileName = file.path.split('/').pop() || file.path;
+        const closeVisible = hoveredPath === file.path || closeFocusedPath === file.path;
 
         return (
-          <Space.Compact key={file.path}>
+          <div
+            key={file.path}
+            onMouseEnter={() => setHoveredPath(file.path)}
+            onMouseLeave={() => setHoveredPath((current) => (current === file.path ? null : current))}
+            style={{
+              alignItems: 'center',
+              display: 'inline-flex',
+              flexShrink: 0,
+              position: 'relative',
+            }}
+          >
             <Tooltip title={file.path}>
               <Button
                 aria-label={file.path}
@@ -2073,9 +2592,11 @@ function OpenFileTabs(props: {
                 style={{
                   background: active ? '#fff' : '#f5f5f5',
                   borderColor: active ? '#91caff' : '#d9d9d9',
+                  borderRadius: 4,
                   boxShadow: active ? 'inset 0 -2px 0 #1677ff' : 'none',
                   color: '#262626',
                   maxWidth: 180,
+                  paddingInlineEnd: 22,
                 }}
                 tabIndex={active ? 0 : -1}
                 type="default"
@@ -2097,13 +2618,35 @@ function OpenFileTabs(props: {
                 </Space>
               </Button>
             </Tooltip>
-            <Button
-              aria-label={`${t('Close file')} ${file.path}`}
-              icon={<CloseOutlined />}
-              onClick={() => onClose(file.path)}
-              size="small"
-            />
-          </Space.Compact>
+            <Tooltip title={t('Close file')} open={closeVisible ? undefined : false}>
+              <Button
+                aria-label={`${t('Close file')} ${file.path}`}
+                icon={<CloseOutlined />}
+                onBlur={() => setCloseFocusedPath((current) => (current === file.path ? null : current))}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onClose(file.path);
+                }}
+                onFocus={() => setCloseFocusedPath(file.path)}
+                size="small"
+                style={{
+                  border: 'none',
+                  boxShadow: 'none',
+                  height: 18,
+                  insetInlineEnd: 3,
+                  opacity: closeVisible ? 1 : 0,
+                  padding: 0,
+                  pointerEvents: closeVisible ? 'auto' : 'none',
+                  position: 'absolute',
+                  top: 3,
+                  transition: 'opacity 120ms ease',
+                  width: 18,
+                }}
+                tabIndex={closeVisible ? 0 : -1}
+                type="text"
+              />
+            </Tooltip>
+          </div>
         );
       })}
     </div>
@@ -2254,7 +2797,7 @@ function SideBySideDiffView(props: { rows: RunJSLineDiffRow[]; t: (key: string) 
         </div>
         <div style={{ padding: '8px 12px' }}>
           <Space>
-            <Typography.Text strong>{t('Current draft')}</Typography.Text>
+            <Typography.Text strong>{t('Current editor')}</Typography.Text>
             <Tag color="gold">{t('Unsaved changes')}</Tag>
           </Space>
         </div>
@@ -2301,27 +2844,27 @@ function SideBySideDiffView(props: { rows: RunJSLineDiffRow[]; t: (key: string) 
 
 function VersionHistoryDock(props: {
   baseVersion: string;
-  hasDraft: boolean;
+  collapsed: boolean;
   hasUnsavedLocalChanges: boolean;
-  height: number;
   historyItems: RunJSSourceHistoryItem[];
   loading: boolean;
+  onCollapsedChange: (collapsed: boolean) => void;
   onRefresh: () => void;
   onSelect: (commit: RunJSSourceHistoryItem) => void;
-  onViewDraftDiff: () => void;
+  onViewChanges: () => void;
   publishedCommitId?: string | null;
   t: (key: string) => string;
 }) {
   const {
     baseVersion,
-    hasDraft,
+    collapsed,
     hasUnsavedLocalChanges,
-    height,
     historyItems,
     loading,
+    onCollapsedChange,
     onRefresh,
     onSelect,
-    onViewDraftDiff,
+    onViewChanges,
     publishedCommitId,
     t,
   } = props;
@@ -2330,68 +2873,101 @@ function VersionHistoryDock(props: {
     <section
       aria-label={t('Commit history')}
       style={{
+        borderTop: '1px solid #f0f0f0',
         display: 'flex',
+        flex: collapsed ? '0 0 40px' : '1 1 220px',
         flexDirection: 'column',
-        gap: 8,
-        height,
-        marginTop: 'auto',
-        minHeight: minConsolePanelHeight,
+        gap: collapsed ? 0 : 8,
+        maxHeight: collapsed ? 40 : undefined,
+        minHeight: collapsed ? 40 : 180,
         overflow: 'hidden',
-        padding: 12,
+        padding: '8px 12px',
       }}
     >
       <Space style={{ justifyContent: 'space-between' }}>
         <Typography.Text strong>{t('History')}</Typography.Text>
-        <Button aria-label={t('Refresh history')} icon={<ReloadOutlined />} loading={loading} onClick={onRefresh} />
+        <Space size={4}>
+          {!collapsed ? (
+            <Button aria-label={t('Refresh history')} icon={<ReloadOutlined />} loading={loading} onClick={onRefresh} />
+          ) : null}
+          <Tooltip title={collapsed ? t('Expand history') : t('Collapse history')}>
+            <Button
+              aria-label={collapsed ? t('Expand history') : t('Collapse history')}
+              icon={collapsed ? <UpOutlined /> : <DownOutlined />}
+              onClick={() => onCollapsedChange(!collapsed)}
+              size="small"
+            />
+          </Tooltip>
+        </Space>
       </Space>
-      {hasDraft || hasUnsavedLocalChanges ? (
-        <div style={{ border: '1px solid #f0f0f0', borderRadius: 6, padding: 8 }}>
-          <Space direction="vertical" size={2}>
-            <Typography.Text strong>{t('Current changes')}</Typography.Text>
-            <Typography.Text type="secondary">
-              {hasUnsavedLocalChanges ? t('Unsaved changes') : t('Saved changes')} · {`${t('Based on')} ${baseVersion}`}
-            </Typography.Text>
-            <Button onClick={onViewDraftDiff} size="small" type="link">
-              {t('View diff')}
-            </Button>
-          </Space>
-        </div>
-      ) : null}
-      <div style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
-        {historyItems.length === 0 ? <Empty description={t('No published versions yet')} /> : null}
-        {historyItems.slice(0, 5).map((commit) => (
-          <button
-            key={commit.id}
-            onClick={() => onSelect(commit)}
-            style={{
-              background: 'transparent',
-              border: 0,
-              borderRadius: 6,
-              cursor: 'pointer',
-              display: 'block',
-              padding: '6px 4px',
-              textAlign: 'left',
-              width: '100%',
-            }}
-            type="button"
-          >
-            <Space direction="vertical" size={0} style={{ width: '100%' }}>
-              <Space size={6}>
-                <Typography.Text strong>{formatVersion(commit.seq)}</Typography.Text>
-                {commit.isPublished || commit.id === publishedCommitId ? (
-                  <Tag color="green">{t('Published')}</Tag>
-                ) : null}
+      {!collapsed ? (
+        <>
+          {hasUnsavedLocalChanges ? (
+            <div style={{ border: '1px solid #f0f0f0', borderRadius: 6, padding: 8 }}>
+              <Space direction="vertical" size={2}>
+                <Typography.Text strong>{t('Current changes')}</Typography.Text>
+                <Typography.Text type="secondary">
+                  {t('Unsaved changes')} · {`${t('Based on')} ${baseVersion}`}
+                </Typography.Text>
+                <Button onClick={onViewChanges} size="small" type="link">
+                  {t('View diff')}
+                </Button>
               </Space>
-              <Typography.Text ellipsis type="secondary">
-                {commit.message}
-              </Typography.Text>
-              <Typography.Text type="secondary">{t('Click to restore')}</Typography.Text>
-            </Space>
-          </button>
-        ))}
-      </div>
+            </div>
+          ) : null}
+          <div style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
+            {historyItems.length === 0 ? <Empty description={t('No published versions yet')} /> : null}
+            {historyItems.map((commit) => (
+              <button
+                key={commit.id}
+                onClick={() => onSelect(commit)}
+                style={{
+                  background: 'transparent',
+                  border: 0,
+                  borderRadius: 6,
+                  cursor: 'pointer',
+                  display: 'block',
+                  padding: '6px 4px',
+                  textAlign: 'left',
+                  width: '100%',
+                }}
+                type="button"
+              >
+                <Space direction="vertical" size={0} style={{ width: '100%' }}>
+                  <Space size={6}>
+                    <Typography.Text strong>{formatCommitTime(commit)}</Typography.Text>
+                    <Typography.Text type="secondary">{formatVersion(commit.seq)}</Typography.Text>
+                    {commit.isPublished || commit.id === publishedCommitId ? (
+                      <Tag color="green">{t('Published')}</Tag>
+                    ) : null}
+                  </Space>
+                  <Typography.Text ellipsis type="secondary">
+                    {commit.message}
+                  </Typography.Text>
+                  <Typography.Text type="secondary">{t('Click to restore')}</Typography.Text>
+                </Space>
+              </button>
+            ))}
+          </div>
+        </>
+      ) : null}
     </section>
   );
+}
+
+function formatCommitTime(commit: RunJSSourceHistoryItem): string {
+  const createdAt = typeof commit.createdAt === 'string' ? commit.createdAt : null;
+  if (!createdAt) {
+    return formatVersion(commit.seq);
+  }
+
+  const date = new Date(createdAt);
+  if (Number.isNaN(date.getTime())) {
+    return formatVersion(commit.seq);
+  }
+
+  const pad = (value: number) => String(value).padStart(2, '0');
+  return `${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
 
 function ConsolePanel(props: {
@@ -2721,7 +3297,7 @@ function CloseConfirmModal(props: {
   );
 }
 
-function RestoreAsDraftModal(props: {
+function RestoreVersionModal(props: {
   commit: RunJSSourceHistoryItem | null;
   loading: boolean;
   onCancel: () => void;
@@ -2780,23 +3356,23 @@ function ConflictDialog(props: {
           />
           {!conflict.canRebase ? (
             <Alert
-              message={t('The source owner changed outside this workspace. Refresh before rebasing.')}
+              message={t('The source owner changed outside this workspace. Load latest version before saving.')}
               role="alert"
               showIcon
               type="error"
             />
           ) : null}
-          <Typography.Text>{`${t('Your draft is based on')} ${conflict.baseVersion}.`}</Typography.Text>
+          <Typography.Text>{`${t('Your changes are based on')} ${conflict.baseVersion}.`}</Typography.Text>
           <Typography.Text>{`${t('Latest published version is')} ${conflict.latestVersion}.`}</Typography.Text>
           <Space wrap>
             {conflict.canRebase ? <Button onClick={onViewChanges}>{t('View changes')}</Button> : null}
             {conflict.canRebase ? (
               <Button onClick={onRebase} type="primary">
-                {t('Keep my changes and rebase')}
+                {t('Keep my changes on latest version')}
               </Button>
             ) : null}
             <Button danger onClick={onDiscard}>
-              {t('Discard my draft')}
+              {t('Load latest version')}
             </Button>
           </Space>
         </Space>
@@ -2820,6 +3396,29 @@ function appendDiagnostics(
   }
 }
 
+function appendRunDiagnostics(
+  result: DiagnoseRunJSResult,
+  appendConsole: (entry: Omit<RunJSConsoleEntry, 'id'>) => void,
+) {
+  for (const log of result.logs || []) {
+    appendConsole({
+      level: log.level,
+      message: log.message,
+    });
+  }
+
+  for (const issue of result.issues || []) {
+    const start = issue.location?.start;
+    appendConsole({
+      column: start?.column,
+      level: issue.type === 'runtime' ? 'error' : 'warn',
+      line: start?.line,
+      message: issue.message,
+      path: issue.sourcePath,
+    });
+  }
+}
+
 function formatCompileDiagnostics(diagnostics: RunJSCompileDiagnostic[]): string {
   return diagnostics
     .map((diagnostic) => {
@@ -2835,6 +3434,78 @@ function formatCompileDiagnostics(diagnostics: RunJSCompileDiagnostic[]): string
       return `${prefix} ${diagnostic.message}${details}`;
     })
     .join('\n\n');
+}
+
+function readFileAsDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => {
+      reject(reader.error || new Error('Failed to read file'));
+    };
+    reader.onload = () => {
+      const result = reader.result;
+      if (typeof result === 'string') {
+        resolve(result);
+        return;
+      }
+      reject(new Error('Failed to read file'));
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function buildRunJSExportFileName(label: string | undefined): string {
+  const baseName = (label || 'runjs-workspace').replace(/[^\w.-]+/g, '-').replace(/^-+|-+$/g, '');
+  return `${baseName || 'runjs-workspace'}.zip`;
+}
+
+function normalizeRunJSWorkspaceBlob(value: Blob): Blob {
+  const blob = value instanceof Blob ? value : new Blob([String(value)], { type: 'application/zip' });
+  return blob.type === 'application/zip' ? blob : new Blob([blob], { type: 'application/zip' });
+}
+
+function createRunJSWorkspaceObjectUrl(value: Blob): string | null {
+  if (typeof URL === 'undefined' || typeof URL.createObjectURL !== 'function') {
+    return null;
+  }
+
+  return URL.createObjectURL(normalizeRunJSWorkspaceBlob(value));
+}
+
+function revokeRunJSWorkspaceObjectUrl(url: string): void {
+  if (typeof URL !== 'undefined' && typeof URL.revokeObjectURL === 'function') {
+    URL.revokeObjectURL(url);
+  }
+}
+
+function canStartRunJSWorkspaceDownload(): boolean {
+  if (typeof navigator === 'undefined') {
+    return true;
+  }
+
+  const activation = (navigator as Navigator & { userActivation?: { isActive?: boolean } }).userActivation;
+  return activation?.isActive !== false;
+}
+
+function downloadRunJSWorkspaceBlob(value: Blob, fileName: string): boolean {
+  if (typeof document === 'undefined' || !canStartRunJSWorkspaceDownload()) {
+    return false;
+  }
+
+  const url = createRunJSWorkspaceObjectUrl(value);
+  if (!url) {
+    return false;
+  }
+
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = fileName;
+  anchor.style.display = 'none';
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  window.setTimeout(() => revokeRunJSWorkspaceObjectUrl(url), 0);
+  return true;
 }
 
 function findCommit(items: RunJSSourceHistoryItem[], commitId?: string | null): RunJSSourceHistoryItem | undefined {
@@ -2864,8 +3535,10 @@ function canPublish(
 function isConflictError(error: unknown): error is RunJSSourceRequestError {
   return (
     error instanceof RunJSSourceRequestError &&
-    (error.code === 'DRAFT_BASE_OUTDATED' ||
-      error.code === 'BASE_COMMIT_OUTDATED' ||
-      error.code === 'RUNJS_SOURCE_OWNER_OUTDATED')
+    (error.code === 'BASE_COMMIT_OUTDATED' || error.code === 'RUNJS_SOURCE_OWNER_OUTDATED')
   );
+}
+
+function isOwnerOutdatedError(error: unknown): error is RunJSSourceRequestError {
+  return error instanceof RunJSSourceRequestError && error.code === 'RUNJS_SOURCE_OWNER_OUTDATED';
 }

@@ -36,6 +36,12 @@ type CodeSchema = {
   'x-component-props'?: Record<string, unknown>;
 };
 
+type SerializedRunJSStep = {
+  uiMode?: {
+    props?: Record<string, unknown>;
+  };
+};
+
 const surfaces: SurfaceSpec[] = [
   { name: 'JSBlockModel', modelClass: JSBlockModel, flowKey: 'jsSettings', surfaceStyle: 'render', scene: 'block' },
   { name: 'JSFieldModel', modelClass: JSFieldModel, flowKey: 'jsSettings', surfaceStyle: 'render', scene: 'block' },
@@ -117,7 +123,7 @@ describe('RunJS FlowModel surfaces', () => {
     });
   });
 
-  it('JSBlockModel keeps the default embed size and header while the RunJS provider owns the footer', () => {
+  it('JSBlockModel uses the RunJS studio embed size while the provider owns the footer', () => {
     const flow = JSBlockModel.globalFlowRegistry.getFlow('jsSettings');
     const step = flow?.getStep('runJs');
     const codeSchema = getRunJsCodeSchema(surfaces[0]);
@@ -128,17 +134,18 @@ describe('RunJS FlowModel surfaces', () => {
       minHeight: 0,
       minWidth: 0,
     });
-    const props = (step?.serialize() as any)?.uiMode?.props;
+    const props = (step?.serialize() as SerializedRunJSStep | undefined)?.uiMode?.props;
     expect(props).toMatchObject({
       footer: null,
+      maxWidth: '960px',
+      minWidth: '720px',
       styles: {
         body: {
           transform: 'translateX(0)',
         },
       },
+      width: '45%',
     });
     expect(props).not.toHaveProperty('title');
-    expect(props).not.toHaveProperty('width');
-    expect(props).not.toHaveProperty('maxWidth');
   });
 });

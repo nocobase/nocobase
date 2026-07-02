@@ -3,6 +3,7 @@
   "version": "2.1.10",
   "main": "dist/server/index.js",
   "dependencies": {
+    "jszip": "^3.10.1",
     "typescript": "^5.x"
   },
   "peerDependencies": {

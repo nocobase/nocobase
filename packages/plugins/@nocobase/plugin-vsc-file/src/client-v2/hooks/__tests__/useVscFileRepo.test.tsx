@@ -15,7 +15,6 @@ import {
   VscFileRepoHookError,
   type VscFileRepoDiffFileInput,
   type VscFileRepoDiffInput,
-  type VscFileRepoDraftInput,
   type VscFileRepoGetFileInput,
   type VscFileRepoListCommitsInput,
   type VscFileRepoListRefsInput,
@@ -24,7 +23,6 @@ import {
   type VscFileRepoPushInput,
   type VscFileRepoRestoreCommitInput,
   type VscFileRepoRestoreFileInput,
-  type VscFileRepoSaveDraftInput,
   type VscFileRepoUpdateRefInput,
   useVscFileRepo,
 } from '../useVscFileRepo';
@@ -35,22 +33,16 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock('@nocobase/flow-engine', () => ({
-  tExpr: (key: string) => key,
   useFlowContext: () => ({
     api: {
       request: mocks.request,
     },
   }),
-  useFlowEngine: () => ({
-    context: {
-      t: mocks.translate,
-    },
-  }),
 }));
 
-const repoInput = {
-  repoId: 'repo-1',
-} satisfies VscFileRepoDraftInput;
+vi.mock('../../locale', () => ({
+  useT: () => mocks.translate,
+}));
 
 const pullInput = {
   repoId: 'repo-1',
@@ -62,18 +54,6 @@ const getFileInput = {
   repoId: 'repo-1',
   path: 'README.md',
 } satisfies VscFileRepoGetFileInput;
-
-const saveDraftInput = {
-  repoId: 'repo-1',
-  baseCommitId: 'commit-1',
-  files: [
-    {
-      path: 'README.md',
-      operation: 'upsert',
-      content: '# test',
-    },
-  ],
-} satisfies VscFileRepoSaveDraftInput;
 
 const pushInput = {
   repoId: 'repo-1',
@@ -145,26 +125,6 @@ const hookCallCases: HookCallCase[] = [
     operation: 'getFile',
     input: getFileInput,
     call: (hook) => hook.getFile(getFileInput),
-  },
-  {
-    operation: 'saveDraft',
-    input: saveDraftInput,
-    call: (hook) => hook.saveDraft(saveDraftInput),
-  },
-  {
-    operation: 'getDraft',
-    input: repoInput,
-    call: (hook) => hook.getDraft(repoInput),
-  },
-  {
-    operation: 'discardDraft',
-    input: repoInput,
-    call: (hook) => hook.discardDraft(repoInput),
-  },
-  {
-    operation: 'diffDraft',
-    input: repoInput,
-    call: (hook) => hook.diffDraft(repoInput),
   },
   {
     operation: 'push',
@@ -332,10 +292,10 @@ describe('useVscFileRepo', () => {
           errors: [
             {
               code: 'PERMISSION_DENIED',
-              message: 'Draft user does not match the current user',
+              message: 'Push is not allowed',
               status: 403,
               details: {
-                action: 'saveDraft',
+                action: 'push',
               },
             },
           ],
@@ -347,21 +307,21 @@ describe('useVscFileRepo', () => {
     let caughtError: unknown;
     await act(async () => {
       try {
-        await result.current.saveDraft(saveDraftInput);
+        await result.current.push(pushInput);
       } catch (error) {
         caughtError = error;
       }
     });
 
     expect(caughtError).toBeInstanceOf(VscFileRepoHookError);
-    expect(result.current.errors.saveDraft).toBe(caughtError);
-    expect(result.current.getError('saveDraft')).toMatchObject({
-      operation: 'saveDraft',
+    expect(result.current.errors.push).toBe(caughtError);
+    expect(result.current.getError('push')).toMatchObject({
+      operation: 'push',
       code: 'PERMISSION_DENIED',
       status: 403,
-      message: 'Draft user does not match the current user',
+      message: 'Push is not allowed',
       details: {
-        action: 'saveDraft',
+        action: 'push',
       },
     });
   });
@@ -379,9 +339,7 @@ describe('useVscFileRepo', () => {
     });
 
     expect(result.current.errors.pull?.message).toBe('translated:VSC file request failed');
-    expect(mocks.translate).toHaveBeenCalledWith('VSC file request failed', {
-      ns: ['@nocobase/plugin-vsc-file', 'client'],
-    });
+    expect(mocks.translate).toHaveBeenCalledWith('VSC file request failed');
   });
 
   it('clears operation errors', async () => {

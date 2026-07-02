@@ -13,8 +13,7 @@ import type { HandlerType, ResourceOptions } from '@nocobase/resourcer';
 
 import { VscError, isVscError } from '../../shared/errors';
 import type { ListCommitsInput } from '../services/CommitService';
-import type { DiffCommitsInput, DiffDraftInput, DiffFileEndpoint, DiffFileInput } from '../services/DiffService';
-import type { DiscardDraftInput, GetDraftInput, SaveDraftInput } from '../services/DraftService';
+import type { DiffCommitsInput, DiffFileEndpoint, DiffFileInput } from '../services/DiffService';
 import type { VscPermissionHookRegistry, VscPermissionRequestMetadata } from '../permissions';
 import type { ListRefsInput, RestoreCommitInput, RestoreFileInput, UpdateRefInput } from '../services/RefService';
 import type {
@@ -26,7 +25,7 @@ import type {
   RepositoryIdInput,
 } from '../services/VscFileService';
 import { VscFileService } from '../services/VscFileService';
-import type { VscDraftFileChange, VscFileChange, VscTreeEntryInput } from '../../shared/types';
+import type { VscFileChange, VscTreeEntryInput } from '../../shared/types';
 
 export const vscFileActionNames = [
   'createRepository',
@@ -34,10 +33,6 @@ export const vscFileActionNames = [
   'archiveRepository',
   'pull',
   'getFile',
-  'saveDraft',
-  'getDraft',
-  'discardDraft',
-  'diffDraft',
   'push',
   'listCommits',
   'getCommit',
@@ -100,18 +95,11 @@ const resourceActionRunners: Record<VscFileActionName, ResourceActionRunner> = {
     service.archiveRepository(normalizeRepositoryIdInput(input), currentUser),
   pull: (service, input, currentUser) => service.pull(normalizePullInput(input), currentUser),
   getFile: (service, input, currentUser) => service.getFile(normalizeGetFileInput(input), currentUser),
-  saveDraft: (service, input, currentUser) =>
-    service.saveDraft(normalizeSaveDraftInput(input, currentUser), currentUser),
-  getDraft: (service, input, currentUser) => service.getDraft(normalizeDraftUserInput(input, currentUser), currentUser),
-  discardDraft: (service, input, currentUser) =>
-    service.discardDraft(normalizeDraftUserInput(input, currentUser), currentUser),
-  diffDraft: (service, input, currentUser) =>
-    service.diffDraft(normalizeDiffDraftInput(input, currentUser), currentUser),
   push: (service, input, currentUser) => service.push(normalizePushInput(input, currentUser), currentUser),
   listCommits: (service, input, currentUser) => service.listCommits(normalizeListCommitsInput(input), currentUser),
   getCommit: (service, input, currentUser) => service.getCommit(normalizeGetCommitInput(input), currentUser),
   diff: (service, input, currentUser) => service.diff(normalizeDiffCommitsInput(input), currentUser),
-  diffFile: (service, input, currentUser) => service.diffFile(normalizeDiffFileInput(input, currentUser), currentUser),
+  diffFile: (service, input, currentUser) => service.diffFile(normalizeDiffFileInput(input), currentUser),
   restoreFile: (service, input, currentUser) =>
     service.restoreFile(normalizeRestoreFileInput(input, currentUser), currentUser),
   restoreCommit: (service, input, currentUser) =>
@@ -285,38 +273,13 @@ function normalizeGetFileInput(input: ResourceActionInput): GetFileInput {
   });
 }
 
-function normalizeSaveDraftInput(input: ResourceActionInput, currentUser: CurrentUserContext): SaveDraftInput {
-  return {
-    ...normalizeDraftUserInput(input, currentUser),
-    baseCommitId: requireNullableString(input, 'baseCommitId'),
-    files: requireArray(input, 'files', normalizeDraftFileChange),
-  };
-}
-
-function normalizeDraftUserInput(input: ResourceActionInput, currentUser: CurrentUserContext): GetDraftInput {
-  return {
-    repoId: requireString(input, 'repoId'),
-    userId: requireCurrentDraftUserId(input, currentUser),
-  };
-}
-
-function normalizeDiffDraftInput(input: ResourceActionInput, currentUser: CurrentUserContext): DiffDraftInput {
-  return normalizeDraftUserInput(input, currentUser);
-}
-
 function normalizePushInput(input: ResourceActionInput, currentUser: CurrentUserContext): PushInput {
-  const draftId = optionalString(input, 'draftId');
-  if (draftId && !currentUser.authorId) {
-    throw new VscError('PERMISSION_DENIED', 'Current user is required to push a draft');
-  }
-
   return compactObject({
     repoId: requireString(input, 'repoId'),
     baseCommitId: requireNullableString(input, 'baseCommitId'),
     message: requireString(input, 'message'),
     files: requireArray(input, 'files', normalizeFileChange),
     allowEmptyCommit: optionalBoolean(input, 'allowEmptyCommit'),
-    draftId,
     authorId: currentUser.authorId,
     metadata: optionalRecord(input, 'metadata'),
   });
@@ -345,11 +308,11 @@ function normalizeDiffCommitsInput(input: ResourceActionInput): DiffCommitsInput
   };
 }
 
-function normalizeDiffFileInput(input: ResourceActionInput, currentUser: CurrentUserContext): DiffFileInput {
+function normalizeDiffFileInput(input: ResourceActionInput): DiffFileInput {
   return compactObject({
     repoId: requireString(input, 'repoId'),
-    from: normalizeOptionalDiffFileEndpoint(input.from, currentUser, 'from'),
-    to: normalizeOptionalDiffFileEndpoint(input.to, currentUser, 'to'),
+    from: normalizeOptionalDiffFileEndpoint(input.from, 'from'),
+    to: normalizeOptionalDiffFileEndpoint(input.to, 'to'),
   });
 }
 
@@ -402,7 +365,7 @@ function normalizeTreeEntryInput(value: unknown, label: string): VscTreeEntryInp
 
 function normalizeFileChange(value: unknown, label: string): VscFileChange {
   const entry = requireRecord(value, label);
-  const operation = optionalDraftFileOperation(entry, 'operation', label);
+  const operation = optionalFileOperation(entry, 'operation', label);
 
   return compactObject({
     ...normalizeTreeEntryInput(entry, label),
@@ -410,29 +373,7 @@ function normalizeFileChange(value: unknown, label: string): VscFileChange {
   });
 }
 
-function normalizeDraftFileChange(value: unknown, label: string): VscDraftFileChange {
-  const entry = requireRecord(value, label);
-  const operation = requireDraftFileOperation(entry, 'operation', label);
-  const content = optionalString(entry, 'content', label);
-
-  if (operation === 'upsert' && typeof content !== 'string') {
-    throwBadRequest(`${fieldPath(label, 'content')} must be a string for upsert operations`);
-  }
-
-  return compactObject({
-    path: requireString(entry, 'path', label),
-    operation,
-    content,
-    language: optionalString(entry, 'language', label),
-    mode: optionalString(entry, 'mode', label),
-  });
-}
-
-function normalizeOptionalDiffFileEndpoint(
-  value: unknown,
-  currentUser: CurrentUserContext,
-  label: string,
-): DiffFileEndpoint | null | undefined {
+function normalizeOptionalDiffFileEndpoint(value: unknown, label: string): DiffFileEndpoint | null | undefined {
   if (typeof value === 'undefined') {
     return undefined;
   }
@@ -450,31 +391,7 @@ function normalizeOptionalDiffFileEndpoint(
       path: requireString(endpoint, 'path', label),
     };
   }
-  if (type === 'draft') {
-    return {
-      type,
-      userId: requireCurrentDraftUserId(endpoint, currentUser, label),
-      path: requireString(endpoint, 'path', label),
-    };
-  }
-  throwBadRequest(`${fieldPath(label, 'type')} must be one of commit or draft`);
-}
-
-function requireCurrentDraftUserId(
-  input: ResourceActionInput,
-  currentUser: CurrentUserContext,
-  label?: string,
-): string {
-  if (!currentUser.authorId) {
-    throw new VscError('PERMISSION_DENIED', 'Current user is required for draft actions');
-  }
-
-  const requestedUserId = optionalUserId(input, 'userId', label);
-  if (requestedUserId && requestedUserId !== currentUser.authorId) {
-    throw new VscError('PERMISSION_DENIED', 'Draft user does not match the current user');
-  }
-
-  return currentUser.authorId;
+  throwBadRequest(`${fieldPath(label, 'type')} must be commit`);
 }
 
 function requireString(input: ResourceActionInput, key: string, label?: string): string {
@@ -496,18 +413,6 @@ function optionalString(input: ResourceActionInput, key: string, label?: string)
   }
 
   return value as string;
-}
-
-function optionalUserId(input: ResourceActionInput, key: string, label?: string): string | undefined {
-  const value = input[key];
-  if (typeof value === 'undefined' || value === null) {
-    return undefined;
-  }
-  if (typeof value !== 'string' && typeof value !== 'number') {
-    throwBadRequest(`${fieldPath(label, key)} must be a string or number`);
-  }
-
-  return String(value);
 }
 
 function requireNullableString(input: ResourceActionInput, key: string, label?: string): string | null {
@@ -648,20 +553,7 @@ function optionalIncludeContent(input: ResourceActionInput): PullInput['includeC
   throwBadRequest('includeContent must be one of none, selected, or all');
 }
 
-function requireDraftFileOperation(
-  input: ResourceActionInput,
-  key: string,
-  label?: string,
-): VscDraftFileChange['operation'] {
-  const value = input[key];
-  if (value === 'upsert' || value === 'delete') {
-    return value;
-  }
-
-  throwBadRequest(`${fieldPath(label, key)} must be one of upsert or delete`);
-}
-
-function optionalDraftFileOperation(
+function optionalFileOperation(
   input: ResourceActionInput,
   key: string,
   label?: string,

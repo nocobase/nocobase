@@ -217,13 +217,6 @@ describe('vsc-file permission hooks and audit registration', () => {
       },
     });
     const repository = await createRepository();
-    const saveResponse = await agent.resource('vscFile').saveDraft({
-      values: {
-        repoId: repository.id,
-        baseCommitId: null,
-        files: [{ path: 'README.md', operation: 'upsert', content: '# Draft\n' }],
-      },
-    });
     const pushResponse = await agent.resource('vscFile').push({
       values: {
         repoId: repository.id,
@@ -242,7 +235,6 @@ describe('vsc-file permission hooks and audit registration', () => {
       },
     });
 
-    expect(saveResponse.status).toBe(200);
     expect(pushResponse.status).toBe(200);
     expect(updateRefResponse.status).toBe(200);
     expect(createWithInitialResponse.status).toBe(200);
@@ -265,22 +257,6 @@ describe('vsc-file permission hooks and audit registration', () => {
         ownerType: 'plugin',
         ownerId: 'initial-demo',
         targetCommitId: createWithInitialCommitId,
-      },
-    );
-    const saveMetadata = await expectAuditMetadata(
-      'saveDraft',
-      {
-        values: {
-          repoId: repository.id,
-        },
-      },
-      {
-        data: saveResponse.body.data,
-      },
-      {
-        repoId: repository.id,
-        ownerType: 'plugin',
-        ownerId: 'demo',
       },
     );
     const pushMetadata = await expectAuditMetadata(
@@ -324,8 +300,6 @@ describe('vsc-file permission hooks and audit registration', () => {
     expect(createMetadata).not.toHaveProperty('refName');
     expect(JSON.stringify(createMetadata.request?.body)).not.toContain('Initial secret');
     expect(JSON.stringify(createMetadata.response?.body)).not.toContain('Initial secret');
-    expect(JSON.stringify(saveMetadata.request?.body)).not.toContain('Draft');
-    expect(JSON.stringify(saveMetadata.response?.body)).not.toContain('Draft');
     expect(JSON.stringify(pushMetadata.request?.body)).not.toContain('Demo');
     expect(JSON.stringify(pushMetadata.response?.body)).not.toContain('Demo');
     expect(updateRefMetadata.request?.body).toMatchObject({

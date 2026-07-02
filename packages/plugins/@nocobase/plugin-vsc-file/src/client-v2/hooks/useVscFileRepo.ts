@@ -12,9 +12,6 @@ import { useCallback, useMemo, useRef, useState } from 'react';
 
 import type {
   VscCommitRecord,
-  VscDraftFileChange,
-  VscDraftFileRecord,
-  VscDraftRecord,
   VscFileChange,
   VscNormalizedTreeEntry,
   VscRefRecord,
@@ -27,10 +24,6 @@ import { useT } from '../locale';
 export const vscFileRepoOperations = [
   'pull',
   'getFile',
-  'saveDraft',
-  'getDraft',
-  'discardDraft',
-  'diffDraft',
   'push',
   'listCommits',
   'diff',
@@ -79,26 +72,11 @@ export interface VscFileRepoGetFileResult extends VscNormalizedTreeEntry {
   content: string;
 }
 
-export interface VscFileRepoDraftInput extends VscFileRepoRepositoryInput {
-  userId?: string | number;
-}
-
-export interface VscFileRepoSaveDraftInput extends VscFileRepoDraftInput {
-  baseCommitId: string | null;
-  files: VscDraftFileChange[];
-}
-
-export interface VscFileRepoActiveDraftResult {
-  draft: VscDraftRecord;
-  files: VscDraftFileRecord[];
-}
-
 export interface VscFileRepoPushInput extends VscFileRepoRepositoryInput {
   baseCommitId: string | null;
   message: string;
   files: VscFileChange[];
   allowEmptyCommit?: boolean;
-  draftId?: string;
   metadata?: Record<string, unknown>;
 }
 
@@ -118,17 +96,11 @@ export interface VscFileRepoDiffInput extends VscFileRepoRepositoryInput {
   toCommitId: string;
 }
 
-export type VscFileRepoDiffFileEndpoint =
-  | {
-      type: 'commit';
-      commitId: string;
-      path: string;
-    }
-  | {
-      type: 'draft';
-      userId?: string | number;
-      path: string;
-    };
+export type VscFileRepoDiffFileEndpoint = {
+  type: 'commit';
+  commitId: string;
+  path: string;
+};
 
 export interface VscFileRepoDiffFileInput extends VscFileRepoRepositoryInput {
   from?: VscFileRepoDiffFileEndpoint | null;
@@ -233,22 +205,6 @@ export interface VscFileRepoRequestMap {
     input: VscFileRepoGetFileInput;
     result: VscFileRepoGetFileResult;
   };
-  saveDraft: {
-    input: VscFileRepoSaveDraftInput;
-    result: VscFileRepoActiveDraftResult;
-  };
-  getDraft: {
-    input: VscFileRepoDraftInput;
-    result: VscFileRepoActiveDraftResult | null;
-  };
-  discardDraft: {
-    input: VscFileRepoDraftInput;
-    result: VscDraftRecord | null;
-  };
-  diffDraft: {
-    input: VscFileRepoDraftInput;
-    result: VscFileRepoFileDiffResult;
-  };
   push: {
     input: VscFileRepoPushInput;
     result: VscFileRepoPushResult;
@@ -321,10 +277,6 @@ export interface UseVscFileRepoResult {
   errors: VscFileRepoOperationState<VscFileRepoHookError>;
   pull(input: VscFileRepoPullInput): Promise<VscFileRepoPullResult>;
   getFile(input: VscFileRepoGetFileInput): Promise<VscFileRepoGetFileResult>;
-  saveDraft(input: VscFileRepoSaveDraftInput): Promise<VscFileRepoActiveDraftResult>;
-  getDraft(input: VscFileRepoDraftInput): Promise<VscFileRepoActiveDraftResult | null>;
-  discardDraft(input: VscFileRepoDraftInput): Promise<VscDraftRecord | null>;
-  diffDraft(input: VscFileRepoDraftInput): Promise<VscFileRepoFileDiffResult>;
   push(input: VscFileRepoPushInput): Promise<VscFileRepoPushResult>;
   listCommits(input: VscFileRepoListCommitsInput): Promise<VscCommitRecord[]>;
   diff(input: VscFileRepoDiffInput): Promise<VscFileRepoFileDiffResult>;
@@ -422,10 +374,6 @@ export function useVscFileRepo(): UseVscFileRepoResult {
       errors,
       pull: (input) => requestOperation('pull', input),
       getFile: (input) => requestOperation('getFile', input),
-      saveDraft: (input) => requestOperation('saveDraft', input),
-      getDraft: (input) => requestOperation('getDraft', input),
-      discardDraft: (input) => requestOperation('discardDraft', input),
-      diffDraft: (input) => requestOperation('diffDraft', input),
       push: (input) => requestOperation('push', input),
       listCommits: (input) => requestOperation('listCommits', input),
       diff: (input) => requestOperation('diff', input),

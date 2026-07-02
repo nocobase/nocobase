@@ -16,11 +16,18 @@ const WORD_RE = /[$_\p{Letter}][$_\p{Letter}\p{Number}.-]*/u;
 type CreateRunJSCompletionSourceOptions = {
   hostCtx: any;
   staticOptions?: Completion[];
+  moduleImportOptions?: RunJSImportModuleCompletion[];
   /**
    * Roots that should use FlowContext meta tree to provide deep completions.
    * When omitted/empty, all `ctx.*` roots are enabled.
    */
   metaRoots?: string[];
+};
+
+export type RunJSImportModuleCompletion = {
+  specifier: string;
+  detail?: string;
+  exports?: string[];
 };
 
 const isPromiseLike = (v: any): v is Promise<any> =>
@@ -29,9 +36,21 @@ const isPromiseLike = (v: any): v is Promise<any> =>
 export function createRunJSCompletionSource({
   hostCtx,
   staticOptions,
+  moduleImportOptions,
   metaRoots,
 }: CreateRunJSCompletionSourceOptions): CompletionSource {
   const optionsSnapshot: Completion[] = Array.isArray(staticOptions) ? staticOptions : [];
+  const importModules = Array.isArray(moduleImportOptions)
+    ? moduleImportOptions
+        .map((item) => ({
+          specifier: typeof item?.specifier === 'string' ? item.specifier : '',
+          detail: typeof item?.detail === 'string' ? item.detail : undefined,
+          exports: Array.isArray(item?.exports)
+            ? Array.from(new Set(item.exports.map((name) => String(name || '').trim()).filter(Boolean))).sort()
+            : [],
+        }))
+        .filter((item) => item.specifier)
+    : [];
   const jsxCompletion = createJsxCompletion();
   const enabledRoots =
     Array.isArray(metaRoots) && metaRoots.length > 0 ? new Set(metaRoots.map((r) => String(r))) : null;
@@ -368,6 +387,109 @@ export function createRunJSCompletionSource({
     return metaOptions;
   };
 
+  const getCurrentLineParts = (context: CompletionContext): { before: string; after: string; lineStart: number } => {
+    const doc = context.state.doc;
+    const pos = context.pos;
+    let lineStart = pos;
+    while (lineStart > 0 && doc.sliceString(lineStart - 1, lineStart) !== '\n') {
+      lineStart -= 1;
+    }
+
+    let lineEnd = pos;
+    const docLength = doc.length;
+    while (lineEnd < docLength && doc.sliceString(lineEnd, lineEnd + 1) !== '\n') {
+      lineEnd += 1;
+    }
+
+    return {
+      before: doc.sliceString(lineStart, pos),
+      after: doc.sliceString(pos, lineEnd),
+      lineStart,
+    };
+  };
+
+  const getImportSourceContext = (
+    context: CompletionContext,
+  ): { from: number; to: number; fragment: string } | null => {
+    if (!importModules.length) return null;
+    const { before, after } = getCurrentLineParts(context);
+    const match =
+      before.match(/\b(?:import|export)\s+(?:[^'"]*\s+from\s*)?(['"])([^'"]*)$/) ||
+      before.match(/\bimport\s*\(\s*(['"])([^'"]*)$/);
+    if (!match) return null;
+
+    const fragment = match[2] || '';
+    if (!context.explicit && !fragment) return null;
+
+    const suffix = after.match(/^([^'"]*)['"]/);
+    const to = suffix ? context.pos + suffix[1].length : context.pos;
+    return {
+      from: context.pos - fragment.length,
+      to,
+      fragment,
+    };
+  };
+
+  const getNamedImportContext = (
+    context: CompletionContext,
+  ): { from: number; to: number; moduleSpecifier: string } | null => {
+    if (!importModules.length) return null;
+    const { before, after } = getCurrentLineParts(context);
+    const beforeMatch = before.match(/\bimport\s+(?:type\s+)?\{([^{}]*)$/);
+    if (!beforeMatch) return null;
+
+    const afterMatch = after.match(/^[^{}]*\}\s*from\s*(['"])([^'"]+)\1/);
+    if (!afterMatch) return null;
+
+    const importedPrefix = beforeMatch[1] || '';
+    const currentNameMatch = importedPrefix.match(/[$_\p{Letter}][$_\p{Letter}\p{Number}]*$/u);
+    const typedName = currentNameMatch?.[0] || '';
+    if (!context.explicit && !typedName) return null;
+
+    return {
+      from: context.pos - typedName.length,
+      to: context.pos,
+      moduleSpecifier: afterMatch[2],
+    };
+  };
+
+  const buildImportSourceResult = (context: CompletionContext): CompletionResult | null => {
+    const sourceContext = getImportSourceContext(context);
+    if (!sourceContext) return null;
+
+    return {
+      from: sourceContext.from,
+      to: sourceContext.to,
+      options: importModules.map((item) => ({
+        label: item.specifier,
+        type: 'file',
+        detail: item.detail,
+        boost: 120,
+      })),
+      validFor: /^[^'"]*$/,
+    };
+  };
+
+  const buildNamedImportResult = (context: CompletionContext): CompletionResult | null => {
+    const namedContext = getNamedImportContext(context);
+    if (!namedContext) return null;
+
+    const moduleInfo = importModules.find((item) => item.specifier === namedContext.moduleSpecifier);
+    if (!moduleInfo?.exports?.length) return null;
+
+    return {
+      from: namedContext.from,
+      to: namedContext.to,
+      options: moduleInfo.exports.map((name) => ({
+        label: name,
+        type: 'variable',
+        detail: moduleInfo.specifier,
+        boost: 130,
+      })),
+      validFor: /^[$_\p{Letter}\p{Number}]*$/u,
+    };
+  };
+
   const dedupeByLabelKeepLast = (list: Completion[]): Completion[] => {
     const seen = new Set<string>();
     const out: Completion[] = [];
@@ -397,10 +519,16 @@ export function createRunJSCompletionSource({
       // ignore
     }
 
+    const importSourceResult = buildImportSourceResult(context);
+    if (importSourceResult) return importSourceResult;
+
+    const namedImportResult = buildNamedImportResult(context);
+    if (namedImportResult) return namedImportResult;
+
     const word = context.matchBefore(WORD_RE);
     if (!word) {
       if (context.explicit) {
-        return { from: context.pos, to: context.pos, options: optionsSnapshot };
+        return optionsSnapshot.length ? { from: context.pos, to: context.pos, options: optionsSnapshot } : null;
       }
       return null;
     }
@@ -446,6 +574,9 @@ export function createRunJSCompletionSource({
 
     const merged =
       metaOptions.length > 0 ? dedupeByLabelKeepLast([...filteredSnapshot, ...metaOptions]) : optionsSnapshot;
+    if (!merged.length) {
+      return null;
+    }
 
     return {
       from: word.from,

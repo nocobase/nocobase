@@ -37,8 +37,6 @@ describe('vsc-file collections', () => {
       'vscFileTreeEntries',
       'vscFileCommits',
       'vscFileRefs',
-      'vscFileDrafts',
-      'vscFileDraftFiles',
     ];
 
     for (const name of expectedCollections) {
@@ -51,8 +49,6 @@ describe('vsc-file collections', () => {
     await expectIndex('vscFileCommits', ['repoId', 'seq'], true);
     await expectIndex('vscFileCommits', ['repoId', 'hash'], true);
     await expectIndex('vscFileRefs', ['repoId', 'name'], true);
-    await expectIndex('vscFileDrafts', ['activeKey'], true);
-    await expectIndex('vscFileDraftFiles', ['draftId', 'pathHash'], true);
   });
 
   it('rejects duplicate repository owner/name tuples', async () => {
@@ -101,51 +97,6 @@ describe('vsc-file collections', () => {
           pathLowerHash: pathLowerHash('foo.ts'),
           blobHash: 'c'.repeat(64),
           size: 1,
-        },
-      }),
-    ).rejects.toBeInstanceOf(UniqueConstraintError);
-  });
-
-  it('allows multiple inactive drafts without activeKey and rejects duplicate active drafts', async () => {
-    const drafts = db.getRepository('vscFileDrafts');
-
-    await drafts.create({
-      values: {
-        repoId: 'repo-1',
-        userId: 'user-1',
-        baseCommitId: null,
-        status: 'committed',
-        activeKey: null,
-      },
-    });
-    await drafts.create({
-      values: {
-        repoId: 'repo-1',
-        userId: 'user-1',
-        baseCommitId: null,
-        status: 'discarded',
-        activeKey: null,
-      },
-    });
-
-    await drafts.create({
-      values: {
-        repoId: 'repo-1',
-        userId: 'user-1',
-        baseCommitId: null,
-        status: 'active',
-        activeKey: 'repo-1:user-1',
-      },
-    });
-
-    await expect(
-      drafts.create({
-        values: {
-          repoId: 'repo-1',
-          userId: 'user-1',
-          baseCommitId: null,
-          status: 'active',
-          activeKey: 'repo-1:user-1',
         },
       }),
     ).rejects.toBeInstanceOf(UniqueConstraintError);

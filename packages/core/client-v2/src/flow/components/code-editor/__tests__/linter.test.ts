@@ -31,6 +31,13 @@ describe('code-editor linter', () => {
     expect(diags.some((d) => d.severity === 'error' && /Syntax error:/.test(d.message))).toBe(true);
   });
 
+  it('accepts ES module imports and treats imported names as declared', () => {
+    const code = `import { abc } from './helper';\nabc();`;
+    const diags = computeDiagnosticsFromText(code);
+    expect(diags.some((d) => d.severity === 'error' && /Syntax error:/.test(d.message))).toBe(false);
+    expect(diags.some((d) => d.message.includes('Possible undefined variable: abc'))).toBe(false);
+  });
+
   it('reports possible undefined variable warning', () => {
     const code = `foo + 1;`;
     const diags = computeDiagnosticsFromText(code);

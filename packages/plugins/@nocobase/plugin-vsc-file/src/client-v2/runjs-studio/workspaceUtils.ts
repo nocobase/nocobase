@@ -14,7 +14,7 @@ import {
   validateRunJSWorkspacePathValue,
   type RunJSWorkspacePathValidationReason,
 } from '../../shared/runjs-workspace-path';
-import type { VscDraftFileRecord, VscFileChange } from '../../shared/types';
+import type { VscFileChange } from '../../shared/types';
 import type { RunJSChangeSummary, RunJSLineDiffRow, RunJSPathValidationResult, RunJSWorkspaceFile } from './types';
 
 export { runJSManifestPath };
@@ -37,35 +37,6 @@ export function normalizeWorkspaceFiles(files: RunJSWorkspaceFile[]): RunJSWorks
   }
 
   return Array.from(byPath.values()).sort((left, right) => compareRunJSPaths(left.path, right.path));
-}
-
-export function applyDraftFiles(
-  baseFiles: RunJSWorkspaceFile[],
-  draftFiles: VscDraftFileRecord[] | undefined,
-): RunJSWorkspaceFile[] {
-  if (!draftFiles?.length) {
-    return normalizeWorkspaceFiles(baseFiles);
-  }
-
-  const nextByPath = new Map(normalizeWorkspaceFiles(baseFiles).map((file) => [file.path, file]));
-
-  for (const file of draftFiles) {
-    const path = normalizePath(file.path);
-    if (file.operation === 'delete') {
-      nextByPath.delete(path);
-      continue;
-    }
-
-    const current = nextByPath.get(path);
-    nextByPath.set(path, {
-      path,
-      content: file.content ?? current?.content ?? '',
-      language: file.language || current?.language || inferLanguageFromPath(path),
-      mode: file.mode || current?.mode,
-    });
-  }
-
-  return Array.from(nextByPath.values()).sort((left, right) => compareRunJSPaths(left.path, right.path));
 }
 
 export function buildWorkspaceChanges(

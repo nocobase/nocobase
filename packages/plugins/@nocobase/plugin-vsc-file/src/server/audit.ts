@@ -19,20 +19,13 @@ import {
 export const vscFileAuditActionNames = [
   'createRepository',
   'archiveRepository',
-  'saveDraft',
   'push',
   'restoreFile',
   'restoreCommit',
   'updateRef',
 ] as const;
 
-export const runJSSourceAuditActionNames = [
-  'saveDraft',
-  'rebaseDraft',
-  'discardDraft',
-  'publish',
-  'restoreAsDraft',
-] as const;
+export const runJSSourceAuditActionNames = ['publish'] as const;
 
 type VscFileAuditActionName = (typeof vscFileAuditActionNames)[number];
 type RunJSSourceAuditActionName = (typeof runJSSourceAuditActionNames)[number];
@@ -127,7 +120,6 @@ async function getRunJSSourceAuditMetadata(db: Database, ctx: Context): Promise<
   const repository = responseRepository || (repoId ? await findRepository(db, repoId) : null);
   const commit = toRecord(response.commit);
   const publishedRef = toRecord(response.publishedRef);
-  const draft = toRecord(response.draft);
   const commitId = toStringValue(commit.id) || toStringValue(publishedRef.commitId);
 
   return {
@@ -137,8 +129,6 @@ async function getRunJSSourceAuditMetadata(db: Database, ctx: Context): Promise<
       locatorKind: locator?.kind || toStringValue(response.locatorKind) || toStringValue(input.locatorKind),
       repoId: repository?.id || repoId,
       commitId,
-      draftId: toStringValue(draft.id) || toStringValue(input.draftId),
-      draftStatus: toStringValue(draft.status),
       ownerId: locator ? getRunJSSourceAuditOwnerId(locator) : undefined,
       repositoryOwnerId: repository?.ownerId || (locator ? getRunJSSourceOwnerId(locator) : undefined),
       sourceCommitId: toStringValue(input.sourceCommitId),
@@ -216,7 +206,7 @@ function sanitizeRunJSSourceRequestBody(
     repoId: toStringValue(input.repoId),
     baseCommitId: toNullableStringValue(input.baseCommitId),
     basePublishedCommitId: toNullableStringValue(input.basePublishedCommitId),
-    draftId: toStringValue(input.draftId),
+    basePublishedOwnerFingerprint: toStringValue(input.basePublishedOwnerFingerprint),
     sourceCommitId: toStringValue(input.sourceCommitId),
     message: actionName === 'publish' ? toStringValue(input.message) : undefined,
     files: sanitizeFileList(input.files),
@@ -228,7 +218,6 @@ function sanitizeRunJSSourceResponseBody(response: Record<string, unknown>): Rec
   const repository = getRepositoryFromResponse(response);
   const commit = toRecord(response.commit);
   const publishedRef = toRecord(response.publishedRef);
-  const draft = toRecord(response.draft);
 
   return compactObject({
     repository: repository
@@ -240,7 +229,6 @@ function sanitizeRunJSSourceResponseBody(response: Record<string, unknown>): Rec
       : undefined,
     commit: sanitizeCommit(commit),
     publishedRef: sanitizeRef(publishedRef),
-    draft: sanitizeDraft(draft),
     artifact: sanitizeRunJSArtifact(toRecord(response.artifact)),
     ownerFingerprint: toStringValue(response.ownerFingerprint),
     fileCount: countArray(response.files),
@@ -252,7 +240,6 @@ function sanitizeResponseBody(response: Record<string, unknown>): Record<string,
   const commit = toRecord(response.commit);
   const initialCommit = toRecord(response.initialCommit);
   const ref = toRecord(response.ref);
-  const draft = toRecord(response.draft);
 
   return compactObject({
     repository: repository
@@ -265,7 +252,6 @@ function sanitizeResponseBody(response: Record<string, unknown>): Record<string,
     commit: sanitizeCommit(commit),
     initialCommit: sanitizeCommit(initialCommit),
     ref: sanitizeRef(ref),
-    draft: sanitizeDraft(draft),
     fileCount: countArray(response.files),
   });
 }
@@ -304,21 +290,6 @@ function sanitizeRef(ref: Record<string, unknown>): Record<string, unknown> | un
     name,
     repoId: toStringValue(ref.repoId),
     commitId: toNullableStringValue(ref.commitId),
-  });
-}
-
-function sanitizeDraft(draft: Record<string, unknown>): Record<string, unknown> | undefined {
-  const id = toStringValue(draft.id);
-  if (!id) {
-    return undefined;
-  }
-
-  return compactObject({
-    id,
-    repoId: toStringValue(draft.repoId),
-    userId: toStringValue(draft.userId),
-    baseCommitId: toNullableStringValue(draft.baseCommitId),
-    status: toStringValue(draft.status),
   });
 }
 

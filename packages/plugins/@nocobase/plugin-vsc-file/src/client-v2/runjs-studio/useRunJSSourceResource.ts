@@ -16,16 +16,16 @@ import type { RunJSSourceActionInput, RunJSSourceActionName, RunJSSourceActionRe
 
 export const runJSSourceActionNames = [
   'open',
-  'saveDraft',
-  'rebaseDraft',
-  'discardDraft',
-  'diffDraft',
+  'openLatest',
+  'restoreFromCode',
   'compilePreview',
   'publish',
+  'exportZip',
+  'importZip',
+  'syncStatus',
   'listHistory',
   'getVersion',
   'diffVersion',
-  'restoreAsDraft',
 ] as const;
 
 export type RunJSSourceLoadingState = Partial<Record<RunJSSourceActionName, boolean>>;
@@ -134,13 +134,18 @@ export function useRunJSSourceResource(): UseRunJSSourceResourceResult {
           });
         }
 
-        const response = await api.request<ResourceResponse<RunJSSourceActionResult<TAction>>>({
+        const response = await api.request<ResourceResponse<RunJSSourceActionResult<TAction>> | Blob>({
           url: `runJSSources:${action}`,
           method: 'post',
           data: input,
+          responseType: action === 'exportZip' ? 'blob' : undefined,
         });
 
-        return response.data.data;
+        if (action === 'exportZip') {
+          return response.data as RunJSSourceActionResult<TAction>;
+        }
+
+        return (response.data as ResourceResponse<RunJSSourceActionResult<TAction>>).data;
       } catch (error) {
         const requestError = normalizeRunJSSourceError(action, error, tRef.current);
         if (requestIdsRef.current[action] === requestId) {
@@ -211,8 +216,6 @@ export function formatRunJSSourceRequestErrorMessage(
   switch (code) {
     case 'BASE_COMMIT_OUTDATED':
       return t('A newer version was published while you were editing.');
-    case 'DRAFT_BASE_OUTDATED':
-      return t('Your draft is based on an older version.');
     case 'RUNJS_IMPORT_NOT_ALLOWED':
       return t('Only relative imports inside this workspace are supported.');
     case 'RUNJS_IMPORT_NOT_FOUND':
@@ -227,6 +230,8 @@ export function formatRunJSSourceRequestErrorMessage(
       return t('This JavaScript source could not be located.');
     case 'RUNJS_SOURCE_NOT_FOUND':
       return t('This JavaScript source no longer exists');
+    case 'RUNJS_SOURCE_OWNER_OUTDATED':
+      return t('RunJS source version is out of sync');
     case 'PERMISSION_DENIED':
       return t('You do not have permission to access this JavaScript source.');
     case 'RUNJS_SOURCE_READONLY':

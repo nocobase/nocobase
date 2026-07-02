@@ -160,6 +160,7 @@ export interface RunJSSourceOpenResult {
   repositoryIdentity: VscRepositoryIdentity;
   legacy: RunJSLegacySource;
   ownerFingerprint: string;
+  publishedOwnerFingerprint?: string;
 }
 
 export interface RunJSSourcePublishResult {
@@ -184,10 +185,10 @@ export interface RunJSSourcePublishInput {
   baseCommitId: string | null;
   basePublishedCommitId: string | null;
   baseOwnerFingerprint: string;
+  basePublishedOwnerFingerprint?: string;
   message: string;
   files: VscFileChange[];
   artifact?: Partial<RunJSRuntimeArtifact>;
-  draftId?: string;
   entryPath?: string;
   version?: string;
 }

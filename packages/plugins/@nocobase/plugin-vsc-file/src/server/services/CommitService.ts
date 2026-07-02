@@ -174,5 +174,14 @@ export function commitFromRecord(record: Model): VscCommitRecord {
     message: record.get('message') as string,
     authorId: (record.get('authorId') as string | null) || null,
     metadata: (record.get('metadata') as Record<string, unknown> | null) || {},
+    createdAt: normalizeRecordDate(record.get('createdAt')),
   };
+}
+
+function normalizeRecordDate(value: unknown): string | undefined {
+  if (value instanceof Date) {
+    return value.toISOString();
+  }
+
+  return typeof value === 'string' ? value : undefined;
 }

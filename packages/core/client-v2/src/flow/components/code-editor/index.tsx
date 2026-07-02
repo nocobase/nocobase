@@ -24,9 +24,11 @@ import { LogsPanel } from './panels/LogsPanel';
 import { SnippetsDrawer } from './panels/SnippetsDrawer';
 import { useCodeRunner } from './hooks/useCodeRunner';
 import { useFullscreenOverlay } from '../../../flow-compat';
-import { createRunJSCompletionSource } from './runjsCompletionSource';
+import { createRunJSCompletionSource, type RunJSImportModuleCompletion } from './runjsCompletionSource';
 import { inferRunJSScenesFromContext, mergeRunJSScenes } from './resolveScenes';
-interface CodeEditorProps {
+import type { CodeEditorTypeScriptProject } from './typescriptProject';
+
+export interface CodeEditorProps {
   value?: string;
   onChange?: (value: string) => void;
   placeholder?: string;
@@ -37,6 +39,8 @@ interface CodeEditorProps {
   enableLinter?: boolean;
   wrapperStyle?: React.CSSProperties;
   extraCompletions?: Completion[]; // 供外部注入的静态补全
+  moduleImportCompletions?: RunJSImportModuleCompletion[];
+  typescriptProject?: CodeEditorTypeScriptProject;
   version?: string; // runjs 版本（默认 v1）
   name?: string;
   language?: string;
@@ -50,6 +54,8 @@ interface CodeEditorProps {
 export * from './types';
 export * from './extension';
 export * from './runjsDiagnostics';
+export * from './typescriptProject';
+export type { RunJSImportModuleCompletion } from './runjsCompletionSource';
 
 export const CodeEditor: React.FC<CodeEditorProps> = ({
   value = '',
@@ -62,6 +68,8 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
   enableLinter = false,
   wrapperStyle,
   extraCompletions,
+  moduleImportCompletions,
+  typescriptProject,
   version = 'v1',
   name,
   language,
@@ -73,6 +81,8 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
 }) => {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
+  const typescriptProjectRef = useRef<CodeEditorTypeScriptProject | undefined>();
+  typescriptProjectRef.current = typescriptProject;
   const { isFullscreen, toggleFullscreen, placeholderRef, placeholderStyle, container } = useFullscreenOverlay();
   const runtimeCtx = useFlowContext<any>();
   // const settingsCtx = useFlowSettingsContext?.() as any;
@@ -136,8 +146,12 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
   }, [extraCompletions, dynamicCompletions]);
 
   const completionSource = useMemo(() => {
-    return createRunJSCompletionSource({ hostCtx, staticOptions: finalExtra });
-  }, [hostCtx, finalExtra]);
+    return createRunJSCompletionSource({
+      hostCtx,
+      staticOptions: finalExtra,
+      moduleImportOptions: moduleImportCompletions,
+    });
+  }, [hostCtx, finalExtra, moduleImportCompletions]);
 
   const runCurrentCode = useCallback(async () => {
     const code = viewRef.current?.state.doc.toString() || '';
@@ -254,6 +268,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
         readonly={readonly}
         enableLinter={enableLinter}
         completionSource={completionSource}
+        typescriptProjectRef={typescriptProject ? typescriptProjectRef : undefined}
         viewRef={viewRef}
       />
       {showLogs ? (

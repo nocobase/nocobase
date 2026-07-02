@@ -18,14 +18,7 @@ import type {
   RunJSSourcePublishResult,
   RunJSSurfaceStyle,
 } from '../../shared/runjs-source-types';
-import type {
-  VscCommitRecord,
-  VscDraftFileRecord,
-  VscDraftRecord,
-  VscFileChange,
-  VscRepositoryIdentity,
-  VscRepositoryRecord,
-} from '../../shared/types';
+import type { VscCommitRecord, VscFileChange, VscRepositoryIdentity, VscRepositoryRecord } from '../../shared/types';
 import type { VscFileRepoFileDiffResult } from '../hooks';
 
 export interface RunJSWorkspaceFile {
@@ -46,14 +39,8 @@ export interface RunJSSourceInfo {
   runtimeVersion: string;
   language: RunJSLegacySource['language'];
   ownerFingerprint: string;
+  publishedOwnerFingerprint?: string;
   metadata?: Record<string, unknown>;
-}
-
-export interface RunJSSourceDraftRecord {
-  id: string;
-  baseCommitId: string | null;
-  status: VscDraftRecord['status'];
-  files: VscDraftFileRecord[];
 }
 
 export interface RunJSSourcePermissions {
@@ -76,52 +63,14 @@ export interface RunJSSourceOpenWorkspaceResult extends RunJSSourceOpenResult {
   repository: RunJSSourceRepositoryRecord;
   source: RunJSSourceInfo;
   files: RunJSWorkspaceFile[];
-  draft: RunJSSourceDraftRecord | null;
   permissions: RunJSSourcePermissions;
   history: RunJSSourceHistoryState;
-}
-
-export interface RunJSSourceSaveDraftInput {
-  locator: RunJSSourceLocator;
-  repoId: string;
-  baseCommitId: string | null;
-  files: VscFileChange[];
-}
-
-export interface RunJSSourceDraftResult {
-  locator: RunJSSourceLocator;
-  locatorKind: RunJSSourceKind;
-  repository: RunJSSourceRepositoryRecord;
-  draft: RunJSSourceDraftRecord;
-  files: VscDraftFileRecord[];
-}
-
-export interface RunJSSourceDiscardDraftResult {
-  locator: RunJSSourceLocator;
-  locatorKind: RunJSSourceKind;
-  repository: RunJSSourceRepositoryRecord;
-  draft: VscDraftRecord | null;
-}
-
-export interface RunJSSourceDiffDraftInput {
-  locator: RunJSSourceLocator;
-  repoId: string;
-  baseCommitId?: string | null;
-  files?: VscFileChange[];
-}
-
-export interface RunJSSourceDiffDraftResult {
-  locator: RunJSSourceLocator;
-  locatorKind: RunJSSourceKind;
-  repository: RunJSSourceRepositoryRecord;
-  diff: VscFileRepoFileDiffResult;
 }
 
 export interface RunJSSourceCompilePreviewInput {
   locator: RunJSSourceLocator;
   repoId?: string;
   baseCommitId?: string | null;
-  draftId?: string;
   files: VscFileChange[];
   entryPath?: string;
   entry?: string;
@@ -184,11 +133,56 @@ export interface RunJSSourceDiffVersionResult {
   diff: VscFileRepoFileDiffResult;
 }
 
-export interface RunJSSourceRestoreAsDraftInput {
+export interface RunJSSourceExportZipInput {
+  locator: RunJSSourceLocator;
+  repoId?: string;
+  commitId?: string;
+}
+
+export interface RunJSSourceImportZipInput {
+  locator: RunJSSourceLocator;
+  repoId?: string;
+  baseCommitId: string | null;
+  basePublishedCommitId: string | null;
+  baseOwnerFingerprint: string;
+  basePublishedOwnerFingerprint?: string;
+  message: string;
+  zipBase64: string;
+  entryPath?: string;
+  version?: string;
+}
+
+export interface RunJSSourceImportZipResult extends RunJSSourcePublishResult {
+  import: {
+    fileCount: number;
+    filesHash: string;
+  };
+}
+
+export interface RunJSSourceSyncStatusInput {
+  locator: RunJSSourceLocator;
+  repoId?: string;
+}
+
+export interface RunJSSourceSyncStatusResult {
+  locator: RunJSSourceLocator;
+  locatorKind: RunJSSourceKind;
+  repository: RunJSSourceRepositoryRecord;
+  publishedCommitId: string | null;
+  headCommitId: string | null;
+  filesHash: string | null;
+  runtimeCodeHash: string | null;
+  entry: string | null;
+  runtimeVersion: string | null;
+  updatedAt: string | null;
+  ownerFingerprint: string | null;
+}
+
+export interface RunJSSourceVersionLoadInput {
   locator: RunJSSourceLocator;
   repoId: string;
-  sourceCommitId: string;
-  baseCommitId: string | null;
+  commitId: string;
+  includeFiles: true;
 }
 
 export interface RunJSSourceRequestMap {
@@ -196,21 +190,13 @@ export interface RunJSSourceRequestMap {
     input: { locator: RunJSSourceLocator };
     result: RunJSSourceOpenWorkspaceResult;
   };
-  saveDraft: {
-    input: RunJSSourceSaveDraftInput;
-    result: RunJSSourceDraftResult;
+  openLatest: {
+    input: { locator: RunJSSourceLocator };
+    result: RunJSSourceOpenWorkspaceResult;
   };
-  rebaseDraft: {
-    input: RunJSSourceSaveDraftInput;
-    result: RunJSSourceDraftResult;
-  };
-  discardDraft: {
-    input: { locator: RunJSSourceLocator; repoId: string };
-    result: RunJSSourceDiscardDraftResult;
-  };
-  diffDraft: {
-    input: RunJSSourceDiffDraftInput;
-    result: RunJSSourceDiffDraftResult;
+  restoreFromCode: {
+    input: { locator: RunJSSourceLocator };
+    result: RunJSSourceOpenWorkspaceResult;
   };
   compilePreview: {
     input: RunJSSourceCompilePreviewInput;
@@ -219,6 +205,18 @@ export interface RunJSSourceRequestMap {
   publish: {
     input: RunJSSourcePublishInput;
     result: RunJSSourcePublishResult;
+  };
+  exportZip: {
+    input: RunJSSourceExportZipInput;
+    result: Blob;
+  };
+  importZip: {
+    input: RunJSSourceImportZipInput;
+    result: RunJSSourceImportZipResult;
+  };
+  syncStatus: {
+    input: RunJSSourceSyncStatusInput;
+    result: RunJSSourceSyncStatusResult;
   };
   listHistory: {
     input: RunJSSourceHistoryInput;
@@ -231,10 +229,6 @@ export interface RunJSSourceRequestMap {
   diffVersion: {
     input: RunJSSourceDiffVersionInput;
     result: RunJSSourceDiffVersionResult;
-  };
-  restoreAsDraft: {
-    input: RunJSSourceRestoreAsDraftInput;
-    result: RunJSSourceDraftResult;
   };
 }
 

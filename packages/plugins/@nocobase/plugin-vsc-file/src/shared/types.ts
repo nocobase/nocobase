@@ -16,9 +16,7 @@ export type VscRepositoryStatus = 'active' | 'archived';
 
 export type VscRefName = 'head' | 'published' | string;
 
-export type VscDraftStatus = 'active' | 'committed' | 'discarded';
-
-export type VscDraftFileOperation = 'upsert' | 'delete';
+export type VscFileOperation = 'upsert' | 'delete';
 
 export type VscFilePath = string;
 
@@ -54,6 +52,7 @@ export interface VscCommitRecord {
   message: string;
   authorId: string | null;
   metadata: Record<string, unknown>;
+  createdAt?: string;
 }
 
 export interface VscRefRecord {
@@ -95,36 +94,6 @@ export interface VscStoredTree {
   byteSize: number;
 }
 
-export interface VscDraftRecord {
-  id: string;
-  repoId: string;
-  userId: string;
-  baseCommitId: string | null;
-  status: VscDraftStatus;
-  activeKey: string | null;
-}
-
-export interface VscDraftFileRecord {
-  id: string;
-  draftId: string;
-  path: VscFilePath;
-  pathHash: VscSha256Hex;
-  pathLowerHash: VscSha256Hex;
-  operation: VscDraftFileOperation;
-  blobHash: VscSha256Hex | null;
-  language: string | null;
-  mode: VscFileMode | null;
-  content?: string;
-}
-
-export interface VscDraftFileChange {
-  path: VscFilePath;
-  operation: VscDraftFileOperation;
-  content?: string;
-  language?: string;
-  mode?: VscFileMode;
-}
-
 export interface VscCommitInput {
   repoId: number | string;
   baseCommitId: number | string | null;
@@ -134,7 +103,7 @@ export interface VscCommitInput {
 }
 
 export interface VscFileChange extends VscTreeEntryInput {
-  operation?: VscDraftFileOperation;
+  operation?: VscFileOperation;
 }
 
 export interface VscErrorResponseItem {

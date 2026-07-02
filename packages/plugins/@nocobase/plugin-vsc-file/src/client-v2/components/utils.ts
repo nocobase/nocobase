@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { VscDraftFileChange, VscDraftFileRecord, VscFileChange } from '../../shared/types';
+import type { VscFileChange } from '../../shared/types';
 
 export function compareVscPaths(left: string, right: string): number {
   return left.localeCompare(right);
@@ -26,7 +26,7 @@ export function formatVscComponentError(error: unknown, fallback: string): strin
   return typeof message === 'string' && message ? message : fallback;
 }
 
-export function toPushFileChanges(files: VscDraftFileChange[]): VscFileChange[] {
+export function toPushFileChanges(files: VscFileChange[]): VscFileChange[] {
   return files.map((file) => {
     if (file.operation === 'delete') {
       return {
@@ -39,25 +39,8 @@ export function toPushFileChanges(files: VscDraftFileChange[]): VscFileChange[] 
       path: file.path,
       operation: 'upsert',
       content: file.content || '',
-    };
-  });
-}
-
-export function draftRecordsToPushFileChanges(files: VscDraftFileRecord[]): VscFileChange[] {
-  return files.map((file) => {
-    if (file.operation === 'delete') {
-      return {
-        path: file.path,
-        operation: 'delete',
-      };
-    }
-
-    return {
-      path: file.path,
-      operation: 'upsert',
-      blobHash: file.blobHash || undefined,
-      language: file.language || undefined,
-      mode: file.mode || undefined,
+      language: file.language,
+      mode: file.mode,
     };
   });
 }

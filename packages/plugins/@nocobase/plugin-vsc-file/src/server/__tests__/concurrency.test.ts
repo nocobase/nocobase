@@ -12,7 +12,6 @@ import path from 'path';
 
 import { VscError } from '../../shared/errors';
 import { BlobService } from '../services/BlobService';
-import type { ActiveDraftResult } from '../services/DraftService';
 import { TreeService } from '../services/TreeService';
 import type { PushResult } from '../services/VscFileService';
 import { VscFileService } from '../services/VscFileService';
@@ -82,47 +81,6 @@ describe('vsc-file concurrency behavior', () => {
         },
       }),
     ).toBe(2);
-  });
-
-  it('keeps one active draft when two saves race for the same repo and user', async () => {
-    const { repository } = await service.createRepository({
-      ownerType: 'plugin',
-      ownerId: 'demo',
-      name: 'main',
-    });
-
-    const results = await Promise.allSettled([
-      service.saveDraft({
-        repoId: repository.id,
-        userId: 'user-1',
-        baseCommitId: null,
-        files: [{ path: 'src/one.ts', operation: 'upsert', content: 'export const one = 1;\n' }],
-      }),
-      service.saveDraft({
-        repoId: repository.id,
-        userId: 'user-1',
-        baseCommitId: null,
-        files: [{ path: 'src/two.ts', operation: 'upsert', content: 'export const two = 2;\n' }],
-      }),
-    ]);
-    const fulfilled = results.filter(isFulfilled<ActiveDraftResult>);
-    const loaded = await service.getDraft({
-      repoId: repository.id,
-      userId: 'user-1',
-    });
-
-    expect(fulfilled).toHaveLength(2);
-    expect(new Set(fulfilled.map((result) => result.value.draft.id)).size).toBe(1);
-    expect(
-      await db.getRepository('vscFileDrafts').count({
-        filter: {
-          repoId: repository.id,
-          userId: 'user-1',
-          status: 'active',
-        },
-      }),
-    ).toBe(1);
-    expect(loaded?.files.map((file) => file.path).sort()).toEqual(['src/one.ts', 'src/two.ts']);
   });
 
   it('returns existing immutable blobs and trees during duplicate insertion races', async () => {

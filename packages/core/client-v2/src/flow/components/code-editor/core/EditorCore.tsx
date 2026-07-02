@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import {
   autocompletion,
   type Completion,
@@ -23,6 +23,12 @@ import { javascriptWithHtmlTemplates } from '../javascriptHtmlTemplate';
 import { createHtmlCompletion } from '../htmlCompletion';
 import { createJsxCompletion } from '../jsxCompletion';
 import { createJavaScriptLinter } from '../linter';
+import {
+  createTypeScriptCompletionSource,
+  createTypeScriptHoverTooltip,
+  createTypeScriptProjectLinter,
+  type CodeEditorTypeScriptProjectRef,
+} from '../typescriptProject';
 import { resolveTooltipParent } from './tooltipParent';
 
 export const EditorCore: React.FC<{
@@ -37,6 +43,7 @@ export const EditorCore: React.FC<{
   knownCtxMemberRoots?: string[];
   extraCompletions?: Completion[];
   completionSource?: CompletionSource;
+  typescriptProjectRef?: CodeEditorTypeScriptProjectRef;
   viewRef: React.MutableRefObject<EditorView | null>;
 }> = ({
   value = '',
@@ -50,10 +57,23 @@ export const EditorCore: React.FC<{
   knownCtxMemberRoots,
   extraCompletions,
   completionSource,
+  typescriptProjectRef,
   viewRef,
 }) => {
   const editorRef = useRef<HTMLDivElement>(null);
   const onChangeRef = useRef<typeof onChange>();
+  const typeScriptCompletionSource = useMemo(
+    () => createTypeScriptCompletionSource({ projectRef: typescriptProjectRef }),
+    [typescriptProjectRef],
+  );
+  const typeScriptLinter = useMemo(
+    () => createTypeScriptProjectLinter({ projectRef: typescriptProjectRef }),
+    [typescriptProjectRef],
+  );
+  const typeScriptHover = useMemo(
+    () => createTypeScriptHoverTooltip({ projectRef: typescriptProjectRef }),
+    [typescriptProjectRef],
+  );
   // keep latest onChange without re-creating the editor
   useEffect(() => {
     onChangeRef.current = onChange;
@@ -99,12 +119,16 @@ export const EditorCore: React.FC<{
             : Array.isArray(extraCompletions) && extraCompletions.length
               ? [staticCompletionSource(extraCompletions)]
               : []),
+          ...(typescriptProjectRef ? [typeScriptCompletionSource] : []),
         ],
         closeOnBlur: false,
         activateOnTyping: true,
       }),
       ...(placeholder ? [cmPlaceholder(placeholder)] : []),
-      ...(enableLinter ? [lintGutter(), createJavaScriptLinter({ knownCtxMemberRoots })] : []),
+      ...(enableLinter
+        ? [lintGutter(), typescriptProjectRef ? typeScriptLinter : createJavaScriptLinter({ knownCtxMemberRoots })]
+        : []),
+      ...(typescriptProjectRef ? [typeScriptHover] : []),
       // Prefer the current popup container so completion tooltips stay above Modal/Drawer masks.
       tooltips({
         parent: resolveTooltipParent(editorRef.current),
@@ -197,7 +221,20 @@ export const EditorCore: React.FC<{
       viewRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [completionSource, extraCompletions, enableLinter, height, minHeight, theme, readonly, placeholder]);
+  }, [
+    completionSource,
+    extraCompletions,
+    enableLinter,
+    height,
+    minHeight,
+    theme,
+    readonly,
+    placeholder,
+    typeScriptCompletionSource,
+    typeScriptHover,
+    typeScriptLinter,
+    typescriptProjectRef,
+  ]);
 
   // Update editor content when value changes
   useEffect(() => {
