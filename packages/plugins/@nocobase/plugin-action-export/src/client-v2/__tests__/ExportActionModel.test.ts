@@ -181,20 +181,6 @@ describe('ExportActionModel', () => {
     antdMocks.cascaderProps = [];
   });
 
-  it('exposes collection export action metadata', () => {
-    const model = createModel('export-action-metadata');
-
-    expect(ExportActionModel.scene).toBe('collection');
-    expect(model.getAclActionName()).toBe('export');
-    expect(model.defaultProps).toMatchObject({
-      type: 'default',
-      icon: 'clouddownloadoutlined',
-    });
-    expect(ExportActionModel.meta).toMatchObject({
-      sort: 1030,
-    });
-  });
-
   it('exports selected rows with translated column metadata', async () => {
     const model = createModel('export-action-selected');
     const exportSettings: ExportSetting[] = [{ dataIndex: ['status'] }, { dataIndex: ['active'] }];

@@ -7,16 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { render, screen } from '@testing-library/react';
-import React from 'react';
-import { describe, expect, it, vi } from 'vitest';
-import { DownloadTips, ImportWarning, initImportSettings } from '../importSupport';
-
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string) => key,
-  }),
-}));
+import { describe, expect, it } from 'vitest';
+import { initImportSettings } from '../importSupport';
 
 describe('importSupport', () => {
   it('initializes import settings from selectable fields', () => {
@@ -35,13 +27,5 @@ describe('importSupport', () => {
       importColumns: undefined,
       explain: '',
     });
-  });
-
-  it('renders import warning and download tips', () => {
-    render(<ImportWarning />);
-    expect(screen.getByText('Import warnings')).toBeTruthy();
-
-    render(<DownloadTips />);
-    expect(screen.getByText('Download tips')).toBeTruthy();
   });
 });

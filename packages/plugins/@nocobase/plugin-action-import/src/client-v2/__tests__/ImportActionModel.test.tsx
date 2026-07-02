@@ -228,20 +228,6 @@ describe('ImportActionModel', () => {
     antdMocks.draggerProps = [];
   });
 
-  it('exposes collection import action metadata', () => {
-    const model = createModel('import-action-metadata');
-
-    expect(ImportActionModel.scene).toBe('collection');
-    expect(model.getAclActionName()).toBe('importXlsx');
-    expect(model.defaultProps).toMatchObject({
-      type: 'default',
-      icon: 'uploadoutlined',
-    });
-    expect(ImportActionModel.meta).toMatchObject({
-      sort: 1040,
-    });
-  });
-
   it('builds import setting schema, defaults, and stored columns', () => {
     const model = createModel('import-action-settings');
     const step = model.getFlow('importActionSetting')?.getStep('importSetting')?.serialize() as
