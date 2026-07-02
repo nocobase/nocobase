@@ -2,6 +2,73 @@
   {
     "type": "custom-link",
     "label": "概述",
+    "link": "/data-sources/overview"
+  },
+  {
+    "type": "custom-link",
+    "label": "主数据源",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "主数据库",
+        "link": "/data-sources/main/database"
+      },
+      {
+        "type": "custom-link",
+        "label": "连接数据库视图",
+        "link": "/data-sources/main/collection-view"
+      },
+      {
+        "type": "custom-link",
+        "label": "创建 SQL 数据表",
+        "link": "/data-sources/main/collection-sql"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "外部据源",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "外部数据库",
+        "link": "/data-sources/external/database"
+      },
+      {
+        "type": "custom-link",
+        "label": "REST API",
+        "link": "/data-sources/external/rest-api"
+      },
+      {
+        "type": "custom-link",
+        "label": "外部 NocoBase ",
+        "link": "/data-sources/external/nocobase"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "主数据库vs外部数据库",
+    "link": "/data-sources/main-vs-external-database"
+  },
+  {
+    "type": "custom-link",
+    "label": "REST APIvs外部NocoBase",
+    "link": "/data-sources/rest-api-vs-external-nocobase"
+  },
+  {
+    "type": "custom-link",
+    "label": "数据表",
+    "link": "/data-sources/collection/collection"
+  },
+  {
+    "type": "custom-link",
+    "label": "字段",
+    "link": "/data-sources/field/field"
+  },
+  {
+    "type": "custom-link",
+    "label": "概述",
     "link": "/data-sources/"
   },
   {
