@@ -134,6 +134,7 @@ describe('CCBlockGridModel', () => {
         children: [
           expect.objectContaining({
             key: 'triggers',
+            label: '{{t("Trigger", { ns: "workflow" })}}',
             children: [triggerItem],
           }),
         ],
@@ -164,6 +165,7 @@ describe('CCBlockGridModel', () => {
         children: [
           expect.objectContaining({
             key: 'triggers',
+            label: '{{t("Trigger", { ns: "workflow" })}}',
             children: [triggerItem],
           }),
         ],
