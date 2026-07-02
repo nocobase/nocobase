@@ -38,6 +38,7 @@ describe('PluginEmbedClientV2', () => {
       router: {
         add: vi.fn(),
       },
+      providers: [],
     };
     const plugin = new PluginEmbedClientV2({} as any, app as any);
 
@@ -57,6 +58,7 @@ describe('PluginEmbedClientV2', () => {
       authCheck: false,
     });
     expect(app.router.add).not.toHaveBeenCalled();
+    expect(app.providers).toHaveLength(1);
     expect(registerCopyEmbedLinkFlow).toHaveBeenCalledTimes(1);
   });
 
@@ -125,7 +127,48 @@ describe('PluginEmbedClientV2', () => {
     expect(app.apiClient.auth.setToken).toHaveBeenCalledWith('test-token');
   });
 
-  it('keeps default storage for embed route without query token or existing embed token', async () => {
+  it('restores the embed URL token after the auth interceptor clears it', async () => {
+    const { default: PluginEmbedClientV2 } = await import('../plugin');
+    const { restoreEmbedSessionToken } = await import('../embedSession');
+    const values: Record<string, string> = {};
+    const storage = {
+      getItem: vi.fn((key: string) => values[key] || null),
+      setItem: vi.fn((key: string, value = '') => {
+        values[key] = value;
+      }),
+    };
+    const app = {
+      router: {
+        getBasename: () => '/v2/apps/app1',
+      },
+      getPublicPath: () => '/v2/',
+      apiClient: {
+        storagePrefix: 'NOCOBASE_',
+        storage: {
+          getItem: vi.fn(),
+          setItem: vi.fn(),
+        },
+        createStorage: vi.fn(() => storage),
+        auth: {
+          getToken: vi.fn(() => storage.getItem('token')),
+          getAuthenticator: vi.fn(() => storage.getItem('auth')),
+          setAuthenticator: vi.fn((authenticator: string | null) => storage.setItem('auth', authenticator || '')),
+          setToken: vi.fn((token: string | null) => storage.setItem('token', token || '')),
+        },
+      },
+    };
+    const plugin = new PluginEmbedClientV2({} as any, app as any);
+
+    window.history.pushState({}, '', '/v2/apps/app1/embed/page-uid?token=111');
+    await plugin.beforeLoad();
+    window.history.pushState({}, '', '/v2/apps/app1/embed/page-uid');
+    storage.setItem('token', '');
+
+    expect(restoreEmbedSessionToken(app as any)).toBe(true);
+    expect(values.token).toBe('111');
+  });
+
+  it('uses isolated embed session storage for embed route without query token', async () => {
     const { default: PluginEmbedClientV2 } = await import('../plugin');
     const originalStorage = {};
     const embedStorage = {};
@@ -150,10 +193,96 @@ describe('PluginEmbedClientV2', () => {
     await plugin.beforeLoad();
 
     expect(app.apiClient.createStorage).toHaveBeenCalledWith('sessionStorage');
-    expect(app.apiClient.auth.getToken).toHaveBeenCalledTimes(1);
+    expect(app.apiClient.auth.getToken).not.toHaveBeenCalled();
+    expect(app.apiClient.storagePrefix).toMatch(/^NOCOBASE_EMBED_[0-9A-Z]+_[0-9A-Z]+_$/);
+    expect(app.apiClient.storage).toBe(embedStorage);
+    expect(app.apiClient.auth.setToken).not.toHaveBeenCalled();
+  });
+
+  it('does not read the default login token for embed route without query token', async () => {
+    const { default: PluginEmbedClientV2 } = await import('../plugin');
+    const originalStorage = {
+      getItem: vi.fn(() => 'admin-token'),
+      setItem: vi.fn(),
+    };
+    const embedStorage = {
+      getItem: vi.fn(() => null),
+      setItem: vi.fn(),
+    };
+    let activeStorage = originalStorage;
+    const app = {
+      router: {
+        getBasename: () => '/v2/apps/app1',
+      },
+      getPublicPath: () => '/v2/',
+      apiClient: {
+        storagePrefix: 'NOCOBASE_',
+        storage: originalStorage,
+        createStorage: vi.fn(() => {
+          activeStorage = embedStorage;
+          return embedStorage;
+        }),
+        auth: {
+          getToken: vi.fn(() => activeStorage.getItem('token')),
+          setToken: vi.fn((token: string | null) => activeStorage.setItem('token', token || '')),
+        },
+      },
+    };
+    const plugin = new PluginEmbedClientV2({} as any, app as any);
+
+    window.history.pushState({}, '', '/v2/apps/app1/embed/page-uid');
+    await plugin.beforeLoad();
+
+    expect(app.apiClient.storage).toBe(embedStorage);
+    expect(app.apiClient.auth.getToken()).toBeNull();
+    expect(embedStorage.getItem).toHaveBeenCalledWith('token');
+    expect(originalStorage.getItem).not.toHaveBeenCalled();
+    expect(app.apiClient.auth.setToken).not.toHaveBeenCalled();
+  });
+
+  it('restores default storage when leaving an embed route', async () => {
+    const { default: PluginEmbedClientV2 } = await import('../plugin');
+    const originalStorage = {};
+    const embedStorage = {};
+    const dispatchEvent = vi.fn();
+    const app = {
+      router: {
+        getBasename: () => '/v2/apps/app1',
+      },
+      getPublicPath: () => '/v2/',
+      eventBus: {
+        dispatchEvent,
+      },
+      apiClient: {
+        storagePrefix: 'NOCOBASE_',
+        storage: originalStorage,
+        createStorage: vi.fn(() => embedStorage),
+        auth: {
+          getToken: vi.fn(() => 'admin-token'),
+          getAuthenticator: vi.fn(() => 'basic'),
+          setToken: vi.fn(),
+        },
+      },
+    };
+    const plugin = new PluginEmbedClientV2({} as any, app as any);
+
+    window.history.pushState({}, '', '/v2/apps/app1/embed/page-uid?token=test-token');
+    await plugin.beforeLoad();
+
+    expect(app.apiClient.storage).toBe(embedStorage);
+    expect(app.apiClient.storagePrefix).toMatch(/^NOCOBASE_EMBED_[0-9A-Z]+_[0-9A-Z]+_$/);
+
+    window.history.pushState({}, '', '/v2/apps/app1/admin');
+    await plugin.beforeLoad();
+
     expect(app.apiClient.storagePrefix).toBe('NOCOBASE_');
     expect(app.apiClient.storage).toBe(originalStorage);
-    expect(app.apiClient.auth.setToken).not.toHaveBeenCalled();
+    expect(dispatchEvent).toHaveBeenCalledTimes(1);
+    expect(dispatchEvent.mock.calls[0][0].type).toBe('auth:tokenChanged');
+    expect(dispatchEvent.mock.calls[0][0].detail).toEqual({
+      token: 'admin-token',
+      authenticator: 'basic',
+    });
   });
 
   it('uses different embed storage prefixes for different router basenames', async () => {

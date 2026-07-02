@@ -16,10 +16,9 @@
  * For more information, see <https://www.nocobase.com/agreement>
  */
 
-import { uid } from '@formily/shared';
 import { PageTabs, Plugin } from '@nocobase/client';
 import { registerCopyEmbedLinkFlow } from '../client-v2/copyEmbedLinkFlow';
-import { isEmbedRoutePathname } from '../client-v2/route';
+import { syncEmbedSessionFromLocation } from '../client-v2/embedSession';
 import { registerEmbedAuthCheckInterceptor } from './embedAuth';
 import { EmbedLayout, EmbedPage, useBlockSettingProps } from './EmbedLayout';
 
@@ -28,13 +27,7 @@ const UrlPrefix = `/${Key}`;
 
 class PluginEmbedClient extends Plugin {
   async beforeLoad() {
-    const url = new URL(window.location.href);
-    const token = url.searchParams.get('token');
-    if (token && isEmbedRoutePathname(this.app, window.location.pathname)) {
-      this.app.apiClient.storagePrefix = `${uid().toUpperCase()}_`;
-      this.app.apiClient.storage = this.app.apiClient.createStorage('sessionStorage');
-      this.app.apiClient.auth.setToken(token);
-    }
+    syncEmbedSessionFromLocation(this.app);
   }
   async load() {
     registerEmbedAuthCheckInterceptor(this.app);
