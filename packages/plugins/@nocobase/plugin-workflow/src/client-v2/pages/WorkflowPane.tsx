@@ -98,6 +98,15 @@ function WorkflowNoticeTags({ notices }: { notices: WorkflowNotice[] }) {
   );
 }
 
+function WorkflowTitleCell({ notices, title }: { notices: WorkflowNotice[]; title?: React.ReactNode }) {
+  return (
+    <div style={{ alignItems: 'center', display: 'flex', flexWrap: 'wrap', gap: '4px 8px', maxWidth: '100%' }}>
+      <span style={{ minWidth: 0, overflowWrap: 'anywhere', whiteSpace: 'normal' }}>{title}</span>
+      <WorkflowNoticeTags notices={notices} />
+    </div>
+  );
+}
+
 function WorkflowEnabledSwitch({
   record,
   resource,
@@ -372,12 +381,7 @@ function WorkflowPaneInner() {
           const asyncNotices = workflowListNotices[String(record.id)] || [];
           const notices = [...syncNotices, ...asyncNotices];
 
-          return (
-            <Space size={[8, 4]} wrap>
-              <span>{value}</span>
-              <WorkflowNoticeTags notices={notices} />
-            </Space>
-          );
+          return <WorkflowTitleCell title={value} notices={notices} />;
         },
       },
       {

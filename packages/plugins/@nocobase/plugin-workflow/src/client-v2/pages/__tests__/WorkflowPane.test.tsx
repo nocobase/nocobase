@@ -385,6 +385,7 @@ describe('WorkflowPane (request layer)', () => {
   });
 
   it('renders synchronous workflow row notices returned by the workflow plugin', async () => {
+    const title = 'a1 长标题长标题长标题长标题长标题长标题长标题长标题长标题长标题长标题长标题';
     mockPlugin.getWorkflowNotices.mockReturnValue([
       {
         key: 'legacy-ui',
@@ -399,7 +400,7 @@ describe('WorkflowPane (request layer)', () => {
           data: [
             {
               id: 9,
-              title: 'Row',
+              title,
               type: 'approval',
               sync: false,
               enabled: false,
@@ -416,6 +417,11 @@ describe('WorkflowPane (request layer)', () => {
 
     renderWithApp(<WorkflowPane />);
 
+    expect(await screen.findByText(title)).toHaveStyle({
+      minWidth: '0',
+      overflowWrap: 'anywhere',
+      whiteSpace: 'normal',
+    });
     expect(await screen.findByText('Approval interface needs reconfiguration')).toBeInTheDocument();
     expect(mockPlugin.getWorkflowNotices).toHaveBeenCalledWith(
       expect.objectContaining({
