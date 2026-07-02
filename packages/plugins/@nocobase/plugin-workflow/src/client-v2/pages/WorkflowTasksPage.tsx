@@ -60,6 +60,40 @@ interface WorkflowTasksRouteParams {
 
 const MOBILE_TASK_TYPE_MENU_HEIGHT = 42;
 
+interface PendingWorkflowTaskPopupRecord {
+  popupId: string;
+  record: WorkflowTaskRecord;
+  taskTypeKey: string;
+}
+
+let pendingWorkflowTaskPopupRecord: PendingWorkflowTaskPopupRecord | null = null;
+
+function getPendingWorkflowTaskPopupRecord(taskTypeKey?: string, popupId?: string) {
+  if (
+    pendingWorkflowTaskPopupRecord &&
+    pendingWorkflowTaskPopupRecord.taskTypeKey === taskTypeKey &&
+    pendingWorkflowTaskPopupRecord.popupId === popupId
+  ) {
+    const record = pendingWorkflowTaskPopupRecord.record;
+    pendingWorkflowTaskPopupRecord = null;
+    return record;
+  }
+  if (taskTypeKey || popupId) {
+    pendingWorkflowTaskPopupRecord = null;
+  }
+  return null;
+}
+
+function clearPendingWorkflowTaskPopupRecord(taskTypeKey?: string, popupId?: string) {
+  if (
+    !taskTypeKey ||
+    !popupId ||
+    (pendingWorkflowTaskPopupRecord?.taskTypeKey === taskTypeKey && pendingWorkflowTaskPopupRecord.popupId === popupId)
+  ) {
+    pendingWorkflowTaskPopupRecord = null;
+  }
+}
+
 function useWorkflowTasksRoute() {
   const params = useParams<WorkflowTasksRouteParams>();
   const location = useLocation();
@@ -462,7 +496,9 @@ function WorkflowTasksPageContent() {
   const t = useT();
   const { token } = theme.useToken();
   const [records, setRecords] = useState<WorkflowTaskRecord[]>([]);
-  const [currentRecord, setCurrentRecord] = useState<WorkflowTaskRecord | null>(null);
+  const [currentRecord, setCurrentRecord] = useState<WorkflowTaskRecord | null>(() =>
+    getPendingWorkflowTaskPopupRecord(currentTaskTypeKey, route.popupId),
+  );
   const [total, setTotal] = useState(0);
   const listSignature = `${currentTaskTypeKey ?? ''}\n${route.status}\n${route.search}`;
   const [paginationState, setPaginationState] = useState({ signature: '', page: 1 });
@@ -470,6 +506,12 @@ function WorkflowTasksPageContent() {
   const [loading, setLoading] = useState(false);
   const listRequestSeqRef = useRef(0);
   const popupRequestSeqRef = useRef(0);
+  const currentRecordRouteRef = useRef<{ popupId: string; taskTypeKey?: string } | null>(
+    currentRecord && route.popupId && currentTaskTypeKey
+      ? { popupId: route.popupId, taskTypeKey: currentTaskTypeKey }
+      : null,
+  );
+  const pendingOpenRouteRef = useRef<{ popupId: string; taskTypeKey?: string } | null>(currentRecordRouteRef.current);
   const showLoadFailed = useMemoizedFn(() => {
     message.error(t('Load failed'));
   });
@@ -568,6 +610,9 @@ function WorkflowTasksPageContent() {
   const loadPopupRecord = useMemoizedFn(async () => {
     const requestSeq = ++popupRequestSeqRef.current;
     if (!ctx?.api || !currentTaskType || !route.popupId) {
+      currentRecordRouteRef.current = null;
+      pendingOpenRouteRef.current = null;
+      clearPendingWorkflowTaskPopupRecord();
       setCurrentRecord(null);
       return;
     }
@@ -586,17 +631,43 @@ function WorkflowTasksPageContent() {
     if (requestSeq !== popupRequestSeqRef.current) {
       return;
     }
+    currentRecordRouteRef.current = {
+      taskTypeKey: currentTaskType.key,
+      popupId: route.popupId,
+    };
+    clearPendingWorkflowTaskPopupRecord(currentTaskType.key, route.popupId);
     setCurrentRecord(normalizeWorkflowTaskRecordResponse(response));
   });
 
   useEffect(() => {
-    setCurrentRecord(null);
     if (!route.popupId) {
-      popupRequestSeqRef.current += 1;
+      if (!pendingOpenRouteRef.current) {
+        popupRequestSeqRef.current += 1;
+        currentRecordRouteRef.current = null;
+        clearPendingWorkflowTaskPopupRecord();
+        setCurrentRecord(null);
+      }
       return;
     }
+    pendingOpenRouteRef.current = null;
+    const nextPopupId = route.popupId;
+    const nextTaskTypeKey = currentTaskTypeKey;
+    setCurrentRecord((record) => {
+      const routeKey = currentRecordRouteRef.current;
+      const recordKey = record ? getWorkflowTaskRecordKey(record) : undefined;
+      if (record && routeKey?.taskTypeKey === nextTaskTypeKey && String(recordKey) === nextPopupId) {
+        return record;
+      }
+      currentRecordRouteRef.current = null;
+      clearPendingWorkflowTaskPopupRecord();
+      return null;
+    });
     loadPopupRecord().catch((error) => {
       console.error('Failed to load workflow task detail', error);
+      currentRecordRouteRef.current = null;
+      pendingOpenRouteRef.current = null;
+      clearPendingWorkflowTaskPopupRecord(currentTaskTypeKey, route.popupId);
+      setCurrentRecord(null);
       showLoadFailed();
     });
     return () => {
@@ -609,6 +680,22 @@ function WorkflowTasksPageContent() {
       return;
     }
     const recordKey = getWorkflowTaskRecordKey(record);
+    popupRequestSeqRef.current += 1;
+    currentRecordRouteRef.current =
+      recordKey === undefined || recordKey === null
+        ? null
+        : {
+            taskTypeKey: currentTaskType.key,
+            popupId: String(recordKey),
+          };
+    pendingOpenRouteRef.current = currentRecordRouteRef.current;
+    pendingWorkflowTaskPopupRecord = currentRecordRouteRef.current
+      ? {
+          popupId: currentRecordRouteRef.current.popupId,
+          record,
+          taskTypeKey: currentTaskType.key,
+        }
+      : null;
     setCurrentRecord(record);
     if (recordKey !== undefined && recordKey !== null) {
       navigate(
@@ -621,6 +708,10 @@ function WorkflowTasksPageContent() {
   });
 
   const handleCloseRecord = useMemoizedFn(() => {
+    popupRequestSeqRef.current += 1;
+    currentRecordRouteRef.current = null;
+    pendingOpenRouteRef.current = null;
+    clearPendingWorkflowTaskPopupRecord();
     setCurrentRecord(null);
     if (currentTaskType) {
       navigate(

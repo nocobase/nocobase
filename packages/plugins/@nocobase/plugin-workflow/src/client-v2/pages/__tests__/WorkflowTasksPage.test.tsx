@@ -25,6 +25,7 @@ const holder = vi.hoisted(() => ({
   location: { pathname: '/admin/workflow/tasks/demo/pending', search: '', hash: '' },
   navigate: vi.fn(),
   isMobileLayout: false,
+  detailModalRecords: [] as Array<Record<string, unknown> | null>,
 }));
 
 vi.mock('@nocobase/flow-engine', async (importOriginal) => {
@@ -96,6 +97,28 @@ function createTaskTypes(options: Partial<TaskTypeOptions> = {}) {
   };
 }
 
+function createTaskTypesWithDetailModal(options: Partial<TaskTypeOptions> = {}) {
+  function TrackedDetailModal(props: {
+    children?: React.ReactNode;
+    onClose?: () => void;
+    record: Record<string, unknown> | null;
+    title?: React.ReactNode;
+  }) {
+    holder.detailModalRecords.push(props.record);
+    return props.record ? (
+      <div data-testid="tracked-detail-modal">
+        <span>tracked title:{props.title}</span>
+        {props.children}
+      </div>
+    ) : null;
+  }
+
+  return createTaskTypes({
+    DetailModal: TrackedDetailModal,
+    ...options,
+  } as Partial<TaskTypeOptions>);
+}
+
 function createMultiTaskTypes(taskTypeMap: Record<string, TaskTypeOptions>) {
   const registry: WorkflowTaskRegistry = {
     getKeys: () => Object.keys(taskTypeMap),
@@ -137,6 +160,7 @@ describe('WorkflowTasksPage', () => {
     holder.params = { taskType: 'demo', status: 'pending', popupId: undefined };
     holder.location = { pathname: '/admin/workflow/tasks/demo/pending', search: '', hash: '' };
     holder.isMobileLayout = false;
+    holder.detailModalRecords = [];
   });
 
   it('loads the selected task type with v1-compatible action params', async () => {
@@ -272,6 +296,193 @@ describe('WorkflowTasksPage', () => {
     expect(document.body.querySelector('.ant-modal')).toBeInTheDocument();
     expect(document.body.querySelector('.ant-drawer')).not.toBeInTheDocument();
     expect(holder.navigate).toHaveBeenCalledWith('/admin/workflow/tasks/demo/pending/9');
+  });
+
+  it('keeps the clicked record open while loading the same popup record from the route', async () => {
+    const popupRecord = createDeferred<{ data: { data: { id: number; title: string } } }>();
+    const getPopupRecord = vi.fn().mockReturnValue(popupRecord.promise);
+    const { registry } = createTaskTypesWithDetailModal({ getPopupRecord });
+    const demoTasks = {
+      listMine: vi.fn().mockResolvedValue({
+        data: { data: [{ id: 9, title: 'Open me' }], meta: { count: 1 } },
+      }),
+    };
+    const userWorkflowTasks = {
+      listMine: vi.fn().mockResolvedValue({ data: [{ type: 'demo', stats: { pending: 1, all: 1 } }] }),
+    };
+    holder.ctx = makeCtx(registry, { demoTasks, userWorkflowTasks });
+
+    const { rerender } = renderWithApp(<WorkflowTasksPage />);
+
+    fireEvent.click(await screen.findByText('Open me'));
+    await screen.findByText('detail:Open me');
+    const recordsAfterOpen = holder.detailModalRecords.length;
+
+    holder.params = { taskType: 'demo', status: 'pending', popupId: '9' };
+    holder.location = { pathname: '/admin/workflow/tasks/demo/pending/9', search: '', hash: '' };
+    rerender(
+      <App>
+        <WorkflowTasksPage />
+      </App>,
+    );
+
+    await waitFor(() => expect(getPopupRecord).toHaveBeenCalledWith(holder.ctx.api, { params: { filterByTk: '9' } }));
+    expect(screen.getByText('detail:Open me')).toBeInTheDocument();
+    expect(holder.detailModalRecords.slice(recordsAfterOpen)).not.toContain(null);
+
+    await act(async () => {
+      popupRecord.resolve({ data: { data: { id: 9, title: 'Full popup task' } } });
+    });
+
+    await screen.findByText('detail:Full popup task');
+    expect(screen.queryByText('detail:Open me')).not.toBeInTheDocument();
+  });
+
+  it('restores the clicked record when the popup route remounts the task page', async () => {
+    const popupRecord = createDeferred<{ data: { data: { id: number; title: string } } }>();
+    const getPopupRecord = vi.fn().mockReturnValue(popupRecord.promise);
+    const { registry } = createTaskTypesWithDetailModal({ getPopupRecord });
+    const demoTasks = {
+      listMine: vi.fn().mockResolvedValue({
+        data: { data: [{ id: 9, title: 'Open me' }], meta: { count: 1 } },
+      }),
+    };
+    const userWorkflowTasks = {
+      listMine: vi.fn().mockResolvedValue({ data: [{ type: 'demo', stats: { pending: 1, all: 1 } }] }),
+    };
+    holder.ctx = makeCtx(registry, { demoTasks, userWorkflowTasks });
+
+    const { unmount } = renderWithApp(<WorkflowTasksPage />);
+
+    fireEvent.click(await screen.findByText('Open me'));
+    await screen.findByText('detail:Open me');
+    const recordsAfterOpen = holder.detailModalRecords.length;
+
+    holder.params = { taskType: 'demo', status: 'pending', popupId: '9' };
+    holder.location = { pathname: '/admin/workflow/tasks/demo/pending/9', search: '', hash: '' };
+    unmount();
+    renderWithApp(<WorkflowTasksPage />);
+
+    expect(await screen.findByText('detail:Open me')).toBeInTheDocument();
+    expect(holder.detailModalRecords.slice(recordsAfterOpen)).not.toContain(null);
+
+    await act(async () => {
+      popupRecord.resolve({ data: { data: { id: 9, title: 'Full popup task' } } });
+    });
+
+    await screen.findByText('detail:Full popup task');
+    expect(screen.queryByText('detail:Open me')).not.toBeInTheDocument();
+  });
+
+  it('closes the lightweight clicked detail when the popup record request fails', async () => {
+    const popupRecord = createDeferred<{ data: { data: { id: number; title: string } } }>();
+    const getPopupRecord = vi.fn().mockReturnValue(popupRecord.promise);
+    const { registry } = createTaskTypesWithDetailModal({ getPopupRecord });
+    const demoTasks = {
+      listMine: vi.fn().mockResolvedValue({
+        data: { data: [{ id: 9, title: 'Open me' }], meta: { count: 1 } },
+      }),
+    };
+    const userWorkflowTasks = {
+      listMine: vi.fn().mockResolvedValue({ data: [{ type: 'demo', stats: { pending: 1, all: 1 } }] }),
+    };
+    holder.ctx = makeCtx(registry, { demoTasks, userWorkflowTasks });
+
+    const { unmount } = renderWithApp(<WorkflowTasksPage />);
+
+    fireEvent.click(await screen.findByText('Open me'));
+    await screen.findByText('detail:Open me');
+
+    holder.params = { taskType: 'demo', status: 'pending', popupId: '9' };
+    holder.location = { pathname: '/admin/workflow/tasks/demo/pending/9', search: '', hash: '' };
+    unmount();
+    renderWithApp(<WorkflowTasksPage />);
+
+    await screen.findByText('detail:Open me');
+
+    await act(async () => {
+      popupRecord.reject(new Error('popup failed'));
+      await popupRecord.promise.catch(() => undefined);
+    });
+
+    await waitFor(() => expect(screen.queryByText('detail:Open me')).not.toBeInTheDocument());
+    expect(holder.detailModalRecords.at(-1)).toBeNull();
+  });
+
+  it('clears the current detail while loading a different popup id', async () => {
+    const popupRecord = createDeferred<{ data: { data: { id: number; title: string } } }>();
+    const getPopupRecord = vi.fn().mockReturnValue(popupRecord.promise);
+    const { registry } = createTaskTypesWithDetailModal({ getPopupRecord });
+    const demoTasks = {
+      listMine: vi.fn().mockResolvedValue({
+        data: { data: [{ id: 9, title: 'Open me' }], meta: { count: 1 } },
+      }),
+    };
+    const userWorkflowTasks = {
+      listMine: vi.fn().mockResolvedValue({ data: [{ type: 'demo', stats: { pending: 1, all: 1 } }] }),
+    };
+    holder.ctx = makeCtx(registry, { demoTasks, userWorkflowTasks });
+
+    const { rerender } = renderWithApp(<WorkflowTasksPage />);
+
+    fireEvent.click(await screen.findByText('Open me'));
+    await screen.findByText('detail:Open me');
+
+    holder.params = { taskType: 'demo', status: 'pending', popupId: '10' };
+    holder.location = { pathname: '/admin/workflow/tasks/demo/pending/10', search: '', hash: '' };
+    rerender(
+      <App>
+        <WorkflowTasksPage />
+      </App>,
+    );
+
+    await waitFor(() => expect(getPopupRecord).toHaveBeenCalledWith(holder.ctx.api, { params: { filterByTk: '10' } }));
+    expect(screen.queryByText('detail:Open me')).not.toBeInTheDocument();
+    expect(holder.detailModalRecords.at(-1)).toBeNull();
+
+    await act(async () => {
+      popupRecord.resolve({ data: { data: { id: 10, title: 'Other popup task' } } });
+    });
+
+    await screen.findByText('detail:Other popup task');
+  });
+
+  it('does not restore a stale clicked record after switching to another popup id', async () => {
+    const popupRecord = createDeferred<{ data: { data: { id: number; title: string } } }>();
+    const getPopupRecord = vi.fn().mockReturnValue(popupRecord.promise);
+    const { registry } = createTaskTypesWithDetailModal({ getPopupRecord });
+    const demoTasks = {
+      listMine: vi.fn().mockResolvedValue({
+        data: { data: [{ id: 9, title: 'Open me' }], meta: { count: 1 } },
+      }),
+    };
+    const userWorkflowTasks = {
+      listMine: vi.fn().mockResolvedValue({ data: [{ type: 'demo', stats: { pending: 1, all: 1 } }] }),
+    };
+    holder.ctx = makeCtx(registry, { demoTasks, userWorkflowTasks });
+
+    const { rerender, unmount } = renderWithApp(<WorkflowTasksPage />);
+
+    fireEvent.click(await screen.findByText('Open me'));
+    await screen.findByText('detail:Open me');
+
+    holder.params = { taskType: 'demo', status: 'pending', popupId: '10' };
+    holder.location = { pathname: '/admin/workflow/tasks/demo/pending/10', search: '', hash: '' };
+    rerender(
+      <App>
+        <WorkflowTasksPage />
+      </App>,
+    );
+
+    await waitFor(() => expect(screen.queryByText('detail:Open me')).not.toBeInTheDocument());
+    unmount();
+
+    holder.params = { taskType: 'demo', status: 'pending', popupId: '9' };
+    holder.location = { pathname: '/admin/workflow/tasks/demo/pending/9', search: '', hash: '' };
+    renderWithApp(<WorkflowTasksPage />);
+
+    await waitFor(() => expect(getPopupRecord).toHaveBeenCalledWith(holder.ctx.api, { params: { filterByTk: '9' } }));
+    expect(screen.queryByText('detail:Open me')).not.toBeInTheDocument();
   });
 
   it('lets a task type override the detail modal container', async () => {
