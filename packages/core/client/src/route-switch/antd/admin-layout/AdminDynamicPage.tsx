@@ -48,15 +48,17 @@ const useSyncLegacyAdminLayoutRoute = () => {
     () => ({ name, tabUid, '*': viewPath }) as Record<string, string | undefined>,
     [name, tabUid, viewPath],
   );
+  const routeState = location.state ?? window.history.state?.usr ?? window.history.state;
   const routeLike = useMemo<LayoutRouteLike>(
     () => ({
       name: tabUid ? 'admin.page.tab' : 'admin.page',
       pathname: location.pathname,
+      state: routeState,
       params: routeParams,
       layoutRouteName: 'admin',
       layoutBasePathname: '/admin',
     }),
-    [location.pathname, routeParams, tabUid],
+    [location.pathname, routeParams, routeState, tabUid],
   );
 
   useEffect(() => {
