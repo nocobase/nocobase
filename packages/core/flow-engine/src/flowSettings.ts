@@ -24,6 +24,7 @@ import {
   DynamicFlowSource,
   DynamicFlowSourceProvider,
   ParamObject,
+  StepDefinition,
   StepSettingsDialogProps,
   ToolbarItemConfig,
 } from './types';
@@ -42,6 +43,15 @@ import { FlowExitAllException } from './utils/exceptions';
 import { FlowStepContext } from './hooks/useFlowStep';
 import { GLOBAL_EMBED_CONTAINER_ID, EMBED_REPLACING_DATA_KEY } from './views';
 import { lazy } from './lazy-helper';
+import { RuntimeSettings } from './runtimeSettings';
+import type { RuntimeSettingsDeclarationSession, UseSettingsConfig } from './runtimeSettings';
+export type {
+  RuntimeSettingsDeclarationSession,
+  UseSettingsConfig,
+  UseSettingsDefinition,
+  UseSettingsObjectDefinition,
+  UseSettingsPrimitive,
+} from './runtimeSettings';
 
 const Panel = Collapse.Panel;
 
@@ -135,6 +145,7 @@ export class FlowSettings {
   #forceEnabled = false; // 强制启用状态，主要用于设计模式下的强制启用
   public toolbarItems: ToolbarItemConfig[] = [];
   private dynamicFlowSourceProviders: DynamicFlowSourceProvider[] = [];
+  private runtimeSettings = new RuntimeSettings();
   #emitter: Emitter = new Emitter();
 
   constructor(engine: FlowEngine) {
@@ -159,6 +170,65 @@ export class FlowSettings {
 
   off(event: 'beforeOpen', callback: (...args: any[]) => void) {
     this.#emitter.off(event, callback);
+  }
+
+  public beginRuntimeSettingsDeclaration(
+    model: FlowModel,
+    sourceKey: string,
+    flowKey: string,
+  ): RuntimeSettingsDeclarationSession {
+    return this.runtimeSettings.beginRuntimeSettingsDeclaration(model, sourceKey, flowKey);
+  }
+
+  public defineRuntimeSettings(
+    session: RuntimeSettingsDeclarationSession,
+    config: UseSettingsConfig,
+  ): Record<string, unknown>;
+  public defineRuntimeSettings(
+    model: FlowModel,
+    sourceKey: string,
+    flowKey: string,
+    config: UseSettingsConfig,
+  ): Record<string, unknown>;
+  public defineRuntimeSettings(
+    modelOrSession: FlowModel | RuntimeSettingsDeclarationSession,
+    sourceKeyOrConfig: string | UseSettingsConfig,
+    flowKey?: string,
+    config?: UseSettingsConfig,
+  ): Record<string, unknown> {
+    if (typeof sourceKeyOrConfig !== 'string') {
+      return this.runtimeSettings.defineRuntimeSettings(
+        modelOrSession as RuntimeSettingsDeclarationSession,
+        sourceKeyOrConfig,
+      );
+    }
+
+    return this.runtimeSettings.defineRuntimeSettings(
+      modelOrSession as FlowModel,
+      sourceKeyOrConfig,
+      flowKey || '',
+      config || {},
+    );
+  }
+
+  public commitRuntimeSettingsDeclaration(session: RuntimeSettingsDeclarationSession) {
+    this.runtimeSettings.commitRuntimeSettingsDeclaration(session);
+  }
+
+  public getRuntimeSettingSteps(model: FlowModel, flowKey: string): Record<string, StepDefinition> {
+    return this.runtimeSettings.getRuntimeSettingSteps(model, flowKey);
+  }
+
+  public getRuntimeSettingsDefaultValues(config: UseSettingsConfig): Record<string, unknown> {
+    return this.runtimeSettings.getRuntimeSettingsDefaultValues(config);
+  }
+
+  public syncRuntimeSettingsFromRunJsSource(model: FlowModel, flowKey: string, stepKey: string, code: unknown) {
+    this.runtimeSettings.syncRuntimeSettingsFromRunJsSource(model, flowKey, stepKey, code);
+  }
+
+  public syncRuntimeSettingsFromStepParams(model: FlowModel, flowKey: string, stepKey = 'runJs') {
+    this.runtimeSettings.syncRuntimeSettingsFromStepParams(model, flowKey, stepKey);
   }
 
   /**
@@ -706,12 +776,20 @@ export class FlowSettings {
         console.warn(`FlowSettings.open: Flow with key '${fk}' not found`);
         continue;
       }
+      const staticSteps = flow.steps || {};
+      const runtimeSteps = this.getRuntimeSettingSteps(model, fk);
+      const combinedSteps = { ...staticSteps };
+      Object.entries(runtimeSteps).forEach(([runtimeStepKey, runtimeStep]) => {
+        if (!Object.prototype.hasOwnProperty.call(staticSteps, runtimeStepKey)) {
+          combinedSteps[runtimeStepKey] = runtimeStep;
+        }
+      });
 
       // 遍历步骤，筛选有可配置 UI 的步骤
-      for (const sk of Object.keys(flow.steps || {})) {
+      for (const sk of Object.keys(combinedSteps)) {
         // 如明确指定了 stepKey，则仅处理对应步骤
         if (stepKey && sk !== stepKey) continue;
-        const step = (flow.steps as any)[sk];
+        const step = combinedSteps[sk];
         if (!preset && (!step || (await shouldHideStepInSettings(model, flow, step)))) continue;
         // 当指定仅打开预设步骤时，过滤掉未标记 preset 的步骤
         if (preset && !step.preset) continue;
@@ -737,8 +815,10 @@ export class FlowSettings {
 
         // 构建 settings 上下文
         const flowRuntimeContext = new FlowRuntimeContext(model, fk, 'settings');
-        setupRuntimeContextSteps(flowRuntimeContext, flow.steps, model, fk);
+        setupRuntimeContextSteps(flowRuntimeContext, combinedSteps, model, fk);
         flowRuntimeContext.defineProperty('currentStep', { value: step });
+        flowRuntimeContext.defineProperty('currentStepKey', { value: sk });
+        flowRuntimeContext.defineProperty('currentFlowKey', { value: fk });
         flowRuntimeContext.defineMethod('getStepFormValues', (flowKey: string, stepKey: string) => {
           return forms.get(keyOf({ flowKey, stepKey }))?.values;
         });
@@ -752,9 +832,11 @@ export class FlowSettings {
           ...(resolvedDefaultParams || {}),
           ...modelStepParams,
         };
+        const uiModeType =
+          typeof uiMode === 'object' && uiMode ? uiMode.type : typeof uiMode === 'string' ? uiMode : undefined;
         if (
           (!mergedUiSchema || Object.keys(mergedUiSchema).length === 0) &&
-          !['select', 'switch'].includes(uiMode?.type || uiMode)
+          !['select', 'switch'].includes(uiModeType)
         ) {
           continue;
         }
@@ -999,6 +1081,11 @@ export class FlowSettings {
             }
 
             await model.saveStepParams();
+            entries.forEach((e) => {
+              if (e.stepKey === 'runJs') {
+                this.syncRuntimeSettingsFromStepParams(model, e.flowKey, e.stepKey);
+              }
+            });
             message?.success?.(t('Configuration saved'));
 
             for (const e of entries) {

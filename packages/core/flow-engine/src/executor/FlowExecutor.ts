@@ -161,6 +161,10 @@ export class FlowExecutor {
         continue;
       }
 
+      runtimeCtx.defineProperty('currentStepKey', { value: stepKey });
+      runtimeCtx.defineProperty('currentStep', { value: step });
+      runtimeCtx.defineProperty('currentFlowKey', { value: flowKey });
+
       const modelStepParams = model.getStepParams(flowKey, stepKey);
       if (modelStepParams !== undefined) {
         combinedParams = { ...combinedParams, ...modelStepParams };

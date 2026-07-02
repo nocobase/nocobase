@@ -165,6 +165,21 @@ function inferSelectsFromUsage(paths: string[] = []): { generatedAppends?: strin
 
 type Getter<T = any> = (ctx: FlowContext) => T | Promise<T>;
 
+type RuntimeSettingsApiLike = {
+  beginRuntimeSettingsDeclaration?: (model: FlowModel, sourceKey: string, flowKey: string) => unknown;
+  commitRuntimeSettingsDeclaration?: (session: unknown) => void;
+  defineRuntimeSettings?: (...args: unknown[]) => Record<string, unknown>;
+  getRuntimeSettingsDefaultValues?: (config: Record<string, unknown>) => Record<string, unknown>;
+};
+
+type RuntimeSettingsContextLike = BaseFlowEngineContext & {
+  model?: FlowModel;
+  currentFlowKey?: unknown;
+  currentStepKey?: unknown;
+  flowKey?: unknown;
+  __runtimeSettingsDeclaration?: unknown;
+};
+
 export type FlowContextDocRef = string | { url: string; title?: string };
 
 export type FlowDeprecationDoc =
@@ -3088,18 +3103,48 @@ class BaseFlowEngineContext extends FlowContext {
     this.defineMethod(
       'runjs',
       async function (code: string, variables?: Record<string, any>, options?: JSRunnerOptions) {
+        const runtimeCtx = this as RuntimeSettingsContextLike;
+        const flowSettings = runtimeCtx.engine?.flowSettings as RuntimeSettingsApiLike | undefined;
+        const currentFlowKey =
+          typeof runtimeCtx.currentFlowKey === 'string'
+            ? runtimeCtx.currentFlowKey
+            : typeof runtimeCtx.flowKey === 'string'
+              ? runtimeCtx.flowKey
+              : undefined;
+        const currentStepKey = typeof runtimeCtx.currentStepKey === 'string' ? runtimeCtx.currentStepKey : undefined;
+        const runtimeSettingsSession =
+          flowSettings?.beginRuntimeSettingsDeclaration && runtimeCtx.model && currentFlowKey && currentStepKey
+            ? flowSettings.beginRuntimeSettingsDeclaration(
+                runtimeCtx.model,
+                `${runtimeCtx.model.uid}:${currentFlowKey}:${currentStepKey}`,
+                currentFlowKey,
+              )
+            : undefined;
+        if (runtimeSettingsSession) {
+          runtimeCtx.defineProperty('__runtimeSettingsDeclaration', { value: runtimeSettingsSession });
+        }
+
         const { preprocessTemplates, ...runnerOptions } = options || {};
         const mergedGlobals = { ...(runnerOptions?.globals || {}), ...(variables || {}) };
-        const runner = await this.createJSRunner({
-          ...(runnerOptions || {}),
-          globals: mergedGlobals,
-        });
-        const shouldPreprocessTemplates = shouldPreprocessRunJSTemplates({
-          version: runnerOptions?.version,
-          preprocessTemplates,
-        });
-        const jsCode = await prepareRunJsCode(String(code ?? ''), { preprocessTemplates: shouldPreprocessTemplates });
-        return runner.run(jsCode);
+        try {
+          const runner = await this.createJSRunner({
+            ...(runnerOptions || {}),
+            globals: mergedGlobals,
+          });
+          const shouldPreprocessTemplates = shouldPreprocessRunJSTemplates({
+            version: runnerOptions?.version,
+            preprocessTemplates,
+          });
+          const jsCode = await prepareRunJsCode(String(code ?? ''), {
+            preprocessTemplates: shouldPreprocessTemplates,
+          });
+          return await runner.run(jsCode);
+        } finally {
+          if (runtimeSettingsSession) {
+            runtimeCtx.defineProperty('__runtimeSettingsDeclaration', { value: undefined });
+            flowSettings?.commitRuntimeSettingsDeclaration?.(runtimeSettingsSession);
+          }
+        }
       },
       {
         description: 'Execute a RunJS code string in the current Flow context.',
@@ -4616,6 +4661,56 @@ export class FlowRunJSContext extends FlowContext {
         [RUNJS_OPEN_VIEW_ROUTE_STATE]: routeState,
       });
     });
+
+    this.defineMethod(
+      'useSettings',
+      function (this: FlowRunJSContext & RuntimeSettingsContextLike, config: Record<string, unknown>) {
+        const settingsConfig = _.isPlainObject(config) ? config : {};
+        const flowSettings = this.engine?.flowSettings as RuntimeSettingsApiLike | undefined;
+        if (!flowSettings) {
+          return {};
+        }
+
+        const session = this.__runtimeSettingsDeclaration;
+        if (session && flowSettings.defineRuntimeSettings) {
+          return flowSettings.defineRuntimeSettings(session, settingsConfig);
+        }
+
+        const currentFlowKey =
+          typeof this.currentFlowKey === 'string'
+            ? this.currentFlowKey
+            : typeof this.flowKey === 'string'
+              ? this.flowKey
+              : undefined;
+        const currentStepKey = typeof this.currentStepKey === 'string' ? this.currentStepKey : undefined;
+        const model = this.model as FlowModel | undefined;
+        if (model && currentFlowKey && currentStepKey && flowSettings.defineRuntimeSettings) {
+          return flowSettings.defineRuntimeSettings(
+            model,
+            `${model.uid}:${currentFlowKey}:${currentStepKey}`,
+            currentFlowKey,
+            settingsConfig,
+          );
+        }
+
+        return flowSettings.getRuntimeSettingsDefaultValues?.(settingsConfig) || {};
+      },
+      {
+        description: 'Declare native settings for the current JS surface and read their saved values.',
+        detail: '(config: Record<string, UseSettingsDefinition>) => Record<string, unknown>',
+        params: [
+          {
+            name: 'config',
+            type: 'Record<string, UseSettingsDefinition>',
+            description: 'Top-level setting declarations. Each key becomes one native settings menu item.',
+          },
+        ],
+        returns: { type: 'Record<string, unknown>' },
+        completion: {
+          insertText: `const settings = ctx.useSettings({ title: 'Orders', pageSize: 20, compact: false })`,
+        },
+      },
+    );
 
     // Convenience: ctx.render(<App />[, container])
     // - container defaults to ctx.element if available
