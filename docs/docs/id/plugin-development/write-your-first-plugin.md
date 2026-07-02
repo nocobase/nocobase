@@ -37,6 +37,7 @@ Setelah perintah berhasil dijalankan, file dasar akan digenerate di direktori `<
      ├─ client-v2                 # Lokasi penyimpanan kode client
      │  ├─ index.tsx             # Class plugin client yang diekspor secara default
      │  ├─ plugin.tsx            # Entry plugin (extends @nocobase/client-v2 Plugin)
+     │  ├─ locale.ts             # Utilitas terjemahan useT / tExpr
      │  ├─ models                # Opsional: model front-end (seperti node flow)
      │  │  └─ index.ts
      │  └─ utils

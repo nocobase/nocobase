@@ -37,6 +37,7 @@ After the command runs successfully, it will generate basic files in the `<app-p
      ├─ client-v2                 # Client-side code location
      │  ├─ index.tsx             # Default exported client-side plugin class
      │  ├─ plugin.tsx            # Plugin entry (extends @nocobase/client-v2 Plugin)
+     │  ├─ locale.ts             # useT / tExpr translation utilities
      │  ├─ models                # Optional: frontend models (such as flow nodes)
      │  │  └─ index.ts
      │  └─ utils

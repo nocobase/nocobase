@@ -37,6 +37,7 @@ nb scaffold plugin @my-project/plugin-hello
      ├─ client-v2                 # Расположение кода для клиентской части
      │  ├─ index.tsx             # Класс плагина для клиентской части, экспортируемый по умолчанию
      │  ├─ plugin.tsx            # Точка входа плагина (наследует @nocobase/client-v2 Plugin)
+     │  ├─ locale.ts             # Утилиты перевода useT / tExpr
      │  ├─ models                # Опционально: модели для фронтенда (например, узлы рабочего процесса)
      │  │  └─ index.ts
      │  └─ utils

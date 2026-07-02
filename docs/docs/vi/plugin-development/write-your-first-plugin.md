@@ -37,6 +37,7 @@ Sau khi lệnh chạy thành công, các file cơ bản sẽ được tạo tron
      ├─ client-v2                 # Vị trí lưu mã client
      │  ├─ index.tsx             # Class Plugin client export mặc định
      │  ├─ plugin.tsx            # Entry Plugin (kế thừa Plugin từ @nocobase/client-v2)
+     │  ├─ locale.ts             # Tiện ích dịch useT / tExpr
      │  ├─ models                # Tùy chọn: model front-end (như flow node)
      │  │  └─ index.ts
      │  └─ utils

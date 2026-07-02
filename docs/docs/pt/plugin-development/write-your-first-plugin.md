@@ -37,6 +37,7 @@ Após o comando ser executado com sucesso, ele irá gerar arquivos básicos no d
      ├─ client-v2                # Localização do código do lado do cliente
      │  ├─ index.tsx             # Classe do plugin do lado do cliente exportada por padrão
      │  ├─ plugin.tsx            # Entrada do plugin (estende @nocobase/client-v2 Plugin)
+     │  ├─ locale.ts             # Utilitários de tradução useT / tExpr
      │  ├─ models                # Opcional: modelos de frontend (como nós de fluxo)
      │  │  └─ index.ts
      │  └─ utils

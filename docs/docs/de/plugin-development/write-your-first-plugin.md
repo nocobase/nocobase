@@ -37,6 +37,7 @@ Nach erfolgreicher Ausführung des Befehls werden im Verzeichnis `<app-path>/plu
      ├─ client-v2                # Speicherort für Client-Side Code
      │  ├─ index.tsx             # Standard-Export der Client-Side Plugin-Klasse
      │  ├─ plugin.tsx            # Plugin-Einstiegspunkt (erweitert @nocobase/client-v2 Plugin)
+     │  ├─ locale.ts             # useT / tExpr Übersetzungswerkzeuge
      │  ├─ models                # Optional: Frontend-Modelle (z. B. Workflow-Knoten)
      │  │  └─ index.ts
      │  └─ utils

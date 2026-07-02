@@ -37,6 +37,7 @@ Una vez que el comando se ejecute correctamente, se generarán los archivos bás
      ├─ client-v2                 # Ubicación del código del lado del cliente
      │  ├─ index.tsx             # Clase de plugin del lado del cliente exportada por defecto
      │  ├─ plugin.tsx            # Entrada del plugin (extiende @nocobase/client-v2 Plugin)
+     │  ├─ locale.ts             # Utilidades de traducción useT / tExpr
      │  ├─ models                # Opcional: modelos de frontend (como nodos de flujo)
      │  │  └─ index.ts
      │  └─ utils

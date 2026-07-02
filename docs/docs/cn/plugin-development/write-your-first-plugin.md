@@ -37,6 +37,7 @@ nb scaffold plugin @my-project/plugin-hello
      ├─ client-v2                 # 客户端代码存放位置
      │  ├─ index.tsx             # 默认导出的客户端插件类
      │  ├─ plugin.tsx            # 插件入口（继承 @nocobase/client-v2 Plugin）
+     │  ├─ locale.ts             # useT / tExpr 翻译工具
      │  ├─ models                # 可选：前端模型（如流程节点）
      │  │  └─ index.ts
      │  └─ utils

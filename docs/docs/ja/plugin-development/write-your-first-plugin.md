@@ -37,6 +37,7 @@ nb scaffold plugin @my-project/plugin-hello
      ├─ client-v2                 # クライアントサイドコードの格納場所
      │  ├─ index.tsx             # デフォルトでエクスポートされるクライアントサイドプラグインクラス
      │  ├─ plugin.tsx            # プラグインエントリ（@nocobase/client-v2 Plugin を継承）
+     │  ├─ locale.ts             # useT / tExpr 翻訳ユーティリティ
      │  ├─ models                # オプション：フロントエンドモデル（フローノードなど）
      │  │  └─ index.ts
      │  └─ utils
