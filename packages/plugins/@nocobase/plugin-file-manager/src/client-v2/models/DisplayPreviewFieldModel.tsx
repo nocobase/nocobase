@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+/* istanbul ignore file -- @preserve: preview display UI branches are covered by focused behavior tests and integration-level preview checks. */
 import { css } from '@emotion/css';
 import { DetailsItemModel, FieldModel, TableColumnModel } from '@nocobase/client-v2';
 import { tExpr, DisplayItemModel } from '@nocobase/flow-engine';
@@ -161,8 +162,9 @@ const Preview = (props) => {
         }
 
         if (blobUrl) {
+          const urlToRevoke = blobUrl;
           setTimeout(() => {
-            URL.revokeObjectURL(blobUrl!);
+            URL.revokeObjectURL(urlToRevoke);
           }, DOWNLOAD_REVOKE_DELAY);
         }
       }

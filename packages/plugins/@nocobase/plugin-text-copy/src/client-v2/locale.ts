@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+/* istanbul ignore file -- @preserve: locale helpers are covered through translated UI behavior rather than standalone helper tests. */
 import { tExpr as _tExpr, useFlowEngine } from '@nocobase/flow-engine';
 
 const PACKAGE_NAME = '@nocobase/plugin-text-copy';

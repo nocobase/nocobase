@@ -1,0 +1,395 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import React from 'react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { Form } from 'antd';
+import type { FormInstance } from 'antd/es/form';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { SequenceRulesConfigureField } from '../SequenceRulesConfigureField';
+import { SequenceFieldInterface } from '../interface';
+
+vi.mock('../locale', () => ({
+  tExpr: (value: string) => value,
+  useT: () => (value: string) => value,
+}));
+
+const ruleTypes = new SequenceFieldInterface().configure.items.find((item) => item.name === 'patterns')?.componentProps
+  ?.ruleTypes;
+
+function SequenceRulesHarness({
+  disabled,
+  initialPatterns = [{ type: 'integer', options: { digits: 4, start: 1, key: 'preserved-key' } }],
+  onForm,
+  required = true,
+  ruleTypes: currentRuleTypes = ruleTypes,
+}: {
+  disabled?: boolean;
+  initialPatterns?: Array<Record<string, unknown>>;
+  onForm?: (form: FormInstance) => void;
+  required?: boolean;
+  ruleTypes?: Array<Record<string, unknown>>;
+}) {
+  const [form] = Form.useForm();
+
+  React.useEffect(() => {
+    onForm?.(form);
+  }, [form, onForm]);
+
+  return (
+    <Form form={form} initialValues={{ patterns: initialPatterns }}>
+      <SequenceRulesConfigureField
+        disabled={disabled}
+        form={form}
+        namePath={['patterns']}
+        schema={{
+          required,
+          'x-component-props': {
+            ruleTypes: currentRuleTypes,
+          },
+        }}
+        title="Sequence rules"
+      />
+    </Form>
+  );
+}
+
+async function openSelectOption(label: string, index = 0) {
+  fireEvent.mouseDown(screen.getAllByRole('combobox')[index]);
+  await screen.findByTitle(label);
+  fireEvent.click(screen.getByTitle(label));
+}
+
+describe('SequenceRulesConfigureField', () => {
+  afterEach(() => {
+    cleanup();
+    vi.clearAllMocks();
+  });
+
+  it('renders rule summaries, adds rules, removes rules and resets options when type changes', async () => {
+    let formRef: FormInstance | undefined;
+    render(<SequenceRulesHarness onForm={(form) => (formRef = form)} />);
+
+    expect(screen.getByText('Autoincrement')).toBeInTheDocument();
+    expect(screen.getByText('Digits')).toBeInTheDocument();
+    expect(screen.getByText('4')).toBeInTheDocument();
+    expect(screen.getByText('Start from')).toBeInTheDocument();
+    expect(screen.getByText('1')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /Add rule/ }));
+    await waitFor(() => expect(formRef?.getFieldValue('patterns')).toHaveLength(2));
+    expect(formRef?.getFieldValue(['patterns', 1])).toEqual({
+      type: 'integer',
+      options: { digits: 4, start: 1 },
+    });
+
+    await openSelectOption('Date', 0);
+    await waitFor(() =>
+      expect(formRef?.getFieldValue(['patterns', 0])).toEqual({
+        type: 'date',
+        options: { format: 'YYYYMMDD' },
+      }),
+    );
+
+    const deleteButtons = screen.getAllByRole('button', { name: 'Delete' });
+    fireEvent.click(deleteButtons[0]);
+    await waitFor(() => expect(formRef?.getFieldValue('patterns')).toHaveLength(1));
+  });
+
+  it('submits configured integer options and preserves existing sequence key', async () => {
+    let formRef: FormInstance | undefined;
+    render(<SequenceRulesHarness onForm={(form) => (formRef = form)} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Configure' }));
+    await screen.findByRole('dialog');
+
+    const dialog = screen.getByRole('dialog');
+    const spinButtons = within(dialog).getAllByRole('spinbutton');
+    fireEvent.change(spinButtons[0], { target: { value: '6' } });
+    fireEvent.change(spinButtons[1], { target: { value: '20' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Submit' }));
+
+    await waitFor(() =>
+      expect(formRef?.getFieldValue(['patterns', 0, 'options'])).toMatchObject({
+        key: 'preserved-key',
+        digits: 6,
+        start: 20,
+      }),
+    );
+  });
+
+  it('configures custom reset cycles for integer rules', async () => {
+    let formRef: FormInstance | undefined;
+    render(
+      <SequenceRulesHarness
+        initialPatterns={[{ type: 'integer', options: { digits: 4, start: 1, cycle: '*/5 * * * *' } }]}
+        onForm={(form) => (formRef = form)}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Configure' }));
+    await screen.findByRole('dialog');
+
+    const dialog = screen.getByRole('dialog');
+    fireEvent.change(within(dialog).getByDisplayValue('*/5 * * * *'), { target: { value: '0 8 * * 1' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Submit' }));
+
+    await waitFor(() =>
+      expect(formRef?.getFieldValue(['patterns', 0, 'options'])).toMatchObject({
+        cycle: '0 8 * * 1',
+      }),
+    );
+  });
+
+  it('summarizes multi-select random character options', async () => {
+    render(
+      <SequenceRulesHarness
+        initialPatterns={[
+          {
+            type: 'randomChar',
+            options: { length: 6, charsets: ['number', 'uppercase'] },
+          },
+        ]}
+      />,
+    );
+
+    expect(screen.getByText('Random character')).toBeInTheDocument();
+    expect(screen.getByText('Character sets')).toBeInTheDocument();
+    expect(screen.getByText('Number, Uppercase letters')).toBeInTheDocument();
+  });
+
+  it('keeps the drawer open when required multi-select options are empty', async () => {
+    let formRef: FormInstance | undefined;
+    render(
+      <SequenceRulesHarness
+        initialPatterns={[
+          {
+            type: 'randomChar',
+            options: { length: 6, charsets: [] },
+          },
+        ]}
+        onForm={(form) => (formRef = form)}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Configure' }));
+    await screen.findByRole('dialog');
+    fireEvent.click(screen.getByRole('button', { name: 'Submit' }));
+
+    await waitFor(() => expect(screen.getAllByText('Required').length).toBeGreaterThan(0));
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(formRef?.getFieldValue(['patterns', 0, 'options'])).toEqual({ length: 6, charsets: [] });
+  });
+
+  it('disables table actions and drawer controls when the field is disabled', async () => {
+    render(<SequenceRulesHarness disabled />);
+
+    expect(screen.getByRole('button', { name: /Add rule/ })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Configure' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Delete' })).toBeDisabled();
+  });
+
+  it('configures fixed text rules through text input controls and closes the drawer', async () => {
+    let formRef: FormInstance | undefined;
+    render(
+      <SequenceRulesHarness
+        initialPatterns={[{ type: 'string', options: { value: 'INV-' } }]}
+        onForm={(form) => (formRef = form)}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Configure' }));
+    const dialog = await screen.findByRole('dialog');
+    fireEvent.change(within(dialog).getByDisplayValue('INV-'), { target: { value: 'PO-' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Submit' }));
+
+    await waitFor(() => expect(formRef?.getFieldValue(['patterns', 0, 'options'])).toEqual({ value: 'PO-' }));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Configure' }));
+    await screen.findByRole('dialog');
+    fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+  });
+
+  it('selects preset reset cycles for integer rules', async () => {
+    let formRef: FormInstance | undefined;
+    render(<SequenceRulesHarness onForm={(form) => (formRef = form)} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Configure' }));
+    const dialog = await screen.findByRole('dialog');
+    fireEvent.mouseDown(within(dialog).getByRole('combobox'));
+    fireEvent.click(await screen.findByTitle('Daily'));
+    fireEvent.click(screen.getByRole('button', { name: 'Submit' }));
+
+    await waitFor(() =>
+      expect(formRef?.getFieldValue(['patterns', 0, 'options'])).toMatchObject({
+        cycle: '0 0 * * *',
+      }),
+    );
+  });
+
+  it('moves rules with drag and drop', async () => {
+    let formRef: FormInstance | undefined;
+    const { container } = render(
+      <SequenceRulesHarness
+        initialPatterns={[
+          { type: 'string', options: { value: 'A' } },
+          { type: 'date', options: { format: 'YYYY' } },
+        ]}
+        onForm={(form) => (formRef = form)}
+      />,
+    );
+    const handles = screen.getAllByLabelText('Drag sort');
+    const rows = Array.from(container.querySelectorAll('tbody tr'));
+
+    fireEvent.dragStart(handles[0]);
+    fireEvent.dragOver(rows[1]);
+    fireEvent.drop(rows[1]);
+
+    await waitFor(() => expect(formRef?.getFieldValue(['patterns', 0, 'type'])).toBe('date'));
+
+    fireEvent.dragEnd(handles[0]);
+    fireEvent.drop(rows[0]);
+    expect(formRef?.getFieldValue('patterns')).toHaveLength(2);
+  });
+
+  it('validates required rule lists', async () => {
+    let formRef: FormInstance | undefined;
+    render(<SequenceRulesHarness initialPatterns={[]} onForm={(form) => (formRef = form)} />);
+
+    await act(async () => {
+      await expect(formRef?.validateFields()).rejects.toMatchObject({
+        errorFields: expect.arrayContaining([
+          expect.objectContaining({
+            errors: ['Please add at least one rule'],
+          }),
+        ]),
+      });
+    });
+  });
+
+  it('uses field defaults when custom rule types omit top-level defaults', async () => {
+    const customRuleTypes = [
+      {
+        value: 'custom',
+        label: 'Custom',
+        fields: [
+          { name: 'prefix', label: 'Prefix', component: 'Input', default: 'C-' },
+          { name: 'kind', label: 'Kind', component: 'Select', default: 'A' },
+        ],
+      },
+    ];
+    let formRef: FormInstance | undefined;
+    render(
+      <SequenceRulesHarness
+        initialPatterns={[]}
+        required={false}
+        ruleTypes={customRuleTypes}
+        onForm={(form) => (formRef = form)}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /Add rule/ }));
+
+    await waitFor(() =>
+      expect(formRef?.getFieldValue(['patterns', 0])).toEqual({
+        type: 'custom',
+        options: {
+          prefix: 'C-',
+          kind: 'A',
+        },
+      }),
+    );
+    expect(screen.getByText('Prefix')).toBeInTheDocument();
+    expect(screen.getByText('C-')).toBeInTheDocument();
+  });
+
+  it('renders no-reset cycle summaries', () => {
+    render(
+      <SequenceRulesHarness initialPatterns={[{ type: 'integer', options: { digits: 4, start: 1, cycle: null } }]} />,
+    );
+
+    expect(screen.getByText('Reset cycle')).toBeInTheDocument();
+    expect(screen.getByText('No reset')).toBeInTheDocument();
+  });
+
+  it('hides option summaries when custom rule fields have no values', () => {
+    const customRuleTypes = [
+      {
+        value: 'custom',
+        label: <span>Custom node</span>,
+        fields: [
+          { name: 'prefix', label: <span>Prefix node</span>, component: 'Input' },
+          { name: 'kind', label: 'Kind', component: 'Select' },
+        ],
+      },
+    ];
+
+    render(
+      <SequenceRulesHarness
+        initialPatterns={[{ type: 'custom', options: {} }]}
+        required={false}
+        ruleTypes={customRuleTypes}
+      />,
+    );
+
+    expect(screen.getByText('Custom node')).toBeInTheDocument();
+    expect(screen.queryByText('Prefix node')).not.toBeInTheDocument();
+  });
+
+  it('renders empty select options when custom schemas omit enum values', async () => {
+    const customRuleTypes = [
+      {
+        value: 'custom',
+        label: 'Custom',
+        defaults: { kind: 'A' },
+        fields: [{ name: 'kind', label: 'Kind', component: 'Select' }],
+      },
+    ];
+
+    render(
+      <SequenceRulesHarness
+        initialPatterns={[{ type: 'custom', options: { kind: 'A' } }]}
+        required={false}
+        ruleTypes={customRuleTypes}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Configure' }));
+    const dialog = await screen.findByRole('dialog');
+
+    expect(within(dialog).getByRole('combobox')).toBeInTheDocument();
+  });
+
+  it('normalizes primitive enum values for custom select controls', async () => {
+    const customRuleTypes = [
+      {
+        value: 'custom',
+        label: 'Custom',
+        defaults: { kind: 'A' },
+        fields: [{ name: 'kind', label: 'Kind', component: 'Select', enum: ['A', 'B'] }],
+      },
+    ];
+
+    render(
+      <SequenceRulesHarness
+        initialPatterns={[{ type: 'custom', options: { kind: 'A' } }]}
+        required={false}
+        ruleTypes={customRuleTypes}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Configure' }));
+    const dialog = await screen.findByRole('dialog');
+    fireEvent.mouseDown(within(dialog).getByRole('combobox'));
+
+    expect((await screen.findAllByTitle('A')).length).toBeGreaterThan(0);
+    expect(await screen.findByTitle('B')).toBeInTheDocument();
+  });
+});

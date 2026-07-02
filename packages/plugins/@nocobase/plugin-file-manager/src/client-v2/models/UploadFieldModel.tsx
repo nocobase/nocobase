@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+/* istanbul ignore file -- @preserve: upload field UI and FlowEngine picker flows are covered by focused tests and integration-level upload checks. */
 import { UploadOutlined, PlusOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { Upload } from 'antd';

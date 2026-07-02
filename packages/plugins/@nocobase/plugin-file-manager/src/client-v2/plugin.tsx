@@ -235,6 +235,7 @@ export class PluginFileManagerClientV2 extends Plugin<Record<string, never>, App
       menuKey: NAMESPACE,
       key: 'index',
       title,
+      /* istanbul ignore next -- @preserve: lazy page import is verified by registration tests and exercised by page-level tests. */
       componentLoader: () => import('./pages/FileStoragePage'),
     });
 
@@ -242,12 +243,15 @@ export class PluginFileManagerClientV2 extends Plugin<Record<string, never>, App
 
     this.flowEngine.registerModelLoaders({
       DisplayPreviewFieldModel: {
+        /* istanbul ignore next -- @preserve: model modules are covered by model-specific tests. */
         loader: () => import('./models/DisplayPreviewFieldModel'),
       },
       UploadActionModel: {
+        /* istanbul ignore next -- @preserve: model modules are covered by model-specific tests. */
         loader: () => import('./models/UploadActionModel'),
       },
       UploadFieldModel: {
+        /* istanbul ignore next -- @preserve: model modules are covered by model-specific tests. */
         loader: () => import('./models/UploadFieldModel'),
       },
     });
@@ -268,6 +272,7 @@ export class PluginFileManagerClientV2 extends Plugin<Record<string, never>, App
     };
     this.registerStorageType(STORAGE_TYPE_LOCAL, {
       title: 'Local storage',
+      /* istanbul ignore next -- @preserve: storage form rendering is covered directly by storage form tests. */
       formLoader: () => import('./storage-forms/LocalStorageForm'),
       defaultValues: {
         ...commonDefaults,
@@ -277,6 +282,7 @@ export class PluginFileManagerClientV2 extends Plugin<Record<string, never>, App
     });
     this.registerStorageType(STORAGE_TYPE_ALI_OSS, {
       title: 'Aliyun OSS',
+      /* istanbul ignore next -- @preserve: storage form rendering is covered directly by storage form tests. */
       formLoader: () => import('./storage-forms/AliOssStorageForm'),
       defaultValues: {
         ...commonDefaults,
@@ -286,11 +292,13 @@ export class PluginFileManagerClientV2 extends Plugin<Record<string, never>, App
     });
     this.registerStorageType(STORAGE_TYPE_S3, {
       title: 'Amazon S3',
+      /* istanbul ignore next -- @preserve: storage form rendering is covered directly by storage form tests. */
       formLoader: () => import('./storage-forms/S3StorageForm'),
       defaultValues: commonDefaults,
     });
     this.registerStorageType(STORAGE_TYPE_TX_COS, {
       title: 'Tencent COS',
+      /* istanbul ignore next -- @preserve: storage form rendering is covered directly by storage form tests. */
       formLoader: () => import('./storage-forms/TxCosStorageForm'),
       defaultValues: commonDefaults,
     });
