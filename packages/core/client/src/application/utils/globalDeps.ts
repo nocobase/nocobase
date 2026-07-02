@@ -68,9 +68,7 @@ export function defineGlobalDeps(requirejs: RequireJS) {
   defineGlobalDep(requirejs, 'react', React);
   defineGlobalDep(requirejs, 'react-dom', ReactDOM);
   defineGlobalDep(requirejs, 'react/jsx-runtime', jsxRuntime);
-  if (process.env.NODE_ENV !== 'production') {
-    defineGlobalDep(requirejs, 'react/jsx-dev-runtime', jsxDevRuntime);
-  }
+  defineGlobalDep(requirejs, 'react/jsx-dev-runtime', jsxDevRuntime);
 
   // react-router
   defineGlobalDep(requirejs, 'react-router', ReactRouter);
