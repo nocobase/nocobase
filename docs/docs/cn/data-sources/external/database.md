@@ -10,7 +10,7 @@ keywords: "外部数据库,MySQL,PostgreSQL,MariaDB,KingbaseES,OceanBase,MSSQL,O
 
 外部数据库用于把已经存在的业务数据库接入 NocoBase ，读取外部数据库中的数据表、字段和视图，让这些数据表可以在页面区块、权限、工作流和 API 中使用。
 
-跟[主数据库](../main/database.md)不同，外部数据库的表结构由原系统、数据库客户端维护，NocoBase 负责读取表结构和视图，不会修改外部数据库的真实表结构。
+与[主数据库](../main/database.md)不同，外部数据库的表结构由原系统、数据库客户端维护，NocoBase 负责读取表结构和视图，不会修改外部数据库的真实表结构。
 
 外部数据库支持的数据库版本和商业版本如下：
 
@@ -106,25 +106,36 @@ keywords: "外部数据库,MySQL,PostgreSQL,MariaDB,KingbaseES,OceanBase,MSSQL,O
 
 :::
 
+:::warning 注意
+
+无主键数据表，需要[**编辑数据表**](#变更数据表)，设置**记录唯一标识**，否则无法在页面中创建区块、无法正确查看或编辑记录
+
+:::
+
 ## 变更外部数据库
 
+变更外部数据库不仅会修改连接参数，也可能改变这个数据源在 NocoBase 中接入的数据表范围。比如修改 `Database`、`Schema`、`Table prefix`，或者调整「Add all collections」和「Collections」勾选项，都可能让 NocoBase 新增或移除部分数据表元数据。
+
 在数据源列表中，点击某个外部数据库右侧的「Edit」，可以修改外部数据库的配置信息。`Data source name` 不能修改，其他配置可以修改。修改后，NocoBase 会使用新的连接信息访问外部数据库。配置信息参考上文[「添加外部数据库」](#添加外部数据库)的说明。
+![edit_external_database](https://static-docs.nocobase.com/edit_external_database.png)
+![edit_external_database_configure](https://static-docs.nocobase.com/edit_external_database_configure.png)
 
 变更连接信息前，建议先确认这些影响：
 
-- 如果修改账号是否仍然能读取需要的数据表、视图、字段、主键和索引
+- 修改账号后，是否仍然能读取需要的数据表、视图、字段、主键和索引
 - `Database`、`Schema` 或 `Table prefix` 变化后，原来接入的数据表是否还在当前范围内
 - 关闭「Add all collections」或调整「Collections」勾选后，页面区块、权限、工作流和 API 是否还依赖被移除的数据表
 
 :::warning 注意
 
-修改连接信息后，NocoBase 会使用新的连接配置访问外部数据库。提交前先确认新账号能读取数据表结构，并且页面区块、权限、工作流和 API 仍然能访问需要的数据表。
+修改连接信息后，NocoBase 会使用新的连接配置访问外部数据库。如果新的数据表范围少了某些表，NocoBase 会移除这些表在当前数据源中的元数据，依赖它们的页面区块、权限、工作流和 API 可能无法正常工作。这个操作不会删除外部数据库中的真实表和数据。
 
 :::
 
 ## 删除外部数据库
 
 在数据源列表中，点击某个外部数据库右侧的「Delete」，可以删除这个外部数据库在 NocoBase 中的数据源配置。
+![delete_external_database](https://static-docs.nocobase.com/delete_external_database.png)
 
 删除外部数据库数据源不会删除外部数据库本身，也不会删除外部数据库里的真实数据表和记录。它只会移除 NocoBase 中保存的数据源、数据表元数据和字段配置。
 
@@ -147,181 +158,146 @@ keywords: "外部数据库,MySQL,PostgreSQL,MariaDB,KingbaseES,OceanBase,MSSQL,O
 ![edit_database](https://static-docs.nocobase.com/edit_database.png)
 
 外部数据库提供数据表管理功能，可以检索、变更、删除数据表，也可以同步数据库中已有数据表的字段；提供数据表字段变更、关系字段创建。
+
 - **筛选**：检索 NocoBase 外部数据库管理的数据表
 - **编辑**：变更业务数据表
 - **删除**：删除业务数据表
 - **从数据库同步**：同步数据库中已有数据表的结构
-- **配置字段**：数据表字段变更、关系字段创建。
-
-外部数据库的管理边界和主数据库不同：
-
-| 能力 | 外部数据库 | 说明 |
-| --- | --- | --- |
-| 读取已有数据表 | ✅ | 连接后读取外部数据库中的已有表和 view。 |
-| 创建普通数据表 | ❌ | 普通表需要在外部数据库侧创建，再回到 NocoBase 同步。 |
-| 修改普通字段结构 | ❌ | 字段类型、长度、默认值等结构变更需要在数据库侧完成。 |
-| 删除数据表 | ❌ | 不建议在 NocoBase 中删除外部数据库真实表。 |
-| 配置字段显示 | ✅ | 可以调整 Field display name、Field interface、标题字段等元数据。 |
-| 新增关系字段 | ✅ | 可在 NocoBase 中补充关系字段，用于建立表之间的业务关联。 |
-| 页面区块使用 | ✅ | 配置 Record unique key 后，可以在页面中创建表格、表单、详情、图表等区块。 |
+- **配置字段**：数据表字段变更、关系字段创建
 
 ### 新增数据表
 
-外部数据库不支持在 NocoBase 中直接创建普通数据表。要新增外部数据库的数据表，需要先在数据库侧创建表或视图，再回到 NocoBase 接入。
+外部数据库不支持在 NocoBase 中直接创建普通数据表。新增外部数据库的数据表，先在数据库侧创建表或视图，再回到 NocoBase 接入。
 
-如果数据源启用了「Add all collections」，新表创建后可以在外部数据库管理页使用「Sync from database」同步结构，NocoBase 会读取当前范围内新出现的数据表。
+如果数据源启用了「Add all collections」，新表创建后可以在外部数据库管理页使用[**「Sync from database」**](#从数据库同步)同步结构，会读取当前范围内新出现的数据表。
 
-如果数据源关闭了「Add all collections」，需要先编辑外部数据库配置，在「Collections」中勾选新增的数据表并保存；然后进入数据表管理，使用「Sync from database」同步字段结构。
+如果数据源关闭了「Add all collections」，需要先[**编辑外部数据库**](#变更外部数据库)配置，在「Collections」中勾选新增的数据表并保存；然后进入数据表管理，使用[「Sync from database」](#从数据库同步)同步字段结构。
 
-:::tip 提示
+### 从数据库同步
 
-新增普通字段、修改字段类型或删除字段，也都需要先在数据库侧完成，再用「Sync from database」更新 NocoBase 中保存的元数据。
+外部数据库建立连接后，NocoBase 会读取数据源里的数据表。后续如果在数据库侧新增表、删除表、修改字段、调整字段类型或调整 view，需要在 NocoBase 中同步结构。
+
+在外部数据库的数据表列表中点击「Sync from database」，可以重新读取表结构，并更新 NocoBase 中保存的表和字段元数据。数据库侧删除的表会同步移除对应元数据，启用「Add all collections」时，新表会被加入。
+
+![sync_from_external_database](https://static-docs.nocobase.com/sync_from_external_database.png)
+
+:::warning 注意
+
+同步结构不会替你迁移页面配置。表被移除、字段被删除、字段重命名、字段类型变化，都可能影响页面区块、权限规则、工作流变量和 API 调用参数。同步前先确认这些配置是否还在使用旧表或旧字段，同步后需要检查并调整相关配置。
+
+:::
+
+:::warning 注意
+
+无主键数据表，需要[**编辑数据表**](#变更数据表)，设置**记录唯一标识**，否则无法在页面中创建区块、无法正确查看或编辑记录
 
 :::
 
 ### 变更数据表
 
-外部数据库的数据表结构由数据库侧维护。NocoBase 中的「Edit」主要用于调整数据表在 NocoBase 里的元信息，不会修改外部数据库中的真实表结构。
+外部数据库的数据表结构由数据库侧维护。在数据表列表中，点击某个数据表右侧的「Edit」，用于调整数据表在 NocoBase 里的元信息，不会修改外部数据库中的真实表结构。
+![edit_external_collection](https://static-docs.nocobase.com/edit_external_collection.png)
+![edit_external_collection_configure](https://static-docs.nocobase.com/edit_external_collection_configure.png)
 
 | 配置 | 说明 |
 | --- | --- |
 | Collection display name | 数据表在界面中显示的名称。可以改成业务人员能理解的名称，比如「客户」「订单」「库存明细」。 |
+| Collection name | 数据表在 NocoBase 中的标识名称。该名称由外部数据库表名生成，不支持修改。 |
 | Categories | 数据表分类。只影响数据源管理界面的组织方式，不改变表结构。 |
 | Description | 数据表说明。适合写数据来源、维护系统、同步方式或注意事项。 |
 | Use simple pagination mode | 简单分页模式。启用后，表格区块分页时会跳过总记录数统计，适合数据量很大的外部表。 |
-| Record unique key | 记录唯一标识。外部表没有主键、使用联合主键或接入 view 时，需要特别配置。 |
-
-:::tip 提示
-
-如果要新增字段、修改字段类型、调整索引或删除字段，请先在外部数据库侧完成，再回到 NocoBase 使用「Sync from database」同步结构。
-
-:::
-
-### 从数据库同步
-
-外部数据库建立连接后，NocoBase 会读取数据源里的数据表。后续如果在数据库侧新增表、删除表、修改字段或调整 view，需要回到 NocoBase 中同步结构。
-
-![20240507204725](https://static-docs.nocobase.com/20240507204725.png)
-
-同步会更新 NocoBase 中保存的数据表和字段元数据，包括表名、字段、字段类型、主键、唯一键和可识别的关系信息。
-
-:::warning 注意
-
-同步结构不会替你迁移页面配置。字段删除和字段重命名都可能影响页面区块、权限规则、工作流变量和 API 调用参数。同步前先确认这些配置是否还在使用旧字段。
-
-:::
+| Record unique key | 记录唯一标识。用于定位一条记录，通常选择主键或唯一字段。数据库视图需要特别关注这个配置，否则无法在页面中创建区块、无法正确查看或编辑记录。 |
 
 ### 配置字段
 
-外部数据库连接后，NocoBase 会自动读取已有字段，并把数据库字段类型映射为 NocoBase 的 Field type 和 Field interface。
+在数据表列表中，点击某个数据表右侧的「Configure fields」，可以进入字段配置页面。外部数据库的字段配置用于维护字段在 NocoBase 中如何显示、如何交互、如何作为标题字段使用，以及如何把数据库字段类型映射为 Field type 和 Field interface。
 
-![20240507210537](https://static-docs.nocobase.com/20240507210537.png)
+外部数据库的物理字段来自数据库侧同步，NocoBase 不会在外部数据库中直接新增、修改或删除这些字段。在字段配置页中，NocoBase 只能新增关系字段，用来补充 NocoBase 中的业务关联。
+[了解更多字段配置信息](../field/field.md)
+![configure_field_external_collection](https://static-docs.nocobase.com/configure_field_external_collection.png)
+
+#### 新增关系字段
+
+在 NocoBase 中，外部数据库只能新增关系字段。关系字段可以基于已有的主键、外键或唯一字段建立关联，但不会在外部数据库中创建真实字段。
+[了解更多字段配置信息](../field/field.md)
+![external_database_add_relation_fields](https://static-docs.nocobase.com/external_database_add_relation_fields.png)
+![relation_field_configure](https://static-docs.nocobase.com/relation_field_configure.png)
 
 | 配置 | 说明 |
 | --- | --- |
-| Field display name | 字段在界面中显示的名称，可以改成业务人员能理解的名称。 |
-| Field name | 外部数据库中的真实字段名，通常不在 NocoBase 中修改。 |
-| Field type | 字段在数据层的类型，由数据库字段类型推断。 |
-| Field interface | 字段在界面中的展示和输入方式，比如单行文本、数字、日期、下拉菜单。 |
-| Title field | 记录在关系选择、关联展示、详情标题等位置默认显示的字段。 |
-| Description | 字段说明，适合写字段含义、数据来源或维护人。 |
-
-比如外部数据库中的 `varchar` 字段，在 NocoBase 中可以显示为「单行文本」「邮箱」「手机号」「URL」「颜色」等 UI 类型。实际选择哪一种，要看这个字段的业务含义。
+| Field interface | 关系字段的类型，比如一对一、一对多、多对一、多对多。选择后会出现对应的关系配置。 |
+| Field display name | 关系字段在界面中显示的名称。建议使用业务人员能理解的名称，比如「所属客户」「关联订单」。 |
+| Field name | 关系字段在 NocoBase 中保存的内部名称，用于 API、权限、工作流等内部引用。 |
+| Target collection | 要关联的目标数据表。可以选择外部数据库中的表，也可以按实际业务关联到其他数据源中的表。 |
+| Relation keys | 关系字段使用的关联键。通常基于已有的主键、外键或唯一字段建立关系，不会在外部数据库中创建新字段。 |
+| Description | 字段说明。适合写关联关系含义、数据来源、维护方式或注意事项。 |
 
 :::warning 注意
 
-切换 Field interface 不等于修改外部数据库的字段类型。它主要影响页面控件、展示方式和校验规则。外部数据库真实字段类型仍然以数据库侧为准。
+新增物理字段、修改字段类型、调整索引或删除字段，都需要先在外部数据库侧完成，再用「Sync from database」更新 NocoBase 中保存的字段元数据。
 
 :::
 
-### 新增字段
+#### 字段映射
 
-外部数据库不适合在 NocoBase 中新增普通字段。如果需要新增普通字段，建议先在数据库侧完成表结构变更，再回到 NocoBase 同步结构。
+外部数据库连接后，NocoBase 会根据数据库字段类型推断 Field type，并匹配一个默认 Field interface。如果输入方式、展示方式或业务含义不符合预期，可以在字段配置中调整 Field interface。
+[了解更多字段配置信息](../field/field.md)
 
-在 NocoBase 中，外部数据库通常只新增关系字段。关系字段用于补充 NocoBase 里的业务关联，不一定会在外部数据库中创建真实字段。
+![mapping_field](https://static-docs.nocobase.com/mapping_field.png)
 
-![20240507220140](https://static-docs.nocobase.com/20240507220140.png)
+:::tip 提示
 
-适合新增关系字段的场景：
+- Field Interface（界面类型 / UI 类型）：决定字段在前端如何展示和交互。比如「单行文本」「数字」「下拉菜单」「日期时间」等，它是用户视角的字段分类
+- Field Type（数据类型）：决定 NocoBase 如何识别字段的数据类型。外部数据库的普通字段通常由数据库字段类型推断，比如 `string`、`integer`、`decimal`、`boolean`、`datetime` 等
 
-- 外部数据库中缺少外键约束，但业务上确实有关联关系
-- 需要在 NocoBase 页面里通过关系选择器选择关联记录
-- 需要在详情、表格、工作流或权限中使用关联数据
-- 需要把两个外部表、外部表和主数据库表关联起来使用
+:::
 
-### 字段映射
+:::warning 注意
 
-字段映射用于把数据库字段类型转换成 NocoBase 可识别的 Field type 和 Field interface。
+切换 Field type 或 Field interface 不等于修改外部数据库的字段类型。它主要影响页面展示方式、校验规则、存储的数据格式。
 
-| 概念 | 作用 | 例子 |
-| --- | --- | --- |
-| 数据库字段类型 | 外部数据库中真实的字段类型。 | `varchar`、`int`、`decimal`、`timestamp`、`json`。 |
-| Field type | NocoBase 识别到的数据层类型。 | `string`、`integer`、`decimal`、`date`、`json`。 |
-| Field interface | NocoBase 页面里的展示和输入方式。 | 单行文本、数字、货币、日期时间、JSON。 |
+:::
 
-常见映射思路如下：
-
-| 数据库字段 | 常见 Field type | 常见 Field interface |
-| --- | --- | --- |
-| `varchar` / `char` | `string` | 单行文本、邮箱、手机号、URL、颜色、图标。 |
-| `text` | `text` | 多行文本、Markdown、富文本、URL。 |
-| `int` / `bigint` | `integer` / `bigInt` | 整数、排序、Unix 时间戳、下拉菜单、单选框。 |
-| `decimal` / `numeric` / `float` / `double` | `decimal` / `float` / `double` | 数字、货币、百分比。 |
-| `boolean` / `tinyint(1)` | `boolean` | 勾选、开关。 |
-| `date` / `datetime` / `timestamp` / `time` | `date` / `dateOnly` / `time` | 日期时间、日期、时间、创建时间、更新时间。 |
-| `json` / `jsonb` | `json` | JSON。 |
-| `enum` / `set` | `enum` / `set` | 下拉菜单、单选框、多选框。 |
-
-如果遇到 NocoBase 暂时无法识别的数据库字段类型，这些字段会单独展示出来。
+如果遇到 NocoBase 无法识别的数据库字段类型，字段会单独展示出来。
 
 ![20240507221854](https://static-docs.nocobase.com/20240507221854.png)
 
-遇到不支持的字段类型时，可以按这些方式处理：
+处理方式：
 
 - 在数据库侧改成 NocoBase 可识别的字段类型
-- 使用数据库 view 转换字段类型后再接入
 - 通过插件扩展字段类型和 Field interface 适配
 - 暂时不在页面区块中使用该字段
 
-## Record unique key
+#### 标题字段
 
-页面区块需要知道用哪个字段定位一条记录。这个字段就是 Record unique key，也叫筛选目标键。
+标题字段用于关系字段选择、关联数据在页面区块展示时候，默认显示的数据。比如客户表通常可以把「客户名称」设为标题字段，订单表可以把「订单编号」设为标题字段。这样在其他表选择客户或订单时，看到的是业务人员能理解的文本，而不是内部 ID。
 
-通常来说，NocoBase 会优先使用数据表主键。如果外部表没有主键、使用联合主键，或者接入的是数据库 view，就需要手动选择一个具有唯一性的字段。
+#### 编辑字段
 
-![20240507210230](https://static-docs.nocobase.com/20240507210230.png)
-
-适合作为 Record unique key 的字段通常满足这些条件：
-
-- 字段值唯一
-- 字段值稳定，不会频繁变化
-- 字段不为空
-- 字段查询性能可接受
-
-设置 Record unique key 后，数据表才更适合在页面中创建表格、详情、表单和操作。
-
-![20240507222827](https://static-docs.nocobase.com/20240507222827.png)
+点击字段右侧的「Edit」可以编辑字段配置。编辑字段适合调整字段在 NocoBase 中的展示和使用方式，比如修改显示名称、描述、界面类型、校验规则或字段专属配置。
+[了解更多字段配置信息](../field/field)
+![edit_field](https://static-docs.nocobase.com/edit_field.png)
+![edit_field_configure](https://static-docs.nocobase.com/edit_field_configure.png)
 
 :::warning 注意
 
-没有可用 Record unique key 的外部表，可能无法正确查看详情、编辑记录、删除记录或配置关系字段。接入外部数据库前，建议优先确认每张业务表是否有主键或稳定唯一字段。
+编辑字段配置不会修改外部数据库中的真实字段名、字段类型、长度、默认值或索引。如果需要调整这些结构，请先在数据库侧完成，再使用「Sync from database」同步。
 
 :::
 
-## 使用建议
+#### 删除关系字段
 
-| 场景 | 建议 |
-| --- | --- |
-| 只查看已有数据 | 使用只读数据库账号接入，降低误操作风险。 |
-| 需要编辑已有数据 | 确认数据库账号具备写入权限，并检查主键或 Record unique key。 |
-| 需要新增普通字段 | 先在数据库侧修改表结构，再回到 NocoBase 同步结构。 |
-| 字段显示不符合业务含义 | 在 NocoBase 中调整 Field display name、Field interface 和标题字段。 |
-| 数据库结构经常变化 | 建立结构变更流程，变更后及时同步数据源。 |
-| 需要复杂查询或报表 | 可以在数据库侧维护 view，再把 view 作为外部数据库表使用。 |
-| 需要完整建模能力 | 默认使用主数据库，更适合创建普通表、树表、文件表、日历表和 SQL 表。 |
+外部数据库在 NocoBase 中仅支持删除关系字段。删除关系字段只会移除 NocoBase 中保存的关系元数据，不会删除外部数据库中的真实字段或数据。
 
-## 相关链接
+如果需要删除外部数据库中的物理字段，请先在数据库侧完成，再回到 NocoBase 使用「Sync from database」同步字段结构。
+[了解更多字段配置信息](../field/field.md)
+![delete_field](https://static-docs.nocobase.com/delete_field.png)
 
-- [主数据库](../main/database.md) — 了解由 NocoBase 管理的数据表和字段
-- [主、外部数据库对比](../main-vs-external-database.md) — 判断什么时候使用外部数据库
-- [字段](../field/field.md) — 了解 Field type、Field interface 和 Record unique key
+:::warning 注意
+
+删除关系字段或同步物理字段删除，都可能影响页面区块、表单、权限、工作流、API 和已有配置。删除前先确认字段是否仍被使用。
+
+:::
+
+## [REST API](rest-api)
+## [外部 NocoBase ](nocobase)
