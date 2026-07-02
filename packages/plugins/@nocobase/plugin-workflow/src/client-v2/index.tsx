@@ -8,6 +8,17 @@
  */
 
 export { default, PluginWorkflowClientV2 } from './plugin';
+export type {
+  WorkflowNotice,
+  WorkflowListNoticeMap,
+  WorkflowListNoticeProviderContext,
+  WorkflowNoticeProvider,
+  WorkflowNoticeProviderContext,
+  WorkflowNoticeProviderFunction,
+  WorkflowNoticeProviderObject,
+  WorkflowNoticeResult,
+  WorkflowNoticeSurface,
+} from './plugin';
 export * from './models';
 
 // Workflow node extension contract (shared base class + canvas building blocks) for downstream node plugins migrating

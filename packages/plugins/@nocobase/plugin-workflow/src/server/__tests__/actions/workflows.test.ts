@@ -24,6 +24,7 @@ describe('workflow > actions > workflows', () => {
   let ExecutionModel;
   let WorkflowStatsRepo;
   let WorkflowVersionStatsRepo;
+  let FlowNodeRepo;
 
   beforeEach(async () => {
     app = await getApp();
@@ -34,6 +35,7 @@ describe('workflow > actions > workflows', () => {
     ExecutionModel = db.getCollection('executions').model;
     WorkflowStatsRepo = db.getCollection('workflowStats').repository;
     WorkflowVersionStatsRepo = db.getCollection('workflowVersionStats').repository;
+    FlowNodeRepo = db.getCollection('flow_nodes').repository;
     PostModel = db.getCollection('posts').model;
     PostRepo = db.getCollection('posts').repository;
   });
@@ -58,6 +60,146 @@ describe('workflow > actions > workflows', () => {
         },
       });
       expect(status).toBe(400);
+    });
+  });
+
+  describe('list', () => {
+    it('does not calculate legacy approval UI status unless explicitly appended', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'approval',
+        config: {
+          applyForm: 'legacy_schema',
+        },
+      });
+      await workflow.createNode({
+        type: 'approval',
+        config: {
+          applyDetail: 'legacy_schema',
+        },
+      });
+      const flowNodesFind = vi.spyOn(FlowNodeRepo, 'find');
+
+      const { status, body } = await agent.resource('workflows').list({
+        sort: ['id'],
+        except: ['config'],
+      });
+
+      expect(status).toBe(200);
+      expect(body.rows[0]).not.toHaveProperty('legacyApprovalUi');
+      expect(flowNodesFind).not.toHaveBeenCalled();
+      flowNodesFind.mockRestore();
+    });
+
+    it('appends legacy approval UI status with current-page batch lookups', async () => {
+      const initiatorWorkflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'approval',
+        config: {
+          applyForm: 'legacy_schema',
+        },
+      });
+      const approverWorkflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'approval',
+        config: {},
+      });
+      await approverWorkflow.createNode({
+        type: 'approval',
+        config: {
+          applyDetail: 'legacy_schema',
+        },
+      });
+      const cleanApprovalWorkflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'approval',
+        config: {},
+      });
+      await cleanApprovalWorkflow.createNode({
+        type: 'approval',
+        config: {
+          applyDetail: null,
+        },
+      });
+      const collectionWorkflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        config: {
+          mode: 1,
+          collection: 'posts',
+        },
+      });
+      const workflowsFind = vi.spyOn(WorkflowRepo, 'find');
+      const workflowsFindAndCount = vi.spyOn(WorkflowRepo, 'findAndCount');
+      const flowNodesFind = vi.spyOn(FlowNodeRepo, 'find');
+
+      const { status, body } = await agent.resource('workflows').list({
+        sort: ['id'],
+        appends: ['stats', 'legacyApprovalUi'],
+        except: ['config'],
+      });
+
+      expect(status).toBe(200);
+      const rowsById = new Map(body.rows.map((row) => [String(row.id), row]));
+      expect(rowsById.get(String(initiatorWorkflow.id))).toMatchObject({
+        legacyApprovalUi: {
+          initiator: true,
+          approver: false,
+        },
+      });
+      expect(rowsById.get(String(approverWorkflow.id))).toMatchObject({
+        legacyApprovalUi: {
+          initiator: false,
+          approver: true,
+        },
+      });
+      expect(rowsById.get(String(cleanApprovalWorkflow.id))).toMatchObject({
+        legacyApprovalUi: {
+          initiator: false,
+          approver: false,
+        },
+      });
+      expect(rowsById.get(String(collectionWorkflow.id))).toMatchObject({
+        legacyApprovalUi: {
+          initiator: false,
+          approver: false,
+        },
+      });
+      body.rows.forEach((row) => {
+        expect(row).not.toHaveProperty('config');
+      });
+      expect(workflowsFindAndCount).toHaveBeenCalledWith(expect.objectContaining({ appends: ['stats'] }));
+      expect(workflowsFind).toHaveBeenCalledTimes(1);
+      expect(workflowsFind).toHaveBeenCalledWith(
+        expect.objectContaining({
+          fields: ['id', 'type', 'config'],
+          filter: {
+            id: {
+              $in: expect.arrayContaining([
+                initiatorWorkflow.id,
+                approverWorkflow.id,
+                cleanApprovalWorkflow.id,
+                collectionWorkflow.id,
+              ]),
+            },
+          },
+        }),
+      );
+      expect(flowNodesFind).toHaveBeenCalledTimes(1);
+      expect(flowNodesFind).toHaveBeenCalledWith(
+        expect.objectContaining({
+          fields: ['workflowId', 'config'],
+          filter: {
+            type: 'approval',
+            workflowId: {
+              $in: expect.arrayContaining([initiatorWorkflow.id, approverWorkflow.id, cleanApprovalWorkflow.id]),
+            },
+          },
+        }),
+      );
+      workflowsFindAndCount.mockRestore();
+      workflowsFind.mockRestore();
+      flowNodesFind.mockRestore();
     });
   });
 
