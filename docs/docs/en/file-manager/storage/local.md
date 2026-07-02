@@ -2,6 +2,15 @@
 
 Uploaded files will be saved in a local directory on the server's hard drive. This is suitable for scenarios with a small total volume of uploaded files managed by the system or for experimental purposes.
 
+
+:::warning Note
+
+Local Storage does not support private access. After a file is uploaded, NocoBase generates a directly accessible URL, and anyone who has that URL can access the file.
+
+If you need to store contracts, identity documents, internal materials, or other files that should not be public, use [S3 Pro](./s3-pro). If historical files already exist, see [Migrate to S3 Pro](./migrate-to-s3-pro.md).
+
+:::
+
 ## Configuration Parameters
 
 
