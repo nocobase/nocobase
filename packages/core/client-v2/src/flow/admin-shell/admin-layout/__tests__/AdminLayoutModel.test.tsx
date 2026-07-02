@@ -11,10 +11,12 @@ import React from 'react';
 import { observable } from '@formily/reactive';
 import { act, render, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { MemoryRouter } from 'react-router-dom';
 
-const { flowModelRendererSpy } = vi.hoisted(() => {
+const { flowModelRendererSpy, adminLayoutContentEffectSpy } = vi.hoisted(() => {
   return {
     flowModelRendererSpy: vi.fn(),
+    adminLayoutContentEffectSpy: vi.fn(),
   };
 });
 
@@ -35,6 +37,52 @@ vi.mock('@nocobase/flow-engine', async (importOriginal) => {
   };
 });
 
+vi.mock('@ant-design/pro-layout', async () => {
+  const ReactActual = await import('react');
+  const RouteContext = ReactActual.createContext({ isMobile: true });
+  const ProLayout = (props: { children?: React.ReactNode }) => {
+    return ReactActual.createElement(RouteContext.Provider, { value: { isMobile: true } }, props.children);
+  };
+
+  return {
+    default: ProLayout,
+    RouteContext,
+  };
+});
+
+vi.mock('../AdminLayoutSlotModels', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../AdminLayoutSlotModels')>();
+  const ReactActual = await import('react');
+
+  return {
+    ...actual,
+    AdminLayoutContent: (props: { onContentElementChange?: (element: HTMLDivElement | null) => void }) => {
+      const bindContentRef = ReactActual.useCallback(
+        (element: HTMLDivElement | null) => {
+          props.onContentElementChange?.(element);
+          if (element) {
+            adminLayoutContentEffectSpy();
+          }
+        },
+        [props.onContentElementChange],
+      );
+
+      return ReactActual.createElement('div', { ref: bindContentRef, 'data-testid': 'admin-layout-content' });
+    },
+  };
+});
+
+vi.mock('../useApplications', () => ({
+  useApplications: () => ({
+    Component: null,
+    appList: [],
+  }),
+}));
+
+vi.mock('../AppListRender', () => ({
+  useAppListRender: () => undefined,
+}));
+
 import {
   FlowEngine,
   FlowEngineProvider,
@@ -43,7 +91,7 @@ import {
   useFlowEngine,
   type FlowModel,
 } from '@nocobase/flow-engine';
-import { AdminLayoutModel, getAdminLayoutModel } from '..';
+import { AdminLayoutComponent, AdminLayoutModel, getAdminLayoutModel } from '..';
 import { NocoBaseDesktopRouteType } from '../../../../flow-compat';
 import { getLayoutPageRouteName, getLayoutPageViewRouteName } from '../../../../layout-manager/utils';
 import { TopbarActionModel } from '../../../models/topbar/TopbarActionModel';
@@ -84,6 +132,7 @@ const TestAdminLayoutHost = (props) => {
 describe('AdminLayoutModel runtime', () => {
   beforeEach(() => {
     flowModelRendererSpy.mockClear();
+    adminLayoutContentEffectSpy.mockReset();
   });
 
   it('should create model via getAdminLayoutModel and update props on rerender', async () => {
@@ -141,6 +190,46 @@ describe('AdminLayoutModel runtime', () => {
     });
 
     expect(model.context.layoutContentElement).toBeNull();
+  });
+
+  it('should expose mobile layout state before initial layout content effects run', async () => {
+    const engine = new FlowEngine();
+    engine.context.defineProperty('routeRepository', {
+      value: {
+        listAccessible: vi.fn(() => []),
+        subscribe: vi.fn(),
+        unsubscribe: vi.fn(),
+        ensureAccessibleLoaded: vi.fn(() => Promise.resolve()),
+        moveRoute: vi.fn(() => Promise.resolve()),
+      },
+    });
+    const model = getAdminLayoutModel<AdminLayoutModel>(engine, { create: true });
+    if (!model) {
+      throw new Error('[NocoBase] Failed to create admin-layout-model.');
+    }
+    const modelLifecycle = model as unknown as { onMount: () => void; onUnmount: () => void };
+    modelLifecycle.onMount();
+    const observedMobileStates: boolean[] = [];
+    adminLayoutContentEffectSpy.mockImplementation(() => {
+      observedMobileStates.push(model.context.isMobileLayout);
+    });
+
+    const { unmount } = render(
+      <FlowEngineProvider engine={engine}>
+        <MemoryRouter initialEntries={['/admin/lrmg36pcahi']}>
+          <AdminLayoutComponent model={model} />
+        </MemoryRouter>
+      </FlowEngineProvider>,
+    );
+
+    await waitFor(() => {
+      expect(adminLayoutContentEffectSpy).toHaveBeenCalledTimes(1);
+    });
+
+    expect(observedMobileStates).toEqual([true]);
+
+    unmount();
+    modelLifecycle.onUnmount();
   });
 
   it('should expose layout definition only while mounted', async () => {
@@ -470,6 +559,226 @@ describe('AdminLayoutModel runtime', () => {
     await waitFor(() => {
       expect(model.context.currentRoute.title).toBe('Page 2');
     });
+  });
+
+  it('should restore layout route from router context when a route page registers after stale cleanup', async () => {
+    const engine = new FlowEngine();
+    engine.context.defineProperty('route', {
+      value: {
+        name: 'admin.page',
+        pathname: '/admin/page-1',
+        params: { name: 'page-1' },
+      },
+    });
+    engine.context.defineProperty('routeRepository', {
+      value: {
+        getRouteBySchemaUid: (pageUid: string) => ({ title: pageUid }),
+      },
+    });
+
+    render(
+      <FlowEngineProvider engine={engine}>
+        <TestAdminLayoutHost />
+      </FlowEngineProvider>,
+    );
+
+    const model = engine.getModel<TestAdminLayoutModel>('admin-layout-model');
+    expect(model).toBeTruthy();
+    const routeLike = {
+      name: 'admin.page',
+      pathname: '/admin/page-1',
+      layoutRouteName: 'admin',
+      layoutBasePathname: '/admin',
+    };
+
+    act(() => {
+      model.syncLayoutRoute(routeLike);
+      model.clearLayoutRoute(routeLike);
+    });
+
+    expect(model.context.layoutRoute).toBeNull();
+    const syncRouteSpy = vi.spyOn(model.getCoordinator(), 'syncRoute');
+    syncRouteSpy.mockClear();
+
+    act(() => {
+      model.registerRoutePage('page-1', {
+        active: true,
+      });
+    });
+
+    await waitFor(() => {
+      expect(model.context.layoutRoute).toMatchObject({
+        type: 'page',
+        pageUid: 'page-1',
+        pathname: '/admin/page-1',
+      });
+    });
+    expect(model.context.currentRoute.title).toBe('page-1');
+    expect(syncRouteSpy).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        layoutRouteName: 'admin',
+        pageUid: 'page-1',
+        pathname: '/admin/page-1',
+        layoutBasePathname: '/admin',
+      }),
+    );
+  });
+
+  it('should restore layout route from a legacy dotted page view route name', async () => {
+    const engine = new FlowEngine();
+    engine.context.defineProperty('route', {
+      value: {
+        name: 'admin.page.view',
+        pathname: '/admin/page-1/view/popup',
+        params: { name: 'page-1' },
+      },
+    });
+    engine.context.defineProperty('routeRepository', {
+      value: {
+        getRouteBySchemaUid: (pageUid: string) => ({ title: pageUid }),
+      },
+    });
+
+    render(
+      <FlowEngineProvider engine={engine}>
+        <TestAdminLayoutHost />
+      </FlowEngineProvider>,
+    );
+
+    const model = engine.getModel<TestAdminLayoutModel>('admin-layout-model');
+    expect(model).toBeTruthy();
+
+    act(() => {
+      model.registerRoutePage('page-1', {
+        active: true,
+      });
+    });
+
+    expect(model.context.layoutRoute).toMatchObject({
+      type: 'page',
+      pageUid: 'page-1',
+      pathname: '/admin/page-1/view/popup',
+      viewStack: [{ viewUid: 'page-1' }, { viewUid: 'popup' }],
+    });
+    expect(model.context.currentRoute.title).toBe('page-1');
+  });
+
+  it('should not restore layout route from another layout when a route page registers', async () => {
+    const engine = new FlowEngine();
+    engine.context.defineProperty('route', {
+      value: {
+        name: 'admin.settings.publicForms.page',
+        pathname: '/admin/settings/public-forms/form-1',
+        params: { name: 'form-1' },
+        layoutRouteName: 'admin.settings.publicForms',
+        layoutBasePathname: '/admin/settings/public-forms',
+      },
+    });
+    engine.context.defineProperty('routeRepository', {
+      value: {
+        getRouteBySchemaUid: (pageUid: string) => ({ title: pageUid }),
+      },
+    });
+
+    render(
+      <FlowEngineProvider engine={engine}>
+        <TestAdminLayoutHost />
+      </FlowEngineProvider>,
+    );
+
+    const model = engine.getModel<TestAdminLayoutModel>('admin-layout-model');
+    expect(model).toBeTruthy();
+
+    act(() => {
+      model.registerRoutePage('form-1', {
+        active: true,
+      });
+    });
+
+    expect(model.context.layoutRoute).toBeNull();
+    expect(model.context.currentRoute).toEqual({});
+  });
+
+  it('should not restore layout route from a nested layout route without layoutRouteName', async () => {
+    const engine = new FlowEngine();
+    engine.context.defineProperty('route', {
+      value: {
+        name: 'admin.settings.publicForms.page',
+        pathname: '/admin/settings/public-forms/form-1',
+        params: { name: 'form-1' },
+        layoutBasePathname: '/admin/settings/public-forms',
+      },
+    });
+    engine.context.defineProperty('routeRepository', {
+      value: {
+        getRouteBySchemaUid: (pageUid: string) => ({ title: pageUid }),
+      },
+    });
+
+    render(
+      <FlowEngineProvider engine={engine}>
+        <TestAdminLayoutHost />
+      </FlowEngineProvider>,
+    );
+
+    const model = engine.getModel<TestAdminLayoutModel>('admin-layout-model');
+    expect(model).toBeTruthy();
+
+    act(() => {
+      model.registerRoutePage('form-1', {
+        active: true,
+      });
+    });
+
+    expect(model.context.layoutRoute).toBeNull();
+    expect(model.context.currentRoute).toEqual({});
+  });
+
+  it('should ignore stale layout route cleanup after a route page has registered on the same path', async () => {
+    const engine = new FlowEngine();
+    engine.context.defineProperty('route', {
+      value: {
+        name: 'admin.page',
+        pathname: '/admin/page-1',
+        params: { name: 'page-1' },
+      },
+    });
+    engine.context.defineProperty('routeRepository', {
+      value: {
+        getRouteBySchemaUid: (pageUid: string) => ({ title: pageUid }),
+      },
+    });
+
+    render(
+      <FlowEngineProvider engine={engine}>
+        <TestAdminLayoutHost />
+      </FlowEngineProvider>,
+    );
+
+    const model = engine.getModel<TestAdminLayoutModel>('admin-layout-model');
+    expect(model).toBeTruthy();
+    const staleRouteLike = {
+      name: 'admin.page',
+      pathname: '/admin/page-1',
+      layoutRouteName: 'admin',
+      layoutBasePathname: '/admin',
+    };
+
+    act(() => {
+      model.syncLayoutRoute(staleRouteLike);
+      model.clearLayoutRoute(staleRouteLike);
+      model.registerRoutePage('page-1', {
+        active: true,
+      });
+      model.clearLayoutRoute(staleRouteLike);
+    });
+
+    expect(model.context.layoutRoute).toMatchObject({
+      type: 'page',
+      pageUid: 'page-1',
+      pathname: '/admin/page-1',
+    });
+    expect(model.context.currentRoute.title).toBe('page-1');
   });
 
   it('should keep pageActive in sync after non-active route page updates', async () => {
