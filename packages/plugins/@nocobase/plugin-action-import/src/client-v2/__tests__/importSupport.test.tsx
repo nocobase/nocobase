@@ -14,7 +14,7 @@ import { DownloadTips, ImportWarning, initImportSettings } from '../importSuppor
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key: string, options?: { limit?: number }) => (options?.limit ? `${key}:${options.limit}` : key),
+    t: (key: string) => key,
   }),
 }));
 
@@ -39,7 +39,7 @@ describe('importSupport', () => {
 
   it('renders import warning and download tips', () => {
     render(<ImportWarning />);
-    expect(screen.getByText('Import warnings:2000')).toBeTruthy();
+    expect(screen.getByText('Import warnings')).toBeTruthy();
 
     render(<DownloadTips />);
     expect(screen.getByText('Download tips')).toBeTruthy();

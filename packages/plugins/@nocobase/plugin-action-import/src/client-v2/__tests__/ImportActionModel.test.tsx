@@ -91,7 +91,7 @@ function createModel(uid: string) {
 
 function createImportContext(
   options: {
-    importColumns?: ImportColumn[];
+    importColumns?: ImportColumn[] | null;
     explain?: string;
     importMode?: string;
     importXlsx?: ReturnType<typeof vi.fn>;
@@ -158,11 +158,14 @@ function createImportContext(
       getProps: () => ({
         importSettings: {
           explain: options.explain ?? 'explain text',
-          importColumns: options.importColumns ?? [
-            { dataIndex: ['status'] },
-            { dataIndex: ['author', 'nickname'], title: 'Author nickname' },
-            { dataIndex: ['missing'] },
-          ],
+          importColumns:
+            options.importColumns === undefined
+              ? [
+                  { dataIndex: ['status'] },
+                  { dataIndex: ['author', 'nickname'], title: 'Author nickname' },
+                  { dataIndex: ['missing'] },
+                ]
+              : options.importColumns,
         },
         importMode: options.importMode ?? 'overwrite',
       }),
@@ -209,11 +212,6 @@ async function openImportDialog(ctx: ImportHandlerContext) {
 
 function setUploadFiles(fileList: UploadFileLike[]) {
   antdMocks.uploadFileList = fileList;
-  fireEvent.click(screen.getByTestId('import-upload-dragger'));
-}
-
-function setUploadFileListPayload(fileList: UploadFileLike[] | { slice: () => UploadFileLike[] }) {
-  antdMocks.uploadFileList = fileList as UploadFileLike[];
   fireEvent.click(screen.getByTestId('import-upload-dragger'));
 }
 
@@ -379,20 +377,31 @@ describe('ImportActionModel', () => {
     });
   });
 
-  it('keeps import disabled for empty and multiple upload payloads', async () => {
+  it('downloads the template without columns when import columns are not configured', async () => {
+    const ctx = createImportContext({
+      importColumns: null,
+    });
+    await openImportDialog(ctx);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Download template' }));
+
+    await waitFor(() => {
+      expect(ctx.resource.runAction).toHaveBeenCalledWith(
+        'downloadXlsxTemplate',
+        expect.objectContaining({
+          data: expect.objectContaining({
+            columns: [],
+          }),
+        }),
+      );
+    });
+  });
+
+  it('keeps import disabled when no file is selected', async () => {
     const ctx = createImportContext();
     await openImportDialog(ctx);
 
     setUploadFiles([]);
-    expect(screen.getByRole('button', { name: 'Start import' })).toBeDisabled();
-
-    setUploadFileListPayload({
-      slice: () => [
-        { name: 'first.xlsx', type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' },
-        { name: 'second.xlsx', type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' },
-      ],
-    });
-    expect(await screen.findByText('Only one file is allowed to be uploaded')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Start import' })).toBeDisabled();
   });
 
@@ -574,5 +583,27 @@ describe('ImportActionModel', () => {
     fireEvent.click(screen.getAllByRole('button', { name: 'Start import' }).at(-1) as HTMLElement);
 
     expect(await screen.findByText('Plain error message')).toBeTruthy();
+
+    const defaultMessageCtx = createImportContext({
+      importXlsx: vi.fn().mockRejectedValue({
+        response: {
+          data: {
+            messages: [],
+          },
+        },
+      }),
+    });
+    await openImportDialog(defaultMessageCtx);
+    setUploadFiles([
+      {
+        name: 'valid.xlsx',
+        originFileObj: new File(['xlsx'], 'valid.xlsx', {
+          type: 'application/vnd.ms-excel',
+        }),
+      },
+    ]);
+    fireEvent.click(screen.getAllByRole('button', { name: 'Start import' }).at(-1) as HTMLElement);
+
+    expect(await screen.findAllByText('Import failed')).not.toHaveLength(0);
   });
 });

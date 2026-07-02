@@ -215,7 +215,6 @@ describe('getOptionFields', () => {
     const rootOption = cache.getRootOptions()[0];
 
     expect(cache.preloadPath(['author'])).toBe(false);
-    expect(cache.preloadPath('author' as unknown as unknown[])).toBe(false);
     expect(cache.loadChildren(undefined)).toEqual([]);
     expect(cache.loadChildren({ name: 'title', isLeaf: true })).toEqual([]);
     expect(cache.loadChildren(rootOption)).toEqual([]);

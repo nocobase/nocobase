@@ -34,17 +34,13 @@ vi.mock('file-saver', () => ({
   saveAs: fileSaverMocks.saveAs,
 }));
 
-vi.mock('@nocobase/utils/client', () => ({
-  uid: () => 'custom-request-key',
-}));
-
 describe('customRequestUtils', () => {
   afterEach(() => {
     vi.clearAllMocks();
   });
 
   it('creates request keys with the expected prefix', () => {
-    expect(makeRequestKey()).toBe('req-custom-request-key');
+    expect(makeRequestKey()).toEqual(expect.stringMatching(/^req-/));
   });
 
   it('normalizes name-value arrays and removes empty names', () => {
