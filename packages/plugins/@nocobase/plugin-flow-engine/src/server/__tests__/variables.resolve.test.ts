@@ -9,7 +9,9 @@
 
 import { vi } from 'vitest';
 import { MockServer } from '@nocobase/test';
+import { generateFlowModelRd } from '@nocobase/utils';
 import { variables, inferSelectsFromUsage } from '../variables/registry';
+import FlowModelRepository from '../repository';
 import { createFlowEngineMockServer, resetVariablesRegistryForTest } from './test-utils';
 
 describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
@@ -17,15 +19,23 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
   beforeAll(() => {
     resetVariablesRegistryForTest();
   });
-  const execResolve = async (values: any, userId?: number) => {
+  const execResolve = async (
+    values: any,
+    userId?: number,
+    options: { currentRole?: string; currentRoles?: string[]; token?: string } = {},
+  ) => {
     const action = app.resourceManager.getAction('variables', 'resolve');
+    const currentRole = options.currentRole ?? (userId ? 'root' : undefined);
     const ctx: any = {
       app,
       db: app.db,
-      headers: {},
+      headers: options.token ? { authorization: `Bearer ${options.token}` } : {},
       request: { method: 'POST', path: '/api/variables:resolve', query: {}, body: values },
       auth: userId ? { user: { id: userId }, role: 'root' } : {},
-      state: {},
+      state: {
+        currentRole,
+        currentRoles: options.currentRoles ?? (currentRole ? [currentRole] : undefined),
+      },
       getCurrentLocale: () => 'en-US',
     };
     ctx.get = (name: string) => ctx.headers?.[name] || ctx.headers?.[name?.toLowerCase?.()] || undefined;
@@ -46,6 +56,19 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
       }
     }
     return ctx;
+  };
+  const createTokenSession = (userId = 1) => {
+    const signInTime = `variables-resolve-${userId}`;
+    const payload = Buffer.from(JSON.stringify({ userId, signInTime })).toString('base64url');
+    return {
+      rd: (flowModelUid: string) => generateFlowModelRd(flowModelUid, `${userId}:${signInTime}`),
+      token: `test.${payload}.sig`,
+    };
+  };
+
+  const insertFlowModel = async (model: Record<string, unknown>) => {
+    const repository = app.db.getCollection('flowModels').repository as FlowModelRepository;
+    return repository.insertModel(model);
   };
 
   beforeEach(async () => {
@@ -97,6 +120,131 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
     expect(data.userId).toBe(1);
   });
 
+  it('should keep original template when rd is missing for a non-configure role', async () => {
+    const payload = {
+      template: { id: '{{ ctx.view.record.id }}' },
+      contextParams: {
+        'view.record': {
+          dataSourceKey: 'main',
+          collection: 'users',
+          filterByTk: 1,
+        },
+      },
+    };
+    const res = await execResolve(payload, 1, { currentRole: 'member', currentRoles: ['member'] });
+    const data = res.body?.data ?? res.body;
+    expect(res.status).toBeUndefined();
+    expect(data.id).toBe('{{ ctx.view.record.id }}');
+  });
+
+  it('should resolve allow-listed request user for a non-configure role and ignore spoofed user contextParams', async () => {
+    const flowModelUid = 'allow-listed-request-user';
+    const session = createTokenSession(1);
+    await insertFlowModel({
+      uid: flowModelUid,
+      use: 'DetailsBlockModel',
+      stepParams: {
+        resourceSettings: {
+          init: { dataSourceKey: 'main', collectionName: 'users' },
+        },
+      },
+      props: {
+        userId: '{{ ctx.user.id }}',
+      },
+    });
+
+    const payload = {
+      rd: session.rd(flowModelUid),
+      template: { userId: '{{ ctx.user.id }}' },
+      contextParams: {
+        user: {
+          dataSourceKey: 'main',
+          collection: 'roles',
+          filterByTk: 'root',
+        },
+      },
+    };
+    const res = await execResolve(payload, 1, {
+      currentRole: 'member',
+      currentRoles: ['member'],
+      token: session.token,
+    });
+    const data = res.body?.data ?? res.body;
+    expect(data.userId).toBe(1);
+  });
+
+  it('should keep strict source validation for ordinary record contextParams', async () => {
+    const flowModelUid = 'strict-view-record-source';
+    const session = createTokenSession(1);
+    await insertFlowModel({
+      uid: flowModelUid,
+      use: 'DetailsBlockModel',
+      stepParams: {
+        resourceSettings: {
+          init: { dataSourceKey: 'main', collectionName: 'users' },
+        },
+      },
+      props: {
+        title: '{{ ctx.view.record.name }}',
+      },
+    });
+
+    const payload = {
+      rd: session.rd(flowModelUid),
+      template: { name: '{{ ctx.view.record.name }}' },
+      contextParams: {
+        'view.record': {
+          dataSourceKey: 'main',
+          collection: 'roles',
+          filterByTk: 'root',
+        },
+      },
+    };
+    const res = await execResolve(payload, 1, {
+      currentRole: 'member',
+      currentRoles: ['member'],
+      token: session.token,
+    });
+    const data = res.body?.data ?? res.body;
+    expect(data.name).toBe('{{ ctx.view.record.name }}');
+  });
+
+  it('should let popup variable validation skip static source matching while keeping model allow-list checks', async () => {
+    const flowModelUid = 'popup-template-source-skip';
+    const session = createTokenSession(1);
+    await insertFlowModel({
+      uid: flowModelUid,
+      use: 'DetailsBlockModel',
+      stepParams: {
+        resourceSettings: {
+          init: { dataSourceKey: 'main', collectionName: 'users' },
+        },
+      },
+      props: {
+        title: '{{ ctx.popup.parent.record.name }}',
+      },
+    });
+
+    const payload = {
+      rd: session.rd(flowModelUid),
+      template: { name: '{{ ctx.popup.parent.record.name }}' },
+      contextParams: {
+        'popup.parent.record': {
+          dataSourceKey: 'main',
+          collection: 'roles',
+          filterByTk: 'root',
+        },
+      },
+    };
+    const res = await execResolve(payload, 1, {
+      currentRole: 'member',
+      currentRoles: ['member'],
+      token: session.token,
+    });
+    const data = res.body?.data ?? res.body;
+    expect(data.name).toBe('root');
+  });
+
   it('should support values.template field', async () => {
     const payload = { template: { time: '{{ ctx.timestamp }}' } };
     const res = await execResolve(payload, 1);
@@ -125,8 +273,8 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
     const payload = {
       template: {
         id: '{{ ctx.view.record.id }}',
-        // name 未在 fields 中显式选择，必须保留占位符
-        name: '{{ ctx.view.record.name }}',
+        // nickname 未在 fields 中显式选择，必须保留占位符
+        nickname: '{{ ctx.view.record.nickname }}',
       },
       contextParams: {
         'view.record': {
@@ -140,7 +288,7 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
     const res = await execResolve(payload, 1);
     const data = res.body?.data ?? res.body;
     expect(data.id).toBe(1);
-    expect(data.name).toBe('{{ ctx.view.record.name }}');
+    expect(data.nickname).toBe('{{ ctx.view.record.nickname }}');
   });
 
   it('should merge top-level record params with deep record params (deep wins)', async () => {

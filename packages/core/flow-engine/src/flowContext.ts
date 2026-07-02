@@ -50,7 +50,7 @@ import {
   resolveModuleUrl,
 } from './utils';
 import { FlowExitAllException } from './utils/exceptions';
-import { enqueueVariablesResolve, JSONValue } from './utils/params-resolvers';
+import { buildFlowModelResolveDescriptor, enqueueVariablesResolve, JSONValue } from './utils/params-resolvers';
 import type { RecordRef } from './utils/serverContextParams';
 import { buildServerContextParams as _buildServerContextParams } from './utils/serverContextParams';
 import { getDirtyAwareApiClient } from './utils/dirtyAwareApiClient';
@@ -3388,6 +3388,7 @@ export class FlowEngineContext extends BaseFlowEngineContext {
         if (this.api) {
           try {
             serverResolved = await enqueueVariablesResolve(this as FlowRuntimeContext<FlowModel>, {
+              rd: buildFlowModelResolveDescriptor(this as FlowRuntimeContext<FlowModel>, this.model?.uid),
               template,
               contextParams: autoContextParams || {},
             });

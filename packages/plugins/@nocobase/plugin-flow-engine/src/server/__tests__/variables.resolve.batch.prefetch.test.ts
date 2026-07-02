@@ -24,7 +24,7 @@ describe('variables:resolve batch prefetch merges selects (integration)', () => 
       headers: {},
       request: { method: 'POST', path: '/api/variables:resolve', query: {}, body: values },
       auth: userId ? { user: { id: userId }, role: 'root' } : {},
-      state: {},
+      state: userId ? { currentRole: 'root', currentRoles: ['root'] } : {},
       getCurrentLocale: () => 'en-US',
     };
     ctx.get = (name: string) => ctx.headers?.[name] || ctx.headers?.[name?.toLowerCase?.()] || undefined;
@@ -75,30 +75,34 @@ describe('variables:resolve batch prefetch merges selects (integration)', () => 
       return repo;
     };
 
-    const payload = {
-      batch: [
-        {
-          id: 't1',
-          template: { a: '{{ ctx.view.record.id }}' },
-          contextParams: { 'view.record': { dataSourceKey: 'main', collection: 'users', filterByTk: 1 } },
-        },
-        {
-          id: 't2',
-          template: { b: '{{ ctx.view.record.roles[0].name }}' },
-          contextParams: { 'view.record': { dataSourceKey: 'main', collection: 'users', filterByTk: 1 } },
-        },
-      ],
-    };
+    try {
+      const payload = {
+        batch: [
+          {
+            id: 't1',
+            template: { a: '{{ ctx.view.record.id }}' },
+            contextParams: { 'view.record': { dataSourceKey: 'main', collection: 'users', filterByTk: 1 } },
+          },
+          {
+            id: 't2',
+            template: { b: '{{ ctx.view.record.roles[0].name }}' },
+            contextParams: { 'view.record': { dataSourceKey: 'main', collection: 'users', filterByTk: 1 } },
+          },
+        ],
+      };
 
-    const res = await execResolve(payload, 1);
-    const results = res.body?.results || [];
-    const r1 = results.find((r: any) => r.id === 't1');
-    const r2 = results.find((r: any) => r.id === 't2');
-    expect(r1?.data?.a).toBe(1);
-    expect(typeof r2?.data?.b).toBe('string');
-    expect((r2?.data?.b || '').length).toBeGreaterThan(0);
+      const res = await execResolve(payload, 1);
+      const results = res.body?.results || [];
+      const r1 = results.find((r: any) => r.id === 't1');
+      const r2 = results.find((r: any) => r.id === 't2');
+      expect(r1?.data?.a).toBe(1);
+      expect(typeof r2?.data?.b).toBe('string');
+      expect((r2?.data?.b || '').length).toBeGreaterThan(0);
 
-    // ensure only one DB call for users collection due to prefetch merge
-    expect(calls).toBe(1);
+      // ensure only one DB call for users collection due to prefetch merge
+      expect(calls).toBe(1);
+    } finally {
+      db.getRepository = originalGetRepository;
+    }
   });
 });
