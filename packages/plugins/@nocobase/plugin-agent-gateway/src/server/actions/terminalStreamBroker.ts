@@ -1120,7 +1120,8 @@ export class TerminalStreamBroker {
       ws.close();
       return;
     }
-    ws.send(JSON.stringify(frame));
+    const connection = this.connections.get(ws);
+    ws.send(JSON.stringify(connection?.kind === 'browser' ? sanitizeBrowserTerminalFrame(frame) : frame));
   }
 
   private mapBrowserAuthError(error: unknown): TerminalError['code'] {
@@ -1176,6 +1177,24 @@ export class TerminalStreamBroker {
 }
 
 type TerminalServerFrameForSend = Exclude<TerminalFrame, TerminalClientSubscribe | TerminalDaemonBindRun>;
+
+type BrowserTerminalPayloadFrame =
+  | Omit<TerminalData, 'sessionName'>
+  | Omit<TerminalSnapshot, 'sessionName'>
+  | Omit<TerminalEnd, 'sessionName'>;
+
+type BrowserTerminalFrameForSend =
+  | BrowserTerminalPayloadFrame
+  | Exclude<TerminalServerFrameForSend, TerminalData | TerminalSnapshot | TerminalEnd>;
+
+function sanitizeBrowserTerminalFrame(frame: TerminalServerFrameForSend): BrowserTerminalFrameForSend {
+  if (frame.type === 'terminal.data' || frame.type === 'terminal.snapshot' || frame.type === 'terminal.end') {
+    const browserFrame: Record<string, unknown> = { ...frame };
+    delete browserFrame.sessionName;
+    return browserFrame as BrowserTerminalPayloadFrame;
+  }
+  return frame;
+}
 
 function registerTerminalStreamStatsRoute(plugin: Plugin, broker: TerminalStreamBroker) {
   plugin.app.use(

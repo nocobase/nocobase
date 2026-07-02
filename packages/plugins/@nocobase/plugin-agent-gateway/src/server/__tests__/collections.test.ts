@@ -21,6 +21,9 @@ import agNodeSkillInstalls from '../collections/agNodeSkillInstalls';
 import agNodes from '../collections/agNodes';
 import agPromptTemplates from '../collections/agPromptTemplates';
 import agRunArtifacts, { AG_RUN_ARTIFACT_UNIQUE_CONSTRAINT_NOTE } from '../collections/agRunArtifacts';
+import agRunControlRequests, {
+  AG_RUN_CONTROL_REQUEST_UNIQUE_CONSTRAINT_NOTE,
+} from '../collections/agRunControlRequests';
 import agRunEvents from '../collections/agRunEvents';
 import agRuns from '../collections/agRuns';
 import agRunSnapshots from '../collections/agRunSnapshots';
@@ -40,6 +43,7 @@ const collections = [
   agPromptTemplates,
   agDispatchBindings,
   agRuns,
+  agRunControlRequests,
   agRunEvents,
   agRunArtifacts,
   agRunSnapshots,
@@ -61,6 +65,7 @@ const requiredCollectionNames = [
   'agPromptTemplates',
   'agDispatchBindings',
   'agRuns',
+  'agRunControlRequests',
   'agRunEvents',
   'agRunArtifacts',
   'agRunSnapshots',
@@ -124,10 +129,12 @@ describe('agent gateway collections', () => {
     expect(getField('agPromptTemplates', 'templateKey')?.unique).toBe(true);
     expect(getField('agRuns', 'runCode')?.unique).toBe(true);
     expect(getField('agRuns', 'continuationRequestKey')?.unique).toBe(true);
+    expect(getField('agRunControlRequests', 'requestKey')?.unique).toBe(true);
     expect(hasUniqueIndex('agRunEvents', ['runId', 'claimAttempt', 'source', 'sequence'])).toBe(true);
     expect(hasUniqueIndex('agRunArtifacts', ['runId', 'claimAttempt', 'artifactKey'])).toBe(true);
     expect(AG_RUN_ARTIFACT_UNIQUE_CONSTRAINT_NOTE).toContain('artifactKey is present');
     expect(AG_AGENT_SESSION_PROVIDER_ID_UNIQUE_CONSTRAINT_NOTE).toContain('providerSessionId is present');
+    expect(AG_RUN_CONTROL_REQUEST_UNIQUE_CONSTRAINT_NOTE).toContain('requestKey is present');
   });
 
   it('marks required relation keys and claim attempts as non-nullable', () => {
@@ -145,6 +152,10 @@ describe('agent gateway collections', () => {
     expectNullableForeignKey('agRuns', 'agentSessionId');
     expectNullableForeignKey('agRuns', 'parentRunId');
     expectNullableForeignKey('agRuns', 'resumedFromRunId');
+    expectRequiredForeignKey('agRunControlRequests', 'runId');
+    expectRequiredField('agRunControlRequests', 'action');
+    expectRequiredField('agRunControlRequests', 'status');
+    expectNullableForeignKey('agRunControlRequests', 'agentSessionId');
     expectNullableForeignKey('agAgentSessions', 'rootRunId');
     expectNullableForeignKey('agAgentSessions', 'latestRunId');
     expectNullableForeignKey('agAgentActionAudits', 'runId');
@@ -216,6 +227,22 @@ describe('agent gateway collections', () => {
 
     expect(fieldNamesOf('agRunArtifacts')).toEqual(
       expect.arrayContaining(['contentText', 'artifactType', 'mimeType', 'sizeBytes', 'metadataJson']),
+    );
+    expect(fieldNamesOf('agRunControlRequests')).toEqual(
+      expect.arrayContaining([
+        'runId',
+        'agentSessionId',
+        'action',
+        'reason',
+        'idempotencyKey',
+        'requestKey',
+        'requestedById',
+        'status',
+        'resultMessage',
+        'metadataJson',
+        'deliveredAt',
+        'completedAt',
+      ]),
     );
     expect(fieldNamesOf('agAgentSessions')).toEqual(
       expect.arrayContaining([
@@ -457,6 +484,26 @@ describe('agent gateway collections', () => {
         artifactKey: 'main',
         artifactType: 'text',
       });
+      await db.getCollection('agRunControlRequests').model.create({
+        runId,
+        action: 'interrupt',
+        status: 'accepted',
+        requestKey: 'control-once',
+      });
+      await expect(
+        db.getCollection('agRunControlRequests').model.create({
+          action: 'interrupt',
+          status: 'accepted',
+        }),
+      ).rejects.toThrow();
+      await expect(
+        db.getCollection('agRunControlRequests').model.create({
+          runId,
+          action: 'interrupt',
+          status: 'accepted',
+          requestKey: 'control-once',
+        }),
+      ).rejects.toThrow();
       await expect(
         db.getCollection('agRunArtifacts').model.create({
           claimAttempt: 0,

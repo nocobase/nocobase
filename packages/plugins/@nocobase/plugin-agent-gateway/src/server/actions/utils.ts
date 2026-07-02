@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { NoPermissionError, checkFilterParams, createUserProvider, parseJsonTemplate } from '@nocobase/acl';
 import { Context } from '@nocobase/actions';
 
 import { AGENT_GATEWAY_ACTIONS, AGENT_GATEWAY_RESOURCE } from '../security';
@@ -32,6 +33,7 @@ export const AGENT_GATEWAY_STANDARD_COLLECTIONS = [
   'agNodes',
   'agPromptTemplates',
   'agRunArtifacts',
+  'agRunControlRequests',
   'agRunEvents',
   'agRunSnapshots',
   'agRuns',
@@ -166,6 +168,14 @@ export function getModelTargetKey(model: ModelRecord, key: string) {
 
 export function getModelJson(model: ModelRecord) {
   return model.toJSON ? model.toJSON() : {};
+}
+
+function getCollection(ctx: Context, collectionName: string) {
+  const collection = (ctx.db as unknown as DatabaseWithCollectionLookup).getCollection?.(collectionName);
+  if (!collection) {
+    ctx.throw(400, `Collection not found: ${collectionName}`);
+  }
+  return collection;
 }
 
 export function getCurrentUserId(ctx: Context) {
@@ -391,4 +401,72 @@ export async function requireManagePermission(ctx: Context) {
     AGENT_GATEWAY_ACTIONS.manage,
     'Agent Gateway management permission required',
   );
+}
+
+export async function getRunAclFilter(ctx: Context, action: 'get' | 'list' = 'get') {
+  const roles = await getCurrentRoleNames(ctx);
+  const permission = ctx.app.acl.can({
+    roles,
+    resource: 'agRuns',
+    action,
+  });
+
+  if (!permission || typeof permission !== 'object') {
+    ctx.throw(403, 'Agent Gateway run visibility permission required');
+  }
+
+  const params = getRecord(permission.params);
+  const rawFilter = params.filter;
+  if (rawFilter === undefined || rawFilter === null) {
+    return null;
+  }
+
+  const collection = getCollection(ctx, 'agRuns');
+  try {
+    checkFilterParams(collection, rawFilter);
+  } catch (error) {
+    if (error instanceof NoPermissionError) {
+      ctx.throw(403, 'Agent Gateway run visibility permission required');
+    }
+    throw error;
+  }
+
+  const parsedParams = getRecord(
+    await parseJsonTemplate(params, {
+      state: ctx.state,
+      timezone: ctx.get('x-timezone'),
+      userProvider: createUserProvider({
+        db: ctx.db,
+        currentUser: ctx.state.currentUser,
+      }),
+    }),
+  );
+  const parsedFilter = getRecord(parsedParams.filter);
+  return Object.keys(parsedFilter).length ? parsedFilter : null;
+}
+
+export async function getVisibleRunFilter(ctx: Context, baseFilter: JsonRecord, action: 'get' | 'list' = 'get') {
+  const visibilityFilter = await getRunAclFilter(ctx, action);
+  return visibilityFilter
+    ? {
+        $and: [baseFilter, visibilityFilter],
+      }
+    : baseFilter;
+}
+
+export async function assertRunVisible(ctx: Context, runId: string, action: 'get' | 'list' = 'get') {
+  const filter = await getVisibleRunFilter(
+    ctx,
+    {
+      id: runId,
+    },
+    action,
+  );
+  const run = (await ctx.db.getRepository('agRuns').findOne({
+    filter,
+  })) as ModelRecord | null;
+  if (!run) {
+    ctx.throw(404, 'Run not found');
+  }
+  return run;
 }

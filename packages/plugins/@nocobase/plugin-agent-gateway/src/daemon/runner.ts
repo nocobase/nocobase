@@ -30,10 +30,17 @@ import {
   syncNodeSkillVersion,
   SyncNodeSkillVersionResult,
 } from './skillSync';
-import { JsonRecord, RunLease } from './types';
+import { JsonRecord, PendingControlRequest, RunLease } from './types';
 import { TerminalRingBuffer } from './terminalRingBuffer';
 import { DaemonTerminalStreamClient, DaemonTerminalStreamClientOptions } from './terminalStreamClient';
-import { executeTmuxCommand, getManagedTmuxSessionName } from './tmuxTerminal';
+import { AGENT_GATEWAY_TERMINATE_CONTROL_CANCEL_REASON } from '../shared/runControl';
+import {
+  executeTmuxCommand,
+  getManagedTmuxSessionName,
+  interruptTmuxSession,
+  TMUX_TERMINATE_CANCEL_REASON,
+  terminateTmuxSession,
+} from './tmuxTerminal';
 
 export interface RunDaemonOnceOptions {
   gateway: AgentGatewayDaemonNodeClient;
@@ -404,6 +411,12 @@ function dedupeSkillVersions(skillVersions: SkillVersionInstallRecord[]) {
   return result;
 }
 
+function abortForRunCancel(cancelController: AbortController, lease: RunLease) {
+  cancelController.abort(
+    lease.cancelReason === AGENT_GATEWAY_TERMINATE_CONTROL_CANCEL_REASON ? TMUX_TERMINATE_CANCEL_REASON : undefined,
+  );
+}
+
 async function syncSkillsForRun(options: RunDaemonOnceOptions, lease: RunLease): Promise<SyncNodeSkillVersionResult[]> {
   const payload = getPayload(lease);
   const skillVersions = dedupeSkillVersions(getSkillVersions(payload));
@@ -447,7 +460,7 @@ function heartbeatWhileRunPhase(options: {
           ...lease,
         });
         if (lease.cancelRequested) {
-          options.cancelController.abort();
+          abortForRunCancel(options.cancelController, lease);
         }
       })
       .catch(() => {
@@ -466,6 +479,169 @@ function heartbeatWhileRunPhase(options: {
   };
 }
 
+function controlRequestWhileRunPhase(options: {
+  gateway: AgentGatewayDaemonNodeClient;
+  getLease(): RunLease;
+  sessionName: string | null;
+  cancelController: AbortController;
+  intervalMs: number;
+}) {
+  let inFlight: Promise<void> | null = null;
+  const handledRequestIds = new Set<string>();
+  const deliveredRequestIds = new Set<string>();
+  const finalAckByRequestId = new Map<
+    string,
+    {
+      status: 'succeeded' | 'failed';
+      values: JsonRecord;
+    }
+  >();
+
+  const ackControlRequest = async (
+    requestId: string,
+    status: 'delivered' | 'succeeded' | 'failed',
+    values: JsonRecord = {},
+  ) => {
+    try {
+      await options.gateway.ackControlRequest(options.getLease(), requestId, status, values);
+    } catch {
+      await delay(Math.min(options.intervalMs, 250));
+      await options.gateway.ackControlRequest(options.getLease(), requestId, status, values);
+    }
+  };
+
+  const ackFinalControlRequest = async (
+    requestId: string,
+    finalAck: {
+      status: 'succeeded' | 'failed';
+      values: JsonRecord;
+    },
+  ) => {
+    await ackControlRequest(requestId, finalAck.status, finalAck.values);
+    finalAckByRequestId.delete(requestId);
+    handledRequestIds.add(requestId);
+  };
+
+  const drainFinalAcks = async () => {
+    for (let attempt = 0; attempt < 3 && finalAckByRequestId.size > 0; attempt += 1) {
+      for (const [requestId, finalAck] of Array.from(finalAckByRequestId.entries())) {
+        try {
+          await ackFinalControlRequest(requestId, finalAck);
+        } catch {
+          // The run is exiting; keep drain bounded and let the server-side
+          // delivered state show that the control reached the daemon.
+        }
+      }
+      if (finalAckByRequestId.size > 0) {
+        await delay(Math.min(options.intervalMs, 250));
+      }
+    }
+  };
+
+  const handleRequest = async (request: PendingControlRequest) => {
+    if (handledRequestIds.has(request.id)) {
+      return;
+    }
+    const cachedFinalAck = finalAckByRequestId.get(request.id);
+    if (cachedFinalAck) {
+      await ackFinalControlRequest(request.id, cachedFinalAck);
+      return;
+    }
+    if (request.status === 'delivered' && !deliveredRequestIds.has(request.id)) {
+      const finalAck = {
+        status: 'failed' as const,
+        values: {
+          resultMessage: 'Control request was already delivered before this daemon instance; duplicate signal skipped',
+          metadataJson: {
+            action: request.action,
+            duplicateSignalSkipped: true,
+          },
+        },
+      };
+      finalAckByRequestId.set(request.id, finalAck);
+      await ackFinalControlRequest(request.id, finalAck);
+      return;
+    }
+    if (request.status !== 'delivered' && !deliveredRequestIds.has(request.id)) {
+      await ackControlRequest(request.id, 'delivered', {
+        metadataJson: {
+          action: request.action,
+        },
+      });
+      deliveredRequestIds.add(request.id);
+    }
+
+    let finalAck: {
+      status: 'succeeded' | 'failed';
+      values: JsonRecord;
+    };
+    try {
+      if (request.action === 'interrupt') {
+        if (!options.sessionName) {
+          throw new Error('No managed tmux session is available for interrupt');
+        }
+        await interruptTmuxSession(options.sessionName);
+      } else if (request.action === 'terminate') {
+        if (!options.sessionName) {
+          throw new Error('No managed tmux session is available for terminate');
+        }
+        options.cancelController.abort(TMUX_TERMINATE_CANCEL_REASON);
+        await terminateTmuxSession(options.sessionName);
+      } else {
+        throw new Error(`Unsupported control request action: ${String(request.action)}`);
+      }
+      finalAck = {
+        status: 'succeeded',
+        values: {
+          metadataJson: {
+            action: request.action,
+          },
+        },
+      };
+    } catch (error) {
+      finalAck = {
+        status: 'failed',
+        values: {
+          resultMessage: error instanceof Error ? error.message : String(error),
+          metadataJson: {
+            action: request.action,
+          },
+        },
+      };
+    }
+    finalAckByRequestId.set(request.id, finalAck);
+    await ackFinalControlRequest(request.id, finalAck);
+  };
+
+  const poll = () => {
+    if (inFlight) {
+      return;
+    }
+    inFlight = options.gateway
+      .listPendingControlRequests(options.getLease())
+      .then(async (result) => {
+        for (const request of result.requests || []) {
+          await handleRequest(request);
+        }
+      })
+      .catch(() => {
+        // Control polling is best-effort. Heartbeat remains the authoritative
+        // lease-lost detector for the run.
+      })
+      .finally(() => {
+        inFlight = null;
+      });
+  };
+
+  poll();
+  const timer = setInterval(poll, options.intervalMs);
+  return async () => {
+    clearInterval(timer);
+    await inFlight;
+    await drainFinalAcks();
+  };
+}
+
 async function refreshRunLeaseBeforeTerminal(options: {
   gateway: AgentGatewayDaemonNodeClient;
   getLease(): RunLease;
@@ -480,7 +656,7 @@ async function refreshRunLeaseBeforeTerminal(options: {
       ...refreshedLease,
     });
     if (refreshedLease.cancelRequested) {
-      options.cancelController.abort();
+      abortForRunCancel(options.cancelController, refreshedLease);
       return 'cancel_requested';
     }
     return 'active';
@@ -742,20 +918,16 @@ export async function executeClaimedRun(
   const cwd = path.resolve(options.workspaceRoot, getString(payload.cwd) || '.');
   const terminalBackend = options.terminalBackend || 'exec';
   const tmuxSessionName = getManagedTmuxSessionName(claimedLease.runId);
+  const usesManagedTmux = terminalBackend === 'tmux' && !options.executeCommand;
   let terminalStream: TerminalStreamHandle | null = null;
   const cancelController = new AbortController();
   const leaseLostController = new AbortController();
   let stopHeartbeat: (() => Promise<void>) | null = null;
+  let stopControlRequests: (() => Promise<void>) | null = null;
 
   try {
     const commandSpec = getExecutionCommandSpec(payload, cwd);
-    if (terminalBackend === 'tmux' && !options.executeCommand) {
-      await options.gateway.updateRunTerminal(activeLease(), {
-        terminalBackend: 'tmux',
-        terminalSessionName: tmuxSessionName,
-        terminalStatus: 'active',
-        terminalStartedAt: new Date().toISOString(),
-      });
+    if (usesManagedTmux) {
       terminalStream = createRunTerminalStream({
         runOptions: options,
         runId: claimedLease.runId,
@@ -764,6 +936,26 @@ export async function executeClaimedRun(
       });
       await terminalStream.start();
     }
+    const startManagedTmuxControls = async (terminalStartedAt: string) => {
+      await options.gateway.updateRunTerminal(activeLease(), {
+        terminalBackend: 'tmux',
+        terminalSessionName: tmuxSessionName,
+        terminalStatus: 'active',
+        terminalStartedAt,
+      });
+      if (!stopControlRequests) {
+        stopControlRequests = controlRequestWhileRunPhase({
+          gateway: options.gateway,
+          getLease: activeLease,
+          sessionName: tmuxSessionName,
+          cancelController,
+          intervalMs: Math.max(
+            250,
+            Math.floor((options.runHeartbeatIntervalMs || DEFAULT_RUN_HEARTBEAT_INTERVAL_MS) / 2),
+          ),
+        });
+      }
+    };
     stopHeartbeat = heartbeatWhileRunPhase({
       gateway: options.gateway,
       getLease: activeLease,
@@ -776,41 +968,47 @@ export async function executeClaimedRun(
       intervalMs: options.runHeartbeatIntervalMs || DEFAULT_RUN_HEARTBEAT_INTERVAL_MS,
     });
 
-    const result =
-      terminalBackend === 'tmux' && !options.executeCommand
-        ? await executeTmuxCommand({
-            runId: claimedLease.runId,
-            definition: getAllowlistedDefinition(options.allowlist, commandSpec.commandKey),
-            args: commandSpec.args,
-            cwd: commandSpec.cwd,
-            workspaceRoot: options.workspaceRoot,
-            env: commandSpec.env,
-            timeoutMs: commandSpec.timeoutMs || DEFAULT_RUN_HEARTBEAT_INTERVAL_MS * 180,
-            cancelSignal: cancelController.signal,
-            leaseLostSignal: leaseLostController.signal,
-            artifactDir: options.artifactDir,
-            onOutputChunk: async (chunk) => {
-              await terminalStream?.appendText(chunk);
-            },
-          })
-        : await (options.executeCommand || executeAllowlistedCommand)({
-            commandKey: commandSpec.commandKey,
-            allowlist: options.allowlist,
-            args: commandSpec.args,
-            cwd: commandSpec.cwd,
-            workspaceRoot: options.workspaceRoot,
-            env: commandSpec.env,
-            timeoutMs: commandSpec.timeoutMs,
-            cancelSignal: cancelController.signal,
-            leaseLostSignal: leaseLostController.signal,
-            artifactDir: options.artifactDir,
-          });
+    const result = usesManagedTmux
+      ? await executeTmuxCommand({
+          runId: claimedLease.runId,
+          definition: getAllowlistedDefinition(options.allowlist, commandSpec.commandKey),
+          args: commandSpec.args,
+          cwd: commandSpec.cwd,
+          workspaceRoot: options.workspaceRoot,
+          env: commandSpec.env,
+          timeoutMs: commandSpec.timeoutMs || DEFAULT_RUN_HEARTBEAT_INTERVAL_MS * 180,
+          cancelSignal: cancelController.signal,
+          leaseLostSignal: leaseLostController.signal,
+          artifactDir: options.artifactDir,
+          onOutputChunk: async (chunk) => {
+            await terminalStream?.appendText(chunk);
+          },
+          onSessionStarted: async (metadata) => {
+            await startManagedTmuxControls(metadata.startedAt);
+          },
+        })
+      : await (options.executeCommand || executeAllowlistedCommand)({
+          commandKey: commandSpec.commandKey,
+          allowlist: options.allowlist,
+          args: commandSpec.args,
+          cwd: commandSpec.cwd,
+          workspaceRoot: options.workspaceRoot,
+          env: commandSpec.env,
+          timeoutMs: commandSpec.timeoutMs,
+          cancelSignal: cancelController.signal,
+          leaseLostSignal: leaseLostController.signal,
+          artifactDir: options.artifactDir,
+        });
     if (stopHeartbeat) {
       await stopHeartbeat();
       stopHeartbeat = null;
     }
+    if (stopControlRequests) {
+      await stopControlRequests();
+      stopControlRequests = null;
+    }
     if (leaseLostController.signal.aborted) {
-      if (terminalBackend === 'tmux' && !options.executeCommand) {
+      if (usesManagedTmux) {
         await closeTmuxTerminalQuietly(options, activeLease(), claimedLease.runId, result.exitCode);
         await terminalStream?.end('disconnected');
       }
@@ -829,7 +1027,7 @@ export async function executeClaimedRun(
       leaseLostController,
     });
     if (refreshedLeaseStatus === 'lease_lost') {
-      if (terminalBackend === 'tmux' && !options.executeCommand) {
+      if (usesManagedTmux) {
         await closeTmuxTerminalQuietly(options, activeLease(), claimedLease.runId, result.exitCode);
         await terminalStream?.end('disconnected');
       }
@@ -839,7 +1037,7 @@ export async function executeClaimedRun(
       };
     }
     if (refreshedLeaseStatus === 'cancel_requested') {
-      if (terminalBackend === 'tmux' && !options.executeCommand) {
+      if (usesManagedTmux) {
         await closeTmuxTerminalQuietly(options, activeLease(), claimedLease.runId, result.exitCode);
         await terminalStream?.end('canceled');
       }
@@ -855,7 +1053,7 @@ export async function executeClaimedRun(
         runId: claimedLease.runId,
       };
     }
-    if (terminalBackend === 'tmux' && !options.executeCommand) {
+    if (usesManagedTmux) {
       await closeTmuxTerminalQuietly(options, activeLease(), claimedLease.runId, result.exitCode);
       await terminalStream?.end(toTerminalEndReason(result.status));
     }
@@ -892,7 +1090,11 @@ export async function executeClaimedRun(
       await stopHeartbeat();
       stopHeartbeat = null;
     }
-    if (terminalBackend === 'tmux' && !options.executeCommand) {
+    if (stopControlRequests) {
+      await stopControlRequests();
+      stopControlRequests = null;
+    }
+    if (usesManagedTmux) {
       await closeTmuxTerminalQuietly(options, activeLease(), claimedLease.runId, null);
       await terminalStream?.end(leaseLostController.signal.aborted ? 'disconnected' : 'failed');
     }
@@ -928,6 +1130,9 @@ export async function executeClaimedRun(
   } finally {
     if (stopHeartbeat) {
       await stopHeartbeat();
+    }
+    if (stopControlRequests) {
+      await stopControlRequests();
     }
     terminalStream?.close();
   }

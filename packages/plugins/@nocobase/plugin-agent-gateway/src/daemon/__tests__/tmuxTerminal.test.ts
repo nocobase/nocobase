@@ -15,6 +15,7 @@ import path from 'path';
 import {
   executeTmuxCommand,
   getManagedTmuxSessionName,
+  TMUX_TERMINATE_CANCEL_REASON,
   terminateTmuxSession,
   writeRedactedArtifactFromFile,
 } from '../tmuxTerminal';
@@ -432,6 +433,108 @@ describe('agent gateway tmux terminal driver', () => {
         '#{pane_dead}:#{pane_current_command}',
       ]);
       expect(paneState.trim()).toMatch(/^1:/);
+    } finally {
+      await terminateTmuxSession(sessionName).catch(() => {
+        // The completed session may already have been removed.
+      });
+    }
+  });
+
+  it('direct terminate cancellation does not send Ctrl-C before killing the tmux session', async () => {
+    if (!tmuxReady) {
+      return;
+    }
+
+    const runId = `tmux-direct-terminate-${Date.now()}`;
+    const sessionName = getManagedTmuxSessionName(runId);
+    const cancelController = new AbortController();
+    const startMarkerPath = path.join(tempDir, `${runId}-start-marker.txt`);
+    const interruptMarkerPath = path.join(tempDir, `${runId}-interrupt-marker.txt`);
+    try {
+      const result = await executeTmuxCommand({
+        runId,
+        definition: {
+          commandKey: 'sh',
+          executable: 'sh',
+        },
+        args: [
+          '-lc',
+          [
+            'trap \'printf "INT\\n" > "$AGW_INT_MARKER"\' INT;',
+            'printf "START\\n" > "$AGW_START_MARKER";',
+            'printf "AGENT_GATEWAY_TMUX_DIRECT_TERMINATE_START\\n";',
+            'sleep 30;',
+            'printf "AGENT_GATEWAY_TMUX_DIRECT_TERMINATE_DONE\\n";',
+          ].join(' '),
+        ],
+        cwd: process.cwd(),
+        workspaceRoot: process.cwd(),
+        env: {
+          AGW_START_MARKER: startMarkerPath,
+          AGW_INT_MARKER: interruptMarkerPath,
+        },
+        timeoutMs: 10_000,
+        artifactDir: tempDir,
+        cancelSignal: cancelController.signal,
+        onSessionStarted: async ({ sessionName }) => {
+          for (let attempt = 0; attempt < 20; attempt += 1) {
+            const startMarker = await fs.readFile(startMarkerPath, 'utf8').catch(() => '');
+            if (startMarker.includes('START')) {
+              break;
+            }
+            await new Promise((resolve) => setTimeout(resolve, 50));
+          }
+          cancelController.abort(TMUX_TERMINATE_CANCEL_REASON);
+          await terminateTmuxSession(sessionName);
+        },
+      });
+
+      expect(result.status).toBe('canceled');
+      expect(result.stdout.text || '').not.toContain('AGENT_GATEWAY_TMUX_DIRECT_TERMINATE_DONE');
+      const startMarker = await fs.readFile(startMarkerPath, 'utf8').catch(() => '');
+      expect(startMarker).toContain('START');
+      const interruptMarker = await fs.readFile(interruptMarkerPath, 'utf8').catch(() => '');
+      expect(interruptMarker).toBe('');
+    } finally {
+      await terminateTmuxSession(sessionName).catch(() => {
+        // The test may already have killed the session.
+      });
+    }
+  });
+
+  it('returns promptly when the tmux pane dies before the done signal is emitted', async () => {
+    if (!tmuxReady) {
+      return;
+    }
+
+    const runId = `tmux-pane-dead-${Date.now()}`;
+    const sessionName = getManagedTmuxSessionName(runId);
+    const startedAt = Date.now();
+    try {
+      const result = await executeTmuxCommand({
+        runId,
+        definition: {
+          commandKey: 'sh',
+          executable: 'sh',
+        },
+        args: ['-lc', 'printf "AGENT_GATEWAY_TMUX_PANE_DEAD_START\\n"; sleep 30'],
+        cwd: process.cwd(),
+        workspaceRoot: process.cwd(),
+        timeoutMs: 10_000,
+        artifactDir: tempDir,
+        onSessionStarted: async ({ sessionName }) => {
+          setTimeout(() => {
+            execTmux(['kill-session', '-t', sessionName]).catch(() => {
+              // The session may already have exited.
+            });
+          }, 500);
+        },
+      });
+
+      expect(Date.now() - startedAt).toBeLessThan(5000);
+      expect(result.status).toBe('failed');
+      expect(result.exitCode).toBeNull();
+      expect(result.stdout.sizeBytes).toBeGreaterThan(0);
     } finally {
       await terminateTmuxSession(sessionName).catch(() => {
         // The completed session may already have been removed.

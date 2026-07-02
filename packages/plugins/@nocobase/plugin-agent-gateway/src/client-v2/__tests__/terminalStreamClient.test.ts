@@ -179,6 +179,68 @@ describe('TerminalStreamClient', () => {
     });
   });
 
+  it('consumes browser terminal frames without sessionName', () => {
+    const fakeWebSocket = new FakeWebSocket();
+    const onChunk = vi.fn();
+    const client = new TerminalStreamClient({
+      runId: 'run-id-1',
+      token: 'browser-token',
+      createWebSocket: () => fakeWebSocket,
+      onChunk,
+    });
+
+    client.connect();
+    fakeWebSocket.dispatch('message', {
+      data: JSON.stringify({
+        type: 'terminal.data',
+        protocol: TERMINAL_PROTOCOL,
+        runId: 'run-id-1',
+        offsetStart: 0,
+        offsetEnd: 6,
+        payloadEncoding: TERMINAL_PAYLOAD_ENCODING,
+        payload: encodeTerminalPayload('hello\n'),
+      }),
+    });
+    fakeWebSocket.dispatch('message', {
+      data: JSON.stringify({
+        type: 'terminal.snapshot',
+        protocol: TERMINAL_PROTOCOL,
+        runId: 'run-id-1',
+        offsetStart: 6,
+        offsetEnd: 12,
+        payloadEncoding: TERMINAL_PAYLOAD_ENCODING,
+        payload: encodeTerminalPayload('world\n'),
+      }),
+    });
+    fakeWebSocket.dispatch('message', {
+      data: JSON.stringify({
+        type: 'terminal.end',
+        protocol: TERMINAL_PROTOCOL,
+        runId: 'run-id-1',
+        offsetEnd: 12,
+        reason: 'completed',
+      }),
+    });
+
+    expect(onChunk).toHaveBeenCalledWith({
+      frameType: 'terminal.data',
+      offsetStart: 0,
+      offsetEnd: 6,
+      text: 'hello\n',
+    });
+    expect(onChunk).toHaveBeenCalledWith({
+      frameType: 'terminal.snapshot',
+      offsetStart: 6,
+      offsetEnd: 12,
+      text: 'world\n',
+    });
+    expect(client.getState()).toMatchObject({
+      connectionState: 'closed',
+      currentOffset: 12,
+      previewText: 'hello\nworld\n',
+    });
+  });
+
   it('splits large decoded payloads into browser frame-sized chunks', () => {
     const fakeWebSocket = new FakeWebSocket();
     const onChunk = vi.fn();

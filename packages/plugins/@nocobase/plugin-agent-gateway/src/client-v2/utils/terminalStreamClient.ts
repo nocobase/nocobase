@@ -268,7 +268,7 @@ export class TerminalStreamClient {
       });
       return;
     }
-    const parsed = parseTerminalFrame(payload);
+    const parsed = parseTerminalFrame(payload, { allowMissingSessionName: true });
     if (parsed.ok === false) {
       this.updateState({
         connectionState: 'error',

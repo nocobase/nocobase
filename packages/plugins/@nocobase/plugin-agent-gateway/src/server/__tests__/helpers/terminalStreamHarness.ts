@@ -165,7 +165,10 @@ export function sendFrame(ws: WebSocket, frame: TerminalFrame | Record<string, u
   ws.send(JSON.stringify(frame));
 }
 
-export async function createRunner(app: MockServer, options: { nodeKey?: string; maxConcurrency?: number } = {}) {
+export async function createRunner(
+  app: MockServer,
+  options: { nodeKey?: string; maxConcurrency?: number; terminalControl?: boolean } = {},
+) {
   const nodeKey = options.nodeKey || `terminal-stream-node-${Date.now()}-${Math.random().toString(16).slice(2)}`;
   const nodeToken = createNodeToken();
   const now = new Date();
@@ -179,6 +182,18 @@ export async function createRunner(app: MockServer, options: { nodeKey?: string;
       capabilitiesJson: {
         maxConcurrency: options.maxConcurrency || 1,
         terminalStream: true,
+        terminal:
+          options.terminalControl === false
+            ? {
+                backend: 'tmux',
+                interrupt: false,
+                terminate: false,
+              }
+            : {
+                backend: 'tmux',
+                interrupt: true,
+                terminate: true,
+              },
       },
       registeredAt: now,
       lastHeartbeatAt: now,

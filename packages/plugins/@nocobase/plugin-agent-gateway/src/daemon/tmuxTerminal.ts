@@ -15,6 +15,7 @@ import path from 'path';
 import { StringDecoder } from 'string_decoder';
 
 import { redactObservabilityText } from '../server/security/redaction';
+import { AGENT_GATEWAY_TERMINATE_CONTROL_CANCEL_REASON } from '../shared/runControl';
 import { ExecCommandDefinition, ExecDriverResult, ExecTerminalStatus } from './execDriver';
 
 export interface TmuxCommandOptions {
@@ -53,6 +54,8 @@ export interface TmuxSnapshot {
   capturedAt: string;
 }
 
+export const TMUX_TERMINATE_CANCEL_REASON = AGENT_GATEWAY_TERMINATE_CONTROL_CANCEL_REASON;
+
 const TERMINAL_CAPTURE_LIMIT = 64 * 1024;
 const DEFAULT_CAPTURE_LINES = 2000;
 const TMUX_SESSION_PATTERN = /^ag-run-[a-z0-9-]{1,80}$/i;
@@ -85,9 +88,14 @@ const PARTIAL_LINE_SENSITIVE_PREFIXES = [
   'cwd',
   'env',
 ];
+
+function isTerminateCancelReason(reason: unknown) {
+  return reason === TMUX_TERMINATE_CANCEL_REASON;
+}
 const PANE_CAPTURE_FLUSH_MAX_WAIT_MS = 500;
 const PANE_CAPTURE_FLUSH_POLL_MS = 25;
 const PANE_CAPTURE_FLUSH_STABLE_POLLS = 2;
+const PANE_ENDED_SIGNAL_GRACE_MS = 1000;
 
 function delay(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -207,22 +215,75 @@ async function sessionExists(sessionName: string) {
   }
 }
 
-async function waitForSignal(signalName: string, timeoutMs: number) {
-  return await new Promise<'completed' | 'timeout'>((resolve, reject) => {
+async function isSessionPaneDead(sessionName: string) {
+  try {
+    const { stdout } = await execTmux(['list-panes', '-t', sessionName, '-F', '#{pane_dead}'], { timeoutMs: 2000 });
+    const paneStates = stdout
+      .split('\n')
+      .map((line) => line.trim())
+      .filter(Boolean);
+    return paneStates.length > 0 && paneStates.every((state) => state === '1');
+  } catch {
+    return true;
+  }
+}
+
+type TmuxWaitResult = 'signal' | 'pane-ended' | 'timeout';
+
+async function waitForSignalOrPaneEnd(sessionName: string, signalName: string, timeoutMs: number) {
+  return await new Promise<TmuxWaitResult>((resolve, reject) => {
     let closed = false;
+    let checkingPane = false;
+    let paneEndedAt: number | null = null;
     const child = spawn('tmux', ['wait-for', signalName], {
       stdio: 'ignore',
     });
-    const timer = setTimeout(() => {
+    const finish = (result: TmuxWaitResult) => {
+      if (closed) {
+        return;
+      }
       closed = true;
       child.kill('SIGTERM');
-      resolve('timeout');
+      clearTimeout(timer);
+      clearInterval(paneTimer);
+      resolve(result);
+    };
+    const timer = setTimeout(() => {
+      finish('timeout');
     }, timeoutMs);
+    const paneTimer = setInterval(() => {
+      if (closed || checkingPane) {
+        return;
+      }
+      checkingPane = true;
+      return isSessionPaneDead(sessionName)
+        .then((paneDead) => {
+          if (!paneDead) {
+            paneEndedAt = null;
+            return;
+          }
+          const now = Date.now();
+          if (paneEndedAt === null) {
+            paneEndedAt = now;
+            return;
+          }
+          if (now - paneEndedAt >= PANE_ENDED_SIGNAL_GRACE_MS) {
+            finish('pane-ended');
+          }
+        })
+        .catch(() => {
+          finish('pane-ended');
+        })
+        .finally(() => {
+          checkingPane = false;
+        });
+    }, 250);
 
     child.on('error', (error) => {
       if (!closed) {
         closed = true;
         clearTimeout(timer);
+        clearInterval(paneTimer);
         reject(error);
       }
     });
@@ -232,8 +293,9 @@ async function waitForSignal(signalName: string, timeoutMs: number) {
       }
       closed = true;
       clearTimeout(timer);
+      clearInterval(paneTimer);
       if (exitCode === 0) {
-        resolve('completed');
+        resolve('signal');
       } else {
         reject(new Error(`tmux wait-for exited with code ${exitCode}`));
       }
@@ -293,13 +355,21 @@ async function appendFallbackOutputIfMissing(paneCapturePath: string, fallbackOu
     return;
   }
 
-  const fallbackBytes = Buffer.byteLength(fallbackOutput);
   const stat = await fs.stat(paneCapturePath).catch(() => null);
   if (!stat?.size) {
     await fs.writeFile(paneCapturePath, fallbackOutput);
     return;
   }
 
+  if (
+    fallbackOutput.includes(REDACTED_OVERSIZED_TERMINAL_LINE.trim()) ||
+    shouldDeferPartialLiveLine(fallbackOutput) ||
+    Buffer.byteLength(fallbackOutput) > TERMINAL_CAPTURE_LIMIT
+  ) {
+    return;
+  }
+
+  const fallbackBytes = Buffer.byteLength(fallbackOutput);
   const tailReadSize = Math.min(stat.size, Math.max(TERMINAL_CAPTURE_LIMIT, fallbackBytes * 2));
   const file = await fs.open(paneCapturePath, 'r');
   try {
@@ -700,15 +770,11 @@ export async function executeTmuxCommand(options: TmuxCommandOptions): Promise<E
         onChunk: options.onOutputChunk,
       });
     }
-    await options.onSessionStarted?.({
-      backend: 'tmux',
-      sessionName,
-      startedAt,
-    });
-    await sendTmuxInput(sessionName, `exec sh ${shellQuote(commandScriptPath)}`, true);
-
     const cancelHandler = () => {
       terminalStatus = terminalStatus || 'canceled';
+      if (isTerminateCancelReason(options.cancelSignal?.reason)) {
+        return;
+      }
       interruptTmuxSession(sessionName).catch(() => {
         // The session may have already ended.
       });
@@ -733,10 +799,17 @@ export async function executeTmuxCommand(options: TmuxCommandOptions): Promise<E
       leaseLostHandler();
     }
 
-    let completed = false;
+    await sendTmuxInput(sessionName, `exec sh ${shellQuote(commandScriptPath)}`, true);
+    await options.onSessionStarted?.({
+      backend: 'tmux',
+      sessionName,
+      startedAt,
+    });
+
+    let waitResult: TmuxWaitResult = 'timeout';
     try {
-      completed = (await waitForSignal(doneSignalName, options.timeoutMs)) === 'completed';
-      if (!completed) {
+      waitResult = await waitForSignalOrPaneEnd(sessionName, doneSignalName, options.timeoutMs);
+      if (waitResult === 'timeout') {
         terminalStatus = terminalStatus || 'timeout';
         await terminateTmuxSession(sessionName);
       }
@@ -756,7 +829,9 @@ export async function executeTmuxCommand(options: TmuxCommandOptions): Promise<E
     }
 
     const rawExitCode = await fs.readFile(exitCodePath, 'utf8').catch(() => '');
-    const exitCode = completed ? getExitCode(rawExitCode) : null;
+    const completedExitCode = getExitCode(rawExitCode);
+    const completed = waitResult === 'signal';
+    const exitCode = completed ? completedExitCode : null;
     const status: ExecTerminalStatus = terminalStatus || (exitCode === 0 ? 'succeeded' : 'failed');
     const snapshot = await captureTmuxSession(sessionName).catch(() => ({
       available: false,

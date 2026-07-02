@@ -264,6 +264,11 @@ function serializeBinding(binding: ModelRecord) {
 function serializeRun(run: ModelRecord) {
   const json = getModelJson(run);
   delete json.claimTokenHash;
+  delete json.claimAttempt;
+  delete json.leaseVersion;
+  delete json.claimTokenLast4;
+  delete json.claimExpiresAt;
+  delete json.terminalSessionName;
   delete json.promptSnapshot;
   delete json.executionPayloadJson;
   return json;

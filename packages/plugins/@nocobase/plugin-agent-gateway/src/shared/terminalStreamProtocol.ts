@@ -157,6 +157,10 @@ export type TerminalParseResult =
       error: TerminalError;
     };
 
+export interface TerminalParseOptions {
+  allowMissingSessionName?: boolean;
+}
+
 type JsonRecord = Record<string, unknown>;
 
 const TERMINAL_FRAME_TYPES = new Set<TerminalFrameType>([
@@ -254,7 +258,14 @@ function validateOffsetPair(record: JsonRecord) {
   return null;
 }
 
-function validatePayloadFrame(record: JsonRecord) {
+function validateSessionName(record: JsonRecord, options: TerminalParseOptions) {
+  if (isNonEmptyString(record.sessionName) || options.allowMissingSessionName) {
+    return null;
+  }
+  return protocolError('sessionName is required', getString(record.requestId) || undefined);
+}
+
+function validatePayloadFrame(record: JsonRecord, options: TerminalParseOptions) {
   const payloadIsValid =
     isNonEmptyString(record.payload) ||
     (record.type === 'terminal.snapshot' &&
@@ -263,9 +274,7 @@ function validatePayloadFrame(record: JsonRecord) {
       record.offsetStart === record.offsetEnd);
   return (
     validateRunId(record) ||
-    (isNonEmptyString(record.sessionName)
-      ? null
-      : protocolError('sessionName is required', getString(record.requestId) || undefined)) ||
+    validateSessionName(record, options) ||
     validateOffsetPair(record) ||
     (record.payloadEncoding === TERMINAL_PAYLOAD_ENCODING
       ? null
@@ -369,7 +378,7 @@ function normalizeTerminalFrame(record: JsonRecord): TerminalFrame {
   };
 }
 
-export function parseTerminalFrame(input: unknown): TerminalParseResult {
+export function parseTerminalFrame(input: unknown, options: TerminalParseOptions = {}): TerminalParseResult {
   const record = isRecord(input) ? input : null;
   if (!record) {
     return {
@@ -424,12 +433,10 @@ export function parseTerminalFrame(input: unknown): TerminalParseResult {
                 ? null
                 : protocolError('fromOffset must be a non-negative integer', getString(record.requestId)))
             : record.type === 'terminal.data' || record.type === 'terminal.snapshot'
-              ? validatePayloadFrame(record)
+              ? validatePayloadFrame(record, options)
               : record.type === 'terminal.end'
                 ? validateRunId(record) ||
-                  (isNonEmptyString(record.sessionName)
-                    ? null
-                    : protocolError('sessionName is required', getString(record.requestId) || undefined)) ||
+                  validateSessionName(record, options) ||
                   (isNonNegativeInteger(record.offsetEnd)
                     ? null
                     : protocolError(
@@ -466,9 +473,9 @@ export function parseTerminalFrame(input: unknown): TerminalParseResult {
   };
 }
 
-export function parseTerminalFrameJson(input: string): TerminalParseResult {
+export function parseTerminalFrameJson(input: string, options: TerminalParseOptions = {}): TerminalParseResult {
   try {
-    return parseTerminalFrame(JSON.parse(input) as unknown);
+    return parseTerminalFrame(JSON.parse(input) as unknown, options);
   } catch {
     return {
       ok: false,

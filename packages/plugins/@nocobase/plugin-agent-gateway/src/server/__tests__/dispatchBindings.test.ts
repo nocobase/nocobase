@@ -473,6 +473,17 @@ describe('agent gateway dispatch binding APIs', () => {
       });
     expect(firstResponse.status).toBe(200);
     const firstDispatch = getData(firstResponse as ResponseLike<DispatchResponse>);
+    await app.db.getRepository('agRuns').update({
+      filterByTk: firstDispatch.run.id,
+      values: {
+        status: 'running',
+        claimAttempt: 3,
+        leaseVersion: 7,
+        claimTokenLast4: 'LAST',
+        claimExpiresAt: new Date(Date.now() + 60_000),
+        terminalSessionName: 'ag-run-dispatch-internal-session',
+      },
+    });
 
     const sameKeyResponse = await rootAgent
       .post(`/api/agent-gateway/dispatch-bindings/${binding.bindingKey}:dispatch`)
@@ -490,6 +501,15 @@ describe('agent gateway dispatch binding APIs', () => {
     });
     expect(sameKeyDispatch.run).not.toHaveProperty('promptSnapshot');
     expect(sameKeyDispatch.run).not.toHaveProperty('executionPayloadJson');
+    for (const internalField of [
+      'claimAttempt',
+      'leaseVersion',
+      'claimTokenLast4',
+      'claimExpiresAt',
+      'terminalSessionName',
+    ]) {
+      expect(sameKeyDispatch.run).not.toHaveProperty(internalField);
+    }
 
     const differentKeyResponse = await rootAgent
       .post(`/api/agent-gateway/dispatch-bindings/${binding.bindingKey}:dispatch`)

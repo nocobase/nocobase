@@ -16,6 +16,7 @@ import { Transaction } from 'sequelize';
 import {
   AGENT_GATEWAY_ACTIONS,
   AGENT_GATEWAY_PERMISSIONS,
+  AGENT_GATEWAY_RESOURCE,
   createClaimToken,
   extractNodeToken,
   redactRunErrorSummary,
@@ -39,12 +40,15 @@ import {
   getModelValue,
   getRecord,
   getString,
+  getCurrentRoleNames,
+  getVisibleRunFilter,
   matchStandardCollectionAction,
   requireAgentGatewayPermission,
   requireManagePermission,
 } from './utils';
 import { serializeSkillVersionSourceForNode } from './skillVersions';
 import { auditAgentActionBestEffort, auditMutatingAgentAction } from '../audit/agentActionAudit';
+import { AGENT_GATEWAY_TERMINATE_CONTROL_CANCEL_REASON } from '../../shared/runControl';
 
 const DEFAULT_CLAIM_LEASE_SECONDS = 60;
 const DEFAULT_MAX_CONCURRENCY = 1;
@@ -52,6 +56,7 @@ const CLAIM_CANDIDATE_PAGE_SIZE = 50;
 
 const ACTIVE_RUN_STATUSES = ['claimed', 'syncing_skills', 'running', 'canceling'] as const;
 const CLAIMABLE_RUN_STATUS = 'queued';
+const CONTROL_RUN_STATUSES = new Set(['claimed', 'syncing_skills', 'running']);
 const TERMINAL_RUN_STATUSES = ['succeeded', 'failed', 'canceled', 'timeout', 'abandoned'] as const;
 const HEARTBEAT_RUN_STATUSES = ['claimed', 'syncing_skills', 'running'] as const;
 const NODE_OWNED_INLINE_SKILL_SOURCE_TYPES = new Set(['opencode-smoke']);
@@ -149,21 +154,133 @@ function serializeRun(run: ModelRecord) {
   return json;
 }
 
-async function serializeRunForManagement(ctx: Context, run: ModelRecord) {
+function serializeRunForUser(run: ModelRecord) {
   const json = serializeRun(run);
+  delete json.claimAttempt;
+  delete json.leaseVersion;
+  delete json.claimTokenLast4;
+  delete json.claimExpiresAt;
+  delete json.terminalSessionName;
+  return json;
+}
+
+async function getAgentGatewayControlActionPermissions(ctx: Context) {
+  const roles = await getCurrentRoleNames(ctx);
+  return {
+    interruptRun: Boolean(
+      ctx.app.acl.can({
+        roles,
+        resource: AGENT_GATEWAY_RESOURCE,
+        action: AGENT_GATEWAY_ACTIONS.interruptRun,
+      }),
+    ),
+    terminateRun: Boolean(
+      ctx.app.acl.can({
+        roles,
+        resource: AGENT_GATEWAY_RESOURCE,
+        action: AGENT_GATEWAY_ACTIONS.terminateRun,
+      }),
+    ),
+  };
+}
+
+function getControlCapabilityDecision(capabilities: JsonRecord, action: 'interrupt' | 'terminate') {
+  if (capabilities[action] === true) {
+    return true;
+  }
+  if (capabilities[action] === false) {
+    return false;
+  }
+
+  for (const key of ['terminal', 'terminalControl']) {
+    const scopedCapabilities = getRecord(capabilities[key]);
+    if (scopedCapabilities[action] === true) {
+      return true;
+    }
+    if (scopedCapabilities[action] === false) {
+      return false;
+    }
+  }
+
+  return null;
+}
+
+function hasActiveTmuxControlSurface(run: ModelRecord) {
+  return (
+    CONTROL_RUN_STATUSES.has(getModelString(run, 'status')) &&
+    getModelString(run, 'terminalBackend') === 'tmux' &&
+    getModelString(run, 'terminalStatus') === 'active' &&
+    Boolean(getModelString(run, 'terminalSessionName'))
+  );
+}
+
+async function getRunnerControlCapability(ctx: Context, run: ModelRecord, action: 'interrupt' | 'terminate') {
+  const decisions: Array<boolean | null> = [];
+  const nodeId = getOptionalTargetKey(run, 'nodeId');
+  if (nodeId) {
+    const node = (await ctx.db.getRepository('agNodes').findOne({
+      filterByTk: nodeId,
+    })) as ModelRecord | null;
+    if (node) {
+      decisions.push(getControlCapabilityDecision(getRecord(getModelValue(node, 'capabilitiesJson')), action));
+    }
+  }
+
+  const agentProfileId = getOptionalTargetKey(run, 'agentProfileId');
+  if (agentProfileId) {
+    const profile = (await ctx.db.getRepository('agAgentProfiles').findOne({
+      filterByTk: agentProfileId,
+    })) as ModelRecord | null;
+    if (profile) {
+      decisions.push(getControlCapabilityDecision(getRecord(getModelValue(profile, 'capabilitiesJson')), action));
+    }
+  }
+
+  if (decisions.includes(false)) {
+    return false;
+  }
+  return decisions.includes(true);
+}
+
+async function getRunControlCapability(
+  ctx: Context,
+  run: ModelRecord,
+  session: ModelRecord | null,
+  sessionCapabilities: JsonRecord,
+  action: 'interrupt' | 'terminate',
+) {
+  if (!hasActiveTmuxControlSurface(run)) {
+    return false;
+  }
+  if (session) {
+    return getControlCapabilityDecision(sessionCapabilities, action) === true;
+  }
+  return await getRunnerControlCapability(ctx, run, action);
+}
+
+async function serializeRunForManagement(ctx: Context, run: ModelRecord) {
+  const json = serializeRunForUser(run);
   const agentSessionId = getOptionalTargetKey(run, 'agentSessionId');
-  if (!agentSessionId) {
-    return json;
-  }
-  const session = (await ctx.db.getRepository('agAgentSessions').findOne({
-    filterByTk: agentSessionId,
-  })) as ModelRecord | null;
-  if (!session) {
-    return json;
-  }
+  const session = agentSessionId
+    ? ((await ctx.db.getRepository('agAgentSessions').findOne({
+        filterByTk: agentSessionId,
+      })) as ModelRecord | null)
+    : null;
+  const capabilities = session ? getRecord(getModelValue(session, 'capabilitiesJson')) : {};
+  const controlPermissions = await getAgentGatewayControlActionPermissions(ctx);
+  const interruptCapable = await getRunControlCapability(ctx, run, session, capabilities, 'interrupt');
+  const terminateCapable = await getRunControlCapability(ctx, run, session, capabilities, 'terminate');
   return {
     ...json,
-    agentSessionCapabilitiesJson: getRecord(getModelValue(session, 'capabilitiesJson')),
+    ...(session
+      ? {
+          agentSessionCapabilitiesJson: capabilities,
+        }
+      : {}),
+    agentGatewayControlActionsJson: {
+      interruptRun: controlPermissions.interruptRun && interruptCapable,
+      terminateRun: controlPermissions.terminateRun && terminateCapable,
+    },
   };
 }
 
@@ -425,7 +542,7 @@ async function createRun(ctx: Context) {
     },
   })) as ModelRecord;
 
-  ctx.body = serializeRun(run);
+  ctx.body = serializeRunForUser(run);
 }
 
 async function listRuns(ctx: Context) {
@@ -434,9 +551,10 @@ async function listRuns(ctx: Context) {
     AGENT_GATEWAY_ACTIONS.readRuns,
     'Agent Gateway run read permission required',
   );
+  const filter = await getVisibleRunFilter(ctx, getRunListFilter(ctx), 'list');
 
   const runs = (await ctx.db.getRepository('agRuns').find({
-    filter: getRunListFilter(ctx),
+    filter,
     sort: ['-createdAt'],
     limit: getQueryLimit(ctx),
   })) as ModelRecord[];
@@ -451,8 +569,15 @@ async function getRun(ctx: Context, runId: string) {
     'Agent Gateway run detail read permission required',
   );
 
+  const filter = await getVisibleRunFilter(
+    ctx,
+    {
+      id: runId,
+    },
+    'get',
+  );
   const run = (await ctx.db.getRepository('agRuns').findOne({
-    filterByTk: runId,
+    filter,
   })) as ModelRecord | null;
   if (!run) {
     ctx.throw(404, 'Run not found');
@@ -895,6 +1020,17 @@ async function runHeartbeat(ctx: Context, nodeId: string, runId: string) {
       },
       transaction,
     });
+    const cancelRequested = getBoolean(getModelValue(lease.run, 'cancelRequested')) || status === 'canceling';
+    const activeTerminateControl = cancelRequested
+      ? ((await ctx.db.getRepository('agRunControlRequests').findOne({
+          filter: {
+            runId,
+            action: 'terminate',
+            status: ['accepted', 'delivered'],
+          },
+          transaction,
+        })) as ModelRecord | null)
+      : null;
 
     return {
       runId,
@@ -902,7 +1038,8 @@ async function runHeartbeat(ctx: Context, nodeId: string, runId: string) {
       claimAttempt: lease.claimAttempt,
       leaseVersion: nextLeaseVersion,
       claimExpiresAt: claimExpiresAt.toISOString(),
-      cancelRequested: getBoolean(getModelValue(lease.run, 'cancelRequested')) || status === 'canceling',
+      cancelRequested,
+      ...(activeTerminateControl ? { cancelReason: AGENT_GATEWAY_TERMINATE_CONTROL_CANCEL_REASON } : {}),
     };
   });
 
@@ -929,6 +1066,88 @@ function assertTerminalAllowed(
   }
 
   return true;
+}
+
+async function appendTerminalControlFailedEvent(options: {
+  ctx: Context;
+  run: ModelRecord;
+  request: ModelRecord;
+  terminalStatus: TerminalRunStatus;
+  transaction: Transaction;
+}) {
+  const runId = String(getModelTargetKey(options.run, 'id'));
+  const source = 'terminal-control';
+  const action = getModelString(options.request, 'action');
+  if (action !== 'interrupt' && action !== 'terminate') {
+    return;
+  }
+  const latestEvent = (await options.ctx.db.getRepository('agRunEvents').findOne({
+    filter: {
+      runId,
+      source,
+    },
+    sort: ['-sequence'],
+    transaction: options.transaction,
+    lock: options.transaction.LOCK.UPDATE,
+  })) as ModelRecord | null;
+  const sequence = (latestEvent ? getModelNumber(latestEvent, 'sequence') : 0) + 1;
+  const eventType = `terminal.${action}.failed`;
+  await options.ctx.db.getRepository('agRunEvents').create({
+    values: {
+      id: randomUUID(),
+      runId,
+      claimAttempt: getModelNumber(options.run, 'claimAttempt'),
+      source,
+      sequence,
+      level: 'info',
+      eventType,
+      message: eventType,
+      payloadJson: {
+        controlRequestId: getModelTargetKey(options.request, 'id'),
+        reason: 'run-finished',
+        terminalStatus: options.terminalStatus,
+      },
+      emittedAt: new Date(),
+    },
+    transaction: options.transaction,
+  });
+}
+
+async function failOpenControlRequestsForFinishedRun(options: {
+  ctx: Context;
+  run: ModelRecord;
+  runId: string;
+  terminalStatus: TerminalRunStatus;
+  now: Date;
+  transaction: Transaction;
+}) {
+  const requests = (await options.ctx.db.getRepository('agRunControlRequests').find({
+    filter: {
+      runId: options.runId,
+      status: ['accepted', 'delivered'],
+    },
+    sort: ['createdAt', 'id'],
+    transaction: options.transaction,
+    lock: options.transaction.LOCK.UPDATE,
+  })) as ModelRecord[];
+  for (const request of requests) {
+    await options.ctx.db.getRepository('agRunControlRequests').update({
+      filterByTk: getModelTargetKey(request, 'id'),
+      values: {
+        status: 'failed',
+        resultMessage: 'Run finished before control request completed',
+        completedAt: options.now,
+      },
+      transaction: options.transaction,
+    });
+    await appendTerminalControlFailedEvent({
+      ctx: options.ctx,
+      run: options.run,
+      request,
+      terminalStatus: options.terminalStatus,
+      transaction: options.transaction,
+    });
+  }
 }
 
 async function finishRun(
@@ -961,6 +1180,14 @@ async function finishRun(
         finishedAt: now,
         ...terminalValues(values, now),
       },
+      transaction,
+    });
+    await failOpenControlRequestsForFinishedRun({
+      ctx,
+      run: lease.run,
+      runId,
+      terminalStatus,
+      now,
       transaction,
     });
 
@@ -1174,7 +1401,7 @@ export async function cancelRun(ctx: Context, runId: string, options: { requireP
         lock: transaction.LOCK.UPDATE,
       })) as ModelRecord;
     });
-    ctx.body = serializeRun(updatedRun);
+    ctx.body = serializeRunForUser(updatedRun);
     if (shouldAudit) {
       await auditCancelRun(ctx, updatedRun, runId, 'succeeded', {
         status: getModelString(updatedRun, 'status'),
@@ -1244,6 +1471,14 @@ async function expireLeases(ctx: Context) {
           claimExpiresAt: null,
           finishedAt: now,
         },
+        transaction,
+      });
+      await failOpenControlRequestsForFinishedRun({
+        ctx,
+        run: lockedRun,
+        runId: String(getModelTargetKey(lockedRun, 'id')),
+        terminalStatus: 'abandoned',
+        now,
         transaction,
       });
       return true;

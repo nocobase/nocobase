@@ -54,4 +54,14 @@ export interface RunLease extends JsonRecord {
   claimed?: boolean;
   run?: JsonRecord;
   cancelRequested?: boolean;
+  cancelReason?: string;
+}
+
+export interface PendingControlRequest extends JsonRecord {
+  id: string;
+  runId: string;
+  action: 'interrupt' | 'terminate';
+  status?: 'accepted' | 'delivered';
+  reason?: string;
+  createdAt: string;
 }

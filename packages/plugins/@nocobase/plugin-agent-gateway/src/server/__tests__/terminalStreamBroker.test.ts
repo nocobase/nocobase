@@ -181,6 +181,7 @@ describe('terminal stream broker', () => {
         'AGENT_GATEWAY_STREAM_SMOKE_1',
       );
       expect(Object.prototype.hasOwnProperty.call(dataFrame, 'claimToken')).toBe(false);
+      expect(Object.prototype.hasOwnProperty.call(dataFrame, 'sessionName')).toBe(false);
     } finally {
       daemon.close();
       browser.close();
@@ -413,6 +414,7 @@ describe('terminal stream broker', () => {
         offsetStart: 0,
         offsetEnd: snapshotOffsetEnd,
       });
+      expect(Object.prototype.hasOwnProperty.call(snapshot, 'sessionName')).toBe(false);
 
       sendFrame(daemon, {
         type: 'terminal.data',
@@ -426,6 +428,7 @@ describe('terminal stream broker', () => {
       });
       const data = await waitForFrame(browser, (frame) => frame.type === 'terminal.data');
       expect(decodeTerminalPayload(data.type === 'terminal.data' ? data.payload : '')).toBe(afterText);
+      expect(Object.prototype.hasOwnProperty.call(data, 'sessionName')).toBe(false);
     } finally {
       daemon.close();
       browser.close();
@@ -511,6 +514,8 @@ describe('terminal stream broker', () => {
       );
       expect(first.type).toBe('terminal.snapshot');
       expect(second.type).toBe('terminal.end');
+      expect(Object.prototype.hasOwnProperty.call(first, 'sessionName')).toBe(false);
+      expect(Object.prototype.hasOwnProperty.call(second, 'sessionName')).toBe(false);
     } finally {
       daemon.close();
       browser.close();
@@ -637,12 +642,13 @@ describe('terminal stream broker', () => {
         reason: 'completed',
       });
 
-      expect(await waitForFrame(browser, (frame) => frame.type === 'terminal.end')).toMatchObject({
+      const endFrame = await waitForFrame(browser, (frame) => frame.type === 'terminal.end');
+      expect(endFrame).toMatchObject({
         runId,
-        sessionName,
         offsetEnd: 44,
         reason: 'completed',
       });
+      expect(Object.prototype.hasOwnProperty.call(endFrame, 'sessionName')).toBe(false);
       expect(await waitForNoFrame(browser, (frame) => frame.type === 'error', 100)).toBe(false);
     } finally {
       daemon.close();
@@ -816,12 +822,13 @@ describe('terminal stream broker', () => {
         browser,
         (frame) => frame.type === 'ack' && frame.requestId === 'subscribe-completed-reconnect',
       );
-      expect(await waitForFrame(browser, (frame) => frame.type === 'terminal.end')).toMatchObject({
+      const endFrame = await waitForFrame(browser, (frame) => frame.type === 'terminal.end');
+      expect(endFrame).toMatchObject({
         runId,
-        sessionName: 'agw_terminal_stream_completed_reconnect',
         offsetEnd: 1203,
         reason: 'completed',
       });
+      expect(Object.prototype.hasOwnProperty.call(endFrame, 'sessionName')).toBe(false);
     } finally {
       browser.close();
       await server.close();

@@ -8,6 +8,7 @@
  */
 
 import { execFile } from 'child_process';
+import { randomUUID } from 'crypto';
 
 import { MockServer, createMockServer } from '@nocobase/test';
 
@@ -176,6 +177,35 @@ describe('agent gateway run terminal APIs', () => {
       .slice(0, 32)}`;
   }
 
+  async function attachAgentSession(runId: unknown) {
+    const providerSessionId = `thread-${randomUUID()}`;
+    const session = await app.db.getRepository('agAgentSessions').create({
+      values: {
+        id: randomUUID(),
+        provider: 'codex',
+        providerSessionId,
+        rootRunId: String(runId),
+        latestRunId: String(runId),
+        status: 'active',
+        capabilitiesJson: {
+          interrupt: true,
+          terminate: true,
+          resumeWithMessage: true,
+          liveSemanticMessage: false,
+          stdinMessage: false,
+        },
+      },
+    });
+    await app.db.getRepository('agRuns').update({
+      filterByTk: runId,
+      values: {
+        agentSessionId: session.get('id'),
+        agentSessionProvider: 'codex',
+        agentSessionProviderId: providerSessionId,
+      },
+    });
+  }
+
   async function createUserAgent(username: string, snippets: string[]) {
     const roleName = `${username}-role`;
     await app.db.getRepository('roles').create({
@@ -221,11 +251,11 @@ describe('agent gateway run terminal APIs', () => {
     const snapshot = getData(snapshotResponse);
     expect(snapshot).toMatchObject({
       backend: 'tmux',
-      sessionName,
       terminalStatus: 'active',
       available: false,
       inputEnabled: false,
     });
+    expect(snapshot).not.toHaveProperty('sessionName');
 
     const audits = await app.db.getRepository('agAgentActionAudits').find({
       filter: {
@@ -289,13 +319,18 @@ describe('agent gateway run terminal APIs', () => {
     const runner = await createRunner();
     const { run: controlRun } = await createAndClaimRun(runner);
     expect(
-      (await interruptAgent.post(`/api/agent-gateway/runs/${controlRun.id}/terminal:interrupt`).send({})).status,
+      (
+        await interruptAgent.post(`/api/agent-gateway/runs/${controlRun.id}/terminal:interrupt`).send({
+          idempotencyKey: 'inactive-interrupt-click',
+        })
+      ).status,
     ).toBe(409);
     const terminateResponse = await terminateAgent
       .post(`/api/agent-gateway/runs/${controlRun.id}/terminal:terminate`)
-      .send({});
-    expect(terminateResponse.status).toBe(200);
-    expect(getData(terminateResponse).terminalTerminated).toBe(false);
+      .send({
+        idempotencyKey: 'inactive-terminate-click',
+      });
+    expect(terminateResponse.status).toBe(409);
 
     const audits = await app.db.getRepository('agAgentActionAudits').find();
     expect(audits.map((audit) => audit.toJSON())).toEqual(
@@ -328,25 +363,13 @@ describe('agent gateway run terminal APIs', () => {
           action: 'interrupt',
           runId: controlRun.id,
           permissionKey: 'agentGateway.interruptRun',
-          resultStatus: 'accepted',
-        }),
-        expect.objectContaining({
-          action: 'interrupt',
-          runId: controlRun.id,
-          permissionKey: 'agentGateway.interruptRun',
-          resultStatus: 'failed',
+          resultStatus: 'denied',
         }),
         expect.objectContaining({
           action: 'terminate',
           runId: controlRun.id,
           permissionKey: 'agentGateway.terminateRun',
-          resultStatus: 'accepted',
-        }),
-        expect.objectContaining({
-          action: 'terminate',
-          runId: controlRun.id,
-          permissionKey: 'agentGateway.terminateRun',
-          resultStatus: 'succeeded',
+          resultStatus: 'denied',
         }),
       ]),
     );
@@ -360,6 +383,7 @@ describe('agent gateway run terminal APIs', () => {
     const runner = await createRunner();
     const { run, claim } = await createAndClaimRun(runner);
     const sessionName = getSessionName(run.id);
+    await attachAgentSession(run.id);
 
     await execTmux(['new-session', '-d', '-s', sessionName, '--', 'sh', '-lc', 'printf ready; sleep 60']);
     try {
@@ -380,27 +404,33 @@ describe('agent gateway run terminal APIs', () => {
       const snapshot = getData(snapshotResponse);
       expect(snapshot.available).toBe(true);
       expect(String(snapshot.output)).toContain('ready');
-      expect(snapshot.inputEnabled).toBe(true);
+      expect(snapshot.inputEnabled).toBe(false);
 
       const sendResponse = await rootAgent.post(`/api/agent-gateway/runs/${run.id}/terminal:send`).send({
         input: 'hello',
         appendEnter: true,
       });
-      expect(sendResponse.status).toBe(200);
-      expect(getData(sendResponse).success).toBe(true);
+      expect(sendResponse.status).toBe(403);
 
-      const terminateResponse = await rootAgent.post(`/api/agent-gateway/runs/${run.id}/terminal:terminate`).send({});
+      const terminateResponse = await rootAgent.post(`/api/agent-gateway/runs/${run.id}/terminal:terminate`).send({
+        idempotencyKey: 'tmux-terminate-click',
+      });
       expect(terminateResponse.status).toBe(200);
-      expect(getData(terminateResponse).terminalTerminated).toBe(true);
+      expect(getData(terminateResponse)).toMatchObject({
+        success: true,
+        terminalTerminationRequested: true,
+        controlRequestStatus: 'accepted',
+      });
 
       const storedRun = await app.db.getRepository('agRuns').findOne({
         filterByTk: run.id,
       });
       expect(storedRun.get('cancelRequested')).toBe(true);
       expect(storedRun.get('status')).toBe('canceling');
+      expect(await app.db.getRepository('agRunControlRequests').count({ filter: { runId: run.id } })).toBe(1);
     } finally {
       await execTmux(['kill-session', '-t', sessionName]).catch(() => {
-        // The terminate API may have already removed the session.
+        // The test cleanup may race with process exit.
       });
     }
   });

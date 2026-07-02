@@ -85,6 +85,7 @@ export const AGENT_GATEWAY_PERMISSION_DEFINITIONS = [
       'agNodeSkillInstalls:*',
       'agPromptTemplates:*',
       'agDispatchBindings:*',
+      'agRunControlRequests:*',
     ],
   },
   {
@@ -110,35 +111,35 @@ export const AGENT_GATEWAY_PERMISSION_DEFINITIONS = [
   },
   {
     name: AGENT_GATEWAY_PERMISSIONS.readSessionMessages,
-    actions: [`${AGENT_GATEWAY_RESOURCE}:${AGENT_GATEWAY_ACTIONS.readSessionMessages}`],
+    actions: [`${AGENT_GATEWAY_RESOURCE}:${AGENT_GATEWAY_ACTIONS.readSessionMessages}`, 'agRuns:get'],
   },
   {
     name: AGENT_GATEWAY_PERMISSIONS.readTerminal,
-    actions: [`${AGENT_GATEWAY_RESOURCE}:${AGENT_GATEWAY_ACTIONS.readTerminal}`],
+    actions: [`${AGENT_GATEWAY_RESOURCE}:${AGENT_GATEWAY_ACTIONS.readTerminal}`, 'agRuns:get'],
   },
   {
     name: AGENT_GATEWAY_PERMISSIONS.resumeAgentSession,
-    actions: [`${AGENT_GATEWAY_RESOURCE}:${AGENT_GATEWAY_ACTIONS.resumeAgentSession}`],
+    actions: [`${AGENT_GATEWAY_RESOURCE}:${AGENT_GATEWAY_ACTIONS.resumeAgentSession}`, 'agRuns:get'],
   },
   {
     name: AGENT_GATEWAY_PERMISSIONS.messageAgentSession,
-    actions: [`${AGENT_GATEWAY_RESOURCE}:${AGENT_GATEWAY_ACTIONS.messageAgentSession}`],
+    actions: [`${AGENT_GATEWAY_RESOURCE}:${AGENT_GATEWAY_ACTIONS.messageAgentSession}`, 'agRuns:get'],
   },
   {
     name: AGENT_GATEWAY_PERMISSIONS.interruptRun,
-    actions: [`${AGENT_GATEWAY_RESOURCE}:${AGENT_GATEWAY_ACTIONS.interruptRun}`],
+    actions: [`${AGENT_GATEWAY_RESOURCE}:${AGENT_GATEWAY_ACTIONS.interruptRun}`, 'agRuns:get'],
   },
   {
     name: AGENT_GATEWAY_PERMISSIONS.terminateRun,
-    actions: [`${AGENT_GATEWAY_RESOURCE}:${AGENT_GATEWAY_ACTIONS.terminateRun}`],
+    actions: [`${AGENT_GATEWAY_RESOURCE}:${AGENT_GATEWAY_ACTIONS.terminateRun}`, 'agRuns:get'],
   },
   {
     name: AGENT_GATEWAY_PERMISSIONS.readArtifacts,
-    actions: [`${AGENT_GATEWAY_RESOURCE}:${AGENT_GATEWAY_ACTIONS.readArtifacts}`],
+    actions: [`${AGENT_GATEWAY_RESOURCE}:${AGENT_GATEWAY_ACTIONS.readArtifacts}`, 'agRuns:get'],
   },
   {
     name: AGENT_GATEWAY_PERMISSIONS.readRawLogs,
-    actions: [`${AGENT_GATEWAY_RESOURCE}:${AGENT_GATEWAY_ACTIONS.readRawLogs}`],
+    actions: [`${AGENT_GATEWAY_RESOURCE}:${AGENT_GATEWAY_ACTIONS.readRawLogs}`, 'agRuns:get'],
   },
   {
     name: AGENT_GATEWAY_PERMISSIONS.writeTerminalRaw,

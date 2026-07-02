@@ -7,7 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { DaemonConfig, DetectedAgentProfile, GatewayRequester, JsonRecord, RunLease } from './types';
+import {
+  DaemonConfig,
+  DetectedAgentProfile,
+  GatewayRequester,
+  JsonRecord,
+  PendingControlRequest,
+  RunLease,
+} from './types';
 import { NodeSkillInstallPayload } from './skillSync';
 
 export class AgentGatewayDaemonNodeClient {
@@ -237,6 +244,39 @@ export class AgentGatewayDaemonNodeClient {
         claimToken: lease.claimToken,
         claimAttempt: lease.claimAttempt,
         leaseVersion: lease.leaseVersion,
+      },
+    });
+  }
+
+  async listPendingControlRequests(lease: RunLease) {
+    return await this.requester.request<{ requests: PendingControlRequest[] }>({
+      method: 'POST',
+      path: `/api/agent-gateway/nodes/${this.config.nodeId}/runs/${lease.runId}/control-requests:pending`,
+      nodeToken: this.config.nodeToken,
+      body: {
+        claimToken: lease.claimToken,
+        claimAttempt: lease.claimAttempt,
+        leaseVersion: lease.leaseVersion,
+      },
+    });
+  }
+
+  async ackControlRequest(
+    lease: RunLease,
+    requestId: string,
+    status: 'delivered' | 'succeeded' | 'failed',
+    values: JsonRecord = {},
+  ) {
+    await this.requester.request({
+      method: 'POST',
+      path: `/api/agent-gateway/nodes/${this.config.nodeId}/runs/${lease.runId}/control-requests/${requestId}:ack`,
+      nodeToken: this.config.nodeToken,
+      body: {
+        claimToken: lease.claimToken,
+        claimAttempt: lease.claimAttempt,
+        leaseVersion: lease.leaseVersion,
+        status,
+        ...values,
       },
     });
   }

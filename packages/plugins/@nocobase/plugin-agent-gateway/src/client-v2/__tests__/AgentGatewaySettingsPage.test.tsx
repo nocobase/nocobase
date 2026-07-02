@@ -760,6 +760,762 @@ describe('PluginAgentGatewayClientV2', () => {
     });
   });
 
+  it('sends terminal control requests with stable idempotency keys and shows final ack state', async () => {
+    let controlAccepted = false;
+    let controlStatusPollCount = 0;
+    const request = vi.fn(async (config: RequestConfig) => {
+      if (config.url === 'agent-gateway/runs:list') {
+        return {
+          data: {
+            data: [
+              {
+                id: 'run-id-1',
+                runCode: 'run-control-1',
+                status: 'running',
+              },
+            ],
+          },
+        };
+      }
+
+      if (config.url === 'agent-gateway/runs:get/run-id-1') {
+        return {
+          data: {
+            data: {
+              id: 'run-id-1',
+              runCode: 'run-control-1',
+              status: 'running',
+              terminalStatus: 'active',
+              agentGatewayControlActionsJson: {
+                interruptRun: true,
+                terminateRun: true,
+              },
+            },
+          },
+        };
+      }
+
+      if (config.url === 'agent-gateway/runs/run-id-1/events:list') {
+        const error = new Error('events forbidden') as Error & { response?: { status: number } };
+        error.response = { status: 403 };
+        throw error;
+      }
+
+      if (config.url === 'agent-gateway/runs/run-id-1/control-requests/control-request-1:get') {
+        if (controlAccepted) {
+          controlStatusPollCount += 1;
+        }
+        return {
+          data: {
+            data: {
+              runId: 'run-id-1',
+              controlRequestId: 'control-request-1',
+              controlRequestStatus:
+                controlStatusPollCount === 1 ? 'accepted' : controlStatusPollCount === 2 ? 'delivered' : 'succeeded',
+            },
+          },
+        };
+      }
+
+      if (config.url === 'agent-gateway/runs/run-id-1/terminal:snapshot') {
+        return {
+          data: {
+            data: {
+              backend: 'tmux',
+              sessionName: 'ag-run-run-id-1',
+              terminalStatus: 'active',
+              runStatus: 'running',
+              available: true,
+              output: 'control run output',
+              capturedAt: '2026-07-02T10:01:02.000Z',
+              inputEnabled: false,
+            },
+          },
+        };
+      }
+
+      if (config.url === 'agent-gateway/runs/run-id-1/terminal:interrupt') {
+        controlAccepted = true;
+        return {
+          data: {
+            data: {
+              success: true,
+              controlRequestId: 'control-request-1',
+              controlRequestStatus: 'accepted',
+            },
+          },
+        };
+      }
+
+      return { data: { data: [] } };
+    });
+
+    renderAgentGatewayPage(AgentGatewayRunsPage, request);
+
+    expect(await screen.findByText('run-control-1')).toBeTruthy();
+    fireEvent.click((await screen.findAllByLabelText('View run details'))[0]);
+    expect(await screen.findByText(/control run output/)).toBeTruthy();
+    expect(screen.queryByText('ag-run-run-id-1')).toBeNull();
+
+    fireEvent.click(screen.getByLabelText('Interrupt'));
+
+    let interruptCall: RequestConfig | undefined;
+    await waitFor(() => {
+      interruptCall = request.mock.calls
+        .map(([config]) => config)
+        .find((config) => config.url === 'agent-gateway/runs/run-id-1/terminal:interrupt');
+      expect(interruptCall).toBeTruthy();
+    });
+    expect(interruptCall).toEqual(
+      expect.objectContaining({
+        url: 'agent-gateway/runs/run-id-1/terminal:interrupt',
+        method: 'post',
+        data: expect.objectContaining({
+          idempotencyKey: expect.stringMatching(/^ag_control:interrupt:run-id-1:.+/),
+        }),
+      }),
+    );
+    await waitFor(() => {
+      expect(screen.queryByText('Control request ID: control-request-1')).toBeNull();
+    });
+    await waitFor(() => {
+      expect(
+        request.mock.calls
+          .map(([config]) => config.url)
+          .filter((url) => url === 'agent-gateway/runs/run-id-1/control-requests/control-request-1:get'),
+      ).not.toHaveLength(0);
+    });
+    expect(await screen.findByText('Control request accepted')).toBeTruthy();
+    expect(await screen.findByText('Control request delivered', {}, { timeout: 7000 })).toBeTruthy();
+    expect(await screen.findByText('Control request succeeded', {}, { timeout: 7000 })).toBeTruthy();
+  });
+
+  it('ignores late terminal control responses after switching run details', async () => {
+    let resolveInterrupt:
+      | ((value: {
+          data: {
+            data: Record<string, unknown>;
+          };
+        }) => void)
+      | undefined;
+    const request = vi.fn(async (config: RequestConfig) => {
+      if (config.url === 'agent-gateway/runs:list') {
+        return {
+          data: {
+            data: [
+              {
+                id: 'run-id-1',
+                runCode: 'run-control-switch-1',
+                status: 'running',
+              },
+              {
+                id: 'run-id-2',
+                runCode: 'run-control-switch-2',
+                status: 'running',
+              },
+            ],
+          },
+        };
+      }
+
+      if (config.url === 'agent-gateway/runs:get/run-id-1' || config.url === 'agent-gateway/runs:get/run-id-2') {
+        const runId = config.url.endsWith('run-id-1') ? 'run-id-1' : 'run-id-2';
+        return {
+          data: {
+            data: {
+              id: runId,
+              runCode: runId === 'run-id-1' ? 'run-control-switch-1' : 'run-control-switch-2',
+              status: 'running',
+              terminalStatus: 'active',
+              agentGatewayControlActionsJson: {
+                interruptRun: true,
+                terminateRun: true,
+              },
+            },
+          },
+        };
+      }
+
+      if (
+        config.url === 'agent-gateway/runs/run-id-1/events:list' ||
+        config.url === 'agent-gateway/runs/run-id-2/events:list'
+      ) {
+        return { data: { data: [] } };
+      }
+
+      if (
+        config.url === 'agent-gateway/runs/run-id-1/terminal:snapshot' ||
+        config.url === 'agent-gateway/runs/run-id-2/terminal:snapshot'
+      ) {
+        const runId = config.url.includes('run-id-1') ? 'run-id-1' : 'run-id-2';
+        return {
+          data: {
+            data: {
+              backend: 'tmux',
+              terminalStatus: 'active',
+              runStatus: 'running',
+              available: true,
+              output: runId === 'run-id-1' ? 'switch output one' : 'switch output two',
+              capturedAt: '2026-07-02T10:01:02.000Z',
+              inputEnabled: false,
+            },
+          },
+        };
+      }
+
+      if (config.url === 'agent-gateway/runs/run-id-1/terminal:interrupt') {
+        return await new Promise<{ data: { data: Record<string, unknown> } }>((resolve) => {
+          resolveInterrupt = resolve;
+        });
+      }
+
+      return { data: { data: [] } };
+    });
+
+    renderAgentGatewayPage(AgentGatewayRunsPage, request);
+
+    expect(await screen.findByText('run-control-switch-1')).toBeTruthy();
+    fireEvent.click((await screen.findAllByLabelText('View run details'))[0]);
+    expect(await screen.findByText(/switch output one/)).toBeTruthy();
+    fireEvent.click(screen.getByLabelText('Interrupt'));
+    await waitFor(() => expect(resolveInterrupt).toBeTruthy());
+
+    fireEvent.click((await screen.findAllByLabelText('View run details'))[1]);
+    expect(await screen.findByText(/switch output two/)).toBeTruthy();
+    resolveInterrupt?.({
+      data: {
+        data: {
+          success: true,
+          runId: 'run-id-1',
+          controlRequestId: 'control-request-switch-1',
+          controlRequestStatus: 'accepted',
+        },
+      },
+    });
+
+    await new Promise<void>((resolve) => {
+      setTimeout(resolve, 50);
+    });
+    expect(screen.queryByText('Control request accepted')).toBeNull();
+    expect(
+      request.mock.calls
+        .map(([config]) => config.url)
+        .filter((url) => url === 'agent-gateway/runs/run-id-2/control-requests/control-request-switch-1:get'),
+    ).toHaveLength(0);
+  });
+
+  it('reuses a pending terminate idempotency key and shows failed final ack state', async () => {
+    vi.spyOn(globalThis.crypto, 'randomUUID')
+      .mockReturnValueOnce('terminate-pending-key-1' as `${string}-${string}-${string}-${string}-${string}`)
+      .mockReturnValueOnce('terminate-pending-key-2' as `${string}-${string}-${string}-${string}-${string}`);
+    let terminateAttempts = 0;
+    let controlStatusPollCount = 0;
+    const request = vi.fn(async (config: RequestConfig) => {
+      if (config.url === 'agent-gateway/runs:list') {
+        return {
+          data: {
+            data: [
+              {
+                id: 'run-id-1',
+                runCode: 'run-terminate-control',
+                status: 'running',
+              },
+            ],
+          },
+        };
+      }
+
+      if (config.url === 'agent-gateway/runs:get/run-id-1') {
+        return {
+          data: {
+            data: {
+              id: 'run-id-1',
+              runCode: 'run-terminate-control',
+              status: 'running',
+              terminalStatus: 'active',
+              agentGatewayControlActionsJson: {
+                interruptRun: true,
+                terminateRun: true,
+              },
+            },
+          },
+        };
+      }
+
+      if (config.url === 'agent-gateway/runs/run-id-1/terminal:snapshot') {
+        return {
+          data: {
+            data: {
+              backend: 'tmux',
+              sessionName: 'ag-run-run-id-1',
+              terminalStatus: 'active',
+              runStatus: 'running',
+              available: true,
+              output: 'terminate control output',
+              capturedAt: '2026-07-02T10:01:02.000Z',
+              inputEnabled: false,
+            },
+          },
+        };
+      }
+
+      if (config.url === 'agent-gateway/runs/run-id-1/control-requests/control-request-terminate:get') {
+        controlStatusPollCount += 1;
+        return {
+          data: {
+            data: {
+              runId: 'run-id-1',
+              controlRequestId: 'control-request-terminate',
+              controlRequestStatus: controlStatusPollCount < 3 ? 'accepted' : 'failed',
+            },
+          },
+        };
+      }
+
+      if (config.url === 'agent-gateway/runs/run-id-1/terminal:terminate') {
+        terminateAttempts += 1;
+        return {
+          data: {
+            data: {
+              success: true,
+              controlRequestId: 'control-request-terminate',
+              controlRequestStatus: 'accepted',
+            },
+          },
+        };
+      }
+
+      return { data: { data: [] } };
+    });
+
+    renderAgentGatewayPage(AgentGatewayRunsPage, request);
+
+    expect(await screen.findByText('run-terminate-control')).toBeTruthy();
+    fireEvent.click((await screen.findAllByLabelText('View run details'))[0]);
+    expect(await screen.findByText(/terminate control output/)).toBeTruthy();
+    fireEvent.click(screen.getByLabelText('Terminate'));
+    expect(await screen.findByText('Control request accepted')).toBeTruthy();
+    fireEvent.click(screen.getByLabelText('Terminate'));
+    await waitFor(() => expect(terminateAttempts).toBe(2));
+
+    const terminateCalls = request.mock.calls
+      .map(([config]) => config)
+      .filter((config) => config.url === 'agent-gateway/runs/run-id-1/terminal:terminate');
+    const idempotencyKeys = terminateCalls.map((config) => config.data?.idempotencyKey);
+    expect(idempotencyKeys).toHaveLength(2);
+    expect(idempotencyKeys[0]).toBe(idempotencyKeys[1]);
+    expect(idempotencyKeys[0]).toMatch(/^ag_control:terminate:run-id-1:/);
+    expect(await screen.findByText('Control request failed', {}, { timeout: 7000 })).toBeTruthy();
+  });
+
+  it('disables terminal controls without server-provided control action permission and capability', async () => {
+    const request = vi.fn(async (config: RequestConfig) => {
+      if (config.url === 'agent-gateway/runs:list') {
+        return {
+          data: {
+            data: [
+              {
+                id: 'run-id-1',
+                runCode: 'run-control-disabled',
+                status: 'running',
+              },
+            ],
+          },
+        };
+      }
+
+      if (config.url === 'agent-gateway/runs:get/run-id-1') {
+        return {
+          data: {
+            data: {
+              id: 'run-id-1',
+              runCode: 'run-control-disabled',
+              status: 'running',
+              terminalStatus: 'active',
+              agentGatewayControlActionsJson: {
+                interruptRun: false,
+                terminateRun: false,
+              },
+            },
+          },
+        };
+      }
+
+      if (config.url === 'agent-gateway/runs/run-id-1/terminal:snapshot') {
+        return {
+          data: {
+            data: {
+              backend: 'tmux',
+              sessionName: 'ag-run-run-id-1',
+              terminalStatus: 'active',
+              runStatus: 'running',
+              available: true,
+              output: 'disabled control output',
+              capturedAt: '2026-07-02T10:01:02.000Z',
+              inputEnabled: true,
+            },
+          },
+        };
+      }
+
+      return { data: { data: [] } };
+    });
+
+    renderAgentGatewayPage(AgentGatewayRunsPage, request);
+
+    expect(await screen.findByText('run-control-disabled')).toBeTruthy();
+    fireEvent.click((await screen.findAllByLabelText('View run details'))[0]);
+    expect(await screen.findByText(/disabled control output/)).toBeTruthy();
+    expect(screen.queryByLabelText('Interrupt')).toBeNull();
+    expect(screen.queryByLabelText('Terminate')).toBeNull();
+    expect(
+      request.mock.calls.map(([config]) => config).find((config) => config.url?.includes('terminal:interrupt')),
+    ).toBeUndefined();
+  });
+
+  it('hides terminal controls for completed runs even when control actions are present', async () => {
+    const request = vi.fn(async (config: RequestConfig) => {
+      if (config.url === 'agent-gateway/runs:list') {
+        return {
+          data: {
+            data: [
+              {
+                id: 'run-id-1',
+                runCode: 'run-control-completed',
+                status: 'succeeded',
+              },
+            ],
+          },
+        };
+      }
+
+      if (config.url === 'agent-gateway/runs:get/run-id-1') {
+        return {
+          data: {
+            data: {
+              id: 'run-id-1',
+              runCode: 'run-control-completed',
+              status: 'succeeded',
+              terminalBackend: 'tmux',
+              terminalStatus: 'active',
+              agentGatewayControlActionsJson: {
+                interruptRun: true,
+                terminateRun: true,
+              },
+            },
+          },
+        };
+      }
+
+      if (config.url === 'agent-gateway/runs/run-id-1/terminal:snapshot') {
+        return {
+          data: {
+            data: {
+              backend: 'tmux',
+              sessionName: 'ag-run-run-id-1',
+              terminalStatus: 'active',
+              runStatus: 'succeeded',
+              available: true,
+              output: 'completed control output',
+              capturedAt: '2026-07-02T10:01:02.000Z',
+              inputEnabled: false,
+            },
+          },
+        };
+      }
+
+      return { data: { data: [] } };
+    });
+
+    renderAgentGatewayPage(AgentGatewayRunsPage, request);
+
+    expect(await screen.findByText('run-control-completed')).toBeTruthy();
+    fireEvent.click((await screen.findAllByLabelText('View run details'))[0]);
+    expect(await screen.findByText(/completed control output/)).toBeTruthy();
+    expect(screen.queryByLabelText('Interrupt')).toBeNull();
+    expect(screen.queryByLabelText('Terminate')).toBeNull();
+  });
+
+  it('reuses a terminal control idempotency key after transient HTTP failure', async () => {
+    vi.spyOn(globalThis.crypto, 'randomUUID')
+      .mockReturnValueOnce('control-retry-key-1' as `${string}-${string}-${string}-${string}-${string}`)
+      .mockReturnValueOnce('control-retry-key-2' as `${string}-${string}-${string}-${string}-${string}`);
+    let interruptAttempts = 0;
+    const request = vi.fn(async (config: RequestConfig) => {
+      if (config.url === 'agent-gateway/runs:list') {
+        return {
+          data: {
+            data: [
+              {
+                id: 'run-id-1',
+                runCode: 'run-control-retry',
+                status: 'running',
+              },
+            ],
+          },
+        };
+      }
+
+      if (config.url === 'agent-gateway/runs:get/run-id-1') {
+        return {
+          data: {
+            data: {
+              id: 'run-id-1',
+              runCode: 'run-control-retry',
+              status: 'running',
+              terminalStatus: 'active',
+              agentGatewayControlActionsJson: {
+                interruptRun: true,
+                terminateRun: true,
+              },
+            },
+          },
+        };
+      }
+
+      if (config.url === 'agent-gateway/runs/run-id-1/terminal:snapshot') {
+        return {
+          data: {
+            data: {
+              backend: 'tmux',
+              sessionName: 'ag-run-run-id-1',
+              terminalStatus: 'active',
+              runStatus: 'running',
+              available: true,
+              output: 'retry control output',
+              capturedAt: '2026-07-02T10:01:02.000Z',
+              inputEnabled: true,
+            },
+          },
+        };
+      }
+
+      if (config.url === 'agent-gateway/runs/run-id-1/terminal:interrupt') {
+        interruptAttempts += 1;
+        if (interruptAttempts === 1) {
+          const error = new Error('temporary interrupt failure') as Error & { response?: { status: number } };
+          error.response = { status: 503 };
+          throw error;
+        }
+        return {
+          data: {
+            data: {
+              success: true,
+              controlRequestId: 'control-request-1',
+              controlRequestStatus: 'accepted',
+            },
+          },
+        };
+      }
+
+      return { data: { data: [] } };
+    });
+
+    renderAgentGatewayPage(AgentGatewayRunsPage, request);
+
+    expect(await screen.findByText('run-control-retry')).toBeTruthy();
+    fireEvent.click((await screen.findAllByLabelText('View run details'))[0]);
+    expect(await screen.findByText(/retry control output/)).toBeTruthy();
+    fireEvent.click(screen.getByLabelText('Interrupt'));
+    await waitFor(() => expect(interruptAttempts).toBe(1));
+    fireEvent.click(screen.getByLabelText('Interrupt'));
+    await waitFor(() => expect(interruptAttempts).toBe(2));
+
+    const interruptCalls = request.mock.calls
+      .map(([config]) => config)
+      .filter((config) => config.url === 'agent-gateway/runs/run-id-1/terminal:interrupt');
+    const idempotencyKeys = interruptCalls.map((config) => config.data?.idempotencyKey);
+    expect(idempotencyKeys).toHaveLength(2);
+    expect(idempotencyKeys[0]).toBe(idempotencyKeys[1]);
+    expect(idempotencyKeys[0]).toMatch(/^ag_control:interrupt:run-id-1:/);
+  });
+
+  it('generates a new terminal control idempotency key after validation failure', async () => {
+    vi.spyOn(globalThis.crypto, 'randomUUID')
+      .mockReturnValueOnce('control-validation-key-1' as `${string}-${string}-${string}-${string}-${string}`)
+      .mockReturnValueOnce('control-validation-key-2' as `${string}-${string}-${string}-${string}-${string}`);
+    let interruptAttempts = 0;
+    const request = vi.fn(async (config: RequestConfig) => {
+      if (config.url === 'agent-gateway/runs:list') {
+        return {
+          data: {
+            data: [
+              {
+                id: 'run-id-1',
+                runCode: 'run-control-validation-key',
+                status: 'running',
+              },
+            ],
+          },
+        };
+      }
+
+      if (config.url === 'agent-gateway/runs:get/run-id-1') {
+        return {
+          data: {
+            data: {
+              id: 'run-id-1',
+              runCode: 'run-control-validation-key',
+              status: 'running',
+              terminalStatus: 'active',
+              agentGatewayControlActionsJson: {
+                interruptRun: true,
+                terminateRun: true,
+              },
+            },
+          },
+        };
+      }
+
+      if (config.url === 'agent-gateway/runs/run-id-1/terminal:snapshot') {
+        return {
+          data: {
+            data: {
+              backend: 'tmux',
+              sessionName: 'ag-run-run-id-1',
+              terminalStatus: 'active',
+              runStatus: 'running',
+              available: true,
+              output: 'validation key control output',
+              capturedAt: '2026-07-02T10:01:02.000Z',
+              inputEnabled: true,
+            },
+          },
+        };
+      }
+
+      if (config.url === 'agent-gateway/runs/run-id-1/terminal:interrupt') {
+        interruptAttempts += 1;
+        if (interruptAttempts === 1) {
+          const error = new Error('invalid control request') as Error & { response?: { status: number } };
+          error.response = { status: 400 };
+          throw error;
+        }
+        return {
+          data: {
+            data: {
+              success: true,
+              controlRequestId: 'control-request-validation',
+              controlRequestStatus: 'accepted',
+            },
+          },
+        };
+      }
+
+      return { data: { data: [] } };
+    });
+
+    renderAgentGatewayPage(AgentGatewayRunsPage, request);
+
+    expect(await screen.findByText('run-control-validation-key')).toBeTruthy();
+    fireEvent.click((await screen.findAllByLabelText('View run details'))[0]);
+    expect(await screen.findByText(/validation key control output/)).toBeTruthy();
+    fireEvent.click(screen.getByLabelText('Interrupt'));
+    await waitFor(() => expect(interruptAttempts).toBe(1));
+    fireEvent.click(screen.getByLabelText('Interrupt'));
+    await waitFor(() => expect(interruptAttempts).toBe(2));
+
+    const idempotencyKeys = request.mock.calls
+      .map(([config]) => config)
+      .filter((config) => config.url === 'agent-gateway/runs/run-id-1/terminal:interrupt')
+      .map((config) => config.data?.idempotencyKey);
+    expect(idempotencyKeys).toHaveLength(2);
+    expect(idempotencyKeys[0]).toMatch(/^ag_control:interrupt:run-id-1:/);
+    expect(idempotencyKeys[1]).toMatch(/^ag_control:interrupt:run-id-1:/);
+    expect(idempotencyKeys[1]).not.toBe(idempotencyKeys[0]);
+  });
+
+  it('generates a new terminal control idempotency key after a final response status', async () => {
+    vi.spyOn(globalThis.crypto, 'randomUUID')
+      .mockReturnValueOnce('control-final-key-1' as `${string}-${string}-${string}-${string}-${string}`)
+      .mockReturnValueOnce('control-final-key-2' as `${string}-${string}-${string}-${string}-${string}`);
+    let interruptAttempts = 0;
+    const request = vi.fn(async (config: RequestConfig) => {
+      if (config.url === 'agent-gateway/runs:list') {
+        return {
+          data: {
+            data: [
+              {
+                id: 'run-id-1',
+                runCode: 'run-control-final-key',
+                status: 'running',
+              },
+            ],
+          },
+        };
+      }
+
+      if (config.url === 'agent-gateway/runs:get/run-id-1') {
+        return {
+          data: {
+            data: {
+              id: 'run-id-1',
+              runCode: 'run-control-final-key',
+              status: 'running',
+              terminalStatus: 'active',
+              agentGatewayControlActionsJson: {
+                interruptRun: true,
+                terminateRun: true,
+              },
+            },
+          },
+        };
+      }
+
+      if (config.url === 'agent-gateway/runs/run-id-1/terminal:snapshot') {
+        return {
+          data: {
+            data: {
+              backend: 'tmux',
+              sessionName: 'ag-run-run-id-1',
+              terminalStatus: 'active',
+              runStatus: 'running',
+              available: true,
+              output: 'final key control output',
+              capturedAt: '2026-07-02T10:01:02.000Z',
+              inputEnabled: true,
+            },
+          },
+        };
+      }
+
+      if (config.url === 'agent-gateway/runs/run-id-1/terminal:interrupt') {
+        interruptAttempts += 1;
+        return {
+          data: {
+            data: {
+              success: true,
+              controlRequestId: `control-request-${interruptAttempts}`,
+              controlRequestStatus: 'succeeded',
+            },
+          },
+        };
+      }
+
+      return { data: { data: [] } };
+    });
+
+    renderAgentGatewayPage(AgentGatewayRunsPage, request);
+
+    expect(await screen.findByText('run-control-final-key')).toBeTruthy();
+    fireEvent.click((await screen.findAllByLabelText('View run details'))[0]);
+    expect(await screen.findByText(/final key control output/)).toBeTruthy();
+    fireEvent.click(screen.getByLabelText('Interrupt'));
+    await waitFor(() => expect(interruptAttempts).toBe(1));
+    expect(await screen.findByText('Control request succeeded')).toBeTruthy();
+    fireEvent.click(screen.getByLabelText('Interrupt'));
+    await waitFor(() => expect(interruptAttempts).toBe(2));
+
+    const idempotencyKeys = request.mock.calls
+      .map(([config]) => config)
+      .filter((config) => config.url === 'agent-gateway/runs/run-id-1/terminal:interrupt')
+      .map((config) => config.data?.idempotencyKey);
+    expect(idempotencyKeys).toHaveLength(2);
+    expect(idempotencyKeys[0]).toMatch(/^ag_control:interrupt:run-id-1:/);
+    expect(idempotencyKeys[1]).toMatch(/^ag_control:interrupt:run-id-1:/);
+    expect(idempotencyKeys[1]).not.toBe(idempotencyKeys[0]);
+  });
+
   it('opens run details from the runId query and preserves unrelated query parameters on close', async () => {
     window.history.pushState({}, '', '/admin/settings/agent-gateway/runs?terminalStreamSmoke=1&runId=run-id-1');
     const request = vi.fn(async (config: RequestConfig) => {
@@ -830,6 +1586,177 @@ describe('PluginAgentGatewayClientV2', () => {
       expect(params.get('runId')).toBeNull();
       expect(params.get('terminalStreamSmoke')).toBe('1');
     });
+  });
+
+  it('opens run details when the v route receives a runId after mount', async () => {
+    window.history.pushState({}, '', '/v/admin/settings/agent-gateway/runs');
+    const request = vi.fn(async (config: RequestConfig) => {
+      if (config.url === 'agent-gateway/runs:list') {
+        return {
+          data: {
+            data: [
+              {
+                id: 'run-id-1',
+                runCode: 'run-build-1',
+                status: 'running',
+              },
+            ],
+          },
+        };
+      }
+
+      if (config.url === 'agent-gateway/runs:get/run-id-1') {
+        return {
+          data: {
+            data: {
+              id: 'run-id-1',
+              runCode: 'run-build-1',
+              status: 'running',
+              requestedAt: '2026-06-30T10:00:00.000Z',
+              startedAt: '2026-06-30T10:01:00.000Z',
+            },
+          },
+        };
+      }
+
+      if (config.url === 'agent-gateway/runs/run-id-1/terminal:snapshot') {
+        return {
+          data: {
+            data: {
+              backend: 'tmux',
+              terminalStatus: 'active',
+              runStatus: 'running',
+              available: true,
+              output: 'opened from v route query',
+              capturedAt: '2026-06-30T10:01:02.000Z',
+              inputEnabled: false,
+            },
+          },
+        };
+      }
+
+      return { data: { data: [] } };
+    });
+
+    renderAgentGatewayPage(AgentGatewayRunsPage, request);
+
+    expect(await screen.findByText('run-build-1')).toBeTruthy();
+
+    act(() => {
+      window.history.pushState({}, '', '/v/admin/settings/agent-gateway/runs?runId=run-id-1');
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    });
+
+    expect(await screen.findByText('Run summary')).toBeTruthy();
+    expect(await screen.findByText(/opened from v route query/)).toBeTruthy();
+
+    act(() => {
+      window.history.pushState({}, '', '/v/admin/settings/agent-gateway/runs');
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    });
+
+    await waitFor(() => {
+      expect(screen.queryByText('Run summary')).toBeNull();
+    });
+  });
+
+  it('ignores a stale terminal snapshot response after switching run details', async () => {
+    let resolveRunOneSnapshot: ((value: { data: { data: Record<string, unknown> } }) => void) | undefined;
+    const request = vi.fn(async (config: RequestConfig) => {
+      if (config.url === 'agent-gateway/runs:list') {
+        return {
+          data: {
+            data: [
+              {
+                id: 'run-id-1',
+                runCode: 'run-stale-snapshot-1',
+                status: 'running',
+              },
+              {
+                id: 'run-id-2',
+                runCode: 'run-stale-snapshot-2',
+                status: 'running',
+              },
+            ],
+          },
+        };
+      }
+
+      if (config.url === 'agent-gateway/runs:get/run-id-1' || config.url === 'agent-gateway/runs:get/run-id-2') {
+        const runId = config.url.endsWith('run-id-1') ? 'run-id-1' : 'run-id-2';
+        return {
+          data: {
+            data: {
+              id: runId,
+              runCode: runId === 'run-id-1' ? 'run-stale-snapshot-1' : 'run-stale-snapshot-2',
+              status: 'running',
+              terminalBackend: 'tmux',
+              terminalStatus: 'active',
+              requestedAt: '2026-06-30T10:00:00.000Z',
+              startedAt: '2026-06-30T10:01:00.000Z',
+              agentGatewayControlActionsJson: {
+                interruptRun: true,
+                terminateRun: true,
+              },
+            },
+          },
+        };
+      }
+
+      if (config.url === 'agent-gateway/runs/run-id-1/terminal:snapshot') {
+        return await new Promise<{ data: { data: Record<string, unknown> } }>((resolve) => {
+          resolveRunOneSnapshot = resolve;
+        });
+      }
+
+      if (config.url === 'agent-gateway/runs/run-id-2/terminal:snapshot') {
+        return {
+          data: {
+            data: {
+              backend: 'tmux',
+              terminalStatus: 'active',
+              runStatus: 'running',
+              available: true,
+              output: 'fresh run two snapshot',
+              capturedAt: '2026-06-30T10:01:03.000Z',
+              inputEnabled: false,
+            },
+          },
+        };
+      }
+
+      return { data: { data: [] } };
+    });
+
+    renderAgentGatewayPage(AgentGatewayRunsPage, request);
+
+    expect(await screen.findByText('run-stale-snapshot-1')).toBeTruthy();
+    const detailButtons = await screen.findAllByLabelText('View run details');
+    fireEvent.click(detailButtons[0]);
+    await waitFor(() => expect(resolveRunOneSnapshot).toBeTruthy());
+
+    fireEvent.click(detailButtons[1]);
+    expect(await screen.findByText(/fresh run two snapshot/)).toBeTruthy();
+
+    resolveRunOneSnapshot?.({
+      data: {
+        data: {
+          backend: 'tmux',
+          terminalStatus: 'active',
+          runStatus: 'running',
+          available: true,
+          output: 'stale run one snapshot',
+          capturedAt: '2026-06-30T10:01:02.000Z',
+          inputEnabled: false,
+        },
+      },
+    });
+
+    await new Promise<void>((resolve) => {
+      setTimeout(resolve, 50);
+    });
+    expect(screen.queryByText(/stale run one snapshot/)).toBeNull();
+    expect(screen.getByText(/fresh run two snapshot/)).toBeTruthy();
   });
 
   it('falls back to the latest terminal snapshot after a live stream error', async () => {
