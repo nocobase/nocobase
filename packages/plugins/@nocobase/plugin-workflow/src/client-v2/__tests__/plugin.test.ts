@@ -136,6 +136,31 @@ describe('PluginWorkflowClientV2 workflow notice providers', () => {
     expect(loadWorkflowListNotices).toHaveBeenCalledTimes(1);
   });
 
+  it('isolates synchronous workflow notice provider failures to the provider', () => {
+    const plugin = createPlugin();
+    const brokenProvider = vi.fn(() => {
+      throw new Error('notice provider failed');
+    });
+    const healthyProvider = vi.fn(() => ({
+      key: 'healthy',
+      message: 'Healthy provider notice',
+      type: 'info' as const,
+    }));
+
+    plugin.registerWorkflowNoticeProvider('broken-provider', brokenProvider);
+    plugin.registerWorkflowNoticeProvider('healthy-provider', healthyProvider);
+
+    expect(plugin.getWorkflowNotices({ surface: 'trigger-node-card', workflow: { id: 1 } })).toEqual([
+      {
+        key: 'healthy',
+        message: 'Healthy provider notice',
+        type: 'info',
+      },
+    ]);
+    expect(brokenProvider).toHaveBeenCalledTimes(1);
+    expect(healthyProvider).toHaveBeenCalledTimes(1);
+  });
+
   it('skips object provider workflow list loading when the provider predicate returns false', async () => {
     const plugin = createPlugin();
     const loadWorkflowListNotices = vi.fn().mockResolvedValue({

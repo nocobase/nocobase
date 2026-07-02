@@ -46,7 +46,7 @@ export type InstructionGroup = { key: string; label: string };
 export type WorkflowNoticeSurface = 'workflow-list-row' | 'trigger-node-card';
 
 export type WorkflowNotice = {
-  /** Extra explanatory content. List rows render this as tooltip content; cards render it inside the compact alert. */
+  /** Extra explanatory content. List rows render this as tooltip content; compact card surfaces may ignore it. */
   description?: ReactNode;
   /** Stable identity for React rendering and provider-level deduplication. */
   key: string;
@@ -176,11 +176,15 @@ export class PluginWorkflowClientV2 extends Plugin {
   /** Collect notices from registered providers for the current UI surface. */
   getWorkflowNotices(context: WorkflowNoticeProviderContext) {
     return Array.from(this.workflowNoticeProviders.getEntities()).flatMap(([, provider]) => {
-      const notices = typeof provider === 'function' ? provider(context) : provider.getNotices?.(context);
-      if (!notices) {
+      try {
+        const notices = typeof provider === 'function' ? provider(context) : provider.getNotices?.(context);
+        if (!notices) {
+          return [];
+        }
+        return Array.isArray(notices) ? notices : [notices];
+      } catch {
         return [];
       }
-      return Array.isArray(notices) ? notices : [notices];
     });
   }
 
