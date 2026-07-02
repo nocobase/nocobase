@@ -259,7 +259,7 @@ TypeError: Cannot assign to read only property 'constructor' of object '[object 
 
 这个问题通常是因为**插件把 NocoBase 内置的依赖打包进了自己的 `node_modules/`**。NocoBase 的构建系统维护了一份 [external 列表](../../dependency-management)，里面的包（比如 `react`、`antd`、`axios`、`lodash` 等）由 NocoBase 宿主提供，不应该被打包进插件。如果插件带了一份私有的副本，运行时可能会和宿主已经加载的版本冲突，引发各种奇怪的错误。
 
-**为什么本地没问题：** 本地开发时插件在 `packages/plugins/` 目录下，没有私有 `node_modules/`，依赖会解析到项目根目录下已经加载好的版本，不会产生冲突。
+**为什么本地没问题：** 本地开发时插件在 `plugins/` 目录下，没有私有 `node_modules/`，依赖会解析到项目根目录下已经加载好的版本，不会产生冲突。
 
 **解决办法：** 把插件 `package.json` 里的 `dependencies` 都移到 `devDependencies`——NocoBase 的构建系统会自动处理插件的依赖：
 

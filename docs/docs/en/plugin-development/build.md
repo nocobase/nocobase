@@ -1,44 +1,40 @@
 ---
 title: "Build and Package"
-description: "NocoBase plugin build and packaging: yarn build, yarn nocobase tar, build.config.ts custom configuration, Rsbuild client bundling, tsup server bundling."
-keywords: "plugin build,plugin package,yarn build,tar,build.config.ts,Rsbuild,tsup,@nocobase/build,NocoBase"
+description: "NocoBase plugin build and packaging: nb source build, build.config.ts custom configuration, Rsbuild client bundling, tsup server bundling."
+keywords: "plugin build,plugin package,nb source build,tar,build.config.ts,Rsbuild,tsup,@nocobase/build,NocoBase"
 ---
 
 # Build and Package
 
-After plugin development is complete, you need to go through two steps — build (compile source code) and package (generate `.tar.gz`) — before distributing it to other NocoBase applications.
+After plugin development is complete, you need to go through two steps — build (compile source code) and package (generate `.tgz`) — before distributing it to other NocoBase applications.
 
 ## Build Plugin
 
-Building compiles the TypeScript source code under `src/` into JavaScript — client-side code is bundled by Rsbuild, and server-side code is bundled by tsup:
+Run the build command from the source directory (`<app-path>/source/`). Building compiles the TypeScript source code under `src/` into JavaScript — client-side code is bundled by Rsbuild, and server-side code is bundled by tsup:
 
 ```bash
-yarn build @my-project/plugin-hello
+cd <app-path>/source
+nb source build @my-project/plugin-hello
 ```
 
 Build artifacts are output to the `dist/` directory under the plugin root.
 
 :::tip
 
-If the plugin is created in a source code repository, the first build will trigger a full repository type check, which may take some time. It's recommended to ensure dependencies are installed and the repository is in a buildable state.
+The first build may trigger a full repository type check, which can take some time. It's recommended to ensure dependencies are installed and the repository is in a buildable state.
 
 :::
 
 ## Package Plugin
 
-Packaging compresses the build artifacts into a `.tar.gz` file for easy upload to other environments:
+Also run from the source directory (`<app-path>/source/`). Use the `--tar` flag to combine build and package into one step, generating a `.tgz` archive:
 
 ```bash
-yarn nocobase tar @my-project/plugin-hello
+cd <app-path>/source
+nb source build @my-project/plugin-hello --tar
 ```
 
-The package file is output to `storage/tar/@my-project/plugin-hello.tar.gz` by default.
-
-You can also combine build and package into one step using the `--tar` flag:
-
-```bash
-yarn build @my-project/plugin-hello --tar
-```
+The package file is output to the `source/storage/tar/` directory by default. The command will print the full path of the tarball after completion.
 
 ## Upload to Other NocoBase Applications
 
@@ -84,7 +80,7 @@ Key points:
 ## Related Links
 
 - [Write Your First Plugin](./write-your-first-plugin.md) — Create a plugin from scratch, including the complete build and package workflow
-- [Project Structure](./project-structure.md) — Understand the role of directories like `packages/plugins`, `storage/tar`, etc.
+- [Project Structure](./project-structure.md) — Understand the role of directories like `plugins/`, `storage/tar`, etc.
 - [Dependency Management](./dependency-management.md) — Plugin dependency declarations and global dependencies
 - [Plugin Development Overview](./index.md) — Overall introduction to plugin development
 - [Install and Upgrade Plugins](../get-started/install-upgrade-plugins.mdx) — Upload packaged files to target environments

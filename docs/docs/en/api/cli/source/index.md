@@ -6,7 +6,7 @@ keywords: "nb source,NocoBase CLI,source,download,dev,build,test"
 
 # nb source
 
-Manage the local NocoBase source project. npm/Git envs use a local source directory; Docker envs usually use [`nb app`](../app/index.md) to manage runtime.
+Manage the local NocoBase source project. Commands under `nb source` must be run from the source directory (`<app-path>/source/`). npm/Git envs use a local source directory; Docker envs usually use [`nb app`](../app/index.md) to manage runtime.
 
 ## Usage
 

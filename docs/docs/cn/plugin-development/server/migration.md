@@ -205,6 +205,6 @@ describe('Migration Test', () => {
 - [Collections 数据表](./collections.md) — Migration 中常需调整的数据表结构定义
 - [Database 数据库操作](./database.md) — Migration 中通过 `this.db` 操作数据的 API
 - [Plugin 插件](./plugin.md) — Migration 文件在插件中的组织与加载方式
-- [Command 命令行](./command.md) — 通过 `nocobase upgrade` 和 `create-migration` 命令触发迁移
+- [Command 命令行](./command.md) — 通过 `nb app upgrade` 和 `nb scaffold migration` 命令触发迁移
 - [Test 测试](./test.md) — 使用 Mock Server 测试 Migration 的执行结果
 - [Migration API](../../api/server/migration.md) — Migration 类的完整 API 参考
