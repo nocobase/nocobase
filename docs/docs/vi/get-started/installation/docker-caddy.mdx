@@ -1,0 +1,170 @@
+---
+title: "Cài đặt Docker (Caddy bên ngoài)"
+description: "Cài đặt NocoBase bằng Docker và dùng một container Caddy bên ngoài làm điểm vào."
+keywords: "Docker,NocoBase,Caddy,cài đặt,reverse proxy"
+---
+
+# Cài đặt Docker (Caddy bên ngoài)
+
+Trong cách triển khai này, container ứng dụng NocoBase và container Caddy chạy tách rời nhau. Bạn có thể bắt đầu từ [Cài đặt Docker (Nginx tích hợp)](./docker.mdx), rồi chuyển điểm vào sang container Caddy bên ngoài.
+
+## Khi nào nên dùng cách này
+
+- Bạn muốn tách riêng NocoBase và web server
+- Bạn muốn đơn giản hóa cấu hình reverse proxy và HTTPS với Caddy
+- Bạn chỉ muốn đưa container proxy ra mạng công khai
+
+## Ví dụ docker-compose.yml
+
+Nếu bạn cần image `full`, hãy thay `latest-no-nginx` bằng `latest-full-no-nginx`.
+
+```yml
+networks:
+  nocobase:
+    driver: bridge
+
+services:
+  app:
+    image: nocobase/nocobase:latest-no-nginx
+    restart: always
+    depends_on:
+      - postgres
+    networks:
+      - nocobase
+    environment:
+      - APP_KEY=your-secret-key
+      - DB_DIALECT=postgres
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_DATABASE=nocobase
+      - DB_USER=nocobase
+      - DB_PASSWORD=nocobase
+      - TZ=Etc/UTC
+      - NOCOBASE_EXTRACT_CLIENT_ASSETS=true
+      - NOCOBASE_PROXY_PROVIDER=caddy
+      - NOCOBASE_PROXY_STORAGE_PATH=/app/nocobase/storage
+      - NOCOBASE_PROXY_UPSTREAM_HOST=app
+    volumes:
+      - ./storage:/app/nocobase/storage
+
+  caddy:
+    image: caddy:2
+    restart: always
+    depends_on:
+      - app
+    networks:
+      - nocobase
+    volumes:
+      - ./storage:/app/nocobase/storage
+    command: >
+      /bin/sh -c '
+        while [ ! -f /app/nocobase/storage/.nocobase/proxy/caddy/nocobase.caddy ]; do
+          echo "waiting for nocobase.caddy..."
+          sleep 1
+        done
+        ln -sf /app/nocobase/storage/.nocobase/proxy/caddy/nocobase.caddy /etc/caddy/Caddyfile
+        caddy run --config /etc/caddy/Caddyfile --adapter caddyfile
+      '
+    ports:
+      - "13000:80"
+
+  postgres:
+    image: postgres:16
+    restart: always
+    command: postgres -c wal_level=logical
+    environment:
+      POSTGRES_USER: nocobase
+      POSTGRES_DB: nocobase
+      POSTGRES_PASSWORD: nocobase
+    volumes:
+      - ./storage/db/postgres:/var/lib/postgresql/data
+    networks:
+      - nocobase
+```
+
+## Điểm chính
+
+- `NOCOBASE_EXTRACT_CLIENT_ASSETS=true` dùng để tách tài nguyên client và tạo cấu hình proxy
+- `NOCOBASE_PROXY_PROVIDER=caddy` cho biết cần tạo cấu hình Caddy
+- `NOCOBASE_PROXY_UPSTREAM_HOST=app` cho phép container Caddy truy cập dịch vụ `app` qua mạng Compose
+- `./storage` cần được mount vào cả `app` và `caddy` để cùng dùng cấu hình proxy, tài nguyên tĩnh và tệp tải lên
+- Container `caddy` cần chờ `nocobase.caddy` được tạo xong, sau đó dùng `ln -sf` liên kết nó tới `/etc/caddy/Caddyfile`
+- Chỉ cần publish cổng của container Caddy ra host. Dịch vụ `app` không cần publish cổng ra host
+
+## Nếu dùng Caddy cài trực tiếp trên máy host
+
+Nếu Caddy của bạn được cài trực tiếp trên máy host thay vì chạy trong container Docker, bạn nên dùng một `docker-compose.yml` riêng. Trong cách này, dịch vụ `app` cần publish cổng ra host, và các biến proxy phải dùng giá trị theo góc nhìn của host.
+
+Bạn có thể dùng `docker-compose.yml` như sau:
+
+```yml
+networks:
+  nocobase:
+    driver: bridge
+
+services:
+  app:
+    image: nocobase/nocobase:latest-no-nginx
+    restart: always
+    depends_on:
+      - postgres
+    networks:
+      - nocobase
+    environment:
+      - APP_KEY=your-secret-key
+      - DB_DIALECT=postgres
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_DATABASE=nocobase
+      - DB_USER=nocobase
+      - DB_PASSWORD=nocobase
+      - TZ=Etc/UTC
+      - NOCOBASE_EXTRACT_CLIENT_ASSETS=true
+      - NOCOBASE_PROXY_PROVIDER=caddy
+      - NOCOBASE_PROXY_STORAGE_PATH=/path/to/your-project/storage
+      - NOCOBASE_PROXY_UPSTREAM_HOST=127.0.0.1
+      - NOCOBASE_PROXY_UPSTREAM_PORT=13000
+    volumes:
+      - ./storage:/app/nocobase/storage
+    ports:
+      - "13000:13000"
+
+  postgres:
+    image: postgres:16
+    restart: always
+    command: postgres -c wal_level=logical
+    environment:
+      POSTGRES_USER: nocobase
+      POSTGRES_DB: nocobase
+      POSTGRES_PASSWORD: nocobase
+    volumes:
+      - ./storage/db/postgres:/var/lib/postgresql/data
+    networks:
+      - nocobase
+```
+
+Trong biến thể này:
+
+- `NOCOBASE_PROXY_STORAGE_PATH` cần là đường dẫn tuyệt đối của thư mục `storage` trên host
+- `NOCOBASE_PROXY_UPSTREAM_HOST` cần là `127.0.0.1`
+- Dịch vụ `app` cần giữ `ports`, để Caddy trên host có thể truy cập ứng dụng qua `127.0.0.1:13000`
+
+Sau khi container `app` khởi động, hãy chờ file cấu hình được tạo rồi liên kết nó vào đường dẫn cấu hình Caddy trên host:
+
+```bash
+while [ ! -f ./storage/.nocobase/proxy/caddy/nocobase.caddy ]; do
+  echo "waiting for nocobase.caddy..."
+  sleep 1
+done
+
+sudo ln -sf "$(pwd)/storage/.nocobase/proxy/caddy/nocobase.caddy" /etc/caddy/Caddyfile
+sudo caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
+sudo systemctl reload caddy
+```
+
+Nếu Caddy trên host của bạn không dùng `/etc/caddy/Caddyfile`, hãy thay đường dẫn đích bằng đường dẫn cấu hình thực tế của bạn. Thông thường, giữ `nocobase.caddy` như file đầu vào chính sẽ an toàn hơn là chép thủ công nội dung của nó.
+
+## Liên kết liên quan
+
+- [Cài đặt Docker (Nginx tích hợp)](./docker.mdx) — Bắt đầu từ mô hình một container
+- [Proxy tài nguyên tĩnh với Caddy](../deployment/static-resource-proxy/caddy.md) — Tìm hiểu thêm về cấu hình Caddy được tạo ra

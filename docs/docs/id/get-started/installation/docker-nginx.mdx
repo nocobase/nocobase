@@ -1,0 +1,172 @@
+---
+title: "Instalasi Docker (Nginx eksternal)"
+description: "Instal NocoBase dengan Docker dan gunakan kontainer Nginx eksternal sebagai pintu masuk."
+keywords: "Docker,NocoBase,Nginx,instalasi,reverse proxy"
+---
+
+# Instalasi Docker (Nginx eksternal)
+
+Dalam mode ini, kontainer aplikasi NocoBase dan kontainer Nginx berjalan terpisah. Anda bisa mulai dari [Instalasi Docker (Nginx bawaan)](./docker.mdx), lalu mengganti pintu masuk ke kontainer Nginx eksternal.
+
+## Kapan menggunakan mode ini
+
+- Anda ingin memisahkan deployment NocoBase dan web server
+- Anda ingin mengelola sendiri konfigurasi Nginx dan port yang dibuka
+- Anda ingin hanya mengekspos kontainer proxy ke jaringan publik
+
+## Contoh docker-compose.yml
+
+Jika Anda membutuhkan image `full`, ganti `latest-no-nginx` dengan `latest-full-no-nginx`.
+
+```yml
+networks:
+  nocobase:
+    driver: bridge
+
+services:
+  app:
+    image: nocobase/nocobase:latest-no-nginx
+    restart: always
+    depends_on:
+      - postgres
+    networks:
+      - nocobase
+    environment:
+      - APP_KEY=your-secret-key
+      - DB_DIALECT=postgres
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_DATABASE=nocobase
+      - DB_USER=nocobase
+      - DB_PASSWORD=nocobase
+      - TZ=Etc/UTC
+      - NOCOBASE_EXTRACT_CLIENT_ASSETS=true
+      - NOCOBASE_PROXY_PROVIDER=nginx
+      - NOCOBASE_PROXY_STORAGE_PATH=/app/nocobase/storage
+      - NOCOBASE_PROXY_UPSTREAM_HOST=app
+    volumes:
+      - ./storage:/app/nocobase/storage
+
+  nginx:
+    image: nginx:latest
+    restart: always
+    depends_on:
+      - app
+    networks:
+      - nocobase
+    volumes:
+      - ./storage:/app/nocobase/storage
+    command: >
+      /bin/sh -c '
+        while [ ! -f /app/nocobase/storage/.nocobase/proxy/nginx/nocobase.conf ]; do
+          echo "waiting for nocobase.conf..."
+          sleep 1
+        done
+        rm -f /etc/nginx/conf.d/default.conf
+        ln -sf /app/nocobase/storage/.nocobase/proxy/nginx/nocobase.conf /etc/nginx/conf.d/default.conf
+        nginx -g "daemon off;"
+      '
+    ports:
+      - "13000:80"
+
+  postgres:
+    image: postgres:16
+    restart: always
+    command: postgres -c wal_level=logical
+    environment:
+      POSTGRES_USER: nocobase
+      POSTGRES_DB: nocobase
+      POSTGRES_PASSWORD: nocobase
+    volumes:
+      - ./storage/db/postgres:/var/lib/postgresql/data
+    networks:
+      - nocobase
+```
+
+## Poin penting
+
+- `NOCOBASE_EXTRACT_CLIENT_ASSETS=true` mengekstrak aset klien dan membuat konfigurasi proxy
+- `NOCOBASE_PROXY_PROVIDER=nginx` menandakan bahwa konfigurasi Nginx harus dibuat
+- `NOCOBASE_PROXY_UPSTREAM_HOST=app` memungkinkan kontainer Nginx mengakses layanan `app` melalui jaringan Compose
+- `./storage` harus dimount ke `app` dan `nginx` agar konfigurasi proxy, aset statis, dan file unggahan bisa dipakai bersama
+- Kontainer `nginx` perlu menunggu sampai `nocobase.conf` dibuat, lalu menautkannya ke `/etc/nginx/conf.d/default.conf` dengan `ln -sf`
+- Jika Anda memakai image dengan Nginx bawaan, kontainer `app` sendiri membuka port dengan `ports: "13000:80"`
+- Jika Anda memakai kontainer Nginx eksternal, biarkan kontainer `nginx` yang menangani pemetaan port ke host, dan layanan `app` tidak perlu membuka port ke host
+
+## Jika menggunakan Nginx lokal di host
+
+Jika Nginx Anda terpasang langsung di host dan tidak berjalan di dalam kontainer Docker, sebaiknya gunakan `docker-compose.yml` terpisah. Dalam mode ini, layanan `app` perlu membuka port ke host, dan variabel proxy harus memakai nilai dari sudut pandang host.
+
+Anda bisa memakai `docker-compose.yml` seperti ini:
+
+```yml
+networks:
+  nocobase:
+    driver: bridge
+
+services:
+  app:
+    image: nocobase/nocobase:latest-no-nginx
+    restart: always
+    depends_on:
+      - postgres
+    networks:
+      - nocobase
+    environment:
+      - APP_KEY=your-secret-key
+      - DB_DIALECT=postgres
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_DATABASE=nocobase
+      - DB_USER=nocobase
+      - DB_PASSWORD=nocobase
+      - TZ=Etc/UTC
+      - NOCOBASE_EXTRACT_CLIENT_ASSETS=true
+      - NOCOBASE_PROXY_PROVIDER=nginx
+      - NOCOBASE_PROXY_STORAGE_PATH=/path/to/your-project/storage
+      - NOCOBASE_PROXY_UPSTREAM_HOST=127.0.0.1
+      - NOCOBASE_PROXY_UPSTREAM_PORT=13000
+    volumes:
+      - ./storage:/app/nocobase/storage
+    ports:
+      - "13000:13000"
+
+  postgres:
+    image: postgres:16
+    restart: always
+    command: postgres -c wal_level=logical
+    environment:
+      POSTGRES_USER: nocobase
+      POSTGRES_DB: nocobase
+      POSTGRES_PASSWORD: nocobase
+    volumes:
+      - ./storage/db/postgres:/var/lib/postgresql/data
+    networks:
+      - nocobase
+```
+
+Dalam varian ini:
+
+- `NOCOBASE_PROXY_STORAGE_PATH` harus berupa path absolut direktori `storage` di host
+- `NOCOBASE_PROXY_UPSTREAM_HOST` harus `127.0.0.1`
+- Layanan `app` perlu mempertahankan `ports`, supaya Nginx lokal bisa mengakses aplikasi melalui `127.0.0.1:13000`
+
+Setelah kontainer `app` berjalan, tunggu file konfigurasi dibuat lalu tautkan ke direktori konfigurasi Nginx lokal:
+
+```bash
+while [ ! -f ./storage/.nocobase/proxy/nginx/nocobase.conf ]; do
+  echo "waiting for nocobase.conf..."
+  sleep 1
+done
+
+sudo ln -sf "$(pwd)/storage/.nocobase/proxy/nginx/nocobase.conf" /etc/nginx/conf.d/nocobase.conf
+sudo nginx -t
+sudo systemctl reload nginx
+```
+
+Jika Nginx lokal Anda tidak menggunakan direktori `conf.d`, ganti target link dengan path konfigurasi Anda sendiri. Biasanya lebih aman membiarkan `nocobase.conf` tetap sebagai file yang di-include dari konteks `http {}` daripada menyalin isinya secara manual.
+
+## Tautan terkait
+
+- [Instalasi Docker (Nginx bawaan)](./docker.mdx) — Mulai dari deployment satu kontainer
+- [Proxy sumber daya statis Nginx](../deployment/static-resource-proxy/nginx.md) — Pelajari lebih lanjut tentang konfigurasi Nginx yang dihasilkan

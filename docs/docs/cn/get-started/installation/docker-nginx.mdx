@@ -1,0 +1,172 @@
+---
+title: "Docker 安装（外部 Nginx）"
+description: "使用 Docker 安装 NocoBase，并通过外部 Nginx 容器作为独立入口。"
+keywords: "Docker,NocoBase,Nginx,安装,反向代理"
+---
+
+# Docker 安装（外部 Nginx）
+
+这种方式里，NocoBase 应用容器和 Nginx 容器分别运行。你可以先按 [Docker 安装（内置 Nginx）](./docker.mdx) 完成基础安装，再把入口切换为外部 Nginx 容器。
+
+## 什么时候用这种方式
+
+- 希望把 NocoBase 和 Web 服务器分开部署
+- 希望自己维护 Nginx 配置和端口暴露
+- 希望只对外暴露代理容器，应用容器只在内部网络通信
+
+## docker-compose.yml 示例
+
+下面的示例使用镜像：`nocobase/nocobase:latest-full-no-nginx`。
+
+```yml
+networks:
+  nocobase:
+    driver: bridge
+
+services:
+  app:
+    image: nocobase/nocobase:latest-full-no-nginx
+    restart: always
+    depends_on:
+      - postgres
+    networks:
+      - nocobase
+    environment:
+      - APP_KEY=your-secret-key
+      - DB_DIALECT=postgres
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_DATABASE=nocobase
+      - DB_USER=nocobase
+      - DB_PASSWORD=nocobase
+      - TZ=Asia/Shanghai
+      - NOCOBASE_EXTRACT_CLIENT_ASSETS=true
+      - NOCOBASE_PROXY_PROVIDER=nginx
+      - NOCOBASE_PROXY_STORAGE_PATH=/app/nocobase/storage
+      - NOCOBASE_PROXY_UPSTREAM_HOST=app
+    volumes:
+      - ./storage:/app/nocobase/storage
+
+  nginx:
+    image: nginx:latest
+    restart: always
+    depends_on:
+      - app
+    networks:
+      - nocobase
+    volumes:
+      - ./storage:/app/nocobase/storage
+    command: >
+      /bin/sh -c '
+        while [ ! -f /app/nocobase/storage/.nocobase/proxy/nginx/nocobase.conf ]; do
+          echo "waiting for nocobase.conf..."
+          sleep 1
+        done
+        rm -f /etc/nginx/conf.d/default.conf
+        ln -sf /app/nocobase/storage/.nocobase/proxy/nginx/nocobase.conf /etc/nginx/conf.d/default.conf
+        nginx -g "daemon off;"
+      '
+    ports:
+      - "13000:80"
+
+  postgres:
+    image: postgres:16
+    restart: always
+    command: postgres -c wal_level=logical
+    environment:
+      POSTGRES_USER: nocobase
+      POSTGRES_DB: nocobase
+      POSTGRES_PASSWORD: nocobase
+    volumes:
+      - ./storage/db/postgres:/var/lib/postgresql/data
+    networks:
+      - nocobase
+```
+
+## 关键点
+
+- `NOCOBASE_EXTRACT_CLIENT_ASSETS=true` 用于提取前端静态资源，并生成代理配置
+- `NOCOBASE_PROXY_PROVIDER=nginx` 表示生成 Nginx 配置
+- `NOCOBASE_PROXY_UPSTREAM_HOST=app` 表示让 Nginx 容器通过 Compose 网络访问 `app` 服务
+- `./storage` 需要同时挂载到 `app` 和 `nginx` 容器，方便共享代理配置、静态资源和上传文件
+- `nginx` 容器启动前需要等待 `nocobase.conf` 生成，再通过 `ln -sf` 链接到 `/etc/nginx/conf.d/default.conf`
+- 如果使用内置 Nginx，`app` 容器本身通过 `ports: "13000:80"` 对外暴露端口
+- 如果使用外部 Nginx，只需要由 `nginx` 容器处理这个端口映射，`app` 服务不需要对宿主机暴露端口
+
+## 如果使用宿主机本地 Nginx
+
+如果你的 Nginx 不是运行在 Docker 容器里，而是直接安装在宿主机上，建议单独使用一份 `docker-compose.yml`。这种情况下，`app` 需要直接对宿主机暴露端口，同时代理相关环境变量也要改成宿主机视角。
+
+可以参考下面的 `docker-compose.yml`：
+
+```yml
+networks:
+  nocobase:
+    driver: bridge
+
+services:
+  app:
+    image: nocobase/nocobase:latest-full-no-nginx
+    restart: always
+    depends_on:
+      - postgres
+    networks:
+      - nocobase
+    environment:
+      - APP_KEY=your-secret-key
+      - DB_DIALECT=postgres
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_DATABASE=nocobase
+      - DB_USER=nocobase
+      - DB_PASSWORD=nocobase
+      - TZ=Asia/Shanghai
+      - NOCOBASE_EXTRACT_CLIENT_ASSETS=true
+      - NOCOBASE_PROXY_PROVIDER=nginx
+      - NOCOBASE_PROXY_STORAGE_PATH=/path/to/your-project/storage
+      - NOCOBASE_PROXY_UPSTREAM_HOST=127.0.0.1
+      - NOCOBASE_PROXY_UPSTREAM_PORT=13000
+    volumes:
+      - ./storage:/app/nocobase/storage
+    ports:
+      - "13000:13000"
+
+  postgres:
+    image: postgres:16
+    restart: always
+    command: postgres -c wal_level=logical
+    environment:
+      POSTGRES_USER: nocobase
+      POSTGRES_DB: nocobase
+      POSTGRES_PASSWORD: nocobase
+    volumes:
+      - ./storage/db/postgres:/var/lib/postgresql/data
+    networks:
+      - nocobase
+```
+
+其中：
+
+- `NOCOBASE_PROXY_STORAGE_PATH` 需要写成宿主机上的 `storage` 绝对路径
+- `NOCOBASE_PROXY_UPSTREAM_HOST` 需要改成 `127.0.0.1`
+- `app` 服务需要保留 `ports`，这样宿主机本地 Nginx 才能通过 `127.0.0.1:13000` 访问到应用
+
+启动 `app` 容器后，再在宿主机上等待配置文件生成，并把它链接到本地 Nginx 配置目录：
+
+```bash
+while [ ! -f ./storage/.nocobase/proxy/nginx/nocobase.conf ]; do
+  echo "waiting for nocobase.conf..."
+  sleep 1
+done
+
+sudo ln -sf "$(pwd)/storage/.nocobase/proxy/nginx/nocobase.conf" /etc/nginx/conf.d/nocobase.conf
+sudo nginx -t
+sudo systemctl reload nginx
+```
+
+如果你的宿主机 Nginx 没有使用 `conf.d` 目录，需要把链接路径改成你自己的配置目录。通常来说，保持 `nocobase.conf` 作为 `http {}` 里的 include 文件会更稳妥，不建议手动拆开后再复制内容。
+
+## 相关链接
+
+- [Docker 安装（内置 Nginx）](./docker.mdx) — 从单容器安装开始
+- [Nginx 静态资源代理](../deployment/static-resource-proxy/nginx.md) — 了解生成的 Nginx 配置
