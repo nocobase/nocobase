@@ -73,7 +73,7 @@ A seguir, apresentamos um exemplo de **plugin** de extensão de notificação pa
 
 ### Criação do Plugin
 
-1. Execute o comando para criar o **plugin**: `yarn pm add @nocobase/plugin-notification-example`
+1. Execute o comando para criar o **plugin**: `nb scaffold plugin @nocobase/plugin-notification-example`
 
 ### Desenvolvimento do Cliente
 
@@ -264,8 +264,8 @@ export default PluginNotificationExampleServer;
 
 ### Registro e Ativação do Plugin
 
-1. Execute o comando de registro: `yarn pm add @nocobase/plugin-notification-example`
-2. Execute o comando de ativação: `yarn pm enable @nocobase/plugin-notification-example`
+1. Execute o comando de registro: `nb scaffold plugin @nocobase/plugin-notification-example`
+2. Execute o comando de ativação: `nb plugin enable @nocobase/plugin-notification-example`
 
 ### Configuração do Canal
 

@@ -271,7 +271,7 @@ export default class extends Migration {
 CLI コマンドで作成します：
 
 ```bash
-yarn nocobase create-migration my-migration --pkg @my-project/plugin-hello
+nb scaffold migration my-migration --pkg @my-project/plugin-hello
 ```
 
 コマンドはプラグインの `src/server/migrations/` ディレクトリにタイムスタンプ付きのファイルを生成します。テンプレートは以下の通りです：
