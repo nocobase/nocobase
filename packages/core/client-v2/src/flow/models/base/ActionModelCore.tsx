@@ -62,6 +62,7 @@ export class ActionModel<T extends DefaultStructure = DefaultStructure> extends 
   enableEditTooltip = true;
   enableEditTitle = true;
   enableEditIcon = true;
+  enableEditIconOnly = true;
   enableEditType = true;
   enableEditDanger = true;
   enableEditColor = false;
@@ -134,6 +135,10 @@ export class ActionModel<T extends DefaultStructure = DefaultStructure> extends 
 
   getTitle() {
     return this.props.title;
+  }
+
+  getTitleFieldDescription() {
+    return undefined;
   }
 
   getIcon() {

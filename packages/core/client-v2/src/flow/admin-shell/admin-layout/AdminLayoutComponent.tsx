@@ -441,8 +441,8 @@ export const AdminLayoutComponent = observer((props: any) => {
   );
   const designable = !isMobileSider && preferredFlowSettingsEnabled;
   const { styles } = useHeaderStyle();
-  const { appList } = useApplications();
-  const appListRender = useAppListRender();
+  const { appList, appSwitcherModel } = useApplications(adminLayoutModel);
+  const appListRender = useAppListRender(appSwitcherModel);
   const flowSettingsSyncRef = useRef(0);
   const desiredFlowSettingsEnabledRef = useRef(false);
   const handleLayoutContentElementChange = useCallback(
@@ -663,6 +663,10 @@ export const AdminLayoutComponent = observer((props: any) => {
 
       .ant-pro-layout-apps-popover {
         z-index: 2000 !important;
+      }
+
+      .ant-pro-layout-apps-popover .ant-popover-content {
+        margin-top: 12px;
       }
 
       .ant-pro-layout-apps-icon {

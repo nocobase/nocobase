@@ -9,6 +9,8 @@
   "Ellipsis action title": "Ellipsis action title",
   "General settings": "General settings",
   "Grid": "Grid",
+  "Horizontal": "Horizontal",
+  "Icon and label layout": "Icon and label layout",
   "Items per row": "Items per row",
   "Layout": "Layout",
   "Link action settings": "Link action settings",
@@ -21,5 +23,6 @@
   "The image size is too large. Please compress it to below 1MB before uploading": "The image size is too large. Please compress it to below 1MB before uploading",
   "The image size is too large. Please compress it to below 10MB before uploading": "The image size is too large. Please compress it to below 10MB before uploading",
   "Unknown error": "Unknown error",
+  "Vertical": "Vertical",
   "You have not granted permission to use the camera": "You have not granted permission to use the camera"
 }

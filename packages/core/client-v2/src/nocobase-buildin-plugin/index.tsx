@@ -15,7 +15,12 @@ import type { Application } from '../Application';
 import { getCurrentV2RedirectPath, getDefaultV2AdminRedirectPath } from '../authRedirect';
 import { AppNotFound } from '../components';
 import { PluginFlowEngine } from '../flow';
-import { ADMIN_LAYOUT_MODEL_UID, AdminLayoutMenuItemModel, AdminLayoutModel } from '../flow/admin-shell/admin-layout';
+import {
+  ADMIN_LAYOUT_MODEL_UID,
+  AdminLayoutMenuItemModel,
+  AdminLayoutModel,
+  AppSwitcherActionPanelModel,
+} from '../flow/admin-shell/admin-layout';
 import { useApp } from '../hooks/useApp';
 import { Plugin } from '../Plugin';
 import { AdminSettingsLayoutModel } from '../settings-center';
@@ -326,6 +331,7 @@ export class NocoBaseBuildInPlugin extends Plugin<any, Application> {
     this.app.flowEngine.registerModels({
       AdminLayoutModel,
       AdminLayoutMenuItemModel,
+      AppSwitcherActionPanelModel,
       AdminSettingsLayoutModel,
     });
     this.app.layoutManager.registerLayout({
