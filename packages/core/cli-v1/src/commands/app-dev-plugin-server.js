@@ -24,6 +24,7 @@ const appDevExternalDeps = [
   'react',
   'react-dom',
   'react/jsx-runtime',
+  'react/jsx-dev-runtime',
   'react-router',
   'react-router-dom',
   'antd',
