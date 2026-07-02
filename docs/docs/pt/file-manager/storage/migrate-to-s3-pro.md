@@ -1,5 +1,4 @@
 ---
-pkg: '@nocobase/plugin-file-storage-s3-pro'
 title: "Migrar para S3 Pro"
 description: "Migrate files from public-only storage engines to S3 Pro, including maintenance windows, backups, object key mapping, record updates, and risk checks."
 keywords: "S3 Pro,storage migration,private access,file migration,Local Storage,S3,OSS,COS,NocoBase"
