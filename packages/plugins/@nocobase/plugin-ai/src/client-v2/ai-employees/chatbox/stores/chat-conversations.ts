@@ -7,10 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { create } from 'zustand';
 import type { Conversation } from '../../types';
-import { createSelectors } from './create-selectors';
-import { getOrCreateGlobalStore } from './global-store';
+import { getOrCreateGlobalStore } from '../../stores/global-store';
+import { createObservableStore } from './create-selectors';
 
 interface ChatConversationsState {
   currentConversation?: string;
@@ -25,13 +24,14 @@ interface ChatConversationsActions {
   setCurrentConversation: (id: string | undefined) => void;
   setKeyword: (keyword: string) => void;
   setConversations: (conversations: Conversation[] | ((prev: Conversation[]) => Conversation[])) => void;
+  markConversationRead: (sessionId: string) => void;
   setWebSearch: (webSearch: boolean) => void;
   setConversationSegmented: (conversationSegmented: string) => void;
   setUnreadCount: (unreadCount: number | ((prev: number) => number)) => void;
 }
 
-const store = getOrCreateGlobalStore('@nocobase/plugin-ai/chat-conversations-store', () =>
-  create<ChatConversationsState & ChatConversationsActions>((set) => ({
+export const useChatConversationsStore = getOrCreateGlobalStore('@nocobase/plugin-ai/chat-conversations-store', () =>
+  createObservableStore<ChatConversationsState & ChatConversationsActions>((set) => ({
     currentConversation: undefined,
     conversations: [],
     keyword: '',
@@ -45,6 +45,27 @@ const store = getOrCreateGlobalStore('@nocobase/plugin-ai/chat-conversations-sto
       set((state) => ({
         conversations: typeof conversations === 'function' ? conversations(state.conversations) : conversations,
       })),
+    markConversationRead: (sessionId) =>
+      set((state) => {
+        const target = state.conversations.find((item) => item.sessionId === sessionId);
+        if (!target || target.read) {
+          return {
+            conversations: state.conversations,
+            unreadCount: state.unreadCount,
+          };
+        }
+        return {
+          conversations: state.conversations.map((item) =>
+            item.sessionId === sessionId
+              ? {
+                  ...item,
+                  read: true,
+                }
+              : item,
+          ),
+          unreadCount: Math.max(0, state.unreadCount - 1),
+        };
+      }),
     setWebSearch: (webSearch) => set({ webSearch }),
     setConversationSegmented: (conversationSegmented) => set({ conversationSegmented }),
     setUnreadCount: (unreadCount) =>
@@ -53,5 +74,3 @@ const store = getOrCreateGlobalStore('@nocobase/plugin-ai/chat-conversations-sto
       })),
   })),
 );
-
-export const useChatConversationsStore = createSelectors(store);
