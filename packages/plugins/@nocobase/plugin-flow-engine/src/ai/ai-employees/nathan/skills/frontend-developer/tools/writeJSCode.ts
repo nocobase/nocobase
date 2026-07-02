@@ -15,8 +15,8 @@ export default defineTools({
   execution: 'frontend',
   defaultPermission: 'ALLOW',
   introduction: {
-    title: `{{t("ai.tools.writeJSCode.title")}}`,
-    about: `{{t("ai.tools.writeJSCode.about")}}`,
+    title: `{{t("ai.tools.writeJSCode.title", { ns: "@nocobase/plugin-ai" })}}`,
+    about: `{{t("ai.tools.writeJSCode.about", { ns: "@nocobase/plugin-ai" })}}`,
   },
   definition: {
     name: 'writeJSCode',
