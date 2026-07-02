@@ -100,10 +100,14 @@ function WorkflowNoticeTags({ notices }: { notices: WorkflowNotice[] }) {
 
 function WorkflowTitleCell({ notices, title }: { notices: WorkflowNotice[]; title?: React.ReactNode }) {
   return (
-    <div style={{ alignItems: 'center', display: 'flex', flexWrap: 'wrap', gap: '4px 8px', maxWidth: '100%' }}>
-      <span style={{ minWidth: 0, overflowWrap: 'anywhere', whiteSpace: 'normal' }}>{title}</span>
-      <WorkflowNoticeTags notices={notices} />
-    </div>
+    <span style={{ overflowWrap: 'anywhere', whiteSpace: 'normal', wordBreak: 'break-word' }}>
+      {title}
+      {notices.length ? (
+        <span style={{ display: 'inline-flex', flexWrap: 'wrap', gap: '4px 8px', marginInlineStart: 8 }}>
+          <WorkflowNoticeTags notices={notices} />
+        </span>
+      ) : null}
+    </span>
   );
 }
 
@@ -376,6 +380,14 @@ function WorkflowPaneInner() {
       {
         title: t('Title'),
         dataIndex: 'title',
+        width: 520,
+        onCell: () => ({
+          style: {
+            overflowWrap: 'anywhere',
+            whiteSpace: 'normal',
+            wordBreak: 'break-word',
+          },
+        }),
         render: (value, record) => {
           const syncNotices = plugin.getWorkflowNotices({ surface: 'workflow-list-row', workflow: record });
           const asyncNotices = workflowListNotices[String(record.id)] || [];
@@ -504,6 +516,7 @@ function WorkflowPaneInner() {
           dataSource={data?.records || []}
           rowSelection={{ selectedRowKeys, onChange: setSelectedRowKeys }}
           pagination={{ current: page, pageSize, total: data?.total || 0, onChange: handlePaginationChange }}
+          tableLayout="fixed"
         />
       </div>
     </div>

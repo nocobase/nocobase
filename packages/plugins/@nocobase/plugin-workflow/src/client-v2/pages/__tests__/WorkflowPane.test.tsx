@@ -69,20 +69,23 @@ vi.mock('@nocobase/client-v2', () => ({
       </button>
     </div>
   ),
-  Table: ({ dataSource = [], columns = [] }: any) => (
-    <table>
+  Table: ({ dataSource = [], columns = [], tableLayout }: any) => (
+    <table style={{ tableLayout }}>
       <tbody>
         {dataSource.map((record: any) => (
           <tr key={record.id}>
-            {columns.map((col: any, index: number) => (
-              <td key={index}>
-                {typeof col.render === 'function'
-                  ? col.render(col.dataIndex ? get(record, col.dataIndex) : undefined, record)
-                  : col.dataIndex
-                    ? get(record, col.dataIndex)
-                    : null}
-              </td>
-            ))}
+            {columns.map((col: any, index: number) => {
+              const cellProps = col.onCell?.(record) ?? {};
+              return (
+                <td key={index} style={{ width: col.width, ...cellProps.style }}>
+                  {typeof col.render === 'function'
+                    ? col.render(col.dataIndex ? get(record, col.dataIndex) : undefined, record)
+                    : col.dataIndex
+                      ? get(record, col.dataIndex)
+                      : null}
+                </td>
+              );
+            })}
           </tr>
         ))}
       </tbody>
@@ -415,12 +418,15 @@ describe('WorkflowPane (request layer)', () => {
     const workflowCategories = { list: vi.fn().mockResolvedValue({ data: { data: [] } }) };
     holder.ctx = makeCtx({ workflows, workflowCategories });
 
-    renderWithApp(<WorkflowPane />);
+    const { container } = renderWithApp(<WorkflowPane />);
 
-    expect(await screen.findByText(title)).toHaveStyle({
-      minWidth: '0',
+    const titleElement = await screen.findByText(title);
+    expect(container.querySelector('table')).toHaveStyle({ tableLayout: 'fixed' });
+    expect(titleElement.closest('td')).toHaveStyle({
       overflowWrap: 'anywhere',
       whiteSpace: 'normal',
+      wordBreak: 'break-word',
+      width: '520px',
     });
     expect(await screen.findByText('Approval interface needs reconfiguration')).toBeInTheDocument();
     expect(mockPlugin.getWorkflowNotices).toHaveBeenCalledWith(
