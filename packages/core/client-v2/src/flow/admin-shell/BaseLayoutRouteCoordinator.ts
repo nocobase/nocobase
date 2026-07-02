@@ -22,6 +22,7 @@ import { getOpenViewStepParams } from '../flows/openViewFlow';
 import { RouteModel } from '../models/base/RouteModel';
 import { resolveViewParamsToViewList, updateViewListHidden, type ViewItem } from '../resolveViewParamsToViewList';
 import type { LayoutDefinition } from '../../layout-manager/types';
+import { getRouteTransientInputArgs } from '../routeTransientInputArgs';
 
 export interface RoutePageMeta {
   active: boolean;
@@ -52,6 +53,7 @@ interface RoutePageRuntime {
   pendingOpenViewKeys: Set<string>;
   hasStepNavigated: boolean;
   currentPathname?: string;
+  currentRouteState?: unknown;
   forceStop: boolean;
   viewGeneration: number;
 }
@@ -60,6 +62,7 @@ interface RouteLike {
   layoutRouteName?: string;
   params?: { name?: string };
   pathname?: string;
+  state?: unknown;
   pageUid?: string;
   layoutBasePathname?: string;
   layoutRoute?: {
@@ -71,6 +74,7 @@ interface RouteLike {
 
 interface SyncRuntimeOptions {
   skipInitialStepNavigation?: boolean;
+  routeState?: unknown;
 }
 
 const hasUsableSourceId = (sourceId: unknown) => sourceId !== undefined && sourceId !== null && String(sourceId) !== '';
@@ -223,7 +227,8 @@ export class BaseLayoutRouteCoordinator {
       runtime.pendingOpenViewKeys.clear();
     }
     runtime.currentPathname = pathname;
-    this.syncRuntimeWithPathname(runtime, pathname);
+    runtime.currentRouteState = routeLike.state;
+    this.syncRuntimeWithPathname(runtime, pathname, { routeState: routeLike.state });
   }
 
   cleanupPage(pageUid: string) {
@@ -243,6 +248,7 @@ export class BaseLayoutRouteCoordinator {
     runtime.prevViewList = [];
     runtime.hasStepNavigated = false;
     runtime.currentPathname = undefined;
+    runtime.currentRouteState = undefined;
   }
 
   destroy() {
@@ -293,11 +299,12 @@ export class BaseLayoutRouteCoordinator {
 
       const viewStack = parsePathnameToViewParams(pathname, { basePath: this.basePathname });
       const viewList = resolveViewParamsToViewList(this.flowEngine, viewStack, runtime.routeModel);
+      const routeState = options.routeState;
 
       if (!options.skipInitialStepNavigation && this.shouldStepNavigate(runtime, viewList)) {
-        this.stepNavigate(viewList, 0);
+        this.stepNavigate(viewList, 0, routeState);
         runtime.hasStepNavigated = true;
-        this.scheduleInitialDeepLinkReplay(runtime, pathname);
+        this.scheduleInitialDeepLinkReplay(runtime, pathname, routeState);
         return;
       }
 
@@ -322,7 +329,7 @@ export class BaseLayoutRouteCoordinator {
 
       if (nextViewsToOpen.length) {
         this.markPendingOpenViews(runtime, nextViewsToOpen);
-        this.handleOpenViews(runtime, viewList, nextViewsToOpen, runtime.viewGeneration).catch((error) => {
+        this.handleOpenViews(runtime, viewList, nextViewsToOpen, runtime.viewGeneration, routeState).catch((error) => {
           console.error(`[NocoBase] Failed to open route-managed views:`, error);
         });
       }
@@ -360,7 +367,7 @@ export class BaseLayoutRouteCoordinator {
     return runtime.prevViewList.length === 0 && viewList.length > 1 && !runtime.hasStepNavigated;
   }
 
-  private scheduleInitialDeepLinkReplay(runtime: RoutePageRuntime, pathname: string) {
+  private scheduleInitialDeepLinkReplay(runtime: RoutePageRuntime, pathname: string, routeState?: unknown) {
     const viewGeneration = runtime.viewGeneration;
     Promise.resolve()
       .then(() => {
@@ -373,23 +380,25 @@ export class BaseLayoutRouteCoordinator {
           return;
         }
 
-        this.syncRuntimeWithPathname(runtime, pathname);
+        this.syncRuntimeWithPathname(runtime, pathname, { routeState });
       })
       .catch(() => {
         // ignore
       });
   }
 
-  private stepNavigate(viewList: ViewItem[], index: number) {
+  private stepNavigate(viewList: ViewItem[], index: number, routeState?: unknown) {
     if (!viewList[index]) {
       return;
     }
 
+    const navigationOptions = routeState ? { state: routeState } : undefined;
     if (index === 0) {
       new ViewNavigation(this.flowEngine.context, [], { basePath: this.basePathname }).navigateTo(
         viewList[index].params,
         {
           replace: true,
+          ...navigationOptions,
         },
       );
     } else {
@@ -397,10 +406,10 @@ export class BaseLayoutRouteCoordinator {
         this.flowEngine.context,
         viewList.slice(0, index).map((item) => item.params),
         { basePath: this.basePathname },
-      ).navigateTo(viewList[index].params);
+      ).navigateTo(viewList[index].params, navigationOptions);
     }
 
-    this.stepNavigate(viewList, index + 1);
+    this.stepNavigate(viewList, index + 1, routeState);
   }
 
   private replayActiveRuntimeViewsAfterLayoutContentElementChange() {
@@ -411,7 +420,10 @@ export class BaseLayoutRouteCoordinator {
 
       this.resetRuntimeViewStateForLayoutContentElementChange(runtime);
       if (runtime.meta.active) {
-        this.syncRuntimeWithPathname(runtime, runtime.currentPathname, { skipInitialStepNavigation: true });
+        this.syncRuntimeWithPathname(runtime, runtime.currentPathname, {
+          skipInitialStepNavigation: true,
+          routeState: runtime.currentRouteState,
+        });
       }
     });
   }
@@ -456,6 +468,7 @@ export class BaseLayoutRouteCoordinator {
     viewList: ViewItem[],
     viewsToOpen: ViewItem[],
     viewGeneration: number,
+    routeState?: unknown,
   ) {
     const missingModels = viewsToOpen.filter((v) => !v.model);
     if (missingModels.length > 0) {
@@ -475,7 +488,7 @@ export class BaseLayoutRouteCoordinator {
     }
 
     this.syncViewListVisibility(runtime, viewList);
-    this.openViews(runtime, viewList, viewsToOpen, 0, viewGeneration);
+    this.openViews(runtime, viewList, viewsToOpen, 0, viewGeneration, routeState);
   }
 
   private openViews(
@@ -484,6 +497,7 @@ export class BaseLayoutRouteCoordinator {
     viewsToOpen: ViewItem[],
     index: number,
     viewGeneration: number,
+    routeState?: unknown,
   ) {
     if (runtime.forceStop || runtime.viewGeneration !== viewGeneration) {
       return;
@@ -511,6 +525,7 @@ export class BaseLayoutRouteCoordinator {
         : openViewParams?.associationName;
     const openViewRouteState = viewItem.params.openViewRouteState;
     const openerUids = viewList.slice(0, viewItem.index).map((item) => item.params.viewUid);
+    const transientInputArgs = getRouteTransientInputArgs(routeState, viewItem.params.viewUid);
     const navigation = new ViewNavigation(
       this.flowEngine.context,
       viewList.slice(0, viewItem.index + 1).map((item) => item.params),
@@ -529,13 +544,14 @@ export class BaseLayoutRouteCoordinator {
         deactivateRef,
         openerUids,
         ...viewItem.params,
+        ...transientInputArgs,
         ...(openViewRouteState?.mode ? { mode: openViewRouteState.mode } : {}),
         ...(openViewRouteState?.size ? { size: openViewRouteState.size } : {}),
         pageActive: runtime.meta.active,
         activationControlledByLayout: true,
         navigation,
         onOpen: () => {
-          this.openViews(runtime, viewList, viewsToOpen, index + 1, viewGeneration);
+          this.openViews(runtime, viewList, viewsToOpen, index + 1, viewGeneration, routeState);
         },
         hidden: viewItem.hidden,
         isMobileLayout: !!this.layoutContext?.isMobileLayout,
