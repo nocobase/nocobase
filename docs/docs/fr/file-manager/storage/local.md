@@ -2,6 +2,15 @@
 
 Les fichiers téléchargés seront enregistrés dans un répertoire local sur le disque dur du serveur. Cette option convient aux scénarios où le volume total de fichiers gérés par le système est faible, ou à des fins expérimentales.
 
+
+:::warning Remarque
+
+Le stockage local ne prend pas en charge l’accès privé. Après l’envoi d’un fichier, NocoBase génère une URL directement accessible, et toute personne disposant de cette URL peut accéder au fichier.
+
+Si vous devez stocker des contrats, pièces d’identité, documents internes ou autres fichiers non publics, utilisez [S3 Pro](./s3-pro). Si des fichiers historiques existent déjà, consultez [Migrer vers S3 Pro](./migrate-to-s3-pro.md).
+
+:::
+
 ## Paramètres de configuration
 
 ![Exemple de configuration du moteur de stockage de fichiers](https://static-docs.nocobase.com/20240529115151.png)
