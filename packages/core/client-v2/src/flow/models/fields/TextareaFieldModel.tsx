@@ -9,54 +9,77 @@
 
 import { Input } from 'antd';
 import type { TextAreaProps } from 'antd/es/input';
-import type { TextAreaRef } from 'antd/es/input/TextArea';
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { largeField, EditableItemModel } from '@nocobase/flow-engine';
 import { FieldModel } from '../base/FieldModel';
 
 function IMESafeTextArea(props: TextAreaProps) {
   const { value, onChange, onCompositionStart, onCompositionEnd, ...rest } = props;
-  const textAreaRef = useRef<TextAreaRef>(null);
-  const previousValueRef = useRef(value);
-  const defaultValue = typeof value === 'bigint' ? String(value) : value;
+  const [textAreaValue, setTextAreaValue] = useState<TextAreaProps['value']>(() => normalizeTextAreaValue(value));
+  const textAreaValueRef = useRef<TextAreaProps['value']>(textAreaValue);
+  const pendingLocalValuesRef = useRef<TextAreaProps['value'][]>([]);
 
   useEffect(() => {
-    if (Object.is(previousValueRef.current, value)) {
-      return;
-    }
-    previousValueRef.current = value;
+    const nextValue = normalizeTextAreaValue(value);
+    const pendingValues = pendingLocalValuesRef.current;
+    const pendingIndex = pendingValues.findIndex((item) => Object.is(item, nextValue));
 
-    const textArea = textAreaRef.current?.resizableTextArea?.textArea;
-    if (textArea) {
-      const nextValue = value == null ? '' : String(value);
-      if (textArea.value !== nextValue) {
-        textArea.value = nextValue;
+    if (pendingIndex >= 0) {
+      pendingValues.splice(0, pendingIndex + 1);
+      if (!Object.is(textAreaValueRef.current, nextValue)) {
+        return;
       }
     }
+
+    pendingValues.length = 0;
+    if (Object.is(textAreaValueRef.current, nextValue)) {
+      return;
+    }
+
+    textAreaValueRef.current = nextValue;
+    setTextAreaValue(nextValue);
   }, [value]);
 
   const getEventValue = (event: React.ChangeEvent<HTMLTextAreaElement> | React.CompositionEvent<HTMLTextAreaElement>) =>
     event.currentTarget.value;
 
+  const recordLocalValue = (
+    event: React.ChangeEvent<HTMLTextAreaElement> | React.CompositionEvent<HTMLTextAreaElement>,
+  ) => {
+    const nextValue = getEventValue(event);
+    const pendingValues = pendingLocalValuesRef.current;
+    pendingValues.push(nextValue);
+    if (pendingValues.length > 20) {
+      pendingValues.shift();
+    }
+    textAreaValueRef.current = nextValue;
+    setTextAreaValue(nextValue);
+  };
+
   return (
     <Input.TextArea
       {...rest}
-      ref={textAreaRef}
-      defaultValue={defaultValue}
+      value={textAreaValue}
       onChange={(event) => {
-        previousValueRef.current = getEventValue(event);
+        recordLocalValue(event);
         onChange?.(event);
       }}
       onCompositionStart={(event) => {
-        previousValueRef.current = getEventValue(event);
+        recordLocalValue(event);
         onCompositionStart?.(event);
       }}
       onCompositionEnd={(event) => {
-        previousValueRef.current = getEventValue(event);
+        recordLocalValue(event);
         onCompositionEnd?.(event);
       }}
     />
   );
+}
+
+function normalizeTextAreaValue(nextValue: unknown): TextAreaProps['value'] {
+  if (typeof nextValue === 'bigint') return String(nextValue);
+  if (nextValue == null) return '';
+  return nextValue as TextAreaProps['value'];
 }
 
 @largeField()
