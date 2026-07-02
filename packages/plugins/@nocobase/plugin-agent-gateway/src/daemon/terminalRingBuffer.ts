@@ -8,6 +8,9 @@
  */
 
 import {
+  TERMINAL_RING_BUFFER_MAX_BYTES,
+  TERMINAL_RING_BUFFER_MAX_CHUNKS,
+  TERMINAL_SERVER_MAX_DECODED_PAYLOAD_BYTES,
   TERMINAL_PAYLOAD_ENCODING,
   TERMINAL_PROTOCOL,
   TerminalData,
@@ -19,6 +22,7 @@ export interface TerminalRingBufferOptions {
   runId: string;
   sessionName: string;
   maxBytes?: number;
+  maxChunks?: number;
   maxSnapshotBytes?: number;
 }
 
@@ -48,8 +52,9 @@ export type TerminalRingBufferDataResult =
       frame: TerminalError;
     };
 
-const DEFAULT_MAX_BYTES = 512 * 1024;
-const DEFAULT_MAX_SNAPSHOT_BYTES = 128 * 1024;
+const DEFAULT_MAX_BYTES = TERMINAL_RING_BUFFER_MAX_BYTES;
+const DEFAULT_MAX_CHUNKS = TERMINAL_RING_BUFFER_MAX_CHUNKS;
+const DEFAULT_MAX_SNAPSHOT_BYTES = TERMINAL_SERVER_MAX_DECODED_PAYLOAD_BYTES;
 
 function getUtf8CodePointByteLength(startByte: number) {
   if (startByte <= 0x7f) {
@@ -99,16 +104,18 @@ function getUtf8SafePrefixLength(buffer: Buffer) {
 
 export class TerminalRingBuffer {
   private readonly maxBytes: number;
+  private readonly maxChunks: number;
   private readonly maxSnapshotBytes: number;
   private readonly chunks: TerminalRingBufferChunk[] = [];
   private offsetStart = 0;
   private offsetEnd = 0;
 
   constructor(private readonly options: TerminalRingBufferOptions) {
-    this.maxBytes = Math.max(1, options.maxBytes || DEFAULT_MAX_BYTES);
+    this.maxBytes = Math.max(1, options.maxBytes ?? DEFAULT_MAX_BYTES);
+    this.maxChunks = Math.max(1, options.maxChunks ?? DEFAULT_MAX_CHUNKS);
     this.maxSnapshotBytes = Math.max(
       1,
-      Math.min(options.maxSnapshotBytes || DEFAULT_MAX_SNAPSHOT_BYTES, this.maxBytes),
+      Math.min(options.maxSnapshotBytes ?? DEFAULT_MAX_SNAPSHOT_BYTES, this.maxBytes),
     );
   }
 
@@ -122,6 +129,10 @@ export class TerminalRingBuffer {
 
   get retainedBytes() {
     return this.offsetEnd - this.offsetStart;
+  }
+
+  get retainedChunkCount() {
+    return this.chunks.length;
   }
 
   appendText(text: string): TerminalData | null {
@@ -268,6 +279,9 @@ export class TerminalRingBuffer {
         offsetEnd: first.offsetEnd,
         buffer: first.buffer.subarray(trimBytes),
       };
+    }
+    while (this.chunks.length > this.maxChunks) {
+      this.chunks.shift();
     }
     this.offsetStart = this.chunks[0]?.offsetStart ?? this.offsetEnd;
   }

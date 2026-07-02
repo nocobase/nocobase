@@ -24,6 +24,7 @@ export interface UseTerminalStreamOptions {
   role?: string;
   baseUrl?: string;
   reconnectDelayMs?: number;
+  maxReconnectDelayMs?: number;
   maxReconnectAttempts?: number;
   createWebSocket?: (url: string) => TerminalStreamWebSocket;
 }
@@ -38,6 +39,7 @@ export interface UseTerminalStreamState extends TerminalStreamClientState {
 }
 
 export const TERMINAL_STREAM_CHUNK_LIMIT = 500;
+const TERMINAL_STREAM_STATE_FLUSH_INTERVAL_MS = 250;
 
 const CLOSED_STATE: UseTerminalStreamState = {
   connectionState: 'closed',
@@ -47,12 +49,29 @@ const CLOSED_STATE: UseTerminalStreamState = {
   hasStreamOutput: false,
 };
 
+function getStoredOffset(runId: string) {
+  if (typeof window === 'undefined') {
+    return 0;
+  }
+  const storedValue = window.sessionStorage.getItem(`agentGatewayTerminalOffset:${runId}`);
+  const storedOffset = Number(storedValue);
+  return Number.isInteger(storedOffset) && storedOffset > 0 ? storedOffset : 0;
+}
+
+function storeOffset(runId: string, offset: number) {
+  if (typeof window === 'undefined' || !Number.isInteger(offset) || offset <= 0) {
+    return;
+  }
+  window.sessionStorage.setItem(`agentGatewayTerminalOffset:${runId}`, String(offset));
+}
+
 export function useTerminalStream(options: UseTerminalStreamOptions): UseTerminalStreamState {
   const {
     authenticator,
     baseUrl,
     createWebSocket,
     enabled: enabledOption,
+    maxReconnectDelayMs,
     maxReconnectAttempts,
     reconnectDelayMs,
     role,
@@ -69,42 +88,101 @@ export function useTerminalStream(options: UseTerminalStreamOptions): UseTermina
     }
 
     let sequence = 0;
+    let flushTimer: ReturnType<typeof setTimeout> | null = null;
+    let pendingState: Partial<TerminalStreamClientState> | null = null;
+    let pendingChunks: TerminalStreamHookChunk[] = [];
+    let disposed = false;
+    const flushPendingState = () => {
+      flushTimer = null;
+      const statePatch = pendingState;
+      const chunksPatch = pendingChunks;
+      pendingState = null;
+      pendingChunks = [];
+      if (disposed) {
+        return;
+      }
+      if (!statePatch && !chunksPatch.length) {
+        return;
+      }
+      setState((previous) => ({
+        ...previous,
+        ...(statePatch || {}),
+        chunks: chunksPatch.length
+          ? [...previous.chunks, ...chunksPatch].slice(-TERMINAL_STREAM_CHUNK_LIMIT)
+          : previous.chunks,
+        hasStreamOutput: previous.hasStreamOutput || chunksPatch.length > 0 || Boolean(statePatch?.previewText),
+      }));
+    };
+    const schedulePendingFlush = () => {
+      if (disposed) {
+        return;
+      }
+      if (flushTimer) {
+        return;
+      }
+      flushTimer = setTimeout(flushPendingState, TERMINAL_STREAM_STATE_FLUSH_INTERVAL_MS);
+    };
     setState(CLOSED_STATE);
+    const lastOffset = getStoredOffset(runId);
     const client = new TerminalStreamClient({
       runId,
       token,
       authenticator,
       role,
       baseUrl,
+      lastOffset,
       reconnectDelayMs,
+      maxReconnectDelayMs,
       maxReconnectAttempts,
       createWebSocket,
       onChunk(chunk) {
+        if (disposed) {
+          return;
+        }
         sequence += 1;
         const nextChunk: TerminalStreamHookChunk = {
           ...chunk,
           sequence,
         };
-        setState((previous) => ({
-          ...previous,
-          chunks: [...previous.chunks, nextChunk].slice(-TERMINAL_STREAM_CHUNK_LIMIT),
-          hasStreamOutput: true,
-        }));
+        pendingChunks.push(nextChunk);
+        schedulePendingFlush();
       },
       onStateChange(nextState) {
-        setState((previous) => ({
-          ...previous,
+        if (disposed) {
+          return;
+        }
+        storeOffset(runId, nextState.currentOffset);
+        pendingState = {
+          ...(pendingState || {}),
           ...nextState,
-          hasStreamOutput: previous.hasStreamOutput || Boolean(nextState.previewText),
-        }));
+        };
+        schedulePendingFlush();
       },
     });
 
     client.connect();
     return () => {
+      disposed = true;
       client.close();
+      if (flushTimer) {
+        clearTimeout(flushTimer);
+        flushTimer = null;
+      }
+      pendingState = null;
+      pendingChunks = [];
     };
-  }, [authenticator, baseUrl, createWebSocket, enabled, maxReconnectAttempts, reconnectDelayMs, role, runId, token]);
+  }, [
+    authenticator,
+    baseUrl,
+    createWebSocket,
+    enabled,
+    maxReconnectAttempts,
+    maxReconnectDelayMs,
+    reconnectDelayMs,
+    role,
+    runId,
+    token,
+  ]);
 
   return state;
 }

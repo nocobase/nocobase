@@ -11,13 +11,18 @@ import { IncomingMessage } from 'http';
 import { Duplex } from 'stream';
 import { parse } from 'url';
 
-import { Context } from '@nocobase/actions';
+import { Context, Next } from '@nocobase/actions';
 import { Application, Gateway, Plugin } from '@nocobase/server';
 import type { Transaction } from 'sequelize';
 import WebSocket, { RawData, WebSocketServer } from 'ws';
 
 import {
+  TERMINAL_MAX_BROWSER_SUBSCRIPTIONS_PER_RUN,
+  TERMINAL_MAX_BROWSER_SUBSCRIPTIONS_PER_USER,
+  TERMINAL_MAX_DAEMON_STREAM_BINDINGS_PER_NODE,
   TERMINAL_STREAM_WS_PATH,
+  TERMINAL_SERVER_MAX_RAW_FRAME_BYTES,
+  TERMINAL_SERVER_MAX_DECODED_PAYLOAD_BYTES,
   TerminalClientSubscribe,
   TerminalDaemonBindRun,
   TerminalData,
@@ -36,17 +41,19 @@ import { AGENT_GATEWAY_ACTIONS } from '../security/permissions';
 import {
   JsonRecord,
   ModelRecord,
+  API_PREFIX,
+  getCurrentUserId,
   getModelNumber,
   getModelString,
   getModelTargetKey,
   getModelValue,
   getRecord,
+  getString,
   requireAgentGatewayPermission,
 } from './utils';
 import { validateRunLease } from './runLifecycle';
 
-const MAX_TERMINAL_FRAME_BYTES = 256 * 1024;
-const MAX_BROWSER_SUBSCRIPTIONS_PER_SOCKET = 16;
+const MAX_TERMINAL_WEBSOCKET_BUFFERED_BYTES = 1024 * 1024;
 const ACTIVE_TERMINAL_STREAM_RUN_STATUSES = new Set(['claimed', 'syncing_skills', 'running', 'canceling']);
 const TERMINALIZED_RUN_END_REASONS = new Map<string, TerminalEnd['reason']>([
   ['succeeded', 'completed'],
@@ -82,6 +89,12 @@ interface PendingSnapshotRequest {
   daemon: WebSocket;
   runId: string;
   subscribeOnSuccess?: boolean;
+  reservationId?: string;
+}
+
+interface PendingBrowserSubscriptionReservation {
+  browser: WebSocket;
+  runId: string;
 }
 
 type BoundRunValidationResult =
@@ -247,12 +260,42 @@ function isProtocolRawWrite(input: unknown) {
   return record.type === 'browser.write' || record.type === 'terminal.write' || record.type === 'terminal.input';
 }
 
+function getRawDataByteLength(data: RawData) {
+  if (Buffer.isBuffer(data)) {
+    return data.byteLength;
+  }
+  if (Array.isArray(data)) {
+    return data.reduce((sum, chunk) => sum + chunk.byteLength, 0);
+  }
+  if (data instanceof ArrayBuffer) {
+    return data.byteLength;
+  }
+  return Buffer.byteLength(String(data));
+}
+
+function rawDataToString(data: RawData) {
+  if (Buffer.isBuffer(data)) {
+    return data.toString();
+  }
+  if (Array.isArray(data)) {
+    return Buffer.concat(data).toString();
+  }
+  if (data instanceof ArrayBuffer) {
+    return Buffer.from(data).toString();
+  }
+  return String(data);
+}
+
 export class TerminalStreamBroker {
-  private readonly wss = new WebSocketServer({ noServer: true });
+  private readonly wss = new WebSocketServer({
+    noServer: true,
+    maxPayload: TERMINAL_SERVER_MAX_RAW_FRAME_BYTES,
+  });
   private readonly connections = new Map<WebSocket, TerminalStreamConnection>();
   private readonly boundRuns = new Map<string, BoundRunStream>();
   private readonly browserSubscriptions = new Map<string, Set<WebSocket>>();
   private readonly pendingSnapshotRequests = new Map<string, PendingSnapshotRequest>();
+  private readonly pendingBrowserSubscriptionReservations = new Map<string, PendingBrowserSubscriptionReservation>();
   private readonly frameQueues = new Map<WebSocket, Promise<void>>();
   private readonly gatewayHandler: (
     request: IncomingMessage,
@@ -303,6 +346,7 @@ export class TerminalStreamBroker {
     this.boundRuns.clear();
     this.browserSubscriptions.clear();
     this.pendingSnapshotRequests.clear();
+    this.pendingBrowserSubscriptionReservations.clear();
   }
 
   handleUpgrade(request: IncomingMessage, socket: Duplex, head: Buffer) {
@@ -323,16 +367,17 @@ export class TerminalStreamBroker {
       return;
     }
 
-    if (Buffer.byteLength(data.toString()) > MAX_TERMINAL_FRAME_BYTES) {
+    if (getRawDataByteLength(data) > TERMINAL_SERVER_MAX_RAW_FRAME_BYTES) {
       this.sendError(ws, 'TERMINAL_FRAME_TOO_LARGE', 'Terminal stream frame is too large');
       return;
     }
 
+    const rawMessage = rawDataToString(data);
     let rawFrame: unknown;
     try {
-      rawFrame = JSON.parse(data.toString()) as unknown;
+      rawFrame = JSON.parse(rawMessage) as unknown;
     } catch {
-      const parseResult = parseTerminalFrameJson(data.toString());
+      const parseResult = parseTerminalFrameJson(rawMessage);
       if (parseResult.ok === false) {
         this.send(ws, parseResult.error);
       }
@@ -347,6 +392,11 @@ export class TerminalStreamBroker {
     const parsed = parseTerminalFrame(rawFrame);
     if (parsed.ok === false) {
       this.send(ws, parsed.error);
+      return;
+    }
+    const payloadSizeError = this.validateDecodedPayloadSize(parsed.frame);
+    if (payloadSizeError) {
+      this.send(ws, payloadSizeError);
       return;
     }
     this.enqueueFrame(connection, parsed.frame);
@@ -465,6 +515,15 @@ export class TerminalStreamBroker {
         );
         return;
       }
+      if (this.wouldExceedDaemonBindingLimit(connection.nodeId, frame.runId)) {
+        this.sendError(
+          connection.ws,
+          'TERMINAL_SUBSCRIPTION_LIMIT',
+          'Too many active terminal stream bindings for this node',
+          frame.requestId,
+        );
+        return;
+      }
 
       this.boundRuns.set(frame.runId, {
         ws: connection.ws,
@@ -481,6 +540,7 @@ export class TerminalStreamBroker {
   }
 
   private async handleBrowserSubscribe(connection: TerminalStreamConnection, frame: TerminalClientSubscribe) {
+    let reservationId: string | undefined;
     try {
       const ctx = await this.authenticateBrowser(connection.request);
       await requireAgentGatewayPermission(
@@ -490,26 +550,26 @@ export class TerminalStreamBroker {
       );
       connection.kind = 'browser';
       connection.userId = getUserId(ctx.state.currentUser);
-      if (connection.subscriptions.size >= MAX_BROWSER_SUBSCRIPTIONS_PER_SOCKET) {
-        this.sendError(
-          connection.ws,
-          'TERMINAL_SUBSCRIPTION_LIMIT',
-          'Too many terminal stream subscriptions',
-          frame.requestId,
-        );
+      const limitError = this.getBrowserSubscriptionLimitError(connection, frame.runId);
+      if (limitError) {
+        this.sendError(connection.ws, 'TERMINAL_SUBSCRIPTION_LIMIT', limitError, frame.requestId);
         return;
       }
+      reservationId =
+        frame.lastOffset !== undefined ? this.reserveBrowserSubscription(connection, frame.runId) : undefined;
       this.send(connection.ws, createTerminalAck(frame.requestId));
       if (frame.lastOffset !== undefined) {
         const requested = await this.requestDaemonSnapshot(connection.ws, frame.runId, frame.lastOffset, {
           subscribeOnSuccess: true,
+          reservationId,
         });
         if (requested) {
           return;
         }
       }
-      this.addSubscription(connection, frame.runId);
+      this.promoteBrowserSubscription(connection, frame.runId, reservationId);
     } catch (error) {
+      this.releaseBrowserSubscriptionReservation(reservationId);
       this.sendError(connection.ws, this.mapBrowserAuthError(error), getErrorMessage(error), frame.requestId);
     }
   }
@@ -541,6 +601,7 @@ export class TerminalStreamBroker {
       this.pendingSnapshotRequests.delete(frame.requestId);
       const validation = await this.validateBoundRun(frame.runId, connection.ws);
       if (validation.ok === false) {
+        this.releaseBrowserSubscriptionReservation(pending.reservationId);
         this.sendError(
           pending.browser,
           validation.reason === 'leaseLost' ? 'TERMINAL_LEASE_LOST' : 'TERMINAL_RUN_NOT_BOUND',
@@ -549,7 +610,9 @@ export class TerminalStreamBroker {
         return;
       }
       if (pending.subscribeOnSuccess) {
-        this.addBrowserSubscriptionBySocket(pending.browser, pending.runId);
+        this.promoteBrowserSubscriptionBySocket(pending.browser, pending.runId, pending.reservationId);
+      } else {
+        this.releaseBrowserSubscriptionReservation(pending.reservationId);
       }
       this.send(pending.browser, frame);
     }
@@ -576,6 +639,7 @@ export class TerminalStreamBroker {
         continue;
       }
       this.pendingSnapshotRequests.delete(requestId);
+      this.releaseBrowserSubscriptionReservation(pending.reservationId);
       this.send(pending.browser, frame);
     }
   }
@@ -588,6 +652,7 @@ export class TerminalStreamBroker {
           return;
         }
         this.pendingSnapshotRequests.delete(frame.requestId);
+        this.releaseBrowserSubscriptionReservation(pending.reservationId);
         const validation = await this.validateBoundRun(pending.runId, connection.ws);
         if (validation.ok === false) {
           this.sendError(
@@ -609,32 +674,79 @@ export class TerminalStreamBroker {
     }
   }
 
-  private addSubscription(connection: TerminalStreamConnection, runId: string) {
+  private addSubscriptionUnchecked(connection: TerminalStreamConnection, runId: string) {
+    if (connection.subscriptions.has(runId)) {
+      return;
+    }
     connection.subscriptions.add(runId);
     const subscribers = this.browserSubscriptions.get(runId) || new Set<WebSocket>();
     subscribers.add(connection.ws);
     this.browserSubscriptions.set(runId, subscribers);
   }
 
-  private addBrowserSubscriptionBySocket(browser: WebSocket, runId: string) {
-    const connection = this.connections.get(browser);
-    if (!connection || connection.kind !== 'browser') {
+  private reserveBrowserSubscription(connection: TerminalStreamConnection, runId: string) {
+    if (connection.subscriptions.has(runId)) {
+      return undefined;
+    }
+    const reservationId = `browser-subscription:${Date.now()}:${Math.random().toString(16).slice(2)}`;
+    this.pendingBrowserSubscriptionReservations.set(reservationId, {
+      browser: connection.ws,
+      runId,
+    });
+    return reservationId;
+  }
+
+  private releaseBrowserSubscriptionReservation(reservationId?: string) {
+    if (!reservationId) {
       return;
     }
-    this.addSubscription(connection, runId);
+    this.pendingBrowserSubscriptionReservations.delete(reservationId);
+  }
+
+  private promoteBrowserSubscription(connection: TerminalStreamConnection, runId: string, reservationId?: string) {
+    if (this.connections.get(connection.ws) !== connection || connection.kind !== 'browser') {
+      this.releaseBrowserSubscriptionReservation(reservationId);
+      return;
+    }
+    if (reservationId) {
+      const reservation = this.pendingBrowserSubscriptionReservations.get(reservationId);
+      this.releaseBrowserSubscriptionReservation(reservationId);
+      if (!reservation || reservation.browser !== connection.ws || reservation.runId !== runId) {
+        return;
+      }
+      this.addSubscriptionUnchecked(connection, runId);
+      return;
+    }
+
+    const limitError = this.getBrowserSubscriptionLimitError(connection, runId);
+    if (limitError) {
+      this.sendError(connection.ws, 'TERMINAL_SUBSCRIPTION_LIMIT', limitError);
+      return;
+    }
+    this.addSubscriptionUnchecked(connection, runId);
+  }
+
+  private promoteBrowserSubscriptionBySocket(browser: WebSocket, runId: string, reservationId?: string) {
+    const connection = this.connections.get(browser);
+    if (!connection || connection.kind !== 'browser') {
+      this.releaseBrowserSubscriptionReservation(reservationId);
+      return;
+    }
+    this.promoteBrowserSubscription(connection, runId, reservationId);
   }
 
   private async requestDaemonSnapshot(
     browser: WebSocket,
     runId: string,
     fromOffset: number,
-    options: { subscribeOnSuccess?: boolean } = {},
+    options: { subscribeOnSuccess?: boolean; reservationId?: string } = {},
   ) {
     const validation = await this.validateBoundRun(runId);
     if (validation.ok === false) {
       if (validation.reason === 'missing') {
         const completedRunEnd = await this.createTerminalEndForCompletedRun(runId, fromOffset);
         if (completedRunEnd) {
+          this.releaseBrowserSubscriptionReservation(options.reservationId);
           this.send(browser, completedRunEnd);
           return true;
         }
@@ -658,6 +770,7 @@ export class TerminalStreamBroker {
       daemon: bound.ws,
       runId,
       subscribeOnSuccess: options.subscribeOnSuccess,
+      reservationId: options.reservationId,
     });
     this.send(bound.ws, {
       type: 'daemon.snapshotRequest',
@@ -824,10 +937,116 @@ export class TerminalStreamBroker {
 
   private validatePayloadOffsets(frame: TerminalData | TerminalSnapshot) {
     const byteLength = getTerminalPayloadByteLength(frame.payload);
+    if (byteLength > TERMINAL_SERVER_MAX_DECODED_PAYLOAD_BYTES) {
+      return createTerminalError('TERMINAL_FRAME_TOO_LARGE', 'Terminal stream payload is too large', {
+        details: {
+          maxDecodedPayloadBytes: TERMINAL_SERVER_MAX_DECODED_PAYLOAD_BYTES,
+          decodedPayloadBytes: byteLength,
+        },
+      });
+    }
     if (frame.offsetEnd - frame.offsetStart !== byteLength) {
       return createTerminalError('TERMINAL_PROTOCOL_ERROR', 'Terminal payload byte length does not match offsets');
     }
     return null;
+  }
+
+  private validateDecodedPayloadSize(frame: TerminalFrame) {
+    if (frame.type !== 'terminal.data' && frame.type !== 'terminal.snapshot') {
+      return null;
+    }
+    const byteLength = getTerminalPayloadByteLength(frame.payload);
+    if (byteLength <= TERMINAL_SERVER_MAX_DECODED_PAYLOAD_BYTES) {
+      return null;
+    }
+    return createTerminalError('TERMINAL_FRAME_TOO_LARGE', 'Terminal stream payload is too large', {
+      requestId: frame.type === 'terminal.snapshot' ? frame.requestId : undefined,
+      details: {
+        maxDecodedPayloadBytes: TERMINAL_SERVER_MAX_DECODED_PAYLOAD_BYTES,
+        decodedPayloadBytes: byteLength,
+      },
+    });
+  }
+
+  private getPendingBrowserSubscriptionCount(options: { runId?: string; userId?: string } = {}) {
+    let count = 0;
+    for (const pending of this.pendingSnapshotRequests.values()) {
+      if (pending.reservationId) {
+        continue;
+      }
+      if (!pending.subscribeOnSuccess) {
+        continue;
+      }
+      if (options.runId && pending.runId !== options.runId) {
+        continue;
+      }
+      const connection = this.connections.get(pending.browser);
+      if (!connection || connection.kind !== 'browser') {
+        continue;
+      }
+      if (options.userId && String(connection.userId) !== options.userId) {
+        continue;
+      }
+      count += 1;
+    }
+    for (const reservation of this.pendingBrowserSubscriptionReservations.values()) {
+      if (options.runId && reservation.runId !== options.runId) {
+        continue;
+      }
+      const connection = this.connections.get(reservation.browser);
+      if (!connection || connection.kind !== 'browser') {
+        continue;
+      }
+      if (options.userId && String(connection.userId) !== options.userId) {
+        continue;
+      }
+      count += 1;
+    }
+    return count;
+  }
+
+  private getActiveBrowserSubscriptionCountForUser(userId: string) {
+    let count = 0;
+    for (const connection of this.connections.values()) {
+      if (connection.kind === 'browser' && String(connection.userId) === userId) {
+        count += connection.subscriptions.size;
+      }
+    }
+    return count;
+  }
+
+  private getActiveBrowserSubscriptionCountForRun(runId: string) {
+    return this.browserSubscriptions.get(runId)?.size || 0;
+  }
+
+  private getBrowserSubscriptionLimitError(connection: TerminalStreamConnection, runId: string) {
+    if (connection.subscriptions.has(runId)) {
+      return null;
+    }
+    const userId = connection.userId === undefined || connection.userId === null ? '' : String(connection.userId);
+    if (userId) {
+      const userCount =
+        this.getActiveBrowserSubscriptionCountForUser(userId) + this.getPendingBrowserSubscriptionCount({ userId });
+      if (userCount >= TERMINAL_MAX_BROWSER_SUBSCRIPTIONS_PER_USER) {
+        return 'Too many active terminal stream subscriptions for this user';
+      }
+    }
+    const runCount =
+      this.getActiveBrowserSubscriptionCountForRun(runId) + this.getPendingBrowserSubscriptionCount({ runId });
+    if (runCount >= TERMINAL_MAX_BROWSER_SUBSCRIPTIONS_PER_RUN) {
+      return 'Too many active terminal stream subscriptions for this run';
+    }
+    return null;
+  }
+
+  private wouldExceedDaemonBindingLimit(nodeId: string, runId: string) {
+    let count = 0;
+    for (const [boundRunId, bound] of this.boundRuns.entries()) {
+      if (boundRunId !== runId && bound.nodeId === nodeId) {
+        count += 1;
+      }
+    }
+    return count >= TERMINAL_MAX_DAEMON_STREAM_BINDINGS_PER_NODE;
   }
 
   private broadcastToRun(runId: string, frame: TerminalServerFrameForSend) {
@@ -869,9 +1088,16 @@ export class TerminalStreamBroker {
     for (const [requestId, pending] of Array.from(this.pendingSnapshotRequests.entries())) {
       if (pending.browser === ws) {
         this.pendingSnapshotRequests.delete(requestId);
+        this.releaseBrowserSubscriptionReservation(pending.reservationId);
       } else if (pending.daemon === ws) {
         this.pendingSnapshotRequests.delete(requestId);
+        this.releaseBrowserSubscriptionReservation(pending.reservationId);
         pending.browser.close();
+      }
+    }
+    for (const [reservationId, reservation] of Array.from(this.pendingBrowserSubscriptionReservations.entries())) {
+      if (reservation.browser === ws) {
+        this.pendingBrowserSubscriptionReservations.delete(reservationId);
       }
     }
   }
@@ -890,6 +1116,10 @@ export class TerminalStreamBroker {
     if (ws.readyState !== WebSocket.OPEN) {
       return;
     }
+    if (ws.bufferedAmount > MAX_TERMINAL_WEBSOCKET_BUFFERED_BYTES) {
+      ws.close();
+      return;
+    }
     ws.send(JSON.stringify(frame));
   }
 
@@ -905,12 +1135,84 @@ export class TerminalStreamBroker {
     }
     return 'TERMINAL_LEASE_LOST';
   }
+
+  getStats(options: { runId?: string; userId?: string; nodeId?: string } = {}) {
+    let activeBrowserConnections = 0;
+    let activeDaemonConnections = 0;
+    let activeBrowserSubscriptions = 0;
+    let activeBrowserSubscriptionsForUser = 0;
+    let activeDaemonBindingsForNode = 0;
+    for (const connection of this.connections.values()) {
+      if (connection.kind === 'browser') {
+        activeBrowserConnections += 1;
+        activeBrowserSubscriptions += connection.subscriptions.size;
+        if (options.userId && String(connection.userId) === options.userId) {
+          activeBrowserSubscriptionsForUser += connection.subscriptions.size;
+        }
+      }
+      if (connection.kind === 'daemon') {
+        activeDaemonConnections += 1;
+      }
+    }
+    for (const bound of this.boundRuns.values()) {
+      if (options.nodeId && bound.nodeId === options.nodeId) {
+        activeDaemonBindingsForNode += 1;
+      }
+    }
+    return {
+      activeConnections: this.connections.size,
+      activeBrowserConnections,
+      activeDaemonConnections,
+      activeBrowserSubscriptions,
+      activeBrowserSubscriptionsForRun: options.runId
+        ? this.getActiveBrowserSubscriptionCountForRun(options.runId)
+        : undefined,
+      activeBrowserSubscriptionsForUser: options.userId ? activeBrowserSubscriptionsForUser : undefined,
+      activeDaemonBindings: this.boundRuns.size,
+      activeDaemonBindingsForNode: options.nodeId ? activeDaemonBindingsForNode : undefined,
+      pendingSnapshotRequests: this.pendingSnapshotRequests.size,
+    };
+  }
 }
 
 type TerminalServerFrameForSend = Exclude<TerminalFrame, TerminalClientSubscribe | TerminalDaemonBindRun>;
 
+function registerTerminalStreamStatsRoute(plugin: Plugin, broker: TerminalStreamBroker) {
+  plugin.app.use(
+    async (ctx: Context, next: Next) => {
+      if (!ctx.path.startsWith(API_PREFIX)) {
+        await next();
+        return;
+      }
+      const routePath = ctx.path.slice(API_PREFIX.length);
+      if (ctx.method !== 'GET' || routePath !== '/terminal-stream:stats') {
+        await next();
+        return;
+      }
+      await requireAgentGatewayPermission(
+        ctx,
+        AGENT_GATEWAY_ACTIONS.readTerminal,
+        'Agent Gateway terminal read permission required',
+      );
+      const query = getRecord(ctx.query);
+      const currentUserId = getCurrentUserId(ctx);
+      ctx.body = broker.getStats({
+        runId: getString(query.runId),
+        userId: currentUserId === null ? undefined : String(currentUserId),
+        nodeId: getString(query.nodeId),
+      });
+    },
+    {
+      tag: 'agentGatewayTerminalStreamStatsRoutes',
+      after: 'agentGatewayRunTerminalRoutes',
+      before: 'agentGatewayRunObservabilityRoutes',
+    },
+  );
+}
+
 export function registerTerminalStreamBroker(plugin: Plugin) {
   const broker = new TerminalStreamBroker(plugin.app);
   broker.register();
+  registerTerminalStreamStatsRoute(plugin, broker);
   return broker;
 }

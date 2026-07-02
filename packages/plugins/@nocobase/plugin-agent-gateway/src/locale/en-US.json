@@ -191,5 +191,6 @@
   "Dispatch binding saved": "Dispatch binding saved",
   "Failed to update dispatch binding status": "Failed to update dispatch binding status",
   "Toggle dispatch binding status": "Toggle dispatch binding status",
-  "JSON format is invalid": "JSON format is invalid"
+  "JSON format is invalid": "JSON format is invalid",
+  "Live output gap detected. Showing saved terminal output when available.": "Live output gap detected. Showing saved terminal output when available."
 }

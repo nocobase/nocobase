@@ -13,6 +13,7 @@ import { AddressInfo } from 'net';
 import WebSocket, { WebSocketServer } from 'ws';
 
 import {
+  TERMINAL_DAEMON_TARGET_CHUNK_BYTES,
   TERMINAL_PROTOCOL,
   TERMINAL_STREAM_WS_PATH,
   TerminalFrame,
@@ -55,6 +56,33 @@ function waitForFrame(ws: WebSocket, predicate: (frame: TerminalFrame) => boolea
 
 function sendFrame(ws: WebSocket, frame: TerminalFrame | Record<string, unknown>) {
   ws.send(JSON.stringify(frame));
+}
+
+function waitForNoFrame(ws: WebSocket, predicate: (frame: TerminalFrame) => boolean, durationMs: number) {
+  return new Promise<boolean>((resolve, reject) => {
+    const timer = setTimeout(() => {
+      ws.off('message', onMessage);
+      resolve(false);
+    }, durationMs);
+    const onMessage = (data: WebSocket.RawData) => {
+      let frame: TerminalFrame;
+      try {
+        frame = JSON.parse(data.toString()) as TerminalFrame;
+      } catch (error) {
+        clearTimeout(timer);
+        ws.off('message', onMessage);
+        reject(error);
+        return;
+      }
+      if (!predicate(frame)) {
+        return;
+      }
+      clearTimeout(timer);
+      ws.off('message', onMessage);
+      resolve(true);
+    };
+    ws.on('message', onMessage);
+  });
 }
 
 async function waitForClientState(client: DaemonTerminalStreamClient, state: string) {
@@ -259,6 +287,114 @@ describe('daemon terminal stream client', () => {
     }
   });
 
+  it('sends large retained output in 32 KiB data frames', async () => {
+    const server = await createTestServer();
+    const connectionPromise = waitForConnection(server.wss);
+    const ringBuffer = new TerminalRingBuffer({
+      runId: 'run-1',
+      sessionName: 'session-1',
+    });
+    const client = new DaemonTerminalStreamClient({
+      serverUrl: server.serverUrl,
+      nodeId: 'node-1',
+      nodeToken: 'ag_node_TEST',
+      runId: 'run-1',
+      sessionName: 'session-1',
+      ringBuffer,
+      getLease: () => createLease(),
+    });
+    const largeOutput = 'L'.repeat(TERMINAL_DAEMON_TARGET_CHUNK_BYTES * 2 + 5);
+
+    try {
+      const startPromise = client.start();
+      const daemon = await connectionPromise;
+      await acknowledgeRegisterAndBind(daemon);
+      await startPromise;
+      const framePromises = [
+        waitForFrame(daemon, (frame) => frame.type === 'terminal.data' && frame.offsetStart === 0),
+        waitForFrame(
+          daemon,
+          (frame) => frame.type === 'terminal.data' && frame.offsetStart === TERMINAL_DAEMON_TARGET_CHUNK_BYTES,
+        ),
+        waitForFrame(
+          daemon,
+          (frame) => frame.type === 'terminal.data' && frame.offsetStart === TERMINAL_DAEMON_TARGET_CHUNK_BYTES * 2,
+        ),
+      ];
+      await client.appendText(largeOutput);
+      const frames = await Promise.all(framePromises);
+
+      expect(frames).toHaveLength(3);
+      expect(
+        frames.map((frame) => (frame.type === 'terminal.data' ? decodeTerminalPayload(frame.payload) : '')).join(''),
+      ).toBe(largeOutput);
+      for (const frame of frames) {
+        expect(frame.type).toBe('terminal.data');
+        if (frame.type === 'terminal.data') {
+          expect(Buffer.byteLength(decodeTerminalPayload(frame.payload), 'utf8')).toBeLessThanOrEqual(
+            TERMINAL_DAEMON_TARGET_CHUNK_BYTES,
+          );
+        }
+      }
+    } finally {
+      client.close();
+      await server.close();
+    }
+  });
+
+  it('rewinds retained output after an unscoped stream error', async () => {
+    const server = await createTestServer();
+    const ringBuffer = new TerminalRingBuffer({
+      runId: 'run-1',
+      sessionName: 'session-1',
+    });
+    const client = new DaemonTerminalStreamClient({
+      serverUrl: server.serverUrl,
+      nodeId: 'node-1',
+      nodeToken: 'ag_node_TEST',
+      runId: 'run-1',
+      sessionName: 'session-1',
+      ringBuffer,
+      getLease: () => createLease(),
+      initialReconnectDelayMs: 1,
+      maxReconnectDelayMs: 1,
+    });
+
+    try {
+      const firstConnectionPromise = waitForConnection(server.wss);
+      const startPromise = client.start();
+      const first = await firstConnectionPromise;
+      await acknowledgeRegisterAndBind(first);
+      await startPromise;
+
+      await client.appendText('must replay\n');
+      const firstData = await waitForFrame(first, (frame) => frame.type === 'terminal.data');
+      expect(firstData).toMatchObject({
+        offsetStart: 0,
+        offsetEnd: 12,
+      });
+
+      const secondConnectionPromise = waitForConnection(server.wss);
+      sendFrame(first, {
+        type: 'error',
+        protocol: TERMINAL_PROTOCOL,
+        code: 'TERMINAL_RUN_NOT_BOUND',
+        message: 'Run is not bound to this daemon',
+      });
+      const second = await secondConnectionPromise;
+      await acknowledgeRegisterAndBind(second);
+      const replay = await waitForFrame(second, (frame) => frame.type === 'terminal.data');
+      expect(replay).toMatchObject({
+        offsetStart: 0,
+        offsetEnd: 12,
+      });
+      expect(decodeTerminalPayload(replay.type === 'terminal.data' ? replay.payload : '')).toBe('must replay\n');
+    } finally {
+      client.close();
+      await server.close();
+    }
+  });
+
   it('delivers a pending terminal end after reconnecting', async () => {
     const server = await createTestServer();
     const ringBuffer = new TerminalRingBuffer({
@@ -320,6 +456,41 @@ describe('daemon terminal stream client', () => {
         reason: 'completed',
       });
       await endPromise;
+    } finally {
+      client.close();
+      await server.close();
+    }
+  });
+
+  it('sends terminal end once when end is called repeatedly', async () => {
+    const server = await createTestServer();
+    const connectionPromise = waitForConnection(server.wss);
+    const ringBuffer = new TerminalRingBuffer({
+      runId: 'run-1',
+      sessionName: 'session-1',
+    });
+    const client = new DaemonTerminalStreamClient({
+      serverUrl: server.serverUrl,
+      nodeId: 'node-1',
+      nodeToken: 'ag_node_TEST',
+      runId: 'run-1',
+      sessionName: 'session-1',
+      ringBuffer,
+      getLease: () => createLease(),
+    });
+
+    try {
+      const startPromise = client.start();
+      const daemon = await connectionPromise;
+      await acknowledgeRegisterAndBind(daemon);
+      await startPromise;
+      await client.end('completed');
+      await client.end('completed');
+      expect(await waitForFrame(daemon, (frame) => frame.type === 'terminal.end')).toMatchObject({
+        type: 'terminal.end',
+        reason: 'completed',
+      });
+      expect(await waitForNoFrame(daemon, (frame) => frame.type === 'terminal.end', 100)).toBe(false);
     } finally {
       client.close();
       await server.close();

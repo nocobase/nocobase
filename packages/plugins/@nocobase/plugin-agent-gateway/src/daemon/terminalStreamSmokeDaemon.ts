@@ -12,6 +12,7 @@ import WebSocket from 'ws';
 import {
   TERMINAL_PAYLOAD_ENCODING,
   TERMINAL_PROTOCOL,
+  TERMINAL_SERVER_MAX_DECODED_PAYLOAD_BYTES,
   TERMINAL_STREAM_WS_PATH,
   TerminalAck,
   TerminalDaemonBindRun,
@@ -35,9 +36,14 @@ export interface TerminalStreamSmokeDaemonOptions {
   claimAttempt?: number;
   leaseVersion?: number;
   lines: string[];
+  linePrefix?: string;
+  lineCount?: number;
+  lineSize?: number;
   sessionName?: string;
   lineDelayMs?: number;
+  disconnectAfterLines?: number;
   holdOpenMs?: number;
+  singleFrameSize?: number;
   requester?: GatewayRequester;
 }
 
@@ -46,6 +52,7 @@ export interface TerminalStreamSmokeDaemonResult {
   sessionName: string;
   emittedLineCount: number;
   offsetEnd: number;
+  observedErrorCode?: string;
 }
 
 interface EmittedStream {
@@ -80,6 +87,17 @@ function buildWebSocketUrl(serverUrl: string) {
 
 function normalizeLine(line: string) {
   return line.endsWith('\n') ? line : `${line}\n`;
+}
+
+function generateLine(prefix: string, index: number, lineSize?: number) {
+  const base = `${prefix}_${index}`;
+  if (!lineSize || lineSize <= 0) {
+    return base;
+  }
+  if (base.length >= lineSize) {
+    return base.slice(0, lineSize);
+  }
+  return `${base}${'X'.repeat(lineSize - base.length)}`;
 }
 
 function isTerminalAck(frame: TerminalFrame, requestId: string): frame is TerminalAck {
@@ -212,13 +230,27 @@ function createSnapshotFrame(
 
   const relativeStart = request.fromOffset - stream.offsetStart;
   const snapshot = stream.buffer.subarray(relativeStart);
-  if (!snapshot.byteLength) {
+  if (!snapshot.byteLength && request.fromOffset !== stream.offsetEnd) {
     return {
       type: 'error',
       protocol: TERMINAL_PROTOCOL,
       requestId: request.requestId,
       code: 'TERMINAL_OFFSET_GAP',
       message: 'No smoke data is available after the requested offset',
+    };
+  }
+  if (snapshot.byteLength > TERMINAL_SERVER_MAX_DECODED_PAYLOAD_BYTES) {
+    return {
+      type: 'error',
+      protocol: TERMINAL_PROTOCOL,
+      requestId: request.requestId,
+      code: 'TERMINAL_OFFSET_GAP',
+      message: 'Smoke snapshot exceeds the maximum decoded payload size',
+      details: {
+        requestedOffset: request.fromOffset,
+        offsetEnd: stream.offsetEnd,
+        maxSnapshotBytes: TERMINAL_SERVER_MAX_DECODED_PAYLOAD_BYTES,
+      },
     };
   }
 
@@ -283,6 +315,14 @@ export function parseTerminalStreamSmokeDaemonArgs(argv: string[]): TerminalStre
     .flatMap((line) => line.split(','))
     .map((line) => line.trim())
     .filter(Boolean);
+  const linePrefix = getFlag('line-prefix') || 'AGENT_GATEWAY_STREAM_LINE';
+  const lineCount = parseIntegerFlag('line-count');
+  const generatedLines =
+    lines.length || !lineCount
+      ? lines
+      : Array.from({ length: lineCount }, (_value, index) =>
+          generateLine(linePrefix, index + 1, parseIntegerFlag('line-size')),
+        );
 
   const options: TerminalStreamSmokeDaemonOptions = {
     serverUrl: getFlag('server-url').replace(/\/$/, ''),
@@ -293,17 +333,22 @@ export function parseTerminalStreamSmokeDaemonArgs(argv: string[]): TerminalStre
     claimToken: getFlag('claim-token') || undefined,
     claimAttempt: parseIntegerFlag('claim-attempt'),
     leaseVersion: parseIntegerFlag('lease-version'),
-    lines,
+    lines: generatedLines,
+    linePrefix,
+    lineCount,
+    lineSize: parseIntegerFlag('line-size'),
     sessionName: getFlag('session-name') || undefined,
-    lineDelayMs: parseIntegerFlag('line-delay-ms'),
+    lineDelayMs: parseIntegerFlag('delay-ms') ?? parseIntegerFlag('line-delay-ms'),
+    disconnectAfterLines: parseIntegerFlag('disconnect-after-lines'),
     holdOpenMs: parseIntegerFlag('hold-open-ms'),
+    singleFrameSize: parseIntegerFlag('single-frame-size'),
   };
 
   if (!options.serverUrl || !options.runId || !options.nodeId || !options.nodeToken) {
     throw new Error('--server-url, --run-id, --node-id, and --node-token are required');
   }
-  if (!options.lines.length) {
-    throw new Error('At least one --line is required');
+  if (!options.lines.length && !options.singleFrameSize) {
+    throw new Error('At least one --line, --line-count, or --single-frame-size is required');
   }
 
   return options;
@@ -319,18 +364,19 @@ export async function runTerminalStreamSmokeDaemon(
     offsetStart: 0,
     offsetEnd: 0,
   };
-  const ws = new WebSocket(buildWebSocketUrl(options.serverUrl), {
-    headers: {
-      Authorization: `Bearer ${options.nodeToken}`,
-    },
-  });
+  let ws: WebSocket | null = null;
 
-  try {
-    await waitForOpen(ws);
-    attachSnapshotResponder(ws, sessionName, stream);
+  const connectAndBind = async () => {
+    const socket = new WebSocket(buildWebSocketUrl(options.serverUrl), {
+      headers: {
+        Authorization: `Bearer ${options.nodeToken}`,
+      },
+    });
+    await waitForOpen(socket);
+    attachSnapshotResponder(socket, sessionName, stream);
 
     const registerRequestId = `smoke-register-${Date.now()}`;
-    await sendFrame(ws, {
+    await sendFrame(socket, {
       type: 'daemon.register',
       protocol: TERMINAL_PROTOCOL,
       requestId: registerRequestId,
@@ -339,7 +385,7 @@ export async function runTerminalStreamSmokeDaemon(
         terminalStream: true,
       },
     });
-    await waitForAck(ws, registerRequestId);
+    await waitForAck(socket, registerRequestId);
 
     const bindRequestId = `smoke-bind-${Date.now()}`;
     const bindFrame: TerminalDaemonBindRun = {
@@ -353,10 +399,37 @@ export async function runTerminalStreamSmokeDaemon(
       claimAttempt: lease.claimAttempt,
       leaseVersion: lease.leaseVersion,
     };
-    await sendFrame(ws, bindFrame);
-    await waitForAck(ws, bindRequestId);
+    await sendFrame(socket, bindFrame);
+    await waitForAck(socket, bindRequestId);
+    return socket;
+  };
 
-    for (const line of options.lines) {
+  try {
+    ws = await connectAndBind();
+
+    if (options.singleFrameSize) {
+      const payloadBuffer = Buffer.alloc(options.singleFrameSize, 'O');
+      await sendFrame(ws, {
+        type: 'terminal.data',
+        protocol: TERMINAL_PROTOCOL,
+        runId: options.runId,
+        sessionName,
+        offsetStart: stream.offsetEnd,
+        offsetEnd: stream.offsetEnd + payloadBuffer.byteLength,
+        payloadEncoding: TERMINAL_PAYLOAD_ENCODING,
+        payload: payloadBuffer.toString('base64'),
+      });
+      const errorFrame = await waitForFrame(ws, isTerminalError);
+      return {
+        runId: options.runId,
+        sessionName,
+        emittedLineCount: 0,
+        offsetEnd: stream.offsetEnd,
+        observedErrorCode: errorFrame.type === 'error' ? errorFrame.code : undefined,
+      };
+    }
+
+    for (const [index, line] of options.lines.entries()) {
       const text = normalizeLine(line);
       const frame = createTerminalDataFrame({
         runId: options.runId,
@@ -368,6 +441,15 @@ export async function runTerminalStreamSmokeDaemon(
       stream.offsetEnd = frame.offsetEnd;
       await sendFrame(ws, frame);
       await sleep(options.lineDelayMs ?? 200);
+      if (
+        options.disconnectAfterLines &&
+        options.disconnectAfterLines > 0 &&
+        index + 1 === options.disconnectAfterLines &&
+        index + 1 < options.lines.length
+      ) {
+        ws.close();
+        ws = await connectAndBind();
+      }
     }
 
     await sleep(options.holdOpenMs ?? 3000);
@@ -387,7 +469,7 @@ export async function runTerminalStreamSmokeDaemon(
       offsetEnd: stream.offsetEnd,
     };
   } finally {
-    ws.close();
+    ws?.close();
   }
 }
 

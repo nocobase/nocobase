@@ -191,5 +191,6 @@
   "Dispatch binding saved": "派发绑定已保存",
   "Failed to update dispatch binding status": "更新派发绑定状态失败",
   "Toggle dispatch binding status": "切换派发绑定状态",
-  "JSON format is invalid": "JSON 格式不正确"
+  "JSON format is invalid": "JSON 格式不正确",
+  "Live output gap detected. Showing saved terminal output when available.": "实时输出存在缺口。可用时将显示已保存的终端输出。"
 }

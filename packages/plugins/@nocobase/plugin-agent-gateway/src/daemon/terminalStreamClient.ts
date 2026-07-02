@@ -10,7 +10,11 @@
 import WebSocket from 'ws';
 
 import {
+  TERMINAL_DAEMON_TARGET_CHUNK_BYTES,
   TERMINAL_PROTOCOL,
+  TERMINAL_RECONNECT_INITIAL_DELAY_MS,
+  TERMINAL_RECONNECT_JITTER_RATIO,
+  TERMINAL_RECONNECT_MAX_DELAY_MS,
   TERMINAL_STREAM_WS_PATH,
   TerminalAck,
   TerminalDaemonBindRun,
@@ -59,10 +63,10 @@ interface PendingAck {
   reject(error: Error): void;
 }
 
-const DEFAULT_INITIAL_RECONNECT_DELAY_MS = 250;
-const DEFAULT_MAX_RECONNECT_DELAY_MS = 5000;
+const DEFAULT_INITIAL_RECONNECT_DELAY_MS = TERMINAL_RECONNECT_INITIAL_DELAY_MS;
+const DEFAULT_MAX_RECONNECT_DELAY_MS = TERMINAL_RECONNECT_MAX_DELAY_MS;
 const DEFAULT_FINAL_END_WAIT_MS = 5000;
-const MAX_REPLAY_DATA_FRAME_BYTES = 64 * 1024;
+const MAX_REPLAY_DATA_FRAME_BYTES = TERMINAL_DAEMON_TARGET_CHUNK_BYTES;
 
 function buildWebSocketUrl(serverUrl: string) {
   const url = new URL(TERMINAL_STREAM_WS_PATH, serverUrl.replace(/\/$/, ''));
@@ -82,6 +86,27 @@ function isErrorForRequest(frame: TerminalFrame, requestId: string): frame is Te
   return frame.type === 'error' && frame.requestId === requestId;
 }
 
+function applyReconnectJitter(delayMs: number, maxDelayMs: number) {
+  if (delayMs <= 1) {
+    return delayMs;
+  }
+  const jitterRange = delayMs * TERMINAL_RECONNECT_JITTER_RATIO;
+  const jitteredDelay = delayMs + (Math.random() * 2 - 1) * jitterRange;
+  return Math.min(maxDelayMs, Math.max(0, Math.round(jitteredDelay)));
+}
+
+function isUnscopedTerminalStreamError(frame: TerminalFrame): frame is TerminalError {
+  if (frame.type !== 'error' || frame.requestId) {
+    return false;
+  }
+  return [
+    'TERMINAL_RUN_NOT_BOUND',
+    'TERMINAL_LEASE_LOST',
+    'TERMINAL_FRAME_TOO_LARGE',
+    'TERMINAL_PROTOCOL_ERROR',
+  ].includes(frame.code);
+}
+
 export class DaemonTerminalStreamClient {
   private ws?: TerminalStreamSocket;
   private state: DaemonTerminalStreamState = 'idle';
@@ -92,6 +117,9 @@ export class DaemonTerminalStreamClient {
   private drainPromise?: Promise<void>;
   private nextSendOffset: number;
   private pendingEnd?: TerminalEnd;
+  private terminalEndSent = false;
+  private streamReplayOffsetStart?: number;
+  private sentTerminalEnd?: TerminalEnd;
   private readonly pendingEndWaiters = new Set<(sent: boolean) => void>();
   private readonly pendingAcks = new Map<string, PendingAck>();
 
@@ -117,6 +145,13 @@ export class DaemonTerminalStreamClient {
   }
 
   async end(reason: TerminalEnd['reason']) {
+    if (this.terminalEndSent) {
+      return;
+    }
+    if (this.pendingEnd) {
+      await this.flushPendingEnd(DEFAULT_FINAL_END_WAIT_MS);
+      return;
+    }
     this.pendingEnd = {
       type: 'terminal.end',
       protocol: TERMINAL_PROTOCOL,
@@ -168,6 +203,8 @@ export class DaemonTerminalStreamClient {
     await this.registerDaemon();
     await this.bindRun();
     this.reconnectAttempts = 0;
+    this.streamReplayOffsetStart = undefined;
+    this.sentTerminalEnd = undefined;
     this.setState('bound');
     await this.drainRetainedData();
     await this.flushPendingEnd(0);
@@ -287,6 +324,7 @@ export class DaemonTerminalStreamClient {
       }
       try {
         await this.sendFrame(replay.frame);
+        this.recordSentStreamData(replay.frame.offsetStart);
         this.nextSendOffset = replay.frame.offsetEnd;
       } catch (error) {
         this.setState('error', error instanceof Error ? error.message : String(error));
@@ -294,6 +332,11 @@ export class DaemonTerminalStreamClient {
         return;
       }
     }
+  }
+
+  private recordSentStreamData(offsetStart: number) {
+    this.streamReplayOffsetStart =
+      this.streamReplayOffsetStart === undefined ? offsetStart : Math.min(this.streamReplayOffsetStart, offsetStart);
   }
 
   private async sendIfBound(frame: TerminalServerFrame) {
@@ -334,10 +377,32 @@ export class DaemonTerminalStreamClient {
     }
     const frame = parsed.frame;
     this.resolvePendingAck(frame);
+    if (this.handleUnscopedStreamError(frame)) {
+      return;
+    }
     if (frame.type === 'daemon.snapshotRequest') {
       this.sendSnapshot(frame.requestId, frame.fromOffset);
     }
   };
+
+  private handleUnscopedStreamError(frame: TerminalFrame) {
+    if (!isUnscopedTerminalStreamError(frame)) {
+      return false;
+    }
+    const rewindOffset =
+      this.streamReplayOffsetStart ?? this.sentTerminalEnd?.offsetEnd ?? this.options.ringBuffer.retainedOffsetStart;
+    this.nextSendOffset = Math.min(this.nextSendOffset, rewindOffset);
+    if (this.sentTerminalEnd && !this.pendingEnd) {
+      this.pendingEnd = this.sentTerminalEnd;
+      this.terminalEndSent = false;
+    }
+    this.sentTerminalEnd = undefined;
+    this.setState('error', `${frame.code}: ${frame.message}`);
+    this.rejectPendingAcks(new Error(`${frame.code}: ${frame.message}`));
+    this.detachSocket(true);
+    this.scheduleReconnect();
+    return true;
+  }
 
   private resolvePendingAck(frame: TerminalFrame) {
     for (const [requestId, pending] of this.pendingAcks) {
@@ -393,14 +458,17 @@ export class DaemonTerminalStreamClient {
     if (!this.pendingEnd || this.state !== 'bound') {
       return;
     }
-    const sent = await this.sendIfBound({
+    const frame: TerminalEnd = {
       ...this.pendingEnd,
       offsetEnd: this.options.ringBuffer.currentOffset,
-    });
+    };
+    const sent = await this.sendIfBound(frame);
     if (!sent) {
       return;
     }
+    this.sentTerminalEnd = frame;
     this.pendingEnd = undefined;
+    this.terminalEndSent = true;
     for (const waiter of this.pendingEndWaiters) {
       waiter(true);
     }
@@ -432,17 +500,21 @@ export class DaemonTerminalStreamClient {
     }
     this.reconnectAttempts += 1;
     this.setState('reconnecting');
-    const delay = Math.min(
+    const maxDelay = this.options.maxReconnectDelayMs ?? DEFAULT_MAX_RECONNECT_DELAY_MS;
+    const baseDelay = Math.min(
       (this.options.initialReconnectDelayMs ?? DEFAULT_INITIAL_RECONNECT_DELAY_MS) *
         2 ** Math.max(0, this.reconnectAttempts - 1),
-      this.options.maxReconnectDelayMs ?? DEFAULT_MAX_RECONNECT_DELAY_MS,
+      maxDelay,
     );
-    this.reconnectTimer = setTimeout(() => {
-      this.reconnectTimer = undefined;
-      this.connect().catch(() => {
-        // connect() owns state and reconnect scheduling.
-      });
-    }, delay);
+    this.reconnectTimer = setTimeout(
+      () => {
+        this.reconnectTimer = undefined;
+        this.connect().catch(() => {
+          // connect() owns state and reconnect scheduling.
+        });
+      },
+      applyReconnectJitter(baseDelay, maxDelay),
+    );
   }
 
   private detachSocket(closeSocket: boolean) {

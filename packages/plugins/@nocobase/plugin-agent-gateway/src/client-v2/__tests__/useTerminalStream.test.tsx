@@ -59,6 +59,7 @@ describe('useTerminalStream', () => {
   afterEach(() => {
     cleanup();
     FakeWebSocket.instances = [];
+    window.sessionStorage.clear();
     vi.useRealTimers();
   });
 
@@ -190,7 +191,6 @@ describe('useTerminalStream', () => {
       firstWebSocket.dispatch('close');
     });
 
-    expect(result.current.connectionState).toBe('reconnecting');
     await act(async () => {
       await vi.runOnlyPendingTimersAsync();
     });
@@ -203,6 +203,141 @@ describe('useTerminalStream', () => {
       type: 'browser.subscribe',
       runId: 'run-id-1',
       lastOffset: 6,
+    });
+  });
+
+  it('persists the consumed offset and resumes from it after remount', async () => {
+    const createWebSocket = () => new FakeWebSocket();
+    const first = renderHook(() =>
+      useTerminalStream({
+        runId: 'run-id-1',
+        token: 'browser-token',
+        createWebSocket,
+      }),
+    );
+    const firstWebSocket = FakeWebSocket.instances[0];
+
+    act(() => {
+      firstWebSocket.dispatch('message', {
+        data: JSON.stringify({
+          type: 'terminal.data',
+          protocol: TERMINAL_PROTOCOL,
+          runId: 'run-id-1',
+          sessionName: 'session-1',
+          offsetStart: 0,
+          offsetEnd: 6,
+          payloadEncoding: TERMINAL_PAYLOAD_ENCODING,
+          payload: encodeTerminalPayload('hello\n'),
+        }),
+      });
+    });
+
+    await waitFor(() => {
+      expect(first.result.current.currentOffset).toBe(6);
+      expect(window.sessionStorage.getItem('agentGatewayTerminalOffset:run-id-1')).toBe('6');
+    });
+
+    first.unmount();
+    renderHook(() =>
+      useTerminalStream({
+        runId: 'run-id-1',
+        token: 'browser-token',
+        createWebSocket,
+      }),
+    );
+    const secondWebSocket = FakeWebSocket.instances[1];
+
+    act(() => {
+      secondWebSocket.dispatch('open');
+    });
+
+    const subscribeFrame = JSON.parse(secondWebSocket.sent[0]) as Record<string, unknown>;
+    expect(subscribeFrame).toMatchObject({
+      type: 'browser.subscribe',
+      runId: 'run-id-1',
+      lastOffset: 6,
+    });
+  });
+
+  it('does not treat a restored offset as visible stream output before data arrives', async () => {
+    window.sessionStorage.setItem('agentGatewayTerminalOffset:run-id-1', '6');
+    const createWebSocket = () => new FakeWebSocket();
+    const { result } = renderHook(() =>
+      useTerminalStream({
+        runId: 'run-id-1',
+        token: 'browser-token',
+        createWebSocket,
+      }),
+    );
+    const webSocket = FakeWebSocket.instances[0];
+
+    act(() => {
+      webSocket.dispatch('open');
+    });
+
+    await waitFor(() => {
+      expect(result.current.currentOffset).toBe(6);
+      expect(result.current.hasStreamOutput).toBe(false);
+      expect(result.current.chunks).toEqual([]);
+    });
+  });
+
+  it('does not flush stale stream state after cleanup disables the hook', async () => {
+    vi.useFakeTimers();
+    const createWebSocket = () => new FakeWebSocket();
+    const { result, rerender } = renderHook(
+      ({ enabled }) =>
+        useTerminalStream({
+          runId: 'run-id-1',
+          token: 'browser-token',
+          enabled,
+          createWebSocket,
+        }),
+      {
+        initialProps: {
+          enabled: true,
+        },
+      },
+    );
+    const webSocket = FakeWebSocket.instances[0];
+
+    act(() => {
+      webSocket.dispatch('message', {
+        data: JSON.stringify({
+          type: 'terminal.data',
+          protocol: TERMINAL_PROTOCOL,
+          runId: 'run-id-1',
+          sessionName: 'session-1',
+          offsetStart: 0,
+          offsetEnd: 6,
+          payloadEncoding: TERMINAL_PAYLOAD_ENCODING,
+          payload: encodeTerminalPayload('hello\n'),
+        }),
+      });
+    });
+    await act(async () => {
+      await vi.runOnlyPendingTimersAsync();
+    });
+    expect(result.current.currentOffset).toBe(6);
+
+    rerender({ enabled: false });
+    expect(result.current).toMatchObject({
+      connectionState: 'closed',
+      currentOffset: 0,
+      previewText: '',
+      chunks: [],
+      hasStreamOutput: false,
+    });
+
+    await act(async () => {
+      await vi.runOnlyPendingTimersAsync();
+    });
+    expect(result.current).toMatchObject({
+      connectionState: 'closed',
+      currentOffset: 0,
+      previewText: '',
+      chunks: [],
+      hasStreamOutput: false,
     });
   });
 });

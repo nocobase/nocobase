@@ -37,6 +37,7 @@ import {
   Typography,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
+import type { CSSMotionProps } from 'rc-motion';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { AgentTimeline, AgentTimelineEventRecord } from '../components/AgentTimeline';
 import { ReadonlyXtermOutput } from '../components/ReadonlyXtermOutput';
@@ -195,6 +196,15 @@ const RUN_STATUS_OPTIONS = [
 const CANCELABLE_STATUSES = new Set(['queued', 'claimed', 'syncing_skills', 'running']);
 const LEGACY_TIMELINE_FALLBACK_STATUSES = new Set(['succeeded']);
 const RUN_DETAIL_QUERY_PARAM = 'runId';
+const NO_COLLAPSE_MOTION: CSSMotionProps = {
+  motionName: '',
+  motionAppear: false,
+  motionEnter: false,
+  motionLeave: false,
+};
+const FastCollapse = Collapse as React.ComponentType<
+  React.ComponentProps<typeof Collapse> & { openMotion?: CSSMotionProps }
+>;
 
 function isCancelableRun(run: RunRecord) {
   return CANCELABLE_STATUSES.has(run.status);
@@ -347,9 +357,10 @@ function TerminalPanel({
   const output = snapshot?.output || '';
   const terminalAvailable = Boolean(snapshot?.available);
   const inputEnabled = Boolean(snapshot?.inputEnabled);
-  const streamHasOutput = stream.hasStreamOutput || stream.currentOffset > 0;
+  const streamHasOutput = stream.hasStreamOutput || stream.chunks.length > 0 || Boolean(stream.previewText);
   const snapshotHasOutput = Boolean(output);
-  const streamUnavailable = stream.connectionState === 'closed' || stream.connectionState === 'error';
+  const streamUnavailable =
+    stream.connectionState === 'closed' || stream.connectionState === 'error' || Boolean(stream.lastErrorCode);
   const useSnapshotFallback = !streamHasOutput || (streamUnavailable && snapshotHasOutput);
   const useStreamOutput = streamHasOutput && !useSnapshotFallback;
   const xtermResetKey = [
@@ -410,6 +421,14 @@ function TerminalPanel({
       </Space>
 
       {!terminalAvailable ? <Alert type="info" showIcon message={t('No terminal session yet')} /> : null}
+      {stream.lastErrorCode === 'TERMINAL_OFFSET_GAP' ? (
+        <Alert
+          data-testid="agent-gateway-terminal-offset-gap"
+          type="warning"
+          showIcon
+          message={t('Live output gap detected. Showing saved terminal output when available.')}
+        />
+      ) : null}
       <ReadonlyXtermOutput
         ariaLabel={t('Readonly live terminal output')}
         chunks={useStreamOutput ? stream.chunks : []}
@@ -1099,8 +1118,9 @@ export default function AgentGatewayRunsPage() {
 
             {showTerminalStreamSmoke ? <TerminalStreamSmokePanel runId={runDetailsRequest.data.run.id} /> : null}
 
-            <Collapse
+            <FastCollapse
               defaultActiveKey={['live-output']}
+              openMotion={NO_COLLAPSE_MOTION}
               items={[
                 {
                   key: 'live-output',

@@ -8,7 +8,11 @@
  */
 
 import {
+  TERMINAL_BROWSER_MAX_DECODED_PAYLOAD_BYTES_PER_FRAME,
   TERMINAL_PROTOCOL,
+  TERMINAL_RECONNECT_INITIAL_DELAY_MS,
+  TERMINAL_RECONNECT_JITTER_RATIO,
+  TERMINAL_RECONNECT_MAX_DELAY_MS,
   TERMINAL_STREAM_WS_PATH,
   TerminalErrorCode,
   TerminalFrame,
@@ -40,6 +44,7 @@ export interface TerminalStreamClientOptions {
   lastOffset?: number;
   baseUrl?: string;
   reconnectDelayMs?: number;
+  maxReconnectDelayMs?: number;
   maxReconnectAttempts?: number;
   createWebSocket?: (url: string) => TerminalStreamWebSocket;
   onStateChange?: (state: TerminalStreamClientState) => void;
@@ -59,8 +64,9 @@ export interface TerminalStreamWebSocketEvent {
 }
 
 const DEFAULT_PREVIEW_LIMIT = 4000;
-const DEFAULT_RECONNECT_DELAY_MS = 1000;
-const DEFAULT_MAX_RECONNECT_ATTEMPTS = 3;
+const DEFAULT_RECONNECT_DELAY_MS = TERMINAL_RECONNECT_INITIAL_DELAY_MS;
+const DEFAULT_MAX_RECONNECT_DELAY_MS = TERMINAL_RECONNECT_MAX_DELAY_MS;
+const DEFAULT_MAX_RECONNECT_ATTEMPTS = Number.POSITIVE_INFINITY;
 const textEncoder = new TextEncoder();
 
 function getDefaultBaseUrl() {
@@ -105,6 +111,47 @@ function sliceDecodedPayloadByByteOffset(text: string, byteOffset: number) {
     charStartIndex += char.length;
   }
   return '';
+}
+
+function splitDecodedTextByByteLimit(text: string, offsetStart: number, maxBytes: number) {
+  const chunks: TerminalStreamChunk[] = [];
+  let chunkText = '';
+  let chunkBytes = 0;
+  let chunkOffsetStart = offsetStart;
+  for (const char of text) {
+    const charBytes = textEncoder.encode(char).byteLength;
+    if (chunkText && chunkBytes + charBytes > maxBytes) {
+      chunks.push({
+        frameType: 'terminal.data',
+        offsetStart: chunkOffsetStart,
+        offsetEnd: chunkOffsetStart + chunkBytes,
+        text: chunkText,
+      });
+      chunkOffsetStart += chunkBytes;
+      chunkText = '';
+      chunkBytes = 0;
+    }
+    chunkText += char;
+    chunkBytes += charBytes;
+  }
+  if (chunkText) {
+    chunks.push({
+      frameType: 'terminal.data',
+      offsetStart: chunkOffsetStart,
+      offsetEnd: chunkOffsetStart + chunkBytes,
+      text: chunkText,
+    });
+  }
+  return chunks;
+}
+
+function applyReconnectJitter(delayMs: number, maxDelayMs: number) {
+  if (delayMs <= 1) {
+    return delayMs;
+  }
+  const jitterRange = delayMs * TERMINAL_RECONNECT_JITTER_RATIO;
+  const jitteredDelay = delayMs + (Math.random() * 2 - 1) * jitterRange;
+  return Math.min(maxDelayMs, Math.max(0, Math.round(jitteredDelay)));
 }
 
 export class TerminalStreamClient {
@@ -251,6 +298,7 @@ export class TerminalStreamClient {
 
   private consumeFrame(frame: TerminalFrame) {
     if (frame.type === 'ack' && frame.requestId === this.requestId) {
+      this.reconnectAttempts = 0;
       this.updateState({ connectionState: 'live', lastErrorCode: undefined });
       return;
     }
@@ -266,12 +314,16 @@ export class TerminalStreamClient {
       const decodedText = decodeTerminalPayload(frame.payload);
       const text = sliceDecodedPayloadByByteOffset(decodedText, currentOffset - frame.offsetStart);
       const nextText = `${this.state.previewText}${text}`;
-      this.options.onChunk?.({
-        frameType: frame.type,
-        offsetStart: Math.max(frame.offsetStart, currentOffset),
-        offsetEnd: frame.offsetEnd,
+      for (const chunk of splitDecodedTextByByteLimit(
         text,
-      });
+        Math.max(frame.offsetStart, currentOffset),
+        TERMINAL_BROWSER_MAX_DECODED_PAYLOAD_BYTES_PER_FRAME,
+      )) {
+        this.options.onChunk?.({
+          ...chunk,
+          frameType: frame.type,
+        });
+      }
       this.updateState({
         connectionState: 'live',
         currentOffset: frame.offsetEnd,
@@ -305,13 +357,21 @@ export class TerminalStreamClient {
     this.reconnectAttempts += 1;
     this.updateState({ connectionState: 'reconnecting' });
     this.clearReconnectTimer();
-    this.reconnectTimer = setTimeout(() => {
-      this.reconnectTimer = undefined;
-      if (this.closedByClient || this.terminalEnded) {
-        return;
-      }
-      this.openSocket('reconnecting');
-    }, this.options.reconnectDelayMs ?? DEFAULT_RECONNECT_DELAY_MS);
+    const maxReconnectDelayMs = this.options.maxReconnectDelayMs ?? DEFAULT_MAX_RECONNECT_DELAY_MS;
+    const baseDelay = Math.min(
+      (this.options.reconnectDelayMs ?? DEFAULT_RECONNECT_DELAY_MS) * 2 ** Math.max(0, this.reconnectAttempts - 1),
+      maxReconnectDelayMs,
+    );
+    this.reconnectTimer = setTimeout(
+      () => {
+        this.reconnectTimer = undefined;
+        if (this.closedByClient || this.terminalEnded) {
+          return;
+        }
+        this.openSocket('reconnecting');
+      },
+      applyReconnectJitter(baseDelay, maxReconnectDelayMs),
+    );
   }
 
   private reconnectForSnapshotCompensation(lastErrorCode: TerminalErrorCode) {

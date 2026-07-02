@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { decodeTerminalPayload } from '../../shared/terminalStreamProtocol';
+import { TERMINAL_RING_BUFFER_MAX_CHUNKS, decodeTerminalPayload } from '../../shared/terminalStreamProtocol';
 import { TerminalRingBuffer } from '../terminalRingBuffer';
 
 describe('terminal ring buffer', () => {
@@ -198,5 +198,19 @@ describe('terminal ring buffer', () => {
     if (secondReplay.ok) {
       expect(decodeTerminalPayload(secondReplay.frame?.payload || '')).toBe('世界\n');
     }
+  });
+
+  it('bounds retained chunks with the default max chunk count', () => {
+    const buffer = new TerminalRingBuffer({
+      runId: 'run-1',
+      sessionName: 'session-1',
+    });
+
+    for (let index = 0; index < TERMINAL_RING_BUFFER_MAX_CHUNKS + 2; index += 1) {
+      buffer.appendText('x');
+    }
+
+    expect(buffer.retainedChunkCount).toBe(TERMINAL_RING_BUFFER_MAX_CHUNKS);
+    expect(buffer.retainedOffsetStart).toBe(2);
   });
 });

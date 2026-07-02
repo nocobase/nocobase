@@ -82,6 +82,82 @@ class FakeBrowserWebSocket {
   }
 }
 
+const xtermMock = vi.hoisted(() => {
+  type KeyHandler = (event: KeyboardEvent) => boolean;
+
+  class MockTerminal {
+    static instances: MockTerminal[] = [];
+
+    writes: string[] = [];
+    resetCount = 0;
+    disposed = false;
+    keyHandler?: KeyHandler;
+    private element?: HTMLElement;
+
+    constructor() {
+      MockTerminal.instances.push(this);
+    }
+
+    loadAddon() {}
+
+    attachCustomKeyEventHandler(handler: KeyHandler) {
+      this.keyHandler = handler;
+    }
+
+    open(container: HTMLElement) {
+      this.element = document.createElement('pre');
+      container.appendChild(this.element);
+    }
+
+    write(value: string, callback?: () => void) {
+      this.writes.push(value);
+      if (this.element) {
+        this.element.textContent = `${this.element.textContent || ''}${value}`;
+      }
+      callback?.();
+    }
+
+    reset() {
+      this.resetCount += 1;
+      if (this.element) {
+        this.element.textContent = '';
+      }
+    }
+
+    dispose() {
+      this.disposed = true;
+    }
+  }
+
+  return {
+    MockTerminal,
+  };
+});
+
+const fitAddonMock = vi.hoisted(() => {
+  class MockFitAddon {
+    static instances: MockFitAddon[] = [];
+
+    fit = vi.fn();
+
+    constructor() {
+      MockFitAddon.instances.push(this);
+    }
+  }
+
+  return {
+    MockFitAddon,
+  };
+});
+
+vi.mock('@xterm/xterm', () => ({
+  Terminal: xtermMock.MockTerminal,
+}));
+
+vi.mock('@xterm/addon-fit', () => ({
+  FitAddon: fitAddonMock.MockFitAddon,
+}));
+
 function setFlowContextValue(app: Application, key: string, value: unknown) {
   (app.flowEngine.context as unknown as FlowContextWithDefineProperty).defineProperty(key, { value });
 }
@@ -116,6 +192,8 @@ function renderSettingsPage(request: (config: RequestConfig) => Promise<unknown>
 
 describe('PluginAgentGatewayClientV2', () => {
   beforeEach(() => {
+    xtermMock.MockTerminal.instances = [];
+    fitAddonMock.MockFitAddon.instances = [];
     window.history.pushState({}, '', '/admin/settings/agent-gateway/runs');
     Object.defineProperty(globalThis.window, 'matchMedia', {
       configurable: true,
@@ -134,6 +212,7 @@ describe('PluginAgentGatewayClientV2', () => {
 
   afterEach(() => {
     cleanup();
+    window.sessionStorage.clear();
     vi.useRealTimers();
     vi.restoreAllMocks();
     vi.unstubAllGlobals();
@@ -871,6 +950,113 @@ describe('PluginAgentGatewayClientV2', () => {
     });
 
     expect(await screen.findByText('snapshot after stream failure')).toBeTruthy();
+  });
+
+  it('keeps the saved terminal snapshot visible when a restored offset has no new stream output', async () => {
+    window.sessionStorage.setItem('agentGatewayTerminalOffset:run-id-1', '12');
+    vi.stubGlobal('WebSocket', FakeBrowserWebSocket);
+    const request = vi.fn(async (config: RequestConfig) => {
+      if (config.url === 'agent-gateway/runs:list') {
+        return {
+          data: {
+            data: [
+              {
+                id: 'run-id-1',
+                runCode: 'run-build-1',
+                status: 'running',
+              },
+            ],
+          },
+        };
+      }
+
+      if (config.url === 'agent-gateway/runs:get/run-id-1') {
+        return {
+          data: {
+            data: {
+              id: 'run-id-1',
+              runCode: 'run-build-1',
+              status: 'running',
+              requestedAt: '2026-06-30T10:00:00.000Z',
+              startedAt: '2026-06-30T10:01:00.000Z',
+            },
+          },
+        };
+      }
+
+      if (config.url === 'agent-gateway/runs/run-id-1/terminal:snapshot') {
+        return {
+          data: {
+            data: {
+              backend: 'tmux',
+              sessionName: 'ag-run-run-id-1',
+              terminalStatus: 'active',
+              runStatus: 'running',
+              available: true,
+              output: 'saved snapshot after reload',
+              capturedAt: '2026-06-30T10:01:02.000Z',
+              inputEnabled: false,
+            },
+          },
+        };
+      }
+
+      return { data: { data: [] } };
+    });
+
+    renderAgentGatewayPage(AgentGatewayRunsPage, request, {
+      auth: {
+        token: 'browser-token',
+        getAuthenticator: () => 'basic',
+        role: 'root',
+      },
+    });
+
+    expect(await screen.findByText('run-build-1')).toBeTruthy();
+    const detailButtons = await screen.findAllByLabelText('View run details');
+    fireEvent.click(detailButtons[0]);
+    expect(await screen.findByText('saved snapshot after reload')).toBeTruthy();
+    await waitFor(() => {
+      expect(FakeBrowserWebSocket.instances).toHaveLength(1);
+    });
+
+    const webSocket = FakeBrowserWebSocket.instances[0];
+    act(() => {
+      webSocket.dispatch('open');
+    });
+    const subscribeFrame = JSON.parse(webSocket.sent[0]) as Record<string, unknown>;
+    expect(subscribeFrame).toMatchObject({
+      type: 'browser.subscribe',
+      runId: 'run-id-1',
+      lastOffset: 12,
+    });
+    act(() => {
+      webSocket.dispatch('message', {
+        data: JSON.stringify({
+          type: 'ack',
+          protocol: TERMINAL_PROTOCOL,
+          requestId: subscribeFrame.requestId,
+        }),
+      });
+      webSocket.dispatch('message', {
+        data: JSON.stringify({
+          type: 'terminal.snapshot',
+          protocol: TERMINAL_PROTOCOL,
+          requestId: 'snapshot-empty',
+          runId: 'run-id-1',
+          sessionName: 'ag-run-run-id-1',
+          offsetStart: 12,
+          offsetEnd: 12,
+          payloadEncoding: TERMINAL_PAYLOAD_ENCODING,
+          payload: '',
+        }),
+      });
+    });
+
+    await waitFor(() => {
+      expect(screen.getByTestId('agent-gateway-xterm-stream-offset').textContent).toBe('Offset: 12');
+    });
+    expect(await screen.findByText('saved snapshot after reload')).toBeTruthy();
   });
 
   it('keeps run details visible when optional observation streams are forbidden', async () => {

@@ -10,6 +10,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
+  TERMINAL_BROWSER_MAX_DECODED_PAYLOAD_BYTES_PER_FRAME,
   TERMINAL_PAYLOAD_ENCODING,
   TERMINAL_PROTOCOL,
   encodeTerminalPayload,
@@ -175,6 +176,44 @@ describe('TerminalStreamClient', () => {
       offsetStart: new TextEncoder().encode(prefix).byteLength,
       offsetEnd: new TextEncoder().encode(fullOutput).byteLength,
       text: tail,
+    });
+  });
+
+  it('splits large decoded payloads into browser frame-sized chunks', () => {
+    const fakeWebSocket = new FakeWebSocket();
+    const onChunk = vi.fn();
+    const largeText = `${'L'.repeat(TERMINAL_BROWSER_MAX_DECODED_PAYLOAD_BYTES_PER_FRAME)}tail`;
+    const client = new TerminalStreamClient({
+      runId: 'run-id-1',
+      token: 'browser-token',
+      createWebSocket: () => fakeWebSocket,
+      onChunk,
+    });
+
+    client.connect();
+    fakeWebSocket.dispatch('message', {
+      data: JSON.stringify({
+        type: 'terminal.data',
+        protocol: TERMINAL_PROTOCOL,
+        runId: 'run-id-1',
+        sessionName: 'session-1',
+        offsetStart: 0,
+        offsetEnd: largeText.length,
+        payloadEncoding: TERMINAL_PAYLOAD_ENCODING,
+        payload: encodeTerminalPayload(largeText),
+      }),
+    });
+
+    expect(onChunk).toHaveBeenCalledTimes(2);
+    expect(onChunk.mock.calls[0][0]).toMatchObject({
+      offsetStart: 0,
+      offsetEnd: TERMINAL_BROWSER_MAX_DECODED_PAYLOAD_BYTES_PER_FRAME,
+    });
+    expect(onChunk.mock.calls[0][0].text).toHaveLength(TERMINAL_BROWSER_MAX_DECODED_PAYLOAD_BYTES_PER_FRAME);
+    expect(onChunk.mock.calls[1][0]).toMatchObject({
+      offsetStart: TERMINAL_BROWSER_MAX_DECODED_PAYLOAD_BYTES_PER_FRAME,
+      offsetEnd: largeText.length,
+      text: 'tail',
     });
   });
 
