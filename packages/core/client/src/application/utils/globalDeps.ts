@@ -39,6 +39,7 @@ import * as reactI18next from 'react-i18next';
 import * as ReactRouter from 'react-router';
 import * as ReactRouterDom from 'react-router-dom';
 import jsxRuntime from 'react/jsx-runtime';
+import * as jsxDevRuntime from 'react/jsx-dev-runtime';
 import * as nocobaseClient from '../../index';
 
 import type { RequireJS } from './requirejs';
@@ -67,6 +68,9 @@ export function defineGlobalDeps(requirejs: RequireJS) {
   defineGlobalDep(requirejs, 'react', React);
   defineGlobalDep(requirejs, 'react-dom', ReactDOM);
   defineGlobalDep(requirejs, 'react/jsx-runtime', jsxRuntime);
+  if (process.env.NODE_ENV !== 'production') {
+    defineGlobalDep(requirejs, 'react/jsx-dev-runtime', jsxDevRuntime);
+  }
 
   // react-router
   defineGlobalDep(requirejs, 'react-router', ReactRouter);
