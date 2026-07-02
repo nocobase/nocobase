@@ -349,15 +349,17 @@ TELEMETRY_TRACE_PROCESSOR=console
 
 ### SERVER_REQUEST_WHITELIST
 
-Liste blanche des cibles autorisées pour les requêtes HTTP sortantes initiées côté serveur, afin de prévenir les attaques SSRF (Server-Side Request Forgery). Accepte une liste séparée par des virgules d'IPs exactes, de plages CIDR, de noms d'hôtes exacts et de sous-domaines génériques à un seul niveau.
+Liste blanche des cibles autorisées pour les requêtes HTTP sortantes initiées par le serveur NocoBase. Accepte une liste séparée par des virgules d'IPs exactes, de plages CIDR, de noms d'hôtes exacts et de sous-domaines génériques à un seul niveau.
 
 ```bash
-SERVER_REQUEST_WHITELIST=1.2.3.4,10.0.0.0/8,api.example.com,*.trusted.com
+SERVER_REQUEST_WHITELIST=api.example.com,*.trusted.com,10.0.0.0/8,127.0.0.1
 ```
 
-**S'applique à** : Les nœuds « Requête HTTP » dans les workflows et les boutons d'action de requête personnalisée. Les requêtes avec chemin relatif (appels à l'API NocoBase elle-même) ne sont pas affectées.
+**S'applique à** : Les nœuds « Requête HTTP » dans les workflows, les boutons d'action de requête personnalisée, les services AI et les autres requêtes côté serveur. Les requêtes avec chemin relatif (appels à l'API NocoBase elle-même) ne sont pas affectées.
 
-**Non configuré** : Toutes les requêtes `http`/`https` sortantes sont autorisées (comportement existant). **Configuré** : Seules les requêtes dont l'hôte correspond à une entrée de la liste blanche sont autorisées ; les requêtes non correspondantes génèrent une erreur.
+**Non configuré** : Toutes les requêtes sortantes `http` / `https` restent autorisées pour conserver le comportement existant. Toutefois, si la cible est une adresse loopback, privée, link-local ou metadata, ou si un domaine se résout vers l'une de ces adresses, le serveur écrit un warning dans les logs.
+
+**Configuré** : Seules les requêtes dont l'hôte correspond à une entrée de la liste blanche sont autorisées ; les requêtes non correspondantes génèrent une erreur. Les versions futures pourront durcir progressivement le comportement par défaut. Si votre déploiement doit accéder à des services internes, configurez une liste blanche explicite à l'avance.
 
 Formats pris en charge :
 
@@ -365,8 +367,16 @@ Formats pris en charge :
 | --- | --- | --- |
 | IPv4 exacte | `1.2.3.4` | Uniquement cette IP |
 | IPv4 CIDR | `10.0.0.0/8` | Toutes les IPs du sous-réseau |
+| IPv6 exacte | `::1` | Uniquement cette IP |
+| IPv6 CIDR | `fc00::/7` | Toutes les IPs du sous-réseau |
 | Nom d'hôte exact | `api.example.com` | Uniquement ce nom d'hôte |
 | Sous-domaine générique | `*.example.com` | Un niveau de sous-domaine, ex. `foo.example.com` ; **pas** `example.com` ni `a.b.example.com` |
+
+:::warning Note
+
+Si un domaine est configuré dans la liste blanche, la vérification utilise le host de l'URL de la requête. Autrement dit, après avoir configuré `internal.example.com`, cette cible est considérée comme explicitement autorisée même si le domaine se résout vers `127.0.0.1` ou une adresse privée.
+
+:::
 
 ## Variables d'environnement expérimentales
 

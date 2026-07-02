@@ -57,6 +57,33 @@ API_BASE_PATH=/api/
 
 ## API_BASE_URL
 
+## SERVER_REQUEST_WHITELIST
+
+Lista de permissões de destinos para requisições HTTP de saída iniciadas pelo servidor. Aplica-se a requisições do lado do servidor em recursos como nós de requisição HTTP em workflows, requisições personalizadas e serviços AI.
+
+Quando essa variável não está configurada, o NocoBase continua permitindo requisições `http` / `https` para manter a compatibilidade com implantações existentes. No entanto, se o destino for um endereço loopback, privado, link-local ou metadata, ou se um domínio resolver para um desses endereços, o servidor registra um warning nos logs. Versões futuras podem tornar o comportamento padrão mais restrito. Se sua implantação precisar acessar serviços internos, configure uma lista de permissões explícita com antecedência.
+
+Entradas suportadas:
+
+- Endereço IPv4 exato, como `192.168.1.10`
+- Intervalo CIDR IPv4, como `10.0.0.0/8`
+- Endereço IPv6 exato, como `::1`
+- Intervalo CIDR IPv6, como `fc00::/7`
+- Domínio exato, como `api.example.com`
+- Subdomínio curinga de um único nível, como `*.example.com`
+
+Use `,` para separar vários destinos:
+
+```bash
+SERVER_REQUEST_WHITELIST=api.example.com,*.trusted.com,10.0.0.0/8,127.0.0.1
+```
+
+:::warning Note
+
+Se um domínio for configurado na lista de permissões, a verificação usa o host na URL da requisição. Em outras palavras, depois que `internal.example.com` for configurado, ele será tratado como explicitamente permitido mesmo que o domínio resolva para `127.0.0.1` ou para um endereço privado.
+
+:::
+
 ## CLUSTER_MODE
 
 > `v1.6.0+`

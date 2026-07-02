@@ -31,8 +31,14 @@
 
 import ipaddr from 'ipaddr.js';
 import axios, { AxiosRequestConfig, AxiosResponse } from 'axios';
+import type { LookupAddress } from 'dns';
+import { lookup } from 'dns/promises';
 
 const ALLOWED_PROTOCOLS = new Set(['http:', 'https:']);
+const SSRF_RISK_IP_RANGES = new Set(['loopback', 'private', 'linkLocal', 'uniqueLocal', 'unspecified']);
+const SSRF_RISK_HOSTNAMES = new Set(['localhost', 'metadata.google.internal']);
+const DNS_LOOKUP_WARNING_TIMEOUT = 1000;
+const warnedSsrfRiskTargets = new Set<string>();
 
 /**
  * Match a hostname (already confirmed to be a valid IP address) against a
@@ -92,6 +98,97 @@ function matchesEntry(hostname: string, entry: string): boolean {
   return ipaddr.isValid(hostname) ? matchesIpEntry(hostname, e) : matchesDomainPattern(hostname, e);
 }
 
+function getNormalizedHost(url: URL): string {
+  const { hostname } = url;
+  return hostname.startsWith('[') && hostname.endsWith(']') ? hostname.slice(1, -1) : hostname;
+}
+
+function getSsrfRiskReason(hostname: string): string | undefined {
+  const host = hostname.toLowerCase();
+  if (SSRF_RISK_HOSTNAMES.has(host)) {
+    return 'known local or metadata hostname';
+  }
+
+  if (!ipaddr.isValid(host)) {
+    return;
+  }
+
+  try {
+    let addr: ipaddr.IPv4 | ipaddr.IPv6 = ipaddr.parse(host);
+    if (addr.kind() === 'ipv6' && (addr as ipaddr.IPv6).isIPv4MappedAddress()) {
+      addr = (addr as ipaddr.IPv6).toIPv4Address();
+    }
+
+    const range = addr.range();
+    return SSRF_RISK_IP_RANGES.has(range) ? range : undefined;
+  } catch {
+    return;
+  }
+}
+
+function warnSsrfRiskTarget(host: string, reason: string, key = `${host}:${reason}`): void {
+  if (warnedSsrfRiskTargets.has(key)) return;
+  warnedSsrfRiskTargets.add(key);
+
+  console.warn(
+    [
+      `Outbound request to "${host}" targets a potential SSRF risk target (${reason}) and is allowed because SERVER_REQUEST_WHITELIST is not configured.`,
+      'Configure SERVER_REQUEST_WHITELIST to explicitly allow required outbound targets.',
+      'A future version may block private, loopback, link-local, and metadata targets by default.',
+    ].join(' '),
+  );
+}
+
+function warnIfSsrfRiskTarget(host: string): void {
+  const reason = getSsrfRiskReason(host);
+  if (!reason) return;
+
+  warnSsrfRiskTarget(host, reason);
+}
+
+function hasServerRequestWhitelist(): boolean {
+  const whitelist = process.env.SERVER_REQUEST_WHITELIST;
+  return Boolean(whitelist && whitelist.trim());
+}
+
+async function resolveHostAddresses(host: string): Promise<LookupAddress[]> {
+  try {
+    return await Promise.race([
+      lookup(host, { all: true, verbatim: true }),
+      new Promise<LookupAddress[]>((resolve) => {
+        setTimeout(() => resolve([]), DNS_LOOKUP_WARNING_TIMEOUT);
+      }),
+    ]);
+  } catch {
+    return [];
+  }
+}
+
+async function warnIfResolvedSsrfRiskTarget(url?: string): Promise<void> {
+  if (!url || !url.includes('://') || hasServerRequestWhitelist()) return;
+
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    return;
+  }
+
+  if (!ALLOWED_PROTOCOLS.has(parsed.protocol)) return;
+
+  const host = getNormalizedHost(parsed);
+  if (getSsrfRiskReason(host) || ipaddr.isValid(host)) return;
+
+  const addresses = await resolveHostAddresses(host);
+  for (const address of addresses) {
+    const reason = getSsrfRiskReason(address.address);
+    if (reason) {
+      warnSsrfRiskTarget(host, `resolves to ${address.address} (${reason})`, `${host}:resolved-risk`);
+      return;
+    }
+  }
+}
+
 /**
  * Validate a URL against the SERVER_REQUEST_WHITELIST environment variable.
  *
@@ -124,18 +221,18 @@ export function checkUrlAgainstWhitelist(url?: string): void {
     );
   }
 
+  const host = getNormalizedHost(parsed);
   const whitelist = process.env.SERVER_REQUEST_WHITELIST;
-  if (!whitelist || !whitelist.trim()) return;
+  if (!whitelist || !whitelist.trim()) {
+    warnIfSsrfRiskTarget(host);
+    return;
+  }
 
   const entries = whitelist
     .split(',')
     .map((e) => e.trim())
     .filter(Boolean);
   if (entries.length === 0) return;
-
-  // WHATWG URL serialises IPv6 addresses with brackets: "[::1]" → "::1"
-  const { hostname } = parsed;
-  const host = hostname.startsWith('[') && hostname.endsWith(']') ? hostname.slice(1, -1) : hostname;
 
   for (const entry of entries) {
     if (matchesEntry(host, entry)) return;
@@ -157,5 +254,6 @@ export async function serverRequest<T = any>(config: AxiosRequestConfig): Promis
   // Check config.url (before any baseURL combination) so that relative paths
   // pointing to the same server are not subject to the whitelist.
   checkUrlAgainstWhitelist(config.url);
+  await warnIfResolvedSsrfRiskTarget(config.url);
   return axios.request<T>(config);
 }
