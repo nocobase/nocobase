@@ -33,7 +33,7 @@ import * as reactI18next from 'react-i18next';
 import * as ReactRouter from 'react-router';
 import * as ReactRouterDom from 'react-router-dom';
 import jsxRuntime from 'react/jsx-runtime';
-import * as jsxDevRuntime from 'react/jsx-dev-runtime';
+import jsxDevRuntime from 'react/jsx-dev-runtime';
 import * as nocobaseClientV2 from '../index';
 import * as dndKitCore from '@dnd-kit/core';
 import * as dndKitSortable from '@dnd-kit/sortable';
