@@ -78,12 +78,14 @@ describe('TerminalStreamClient', () => {
   it('subscribes on open and consumes ordered terminal data', () => {
     const fakeWebSocket = new FakeWebSocket();
     const states: unknown[] = [];
+    const onChunk = vi.fn();
     const client = new TerminalStreamClient({
       runId: 'run-id-1',
       token: 'browser-token',
       baseUrl: 'http://127.0.0.1:23000',
       createWebSocket: () => fakeWebSocket,
       onStateChange: (state) => states.push(state),
+      onChunk,
     });
 
     client.connect();
@@ -121,12 +123,59 @@ describe('TerminalStreamClient', () => {
       currentOffset: 6,
       previewText: 'hello\n',
     });
+    expect(onChunk).toHaveBeenCalledWith({
+      frameType: 'terminal.data',
+      offsetStart: 0,
+      offsetEnd: 6,
+      text: 'hello\n',
+    });
     expect(states).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ connectionState: 'connecting' }),
         expect.objectContaining({ connectionState: 'live' }),
       ]),
     );
+  });
+
+  it('only emits the unconsumed tail from overlapping snapshot frames', () => {
+    const fakeWebSocket = new FakeWebSocket();
+    const onChunk = vi.fn();
+    const prefix = '你好\n';
+    const tail = 'world\n';
+    const fullOutput = `${prefix}${tail}`;
+    const client = new TerminalStreamClient({
+      runId: 'run-id-1',
+      token: 'browser-token',
+      lastOffset: new TextEncoder().encode(prefix).byteLength,
+      createWebSocket: () => fakeWebSocket,
+      onChunk,
+    });
+
+    client.connect();
+    fakeWebSocket.dispatch('message', {
+      data: JSON.stringify({
+        type: 'terminal.snapshot',
+        protocol: TERMINAL_PROTOCOL,
+        runId: 'run-id-1',
+        sessionName: 'session-1',
+        offsetStart: 0,
+        offsetEnd: new TextEncoder().encode(fullOutput).byteLength,
+        payloadEncoding: TERMINAL_PAYLOAD_ENCODING,
+        payload: encodeTerminalPayload(fullOutput),
+      }),
+    });
+
+    expect(client.getState()).toMatchObject({
+      connectionState: 'live',
+      currentOffset: new TextEncoder().encode(fullOutput).byteLength,
+      previewText: tail,
+    });
+    expect(onChunk).toHaveBeenCalledWith({
+      frameType: 'terminal.snapshot',
+      offsetStart: new TextEncoder().encode(prefix).byteLength,
+      offsetEnd: new TextEncoder().encode(fullOutput).byteLength,
+      text: tail,
+    });
   });
 
   it('ignores stale chunks and reconnects from the current offset after a local gap', async () => {

@@ -25,6 +25,13 @@ export interface TerminalStreamClientState {
   lastErrorCode?: TerminalErrorCode;
 }
 
+export interface TerminalStreamChunk {
+  frameType: 'terminal.data' | 'terminal.snapshot';
+  offsetStart: number;
+  offsetEnd: number;
+  text: string;
+}
+
 export interface TerminalStreamClientOptions {
   runId: string;
   token: string;
@@ -36,6 +43,7 @@ export interface TerminalStreamClientOptions {
   maxReconnectAttempts?: number;
   createWebSocket?: (url: string) => TerminalStreamWebSocket;
   onStateChange?: (state: TerminalStreamClientState) => void;
+  onChunk?: (chunk: TerminalStreamChunk) => void;
 }
 
 export interface TerminalStreamWebSocket {
@@ -53,6 +61,7 @@ export interface TerminalStreamWebSocketEvent {
 const DEFAULT_PREVIEW_LIMIT = 4000;
 const DEFAULT_RECONNECT_DELAY_MS = 1000;
 const DEFAULT_MAX_RECONNECT_ATTEMPTS = 3;
+const textEncoder = new TextEncoder();
 
 function getDefaultBaseUrl() {
   if (typeof window === 'undefined') {
@@ -76,6 +85,26 @@ export function buildTerminalStreamUrl(options: {
     url.searchParams.set('role', options.role);
   }
   return url.toString();
+}
+
+function sliceDecodedPayloadByByteOffset(text: string, byteOffset: number) {
+  if (byteOffset <= 0) {
+    return text;
+  }
+  let consumedBytes = 0;
+  let charStartIndex = 0;
+  for (const char of text) {
+    const nextConsumedBytes = consumedBytes + textEncoder.encode(char).byteLength;
+    if (nextConsumedBytes > byteOffset) {
+      return text.slice(charStartIndex);
+    }
+    if (nextConsumedBytes === byteOffset) {
+      return text.slice(charStartIndex + char.length);
+    }
+    consumedBytes = nextConsumedBytes;
+    charStartIndex += char.length;
+  }
+  return '';
 }
 
 export class TerminalStreamClient {
@@ -233,7 +262,16 @@ export class TerminalStreamClient {
         this.reconnectForSnapshotCompensation('TERMINAL_OFFSET_GAP');
         return;
       }
-      const nextText = `${this.state.previewText}${decodeTerminalPayload(frame.payload)}`;
+      const currentOffset = this.state.currentOffset;
+      const decodedText = decodeTerminalPayload(frame.payload);
+      const text = sliceDecodedPayloadByByteOffset(decodedText, currentOffset - frame.offsetStart);
+      const nextText = `${this.state.previewText}${text}`;
+      this.options.onChunk?.({
+        frameType: frame.type,
+        offsetStart: Math.max(frame.offsetStart, currentOffset),
+        offsetEnd: frame.offsetEnd,
+        text,
+      });
       this.updateState({
         connectionState: 'live',
         currentOffset: frame.offsetEnd,

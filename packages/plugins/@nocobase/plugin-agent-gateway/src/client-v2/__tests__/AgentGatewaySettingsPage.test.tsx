@@ -13,11 +13,17 @@ import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testi
 import { App as AntdApp } from 'antd';
 import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+  TERMINAL_PAYLOAD_ENCODING,
+  TERMINAL_PROTOCOL,
+  encodeTerminalPayload,
+} from '../../shared/terminalStreamProtocol';
 import AgentGatewayDispatchBindingsPage from '../pages/AgentGatewayDispatchBindingsPage';
 import AgentGatewayPromptTemplatesPage from '../pages/AgentGatewayPromptTemplatesPage';
 import AgentGatewayRunsPage from '../pages/AgentGatewayRunsPage';
 import AgentGatewaySettingsPage from '../pages/AgentGatewaySettingsPage';
 import PluginAgentGatewayClientV2 from '../plugin';
+import { TerminalStreamWebSocketEvent } from '../utils/terminalStreamClient';
 
 interface FlowContextWithDefineProperty {
   defineProperty(name: string, descriptor: { value: unknown }): void;
@@ -30,14 +36,65 @@ interface RequestConfig {
   params?: Record<string, unknown>;
 }
 
+interface ApiContextOverrides {
+  auth?: {
+    token?: string;
+    authenticator?: string;
+    getAuthenticator?: () => string;
+    role?: string;
+  };
+}
+
+class FakeBrowserWebSocket {
+  static instances: FakeBrowserWebSocket[] = [];
+
+  readyState = 1;
+  sent: string[] = [];
+  private readonly listeners = new Map<string, Set<(event: TerminalStreamWebSocketEvent) => void>>();
+
+  constructor(readonly url: string) {
+    FakeBrowserWebSocket.instances.push(this);
+  }
+
+  send(data: string) {
+    this.sent.push(data);
+  }
+
+  close() {
+    this.readyState = 3;
+    this.dispatch('close', {});
+  }
+
+  addEventListener(type: string, listener: (event: TerminalStreamWebSocketEvent) => void) {
+    const listeners = this.listeners.get(type) || new Set<(event: TerminalStreamWebSocketEvent) => void>();
+    listeners.add(listener);
+    this.listeners.set(type, listeners);
+  }
+
+  removeEventListener(type: string, listener: (event: TerminalStreamWebSocketEvent) => void) {
+    this.listeners.get(type)?.delete(listener);
+  }
+
+  dispatch(type: string, event: TerminalStreamWebSocketEvent = {}) {
+    for (const listener of this.listeners.get(type) || []) {
+      listener(event);
+    }
+  }
+}
+
 function setFlowContextValue(app: Application, key: string, value: unknown) {
   (app.flowEngine.context as unknown as FlowContextWithDefineProperty).defineProperty(key, { value });
 }
 
-function renderAgentGatewayPage(Page: React.ComponentType, request: (config: RequestConfig) => Promise<unknown>) {
+function renderAgentGatewayPage(
+  Page: React.ComponentType,
+  request: (config: RequestConfig) => Promise<unknown>,
+  apiOverrides: ApiContextOverrides = {},
+) {
   const app = new Application();
   setFlowContextValue(app, 'api', {
     request,
+    ...apiOverrides,
   });
   setFlowContextValue(app, 'message', {
     success: vi.fn(),
@@ -59,6 +116,7 @@ function renderSettingsPage(request: (config: RequestConfig) => Promise<unknown>
 
 describe('PluginAgentGatewayClientV2', () => {
   beforeEach(() => {
+    window.history.pushState({}, '', '/admin/settings/agent-gateway/runs');
     Object.defineProperty(globalThis.window, 'matchMedia', {
       configurable: true,
       value: vi.fn().mockImplementation((query: string) => ({
@@ -78,6 +136,8 @@ describe('PluginAgentGatewayClientV2', () => {
     cleanup();
     vi.useRealTimers();
     vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+    FakeBrowserWebSocket.instances = [];
   });
 
   it('registers the Agent Gateway settings page', async () => {
@@ -596,6 +656,7 @@ describe('PluginAgentGatewayClientV2', () => {
 
     const detailButtons = await screen.findAllByLabelText('View run details');
     fireEvent.click(detailButtons[0]);
+    expect(new URLSearchParams(window.location.search).get('runId')).toBe('run-id-1');
 
     expect(await screen.findByText('Run summary')).toBeTruthy();
     expect(await screen.findAllByText('codex / thread-id-1')).toBeTruthy();
@@ -614,6 +675,202 @@ describe('PluginAgentGatewayClientV2', () => {
     expect(await screen.findByText('/api/agent-gateway/runs/run-id-1/events:append')).toBeTruthy();
     expect(screen.queryByText(/must-not-render/)).toBeNull();
     expect(screen.queryByText(/https:\/\/daemon\.example\/artifact/)).toBeNull();
+    fireEvent.click(screen.getByLabelText('Close'));
+    await waitFor(() => {
+      expect(new URLSearchParams(window.location.search).get('runId')).toBeNull();
+    });
+  });
+
+  it('opens run details from the runId query and preserves unrelated query parameters on close', async () => {
+    window.history.pushState({}, '', '/admin/settings/agent-gateway/runs?terminalStreamSmoke=1&runId=run-id-1');
+    const request = vi.fn(async (config: RequestConfig) => {
+      if (config.url === 'agent-gateway/runs:list') {
+        return {
+          data: {
+            data: [
+              {
+                id: 'run-id-1',
+                runCode: 'run-build-1',
+                status: 'running',
+              },
+            ],
+          },
+        };
+      }
+
+      if (config.url === 'agent-gateway/runs:get/run-id-1') {
+        return {
+          data: {
+            data: {
+              id: 'run-id-1',
+              runCode: 'run-build-1',
+              status: 'running',
+              requestedAt: '2026-06-30T10:00:00.000Z',
+              startedAt: '2026-06-30T10:01:00.000Z',
+            },
+          },
+        };
+      }
+
+      if (config.url === 'agent-gateway/runs/run-id-1/terminal:snapshot') {
+        return {
+          data: {
+            data: {
+              backend: 'tmux',
+              sessionName: 'ag-run-run-id-1',
+              terminalStatus: 'active',
+              runStatus: 'running',
+              available: true,
+              output: 'opened from query',
+              capturedAt: '2026-06-30T10:01:02.000Z',
+              inputEnabled: false,
+            },
+          },
+        };
+      }
+
+      return { data: { data: [] } };
+    });
+
+    renderAgentGatewayPage(AgentGatewayRunsPage, request);
+
+    expect(await screen.findByText('Run summary')).toBeTruthy();
+    expect(await screen.findByText(/opened from query/)).toBeTruthy();
+    expect(request).toHaveBeenCalledWith(
+      expect.objectContaining({
+        url: 'agent-gateway/runs:get/run-id-1',
+        method: 'get',
+      }),
+    );
+    expect(new URLSearchParams(window.location.search).get('runId')).toBe('run-id-1');
+
+    fireEvent.click(screen.getByLabelText('Close'));
+
+    await waitFor(() => {
+      const params = new URLSearchParams(window.location.search);
+      expect(params.get('runId')).toBeNull();
+      expect(params.get('terminalStreamSmoke')).toBe('1');
+    });
+  });
+
+  it('falls back to the latest terminal snapshot after a live stream error', async () => {
+    vi.stubGlobal('WebSocket', FakeBrowserWebSocket);
+    let terminalSnapshotCallCount = 0;
+    const request = vi.fn(async (config: RequestConfig) => {
+      if (config.url === 'agent-gateway/runs:list') {
+        return {
+          data: {
+            data: [
+              {
+                id: 'run-id-1',
+                runCode: 'run-build-1',
+                status: 'running',
+              },
+            ],
+          },
+        };
+      }
+
+      if (config.url === 'agent-gateway/runs:get/run-id-1') {
+        return {
+          data: {
+            data: {
+              id: 'run-id-1',
+              runCode: 'run-build-1',
+              status: 'running',
+              requestedAt: '2026-06-30T10:00:00.000Z',
+              startedAt: '2026-06-30T10:01:00.000Z',
+            },
+          },
+        };
+      }
+
+      if (config.url === 'agent-gateway/runs/run-id-1/terminal:snapshot') {
+        terminalSnapshotCallCount += 1;
+        return {
+          data: {
+            data: {
+              backend: 'tmux',
+              sessionName: 'ag-run-run-id-1',
+              terminalStatus: 'active',
+              runStatus: 'running',
+              available: true,
+              output: terminalSnapshotCallCount === 1 ? 'snapshot before stream' : 'snapshot after stream failure',
+              capturedAt: terminalSnapshotCallCount === 1 ? '2026-06-30T10:01:02.000Z' : '2026-06-30T10:01:04.000Z',
+              inputEnabled: false,
+            },
+          },
+        };
+      }
+
+      return { data: { data: [] } };
+    });
+
+    renderAgentGatewayPage(AgentGatewayRunsPage, request, {
+      auth: {
+        token: 'browser-token',
+        getAuthenticator: () => 'basic',
+        role: 'root',
+      },
+    });
+
+    expect(await screen.findByText('run-build-1')).toBeTruthy();
+    const detailButtons = await screen.findAllByLabelText('View run details');
+    fireEvent.click(detailButtons[0]);
+    expect(await screen.findByText('snapshot before stream')).toBeTruthy();
+    await waitFor(() => {
+      expect(FakeBrowserWebSocket.instances).toHaveLength(1);
+    });
+
+    const webSocket = FakeBrowserWebSocket.instances[0];
+    act(() => {
+      webSocket.dispatch('open');
+    });
+    const subscribeFrame = JSON.parse(webSocket.sent[0]) as Record<string, unknown>;
+    act(() => {
+      webSocket.dispatch('message', {
+        data: JSON.stringify({
+          type: 'ack',
+          protocol: TERMINAL_PROTOCOL,
+          requestId: subscribeFrame.requestId,
+        }),
+      });
+      webSocket.dispatch('message', {
+        data: JSON.stringify({
+          type: 'terminal.data',
+          protocol: TERMINAL_PROTOCOL,
+          runId: 'run-id-1',
+          sessionName: 'ag-run-run-id-1',
+          offsetStart: 0,
+          offsetEnd: 12,
+          payloadEncoding: TERMINAL_PAYLOAD_ENCODING,
+          payload: encodeTerminalPayload('stream first\n'),
+        }),
+      });
+    });
+
+    expect(await screen.findByText('stream first')).toBeTruthy();
+
+    act(() => {
+      webSocket.dispatch('message', {
+        data: JSON.stringify({
+          type: 'error',
+          protocol: TERMINAL_PROTOCOL,
+          requestId: subscribeFrame.requestId,
+          code: 'TERMINAL_DAEMON_UNAVAILABLE',
+          message: 'offline',
+        }),
+      });
+    });
+    expect((await screen.findByTestId('agent-gateway-xterm-stream-error')).textContent).toBe(
+      'TERMINAL_DAEMON_UNAVAILABLE',
+    );
+    fireEvent.click(screen.getByLabelText('Refresh terminal'));
+    await waitFor(() => {
+      expect(terminalSnapshotCallCount).toBeGreaterThan(1);
+    });
+
+    expect(await screen.findByText('snapshot after stream failure')).toBeTruthy();
   });
 
   it('keeps run details visible when optional observation streams are forbidden', async () => {

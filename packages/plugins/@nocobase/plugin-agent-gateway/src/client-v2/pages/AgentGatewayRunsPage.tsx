@@ -39,7 +39,9 @@ import {
 import type { ColumnsType } from 'antd/es/table';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { AgentTimeline, AgentTimelineEventRecord } from '../components/AgentTimeline';
+import { ReadonlyXtermOutput } from '../components/ReadonlyXtermOutput';
 import { TerminalStreamSmokePanel, isTerminalStreamSmokeEnabled } from '../components/TerminalStreamSmokePanel';
+import { useTerminalStream, UseTerminalStreamState } from '../hooks/useTerminalStream';
 import { useT } from '../locale';
 import {
   AgentGatewayContext,
@@ -192,21 +194,7 @@ const RUN_STATUS_OPTIONS = [
 
 const CANCELABLE_STATUSES = new Set(['queued', 'claimed', 'syncing_skills', 'running']);
 const LEGACY_TIMELINE_FALLBACK_STATUSES = new Set(['succeeded']);
-
-const terminalOutputStyle: React.CSSProperties = {
-  minHeight: 420,
-  maxHeight: 520,
-  overflow: 'auto',
-  margin: 0,
-  padding: 12,
-  borderRadius: 6,
-  background: '#111827',
-  color: '#d1d5db',
-  fontFamily: 'SFMono-Regular, Consolas, Liberation Mono, Menlo, monospace',
-  fontSize: 12,
-  lineHeight: 1.55,
-  whiteSpace: 'pre-wrap',
-};
+const RUN_DETAIL_QUERY_PARAM = 'runId';
 
 function isCancelableRun(run: RunRecord) {
   return CANCELABLE_STATUSES.has(run.status);
@@ -261,6 +249,41 @@ function EmptyInline({ description }: { description: string }) {
   return <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={description} />;
 }
 
+function getTerminalStreamAuth(ctx: AgentGatewayContext) {
+  const auth = ctx.api.auth;
+  return {
+    token: auth?.token || '',
+    authenticator: auth?.getAuthenticator?.() || auth?.authenticator || 'basic',
+    role: auth?.role,
+  };
+}
+
+function getRunIdFromLocationSearch() {
+  if (typeof window === 'undefined') {
+    return undefined;
+  }
+  return new URLSearchParams(window.location.search).get(RUN_DETAIL_QUERY_PARAM) || undefined;
+}
+
+function replaceRunIdInLocationSearch(runId?: string) {
+  if (typeof window === 'undefined') {
+    return;
+  }
+  const params = new URLSearchParams(window.location.search);
+  if (runId) {
+    params.set(RUN_DETAIL_QUERY_PARAM, runId);
+  } else {
+    params.delete(RUN_DETAIL_QUERY_PARAM);
+  }
+  const search = params.toString();
+  const nextUrl = `${window.location.pathname}${search ? `?${search}` : ''}${window.location.hash}`;
+  window.history.replaceState(window.history.state, '', nextUrl);
+}
+
+function useInitialRunDetailQuery() {
+  return useState(() => getRunIdFromLocationSearch())[0];
+}
+
 function RunSessionSummary({ run, t }: { run: RunRecord; t: TFunction }) {
   const providerSummary = [run.agentSessionProvider, run.agentSessionProviderId].filter(Boolean).join(' / ');
   if (providerSummary || run.agentSessionId) {
@@ -299,8 +322,10 @@ async function getOptionalDetails<T>(options: {
 }
 
 function TerminalPanel({
+  runId,
   t,
   snapshot,
+  stream,
   loading,
   interrupting,
   terminating,
@@ -308,8 +333,10 @@ function TerminalPanel({
   onInterrupt,
   onTerminate,
 }: {
+  runId: string;
   t: TFunction;
   snapshot: TerminalSnapshot | null | undefined;
+  stream: UseTerminalStreamState;
   loading: boolean;
   interrupting: boolean;
   terminating: boolean;
@@ -320,6 +347,18 @@ function TerminalPanel({
   const output = snapshot?.output || '';
   const terminalAvailable = Boolean(snapshot?.available);
   const inputEnabled = Boolean(snapshot?.inputEnabled);
+  const streamHasOutput = stream.hasStreamOutput || stream.currentOffset > 0;
+  const snapshotHasOutput = Boolean(output);
+  const streamUnavailable = stream.connectionState === 'closed' || stream.connectionState === 'error';
+  const useSnapshotFallback = !streamHasOutput || (streamUnavailable && snapshotHasOutput);
+  const useStreamOutput = streamHasOutput && !useSnapshotFallback;
+  const xtermResetKey = [
+    runId,
+    useStreamOutput ? 'stream' : 'snapshot',
+    useStreamOutput ? 'live' : snapshot?.capturedAt || 'empty',
+    snapshot?.sessionName || '',
+  ].join(':');
+  const fallbackOutput = output || t('No terminal output yet');
 
   return (
     <Space direction="vertical" size={12} style={{ width: '100%' }}>
@@ -327,6 +366,16 @@ function TerminalPanel({
         <Space wrap>
           <Typography.Text type="secondary">{snapshot?.sessionName || '-'}</Typography.Text>
           {snapshot?.terminalStatus ? statusTag(snapshot.terminalStatus) : null}
+          <Typography.Text type="secondary">{t('Stream')}</Typography.Text>
+          {statusTag(stream.connectionState)}
+          <Typography.Text data-testid="agent-gateway-xterm-stream-offset" type="secondary">
+            {t('Offset')}: {stream.currentOffset}
+          </Typography.Text>
+          {stream.lastErrorCode ? (
+            <Typography.Text data-testid="agent-gateway-xterm-stream-error" type="danger">
+              {stream.lastErrorCode}
+            </Typography.Text>
+          ) : null}
           <Typography.Text type="secondary">{formatDateTime(snapshot?.capturedAt)}</Typography.Text>
         </Space>
         <Space>
@@ -361,9 +410,13 @@ function TerminalPanel({
       </Space>
 
       {!terminalAvailable ? <Alert type="info" showIcon message={t('No terminal session yet')} /> : null}
-      <pre aria-label={t('Terminal output')} style={terminalOutputStyle}>
-        {output || t('No terminal output yet')}
-      </pre>
+      <ReadonlyXtermOutput
+        ariaLabel={t('Readonly live terminal output')}
+        chunks={useStreamOutput ? stream.chunks : []}
+        emptyText={t('No terminal output yet')}
+        initialOutput={useStreamOutput ? '' : fallbackOutput}
+        resetKey={xtermResetKey}
+      />
     </Space>
   );
 }
@@ -530,10 +583,11 @@ function ArtifactsPanel({
 export default function AgentGatewayRunsPage() {
   const t = useT();
   const ctx = useFlowContext() as unknown as AgentGatewayContext;
+  const initialRunId = useInitialRunDetailQuery();
   const [filterForm] = Form.useForm<RunFilterFormValues>();
   const [runFilters, setRunFilters] = useState<Record<string, unknown>>({});
-  const [detailOpen, setDetailOpen] = useState(false);
-  const [selectedRunId, setSelectedRunId] = useState<string>();
+  const [detailOpen, setDetailOpen] = useState(Boolean(initialRunId));
+  const [selectedRunId, setSelectedRunId] = useState<string | undefined>(initialRunId);
   const [conversationEventsState, setConversationEventsState] = useState<ConversationEventsState | null>(null);
   const [conversationEventsWarning, setConversationEventsWarning] = useState<string>();
 
@@ -794,6 +848,7 @@ export default function AgentGatewayRunsPage() {
     setConversationEventsWarning(undefined);
     setSelectedRunId(run.id);
     setDetailOpen(true);
+    replaceRunIdInLocationSearch(run.id);
   }, []);
 
   const closeRunDetails = useCallback(() => {
@@ -801,6 +856,7 @@ export default function AgentGatewayRunsPage() {
     setSelectedRunId(undefined);
     setConversationEventsState(null);
     setConversationEventsWarning(undefined);
+    replaceRunIdInLocationSearch();
   }, []);
 
   const submitFilters = useCallback(
@@ -916,6 +972,14 @@ export default function AgentGatewayRunsPage() {
     Boolean(timelineWarning),
   );
   const showTerminalStreamSmoke = isTerminalStreamSmokeEnabled();
+  const terminalStreamAuth = useMemo(() => getTerminalStreamAuth(ctx), [ctx]);
+  const terminalStream = useTerminalStream({
+    runId: selectedRunId,
+    enabled: detailOpen && Boolean(selectedRunId),
+    token: terminalStreamAuth.token,
+    authenticator: terminalStreamAuth.authenticator,
+    role: terminalStreamAuth.role,
+  });
 
   return (
     <section aria-label={t('Runs')}>
@@ -1043,8 +1107,10 @@ export default function AgentGatewayRunsPage() {
                   label: t('Live CLI Output'),
                   children: (
                     <TerminalPanel
+                      runId={runDetailsRequest.data.run.id}
                       t={t}
                       snapshot={terminalSnapshot}
+                      stream={terminalStream}
                       loading={terminalSnapshotRequest.loading}
                       interrupting={interruptTerminalRequest.loading}
                       terminating={terminateTerminalRequest.loading}

@@ -1,0 +1,208 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import { act, cleanup, renderHook, waitFor } from '@testing-library/react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+
+import {
+  TERMINAL_PAYLOAD_ENCODING,
+  TERMINAL_PROTOCOL,
+  encodeTerminalPayload,
+} from '../../shared/terminalStreamProtocol';
+import { TerminalStreamWebSocket, TerminalStreamWebSocketEvent } from '../utils/terminalStreamClient';
+import { TERMINAL_STREAM_CHUNK_LIMIT, useTerminalStream } from '../hooks/useTerminalStream';
+
+class FakeWebSocket implements TerminalStreamWebSocket {
+  static instances: FakeWebSocket[] = [];
+
+  readyState = 1;
+  sent: string[] = [];
+  private readonly listeners = new Map<string, Set<(event: TerminalStreamWebSocketEvent) => void>>();
+
+  constructor() {
+    FakeWebSocket.instances.push(this);
+  }
+
+  send(data: string) {
+    this.sent.push(data);
+  }
+
+  close() {
+    this.readyState = 3;
+    this.dispatch('close', {});
+  }
+
+  addEventListener(type: string, listener: (event: TerminalStreamWebSocketEvent) => void) {
+    const listeners = this.listeners.get(type) || new Set<(event: TerminalStreamWebSocketEvent) => void>();
+    listeners.add(listener);
+    this.listeners.set(type, listeners);
+  }
+
+  removeEventListener(type: string, listener: (event: TerminalStreamWebSocketEvent) => void) {
+    this.listeners.get(type)?.delete(listener);
+  }
+
+  dispatch(type: string, event: TerminalStreamWebSocketEvent = {}) {
+    for (const listener of this.listeners.get(type) || []) {
+      listener(event);
+    }
+  }
+}
+
+describe('useTerminalStream', () => {
+  afterEach(() => {
+    cleanup();
+    FakeWebSocket.instances = [];
+    vi.useRealTimers();
+  });
+
+  it('tracks stream state and decoded chunks', async () => {
+    const createWebSocket = () => new FakeWebSocket();
+    const { result } = renderHook(() =>
+      useTerminalStream({
+        runId: 'run-id-1',
+        token: 'browser-token',
+        createWebSocket,
+      }),
+    );
+    const webSocket = FakeWebSocket.instances[0];
+
+    act(() => {
+      webSocket.dispatch('open');
+    });
+    const subscribeFrame = JSON.parse(webSocket.sent[0]) as Record<string, unknown>;
+    act(() => {
+      webSocket.dispatch('message', {
+        data: JSON.stringify({
+          type: 'ack',
+          protocol: TERMINAL_PROTOCOL,
+          requestId: subscribeFrame.requestId,
+        }),
+      });
+      webSocket.dispatch('message', {
+        data: JSON.stringify({
+          type: 'terminal.data',
+          protocol: TERMINAL_PROTOCOL,
+          runId: 'run-id-1',
+          sessionName: 'session-1',
+          offsetStart: 0,
+          offsetEnd: 12,
+          payloadEncoding: TERMINAL_PAYLOAD_ENCODING,
+          payload: encodeTerminalPayload('hello world\n'),
+        }),
+      });
+    });
+
+    await waitFor(() => {
+      expect(result.current.connectionState).toBe('live');
+      expect(result.current.currentOffset).toBe(12);
+      expect(result.current.chunks).toEqual([
+        expect.objectContaining({
+          offsetStart: 0,
+          offsetEnd: 12,
+          sequence: 1,
+          text: 'hello world\n',
+        }),
+      ]);
+    });
+  });
+
+  it('stays closed when disabled or missing auth', () => {
+    const { result } = renderHook(() =>
+      useTerminalStream({
+        runId: 'run-id-1',
+        enabled: true,
+      }),
+    );
+
+    expect(result.current.connectionState).toBe('closed');
+    expect(FakeWebSocket.instances).toHaveLength(0);
+  });
+
+  it('caps retained chunks while preserving monotonically increasing sequence numbers', async () => {
+    const createWebSocket = () => new FakeWebSocket();
+    const { result } = renderHook(() =>
+      useTerminalStream({
+        runId: 'run-id-1',
+        token: 'browser-token',
+        createWebSocket,
+      }),
+    );
+    const webSocket = FakeWebSocket.instances[0];
+
+    act(() => {
+      for (let index = 0; index < TERMINAL_STREAM_CHUNK_LIMIT + 2; index += 1) {
+        const text = `${index}\n`;
+        webSocket.dispatch('message', {
+          data: JSON.stringify({
+            type: 'terminal.data',
+            protocol: TERMINAL_PROTOCOL,
+            runId: 'run-id-1',
+            sessionName: 'session-1',
+            offsetStart: index,
+            offsetEnd: index + 1,
+            payloadEncoding: TERMINAL_PAYLOAD_ENCODING,
+            payload: encodeTerminalPayload(text),
+          }),
+        });
+      }
+    });
+
+    await waitFor(() => {
+      expect(result.current.chunks).toHaveLength(TERMINAL_STREAM_CHUNK_LIMIT);
+      expect(result.current.chunks[0].sequence).toBe(3);
+      expect(result.current.chunks.at(-1)?.sequence).toBe(TERMINAL_STREAM_CHUNK_LIMIT + 2);
+    });
+  });
+
+  it('reconnects with the current offset after socket close', async () => {
+    vi.useFakeTimers();
+    const createWebSocket = () => new FakeWebSocket();
+    const { result } = renderHook(() =>
+      useTerminalStream({
+        runId: 'run-id-1',
+        token: 'browser-token',
+        reconnectDelayMs: 0,
+        maxReconnectAttempts: 1,
+        createWebSocket,
+      }),
+    );
+    const firstWebSocket = FakeWebSocket.instances[0];
+    act(() => {
+      firstWebSocket.dispatch('message', {
+        data: JSON.stringify({
+          type: 'terminal.data',
+          protocol: TERMINAL_PROTOCOL,
+          runId: 'run-id-1',
+          sessionName: 'session-1',
+          offsetStart: 0,
+          offsetEnd: 6,
+          payloadEncoding: TERMINAL_PAYLOAD_ENCODING,
+          payload: encodeTerminalPayload('hello\n'),
+        }),
+      });
+      firstWebSocket.dispatch('close');
+    });
+
+    expect(result.current.connectionState).toBe('reconnecting');
+    await act(async () => {
+      await vi.runOnlyPendingTimersAsync();
+    });
+    const secondWebSocket = FakeWebSocket.instances[1];
+    act(() => {
+      secondWebSocket.dispatch('open');
+    });
+    const subscribeFrame = JSON.parse(secondWebSocket.sent[0]) as Record<string, unknown>;
+    expect(subscribeFrame).toMatchObject({
+      type: 'browser.subscribe',
+      runId: 'run-id-1',
+      lastOffset: 6,
+    });
+  });
+});
