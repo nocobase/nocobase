@@ -127,7 +127,8 @@ export type ManualEnvProxyNginxInput = {
   runtimeVersion: string;
   appPublicPath?: string;
   upstreamHost?: string;
-  upstreamPort: string;
+  upstreamPort?: string;
+  appPort?: string;
   cdnBaseUrl?: string;
 };
 
@@ -537,6 +538,8 @@ function createManualProxyEnvSettings(input: ManualEnvProxyNginxInput): ProxyEnv
 }
 
 function normalizeManualNginxInput(input: ManualEnvProxyNginxInput): ManualEnvProxyNginxInput {
+  const upstreamPort = trimValue(input.upstreamPort) ?? trimValue(input.appPort);
+
   return {
     name: String(input.name).trim(),
     storagePath: String(input.storagePath).trim(),
@@ -544,7 +547,8 @@ function normalizeManualNginxInput(input: ManualEnvProxyNginxInput): ManualEnvPr
     runtimeVersion: String(input.runtimeVersion).trim(),
     appPublicPath: trimValue(input.appPublicPath),
     upstreamHost: trimValue(input.upstreamHost),
-    upstreamPort: String(input.upstreamPort).trim(),
+    upstreamPort,
+    appPort: trimValue(input.appPort),
     cdnBaseUrl: trimValue(input.cdnBaseUrl),
   };
 }
