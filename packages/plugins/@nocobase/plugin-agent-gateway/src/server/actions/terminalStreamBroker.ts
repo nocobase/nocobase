@@ -48,6 +48,13 @@ import { validateRunLease } from './runLifecycle';
 const MAX_TERMINAL_FRAME_BYTES = 256 * 1024;
 const MAX_BROWSER_SUBSCRIPTIONS_PER_SOCKET = 16;
 const ACTIVE_TERMINAL_STREAM_RUN_STATUSES = new Set(['claimed', 'syncing_skills', 'running', 'canceling']);
+const TERMINALIZED_RUN_END_REASONS = new Map<string, TerminalEnd['reason']>([
+  ['succeeded', 'completed'],
+  ['failed', 'failed'],
+  ['canceled', 'canceled'],
+  ['timeout', 'timeout'],
+  ['abandoned', 'disconnected'],
+]);
 
 type ConnectionKind = 'unknown' | 'daemon' | 'browser';
 
@@ -74,6 +81,7 @@ interface PendingSnapshotRequest {
   browser: WebSocket;
   daemon: WebSocket;
   runId: string;
+  subscribeOnSuccess?: boolean;
 }
 
 type BoundRunValidationResult =
@@ -245,6 +253,7 @@ export class TerminalStreamBroker {
   private readonly boundRuns = new Map<string, BoundRunStream>();
   private readonly browserSubscriptions = new Map<string, Set<WebSocket>>();
   private readonly pendingSnapshotRequests = new Map<string, PendingSnapshotRequest>();
+  private readonly frameQueues = new Map<WebSocket, Promise<void>>();
   private readonly gatewayHandler: (
     request: IncomingMessage,
     socket: Duplex,
@@ -340,36 +349,68 @@ export class TerminalStreamBroker {
       this.send(ws, parsed.error);
       return;
     }
-    this.dispatchFrame(connection, parsed.frame);
+    this.enqueueFrame(connection, parsed.frame);
   }
 
-  private dispatchFrame(connection: TerminalStreamConnection, frame: TerminalFrame) {
+  private enqueueFrame(connection: TerminalStreamConnection, frame: TerminalFrame) {
+    const previous = this.frameQueues.get(connection.ws) || Promise.resolve();
+    const next = previous
+      .catch(() => {
+        // Keep later frames moving after a previous handler failed.
+      })
+      .then(async () => {
+        if (this.connections.get(connection.ws) !== connection) {
+          return;
+        }
+        await this.dispatchFrame(connection, frame);
+      })
+      .catch((error) => {
+        this.app.logger?.warn?.('Agent Gateway terminal frame handling failed', {
+          error: getErrorMessage(error),
+        });
+        if (this.connections.get(connection.ws) === connection) {
+          this.sendError(connection.ws, 'TERMINAL_PROTOCOL_ERROR', 'Terminal stream frame handling failed');
+        }
+      });
+    this.frameQueues.set(connection.ws, next);
+    next
+      .finally(() => {
+        if (this.frameQueues.get(connection.ws) === next) {
+          this.frameQueues.delete(connection.ws);
+        }
+      })
+      .catch(() => {
+        // The queue promise already handles frame errors; this only keeps cleanup non-floating.
+      });
+  }
+
+  private async dispatchFrame(connection: TerminalStreamConnection, frame: TerminalFrame) {
     if (frame.type === 'daemon.register') {
-      this.handleDaemonRegister(connection, frame);
+      await this.handleDaemonRegister(connection, frame);
       return;
     }
     if (frame.type === 'daemon.bindRun') {
-      this.handleDaemonBindRun(connection, frame);
+      await this.handleDaemonBindRun(connection, frame);
       return;
     }
     if (frame.type === 'browser.subscribe') {
-      this.handleBrowserSubscribe(connection, frame);
+      await this.handleBrowserSubscribe(connection, frame);
       return;
     }
     if (frame.type === 'terminal.data') {
-      this.handleTerminalData(connection, frame);
+      await this.handleTerminalData(connection, frame);
       return;
     }
     if (frame.type === 'terminal.snapshot') {
-      this.handleTerminalSnapshot(connection, frame);
+      await this.handleTerminalSnapshot(connection, frame);
       return;
     }
     if (frame.type === 'terminal.end') {
-      this.handleTerminalEnd(connection, frame);
+      await this.handleTerminalEnd(connection, frame);
       return;
     }
     if (frame.type === 'error') {
-      this.handleDaemonError(connection, frame);
+      await this.handleDaemonError(connection, frame);
       return;
     }
 
@@ -458,11 +499,16 @@ export class TerminalStreamBroker {
         );
         return;
       }
-      this.addSubscription(connection, frame.runId);
       this.send(connection.ws, createTerminalAck(frame.requestId));
       if (frame.lastOffset !== undefined) {
-        await this.requestDaemonSnapshot(connection.ws, frame.runId, frame.lastOffset);
+        const requested = await this.requestDaemonSnapshot(connection.ws, frame.runId, frame.lastOffset, {
+          subscribeOnSuccess: true,
+        });
+        if (requested) {
+          return;
+        }
       }
+      this.addSubscription(connection, frame.runId);
     } catch (error) {
       this.sendError(connection.ws, this.mapBrowserAuthError(error), getErrorMessage(error), frame.requestId);
     }
@@ -502,18 +548,36 @@ export class TerminalStreamBroker {
         );
         return;
       }
+      if (pending.subscribeOnSuccess) {
+        this.addBrowserSubscriptionBySocket(pending.browser, pending.runId);
+      }
       this.send(pending.browser, frame);
     }
   }
 
-  private handleTerminalEnd(connection: TerminalStreamConnection, frame: TerminalEnd) {
-    const bound = this.boundRuns.get(frame.runId);
-    if (!bound || bound.ws !== connection.ws) {
-      this.sendError(connection.ws, 'TERMINAL_RUN_NOT_BOUND', 'Run is not bound to this daemon');
+  private async handleTerminalEnd(connection: TerminalStreamConnection, frame: TerminalEnd) {
+    const validation = await this.validateBoundRun(frame.runId, connection.ws);
+    if (validation.ok === false) {
+      this.sendError(
+        connection.ws,
+        validation.reason === 'leaseLost' ? 'TERMINAL_LEASE_LOST' : 'TERMINAL_RUN_NOT_BOUND',
+        'Run stream is no longer bound to this daemon',
+      );
       return;
     }
+    this.resolvePendingSnapshotsWithTerminalEnd(connection.ws, frame);
     this.boundRuns.delete(frame.runId);
     this.broadcastToRun(frame.runId, frame);
+  }
+
+  private resolvePendingSnapshotsWithTerminalEnd(daemon: WebSocket, frame: TerminalEnd) {
+    for (const [requestId, pending] of Array.from(this.pendingSnapshotRequests.entries())) {
+      if (pending.runId !== frame.runId || pending.daemon !== daemon) {
+        continue;
+      }
+      this.pendingSnapshotRequests.delete(requestId);
+      this.send(pending.browser, frame);
+    }
   }
 
   private async handleDaemonError(connection: TerminalStreamConnection, frame: TerminalError) {
@@ -552,9 +616,29 @@ export class TerminalStreamBroker {
     this.browserSubscriptions.set(runId, subscribers);
   }
 
-  private async requestDaemonSnapshot(browser: WebSocket, runId: string, fromOffset: number) {
+  private addBrowserSubscriptionBySocket(browser: WebSocket, runId: string) {
+    const connection = this.connections.get(browser);
+    if (!connection || connection.kind !== 'browser') {
+      return;
+    }
+    this.addSubscription(connection, runId);
+  }
+
+  private async requestDaemonSnapshot(
+    browser: WebSocket,
+    runId: string,
+    fromOffset: number,
+    options: { subscribeOnSuccess?: boolean } = {},
+  ) {
     const validation = await this.validateBoundRun(runId);
     if (validation.ok === false) {
+      if (validation.reason === 'missing') {
+        const completedRunEnd = await this.createTerminalEndForCompletedRun(runId, fromOffset);
+        if (completedRunEnd) {
+          this.send(browser, completedRunEnd);
+          return true;
+        }
+      }
       if (fromOffset > 0) {
         this.sendError(
           browser,
@@ -564,7 +648,7 @@ export class TerminalStreamBroker {
       } else if (validation.reason === 'leaseLost') {
         this.sendError(browser, 'TERMINAL_LEASE_LOST', 'Run lease is no longer active for this daemon');
       }
-      return;
+      return false;
     }
     const { bound } = validation;
 
@@ -573,6 +657,7 @@ export class TerminalStreamBroker {
       browser,
       daemon: bound.ws,
       runId,
+      subscribeOnSuccess: options.subscribeOnSuccess,
     });
     this.send(bound.ws, {
       type: 'daemon.snapshotRequest',
@@ -581,6 +666,28 @@ export class TerminalStreamBroker {
       runId,
       fromOffset,
     });
+    return true;
+  }
+
+  private async createTerminalEndForCompletedRun(runId: string, offsetEnd: number): Promise<TerminalEnd | null> {
+    const run = (await this.app.db.getRepository('agRuns').findOne({
+      filterByTk: runId,
+    })) as ModelRecord | null;
+    if (!run) {
+      return null;
+    }
+    const reason = TERMINALIZED_RUN_END_REASONS.get(getModelString(run, 'status'));
+    if (!reason) {
+      return null;
+    }
+    return {
+      type: 'terminal.end',
+      protocol: 'agent-gateway.terminal.v1',
+      runId,
+      sessionName: getModelString(run, 'terminalSessionName') || `ag-run-${runId}`,
+      offsetEnd,
+      reason,
+    };
   }
 
   private async validateDaemonFrameBinding(connection: TerminalStreamConnection, runId: string) {
@@ -739,6 +846,7 @@ export class TerminalStreamBroker {
       return;
     }
     this.connections.delete(ws);
+    this.frameQueues.delete(ws);
 
     if (connection.kind === 'browser') {
       for (const runId of connection.subscriptions) {
@@ -754,14 +862,6 @@ export class TerminalStreamBroker {
       for (const [runId, bound] of Array.from(this.boundRuns.entries())) {
         if (bound.ws === ws) {
           this.boundRuns.delete(runId);
-          this.broadcastToRun(runId, {
-            type: 'terminal.end',
-            protocol: 'agent-gateway.terminal.v1',
-            runId,
-            sessionName: bound.sessionName,
-            offsetEnd: 0,
-            reason: 'disconnected',
-          });
         }
       }
     }
@@ -769,6 +869,9 @@ export class TerminalStreamBroker {
     for (const [requestId, pending] of Array.from(this.pendingSnapshotRequests.entries())) {
       if (pending.browser === ws) {
         this.pendingSnapshotRequests.delete(requestId);
+      } else if (pending.daemon === ws) {
+        this.pendingSnapshotRequests.delete(requestId);
+        pending.browser.close();
       }
     }
   }

@@ -75,6 +75,30 @@ describe('terminal stream protocol contract', () => {
     expect(decodeTerminalPayload(frame.payload)).toBe('中文\n');
   });
 
+  it('accepts empty snapshots for exact current-offset reconnects', () => {
+    const result = parseTerminalFrame({
+      type: 'terminal.snapshot',
+      protocol: TERMINAL_PROTOCOL,
+      requestId: 'snapshot-empty',
+      runId: 'run-id',
+      sessionName: 'session-name',
+      offsetStart: 42,
+      offsetEnd: 42,
+      payloadEncoding: 'base64-utf8',
+      payload: '',
+    });
+
+    expect(result).toMatchObject({
+      ok: true,
+      frame: {
+        type: 'terminal.snapshot',
+        offsetStart: 42,
+        offsetEnd: 42,
+        payload: '',
+      },
+    });
+  });
+
   it('normalizes parsed frames and strips unknown fields before forwarding', () => {
     const result = parseTerminalFrame({
       type: 'terminal.data',

@@ -129,18 +129,21 @@ describe('TerminalStreamClient', () => {
     );
   });
 
-  it('ignores stale chunks and marks offset gaps explicitly', () => {
-    const fakeWebSocket = new FakeWebSocket();
+  it('ignores stale chunks and reconnects from the current offset after a local gap', async () => {
+    vi.useFakeTimers();
     const onStateChange = vi.fn();
     const client = new TerminalStreamClient({
       runId: 'run-id-1',
       token: 'browser-token',
       lastOffset: 6,
-      createWebSocket: () => fakeWebSocket,
+      reconnectDelayMs: 0,
+      maxReconnectAttempts: 1,
+      createWebSocket: () => new FakeWebSocket(),
       onStateChange,
     });
 
     client.connect();
+    const fakeWebSocket = FakeWebSocket.instances[0];
     fakeWebSocket.dispatch('message', {
       data: JSON.stringify({
         type: 'terminal.data',
@@ -168,9 +171,18 @@ describe('TerminalStreamClient', () => {
     });
 
     expect(client.getState()).toMatchObject({
-      connectionState: 'error',
+      connectionState: 'reconnecting',
       currentOffset: 6,
       lastErrorCode: 'TERMINAL_OFFSET_GAP',
+    });
+    await vi.runOnlyPendingTimersAsync();
+    const secondWebSocket = FakeWebSocket.instances[1];
+    secondWebSocket.dispatch('open');
+    const subscribeFrame = JSON.parse(secondWebSocket.sent[0]) as Record<string, unknown>;
+    expect(subscribeFrame).toMatchObject({
+      type: 'browser.subscribe',
+      runId: 'run-id-1',
+      lastOffset: 6,
     });
   });
 
@@ -252,5 +264,41 @@ describe('TerminalStreamClient', () => {
       lastOffset: 6,
     });
     expect(states).toEqual(expect.arrayContaining([expect.objectContaining({ connectionState: 'reconnecting' })]));
+  });
+
+  it('reconnects after a native websocket error followed by close', async () => {
+    vi.useFakeTimers();
+    const client = new TerminalStreamClient({
+      runId: 'run-id-1',
+      token: 'browser-token',
+      lastOffset: 9,
+      reconnectDelayMs: 0,
+      maxReconnectAttempts: 1,
+      createWebSocket: () => new FakeWebSocket(),
+    });
+
+    client.connect();
+    const firstWebSocket = FakeWebSocket.instances[0];
+    firstWebSocket.dispatch('error');
+    expect(client.getState()).toMatchObject({
+      connectionState: 'connecting',
+      lastErrorCode: 'TERMINAL_DAEMON_UNAVAILABLE',
+    });
+
+    firstWebSocket.dispatch('close');
+    expect(client.getState()).toMatchObject({
+      connectionState: 'reconnecting',
+      currentOffset: 9,
+    });
+
+    await vi.runOnlyPendingTimersAsync();
+    const secondWebSocket = FakeWebSocket.instances[1];
+    secondWebSocket.dispatch('open');
+    const subscribeFrame = JSON.parse(secondWebSocket.sent[0]) as Record<string, unknown>;
+    expect(subscribeFrame).toMatchObject({
+      type: 'browser.subscribe',
+      runId: 'run-id-1',
+      lastOffset: 9,
+    });
   });
 });

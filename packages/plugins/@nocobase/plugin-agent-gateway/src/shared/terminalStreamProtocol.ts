@@ -241,6 +241,12 @@ function validateOffsetPair(record: JsonRecord) {
 }
 
 function validatePayloadFrame(record: JsonRecord) {
+  const payloadIsValid =
+    isNonEmptyString(record.payload) ||
+    (record.type === 'terminal.snapshot' &&
+      typeof record.payload === 'string' &&
+      record.payload === '' &&
+      record.offsetStart === record.offsetEnd);
   return (
     validateRunId(record) ||
     (isNonEmptyString(record.sessionName)
@@ -250,9 +256,7 @@ function validatePayloadFrame(record: JsonRecord) {
     (record.payloadEncoding === TERMINAL_PAYLOAD_ENCODING
       ? null
       : protocolError('payloadEncoding must be base64-utf8', getString(record.requestId) || undefined)) ||
-    (isNonEmptyString(record.payload)
-      ? null
-      : protocolError('payload is required', getString(record.requestId) || undefined))
+    (payloadIsValid ? null : protocolError('payload is required', getString(record.requestId) || undefined))
   );
 }
 

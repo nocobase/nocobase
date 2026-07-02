@@ -15,9 +15,11 @@ import { createInterface } from 'readline';
 import { buildTextArtifactUpload } from './artifactUpload';
 import { getAgentAdapter } from './adapters';
 import { AgentGatewayDaemonNodeClient } from './gateway';
+import { TerminalEnd } from '../shared/terminalStreamProtocol';
 import {
   ExecCommandAllowlist,
   ExecDriverResult,
+  ExecTerminalStatus,
   executeAllowlistedCommand,
   getAllowlistedDefinition,
 } from './execDriver';
@@ -29,6 +31,8 @@ import {
   SyncNodeSkillVersionResult,
 } from './skillSync';
 import { JsonRecord, RunLease } from './types';
+import { TerminalRingBuffer } from './terminalRingBuffer';
+import { DaemonTerminalStreamClient, DaemonTerminalStreamClientOptions } from './terminalStreamClient';
 import { executeTmuxCommand, getManagedTmuxSessionName } from './tmuxTerminal';
 
 export interface RunDaemonOnceOptions {
@@ -44,6 +48,8 @@ export interface RunDaemonOnceOptions {
   runHeartbeatIntervalMs?: number;
   syncSkillVersion?: typeof syncNodeSkillVersion;
   executeCommand?: typeof executeAllowlistedCommand;
+  terminalRingBufferMaxBytes?: number;
+  terminalStreamClientFactory?: (options: DaemonTerminalStreamClientOptions) => TerminalStreamHandle;
 }
 
 export interface DaemonRunLoopOptions extends RunDaemonOnceOptions {
@@ -62,6 +68,13 @@ const MAX_PROVIDER_SESSION_SCAN_BYTES = 256 * 1024;
 const PROVIDER_SESSION_UPSERT_MAX_ATTEMPTS = 3;
 const PROVIDER_SESSION_UPSERT_RETRY_DELAY_MS = 250;
 const MAX_CONVERSATION_EVENTS_PER_APPEND = 100;
+
+interface TerminalStreamHandle {
+  start(): Promise<void>;
+  appendText(text: string): Promise<void>;
+  end(reason: TerminalEnd['reason']): Promise<void>;
+  close(): void;
+}
 
 function isRecord(value: unknown): value is JsonRecord {
   return Object.prototype.toString.call(value) === '[object Object]';
@@ -526,6 +539,57 @@ async function closeTmuxTerminalQuietly(
   }
 }
 
+function createTerminalStreamHandle(options: DaemonTerminalStreamClientOptions): TerminalStreamHandle {
+  const client = new DaemonTerminalStreamClient(options);
+  return {
+    start: async () => {
+      await client.start();
+    },
+    appendText: async (text) => {
+      await client.appendText(text);
+    },
+    end: async (reason) => {
+      await client.end(reason);
+    },
+    close: () => {
+      client.close();
+    },
+  };
+}
+
+function createRunTerminalStream(options: {
+  runOptions: RunDaemonOnceOptions;
+  runId: string;
+  sessionName: string;
+  getLease(): RunLease;
+}) {
+  const ringBuffer = new TerminalRingBuffer({
+    runId: options.runId,
+    sessionName: options.sessionName,
+    maxBytes: options.runOptions.terminalRingBufferMaxBytes,
+  });
+  const factory = options.runOptions.terminalStreamClientFactory || createTerminalStreamHandle;
+  return factory({
+    serverUrl: options.runOptions.gateway.serverUrl,
+    nodeId: options.runOptions.gateway.nodeId,
+    nodeToken: options.runOptions.gateway.nodeToken,
+    runId: options.runId,
+    sessionName: options.sessionName,
+    ringBuffer,
+    getLease: options.getLease,
+  });
+}
+
+function toTerminalEndReason(status: ExecTerminalStatus): TerminalEnd['reason'] {
+  if (status === 'succeeded') {
+    return 'completed';
+  }
+  if (status === 'lease_lost') {
+    return 'disconnected';
+  }
+  return status;
+}
+
 export async function executeClaimedRun(
   options: RunDaemonOnceOptions,
   claimedLease: RunLease,
@@ -626,15 +690,24 @@ export async function executeClaimedRun(
   const commandKey = getString(payload.commandKey || payload.profileKey);
   const cwd = path.resolve(options.workspaceRoot, getString(payload.cwd) || '.');
   const terminalBackend = options.terminalBackend || 'exec';
+  const tmuxSessionName = getManagedTmuxSessionName(claimedLease.runId);
+  let terminalStream: TerminalStreamHandle | null = null;
   const cancelController = new AbortController();
   const leaseLostController = new AbortController();
   if (terminalBackend === 'tmux' && !options.executeCommand) {
     await options.gateway.updateRunTerminal(activeLease(), {
       terminalBackend: 'tmux',
-      terminalSessionName: getManagedTmuxSessionName(claimedLease.runId),
+      terminalSessionName: tmuxSessionName,
       terminalStatus: 'active',
       terminalStartedAt: new Date().toISOString(),
     });
+    terminalStream = createRunTerminalStream({
+      runOptions: options,
+      runId: claimedLease.runId,
+      sessionName: tmuxSessionName,
+      getLease: activeLease,
+    });
+    await terminalStream.start();
   }
   let stopHeartbeat: (() => Promise<void>) | null = heartbeatWhileRunPhase({
     gateway: options.gateway,
@@ -662,6 +735,9 @@ export async function executeClaimedRun(
             cancelSignal: cancelController.signal,
             leaseLostSignal: leaseLostController.signal,
             artifactDir: options.artifactDir,
+            onOutputChunk: async (chunk) => {
+              await terminalStream?.appendText(chunk);
+            },
           })
         : await (options.executeCommand || executeAllowlistedCommand)({
             commandKey,
@@ -680,6 +756,10 @@ export async function executeClaimedRun(
       stopHeartbeat = null;
     }
     if (leaseLostController.signal.aborted) {
+      if (terminalBackend === 'tmux' && !options.executeCommand) {
+        await closeTmuxTerminalQuietly(options, activeLease(), claimedLease.runId, result.exitCode);
+        await terminalStream?.end('disconnected');
+      }
       return {
         status: 'lease_lost',
         runId: claimedLease.runId,
@@ -695,6 +775,10 @@ export async function executeClaimedRun(
       leaseLostController,
     });
     if (refreshedLeaseStatus === 'lease_lost') {
+      if (terminalBackend === 'tmux' && !options.executeCommand) {
+        await closeTmuxTerminalQuietly(options, activeLease(), claimedLease.runId, result.exitCode);
+        await terminalStream?.end('disconnected');
+      }
       return {
         status: 'lease_lost',
         runId: claimedLease.runId,
@@ -703,6 +787,7 @@ export async function executeClaimedRun(
     if (refreshedLeaseStatus === 'cancel_requested') {
       if (terminalBackend === 'tmux' && !options.executeCommand) {
         await closeTmuxTerminalQuietly(options, activeLease(), claimedLease.runId, result.exitCode);
+        await terminalStream?.end('canceled');
       }
       await reportProviderSessionAndCollectWarnings({
         gateway: options.gateway,
@@ -718,6 +803,7 @@ export async function executeClaimedRun(
     }
     if (terminalBackend === 'tmux' && !options.executeCommand) {
       await closeTmuxTerminalQuietly(options, activeLease(), claimedLease.runId, result.exitCode);
+      await terminalStream?.end(toTerminalEndReason(result.status));
     }
     const sessionObservationWarnings = await reportProviderSessionAndCollectWarnings({
       gateway: options.gateway,
@@ -754,6 +840,7 @@ export async function executeClaimedRun(
     }
     if (terminalBackend === 'tmux' && !options.executeCommand) {
       await closeTmuxTerminalQuietly(options, activeLease(), claimedLease.runId, null);
+      await terminalStream?.end(leaseLostController.signal.aborted ? 'disconnected' : 'failed');
     }
     if (!leaseLostController.signal.aborted) {
       try {
@@ -788,6 +875,7 @@ export async function executeClaimedRun(
     if (stopHeartbeat) {
       await stopHeartbeat();
     }
+    terminalStream?.close();
   }
 }
 

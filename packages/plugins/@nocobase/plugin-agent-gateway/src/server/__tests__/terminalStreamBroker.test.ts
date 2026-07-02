@@ -8,10 +8,12 @@
  */
 
 import { MockServer, createMockServer } from '@nocobase/test';
+import WebSocket from 'ws';
 
 import {
   TERMINAL_PAYLOAD_ENCODING,
   TERMINAL_PROTOCOL,
+  TerminalFrame,
   decodeTerminalPayload,
   encodeTerminalPayload,
 } from '../../shared/terminalStreamProtocol';
@@ -28,6 +30,51 @@ import {
   waitForFrame,
   waitForOpen,
 } from './helpers/terminalStreamHarness';
+
+function waitForNoFrame(ws: WebSocket, predicate: (frame: TerminalFrame) => boolean, durationMs: number) {
+  return new Promise<boolean>((resolve, reject) => {
+    const timer = setTimeout(() => {
+      ws.off('message', onMessage);
+      resolve(false);
+    }, durationMs);
+    const onMessage = (data: WebSocket.RawData) => {
+      let frame: TerminalFrame;
+      try {
+        frame = JSON.parse(data.toString()) as TerminalFrame;
+      } catch (error) {
+        clearTimeout(timer);
+        ws.off('message', onMessage);
+        reject(error);
+        return;
+      }
+      if (!predicate(frame)) {
+        return;
+      }
+      clearTimeout(timer);
+      ws.off('message', onMessage);
+      resolve(true);
+    };
+    ws.on('message', onMessage);
+  });
+}
+
+function waitForClose(ws: WebSocket) {
+  if (ws.readyState === WebSocket.CLOSED) {
+    return Promise.resolve();
+  }
+  return new Promise<void>((resolve, reject) => {
+    const timer = setTimeout(() => {
+      ws.off('close', onClose);
+      reject(new Error('WebSocket close timed out'));
+    }, 5000);
+    const onClose = () => {
+      clearTimeout(timer);
+      ws.off('close', onClose);
+      resolve();
+    };
+    ws.on('close', onClose);
+  });
+}
 
 describe('terminal stream broker', () => {
   let app: MockServer;
@@ -288,6 +335,322 @@ describe('terminal stream broker', () => {
     }
   });
 
+  it('delays a reconnecting browser subscription until its daemon snapshot is delivered', async () => {
+    const runner = await createRunner(app, { nodeKey: 'terminal-stream-broker-node-snapshot-order' });
+    const runId = await createQueuedRun(app, runner, 'terminal-stream-broker-run-snapshot-order');
+    const lease = await claimRun(app, runner, runId);
+    const server = await createTerminalStreamServer(app);
+    const browserToken = await createBrowserToken(app, rootUserId);
+    const daemon = createWebSocket(server.wsUrl, { nodeToken: runner.nodeToken });
+    const browser = createWebSocket(server.wsUrl, { token: browserToken });
+    const sessionName = 'agw_terminal_stream_snapshot_order';
+
+    try {
+      await Promise.all([waitForOpen(daemon), waitForOpen(browser)]);
+      sendFrame(daemon, {
+        type: 'daemon.register',
+        protocol: TERMINAL_PROTOCOL,
+        requestId: 'register-snapshot-order',
+        nodeId: runner.nodeId,
+        capabilities: {
+          terminalStream: true,
+        },
+      });
+      await waitForFrame(daemon, (frame) => frame.type === 'ack' && frame.requestId === 'register-snapshot-order');
+      sendFrame(daemon, {
+        type: 'daemon.bindRun',
+        protocol: TERMINAL_PROTOCOL,
+        requestId: 'bind-snapshot-order',
+        runId,
+        sessionName,
+        startOffset: 0,
+        claimToken: lease.claimToken,
+        claimAttempt: lease.claimAttempt,
+        leaseVersion: lease.leaseVersion,
+      });
+      await waitForFrame(daemon, (frame) => frame.type === 'ack' && frame.requestId === 'bind-snapshot-order');
+
+      sendFrame(browser, {
+        type: 'browser.subscribe',
+        protocol: TERMINAL_PROTOCOL,
+        requestId: 'subscribe-snapshot-order',
+        runId,
+        lastOffset: 0,
+      });
+      await waitForFrame(browser, (frame) => frame.type === 'ack' && frame.requestId === 'subscribe-snapshot-order');
+      const snapshotRequest = await waitForFrame(daemon, (frame) => frame.type === 'daemon.snapshotRequest');
+
+      const priorText = 'before-subscribe\n';
+      const duringText = 'during-snapshot\n';
+      const afterText = 'after-snapshot\n';
+      const priorOffset = Buffer.byteLength(priorText);
+      const snapshotOffsetEnd = priorOffset + Buffer.byteLength(duringText);
+      sendFrame(daemon, {
+        type: 'terminal.data',
+        protocol: TERMINAL_PROTOCOL,
+        runId,
+        sessionName,
+        offsetStart: priorOffset,
+        offsetEnd: snapshotOffsetEnd,
+        payloadEncoding: TERMINAL_PAYLOAD_ENCODING,
+        payload: encodeTerminalPayload(duringText),
+      });
+      expect(await waitForNoFrame(browser, (frame) => frame.type === 'terminal.data', 100)).toBe(false);
+
+      sendFrame(daemon, {
+        type: 'terminal.snapshot',
+        protocol: TERMINAL_PROTOCOL,
+        requestId: snapshotRequest.type === 'daemon.snapshotRequest' ? snapshotRequest.requestId : '',
+        runId,
+        sessionName,
+        offsetStart: 0,
+        offsetEnd: snapshotOffsetEnd,
+        payloadEncoding: TERMINAL_PAYLOAD_ENCODING,
+        payload: encodeTerminalPayload(`${priorText}${duringText}`),
+      });
+      const snapshot = await waitForFrame(browser, (frame) => frame.type === 'terminal.snapshot');
+      expect(snapshot).toMatchObject({
+        offsetStart: 0,
+        offsetEnd: snapshotOffsetEnd,
+      });
+
+      sendFrame(daemon, {
+        type: 'terminal.data',
+        protocol: TERMINAL_PROTOCOL,
+        runId,
+        sessionName,
+        offsetStart: snapshotOffsetEnd,
+        offsetEnd: snapshotOffsetEnd + Buffer.byteLength(afterText),
+        payloadEncoding: TERMINAL_PAYLOAD_ENCODING,
+        payload: encodeTerminalPayload(afterText),
+      });
+      const data = await waitForFrame(browser, (frame) => frame.type === 'terminal.data');
+      expect(decodeTerminalPayload(data.type === 'terminal.data' ? data.payload : '')).toBe(afterText);
+    } finally {
+      daemon.close();
+      browser.close();
+      await server.close();
+    }
+  });
+
+  it('does not let terminal end overtake a pending reconnect snapshot from the same daemon', async () => {
+    const runner = await createRunner(app, { nodeKey: 'terminal-stream-broker-node-snapshot-before-end' });
+    const runId = await createQueuedRun(app, runner, 'terminal-stream-broker-run-snapshot-before-end');
+    const lease = await claimRun(app, runner, runId);
+    const server = await createTerminalStreamServer(app);
+    const browserToken = await createBrowserToken(app, rootUserId);
+    const daemon = createWebSocket(server.wsUrl, { nodeToken: runner.nodeToken });
+    const browser = createWebSocket(server.wsUrl, { token: browserToken });
+    const sessionName = 'agw_terminal_stream_snapshot_before_end';
+
+    try {
+      await Promise.all([waitForOpen(daemon), waitForOpen(browser)]);
+      sendFrame(daemon, {
+        type: 'daemon.register',
+        protocol: TERMINAL_PROTOCOL,
+        requestId: 'register-snapshot-before-end',
+        nodeId: runner.nodeId,
+        capabilities: {
+          terminalStream: true,
+        },
+      });
+      await waitForFrame(daemon, (frame) => frame.type === 'ack' && frame.requestId === 'register-snapshot-before-end');
+      sendFrame(daemon, {
+        type: 'daemon.bindRun',
+        protocol: TERMINAL_PROTOCOL,
+        requestId: 'bind-snapshot-before-end',
+        runId,
+        sessionName,
+        startOffset: 0,
+        claimToken: lease.claimToken,
+        claimAttempt: lease.claimAttempt,
+        leaseVersion: lease.leaseVersion,
+      });
+      await waitForFrame(daemon, (frame) => frame.type === 'ack' && frame.requestId === 'bind-snapshot-before-end');
+
+      sendFrame(browser, {
+        type: 'browser.subscribe',
+        protocol: TERMINAL_PROTOCOL,
+        requestId: 'subscribe-snapshot-before-end',
+        runId,
+        lastOffset: 0,
+      });
+      await waitForFrame(
+        browser,
+        (frame) => frame.type === 'ack' && frame.requestId === 'subscribe-snapshot-before-end',
+      );
+      const snapshotRequest = await waitForFrame(daemon, (frame) => frame.type === 'daemon.snapshotRequest');
+
+      sendFrame(daemon, {
+        type: 'terminal.snapshot',
+        protocol: TERMINAL_PROTOCOL,
+        requestId: snapshotRequest.type === 'daemon.snapshotRequest' ? snapshotRequest.requestId : '',
+        runId,
+        sessionName,
+        offsetStart: 0,
+        offsetEnd: 14,
+        payloadEncoding: TERMINAL_PAYLOAD_ENCODING,
+        payload: encodeTerminalPayload('snapshot tail\n'),
+      });
+      sendFrame(daemon, {
+        type: 'terminal.end',
+        protocol: TERMINAL_PROTOCOL,
+        runId,
+        sessionName,
+        offsetEnd: 14,
+        reason: 'completed',
+      });
+
+      const first = await waitForFrame(
+        browser,
+        (frame) => frame.type === 'terminal.snapshot' || frame.type === 'terminal.end',
+      );
+      const second = await waitForFrame(
+        browser,
+        (frame) => frame.type === 'terminal.snapshot' || frame.type === 'terminal.end',
+      );
+      expect(first.type).toBe('terminal.snapshot');
+      expect(second.type).toBe('terminal.end');
+    } finally {
+      daemon.close();
+      browser.close();
+      await server.close();
+    }
+  });
+
+  it('closes a reconnecting browser when the daemon disconnects before snapshot response', async () => {
+    const runner = await createRunner(app, { nodeKey: 'terminal-stream-broker-node-snapshot-daemon-close' });
+    const runId = await createQueuedRun(app, runner, 'terminal-stream-broker-run-snapshot-daemon-close');
+    const lease = await claimRun(app, runner, runId);
+    const server = await createTerminalStreamServer(app);
+    const browserToken = await createBrowserToken(app, rootUserId);
+    const daemon = createWebSocket(server.wsUrl, { nodeToken: runner.nodeToken });
+    const browser = createWebSocket(server.wsUrl, { token: browserToken });
+
+    try {
+      await Promise.all([waitForOpen(daemon), waitForOpen(browser)]);
+      sendFrame(daemon, {
+        type: 'daemon.register',
+        protocol: TERMINAL_PROTOCOL,
+        requestId: 'register-snapshot-daemon-close',
+        nodeId: runner.nodeId,
+        capabilities: {
+          terminalStream: true,
+        },
+      });
+      await waitForFrame(
+        daemon,
+        (frame) => frame.type === 'ack' && frame.requestId === 'register-snapshot-daemon-close',
+      );
+      sendFrame(daemon, {
+        type: 'daemon.bindRun',
+        protocol: TERMINAL_PROTOCOL,
+        requestId: 'bind-snapshot-daemon-close',
+        runId,
+        sessionName: 'agw_terminal_stream_snapshot_daemon_close',
+        startOffset: 0,
+        claimToken: lease.claimToken,
+        claimAttempt: lease.claimAttempt,
+        leaseVersion: lease.leaseVersion,
+      });
+      await waitForFrame(daemon, (frame) => frame.type === 'ack' && frame.requestId === 'bind-snapshot-daemon-close');
+
+      sendFrame(browser, {
+        type: 'browser.subscribe',
+        protocol: TERMINAL_PROTOCOL,
+        requestId: 'subscribe-snapshot-daemon-close',
+        runId,
+        lastOffset: 8,
+      });
+      await waitForFrame(
+        browser,
+        (frame) => frame.type === 'ack' && frame.requestId === 'subscribe-snapshot-daemon-close',
+      );
+      await waitForFrame(daemon, (frame) => frame.type === 'daemon.snapshotRequest');
+
+      daemon.close();
+      await waitForClose(browser);
+    } finally {
+      daemon.close();
+      browser.close();
+      await server.close();
+    }
+  });
+
+  it('delivers terminal end to a reconnecting browser while its daemon snapshot is pending', async () => {
+    const runner = await createRunner(app, { nodeKey: 'terminal-stream-broker-node-end-pending-snapshot' });
+    const runId = await createQueuedRun(app, runner, 'terminal-stream-broker-run-end-pending-snapshot');
+    const lease = await claimRun(app, runner, runId);
+    const server = await createTerminalStreamServer(app);
+    const browserToken = await createBrowserToken(app, rootUserId);
+    const daemon = createWebSocket(server.wsUrl, { nodeToken: runner.nodeToken });
+    const browser = createWebSocket(server.wsUrl, { token: browserToken });
+    const sessionName = 'agw_terminal_stream_end_pending_snapshot';
+
+    try {
+      await Promise.all([waitForOpen(daemon), waitForOpen(browser)]);
+      sendFrame(daemon, {
+        type: 'daemon.register',
+        protocol: TERMINAL_PROTOCOL,
+        requestId: 'register-end-pending-snapshot',
+        nodeId: runner.nodeId,
+        capabilities: {
+          terminalStream: true,
+        },
+      });
+      await waitForFrame(
+        daemon,
+        (frame) => frame.type === 'ack' && frame.requestId === 'register-end-pending-snapshot',
+      );
+      sendFrame(daemon, {
+        type: 'daemon.bindRun',
+        protocol: TERMINAL_PROTOCOL,
+        requestId: 'bind-end-pending-snapshot',
+        runId,
+        sessionName,
+        startOffset: 0,
+        claimToken: lease.claimToken,
+        claimAttempt: lease.claimAttempt,
+        leaseVersion: lease.leaseVersion,
+      });
+      await waitForFrame(daemon, (frame) => frame.type === 'ack' && frame.requestId === 'bind-end-pending-snapshot');
+
+      sendFrame(browser, {
+        type: 'browser.subscribe',
+        protocol: TERMINAL_PROTOCOL,
+        requestId: 'subscribe-end-pending-snapshot',
+        runId,
+        lastOffset: 12,
+      });
+      await waitForFrame(
+        browser,
+        (frame) => frame.type === 'ack' && frame.requestId === 'subscribe-end-pending-snapshot',
+      );
+      await waitForFrame(daemon, (frame) => frame.type === 'daemon.snapshotRequest');
+
+      sendFrame(daemon, {
+        type: 'terminal.end',
+        protocol: TERMINAL_PROTOCOL,
+        runId,
+        sessionName,
+        offsetEnd: 44,
+        reason: 'completed',
+      });
+
+      expect(await waitForFrame(browser, (frame) => frame.type === 'terminal.end')).toMatchObject({
+        runId,
+        sessionName,
+        offsetEnd: 44,
+        reason: 'completed',
+      });
+      expect(await waitForNoFrame(browser, (frame) => frame.type === 'error', 100)).toBe(false);
+    } finally {
+      daemon.close();
+      browser.close();
+      await server.close();
+    }
+  });
+
   it('keeps a bound websocket stream valid after normal run heartbeat lease renewal', async () => {
     const runner = await createRunner(app, { nodeKey: 'terminal-stream-broker-node-heartbeat' });
     const runId = await createQueuedRun(app, runner, 'terminal-stream-broker-run-heartbeat');
@@ -417,6 +780,116 @@ describe('terminal stream broker', () => {
       expect(await waitForFrame(browser, (frame) => frame.type === 'error')).toMatchObject({
         code: 'TERMINAL_LEASE_LOST',
       });
+    } finally {
+      daemon.close();
+      browser.close();
+      await server.close();
+    }
+  });
+
+  it('returns terminal end for reconnect snapshots after a run is already terminalized', async () => {
+    const runner = await createRunner(app, { nodeKey: 'terminal-stream-broker-node-completed-reconnect' });
+    const runId = await createQueuedRun(app, runner, 'terminal-stream-broker-run-completed-reconnect');
+    await app.db.getRepository('agRuns').update({
+      filterByTk: runId,
+      values: {
+        status: 'succeeded',
+        terminalStatus: 'closed',
+        terminalSessionName: 'agw_terminal_stream_completed_reconnect',
+        finishedAt: new Date(),
+      },
+    });
+    const server = await createTerminalStreamServer(app);
+    const browserToken = await createBrowserToken(app, rootUserId);
+    const browser = createWebSocket(server.wsUrl, { token: browserToken });
+
+    try {
+      await waitForOpen(browser);
+      sendFrame(browser, {
+        type: 'browser.subscribe',
+        protocol: TERMINAL_PROTOCOL,
+        requestId: 'subscribe-completed-reconnect',
+        runId,
+        lastOffset: 1203,
+      });
+      await waitForFrame(
+        browser,
+        (frame) => frame.type === 'ack' && frame.requestId === 'subscribe-completed-reconnect',
+      );
+      expect(await waitForFrame(browser, (frame) => frame.type === 'terminal.end')).toMatchObject({
+        runId,
+        sessionName: 'agw_terminal_stream_completed_reconnect',
+        offsetEnd: 1203,
+        reason: 'completed',
+      });
+    } finally {
+      browser.close();
+      await server.close();
+    }
+  });
+
+  it('rejects terminal end after the bound run lease expires', async () => {
+    const runner = await createRunner(app, { nodeKey: 'terminal-stream-broker-node-end-expired' });
+    const runId = await createQueuedRun(app, runner, 'terminal-stream-broker-run-end-expired');
+    const lease = await claimRun(app, runner, runId);
+    const server = await createTerminalStreamServer(app);
+    const browserToken = await createBrowserToken(app, rootUserId);
+    const daemon = createWebSocket(server.wsUrl, { nodeToken: runner.nodeToken });
+    const browser = createWebSocket(server.wsUrl, { token: browserToken });
+
+    try {
+      await Promise.all([waitForOpen(daemon), waitForOpen(browser)]);
+      sendFrame(daemon, {
+        type: 'daemon.register',
+        protocol: TERMINAL_PROTOCOL,
+        requestId: 'register-end-expired',
+        nodeId: runner.nodeId,
+        capabilities: {
+          terminalStream: true,
+        },
+      });
+      await waitForFrame(daemon, (frame) => frame.type === 'ack' && frame.requestId === 'register-end-expired');
+      sendFrame(daemon, {
+        type: 'daemon.bindRun',
+        protocol: TERMINAL_PROTOCOL,
+        requestId: 'bind-end-expired',
+        runId,
+        sessionName: 'agw_terminal_stream_end_expired',
+        startOffset: 0,
+        claimToken: lease.claimToken,
+        claimAttempt: lease.claimAttempt,
+        leaseVersion: lease.leaseVersion,
+      });
+      await waitForFrame(daemon, (frame) => frame.type === 'ack' && frame.requestId === 'bind-end-expired');
+
+      sendFrame(browser, {
+        type: 'browser.subscribe',
+        protocol: TERMINAL_PROTOCOL,
+        requestId: 'subscribe-end-expired',
+        runId,
+      });
+      await waitForFrame(browser, (frame) => frame.type === 'ack' && frame.requestId === 'subscribe-end-expired');
+
+      await app.db.getRepository('agRuns').update({
+        filterByTk: runId,
+        values: {
+          claimExpiresAt: new Date(Date.now() - 1000),
+        },
+      });
+
+      sendFrame(daemon, {
+        type: 'terminal.end',
+        protocol: TERMINAL_PROTOCOL,
+        runId,
+        sessionName: 'agw_terminal_stream_end_expired',
+        offsetEnd: 0,
+        reason: 'completed',
+      });
+
+      expect(await waitForFrame(daemon, (frame) => frame.type === 'error')).toMatchObject({
+        code: 'TERMINAL_LEASE_LOST',
+      });
+      expect(await waitForNoFrame(browser, (frame) => frame.type === 'terminal.end', 100)).toBe(false);
     } finally {
       daemon.close();
       browser.close();

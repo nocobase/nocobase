@@ -24,6 +24,10 @@ export class AgentGatewayDaemonNodeClient {
     return this.config.serverUrl;
   }
 
+  get nodeToken() {
+    return this.config.nodeToken;
+  }
+
   getNodeAuthHeaders() {
     return {
       Authorization: `Bearer ${this.config.nodeToken}`,

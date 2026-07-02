@@ -216,14 +216,13 @@ export class TerminalStreamClient {
 
   private readonly handleSocketError = () => {
     this.updateState({
-      connectionState: 'error',
       lastErrorCode: 'TERMINAL_DAEMON_UNAVAILABLE',
     });
   };
 
   private consumeFrame(frame: TerminalFrame) {
     if (frame.type === 'ack' && frame.requestId === this.requestId) {
-      this.updateState({ connectionState: 'live' });
+      this.updateState({ connectionState: 'live', lastErrorCode: undefined });
       return;
     }
     if (frame.type === 'terminal.data' || frame.type === 'terminal.snapshot') {
@@ -231,10 +230,7 @@ export class TerminalStreamClient {
         return;
       }
       if (frame.offsetStart > this.state.currentOffset) {
-        this.updateState({
-          connectionState: 'error',
-          lastErrorCode: 'TERMINAL_OFFSET_GAP',
-        });
+        this.reconnectForSnapshotCompensation('TERMINAL_OFFSET_GAP');
         return;
       }
       const nextText = `${this.state.previewText}${decodeTerminalPayload(frame.payload)}`;
@@ -242,6 +238,7 @@ export class TerminalStreamClient {
         connectionState: 'live',
         currentOffset: frame.offsetEnd,
         previewText: nextText.slice(-DEFAULT_PREVIEW_LIMIT),
+        lastErrorCode: undefined,
       });
       return;
     }
@@ -277,6 +274,15 @@ export class TerminalStreamClient {
       }
       this.openSocket('reconnecting');
     }, this.options.reconnectDelayMs ?? DEFAULT_RECONNECT_DELAY_MS);
+  }
+
+  private reconnectForSnapshotCompensation(lastErrorCode: TerminalErrorCode) {
+    this.updateState({ lastErrorCode });
+    this.detachSocket(true);
+    if (this.closedByClient || this.terminalEnded) {
+      return;
+    }
+    this.scheduleReconnect();
   }
 
   private updateState(nextState: Partial<TerminalStreamClientState>) {

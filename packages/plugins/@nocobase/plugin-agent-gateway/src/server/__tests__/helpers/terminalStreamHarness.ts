@@ -98,7 +98,9 @@ export async function createTerminalStreamServer(app: MockServer) {
     server.listen(0, '127.0.0.1', resolve);
   });
   const address = server.address() as AddressInfo;
+  const serverUrl = `http://127.0.0.1:${address.port}`;
   return {
+    serverUrl,
     wsUrl: `ws://127.0.0.1:${address.port}${TERMINAL_STREAM_WS_PATH}`,
     async close() {
       broker.unregister();

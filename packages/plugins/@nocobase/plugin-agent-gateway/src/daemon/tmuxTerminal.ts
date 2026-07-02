@@ -28,6 +28,8 @@ export interface TmuxCommandOptions {
   artifactDir?: string;
   cancelSignal?: AbortSignal;
   leaseLostSignal?: AbortSignal;
+  liveOutputPollIntervalMs?: number;
+  onOutputChunk?(chunk: string): Promise<void> | void;
   onSessionStarted?(metadata: TmuxSessionMetadata): Promise<void> | void;
   onSessionEnded?(metadata: TmuxSessionEndMetadata): Promise<void> | void;
 }
@@ -53,11 +55,36 @@ export interface TmuxSnapshot {
 
 const TERMINAL_CAPTURE_LIMIT = 64 * 1024;
 const DEFAULT_CAPTURE_LINES = 2000;
-const TMUX_SESSION_PATTERN = /^ag-run-[a-z0-9-]{8,80}$/i;
+const TMUX_SESSION_PATTERN = /^ag-run-[a-z0-9-]{1,80}$/i;
 const SHELL_ENV_KEY_PATTERN = /^[A-Za-z_][A-Za-z0-9_]*$/;
 const REDACTION_STREAM_HIGH_WATER_MARK = 16 * 1024;
 const MAX_REDACTION_PENDING_LINE_CHARS = 64 * 1024;
 const REDACTED_OVERSIZED_TERMINAL_LINE = '[REDACTED_OVERSIZED_TERMINAL_LINE]\n';
+const DEFAULT_LIVE_OUTPUT_POLL_INTERVAL_MS = 100;
+const PARTIAL_LINE_SENSITIVE_PATTERN =
+  /\b(?:Authorization|Cookie|Set-Cookie)\b|\bBearer\b|\b(?:token|secret|password|api[_-]?key|private[_-]?key|access[_-]?key|command|commandPath|cwd|env)(?:\.[A-Za-z0-9_-]+)?\b/i;
+const PARTIAL_LINE_SENSITIVE_PREFIXES = [
+  'authorization',
+  'cookie',
+  'set-cookie',
+  'bearer',
+  'token',
+  'secret',
+  'password',
+  'api_key',
+  'api-key',
+  'apikey',
+  'private_key',
+  'private-key',
+  'privatekey',
+  'access_key',
+  'access-key',
+  'accesskey',
+  'commandpath',
+  'command',
+  'cwd',
+  'env',
+];
 
 function execTmux(args: string[], options: { timeoutMs?: number } = {}) {
   return new Promise<{ stdout: string; stderr: string }>((resolve, reject) => {
@@ -81,6 +108,23 @@ function shellQuote(value: string) {
 function getExitCode(rawValue: string) {
   const parsed = Number(rawValue.trim());
   return Number.isInteger(parsed) ? parsed : null;
+}
+
+function shouldDeferPartialLiveLine(lineText: string) {
+  return PARTIAL_LINE_SENSITIVE_PATTERN.test(lineText);
+}
+
+function getSensitivePrefixSuffixLength(lineText: string) {
+  const normalized = lineText.toLowerCase();
+  const maxPrefixLength = Math.max(...PARTIAL_LINE_SENSITIVE_PREFIXES.map((prefix) => prefix.length));
+  const maxSuffixLength = Math.min(maxPrefixLength - 1, normalized.length);
+  for (let length = maxSuffixLength; length > 0; length -= 1) {
+    const suffix = normalized.slice(-length);
+    if (PARTIAL_LINE_SENSITIVE_PREFIXES.some((prefix) => prefix.startsWith(suffix))) {
+      return length;
+    }
+  }
+  return 0;
 }
 
 function isWithin(parent: string, child: string) {
@@ -125,7 +169,6 @@ function buildShellCommand(options: {
   env?: Record<string, string>;
   exitCodePath: string;
   doneSignalName: string;
-  paneCapturePath: string;
 }) {
   const commandParts = [
     shellQuote(options.definition.executable),
@@ -136,15 +179,12 @@ function buildShellCommand(options: {
     .filter(([key]) => SHELL_ENV_KEY_PATTERN.test(key))
     .map(([key, value]) => `export ${key}=${shellQuote(value)};`);
   return [
+    "trap 'stty echo 2>/dev/null || true' EXIT;",
     'tmux set-option -w remain-on-exit on >/dev/null 2>&1 || true;',
     'set +e;',
-    `if [ -n "\${TMUX_PANE:-}" ]; then tmux pipe-pane -o -t "$TMUX_PANE" ${shellQuote(
-      `cat >> ${shellQuote(options.paneCapturePath)}`,
-    )} >/dev/null 2>&1 || true; fi;`,
     ...envLines,
     `${commandParts.join(' ')};`,
     'code=$?;',
-    'if [ -n "${TMUX_PANE:-}" ]; then tmux pipe-pane -t "$TMUX_PANE" >/dev/null 2>&1 || true; fi;',
     `printf '%s' "$code" > ${shellQuote(options.exitCodePath)};`,
     `printf '\\n[agent-gateway] process exited with code %s\\n' "$code";`,
     `tmux wait-for -S ${shellQuote(options.doneSignalName)};`,
@@ -200,6 +240,16 @@ async function killTmuxSessionIfExists(sessionName: string) {
   }
 }
 
+async function startPaneCapture(sessionName: string, paneCapturePath: string) {
+  await execTmux(['pipe-pane', '-o', '-t', sessionName, `cat >> ${shellQuote(paneCapturePath)}`]);
+}
+
+async function stopPaneCapture(sessionName: string) {
+  await execTmux(['pipe-pane', '-t', sessionName]).catch(() => {
+    // The session may already have ended or been terminated.
+  });
+}
+
 async function writeTextArtifact(artifactDir: string | undefined, fileName: string, content: string) {
   if (!artifactDir) {
     return undefined;
@@ -232,6 +282,139 @@ async function closeArtifactWriter(writer: ReturnType<typeof createWriteStream>)
     writer.once('error', reject);
     writer.end();
   });
+}
+
+function createRedactedLiveOutputTailer(options: {
+  sourcePath: string;
+  pollIntervalMs?: number;
+  onChunk(chunk: string): Promise<void> | void;
+}) {
+  const decoder = new StringDecoder('utf8');
+  let pendingLineText = '';
+  let droppingOversizedLine = false;
+  let readOffset = 0;
+  let readPromise: Promise<void> | null = null;
+  let stopped = false;
+
+  const emitChunk = async (chunk: string) => {
+    if (chunk) {
+      await options.onChunk(chunk);
+    }
+  };
+
+  const emitCompleteLine = async (lineText: string) => {
+    if (lineText.length > MAX_REDACTION_PENDING_LINE_CHARS) {
+      await emitChunk(REDACTED_OVERSIZED_TERMINAL_LINE);
+      return;
+    }
+    await emitChunk(redactObservabilityText(lineText));
+  };
+
+  const consumeDecodedText = async (decodedText: string) => {
+    let text = decodedText;
+    while (text.length > 0) {
+      if (droppingOversizedLine) {
+        const newlineIndex = text.indexOf('\n');
+        if (newlineIndex === -1) {
+          return;
+        }
+        droppingOversizedLine = false;
+        text = text.slice(newlineIndex + 1);
+        continue;
+      }
+
+      const newlineIndex = text.indexOf('\n');
+      if (newlineIndex === -1) {
+        pendingLineText += text;
+        if (pendingLineText.length > MAX_REDACTION_PENDING_LINE_CHARS) {
+          await emitChunk(REDACTED_OVERSIZED_TERMINAL_LINE);
+          pendingLineText = '';
+          droppingOversizedLine = true;
+        }
+        return;
+      }
+
+      await emitCompleteLine(pendingLineText + text.slice(0, newlineIndex + 1));
+      pendingLineText = '';
+      text = text.slice(newlineIndex + 1);
+    }
+  };
+
+  const flushPartialLine = async (force = false) => {
+    if (!pendingLineText || droppingOversizedLine) {
+      return;
+    }
+    if (force) {
+      await emitChunk(redactObservabilityText(pendingLineText));
+      pendingLineText = '';
+      return;
+    }
+    if (shouldDeferPartialLiveLine(pendingLineText)) {
+      return;
+    }
+    const retainedSuffixLength = getSensitivePrefixSuffixLength(pendingLineText);
+    const flushLength = pendingLineText.length - retainedSuffixLength;
+    if (flushLength <= 0) {
+      return;
+    }
+    await emitChunk(redactObservabilityText(pendingLineText.slice(0, flushLength)));
+    pendingLineText = pendingLineText.slice(flushLength);
+  };
+
+  const readAvailable = async () => {
+    const stat = await fs.stat(options.sourcePath).catch(() => null);
+    if (!stat || stat.size <= readOffset) {
+      return;
+    }
+
+    const file = await fs.open(options.sourcePath, 'r');
+    try {
+      while (readOffset < stat.size) {
+        const length = Math.min(REDACTION_STREAM_HIGH_WATER_MARK, stat.size - readOffset);
+        const buffer = Buffer.alloc(length);
+        const { bytesRead } = await file.read(buffer, 0, length, readOffset);
+        if (!bytesRead) {
+          return;
+        }
+        readOffset += bytesRead;
+        await consumeDecodedText(decoder.write(buffer.subarray(0, bytesRead)));
+      }
+      if (!stopped) {
+        await flushPartialLine(false);
+      }
+    } finally {
+      await file.close();
+    }
+  };
+
+  const readSafely = async () => {
+    try {
+      await readAvailable();
+    } catch {
+      // Live streaming is observational; final artifact capture remains authoritative.
+    }
+  };
+
+  const timer = setInterval(() => {
+    if (readPromise) {
+      return;
+    }
+    readPromise = readSafely().finally(() => {
+      readPromise = null;
+    });
+  }, options.pollIntervalMs || DEFAULT_LIVE_OUTPUT_POLL_INTERVAL_MS);
+
+  return async () => {
+    if (stopped) {
+      return;
+    }
+    stopped = true;
+    clearInterval(timer);
+    await readPromise;
+    await readSafely();
+    await consumeDecodedText(decoder.end());
+    await flushPartialLine(true);
+  };
 }
 
 export async function writeRedactedArtifactFromFile(options: {
@@ -408,10 +591,12 @@ export async function executeTmuxCommand(options: TmuxCommandOptions): Promise<E
   const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), `${sessionName}-`));
   const exitCodePath = path.join(tempDir, 'exit-code');
   const paneCapturePath = path.join(tempDir, 'pane-output.raw.log');
+  const commandScriptPath = path.join(tempDir, 'command.sh');
   const doneSignalName = getDoneSignalName(sessionName);
   const guardedCwd = await resolveGuardedCwd(options.workspaceRoot, options.cwd);
   let terminalStatus: ExecTerminalStatus | null = null;
   let forceKillTimer: ReturnType<typeof setTimeout> | null = null;
+  let stopLiveOutputTailer: (() => Promise<void>) | null = null;
 
   try {
     await killTmuxSessionIfExists(sessionName);
@@ -421,17 +606,37 @@ export async function executeTmuxCommand(options: TmuxCommandOptions): Promise<E
       env: options.env,
       exitCodePath,
       doneSignalName,
-      paneCapturePath,
     });
-    await execTmux(['new-session', '-d', '-s', sessionName, '-c', guardedCwd, '--', 'sh', '-lc', shellCommand]);
+    await fs.writeFile(commandScriptPath, `${shellCommand}\n`, { mode: 0o700 });
+    await execTmux([
+      'new-session',
+      '-d',
+      '-s',
+      sessionName,
+      '-c',
+      guardedCwd,
+      '--',
+      'sh',
+      '-lc',
+      'stty -echo 2>/dev/null || true; exec sh',
+    ]);
     await execTmux(['set-option', '-t', sessionName, 'remain-on-exit', 'on']).catch(() => {
       // Older tmux versions may reject this after a very short-lived process exits.
     });
+    await startPaneCapture(sessionName, paneCapturePath);
+    if (options.onOutputChunk) {
+      stopLiveOutputTailer = createRedactedLiveOutputTailer({
+        sourcePath: paneCapturePath,
+        pollIntervalMs: options.liveOutputPollIntervalMs,
+        onChunk: options.onOutputChunk,
+      });
+    }
     await options.onSessionStarted?.({
       backend: 'tmux',
       sessionName,
       startedAt,
     });
+    await sendTmuxInput(sessionName, `exec sh ${shellQuote(commandScriptPath)}`, true);
 
     const cancelHandler = () => {
       terminalStatus = terminalStatus || 'canceled';
@@ -473,6 +678,11 @@ export async function executeTmuxCommand(options: TmuxCommandOptions): Promise<E
       options.cancelSignal?.removeEventListener('abort', cancelHandler);
       options.leaseLostSignal?.removeEventListener('abort', leaseLostHandler);
     }
+    await stopPaneCapture(sessionName);
+    if (stopLiveOutputTailer) {
+      await stopLiveOutputTailer();
+      stopLiveOutputTailer = null;
+    }
 
     const rawExitCode = await fs.readFile(exitCodePath, 'utf8').catch(() => '');
     const exitCode = completed ? getExitCode(rawExitCode) : null;
@@ -510,6 +720,10 @@ export async function executeTmuxCommand(options: TmuxCommandOptions): Promise<E
       },
     };
   } finally {
+    await stopPaneCapture(sessionName);
+    if (stopLiveOutputTailer) {
+      await stopLiveOutputTailer();
+    }
     await fs.rm(tempDir, { recursive: true, force: true }).catch(() => {
       // The temp directory only contains raw pane capture and exit-code helpers.
     });
