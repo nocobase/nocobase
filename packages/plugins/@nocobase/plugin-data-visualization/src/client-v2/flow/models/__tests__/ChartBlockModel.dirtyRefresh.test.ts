@@ -134,6 +134,20 @@ describe('ChartBlockModel onActive dirty refresh', () => {
     expect(resource.refreshCalls).toBe(0);
   });
 
+  it('refreshes builder charts when activation is forced', async () => {
+    const { model, resource } = setupModel({
+      mode: 'builder',
+      collectionPath: ['main', 'orders'],
+    });
+
+    await model.refresh();
+    resource.refreshCalls = 0;
+
+    await model.onActive(true);
+
+    expect(resource.refreshCalls).toBe(1);
+  });
+
   it('refreshes builder charts when the query changes for the same collection', async () => {
     const { model, resource } = setupModel({
       mode: 'builder',
