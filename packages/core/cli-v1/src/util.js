@@ -348,11 +348,16 @@ exports.genTsConfigPaths = function genTsConfigPaths() {
 
   const tsConfigJsonPath = join(cwd, './tsconfig.paths.json');
   const content = { compilerOptions: { paths } };
-  writeFileSync(tsConfigJsonPath, JSON.stringify(content, null, 2), 'utf-8');
+  if (process.env.NOCOBASE_RUNNING_IN_DOCKER !== 'true') {
+    writeFileSync(tsConfigJsonPath, JSON.stringify(content, null, 2), 'utf-8');
+  }
   return content;
 };
 
 function generatePlaywrightPath(clean = false) {
+  if (process.env.NOCOBASE_RUNNING_IN_DOCKER === 'true') {
+    return;
+  }
   try {
     const playwright = storagePathJoin('playwright', 'tests');
     if (clean && fs.existsSync(playwright)) {
@@ -552,7 +557,7 @@ function generateGatewayPath() {
     return resolve(process.cwd(), process.env.SOCKET_PATH);
   }
   if (process.env.NOCOBASE_RUNNING_IN_DOCKER === 'true') {
-    return resolve(os.homedir(), '.nocobase', 'gateway.sock');
+    return resolve(os.tmpdir(), 'nocobase', 'gateway.sock');
   }
   return storagePathJoin('gateway.sock');
 }
@@ -565,7 +570,7 @@ function generatePm2Home() {
     return resolve(process.cwd(), process.env.PM2_HOME);
   }
   if (process.env.NOCOBASE_RUNNING_IN_DOCKER === 'true') {
-    return resolve(os.homedir(), '.nocobase', 'pm2');
+    return resolve(os.tmpdir(), 'nocobase', 'pm2');
   }
   return storagePathJoin('.pm2');
 }
@@ -733,6 +738,9 @@ exports.checkDBDialect = function () {
 };
 
 exports.generatePlugins = function () {
+  if (process.env.NOCOBASE_RUNNING_IN_DOCKER === 'true') {
+    return;
+  }
   try {
     require.resolve('@nocobase/devtools/common');
     const { generateAllPlugins, generatePlugins, generateV2Plugins } = require('@nocobase/devtools/common');
