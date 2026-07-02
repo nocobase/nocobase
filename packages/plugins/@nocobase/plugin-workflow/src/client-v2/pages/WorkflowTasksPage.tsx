@@ -400,7 +400,7 @@ function WorkflowTaskList(props: {
         rowKey={(record) => String(getWorkflowTaskRecordKey(record) ?? '')}
         locale={{ emptyText: t('No data yet') }}
         split={false}
-        style={{ background: token.colorBgLayout, flex: '1 1 0%', minHeight: 0 }}
+        style={{ background: token.colorBgLayout, flex: '1 1 0%', minHeight: 0, overflow: 'auto' }}
         renderItem={(record, index) => (
           <WorkflowTaskRecordContext.Provider value={{ record, openRecord: onOpenRecord, refresh }}>
             <List.Item
@@ -427,7 +427,9 @@ function WorkflowTaskList(props: {
         <Flex
           justify="end"
           style={{
-            padding: mobile ? '0.5em' : `0 ${token.paddingLG}px ${token.padding}px`,
+            background: token.colorBgLayout,
+            flexShrink: 0,
+            padding: mobile ? '0.5em' : `${token.padding}px ${token.paddingLG}px`,
           }}
         >
           <WorkflowTaskPagination mobile={mobile} onPageChange={onPageChange} page={page} total={total} />
@@ -807,7 +809,7 @@ function WorkflowTasksPageContent() {
             flexDirection: 'column',
             minHeight: 0,
             padding: 0,
-            overflow: 'auto',
+            overflow: 'hidden',
           }}
         >
           {mobile ? null : (

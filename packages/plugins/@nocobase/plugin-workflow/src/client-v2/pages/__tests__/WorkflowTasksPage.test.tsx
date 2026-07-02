@@ -641,6 +641,16 @@ describe('WorkflowTasksPage', () => {
     expect(screen.getByRole('combobox', { name: 'Page size' })).toBeInTheDocument();
     expect(screen.getByRole('combobox', { name: 'Page size' }).closest('.ant-select')).toHaveStyle({ width: '112px' });
     expect(screen.getByText('20 / page')).toBeInTheDocument();
+    expect(container.querySelector('.ant-list')).toHaveStyle({
+      flex: '1 1 0%',
+      minHeight: '0',
+      overflow: 'auto',
+    });
+    expect(screen.getByTestId('workflow-task-pagination').parentElement).toHaveStyle({
+      background: '#f5f5f5',
+      flexShrink: '0',
+      padding: '16px 24px',
+    });
     expect(screen.getByTestId('workflow-task-list-region')).toHaveStyle({
       background: '#f5f5f5',
       display: 'flex',
