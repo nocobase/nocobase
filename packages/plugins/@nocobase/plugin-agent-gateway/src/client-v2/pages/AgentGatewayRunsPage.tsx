@@ -40,6 +40,7 @@ import type { ColumnsType } from 'antd/es/table';
 import type { CSSMotionProps } from 'rc-motion';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { AgentTimeline, AgentTimelineEventRecord } from '../components/AgentTimeline';
+import { AgentSessionResumeBox, AgentSessionResumeInput } from '../components/AgentSessionResumeBox';
 import { ReadonlyXtermOutput } from '../components/ReadonlyXtermOutput';
 import { TerminalStreamSmokePanel, isTerminalStreamSmokeEnabled } from '../components/TerminalStreamSmokePanel';
 import { useTerminalStream, UseTerminalStreamState } from '../hooks/useTerminalStream';
@@ -159,6 +160,15 @@ interface RunDetailsWarnings {
   artifacts?: string;
   snapshots?: string;
   apiCallLogs?: string;
+}
+
+interface ResumeAgentSessionResult {
+  runId: string;
+  runCode?: string;
+  agentSessionId: string;
+  parentRunId?: string;
+  resumedFromRunId?: string;
+  deduped: boolean;
 }
 
 interface ConversationEventsState {
@@ -636,11 +646,14 @@ export default function AgentGatewayRunsPage() {
         method: 'get',
       });
       const run = getRequiredResponseData(runResponse, t('Failed to load run details'));
+      const timelineUrl = run.agentSessionId
+        ? `agent-gateway/agent-sessions/${encodeURIComponent(run.agentSessionId)}/conversation-events:list`
+        : `agent-gateway/runs/${encodeURIComponent(selectedRunId)}/conversation-events:list`;
       const [conversationEventsResult, eventsResult, artifactsResult, snapshotsResult, apiCallLogsResult] =
         await Promise.all([
           getOptionalDetails<AgentTimelineEventRecord[]>({
             request: ctx.api.request<AgentTimelineEventRecord[]>({
-              url: `agent-gateway/runs/${encodeURIComponent(selectedRunId)}/conversation-events:list`,
+              url: timelineUrl,
               method: 'get',
             }),
             fallback: [],
@@ -746,8 +759,14 @@ export default function AgentGatewayRunsPage() {
       if (!selectedRunId || !detailOpen) {
         return null;
       }
+      const currentRun = runDetailsRequest.data?.run;
+      const currentRunMatchesSelection = currentRun?.id === selectedRunId;
+      const timelineUrl =
+        currentRunMatchesSelection && currentRun?.agentSessionId
+          ? `agent-gateway/agent-sessions/${encodeURIComponent(currentRun.agentSessionId)}/conversation-events:list`
+          : `agent-gateway/runs/${encodeURIComponent(selectedRunId)}/conversation-events:list`;
       const response = await ctx.api.request<AgentTimelineEventRecord[]>({
-        url: `agent-gateway/runs/${encodeURIComponent(selectedRunId)}/conversation-events:list`,
+        url: timelineUrl,
         method: 'get',
       });
       return {
@@ -837,6 +856,40 @@ export default function AgentGatewayRunsPage() {
       },
       onError(error) {
         ctx.message?.error(getApiErrorMessage(error, t('Failed to terminate terminal')));
+      },
+    },
+  );
+
+  const resumeSessionRequest = useRequest(
+    async (options: { run: RunRecord } & AgentSessionResumeInput) => {
+      if (!options.run.agentSessionId) {
+        throw new Error(t('No agent session'));
+      }
+      const response = await ctx.api.request<ResumeAgentSessionResult>({
+        url: `agent-gateway/agent-sessions/${encodeURIComponent(options.run.agentSessionId)}/resume`,
+        method: 'post',
+        data: {
+          message: options.message,
+          idempotencyKey: options.idempotencyKey,
+          resumedFromRunId: options.run.id,
+        },
+      });
+      return getRequiredResponseData(response, t('Failed to resume session'));
+    },
+    {
+      manual: true,
+      onSuccess(result) {
+        const nextRunId = String(result.runId);
+        setConversationEventsState(null);
+        setConversationEventsWarning(undefined);
+        setSelectedRunId(nextRunId);
+        setDetailOpen(true);
+        replaceRunIdInLocationSearch(nextRunId);
+        runsRequest.refresh();
+        ctx.message?.success(result.deduped ? t('Continuation run already exists') : t('Continuation run created'));
+      },
+      onError(error) {
+        ctx.message?.error(getApiErrorMessage(error, t('Failed to resume session')));
       },
     },
   );
@@ -978,15 +1031,15 @@ export default function AgentGatewayRunsPage() {
     [openRunDetails, renderCancelButton, t],
   );
 
-  const selectedRun = runDetailsRequest.data?.run || runsRequest.data?.find((run) => run.id === selectedRunId);
+  const activeRunDetails = runDetailsRequest.data?.run.id === selectedRunId ? runDetailsRequest.data : null;
+  const selectedRun = activeRunDetails?.run || runsRequest.data?.find((run) => run.id === selectedRunId);
   const terminalSnapshot = terminalSnapshotRequest.data;
   const latestConversationEvents = conversationEventsState?.runId === selectedRunId ? conversationEventsState : null;
-  const timelineEvents = latestConversationEvents?.events || runDetailsRequest.data?.conversationEvents || [];
+  const timelineEvents = latestConversationEvents?.events || activeRunDetails?.conversationEvents || [];
   const timelineWarning =
-    conversationEventsWarning ||
-    (latestConversationEvents ? undefined : runDetailsRequest.data?.warnings.conversationEvents);
+    conversationEventsWarning || (latestConversationEvents ? undefined : activeRunDetails?.warnings.conversationEvents);
   const useLegacyTimelineFallback = canUseLegacyTimelineFallback(
-    runDetailsRequest.data?.run,
+    activeRunDetails?.run,
     timelineEvents.length,
     Boolean(timelineWarning),
   );
@@ -1060,63 +1113,73 @@ export default function AgentGatewayRunsPage() {
         extra={selectedRun && isCancelableRun(selectedRun) ? renderCancelButton(selectedRun) : null}
         destroyOnClose
       >
-        {runDetailsRequest.loading ? <Spin /> : null}
-        {runDetailsRequest.data ? (
+        {runDetailsRequest.loading || (detailOpen && selectedRunId && !activeRunDetails) ? <Spin /> : null}
+        {activeRunDetails ? (
           <Space direction="vertical" size={16} style={{ width: '100%' }}>
             <Descriptions bordered size="small" column={2} title={t('Run summary')}>
-              <Descriptions.Item label={t('Status')}>{statusTag(runDetailsRequest.data.run.status)}</Descriptions.Item>
+              <Descriptions.Item label={t('Status')}>{statusTag(activeRunDetails.run.status)}</Descriptions.Item>
               <Descriptions.Item label={t('Agent')}>
-                {[runDetailsRequest.data.run.nodeId, runDetailsRequest.data.run.agentProfileId]
-                  .filter(Boolean)
-                  .join(' / ') || '-'}
+                {[activeRunDetails.run.nodeId, activeRunDetails.run.agentProfileId].filter(Boolean).join(' / ') || '-'}
               </Descriptions.Item>
               <Descriptions.Item label={t('Requested at')}>
-                {formatDateTime(runDetailsRequest.data.run.requestedAt)}
+                {formatDateTime(activeRunDetails.run.requestedAt)}
               </Descriptions.Item>
               <Descriptions.Item label={t('Started at')}>
-                {formatDateTime(runDetailsRequest.data.run.startedAt)}
+                {formatDateTime(activeRunDetails.run.startedAt)}
               </Descriptions.Item>
               <Descriptions.Item label={t('Finished at')}>
-                {formatDateTime(runDetailsRequest.data.run.finishedAt)}
+                {formatDateTime(activeRunDetails.run.finishedAt)}
               </Descriptions.Item>
               <Descriptions.Item label={t('Terminal status')}>
-                {runDetailsRequest.data.run.terminalStatus ? statusTag(runDetailsRequest.data.run.terminalStatus) : '-'}
+                {activeRunDetails.run.terminalStatus ? statusTag(activeRunDetails.run.terminalStatus) : '-'}
               </Descriptions.Item>
               <Descriptions.Item label={t('Agent session')} span={2}>
-                <RunSessionSummary run={runDetailsRequest.data.run} t={t} />
-                {!runDetailsRequest.data.run.agentSessionId &&
-                !runDetailsRequest.data.run.agentSessionProvider &&
-                !runDetailsRequest.data.run.agentSessionProviderId ? (
+                <RunSessionSummary run={activeRunDetails.run} t={t} />
+                {!activeRunDetails.run.agentSessionId &&
+                !activeRunDetails.run.agentSessionProvider &&
+                !activeRunDetails.run.agentSessionProviderId ? (
                   <Typography.Text type="secondary" style={{ display: 'block' }}>
                     {t('No agent session')}
                   </Typography.Text>
                 ) : null}
               </Descriptions.Item>
               <Descriptions.Item label={t('Continuation')} span={2}>
-                {[runDetailsRequest.data.run.continuationReason, runDetailsRequest.data.run.parentRunId]
+                {[activeRunDetails.run.continuationReason, activeRunDetails.run.parentRunId]
                   .filter(Boolean)
                   .join(' / ') || '-'}
               </Descriptions.Item>
               <Descriptions.Item label={t('Last terminal activity')}>
-                {formatDateTime(runDetailsRequest.data.run.terminalLastActivityAt)}
+                {formatDateTime(activeRunDetails.run.terminalLastActivityAt)}
               </Descriptions.Item>
               <Descriptions.Item label={t('Error summary')}>
-                {redactPreviewText(runDetailsRequest.data.run.errorSummary) || '-'}
+                {redactPreviewText(activeRunDetails.run.errorSummary) || '-'}
               </Descriptions.Item>
               <Descriptions.Item label={t('Result summary')} span={2}>
-                <JsonPreview value={runDetailsRequest.data.run.resultSummaryJson} />
+                <JsonPreview value={activeRunDetails.run.resultSummaryJson} />
               </Descriptions.Item>
             </Descriptions>
 
             <AgentTimeline
               t={t}
               events={timelineEvents}
-              legacyEvents={runDetailsRequest.data.events}
+              legacyEvents={activeRunDetails.events}
               useLegacyFallback={useLegacyTimelineFallback}
               warning={timelineWarning}
             />
 
-            {showTerminalStreamSmoke ? <TerminalStreamSmokePanel runId={runDetailsRequest.data.run.id} /> : null}
+            <AgentSessionResumeBox
+              run={activeRunDetails.run}
+              t={t}
+              loading={resumeSessionRequest.loading}
+              onResume={async (input) => {
+                await resumeSessionRequest.runAsync({
+                  run: activeRunDetails.run,
+                  ...input,
+                });
+              }}
+            />
+
+            {showTerminalStreamSmoke ? <TerminalStreamSmokePanel runId={activeRunDetails.run.id} /> : null}
 
             <FastCollapse
               defaultActiveKey={['live-output']}
@@ -1127,7 +1190,7 @@ export default function AgentGatewayRunsPage() {
                   label: t('Live CLI Output'),
                   children: (
                     <TerminalPanel
-                      runId={runDetailsRequest.data.run.id}
+                      runId={activeRunDetails.run.id}
                       t={t}
                       snapshot={terminalSnapshot}
                       stream={terminalStream}
@@ -1153,10 +1216,10 @@ export default function AgentGatewayRunsPage() {
                   children: (
                     <LogsPanel
                       t={t}
-                      events={runDetailsRequest.data.events}
-                      apiCallLogs={runDetailsRequest.data.apiCallLogs}
-                      eventsWarning={runDetailsRequest.data.warnings.events}
-                      apiCallLogsWarning={runDetailsRequest.data.warnings.apiCallLogs}
+                      events={activeRunDetails.events}
+                      apiCallLogs={activeRunDetails.apiCallLogs}
+                      eventsWarning={activeRunDetails.warnings.events}
+                      apiCallLogsWarning={activeRunDetails.warnings.apiCallLogs}
                     />
                   ),
                 },
@@ -1167,10 +1230,10 @@ export default function AgentGatewayRunsPage() {
                   children: (
                     <ArtifactsPanel
                       t={t}
-                      artifacts={runDetailsRequest.data.artifacts}
-                      snapshots={runDetailsRequest.data.snapshots}
-                      artifactsWarning={runDetailsRequest.data.warnings.artifacts}
-                      snapshotsWarning={runDetailsRequest.data.warnings.snapshots}
+                      artifacts={activeRunDetails.artifacts}
+                      snapshots={activeRunDetails.snapshots}
+                      artifactsWarning={activeRunDetails.warnings.artifacts}
+                      snapshotsWarning={activeRunDetails.warnings.snapshots}
                     />
                   ),
                 },

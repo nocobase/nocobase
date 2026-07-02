@@ -791,10 +791,10 @@ describe('agent gateway run observability APIs', () => {
     const readRunDetailsAgent = await createUserAgent('agent-gateway-run-details-reader', [
       'agentGateway.readRunDetails',
     ]);
-    expect((await readRunDetailsAgent.get(`/api/agent-gateway/runs/${runId}/events:list`)).status).toBe(200);
-    expect((await readRunDetailsAgent.get(`/api/agent-gateway/runs/${runId}/artifacts:list`)).status).toBe(200);
-    expect((await readRunDetailsAgent.get(`/api/agent-gateway/runs/${runId}/snapshots:list`)).status).toBe(200);
-    expect((await readRunDetailsAgent.get(`/api/agent-gateway/runs/${runId}/api-call-logs:list`)).status).toBe(200);
+    expect((await readRunDetailsAgent.get(`/api/agent-gateway/runs/${runId}/events:list`)).status).toBe(403);
+    expect((await readRunDetailsAgent.get(`/api/agent-gateway/runs/${runId}/artifacts:list`)).status).toBe(403);
+    expect((await readRunDetailsAgent.get(`/api/agent-gateway/runs/${runId}/snapshots:list`)).status).toBe(403);
+    expect((await readRunDetailsAgent.get(`/api/agent-gateway/runs/${runId}/api-call-logs:list`)).status).toBe(403);
     expect((await readRunDetailsAgent.get('/agRunEvents:list')).status).toBe(403);
     expect((await readRunDetailsAgent.get('/agRunArtifacts:list')).status).toBe(403);
     expect((await readRunDetailsAgent.get('/agRunSnapshots:list')).status).toBe(403);

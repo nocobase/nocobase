@@ -76,6 +76,14 @@ interface TerminalStreamHandle {
   close(): void;
 }
 
+interface ExecutionCommandSpec {
+  commandKey: string;
+  args: string[];
+  cwd: string;
+  env: Record<string, string>;
+  timeoutMs?: number;
+}
+
 function isRecord(value: unknown): value is JsonRecord {
   return Object.prototype.toString.call(value) === '[object Object]';
 }
@@ -87,6 +95,10 @@ function getPayload(lease: RunLease) {
 
 function getString(value: unknown) {
   return typeof value === 'string' ? value.trim() : '';
+}
+
+function getRawString(value: unknown) {
+  return typeof value === 'string' ? value : '';
 }
 
 function getStringArray(value: unknown) {
@@ -109,6 +121,46 @@ function getStringMap(value: unknown) {
 function getNumber(value: unknown) {
   const numberValue = typeof value === 'number' ? value : Number(value);
   return Number.isFinite(numberValue) && numberValue > 0 ? numberValue : undefined;
+}
+
+function getExecutionCommandSpec(payload: JsonRecord, cwd: string): ExecutionCommandSpec {
+  const commandKey = getString(payload.commandKey || payload.profileKey);
+  if (getString(payload.mode) !== 'agent-session-resume') {
+    return {
+      commandKey,
+      args: getStringArray(payload.args),
+      cwd,
+      env: getStringMap(payload.env),
+      timeoutMs: getNumber(payload.timeoutMs),
+    };
+  }
+
+  const adapter = getAgentAdapter(commandKey);
+  if (!adapter?.capabilities.resumeWithMessage) {
+    throw new Error(`Agent provider does not support resume: ${commandKey || 'unknown'}`);
+  }
+
+  const providerSessionId = getString(payload.providerSessionId);
+  const message = getRawString(payload.message);
+  if (!providerSessionId) {
+    throw new Error('providerSessionId is required for resume runs');
+  }
+  if (!message.trim()) {
+    throw new Error('message is required for resume runs');
+  }
+
+  const command = adapter.buildResumeCommand({
+    providerSessionId,
+    message,
+    cwd,
+    extraArgs: getStringArray(payload.extraArgs),
+    timeoutMs: getNumber(payload.timeoutMs),
+  });
+  return {
+    ...command,
+    cwd: command.cwd || cwd,
+    env: getStringMap(payload.env),
+  };
 }
 
 function isSkillVersionSource(value: unknown): value is SkillVersionSource {
@@ -687,51 +739,53 @@ export async function executeClaimedRun(
   }
 
   const payload = getPayload(claimedLease);
-  const commandKey = getString(payload.commandKey || payload.profileKey);
   const cwd = path.resolve(options.workspaceRoot, getString(payload.cwd) || '.');
   const terminalBackend = options.terminalBackend || 'exec';
   const tmuxSessionName = getManagedTmuxSessionName(claimedLease.runId);
   let terminalStream: TerminalStreamHandle | null = null;
   const cancelController = new AbortController();
   const leaseLostController = new AbortController();
-  if (terminalBackend === 'tmux' && !options.executeCommand) {
-    await options.gateway.updateRunTerminal(activeLease(), {
-      terminalBackend: 'tmux',
-      terminalSessionName: tmuxSessionName,
-      terminalStatus: 'active',
-      terminalStartedAt: new Date().toISOString(),
-    });
-    terminalStream = createRunTerminalStream({
-      runOptions: options,
-      runId: claimedLease.runId,
-      sessionName: tmuxSessionName,
-      getLease: activeLease,
-    });
-    await terminalStream.start();
-  }
-  let stopHeartbeat: (() => Promise<void>) | null = heartbeatWhileRunPhase({
-    gateway: options.gateway,
-    getLease: activeLease,
-    setLease: (nextLease) => {
-      lease = nextLease;
-    },
-    status: 'running',
-    cancelController,
-    leaseLostController,
-    intervalMs: options.runHeartbeatIntervalMs || DEFAULT_RUN_HEARTBEAT_INTERVAL_MS,
-  });
+  let stopHeartbeat: (() => Promise<void>) | null = null;
 
   try {
+    const commandSpec = getExecutionCommandSpec(payload, cwd);
+    if (terminalBackend === 'tmux' && !options.executeCommand) {
+      await options.gateway.updateRunTerminal(activeLease(), {
+        terminalBackend: 'tmux',
+        terminalSessionName: tmuxSessionName,
+        terminalStatus: 'active',
+        terminalStartedAt: new Date().toISOString(),
+      });
+      terminalStream = createRunTerminalStream({
+        runOptions: options,
+        runId: claimedLease.runId,
+        sessionName: tmuxSessionName,
+        getLease: activeLease,
+      });
+      await terminalStream.start();
+    }
+    stopHeartbeat = heartbeatWhileRunPhase({
+      gateway: options.gateway,
+      getLease: activeLease,
+      setLease: (nextLease) => {
+        lease = nextLease;
+      },
+      status: 'running',
+      cancelController,
+      leaseLostController,
+      intervalMs: options.runHeartbeatIntervalMs || DEFAULT_RUN_HEARTBEAT_INTERVAL_MS,
+    });
+
     const result =
       terminalBackend === 'tmux' && !options.executeCommand
         ? await executeTmuxCommand({
             runId: claimedLease.runId,
-            definition: getAllowlistedDefinition(options.allowlist, commandKey),
-            args: getStringArray(payload.args),
-            cwd,
+            definition: getAllowlistedDefinition(options.allowlist, commandSpec.commandKey),
+            args: commandSpec.args,
+            cwd: commandSpec.cwd,
             workspaceRoot: options.workspaceRoot,
-            env: getStringMap(payload.env),
-            timeoutMs: getNumber(payload.timeoutMs) || DEFAULT_RUN_HEARTBEAT_INTERVAL_MS * 180,
+            env: commandSpec.env,
+            timeoutMs: commandSpec.timeoutMs || DEFAULT_RUN_HEARTBEAT_INTERVAL_MS * 180,
             cancelSignal: cancelController.signal,
             leaseLostSignal: leaseLostController.signal,
             artifactDir: options.artifactDir,
@@ -740,13 +794,13 @@ export async function executeClaimedRun(
             },
           })
         : await (options.executeCommand || executeAllowlistedCommand)({
-            commandKey,
+            commandKey: commandSpec.commandKey,
             allowlist: options.allowlist,
-            args: getStringArray(payload.args),
-            cwd,
+            args: commandSpec.args,
+            cwd: commandSpec.cwd,
             workspaceRoot: options.workspaceRoot,
-            env: getStringMap(payload.env),
-            timeoutMs: getNumber(payload.timeoutMs),
+            env: commandSpec.env,
+            timeoutMs: commandSpec.timeoutMs,
             cancelSignal: cancelController.signal,
             leaseLostSignal: leaseLostController.signal,
             artifactDir: options.artifactDir,
@@ -792,7 +846,7 @@ export async function executeClaimedRun(
       await reportProviderSessionAndCollectWarnings({
         gateway: options.gateway,
         lease: activeLease(),
-        commandKey,
+        commandKey: commandSpec.commandKey,
         result,
       });
       await options.gateway.cancelAckRun(activeLease());
@@ -808,7 +862,7 @@ export async function executeClaimedRun(
     const sessionObservationWarnings = await reportProviderSessionAndCollectWarnings({
       gateway: options.gateway,
       lease: activeLease(),
-      commandKey,
+      commandKey: commandSpec.commandKey,
       result,
     });
     const terminalResult: ExecDriverResult =

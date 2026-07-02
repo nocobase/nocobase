@@ -115,6 +115,9 @@ async function requireObservabilityRead(
 ) {
   try {
     await requireAgentGatewayPermission(ctx, action, message);
+    return {
+      permissionKey: audit.permissionKey,
+    };
   } catch (error) {
     await auditAgentActionBestEffort(ctx, {
       action: audit.auditAction,
@@ -146,6 +149,7 @@ async function auditObservationRead(
   action: 'readArtifacts' | 'readRawLogs',
   permissionKey: string,
   routeAction: string,
+  metadataJson: JsonRecord = {},
 ) {
   await auditReadAgentAction(ctx, {
     action,
@@ -156,6 +160,7 @@ async function auditObservationRead(
     resultStatus: 'succeeded',
     metadataJson: {
       routeAction,
+      ...metadataJson,
     },
   });
 }
@@ -394,7 +399,7 @@ async function registerSnapshot(ctx: Context, runId: string) {
 }
 
 async function listRunEvents(ctx: Context, runId: string) {
-  await requireObservabilityRead(
+  const permission = await requireObservabilityRead(
     ctx,
     AGENT_GATEWAY_ACTIONS.readRawLogs,
     'Agent Gateway raw log read permission required',
@@ -415,11 +420,11 @@ async function listRunEvents(ctx: Context, runId: string) {
   })) as ModelRecord[];
 
   ctx.body = events.map(serializeModel);
-  await auditObservationRead(ctx, run, 'readRawLogs', AGENT_GATEWAY_PERMISSIONS.readRawLogs, 'events:list');
+  await auditObservationRead(ctx, run, 'readRawLogs', permission.permissionKey, 'events:list');
 }
 
 async function listRunArtifacts(ctx: Context, runId: string) {
-  await requireObservabilityRead(
+  const permission = await requireObservabilityRead(
     ctx,
     AGENT_GATEWAY_ACTIONS.readArtifacts,
     'Agent Gateway artifact read permission required',
@@ -440,11 +445,11 @@ async function listRunArtifacts(ctx: Context, runId: string) {
   })) as ModelRecord[];
 
   ctx.body = artifacts.map(serializeModel);
-  await auditObservationRead(ctx, run, 'readArtifacts', AGENT_GATEWAY_PERMISSIONS.readArtifacts, 'artifacts:list');
+  await auditObservationRead(ctx, run, 'readArtifacts', permission.permissionKey, 'artifacts:list');
 }
 
 async function listRunSnapshots(ctx: Context, runId: string) {
-  await requireObservabilityRead(
+  const permission = await requireObservabilityRead(
     ctx,
     AGENT_GATEWAY_ACTIONS.readArtifacts,
     'Agent Gateway artifact read permission required',
@@ -465,11 +470,11 @@ async function listRunSnapshots(ctx: Context, runId: string) {
   })) as ModelRecord[];
 
   ctx.body = snapshots.map(serializeModel);
-  await auditObservationRead(ctx, run, 'readArtifacts', AGENT_GATEWAY_PERMISSIONS.readArtifacts, 'snapshots:list');
+  await auditObservationRead(ctx, run, 'readArtifacts', permission.permissionKey, 'snapshots:list');
 }
 
 async function listRunApiCallLogs(ctx: Context, runId: string) {
-  await requireObservabilityRead(
+  const permission = await requireObservabilityRead(
     ctx,
     AGENT_GATEWAY_ACTIONS.readRawLogs,
     'Agent Gateway raw log read permission required',
@@ -490,7 +495,7 @@ async function listRunApiCallLogs(ctx: Context, runId: string) {
   })) as ModelRecord[];
 
   ctx.body = apiCallLogs.map(serializeModel);
-  await auditObservationRead(ctx, run, 'readRawLogs', AGENT_GATEWAY_PERMISSIONS.readRawLogs, 'api-call-logs:list');
+  await auditObservationRead(ctx, run, 'readRawLogs', permission.permissionKey, 'api-call-logs:list');
 }
 
 export function registerRunObservabilityRoutes(plugin: Plugin) {

@@ -14,16 +14,19 @@ import { createApiCallLogSummary, redactDaemonErrorSummary, redactText } from '.
 import { API_PREFIX, getRecord, getString } from './utils';
 
 const DAEMON_API_DIRECTION = 'daemon_to_nocobase';
+const USER_API_DIRECTION = 'user_to_nocobase';
 const API_LOG_PATH_MAX_CHARS = 240;
 const API_LOG_FIELD_SUMMARY_MAX_CHARS = 1000;
 const API_LOG_STRUCTURED_VALUE_MAX_CHARS = 4000;
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const API_LOG_OMITTED_KEY_FRAGMENTS = ['content', 'metadata', 'payload', 'prompt', 'snapshot'];
 
-interface MatchedDaemonRoute {
+interface MatchedApiRoute {
   action: string;
+  direction?: string;
   nodeId?: string;
   runId?: string;
+  sessionId?: string;
 }
 
 interface ErrorWithStatus {
@@ -137,7 +140,7 @@ function getUuidForeignKey(value: unknown) {
   return UUID_PATTERN.test(stringValue) ? stringValue : '';
 }
 
-function matchDaemonRoute(ctx: Context): MatchedDaemonRoute | null {
+function matchApiRoute(ctx: Context): MatchedApiRoute | null {
   if (ctx.method !== 'POST' || !ctx.path.startsWith(API_PREFIX)) {
     return null;
   }
@@ -220,6 +223,15 @@ function matchDaemonRoute(ctx: Context): MatchedDaemonRoute | null {
     };
   }
 
+  const agentSessionResumeMatch = routePath.match(/^\/agent-sessions\/([^/]+)\/resume$/);
+  if (agentSessionResumeMatch) {
+    return {
+      action: 'agent-session:resume',
+      direction: USER_API_DIRECTION,
+      sessionId: agentSessionResumeMatch[1],
+    };
+  }
+
   return null;
 }
 
@@ -240,9 +252,9 @@ function getRequestId(ctx: Context) {
   return requestId ? redactText(requestId, { maxStringLength: 255 }) : null;
 }
 
-function getPersistedPath(ctx: Context, route: MatchedDaemonRoute) {
+function getPersistedPath(ctx: Context, route: MatchedApiRoute) {
   let path = ctx.path;
-  for (const routeValue of [route.nodeId, route.runId]) {
+  for (const routeValue of [route.nodeId, route.runId, route.sessionId]) {
     if (routeValue && !UUID_PATTERN.test(routeValue)) {
       path = path.replace(routeValue, '[REDACTED]');
     }
@@ -250,7 +262,7 @@ function getPersistedPath(ctx: Context, route: MatchedDaemonRoute) {
   return redactText(path, { maxStringLength: API_LOG_PATH_MAX_CHARS });
 }
 
-async function writeApiCallLog(ctx: Context, route: MatchedDaemonRoute, startedAt: number, error?: unknown) {
+async function writeApiCallLog(ctx: Context, route: MatchedApiRoute, startedAt: number, error?: unknown) {
   const durationMs = Date.now() - startedAt;
   const statusCode = error ? getErrorStatus(error) : ctx.status;
   const responseBody = error
@@ -287,7 +299,7 @@ async function writeApiCallLog(ctx: Context, route: MatchedDaemonRoute, startedA
     values: {
       runId,
       nodeId,
-      direction: DAEMON_API_DIRECTION,
+      direction: route.direction || DAEMON_API_DIRECTION,
       requestId: getRequestId(ctx),
       method: ctx.method,
       path: persistedPath,
@@ -300,7 +312,7 @@ async function writeApiCallLog(ctx: Context, route: MatchedDaemonRoute, startedA
   });
 }
 
-async function safelyWriteApiCallLog(ctx: Context, route: MatchedDaemonRoute, startedAt: number, error?: unknown) {
+async function safelyWriteApiCallLog(ctx: Context, route: MatchedApiRoute, startedAt: number, error?: unknown) {
   try {
     await writeApiCallLog(ctx, route, startedAt, error);
   } catch (logError) {
@@ -315,7 +327,7 @@ async function safelyWriteApiCallLog(ctx: Context, route: MatchedDaemonRoute, st
 export function registerApiCallLogMiddleware(plugin: Plugin) {
   plugin.app.use(
     async (ctx: Context, next: Next) => {
-      const route = matchDaemonRoute(ctx);
+      const route = matchApiRoute(ctx);
       if (!route) {
         await next();
         return;

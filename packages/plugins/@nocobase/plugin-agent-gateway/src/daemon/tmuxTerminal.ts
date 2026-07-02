@@ -85,6 +85,13 @@ const PARTIAL_LINE_SENSITIVE_PREFIXES = [
   'cwd',
   'env',
 ];
+const PANE_CAPTURE_FLUSH_MAX_WAIT_MS = 500;
+const PANE_CAPTURE_FLUSH_POLL_MS = 25;
+const PANE_CAPTURE_FLUSH_STABLE_POLLS = 2;
+
+function delay(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 function execTmux(args: string[], options: { timeoutMs?: number } = {}) {
   return new Promise<{ stdout: string; stderr: string }>((resolve, reject) => {
@@ -248,6 +255,68 @@ async function stopPaneCapture(sessionName: string) {
   await execTmux(['pipe-pane', '-t', sessionName]).catch(() => {
     // The session may already have ended or been terminated.
   });
+}
+
+async function waitForPaneCaptureToSettle(paneCapturePath: string) {
+  const deadline = Date.now() + PANE_CAPTURE_FLUSH_MAX_WAIT_MS;
+  let lastSize = -1;
+  let stablePolls = 0;
+
+  while (Date.now() < deadline) {
+    const stat = await fs.stat(paneCapturePath).catch(() => null);
+    const currentSize = stat?.size ?? 0;
+    if (currentSize === lastSize) {
+      stablePolls += 1;
+      if (stablePolls >= PANE_CAPTURE_FLUSH_STABLE_POLLS) {
+        return;
+      }
+    } else {
+      lastSize = currentSize;
+      stablePolls = 0;
+    }
+    await delay(PANE_CAPTURE_FLUSH_POLL_MS);
+  }
+}
+
+function findTextOverlap(left: string, right: string) {
+  const maxLength = Math.min(left.length, right.length);
+  for (let length = maxLength; length > 0; length -= 1) {
+    if (left.endsWith(right.slice(0, length))) {
+      return length;
+    }
+  }
+  return 0;
+}
+
+async function appendFallbackOutputIfMissing(paneCapturePath: string, fallbackOutput: string) {
+  if (!fallbackOutput) {
+    return;
+  }
+
+  const fallbackBytes = Buffer.byteLength(fallbackOutput);
+  const stat = await fs.stat(paneCapturePath).catch(() => null);
+  if (!stat?.size) {
+    await fs.writeFile(paneCapturePath, fallbackOutput);
+    return;
+  }
+
+  const tailReadSize = Math.min(stat.size, Math.max(TERMINAL_CAPTURE_LIMIT, fallbackBytes * 2));
+  const file = await fs.open(paneCapturePath, 'r');
+  try {
+    const buffer = Buffer.alloc(tailReadSize);
+    const { bytesRead } = await file.read(buffer, 0, tailReadSize, stat.size - tailReadSize);
+    const tail = buffer.subarray(0, bytesRead).toString('utf8');
+    if (tail.includes(fallbackOutput)) {
+      return;
+    }
+    const overlap = findTextOverlap(tail, fallbackOutput);
+    const missingSuffix = fallbackOutput.slice(overlap);
+    if (missingSuffix) {
+      await fs.appendFile(paneCapturePath, missingSuffix);
+    }
+  } finally {
+    await file.close();
+  }
 }
 
 async function writeTextArtifact(artifactDir: string | undefined, fileName: string, content: string) {
@@ -678,7 +747,9 @@ export async function executeTmuxCommand(options: TmuxCommandOptions): Promise<E
       options.cancelSignal?.removeEventListener('abort', cancelHandler);
       options.leaseLostSignal?.removeEventListener('abort', leaseLostHandler);
     }
+    await waitForPaneCaptureToSettle(paneCapturePath);
     await stopPaneCapture(sessionName);
+    await waitForPaneCaptureToSettle(paneCapturePath);
     if (stopLiveOutputTailer) {
       await stopLiveOutputTailer();
       stopLiveOutputTailer = null;
@@ -693,6 +764,7 @@ export async function executeTmuxCommand(options: TmuxCommandOptions): Promise<E
       sessionName,
       capturedAt: new Date().toISOString(),
     }));
+    await appendFallbackOutputIfMissing(paneCapturePath, snapshot.output);
     const stdout = await buildTmuxStdoutOutput({
       artifactDir: options.artifactDir,
       sessionName,

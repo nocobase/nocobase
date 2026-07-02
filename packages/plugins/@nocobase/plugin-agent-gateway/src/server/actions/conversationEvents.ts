@@ -24,6 +24,7 @@ import {
   getCurrentUserId,
   getModelJson,
   getModelString,
+  getModelTargetKey,
   getRecord,
   getString,
   getCurrentRoleNames,
@@ -250,7 +251,7 @@ async function requireConversationRead(ctx: Context) {
   );
 }
 
-async function assertSessionReadableViaRun(ctx: Context, sessionId: string) {
+async function findReadableSessionRunIds(ctx: Context, sessionId: string) {
   const visibilityFilter = await getRunVisibilityFilter(ctx);
   const filter = visibilityFilter
     ? {
@@ -265,14 +266,15 @@ async function assertSessionReadableViaRun(ctx: Context, sessionId: string) {
         agentSessionId: sessionId,
       };
 
-  const run = (await ctx.db.getRepository('agRuns').findOne({
+  const runs = (await ctx.db.getRepository('agRuns').find({
     filter,
     sort: ['-createdAt'],
-  })) as ModelRecord | null;
-  if (!run) {
+  })) as ModelRecord[];
+  const runIds = runs.map((run) => String(getModelTargetKey(run, 'id')));
+  if (!runIds.length) {
     ctx.throw(404, 'Agent session run not found');
   }
-  return run;
+  return runIds;
 }
 
 function getCollection(ctx: Context, collectionName: string) {
@@ -476,11 +478,14 @@ async function listRunConversationEvents(ctx: Context, runId: string) {
 async function listSessionConversationEvents(ctx: Context, sessionId: string) {
   await requireConversationRead(ctx);
   await assertSessionExists(ctx, sessionId);
-  await assertSessionReadableViaRun(ctx, sessionId);
+  const readableRunIds = await findReadableSessionRunIds(ctx, sessionId);
 
   const events = (await ctx.db.getRepository('agAgentConversationEvents').find({
     filter: {
       sessionId,
+      runId: {
+        $in: readableRunIds,
+      },
     },
     sort: ['createdAt', 'sequence'],
   })) as ModelRecord[];

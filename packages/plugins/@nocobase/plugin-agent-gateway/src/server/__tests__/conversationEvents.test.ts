@@ -503,6 +503,103 @@ describe('agent gateway conversation event APIs', () => {
     expect(JSON.stringify(hiddenRunResponse.body)).not.toContain('scoped session message');
   });
 
+  it('filters session-level conversation events to the readable runs in that session', async () => {
+    const runner = await createRunner();
+    const visibleRun = await createRun(runner, 'conversation-run-scoped-visible');
+    const claim = await claimRun(runner, visibleRun.id);
+    const sessionResult = await upsertSession(runner, claim, 'codex-conversation-thread-partial-scope');
+    const session = sessionResult.session as Record<string, unknown>;
+    const sessionId = expectString(session.id);
+
+    const visibleAppendResponse = await appendConversationEvents(
+      runner,
+      visibleRun.id,
+      leaseValues(claim, {
+        source: 'codex',
+        sequence: 1,
+        eventType: 'agent.message',
+        contentText: 'visible scoped session message',
+      }),
+    );
+    expect(visibleAppendResponse.status).toBe(200);
+
+    const hiddenRun = await app.db.getRepository('agRuns').create({
+      values: {
+        id: randomUUID(),
+        runCode: `conversation-run-scoped-hidden-${randomUUID()}`,
+        status: 'succeeded',
+        claimAttempt: 1,
+        leaseVersion: 1,
+        cancelRequested: false,
+        sourceType: 'test',
+        promptSnapshot: {
+          text: 'Hidden scoped prompt',
+        },
+        executionPayloadJson: {
+          commandKey: 'codex',
+        },
+        requestedAt: new Date(),
+        queuedAt: new Date(),
+        startedAt: new Date(),
+        completedAt: new Date(),
+        finishedAt: new Date(),
+        agentSessionId: sessionId,
+        agentSessionProvider: 'codex',
+        agentSessionProviderId: 'codex-conversation-thread-partial-scope',
+      },
+    });
+    await app.db.getRepository('agAgentConversationEvents').create({
+      values: {
+        id: randomUUID(),
+        sessionId,
+        runId: hiddenRun.get('id'),
+        source: 'codex',
+        sequence: 1,
+        eventType: 'agent.message',
+        providerEventId: `hidden:${hiddenRun.get('id')}`,
+        contentText: 'hidden scoped session message',
+        contentJson: {},
+      },
+    });
+
+    const readDetailsSnippet = registerTestSnippet('agentGateway.test.readDetailsOnlyPartialScope', [
+      'agentGateway:readRunDetails',
+    ]);
+    const { agent: scopedReader, roleName } = await createUserWithRole('conversation-partial-scoped-reader', [
+      readDetailsSnippet,
+      'agentGateway.readSessionMessages',
+    ]);
+    const scopeResponse = await rootAgent.resource('dataSourcesRolesResourcesScopes').create({
+      values: {
+        resourceName: 'agRuns',
+        name: 'conversation-visible-runs',
+        scope: {
+          runCode: 'conversation-run-scoped-visible',
+        },
+      },
+    });
+    expect(scopeResponse.status).toBe(200);
+    await rootAgent.resource('roles.resources', roleName).create({
+      values: {
+        name: 'agRuns',
+        usingActionsConfig: true,
+        actions: [
+          {
+            name: 'view',
+            scope: scopeResponse.body.data.id,
+          },
+        ],
+      },
+    });
+
+    const sessionResponse = await scopedReader.get(
+      `/api/agent-gateway/agent-sessions/${sessionId}/conversation-events:list`,
+    );
+    expect(sessionResponse.status).toBe(200);
+    expect(JSON.stringify(sessionResponse.body.data)).toContain('visible scoped session message');
+    expect(JSON.stringify(sessionResponse.body.data)).not.toContain('hidden scoped session message');
+  });
+
   it('rejects conversation event writes without a valid active node lease', async () => {
     const runner = await createRunner();
     const run = await createRun(runner, 'conversation-run-lease');

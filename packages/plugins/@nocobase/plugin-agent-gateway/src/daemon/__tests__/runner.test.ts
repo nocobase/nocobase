@@ -353,6 +353,148 @@ describe('agent gateway daemon runner', () => {
     });
   });
 
+  it('builds continuation runs through the Codex resume command builder', async () => {
+    const workspace = path.join(tempDir, 'workspace');
+    await fs.mkdir(workspace, { recursive: true });
+    const resumeMessage = 'Continue with spaces, "quotes", and newline\nthen finish';
+    const requester = new RunnerRequester({
+      claimPayload: {
+        claimed: true,
+        runId: 'run-1',
+        claimToken: 'ag_claim_CLAIM_TOKEN_SECRET',
+        claimAttempt: 1,
+        leaseVersion: 1,
+        run: {
+          id: 'run-1',
+          executionPayloadJson: {
+            mode: 'agent-session-resume',
+            commandKey: 'codex',
+            providerSessionId: '019f1e72-d75c-7c61-a9ba-cc99c653e0a2',
+            message: resumeMessage,
+            args: ['exec', '--json', 'stale start args must not be used'],
+            cwd: '.',
+          },
+        },
+      },
+    });
+    const gateway = new AgentGatewayDaemonNodeClient(requester, {
+      serverUrl: 'https://nocobase.example.test',
+      nodeId: 'node-1',
+      nodeKey: 'node-1',
+      nodeToken: 'ag_node_NODE_TOKEN_SECRET',
+      savedAt: new Date().toISOString(),
+    });
+    const executedArgs: string[][] = [];
+
+    const result = await runDaemonOnce({
+      gateway,
+      allowlist: {
+        codex: {
+          commandKey: 'codex',
+          executable: process.execPath,
+          defaultTimeoutMs: 5000,
+        },
+      },
+      workspaceRoot: workspace,
+      skillsRoot: path.join(tempDir, 'skills'),
+      artifactDir: path.join(tempDir, 'artifacts'),
+      runHeartbeatIntervalMs: 60_000,
+      executeCommand: async (options) => {
+        executedArgs.push(options.args || []);
+        return {
+          status: 'succeeded',
+          exitCode: 0,
+          signal: null,
+          stdout: {
+            text: '{"type":"turn.completed"}',
+            sizeBytes: 25,
+          },
+          stderr: {
+            text: null,
+            sizeBytes: 0,
+          },
+        };
+      },
+      detectOptions: {
+        probeCommand: async (candidates) => ({
+          available: candidates.includes('codex'),
+          command: candidates[0],
+          version: 'codex 1.0.0',
+        }),
+      },
+    });
+
+    expect(result.status).toBe('succeeded');
+    expect(executedArgs).toEqual([['exec', 'resume', '--json', '019f1e72-d75c-7c61-a9ba-cc99c653e0a2', resumeMessage]]);
+  });
+
+  it('fails malformed resume runs instead of leaving them active', async () => {
+    const workspace = path.join(tempDir, 'workspace');
+    await fs.mkdir(workspace, { recursive: true });
+    const requester = new RunnerRequester({
+      claimPayload: {
+        claimed: true,
+        runId: 'run-1',
+        claimToken: 'ag_claim_CLAIM_TOKEN_SECRET',
+        claimAttempt: 1,
+        leaseVersion: 1,
+        run: {
+          id: 'run-1',
+          executionPayloadJson: {
+            mode: 'agent-session-resume',
+            commandKey: 'codex',
+            message: 'continue without a provider session id',
+            cwd: '.',
+          },
+        },
+      },
+    });
+    const gateway = new AgentGatewayDaemonNodeClient(requester, {
+      serverUrl: 'https://nocobase.example.test',
+      nodeId: 'node-1',
+      nodeKey: 'node-1',
+      nodeToken: 'ag_node_NODE_TOKEN_SECRET',
+      savedAt: new Date().toISOString(),
+    });
+    let commandExecuted = false;
+
+    const result = await runDaemonOnce({
+      gateway,
+      allowlist: {
+        codex: {
+          commandKey: 'codex',
+          executable: process.execPath,
+          defaultTimeoutMs: 5000,
+        },
+      },
+      workspaceRoot: workspace,
+      skillsRoot: path.join(tempDir, 'skills'),
+      artifactDir: path.join(tempDir, 'artifacts'),
+      runHeartbeatIntervalMs: 60_000,
+      executeCommand: async () => {
+        commandExecuted = true;
+        throw new Error('malformed resume payload should fail before execution');
+      },
+      detectOptions: {
+        probeCommand: async (candidates) => ({
+          available: candidates.includes('codex'),
+          command: candidates[0],
+          version: 'codex 1.0.0',
+        }),
+      },
+    });
+
+    expect(result).toMatchObject({
+      status: 'failed',
+      runId: 'run-1',
+    });
+    expect(commandExecuted).toBe(false);
+    const failCall = requester.calls.find((call) => call.path.endsWith('/fail'));
+    expect(failCall?.body).toMatchObject({
+      errorSummary: 'providerSessionId is required for resume runs',
+    });
+  });
+
   it('retries transient Codex provider session upsert failures before completing the run', async () => {
     const workspace = path.join(tempDir, 'workspace');
     await fs.mkdir(workspace, { recursive: true });
@@ -694,7 +836,8 @@ describe('agent gateway daemon runner', () => {
               '-e',
               [
                 'process.stdout.write(\'{"type":"thread.started","thread_id":"019f1eb9-2c3a-7f77-9004-8c81f7abf7b1"}\\n\');',
-                'process.stdout.write("x".repeat(66 * 1024));',
+                'process.stdout.write("x".repeat(66 * 1024) + "\\n");',
+                'process.stdout.write(\'{"type":"item.completed","item":{"id":"item-tail-tmux","type":"agent_message","text":"tail after pane capture"}}\\n\');',
               ].join(''),
             ],
             cwd: '.',
@@ -739,6 +882,16 @@ describe('agent gateway daemon runner', () => {
       expect(upsertCall?.body).toMatchObject({
         provider: 'codex',
         providerSessionId: '019f1eb9-2c3a-7f77-9004-8c81f7abf7b1',
+      });
+      const conversationCall = requester.calls.find((call) => call.path.endsWith('/conversation-events:append'));
+      expect(conversationCall?.body).toMatchObject({
+        events: expect.arrayContaining([
+          expect.objectContaining({
+            eventType: 'agent.message',
+            contentText: 'tail after pane capture',
+            providerEventId: 'item.completed:item-tail-tmux',
+          }),
+        ]),
       });
     } finally {
       await terminateTmuxSession('ag-run-run-1').catch(() => {

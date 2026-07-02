@@ -48,6 +48,17 @@ describe('Codex agent adapter', () => {
     });
   });
 
+  it('keeps spaces, quotes, and newlines as one resume message argv element', () => {
+    const message = 'Continue with spaces, "quotes", and a newline\nthen finish';
+    const command = codexAdapter.buildResumeCommand({
+      providerSessionId: '019f1e72-d75c-7c61-a9ba-cc99c653e0a2',
+      message,
+    });
+
+    expect(command.args).toEqual(['exec', 'resume', '--json', '019f1e72-d75c-7c61-a9ba-cc99c653e0a2', message]);
+    expect(command.args.at(-1)).toBe(message);
+  });
+
   it('detects session ids from valid thread.started JSONL', () => {
     expect(
       codexAdapter.detectSessionId({

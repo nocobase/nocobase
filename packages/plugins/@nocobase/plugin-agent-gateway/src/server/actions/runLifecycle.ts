@@ -149,6 +149,24 @@ function serializeRun(run: ModelRecord) {
   return json;
 }
 
+async function serializeRunForManagement(ctx: Context, run: ModelRecord) {
+  const json = serializeRun(run);
+  const agentSessionId = getOptionalTargetKey(run, 'agentSessionId');
+  if (!agentSessionId) {
+    return json;
+  }
+  const session = (await ctx.db.getRepository('agAgentSessions').findOne({
+    filterByTk: agentSessionId,
+  })) as ModelRecord | null;
+  if (!session) {
+    return json;
+  }
+  return {
+    ...json,
+    agentSessionCapabilitiesJson: getRecord(getModelValue(session, 'capabilitiesJson')),
+  };
+}
+
 function isRecordWithValues(value: JsonRecord) {
   return Object.keys(value).length > 0;
 }
@@ -423,7 +441,7 @@ async function listRuns(ctx: Context) {
     limit: getQueryLimit(ctx),
   })) as ModelRecord[];
 
-  ctx.body = runs.map(serializeRun);
+  ctx.body = await Promise.all(runs.map((run) => serializeRunForManagement(ctx, run)));
 }
 
 async function getRun(ctx: Context, runId: string) {
@@ -440,7 +458,7 @@ async function getRun(ctx: Context, runId: string) {
     ctx.throw(404, 'Run not found');
   }
 
-  ctx.body = serializeRun(run);
+  ctx.body = await serializeRunForManagement(ctx, run);
 }
 
 async function getActiveProfiles(ctx: Context, nodeId: string, values: JsonRecord, transaction: Transaction) {

@@ -232,6 +232,68 @@ describe('agent gateway run lifecycle APIs', () => {
     expect(storedRun.get('queuedAt')).toBeTruthy();
   });
 
+  it('includes agent session capabilities in management run list and details', async () => {
+    const now = new Date();
+    const session = await app.db.getRepository('agAgentSessions').create({
+      values: {
+        id: randomUUID(),
+        provider: 'codex',
+        providerSessionId: `codex-thread-${randomUUID()}`,
+        status: 'ended',
+        capabilitiesJson: {
+          resumeWithMessage: false,
+          detectSessionId: true,
+        },
+      },
+    });
+    const run = await app.db.getRepository('agRuns').create({
+      values: {
+        id: randomUUID(),
+        runCode: 'run-management-session-capabilities',
+        status: 'succeeded',
+        claimAttempt: 1,
+        leaseVersion: 1,
+        cancelRequested: false,
+        requestedAt: now,
+        queuedAt: now,
+        startedAt: now,
+        completedAt: now,
+        finishedAt: now,
+        agentSessionId: session.get('id'),
+        agentSessionProvider: 'codex',
+        agentSessionProviderId: session.get('providerSessionId'),
+      },
+    });
+    await app.db.getRepository('agAgentSessions').update({
+      filterByTk: session.get('id'),
+      values: {
+        rootRunId: run.get('id'),
+        latestRunId: run.get('id'),
+      },
+    });
+
+    const listResponse = await rootAgent.get('/api/agent-gateway/runs:list');
+    expect(listResponse.status).toBe(200);
+    const listedRun = (listResponse.body.data as Array<Record<string, unknown>>).find(
+      (item) => item.id === run.get('id'),
+    );
+    expect(listedRun).toMatchObject({
+      agentSessionCapabilitiesJson: {
+        resumeWithMessage: false,
+        detectSessionId: true,
+      },
+    });
+
+    const detailResponse = await rootAgent.get(`/api/agent-gateway/runs:get/${run.get('id')}`);
+    expect(detailResponse.status).toBe(200);
+    expect(getData(detailResponse)).toMatchObject({
+      agentSessionCapabilitiesJson: {
+        resumeWithMessage: false,
+        detectSessionId: true,
+      },
+    });
+  });
+
   it('ignores session and continuation lineage fields when dispatch creates queued runs', async () => {
     const parentRun = await seedQueuedRun('run-parent-for-continuation');
     const continuationRequestedAt = '2026-07-01T00:00:00.000Z';
