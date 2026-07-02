@@ -37,9 +37,21 @@ type WorkflowRowLike = {
 
 function normalizeAppends(appends: unknown): string[] {
   if (Array.isArray(appends)) {
-    return appends.filter((append): append is string => typeof append === 'string');
+    return appends.flatMap((append) =>
+      typeof append === 'string'
+        ? append
+            .split(',')
+            .map((item) => item.trim())
+            .filter(Boolean)
+        : [],
+    );
   }
-  return typeof appends === 'string' ? [appends] : [];
+  return typeof appends === 'string'
+    ? appends
+        .split(',')
+        .map((append) => append.trim())
+        .filter(Boolean)
+    : [];
 }
 
 function removeLegacyApprovalUiAppend(context: Context) {
@@ -48,9 +60,12 @@ function removeLegacyApprovalUiAppend(context: Context) {
     return false;
   }
 
-  context.action.mergeParams({
-    appends: appends.filter((append) => append !== LEGACY_APPROVAL_UI_APPEND),
-  });
+  context.action.mergeParams(
+    {
+      appends: appends.filter((append) => append !== LEGACY_APPROVAL_UI_APPEND),
+    },
+    { appends: 'overwrite' },
+  );
 
   return true;
 }

@@ -130,11 +130,12 @@ describe('workflow > actions > workflows', () => {
         },
       });
       const workflowsFind = vi.spyOn(WorkflowRepo, 'find');
+      const workflowsFindAndCount = vi.spyOn(WorkflowRepo, 'findAndCount');
       const flowNodesFind = vi.spyOn(FlowNodeRepo, 'find');
 
       const { status, body } = await agent.resource('workflows').list({
         sort: ['id'],
-        appends: ['legacyApprovalUi'],
+        appends: ['stats', 'legacyApprovalUi'],
         except: ['config'],
       });
 
@@ -167,6 +168,7 @@ describe('workflow > actions > workflows', () => {
       body.rows.forEach((row) => {
         expect(row).not.toHaveProperty('config');
       });
+      expect(workflowsFindAndCount).toHaveBeenCalledWith(expect.objectContaining({ appends: ['stats'] }));
       expect(workflowsFind).toHaveBeenCalledTimes(1);
       expect(workflowsFind).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -195,6 +197,7 @@ describe('workflow > actions > workflows', () => {
           },
         }),
       );
+      workflowsFindAndCount.mockRestore();
       workflowsFind.mockRestore();
       flowNodesFind.mockRestore();
     });
