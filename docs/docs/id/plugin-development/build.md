@@ -1,7 +1,7 @@
 ---
 title: "Build & Packaging"
-description: "Build dan packaging plugin NocoBase: yarn build, yarn nocobase tar, konfigurasi kustom build.config.ts, packaging client Rsbuild, packaging server tsup."
-keywords: "build plugin,packaging plugin,yarn build,tar,build.config.ts,Rsbuild,tsup,@nocobase/build,NocoBase"
+description: "Build dan packaging plugin NocoBase: nb source build, konfigurasi kustom build.config.ts, packaging client Rsbuild, packaging server tsup."
+keywords: "build plugin,packaging plugin,nb source build,tar,build.config.ts,Rsbuild,tsup,@nocobase/build,NocoBase"
 ---
 
 # Build & Packaging
@@ -10,10 +10,11 @@ Setelah pengembangan plugin selesai, Anda perlu melalui dua tahap yaitu build (m
 
 ## Build Plugin
 
-Build akan mengompilasi source code TypeScript di bawah `src/` menjadi JavaScript — kode client dipaketkan oleh Rsbuild, sedangkan kode server dipaketkan oleh tsup:
+Jalankan perintah build di direktori source code (`<app-path>/source/`). Build akan mengompilasi source code TypeScript di bawah `src/` menjadi JavaScript — kode client dipaketkan oleh Rsbuild, sedangkan kode server dipaketkan oleh tsup:
 
 ```bash
-yarn build @my-project/plugin-hello
+cd <app-path>/source
+nb source build @my-project/plugin-hello
 ```
 
 Hasil build akan dikeluarkan ke direktori `dist/` di root plugin.
@@ -26,19 +27,14 @@ Jika plugin dibuat di repository source code, build pertama akan memicu pemeriks
 
 ## Packaging Plugin
 
-Packaging akan mengompresi hasil build menjadi sebuah file `.tar.gz`, memudahkan upload ke environment lain:
+Jalankan juga di direktori source code (`<app-path>/source/`). Gunakan parameter `--tar` untuk menggabungkan build dan packaging menjadi satu langkah, menghasilkan file `.tgz`:
 
 ```bash
-yarn nocobase tar @my-project/plugin-hello
+cd <app-path>/source
+nb source build @my-project/plugin-hello --tar
 ```
 
-File hasil packaging secara default dikeluarkan ke `storage/tar/@my-project/plugin-hello.tar.gz`.
-
-Anda juga dapat menggunakan parameter `--tar` untuk menggabungkan build dan packaging menjadi satu langkah:
-
-```bash
-yarn build @my-project/plugin-hello --tar
-```
+File hasil packaging secara default dikeluarkan ke direktori `source/storage/tar/`, setelah build selesai perintah akan mencetak path lengkap tarball.
 
 ## Upload ke Aplikasi NocoBase Lain
 
@@ -84,7 +80,7 @@ Beberapa poin kunci:
 ## Tautan Terkait
 
 - [Menulis Plugin Pertama](./write-your-first-plugin.md) — Membuat plugin dari nol, termasuk alur build dan packaging lengkap
-- [Struktur Direktori Proyek](./project-structure.md) — Memahami fungsi direktori `packages/plugins`, `storage/tar`, dll.
+- [Struktur Direktori Proyek](./project-structure.md) — Memahami fungsi direktori `plugins/`, `storage/tar`, dll.
 - [Manajemen Dependensi](./dependency-management.md) — Deklarasi dependensi plugin dan dependensi global
 - [Ikhtisar Plugin Development](./index.md) — Pengantar menyeluruh tentang plugin development
 - [Instalasi & Upgrade Plugin](../get-started/install-upgrade-plugins.mdx) — Upload file hasil packaging ke environment target

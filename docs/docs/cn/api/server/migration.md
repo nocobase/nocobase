@@ -271,7 +271,7 @@ export default class extends Migration {
 通过 CLI 命令创建：
 
 ```bash
-yarn nocobase create-migration my-migration --pkg @my-project/plugin-hello
+nb scaffold migration my-migration --pkg @my-project/plugin-hello
 ```
 
 命令会在插件的 `src/server/migrations/` 目录下生成带时间戳的文件，模板如下：

@@ -1,7 +1,7 @@
 ---
 title: "编写第一个 NocoBase 插件"
-description: "从零创建区块插件：yarn pm create、插件骨架、client/server 目录、注册区块、开发调试流程。"
-keywords: "编写插件,第一个插件,yarn pm create,插件骨架,区块插件,NocoBase 插件开发"
+description: "从零创建区块插件：nb scaffold plugin、插件骨架、client/server 目录、注册区块、开发调试流程。"
+keywords: "编写插件,第一个插件,nb scaffold plugin,插件骨架,区块插件,NocoBase 插件开发"
 ---
 
 # 编写第一个插件
@@ -10,25 +10,22 @@ keywords: "编写插件,第一个插件,yarn pm create,插件骨架,区块插件
 
 ## 前置条件
 
-开始之前，确保你已经安装好了 NocoBase。如果还没有安装，可以参考：
-
-- [使用 create-nocobase-app 安装](../get-started/installation/create-nocobase-app)
-- [从 Git 源码安装](../get-started/installation/git)
+开始之前，确保你已经通过 NocoBase CLI（`nb init`）安装好了一个 NocoBase 应用。CLI 支持 npm 和 Git 两种来源，推荐使用 Git 来源（AI 开发时可直接参考源码）。详见 [使用 CLI 安装应用](../nocobase-cli/installation/cli.md) 或 [AI Agent 接入指南](../ai/quick-start.mdx)。
 
 安装完成后就可以开始了。
 
 ## 第 1 步：通过 CLI 创建插件骨架
 
-在仓库根目录执行以下命令，快速生成一个空的插件：
+在项目根目录（`<app-path>`）或 `source/` 目录下执行以下命令，快速生成一个空的插件：
 
 ```bash
-yarn pm create @my-project/plugin-hello
+nb scaffold plugin @my-project/plugin-hello
 ```
 
-命令执行成功后，会在 `packages/plugins/@my-project/plugin-hello` 目录下生成基础文件，默认结构如下：
+命令执行成功后，会在 `<app-path>/plugins/@my-project/plugin-hello` 目录下生成基础文件（`nb` 会自动将插件同步到 `source/packages/plugins/` 供开发和构建流程使用），默认结构如下：
 
 ```bash
-├─ /packages/plugins/@my-project/plugin-hello
+├─ /plugins/@my-project/plugin-hello
   ├─ package.json
   ├─ README.md
   ├─ client-v2.d.ts
@@ -40,6 +37,7 @@ yarn pm create @my-project/plugin-hello
      ├─ client-v2                 # 客户端代码存放位置
      │  ├─ index.tsx             # 默认导出的客户端插件类
      │  ├─ plugin.tsx            # 插件入口（继承 @nocobase/client-v2 Plugin）
+     │  ├─ locale.ts             # useT / tExpr 翻译工具
      │  ├─ models                # 可选：前端模型（如流程节点）
      │  │  └─ index.ts
      │  └─ utils
@@ -60,7 +58,7 @@ yarn pm create @my-project/plugin-hello
         └─ zh-CN.json
 ```
 
-创建完成后，你可以在浏览器中访问「插件管理器」页面（默认地址：http://localhost:13000/admin/settings/plugin-manager），确认插件是否已出现在列表中。
+创建完成后，你可以在浏览器中访问「插件管理器」页面（[默认地址](http://localhost:13000/admin/settings/plugin-manager)），确认插件是否已出现在列表中。
 
 ## 第 2 步：实现一个简单的客户端区块
 
@@ -109,7 +107,7 @@ export default {
 - **命令行**
 
   ```bash
-  yarn pm enable @my-project/plugin-hello
+  nb plugin enable @my-project/plugin-hello
   ```
 
 - **管理界面**：访问「插件管理器」，找到 `@my-project/plugin-hello`，点击「激活」。
@@ -135,7 +133,7 @@ APPEND_PRESET_LOCAL_PLUGINS=@my-project/plugin-hello,@my-project/plugin-hello-wo
 APPEND_PRESET_BUILT_IN_PLUGINS=@my-project/plugin-hello,@my-project/plugin-hello-world
 ```
 
-通常来说，本地开发调试用前面的 `yarn pm enable` 就够了。这两个变量更适合「开箱即用」的发行场景——比如你打包了一套带固定插件的 NocoBase 应用，想让插件在初始化后直接可用。
+通常来说，本地开发调试用前面的 `nb plugin enable` 就够了。这两个变量更适合「开箱即用」的发行场景——比如你打包了一套带固定插件的 NocoBase 应用，想让插件在初始化后直接可用。
 
 :::tip 提示
 
@@ -150,10 +148,10 @@ APPEND_PRESET_BUILT_IN_PLUGINS=@my-project/plugin-hello,@my-project/plugin-hello
 当你准备把插件分发到其他环境时，需要先构建再打包：
 
 ```bash
-yarn build @my-project/plugin-hello --tar
+nb source build @my-project/plugin-hello --tar
 # 或者分两步执行
-yarn build @my-project/plugin-hello
-yarn nocobase tar @my-project/plugin-hello
+nb source build @my-project/plugin-hello
+nb source build @my-project/plugin-hello --tar
 ```
 
 :::tip 提示
@@ -162,7 +160,7 @@ yarn nocobase tar @my-project/plugin-hello
 
 :::
 
-构建完成后，打包文件默认位于 `storage/tar/@my-project/plugin-hello.tar.gz`。
+构建完成后，打包文件默认位于 `source/storage/tar/` 目录下，命令会打印 tarball 的完整路径。
 
 :::tip 提示
 
@@ -182,7 +180,7 @@ yarn nocobase tar @my-project/plugin-hello
 - [客户端开发概述](./client/index.md) — 客户端插件的整体介绍与核心概念
 - [构建与打包](./build.md) — 插件的构建、打包与分发流程
 - [Test 测试](./server/test.md) — 编写服务端插件测试用例
-- [使用 create-nocobase-app 安装](../get-started/installation/create-nocobase-app) — NocoBase 安装方式之一
-- [从 Git 源码安装](../get-started/installation/git) — 从源码安装 NocoBase
+- [AI Agent 接入指南](../ai/quick-start.mdx) — 安装 NocoBase CLI 并初始化应用
+- [使用 CLI 安装应用](../nocobase-cli/installation/cli.md) — 完整安装流程
 - [安装与升级插件](../get-started/install-upgrade-plugins.mdx) — 把打包后的插件上传到其他环境
 - [环境变量](../get-started/installation/env.md) — 预置、内置插件等环境变量配置

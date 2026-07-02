@@ -15,8 +15,9 @@ import {
   resolveManagedAppRuntime,
   runLocalNocoBaseCommand,
 } from '../../lib/app-runtime.js';
+import { isCliManagedSourceApp, summarizePluginWorkspaceSync, syncPluginWorkspace } from '../../lib/plugin-workspace.js';
 import { findAvailableTcpPort } from '../../lib/prompt-validators.js';
-import { announceTargetEnv, failTask, printInfo, startTask, succeedTask } from '../../lib/ui.js';
+import { announceTargetEnv, failTask, printInfo, printWarning, startTask, succeedTask } from '../../lib/ui.js';
 
 function formatUnsupportedRuntimeMessage(kind: 'docker' | 'http' | 'ssh', envName: string): string {
   if (kind === 'docker') {
@@ -182,6 +183,20 @@ export default class SourceDev extends Command {
     printInfo(`Starting NocoBase dev mode for "${runtime.envName}" from ${runtime.projectRoot}. Press Ctrl+C to stop.`);
 
     try {
+      if (isCliManagedSourceApp({ appPath: runtime.env.appPath, sourcePath: runtime.env.sourcePath })) {
+        const syncResult = await syncPluginWorkspace({
+          appPath: runtime.env.appPath,
+          sourcePath: runtime.env.sourcePath,
+          mode: 'all',
+        });
+        const summary = summarizePluginWorkspaceSync(syncResult);
+        if (summary.length > 0) {
+          printInfo(`Plugin workspace synced: ${summary.join('; ')}`);
+        }
+        for (const warning of syncResult.warnings) {
+          printWarning(warning);
+        }
+      }
       await ensureNpmSourceDevDependencies(runtime, {
         onStartTask: startTask,
         onSucceedTask: succeedTask,

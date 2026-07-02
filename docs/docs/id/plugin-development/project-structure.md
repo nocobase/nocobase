@@ -1,72 +1,51 @@
 ---
 title: "Struktur Direktori Proyek Plugin"
-description: "Struktur proyek plugin NocoBase: Yarn Workspace, packages/plugins, storage, direktori client/server, konfigurasi lerna.json."
-keywords: "struktur proyek,Yarn Workspace,packages/plugins,direktori plugin,create-nocobase-app,NocoBase"
+description: "Struktur proyek plugin NocoBase: nb init, layout aplikasi, plugins, direktori plugin, source, direktori runtime storage."
+keywords: "struktur proyek,nb init,plugins,direktori plugin,NocoBase"
 ---
 
 # Struktur Direktori Proyek
 
-Apakah Anda meng-clone source code melalui Git, atau menginisialisasi proyek dengan `create-nocobase-app`, proyek NocoBase yang dihasilkan pada dasarnya adalah repository multi-paket berbasis **Yarn Workspace**.
+Aplikasi yang diinisialisasi melalui NocoBase CLI (`nb init`) akan menghasilkan direktori aplikasi standar. CLI mendukung dua sumber yaitu npm (`create-nocobase-app`) dan Git, struktur tingkat atas aplikasi tetap konsisten.
 
 ## Ikhtisar Direktori Tingkat Atas
 
-Berikut menggunakan `my-nocobase-app/` sebagai direktori proyek. Mungkin ada sedikit perbedaan di environment yang berbeda:
-
 ```bash
-my-nocobase-app/
-├── packages/              # Source code proyek
-│   ├── plugins/           # Source code plugin yang sedang dikembangkan (belum dicompile)
-├── storage/               # Data runtime dan konten yang digenerate dinamis
-│   ├── apps/
-│   ├── db/
-│   ├── logs/
-│   ├── uploads/
-│   ├── plugins/           # Plugin yang sudah dicompile (termasuk yang diupload melalui antarmuka)
-│   └── tar/               # File hasil packaging plugin (.tar)
-├── scripts/               # Script utilitas dan perintah tools
-├── .env*                  # Konfigurasi variabel untuk environment yang berbeda
-├── lerna.json             # Konfigurasi workspace Lerna
-├── package.json           # Konfigurasi paket root, mendeklarasikan workspace dan script
-├── tsconfig*.json         # Konfigurasi TypeScript (front-end, back-end, path mapping)
-├── vitest.config.mts      # Konfigurasi unit test Vitest
-└── playwright.config.ts   # Konfigurasi E2E test Playwright
+<app-path>/
+├── .nb/                   # Metadata yang disimpan CLI untuk env saat ini
+├── source/                # Source code engineering aplikasi (NocoBase core + plugin bawaan)
+├── storage/               # Direktori data runtime
+│   ├── plugins/           # Plugin yang sudah dicompile (diupload atau diimpor)
+│   └── tar/               # File hasil packaging plugin (.tgz)
+├── plugins/               # Source code plugin Anda (nb scaffold plugin digenerate di sini)
+├── .env                   # File environment variable aplikasi
 ```
 
-## Penjelasan Subdirektori packages/
+## plugins/ Direktori Pengembangan Plugin
 
-Direktori `packages/` berisi modul inti dan paket yang dapat diperluas dari NocoBase, konten spesifik bergantung pada sumber proyek:
+`plugins/` adalah lokasi utama Anda untuk mengembangkan plugin kustom. Plugin yang dibuat melalui `nb scaffold plugin` akan ditempatkan di sini.
 
-- **Proyek yang dibuat melalui `create-nocobase-app`**: Secara default hanya memiliki `packages/plugins/`, digunakan untuk menyimpan source code plugin kustom. Setiap subdirektori adalah paket npm independen.
-- **Clone repository source code resmi**: Akan terlihat lebih banyak subdirektori, seperti `core/`, `plugins/`, `pro-plugins/`, `presets/`, dll., masing-masing sesuai dengan core framework, plugin bawaan, dan solusi preset resmi.
+`nb` akan secara otomatis menyinkronkan plugin di bawah `plugins/` ke `source/packages/plugins/` dalam bentuk symbolic link, untuk digunakan dalam alur pengembangan dan build. Anda tidak perlu mengoperasikan konten di bawah direktori `source/` secara manual.
 
-Apapun kasusnya, `packages/plugins` adalah lokasi utama Anda untuk mengembangkan dan men-debug plugin kustom.
+## source/ Direktori Source Code Engineering
 
-## Direktori Runtime storage/
+Direktori `source/` berisi source code engineering lengkap NocoBase, konten spesifik bergantung pada sumber proyek:
 
-`storage/` menyimpan data yang digenerate saat runtime dan output build. Penjelasan subdirektori umum sebagai berikut:
+- **Sumber npm** (`create-nocobase-app`): Secara default hanya memiliki direktori dasar seperti `packages/plugins/`.
+- **Sumber Git** (disarankan): Berisi source code core framework lengkap (`packages/core/`), plugin bawaan, dll., saat pengembangan dengan AI dapat langsung merujuk.
 
-- `apps/`: Konfigurasi dan cache untuk skenario multi-aplikasi.
-- `logs/`: Log runtime dan output debug.
-- `uploads/`: File dan resource media yang diupload pengguna.
+## storage/ Direktori Runtime
+
+`storage/` menyimpan data yang digenerate saat runtime dan output build:
+
 - `plugins/`: Plugin yang di-package, diupload melalui antarmuka atau diimpor melalui CLI.
-- `tar/`: Paket terkompresi plugin yang dihasilkan setelah menjalankan `yarn build <plugin> --tar`.
-
-:::tip Tips
-
-Umumnya disarankan untuk menambahkan direktori `storage` ke `.gitignore`, dan menanganinya secara terpisah saat deployment atau backup.
-
-:::
-
-## Konfigurasi Environment dan Script Proyek
-
-- `.env`, `.env.test`, `.env.e2e`: Masing-masing untuk runtime lokal, test unit/integrasi, dan test end-to-end.
-- `scripts/`: Menyimpan script operasional umum, seperti inisialisasi database, tools bantuan rilis, dll.
+- `tar/`: Paket terkompresi plugin yang dihasilkan setelah menjalankan `nb source build <plugin> --tar`.
 
 ## Path dan Prioritas Loading Plugin
 
 Plugin dapat berada di beberapa lokasi, NocoBase memuatnya saat startup berdasarkan prioritas berikut:
 
-1. Versi source code di `packages/plugins` (untuk pengembangan dan debugging lokal).
+1. Versi source code di `source/packages/plugins` (untuk pengembangan dan debugging lokal, disinkronkan secara otomatis oleh `nb` dari `plugins/`).
 2. Versi yang di-package di `storage/plugins` (diupload melalui antarmuka atau diimpor melalui CLI).
 3. Paket dependensi di `node_modules` (diinstal melalui npm/yarn atau bawaan framework).
 
@@ -77,13 +56,13 @@ Jika plugin dengan nama sama berada di direktori source code dan direktori packa
 Membuat plugin dengan CLI:
 
 ```bash
-yarn pm create @my-project/plugin-hello
+nb scaffold plugin @my-project/plugin-hello
 ```
 
 Struktur direktori yang dihasilkan adalah sebagai berikut:
 
 ```bash
-packages/plugins/@my-project/plugin-hello/
+plugins/@my-project/plugin-hello/
 ├── dist/                    # Output build (digenerate sesuai kebutuhan)
 ├── src/                     # Direktori source code
 │   ├── client-v2/           # Kode front-end (Block, halaman, model, dll.)
@@ -108,7 +87,7 @@ packages/plugins/@my-project/plugin-hello/
 
 :::tip Tips
 
-Setelah build selesai, file `dist/` serta `client-v2.js` dan `server.js` akan dimuat saat plugin diaktifkan. Selama tahap pengembangan Anda hanya perlu memodifikasi direktori `src/`, sebelum rilis jalankan `yarn build <plugin>` atau `yarn build <plugin> --tar`.
+Setelah build selesai, file `dist/` serta `client-v2.js` dan `server.js` akan dimuat saat plugin diaktifkan. Selama tahap pengembangan Anda hanya perlu memodifikasi direktori `src/`, sebelum rilis jalankan `nb source build <plugin>` atau `nb source build <plugin> --tar`.
 
 :::
 

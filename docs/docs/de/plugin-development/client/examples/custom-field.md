@@ -37,17 +37,17 @@ Nach dem Aktivieren des Plugins können Sie im Tabellenblock zu einer einzeilige
 Vollständigen Quellcode siehe [@nocobase-example/plugin-field-simple](https://github.com/nocobase/nocobase/tree/develop/packages/plugins/%40nocobase-example/plugin-field-simple). Wenn Sie es lokal ausprobieren möchten:
 
 ```bash
-yarn pm enable @nocobase-example/plugin-field-simple
+nb plugin enable @nocobase-example/plugin-field-simple
 ```
 
 Im Folgenden bauen wir dieses Plugin Schritt für Schritt von Grund auf auf.
 
 ## Schritt 1: Plugin-Gerüst erstellen
 
-Im Stammverzeichnis des Repositories ausführen:
+Im Projektstammverzeichnis oder `source/`-Verzeichnis ausführen:
 
 ```bash
-yarn pm create @my-project/plugin-field-simple
+nb scaffold plugin @my-project/plugin-field-simple
 ```
 
 Detaillierte Erläuterungen siehe [Erstes Plugin schreiben](../../write-your-first-plugin).
@@ -140,7 +140,7 @@ export default PluginFieldSimpleClient;
 ## Schritt 5: Plugin aktivieren
 
 ```bash
-yarn pm enable @my-project/plugin-field-simple
+nb plugin enable @my-project/plugin-field-simple
 ```
 
 Nach der Aktivierung können Sie im Tabellenblock zu einer einzeiligen Textfeld-Spalte wechseln, auf den Konfigurations-Button der Spalte klicken und im Dropdown „Feld-Component" zu diesem benutzerdefinierten Anzeige-Component wechseln.

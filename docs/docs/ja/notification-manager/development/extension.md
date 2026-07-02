@@ -74,7 +74,7 @@ export default PluginNotificationExampleServer;
 
 ### プラグインの作成
 
-1. プラグイン作成コマンド `yarn pm add @nocobase/plugin-notification-example` を実行します。
+1. プラグイン作成コマンド `nb scaffold plugin @nocobase/plugin-notification-example` を実行します。
 
 ### クライアント開発
 
@@ -265,8 +265,8 @@ export default PluginNotificationExampleServer;
 
 ### プラグインの登録と起動
 
-1. 登録コマンド `yarn pm add @nocobase/plugin-notification-example` を実行します。
-2. 有効化コマンド `yarn pm enable @nocobase/plugin-notification-example` を実行します。
+1. 登録コマンド `nb scaffold plugin @nocobase/plugin-notification-example` を実行します。
+2. 有効化コマンド `nb plugin enable @nocobase/plugin-notification-example` を実行します。
 
 ### チャネル設定
 

@@ -37,17 +37,17 @@ After enabling the plugin, find a single-line text field column in a table block
 Full source code is available at [@nocobase-example/plugin-field-simple](https://github.com/nocobase/nocobase/tree/develop/packages/plugins/%40nocobase-example/plugin-field-simple). If you want to run it locally:
 
 ```bash
-yarn pm enable @nocobase-example/plugin-field-simple
+nb plugin enable @nocobase-example/plugin-field-simple
 ```
 
 Let's build this plugin step by step from scratch.
 
 ## Step 1: Create the Plugin Skeleton
 
-Run the following in the repository root:
+In the project root or `source/` directory:
 
 ```bash
-yarn pm create @my-project/plugin-field-simple
+nb scaffold plugin @my-project/plugin-field-simple
 ```
 
 For detailed instructions, see [Writing Your First Plugin](../../write-your-first-plugin).
@@ -140,7 +140,7 @@ export default PluginFieldSimpleClient;
 ## Step 5: Enable the Plugin
 
 ```bash
-yarn pm enable @my-project/plugin-field-simple
+nb plugin enable @my-project/plugin-field-simple
 ```
 
 After enabling, find a single-line text field column in a table block, click the column's configuration button, and switch to this custom display component in the "Field Component" dropdown menu.

@@ -6,7 +6,7 @@ keywords: "nb source dev,NocoBase CLI,mode development,hot reload"
 
 # nb source dev
 
-Memulai mode development di env yang berasal dari npm atau Git. Untuk env Docker, gunakan [`nb app logs`](../app/logs.md) untuk melihat log runtime.
+Memulai mode development di env yang berasal dari npm atau Git. Perlu dijalankan di direktori source code (`<app-path>/source/`). Untuk env Docker, gunakan [`nb app logs`](../app/logs.md) untuk melihat log runtime.
 
 ## Penggunaan
 

@@ -29,8 +29,19 @@ Nach Aktivierung des Plugins:
 
 Stellen Sie sicher, dass Sie:
 
-1. Eine laufende NocoBase-Entwicklungsumgebung haben (NocoBase Skills werden bei der Initialisierung der NocoBase CLI automatisch installiert)
-2. Einen Editor mit KI-Agent-Unterstützung geöffnet haben (z. B. Claude Code, Codex, Cursor usw.)
+1. Mit `nb init` ein NocoBase-Projekt erstellt haben (empfohlen mit Git-Quelle), und die Anwendung läuft bereits
+2. Einen Editor mit KI-Agent-Unterstützung geöffnet haben (z. B. Claude Code, Codex, Cursor usw.), wobei das Arbeitsverzeichnis auf das Projektstammverzeichnis (`<app-path>`) gesetzt ist
+
+Die mit `nb init` erstellte Projektverzeichnisstruktur sieht wie folgt aus:
+
+```bash
+<app-path>/
+├── .nb/                  # CLI-Metadaten für die aktuelle Umgebung
+├── source/               # Quellcode-Projekt (NocoBase-Kern + eingebaute Plugins)
+├── storage/              # Laufzeitdatenverzeichnis
+├── plugins/              # Ihr Plugin-Quellcode (von nb scaffold plugin hier generiert)
+└── .env                  # Umgebungsvariablen-Datei
+```
 
 :::warning Hinweis
 
@@ -41,7 +52,7 @@ Stellen Sie sicher, dass Sie:
 
 ## Loslegen
 
-Senden Sie im Stammverzeichnis Ihres NocoBase-Projekts die folgende Eingabeaufforderung an die KI:
+Senden Sie im Projektstammverzeichnis (dem mit `nb init` erstellten `<app-path>`) die folgende Eingabeaufforderung an die KI:
 
 ```
 Hilf mir mit dem nocobase-plugin-development Skill, ein NocoBase-Watermark-Plugin zu entwickeln.
@@ -80,10 +91,10 @@ Nach Bestätigung des Plans beginnt die KI mit der Codegenerierung.
 ### 2. Plugin-Gerüst erstellen
 
 ```bash
-yarn pm create @my-project/plugin-watermark
+nb scaffold plugin @my-project/plugin-watermark
 ```
 
-Die KI generiert unter `packages/plugins/@my-project/plugin-watermark/` die Standard-Verzeichnisstruktur des Plugins.
+Die KI generiert unter `plugins/@my-project/plugin-watermark/` die Standard-Verzeichnisstruktur des Plugins.
 
 ### 3. Serverseitigen Code schreiben
 
@@ -113,7 +124,7 @@ Die KI generiert automatisch Sprachpakete für Chinesisch und Englisch, ohne das
 ### 6. Plugin aktivieren
 
 ```bash
-yarn pm enable @my-project/plugin-watermark
+nb plugin enable @my-project/plugin-watermark
 ```
 
 Nach der Aktivierung sehen Sie beim Öffnen einer NocoBase-Seite das Wasserzeichen über dem Inhalt.

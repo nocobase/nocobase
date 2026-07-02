@@ -1,72 +1,51 @@
 ---
 title: "プラグインプロジェクトのディレクトリ構造"
-description: "NocoBase プラグインプロジェクト構造：Yarn Workspace、packages/plugins、storage、client/server ディレクトリ、lerna.json 設定。"
-keywords: "プロジェクト構造,Yarn Workspace,packages/plugins,プラグインディレクトリ,create-nocobase-app,NocoBase"
+description: "NocoBase プラグインプロジェクト構造：nb init アプリレイアウト、plugins プラグインディレクトリ、source ソースコード、storage ランタイムディレクトリ。"
+keywords: "プロジェクト構造,nb init,plugins,プラグインディレクトリ,NocoBase"
 ---
 
 # プロジェクトのディレクトリ構造
 
-Git からソースコードをクローンする場合でも、`create-nocobase-app` を使ってプロジェクトを初期化する場合でも、生成される NocoBase プロジェクトは基本的に **Yarn Workspace** をベースとしたモノレポです。
+NocoBase CLI（`nb init`）で初期化したアプリケーションは、標準的なアプリケーションディレクトリを生成します。CLI は npm（`create-nocobase-app`）と Git の 2 つのソースをサポートしており、アプリケーションのトップレベル構造は共通です。
 
 ## トップレベルディレクトリの概要
 
-以下の例では、`my-nocobase-app/` をプロジェクトディレクトリとしています。環境によっては多少異なる場合があります：
-
 ```bash
-my-nocobase-app/
-├── packages/              # プロジェクトのソースコード
-│   ├── plugins/           # 開発中のプラグインソースコード（未コンパイル）
-├── storage/               # ランタイムデータと動的に生成されるコンテンツ
-│   ├── apps/
-│   ├── db/
-│   ├── logs/
-│   ├── uploads/
+<app-path>/
+├── .nb/                   # CLI が現在の env 用に保存するメタデータ
+├── source/                # アプリケーションソースコード（NocoBase コア + 組み込みプラグイン）
+├── storage/               # ランタイムデータディレクトリ
 │   ├── plugins/           # コンパイル済みプラグイン（UI からアップロードされたものも含む）
-│   └── tar/               # プラグインのパッケージファイル（.tar）
-├── scripts/               # ユーティリティスクリプトとツールコマンド
-├── .env*                  # 各環境の変数設定
-├── lerna.json             # Lerna ワークスペース設定
-├── package.json           # ルートパッケージ設定、ワークスペースとスクリプトを宣言
-├── tsconfig*.json         # TypeScript 設定（フロントエンド、バックエンド、パスエイリアス）
-├── vitest.config.mts      # Vitest ユニットテスト設定
-└── playwright.config.ts   # Playwright E2E テスト設定
+│   └── tar/               # プラグインのパッケージファイル（.tgz）
+├── plugins/               # プラグインソースコード（nb scaffold plugin で生成）
+└── .env                   # アプリケーション環境変数ファイル
 ```
 
-## packages/ サブディレクトリの説明
+## plugins/ プラグイン開発ディレクトリ
 
-`packages/` ディレクトリには、NocoBase のコアモジュールと拡張可能なパッケージが含まれています。具体的な内容はプロジェクトのソースによって異なります：
+`plugins/` はカスタムプラグインの開発を行う主要な場所です。`nb scaffold plugin` で作成したプラグインはここに配置されます。
 
-- **`create-nocobase-app` で作成されたプロジェクト**：デフォルトでは `packages/plugins/` のみが含まれており、カスタムプラグインのソースコードを格納するために使用されます。各サブディレクトリは独立した npm パッケージです。
-- **公式ソースリポジトリをクローンした場合**：`core/`、`plugins/`、`pro-plugins/`、`presets/` など、より多くのサブディレクトリが表示されます。これらはそれぞれフレームワークのコア、組み込みプラグイン、公式プリセットソリューションに対応しています。
+`nb` は `plugins/` 配下のプラグインをシンボリックリンクで `source/packages/plugins/` に自動同期し、開発とビルドのフローで使用できるようにします。`source/` ディレクトリを手動で操作する必要はありません。
 
-どちらの場合でも、`packages/plugins` がカスタムプラグインの開発とデバッグを行う主要な場所となります。
+## source/ ソースコードディレクトリ
+
+`source/` ディレクトリには NocoBase の完全なソースコードが含まれています。具体的な内容はプロジェクトのソースによって異なります：
+
+- **npm ソース**（`create-nocobase-app`）：デフォルトでは `packages/plugins/` などの基本ディレクトリのみが含まれます。
+- **Git ソース**（推奨）：フレームワークのコアソースコード（`packages/core/`）、組み込みプラグインなどが含まれ、AI 開発時に直接参照できます。
 
 ## storage/ ランタイムディレクトリ
 
-`storage/` には、ランタイムで生成されるデータとビルド出力が格納されます。一般的なサブディレクトリの説明は以下の通りです：
+`storage/` には、ランタイムで生成されるデータとビルド出力が格納されます：
 
-- `apps/`：マルチアプリケーション環境での設定とキャッシュ。
-- `logs/`：ランタイムログとデバッグ出力。
-- `uploads/`：ユーザーがアップロードしたファイルとメディアリソース。
 - `plugins/`：UI からアップロードされた、または CLI でインポートされたパッケージ済みプラグイン。
-- `tar/`：`yarn build <plugin> --tar` 実行後に生成されるプラグインの圧縮パッケージ。
-
-:::tip 提示
-
-通常、`storage` ディレクトリは `.gitignore` に追加し、デプロイやバックアップ時には個別に処理することをおすすめします。
-
-:::
-
-## 環境設定とプロジェクトスクリプト
-
-- `.env`、`.env.test`、`.env.e2e`：それぞれローカル実行、ユニット/統合テスト、エンドツーエンドテストに使用されます。
-- `scripts/`：データベースの初期化、リリース補助ツールなどの一般的な運用スクリプトが格納されます。
+- `tar/`：`nb source build <plugin> --tar` 実行後に生成されるプラグインの圧縮パッケージ。
 
 ## プラグインのロードパスと優先順位
 
 プラグインは複数の場所に存在する可能性があります。NocoBase は起動時に以下の優先順位でロードします：
 
-1. `packages/plugins` 内のソースコードバージョン（ローカル開発とデバッグ用）。
+1. `source/packages/plugins` 内のソースコードバージョン（ローカル開発とデバッグ用、`nb` が `plugins/` から自動同期）。
 2. `storage/plugins` 内のパッケージバージョン（UI からアップロードされたもの、または CLI でインポートされたもの）。
 3. `node_modules` 内の依存パッケージ（npm/yarn でインストールされたもの、またはフレームワークに組み込まれたもの）。
 
@@ -77,13 +56,13 @@ my-nocobase-app/
 CLI を使ってプラグインを作成します：
 
 ```bash
-yarn pm create @my-project/plugin-hello
+nb scaffold plugin @my-project/plugin-hello
 ```
 
 生成されるディレクトリ構造は以下の通りです：
 
 ```bash
-packages/plugins/@my-project/plugin-hello/
+plugins/@my-project/plugin-hello/
 ├── dist/                    # ビルド出力（必要に応じて生成）
 ├── src/                     # ソースコードディレクトリ
 │   ├── client-v2/           # フロントエンドコード（ブロック、ページ、モデルなど）
@@ -108,7 +87,7 @@ packages/plugins/@my-project/plugin-hello/
 
 :::tip 提示
 
-ビルドが完了すると、`dist/` ディレクトリと `client-v2.js`、`server.js` ファイルはプラグインが有効になったときにロードされます。開発段階では `src/` ディレクトリのみを修正すればよく、公開前には `yarn build <plugin>` または `yarn build <plugin> --tar` を実行するだけで済みます。
+ビルドが完了すると、`dist/` ディレクトリと `client-v2.js`、`server.js` ファイルはプラグインが有効になったときにロードされます。開発段階では `src/` ディレクトリのみを修正すればよく、公開前には `nb source build <plugin>` または `nb source build <plugin> --tar` を実行するだけで済みます。
 
 :::
 

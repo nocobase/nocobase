@@ -33,6 +33,15 @@ import * as reactI18next from 'react-i18next';
 import * as ReactRouter from 'react-router';
 import * as ReactRouterDom from 'react-router-dom';
 import jsxRuntime from 'react/jsx-runtime';
+
+// react/jsx-dev-runtime conditionally loads production or development builds
+// based on NODE_ENV. In production builds, jsxDEV is undefined. Since plugin dev
+// servers compile JSX with jsxDEV calls even when the host app is built in
+// production mode, we must ensure jsxDEV is always available. Fall back to jsx
+// from the production runtime when the dev export is missing.
+import jsxDevRuntimeRaw from 'react/jsx-dev-runtime';
+const jsxDevRuntime =
+  typeof jsxDevRuntimeRaw?.jsxDEV === 'function' ? jsxDevRuntimeRaw : { ...jsxDevRuntimeRaw, jsxDEV: jsxRuntime?.jsx };
 import * as nocobaseClientV2 from '../index';
 import * as dndKitCore from '@dnd-kit/core';
 import * as dndKitSortable from '@dnd-kit/sortable';
@@ -62,6 +71,7 @@ export function defineGlobalDeps(requirejs: RequireJS) {
   defineGlobalDep(requirejs, 'react', React);
   defineGlobalDep(requirejs, 'react-dom', ReactDOM);
   defineGlobalDep(requirejs, 'react/jsx-runtime', jsxRuntime);
+  defineGlobalDep(requirejs, 'react/jsx-dev-runtime', jsxDevRuntime);
 
   // react-router
   defineGlobalDep(requirejs, 'react-router', ReactRouter);

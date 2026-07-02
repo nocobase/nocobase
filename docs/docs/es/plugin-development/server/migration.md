@@ -1,42 +1,49 @@
-# Migración
+---
+title: "Migration: Scripts de actualización"
+description: "Migración de base de datos para plugins NocoBase: clase Migration, up/down, actualización de versiones, cambios de esquema."
+keywords: "Migration,migración de base de datos,up,down,script de actualización,cambio de esquema,NocoBase"
+---
 
-Durante el desarrollo y las actualizaciones de los **plugins** de NocoBase, la estructura de la base de datos o la configuración de un **plugin** pueden sufrir cambios incompatibles. Para asegurar una actualización fluida, NocoBase ofrece un mecanismo de **Migración** que permite gestionar estos cambios mediante la escritura de archivos de migración. Esta guía le ayudará a comprender de forma sistemática cómo utilizar las migraciones y su flujo de trabajo de desarrollo.
+# Migration: Scripts de actualización
+
+Durante el desarrollo y las actualizaciones de los plugins de NocoBase, la estructura de la base de datos o la configuración de un plugin pueden sufrir cambios incompatibles. Para asegurar una actualización fluida, NocoBase ofrece un mecanismo de **Migration** — mediante la escritura de archivos de migración para gestionar estos cambios.
 
 ## Concepto de Migración
 
-Una migración es un script que se ejecuta automáticamente durante las actualizaciones de los **plugins** y se utiliza para resolver los siguientes problemas:
+Una migración es un script que se ejecuta automáticamente durante las actualizaciones de los plugins y se utiliza para resolver los siguientes problemas:
 
 - Ajustes en la estructura de las tablas de datos (como añadir campos, modificar tipos de campos, etc.)
 - Migración de datos (por ejemplo, actualizaciones masivas de valores de campos)
-- Actualizaciones de la configuración o la lógica interna del **plugin**
+- Actualizaciones de la configuración o la lógica interna del plugin
 
 El momento de ejecución de las migraciones se divide en tres categorías:
 
 | Tipo | Momento de activación | Escenario de ejecución |
 |------|-----------------------|------------------------|
-| `beforeLoad` | Antes de que se carguen todas las configuraciones de los **plugins** | |
-| `afterSync`  | Después de que las configuraciones de las **colecciones** se sincronicen con la base de datos (la estructura de la tabla ya ha cambiado) | |
-| `afterLoad`  | Después de que se carguen todas las configuraciones de los **plugins** | |
+| `beforeLoad` | Antes de que se carguen todas las configuraciones de los plugins | |
+| `afterSync`  | Después de que las configuraciones de las tablas se sincronicen con la base de datos (la estructura de las tablas ya ha cambiado) | |
+| `afterLoad`  | Después de que se carguen todas las configuraciones de los plugins | |
 
-## Creación de Archivos de Migración
+## Creación de archivos de migración
 
-Los archivos de migración deben ubicarse en `src/server/migrations/*.ts` dentro del directorio del **plugin**. NocoBase ofrece el comando `create-migration` para generar rápidamente archivos de migración.
+Los archivos de migración deben ubicarse en `src/server/migrations/*.ts` dentro del directorio del plugin. El CLI de NocoBase proporciona el comando `nb scaffold migration` para generar rápidamente archivos de migración.
 
 ```bash
-yarn nocobase create-migration [options] <name>
+nb scaffold migration <name> --pkg <pkg> [--on <timing>]
 ```
 
-Parámetros Opcionales
+Parámetros
 
 | Parámetro | Descripción |
 |------|----------|
-| `--pkg <pkg>` | Especifica el nombre del paquete del **plugin** |
-| `--on [on]`  | Especifica el momento de ejecución, opciones: `beforeLoad`, `afterSync`, `afterLoad` |
+| `<name>` | Nombre de la migración, obligatorio |
+| `--pkg <pkg>` | Especifica el nombre del paquete del plugin, obligatorio |
+| `--on <timing>` | Especifica el momento de ejecución, opciones: `beforeLoad`, `afterSync`, `afterLoad` |
 
 Ejemplo
 
 ```bash
-$ yarn nocobase create-migration update-ui --pkg=@nocobase/plugin-client
+$ nb scaffold migration update-ui --pkg @nocobase/plugin-client
 ```
 
 La ruta del archivo de migración generado es la siguiente:
@@ -60,42 +67,46 @@ export default class extends Migration {
 }
 ```
 
-> ⚠️ `appVersion` se utiliza para identificar la versión a la que se dirige la actualización. Los entornos con versiones anteriores a la especificada ejecutarán esta migración.
+:::tip Consejo
 
-## Escritura de Migraciones
+`appVersion` se utiliza para identificar la versión a la que se dirige la actualización. Los entornos con versiones anteriores a la especificada ejecutarán esta migración.
 
-En los archivos de migración, puede acceder a las siguientes propiedades y API comunes a través de `this` para operar cómodamente con la base de datos, los **plugins** y las instancias de la aplicación:
+:::
 
-Propiedades Comunes
+## Escritura de migraciones
 
-- **`this.app`**  
-  Instancia actual de la aplicación NocoBase. Se puede utilizar para acceder a servicios globales, **plugins** o configuraciones.  
+En los archivos de migración, puede acceder a las siguientes propiedades y API comunes a través de `this` para operar cómodamente con la base de datos, los plugins y las instancias de la aplicación:
+
+Propiedades comunes
+
+- **`this.app`**
+  Instancia actual de la aplicación NocoBase. Se puede utilizar para acceder a servicios globales, plugins o configuraciones.
   ```ts
   const config = this.app.config.get('database');
   ```
 
-- **`this.db`**  
-  Instancia del servicio de base de datos, proporciona interfaces para operar con modelos (**colecciones**).  
+- **`this.db`**
+  Instancia del servicio de base de datos, proporciona interfaces para operar con modelos (Tables).
   ```ts
   const users = await this.db.getRepository('users').findAll();
   ```
 
-- **`this.plugin`**  
-  Instancia del **plugin** actual, se puede utilizar para acceder a los métodos personalizados del **plugin**.  
+- **`this.plugin`**
+  Instancia del plugin actual, se puede utilizar para acceder a los métodos personalizados del plugin.
   ```ts
   const settings = this.plugin.customMethod();
   ```
 
-- **`this.sequelize`**  
-  Instancia de Sequelize, puede ejecutar directamente SQL nativo u operaciones de transacción.  
+- **`this.sequelize`**
+  Instancia de Sequelize, puede ejecutar directamente SQL nativo u operaciones de transacción.
   ```ts
   await this.sequelize.transaction(async (transaction) => {
     await this.sequelize.query('UPDATE users SET active = 1', { transaction });
   });
   ```
 
-- **`this.queryInterface`**  
-  QueryInterface de Sequelize, comúnmente utilizada para modificar estructuras de tablas, como añadir campos, eliminar tablas, etc.  
+- **`this.queryInterface`**
+  QueryInterface de Sequelize, comúnmente utilizada para modificar estructuras de tablas, como añadir campos, eliminar tablas, etc.
   ```ts
   await this.queryInterface.addColumn('users', 'age', {
     type: this.sequelize.Sequelize.INTEGER,
@@ -103,7 +114,7 @@ Propiedades Comunes
   });
   ```
 
-Ejemplo de Escritura de Migración
+Ejemplo de escritura de migración
 
 ```ts
 import { Migration } from '@nocobase/server';
@@ -132,21 +143,21 @@ export default class extends Migration {
 }
 ```
 
-Además de las propiedades comunes mencionadas anteriormente, la Migración también ofrece una amplia gama de API. Para obtener documentación detallada, consulte la [API de Migración](/api/server/migration).
+Además de las propiedades comunes mencionadas anteriormente, la clase Migration también ofrece una amplia gama de API. Para obtener documentación detallada, consulte la [API de Migration](../../api/server/migration.md).
 
-## Activación de Migraciones
+## Activación de migraciones
 
-La ejecución de las migraciones se activa mediante el comando `nocobase upgrade`:
+La ejecución de las migraciones se activa mediante el comando de actualización:
 
 ```bash
-$ yarn nocobase upgrade
+$ nb app upgrade
 ```
 
 Durante la actualización, el sistema determinará el orden de ejecución basándose en el tipo de migración y `appVersion`.
 
-## Prueba de Migraciones
+## Prueba de migraciones
 
-En el desarrollo de **plugins**, se recomienda utilizar un **Mock Server** para probar si la migración se ejecuta correctamente, evitando así dañar los datos reales.
+En el desarrollo de plugins, se recomienda utilizar un **Mock Server** para probar si la migración se ejecuta correctamente, evitando así dañar los datos reales.
 
 ```ts
 import { createMockServer, MockServer } from '@nocobase/test';
@@ -172,15 +183,28 @@ describe('Migration Test', () => {
 });
 ```
 
-> Tip: Usar un Mock Server le permite simular rápidamente escenarios de actualización y verificar el orden de ejecución de las migraciones y los cambios en los datos.
+:::tip Consejo
 
-## Recomendaciones para la Práctica de Desarrollo
+Usar un Mock Server le permite simular rápidamente escenarios de actualización y verificar el orden de ejecución de las migraciones y los cambios en los datos.
 
-1.  **Divida las Migraciones**  
-    Intente generar un archivo de migración por cada actualización para mantener la atomicidad y facilitar la resolución de problemas.
-2.  **Especifique el Momento de Ejecución**  
-    Elija `beforeLoad`, `afterSync` o `afterLoad` según los objetos de la operación para evitar depender de módulos no cargados.
-3.  **Gestione el Control de Versiones**  
-    Utilice `appVersion` para especificar claramente la versión a la que se aplica la migración y evitar ejecuciones repetidas.
-4.  **Cobertura de Pruebas**  
-    Verifique la migración en un Mock Server antes de ejecutar la actualización en un entorno real.
+:::
+
+## Recomendaciones para la práctica de desarrollo
+
+1. **Divida las migraciones**
+   Intente generar un archivo de migración por cada actualización para mantener la atomicidad y facilitar la resolución de problemas.
+2. **Especifique el momento de ejecución**
+   Elija `beforeLoad`, `afterSync` o `afterLoad` según los objetos de la operación para evitar depender de módulos no cargados.
+3. **Gestione el control de versiones**
+   Utilice `appVersion` para especificar claramente la versión a la que se aplica la migración y evitar ejecuciones repetidas.
+4. **Cobertura de pruebas**
+   Verifique la migración en un Mock Server antes de ejecutar la actualización en un entorno real.
+
+## Enlaces relacionados
+
+- [Collections: Tablas de datos](./collections.md) — Definición de la estructura de tablas que a menudo se ajusta en las migraciones
+- [Database: Operaciones de base de datos](./database.md) — API para operar datos mediante `this.db` en las migraciones
+- [Plugin](./plugin.md) — Organización y carga de archivos de migración en un plugin
+- [Command: Línea de comandos](./command.md) — Activación de migraciones mediante `nb app upgrade` y `nb scaffold migration`
+- [Test](./test.md) — Prueba de la ejecución de migraciones con Mock Server
+- [API de Migration](../../api/server/migration.md) — Referencia completa de la API de la clase Migration

@@ -36,7 +36,7 @@ keywords: "пользовательский блок,BlockModel,registerFlow,uiS
 Полный исходный код см. в [@nocobase-example/plugin-simple-block](https://github.com/nocobase/nocobase/tree/develop/packages/plugins/%40nocobase-example/plugin-simple-block). Если хотите запустить и посмотреть локально:
 
 ```bash
-yarn pm enable @nocobase-example/plugin-simple-block
+nb plugin enable @nocobase-example/plugin-simple-block
 ```
 
 Ниже шаг за шагом построим этот плагин с нуля.
@@ -46,10 +46,10 @@ yarn pm enable @nocobase-example/plugin-simple-block
 Выполните в корне репозитория:
 
 ```bash
-yarn pm create @my-project/plugin-simple-block
+nb scaffold plugin @my-project/plugin-simple-block
 ```
 
-Это сгенерирует базовую файловую структуру в `packages/plugins/@my-project/plugin-simple-block`. Подробное описание см. в [Написание первого плагина](../../write-your-first-plugin).
+Это сгенерирует базовую файловую структуру в `plugins/@my-project/plugin-simple-block`. Подробное описание см. в [Написание первого плагина](../../write-your-first-plugin).
 
 ## Шаг 2: создать модель блока
 
@@ -168,7 +168,7 @@ export default PluginSimpleBlockClient;
 ## Шаг 5: включить плагин
 
 ```bash
-yarn pm enable @my-project/plugin-simple-block
+nb plugin enable @my-project/plugin-simple-block
 ```
 
 После включения создайте новую страницу, нажмите «Добавить блок» — Вы увидите «Simple block». После добавления нажмите кнопку настройки блока, чтобы редактировать HTML-содержимое.

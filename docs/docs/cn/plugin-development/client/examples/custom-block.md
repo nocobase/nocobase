@@ -36,20 +36,20 @@ keywords: "自定义区块,BlockModel,registerFlow,uiSchema,renderComponent,Noco
 完整源码见 [@nocobase-example/plugin-simple-block](https://github.com/nocobase/nocobase/tree/develop/packages/plugins/%40nocobase-example/plugin-simple-block)。如果你想直接在本地跑起来看效果：
 
 ```bash
-yarn pm enable @nocobase-example/plugin-simple-block
+nb plugin enable @nocobase-example/plugin-simple-block
 ```
 
 下面从零开始，一步步搭建这个插件。
 
 ## 第一步：创建插件骨架
 
-在仓库根目录执行：
+在项目根目录或 `source/` 目录下执行：
 
 ```bash
-yarn pm create @my-project/plugin-simple-block
+nb scaffold plugin @my-project/plugin-simple-block
 ```
 
-这会在 `packages/plugins/@my-project/plugin-simple-block` 下生成基础文件结构。详细说明见 [编写第一个插件](../../write-your-first-plugin)。
+这会在 `plugins/@my-project/plugin-simple-block` 下生成基础文件结构。详细说明见 [编写第一个插件](../../write-your-first-plugin)。
 
 ## 第二步：创建区块模型
 
@@ -168,7 +168,7 @@ export default PluginSimpleBlockClient;
 ## 第五步：启用插件
 
 ```bash
-yarn pm enable @my-project/plugin-simple-block
+nb plugin enable @my-project/plugin-simple-block
 ```
 
 启用后，新建一个页面，点击「添加区块」就能看到「Simple block」。添加后，点击区块的配置按钮可以编辑 HTML 内容。

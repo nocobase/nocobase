@@ -12,13 +12,13 @@ keywords: "FAQ,よくある質問,トラブルシューティング,Troubleshoot
 
 ### プラグイン作成後にプラグインマネージャーに表示されない
 
-手動でディレクトリを作成するのではなく、`yarn pm create` を実行したか確認してください。`yarn pm create` はファイル生成だけでなく、データベースの `applicationPlugins` テーブルへの登録も行います。手動で作成してしまった場合は、`yarn nocobase upgrade` を実行して再スキャンできます。
+手動でディレクトリを作成するのではなく、`nb scaffold plugin` を実行したか確認してください。`nb scaffold plugin` はファイル生成だけでなく、データベースの `applicationPlugins` テーブルへの登録も行います。手動で作成してしまった場合は、`nb app upgrade` を実行して再スキャンできます。
 
 ### プラグインを有効化してもページに変化がない
 
 以下の順番で確認してください：
 
-1. `yarn pm enable <pluginName>` を実行したか確認
+1. `nb plugin enable <pluginName>` を実行したか確認
 2. ブラウザをリフレッシュ（強制リフレッシュ `Ctrl+Shift+R` が必要な場合もあります）
 3. ブラウザのコンソールにエラーが出ていないか確認
 
@@ -30,7 +30,7 @@ keywords: "FAQ,よくある質問,トラブルシューティング,Troubleshoot
 | --- | --- |
 | `src/client-v2/` 配下の tsx/ts | 自動ホットリロード、操作不要 |
 | `src/locale/` 配下の翻訳ファイル | **アプリの再起動** |
-| `src/server/collections/` 配下の新規・修正 collection | `yarn nocobase upgrade` を実行 |
+| `src/server/collections/` 配下の新規・修正 collection | `nb app upgrade` を実行 |
 
 クライアントコードを変更してもホットリロードされない場合は、まずブラウザをリフレッシュしてみてください。
 
@@ -220,15 +220,15 @@ this.app.acl.allow('todoItems', ['list', 'get', 'create', 'update', 'destroy'], 
 
 ## ビルドとデプロイ関連
 
-### `yarn build --tar` で "no paths specified to add to archive" エラー
+### `nb source build --tar` で "no paths specified to add to archive" エラー
 
-`yarn build <pluginName> --tar` 実行時のエラー：
+`nb source build <pluginName> --tar` 実行時のエラー：
 
 ```bash
 TypeError: no paths specified to add to archive
 ```
 
-ただし `yarn build <pluginName>`（`--tar` なし）だけなら正常に動きます。
+ただし `nb source build <pluginName>`（`--tar` なし）だけなら正常に動きます。
 
 この問題は通常、プラグインの `.npmignore` で**否定構文**（npm の `!` プレフィックス）を使っていることが原因です。`--tar` パッケージング時、NocoBase は `.npmignore` の各行の先頭に `!` を付けて `fast-glob` の除外パターンに変換します。もし `.npmignore` で既に否定構文を使っている場合、例えば：
 
@@ -259,7 +259,7 @@ TypeError: Cannot assign to read only property 'constructor' of object '[object 
 
 この問題は通常、**プラグインが NocoBase 組み込みの依存パッケージを自身の `node_modules/` にバンドルしている**ことが原因です。NocoBase のビルドシステムは [external リスト](../../dependency-management)を管理しており、そこに含まれるパッケージ（`react`、`antd`、`axios`、`lodash` など）は NocoBase ホストが提供するため、プラグインにバンドルすべきではありません。プラグインがプライベートコピーを持っていると、ランタイムでホスト側のバージョンと競合し、さまざまな不可解なエラーが発生します。
 
-**ローカルで問題が起きない理由：** ローカル開発ではプラグインは `packages/plugins/` ディレクトリ配下にあり、プライベートな `node_modules/` を持ちません。依存関係はプロジェクトルートディレクトリの既にロードされたバージョンに解決されるため、競合が発生しません。
+**ローカルで問題が起きない理由：** ローカル開発ではプラグインは `plugins/` ディレクトリ配下にあり、プライベートな `node_modules/` を持ちません。依存関係はプロジェクトルートディレクトリの既にロードされたバージョンに解決されるため、競合が発生しません。
 
 **解決方法：** プラグインの `package.json` 内の `dependencies` をすべて `devDependencies` に移動してください。NocoBase のビルドシステムがプラグインの依存関係を自動的に処理します：
 

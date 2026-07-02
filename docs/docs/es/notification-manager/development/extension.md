@@ -74,7 +74,7 @@ Supongamos que queremos añadir la funcionalidad de notificación por SMS a Noco
 
 ### Creación del **plugin**
 
-1. Ejecute el comando para crear el **plugin**: `yarn pm add @nocobase/plugin-notification-example`
+1. Ejecute el comando para crear el **plugin**: `nb scaffold plugin @nocobase/plugin-notification-example`
 
 ### Desarrollo del cliente
 
@@ -265,8 +265,8 @@ export default PluginNotificationExampleServer;
 
 ### Registro y activación del **plugin**
 
-1. Ejecute el comando de registro: `yarn pm add @nocobase/plugin-notification-example`
-2. Ejecute el comando de activación: `yarn pm enable @nocobase/plugin-notification-example`
+1. Ejecute el comando de registro: `nb scaffold plugin @nocobase/plugin-notification-example`
+2. Ejecute el comando de activación: `nb plugin enable @nocobase/plugin-notification-example`
 
 ### Configuración del canal
 

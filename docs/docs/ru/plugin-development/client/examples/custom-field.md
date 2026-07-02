@@ -37,7 +37,7 @@ keywords: "пользовательское поле,FieldModel,ClickableFieldMo
 Полный исходный код см. в [@nocobase-example/plugin-field-simple](https://github.com/nocobase/nocobase/tree/develop/packages/plugins/%40nocobase-example/plugin-field-simple). Если хотите запустить и посмотреть локально:
 
 ```bash
-yarn pm enable @nocobase-example/plugin-field-simple
+nb plugin enable @nocobase-example/plugin-field-simple
 ```
 
 Ниже шаг за шагом построим этот плагин с нуля.
@@ -47,7 +47,7 @@ yarn pm enable @nocobase-example/plugin-field-simple
 Выполните в корне репозитория:
 
 ```bash
-yarn pm create @my-project/plugin-field-simple
+nb scaffold plugin @my-project/plugin-field-simple
 ```
 
 Подробное описание см. в [Написание первого плагина](../../write-your-first-plugin).
@@ -140,7 +140,7 @@ export default PluginFieldSimpleClient;
 ## Шаг 5: включить плагин
 
 ```bash
-yarn pm enable @my-project/plugin-field-simple
+nb plugin enable @my-project/plugin-field-simple
 ```
 
 После включения в блоке таблицы найдите столбец однострочного текстового поля, нажмите кнопку настройки столбца — в выпадающем меню «Компонент поля» можно будет переключиться на этот пользовательский компонент отображения.

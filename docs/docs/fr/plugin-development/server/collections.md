@@ -194,13 +194,7 @@ Tous les champs de colonne prennent en charge les paramètres suivants :
 Lors de la première activation du plugin, le système synchronise automatiquement la configuration des Collections avec la structure de la base de données. Si le plugin est déjà installé et en cours d'exécution, après l'ajout ou la modification de Collections, vous devez exécuter manuellement la commande de mise à niveau :
 
 ```bash
-yarn nocobase upgrade
-```
-
-En cas d'anomalie ou de données corrompues lors de la synchronisation, vous pouvez reconstruire la structure des tables en réinstallant l'application :
-
-```bash
-yarn nocobase install -f
+nb app upgrade
 ```
 
 Si la mise à niveau du plugin nécessite une migration des données existantes — par exemple renommer un champ, scinder une table ou remplir des valeurs par défaut —, utilisez les [scripts de migration](./migration.md) plutôt que de modifier la base de données à la main.

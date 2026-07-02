@@ -40,17 +40,17 @@ Wir erstellen ein „To-do"-Datenmanagement-Plugin mit folgenden Funktionen:
 Vollständigen Quellcode siehe [@nocobase-example/plugin-custom-table-block-resource](https://github.com/nocobase/nocobase/tree/develop/packages/plugins/%40nocobase-example/plugin-custom-table-block-resource). Wenn Sie es lokal ausprobieren möchten:
 
 ```bash
-yarn pm enable @nocobase-example/plugin-custom-table-block-resource
+nb plugin enable @nocobase-example/plugin-custom-table-block-resource
 ```
 
 Im Folgenden bauen wir dieses Plugin Schritt für Schritt von Grund auf auf.
 
 ## Schritt 1: Plugin-Gerüst erstellen
 
-Im Stammverzeichnis des Repositories ausführen:
+Im Projektstammverzeichnis oder `source/`-Verzeichnis ausführen:
 
 ```bash
-yarn pm create @my-project/plugin-custom-table-block-resource
+nb scaffold plugin @my-project/plugin-custom-table-block-resource
 ```
 
 Detaillierte Erläuterungen siehe [Erstes Plugin schreiben](../../write-your-first-plugin).
@@ -458,7 +458,7 @@ Wichtige Punkte:
 ## Schritt 9: Plugin aktivieren
 
 ```bash
-yarn pm enable @my-project/plugin-custom-table-block-resource
+nb plugin enable @my-project/plugin-custom-table-block-resource
 ```
 
 Nach der Aktivierung:

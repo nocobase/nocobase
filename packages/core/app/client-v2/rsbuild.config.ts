@@ -286,6 +286,8 @@ export default defineConfig(({ command }) => {
     },
     tools: {
       rspack(config) {
+        config.resolve = config.resolve || {};
+        config.resolve.symlinks = false;
         config.target = ['web', 'es2020'];
         config.output.module = isBuild;
         config.output.chunkFormat = isBuild ? 'module' : 'array-push';

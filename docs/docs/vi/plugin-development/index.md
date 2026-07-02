@@ -27,20 +27,31 @@ plugin-hello/
 │  └─ server/            # Mã nguồn server, có thể đăng ký resource, event, command line, v.v.
 ```
 
+## Điều kiện tiên quyết
+
+Trước khi phát triển Plugin, bạn cần khởi tạo một ứng dụng qua NocoBase CLI. CLI hỗ trợ hai nguồn npm và Git:
+
+- **Nguồn npm** (`create-nocobase-app`): Phù hợp để bắt đầu nhanh, mở hộp là dùng được.
+- **Nguồn Git** (khuyến nghị): Clone repo source code NocoBase, khi phát triển với AI có thể tham khảo trực tiếp source code lõi, hiệu quả tốt hơn.
+
+Xem chi tiết tại [Cài đặt bằng CLI](../nocobase-cli/installation/cli.md) hoặc [Hướng dẫn kết nối AI Agent](../ai/quick-start.mdx).
+
 ## Quy ước thư mục và thứ tự load
 
-Khi khởi động, NocoBase sẽ quét các thư mục sau để load Plugin:
+Ứng dụng được tạo qua `nb init` có cấu trúc thư mục như sau:
 
 ```bash
-my-nocobase-app/
-├── packages/
-│   └── plugins/          # Plugin đang phát triển từ source (ưu tiên cao nhất)
-└── storage/
-    └── plugins/          # Plugin đã biên dịch, ví dụ Plugin được upload hoặc phát hành
+<app-path>/
+├── .nb/                  # Metadata mà CLI lưu cho env hiện tại
+├── source/               # Source code ứng dụng (project NocoBase)
+├── storage/              # Thư mục dữ liệu runtime
+│   └── plugins/          # Plugin đã biên dịch (upload hoặc import)
+├── plugins/              # Source code Plugin của bạn (nb scaffold plugin tạo ở đây)
+└── .env                  # File biến môi trường ứng dụng
 ```
 
-- `packages/plugins`: Thư mục Plugin phát triển local, hỗ trợ biên dịch và debug realtime.
-- `storage/plugins`: Lưu Plugin đã biên dịch, ví dụ Plugin thương mại hoặc Plugin của bên thứ ba.
+- `plugins/`: Thư mục source code Plugin do bạn phát triển. Plugin được tạo qua `nb scaffold plugin` sẽ nằm ở đây, `nb` sẽ tự động đồng bộ chúng vào `source/packages/plugins/` để phục vụ quy trình phát triển và build, bạn không cần thao tác thủ công trên thư mục `source/`.
+- `storage/plugins/`: Lưu Plugin đã biên dịch, ví dụ Plugin thương mại hoặc Plugin của bên thứ ba.
 
 ## Vòng đời và trạng thái Plugin
 
@@ -63,19 +74,13 @@ Một Plugin thường trải qua các giai đoạn sau:
 
 ```bash
 # 1. Tạo bộ khung Plugin
-yarn pm create @my-project/plugin-hello
+nb scaffold plugin @my-project/plugin-hello
 
-# 2. Pull Plugin package (download hoặc link)
-yarn pm pull @my-project/plugin-hello
+# 2. Kích hoạt Plugin (lần đầu kích hoạt sẽ tự động cài đặt)
+nb plugin enable @my-project/plugin-hello
 
-# 3. Kích hoạt Plugin (lần đầu kích hoạt sẽ tự động cài đặt)
-yarn pm enable @my-project/plugin-hello
-
-# 4. Vô hiệu hóa Plugin
-yarn pm disable @my-project/plugin-hello
-
-# 5. Gỡ cài đặt Plugin
-yarn pm remove @my-project/plugin-hello
+# 3. Vô hiệu hóa Plugin
+nb plugin disable @my-project/plugin-hello
 ```
 
 ## Giao diện quản lý Plugin

@@ -74,7 +74,7 @@ export default PluginNotificationExampleServer;
 
 ### Создание плагина
 
-1. Выполните команду для создания плагина: `yarn pm add @nocobase/plugin-notification-example`
+1. Выполните команду для создания плагина: `nb scaffold plugin @nocobase/plugin-notification-example`
 
 ### Разработка клиентской части
 
@@ -270,8 +270,8 @@ export default PluginNotificationExampleServer;
 
 ### Регистрация и запуск плагина
 
-1. Выполните команду для регистрации плагина: `yarn pm add @nocobase/plugin-notification-example`
-2. Выполните команду для включения плагина: `yarn pm enable @nocobase/plugin-notification-example`
+1. Выполните команду для регистрации плагина: `nb scaffold plugin @nocobase/plugin-notification-example`
+2. Выполните команду для включения плагина: `nb plugin enable @nocobase/plugin-notification-example`
 
 ### Настройка канала
 

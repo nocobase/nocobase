@@ -10,6 +10,23 @@ AI 开发插件是 NocoBase 提供的 AI 辅助插件开发能力——你可以
 
 AI 开发插件的能力基于 [nocobase-plugin-development](https://github.com/nocobase/skills/tree/main/skills/nocobase-plugin-development) Skill 实现。如果你已经通过 NocoBase CLI 初始化（`nb init`），这个 Skill 会自动安装。
 
+## 在哪里运行 AI Agent
+
+AI 开发插件需要在一个通过 `nb init` 创建的 NocoBase 项目根目录下运行 AI Agent。CLI 支持 npm 和 Git 两种来源——**推荐使用 Git 来源**，这样 AI 可以直接参考 NocoBase 核心源码，开发效果更好。
+
+`nb init` 创建的项目目录结构如下（即 `<app-path>`）：
+
+```bash
+<app-path>/
+├── .nb/                  # CLI 为当前 env 保存的元数据
+├── source/               # 应用源码工程（NocoBase 核心 + 内置插件）
+├── storage/              # 运行时数据目录
+├── plugins/              # 你的插件源码（nb scaffold plugin 生成在这里）
+└── .env                  # 应用环境变量文件
+```
+
+打开 AI Agent（如 Claude Code、Codex、Cursor 等）时，将工作目录切换到 `<app-path>` 即可开始开发插件。
+
 ## 快速开始
 
 如果你已经安装过 [NocoBase CLI](../ai/quick-start.md)，可以跳过这一步。
@@ -41,11 +58,13 @@ nb init --ui
 
 ## 从一句话到一个完整插件
 
-安装完成后，你可以直接用自然语言告诉 AI 你想开发什么插件。下面是几个真实场景，感受一下 AI 开发插件的能力。
+安装完成后，在项目根目录（`<app-path>`）下打开 AI Agent，就可以直接用自然语言告诉 AI 你想开发什么插件。下面是几个真实场景，感受一下 AI 开发插件的能力。
 
 ### 一句话开发水印插件
 
 一句提示词，AI 就能帮你生成一个完整的水印插件——包括前端渲染逻辑、防篡改检测、后端设置存储 API 和插件设置页面。
+
+在 `<app-path>` 下把以下提示词发给 AI：
 
 ```
 帮我用 nocobase-plugin-development skill 开发一个 NocoBase 的水印插件，
@@ -64,6 +83,8 @@ nb init --ui
 ### 一句话做一个自定义字段组件
 
 想让 integer 字段显示成星星评分？告诉 AI 你想要的展示效果，它会帮你生成自定义的 FieldModel，替换默认的字段渲染组件。
+
+同样在 `<app-path>` 下把以下提示词发给 AI：
 
 ```
 请你用 nocobase-plugin-development skill 帮我开发一个 NocoBase 插件，名叫 @my-scope/plugin-rating，

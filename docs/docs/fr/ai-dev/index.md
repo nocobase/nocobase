@@ -10,6 +10,23 @@ Le plugin AI Development est la capacité de développement de plugins assistée
 
 La capacité du plugin AI Development repose sur la Skill [nocobase-plugin-development](https://github.com/nocobase/skills/tree/main/skills/nocobase-plugin-development). Si vous avez déjà initialisé via la NocoBase CLI (`nb init`), cette Skill est installée automatiquement.
 
+## Où exécuter l'AI Agent
+
+Le plugin AI Development nécessite d'exécuter l'AI Agent à la racine d'un projet NocoBase créé via `nb init`. La CLI prend en charge deux sources : npm et Git — **il est recommandé d'utiliser la source Git**, car l'IA peut alors consulter directement le code source de NocoBase, ce qui améliore les résultats de développement.
+
+La structure du répertoire du projet créé par `nb init` est la suivante (c'est-à-dire `<app-path>`) :
+
+```bash
+<app-path>/
+├── .nb/                  # Métadonnées sauvegardées par la CLI pour l'env actuel
+├── source/               # Projet de code source (noyau NocoBase + plugins intégrés)
+├── storage/              # Répertoire de données d'exécution
+├── plugins/              # Code source de vos plugins (nb scaffold plugin génère ici)
+└── .env                  # Fichier de variables d'environnement de l'application
+```
+
+Ouvrez l'AI Agent (comme Claude Code, Codex, Cursor, etc.) et changez le répertoire de travail vers `<app-path>` pour commencer à développer des plugins.
+
 ## Démarrage rapide
 
 Si vous avez déjà installé la [NocoBase CLI](../ai/quick-start.md), vous pouvez sauter cette étape.
@@ -41,11 +58,13 @@ Le navigateur ouvrira automatiquement la page de configuration visuelle, qui vou
 
 ## D'une phrase à un plugin complet
 
-Une fois l'installation terminée, vous pouvez directement dire à l'IA, en langage naturel, le plugin que vous voulez développer. Voici quelques scénarios réels qui illustrent la capacité du plugin AI Development.
+Une fois l'installation terminée, ouvrez l'AI Agent dans le répertoire racine du projet (`<app-path>`) et vous pouvez directement dire à l'IA, en langage naturel, le plugin que vous voulez développer. Voici quelques scénarios réels qui illustrent la capacité du plugin AI Development.
 
 ### Développer un plugin de filigrane en une phrase
 
 Avec un seul prompt, l'IA peut générer pour vous un plugin de filigrane complet — incluant la logique de rendu front-end, la détection anti-altération, l'API back-end de stockage des paramètres et la page de configuration du plugin.
+
+Dans `<app-path>`, envoyez le prompt suivant à l'IA :
 
 ```
 帮我用 nocobase-plugin-development skill 开发一个 NocoBase 的水印插件，
@@ -64,6 +83,8 @@ Tout au long du processus, vous n'avez qu'à décrire vos besoins et prendre les
 ### Créer un composant de field personnalisé en une phrase
 
 Vous voulez afficher un field integer sous forme de notation par étoiles ? Décrivez à l'IA l'effet d'affichage souhaité, et elle générera pour vous un FieldModel personnalisé qui remplacera le composant de rendu de field par défaut.
+
+Toujours dans `<app-path>`, envoyez le prompt suivant à l'IA :
 
 ```
 请你用 nocobase-plugin-development skill 帮我开发一个 NocoBase 插件，名叫 @my-scope/plugin-rating，

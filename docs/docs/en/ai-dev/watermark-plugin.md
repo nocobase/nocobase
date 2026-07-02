@@ -29,8 +29,19 @@ After enabling the plugin:
 
 Make sure you have:
 
-1. A running NocoBase development environment (NocoBase Skills are automatically installed during NocoBase CLI initialization)
-2. An editor that supports AI Agent open (e.g., Claude Code, Codex, Cursor, etc.)
+1. Created a NocoBase project via `nb init` (Git source is recommended), and the application is already running
+2. An editor that supports AI Agent open (e.g., Claude Code, Codex, Cursor, etc.), with the working directory set to the project root (`<app-path>`)
+
+The project directory structure created by `nb init` is as follows:
+
+```bash
+<app-path>/
+├── .nb/                  # CLI metadata for the current env
+├── source/               # Application source code (NocoBase core + built-in plugins)
+├── storage/              # Runtime data directory
+├── plugins/              # Your plugin source code (nb scaffold plugin generates here)
+└── .env                  # Application environment variables
+```
 
 :::warning Note
 
@@ -41,7 +52,7 @@ Make sure you have:
 
 ## Getting Started
 
-In your NocoBase project root directory, send the following prompt to AI:
+In your NocoBase project root (the `<app-path>` created by `nb init`), send the following prompt to AI:
 
 ```
 Help me use nocobase-plugin-development skill to develop a NocoBase watermark plugin.
@@ -80,10 +91,10 @@ After you confirm the plan, AI starts writing code.
 ### 2. Create the Plugin Scaffold
 
 ```bash
-yarn pm create @my-project/plugin-watermark
+nb scaffold plugin @my-project/plugin-watermark
 ```
 
-AI generates a standard plugin directory structure under `packages/plugins/@my-project/plugin-watermark/`.
+AI generates a standard plugin directory structure under `plugins/@my-project/plugin-watermark/`.
 
 ### 3. Write Server-Side Code
 
@@ -113,7 +124,7 @@ AI automatically generates Chinese and English language packs -- no extra action
 ### 6. Enable the Plugin
 
 ```bash
-yarn pm enable @my-project/plugin-watermark
+nb plugin enable @my-project/plugin-watermark
 ```
 
 After enabling, open the NocoBase page and you'll see the watermark overlaying the content.

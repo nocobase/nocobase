@@ -28,7 +28,20 @@ Vous trouverez ci-dessous toutes les choses que l'IA peut faire pour vous. Chaqu
 
 - **Indiquez clairement à l'IA que vous voulez créer ou modifier un plugin NocoBase, et fournissez le nom du plugin** — par exemple « Veuillez utiliser la skill nocobase-plugin-development pour m'aider à développer un plugin NocoBase nommé @my-scope/plugin-rating ». Sans le nom du plugin, l'IA risque de ne pas savoir où générer le code.
 - **Précisez explicitement dans le prompt l'utilisation de la skill nocobase-plugin-development** — par exemple « Veuillez utiliser la skill nocobase-plugin-development pour m'aider à développer un plugin NocoBase… ». Ainsi, l'AI Agent peut lire directement les capacités de la Skill et éviter d'entrer en mode plan en ignorant les Skills.
-- **Exécutez l'AI Agent à la racine du dépôt source de NocoBase** — ainsi l'IA peut trouver automatiquement la structure du projet, les dépendances et les plugins existants. Si vous n'êtes pas à la racine du dépôt source, vous devez indiquer en plus à l'AI Agent le chemin du dépôt source.
+- **Exécutez l'AI Agent dans le répertoire racine du projet créé par `nb init`** — il est recommandé de créer le projet à partir de la source Git, afin que l'IA puisse directement consulter le code source du noyau NocoBase pour de meilleurs résultats de développement. Si vous n'êtes pas dans le répertoire racine du projet, vous devez indiquer en plus à l'AI Agent le chemin du projet.
+
+L'arborescence du répertoire de projet créé par `nb init` est la suivante (c'est-à-dire `<app-path>`) :
+
+```bash
+<app-path>/
+├── .nb/                  # Metadonnees sauvegardees par la CLI pour l'env actuel
+├── source/               # Projet de code source (noyau NocoBase + plugins integres)
+├── storage/              # Repertoire de donnees d'execution
+├── plugins/              # Code source de vos plugins (nb scaffold plugin genere ici)
+└── .env                  # Fichier de variables d'environnement de l'application
+```
+
+Tous les exemples de prompts ci-dessous supposent que vous exécutez l'AI Agent depuis `<app-path>`.
 
 ## Index rapide
 
@@ -49,16 +62,16 @@ Vous trouverez ci-dessous toutes les choses que l'IA peut faire pour vous. Chaqu
 
 L'IA peut, à partir de la description de votre besoin, générer une arborescence complète de plugin NocoBase — incluant les fichiers d'entrée front-end et back-end, les définitions de types et la configuration de base.
 
-Exemple de prompt :
+Ouvrez l'AI Agent dans le répertoire racine du projet (`<app-path>`) et envoyez le prompt :
 
 ```
 帮我创建一个 NocoBase 插件，插件名叫 @my-scope/plugin-todo
 ```
 
-L'IA exécutera `yarn pm create @my-scope/plugin-todo` et générera l'arborescence standard :
+L'IA exécutera `nb scaffold plugin @my-scope/plugin-todo` et générera l'arborescence standard :
 
 ```
-packages/plugins/@my-scope/plugin-todo/
+plugins/@my-scope/plugin-todo/
 ├── src/
 │   ├── server/
 │   │   └── plugin.ts

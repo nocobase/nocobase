@@ -126,6 +126,9 @@ const mocks = vi.hoisted(() => ({
   checkExternalDbConnection: vi.fn(),
   readExternalDbConnectionConfig: vi.fn(),
   formatDbCheckAddress: vi.fn(),
+  syncPluginWorkspace: vi.fn(),
+  isCliManagedSourceApp: vi.fn(),
+  summarizePluginWorkspaceSync: vi.fn(),
   childSpawnCalls: [] as Array<{
     command: string;
     args: string[];
@@ -230,6 +233,16 @@ vi.mock('../lib/run-npm.js', () => ({
   ensureDockerDaemonRunning: mocks.ensureDockerDaemonRunning,
   resolveProjectCwd: mocks.resolveProjectCwd,
 }));
+
+vi.mock('../lib/plugin-workspace.js', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../lib/plugin-workspace.js')>();
+  return {
+    ...actual,
+    isCliManagedSourceApp: mocks.isCliManagedSourceApp,
+    syncPluginWorkspace: mocks.syncPluginWorkspace,
+    summarizePluginWorkspaceSync: mocks.summarizePluginWorkspaceSync,
+  };
+});
 
 vi.mock('../lib/prompt-validators.js', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../lib/prompt-validators.js')>();
@@ -411,6 +424,18 @@ beforeEach(() => {
   });
   mocks.upsertEnv.mockResolvedValue(undefined);
   mocks.clearEnvRootSetup.mockResolvedValue(true);
+  mocks.syncPluginWorkspace.mockResolvedValue({
+    createdPluginWorkspace: false,
+    createdSourcePluginRoot: false,
+    linked: [],
+    relinked: [],
+    removedDangling: [],
+    warnings: [],
+    skipped: [],
+    changed: false,
+  });
+  mocks.isCliManagedSourceApp.mockReturnValue(true);
+  mocks.summarizePluginWorkspaceSync.mockReturnValue([]);
 });
 
 afterEach(() => {
@@ -480,6 +505,8 @@ test('start enables daemon by default for npm/git envs', async () => {
     source: 'npm',
     projectRoot: '/tmp/nocobase',
     env: {
+      appPath: '/tmp',
+      sourcePath: '/tmp/source',
       appPort: 13000,
       envVars: { APP_PORT: '13000' },
     },
@@ -498,6 +525,11 @@ test('start enables daemon by default for npm/git envs', async () => {
 
   await Start.prototype.run.call(command);
 
+  expect(mocks.syncPluginWorkspace).toHaveBeenCalledWith({
+    appPath: '/tmp',
+    sourcePath: '/tmp/source',
+    mode: 'all',
+  });
   expect(runCommand.mock.calls).toEqual([['license:plugins:sync', ['--env', 'local', '--skip-if-no-license']]]);
   expect(mocks.startTask.mock.calls).toEqual([
     ['Running local postinstall for "local"...'],
@@ -754,6 +786,8 @@ test('start prints the resolved public app url for local envs', async () => {
     source: 'npm',
     projectRoot: '/tmp/nocobase',
     env: {
+      appPath: '/tmp',
+      sourcePath: '/tmp/source',
       appPort: 13000,
       envVars: { APP_PORT: '13000' },
     },
@@ -795,6 +829,8 @@ test('start allows opting out of quickstart explicitly', async () => {
     source: 'npm',
     projectRoot: '/tmp/nocobase',
     env: {
+      appPath: '/tmp',
+      sourcePath: '/tmp/source',
       appPort: 13000,
       envVars: { APP_PORT: '13000' },
     },
@@ -835,6 +871,8 @@ test('start reports when the local app is already running', async () => {
     source: 'npm',
     projectRoot: '/tmp/nocobase',
     env: {
+      appPath: '/tmp',
+      sourcePath: '/tmp/source',
       appPort: 13000,
       envVars: { APP_PORT: '13000' },
     },
@@ -868,6 +906,8 @@ test('start can suppress the final success line for upgrade subcommand context',
     source: 'npm',
     projectRoot: '/tmp/nocobase',
     env: {
+      appPath: '/tmp',
+      sourcePath: '/tmp/source',
       appPort: 13000,
       envVars: { APP_PORT: '13000' },
     },
@@ -2100,6 +2140,8 @@ test('restart runs stop before start and forwards supported startup flags', asyn
     source: 'npm',
     projectRoot: '/tmp/nocobase',
     env: {
+      appPath: '/tmp',
+      sourcePath: '/tmp/source',
       appPort: 13000,
       envVars: { APP_PORT: '13000' },
     },
@@ -2120,6 +2162,11 @@ test('restart runs stop before start and forwards supported startup flags', asyn
 
   await Restart.prototype.run.call(command);
 
+  expect(mocks.syncPluginWorkspace).toHaveBeenCalledWith({
+    appPath: '/tmp',
+    sourcePath: '/tmp/source',
+    mode: 'all',
+  });
   expect(runCommand.mock.calls).toEqual([
     ['license:plugins:sync', ['--env', 'local', '--skip-if-no-license', '--verbose']],
     ['app:stop', ['--env', 'local', '--verbose']],
@@ -5826,6 +5873,46 @@ test('pm disable routes local envs to the local nocobase command', async () => {
   ]);
 });
 
+test('pm enable syncs targeted plugin workspace entries for local envs before enabling', async () => {
+  const { default: PmEnable } = await import('../commands/plugin/enable.js');
+  const runtime = {
+    kind: 'local',
+    envName: 'dev',
+    source: 'git',
+    projectRoot: '/tmp/nocobase',
+    env: {
+      appPath: '/tmp/app',
+      sourcePath: '/tmp/app/source',
+      envVars: {},
+    },
+  };
+  mocks.resolveManagedAppRuntime.mockResolvedValue(runtime);
+
+  const command = createCommandHarness({
+    args: {
+      packages: ['@nocobase/plugin-a', '@nocobase/plugin-b'],
+    },
+    flags: {
+      env: 'dev',
+    },
+  });
+
+  await PmEnable.prototype.run.call(command);
+
+  expect(mocks.syncPluginWorkspace).toHaveBeenCalledWith({
+    appPath: '/tmp/app',
+    sourcePath: '/tmp/app/source',
+    mode: 'targeted',
+    targetPackageNames: ['@nocobase/plugin-a', '@nocobase/plugin-b'],
+  });
+  expect(mocks.runLocalNocoBaseCommand.mock.calls[0]?.[1]).toEqual([
+    'pm',
+    'enable',
+    '@nocobase/plugin-a',
+    '@nocobase/plugin-b',
+  ]);
+});
+
 test('pm enable keeps API fallback for http envs and forwards the resolved env', async () => {
   const { default: PmEnable } = await import('../commands/plugin/enable.js');
   const restoreTerminal = setTerminalInteractivity(true);
@@ -5869,6 +5956,8 @@ test('dev runs local npm/git source envs with a generated port when --port is om
     source: 'git',
     projectRoot: '/tmp/nocobase',
     env: {
+      appPath: '/tmp',
+      sourcePath: '/tmp/source',
       appPort: 13000,
       envVars: {
         APP_PORT: '13000',
@@ -5891,6 +5980,11 @@ test('dev runs local npm/git source envs with a generated port when --port is om
   expect(mocks.printInfo.mock.calls).toEqual([
     ['Starting NocoBase dev mode for "dev" from /tmp/nocobase. Press Ctrl+C to stop.'],
   ]);
+  expect(mocks.syncPluginWorkspace).toHaveBeenCalledWith({
+    appPath: '/tmp',
+    sourcePath: '/tmp/source',
+    mode: 'all',
+  });
   expect(mocks.startTask.mock.calls).toEqual([['Running local postinstall for "dev"...']]);
   expect(mocks.succeedTask.mock.calls).toEqual([['Local postinstall finished for "dev".']]);
   expect(mocks.runLocalNocoBaseCommand.mock.calls).toEqual([
@@ -6223,6 +6317,36 @@ test('pm list keeps API fallback for http envs', async () => {
   await PmList.prototype.run.call(command);
 
   expect(runCommand.mock.calls).toEqual([['api:pm:list', ['--mode=summary']]]);
+});
+
+test('pm list syncs all top-level plugins for local envs before listing', async () => {
+  const { default: PmList } = await import('../commands/plugin/list.js');
+  const runtime = {
+    kind: 'local',
+    envName: 'local',
+    source: 'git',
+    projectRoot: '/tmp/nocobase',
+    env: {
+      appPath: '/tmp/app',
+      sourcePath: '/tmp/app/source',
+      envVars: {},
+    },
+  };
+  mocks.resolveManagedAppRuntime.mockResolvedValue(runtime);
+  const command = createCommandHarness({
+    flags: {
+      env: 'local',
+    },
+  });
+
+  await PmList.prototype.run.call(command);
+
+  expect(mocks.syncPluginWorkspace).toHaveBeenCalledWith({
+    appPath: '/tmp/app',
+    sourcePath: '/tmp/app/source',
+    mode: 'all',
+  });
+  expect(mocks.runLocalNocoBaseCommand.mock.calls).toEqual([[runtime, ['pm', 'list']]]);
 });
 
 test('pm list forwards explicit env selection to API fallback', async () => {

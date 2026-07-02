@@ -6,7 +6,7 @@ keywords: "nb source dev,NocoBase CLI,режим разработки,горяч
 
 # nb source dev
 
-Запускает режим разработки в env с источником npm или Git. Для Docker env используйте [`nb app logs`](../app/logs.md) для просмотра логов работы.
+Запускает режим разработки в env с источником npm или Git. Команду необходимо выполнять в каталоге исходного кода (`<app-path>/source/`). Для Docker env используйте [`nb app logs`](../app/logs.md) для просмотра логов работы.
 
 ## Использование
 

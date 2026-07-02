@@ -34,17 +34,17 @@ Vamos criar três botões de ação personalizados, correspondentes a três cen�
 O código-fonte completo está em [@nocobase-example/plugin-simple-action](https://github.com/nocobase/nocobase/tree/develop/packages/plugins/%40nocobase-example/plugin-simple-action). Se quiser executar localmente para ver o resultado:
 
 ```bash
-yarn pm enable @nocobase-example/plugin-simple-action
+nb plugin enable @nocobase-example/plugin-simple-action
 ```
 
 A seguir, montamos esse plugin do zero, passo a passo.
 
 ## Passo 1: criar o esqueleto do plugin
 
-Na raiz do repositório, execute:
+No diretório raiz do projeto ou no diretório `source/`, execute:
 
 ```bash
-yarn pm create @my-project/plugin-simple-action
+nb scaffold plugin @my-project/plugin-simple-action
 ```
 
 Para mais detalhes, veja [Escreva seu primeiro plugin](../../write-your-first-plugin).
@@ -240,7 +240,7 @@ export default PluginSimpleActionClient;
 ## Passo 5: ativar o plugin
 
 ```bash
-yarn pm enable @my-project/plugin-simple-action
+nb plugin enable @my-project/plugin-simple-action
 ```
 
 Após ativar, em "Configurar ações" do bloco de tabela você poderá adicionar esses botões de ação personalizados.

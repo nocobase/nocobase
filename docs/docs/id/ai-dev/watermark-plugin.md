@@ -29,8 +29,19 @@ Setelah Plugin diaktifkan:
 
 Pastikan Anda telah:
 
-1. Memiliki lingkungan pengembangan NocoBase yang berjalan (NocoBase CLI akan otomatis memasang NocoBase Skills saat inisialisasi)
-2. Membuka editor yang mendukung AI Agent (seperti Claude Code, Codex, Cursor, dll)
+1. Membuat proyek NocoBase melalui `nb init` (disarankan menggunakan sumber Git), dan aplikasi sudah berjalan
+2. Membuka editor yang mendukung AI Agent (seperti Claude Code, Codex, Cursor, dll), dengan direktori kerja diatur ke direktori root proyek (`<app-path>`)
+
+Struktur direktori proyek yang dibuat oleh `nb init` adalah sebagai berikut:
+
+```bash
+<app-path>/
+├── .nb/                  # Metadata yang disimpan CLI untuk env saat ini
+├── source/               # Source code aplikasi (inti NocoBase + plugin bawaan)
+├── storage/              # Direktori data runtime
+├── plugins/              # Source code plugin Anda (nb scaffold plugin menghasilkan di sini)
+└── .env                  # File environment variable aplikasi
+```
 
 :::warning Perhatian
 
@@ -41,7 +52,7 @@ Pastikan Anda telah:
 
 ## Mulai
 
-Di direktori root proyek NocoBase Anda, kirim prompt berikut ke AI:
+Di direktori root proyek NocoBase Anda (yaitu `<app-path>` yang dibuat melalui `nb init`), kirim prompt berikut ke AI:
 
 ```
 Bantu saya menggunakan nocobase-plugin-development skill untuk mengembangkan Plugin watermark NocoBase,
@@ -80,10 +91,10 @@ Setelah rencana dikonfirmasi, AI mulai menulis kode.
 ### 2. Membuat Scaffold Plugin
 
 ```bash
-yarn pm create @my-project/plugin-watermark
+nb scaffold plugin @my-project/plugin-watermark
 ```
 
-AI menghasilkan struktur direktori Plugin standar di `packages/plugins/@my-project/plugin-watermark/`.
+AI menghasilkan struktur direktori Plugin standar di `plugins/@my-project/plugin-watermark/`.
 
 ### 3. Menulis Kode Sisi Server
 
@@ -113,7 +124,7 @@ AI secara otomatis menghasilkan paket bahasa Mandarin dan Inggris, tanpa memerlu
 ### 6. Mengaktifkan Plugin
 
 ```bash
-yarn pm enable @my-project/plugin-watermark
+nb plugin enable @my-project/plugin-watermark
 ```
 
 Setelah diaktifkan, buka halaman NocoBase, Anda akan melihat watermark menutupi konten.

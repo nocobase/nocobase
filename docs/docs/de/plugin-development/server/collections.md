@@ -58,17 +58,13 @@ Die konventionelle Verzeichnisstruktur wird geladen, bevor die `load()`-Methoden
 
 ## Datenbankstruktur synchronisieren
 
-Wenn ein Plugin zum ersten Mal aktiviert wird, synchronisiert das System automatisch die Sammlungs-Konfigurationen mit der Datenbankstruktur. Ist das Plugin bereits installiert und in Betrieb, müssen Sie nach dem Hinzufügen oder Ändern von Sammlungen den Upgrade-Befehl manuell ausführen:
+Wenn ein Plugin zum ersten Mal aktiviert wird, synchronisiert das System automatisch die Sammlungs-Konfigurationen mit der Datenbankstruktur. Ist das Plugin bereits installiert und in Betrieb, müssen Sie nach dem Hinzufügen oder Ändern von Sammlungen den Upgrade-Befehl ausführen, um die Datenbankstruktur zu synchronisieren:
 
 ```bash
-yarn nocobase upgrade
+nb app upgrade
 ```
 
-Sollten während der Synchronisierung Ausnahmen oder inkonsistente Daten auftreten, können Sie die Tabellenstruktur durch eine Neuinstallation der Anwendung wiederherstellen:
-
-```bash
-yarn nocobase install -f
-```
+Wenn beim Plugin-Upgrade vorhandene Daten migriert werden müssen — z. B. Felder umbenennen, Tabellen aufteilen, Standardwerte nachfüllen usw. — sollte dies über [Migrations-Skripte](./migration.md) erfolgen, anstatt die Datenbank manuell zu ändern.
 
 ## Ressourcen automatisch generieren
 

@@ -259,6 +259,8 @@ export default defineConfig(({ command }) => {
     },
     tools: {
       rspack(config) {
+        config.resolve = config.resolve || {};
+        config.resolve.symlinks = false;
         config.target = ['web', 'es2020'];
         config.optimization = {
           ...config.optimization,

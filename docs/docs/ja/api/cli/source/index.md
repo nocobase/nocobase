@@ -6,7 +6,7 @@ keywords: "nb source,NocoBase CLI,ソースコード,download,dev,build,test"
 
 # nb source
 
-ローカル NocoBase ソースコードプロジェクトを管理します。npm/Git env ではローカルソースディレクトリを使用します。Docker env では通常、[`nb app`](../app/index.md) でランタイムを管理するだけで十分です。
+ローカル NocoBase ソースコードプロジェクトを管理します。`nb source` 配下のコマンドはソースコードディレクトリ（`<app-path>/source/`）で実行する必要があります。npm/Git env ではローカルソースディレクトリを使用します。Docker env では通常、[`nb app`](../app/index.md) でランタイムを管理するだけで十分です。
 
 ## 使い方
 

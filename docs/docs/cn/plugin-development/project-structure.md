@@ -1,72 +1,51 @@
 ---
 title: "插件项目目录结构"
-description: "NocoBase 插件项目结构：Yarn Workspace、packages/plugins、storage、client/server 目录、lerna.json 配置。"
-keywords: "项目结构,Yarn Workspace,packages/plugins,插件目录,create-nocobase-app,NocoBase"
+description: "NocoBase 插件项目结构：nb init 应用布局、plugins 插件目录、source 源码工程、storage 运行时目录。"
+keywords: "项目结构,nb init,plugins,插件目录,NocoBase"
 ---
 
 # 项目目录结构
 
-不管你是通过 Git 克隆源码，还是用 `create-nocobase-app` 初始化项目，生成的 NocoBase 工程本质上都是一个基于 **Yarn Workspace** 的多包仓库。
+通过 NocoBase CLI（`nb init`）初始化的应用，会生成一个标准的应用目录。CLI 支持 npm（`create-nocobase-app`）和 Git 两种来源，应用的顶层结构是一致的。
 
 ## 顶层目录概览
 
-下面以 `my-nocobase-app/` 为项目目录。不同环境下可能略有差异：
-
 ```bash
-my-nocobase-app/
-├── packages/              # 项目源代码
-│   ├── plugins/           # 正在开发的插件源码（未编译）
-├── storage/               # 运行时数据与动态生成内容
-│   ├── apps/
-│   ├── db/
-│   ├── logs/
-│   ├── uploads/
-│   ├── plugins/           # 已编译插件（包括通过界面上传的）
-│   └── tar/               # 插件打包文件（.tar）
-├── scripts/               # 实用脚本与工具命令
-├── .env*                  # 不同环境的变量配置
-├── lerna.json             # Lerna 工作区配置
-├── package.json           # 根包配置，声明 workspace 与脚本
-├── tsconfig*.json         # TypeScript 配置（前端、后端、路径映射）
-├── vitest.config.mts      # Vitest 单元测试配置
-└── playwright.config.ts   # Playwright E2E 测试配置
+<app-path>/
+├── .nb/                   # CLI 为当前 env 保存的元数据
+├── source/                # 应用源码工程（NocoBase 核心 + 内置插件）
+├── storage/               # 运行时数据目录
+│   ├── plugins/           # 已编译插件（上传或导入的）
+│   └── tar/               # 插件打包文件（.tgz）
+├── plugins/               # 你的插件源码（nb scaffold plugin 生成在这里）
+├── .env                   # 应用环境变量文件
 ```
 
-## packages/ 子目录说明
+## plugins/ 插件开发目录
 
-`packages/` 目录包含 NocoBase 的核心模块与可扩展包，具体内容和项目来源有关：
+`plugins/` 是你开发自定义插件的主要位置。通过 `nb scaffold plugin` 创建的插件会放在这里。
 
-- **通过 `create-nocobase-app` 创建的项目**：默认只有 `packages/plugins/`，用来存放自定义插件源码。每个子目录都是独立的 npm 包。
-- **克隆官方源码仓库**：会看到更多子目录，比如 `core/`、`plugins/`、`pro-plugins/`、`presets/` 等，分别对应框架核心、内置插件与官方预设方案。
+`nb` 会自动将 `plugins/` 下的插件以符号链接的形式同步到 `source/packages/plugins/`，供开发和构建流程使用。你不需要手动操作 `source/` 目录下的内容。
 
-不管哪种情况，`packages/plugins` 都是你开发和调试自定义插件的主要位置。
+## source/ 源码工程目录
+
+`source/` 目录包含 NocoBase 的完整源码工程，具体内容和项目来源有关：
+
+- **npm 来源**（`create-nocobase-app`）：默认只有 `packages/plugins/` 等基础目录。
+- **Git 来源**（推荐）：包含完整的框架核心源码（`packages/core/`）、内置插件等，AI 开发时可以直接参考。
 
 ## storage/ 运行时目录
 
-`storage/` 存放运行时生成的数据与构建输出。常见子目录说明如下：
+`storage/` 存放运行时生成的数据与构建输出：
 
-- `apps/`：多应用场景下的配置与缓存。
-- `logs/`：运行日志与调试输出。
-- `uploads/`：用户上传的文件和媒体资源。
 - `plugins/`：通过界面上传或 CLI 导入的打包插件。
-- `tar/`：执行 `yarn build <plugin> --tar` 后生成的插件压缩包。
-
-:::tip 提示
-
-通常来说建议把 `storage` 目录加入 `.gitignore`，在部署或备份时单独处理。
-
-:::
-
-## 环境配置与工程脚本
-
-- `.env`、`.env.test`、`.env.e2e`：分别对应本地运行、单元/集成测试、端到端测试。
-- `scripts/`：存放常用运维脚本，比如数据库初始化、发布辅助工具等。
+- `tar/`：执行 `nb source build <plugin> --tar` 后生成的插件压缩包。
 
 ## 插件加载路径与优先级
 
 插件可能存在于多个位置，NocoBase 启动时按以下优先级加载：
 
-1. `packages/plugins` 中的源代码版本（用于本地开发与调试）。
+1. `source/packages/plugins` 中的源代码版本（用于本地开发与调试，由 `nb` 从 `plugins/` 自动同步）。
 2. `storage/plugins` 中的打包版本（通过界面上传或 CLI 导入）。
 3. `node_modules` 中的依赖包（通过 npm/yarn 安装或框架内置）。
 
@@ -77,13 +56,13 @@ my-nocobase-app/
 用 CLI 创建插件：
 
 ```bash
-yarn pm create @my-project/plugin-hello
+nb scaffold plugin @my-project/plugin-hello
 ```
 
 生成的目录结构如下：
 
 ```bash
-packages/plugins/@my-project/plugin-hello/
+plugins/@my-project/plugin-hello/
 ├── dist/                    # 构建输出（按需生成）
 ├── src/                     # 源代码目录
 │   ├── client-v2/           # 前端代码（区块、页面、模型等）
@@ -108,7 +87,7 @@ packages/plugins/@my-project/plugin-hello/
 
 :::tip 提示
 
-构建完成后，`dist/` 及 `client-v2.js`、`server.js` 文件会在插件启用时被加载。开发阶段只需修改 `src/` 目录，发布前执行 `yarn build <plugin>` 或 `yarn build <plugin> --tar` 即可。
+构建完成后，`dist/` 及 `client-v2.js`、`server.js` 文件会在插件启用时被加载。开发阶段只需修改 `src/` 目录，发布前执行 `nb source build <plugin>` 或 `nb source build <plugin> --tar` 即可。
 
 :::
 
