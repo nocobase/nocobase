@@ -9,6 +9,7 @@
 
 import React from 'react';
 import { describe, it, expect, vi } from 'vitest';
+import { RUNJS_OPEN_VIEW_ROUTE_STATE } from '@nocobase/flow-engine';
 import { openView } from '../openView';
 import { FlowPage } from '../../FlowPage';
 import { ROUTE_TRANSIENT_INPUT_ARGS_KEY } from '../../routeTransientInputArgs';
@@ -49,6 +50,27 @@ describe('openView action - route mode defineProperties/defineMethods', () => {
     };
 
     return { ctx, engine };
+  };
+
+  const createFirstStageCtx = (inputArgs: Record<PropertyKey, unknown>) => {
+    const navigateTo = vi.fn();
+    const ctx: any = {
+      inputArgs,
+      engine: { context: { themeToken: { colorBgLayout: '#fff' } } },
+      model: {
+        uid: 'popup-uid',
+        context: {
+          inputArgs: {},
+          defineProperty: vi.fn(),
+        },
+        flowEngine: { context: { themeToken: { colorBgLayout: '#fff' } } },
+      },
+      view: {
+        navigation: { navigateTo },
+      },
+    };
+
+    return { ctx, navigateTo };
   };
 
   it('injects defineProperties/defineMethods on onModelLoaded even when not present in current inputArgs', async () => {
@@ -198,6 +220,97 @@ describe('openView action - route mode defineProperties/defineMethods', () => {
           },
         },
       },
+    );
+  });
+
+  it('adds route state to first-stage navigation only for RunJS ctx.openView calls', async () => {
+    const { ctx, navigateTo } = createFirstStageCtx({
+      mode: 'dialog',
+      size: 'large',
+      [RUNJS_OPEN_VIEW_ROUTE_STATE]: { mode: 'dialog', size: 'large' },
+    });
+
+    await openView.handler(ctx, { mode: 'drawer', size: 'medium', navigation: true });
+
+    expect(navigateTo).toHaveBeenCalledWith(
+      {
+        viewUid: 'popup-uid',
+        filterByTk: undefined,
+        sourceId: undefined,
+        tabUid: undefined,
+        openViewRouteState: { mode: 'dialog', size: 'large' },
+      },
+      undefined,
+    );
+  });
+
+  it('normalizes first-stage RunJS route state mode on mobile layout', async () => {
+    const { ctx, navigateTo } = createFirstStageCtx({
+      isMobileLayout: true,
+      mode: 'dialog',
+      size: 'large',
+      [RUNJS_OPEN_VIEW_ROUTE_STATE]: { mode: 'dialog', size: 'large' },
+    });
+
+    await openView.handler(ctx, { mode: 'drawer', size: 'medium', navigation: true });
+
+    expect(navigateTo).toHaveBeenCalledWith(
+      {
+        viewUid: 'popup-uid',
+        filterByTk: undefined,
+        sourceId: undefined,
+        tabUid: undefined,
+        openViewRouteState: { mode: 'embed', size: 'large' },
+      },
+      undefined,
+    );
+  });
+
+  it('uses route replay mode and size before persisted openView defaults', async () => {
+    const { ctx } = createRouteManagedCtx();
+    ctx.inputArgs.mode = 'dialog';
+    ctx.inputArgs.size = 'large';
+
+    await openView.handler(ctx, { mode: 'drawer', size: 'medium', navigation: true });
+
+    expect(ctx.viewer.open).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'dialog',
+        width: '80%',
+      }),
+    );
+  });
+
+  it('uses decoded openView route state during route replay', async () => {
+    const { ctx } = createRouteManagedCtx();
+    ctx.inputArgs.openViewRouteState = { mode: 'dialog', size: 'large' };
+
+    await openView.handler(ctx, { mode: 'drawer', size: 'medium', navigation: true });
+
+    expect(ctx.viewer.open).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'dialog',
+        width: '80%',
+      }),
+    );
+  });
+
+  it('keeps first-stage navigation unchanged for non-RunJS openView calls', async () => {
+    const { ctx, navigateTo } = createFirstStageCtx({
+      mode: 'dialog',
+      size: 'large',
+    });
+
+    await openView.handler(ctx, { mode: 'drawer', size: 'medium', navigation: true });
+
+    expect(navigateTo).toHaveBeenCalledWith(
+      {
+        viewUid: 'popup-uid',
+        filterByTk: undefined,
+        sourceId: undefined,
+        tabUid: undefined,
+      },
+      undefined,
     );
   });
 });

@@ -12,10 +12,10 @@ import { Model } from '@nocobase/database';
 import { AttachmentModel, PluginFileManagerServer } from '@nocobase/plugin-file-manager';
 import { Application } from '@nocobase/server';
 import { checkUrlAgainstWhitelist, serverRequest } from '@nocobase/utils';
-import { AIChatContext } from '../types/ai-chat-conversation.type';
+import { AIChatContext, AIMessageInput } from '../types/ai-chat-conversation.type';
 import { buildTool, encodeFile, parseResponseMessage, stripToolCallTags } from '../utils';
 import { EmbeddingsInterface } from '@langchain/core/embeddings';
-import { AIMessageChunk } from '@langchain/core/messages';
+import { AIMessage, AIMessageChunk } from '@langchain/core/messages';
 import { Context } from '@nocobase/actions';
 import '@langchain/core/utils/stream';
 import { LLMResult } from '@langchain/core/outputs';
@@ -52,16 +52,38 @@ export interface LLMProviderOptions {
   modelOptions?: Record<string, any>;
 }
 
-function normalizeBaseURL(baseURL: string): string {
-  checkUrlAgainstWhitelist(baseURL);
-  return new URL(baseURL).toString().replace(/\/$/, '');
+function assertBaseURLString(baseURL: unknown): asserts baseURL is string {
+  if (typeof baseURL !== 'string') {
+    throw new Error('baseURL must be a string');
+  }
+}
+
+function normalizeBaseURL(baseURL: unknown): string {
+  assertBaseURLString(baseURL);
+  const trimmedBaseURL = baseURL.trim();
+  checkUrlAgainstWhitelist(trimmedBaseURL);
+  return new URL(trimmedBaseURL).toString().replace(/\/$/, '');
+}
+
+function isBlankBaseURL(baseURL: string): boolean {
+  return baseURL.trim() === '';
+}
+
+function getServiceBaseURL(serviceOptions?: Record<string, any>): unknown {
+  const baseURL = serviceOptions?.baseURL;
+  if (typeof baseURL === 'string' && isBlankBaseURL(baseURL)) {
+    return null;
+  }
+  return baseURL;
 }
 
 function resolveServiceOptions(serviceOptions: Record<string, any> | undefined, app: Application) {
   const rendered = app.environment.renderJsonTemplate(serviceOptions ?? {});
   if (rendered?.baseURL != null) {
-    if (typeof rendered.baseURL !== 'string') {
-      throw new Error('baseURL must be a string');
+    assertBaseURLString(rendered.baseURL);
+    if (isBlankBaseURL(rendered.baseURL)) {
+      delete rendered.baseURL;
+      return rendered;
     }
     rendered.baseURL = normalizeBaseURL(rendered.baseURL);
   }
@@ -363,17 +385,16 @@ export abstract class LLMProvider {
     return err?.message ?? 'Unexpected LLM service error';
   }
 
+  reshapeAIMessage(_options: { aiMessage: AIMessage; values: AIMessageInput }) {}
+
   protected get documentLoader(): CachedDocumentLoader {
     return this.aiPlugin.documentLoaders.cached;
   }
 
   protected getResolvedBaseURL(): string {
-    const baseURL = this.serviceOptions?.baseURL ?? this.baseURL;
+    const baseURL = getServiceBaseURL(this.serviceOptions) ?? this.baseURL;
     if (!baseURL) {
       throw new Error('baseURL is required');
-    }
-    if (typeof baseURL !== 'string') {
-      throw new Error('baseURL must be a string');
     }
     return normalizeBaseURL(baseURL);
   }
@@ -417,12 +438,9 @@ export abstract class EmbeddingProvider {
   }
 
   protected get baseURL() {
-    const baseURL = this.serviceOptions?.baseURL ?? this.getDefaultUrl();
+    const baseURL = getServiceBaseURL(this.serviceOptions) ?? this.getDefaultUrl();
     if (!baseURL) {
       throw new Error('baseURL is required');
-    }
-    if (typeof baseURL !== 'string') {
-      throw new Error('baseURL must be a string');
     }
     return normalizeBaseURL(baseURL);
   }

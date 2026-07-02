@@ -31,7 +31,7 @@
   "Notification type": "Tipo di notifica",
   "Notification type {{type}} is not registered.": "Il tipo di notifica {{type}} non è registrato.",
   "Query users": "Cerca utenti",
-  "Randomly generated and can not be modified. Support letters, numbers and underscores, must start with an letter.": "Generato casualmente e non modificabile. Supporta lettere, numeri e underscore, deve iniziare con una lettera.",
+  "Randomly generated and can not be modified. Support letters, numbers and underscores, must start with a letter.": "Generato casualmente e non modificabile. Supporta lettere, numeri e underscore, deve iniziare con una lettera.",
   "Reason": "Motivo",
   "Receiver": "Destinatario",
   "Receiver type": "Tipo di destinatario",

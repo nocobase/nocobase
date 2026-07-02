@@ -18,6 +18,29 @@ Actualmente, NocoBase ofrece soporte integrado para los siguientes tipos de moto
 
 El sistema añade automáticamente un motor de almacenamiento local durante la instalación, el cual puede utilizar directamente. También tiene la opción de añadir nuevos motores o editar los parámetros de los ya existentes.
 
+
+Si ya utiliza un motor de almacenamiento que solo admite acceso público y quiere migrar archivos históricos a S3 Pro, consulte [Migrar a S3 Pro](./migrate-to-s3-pro.md).
+
+## Accesibilidad de archivos
+
+Cada motor de almacenamiento admite controles de acceso diferentes. Antes de configurarlo, confirme si los archivos necesitan acceso privado:
+
+| Motor de almacenamiento | Accesibilidad de archivos |
+| --- | --- |
+| [Local Storage](./local) | Solo se admite acceso público; no se admite acceso privado |
+| [Amazon S3](./amazon-s3) | Solo se admite acceso público; no se admite acceso privado |
+| [Aliyun OSS](./aliyun-oss) | Solo se admite acceso público; no se admite acceso privado |
+| [Tencent COS](./tencent-cos) | Solo se admite acceso público; no se admite acceso privado |
+| [S3 Pro](./s3-pro) | Se admite acceso privado mediante URL firmadas temporales |
+
+:::warning Nota
+
+Almacenamiento local, Amazon S3, Aliyun OSS y Tencent COS no realizan autenticación de inicio de sesión para acceder a los archivos y no generan URL firmadas temporales. Después de subir un archivo, cualquier persona que tenga la URL puede acceder directamente a él.
+
+Si necesita guardar contratos, documentos de identidad, materiales internos u otros archivos que no deben ser públicos, utilice [S3 Pro](./s3-pro) y active el acceso privado.
+
+:::
+
 ## Parámetros comunes
 
 Además de los parámetros específicos de cada tipo de motor, las siguientes secciones describen los parámetros comunes (tomando como ejemplo el almacenamiento local):

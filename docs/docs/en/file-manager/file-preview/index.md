@@ -12,17 +12,8 @@ Currently, NocoBase provides the following file preview plugins:
 
 ## PDF preview with external storage
 
-PDF preview uses PDF.js to render files in the browser. The browser must first read the PDF file content and then pass it to PDF.js for rendering. Therefore, when files are stored in external storage such as OSS, S3, COS, or a CDN, and the file access domain is different from the NocoBase site domain, the external storage must allow the NocoBase site to read files across origins.
+NocoBase previews PDFs through a browser iframe. Some browsers or PDF readers may support scripts, forms, or other interactive content inside PDF files. If the previewed file comes from an untrusted source, pay attention to the security boundary for script execution.
 
-If CORS is not configured, PDF downloads can still work normally, but preview may fail with a file loading error.
+We recommend isolating the file access domain from the NocoBase site and API domains. For example, serve files from OSS, S3, COS, or a CDN through a dedicated domain, instead of sharing the same origin with the NocoBase frontend or API.
 
-The CORS configuration for external storage or CDN should include:
-
-```http
-Access-Control-Allow-Origin: https://your-nocobase-domain
-Access-Control-Allow-Methods: GET, HEAD
-Access-Control-Allow-Headers: *
-Access-Control-Expose-Headers: Content-Length, Content-Range, Accept-Ranges, Content-Disposition, Content-Type
-```
-
-`Access-Control-Allow-Origin` should be set to the actual domain used to access NocoBase. Avoid using `*` for non-public files over the long term, because it expands the range of sites that can read the files.
+If the file domain is different from the API domain, and the API does not enable CORS access for the file domain, scripts running in the PDF preview environment are usually restricted by the browser's same-origin policy. They cannot directly read the NocoBase page, browser storage, or API responses.

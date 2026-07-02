@@ -30,7 +30,11 @@ import {
   resolveEnvRoot,
   resolveEnvRelativePath,
 } from '../lib/cli-home.js';
-import { defaultDockerContainerPrefix, defaultDockerNetworkName } from '../lib/app-runtime.js';
+import {
+  defaultDockerContainerPrefix,
+  defaultDockerNetworkName,
+  managedAppLifecycleEnvVars,
+} from '../lib/app-runtime.js';
 import { resolveDefaultApiHost, resolveDockerContainerPrefix, resolveDockerNetworkName } from '../lib/cli-config.js';
 import { DEFAULT_DOCKER_VERSION, resolveDockerImageRef } from '../lib/docker-image.ts';
 import {
@@ -1934,8 +1938,6 @@ export default class Install extends Command {
         '-d',
         '--name',
         containerName,
-        '--restart',
-        'always',
         '--network',
         networkName,
         '-e',
@@ -1982,8 +1984,6 @@ export default class Install extends Command {
         '-d',
         '--name',
         containerName,
-        '--restart',
-        'always',
         '--network',
         networkName,
         '-e',
@@ -2032,8 +2032,6 @@ export default class Install extends Command {
         '-d',
         '--name',
         containerName,
-        '--restart',
-        'always',
         '--network',
         networkName,
         '-e',
@@ -2082,8 +2080,6 @@ export default class Install extends Command {
         '-d',
         '--name',
         containerName,
-        '--restart',
-        'always',
         '--network',
         networkName,
         '--platform',
@@ -2346,8 +2342,6 @@ export default class Install extends Command {
       '-d',
       '--name',
       containerName,
-      '--restart',
-      'always',
       '--network',
       params.networkName,
       '-p',
@@ -2580,7 +2574,9 @@ export default class Install extends Command {
 
   private static resolveAbsoluteStoragePath(envName: string, appResults: Record<string, PromptValue>): string {
     const configuredStoragePath = resolveConfiguredStoragePathValue(appResults, envName);
-    return resolveConfiguredEnvPath(configuredStoragePath) ?? resolveEnvRelativePath(defaultInstallStoragePath(envName));
+    return (
+      resolveConfiguredEnvPath(configuredStoragePath) ?? resolveEnvRelativePath(defaultInstallStoragePath(envName))
+    );
   }
 
   private async prepareHookScriptForInstall(params: {
@@ -2718,7 +2714,9 @@ export default class Install extends Command {
     const dbDialect = String(params.dbResults.dbDialect ?? 'postgres').trim() || 'postgres';
     const appKey = Install.resolveManagedAppKey(params.appResults.appKey);
     const timeZone = Install.resolveManagedTimeZone(params.appResults.timeZone);
+    const lifecycleEnvVars = managedAppLifecycleEnvVars();
     const env: Record<string, string> = {
+      ...lifecycleEnvVars,
       STORAGE_PATH: storagePath,
       APP_PORT: String(params.appResults.appPort ?? DEFAULT_INSTALL_APP_PORT).trim() || DEFAULT_INSTALL_APP_PORT,
       APP_KEY: appKey,

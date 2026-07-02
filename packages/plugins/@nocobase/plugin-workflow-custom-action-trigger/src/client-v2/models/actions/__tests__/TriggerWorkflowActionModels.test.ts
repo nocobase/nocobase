@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import React from 'react';
 import {
   ActionGroupModel,
   CollectionActionGroupModel,
@@ -14,6 +15,7 @@ import {
   RecordActionGroupModel,
 } from '@nocobase/client-v2';
 import { FlowEngine } from '@nocobase/flow-engine';
+import { render, waitFor } from '@nocobase/test/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   CollectionTriggerWorkflowActionModel,
@@ -21,8 +23,35 @@ import {
   RecordTriggerWorkflowActionModel,
   registerTriggerWorkflowActionGroups,
   WorkbenchTriggerWorkflowActionModel,
+  WorkflowSelect,
 } from '../TriggerWorkflowActionModels';
 import { CONTEXT_TYPE } from '../../../../common/constants';
+
+const { mockUseFlowContext, selectMockState } = vi.hoisted(() => ({
+  mockUseFlowContext: vi.fn(),
+  selectMockState: {
+    props: undefined as any,
+  },
+}));
+
+vi.mock('@nocobase/flow-engine', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@nocobase/flow-engine')>();
+  return {
+    ...actual,
+    useFlowContext: mockUseFlowContext,
+  };
+});
+
+vi.mock('antd', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('antd')>();
+  return {
+    ...actual,
+    Select: (props: any) => {
+      selectMockState.props = props;
+      return React.createElement('div', { 'data-testid': 'workflow-select' });
+    },
+  };
+});
 
 class ActionPanelGroupActionModel extends ActionGroupModel {}
 
@@ -114,6 +143,8 @@ describe('trigger workflow action model registration', () => {
       ModelClass,
       new Map(ModelClass.currentModels),
     ]);
+    mockUseFlowContext.mockReset();
+    selectMockState.props = undefined;
   });
 
   afterEach(() => {
@@ -151,6 +182,47 @@ describe('trigger workflow action model registration', () => {
 });
 
 describe('WorkbenchTriggerWorkflowActionModel', () => {
+  it('loads workflows through resource list so boolean filters stay typed', async () => {
+    const list = vi.fn().mockResolvedValue({
+      data: {
+        data: [{ title: 'Workflow 1', key: 'workflow-1' }],
+      },
+    });
+    const resource = vi.fn().mockReturnValue({ list });
+    const request = vi.fn();
+
+    mockUseFlowContext.mockReturnValue({
+      api: {
+        resource,
+        request,
+      },
+    });
+
+    render(
+      React.createElement(WorkflowSelect, {
+        filter: { 'config.collection': 'posts' },
+        optionFilter: () => true,
+      }),
+    );
+
+    await waitFor(() => {
+      expect(resource).toHaveBeenCalledWith('workflows');
+      expect(list).toHaveBeenCalledWith({
+        paginate: false,
+        filter: {
+          type: 'custom-action',
+          enabled: true,
+          'config.collection': 'posts',
+        },
+      });
+    });
+
+    expect(request).not.toHaveBeenCalled();
+    await waitFor(() => {
+      expect(selectMockState.props?.options).toEqual([{ label: 'Workflow 1', value: 'workflow-1' }]);
+    });
+  });
+
   it('does not send trigger request when no workflow is bound', async () => {
     const flowEngine = createEngine();
     const model = flowEngine.createModel<WorkbenchTriggerWorkflowActionModel>({

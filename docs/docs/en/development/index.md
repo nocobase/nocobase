@@ -2,8 +2,8 @@
 pageType: home
 pageName: development
 title: "NocoBase Development Guide"
-description: "NocoBase development guide: plugin development, FlowEngine, RunJS, block/field/action extensions, data source extensions, workflow extensions, authentication extensions."
-keywords: "NocoBase,development guide,plugin development,FlowEngine,RunJS,NocoBase extensions"
+description: "NocoBase development guide: plugin development, shared components, FlowEngine, RunJS, block/field/action extensions, data source extensions, workflow extensions, authentication extensions."
+keywords: "NocoBase,development guide,plugin development,shared components,FlowEngine,RunJS,NocoBase extensions"
 features:
   - title: Core Development
     details: Master NocoBase's underlying extension mechanism and advanced development capabilities, including the plugin system, AI assistance, FlowEngine and RunJS environment, to build a solid development foundation.
@@ -23,6 +23,10 @@ features:
       - title: Frontend RunJS
         details: JavaScript execution environment for JS blocks, JS fields, and JS actions, and similar scenarios.
         link: /runjs
+        showOnHome: true
+      - title: Shared Components
+        details: Reuse the built-in form, filter, table, and icon components in NocoBase client v2 when building plugin pages.
+        link: /shared-components
         showOnHome: true
   - title: Plugin Ecosystem
     details: Extend the capabilities of existing plugins through other plugins, building a hierarchical and modular plugin ecosystem to enhance system extensibility and collaboration.
