@@ -34,17 +34,17 @@ Chúng ta sẽ tạo ba nút Action tùy chỉnh, tương ứng với ba kịch 
 Toàn bộ source code xem tại [@nocobase-example/plugin-simple-action](https://github.com/nocobase/nocobase/tree/develop/packages/plugins/%40nocobase-example/plugin-simple-action). Nếu bạn muốn chạy thử trực tiếp ở local:
 
 ```bash
-yarn pm enable @nocobase-example/plugin-simple-action
+nb plugin enable @nocobase-example/plugin-simple-action
 ```
 
 Sau đây ta sẽ xây dựng plugin này từ đầu, từng bước một.
 
 ## Bước 1: Tạo khung plugin
 
-Tại thư mục gốc của repo, chạy:
+Tại thư mục gốc của project hoặc thư mục `source/`, chạy:
 
 ```bash
-yarn pm create @my-project/plugin-simple-action
+nb scaffold plugin @my-project/plugin-simple-action
 ```
 
 Chi tiết xem tại [Viết Plugin đầu tiên](../../write-your-first-plugin).
@@ -240,7 +240,7 @@ export default PluginSimpleActionClient;
 ## Bước 5: Bật plugin
 
 ```bash
-yarn pm enable @my-project/plugin-simple-action
+nb plugin enable @my-project/plugin-simple-action
 ```
 
 Sau khi bật, trong "Cấu hình action" của block table bạn có thể thêm các nút Action tùy chỉnh này.

@@ -12,13 +12,13 @@ Cette page rassemble les pièges les plus courants lors du développement de plu
 
 ### Le plugin n'apparaît pas dans le gestionnaire après création
 
-Vérifiez que vous avez bien exécuté `yarn pm create` plutôt que créé les répertoires à la main. En plus de générer les fichiers, `yarn pm create` enregistre le plugin dans la table `applicationPlugins` de la base de données. Si vous avez créé les répertoires manuellement, exécutez `yarn nocobase upgrade` pour relancer le scan.
+Vérifiez que vous avez bien exécuté `nb scaffold plugin` plutôt que créé les répertoires à la main. En plus de générer les fichiers, `nb scaffold plugin` enregistre le plugin dans la table `applicationPlugins` de la base de données. Si vous avez créé les répertoires manuellement, exécutez `nb app upgrade` pour relancer le scan.
 
 ### La page ne change pas après l'activation du plugin
 
 Vérifiez dans cet ordre :
 
-1. Confirmez que vous avez exécuté `yarn pm enable <pluginName>`
+1. Confirmez que vous avez exécuté `nb plugin enable <pluginName>`
 2. Rafraîchissez le navigateur (parfois un rafraîchissement forcé `Ctrl+Shift+R` est nécessaire)
 3. Vérifiez la console du navigateur pour les erreurs
 
@@ -30,7 +30,7 @@ Le comportement du hot reload diffère selon le type de fichier :
 | --- | --- |
 | tsx/ts sous `src/client-v2/` | Hot reload automatique, aucune action requise |
 | Fichiers de traduction sous `src/locale/` | **Redémarrer l'application** |
-| Ajout/modification d'une collection sous `src/server/collections/` | Exécuter `yarn nocobase upgrade` |
+| Ajout/modification d'une collection sous `src/server/collections/` | Exécuter `nb app upgrade` |
 
 Si le code client a été modifié mais le hot reload ne s'est pas déclenché, essayez d'abord de rafraîchir le navigateur.
 
@@ -220,15 +220,15 @@ Vérifiez dans cet ordre :
 
 ## Build et déploiement
 
-### `yarn build --tar` lève l'erreur « no paths specified to add to archive »
+### `nb source build --tar` lève l'erreur « no paths specified to add to archive »
 
-Lors de l'exécution de `yarn build <pluginName> --tar`, l'erreur :
+Lors de l'exécution de `nb source build <pluginName> --tar`, l'erreur :
 
 ```bash
 TypeError: no paths specified to add to archive
 ```
 
-apparaît, alors que `yarn build <pluginName>` (sans `--tar`) fonctionne correctement.
+apparaît, alors que `nb source build <pluginName>` (sans `--tar`) fonctionne correctement.
 
 Ce problème vient généralement du fait que le `.npmignore` du plugin **utilise la syntaxe de négation** (préfixe `!` de npm). Lors du packaging avec `--tar`, NocoBase lit chaque ligne de `.npmignore` et y ajoute un `!` pour la transformer en motif d'exclusion `fast-glob`. Si votre `.npmignore` utilise déjà la négation, par exemple :
 
@@ -259,7 +259,7 @@ TypeError: Cannot assign to read only property 'constructor' of object '[object 
 
 Ce problème vient généralement du fait que **le plugin a empaqueté des dépendances internes de NocoBase dans son propre `node_modules/`**. Le système de build de NocoBase maintient une [liste d'externals](../../dependency-management) ; les packages qu'elle contient (comme `react`, `antd`, `axios`, `lodash`, etc.) sont fournis par l'hôte NocoBase et ne devraient pas être empaquetés dans le plugin. Si le plugin embarque une copie privée, des conflits avec la version déjà chargée par l'hôte peuvent survenir à l'exécution, provoquant des erreurs étranges.
 
-**Pourquoi cela fonctionne en local :** en développement local, le plugin se trouve sous `packages/plugins/` et n'a pas de `node_modules/` privé ; les dépendances se résolvent vers les versions déjà chargées à la racine du projet, sans conflit possible.
+**Pourquoi cela fonctionne en local :** en développement local, le plugin se trouve sous `plugins/` et n'a pas de `node_modules/` privé ; les dépendances se résolvent vers les versions déjà chargées à la racine du projet, sans conflit possible.
 
 **Solution :** déplacez toutes les `dependencies` de `package.json` du plugin vers `devDependencies` — le système de build NocoBase gère automatiquement les dépendances :
 

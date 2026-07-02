@@ -29,8 +29,19 @@ Sau khi enable plugin:
 
 Đảm bảo bạn đã:
 
-1. Có một môi trường phát triển NocoBase đang chạy (NocoBase CLI khi khởi tạo sẽ tự động cài đặt NocoBase Skills)
-2. Đã mở editor hỗ trợ AI Agent (như Claude Code, Codex, Cursor, v.v.)
+1. Tạo một dự án NocoBase thông qua `nb init` (khuyến nghị sử dụng nguồn Git), và ứng dụng đã chạy thành công
+2. Đã mở editor hỗ trợ AI Agent (như Claude Code, Codex, Cursor, v.v.), với thư mục làm việc được đặt là thư mục gốc của dự án (`<app-path>`)
+
+Cấu trúc thư mục dự án do `nb init` tạo ra như sau:
+
+```bash
+<app-path>/
+├── .nb/                  # Metadata mà CLI lưu cho env hiện tại
+├── source/               # Source code ứng dụng (NocoBase core + plugin tích hợp)
+├── storage/              # Thư mục dữ liệu runtime
+├── plugins/              # Source code plugin của bạn (nb scaffold plugin sinh ra ở đây)
+└── .env                  # File biến môi trường ứng dụng
+```
 
 :::warning Lưu ý
 
@@ -41,7 +52,7 @@ Sau khi enable plugin:
 
 ## Bắt đầu
 
-Tại thư mục gốc của dự án NocoBase của bạn, gửi prompt dưới đây cho AI:
+Tại thư mục gốc dự án NocoBase của bạn (tức `<app-path>` được tạo thông qua `nb init`), gửi prompt dưới đây cho AI:
 
 ```
 Hãy dùng nocobase-plugin-development skill để phát triển một plugin watermark cho NocoBase,
@@ -80,10 +91,10 @@ Sau khi xác nhận kế hoạch, AI bắt đầu viết code.
 ### 2. Tạo scaffold plugin
 
 ```bash
-yarn pm create @my-project/plugin-watermark
+nb scaffold plugin @my-project/plugin-watermark
 ```
 
-AI đã sinh cấu trúc thư mục plugin chuẩn dưới `packages/plugins/@my-project/plugin-watermark/`.
+AI đã sinh cấu trúc thư mục plugin chuẩn dưới `plugins/@my-project/plugin-watermark/`.
 
 ### 3. Viết code phía server
 
@@ -113,7 +124,7 @@ AI tự động sinh language pack tiếng Trung và tiếng Anh, bạn không c
 ### 6. Enable plugin
 
 ```bash
-yarn pm enable @my-project/plugin-watermark
+nb plugin enable @my-project/plugin-watermark
 ```
 
 Sau khi enable, mở trang NocoBase, bạn sẽ thấy watermark phủ lên trên nội dung.

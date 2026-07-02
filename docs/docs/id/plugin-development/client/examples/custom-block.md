@@ -36,20 +36,20 @@ Yang akan kita buat adalah Block "Simple block":
 Source code lengkap lihat [@nocobase-example/plugin-simple-block](https://github.com/nocobase/nocobase/tree/develop/packages/plugins/%40nocobase-example/plugin-simple-block). Jika Anda ingin langsung menjalankannya secara lokal untuk melihat hasilnya:
 
 ```bash
-yarn pm enable @nocobase-example/plugin-simple-block
+nb plugin enable @nocobase-example/plugin-simple-block
 ```
 
 Berikutnya, mari kita bangun plugin ini dari nol, langkah demi langkah.
 
 ## Langkah 1: Membuat Skeleton Plugin
 
-Eksekusi di direktori root repository:
+Eksekusi di direktori root proyek atau direktori `source/`:
 
 ```bash
-yarn pm create @my-project/plugin-simple-block
+nb scaffold plugin @my-project/plugin-simple-block
 ```
 
-Ini akan menghasilkan struktur file dasar di `packages/plugins/@my-project/plugin-simple-block`. Untuk penjelasan detail lihat [Menulis Plugin Pertama Anda](../../write-your-first-plugin).
+Ini akan menghasilkan struktur file dasar di `plugins/@my-project/plugin-simple-block`. Untuk penjelasan detail lihat [Menulis Plugin Pertama Anda](../../write-your-first-plugin).
 
 ## Langkah 2: Membuat Model Block
 
@@ -168,7 +168,7 @@ export default PluginSimpleBlockClient;
 ## Langkah 5: Mengaktifkan Plugin
 
 ```bash
-yarn pm enable @my-project/plugin-simple-block
+nb plugin enable @my-project/plugin-simple-block
 ```
 
 Setelah diaktifkan, buat halaman baru, klik "Tambah Block" dan Anda akan melihat "Simple block". Setelah ditambahkan, klik tombol konfigurasi Block untuk mengedit konten HTML.

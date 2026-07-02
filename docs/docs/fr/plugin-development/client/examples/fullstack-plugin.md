@@ -40,17 +40,17 @@ Nous allons créer un plugin de gestion de « tâches à faire » avec les capac
 Code source complet : [@nocobase-example/plugin-custom-table-block-resource](https://github.com/nocobase/nocobase/tree/develop/packages/plugins/%40nocobase-example/plugin-custom-table-block-resource). Pour le faire tourner directement en local :
 
 ```bash
-yarn pm enable @nocobase-example/plugin-custom-table-block-resource
+nb plugin enable @nocobase-example/plugin-custom-table-block-resource
 ```
 
 Construisons ce plugin pas à pas, à partir de zéro.
 
 ## Étape 1 : créer le squelette du plugin
 
-À la racine du dépôt :
+À la racine du projet ou dans le répertoire `source/` :
 
 ```bash
-yarn pm create @my-project/plugin-custom-table-block-resource
+nb scaffold plugin @my-project/plugin-custom-table-block-resource
 ```
 
 Voir [Écrire votre premier plugin](../../write-your-first-plugin) pour les détails.
@@ -458,7 +458,7 @@ Quelques points clés :
 ## Étape 9 : activer le plugin
 
 ```bash
-yarn pm enable @my-project/plugin-custom-table-block-resource
+nb plugin enable @my-project/plugin-custom-table-block-resource
 ```
 
 Une fois activé :

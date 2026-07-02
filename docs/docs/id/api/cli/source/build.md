@@ -6,7 +6,7 @@ keywords: "nb source build,NocoBase CLI,build,source code"
 
 # nb source build
 
-Build proyek source code NocoBase lokal. Perintah ini akan meneruskan eksekusi alur build NocoBase lama di direktori root repository.
+Build proyek source code NocoBase lokal. Perlu dijalankan di direktori source code (`<app-path>/source/`). Untuk source app yang dikelola CLI, plugin di direktori `plugins/` akan secara otomatis disinkronkan ke `source/packages/plugins/` sebelum build.
 
 ## Penggunaan
 
@@ -22,17 +22,22 @@ nb source build [packages...] [flags]
 | `--cwd`, `-c` | string | Direktori kerja |
 | `--no-dts` | boolean | Tidak menghasilkan file deklarasi `.d.ts` |
 | `--sourcemap` | boolean | Menghasilkan sourcemap |
+| `--tar` | boolean | Otomatis mengemas menjadi file `.tgz` setelah build selesai |
 | `--verbose` | boolean | Menampilkan output perintah detail |
 
 ## Contoh
 
 ```bash
 nb source build
+nb source build @my-project/plugin-hello
+nb source build @my-project/plugin-hello --tar
 nb source build --no-dts
 nb source build --sourcemap
-nb source build @nocobase/acl
-nb source build @nocobase/acl @nocobase/actions
 ```
+
+## Penjelasan
+
+Saat menggunakan `--tar`, setelah build selesai plugin yang ditentukan akan dikemas menjadi file `.tgz` dan disimpan ke direktori `source/storage/tar/`. Path lengkap tarball akan ditampilkan saat perintah selesai.
 
 ## Perintah Terkait
 

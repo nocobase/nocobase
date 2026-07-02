@@ -27,20 +27,31 @@ plugin-hello/
 │  └─ server/            # Source code server, dapat mendaftarkan resource, event, command line, dll.
 ```
 
+## Prasyarat
+
+Sebelum mengembangkan plugin, Anda perlu menginisialisasi aplikasi melalui NocoBase CLI terlebih dahulu. CLI mendukung dua sumber yaitu npm dan Git:
+
+- **Sumber npm** (`create-nocobase-app`): Cocok untuk memulai dengan cepat, siap pakai.
+- **Sumber Git** (disarankan): Clone repository source code NocoBase, saat pengembangan dengan AI dapat langsung merujuk source code inti untuk hasil yang lebih baik.
+
+Lihat [Instalasi menggunakan CLI](../nocobase-cli/installation/cli.md) atau [Panduan AI Agent](../ai/quick-start.mdx).
+
 ## Konvensi Direktori dan Urutan Loading
 
-Saat NocoBase dijalankan, sistem akan memindai direktori berikut untuk memuat plugin:
+Aplikasi yang dibuat melalui `nb init` memiliki struktur direktori sebagai berikut:
 
 ```bash
-my-nocobase-app/
-├── packages/
-│   └── plugins/          # Plugin yang sedang dikembangkan dari source code (prioritas tertinggi)
-└── storage/
-    └── plugins/          # Plugin yang sudah dicompile, misalnya plugin yang diupload atau dirilis
+<app-path>/
+├── .nb/                  # Metadata yang disimpan CLI untuk env saat ini
+├── source/               # Source code aplikasi (NocoBase engineering)
+├── storage/              # Direktori data runtime
+│   └── plugins/          # Plugin yang sudah dicompile (diupload atau diimpor)
+├── plugins/              # Source code plugin Anda (nb scaffold plugin digenerate di sini)
+└── .env                  # File environment variable aplikasi
 ```
 
-- `packages/plugins`: Direktori plugin yang dikembangkan secara lokal, mendukung kompilasi dan debug real-time.
-- `storage/plugins`: Menyimpan plugin yang sudah dicompile, seperti versi commercial atau plugin pihak ketiga.
+- `plugins/`: Direktori source code plugin yang Anda kembangkan. Plugin yang dibuat melalui `nb scaffold plugin` akan ditempatkan di sini, `nb` akan secara otomatis menyinkronkannya ke `source/packages/plugins/` untuk digunakan dalam alur pengembangan dan build, Anda tidak perlu mengoperasikan direktori `source/` secara manual.
+- `storage/plugins/`: Menyimpan plugin yang sudah dicompile, seperti versi commercial atau plugin pihak ketiga.
 
 ## Siklus Hidup dan Status Plugin
 
@@ -63,19 +74,13 @@ Sebuah plugin biasanya melewati tahapan berikut:
 
 ```bash
 # 1. Membuat skeleton plugin
-yarn pm create @my-project/plugin-hello
+nb scaffold plugin @my-project/plugin-hello
 
-# 2. Mengambil paket plugin (download atau link)
-yarn pm pull @my-project/plugin-hello
+# 2. Mengaktifkan plugin (aktivasi pertama akan otomatis menginstal)
+nb plugin enable @my-project/plugin-hello
 
-# 3. Mengaktifkan plugin (aktivasi pertama akan otomatis menginstal)
-yarn pm enable @my-project/plugin-hello
-
-# 4. Menonaktifkan plugin
-yarn pm disable @my-project/plugin-hello
-
-# 5. Menghapus plugin
-yarn pm remove @my-project/plugin-hello
+# 3. Menonaktifkan plugin
+nb plugin disable @my-project/plugin-hello
 ```
 
 ## Antarmuka Manajemen Plugin

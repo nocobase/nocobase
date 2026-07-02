@@ -40,17 +40,17 @@ Vamos construir um plugin de gestão de "Tarefas (To-Do)" com as seguintes capac
 O código-fonte completo está em [@nocobase-example/plugin-custom-table-block-resource](https://github.com/nocobase/nocobase/tree/develop/packages/plugins/%40nocobase-example/plugin-custom-table-block-resource). Se quiser executar localmente para ver o resultado:
 
 ```bash
-yarn pm enable @nocobase-example/plugin-custom-table-block-resource
+nb plugin enable @nocobase-example/plugin-custom-table-block-resource
 ```
 
 A seguir, montamos esse plugin do zero, passo a passo.
 
 ## Passo 1: criar o esqueleto do plugin
 
-Na raiz do repositório, execute:
+No diretório raiz do projeto ou no diretório `source/`, execute:
 
 ```bash
-yarn pm create @my-project/plugin-custom-table-block-resource
+nb scaffold plugin @my-project/plugin-custom-table-block-resource
 ```
 
 Para mais detalhes, veja [Escreva seu primeiro plugin](../../write-your-first-plugin).
@@ -458,7 +458,7 @@ Pontos-chave:
 ## Passo 9: ativar o plugin
 
 ```bash
-yarn pm enable @my-project/plugin-custom-table-block-resource
+nb plugin enable @my-project/plugin-custom-table-block-resource
 ```
 
 Após ativar:

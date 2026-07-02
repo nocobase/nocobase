@@ -12,13 +12,13 @@ keywords: "FAQ,Vấn đề thường gặp,Hướng dẫn xử lý lỗi,Trouble
 
 ### Sau khi tạo Plugin không thấy trong trình quản lý
 
-Xác nhận đã thực thi `yarn pm create` thay vì tạo thư mục thủ công. `yarn pm create` ngoài việc sinh tệp, còn đăng ký Plugin vào bảng `applicationPlugins` của database. Nếu đã tạo thư mục thủ công, có thể thực thi `yarn nocobase upgrade` để quét lại.
+Xác nhận đã thực thi `nb scaffold plugin` thay vì tạo thư mục thủ công. `nb scaffold plugin` ngoài việc sinh tệp, còn đăng ký Plugin vào bảng `applicationPlugins` của database. Nếu đã tạo thư mục thủ công, có thể thực thi `nb app upgrade` để quét lại.
 
 ### Sau khi bật Plugin trang không thay đổi
 
 Kiểm tra theo thứ tự sau:
 
-1. Xác nhận đã thực thi `yarn pm enable <pluginName>`
+1. Xác nhận đã thực thi `nb plugin enable <pluginName>`
 2. Làm mới trình duyệt (đôi khi cần làm mới cứng `Ctrl+Shift+R`)
 3. Kiểm tra console của trình duyệt có lỗi không
 
@@ -30,7 +30,7 @@ Các loại tệp khác nhau có hành vi hot reload khác nhau:
 | --- | --- |
 | tsx/ts trong `src/client-v2/` | Tự động hot reload, không cần thao tác |
 | Tệp dịch trong `src/locale/` | **Khởi động lại ứng dụng** |
-| Thêm hoặc sửa collection trong `src/server/collections/` | Thực thi `yarn nocobase upgrade` |
+| Thêm hoặc sửa collection trong `src/server/collections/` | Thực thi `nb app upgrade` |
 
 Nếu code client đã sửa nhưng không hot reload, thử làm mới trình duyệt trước.
 
@@ -220,15 +220,15 @@ Kiểm tra theo thứ tự sau:
 
 ## Liên quan đến build và deploy
 
-### `yarn build --tar` báo lỗi "no paths specified to add to archive"
+### `nb source build --tar` báo lỗi "no paths specified to add to archive"
 
-Khi thực thi `yarn build <pluginName> --tar` báo lỗi:
+Khi thực thi `nb source build <pluginName> --tar` báo lỗi:
 
 ```bash
 TypeError: no paths specified to add to archive
 ```
 
-Tuy nhiên thực thi riêng `yarn build <pluginName>` (không có `--tar`) thì bình thường.
+Tuy nhiên thực thi riêng `nb source build <pluginName>` (không có `--tar`) thì bình thường.
 
 Vấn đề này thường do `.npmignore` của Plugin **dùng cú pháp phủ định** (tiền tố `!` của npm). Khi đóng gói `--tar`, NocoBase sẽ đọc từng dòng của `.npmignore` và thêm `!` ở đầu để chuyển thành mẫu loại trừ của `fast-glob`. Nếu `.npmignore` của bạn đã dùng cú pháp phủ định, ví dụ:
 
@@ -259,7 +259,7 @@ TypeError: Cannot assign to read only property 'constructor' of object '[object 
 
 Vấn đề này thường do **Plugin đóng gói các phụ thuộc tích hợp của NocoBase vào `node_modules/` của chính nó**. Hệ thống build của NocoBase duy trì một [danh sách external](../../dependency-management), trong đó các package (như `react`, `antd`, `axios`, `lodash`, v.v.) do host NocoBase cung cấp, không nên được đóng gói vào Plugin. Nếu Plugin có một bản sao riêng, runtime có thể xung đột với phiên bản host đã tải, gây ra nhiều lỗi kỳ lạ.
 
-**Tại sao local không có vấn đề:** Khi phát triển local Plugin nằm trong thư mục `packages/plugins/`, không có `node_modules/` riêng, các phụ thuộc sẽ resolve về phiên bản đã tải ở thư mục gốc dự án, không gây xung đột.
+**Tại sao local không có vấn đề:** Khi phát triển local Plugin nằm trong thư mục `plugins/`, không có `node_modules/` riêng, các phụ thuộc sẽ resolve về phiên bản đã tải ở thư mục gốc dự án, không gây xung đột.
 
 **Cách giải quyết:** Chuyển tất cả `dependencies` trong `package.json` của Plugin sang `devDependencies` — hệ thống build của NocoBase sẽ tự động xử lý các phụ thuộc của Plugin:
 

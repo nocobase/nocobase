@@ -40,17 +40,17 @@ Yang akan kita buat adalah plugin manajemen data "Todo Items", mencakup kapabili
 Source code lengkap lihat [@nocobase-example/plugin-custom-table-block-resource](https://github.com/nocobase/nocobase/tree/develop/packages/plugins/%40nocobase-example/plugin-custom-table-block-resource). Jika Anda ingin langsung menjalankannya secara lokal untuk melihat hasilnya:
 
 ```bash
-yarn pm enable @nocobase-example/plugin-custom-table-block-resource
+nb plugin enable @nocobase-example/plugin-custom-table-block-resource
 ```
 
 Berikutnya, mari kita bangun plugin ini dari nol, langkah demi langkah.
 
 ## Langkah 1: Membuat Skeleton Plugin
 
-Eksekusi di direktori root repository:
+Eksekusi di direktori root proyek atau direktori `source/`:
 
 ```bash
-yarn pm create @my-project/plugin-custom-table-block-resource
+nb scaffold plugin @my-project/plugin-custom-table-block-resource
 ```
 
 Untuk penjelasan detail lihat [Menulis Plugin Pertama Anda](../../write-your-first-plugin).
@@ -458,7 +458,7 @@ Beberapa poin penting:
 ## Langkah 9: Mengaktifkan Plugin
 
 ```bash
-yarn pm enable @my-project/plugin-custom-table-block-resource
+nb plugin enable @my-project/plugin-custom-table-block-resource
 ```
 
 Setelah diaktifkan:

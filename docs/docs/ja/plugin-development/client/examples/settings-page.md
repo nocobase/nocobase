@@ -37,20 +37,20 @@ keywords: "プラグイン設定ページ,pluginSettingsManager,addMenuItem,addP
 完全なソースコードは [@nocobase-example/plugin-settings-page](https://github.com/nocobase/nocobase/tree/develop/packages/plugins/%40nocobase-example/plugin-settings-page) を参照してください。ローカルで動作確認したい場合：
 
 ```bash
-yarn pm enable @nocobase-example/plugin-settings-page
+nb plugin enable @nocobase-example/plugin-settings-page
 ```
 
 以下、ゼロからこのプラグインを構築していきます。
 
 ## ステップ1：プラグインスケルトンの作成
 
-リポジトリのルートで実行します：
+プロジェクトルートまたは `source/` ディレクトリで実行します：
 
 ```bash
-yarn pm create @my-project/plugin-settings-page
+nb scaffold plugin @my-project/plugin-settings-page
 ```
 
-`packages/plugins/@my-project/plugin-settings-page` 配下に `src/client-v2/`、`src/server/`、`src/locale/` などのディレクトリを含む基本的なファイル構成が生成されます。詳しくは[はじめてのプラグインを書く](../../write-your-first-plugin)をご覧ください。
+`plugins/@my-project/plugin-settings-page` 配下に `src/client-v2/`、`src/server/`、`src/locale/` などのディレクトリを含む基本的なファイル構成が生成されます。詳しくは[はじめてのプラグインを書く](../../write-your-first-plugin)をご覧ください。
 
 ## ステップ2：設定ページの登録
 
@@ -370,7 +370,7 @@ export default function AboutPage() {
 ## ステップ7：プラグインの有効化
 
 ```bash
-yarn pm enable @my-project/plugin-settings-page
+nb plugin enable @my-project/plugin-settings-page
 ```
 
 有効化後にページをリフレッシュすると、「プラグイン設定」メニューに「外部サービス設定」エントリが表示されます。

@@ -10,7 +10,7 @@ Beim Schreiben von Plugins fragt man sich oft: „In welcher Datei und mit welch
 
 ## Plugin-Verzeichnisstruktur
 
-Mit `yarn pm create @my-project/plugin-name` erstellen Sie ein Plugin, dabei wird automatisch die folgende Verzeichnisstruktur erzeugt. Erstellen Sie Verzeichnisse nicht manuell, da sonst Registrierungsschritte vergessen werden können und das Plugin nicht funktioniert. Details siehe [Erstes Plugin schreiben](../../write-your-first-plugin).
+Mit `nb scaffold plugin @my-project/plugin-name` erstellen Sie ein Plugin, dabei wird automatisch die folgende Verzeichnisstruktur erzeugt. Erstellen Sie Verzeichnisse nicht manuell, da sonst Registrierungsschritte vergessen werden können und das Plugin nicht funktioniert. Details siehe [Erstes Plugin schreiben](../../write-your-first-plugin).
 
 ```bash
 plugin-name/

@@ -10,7 +10,7 @@ Khi viết Plugin thường tự hỏi "thứ này nên viết trong tệp nào,
 
 ## Cấu trúc thư mục Plugin
 
-Tạo Plugin thông qua `yarn pm create @my-project/plugin-name`, sẽ tự động sinh cấu trúc thư mục sau. Đừng tạo thư mục thủ công, để tránh thiếu bước đăng ký dẫn đến Plugin không có hiệu lực. Xem chi tiết tại [Viết Plugin đầu tiên](../../write-your-first-plugin).
+Tạo Plugin thông qua `nb scaffold plugin @my-project/plugin-name`, sẽ tự động sinh cấu trúc thư mục sau. Đừng tạo thư mục thủ công, để tránh thiếu bước đăng ký dẫn đến Plugin không có hiệu lực. Xem chi tiết tại [Viết Plugin đầu tiên](../../write-your-first-plugin).
 
 ```bash
 plugin-name/

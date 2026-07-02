@@ -37,20 +37,20 @@ Chúng ta sẽ tạo một trang cài đặt "Cấu hình dịch vụ bên ngoà
 Toàn bộ source code xem tại [@nocobase-example/plugin-settings-page](https://github.com/nocobase/nocobase/tree/develop/packages/plugins/%40nocobase-example/plugin-settings-page). Nếu bạn muốn chạy thử trực tiếp ở local:
 
 ```bash
-yarn pm enable @nocobase-example/plugin-settings-page
+nb plugin enable @nocobase-example/plugin-settings-page
 ```
 
 Sau đây ta sẽ xây dựng plugin này từ đầu, từng bước một.
 
 ## Bước 1: Tạo khung plugin
 
-Tại thư mục gốc của repo, chạy:
+Tại thư mục gốc của project hoặc thư mục `source/`, chạy:
 
 ```bash
-yarn pm create @my-project/plugin-settings-page
+nb scaffold plugin @my-project/plugin-settings-page
 ```
 
-Lệnh này sẽ sinh cấu trúc file cơ bản tại `packages/plugins/@my-project/plugin-settings-page`, bao gồm các thư mục `src/client-v2/`, `src/server/`, `src/locale/`, v.v. Chi tiết xem tại [Viết Plugin đầu tiên](../../write-your-first-plugin).
+Lệnh này sẽ sinh cấu trúc file cơ bản tại `plugins/@my-project/plugin-settings-page`, bao gồm các thư mục `src/client-v2/`, `src/server/`, `src/locale/`, v.v. Chi tiết xem tại [Viết Plugin đầu tiên](../../write-your-first-plugin).
 
 ## Bước 2: Đăng ký trang cài đặt
 
@@ -370,7 +370,7 @@ Trang này rất đơn giản — dùng `Descriptions` của Antd để hiển t
 ## Bước 7: Bật plugin
 
 ```bash
-yarn pm enable @my-project/plugin-settings-page
+nb plugin enable @my-project/plugin-settings-page
 ```
 
 Sau khi bật, refresh lại trang, bạn sẽ thấy mục "Cấu hình dịch vụ bên ngoài" trong menu "Cấu hình Plugin".

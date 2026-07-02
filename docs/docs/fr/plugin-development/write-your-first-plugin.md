@@ -1,34 +1,31 @@
 ---
 title: "Écrire votre premier plugin NocoBase"
-description: "Créez un plugin de bloc de zéro : yarn pm create, ossature du plugin, répertoires client/server, enregistrer un bloc, flux de développement et de débogage."
-keywords: "écrire un plugin, premier plugin, yarn pm create, ossature de plugin, plugin de bloc, développement de plugins NocoBase"
+description: "Créer un plugin de bloc de zéro : nb scaffold plugin, ossature du plugin, répertoires client/server, enregistrer un bloc, flux de développement et de débogage."
+keywords: "écrire un plugin,premier plugin,nb scaffold plugin,ossature de plugin,plugin de bloc,développement de plugins NocoBase"
 ---
 
 # Écrire votre premier plugin
 
-Cette documentation vous accompagnera pour créer de zéro un plugin de bloc utilisable dans une page, et vous aidera à comprendre la structure de base et le flux de développement d'un plugin NocoBase.
+Ce document vous accompagnera pour créer de zéro un plugin de bloc utilisable dans une page, afin de comprendre la structure de base et le flux de développement d'un plugin NocoBase.
 
 ## Prérequis
 
-Avant de commencer, assurez-vous d'avoir installé NocoBase. Si ce n'est pas encore fait, vous pouvez consulter :
-
-- [Installer avec create-nocobase-app](../get-started/installation/create-nocobase-app)
-- [Installer depuis les sources Git](../get-started/installation/git)
+Avant de commencer, assurez-vous d'avoir installé une application NocoBase via le CLI NocoBase (`nb init`). Le CLI prend en charge deux sources : npm et Git. La source Git est recommandée (lors du développement avec l'IA, vous pouvez directement consulter le code source). Voir [Installer l'application via le CLI](../nocobase-cli/installation/cli.md) ou le [Guide de démarrage AI Agent](../ai/quick-start.mdx).
 
 Une fois l'installation terminée, vous pouvez commencer.
 
-## Étape 1 : créer l'ossature du plugin via la CLI
+## Étape 1 : créer l'ossature du plugin via le CLI
 
-Exécutez la commande suivante à la racine du dépôt pour générer rapidement un plugin vide :
+Exécutez la commande suivante dans le répertoire racine du projet (`<app-path>`) ou dans le répertoire `source/` pour générer rapidement un plugin vide :
 
 ```bash
-yarn pm create @my-project/plugin-hello
+nb scaffold plugin @my-project/plugin-hello
 ```
 
-Une fois la commande exécutée avec succès, des fichiers de base seront générés dans le répertoire `packages/plugins/@my-project/plugin-hello`. La structure par défaut est la suivante :
+Une fois la commande exécutée avec succès, des fichiers de base seront générés dans le répertoire `<app-path>/plugins/@my-project/plugin-hello` (`nb` synchronise automatiquement le plugin vers `source/packages/plugins/` pour le développement et la construction). La structure par défaut est la suivante :
 
 ```bash
-├─ /packages/plugins/@my-project/plugin-hello
+├─ /plugins/@my-project/plugin-hello
   ├─ package.json
   ├─ README.md
   ├─ client-v2.d.ts
@@ -60,13 +57,13 @@ Une fois la commande exécutée avec succès, des fichiers de base seront géné
         └─ zh-CN.json
 ```
 
-Une fois la création terminée, vous pouvez accéder à la page «Gestionnaire de plugins» dans votre navigateur (adresse par défaut : http://localhost:13000/admin/settings/plugin-manager) pour vérifier que le plugin apparaît bien dans la liste.
+Une fois la création terminée, vous pouvez accéder à la page « Gestionnaire de plugins » dans votre navigateur ([adresse par défaut](http://localhost:13000/admin/settings/plugin-manager)) pour vérifier que le plugin apparaît bien dans la liste.
 
 ## Étape 2 : implémenter un bloc client simple
 
 Ajoutons maintenant un modèle de bloc personnalisé au plugin pour afficher un texte de bienvenue.
 
-1. **Ajoutez le fichier de modèle de bloc** `client-v2/models/HelloBlockModel.tsx` :
+1. **Créez le fichier de modèle de bloc** `client-v2/models/HelloBlockModel.tsx` :
 
 ```tsx pure
 import { BlockModel } from '@nocobase/client-v2';
@@ -100,7 +97,7 @@ export default {
 } as Record<string, ModelConstructor>;
 ```
 
-Après avoir sauvegardé le code, si vous exécutez un script de développement, vous devriez voir des journaux de rechargement à chaud (hot-reload) dans la sortie du terminal.
+Après avoir sauvegardé le code, si vous exécutez un script de développement, vous devriez voir des journaux de rechargement à chaud dans la sortie du terminal.
 
 ## Étape 3 : activer et tester le plugin
 
@@ -109,12 +106,12 @@ Vous pouvez activer le plugin via la ligne de commande ou via l'interface :
 - **Ligne de commande**
 
   ```bash
-  yarn pm enable @my-project/plugin-hello
+  nb plugin enable @my-project/plugin-hello
   ```
 
-- **Interface d'administration** : accédez au «Gestionnaire de plugins», localisez `@my-project/plugin-hello` et cliquez sur «Activer».
+- **Interface d'administration** : accédez au « Gestionnaire de plugins », localisez `@my-project/plugin-hello` et cliquez sur « Activer ».
 
-Après l'activation, créez une nouvelle page «Modern page (v2)». Lors de l'ajout de blocs, vous verrez apparaître «Hello block» ; insérez-le dans la page pour visualiser le contenu de bienvenue que vous venez de créer.
+Après l'activation, créez une nouvelle page « Modern page (v2) ». Lors de l'ajout de blocs, vous verrez apparaître « Hello block » ; insérez-le dans la page pour visualiser le contenu de bienvenue que vous venez de créer.
 
 ![20250928174529](https://static-docs.nocobase.com/20250928174529.png)
 
@@ -122,8 +119,8 @@ Après l'activation, créez une nouvelle page «Modern page (v2)». Lors de l'aj
 
 Ce qui précède décrit l'activation manuelle d'un plugin individuel. Si vous maintenez votre propre application NocoBase et souhaitez que certains plugins soient automatiquement disponibles après l'exécution de `nocobase install` (première installation) ou `nocobase upgrade` (mise à niveau), vous pouvez utiliser deux variables d'environnement pour contrôler l'état par défaut des plugins :
 
-- **`APPEND_PRESET_LOCAL_PLUGINS` (ajouter aux plugins locaux préinstallés par défaut)** — ajoute le plugin à la liste des plugins locaux préinstallés ; il apparaît dans le «Gestionnaire de plugins» après l'installation, mais n'est pas activé par défaut et doit être activé manuellement
-- **`APPEND_PRESET_BUILT_IN_PLUGINS` (ajouter aux plugins intégrés par défaut)** — ajoute le plugin à la liste des plugins intégrés, qui sont automatiquement activés lors de l'installation ; en tant que plugins intégrés, **ils ne peuvent pas être désactivés ni supprimés dans le «Gestionnaire de plugins»**
+- **`APPEND_PRESET_LOCAL_PLUGINS` (ajouter aux plugins locaux préinstallés par défaut)** — ajoute le plugin à la liste des plugins locaux préinstallés ; il apparaît dans le « Gestionnaire de plugins » après l'installation, mais n'est pas activé par défaut et doit être activé manuellement
+- **`APPEND_PRESET_BUILT_IN_PLUGINS` (ajouter aux plugins intégrés par défaut)** — ajoute le plugin à la liste des plugins intégrés, qui sont automatiquement activés lors de l'installation ; en tant que plugins intégrés, **ils ne peuvent pas être désactivés ni supprimés dans le « Gestionnaire de plugins »**
 
 La valeur de ces deux variables est le nom du package du plugin (le champ `name` dans `package.json`), avec plusieurs plugins séparés par des virgules. Configurez-les dans le fichier `.env` :
 
@@ -135,7 +132,7 @@ APPEND_PRESET_LOCAL_PLUGINS=@my-project/plugin-hello,@my-project/plugin-hello-wo
 APPEND_PRESET_BUILT_IN_PLUGINS=@my-project/plugin-hello,@my-project/plugin-hello-world
 ```
 
-En règle générale, `yarn pm enable` suffit pour le développement et le débogage en local. Ces deux variables sont davantage adaptées aux scénarios de distribution «prêts à l'emploi» — par exemple, si vous avez empaqueté une application NocoBase avec un ensemble fixe de plugins et souhaitez que ces plugins soient directement disponibles après l'initialisation.
+En règle générale, `nb plugin enable` suffit pour le développement et le débogage en local. Ces deux variables sont davantage adaptées aux scénarios de distribution « prêts à l'emploi » — par exemple, si vous avez empaqueté une application NocoBase avec un ensemble fixe de plugins et souhaitez que ces plugins soient directement disponibles après l'initialisation.
 
 :::tip Astuce
 
@@ -145,24 +142,24 @@ En règle générale, `yarn pm enable` suffit pour le développement et le débo
 
 :::
 
-## Étape 4 : compiler et empaqueter
+## Étape 4 : construire et empaqueter
 
-Lorsque vous êtes prêt à distribuer votre plugin vers d'autres environnements, vous devez d'abord le compiler, puis l'empaqueter :
+Lorsque vous êtes prêt à distribuer votre plugin vers d'autres environnements, vous devez d'abord le construire puis l'empaqueter :
 
 ```bash
-yarn build @my-project/plugin-hello --tar
+nb source build @my-project/plugin-hello --tar
 # Ou exécutez en deux étapes
-yarn build @my-project/plugin-hello
-yarn nocobase tar @my-project/plugin-hello
+nb source build @my-project/plugin-hello
+nb source build @my-project/plugin-hello --tar
 ```
 
 :::tip Astuce
 
-Si le plugin est créé dans le dépôt source, la première compilation déclenchera une vérification de type complète du dépôt, ce qui peut prendre un certain temps. Il est recommandé de s'assurer que les dépendances sont installées et que le dépôt est dans un état compilable.
+Si le plugin est créé dans le dépôt source, la première construction déclenchera une vérification de type complète du dépôt, ce qui peut prendre un certain temps. Il est recommandé de s'assurer que les dépendances sont installées et que le dépôt est dans un état compilable.
 
 :::
 
-Une fois la compilation terminée, le fichier empaqueté se trouve par défaut dans `storage/tar/@my-project/plugin-hello.tar.gz`.
+Une fois la construction terminée, le fichier empaqueté se trouve par défaut dans le répertoire `source/storage/tar/`, et la commande affiche le chemin complet du tarball.
 
 :::tip Astuce
 
@@ -177,12 +174,12 @@ Téléversez et décompressez le fichier dans le répertoire `./storage/plugins`
 ## Liens connexes
 
 - [Aperçu du développement de plugins](./index.md) — comprendre l'architecture micro-noyau de NocoBase et le cycle de vie des plugins
-- [Structure du projet](./project-structure.md) — conventions de l'arborescence du projet, chemins de chargement et priorité des plugins
+- [Structure du répertoire du projet](./project-structure.md) — conventions de l'arborescence du projet, chemins de chargement et priorité des plugins
 - [Aperçu du développement serveur](./server/index.md) — présentation et concepts centraux des plugins serveur
 - [Aperçu du développement client](./client/index.md) — présentation et concepts centraux des plugins client
-- [Build et empaquetage](./build.md) — processus de build, d'empaquetage et de distribution des plugins
+- [Construction et packaging](./build.md) — processus de construction, de packaging et de distribution des plugins
 - [Test](./server/test.md) — écrire des tests de plugins serveur
-- [Installer avec create-nocobase-app](../get-started/installation/create-nocobase-app) — l'une des méthodes d'installation de NocoBase
-- [Installer depuis les sources Git](../get-started/installation/git) — installer NocoBase depuis le code source
+- [Guide de démarrage AI Agent](../ai/quick-start.mdx) — installer le CLI NocoBase et initialiser l'application
+- [Installer l'application via le CLI](../nocobase-cli/installation/cli.md) — procédure d'installation complète
 - [Installer et mettre à niveau les plugins](../get-started/install-upgrade-plugins.mdx) — téléverser le plugin empaqueté vers d'autres environnements
 - [Variables d'environnement](../get-started/installation/env.md) — configuration des variables d'environnement pour les plugins préinstallés et intégrés
