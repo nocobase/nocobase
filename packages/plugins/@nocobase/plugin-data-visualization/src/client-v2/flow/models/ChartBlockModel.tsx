@@ -28,6 +28,11 @@ import { configStore } from './config-store';
 import PluginDataVisualizationClient from '../../plugin';
 import { DaraButton } from '../components/DaraButton';
 import { useChatBoxStore, useChatMessagesStore } from '@nocobase/plugin-ai/client-v2';
+import {
+  getChartDirtyRefreshSnapshot,
+  shouldRefreshChartOnActive,
+  type ChartDirtyRefreshSnapshot,
+} from './chartDirtyTracking';
 
 const NO_PREVIEW_SNAPSHOT = Symbol('NO_PREVIEW_SNAPSHOT');
 
@@ -86,13 +91,48 @@ export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
 
   // 统一管理 refresh 监听引用，便于 off 解绑
   private __onResourceRefresh = () => this.renderChart();
+  private lastRefreshSnapshot: ChartDirtyRefreshSnapshot | null = null;
+  private dirtyRefreshing = false;
 
-  onActive() {
-    this.resource.refresh();
+  private getCurrentRefreshSnapshot(): ChartDirtyRefreshSnapshot | null {
+    return getChartDirtyRefreshSnapshot({
+      engine: this.context.engine,
+      dataSourceManager: this.context.dataSourceManager,
+      query: this.getResourceSettingsInitParams()?.query,
+    });
   }
 
-  refresh() {
-    return this.resource.refresh();
+  private rememberRefreshSnapshot() {
+    this.lastRefreshSnapshot = this.getCurrentRefreshSnapshot();
+  }
+
+  private async refreshAndRememberSnapshot(): Promise<void> {
+    if (this.dirtyRefreshing) return;
+    this.dirtyRefreshing = true;
+    try {
+      await this.resource.refresh();
+      this.rememberRefreshSnapshot();
+    } catch {
+      // Keep lastRefreshSnapshot unchanged so the next activate can retry.
+    } finally {
+      this.dirtyRefreshing = false;
+    }
+  }
+
+  async onActive(forceRefresh = false) {
+    if (this.hidden) return;
+
+    const currentSnapshot = this.getCurrentRefreshSnapshot();
+    if (!shouldRefreshChartOnActive({ forceRefresh, currentSnapshot, lastSnapshot: this.lastRefreshSnapshot })) {
+      return;
+    }
+
+    await this.refreshAndRememberSnapshot();
+  }
+
+  async refresh() {
+    await this.resource.refresh();
+    this.rememberRefreshSnapshot();
   }
 
   // 初始化注册 ChartResource | SQLResource
@@ -182,7 +222,7 @@ export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
       const initQuery = initParams?.query;
       if (initQuery) {
         this.applyQuery(await this.buildQueryRequest(initQuery));
-        await this.resource.refresh();
+        await this.refresh();
       }
     } catch (e) {
       const message = (e as any)?.message || String(e);
@@ -476,7 +516,7 @@ export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
       try {
         // 等待确保 stepParams 已更新
         await sleep(200);
-        await this.resource.refresh();
+        await this.refresh();
         this.setDataResult();
       } finally {
         if (isSQL) {
@@ -497,7 +537,7 @@ export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
       // 等待确保 stepParams 已更新
       await sleep(100);
       // 重新请求数据，并刷新图表
-      await this.resource.refresh();
+      await this.refresh();
     }
   }
 }
