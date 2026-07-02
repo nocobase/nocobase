@@ -102,27 +102,30 @@ Do not treat **${toolName}** as optional, and do not finish the task without cal
         const plugin = this.workflow.app.pm.get('ai') as PluginAIServer;
         const resolvedModel = await plugin.aiEmployeesManager.resolveModel(employee, model);
 
+        const aiEmployeeContext = {
+          app: this.workflow.app,
+          db: this.workflow.app.db,
+          log: this.workflow.app.log,
+          logger: this.workflow.app.log,
+          state: { currentRoles },
+          auth: {
+            user: {
+              id: input?.result?.user?.id ?? userId,
+            },
+          },
+          action: {
+            params: {
+              values: {
+                sessionId: conversation.sessionId,
+                model: resolvedModel,
+              },
+            },
+          },
+        } as any;
+        const aiEmployeeActionValues = aiEmployeeContext.action.params.values;
+
         const aiEmployee = new AIEmployee({
-          ctx: {
-            app: this.workflow.app,
-            db: this.workflow.app.db,
-            log: this.workflow.app.log,
-            logger: this.workflow.app.log,
-            state: { currentRoles },
-            auth: {
-              user: {
-                id: input?.result?.user?.id ?? userId,
-              },
-            },
-            action: {
-              params: {
-                values: {
-                  sessionId: conversation.sessionId,
-                  model: resolvedModel,
-                },
-              },
-            },
-          } as any,
+          ctx: aiEmployeeContext,
           employee,
           sessionId: conversation.sessionId,
           systemMessage,
@@ -142,6 +145,7 @@ Do not treat **${toolName}** as optional, and do not finish the task without cal
 
         let result;
         let isToolInvoke = false;
+        let recoveredFromGraphRecursion = false;
         let retry = 0;
         do {
           const userMessages = [
@@ -154,38 +158,80 @@ Do not treat **${toolName}** as optional, and do not finish the task without cal
               ...attachmentPart,
             },
           ];
-          if (retry > 0) {
-            if (retry < 2) {
-              abortHandle.throwIfAborted();
-              const firstUserMessage = await this.workflow.db
-                .getRepository('aiConversations.messages', conversation.sessionId)
-                .findOne({
-                  filter: {
-                    role: 'user',
-                  },
-                  sort: ['messageId'],
-                });
-              const messageId = firstUserMessage?.messageId;
-              result = await aiEmployee.invoke({ messageId, userMessages, signal: abortHandle.signal });
-            } else {
-              result = await aiEmployee.invoke({
-                signal: abortHandle.signal,
-                userMessages: [
-                  {
-                    role: 'user',
-                    content: {
-                      type: 'text',
-                      content: `You failed to call the required tool "${SYSTEM_TOOLS.WORK_FLOW_TASK_OUTPUT}" in your previous response.
-Call "${SYSTEM_TOOLS.WORK_FLOW_TASK_OUTPUT}" now to submit the workflow outcome.
+          try {
+            if (retry > 0) {
+              if (retry < 2) {
+                abortHandle.throwIfAborted();
+                const firstUserMessage = await this.workflow.db
+                  .getRepository('aiConversations.messages', conversation.sessionId)
+                  .findOne({
+                    filter: {
+                      role: 'user',
+                    },
+                    sort: ['messageId'],
+                  });
+                const messageId = firstUserMessage?.messageId;
+                result = await aiEmployee.invoke({ messageId, userMessages, signal: abortHandle.signal });
+              } else {
+                result = await aiEmployee.invoke({
+                  signal: abortHandle.signal,
+                  userMessages: [
+                    {
+                      role: 'user',
+                      content: {
+                        type: 'text',
+                        content: `You failed to call the required tool "${toolName}" in your previous response.
+Call "${toolName}" now to submit the workflow outcome.
 Do not send another normal assistant response without invoking it.
                   `,
+                      },
+                    },
+                  ],
+                });
+              }
+            } else {
+              result = await aiEmployee.invoke({ userMessages, signal: abortHandle.signal });
+            }
+          } catch (error) {
+            if (!isGraphRecursionError(error) || recoveredFromGraphRecursion) {
+              throw error;
+            }
+            recoveredFromGraphRecursion = true;
+            processor.logger.warn(`ai employee invoke reached graph recursion limit, trying workflow output recovery`, {
+              node: node.id,
+              stack: error.stack,
+              chatOptions: node.config,
+            });
+            const latestMessage = await this.workflow.db
+              .getRepository('aiConversations.messages', conversation.sessionId)
+              .findOne({
+                sort: ['-messageId'],
+              });
+            const recoveryAIEmployee = new AIEmployee({
+              ctx: {
+                ...aiEmployeeContext,
+                action: {
+                  params: {
+                    values: {
+                      ...aiEmployeeActionValues,
+                      important: 'GraphRecursionError',
                     },
                   },
-                ],
-              });
-            }
-          } else {
-            result = await aiEmployee.invoke({ userMessages, signal: abortHandle.signal });
+                },
+              } as any,
+              employee,
+              sessionId: conversation.sessionId,
+              systemMessage,
+              skillSettings,
+              webSearch,
+              model: resolvedModel,
+              tools: [{ name: toolName }],
+            });
+            abortHandle.throwIfAborted();
+            result = await recoveryAIEmployee.invoke({
+              messageId: latestMessage?.messageId,
+              signal: abortHandle.signal,
+            });
           }
 
           abortHandle.throwIfAborted();
@@ -499,6 +545,16 @@ async function parseAssignees(node, processor): Promise<number[]> {
   }
 
   return assignees;
+}
+
+function isGraphRecursionError(error: unknown): error is Error {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    ('name' in error || 'lc_error_code' in error) &&
+    ((error as { name?: unknown }).name === 'GraphRecursionError' ||
+      (error as { lc_error_code?: unknown }).lc_error_code === 'GRAPH_RECURSION_LIMIT')
+  );
 }
 
 export * from './handler';

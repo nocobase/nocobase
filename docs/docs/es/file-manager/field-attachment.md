@@ -1,5 +1,11 @@
 # Campo de Adjunto
 
+:::warning Nota
+
+El campo de adjunto quedará obsoleto en una versión futura. Para nuevas aplicaciones o al ajustar procesos existentes, migre cuanto antes a una tabla de archivos personalizada y gestione los archivos relacionados mediante campos de relación.
+
+:::
+
 ## Introducción
 
 El sistema incluye un tipo de campo "Adjunto" que permite a los usuarios subir archivos en sus colecciones personalizadas.

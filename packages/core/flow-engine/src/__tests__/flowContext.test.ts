@@ -1607,6 +1607,29 @@ describe('FlowEngine context', () => {
     await expect((engine.context as any).getVar('foo.bar')).rejects.toThrow();
   });
 
+  it('model.context.getVar should resolve the latest ctx.auth.user after user changes', async () => {
+    const engine = new FlowEngine();
+    engine.context.defineProperty('api', {
+      value: { auth: { role: 'admin', locale: 'en-US', token: 'token-1' } },
+    });
+    engine.context.defineProperty('user', { value: { id: 1, nickname: 'Alice' } });
+
+    class AuthUserModel extends FlowModel {}
+    engine.registerModels({ AuthUserModel });
+    const model = engine.createModel({ use: 'AuthUserModel' });
+
+    expect(await model.context.getVar('ctx.auth.user.id')).toBe(1);
+    expect(await model.context.getVar('ctx.auth.token')).toBe('token-1');
+
+    engine.context.api.auth.role = 'member';
+    engine.context.api.auth.token = 'token-2';
+    engine.context.defineProperty('user', { value: { id: 2, nickname: 'Bob' } });
+
+    expect(await model.context.getVar('ctx.auth.user.id')).toBe(2);
+    expect(await model.context.getVar('ctx.auth.roleName')).toBe('member');
+    expect(await model.context.getVar('ctx.auth.token')).toBe('token-2');
+  });
+
   it('engine.context.runAction should resolve action from engine.getAction', async () => {
     const engine = new FlowEngine();
 

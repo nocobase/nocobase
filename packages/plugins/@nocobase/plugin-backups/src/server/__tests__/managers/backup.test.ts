@@ -25,6 +25,7 @@ vi.mock('child_process', async (importOriginal) => {
   return {
     ...actual,
     execSync: vi.fn(),
+    spawnSync: vi.fn().mockReturnValue({ status: 0, stdout: 'PostgreSQL 16.1', stderr: '' }),
     exec: vi.fn().mockImplementation((command, _options, callback) => {
       if (command.includes(' > ')) {
         // mock the command to create a backup file

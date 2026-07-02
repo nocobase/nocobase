@@ -2,6 +2,15 @@
 
 Os arquivos enviados serão salvos em um diretório local no disco rígido do servidor. Isso é ideal para cenários onde o volume total de arquivos enviados gerenciados pelo sistema é pequeno ou para fins experimentais.
 
+
+:::warning Observação
+
+O armazenamento local não oferece acesso privado. Depois que um arquivo é enviado, o NocoBase gera uma URL diretamente acessível, e qualquer pessoa com essa URL pode acessar o arquivo.
+
+Se você precisa armazenar contratos, documentos de identidade, materiais internos ou outros arquivos que não devem ser públicos, use [S3 Pro](./s3-pro). Se já houver arquivos históricos, consulte [Migrar para S3 Pro](./migrate-to-s3-pro.md).
+
+:::
+
 ## Parâmetros de Configuração
 
 ![Exemplo de configuração do motor de armazenamento de arquivos](https://static-docs.nocobase.com/20240529115151.png)
