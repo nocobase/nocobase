@@ -120,6 +120,17 @@ export type EnvProxyNginxBundle = {
   indexV2Content: string;
 };
 
+export type ManualEnvProxyNginxInput = {
+  name: string;
+  appPort: string;
+  storagePath: string;
+  distRootPath: string;
+  runtimeVersion: string;
+  appPublicPath?: string;
+  upstreamHost?: string;
+  cdnBaseUrl?: string;
+};
+
 export type EnvProxyCaddyBundle = {
   envName: string;
   envFilePath?: string;
@@ -178,10 +189,21 @@ type EnvProxyProviderOptions = {
   provider?: ProxyProvider;
   runtimeCliRoot?: string;
   upstreamHost?: string;
+  cdnBaseUrl?: string;
 };
 
 type EnvProxyBuildOptions = EnvProxyProviderOptions & {
   useHostPaths?: boolean;
+};
+
+type NginxBundleSource = {
+  envName: string;
+  envFilePath?: string;
+  storagePath: string;
+  distRootPath: string;
+  settings: ProxyEnvSettings;
+  apiPort: string;
+  activeVersion: string;
 };
 
 function trimValue(value: unknown): string | undefined {
@@ -454,6 +476,7 @@ function toCaddyPathMatcher(prefixPath: string): string {
 
 export async function loadEnvProxySettings(
   runtime: Extract<ManagedAppRuntime, { kind: 'local' | 'docker' }>,
+  options?: { cdnBaseUrl?: string },
 ): Promise<{ envFilePath?: string; settings: ProxyEnvSettings }> {
   const { envFilePath, envValues } = await readManagedRuntimeEnvValues(runtime);
   const appPublicPath = resolveAppPublicPath(runtime.env.config.appPublicPath || envValues.APP_PUBLIC_PATH || DEFAULT_APP_PUBLIC_PATH);
@@ -474,7 +497,10 @@ export async function loadEnvProxySettings(
         { trailingSlash: true },
       ),
       modernClientPrefix: normalizeModernClientPrefix(envValues.APP_MODERN_CLIENT_PREFIX),
-      cdnBaseUrl: trimValue(runtime.env.envVars?.CDN_BASE_URL) ?? trimValue(envValues.CDN_BASE_URL),
+      cdnBaseUrl:
+        trimValue(options?.cdnBaseUrl) ??
+        trimValue(runtime.env.envVars?.CDN_BASE_URL) ??
+        trimValue(envValues.CDN_BASE_URL),
       apiClientStoragePrefix: trimValue(envValues.API_CLIENT_STORAGE_PREFIX) ?? DEFAULT_API_CLIENT_STORAGE_PREFIX,
       apiClientStorageType: trimValue(envValues.API_CLIENT_STORAGE_TYPE) ?? DEFAULT_API_CLIENT_STORAGE_TYPE,
       apiClientShareToken,
@@ -482,6 +508,43 @@ export async function loadEnvProxySettings(
       esmCdnBaseUrl: trimValue(envValues.ESM_CDN_BASE_URL) ?? DEFAULT_ESM_CDN_BASE_URL,
       esmCdnSuffix: trimValue(envValues.ESM_CDN_SUFFIX) ?? '',
     },
+  };
+}
+
+function createManualProxyEnvSettings(input: ManualEnvProxyNginxInput): ProxyEnvSettings {
+  const appPublicPath = resolveAppPublicPath(input.appPublicPath || DEFAULT_APP_PUBLIC_PATH);
+
+  return {
+    appPublicPath,
+    apiBasePath: prefixRuntimePath(appPublicPath, DEFAULT_API_BASE_PATH, {
+      trailingSlash: true,
+    }),
+    distPath: resolveDistPublicPath(appPublicPath),
+    wsPath: prefixRuntimePath(appPublicPath, DEFAULT_WS_PATH),
+    pluginStaticsPath: prefixRuntimePath(appPublicPath, DEFAULT_PLUGIN_STATICS_PATH, {
+      trailingSlash: true,
+    }),
+    modernClientPrefix: DEFAULT_MODERN_CLIENT_PREFIX,
+    cdnBaseUrl: trimValue(input.cdnBaseUrl),
+    apiClientStoragePrefix: DEFAULT_API_CLIENT_STORAGE_PREFIX,
+    apiClientStorageType: DEFAULT_API_CLIENT_STORAGE_TYPE,
+    apiClientShareToken: false,
+    wsUrl: '',
+    esmCdnBaseUrl: DEFAULT_ESM_CDN_BASE_URL,
+    esmCdnSuffix: '',
+  };
+}
+
+function normalizeManualNginxInput(input: ManualEnvProxyNginxInput): ManualEnvProxyNginxInput {
+  return {
+    name: String(input.name).trim(),
+    appPort: String(input.appPort).trim(),
+    storagePath: String(input.storagePath).trim(),
+    distRootPath: String(input.distRootPath).trim(),
+    runtimeVersion: String(input.runtimeVersion).trim(),
+    appPublicPath: trimValue(input.appPublicPath),
+    upstreamHost: trimValue(input.upstreamHost),
+    cdnBaseUrl: trimValue(input.cdnBaseUrl),
   };
 }
 
@@ -804,9 +867,58 @@ function buildCaddyRuntimeConfig(context: EnvProxyCaddyRenderContext, variant: '
 }
 
 async function buildEnvProxyNginxRenderContext(
-  runtime: Extract<ManagedAppRuntime, { kind: 'local' | 'docker' }>,
+  source: NginxBundleSource,
   options?: EnvProxyProviderOptions,
 ): Promise<EnvProxyNginxRenderContext> {
+  const proxyHost = await resolveProxyUpstreamHost(options);
+  const backendUrl = `http://${proxyHost}:${source.apiPort}`;
+  const cdnBaseUrl = source.settings.cdnBaseUrl ?? buildDefaultCdnBaseUrl(source.settings.appPublicPath, source.activeVersion);
+  const entryDir = resolveEnvProxyEntryDir(source.envName, { scope: options?.scope });
+  const publicDir = resolveEnvProxyNginxPublicOutputDir(source.envName, { scope: options?.scope });
+  const snippetsDir = resolveEnvProxyNginxSnippetsOutputDir({ scope: options?.scope });
+  const distRootDir = source.distRootPath;
+  const uploadsDir = path.join(source.storagePath, 'uploads');
+  const mappedEntryDir = await mapProxyPathFromCliRoot(entryDir, options);
+  const mappedPublicDir = await mapProxyPathFromCliRoot(publicDir, options);
+  const mappedSnippetsDir = await mapProxyPathFromCliRoot(snippetsDir, options);
+  const mappedDistRootDir = await mapProxyPathFromCliRoot(distRootDir, options);
+  const mappedUploadsDir = await mapProxyPathFromCliRoot(uploadsDir, options);
+  const v2PublicPath = `${source.settings.appPublicPath.replace(/\/$/, '')}/${source.settings.modernClientPrefix}/`;
+
+  return {
+    envName: source.envName,
+    envFilePath: source.envFilePath,
+    apiBasePath: source.settings.apiBasePath,
+    apiClientShareToken: source.settings.apiClientShareToken,
+    apiClientStoragePrefix: source.settings.apiClientStoragePrefix,
+    apiClientStorageType: source.settings.apiClientStorageType,
+    apiPort: source.apiPort,
+    appPublicPath: source.settings.appPublicPath,
+    backendUrl,
+    cdnBaseUrl: ensureTrailingSlash(cdnBaseUrl),
+    distPath: source.settings.distPath,
+    distRootDir: mappedDistRootDir,
+    entryDir: mappedEntryDir,
+    publicDir: mappedPublicDir,
+    esmCdnBaseUrl: source.settings.esmCdnBaseUrl,
+    esmCdnSuffix: source.settings.esmCdnSuffix,
+    indexV1Path: await mapProxyPathFromCliRoot(resolveEnvProxyNginxIndexOutputPath(source.envName, 'v1', { scope: options?.scope }), options),
+    indexV2Path: await mapProxyPathFromCliRoot(resolveEnvProxyNginxIndexOutputPath(source.envName, 'v2', { scope: options?.scope }), options),
+    modernClientPrefix: source.settings.modernClientPrefix,
+    proxyHost,
+    snippetsDir: mappedSnippetsDir,
+    uploadsDir: mappedUploadsDir,
+    v2PublicPath,
+    wsPath: source.settings.wsPath,
+    wsUrl: source.settings.wsUrl,
+    activeVersion: source.activeVersion,
+  };
+}
+
+async function resolveRuntimeNginxBundleSource(
+  runtime: Extract<ManagedAppRuntime, { kind: 'local' | 'docker' }>,
+  options?: { cdnBaseUrl?: string },
+): Promise<NginxBundleSource> {
   const apiPort = trimValue(runtime.env.appPort ?? runtime.env.config.appPort);
   if (!apiPort) {
     throw new Error(
@@ -825,49 +937,30 @@ async function buildEnvProxyNginxRenderContext(
     );
   }
 
-  const { envFilePath, settings } = await loadEnvProxySettings(runtime);
-  const proxyHost = await resolveProxyUpstreamHost(options);
-  const backendUrl = `http://${proxyHost}:${apiPort}`;
-  const cdnBaseUrl = settings.cdnBaseUrl ?? buildDefaultCdnBaseUrl(settings.appPublicPath, activeVersion);
-  const entryDir = resolveEnvProxyEntryDir(runtime.envName, { scope: options?.scope });
-  const publicDir = resolveEnvProxyNginxPublicOutputDir(runtime.envName, { scope: options?.scope });
-  const snippetsDir = resolveEnvProxyNginxSnippetsOutputDir({ scope: options?.scope });
-  const distRootDir = resolveDistClientRoot(runtime.env.storagePath);
-  const uploadsDir = path.join(runtime.env.storagePath, 'uploads');
-  const mappedEntryDir = await mapProxyPathFromCliRoot(entryDir, options);
-  const mappedPublicDir = await mapProxyPathFromCliRoot(publicDir, options);
-  const mappedSnippetsDir = await mapProxyPathFromCliRoot(snippetsDir, options);
-  const mappedDistRootDir = await mapProxyPathFromCliRoot(distRootDir, options);
-  const mappedUploadsDir = await mapProxyPathFromCliRoot(uploadsDir, options);
-  const v2PublicPath = `${settings.appPublicPath.replace(/\/$/, '')}/${settings.modernClientPrefix}/`;
+  const { envFilePath, settings } = await loadEnvProxySettings(runtime, options);
 
   return {
     envName: runtime.envName,
     envFilePath,
-    apiBasePath: settings.apiBasePath,
-    apiClientShareToken: settings.apiClientShareToken,
-    apiClientStoragePrefix: settings.apiClientStoragePrefix,
-    apiClientStorageType: settings.apiClientStorageType,
+    storagePath: runtime.env.storagePath,
+    distRootPath: resolveDistClientRoot(runtime.env.storagePath),
+    settings,
     apiPort,
-    appPublicPath: settings.appPublicPath,
-    backendUrl,
-    cdnBaseUrl: ensureTrailingSlash(cdnBaseUrl),
-    distPath: settings.distPath,
-    distRootDir: mappedDistRootDir,
-    entryDir: mappedEntryDir,
-    publicDir: mappedPublicDir,
-    esmCdnBaseUrl: settings.esmCdnBaseUrl,
-    esmCdnSuffix: settings.esmCdnSuffix,
-    indexV1Path: await mapProxyPathFromCliRoot(resolveEnvProxyNginxIndexOutputPath(runtime.envName, 'v1', { scope: options?.scope }), options),
-    indexV2Path: await mapProxyPathFromCliRoot(resolveEnvProxyNginxIndexOutputPath(runtime.envName, 'v2', { scope: options?.scope }), options),
-    modernClientPrefix: settings.modernClientPrefix,
-    proxyHost,
-    snippetsDir: mappedSnippetsDir,
-    uploadsDir: mappedUploadsDir,
-    v2PublicPath,
-    wsPath: settings.wsPath,
-    wsUrl: settings.wsUrl,
     activeVersion,
+  };
+}
+
+async function resolveManualNginxBundleSource(input: ManualEnvProxyNginxInput): Promise<NginxBundleSource> {
+  const normalized = normalizeManualNginxInput(input);
+
+  return {
+    envName: normalized.name,
+    envFilePath: undefined,
+    storagePath: normalized.storagePath,
+    distRootPath: normalized.distRootPath,
+    settings: createManualProxyEnvSettings(normalized),
+    apiPort: normalized.appPort,
+    activeVersion: normalized.runtimeVersion,
   };
 }
 
@@ -875,7 +968,14 @@ async function buildEnvProxyCaddyRenderContext(
   runtime: Extract<ManagedAppRuntime, { kind: 'local' | 'docker' }>,
   options?: EnvProxyProviderOptions,
 ): Promise<EnvProxyCaddyRenderContext> {
-  return await buildEnvProxyNginxRenderContext(runtime, {
+  return await buildEnvProxyCaddyRenderContextFromSource(await resolveRuntimeNginxBundleSource(runtime), options);
+}
+
+async function buildEnvProxyCaddyRenderContextFromSource(
+  source: NginxBundleSource,
+  options?: EnvProxyProviderOptions,
+): Promise<EnvProxyCaddyRenderContext> {
+  return await buildEnvProxyNginxRenderContext(source, {
     ...options,
     provider: 'caddy',
   });
@@ -957,11 +1057,28 @@ export async function buildEnvProxyNginxBundle(
   runtime: Extract<ManagedAppRuntime, { kind: 'local' | 'docker' }>,
   options?: EnvProxyProviderOptions,
 ): Promise<EnvProxyNginxBundle> {
-  const context = await buildEnvProxyNginxRenderContext(runtime, options);
+  return await buildNginxBundleFromSource(await resolveRuntimeNginxBundleSource(runtime, options), options);
+}
+
+export async function buildManualEnvProxyNginxBundle(
+  input: ManualEnvProxyNginxInput,
+  options?: EnvProxyProviderOptions,
+): Promise<EnvProxyNginxBundle> {
+  return await buildNginxBundleFromSource(await resolveManualNginxBundleSource(input), {
+    ...options,
+    upstreamHost: trimValue(input.upstreamHost) ?? options?.upstreamHost,
+  });
+}
+
+async function buildNginxBundleFromSource(
+  source: NginxBundleSource,
+  options?: EnvProxyProviderOptions,
+): Promise<EnvProxyNginxBundle> {
+  const context = await buildEnvProxyNginxRenderContext(source, options);
   const appTemplate = await readEnvProxyNginxAssetText('app.conf.tpl');
   const mainTemplate = await readEnvProxyNginxAssetText('nocobase.conf.tpl');
-  const sourceIndexV1Path = path.join(runtime.env.storagePath, 'dist-client', context.activeVersion, 'index.html');
-  const sourceIndexV2Path = path.join(runtime.env.storagePath, 'dist-client', context.activeVersion, DEFAULT_MODERN_CLIENT_PREFIX, 'index.html');
+  const sourceIndexV1Path = path.join(source.distRootPath, context.activeVersion, 'index.html');
+  const sourceIndexV2Path = path.join(source.distRootPath, context.activeVersion, DEFAULT_MODERN_CLIENT_PREFIX, 'index.html');
   const [sourceIndexV1Content, sourceIndexV2Content] = await Promise.all([
     readFile(sourceIndexV1Path, 'utf8'),
     readFile(sourceIndexV2Path, 'utf8'),
@@ -992,13 +1109,13 @@ export async function buildEnvProxyNginxBundle(
   };
 
   return {
-    envName: runtime.envName,
+    envName: source.envName,
     envFilePath: context.envFilePath,
-    entryDir: resolveEnvProxyEntryDir(runtime.envName, { scope: options?.scope, provider: 'nginx' }),
-    publicDir: resolveEnvProxyNginxPublicOutputDir(runtime.envName, { scope: options?.scope }),
-    appConfigPath: resolveEnvProxyAppOutputPath(runtime.envName, { scope: options?.scope, provider: 'nginx' }),
-    indexV1Path: resolveEnvProxyNginxIndexOutputPath(runtime.envName, 'v1', { scope: options?.scope }),
-    indexV2Path: resolveEnvProxyNginxIndexOutputPath(runtime.envName, 'v2', { scope: options?.scope }),
+    entryDir: resolveEnvProxyEntryDir(source.envName, { scope: options?.scope, provider: 'nginx' }),
+    publicDir: resolveEnvProxyNginxPublicOutputDir(source.envName, { scope: options?.scope }),
+    appConfigPath: resolveEnvProxyAppOutputPath(source.envName, { scope: options?.scope, provider: 'nginx' }),
+    indexV1Path: resolveEnvProxyNginxIndexOutputPath(source.envName, 'v1', { scope: options?.scope }),
+    indexV2Path: resolveEnvProxyNginxIndexOutputPath(source.envName, 'v2', { scope: options?.scope }),
     mainConfigPath: resolveEnvProxyMainOutputPath({ scope: options?.scope, provider: 'nginx' }),
     snippetsDir: resolveEnvProxyNginxSnippetsOutputDir({ scope: options?.scope }),
     appPublicPath: context.appPublicPath,
@@ -1029,9 +1146,26 @@ export async function buildEnvProxyCaddyBundle(
   runtime: Extract<ManagedAppRuntime, { kind: 'local' | 'docker' }>,
   options?: EnvProxyProviderOptions,
 ): Promise<EnvProxyCaddyBundle> {
-  const context = await buildEnvProxyCaddyRenderContext(runtime, options);
-  const sourceIndexV1Path = path.join(runtime.env.storagePath, 'dist-client', context.activeVersion, 'index.html');
-  const sourceIndexV2Path = path.join(runtime.env.storagePath, 'dist-client', context.activeVersion, DEFAULT_MODERN_CLIENT_PREFIX, 'index.html');
+  return await buildCaddyBundleFromSource(await resolveRuntimeNginxBundleSource(runtime), options);
+}
+
+export async function buildManualEnvProxyCaddyBundle(
+  input: ManualEnvProxyNginxInput,
+  options?: EnvProxyProviderOptions,
+): Promise<EnvProxyCaddyBundle> {
+  return await buildCaddyBundleFromSource(await resolveManualNginxBundleSource(input), {
+    ...options,
+    upstreamHost: trimValue(input.upstreamHost) ?? options?.upstreamHost,
+  });
+}
+
+async function buildCaddyBundleFromSource(
+  source: NginxBundleSource,
+  options?: EnvProxyProviderOptions,
+): Promise<EnvProxyCaddyBundle> {
+  const context = await buildEnvProxyCaddyRenderContextFromSource(source, options);
+  const sourceIndexV1Path = path.join(source.distRootPath, context.activeVersion, 'index.html');
+  const sourceIndexV2Path = path.join(source.distRootPath, context.activeVersion, DEFAULT_MODERN_CLIENT_PREFIX, 'index.html');
   const [sourceIndexV1Content, sourceIndexV2Content] = await Promise.all([
     readFile(sourceIndexV1Path, 'utf8'),
     readFile(sourceIndexV2Path, 'utf8'),
@@ -1042,9 +1176,9 @@ export async function buildEnvProxyCaddyBundle(
   const sourceV2PublicPath = extractRuntimePublicPath(sourceIndexV2Content);
   const indexV1AssetPublicPath = context.cdnBaseUrl;
   const indexV2AssetPublicPath = `${trimTrailingSlash(context.cdnBaseUrl)}/${DEFAULT_MODERN_CLIENT_PREFIX}/`;
-  const appConfigPath = resolveEnvProxyAppOutputPath(runtime.envName, { scope: options?.scope, provider: 'caddy' });
-  const entryDir = resolveEnvProxyEntryDir(runtime.envName, { scope: options?.scope, provider: 'caddy' });
-  const publicDir = resolveEnvProxyCaddyPublicOutputDir(runtime.envName, { scope: options?.scope });
+  const appConfigPath = resolveEnvProxyAppOutputPath(source.envName, { scope: options?.scope, provider: 'caddy' });
+  const entryDir = resolveEnvProxyEntryDir(source.envName, { scope: options?.scope, provider: 'caddy' });
+  const publicDir = resolveEnvProxyCaddyPublicOutputDir(source.envName, { scope: options?.scope });
   const renderedPublicDir = await mapProxyPathFromCliRoot(publicDir, { ...options, provider: 'caddy' });
   const appConfigContent = renderCaddyAppTemplate(buildCaddySiteAddress(), {
     appPublicPath: context.appPublicPath,
@@ -1061,13 +1195,13 @@ export async function buildEnvProxyCaddyBundle(
   }, renderedPublicDir);
 
   return {
-    envName: runtime.envName,
+    envName: source.envName,
     envFilePath: context.envFilePath,
     entryDir,
     publicDir,
     appConfigPath,
-    indexV1Path: resolveEnvProxyCaddyIndexOutputPath(runtime.envName, 'v1', { scope: options?.scope }),
-    indexV2Path: resolveEnvProxyCaddyIndexOutputPath(runtime.envName, 'v2', { scope: options?.scope }),
+    indexV1Path: resolveEnvProxyCaddyIndexOutputPath(source.envName, 'v1', { scope: options?.scope }),
+    indexV2Path: resolveEnvProxyCaddyIndexOutputPath(source.envName, 'v2', { scope: options?.scope }),
     mainConfigPath: resolveEnvProxyMainOutputPath({ scope: options?.scope, provider: 'caddy' }),
     appPublicPath: context.appPublicPath,
     apiBasePath: context.apiBasePath,

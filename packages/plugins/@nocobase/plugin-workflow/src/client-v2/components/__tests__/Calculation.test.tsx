@@ -1,0 +1,66 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import React from 'react';
+import { render, screen } from '@testing-library/react';
+import { describe, expect, it, vi } from 'vitest';
+import { CalculationConfig } from '../Calculation';
+
+const holder = vi.hoisted(() => ({
+  typedVariableInputProps: [] as Array<{ metaTree: unknown; value: unknown }>,
+}));
+
+vi.mock('../../locale', () => ({
+  NAMESPACE: 'workflow',
+  useT: () => (key: string) => key,
+  useWorkflowTranslation: () => ({ t: (key: string) => key }),
+}));
+
+vi.mock('@nocobase/client-v2', () => ({
+  TypedVariableInput: (props: any) => {
+    holder.typedVariableInputProps.push({
+      metaTree: props.metaTree,
+      value: props.value,
+    });
+    return <div data-testid="typed-variable-input" />;
+  },
+}));
+
+vi.mock('@nocobase/evaluators/client', () => ({
+  evaluators: {
+    getEntities: () => [],
+  },
+}));
+
+describe('CalculationConfig', () => {
+  it('creates separate workflow variable trees for left and right operands', () => {
+    holder.typedVariableInputProps = [];
+    const useVariableHook = vi
+      .fn()
+      .mockImplementation(() => [{ name: '$context', title: 'Trigger variables', paths: ['$context'], type: '' }]);
+
+    render(
+      <CalculationConfig
+        useVariableHook={useVariableHook}
+        value={{
+          group: {
+            type: 'and',
+            calculations: [{ calculator: 'equal', operands: ['{{$context.data.id}}', '{{$context.data.id}}'] }],
+          },
+        }}
+        onChange={() => undefined}
+      />,
+    );
+
+    expect(screen.getAllByTestId('typed-variable-input')).toHaveLength(2);
+    expect(useVariableHook).toHaveBeenCalledTimes(2);
+    expect(holder.typedVariableInputProps).toHaveLength(2);
+    expect(holder.typedVariableInputProps[0].metaTree).not.toBe(holder.typedVariableInputProps[1].metaTree);
+  });
+});

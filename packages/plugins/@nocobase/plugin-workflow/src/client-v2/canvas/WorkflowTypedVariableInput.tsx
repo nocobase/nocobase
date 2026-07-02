@@ -10,6 +10,7 @@
 import React from 'react';
 import { TypedVariableInput, type TypedConstantSpec, type TypedVariableInputProps } from '@nocobase/client-v2';
 import { useWorkflowVariableOptions, type UseWorkflowVariableOptions } from './useWorkflowVariableOptions';
+import { useHideVariable } from '../components/HideVariableContext';
 
 export const WORKFLOW_TYPED_CONSTANT_TYPES: TypedConstantSpec[] = ['string', 'number', 'boolean', 'date', 'object'];
 
@@ -22,5 +23,6 @@ export type WorkflowTypedVariableInputProps = Omit<
 
 export function WorkflowTypedVariableInput({ variableOptions, ...rest }: WorkflowTypedVariableInputProps) {
   const metaTree = useWorkflowVariableOptions(variableOptions);
-  return <TypedVariableInput {...rest} metaTree={metaTree} />;
+  const hideVariable = useHideVariable();
+  return <TypedVariableInput {...rest} hideVariable={hideVariable} metaTree={metaTree} />;
 }

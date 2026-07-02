@@ -32,6 +32,13 @@ vi.mock('@nocobase/client-v2', () => ({
 }));
 
 const flowContextValue = {
+  app: {
+    pm: {
+      get: () => undefined,
+    },
+  },
+  getPropertyMetaTree: () => [],
+  t: (key: string) => key,
   dataSourceManager: {
     getDataSource: () => ({
       collectionManager: {
@@ -57,13 +64,15 @@ const flowContextValue = {
 };
 
 vi.mock('@nocobase/flow-engine', () => ({
+  FlowContextSelector: ({ children }: { children?: React.ReactNode }) => children ?? null,
   useFlowContext: () => flowContextValue,
   useFlowEngine: () => ({
     context: flowContextValue,
   }),
 }));
 
-vi.mock('../../../canvas/contexts', () => ({
+vi.mock('../../../canvas/contexts', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../../canvas/contexts')>()),
   useCurrentWorkflowContext: () => ({
     config: { mode: SCHEDULE_MODE.DATE_FIELD, collection: 'roles' },
   }),

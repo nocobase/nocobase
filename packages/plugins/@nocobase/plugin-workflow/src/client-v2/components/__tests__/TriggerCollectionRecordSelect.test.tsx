@@ -12,6 +12,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import { Form } from 'antd';
 import { TriggerCollectionRecordSelect } from '../collection';
+import type { ReactNode } from 'react';
 
 const remoteSelectState = vi.hoisted(() => ({
   props: null as null | {
@@ -19,9 +20,12 @@ const remoteSelectState = vi.hoisted(() => ({
     onChange?: (value?: unknown) => void;
     request: () => Promise<any[]>;
     onLoaded?: (items: any[]) => void;
-    mapOptions: (item: any, index: number) => { label: React.ReactNode; value: any };
+    mapOptions: (item: any, index: number) => { label: ReactNode; value: any };
+    onSearch?: (value: string) => void;
   },
 }));
+
+const listMock = vi.fn();
 
 vi.mock('@nocobase/client-v2', () => ({
   RemoteSelect: (props: any) => {
@@ -45,18 +49,27 @@ vi.mock('@nocobase/flow-engine', () => ({
       },
       api: {
         resource: () => ({
-          list: async () => ({
-            data: {
-              data: [
-                { name: 'admin', title: '{{t("Admin")}}' },
-                { name: 'root', title: '{{t("Root")}}' },
-              ],
-            },
-          }),
+          list: listMock,
         }),
       },
     },
   }),
+}));
+
+listMock.mockImplementation(async () => ({
+  data: {
+    data: [
+      { name: 'admin', title: '{{t("Admin")}}' },
+      { name: 'root', title: '{{t("Root")}}' },
+    ],
+  },
+}));
+
+// The variable toggle resolves the workflow variable tree from the full flow-engine context (`context.app.pm`,
+// `getPropertyMetaTree`, …), which this suite does not stub. These tests cover the record-picker branch, so render the
+// wrapper as a pass-through to its constant (non-variable) render path.
+vi.mock('../WorkflowVariableWrapper', () => ({
+  WorkflowVariableWrapper: ({ value, onChange, render }: any) => render({ value: value ?? undefined, onChange }),
 }));
 
 vi.mock('../../canvas/contexts', () => ({
@@ -74,6 +87,43 @@ vi.mock('../../locale', () => ({
 }));
 
 describe('TriggerCollectionRecordSelect', () => {
+  it('requests 200 records on initial load and refetches with remote includes filter after debounce', async () => {
+    vi.useFakeTimers();
+    listMock.mockClear();
+    try {
+      render(<TriggerCollectionRecordSelect />);
+
+      await remoteSelectState.props?.request();
+
+      expect(listMock).toHaveBeenLastCalledWith({ pageSize: 200 });
+
+      act(() => {
+        remoteSelectState.props?.onSearch?.('123');
+      });
+
+      await remoteSelectState.props?.request();
+
+      expect(listMock).toHaveBeenLastCalledWith({ pageSize: 200 });
+
+      await act(async () => {
+        vi.advanceTimersByTime(300);
+      });
+
+      await remoteSelectState.props?.request();
+
+      expect(listMock).toHaveBeenLastCalledWith({
+        pageSize: 200,
+        filter: {
+          title: {
+            $includes: '123',
+          },
+        },
+      });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('compiles server-returned title templates before rendering remote select options', async () => {
     render(<TriggerCollectionRecordSelect />);
 

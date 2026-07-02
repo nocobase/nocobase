@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/cli",
-  "version": "2.2.0-alpha.1",
+  "version": "2.2.0-alpha.4",
   "description": "NocoBase Command Line Tool",
   "type": "module",
   "main": "dist/generated/command-registry.js",
@@ -13,6 +13,7 @@
   "author": "",
   "license": "Apache-2.0",
   "files": [
+    "assets",
     "bin",
     "dist",
     "nocobase-ctl.config.json"

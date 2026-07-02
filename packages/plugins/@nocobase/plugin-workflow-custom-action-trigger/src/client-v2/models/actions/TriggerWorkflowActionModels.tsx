@@ -13,10 +13,10 @@ import {
   ActionSceneEnum,
   CollectionActionModel,
   FormActionModel,
-  TextAreaWithContextSelector,
+  VariableJsonTextArea,
 } from '@nocobase/client-v2';
 import { css } from '@emotion/css';
-import { MultiRecordResource, resolveExpressions, useFlowContext } from '@nocobase/flow-engine';
+import { MultiRecordResource, useFlowContext } from '@nocobase/flow-engine';
 import type { FlowEngine, FlowRuntimeContext, ModelConstructor } from '@nocobase/flow-engine';
 import { Alert, Select, Space } from 'antd';
 import type { ButtonProps } from 'antd/es/button';
@@ -78,6 +78,21 @@ const buildTriggerWorkflows = (group?: TriggerWorkflowBinding[]) => {
     : undefined;
 };
 
+function parseContextData(contextData: unknown) {
+  if (typeof contextData !== 'string') {
+    return contextData;
+  }
+  return JSON.parse(contextData);
+}
+
+async function resolveContextData(ctx: FlowRuntimeContext, contextData: unknown) {
+  const parsedContextData = parseContextData(contextData);
+  if (typeof ctx.resolveJsonTemplate !== 'function') {
+    return parsedContextData;
+  }
+  return await ctx.resolveJsonTemplate(parsedContextData);
+}
+
 function ensureTriggerWorkflowsConfigured(ctx: FlowRuntimeContext, group?: TriggerWorkflowBinding[]) {
   if (group?.length) {
     return true;
@@ -101,7 +116,7 @@ function getRecordKey(record, collection) {
   return record[filterByTk];
 }
 
-function WorkflowSelect({ filter, optionFilter, ...props }) {
+export function WorkflowSelect({ filter, optionFilter, ...props }) {
   const ctx = useFlowContext();
   const [options, setOptions] = React.useState<any[]>([]);
   const [loading, setLoading] = React.useState(false);
@@ -111,16 +126,12 @@ function WorkflowSelect({ filter, optionFilter, ...props }) {
     const loadWorkflows = async () => {
       setLoading(true);
       try {
-        const res = await ctx.api.request({
-          url: 'workflows:list',
-          method: 'get',
-          params: {
-            paginate: false,
-            filter: {
-              type: EVENT_TYPE,
-              enabled: true,
-              ...filter,
-            },
+        const res = await ctx.api.resource('workflows').list({
+          paginate: false,
+          filter: {
+            type: EVENT_TYPE,
+            enabled: true,
+            ...filter,
           },
         });
         if (!mounted) {
@@ -245,13 +256,13 @@ function createTriggerWorkflowsSchema({
     ...(withContextData
       ? {
           contextData: {
-            type: 'string',
+            type: 'object',
             title: tExpr('Context data'),
             description: tExpr(
               'Input JSON as context data passed into the workflow. Frontend variables are supported.',
             ),
             'x-decorator': 'FormItem',
-            'x-component': TextAreaWithContextSelector,
+            'x-component': VariableJsonTextArea,
             'x-component-props': {
               rows: 5,
             },
@@ -504,7 +515,7 @@ CollectionTriggerWorkflowActionModel.registerFlow({
           let values;
           if (contextData) {
             try {
-              values = await resolveExpressions(contextData, ctx);
+              values = await resolveContextData(ctx, contextData);
             } catch (e) {
               // resolution error, ignore
             }
@@ -516,7 +527,7 @@ CollectionTriggerWorkflowActionModel.registerFlow({
               params: {
                 triggerWorkflows: buildTriggerWorkflows(group),
               },
-              data: { values },
+              data: values,
             });
           } catch (error) {
             console.error('Error triggering workflows:', error);
@@ -566,7 +577,7 @@ async function globalTriggerWorkflowHandler(ctx, params) {
   let values;
   if (params.contextData) {
     try {
-      values = await resolveExpressions(params.contextData, ctx);
+      values = await resolveContextData(ctx, params.contextData);
     } catch (e) {
       // resolution error, ignore
     }
@@ -578,7 +589,7 @@ async function globalTriggerWorkflowHandler(ctx, params) {
       params: {
         triggerWorkflows: buildTriggerWorkflows(params.group),
       },
-      data: { values },
+      data: values,
     });
   } catch (error) {
     console.error('Error triggering workflows:', error);

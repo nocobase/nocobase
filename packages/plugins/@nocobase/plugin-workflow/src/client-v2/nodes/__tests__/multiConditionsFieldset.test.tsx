@@ -15,6 +15,7 @@ import { MultiConditionsFieldset } from '../components/multi-conditions';
 
 vi.mock('../../locale', () => ({
   NAMESPACE: 'workflow',
+  tExpr: (key: string) => key,
   useT: () => (key: string) => key,
 }));
 

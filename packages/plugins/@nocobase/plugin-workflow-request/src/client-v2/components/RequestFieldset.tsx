@@ -32,21 +32,33 @@ import { getDefaultRequestBodyValue, getRequestBodyEditorKind } from '../utils';
 
 function useContentTypeReset() {
   const form = Form.useFormInstance();
-  const contentType = Form.useWatch(['config', 'contentType'], form) as RequestContentType | undefined;
-  const data = Form.useWatch(['config', 'data'], form);
+  const watchedContentType = Form.useWatch(['config', 'contentType'], form) as RequestContentType | undefined;
   const previousContentTypeRef = useRef<RequestContentType | undefined>();
+  const initializedRef = useRef(false);
 
   useEffect(() => {
-    if (!previousContentTypeRef.current && typeof data === 'undefined') {
-      form.setFieldValue(['config', 'data'], getDefaultRequestBodyValue(contentType));
+    const contentType =
+      (form.getFieldValue(['config', 'contentType']) as RequestContentType | undefined) ??
+      watchedContentType ??
+      DEFAULT_REQUEST_CONTENT_TYPE;
+    const currentData = form.getFieldValue(['config', 'data']);
+
+    if (!initializedRef.current) {
+      initializedRef.current = true;
+      previousContentTypeRef.current = contentType;
+
+      if (typeof currentData === 'undefined') {
+        form.setFieldValue(['config', 'data'], getDefaultRequestBodyValue(contentType));
+      }
+      return;
     }
 
-    if (previousContentTypeRef.current && previousContentTypeRef.current !== contentType) {
+    if (previousContentTypeRef.current !== contentType) {
       form.setFieldValue(['config', 'data'], getDefaultRequestBodyValue(contentType));
     }
 
     previousContentTypeRef.current = contentType;
-  }, [contentType, data, form]);
+  }, [watchedContentType, form]);
 }
 
 function KeyValueListField({
@@ -187,8 +199,11 @@ function MultipartListField({ name, label }: { name: NamePath; label: React.Reac
 function RequestBodyField() {
   const t = useT();
   const form = Form.useFormInstance();
+  const watchedContentType = Form.useWatch(['config', 'contentType'], form) as RequestContentType | undefined;
   const contentType =
-    (Form.useWatch(['config', 'contentType'], form) as RequestContentType | undefined) ?? DEFAULT_REQUEST_CONTENT_TYPE;
+    (form.getFieldValue(['config', 'contentType']) as RequestContentType | undefined) ??
+    watchedContentType ??
+    DEFAULT_REQUEST_CONTENT_TYPE;
   const bodyKind = getRequestBodyEditorKind(contentType);
 
   if (bodyKind === 'json') {
@@ -265,27 +280,22 @@ export function RequestFieldset() {
       <RequestBodyField />
 
       <Form.Item name={['config', 'timeout']} label={t('Timeout config')} initialValue={DEFAULT_TIMEOUT}>
-        <InputNumber addonAfter={t('ms')} min={1} step={1000} style={{ width: '100%' }} />
+        <InputNumber addonAfter={t('ms')} min={1} step={1000} />
       </Form.Item>
 
       <Form.Item
         name={['config', 'onlyData']}
-        label={t('Only return response data')}
         valuePropName="checked"
         extra={t(
           'If enabled, only the response data will be saved into result, and the status code and headers will be ignored.',
         )}
         initialValue={true}
       >
-        <Checkbox />
+        <Checkbox>{t('Only return response data')}</Checkbox>
       </Form.Item>
 
-      <Form.Item
-        name={['config', 'ignoreFail']}
-        label={t('Ignore failed request and continue workflow')}
-        valuePropName="checked"
-      >
-        <Checkbox />
+      <Form.Item name={['config', 'ignoreFail']} valuePropName="checked">
+        <Checkbox>{t('Ignore failed request and continue workflow')}</Checkbox>
       </Form.Item>
     </>
   );

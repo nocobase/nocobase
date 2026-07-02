@@ -60,6 +60,7 @@ import { compileLegacyTemplate, preferLegacyTemplateTitle } from '../../utils/co
 import { getErrorMessage, isFormValidationError } from '../../utils/error';
 import { getCollectionFieldActionUrl } from './collectionFieldApi';
 import FieldsPage from './FieldsPage';
+import { getCollectionRecordUniqueKey, RecordUniqueKeyWarningIcon } from './RecordUniqueKey';
 
 interface CollectionsPageProps {
   dataSourceKey: string;
@@ -295,31 +296,6 @@ function renderCategoryTags(value: CollectionCategoryRecord[] | undefined, t: (k
       ))}
     </Space>
   );
-}
-
-function normalizeFilterTargetKey(value: unknown) {
-  if (Array.isArray(value)) {
-    return value.filter(Boolean).map(String);
-  }
-
-  return value ? [String(value)] : undefined;
-}
-
-function getCollectionFilterTargetKey(collection: Record<string, any>) {
-  const configuredFilterTargetKey = normalizeFilterTargetKey(collection.filterTargetKey);
-  if (configuredFilterTargetKey?.length) {
-    return configuredFilterTargetKey;
-  }
-
-  if (!Array.isArray(collection.fields)) {
-    return undefined;
-  }
-
-  const primaryKeys = collection.fields
-    .filter((field) => field?.primaryKey && field?.name)
-    .map((field) => String(field.name));
-
-  return primaryKeys.length === 1 ? primaryKeys : undefined;
 }
 
 const CollectionFilterItem: FC<{ value: CollectionFilterItemValue }> = observer(
@@ -876,11 +852,11 @@ function CollectionCreateDrawer(props: {
             { required: true },
             {
               pattern: /^[A-Za-z][A-Za-z0-9_]*$/,
-              message: t('Support letters, numbers and underscores, must start with an letter.'),
+              message: t('Support letters, numbers and underscores, must start with a letter.'),
             },
           ]}
           extra={t(
-            'Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.',
+            'Randomly generated and can be modified. Support letters, numbers and underscores, must start with a letter.',
           )}
         >
           <Input />
@@ -1009,7 +985,7 @@ function CollectionEditDrawer(props: {
   const filterTargetKeyOptions = useMemo(() => {
     const fields =
       Array.isArray(collection.fields) && collection.fields.length ? collection.fields : fieldsRequest.data || [];
-    const selectedFilterTargetKeys = getCollectionFilterTargetKey(collection) || [];
+    const selectedFilterTargetKeys = getCollectionRecordUniqueKey(collection, collection.fields) || [];
     const options = fields
       .filter((field) => {
         return !!field.name;
@@ -1039,7 +1015,7 @@ function CollectionEditDrawer(props: {
       category: Array.isArray(collection.category) ? collection.category.map((item) => String(item.id)) : [],
       description: collection.description,
       simplePaginate: collection.simplePaginate,
-      filterTargetKey: getCollectionFilterTargetKey(collection),
+      filterTargetKey: getCollectionRecordUniqueKey(collection, collection.fields),
       databaseView: getDatabaseViewFormValue(collection),
       schema: collection.schema,
       viewName: collection.viewName || collection.name,
@@ -1128,7 +1104,7 @@ function CollectionEditDrawer(props: {
             name="name"
             label={t('Collection name')}
             extra={t(
-              'Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.',
+              'Randomly generated and can be modified. Support letters, numbers and underscores, must start with a letter.',
             )}
           >
             <Input disabled />
@@ -1185,7 +1161,7 @@ function CollectionEditDrawer(props: {
           name="name"
           label={t('Collection name')}
           extra={t(
-            'Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.',
+            'Randomly generated and can be modified. Support letters, numbers and underscores, must start with a letter.',
           )}
         >
           <Input disabled />
@@ -1757,7 +1733,21 @@ function CollectionsPage(props: CollectionsPageProps) {
     const nextColumns: ColumnsType<Record<string, any>> = [
       {
         title: t('Collection display name'),
-        render: (record) => compileLegacyTemplate(record.title || record.name, t),
+        render: (record) => (
+          <Space size={4}>
+            <RecordUniqueKeyWarningIcon
+              collection={record}
+              dataSourceKey={props.dataSourceKey}
+              fields={record.fields}
+              onSaved={(values) => {
+                Object.assign(record, values);
+                request.mutate(updateCollectionListRecord(request.data, record.name, values));
+                request.refresh();
+              }}
+            />
+            <span>{compileLegacyTemplate(record.title || record.name, t)}</span>
+          </Space>
+        ),
       },
       { title: t('Collection name'), dataIndex: 'name', ellipsis: true },
       {

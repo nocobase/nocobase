@@ -16,6 +16,10 @@ _Avoid_: v2 (in user-facing terms), new client
 The base URL path the whole NocoBase app is mounted under, set by `APP_PUBLIC_PATH` (default `/`).
 _Avoid_: base path, root path
 
+**Site root**:
+The domain root path `/`, which may redirect into the **App public path** when the app is mounted under a sub-path.
+_Avoid_: app root, public path
+
 **Modern client prefix**:
 The single URL path segment, directly under the app public path, where the modern client is served — set by `APP_MODERN_CLIENT_PREFIX` (default `v`, historically the hardcoded `v2`). A segment, not a full path; accepted in any of `v` / `/v` / `/v/` and normalized to a bare segment.
 _Avoid_: v2 prefix, route prefix, base url
@@ -28,11 +32,36 @@ _Avoid_: v2 public path
 The fixed on-disk location of the modern client's built assets (`dist/client/v/`), named from `DEFAULT_MODERN_CLIENT_PREFIX`. Internal and never user-facing; intentionally does NOT track the runtime **Modern client prefix**, so the prefix can change at runtime without a rebuild.
 _Avoid_: v2 dist, asset directory (without "build")
 
+**App client entry mode**:
+The runtime policy that decides whether the legacy client shell keeps an entry on a given URL, or hands that entry off to the modern client; in production this is primarily enforced by the legacy browser shell, while dev may add targeted shortcuts.
+_Avoid_: route mode, bootstrap mode
+
+**Legacy-default**:
+An **App client entry mode** where the app root opens the **Legacy client**, while the **Modern client** remains available at its own public path.
+_Avoid_: legacy mode, old default
+
+**Modern-default**:
+An **App client entry mode** where the app root itself hands off to the **Modern client public path**, while legacy deep links such as `/admin` or `/signin` remain valid.
+_Avoid_: hybrid modern-only, redirect-all
+
+**Modern-only**:
+An **App client entry mode** where legacy client document entries hand off to the **Modern client public path**; in production this is mainly a browser-side handoff, while dev additionally avoids running the legacy client dev server and redirects non-`/v/` entries into `/v/`.
+_Avoid_: compatible modern-only, route-mapped modern-only
+
+**Client document entry request**:
+An HTTP request whose job is to load a client HTML entry, not an API, websocket, upload, dist, or plugin-static resource.
+_Avoid_: all frontend request, browser request
+
 ## Relationships
 
 - The **Modern client public path** = **App public path** + **Modern client prefix** + `/`
 - The **Legacy client** is served at the **App public path**; the **Modern client** is served at the **Modern client public path** nested inside it
 - **App public path** and **Modern client prefix** vary independently; both default such that the modern client lands at `/v/`
+- The **Site root** is not always the **App public path**
+- The **App client entry mode** chooses the default entry behavior independently from the concrete route trees owned by the **Legacy client** and the **Modern client**
+- A **Legacy client** deep link is not assumed to have a one-to-one **Modern client** deep link
+- In production, the **Legacy client** shell is the main place where **App client entry mode** hands off document entries to the **Modern client**
+- In dev, only **Modern-only** adds extra runtime handling so the legacy dev server is not started and non-`/v/` entries are redirected into the modern dev entry
 
 ## Example dialogue
 
@@ -44,6 +73,10 @@ _Avoid_: v2 dist, asset directory (without "build")
 ## Flagged ambiguities
 
 - **"v2"** was overloaded to mean three different things: (a) the **Modern client** runtime, (b) its URL **Modern client prefix**, and (c) the physical build-output directory name. Resolved: the runtime is the *modern client*; the URL segment is the *modern client prefix* (runtime-configurable, default `v`); the *modern client build directory* is a fixed internal constant (`v`), decoupled from the prefix so the prefix can change at runtime without rebuilding (see ADR-0001).
+- **"modern default" vs "modern only"** are not route-equivalent terms. Resolved so far: **Modern-default** only changes the app root entry; because legacy and modern deep links are not one-to-one, it does not imply automatic translation of legacy deep links into modern ones.
+- **"/* -> /v/*"** was overloaded between a browser-visible outcome and a service-layer implementation. Resolved: in the current implementation, production primarily relies on the legacy browser shell to hand off document entries into the modern prefix, while dev keeps an additional `modern-only` shortcut.
+- **"all / requests"** was ambiguous between every HTTP request and every client entry navigation. Resolved: **App client entry mode** only applies to **Client document entry requests**; API, websocket, upload, dist, and plugin-static requests keep their existing handling.
+- **"root"** was ambiguous between the **Site root** `/` and the **App public path**. Resolved: entry-mode decisions apply to the **App public path**; the **Site root** may first redirect into it when the app is mounted under a sub-path.
 
 ---
 

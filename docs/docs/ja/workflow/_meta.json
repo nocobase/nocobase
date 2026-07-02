@@ -359,6 +359,11 @@
         "type": "custom-link",
         "label": "APIリファレンス",
         "link": "/workflow/development/api"
+      },
+      {
+        "type": "custom-link",
+        "label": "v1 から v2 への移行ガイド",
+        "link": "/workflow/development/migration"
       }
     ]
   }

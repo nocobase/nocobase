@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-workflow-response-message",
-  "version": "2.2.0-alpha.1",
+  "version": "2.2.0-alpha.4",
   "displayName": "Workflow: Response message",
   "displayName.ru-RU": "Рабочий процесс: Сообщение ответа",
   "displayName.zh-CN": "工作流：响应消息",
@@ -16,6 +16,8 @@
   },
   "peerDependencies": {
     "@nocobase/client": "2.x",
+    "@nocobase/client-v2": "2.x",
+    "@nocobase/flow-engine": "2.x",
     "@nocobase/plugin-workflow": "2.x",
     "@nocobase/server": "2.x",
     "@nocobase/test": "2.x",

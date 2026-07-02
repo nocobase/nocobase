@@ -142,6 +142,23 @@ describe('InputFieldModel', () => {
     expect(input.value).toBe('tét');
   });
 
+  it('does not overwrite local replacement edit when parent advances to an older value', () => {
+    const onChange = vi.fn();
+    const createModel = (value: string) =>
+      createInputFieldModel({
+        value,
+        onChange,
+      });
+
+    const { rerender } = render(<>{createModel('').render()}</>);
+    const input = screen.getByRole('textbox') as HTMLInputElement;
+
+    fireEvent.change(input, { target: { value: 'té' } });
+    rerender(<>{createModel('t').render()}</>);
+
+    expect(input.value).toBe('té');
+  });
+
   it('renders ScanInput when scan input is enabled', () => {
     const model = createInputFieldModel({ enableScan: true });
 

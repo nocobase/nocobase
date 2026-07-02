@@ -12,10 +12,15 @@ import { App } from 'antd';
 import { get } from 'lodash';
 import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { defaultWorkflowFilter } from '../../../common/defaultWorkflowFilter';
 
 // --- Mock the FlowContext so `useFlowContext()` returns our controlled ctx ---
 const holder = vi.hoisted(() => ({ ctx: null as any }));
-const providerHolder = vi.hoisted(() => ({ collections: null as any, workflowTabsClassName: null as string | null }));
+const providerHolder = vi.hoisted(() => ({
+  collections: null as any,
+  workflowTabsClassName: null as string | null,
+  collectionFilterProps: null as any,
+}));
 vi.mock('@nocobase/flow-engine', async (importOriginal) => {
   const actual = (await importOriginal()) as Record<string, unknown>;
   return { ...actual, useFlowContext: () => holder.ctx };
@@ -32,9 +37,19 @@ vi.mock('../../locale', () => ({
 // --- Mock the client-v2 layout primitives with lightweight test doubles ---
 vi.mock('@nocobase/client-v2', () => ({
   DEFAULT_PAGE_SIZE: 20,
+  getRouteRuntimeVersion: () => 'modern',
+  FormSubmitActionModel: {
+    registerFlow: vi.fn(),
+  },
   Plugin: class Plugin {},
   SortableCategoryTabs: () => null,
-  CollectionFilter: () => null,
+  CollectionFilter: (props: any) => {
+    providerHolder.collectionFilterProps = props;
+    return null;
+  },
+  UpdateRecordActionModel: {
+    registerFlow: vi.fn(),
+  },
   ExtendCollectionsProvider: ({ children, collections }: any) => {
     providerHolder.collections = collections;
     return <>{children}</>;
@@ -109,6 +124,7 @@ describe('WorkflowPane (request layer)', () => {
     vi.clearAllMocks();
     providerHolder.collections = null;
     providerHolder.workflowTabsClassName = null;
+    providerHolder.collectionFilterProps = null;
   });
 
   it('fires resource.create on submit in create mode', async () => {
@@ -315,5 +331,26 @@ describe('WorkflowPane (request layer)', () => {
     });
 
     expect(providerHolder.workflowTabsClassName).toBeTruthy();
+  });
+
+  it('passes the shared default filter to CollectionFilter so reset restores name + trigger type rows', async () => {
+    const workflows = {
+      list: vi.fn().mockResolvedValue({
+        data: {
+          data: [],
+          meta: { count: 0 },
+        },
+      }),
+    };
+    const workflowCategories = { list: vi.fn().mockResolvedValue({ data: { data: [] } }) };
+    holder.ctx = makeCtx({ workflows, workflowCategories });
+
+    renderWithApp(<WorkflowPane />);
+
+    await waitFor(() => {
+      expect(providerHolder.collectionFilterProps).toBeTruthy();
+    });
+
+    expect(providerHolder.collectionFilterProps.defaultValue).toEqual(defaultWorkflowFilter);
   });
 });

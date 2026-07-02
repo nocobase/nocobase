@@ -19,7 +19,11 @@ vi.mock('../../locale', () => ({
   useT: () => (key: string) => key,
 }));
 
+type MockAssignedField = { name: string; type?: string };
+
 vi.mock('../../components/collection', () => ({
+  isAssociationField: (field: MockAssignedField) =>
+    ['belongsTo', 'hasOne', 'hasMany', 'belongsToMany', 'belongsToArray'].includes(field.type ?? ''),
   CollectionCascader: ({
     value,
     onChange,
@@ -40,9 +44,34 @@ vi.mock('../../components/collection', () => ({
       <option value="comments">Comments</option>
     </select>
   ),
-  AssignedFieldsEditor: ({ collection }: { collection?: string }) => (
-    <div data-testid="assigned-fields" data-collection={collection ?? ''} />
-  ),
+  AssignedFieldsEditor: ({
+    collection,
+    fieldFilter,
+    pruneFilteredValues,
+  }: {
+    collection?: string;
+    fieldFilter?: (field: MockAssignedField) => boolean;
+    pruneFilteredValues?: boolean;
+  }) => {
+    const fields: MockAssignedField[] = [
+      { name: 'title', type: 'string' },
+      { name: 'author', type: 'belongsTo' },
+      { name: 'comments', type: 'hasMany' },
+      { name: 'tags', type: 'belongsToMany' },
+    ];
+
+    return (
+      <div
+        data-testid="assigned-fields"
+        data-collection={collection ?? ''}
+        data-fields={fields
+          .filter((field) => fieldFilter?.(field) ?? true)
+          .map((field) => field.name)
+          .join(',')}
+        data-prune-filtered-values={String(Boolean(pruneFilteredValues))}
+      />
+    );
+  },
 }));
 
 vi.mock('../../components/FilterDynamicComponent', () => ({
@@ -126,6 +155,7 @@ describe('UpdateFieldset', () => {
             filter: { title: { $eq: 'old' } },
             values: { title: 'new' },
           },
+          usingAssignFormSchema: true,
           assignFormSchema: { name: 'legacy' },
         },
       },
@@ -138,7 +168,42 @@ describe('UpdateFieldset', () => {
       expect(getForm()?.getFieldValue(['config', 'params', 'individualHooks'])).toBe(true);
       expect(getForm()?.getFieldValue(['config', 'params', 'filter'])).toEqual({});
       expect(getForm()?.getFieldValue(['config', 'params', 'values'])).toEqual({});
-      expect(getForm()?.getFieldValue(['config', 'assignFormSchema'])).toEqual({});
+      expect(getForm()?.getFieldValue(['config', 'usingAssignFormSchema'])).toBeUndefined();
+      expect(getForm()?.getFieldValue(['config', 'assignFormSchema'])).toBeUndefined();
+    });
+  });
+
+  it('limits batch update assigned fields to non-association and belongsTo fields', async () => {
+    renderWithForm(
+      { id: 1, config: { collection: 'posts' } },
+      {
+        config: {
+          collection: 'posts',
+          params: { individualHooks: false, values: {} },
+        },
+      },
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId('assigned-fields')).toHaveAttribute('data-fields', 'title,author');
+      expect(screen.getByTestId('assigned-fields')).toHaveAttribute('data-prune-filtered-values', 'true');
+    });
+  });
+
+  it('allows all assigned fields when updating one by one', async () => {
+    renderWithForm(
+      { id: 1, config: { collection: 'posts' } },
+      {
+        config: {
+          collection: 'posts',
+          params: { individualHooks: true, values: {} },
+        },
+      },
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId('assigned-fields')).toHaveAttribute('data-fields', 'title,author,comments,tags');
+      expect(screen.getByTestId('assigned-fields')).toHaveAttribute('data-prune-filtered-values', 'false');
     });
   });
 });

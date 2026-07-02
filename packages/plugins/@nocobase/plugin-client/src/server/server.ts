@@ -201,7 +201,7 @@ export class PluginClientServer extends Plugin {
 
     this.app.acl.registerSnippet({
       name: `pm.desktopRoutes`,
-      actions: ['desktopRoutes:list', 'roles.desktopRoutes:*'],
+      actions: ['roles.desktopRoutes:*'],
     });
 
     this.app.acl.allow('desktopRoutes', ['listAccessible', 'getAccessible'], 'loggedIn');

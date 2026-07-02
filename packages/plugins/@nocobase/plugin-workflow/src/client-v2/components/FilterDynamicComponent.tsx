@@ -10,6 +10,7 @@
 import { FilterGroup, VariableFilterItem, type VariableFilterItemValue } from '@nocobase/client-v2';
 import {
   FlowModel,
+  FlowModelProvider,
   observable,
   randomId,
   reaction,
@@ -276,10 +277,23 @@ export function FilterDynamicComponent({
   collection,
   value,
   onChange,
+  rightAsVariable = true,
+  maxAssociationFieldDepth = 2,
 }: {
   collection?: string;
   value?: Record<string, unknown> | null;
   onChange?: (value: Record<string, unknown> | null) => void;
+  /**
+   * Controls whether the filter row's right-hand value editor allows workflow variables.
+   * - `true`: render the RHS as a variable-aware input (constant or workflow variable)
+   * - `false`: render the RHS as a pure typed static input with no variable picker
+   */
+  rightAsVariable?: boolean;
+  /**
+   * Maximum association depth allowed in the left-side field picker.
+   * Defaults to `2` to match the legacy v1 workflow filter behaviour.
+   */
+  maxAssociationFieldDepth?: number;
 }) {
   const flowEngine = useFlowEngine();
   const t = useT();
@@ -363,11 +377,19 @@ export function FilterDynamicComponent({
     }
 
     const Component = ({ value }: { value: VariableFilterItemValue }) => (
-      <VariableFilterItem value={value} model={filterModel} rightAsVariable rightMetaTree={rightMetaTree} />
+      <FlowModelProvider model={filterModel}>
+        <VariableFilterItem
+          value={value}
+          model={filterModel}
+          rightAsVariable={rightAsVariable}
+          rightMetaTree={rightMetaTree}
+          maxAssociationFieldDepth={maxAssociationFieldDepth}
+        />
+      </FlowModelProvider>
     );
     Component.displayName = 'WorkflowVariableFilterItem';
     return Component;
-  }, [filterModel, rightMetaTree]);
+  }, [filterModel, maxAssociationFieldDepth, rightAsVariable, rightMetaTree]);
 
   return <FilterGroup value={filterRef.current} FilterItem={FilterItemComponent ?? undefined} />;
 }

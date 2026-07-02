@@ -24,8 +24,8 @@
  *     environment-variables plugin via `flowEngine.context.defineProperty`,
  *     read from `getPropertyMetaTree()`. Independent of any node/trigger
  *     migration. Serialized as `{{$env.x.y}}` (no inner spaces, workflow style).
- *   - `$context` (Trigger variables)     — **stub**: lit when v2 triggers
- *     implement `useVariables`.
+ *   - `$context` (Trigger variables)     — trigger outputs from
+ *     `useVariables`.
  *   - `$system` (System variables)       — **stub**: lit when the v2 plugin
  *     gains a `systemVariables` registry.
  *   - `$scopes` (Scope variables)        — **stub**: lit when branch nodes
@@ -39,7 +39,7 @@
 import React, { useMemo } from 'react';
 import type { MetaTreeNode } from '@nocobase/flow-engine';
 import { useFlowEngine } from '@nocobase/flow-engine';
-import { useCurrentWorkflowContext, useNodeContext } from './contexts';
+import { useCurrentWorkflowContext, useNodeContext, useWorkflowVariableSourceContext } from './contexts';
 import { useAvailableUpstreams, useUpstreamScopes, type Instruction } from './Instruction';
 import { adaptVariableOptionToMetaTree, adaptVariableOptionsToMetaTree } from './adaptVariableOptionToMetaTree';
 import { NAMESPACE } from '../locale';
@@ -54,9 +54,10 @@ const SCOPES_ROOT = '$scopes';
  * A system variable as held by either runtime's `systemVariables` registry.
  * v2 stores `{ key, label(string template) }`; v1 stores
  * `{ key, label(string OR already-rendered JSX), value }` (the JSX bakes in a
- * tooltip icon). `useSystemScope` reduces either to a plain string title.
+ * tooltip icon). `useSystemScope` reduces either to a plain string title and stores
+ * optional tooltip text under the existing `MetaTreeNode.options` bag.
  */
-type SystemVariableLike = { key: string; label: React.ReactNode };
+type SystemVariableLike = { key: string; label: React.ReactNode; tooltip?: React.ReactNode };
 
 /**
  * Coerce a React node to plain text for use as a `MetaTreeNode.title` (which is a
@@ -81,11 +82,29 @@ function reactNodeToPlainText(node: React.ReactNode): string {
   return '';
 }
 
+function extractTooltipFromReactNode(node: React.ReactNode): string {
+  if (node == null || typeof node === 'boolean') {
+    return '';
+  }
+  if (Array.isArray(node)) {
+    return node.map(extractTooltipFromReactNode).find(Boolean) ?? '';
+  }
+  if (!React.isValidElement(node)) {
+    return '';
+  }
+
+  const props = node.props as { children?: React.ReactNode; title?: React.ReactNode };
+  if (props.title != null && typeof node.type !== 'string') {
+    return reactNodeToPlainText(props.title);
+  }
+
+  return extractTooltipFromReactNode(props.children);
+}
+
 /**
  * A trigger as held by either runtime's `triggers` registry. v1 stores a
  * `Trigger` instance carrying a `useVariables(config, options)` hook; v2 stores
- * a plain options object with no `useVariables` (so its trigger scope is empty —
- * the trigger variable migration hasn't happened in v2 yet).
+ * a plain options object with no `useVariables`.
  */
 type TriggerLike = { useVariables?(config: any, options?: any): any[] | null | undefined };
 
@@ -112,11 +131,50 @@ function useWorkflowPlugin(): WorkflowVariablePlugin | undefined {
   return flowEngine.context.app.pm.get('workflow') as WorkflowVariablePlugin | undefined;
 }
 
+function prefixMetaTreeNodePaths(node: MetaTreeNode, prefix: string[]): MetaTreeNode {
+  const { children } = node;
+  const nextNode: MetaTreeNode = {
+    ...node,
+    paths: [...prefix, ...(node.paths ?? [String(node.name ?? '')])],
+  };
+
+  if (Array.isArray(children)) {
+    nextNode.children = children.map((child) => prefixMetaTreeNodePaths(child, prefix));
+  } else if (typeof children === 'function') {
+    nextNode.children = async () => {
+      const loaded = await children();
+      return loaded.map((child) => prefixMetaTreeNodePaths(child, prefix));
+    };
+  }
+
+  return nextNode;
+}
+
+function isMetaTreeNodeArray(value: unknown): value is MetaTreeNode[] {
+  return Array.isArray(value) && value.every((item) => item && typeof item === 'object' && 'paths' in item);
+}
+
+function createDisabledWorkflowRoot(name: string, title: string): MetaTreeNode {
+  return {
+    name,
+    title,
+    type: '',
+    paths: [name],
+    disabled: true,
+  };
+}
+
 export type UseWorkflowVariableOptions = {
   types?: any[];
   fieldNames?: { label?: string; value?: string; children?: string };
   appends?: string[] | null;
   depth?: number;
+  /**
+   * Include the `$scopes` root. Scope providers (loop / parallel) building
+   * their own local variables must disable this when they call back into the
+   * workflow aggregator, otherwise the scope chain recursively nests itself.
+   */
+  includeScopes?: boolean;
 };
 
 /**
@@ -181,25 +239,31 @@ function useEnvScope(): MetaTreeNode | null {
  *
  * Runtime-neutral, mirroring `useNodeResultScope`: a v1 trigger
  * (`PluginWorkflowClient.triggers`) implements `useVariables` so the scope lights
- * up; a v2 trigger (a plain options object) has none, so it stays empty until the
- * trigger-variable migration reaches v2. Returns null when no trigger contributes.
+ * up. Returns null when no workflow is in context.
  */
 function useTriggerScope(options: UseWorkflowVariableOptions): MetaTreeNode | null {
   const flowEngine = useFlowEngine();
   const plugin = useWorkflowPlugin();
-  const workflow = useCurrentWorkflowContext();
+  const variableSourceWorkflow = useWorkflowVariableSourceContext();
+  const currentWorkflow = useCurrentWorkflowContext();
+  const workflow = variableSourceWorkflow ?? currentWorkflow;
+  const t = (key: string) => flowEngine.context.t(key, { ns: NAMESPACE });
+  if (!workflow) {
+    return null;
+  }
   const trigger = workflow?.type ? plugin?.triggers?.get(workflow.type) : undefined;
   const subOptions = trigger?.useVariables?.(workflow?.config, options);
   const list = Array.isArray(subOptions) ? subOptions.filter(Boolean) : [];
-  if (!list.length) {
+  const children = adaptVariableOptionsToMetaTree(list, [TRIGGER_ROOT]);
+  if (!children.length) {
     return null;
   }
   return {
     name: TRIGGER_ROOT,
-    title: flowEngine.context.t('Trigger variables', { ns: NAMESPACE }),
+    title: t('Trigger variables'),
     type: '',
     paths: [TRIGGER_ROOT],
-    children: adaptVariableOptionsToMetaTree(list, [TRIGGER_ROOT]),
+    children,
   };
 }
 
@@ -216,11 +280,17 @@ function useSystemScope(): MetaTreeNode | null {
     // them; v1 labels may be already-rendered JSX — coerce to a plain string for the title (the picker renders
     // strings).
     const label = typeof item.label === 'string' ? t(item.label) : reactNodeToPlainText(item.label);
+    const rawTooltip = item.tooltip ?? extractTooltipFromReactNode(item.label);
+    const tooltip =
+      typeof rawTooltip === 'string' || typeof rawTooltip === 'number'
+        ? t(String(rawTooltip))
+        : reactNodeToPlainText(rawTooltip);
     return {
       name: item.key,
       title: label,
       type: '',
       paths: [SYSTEM_ROOT, item.key],
+      ...(tooltip ? { options: { tooltip } } : {}),
     };
   });
   return {
@@ -249,11 +319,25 @@ function useScopeVariablesScope(options: UseWorkflowVariableOptions): MetaTreeNo
   const current = useNodeContext();
   const scopes = useUpstreamScopes(current);
 
+  if (options.includeScopes === false) {
+    return null;
+  }
+
   const children: MetaTreeNode[] = [];
   scopes.forEach((node: any) => {
     const instruction = plugin?.instructions?.get(node.type);
-    const subOptions = instruction?.useScopeVariables?.(node, options);
+    const subOptions = instruction?.useScopeVariables?.(node, { ...options, includeScopes: false });
     if (!subOptions) {
+      return;
+    }
+    if (isMetaTreeNodeArray(subOptions)) {
+      children.push({
+        name: node.key,
+        title: node.title ?? `#${node.id}`,
+        type: '',
+        paths: [SCOPES_ROOT, node.key],
+        children: subOptions.map((item) => prefixMetaTreeNodePaths(item, [SCOPES_ROOT, node.key])),
+      });
       return;
     }
     // Each scope node hangs under $scopes.<nodeKey>, its variables beneath it.
@@ -297,6 +381,7 @@ function useScopeVariablesScope(options: UseWorkflowVariableOptions): MetaTreeNo
  * children survive the re-render.
  */
 export function useWorkflowVariableOptions(options: UseWorkflowVariableOptions = {}): MetaTreeNode[] {
+  const flowEngine = useFlowEngine();
   const scopeVars = useScopeVariablesScope(options);
   const nodeResult = useNodeResultScope(options);
   const trigger = useTriggerScope(options);
@@ -304,7 +389,9 @@ export function useWorkflowVariableOptions(options: UseWorkflowVariableOptions =
   const env = useEnvScope();
 
   const current = useNodeContext();
-  const workflow = useCurrentWorkflowContext();
+  const variableSourceWorkflow = useWorkflowVariableSourceContext();
+  const currentWorkflow = useCurrentWorkflowContext();
+  const workflow = variableSourceWorkflow ?? currentWorkflow;
   // A signature that changes only when the variable tree's *structure* could change — the current node, its upstream
   // chain (node-result), its branching scopes, and the workflow (trigger). Lazy children resolved into the tree by the
   // picker are NOT part of this key, so they persist until the structure itself changes.
@@ -314,11 +401,24 @@ export function useWorkflowVariableOptions(options: UseWorkflowVariableOptions =
   const scopeKeys = useUpstreamScopes(current)
     .map((n: any) => n.key)
     .join(',');
-  const signature = `${current?.key ?? ''}|${upstreamKeys}|${scopeKeys}|${workflow?.id ?? ''}|${workflow?.type ?? ''}`;
+  const signature = `${current?.key ?? ''}|${upstreamKeys}|${options.includeScopes === false ? '' : scopeKeys}|${
+    workflow?.id ?? ''
+  }|${workflow?.type ?? ''}|${options.includeScopes === false ? 'no-scopes' : 'with-scopes'}`;
 
-  /* eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally keyed
-     on the structural `signature`, not the scope objects (which are fresh each
-     render); see the doc comment above. Including them would defeat the memo and
-     reintroduce the lazy-load spinner bug. */
-  return useMemo(() => [scopeVars, nodeResult, trigger, system, env].filter(Boolean) as MetaTreeNode[], [signature]);
+  return useMemo(() => {
+    const roots: Array<MetaTreeNode | null> = [
+      options.includeScopes === false
+        ? null
+        : scopeVars ??
+          createDisabledWorkflowRoot(SCOPES_ROOT, flowEngine.context.t('Scope variables', { ns: NAMESPACE })),
+      nodeResult ??
+        createDisabledWorkflowRoot(NODE_RESULT_ROOT, flowEngine.context.t('Node result', { ns: 'workflow' })),
+      trigger,
+      system,
+      env,
+    ];
+
+    return roots.filter(Boolean) as MetaTreeNode[];
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally keyed on the structural `signature`; including fresh scope objects would defeat the memo and reintroduce the lazy-load spinner bug.
+  }, [signature]);
 }

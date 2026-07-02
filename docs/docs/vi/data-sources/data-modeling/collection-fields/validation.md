@@ -69,6 +69,10 @@ Field quan hệ chỉ hỗ trợ xác thực bắt buộc. Cần lưu ý rằng 
 Sau khi cấu hình quy tắc Field, các quy tắc xác thực tương ứng sẽ được kích hoạt khi thêm hoặc sửa dữ liệu.
 ![20250819201027](https://nocobase-docs.oss-cn-beijing.aliyuncs.com/20250819201027.png)
 
+Khi Field được dùng trong Form, quy tắc xác thực Field cũng sẽ hiển thị trong cài đặt xác thực của Field. Các quy tắc này nằm dưới **Quy tắc xác thực Field phía server** và chỉ đọc tại đây. Nếu cần thay đổi, hãy chỉnh sửa Field trong Data Source → Cấu hình Collection.
+
+Bạn vẫn có thể thêm quy tắc bổ sung cho Field Form hiện tại dưới **Quy tắc xác thực phía client**. Các quy tắc này chỉ áp dụng cho component Field hiện tại. Kết quả xác thực cuối cùng sẽ kết hợp **Quy tắc xác thực Field phía server** và **Quy tắc xác thực phía client**.
+
 Quy tắc xác thực cũng áp dụng cho component sub-table và sub-form:
 ![20250819202514](https://nocobase-docs.oss-cn-beijing.aliyuncs.com/20250819202514.png)
 
@@ -77,19 +81,19 @@ Quy tắc xác thực cũng áp dụng cho component sub-table và sub-form:
 Cần lưu ý rằng trong các tình huống sub-form hoặc sub-table, xác thực bắt buộc của Field quan hệ tạm thời không có hiệu lực.
 ![20250819203016](https://nocobase-docs.oss-cn-beijing.aliyuncs.com/20250819203016.png)
 
-## Sự khác biệt với xác thực Field phía client
-Xác thực Field phía server và phía client phù hợp với các tình huống ứng dụng khác nhau, hai loại có sự khác biệt rõ rệt về cách triển khai và thời điểm kích hoạt quy tắc, do đó cần được quản lý riêng biệt.
+## Sự khác biệt giữa quy tắc xác thực Field phía server và phía client
+Quy tắc xác thực Field phía server và quy tắc xác thực phía client được cấu hình ở các vị trí khác nhau và có phạm vi áp dụng khác nhau.
 
 ### Sự khác biệt về cách cấu hình
-- **Xác thực phía client**: Cấu hình quy tắc trong form chỉnh sửa (như hình bên dưới)
-- **Xác thực Field phía server**: Thiết lập quy tắc Field trong cấu hình Data Source → Collection
+- **Quy tắc xác thực Field phía server**: Thiết lập quy tắc Field trong Data Source → Cấu hình Collection. Đây là quy tắc cơ sở của Field
+- **Quy tắc xác thực phía client**: Cấu hình quy tắc bổ sung trong cài đặt Field của Form. Các quy tắc này chỉ ảnh hưởng đến component Field hiện tại
 ![20250819203836](https://nocobase-docs.oss-cn-beijing.aliyuncs.com/20250819203836.png)
 
 ![20250819203845](https://nocobase-docs.oss-cn-beijing.aliyuncs.com/20250819203845.png)
 
 
 ### Sự khác biệt về thời điểm kích hoạt xác thực
-- **Xác thực phía client**: Kích hoạt xác thực theo thời gian thực khi bạn nhập Field, hiển thị thông báo lỗi ngay lập tức
-- **Xác thực Field phía server**: Sau khi gửi dữ liệu, server sẽ xác thực trước khi lưu vào database, thông báo lỗi được trả về qua phản hồi API
-- **Phạm vi áp dụng**: Xác thực Field phía server ngoài việc có hiệu lực khi gửi form, còn được kích hoạt trong workflow, nhập dữ liệu và tất cả các tình huống liên quan đến thêm hoặc sửa dữ liệu
-- **Thông báo lỗi**: Xác thực phía client hỗ trợ thông báo lỗi tùy chỉnh, xác thực phía server tạm thời không hỗ trợ thông báo lỗi tùy chỉnh
+- **Quy tắc xác thực Field phía server**: Kích hoạt xác thực frontend khi Field được dùng trong Form, đồng thời xác thực trước khi dữ liệu được ghi. Các quy tắc này cũng áp dụng cho những tình huống tạo hoặc cập nhật dữ liệu, như workflow và nhập dữ liệu
+- **Quy tắc xác thực phía client**: Chỉ kích hoạt xác thực frontend trong Field Form hiện tại
+- **Hiển thị quy tắc**: Quy tắc xác thực Field phía server được hiển thị dưới dạng quy tắc kế thừa và chỉ đọc. Quy tắc xác thực phía client được hiển thị riêng và có thể chỉnh sửa tại đó
+- **Thông báo lỗi**: Quy tắc xác thực phía client hỗ trợ thông báo lỗi tùy chỉnh, trong khi quy tắc xác thực Field phía server tạm thời không hỗ trợ thông báo lỗi tùy chỉnh

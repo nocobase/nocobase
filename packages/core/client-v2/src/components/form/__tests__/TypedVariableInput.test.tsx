@@ -64,6 +64,7 @@ describe('TypedVariableInput - constant rendering', () => {
       const item = screen.getByText('True');
       expect(item).toBeInTheDocument();
     });
+    expect(screen.getByRole('button', { name: 'variable-switcher' }).className).not.toContain('ant-btn-primary');
   });
 
   it('renders the Null placeholder when value=null and nullable=true', async () => {
@@ -77,6 +78,7 @@ describe('TypedVariableInput - constant rendering', () => {
     const nullInput = await screen.findByPlaceholderText('<Null>');
     expect(nullInput).toBeInTheDocument();
     expect(nullInput.getAttribute('readonly')).not.toBeNull();
+    expect(screen.getByRole('button', { name: 'variable-switcher' }).className).not.toContain('ant-btn-primary');
   });
 
   it('defaults undefined to the first constant type', async () => {
@@ -161,10 +163,10 @@ describe('TypedVariableInput - variable rendering', () => {
     });
   });
 
-  it('clears back to null when the close button is clicked (nullable=true)', async () => {
+  it('clears back to default-of-first-type when the close button is clicked (nullable=true)', async () => {
     const ctx = createContextWithEnv();
     const handleChange = vi.fn();
-    renderWithCtx(
+    const { container } = renderWithCtx(
       ctx,
       <TypedVariableInput
         value="{{$env.SMTP_PORT}}"
@@ -174,15 +176,17 @@ describe('TypedVariableInput - variable rendering', () => {
         onChange={handleChange}
       />,
     );
-    const clear = await screen.findByRole('button', { name: 'icon-close' });
-    fireEvent.click(clear);
-    expect(handleChange).toHaveBeenCalledWith(null);
+    const clear = container.querySelector('button.clear-button') as HTMLButtonElement | null;
+    expect(clear).not.toBeNull();
+    expect(clear).toHaveClass('clear-button');
+    fireEvent.click(clear as HTMLButtonElement);
+    expect(handleChange).toHaveBeenCalledWith(0);
   });
 
   it('clears back to default-of-first-type when nullable=false', async () => {
     const ctx = createContextWithEnv();
     const handleChange = vi.fn();
-    renderWithCtx(
+    const { container } = renderWithCtx(
       ctx,
       <TypedVariableInput
         value="{{$env.SMTP_PORT}}"
@@ -192,9 +196,62 @@ describe('TypedVariableInput - variable rendering', () => {
         onChange={handleChange}
       />,
     );
-    const clear = await screen.findByRole('button', { name: 'icon-close' });
-    fireEvent.click(clear);
+    const clear = container.querySelector('button.clear-button') as HTMLButtonElement | null;
+    expect(clear).not.toBeNull();
+    fireEvent.click(clear as HTMLButtonElement);
     expect(handleChange).toHaveBeenCalledWith(0);
+  });
+
+  it('treats types=[] as variable-only mode with a readonly placeholder before selection', async () => {
+    const ctx = createContextWithEnv();
+    renderWithCtx(
+      ctx,
+      <TypedVariableInput
+        value={undefined}
+        types={[]}
+        namespaces={['$env']}
+        placeholder="Select variable"
+        onChange={() => undefined}
+      />,
+    );
+
+    const input = await screen.findByPlaceholderText('Select variable');
+    expect(input).toBeInTheDocument();
+    expect(input).toHaveAttribute('readonly');
+    expect(screen.queryByRole('button', { name: 'variable-switcher' })).toBeInTheDocument();
+  });
+
+  it('clears a variable-only selection back to null', async () => {
+    const ctx = createContextWithEnv();
+    const handleChange = vi.fn();
+    const { container } = renderWithCtx(
+      ctx,
+      <TypedVariableInput value="{{$env.SMTP_PORT}}" types={[]} namespaces={['$env']} onChange={handleChange} />,
+    );
+
+    const clear = container.querySelector('button.clear-button') as HTMLButtonElement | null;
+    expect(clear).not.toBeNull();
+    fireEvent.click(clear as HTMLButtonElement);
+    expect(handleChange).toHaveBeenCalledWith(null);
+  });
+
+  it('hides the variable switcher when hideVariable=true in variable-only mode', async () => {
+    const ctx = createContextWithEnv();
+    renderWithCtx(
+      ctx,
+      <TypedVariableInput
+        value="{{$env.SMTP_PORT}}"
+        types={[]}
+        namespaces={['$env']}
+        hideVariable
+        onChange={() => undefined}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'variable-tag' })).toBeInTheDocument();
+    });
+    expect(screen.queryByRole('button', { name: 'variable-switcher' })).toBeNull();
   });
 });
 

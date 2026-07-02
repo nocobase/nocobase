@@ -39,10 +39,12 @@ import {
   FlowEngine,
   FlowEngineProvider,
   FlowModelRenderer,
+  encodeOpenViewRouteState,
   useFlowEngine,
   type FlowModel,
 } from '@nocobase/flow-engine';
 import { AdminLayoutModel, getAdminLayoutModel } from '..';
+import { NocoBaseDesktopRouteType } from '../../../../flow-compat';
 import { getLayoutPageRouteName, getLayoutPageViewRouteName } from '../../../../layout-manager/utils';
 import { TopbarActionModel } from '../../../models/topbar/TopbarActionModel';
 import { UserCenterTopbarActionModel } from '../../../models/topbar/UserCenterTopbarActionModel';
@@ -210,6 +212,163 @@ describe('AdminLayoutModel runtime', () => {
     await waitFor(() => {
       expect(model.context.layoutRoute).toBeNull();
       expect(model.context.currentRoute).toEqual({});
+    });
+  });
+
+  it('should parse RunJS openView route params into layout route view stack state', async () => {
+    const token = encodeOpenViewRouteState('popup', { mode: 'dialog', size: 'large' });
+    if (!token) {
+      throw new Error('Expected openView route state token.');
+    }
+    const engine = new FlowEngine();
+    engine.context.defineProperty('routeRepository', {
+      value: {
+        getRouteBySchemaUid: (pageUid: string) => ({ title: pageUid }),
+      },
+    });
+
+    render(
+      <FlowEngineProvider engine={engine}>
+        <TestAdminLayoutHost />
+      </FlowEngineProvider>,
+    );
+    const model = engine.getModel<TestAdminLayoutModel>('admin-layout-model');
+    expect(model).toBeTruthy();
+
+    act(() => {
+      model.syncLayoutRoute({
+        name: getLayoutPageViewRouteName('admin'),
+        pathname: `/admin/page-1/view/popup/opts/${token}/filterbytk/1`,
+        layoutBasePathname: '/admin',
+      });
+    });
+
+    await waitFor(() => {
+      expect(model.context.layoutRoute).toMatchObject({
+        type: 'page',
+        pageUid: 'page-1',
+        viewStack: [
+          { viewUid: 'page-1' },
+          {
+            viewUid: 'popup',
+            openViewRouteState: { mode: 'dialog', size: 'large' },
+            filterByTk: '1',
+          },
+        ],
+      });
+    });
+  });
+
+  it('should reject malformed RunJS openView route params', async () => {
+    const wrongViewToken = encodeOpenViewRouteState('other-popup', { mode: 'dialog', size: 'large' });
+    if (!wrongViewToken) {
+      throw new Error('Expected openView route state token.');
+    }
+    const engine = new FlowEngine();
+
+    render(
+      <FlowEngineProvider engine={engine}>
+        <TestAdminLayoutHost />
+      </FlowEngineProvider>,
+    );
+    const model = engine.getModel<TestAdminLayoutModel>('admin-layout-model');
+    expect(model).toBeTruthy();
+
+    [
+      '/admin/page-1/sourceid',
+      '/admin/page-1/AbCdEfGh/filterbytk/1',
+      '/admin/page-1/view/popup/AbCdEfGh/filterbytk/1',
+      '/admin/page-1/view/popup/opts/AbCdEfGh/filterbytk/1',
+      '/admin/page-1/view/popup/openviewmode/dialog',
+      '/admin/page-1/view/popup/openviewsize/large',
+      `/admin/page-1/view/popup/opts/${wrongViewToken}/filterbytk/1`,
+    ].forEach((pathname) => {
+      expect(
+        model.resolveLayoutRoute({
+          name: getLayoutPageViewRouteName('admin'),
+          pathname,
+          layoutBasePathname: '/admin',
+        }),
+      ).toMatchObject({
+        type: 'notFound',
+        pathname,
+      });
+    });
+  });
+
+  it('should resolve group id paths as blank root routes', async () => {
+    const engine = new FlowEngine();
+    engine.context.defineProperty('routeRepository', {
+      value: {
+        getRouteById: (routeId: string) =>
+          routeId === '1'
+            ? {
+                id: 1,
+                type: NocoBaseDesktopRouteType.group,
+              }
+            : undefined,
+      },
+    });
+
+    render(
+      <FlowEngineProvider engine={engine}>
+        <TestAdminLayoutHost />
+      </FlowEngineProvider>,
+    );
+    const model = engine.getModel<TestAdminLayoutModel>('admin-layout-model');
+    expect(model).toBeTruthy();
+
+    expect(
+      model.resolveLayoutRoute({
+        name: getLayoutPageRouteName('admin'),
+        pathname: '/admin/1',
+        layoutBasePathname: '/admin',
+      }),
+    ).toMatchObject({
+      type: 'root',
+      pathname: '/admin/1',
+      relativePath: '1',
+    });
+  });
+
+  it('should prefer schema uid routes before treating numeric paths as group ids', async () => {
+    const engine = new FlowEngine();
+    engine.context.defineProperty('routeRepository', {
+      value: {
+        getRouteBySchemaUid: (pageUid: string) =>
+          pageUid === '1'
+            ? {
+                schemaUid: '1',
+                type: NocoBaseDesktopRouteType.flowPage,
+              }
+            : undefined,
+        getRouteById: (routeId: string) =>
+          routeId === '1'
+            ? {
+                id: 1,
+                type: NocoBaseDesktopRouteType.group,
+              }
+            : undefined,
+      },
+    });
+
+    render(
+      <FlowEngineProvider engine={engine}>
+        <TestAdminLayoutHost />
+      </FlowEngineProvider>,
+    );
+    const model = engine.getModel<TestAdminLayoutModel>('admin-layout-model');
+    expect(model).toBeTruthy();
+
+    expect(
+      model.resolveLayoutRoute({
+        name: getLayoutPageRouteName('admin'),
+        pathname: '/admin/1',
+        layoutBasePathname: '/admin',
+      }),
+    ).toMatchObject({
+      type: 'page',
+      pageUid: '1',
     });
   });
 

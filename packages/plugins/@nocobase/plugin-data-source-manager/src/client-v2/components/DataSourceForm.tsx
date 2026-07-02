@@ -165,12 +165,12 @@ export function DataSourceForm(props: DataSourceFormProps) {
             {
               pattern: /^[A-Za-z][A-Za-z0-9_]*$/,
               message: t(
-                'Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.',
+                'Randomly generated and can be modified. Support letters, numbers and underscores, must start with a letter.',
               ),
             },
           ]}
           extra={t(
-            'Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.',
+            'Randomly generated and can be modified. Support letters, numbers and underscores, must start with a letter.',
           )}
         >
           <Input disabled={props.mode === 'edit'} />

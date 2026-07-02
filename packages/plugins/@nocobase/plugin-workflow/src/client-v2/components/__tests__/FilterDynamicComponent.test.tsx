@@ -20,12 +20,18 @@ const testState = vi.hoisted(() => ({
 vi.mock('@nocobase/client-v2', async () => {
   const actual = await vi.importActual<any>('@nocobase/client-v2');
   const ReactModule = await vi.importActual<any>('react');
+  const { useFlowContext } = await vi.importActual<any>('@nocobase/flow-engine');
   return {
     ...actual,
     VariableFilterItem: (props: any) => {
-      testState.variableFilterItems.push(props);
+      const ctx = useFlowContext();
+      testState.variableFilterItems.push({
+        ...props,
+        contextModel: ctx?.model,
+      });
       return ReactModule.default.createElement('input', {
         'data-testid': 'variable-filter-item',
+        'data-flow-model-translate': typeof ctx?.model?.translate,
         value: props.value.value ?? '',
         onChange: (event: React.ChangeEvent<HTMLInputElement>) => {
           props.value.value = event.target.value;
@@ -183,6 +189,59 @@ describe('FilterDynamicComponent', () => {
     expect(testState.variableFilterItems).toHaveLength(1);
   });
 
+  it('defaults maxAssociationFieldDepth to 2 for v1-compatible workflow filters', () => {
+    const { engine } = setupEngine();
+
+    render(
+      <FlowEngineProvider engine={engine}>
+        <FilterDynamicComponent
+          collection="posts"
+          value={{ $and: [{ title: { $eq: 'foo' } }] }}
+          onChange={() => undefined}
+        />
+      </FlowEngineProvider>,
+    );
+
+    expect(testState.variableFilterItems.length).toBeGreaterThan(0);
+    expect(testState.variableFilterItems.at(-1)?.maxAssociationFieldDepth).toBe(2);
+  });
+
+  it('passes through a custom maxAssociationFieldDepth when consumers override it', () => {
+    const { engine } = setupEngine();
+
+    render(
+      <FlowEngineProvider engine={engine}>
+        <FilterDynamicComponent
+          collection="posts"
+          value={{ $and: [{ title: { $eq: 'foo' } }] }}
+          onChange={() => undefined}
+          maxAssociationFieldDepth={3}
+        />
+      </FlowEngineProvider>,
+    );
+
+    expect(testState.variableFilterItems.length).toBeGreaterThan(0);
+    expect(testState.variableFilterItems.at(-1)?.maxAssociationFieldDepth).toBe(3);
+  });
+
+  it('provides the filter model context to nested value editors', () => {
+    const { engine } = setupEngine();
+    function Wrapper() {
+      const [value, setValue] = React.useState<Record<string, unknown>>({});
+      return <FilterDynamicComponent collection="posts" value={value} onChange={(next) => setValue(next ?? {})} />;
+    }
+
+    render(
+      <FlowEngineProvider engine={engine}>
+        <Wrapper />
+      </FlowEngineProvider>,
+    );
+
+    fireEvent.click(screen.getByText('Add condition'));
+
+    expect(screen.getByTestId('variable-filter-item')).toHaveAttribute('data-flow-model-translate', 'function');
+  });
+
   it('keeps an empty draft condition group visible after clicking Add condition group', async () => {
     const { engine } = setupEngine();
     function Wrapper() {
@@ -226,5 +285,20 @@ describe('FilterDynamicComponent', () => {
     await waitFor(() => {
       expect(onChange).toHaveBeenCalledWith({ $and: [{ title: { $eq: '{{$jobsMapByNodeKey.n1.body}}' } }] });
     });
+  });
+
+  it('can disable right-side variable input for trigger-only filter usage', () => {
+    const { engine } = setupEngine();
+
+    render(
+      <FlowEngineProvider engine={engine}>
+        <FilterDynamicComponent collection="posts" value={{}} onChange={() => undefined} rightAsVariable={false} />
+      </FlowEngineProvider>,
+    );
+
+    fireEvent.click(screen.getByText('Add condition'));
+
+    expect(testState.variableFilterItems).toHaveLength(1);
+    expect(testState.variableFilterItems[0].rightAsVariable).toBe(false);
   });
 });

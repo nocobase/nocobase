@@ -24,6 +24,7 @@ import { useFlowContext as useFlowEngineContext } from '@nocobase/flow-engine';
 
 import { useFlowContext, useWorkflowCanvasExecuted, type CanvasNode } from './contexts';
 import { useT, useWorkflowTranslation } from '../locale';
+import { getWorkflowSingleton } from '../utils/contextSingleton';
 import useStyles from './style';
 import { useWorkflowPlugin } from './useWorkflowInstruction';
 import type { Instruction } from './Instruction';
@@ -112,7 +113,7 @@ export type NodeDragContextValue = {
   consumeClick: () => boolean;
 };
 
-const NodeDragContext = createContext<NodeDragContextValue | null>(null);
+const NodeDragContext = getWorkflowSingleton('NodeDragContext', () => createContext<NodeDragContextValue | null>(null));
 
 export function useNodeDragContext() {
   return useContext(NodeDragContext);

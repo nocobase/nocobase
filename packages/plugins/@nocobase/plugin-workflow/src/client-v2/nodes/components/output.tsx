@@ -19,7 +19,6 @@ export function OutputFieldset() {
     <Form.Item name={['config', 'value']} label={t('Output value')}>
       <WorkflowTypedVariableInput
         types={WORKFLOW_TYPED_CONSTANT_TYPES}
-        nullable={false}
         defaultToFirstConstantTypeWhenUndefined
         placeholder={t('Input workflow result')}
       />
