@@ -59,12 +59,12 @@
   {
     "type": "custom-link",
     "label": "数据表",
-    "link": "/data-sources/collection"
+    "link": "/data-sources/collection/collection"
   },
   {
     "type": "custom-link",
     "label": "字段",
-    "link": "/data-sources/field"
+    "link": "/data-sources/field/field"
   },
   {
     "type": "custom-link",
