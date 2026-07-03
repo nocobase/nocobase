@@ -22,7 +22,7 @@ export default {
     required: true,
     default: '{{ useNewId("s_") }}',
     description:
-      '{{t("Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.")}}',
+      '{{t("Randomly generated and can be modified. Support letters, numbers and underscores, must start with a letter.")}}',
   },
   baseUrl: {
     'x-component': 'CollectionField',
@@ -50,7 +50,7 @@ export default {
       mimetype: {
         type: 'string',
         title: `{{t("File type allowed (in MIME type format)", { ns: "${NAMESPACE}" })}}`,
-        description: `{{t('Multi-types seperated with comma, for example: "image/*", "image/png", "image/*, application/pdf" etc.', { ns: "${NAMESPACE}" })}}`,
+        description: `{{t('Multi-types separated with comma, for example: "image/*", "image/png", "image/*, application/pdf" etc.', { ns: "${NAMESPACE}" })}}`,
         'x-decorator': 'FormItem',
         'x-component': 'Input',
         'x-component-props': {

@@ -19,7 +19,7 @@ export function NameField() {
       label={`${t('Storage name')} :`}
       rules={[{ required: true, message: t('The field value is required') }]}
       extra={t(
-        'Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.',
+        'Randomly generated and can be modified. Support letters, numbers and underscores, must start with a letter.',
       )}
     >
       <Input />

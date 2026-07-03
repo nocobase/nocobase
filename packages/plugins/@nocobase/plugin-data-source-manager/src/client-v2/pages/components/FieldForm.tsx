@@ -20,7 +20,7 @@ import {
 } from '@nocobase/client-v2';
 import { randomId, useFlowContext } from '@nocobase/flow-engine';
 import { getPickerFormat } from '@nocobase/utils/client';
-import { DeleteOutlined, DownOutlined, MenuOutlined, PlusOutlined } from '@ant-design/icons';
+import { DeleteOutlined, DownOutlined, MenuOutlined, PlusOutlined, RightOutlined } from '@ant-design/icons';
 import { closestCenter, DndContext, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import type { DragEndEvent, DraggableAttributes, DraggableSyntheticListeners } from '@dnd-kit/core';
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
@@ -66,6 +66,7 @@ interface FieldFormProps {
   collection: Record<string, any>;
   interfaceName?: string;
   field?: Record<string, any>;
+  override?: boolean;
   onSubmitted: () => void;
 }
 
@@ -75,6 +76,13 @@ interface FieldInterfaceManagerWithConfigure {
 
 type ConfigureProperty = { name: string; schema: any };
 type FieldInterfaceOption = Record<string, any> & { name: string };
+
+function formatFallbackRuleLabel(name: string) {
+  if (!name) {
+    return name;
+  }
+  return `${name.slice(0, 1).toUpperCase()}${name.slice(1)}`;
+}
 
 function getFieldInterfaces(ctx: any, dataSourceType?: string): FieldInterfaceOption[] {
   return (ctx.dataSourceManager.collectionFieldInterfaceManager?.getFieldInterfaces?.(dataSourceType) ||
@@ -126,7 +134,7 @@ function toNamePath(name: string) {
 
 const fieldNamePattern = /^[a-zA-Z][a-zA-Z0-9_-]*$/;
 const fieldNameDescription =
-  'Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.';
+  'Randomly generated and can be modified. Support letters, numbers and underscores, must start with a letter.';
 const collectionOptionComponents = new Set(['Select', 'CollectionSelect', 'RemoteSelect']);
 const relationCollectionPropertyNames = new Set(['target']);
 const fileCollectionEnum = '{{fileCollections}}';
@@ -759,7 +767,9 @@ function NativeFieldValidation(props: {
   excludeValidationOptions?: string[];
 }) {
   const t = useT();
+  const { token } = theme.useToken();
   const { availableValidationOptions, excludeValidationOptions, onChange, type, value } = props;
+  const [expandedRuleKeys, setExpandedRuleKeys] = useState<string[]>([]);
   const rules = useMemo(() => value?.rules || [], [value?.rules]);
   const validationType = value?.type || type || 'string';
   const validationOptions = useMemo(() => {
@@ -825,6 +835,9 @@ function NativeFieldValidation(props: {
     },
     [onChange, rules, validationType],
   );
+  const handleToggleExpand = useCallback((key: string) => {
+    setExpandedRuleKeys((prev) => (prev.includes(key) ? prev.filter((item) => item !== key) : [...prev, key]));
+  }, []);
   const renderParamControl = useCallback(
     (rule: (typeof rules)[number], param: NonNullable<FieldValidationConfigureItem['params']>[number]) => {
       const currentValue = rule.args?.[param.key] ?? param.defaultValue;
@@ -891,63 +904,95 @@ function NativeFieldValidation(props: {
 
   return (
     <div>
-      <Space direction="vertical" style={{ width: '100%', marginBottom: rules.length ? 12 : 0 }} size={0}>
-        {rules.map((rule) => {
-          const option = getRuleOption(rule.name);
-          return (
-            <div
-              key={rule.key}
-              style={{
-                border: '1px solid var(--ant-color-border)',
-                borderRadius: 6,
-                overflow: 'hidden',
-              }}
-            >
+      {rules.length > 0 && (
+        <div
+          style={{
+            background: token.colorBgContainer,
+            border: `1px solid ${token.colorBorderSecondary}`,
+            borderRadius: token.borderRadius,
+            marginBottom: token.marginSM,
+            overflow: 'hidden',
+          }}
+        >
+          {rules.map((rule, index) => {
+            const option = getRuleOption(rule.name);
+            const hasParams = !!(option?.hasValue && option.params?.length);
+            const isExpanded = expandedRuleKeys.includes(rule.key);
+            return (
               <div
+                key={rule.key}
                 style={{
-                  alignItems: 'center',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  minHeight: 40,
-                  padding: '8px 12px',
+                  borderBottom: index === rules.length - 1 ? undefined : `1px solid ${token.colorBorderSecondary}`,
                 }}
               >
-                <Space>
-                  <DownOutlined />
-                  <span>{compileLegacyTemplate(option?.label || rule.name, t)}</span>
-                </Space>
-                <Button
-                  aria-label={t('Delete')}
-                  icon={<DeleteOutlined />}
-                  size="small"
-                  type="text"
-                  onClick={() => handleRemove(rule.key)}
-                />
-              </div>
-              {option?.hasValue && option.params?.length ? (
                 <div
                   style={{
-                    background: 'var(--ant-color-fill-tertiary)',
-                    borderTop: '1px solid var(--ant-color-border)',
-                    padding: 12,
+                    alignItems: 'center',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    minHeight: 40,
+                    padding: `${token.paddingXS}px ${token.paddingSM}px`,
                   }}
                 >
-                  {option.params.map((param) => (
-                    <Form.Item
-                      key={param.key}
-                      label={compileLegacyTemplate(param.label, t)}
-                      required={!!param.required}
-                      style={{ marginBottom: 0 }}
-                    >
-                      {renderParamControl(rule, param)}
-                    </Form.Item>
-                  ))}
+                  <Space size={token.marginXS}>
+                    {hasParams ? (
+                      <Button
+                        aria-label={isExpanded ? t('Collapse') : t('Expand button')}
+                        icon={isExpanded ? <DownOutlined /> : <RightOutlined />}
+                        size="small"
+                        type="text"
+                        style={{
+                          color: token.colorTextSecondary,
+                          height: 18,
+                          minWidth: 18,
+                          padding: 0,
+                          width: 18,
+                        }}
+                        onClick={() => handleToggleExpand(rule.key)}
+                      />
+                    ) : (
+                      <span style={{ display: 'inline-block', width: 18 }} />
+                    )}
+                    <span>
+                      {option?.label
+                        ? compileLegacyTemplate(option.label, t)
+                        : compileLegacyTemplate(formatFallbackRuleLabel(rule.name), t)}
+                    </span>
+                  </Space>
+                  <Button
+                    aria-label={t('Delete')}
+                    icon={<DeleteOutlined />}
+                    size="small"
+                    type="text"
+                    style={{ color: token.colorTextSecondary }}
+                    onClick={() => handleRemove(rule.key)}
+                  />
                 </div>
-              ) : null}
-            </div>
-          );
-        })}
-      </Space>
+                {hasParams && isExpanded ? (
+                  <div
+                    style={{
+                      background: token.colorFillQuaternary,
+                      borderTop: `1px solid ${token.colorBorderSecondary}`,
+                      padding: token.paddingSM,
+                    }}
+                  >
+                    {option.params.map((param, index) => (
+                      <Form.Item
+                        key={param.key}
+                        label={compileLegacyTemplate(param.label, t)}
+                        required={!!param.required}
+                        style={{ marginBottom: index === option.params.length - 1 ? 0 : token.marginSM }}
+                      >
+                        {renderParamControl(rule, param)}
+                      </Form.Item>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
+            );
+          })}
+        </div>
+      )}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <Dropdown menu={menu} placement="bottomLeft" disabled={!menuItems.length}>
           <Button size="small" type="dashed" icon={<PlusOutlined />}>
@@ -1767,9 +1812,11 @@ export function FieldForm(props: FieldFormProps) {
       createMainOnly: props.mode === 'create' && props.dataSourceKey === 'main',
       disabledJSONB: props.mode === 'edit',
       isDialect: (dialect: string) => databaseDialect === dialect,
+      isOverride: !!props.override,
+      override: !!props.override,
       primaryKeyOnly: false,
     }),
-    [databaseDialect, props.dataSourceKey, props.mode],
+    [databaseDialect, props.dataSourceKey, props.mode, props.override],
   );
   const previousWatchedValuesRef = useRef<Record<string, any>>();
   const pendingInitialValuesRef = useRef<Record<string, any>>();
@@ -2003,7 +2050,9 @@ export function FieldForm(props: FieldFormProps) {
   ]);
 
   const collectionTitle = compileLegacyTemplateText(get(props.collection, 'title') || props.collection.name, t);
-  const title = `${collectionTitle} - ${props.mode === 'create' ? t('Add field') : t('Edit field')}`;
+  const title = `${collectionTitle} - ${
+    props.override ? t('Override field') : props.mode === 'create' ? t('Add field') : t('Edit field')
+  }`;
   const existingFieldNames = new Set((props.collection.fields || []).map((field: Record<string, any>) => field.name));
 
   return (
@@ -2058,7 +2107,10 @@ export function FieldForm(props: FieldFormProps) {
           ]}
           extra={t(fieldNameDescription)}
         >
-          <Input autoComplete="off" disabled={props.mode === 'edit' || interfaceName === 'tableoid'} />
+          <Input
+            autoComplete="off"
+            disabled={props.mode === 'edit' || props.override || interfaceName === 'tableoid'}
+          />
         </Form.Item>
         <FieldConfigureItemsRenderer
           items={mainConfigureItems}

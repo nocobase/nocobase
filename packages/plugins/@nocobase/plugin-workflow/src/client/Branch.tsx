@@ -37,7 +37,7 @@ export function Branch({
   branchIndex = null,
   controller = null,
   className,
-  end,
+  end = null,
   addable = true,
   syncOnly = false,
   start = false,
@@ -49,7 +49,7 @@ export function Branch({
   branchIndex?: number | null;
   controller?: React.ReactNode;
   className?: string;
-  end?: boolean;
+  end?: true | React.ReactNode | null;
   addable?: boolean;
   syncOnly?: boolean;
   start?: boolean;
@@ -75,7 +75,7 @@ export function Branch({
             <Node data={item} key={item.id} />
           ))}
         </div>
-        {end ? <EndSign /> : null}
+        {end === true ? <EndSign /> : end}
       </div>
     </BranchContext.Provider>
   );

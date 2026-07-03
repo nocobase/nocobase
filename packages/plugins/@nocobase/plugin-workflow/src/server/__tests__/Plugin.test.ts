@@ -855,6 +855,60 @@ describe('workflow > Plugin', () => {
       },
     );
 
+    it('should skip non-queueing undispatched executions when fetching from db', async () => {
+      type DbFetchDispatcher = {
+        recover(): Promise<void>;
+        executing: Promise<unknown> | null;
+      };
+      const dispatcher = (plugin as unknown as { dispatcher: DbFetchDispatcher }).dispatcher;
+
+      const w1 = await WorkflowModel.create({
+        enabled: true,
+        type: 'asyncTrigger',
+      });
+      await w1.createNode({
+        type: 'echo',
+      });
+      const aborted = await w1.createExecution({
+        key: w1.key,
+        context: { aborted: true },
+        dispatched: false,
+        status: EXECUTION_STATUS.ABORTED,
+      });
+
+      const w2 = await WorkflowModel.create({
+        enabled: true,
+        type: 'asyncTrigger',
+      });
+      await w2.createNode({
+        type: 'echo',
+      });
+      const queueing = await w2.createExecution({
+        key: w2.key,
+        context: { queueing: true },
+        dispatched: false,
+        status: EXECUTION_STATUS.QUEUEING,
+      });
+
+      await dispatcher.recover();
+
+      for (let i = 0; i < 20; i++) {
+        await queueing.reload();
+        if (queueing.status === EXECUTION_STATUS.RESOLVED) {
+          break;
+        }
+        await sleep(50);
+      }
+
+      await aborted.reload();
+      expect(aborted.status).toBe(EXECUTION_STATUS.ABORTED);
+      expect(aborted.dispatched).toBe(false);
+      expect(queueing.status).toBe(EXECUTION_STATUS.RESOLVED);
+      expect(queueing.dispatched).toBe(true);
+
+      await dispatcher.executing?.catch(() => null);
+    });
+
     it('multiple triggers in same event', async () => {
       const w1 = await WorkflowModel.create({
         enabled: true,
@@ -883,18 +937,18 @@ describe('workflow > Plugin', () => {
         },
       });
 
-      const p1 = await PostRepo.create({ values: { title: 't1' } });
+      await PostRepo.create({ values: { title: 't1' } });
 
-      await sleep(500);
-
-      const [e1] = await w1.getExecutions();
-      expect(e1.status).toBe(EXECUTION_STATUS.RESOLVED);
-
-      const [e2] = await w2.getExecutions();
-      expect(e2.status).toBe(EXECUTION_STATUS.RESOLVED);
-
-      const [e3] = await w3.getExecutions();
-      expect(e3.status).toBe(EXECUTION_STATUS.RESOLVED);
+      const executions = await waitFor(
+        async () => {
+          const [e1] = await w1.getExecutions();
+          const [e2] = await w2.getExecutions();
+          const [e3] = await w3.getExecutions();
+          return [e1, e2, e3] as ExecutionModel[];
+        },
+        (executions) => executions.every((execution) => execution?.status === EXECUTION_STATUS.RESOLVED),
+      );
+      expect(executions.map((execution) => execution?.status)).toEqual(Array(3).fill(EXECUTION_STATUS.RESOLVED));
     });
 
     it('multiple events on same workflow', async () => {

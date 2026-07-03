@@ -61,23 +61,28 @@ Beziehungsfelder unterstützen lediglich die Pflichtfeldvalidierung. Beachten Si
 ## Anwendung von Validierungsregeln
 Nachdem Sie Feldregeln konfiguriert haben, werden die entsprechenden Validierungsregeln beim Hinzufügen oder Ändern von Daten ausgelöst.
 ![20250819201027](https://nocobase-docs.oss-cn-beijing.aliyuncs.com/20250819201027.png)
+
+Wenn das Feld in einem Formular verwendet wird, werden die Feldvalidierungsregeln auch in den Validierungseinstellungen des Feldes angezeigt. Diese Regeln erscheinen unter **Serverseitige Feldvalidierungsregeln** und sind dort schreibgeschützt. Wenn Sie sie ändern müssen, bearbeiten Sie das Feld unter Datenquelle → Sammlungskonfiguration.
+
+Unter **Clientseitige Validierungsregeln** können Sie weiterhin zusätzliche Regeln für das aktuelle Formularfeld hinzufügen. Diese Regeln gelten nur für die aktuelle Feldkomponente. Das endgültige Validierungsergebnis kombiniert **Serverseitige Feldvalidierungsregeln** und **Clientseitige Validierungsregeln**.
+
 Validierungsregeln gelten auch für Untertabellen- und Unterformular-Komponenten:
 ![20250819202514](https://nocobase-docs.oss-cn-beijing.aliyuncs.com/20250819202514.png)
 ![20250819202357](https://nocobase-docs.oss-cn-beijing.aliyuncs.com/20250819202357.png)
 Beachten Sie bitte, dass in Szenarien mit Unterformularen oder Untertabellen die Pflichtfeldvalidierung für Beziehungsfelder derzeit nicht wirksam ist.
 ![20250819203016](https://nocobase-docs.oss-cn-beijing.aliyuncs.com/20250819203016.png)
 
-## Unterschiede zur clientseitigen Feldvalidierung
-Clientseitige und serverseitige Feldvalidierung eignen sich für unterschiedliche Anwendungsszenarien. Beide unterscheiden sich erheblich in ihrer Implementierung und im Zeitpunkt der Regelauslösung und müssen daher separat verwaltet werden.
+## Unterschiede zwischen serverseitigen Feldvalidierungsregeln und clientseitigen Validierungsregeln
+Serverseitige Feldvalidierungsregeln und clientseitige Validierungsregeln werden an unterschiedlichen Stellen konfiguriert und haben unterschiedliche Geltungsbereiche.
 
 ### Unterschiede in der Konfigurationsmethode
-- **Clientseitige Validierung**: Konfigurieren Sie Regeln in Bearbeitungsformularen (wie in der Abbildung unten gezeigt).
-- **Serverseitige Feldvalidierung**: Legen Sie Feldregeln in der Datenquelle → Sammlungskonfiguration fest.
+- **Serverseitige Feldvalidierungsregeln**: Legen Sie Feldregeln unter Datenquelle → Sammlungskonfiguration fest. Diese Regeln sind die Basisregeln des Feldes.
+- **Clientseitige Validierungsregeln**: Konfigurieren Sie zusätzliche Regeln in den Einstellungen eines Formularfeldes. Diese Regeln wirken sich nur auf die aktuelle Feldkomponente aus.
 ![20250819203836](https://nocobase-docs.oss-cn-beijing.aliyuncs.com/20250819203836.png)
 ![20250819203845](https://nocobase-docs.oss-cn-beijing.aliyuncs.com/20250819203845.png)
 
 ### Unterschiede im Zeitpunkt der Validierungsauslösung
-- **Clientseitige Validierung**: Löst die Validierung in Echtzeit aus, während Benutzer Felder ausfüllen, und zeigt Fehlermeldungen sofort an.
-- **Serverseitige Feldvalidierung**: Validiert serverseitig nach der Datenübermittlung, aber vor der Datenspeicherung. Fehlermeldungen werden über API-Antworten zurückgegeben.
-- **Anwendungsbereich**: Die serverseitige Feldvalidierung wird nicht nur bei der Formularübermittlung wirksam, sondern auch in allen Szenarien, die das Hinzufügen oder Ändern von Daten betreffen, wie z. B. Workflows und Datenimporte.
-- **Fehlermeldungen**: Die clientseitige Validierung unterstützt benutzerdefinierte Fehlermeldungen, während die serverseitige Validierung derzeit keine benutzerdefinierten Fehlermeldungen unterstützt.
+- **Serverseitige Feldvalidierungsregeln**: Lösen eine Frontend-Validierung aus, wenn das Feld in einem Formular verwendet wird, und validieren auch vor dem Schreiben der Daten. Sie gelten auch für Szenarien, in denen Daten erstellt oder aktualisiert werden, etwa Workflows und Datenimporte.
+- **Clientseitige Validierungsregeln**: Lösen die Frontend-Validierung nur im aktuellen Formularfeld aus.
+- **Regelanzeige**: Serverseitige Feldvalidierungsregeln werden als geerbte, schreibgeschützte Regeln angezeigt. Clientseitige Validierungsregeln werden separat angezeigt und können dort bearbeitet werden.
+- **Fehlermeldungen**: Clientseitige Validierungsregeln unterstützen benutzerdefinierte Fehlermeldungen, während serverseitige Feldvalidierungsregeln derzeit keine benutzerdefinierten Fehlermeldungen unterstützen.

@@ -1,4 +1,5 @@
 ---
+pkg: '@nocobase/plugin-version-control'
 title: "バージョン管理"
 description: "バージョン管理プラグインの操作ガイド。AI ビルダーでの自動保存、手動でのバージョン作成と復元、保持数、ショートカット、ユーザーコレクションの設定を説明します。"
 keywords: "バージョン管理,Version control,運用管理,AI ビルダー,nocobase-revision,nb revision create,バージョン作成,バージョン復元,NocoBase"

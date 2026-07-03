@@ -272,8 +272,7 @@ export default class extends Instruction {
   async run(node: FlowNodeModel, prevJob: JobModel, processor: Processor, options?: { signal?: AbortSignal }) {
     const config = processor.getParsedValue(node.config, node.id) as RequestInstructionConfig;
 
-    const { workflow } = processor.execution;
-    const sync = this.workflow.isWorkflowSync(workflow);
+    const sync = processor.isInstructionSync(node);
 
     if (sync) {
       try {

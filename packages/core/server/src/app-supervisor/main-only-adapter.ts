@@ -17,6 +17,7 @@ export class MainOnlyAdapter implements AppDiscoveryAdapter, AppProcessAdapter {
   apps: Record<string, Application> = {};
   status: AppStatus;
   appErrors: Record<string, Error> = {};
+  private readonly appManifests = new Map<string, Map<string, unknown>>();
 
   constructor(protected readonly supervisor: AppSupervisor) {
     this.name = 'main-only';
@@ -63,6 +64,38 @@ export class MainOnlyAdapter implements AppDiscoveryAdapter, AppProcessAdapter {
 
   getApps() {
     return Object.values(this.apps);
+  }
+
+  async listAppModels() {
+    return [];
+  }
+
+  async setAppManifestItem(appName: string, namespace: string, itemKey: string, item: unknown) {
+    const manifest = this.getOrCreateAppManifest(appName, namespace);
+    manifest.set(itemKey, item);
+  }
+
+  async removeAppManifestItem(appName: string, namespace: string, itemKey: string) {
+    this.appManifests.get(this.getAppManifestKey(appName, namespace))?.delete(itemKey);
+  }
+
+  async removeAppManifest(appName: string, namespace: string) {
+    this.appManifests.delete(this.getAppManifestKey(appName, namespace));
+  }
+
+  async getAppManifestItems<T = unknown>(appName: string, namespace: string) {
+    return Array.from(this.appManifests.get(this.getAppManifestKey(appName, namespace))?.values() || []) as T[];
+  }
+
+  async getAppManifests<T = unknown>(namespace: string, appNames: string[]) {
+    const result: Record<string, T[]> = {};
+    for (const appName of appNames) {
+      const data = await this.getAppManifestItems<T>(appName, namespace);
+      if (data.length > 0) {
+        result[appName] = data;
+      }
+    }
+    return result;
   }
 
   hasApp(appName: string) {
@@ -156,5 +189,20 @@ export class MainOnlyAdapter implements AppDiscoveryAdapter, AppProcessAdapter {
 
   getAppLastSeenAt(appName: string) {
     return null;
+  }
+
+  private getAppManifestKey(appName: string, namespace: string) {
+    return `${namespace}:${appName}`;
+  }
+
+  private getOrCreateAppManifest(appName: string, namespace: string) {
+    const key = this.getAppManifestKey(appName, namespace);
+    const manifest = this.appManifests.get(key);
+    if (manifest) {
+      return manifest;
+    }
+    const nextManifest = new Map<string, unknown>();
+    this.appManifests.set(key, nextManifest);
+    return nextManifest;
   }
 }

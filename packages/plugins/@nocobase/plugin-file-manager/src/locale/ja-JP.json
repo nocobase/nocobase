@@ -31,7 +31,7 @@
   "Local storage": "ローカルストレージ",
   "MIME type": "ファイル形式",
   "Minimum from 1 byte.": "Minimum from 1 byte.",
-  "Multi-types seperated with comma, for example: \"image/*\", \"image/png\", \"image/*, application/pdf\" etc.": "複数のタイプはカンマで区切ります。 例えば「image/*」「image/png」「image/*、application/pdf」など。",
+  "Multi-types separated with comma, for example: \"image/*\", \"image/png\", \"image/*, application/pdf\" etc.": "複数のタイプはカンマで区切ります。 例えば「image/*」「image/png」「image/*、application/pdf」など。",
   "Path": "パス",
   "PDF preview failed. Please download the file to preview it.": "PDF のプレビューに失敗しました。ファイルをダウンロードして確認してください。",
   "PDF preview failed to load the file. If the file is stored on another domain, configure CORS for the external storage to allow this site to read the file.": "PDF プレビューでファイルを読み込めませんでした。ファイルが別ドメインに保存されている場合は、このサイトがファイルを読み取れるように外部ストレージの CORS を設定してください。",

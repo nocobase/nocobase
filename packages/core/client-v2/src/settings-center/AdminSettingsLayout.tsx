@@ -209,6 +209,9 @@ export const InternalAdminSettingsLayout = () => {
         style={{
           background: token.colorBgContainer,
           borderInlineEnd: `${token.lineWidth}px solid ${token.colorBorderSecondary}`,
+          minHeight: 0,
+          overflowY: 'auto',
+          overflowX: 'hidden',
         }}
       >
         <Menu
@@ -239,11 +242,12 @@ export const InternalAdminSettingsLayout = () => {
       <Layout.Content
         style={{
           background: token.colorBgLayout,
+          flex: 1,
           display: 'flex',
           flexDirection: 'column',
           minWidth: 0,
-          overflowY: 'auto',
-          overflowX: 'hidden',
+          minHeight: 0,
+          overflow: 'hidden',
         }}
       >
         <PageHeader
@@ -273,6 +277,10 @@ export const InternalAdminSettingsLayout = () => {
         />
         <div
           style={{
+            flex: 1,
+            minHeight: 0,
+            boxSizing: 'border-box',
+            overflow: 'auto',
             padding: token.paddingLG,
           }}
         >

@@ -109,7 +109,7 @@ test('buildSnapshotVersion uses date and git sha to form a unique version', asyn
       gitSha: 'abc12345',
     }),
   ).toBe(
-    'nb init --ui --env snapshotabc12345 --yes --source npm --version 2.1.0-beta.34-snapshot.20260519.abc12345 --npm-registry=http://127.0.0.1:4873',
+    'nb init --env snapshotabc12345 --yes --source npm --version 2.1.0-beta.34-snapshot.20260519.abc12345 --npm-registry=http://127.0.0.1:4873',
   );
 });
 
@@ -119,7 +119,11 @@ test('resolveGitBranch rejects a missing current branch reference before publish
     if (args[0] === 'branch' && args[1] === '--show-current') {
       return 'nb/source-publish-20260607100306-b7e1284f';
     }
-    if (args[0] === 'rev-parse' && args[1] === '--verify' && args[2] === 'refs/heads/nb/source-publish-20260607100306-b7e1284f') {
+    if (
+      args[0] === 'rev-parse' &&
+      args[1] === '--verify' &&
+      args[2] === 'refs/heads/nb/source-publish-20260607100306-b7e1284f'
+    ) {
       throw new Error('fatal: invalid reference: nb/source-publish-20260607100306-b7e1284f');
     }
     return 'abc12345';
@@ -191,6 +195,7 @@ test('publishSourceSnapshot versions and publishes from a temporary git branch',
         'local',
         '--yes',
         '--no-verify-access',
+        '--no-git-reset',
         '--git-head',
         'abc12345',
       ],
@@ -283,6 +288,7 @@ test('publishSourceSnapshot skips stash steps when the worktree is already clean
         'local',
         '--yes',
         '--no-verify-access',
+        '--no-git-reset',
         '--git-head',
         'abc12345',
       ],

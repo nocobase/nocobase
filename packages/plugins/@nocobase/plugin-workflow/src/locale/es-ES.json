@@ -202,6 +202,7 @@
   "Syntax references: ": "Syntax references: ",
   "System time": "System time",
   "System variables": "System variables",
+  "System process failed, please contact administrator.": "El proceso del sistema falló, contacte al administrador.",
   "Task type {{type}} is invalid": "Task type {{type}} is invalid",
   "Test run": "Test run",
   "Test run will do the actual data manipulating or API calling, please use with caution.": "Test run will do the actual data manipulating or API calling, please use with caution.",
