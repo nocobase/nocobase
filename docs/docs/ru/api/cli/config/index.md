@@ -1,7 +1,7 @@
 ---
 title: "nb config"
-description: "Справка по nb config: управление значениями конфигурации CLI NocoBase по умолчанию."
-keywords: "nb config,NocoBase CLI,configuration,default configuration"
+description: "Справочник по команде nb config: управление значениями конфигурации CLI NocoBase по умолчанию."
+keywords: "nb config,NocoBase CLI,конфигурация,конфигурация по умолчанию"
 ---
 
 # nb config
@@ -9,9 +9,9 @@ keywords: "nb config,NocoBase CLI,configuration,default configuration"
 Управляет значениями конфигурации CLI по умолчанию. Поддерживаемые сейчас ключи в основном делятся на такие группы:
 
 - Сама CLI: `locale`, `update.policy`, `license.pkg-url`
-- Docker runtime: `docker.network`, `docker.container-prefix`
-- Внешние исполняемые файлы: `bin.docker`, `bin.caddy`, `bin.git`, `bin.nginx`, `bin.pnpm`, `bin.yarn`
-- Генерация proxy: `proxy.nb-cli-root`, `proxy.upstream-host`, `proxy.nginx-driver`, `proxy.caddy-driver`
+- Среда выполнения Docker: `docker.network`, `docker.container-prefix`
+- Внешние исполняемые файлы: `bin.docker`, `bin.caddy`, `bin.git`, `bin.nginx`, `bin.yarn`
+- Генерация прокси: `proxy.nb-cli-root`, `proxy.upstream-host`, `proxy.nginx-driver`, `proxy.caddy-driver`
 
 Большинству проектов нужна только часть этих ключей. На практике чаще всего используются:
 
@@ -27,7 +27,7 @@ keywords: "nb config,NocoBase CLI,configuration,default configuration"
 | --- | --- | --- |
 | `locale` | определяется по текущим правилам CLI | Переопределяет язык, используемый CLI |
 | `update.policy` | `prompt` | Политика обновления при запуске: `prompt`, `auto` или `off` |
-| `license.pkg-url` | `https://pkg.nocobase.com/` | Переопределяет URL загрузки пакетов коммерческих расширений |
+| `license.pkg-url` | `https://pkg.nocobase.com/` | Переопределяет URL загрузки коммерческих плагинов |
 | `docker.network` | `nocobase` | Сеть по умолчанию для Docker-приложений, управляемых CLI |
 | `docker.container-prefix` | `nb` | Префикс по умолчанию для Docker-контейнеров, управляемых CLI |
 | `bin.docker` | `docker` | Переопределяет путь к исполняемому файлу Docker |
@@ -36,10 +36,10 @@ keywords: "nb config,NocoBase CLI,configuration,default configuration"
 | `bin.nginx` | `nginx` | Переопределяет путь к исполняемому файлу Nginx |
 | `bin.pnpm` | `pnpm` | Переопределяет путь к исполняемому файлу pnpm |
 | `bin.yarn` | `yarn` | Переопределяет путь к исполняемому файлу Yarn |
-| `proxy.nb-cli-root` | корень CLI, обычно домашний каталог текущего пользователя | Переопределяет корневой путь, который видит сгенерированная proxy-конфигурация, когда proxy-процесс и CLI не видят один и тот же корень файловой системы |
-| `proxy.upstream-host` | `127.0.0.1` | Переопределяет хост, который proxy использует для пересылки трафика обратно в приложение NocoBase |
-| `proxy.nginx-driver` | `local` | Драйвер runtime по умолчанию для `nb proxy nginx` |
-| `proxy.caddy-driver` | `local` | Драйвер runtime по умолчанию для `nb proxy caddy` |
+| `proxy.nb-cli-root` | корень CLI, обычно домашний каталог текущего пользователя | Переопределяет корневой путь, который видит сгенерированная конфигурация прокси, когда процесс прокси и CLI не видят один и тот же корень файловой системы |
+| `proxy.upstream-host` | `127.0.0.1` | Переопределяет хост, который прокси использует для пересылки трафика обратно в приложение NocoBase |
+| `proxy.nginx-driver` | `local` | Драйвер среды выполнения по умолчанию для `nb proxy nginx` |
+| `proxy.caddy-driver` | `local` | Драйвер среды выполнения по умолчанию для `nb proxy caddy` |
 
 ## Использование
 
@@ -79,9 +79,9 @@ nb config delete docker.container-prefix
 
 - `bin.nginx` и `bin.caddy` влияют только на драйвер `local` для `nb proxy nginx` и `nb proxy caddy`
 - `bin.pnpm` используется, когда командам нужно запускать pnpm напрямую, например при обновлении глобальной установки CLI, управляемой pnpm, через `nb self update`
-- `proxy.nginx-driver` и `proxy.caddy-driver` хранят драйвер по умолчанию для каждого provider
-- `proxy.nb-cli-root` и `proxy.upstream-host` — это расширенные proxy-override-настройки. Для большинства CLI-managed env типов `local` и `docker` достаточно значений по умолчанию
-- Если вам нужно только переключить активный proxy-драйвер, обычно понятнее использовать `nb proxy nginx use` или `nb proxy caddy use`, чем вручную менять ключ конфигурации
+- `proxy.nginx-driver` и `proxy.caddy-driver` хранят драйвер по умолчанию для каждого провайдера
+- `proxy.nb-cli-root` и `proxy.upstream-host` — это расширенные настройки прокси. Для большинства окружений типов `local` и `docker`, управляемых CLI, достаточно значений по умолчанию
+- Если вам нужно только переключить активный драйвер прокси, обычно понятнее использовать `nb proxy nginx use` или `nb proxy caddy use`, чем вручную менять ключ конфигурации
 
 ## Связанные команды
 

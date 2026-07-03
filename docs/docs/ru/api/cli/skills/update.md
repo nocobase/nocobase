@@ -1,12 +1,12 @@
 ---
 title: "nb skills update"
-description: "Справочник по команде nb skills update: обновление глобальных AI coding Skills NocoBase."
-keywords: "nb skills update,NocoBase CLI,обновление Skills"
+description: "Справочник по команде nb skills update: обновление глобальных навыков ИИ-разработки NocoBase."
+keywords: "nb skills update,NocoBase CLI,обновление навыков"
 ---
 
 # nb skills update
 
-Обновляет глобально установленные AI coding Skills NocoBase. Эта команда обновляет только существующую установку `@nocobase/skills`.
+Обновляет глобально установленные навыки ИИ-разработки NocoBase. Эта команда обновляет только существующую установку `@nocobase/skills`.
 
 ## Использование
 

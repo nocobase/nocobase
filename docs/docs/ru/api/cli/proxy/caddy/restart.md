@@ -1,12 +1,12 @@
 ---
 title: "nb proxy caddy restart"
-description: "Справка по команде nb proxy caddy restart: перезапускает proxy Caddy с текущим driver."
+description: "Справочник по команде nb proxy caddy restart: перезапуск прокси Caddy с текущим драйвером."
 keywords: "nb proxy caddy restart,NocoBase CLI,caddy,restart"
 ---
 
 # nb proxy caddy restart
 
-Перезапускает proxy Caddy с текущим driver.
+Перезапускает прокси Caddy с текущим драйвером.
 
 ## Использование
 
@@ -22,8 +22,8 @@ nb proxy caddy restart
 
 ## Примечания
 
-- Эта команда сначала останавливает proxy, а затем запускает его снова
-- При `local` или `docker` она работает с локальным процессом или Docker-контейнером, соответствующим текущему driver
+- Команда сначала останавливает прокси, а затем запускает его снова
+- С драйверами `local` или `docker` она работает с локальным процессом или Docker-контейнером текущего драйвера
 
 ## Связанные команды
 
