@@ -17,6 +17,7 @@ import React, { useEffect, useCallback, useLayoutEffect, useMemo, useRef, useSta
 import { useTranslation } from 'react-i18next';
 import Vditor from 'vditor';
 import 'vditor/dist/index.css';
+import { stripMarkdownIframes } from './sanitize';
 import { useCDN } from './useCDN';
 import useStyle from './style';
 
@@ -108,7 +109,13 @@ const Edit = (props) => {
       cache: { enable: false },
       undoDelay: 0,
       mode: props.mode || 'ir',
-      preview: { math: { engine: 'KaTeX' } },
+      preview: {
+        markdown: {
+          sanitize: true,
+        },
+        math: { engine: 'KaTeX' },
+        transform: stripMarkdownIframes,
+      },
       toolbar: toolbarConfig,
       fullscreen: { index: 1200 },
       cdn,

@@ -13,6 +13,7 @@ import Vditor from 'vditor';
 import { defaultToolbar } from '../interface';
 import { useT } from '../locale';
 import { useCDN } from './const';
+import { stripMarkdownIframes } from './sanitize';
 import useStyle from './style';
 
 const locales = ['en_US', 'fr_FR', 'pt_BR', 'ja_JP', 'ko_KR', 'ru_RU', 'sv_SE', 'zh_CN', 'zh_TW'];
@@ -53,7 +54,13 @@ export const Edit = (props) => {
       lang,
       cache: { enable: false },
       undoDelay: 0,
-      preview: { math: { engine: 'KaTeX' } },
+      preview: {
+        markdown: {
+          sanitize: true,
+        },
+        math: { engine: 'KaTeX' },
+        transform: stripMarkdownIframes,
+      },
       toolbar: toolbarConfig,
       fullscreen: {
         index: 1200,
@@ -234,7 +241,8 @@ export const Edit = (props) => {
   }, [zIndex]);
 
   useLayoutEffect(() => {
-    if (!containerRef.current) return;
+    const container = containerRef.current;
+    if (!container) return;
 
     const observer = new ResizeObserver((entries) => {
       for (const entry of entries) {
@@ -249,10 +257,10 @@ export const Edit = (props) => {
       }
     });
 
-    observer.observe(containerRef.current);
+    observer.observe(container);
 
     return () => {
-      observer.unobserve(containerRef.current);
+      observer.unobserve(container);
     };
   }, []);
 
