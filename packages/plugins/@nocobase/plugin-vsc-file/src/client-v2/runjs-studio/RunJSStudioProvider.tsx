@@ -2878,10 +2878,13 @@ function VersionHistoryDock(props: {
         flex: collapsed ? '0 0 40px' : '1 1 220px',
         flexDirection: 'column',
         gap: collapsed ? 0 : 8,
+        marginTop: collapsed ? 'auto' : 0,
         maxHeight: collapsed ? 40 : undefined,
         minHeight: collapsed ? 40 : 180,
         overflow: 'hidden',
         padding: '8px 12px',
+        transition:
+          'flex-basis 180ms ease, min-height 180ms ease, max-height 180ms ease, margin-top 180ms ease, gap 180ms ease',
       }}
     >
       <Space style={{ justifyContent: 'space-between' }}>

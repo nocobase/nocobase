@@ -414,8 +414,17 @@ describe('runJSStudioProvider', () => {
     expect(historyPanel.style.flex).toBe('1 1 220px');
     expect(historyPanel.style.minHeight).toBe('180px');
     expect(historyPanel.style.maxHeight).toBe('');
+    expect(historyPanel.style.marginTop).toMatch(/^(0|0px)$/);
+    expect(historyPanel.style.transition).toContain('flex-basis');
     expect(within(historyPanel).getByRole('button', { name: 'Collapse history' })).toBeTruthy();
     expect(screen.getByText(/07-02/)).toBeTruthy();
+
+    fireEvent.click(within(historyPanel).getByRole('button', { name: 'Collapse history' }));
+    expect(historyPanel.style.flex).toBe('0 0 40px');
+    expect(historyPanel.style.minHeight).toBe('40px');
+    expect(historyPanel.style.maxHeight).toBe('40px');
+    expect(historyPanel.style.marginTop).toBe('auto');
+    expect(within(historyPanel).getByRole('button', { name: 'Expand history' })).toBeTruthy();
   });
 
   it('uses the drawer viewport height instead of the legacy compact editor height', async () => {
