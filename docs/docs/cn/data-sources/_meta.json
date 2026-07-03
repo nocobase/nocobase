@@ -53,11 +53,6 @@
   },
   {
     "type": "custom-link",
-    "label": "REST APIvs外部NocoBase",
-    "link": "/data-sources/rest-api-vs-external-nocobase"
-  },
-  {
-    "type": "custom-link",
     "label": "数据表",
     "link": "/data-sources/collection/collection"
   },

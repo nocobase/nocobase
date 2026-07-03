@@ -26,6 +26,12 @@ keywords: "外部数据库,MySQL,PostgreSQL,MariaDB,KingbaseES,OceanBase,MSSQL,O
 | ClickHouse | 以对应插件说明为准 | ❌ | ❌ | ❌ | ✅ |
 | Doris | 以对应插件说明为准 | ❌ | ❌ | ❌ | ✅ |
 
+:::tip 提示
+
+KingbaseES 只支持 PostgreSQL 兼容模式，OceanBase、ClickHouse、Doris 只支持 MySQL 兼容模式。
+
+:::
+
 外部数据库适用场景：
 
 - 连接已有业务系统（如老 ERP、MES、WMS）数据库，利用 NocoBase 的能力，在不改动原数据库表结构的前提下，快速搭建管理界面、权限控制、工作流和报表。
@@ -75,7 +81,7 @@ keywords: "外部数据库,MySQL,PostgreSQL,MariaDB,KingbaseES,OceanBase,MSSQL,O
 
 | 配置 | 说明 |
 | --- | --- |
-| Data source name | 数据源内部标识，用于页面区块、权限、工作流和 API 中使用。创建后不能修改。 |
+| Data source name | 数据源标识名称，用于页面区块、权限、工作流和 API 中使用。创建后不能修改。 |
 | Data source display name | 数据源在界面中显示的名称，建议使用业务人员能理解的名称，比如「ERP 数据库」「报表库」。 |
 | Host / Port | 数据库主机地址和端口。 |
 | Database | 要连接的数据库名称。MySQL、MariaDB、PostgreSQL、MSSQL、KingbaseES、ClickHouse、Doris 需要填写。 |
@@ -108,13 +114,13 @@ keywords: "外部数据库,MySQL,PostgreSQL,MariaDB,KingbaseES,OceanBase,MSSQL,O
 
 :::warning 注意
 
-无主键数据表，需要[**编辑数据表**](#变更数据表)，设置**记录唯一标识**，否则无法在页面中创建区块、无法正确查看或编辑记录
+无主键数据表，需要[**编辑数据表**](#编辑数据表)，设置**记录唯一标识**，否则无法在页面中创建区块、无法正确查看或编辑记录
 
 :::
 
-## 变更外部数据库
+## 编辑外部数据库
 
-变更外部数据库不仅会修改连接参数，也可能改变这个数据源在 NocoBase 中接入的数据表范围。比如修改 `Database`、`Schema`、`Table prefix`，或者调整「Add all collections」和「Collections」勾选项，都可能让 NocoBase 新增或移除部分数据表元数据。
+编辑外部数据库不仅会修改连接参数，也可能改变这个数据源在 NocoBase 中接入的数据表范围。比如修改 `Database`、`Schema`、`Table prefix`，或者调整「Add all collections」和「Collections」勾选项，都可能让 NocoBase 新增或移除部分数据表元数据。
 
 在数据源列表中，点击某个外部数据库右侧的「Edit」，可以修改外部数据库的配置信息。`Data source name` 不能修改，其他配置可以修改。修改后，NocoBase 会使用新的连接信息访问外部数据库。配置信息参考上文[「添加外部数据库」](#添加外部数据库)的说明。
 ![edit_external_database](https://static-docs.nocobase.com/edit_external_database.png)
@@ -193,7 +199,7 @@ keywords: "外部数据库,MySQL,PostgreSQL,MariaDB,KingbaseES,OceanBase,MSSQL,O
 
 :::
 
-### 变更数据表
+### 编辑数据表
 
 外部数据库的数据表结构由数据库侧维护。在数据表列表中，点击某个数据表右侧的「Edit」，用于调整数据表在 NocoBase 里的元信息，不会修改外部数据库中的真实表结构。
 ![edit_external_collection](https://static-docs.nocobase.com/edit_external_collection.png)
@@ -227,7 +233,7 @@ keywords: "外部数据库,MySQL,PostgreSQL,MariaDB,KingbaseES,OceanBase,MSSQL,O
 | --- | --- |
 | Field interface | 关系字段的类型，比如一对一、一对多、多对一、多对多。选择后会出现对应的关系配置。 |
 | Field display name | 关系字段在界面中显示的名称。建议使用业务人员能理解的名称，比如「所属客户」「关联订单」。 |
-| Field name | 关系字段在 NocoBase 中保存的内部名称，用于 API、权限、工作流等内部引用。 |
+| Field name | 关系字段在 NocoBase 中保存的标识名称，用于 API、权限、工作流等内部引用。 |
 | Target collection | 要关联的目标数据表。可以选择外部数据库中的表，也可以按实际业务关联到其他数据源中的表。 |
 | Relation keys | 关系字段使用的关联键。通常基于已有的主键、外键或唯一字段建立关系，不会在外部数据库中创建新字段。 |
 | Description | 字段说明。适合写关联关系含义、数据来源、维护方式或注意事项。 |
