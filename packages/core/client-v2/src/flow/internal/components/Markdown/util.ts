@@ -9,7 +9,7 @@
 
 import _ from 'lodash';
 import { useEffect, useState } from 'react';
-import { stripMarkdownIframes } from '../../../common/Markdown/sanitize';
+import { stripMarkdownIframes } from '../../../../utils/markdownSanitize';
 
 export const parseMarkdown = _.memoize(async (text: string) => {
   if (!text) {

@@ -12,7 +12,7 @@ import { css } from '@emotion/css';
 import { createRoot } from 'react-dom/client';
 import React, { CSSProperties, useCallback, useEffect, useRef, useState } from 'react';
 import Vditor from 'vditor';
-import { removeMarkdownIframes, stripMarkdownIframes } from './sanitize';
+import { removeMarkdownIframes, stripMarkdownIframes } from '../../../utils/markdownSanitize';
 import { useCDN } from './useCDN';
 import useStyle from './style';
 

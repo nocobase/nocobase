@@ -17,7 +17,7 @@ import React, { useEffect, useCallback, useLayoutEffect, useMemo, useRef, useSta
 import { useTranslation } from 'react-i18next';
 import Vditor from 'vditor';
 import 'vditor/dist/index.css';
-import { stripMarkdownIframeTags, stripMarkdownIframes } from './sanitize';
+import { stripMarkdownIframeTags, stripMarkdownIframes } from '../../../utils/markdownSanitize';
 import { useCDN } from './useCDN';
 import useStyle from './style';
 
