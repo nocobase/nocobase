@@ -34,10 +34,16 @@ import {
   requireManagePermission,
 } from './utils';
 import { validateRunLease } from './runLifecycle';
+import {
+  AGENT_GATEWAY_ACTION_UNSUPPORTED_CODE,
+  getAgentProviderKey,
+  getUnsupportedCapabilityMessage,
+  normalizeAgentProviderCapabilities,
+} from '../../shared/providerCapabilities';
+import { getRunProviderCapabilitySummary, isRunCapabilitySupported } from './capabilityUtils';
 
 const AGENT_SESSION_STATUSES = new Set(['active', 'idle', 'ended', 'unknown']);
-const AGENT_SESSION_PROVIDERS = new Set(['codex', 'opencode', 'claude-code']);
-const RESUMABLE_AGENT_SESSION_PROVIDERS = new Set(['codex']);
+const AGENT_SESSION_PROVIDERS = new Set(['codex', 'opencode', 'claude-code', 'generic-cli']);
 const TERMINAL_RUN_STATUSES = new Set(['succeeded', 'failed', 'canceled', 'timeout', 'abandoned']);
 const ACTIVE_CONTINUATION_RUN_STATUSES = new Set(['queued', 'claimed', 'syncing_skills', 'running', 'canceling']);
 const STANDARD_AGENT_SESSION_COLLECTIONS = ['agAgentSessions'] as const;
@@ -137,17 +143,19 @@ function getOptionalModelTargetKey(model: ModelRecord, key: string) {
   return typeof value === 'string' || typeof value === 'number' ? String(value) : '';
 }
 
-function assertResumeSupported(ctx: Context, session: ModelRecord) {
-  const provider = getModelString(session, 'provider');
-  if (!RESUMABLE_AGENT_SESSION_PROVIDERS.has(provider)) {
-    ctx.throw(409, 'Agent session provider does not support resume');
+async function assertResumeSupported(ctx: Context, session: ModelRecord, sourceRun: ModelRecord) {
+  const capabilitySummary = await getRunProviderCapabilitySummary(ctx, sourceRun, session);
+  if (
+    !isRunCapabilitySupported(capabilitySummary, 'resumeSession') ||
+    capabilitySummary.capabilities.resumeWithMessage !== true
+  ) {
+    ctx.throw(409, {
+      code: AGENT_GATEWAY_ACTION_UNSUPPORTED_CODE,
+      message: getUnsupportedCapabilityMessage('resumeSession'),
+    });
   }
 
-  const capabilities = getRecord(getModelValue(session, 'capabilitiesJson'));
-  if (capabilities.resumeWithMessage !== true) {
-    ctx.throw(409, 'Agent session does not support resume with message');
-  }
-
+  const provider = capabilitySummary.provider;
   const providerSessionId = getModelString(session, 'providerSessionId');
   if (!providerSessionId) {
     ctx.throw(409, 'Agent session does not have a provider session id');
@@ -225,7 +233,7 @@ function throwResourceNotVisible(ctx: Context) {
   });
 }
 
-async function getRunForResume(ctx: Context, runId: string, sessionId: string, transaction: Transaction) {
+async function getRunForResume(ctx: Context, runId: string, sessionId: string, transaction?: Transaction) {
   const filter = await getVisibleRunFilter(
     ctx,
     {
@@ -235,8 +243,7 @@ async function getRunForResume(ctx: Context, runId: string, sessionId: string, t
   );
   const run = (await ctx.db.getRepository('agRuns').findOne({
     filter,
-    transaction,
-    lock: transaction.LOCK.UPDATE,
+    ...(transaction ? { transaction, lock: transaction.LOCK.UPDATE } : {}),
   })) as ModelRecord | null;
   if (!run) {
     const existingRunForSession = (await ctx.db.getRepository('agRuns').findOne({
@@ -244,8 +251,7 @@ async function getRunForResume(ctx: Context, runId: string, sessionId: string, t
         id: runId,
         agentSessionId: sessionId,
       },
-      transaction,
-      lock: transaction.LOCK.UPDATE,
+      ...(transaction ? { transaction, lock: transaction.LOCK.UPDATE } : {}),
     })) as ModelRecord | null;
     if (existingRunForSession) {
       throwResourceNotVisible(ctx);
@@ -269,7 +275,7 @@ async function resolveResumeSourceRun(
   session: ModelRecord,
   sessionId: string,
   requestedRunId: string,
-  transaction: Transaction,
+  transaction?: Transaction,
 ) {
   const resumedFromRunId = requestedRunId || getModelString(session, 'latestRunId');
   if (!resumedFromRunId) {
@@ -279,8 +285,26 @@ async function resolveResumeSourceRun(
   return await getRunForResume(ctx, resumedFromRunId, sessionId, transaction);
 }
 
-function buildCodexResumePayload(options: {
+async function resolveResumeSourceRunForContinuation(options: {
+  ctx: Context;
+  session: ModelRecord;
+  sessionId: string;
+  continuationRun: ModelRecord;
+  requestedRunId: string;
+  transaction?: Transaction;
+}) {
+  return await resolveResumeSourceRun(
+    options.ctx,
+    options.session,
+    options.sessionId,
+    options.requestedRunId || getModelString(options.continuationRun, 'resumedFromRunId'),
+    options.transaction,
+  );
+}
+
+function buildResumePayload(options: {
   sourceRun: ModelRecord;
+  provider: string;
   providerSessionId: string;
   message: string;
   messageHash: string;
@@ -290,12 +314,15 @@ function buildCodexResumePayload(options: {
   const timeoutMs = sourcePayload.timeoutMs;
   return {
     mode: 'agent-session-resume',
-    commandKey: 'codex',
-    profileKey: getString(sourcePayload.profileKey) || 'codex',
+    commandKey: options.provider,
+    profileKey: getString(sourcePayload.profileKey) || options.provider,
     providerSessionId: options.providerSessionId,
     message: options.message,
     messageHash: options.messageHash,
-    args: ['exec', 'resume', '--json', options.providerSessionId, options.message],
+    args:
+      options.provider === 'codex'
+        ? ['exec', 'resume', '--json', options.providerSessionId, options.message]
+        : getRecord(sourcePayload).args,
     cwd,
     ...(typeof timeoutMs === 'number' ? { timeoutMs } : {}),
   };
@@ -575,7 +602,7 @@ async function upsertAgentSession(ctx: Context, nodeId: string, runId: string) {
         : resolvedRootRunId,
       latestRunId,
       status: getSessionStatus(values.status),
-      capabilitiesJson: getRecord(values.capabilitiesJson || values.capabilities),
+      capabilitiesJson: normalizeAgentProviderCapabilities(provider, values.capabilitiesJson || values.capabilities),
       metadataJson: getRecord(values.metadataJson || values.metadata),
     };
     let session: ModelRecord;
@@ -693,8 +720,9 @@ async function createContinuationRun(options: {
         providerSessionId: options.providerSessionId,
         resumedFromRunId: sourceRunId,
       },
-      executionPayloadJson: buildCodexResumePayload({
+      executionPayloadJson: buildResumePayload({
         sourceRun: options.sourceRun,
+        provider: options.provider,
         providerSessionId: options.providerSessionId,
         message: options.message,
         messageHash: options.messageFields.contentHash,
@@ -767,7 +795,15 @@ async function createOrFindContinuationRun(options: {
           visibilityAuditState: options.visibilityAuditState,
           transaction,
         });
-        assertResumeSupported(options.ctx, session);
+        const sourceRun = await resolveResumeSourceRunForContinuation({
+          ctx: options.ctx,
+          session,
+          sessionId: options.sessionId,
+          continuationRun: visibleRun,
+          requestedRunId: options.resumedFromRunId,
+          transaction,
+        });
+        await assertResumeSupported(options.ctx, session, sourceRun);
         assertIdempotentContinuationRequestMatches(
           options.ctx,
           visibleRun,
@@ -787,7 +823,7 @@ async function createOrFindContinuationRun(options: {
         options.resumedFromRunId,
         transaction,
       );
-      const { provider, providerSessionId } = assertResumeSupported(options.ctx, session);
+      const { provider, providerSessionId } = await assertResumeSupported(options.ctx, session, sourceRun);
       await assertNoActiveContinuationForSource(
         options.ctx,
         options.sessionId,
@@ -829,6 +865,20 @@ async function createOrFindContinuationRun(options: {
       operatorId: options.operatorId,
       visibilityAuditState: options.visibilityAuditState,
     });
+    const session = (await options.ctx.db.getRepository('agAgentSessions').findOne({
+      filterByTk: options.sessionId,
+    })) as ModelRecord | null;
+    if (!session) {
+      options.ctx.throw(404, 'Agent session not found');
+    }
+    const sourceRun = await resolveResumeSourceRunForContinuation({
+      ctx: options.ctx,
+      session,
+      sessionId: options.sessionId,
+      continuationRun: visibleRun,
+      requestedRunId: options.resumedFromRunId,
+    });
+    await assertResumeSupported(options.ctx, session, sourceRun);
     assertIdempotentContinuationRequestMatches(
       options.ctx,
       visibleRun,
@@ -1030,19 +1080,21 @@ async function messageAgentSession(ctx: Context, sessionId: string) {
   }
 
   const capabilities = getRecord(getModelValue(session, 'capabilitiesJson'));
+  const provider = getAgentProviderKey(getModelString(session, 'provider'));
+  const normalizedCapabilities = normalizeAgentProviderCapabilities(provider, capabilities);
   await auditAgentActionBestEffort(ctx, {
     ...getMessageAuditBase(),
-    provider: getModelString(session, 'provider') || undefined,
+    provider,
     resultStatus: 'denied',
     metadataJson: {
       reason: 'unsupported-capability',
-      liveSemanticMessage: capabilities.liveSemanticMessage === true,
-      stdinMessage: capabilities.stdinMessage === true,
+      liveSemanticMessage: normalizedCapabilities.liveSemanticMessage === true,
+      stdinMessage: normalizedCapabilities.stdinMessage === true,
     },
   });
   ctx.throw(409, {
-    code: 'AGENT_GATEWAY_ACTION_UNSUPPORTED',
-    message: 'Agent session live message is not supported',
+    code: AGENT_GATEWAY_ACTION_UNSUPPORTED_CODE,
+    message: getUnsupportedCapabilityMessage('liveSemanticMessage'),
   });
 }
 

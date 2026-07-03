@@ -45,6 +45,14 @@ export class PluginAgentGatewayClientV2 extends Plugin {
 
     this.pluginSettingsManager.addPageTabItem({
       menuKey: NAMESPACE,
+      key: 'provider-capabilities',
+      title: this.t('Provider Capabilities'),
+      aclSnippet: 'pm.agent-gateway.nodes',
+      componentLoader: () => import('./pages/AgentGatewayProviderCapabilitiesPage'),
+    });
+
+    this.pluginSettingsManager.addPageTabItem({
+      menuKey: NAMESPACE,
       key: 'audit',
       title: this.t('Audit'),
       aclSnippet: 'pm.agent-gateway.audit',

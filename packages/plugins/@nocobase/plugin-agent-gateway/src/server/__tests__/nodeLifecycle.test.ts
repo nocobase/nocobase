@@ -194,6 +194,7 @@ describe('agent gateway node lifecycle APIs', () => {
         profiles: [
           {
             profileKey: 'fake-success',
+            provider: 'generic-cli',
             displayName: 'Fake Success',
             agentType: 'code',
             driver: 'fake',
@@ -207,6 +208,16 @@ describe('agent gateway node lifecycle APIs', () => {
                 SECRET: 'must-not-persist',
               },
               label: 'safe',
+            },
+          },
+          {
+            profileKey: 'local-node',
+            displayName: 'Local Node',
+            agentType: 'code',
+            driver: 'exec',
+            capabilities: {
+              commandKey: 'node',
+              mode: 'success',
             },
           },
         ],
@@ -234,6 +245,7 @@ describe('agent gateway node lifecycle APIs', () => {
       },
     });
     expect(profile).toBeTruthy();
+    expect(profile.get('provider')).toBe('generic-cli');
     expect(profile.get('status')).toBe('active');
     expect(profile.get('capabilitiesJson')).toMatchObject({
       mode: 'success',
@@ -242,6 +254,20 @@ describe('agent gateway node lifecycle APIs', () => {
       label: 'safe',
     });
     expect(profile.get('trustedConfigJson')).toBeFalsy();
+
+    const commandProfile = await app.db.getRepository('agAgentProfiles').findOne({
+      filter: {
+        nodeId,
+        profileKey: 'local-node',
+      },
+    });
+    expect(commandProfile).toBeTruthy();
+    expect(commandProfile.get('provider')).toBe('generic-cli');
+    expect(commandProfile.get('capabilitiesJson')).toMatchObject({
+      commandKey: 'node',
+      mode: 'success',
+      structuredEvents: false,
+    });
 
     const emptyProfilesResponse = await app
       .agent()

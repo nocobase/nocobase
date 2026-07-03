@@ -8,6 +8,7 @@
  */
 
 import { JsonRecord } from '../types';
+import { normalizeAgentProviderCapabilities } from '../../shared/providerCapabilities';
 import {
   AgentAdapter,
   BuildResumeCommandInput,
@@ -92,15 +93,7 @@ function normalizeAgentMessage(event: JsonRecord): NormalizedAgentEvent[] {
 
 export const codexAdapter: AgentAdapter = {
   provider: 'codex',
-  capabilities: {
-    structuredEvents: true,
-    detectSessionId: true,
-    resumeWithMessage: true,
-    liveSemanticMessage: false,
-    stdinMessage: false,
-    interrupt: true,
-    terminate: true,
-  },
+  capabilities: normalizeAgentProviderCapabilities('codex'),
   buildStartCommand(input: BuildStartCommandInput) {
     return {
       commandKey: 'codex',

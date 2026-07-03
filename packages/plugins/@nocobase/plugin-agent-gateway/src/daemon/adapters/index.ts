@@ -8,19 +8,27 @@
  */
 
 import { codexAdapter } from './codex';
-import { AgentAdapter, AgentProviderKey } from './types';
+import { claudeCodeAdapter } from './claudeCode';
+import { genericCliAdapter } from './genericCli';
+import { opencodeAdapter } from './opencode';
+import { AgentProviderKey } from '../../shared/providerCapabilities';
+import { AgentAdapter } from './types';
 
 export * from './codex';
+export * from './claudeCode';
+export * from './genericCli';
+export * from './opencode';
 export * from './types';
 
-const adapters: Record<AgentProviderKey, AgentAdapter | null> = {
+const adapters: Record<AgentProviderKey, AgentAdapter> = {
   codex: codexAdapter,
-  opencode: null,
-  'claude-code': null,
+  opencode: opencodeAdapter,
+  'claude-code': claudeCodeAdapter,
+  'generic-cli': genericCliAdapter,
 };
 
 export function getAgentAdapter(provider: string): AgentAdapter | null {
-  if (provider === 'codex' || provider === 'opencode' || provider === 'claude-code') {
+  if (provider === 'codex' || provider === 'opencode' || provider === 'claude-code' || provider === 'generic-cli') {
     return adapters[provider];
   }
   return null;

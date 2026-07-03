@@ -35,6 +35,12 @@ import { TerminalRingBuffer } from './terminalRingBuffer';
 import { DaemonTerminalStreamClient, DaemonTerminalStreamClientOptions } from './terminalStreamClient';
 import { AGENT_GATEWAY_TERMINATE_CONTROL_CANCEL_REASON } from '../shared/runControl';
 import {
+  AgentProviderKey,
+  hasAgentCapabilitySignal,
+  getExplicitAgentProviderKey,
+  normalizeAgentProviderCapabilities,
+} from '../shared/providerCapabilities';
+import {
   executeTmuxCommand,
   getManagedTmuxSessionName,
   interruptTmuxSession,
@@ -85,6 +91,7 @@ interface TerminalStreamHandle {
 
 interface ExecutionCommandSpec {
   commandKey: string;
+  provider?: AgentProviderKey;
   args: string[];
   cwd: string;
   env: Record<string, string>;
@@ -130,11 +137,74 @@ function getNumber(value: unknown) {
   return Number.isFinite(numberValue) && numberValue > 0 ? numberValue : undefined;
 }
 
-function getExecutionCommandSpec(payload: JsonRecord, cwd: string): ExecutionCommandSpec {
+function getRunPrompt(lease: RunLease, payload: JsonRecord) {
+  const run = isRecord(lease.run) ? lease.run : {};
+  const promptSnapshot = isRecord(run.promptSnapshot) ? run.promptSnapshot : {};
+  return getRawString(payload.prompt) || getRawString(payload.message) || getRawString(promptSnapshot.text);
+}
+
+function getCanonicalProvider(lease: RunLease, payload: JsonRecord) {
+  return (
+    getExplicitAgentProviderKey(lease.profileProvider) ||
+    getExplicitAgentProviderKey(payload.provider) ||
+    getExplicitAgentProviderKey(payload.agentProvider) ||
+    getExplicitAgentProviderKey(payload.commandKey)
+  );
+}
+
+function shouldUseStartAdapter(payload: JsonRecord, provider: AgentProviderKey, prompt: string) {
+  if (provider === 'generic-cli' || !prompt.trim()) {
+    return false;
+  }
+  const commandKey = getString(payload.commandKey);
+  const profileKey = getString(payload.profileKey);
+  const hasExplicitArgs = getStringArray(payload.args).length > 0;
+  return (
+    getExplicitAgentProviderKey(commandKey) === provider ||
+    (!hasExplicitArgs && (!commandKey || commandKey === profileKey))
+  );
+}
+
+function getFallbackObservationProvider(payload: JsonRecord, provider: AgentProviderKey | null) {
+  if (!provider || provider === 'generic-cli') {
+    return undefined;
+  }
+  const commandKey = getString(payload.commandKey);
+  const commandProvider = getExplicitAgentProviderKey(commandKey);
+  if (commandProvider) {
+    return commandProvider === provider ? provider : undefined;
+  }
+  if (commandKey) {
+    return undefined;
+  }
+  return undefined;
+}
+
+function getExecutionCommandSpec(lease: RunLease, cwd: string): ExecutionCommandSpec {
+  const payload = getPayload(lease);
   const commandKey = getString(payload.commandKey || payload.profileKey);
+  const provider = getCanonicalProvider(lease, payload);
+  const adapter = provider ? getAgentAdapter(provider) : null;
   if (getString(payload.mode) !== 'agent-session-resume') {
+    const prompt = getRunPrompt(lease, payload);
+    if (adapter && shouldUseStartAdapter(payload, adapter.provider, prompt)) {
+      const command = adapter.buildStartCommand({
+        prompt,
+        cwd,
+        extraArgs: getStringArray(payload.extraArgs),
+        timeoutMs: getNumber(payload.timeoutMs),
+      });
+      return {
+        ...command,
+        provider: adapter.provider,
+        cwd: command.cwd || cwd,
+        env: getStringMap(payload.env),
+      };
+    }
+    const observationProvider = getFallbackObservationProvider(payload, provider);
     return {
       commandKey,
+      ...(observationProvider ? { provider: observationProvider } : {}),
       args: getStringArray(payload.args),
       cwd,
       env: getStringMap(payload.env),
@@ -142,9 +212,11 @@ function getExecutionCommandSpec(payload: JsonRecord, cwd: string): ExecutionCom
     };
   }
 
-  const adapter = getAgentAdapter(commandKey);
-  if (!adapter?.capabilities.resumeWithMessage) {
-    throw new Error(`Agent provider does not support resume: ${commandKey || 'unknown'}`);
+  if (!adapter) {
+    throw new Error(`Agent provider does not support resume: ${provider || commandKey || 'unknown'}`);
+  }
+  if (!adapter.capabilities.resumeWithMessage) {
+    throw new Error(`Agent provider does not support resume: ${adapter.provider}`);
   }
 
   const providerSessionId = getString(payload.providerSessionId);
@@ -165,6 +237,7 @@ function getExecutionCommandSpec(payload: JsonRecord, cwd: string): ExecutionCom
   });
   return {
     ...command,
+    provider: adapter.provider,
     cwd: command.cwd || cwd,
     env: getStringMap(payload.env),
   };
@@ -280,8 +353,8 @@ async function* readOutputLinesForProviderEvents(output: ExecDriverResult['stdou
   }
 }
 
-async function detectProviderSessionId(commandKey: string, result: ExecDriverResult) {
-  const adapter = getAgentAdapter(commandKey);
+async function detectProviderSessionId(provider: string | undefined, result: ExecDriverResult) {
+  const adapter = provider ? getAgentAdapter(provider) : null;
   if (!adapter?.capabilities.detectSessionId) {
     return null;
   }
@@ -294,7 +367,7 @@ async function detectProviderSessionId(commandKey: string, result: ExecDriverRes
     for (const rawLine of output.split(/\r?\n/)) {
       const providerSessionId = adapter.detectSessionId({
         rawLine,
-        source: commandKey,
+        source: provider,
       });
       if (providerSessionId) {
         return {
@@ -308,8 +381,8 @@ async function detectProviderSessionId(commandKey: string, result: ExecDriverRes
   return null;
 }
 
-async function collectProviderConversationEvents(commandKey: string, result: ExecDriverResult) {
-  const adapter = getAgentAdapter(commandKey);
+async function collectProviderConversationEvents(provider: string | undefined, result: ExecDriverResult) {
+  const adapter = provider ? getAgentAdapter(provider) : null;
   if (!adapter?.capabilities.structuredEvents) {
     return [];
   }
@@ -318,7 +391,7 @@ async function collectProviderConversationEvents(commandKey: string, result: Exe
   const events: JsonRecord[] = [];
   for (const outputRecord of [result.stdout, result.stderr]) {
     for await (const rawLine of readOutputLinesForProviderEvents(outputRecord)) {
-      for (const event of adapter.normalizeEvent({ rawLine, source: commandKey })) {
+      for (const event of adapter.normalizeEvent({ rawLine, source: provider })) {
         events.push({
           source: adapter.provider,
           sequence,
@@ -340,25 +413,28 @@ async function collectProviderConversationEvents(commandKey: string, result: Exe
 async function reportProviderSessionIfDetected(options: {
   gateway: AgentGatewayDaemonNodeClient;
   lease: RunLease;
-  commandKey: string;
+  provider?: string;
   result: ExecDriverResult;
 }) {
-  const detected = await detectProviderSessionId(options.commandKey, options.result);
+  const detected = await detectProviderSessionId(options.provider, options.result);
   if (!detected) {
     return null;
   }
 
   let lastError: unknown;
+  const capabilities = hasAgentCapabilitySignal(options.lease.profileCapabilities)
+    ? normalizeAgentProviderCapabilities(detected.adapter.provider, options.lease.profileCapabilities)
+    : detected.adapter.capabilities;
   for (let attempt = 1; attempt <= PROVIDER_SESSION_UPSERT_MAX_ATTEMPTS; attempt += 1) {
     try {
       await options.gateway.upsertAgentSession(options.lease, {
         provider: detected.adapter.provider,
         providerSessionId: detected.providerSessionId,
         status: 'active',
-        capabilities: detected.adapter.capabilities,
+        capabilities,
         metadata: {
           detectedFrom: 'exec-jsonl',
-          commandKey: options.commandKey,
+          provider: detected.adapter.provider,
           upsertAttempt: attempt,
         },
       });
@@ -377,7 +453,7 @@ async function reportProviderSessionIfDetected(options: {
 async function reportProviderSessionAndCollectWarnings(options: {
   gateway: AgentGatewayDaemonNodeClient;
   lease: RunLease;
-  commandKey: string;
+  provider?: string;
   result: ExecDriverResult;
 }) {
   const warnings: string[] = [];
@@ -387,7 +463,7 @@ async function reportProviderSessionAndCollectWarnings(options: {
     warnings.push(`Agent session upsert failed: ${error instanceof Error ? error.message : String(error)}`);
   }
   try {
-    const events = await collectProviderConversationEvents(options.commandKey, options.result);
+    const events = await collectProviderConversationEvents(options.provider, options.result);
     for (let index = 0; index < events.length; index += MAX_CONVERSATION_EVENTS_PER_APPEND) {
       await options.gateway.appendConversationEvents(options.lease, {
         events: events.slice(index, index + MAX_CONVERSATION_EVENTS_PER_APPEND),
@@ -926,7 +1002,7 @@ export async function executeClaimedRun(
   let stopControlRequests: (() => Promise<void>) | null = null;
 
   try {
-    const commandSpec = getExecutionCommandSpec(payload, cwd);
+    const commandSpec = getExecutionCommandSpec(claimedLease, cwd);
     if (usesManagedTmux) {
       terminalStream = createRunTerminalStream({
         runOptions: options,
@@ -1044,7 +1120,7 @@ export async function executeClaimedRun(
       await reportProviderSessionAndCollectWarnings({
         gateway: options.gateway,
         lease: activeLease(),
-        commandKey: commandSpec.commandKey,
+        provider: commandSpec.provider,
         result,
       });
       await options.gateway.cancelAckRun(activeLease());
@@ -1060,7 +1136,7 @@ export async function executeClaimedRun(
     const sessionObservationWarnings = await reportProviderSessionAndCollectWarnings({
       gateway: options.gateway,
       lease: activeLease(),
-      commandKey: commandSpec.commandKey,
+      provider: commandSpec.provider,
       result,
     });
     const terminalResult: ExecDriverResult =

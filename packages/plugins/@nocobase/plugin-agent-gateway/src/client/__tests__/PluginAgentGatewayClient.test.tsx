@@ -53,6 +53,13 @@ describe('PluginAgentGatewayClient', () => {
       }),
     );
     expect(addSetting).toHaveBeenCalledWith(
+      'agent-gateway.provider-capabilities',
+      expect.objectContaining({
+        aclSnippet: 'pm.agent-gateway.nodes',
+        componentLoader: expect.any(Function),
+      }),
+    );
+    expect(addSetting).toHaveBeenCalledWith(
       'agent-gateway.audit',
       expect.objectContaining({
         aclSnippet: 'pm.agent-gateway.audit',
@@ -77,6 +84,9 @@ describe('PluginAgentGatewayClient', () => {
 
     expect(app.pluginSettingsManager.getRoutePath('agent-gateway.nodes')).toBe('/admin/settings/agent-gateway/nodes');
     expect(app.pluginSettingsManager.getRoutePath('agent-gateway.runs')).toBe('/admin/settings/agent-gateway/runs');
+    expect(app.pluginSettingsManager.getRoutePath('agent-gateway.provider-capabilities')).toBe(
+      '/admin/settings/agent-gateway/provider-capabilities',
+    );
     expect(app.pluginSettingsManager.getRoutePath('agent-gateway.audit')).toBe('/admin/settings/agent-gateway/audit');
     expect(app.pluginSettingsManager.getRoutePath('agent-gateway.prompt-templates')).toBe(
       '/admin/settings/agent-gateway/prompt-templates',
@@ -87,6 +97,7 @@ describe('PluginAgentGatewayClient', () => {
     expect(app.pluginSettingsManager.get('agent-gateway')?.children?.map((item) => item.name)).toEqual([
       'agent-gateway.nodes',
       'agent-gateway.runs',
+      'agent-gateway.provider-capabilities',
       'agent-gateway.audit',
       'agent-gateway.prompt-templates',
       'agent-gateway.dispatch-bindings',

@@ -46,6 +46,12 @@ import {
 } from './utils';
 import { validateRunLease } from './runLifecycle';
 import { auditAgentActionBestEffort } from '../audit/agentActionAudit';
+import {
+  AGENT_GATEWAY_ACTION_UNSUPPORTED_CODE,
+  AgentCapabilityKey,
+  getUnsupportedCapabilityMessage,
+} from '../../shared/providerCapabilities';
+import { getRunProviderCapabilitySummary, isRunCapabilitySupported } from './capabilityUtils';
 
 const MAX_EVENT_MESSAGE_LENGTH = 4000;
 const MAX_EVENT_PAYLOAD_CHARS = 16000;
@@ -76,6 +82,7 @@ const STANDARD_OBSERVABILITY_COLLECTIONS = [
   'agApiCallLogs',
   'agAgentActionAudits',
 ] as const;
+const DIRECT_OBSERVABILITY_READ_ACTIONS = new Set(['get', 'list']);
 
 function getRequiredString(ctx: Context, value: unknown, name: string) {
   const stringValue = getString(value);
@@ -379,6 +386,39 @@ async function auditObservationRead(
   });
 }
 
+async function assertObservationCapability(
+  ctx: Context,
+  run: ModelRecord,
+  capability: AgentCapabilityKey,
+  audit: {
+    auditAction: 'readArtifacts' | 'readRawLogs';
+    permissionKey: string;
+    routeAction: string;
+  },
+) {
+  const capabilitySummary = await getRunProviderCapabilitySummary(ctx, run);
+  if (isRunCapabilitySupported(capabilitySummary, capability)) {
+    return capabilitySummary;
+  }
+  await auditAgentActionBestEffort(ctx, {
+    action: audit.auditAction,
+    runId: getModelString(run, 'id'),
+    sessionId: getModelString(run, 'agentSessionId') || undefined,
+    operatorId: getCurrentUserId(ctx) || undefined,
+    permissionKey: audit.permissionKey,
+    resultStatus: 'denied',
+    provider: capabilitySummary.provider,
+    metadataJson: {
+      routeAction: audit.routeAction,
+      unsupportedCapability: capability,
+    },
+  });
+  ctx.throw(409, {
+    code: AGENT_GATEWAY_ACTION_UNSUPPORTED_CODE,
+    message: getUnsupportedCapabilityMessage(capability),
+  });
+}
+
 function getRedactedPayload(ctx: Context, payload: unknown) {
   const redactedPayload = redactEventPayload(payload);
   const serializedPayload = JSON.stringify(redactedPayload) || '';
@@ -629,6 +669,11 @@ async function listRunEvents(ctx: Context, runId: string) {
     permissionKey: permission.permissionKey,
     routeAction: 'events:list',
   });
+  await assertObservationCapability(ctx, run, 'structuredEvents', {
+    auditAction: 'readRawLogs',
+    permissionKey: permission.permissionKey,
+    routeAction: 'events:list',
+  });
 
   const events = (await ctx.db.getRepository('agRunEvents').find({
     filter: {
@@ -654,6 +699,11 @@ async function listRunArtifacts(ctx: Context, runId: string) {
     },
   );
   const run = await assertObservationRunVisible(ctx, runId, {
+    auditAction: 'readArtifacts',
+    permissionKey: permission.permissionKey,
+    routeAction: 'artifacts:list',
+  });
+  await assertObservationCapability(ctx, run, 'artifacts', {
     auditAction: 'readArtifacts',
     permissionKey: permission.permissionKey,
     routeAction: 'artifacts:list',
@@ -687,6 +737,11 @@ async function listRunSnapshots(ctx: Context, runId: string) {
     permissionKey: permission.permissionKey,
     routeAction: 'snapshots:list',
   });
+  await assertObservationCapability(ctx, run, 'artifacts', {
+    auditAction: 'readArtifacts',
+    permissionKey: permission.permissionKey,
+    routeAction: 'snapshots:list',
+  });
 
   const snapshots = (await ctx.db.getRepository('agRunSnapshots').find({
     filter: {
@@ -712,6 +767,11 @@ async function listRunApiCallLogs(ctx: Context, runId: string) {
     },
   );
   const run = await assertObservationRunVisible(ctx, runId, {
+    auditAction: 'readRawLogs',
+    permissionKey: permission.permissionKey,
+    routeAction: 'api-call-logs:list',
+  });
+  await assertObservationCapability(ctx, run, 'structuredEvents', {
     auditAction: 'readRawLogs',
     permissionKey: permission.permissionKey,
     routeAction: 'api-call-logs:list',
@@ -743,6 +803,9 @@ export function registerRunObservabilityRoutes(plugin: Plugin) {
         }
         await requireManagePermission(ctx);
       } else if (standardCollectionAction) {
+        if (ctx.method === 'GET' && DIRECT_OBSERVABILITY_READ_ACTIONS.has(standardCollectionAction.action)) {
+          ctx.throw(403, 'Use Agent Gateway observability routes to read run data');
+        }
         await requireManagePermission(ctx);
         await next();
         return;

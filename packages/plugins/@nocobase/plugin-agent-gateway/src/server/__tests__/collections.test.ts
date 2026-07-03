@@ -178,6 +178,7 @@ describe('agent gateway collections', () => {
     expect(profileFields).toEqual(
       expect.arrayContaining([
         'profileKey',
+        'provider',
         'agentType',
         'driver',
         'capabilitiesJson',

@@ -353,6 +353,258 @@ describe('agent gateway daemon runner', () => {
     });
   });
 
+  it('uses the claimed canonical provider for adapter commands when profile keys are custom', async () => {
+    const workspace = path.join(tempDir, 'workspace');
+    await fs.mkdir(workspace, { recursive: true });
+    const requester = new RunnerRequester({
+      claimPayload: {
+        claimed: true,
+        runId: 'run-1',
+        runCode: 'run-1',
+        claimToken: 'ag_claim_CLAIM_TOKEN_SECRET',
+        claimAttempt: 1,
+        leaseVersion: 1,
+        profileKey: 'custom-codex',
+        profileProvider: 'codex',
+        profileCapabilities: {
+          artifacts: false,
+        },
+        run: {
+          id: 'run-1',
+          promptSnapshot: {
+            text: 'Build with custom profile',
+          },
+          executionPayloadJson: {
+            profileKey: 'custom-codex',
+            cwd: '.',
+          },
+        },
+      },
+    });
+    const gateway = new AgentGatewayDaemonNodeClient(requester, {
+      serverUrl: 'https://nocobase.example.test',
+      nodeId: 'node-1',
+      nodeKey: 'node-1',
+      nodeToken: 'ag_node_NODE_TOKEN_SECRET',
+      savedAt: new Date().toISOString(),
+    });
+    const executedCommands: JsonRecord[] = [];
+
+    const result = await runDaemonOnce({
+      gateway,
+      allowlist: {
+        codex: {
+          commandKey: 'codex',
+          executable: process.execPath,
+          defaultTimeoutMs: 5000,
+        },
+      },
+      workspaceRoot: workspace,
+      skillsRoot: path.join(tempDir, 'skills'),
+      artifactDir: path.join(tempDir, 'artifacts'),
+      runHeartbeatIntervalMs: 60_000,
+      executeCommand: async (options) => {
+        executedCommands.push({
+          commandKey: options.commandKey,
+          args: options.args,
+          cwd: options.cwd,
+        });
+        return {
+          status: 'succeeded',
+          exitCode: 0,
+          signal: null,
+          stdout: {
+            text: '{"type":"thread.started","thread_id":"019f1e72-d75c-7c61-a9ba-cc99c653e0a2"}',
+            sizeBytes: 76,
+          },
+          stderr: {
+            text: null,
+            sizeBytes: 0,
+          },
+        };
+      },
+      detectOptions: {
+        probeCommand: async (candidates) => ({
+          available: candidates.includes('codex'),
+          command: candidates[0],
+          version: 'codex 1.0.0',
+        }),
+      },
+    });
+
+    expect(result.status).toBe('succeeded');
+    expect(executedCommands[0]).toMatchObject({
+      commandKey: 'codex',
+      args: ['exec', '--json', 'Build with custom profile'],
+    });
+    const upsertCall = requester.calls.find((call) => call.path.endsWith('/agent-session:upsert'));
+    expect(upsertCall?.body).toMatchObject({
+      provider: 'codex',
+      providerSessionId: '019f1e72-d75c-7c61-a9ba-cc99c653e0a2',
+      capabilities: {
+        artifacts: false,
+      },
+    });
+  });
+
+  it('keeps explicit allowlisted commands when a claimed profile also reports a canonical provider', async () => {
+    const workspace = path.join(tempDir, 'workspace');
+    await fs.mkdir(workspace, { recursive: true });
+    const requester = new RunnerRequester({
+      claimPayload: {
+        claimed: true,
+        runId: 'run-1',
+        runCode: 'run-1',
+        claimToken: 'ag_claim_CLAIM_TOKEN_SECRET',
+        claimAttempt: 1,
+        leaseVersion: 1,
+        profileKey: 'custom-codex',
+        profileProvider: 'codex',
+        run: {
+          id: 'run-1',
+          promptSnapshot: {
+            text: 'Prompt should not replace the explicit node command',
+          },
+          executionPayloadJson: {
+            commandKey: 'node',
+            profileKey: 'custom-codex',
+            args: ['-e', 'process.stdout.write("legacy command complete")'],
+            cwd: '.',
+          },
+        },
+      },
+    });
+    const gateway = new AgentGatewayDaemonNodeClient(requester, {
+      serverUrl: 'https://nocobase.example.test',
+      nodeId: 'node-1',
+      nodeKey: 'node-1',
+      nodeToken: 'ag_node_NODE_TOKEN_SECRET',
+      savedAt: new Date().toISOString(),
+    });
+    const executedCommands: JsonRecord[] = [];
+
+    const result = await runDaemonOnce({
+      gateway,
+      allowlist: {
+        node: {
+          commandKey: 'node',
+          executable: process.execPath,
+          defaultTimeoutMs: 5000,
+        },
+      },
+      workspaceRoot: workspace,
+      skillsRoot: path.join(tempDir, 'skills'),
+      artifactDir: path.join(tempDir, 'artifacts'),
+      runHeartbeatIntervalMs: 60_000,
+      executeCommand: async (options) => {
+        executedCommands.push({
+          commandKey: options.commandKey,
+          args: options.args,
+          cwd: options.cwd,
+        });
+        return {
+          status: 'succeeded',
+          exitCode: 0,
+          signal: null,
+          stdout: {
+            text: '{"type":"thread.started","thread_id":"019f1e72-d75c-7c61-a9ba-cc99c653e0a2"}',
+            sizeBytes: 76,
+          },
+          stderr: {
+            text: null,
+            sizeBytes: 0,
+          },
+        };
+      },
+    });
+
+    expect(result.status).toBe('succeeded');
+    expect(executedCommands[0]).toMatchObject({
+      commandKey: 'node',
+      args: ['-e', 'process.stdout.write("legacy command complete")'],
+    });
+    expect(requester.calls.some((call) => call.path.endsWith('/agent-session:upsert'))).toBe(false);
+    expect(requester.calls.some((call) => call.path.endsWith('/conversation-events:append'))).toBe(false);
+  });
+
+  it('does not treat a canonical-looking profile key as the provider for explicit commands', async () => {
+    const workspace = path.join(tempDir, 'workspace');
+    await fs.mkdir(workspace, { recursive: true });
+    const requester = new RunnerRequester({
+      claimPayload: {
+        claimed: true,
+        runId: 'run-1',
+        runCode: 'run-1',
+        claimToken: 'ag_claim_CLAIM_TOKEN_SECRET',
+        claimAttempt: 1,
+        leaseVersion: 1,
+        run: {
+          id: 'run-1',
+          promptSnapshot: {
+            text: 'Prompt should not replace explicit node command',
+          },
+          executionPayloadJson: {
+            commandKey: 'node',
+            profileKey: 'codex',
+            args: ['-e', 'process.stdout.write("legacy command complete")'],
+            cwd: '.',
+          },
+        },
+      },
+    });
+    const gateway = new AgentGatewayDaemonNodeClient(requester, {
+      serverUrl: 'https://nocobase.example.test',
+      nodeId: 'node-1',
+      nodeKey: 'node-1',
+      nodeToken: 'ag_node_NODE_TOKEN_SECRET',
+      savedAt: new Date().toISOString(),
+    });
+    const executedCommands: JsonRecord[] = [];
+
+    const result = await runDaemonOnce({
+      gateway,
+      allowlist: {
+        node: {
+          commandKey: 'node',
+          executable: process.execPath,
+          defaultTimeoutMs: 5000,
+        },
+      },
+      workspaceRoot: workspace,
+      skillsRoot: path.join(tempDir, 'skills'),
+      artifactDir: path.join(tempDir, 'artifacts'),
+      runHeartbeatIntervalMs: 60_000,
+      executeCommand: async (options) => {
+        executedCommands.push({
+          commandKey: options.commandKey,
+          args: options.args,
+          cwd: options.cwd,
+        });
+        return {
+          status: 'succeeded',
+          exitCode: 0,
+          signal: null,
+          stdout: {
+            text: '{"type":"thread.started","thread_id":"019f1e72-d75c-7c61-a9ba-cc99c653e0a2"}',
+            sizeBytes: 76,
+          },
+          stderr: {
+            text: null,
+            sizeBytes: 0,
+          },
+        };
+      },
+    });
+
+    expect(result.status).toBe('succeeded');
+    expect(executedCommands[0]).toMatchObject({
+      commandKey: 'node',
+      args: ['-e', 'process.stdout.write("legacy command complete")'],
+    });
+    expect(requester.calls.some((call) => call.path.endsWith('/agent-session:upsert'))).toBe(false);
+    expect(requester.calls.some((call) => call.path.endsWith('/conversation-events:append'))).toBe(false);
+  });
+
   it('builds continuation runs through the Codex resume command builder', async () => {
     const workspace = path.join(tempDir, 'workspace');
     await fs.mkdir(workspace, { recursive: true });

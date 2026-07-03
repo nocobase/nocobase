@@ -19,6 +19,7 @@ interface ResumeSourceRun {
   agentSessionProvider?: string | null;
   agentSessionProviderId?: string | null;
   agentSessionCapabilitiesJson?: {
+    resumeSession?: unknown;
     resumeWithMessage?: unknown;
   } | null;
 }
@@ -48,11 +49,11 @@ function getDisabledReason(run: ResumeSourceRun, t: AgentSessionResumeBoxProps['
   if (!RESUMABLE_RUN_STATUSES.has(run.status || '')) {
     return t('Resume is available after the run ends');
   }
-  if (run.agentSessionProvider !== 'codex') {
-    return t('Resume is currently available for Codex sessions only');
-  }
   if (!run.agentSessionId || !run.agentSessionProviderId) {
     return t('Resume requires a provider session id');
+  }
+  if (run.agentSessionCapabilitiesJson?.resumeSession === false) {
+    return t('Agent session resume is not supported by this provider');
   }
   if (run.agentSessionCapabilitiesJson?.resumeWithMessage === false) {
     return t('Agent session does not support resume with message');

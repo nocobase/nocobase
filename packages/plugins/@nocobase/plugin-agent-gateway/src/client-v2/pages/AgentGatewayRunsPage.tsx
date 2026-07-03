@@ -40,6 +40,11 @@ import {
 import type { ColumnsType } from 'antd/es/table';
 import type { CSSMotionProps } from 'rc-motion';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  AgentCapabilityKey,
+  isAgentCapabilitySupported,
+  normalizeAgentProviderCapabilities,
+} from '../../shared/providerCapabilities';
 import { AgentTimeline, AgentTimelineEventRecord } from '../components/AgentTimeline';
 import { AgentSessionResumeBox, AgentSessionResumeInput } from '../components/AgentSessionResumeBox';
 import { ReadonlyXtermOutput } from '../components/ReadonlyXtermOutput';
@@ -85,6 +90,9 @@ interface RunRecord {
   continuationReason?: string | null;
   agentSessionProvider?: string | null;
   agentSessionProviderId?: string | null;
+  agentProvider?: string | null;
+  agentProviderCapabilitySource?: string | null;
+  agentProviderCapabilitiesJson?: JsonRecord;
   agentSessionCapabilitiesJson?: JsonRecord;
   agentGatewayActionPermissionsJson?: {
     resumeAgentSession?: boolean;
@@ -156,6 +164,9 @@ interface TerminalSnapshot {
   output: string;
   capturedAt: string;
   inputEnabled: boolean;
+  unsupported?: boolean;
+  unsupportedCapability?: AgentCapabilityKey;
+  message?: string;
 }
 
 interface TerminalSnapshotState {
@@ -180,6 +191,8 @@ interface RunDetailsWarnings {
   snapshots?: string;
   apiCallLogs?: string;
 }
+
+type RunActionPermissionKey = keyof NonNullable<RunRecord['agentGatewayActionPermissionsJson']>;
 
 interface ResumeAgentSessionResult {
   runId: string;
@@ -275,9 +288,10 @@ function canUseTerminalControl(run: RunRecord | undefined, snapshot: TerminalSna
   if (!run || !TERMINAL_CONTROL_RUN_STATUSES.has(run.status)) {
     return false;
   }
-  const backend = snapshot?.backend ?? run.terminalBackend;
-  const terminalStatus = snapshot?.terminalStatus ?? run.terminalStatus;
-  return backend === 'tmux' && terminalStatus === 'active' && snapshot?.available !== false;
+  const outputUnsupported = snapshot?.unsupportedCapability === 'terminalOutput';
+  const backend = outputUnsupported ? run.terminalBackend : snapshot?.backend ?? run.terminalBackend;
+  const terminalStatus = outputUnsupported ? run.terminalStatus : snapshot?.terminalStatus ?? run.terminalStatus;
+  return backend === 'tmux' && terminalStatus === 'active' && (outputUnsupported || snapshot?.available !== false);
 }
 
 function mergeConversationEventsState(
@@ -386,6 +400,13 @@ function canOpenAuditFromRuns(runs: RunRecord[] | undefined) {
   return Boolean(runs?.some((run) => run.agentGatewayActionPermissionsJson?.readAudit === true));
 }
 
+function isRunActionAllowed(
+  permissions: RunRecord['agentGatewayActionPermissionsJson'] | undefined,
+  action: RunActionPermissionKey,
+) {
+  return permissions?.[action] === true;
+}
+
 function RunSessionSummary({ run, t }: { run: RunRecord; t: TFunction }) {
   const providerSummary = [run.agentSessionProvider, run.agentSessionProviderId].filter(Boolean).join(' / ');
   if (providerSummary || run.agentSessionId) {
@@ -409,6 +430,29 @@ function getSkippedDetails<T>(fallback: T, warning: string) {
   return {
     data: fallback,
     warning,
+  };
+}
+
+function getRunCapability(run: RunRecord, capability: AgentCapabilityKey) {
+  const capabilities = run.agentProviderCapabilitiesJson;
+  if (!capabilities || !Object.keys(capabilities).length) {
+    return true;
+  }
+  return isAgentCapabilitySupported(run.agentProvider || 'generic-cli', capabilities, capability);
+}
+
+function createUnsupportedTerminalSnapshot(run: RunRecord): TerminalSnapshot {
+  return {
+    backend: run.terminalBackend,
+    terminalStatus: run.terminalStatus,
+    runStatus: run.status,
+    available: false,
+    output: '',
+    capturedAt: run.terminalLastActivityAt || run.startedAt || run.requestedAt || '',
+    inputEnabled: false,
+    unsupported: true,
+    unsupportedCapability: 'terminalOutput',
+    message: 'Agent CLI terminal output is not supported by this provider',
   };
 }
 
@@ -478,6 +522,7 @@ function TerminalPanel({
 }) {
   const output = snapshot?.output || '';
   const terminalAvailable = Boolean(snapshot?.available);
+  const terminalOutputSupported = snapshot?.unsupportedCapability !== 'terminalOutput';
   const streamHasOutput = stream.hasStreamOutput || stream.chunks.length > 0 || Boolean(stream.previewText);
   const snapshotHasOutput = Boolean(output);
   const streamUnavailable =
@@ -510,7 +555,7 @@ function TerminalPanel({
           <Typography.Text type="secondary">{formatDateTime(snapshot?.capturedAt)}</Typography.Text>
         </Space>
         <Space>
-          {canReadTerminal ? (
+          {canReadTerminal && terminalOutputSupported ? (
             <Tooltip title={t('Refresh terminal')}>
               <Button
                 aria-label={t('Refresh terminal')}
@@ -548,7 +593,15 @@ function TerminalPanel({
         <Alert type="warning" showIcon message={t('Agent Gateway terminal read permission required')} />
       ) : null}
       {canReadTerminal && !terminalAvailable ? (
-        <Alert type="info" showIcon message={t('No terminal session yet')} />
+        <Alert
+          type="info"
+          showIcon
+          message={
+            snapshot?.unsupported
+              ? t('Terminal output is not supported by this provider')
+              : t('No terminal session yet')
+          }
+        />
       ) : null}
       {controlRequestState ? (
         <Alert
@@ -566,7 +619,7 @@ function TerminalPanel({
           message={t('Live output gap detected. Showing saved terminal output when available.')}
         />
       ) : null}
-      {canReadTerminal ? (
+      {canReadTerminal && terminalOutputSupported ? (
         <ReadonlyXtermOutput
           ariaLabel={t('Readonly live terminal output')}
           chunks={useStreamOutput ? stream.chunks : []}
@@ -803,9 +856,11 @@ export default function AgentGatewayRunsPage() {
       });
       const run = getRequiredResponseData(runResponse, t('Failed to load run details'));
       const runActionPermissions = run.agentGatewayActionPermissionsJson || {};
-      const canReadSessionMessages = runActionPermissions.readSessionMessages !== false;
-      const canReadArtifacts = runActionPermissions.readArtifacts !== false;
-      const canReadRawLogs = runActionPermissions.readRawLogs !== false;
+      const canReadSessionMessages = isRunActionAllowed(runActionPermissions, 'readSessionMessages');
+      const canReadArtifacts = isRunActionAllowed(runActionPermissions, 'readArtifacts');
+      const canReadRawLogs = isRunActionAllowed(runActionPermissions, 'readRawLogs');
+      const supportsArtifacts = getRunCapability(run, 'artifacts');
+      const supportsStructuredEvents = getRunCapability(run, 'structuredEvents');
       const timelineUrl = run.agentSessionId
         ? `agent-gateway/agent-sessions/${encodeURIComponent(run.agentSessionId)}/conversation-events:list`
         : `agent-gateway/runs/${encodeURIComponent(selectedRunId)}/conversation-events:list`;
@@ -824,7 +879,7 @@ export default function AgentGatewayRunsPage() {
                 [],
                 t('Agent Gateway session message read permission required'),
               ),
-          canReadRawLogs
+          canReadRawLogs && supportsStructuredEvents
             ? getOptionalDetails<RunEventRecord[]>({
                 request: ctx.api.request<RunEventRecord[]>({
                   url: `agent-gateway/runs/${encodeURIComponent(selectedRunId)}/events:list`,
@@ -833,8 +888,13 @@ export default function AgentGatewayRunsPage() {
                 fallback: [],
                 fallbackMessage: t('Events unavailable'),
               })
-            : getSkippedDetails<RunEventRecord[]>([], t('Agent Gateway raw log read permission required')),
-          canReadArtifacts
+            : getSkippedDetails<RunEventRecord[]>(
+                [],
+                canReadRawLogs
+                  ? t('Structured events are not supported by this provider')
+                  : t('Agent Gateway raw log read permission required'),
+              ),
+          canReadArtifacts && supportsArtifacts
             ? getOptionalDetails<RunArtifactRecord[]>({
                 request: ctx.api.request<RunArtifactRecord[]>({
                   url: `agent-gateway/runs/${encodeURIComponent(selectedRunId)}/artifacts:list`,
@@ -843,8 +903,13 @@ export default function AgentGatewayRunsPage() {
                 fallback: [],
                 fallbackMessage: t('Artifacts unavailable'),
               })
-            : getSkippedDetails<RunArtifactRecord[]>([], t('Agent Gateway artifact read permission required')),
-          canReadArtifacts
+            : getSkippedDetails<RunArtifactRecord[]>(
+                [],
+                canReadArtifacts
+                  ? t('Artifacts are not supported by this provider')
+                  : t('Agent Gateway artifact read permission required'),
+              ),
+          canReadArtifacts && supportsArtifacts
             ? getOptionalDetails<RunSnapshotRecord[]>({
                 request: ctx.api.request<RunSnapshotRecord[]>({
                   url: `agent-gateway/runs/${encodeURIComponent(selectedRunId)}/snapshots:list`,
@@ -853,8 +918,13 @@ export default function AgentGatewayRunsPage() {
                 fallback: [],
                 fallbackMessage: t('Snapshots unavailable'),
               })
-            : getSkippedDetails<RunSnapshotRecord[]>([], t('Agent Gateway artifact read permission required')),
-          canReadRawLogs
+            : getSkippedDetails<RunSnapshotRecord[]>(
+                [],
+                canReadArtifacts
+                  ? t('Artifacts are not supported by this provider')
+                  : t('Agent Gateway artifact read permission required'),
+              ),
+          canReadRawLogs && supportsStructuredEvents
             ? getOptionalDetails<ApiCallLogRecord[]>({
                 request: ctx.api.request<ApiCallLogRecord[]>({
                   url: `agent-gateway/runs/${encodeURIComponent(selectedRunId)}/api-call-logs:list`,
@@ -863,7 +933,12 @@ export default function AgentGatewayRunsPage() {
                 fallback: [],
                 fallbackMessage: t('API logs unavailable'),
               })
-            : getSkippedDetails<ApiCallLogRecord[]>([], t('Agent Gateway raw log read permission required')),
+            : getSkippedDetails<ApiCallLogRecord[]>(
+                [],
+                canReadRawLogs
+                  ? t('Structured events are not supported by this provider')
+                  : t('Agent Gateway raw log read permission required'),
+              ),
         ]);
 
       return {
@@ -889,11 +964,14 @@ export default function AgentGatewayRunsPage() {
           return;
         }
         setRunDetailsError(undefined);
-        if (data.run.agentGatewayActionPermissionsJson?.readTerminal === false) {
+        if (!isRunActionAllowed(data.run.agentGatewayActionPermissionsJson, 'readTerminal')) {
           setTerminalSnapshotState(null);
         }
         if (data.warnings.conversationEvents) {
-          const canReadSessionMessages = data.run.agentGatewayActionPermissionsJson?.readSessionMessages !== false;
+          const canReadSessionMessages = isRunActionAllowed(
+            data.run.agentGatewayActionPermissionsJson,
+            'readSessionMessages',
+          );
           setConversationEventsState((previous) =>
             canReadSessionMessages && previous?.runId === data.run.id ? previous : null,
           );
@@ -925,8 +1003,15 @@ export default function AgentGatewayRunsPage() {
       if (!selectedRunId || !detailOpen || runDetailsError || runDetailsRequest.data?.run.id !== selectedRunId) {
         return null;
       }
-      if (runDetailsRequest.data?.run.agentGatewayActionPermissionsJson?.readTerminal === false) {
+      const run = runDetailsRequest.data.run;
+      if (!isRunActionAllowed(run.agentGatewayActionPermissionsJson, 'readTerminal')) {
         return null;
+      }
+      if (!getRunCapability(run, 'terminalOutput')) {
+        return {
+          runId: run.id,
+          snapshot: createUnsupportedTerminalSnapshot(run),
+        } satisfies TerminalSnapshotState;
       }
       const runId = selectedRunId;
       const response = await ctx.api.request<TerminalSnapshot | null>({
@@ -1196,25 +1281,39 @@ export default function AgentGatewayRunsPage() {
     ? undefined
     : runDetailsRequest.data?.run.agentGatewayActionPermissionsJson;
 
+  const pollingRun = runDetailsRequest.data?.run;
+
   useEffect(() => {
     if (!detailOpen || !selectedRunId || runDetailsError) {
       return;
     }
-    if (runDetailsRequest.data?.run.id !== selectedRunId) {
+    if (pollingRun?.id !== selectedRunId) {
       return;
     }
+    const run = pollingRun;
     const pollActionPermissions = selectedRunActionPermissions || {};
-    const canPollTerminal = pollActionPermissions.readTerminal !== false;
-    const canPollSessionMessages = pollActionPermissions.readSessionMessages !== false;
+    const canPollTerminal = isRunActionAllowed(pollActionPermissions, 'readTerminal');
+    const terminalOutputSupported = getRunCapability(run, 'terminalOutput');
+    const canPollSessionMessages = isRunActionAllowed(pollActionPermissions, 'readSessionMessages');
 
-    if (canPollTerminal) {
+    if (canPollTerminal && terminalOutputSupported) {
       refreshTerminalSnapshot();
+    } else if (canPollTerminal) {
+      setTerminalSnapshotState((previous) => {
+        if (previous?.runId === run.id && previous.snapshot?.unsupportedCapability === 'terminalOutput') {
+          return previous;
+        }
+        return {
+          runId: run.id,
+          snapshot: createUnsupportedTerminalSnapshot(run),
+        };
+      });
     }
     if (canPollSessionMessages) {
       refreshConversationEvents();
     }
     const realtimeTimer = window.setInterval(() => {
-      if (canPollTerminal) {
+      if (canPollTerminal && terminalOutputSupported) {
         refreshTerminalSnapshot();
       }
       if (canPollSessionMessages) {
@@ -1235,8 +1334,8 @@ export default function AgentGatewayRunsPage() {
     refreshRunDetails,
     refreshRuns,
     refreshTerminalSnapshot,
-    runDetailsRequest.data?.run.id,
     runDetailsError,
+    pollingRun,
     selectedRunId,
     selectedRunActionPermissions,
   ]);
@@ -1284,7 +1383,7 @@ export default function AgentGatewayRunsPage() {
 
   const renderCancelButton = useCallback(
     (run: RunRecord) => {
-      const canCancelRun = run.agentGatewayActionPermissionsJson?.cancelRun !== false;
+      const canCancelRun = isRunActionAllowed(run.agentGatewayActionPermissionsJson, 'cancelRun');
       return isCancelableRun(run) && canCancelRun ? (
         <Tooltip title={t('Cancel run')}>
           <Button
@@ -1376,9 +1475,13 @@ export default function AgentGatewayRunsPage() {
     !runDetailsError && runDetailsRequest.data?.run.id === selectedRunId ? runDetailsRequest.data : null;
   const selectedRun = activeRunDetails?.run || runsRequest.data?.find((run) => run.id === selectedRunId);
   const actionPermissions = activeRunDetails?.run.agentGatewayActionPermissionsJson || {};
-  const canResumeAgentSession = actionPermissions.resumeAgentSession !== false;
-  const canReadSessionMessages = actionPermissions.readSessionMessages !== false;
-  const canReadTerminal = actionPermissions.readTerminal !== false;
+  const canResumeAgentSession =
+    isRunActionAllowed(actionPermissions, 'resumeAgentSession') &&
+    Boolean(activeRunDetails?.run && getRunCapability(activeRunDetails.run, 'resumeSession'));
+  const canReadSessionMessages = isRunActionAllowed(actionPermissions, 'readSessionMessages');
+  const canReadTerminal = isRunActionAllowed(actionPermissions, 'readTerminal');
+  const canStreamTerminal =
+    canReadTerminal && Boolean(activeRunDetails?.run && getRunCapability(activeRunDetails.run, 'terminalOutput'));
   const terminalSnapshot =
     canReadTerminal && !runDetailsError && terminalSnapshotState && terminalSnapshotState.runId === selectedRunId
       ? terminalSnapshotState.snapshot
@@ -1417,7 +1520,7 @@ export default function AgentGatewayRunsPage() {
   );
   const terminalStream = useTerminalStream({
     runId: selectedRunId,
-    enabled: detailOpen && canReadTerminal && Boolean(activeRunDetails?.run.id === selectedRunId),
+    enabled: detailOpen && canStreamTerminal && Boolean(activeRunDetails?.run.id === selectedRunId),
     createStreamTicket,
   });
 
@@ -1615,6 +1718,33 @@ export default function AgentGatewayRunsPage() {
                   </Typography.Text>
                 ) : null}
               </Descriptions.Item>
+              <Descriptions.Item label={t('Provider capabilities')} span={2}>
+                <Space wrap>
+                  {Object.entries(
+                    normalizeAgentProviderCapabilities(
+                      activeRunDetails.run.agentProvider || 'generic-cli',
+                      activeRunDetails.run.agentProviderCapabilitiesJson,
+                    ),
+                  )
+                    .filter(([key]) =>
+                      [
+                        'structuredEvents',
+                        'terminalOutput',
+                        'resumeSession',
+                        'liveSemanticMessage',
+                        'stdinMessage',
+                        'interrupt',
+                        'terminate',
+                        'artifacts',
+                      ].includes(key),
+                    )
+                    .map(([key, value]) => (
+                      <Typography.Text key={key} type={value === true ? undefined : 'secondary'}>
+                        {t(key)}: {value === true ? t('Yes') : t('No')}
+                      </Typography.Text>
+                    ))}
+                </Space>
+              </Descriptions.Item>
               <Descriptions.Item label={t('Continuation')} span={2}>
                 {[activeRunDetails.run.continuationReason, activeRunDetails.run.parentRunId]
                   .filter(Boolean)
@@ -1653,7 +1783,7 @@ export default function AgentGatewayRunsPage() {
               />
             ) : null}
 
-            {showTerminalStreamSmoke && canReadTerminal ? (
+            {showTerminalStreamSmoke && canStreamTerminal ? (
               <TerminalStreamSmokePanel runId={activeRunDetails.run.id} />
             ) : null}
 

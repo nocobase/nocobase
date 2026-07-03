@@ -51,6 +51,7 @@ import {
 import { serializeSkillVersionSourceForNode } from './skillVersions';
 import { auditAgentActionBestEffort, auditMutatingAgentAction } from '../audit/agentActionAudit';
 import { AGENT_GATEWAY_TERMINATE_CONTROL_CANCEL_REASON } from '../../shared/runControl';
+import { getRunProviderCapabilitySummary, isRunCapabilitySupported } from './capabilityUtils';
 
 const DEFAULT_CLAIM_LEASE_SECONDS = 60;
 const DEFAULT_MAX_CONCURRENCY = 1;
@@ -324,14 +325,17 @@ async function getRunControlCapability(
   ctx: Context,
   run: ModelRecord,
   session: ModelRecord | null,
-  sessionCapabilities: JsonRecord,
   action: 'interrupt' | 'terminate',
 ) {
   if (!hasActiveTmuxControlSurface(run)) {
     return false;
   }
+  const capabilitySummary = await getRunProviderCapabilitySummary(ctx, run, session);
+  if (capabilitySummary.enforceCapabilities) {
+    return isRunCapabilitySupported(capabilitySummary, action);
+  }
   if (session) {
-    return getControlCapabilityDecision(sessionCapabilities, action) === true;
+    return true;
   }
   return await getRunnerControlCapability(ctx, run, action);
 }
@@ -344,17 +348,20 @@ async function serializeRunForManagement(ctx: Context, run: ModelRecord) {
         filterByTk: agentSessionId,
       })) as ModelRecord | null)
     : null;
-  const capabilities = session ? getRecord(getModelValue(session, 'capabilitiesJson')) : {};
+  const capabilitySummary = await getRunProviderCapabilitySummary(ctx, run, session);
   const actionPermissions = await getAgentGatewayActionPermissions(ctx);
-  const interruptCapable = await getRunControlCapability(ctx, run, session, capabilities, 'interrupt');
-  const terminateCapable = await getRunControlCapability(ctx, run, session, capabilities, 'terminate');
+  const interruptCapable = await getRunControlCapability(ctx, run, session, 'interrupt');
+  const terminateCapable = await getRunControlCapability(ctx, run, session, 'terminate');
   return {
     ...json,
     ...(session
       ? {
-          agentSessionCapabilitiesJson: capabilities,
+          agentSessionCapabilitiesJson: capabilitySummary.capabilities,
         }
       : {}),
+    agentProvider: capabilitySummary.provider,
+    agentProviderCapabilitySource: capabilitySummary.providerSource,
+    agentProviderCapabilitiesJson: capabilitySummary.capabilities,
     agentGatewayActionPermissionsJson: {
       resumeAgentSession: actionPermissions.resumeAgentSession,
       readSessionMessages: actionPermissions.readSessionMessages,
@@ -362,6 +369,8 @@ async function serializeRunForManagement(ctx: Context, run: ModelRecord) {
       readArtifacts: actionPermissions.readArtifacts,
       readRawLogs: actionPermissions.readRawLogs,
       readAudit: actionPermissions.readAudit,
+      interruptRun: actionPermissions.interruptRun,
+      terminateRun: actionPermissions.terminateRun,
       cancelRun: actionPermissions.cancelRun,
     },
     agentGatewayControlActionsJson: {
@@ -1037,6 +1046,8 @@ async function claimRun(ctx: Context, nodeId: string) {
       claimToken: claimToken.token,
       tokenLast4: claimToken.tokenLast4,
       heartbeatIntervalSeconds: Math.min(DEFAULT_CLAIM_LEASE_SECONDS, 30),
+      profileKey: getModelString(candidate.profile, 'profileKey'),
+      profileProvider: getModelString(candidate.profile, 'provider') || undefined,
       nodeCapabilities: getRecord(getModelValue(node, 'capabilitiesJson')),
       profileCapabilities: getRecord(getModelValue(candidate.profile, 'capabilitiesJson')),
       run: await serializeRunForNodeClaim(ctx, candidate.run, transaction),

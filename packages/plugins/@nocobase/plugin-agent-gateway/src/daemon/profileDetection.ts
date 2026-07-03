@@ -9,6 +9,8 @@
 
 import { spawn } from 'child_process';
 
+import { getAgentAdapter } from './adapters';
+import { getAgentProviderKey, normalizeAgentProviderCapabilities } from '../shared/providerCapabilities';
 import { AgentGatewayProfileKey, AgentGatewayProfileStatus, DetectedAgentProfile, JsonRecord } from './types';
 
 interface ProfileProbeDefinition {
@@ -122,7 +124,10 @@ function buildProfileStatus(result: CommandProbeResult): AgentGatewayProfileStat
 }
 
 function buildCapabilities(definition: ProfileProbeDefinition, result: CommandProbeResult): JsonRecord {
+  const provider = getAgentProviderKey(definition.profileKey);
+  const adapter = getAgentAdapter(provider);
   return {
+    ...normalizeAgentProviderCapabilities(provider, adapter?.capabilities || {}),
     commandKey: definition.profileKey,
     detectedCommand: result.command || null,
     version: result.version || null,
@@ -137,8 +142,10 @@ export async function detectAgentProfiles(options: DetectAgentProfilesOptions = 
 
   for (const definition of PROFILE_DEFINITIONS) {
     const result = await probeCommand(definition.commandCandidates);
+    const provider = getAgentProviderKey(definition.profileKey);
     profiles.push({
       profileKey: definition.profileKey,
+      provider,
       displayName: definition.displayName,
       agentType: 'code',
       driver: 'exec',

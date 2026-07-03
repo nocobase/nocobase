@@ -42,6 +42,11 @@ import {
   getString,
   requireAgentGatewayPermission,
 } from './utils';
+import { getRunProviderCapabilitySummary, isRunCapabilitySupported } from './capabilityUtils';
+import {
+  AGENT_GATEWAY_ACTION_UNSUPPORTED_CODE,
+  getUnsupportedCapabilityMessage,
+} from '../../shared/providerCapabilities';
 
 export const DEFAULT_TERMINAL_STREAM_TICKET_TTL_MS = 60 * 1000;
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -205,6 +210,34 @@ async function requireTerminalStreamTicketPermission(ctx: Context, runId: string
   }
 }
 
+async function requireTerminalOutputCapability(
+  ctx: Context,
+  run: ModelRecord,
+  phase: 'stream-ticket-create' | 'stream-subscribe',
+) {
+  const capabilitySummary = await getRunProviderCapabilitySummary(ctx, run);
+  if (isRunCapabilitySupported(capabilitySummary, 'terminalOutput')) {
+    return;
+  }
+
+  await auditTerminalReadDenied(ctx, getModelString(run, 'id'), {
+    phase,
+    routeAction: phase === 'stream-ticket-create' ? 'terminal-stream-tickets:create' : 'terminal-stream:subscribe',
+    reason: 'unsupported-capability',
+    unsupportedCapability: 'terminalOutput',
+    provider: capabilitySummary.provider,
+  });
+
+  if (phase === 'stream-ticket-create') {
+    ctx.throw(409, {
+      code: AGENT_GATEWAY_ACTION_UNSUPPORTED_CODE,
+      message: getUnsupportedCapabilityMessage('terminalOutput'),
+    });
+  }
+
+  throw new TerminalStreamTicketError('TERMINAL_PERMISSION_DENIED', getUnsupportedCapabilityMessage('terminalOutput'));
+}
+
 async function cleanupTerminalStreamTickets(app: Application, now = new Date()) {
   await app.db.getRepository('agTerminalStreamTickets').destroy({
     filter: {
@@ -236,6 +269,7 @@ export async function createTerminalStreamTicket(ctx: Context, runId: string) {
     });
     throw error;
   }
+  await requireTerminalOutputCapability(ctx, run, 'stream-ticket-create');
   const userId = getCurrentUserId(ctx);
   if (!userId) {
     ctx.throw(401, 'Authentication required');
@@ -408,6 +442,7 @@ export async function consumeTerminalStreamTicket(options: {
       'Agent Gateway terminal read permission required',
     );
     const run = await assertRunVisible(ctx, options.runId, 'get');
+    await requireTerminalOutputCapability(ctx, run, 'stream-subscribe');
     await auditReadAgentAction(ctx, {
       action: 'readTerminal',
       ...getTicketAuditFields(ctx, run),
@@ -418,6 +453,9 @@ export async function consumeTerminalStreamTicket(options: {
       },
     });
   } catch (error) {
+    if (error instanceof TerminalStreamTicketError) {
+      throw error;
+    }
     await auditTerminalReadDenied(ctx, options.runId, {
       phase: 'stream-subscribe',
       reason: error instanceof Error ? error.message : String(error),

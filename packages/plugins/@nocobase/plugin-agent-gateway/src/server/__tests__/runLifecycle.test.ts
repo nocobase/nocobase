@@ -24,6 +24,8 @@ interface TestRunner {
   nodeId: string;
   nodeToken: string;
   profileId: string;
+  profileKey: string;
+  profileProvider?: string;
 }
 
 function getData(response: ResponseLike) {
@@ -64,8 +66,11 @@ describe('agent gateway run lifecycle APIs', () => {
     await app?.destroy();
   });
 
-  async function createRunner(options: { nodeKey?: string; maxConcurrency?: number } = {}): Promise<TestRunner> {
+  async function createRunner(
+    options: { nodeKey?: string; maxConcurrency?: number; profileKey?: string; profileProvider?: string } = {},
+  ): Promise<TestRunner> {
     const nodeKey = options.nodeKey || 'node-1';
+    const profileKey = options.profileKey || 'fake-success';
     const nodeToken = createNodeToken();
     const now = new Date();
     const node = await app.db.getRepository('agNodes').create({
@@ -86,8 +91,9 @@ describe('agent gateway run lifecycle APIs', () => {
     const profile = await app.db.getRepository('agAgentProfiles').create({
       values: {
         nodeId,
-        profileKey: 'fake-success',
-        displayName: 'Fake Success',
+        profileKey,
+        provider: options.profileProvider,
+        displayName: profileKey,
         agentType: 'code',
         driver: 'fake',
         status: 'active',
@@ -101,6 +107,8 @@ describe('agent gateway run lifecycle APIs', () => {
       nodeId,
       nodeToken: nodeToken.token,
       profileId: String(profile.get('id')),
+      profileKey,
+      profileProvider: options.profileProvider,
     };
   }
 
@@ -354,6 +362,7 @@ describe('agent gateway run lifecycle APIs', () => {
     expect(claim.profileCapabilities).toMatchObject({
       maxConcurrency: 1,
     });
+    expect(claim.profileKey).toBe(runner.profileKey);
     expect(claim.run).toMatchObject({
       id: firstRun.id,
       promptSnapshot: {
@@ -383,8 +392,33 @@ describe('agent gateway run lifecycle APIs', () => {
     });
   });
 
+  it('returns canonical provider separately from a custom profile key during claim', async () => {
+    const runner = await createRunner({
+      profileKey: 'custom-codex',
+      profileProvider: 'codex',
+    });
+    const run = await createRun('run-custom-provider', {
+      agentProfileId: runner.profileId,
+    });
+
+    const claimResponse = await claimRun(runner, {
+      profileKey: 'custom-codex',
+    });
+    const claim = getData(claimResponse);
+
+    expect(claimResponse.status).toBe(200);
+    expect(claim).toMatchObject({
+      claimed: true,
+      runId: run.id,
+      profileKey: 'custom-codex',
+      profileProvider: 'codex',
+    });
+  });
+
   it('enriches dispatch resolved Skill selections with solidified sources for node claims', async () => {
-    const runner = await createRunner();
+    const runner = await createRunner({
+      profileProvider: 'codex',
+    });
     const skill = await app.db.getRepository('agSkills').create({
       values: {
         id: randomUUID(),
@@ -871,7 +905,9 @@ describe('agent gateway run lifecycle APIs', () => {
   });
 
   it('redacts terminal result and error summaries before exposing them to run readers', async () => {
-    const runner = await createRunner();
+    const runner = await createRunner({
+      profileProvider: 'codex',
+    });
     const run = await createRun('run-terminal-redaction-1', {
       agentProfileId: runner.profileId,
     });

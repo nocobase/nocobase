@@ -39,6 +39,11 @@ export default defineCollection({
       allowNull: false,
     },
     {
+      type: 'string',
+      name: 'provider',
+      index: true,
+    },
+    {
       type: 'belongsTo',
       name: 'node',
       target: 'agNodes',

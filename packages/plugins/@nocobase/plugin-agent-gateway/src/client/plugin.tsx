@@ -48,6 +48,14 @@ export class PluginAgentGatewayClient extends Plugin {
       sort: 20,
     });
 
+    this.pluginSettingsManager.add(`${AGENT_GATEWAY_SETTINGS_KEY}.provider-capabilities`, {
+      icon: 'PartitionOutlined',
+      title: tval('Provider Capabilities', { ns: AGENT_GATEWAY_SETTINGS_KEY }),
+      aclSnippet: `pm.${AGENT_GATEWAY_SETTINGS_KEY}.nodes`,
+      componentLoader: () => import('../client-v2/pages/AgentGatewayProviderCapabilitiesPage'),
+      sort: 24,
+    });
+
     this.pluginSettingsManager.add(`${AGENT_GATEWAY_SETTINGS_KEY}.audit`, {
       icon: 'AuditOutlined',
       title: tval('Audit', { ns: AGENT_GATEWAY_SETTINGS_KEY }),

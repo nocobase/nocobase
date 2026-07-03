@@ -8,18 +8,9 @@
  */
 
 import { JsonRecord } from '../types';
+import { AgentProviderCapabilities, AgentProviderKey } from '../../shared/providerCapabilities';
 
-export type AgentProviderKey = 'codex' | 'opencode' | 'claude-code';
-
-export interface AgentCapabilities {
-  structuredEvents: boolean;
-  detectSessionId: boolean;
-  resumeWithMessage: boolean;
-  liveSemanticMessage: boolean;
-  stdinMessage: boolean;
-  interrupt: boolean;
-  terminate: boolean;
-}
+export type AgentCapabilities = AgentProviderCapabilities;
 
 export interface CommandSpec {
   commandKey: AgentProviderKey;

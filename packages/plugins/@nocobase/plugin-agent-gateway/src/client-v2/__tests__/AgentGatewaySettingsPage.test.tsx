@@ -24,6 +24,7 @@ import {
 } from '../../shared/terminalStreamProtocol';
 import AgentGatewayAuditPage from '../pages/AgentGatewayAuditPage';
 import AgentGatewayDispatchBindingsPage from '../pages/AgentGatewayDispatchBindingsPage';
+import AgentGatewayProviderCapabilitiesPage from '../pages/AgentGatewayProviderCapabilitiesPage';
 import AgentGatewayPromptTemplatesPage from '../pages/AgentGatewayPromptTemplatesPage';
 import AgentGatewayRunsPage from '../pages/AgentGatewayRunsPage';
 import AgentGatewaySettingsPage from '../pages/AgentGatewaySettingsPage';
@@ -300,6 +301,13 @@ describe('PluginAgentGatewayClientV2', () => {
     expect(addPageTabItem).toHaveBeenCalledWith(
       expect.objectContaining({
         menuKey: 'agent-gateway',
+        key: 'provider-capabilities',
+        aclSnippet: 'pm.agent-gateway.nodes',
+      }),
+    );
+    expect(addPageTabItem).toHaveBeenCalledWith(
+      expect.objectContaining({
+        menuKey: 'agent-gateway',
         key: 'audit',
         aclSnippet: 'pm.agent-gateway.audit',
         hidden: true,
@@ -428,6 +436,223 @@ describe('PluginAgentGatewayClientV2', () => {
         }),
       );
     });
+  });
+
+  it('renders a compact provider capability matrix', async () => {
+    const request = vi.fn(async (config: RequestConfig) => {
+      if (config.url === 'agent-gateway/nodes:list') {
+        return {
+          data: {
+            data: [
+              {
+                id: 'node-id-1',
+                nodeKey: 'node-1',
+              },
+            ],
+          },
+        };
+      }
+      if (config.url === 'agent-gateway/nodes/node-id-1/profiles:list') {
+        return {
+          data: {
+            data: [
+              {
+                id: 'profile-codex',
+                profileKey: 'codex',
+                provider: 'codex',
+                displayName: 'Codex',
+                status: 'active',
+                capabilitiesJson: {
+                  resumeSession: true,
+                },
+              },
+              {
+                id: 'profile-generic',
+                profileKey: 'generic-cli',
+                provider: 'generic-cli',
+                displayName: 'Generic CLI',
+                status: 'active',
+                capabilitiesJson: {},
+              },
+            ],
+          },
+        };
+      }
+      if (config.url === 'agent-gateway/runs:list') {
+        return {
+          data: {
+            data: [
+              {
+                id: 'run-codex',
+                runCode: 'provider-capability-codex',
+                status: 'succeeded',
+                agentProfileId: 'profile-codex',
+                sourceType: 'provider-capability-seed',
+                agentSessionId: 'session-codex',
+                agentSessionProviderId: 'codex-thread',
+                agentProvider: 'codex',
+                agentProviderCapabilitySource: 'session',
+                agentProviderCapabilitiesJson: {
+                  resumeSession: true,
+                  artifacts: false,
+                },
+                agentGatewayActionPermissionsJson: {
+                  resumeAgentSession: true,
+                  readTerminal: true,
+                  readArtifacts: true,
+                  readRawLogs: true,
+                  interruptRun: true,
+                  terminateRun: true,
+                },
+                agentGatewayControlActionsJson: {
+                  interruptRun: true,
+                  terminateRun: true,
+                },
+              },
+              {
+                id: 'run-generic',
+                runCode: 'provider-capability-generic',
+                status: 'running',
+                agentProfileId: 'profile-generic',
+                sourceType: 'provider-capability-seed',
+                terminalBackend: 'tmux',
+                terminalStatus: 'active',
+                agentGatewayActionPermissionsJson: {
+                  resumeAgentSession: true,
+                  readTerminal: true,
+                  readArtifacts: true,
+                  readRawLogs: true,
+                  interruptRun: true,
+                  terminateRun: true,
+                },
+                agentGatewayControlActionsJson: {
+                  interruptRun: true,
+                  terminateRun: true,
+                },
+              },
+            ],
+          },
+        };
+      }
+      return { data: { data: [] } };
+    });
+
+    renderAgentGatewayPage(AgentGatewayProviderCapabilitiesPage, request);
+
+    expect(await screen.findByText('Provider Capabilities')).toBeTruthy();
+    expect(await screen.findByText('Run detail')).toBeTruthy();
+    expect(await screen.findByText('Detail controls')).toBeTruthy();
+    expect(await screen.findByText('Server response')).toBeTruthy();
+    expect(await screen.findByText('provider-capability-codex')).toBeTruthy();
+    expect(await screen.findByText('provider-capability-generic')).toBeTruthy();
+    expect(await screen.findAllByText('codex')).toHaveLength(2);
+    expect(await screen.findAllByText('generic-cli')).toHaveLength(2);
+    expect(await screen.findAllByText('Resume: Visible')).toHaveLength(1);
+    expect(await screen.findAllByText('Resume: Hidden')).toHaveLength(1);
+    expect(await screen.findAllByText('Resume: 409 unsupported')).toHaveLength(1);
+    expect(await screen.findAllByText('Artifacts: Hidden')).toHaveLength(2);
+    expect(await screen.findAllByText('Artifacts: 409 unsupported')).toHaveLength(2);
+    expect(await screen.findAllByText('Live message: 409 unsupported')).toHaveLength(2);
+    expect(await screen.findAllByText('CLI stdin: 403 disabled')).toHaveLength(2);
+    expect(await screen.findByText('Interrupt: 409 unsupported')).toBeTruthy();
+    expect(await screen.findByText('Terminate: Allowed')).toBeTruthy();
+    expect(await screen.findAllByText('Terminal output: 200 unavailable')).toHaveLength(2);
+    expect(screen.queryByText('Live message: Allowed')).toBeNull();
+    expect(
+      await screen.findByText(
+        (_, element) => element?.tagName === 'SPAN' && element.textContent === 'resumeSession: 1',
+      ),
+    ).toBeTruthy();
+    expect(
+      await screen.findByText((_, element) => element?.tagName === 'SPAN' && element.textContent === 'artifacts: 0'),
+    ).toBeTruthy();
+  });
+
+  it('renders provider capability matrix controls with current user permissions', async () => {
+    const request = vi.fn(async (config: RequestConfig) => {
+      if (config.url === 'agent-gateway/nodes:list') {
+        return {
+          data: {
+            data: [
+              {
+                id: 'node-id-1',
+                nodeKey: 'node-1',
+              },
+            ],
+          },
+        };
+      }
+      if (config.url === 'agent-gateway/nodes/node-id-1/profiles:list') {
+        return {
+          data: {
+            data: [
+              {
+                id: 'profile-codex',
+                profileKey: 'custom-codex',
+                provider: 'codex',
+                displayName: 'Custom Codex',
+                status: 'active',
+                capabilitiesJson: {
+                  structuredEvents: true,
+                  terminalOutput: true,
+                  resumeSession: true,
+                  interrupt: true,
+                  terminate: true,
+                  artifacts: true,
+                },
+              },
+            ],
+          },
+        };
+      }
+      if (config.url === 'agent-gateway/runs:list') {
+        return {
+          data: {
+            data: [
+              {
+                id: 'run-codex',
+                runCode: 'provider-capability-codex-restricted',
+                status: 'running',
+                agentProfileId: 'profile-codex',
+                sourceType: 'provider-capability-seed',
+                agentSessionId: 'session-codex',
+                agentSessionProviderId: 'codex-thread',
+                terminalBackend: 'tmux',
+                terminalStatus: 'active',
+                agentGatewayActionPermissionsJson: {
+                  resumeAgentSession: false,
+                  readTerminal: false,
+                  readArtifacts: false,
+                  readRawLogs: false,
+                  interruptRun: false,
+                  terminateRun: false,
+                },
+                agentGatewayControlActionsJson: {
+                  interruptRun: false,
+                  terminateRun: false,
+                },
+              },
+            ],
+          },
+        };
+      }
+      return { data: { data: [] } };
+    });
+
+    renderAgentGatewayPage(AgentGatewayProviderCapabilitiesPage, request);
+
+    expect(await screen.findByText('provider-capability-codex-restricted')).toBeTruthy();
+    expect(await screen.findAllByText('Resume: Hidden')).toHaveLength(1);
+    expect(await screen.findAllByText('Live output: Hidden')).toHaveLength(1);
+    expect(await screen.findAllByText('Interrupt: Hidden')).toHaveLength(1);
+    expect(await screen.findAllByText('Terminate: Hidden')).toHaveLength(1);
+    expect(await screen.findAllByText('Raw logs: Hidden')).toHaveLength(1);
+    expect(await screen.findAllByText('Artifacts: Hidden')).toHaveLength(1);
+    expect(await screen.findAllByText('Resume: 403 denied')).toHaveLength(1);
+    expect(await screen.findAllByText('Interrupt: 403 denied')).toHaveLength(1);
+    expect(await screen.findAllByText('Terminal output: 403 denied')).toHaveLength(1);
+    expect(await screen.findAllByText('Raw logs: 403 denied')).toHaveLength(1);
+    expect(await screen.findAllByText('Artifacts: 403 denied')).toHaveLength(1);
   });
 
   it('creates an invitation and clears the one-time register command when the modal closes', async () => {
@@ -718,6 +943,9 @@ describe('PluginAgentGatewayClientV2', () => {
                 sourceCollection: 'tickets',
                 sourceRecordId: '1',
                 requestedAt: '2026-06-30T10:00:00.000Z',
+                agentGatewayActionPermissionsJson: {
+                  cancelRun: true,
+                },
               },
               {
                 id: 'run-id-2',
@@ -775,6 +1003,12 @@ describe('PluginAgentGatewayClientV2', () => {
               errorSummary: 'command=must-not-render cwd=/tmp/must-not-render env.SECRET=must-not-render',
               requestedAt: '2026-06-30T10:00:00.000Z',
               startedAt: '2026-06-30T10:01:00.000Z',
+              agentGatewayActionPermissionsJson: {
+                readSessionMessages: true,
+                readTerminal: true,
+                readArtifacts: true,
+                readRawLogs: true,
+              },
             },
           },
         };
@@ -967,6 +1201,9 @@ describe('PluginAgentGatewayClientV2', () => {
               runCode: 'run-control-1',
               status: 'running',
               terminalStatus: 'active',
+              agentGatewayActionPermissionsJson: {
+                readTerminal: true,
+              },
               agentGatewayControlActionsJson: {
                 interruptRun: true,
                 terminateRun: true,
@@ -1108,6 +1345,9 @@ describe('PluginAgentGatewayClientV2', () => {
               runCode: runId === 'run-id-1' ? 'run-control-switch-1' : 'run-control-switch-2',
               status: 'running',
               terminalStatus: 'active',
+              agentGatewayActionPermissionsJson: {
+                readTerminal: true,
+              },
               agentGatewayControlActionsJson: {
                 interruptRun: true,
                 terminateRun: true,
@@ -1214,6 +1454,9 @@ describe('PluginAgentGatewayClientV2', () => {
               runCode: 'run-terminate-control',
               status: 'running',
               terminalStatus: 'active',
+              agentGatewayActionPermissionsJson: {
+                readTerminal: true,
+              },
               agentGatewayControlActionsJson: {
                 interruptRun: true,
                 terminateRun: true,
@@ -1313,6 +1556,9 @@ describe('PluginAgentGatewayClientV2', () => {
               runCode: 'run-control-disabled',
               status: 'running',
               terminalStatus: 'active',
+              agentGatewayActionPermissionsJson: {
+                readTerminal: true,
+              },
               agentGatewayControlActionsJson: {
                 interruptRun: false,
                 terminateRun: false,
@@ -1379,6 +1625,9 @@ describe('PluginAgentGatewayClientV2', () => {
               status: 'succeeded',
               terminalBackend: 'tmux',
               terminalStatus: 'active',
+              agentGatewayActionPermissionsJson: {
+                readTerminal: true,
+              },
               agentGatewayControlActionsJson: {
                 interruptRun: true,
                 terminateRun: true,
@@ -1445,6 +1694,9 @@ describe('PluginAgentGatewayClientV2', () => {
               runCode: 'run-control-retry',
               status: 'running',
               terminalStatus: 'active',
+              agentGatewayActionPermissionsJson: {
+                readTerminal: true,
+              },
               agentGatewayControlActionsJson: {
                 interruptRun: true,
                 terminateRun: true,
@@ -1539,6 +1791,9 @@ describe('PluginAgentGatewayClientV2', () => {
               runCode: 'run-control-validation-key',
               status: 'running',
               terminalStatus: 'active',
+              agentGatewayActionPermissionsJson: {
+                readTerminal: true,
+              },
               agentGatewayControlActionsJson: {
                 interruptRun: true,
                 terminateRun: true,
@@ -1634,6 +1889,9 @@ describe('PluginAgentGatewayClientV2', () => {
               runCode: 'run-control-final-key',
               status: 'running',
               terminalStatus: 'active',
+              agentGatewayActionPermissionsJson: {
+                readTerminal: true,
+              },
               agentGatewayControlActionsJson: {
                 interruptRun: true,
                 terminateRun: true,
@@ -1723,6 +1981,15 @@ describe('PluginAgentGatewayClientV2', () => {
               status: 'running',
               requestedAt: '2026-06-30T10:00:00.000Z',
               startedAt: '2026-06-30T10:01:00.000Z',
+              agentGatewayActionPermissionsJson: {
+                readTerminal: true,
+                interruptRun: true,
+                terminateRun: true,
+              },
+              agentGatewayControlActionsJson: {
+                interruptRun: true,
+                terminateRun: true,
+              },
             },
           },
         };
@@ -2261,6 +2528,83 @@ describe('PluginAgentGatewayClientV2', () => {
     expect(FakeBrowserWebSocket.instances).toHaveLength(0);
   });
 
+  it('does not open a live terminal stream when terminal output is unsupported by the provider', async () => {
+    vi.stubGlobal('WebSocket', FakeBrowserWebSocket);
+    const requestedUrls: string[] = [];
+    const request = vi.fn(async (config: RequestConfig) => {
+      requestedUrls.push(config.url);
+      if (config.url === 'agent-gateway/runs:list') {
+        return {
+          data: {
+            data: [
+              {
+                id: 'run-id-1',
+                runCode: 'run-no-terminal-output',
+                status: 'running',
+                terminalBackend: 'tmux',
+                terminalStatus: 'active',
+              },
+            ],
+          },
+        };
+      }
+
+      if (config.url === 'agent-gateway/runs:get/run-id-1') {
+        return {
+          data: {
+            data: {
+              id: 'run-id-1',
+              runCode: 'run-no-terminal-output',
+              status: 'running',
+              terminalBackend: 'tmux',
+              terminalStatus: 'active',
+              agentProvider: 'codex',
+              agentProviderCapabilitiesJson: {
+                structuredEvents: true,
+                terminalOutput: false,
+                resumeSession: true,
+                liveSemanticMessage: false,
+                stdinMessage: false,
+                interrupt: true,
+                terminate: true,
+                artifacts: true,
+              },
+              agentGatewayActionPermissionsJson: {
+                readTerminal: true,
+                interruptRun: true,
+                terminateRun: true,
+              },
+              agentGatewayControlActionsJson: {
+                interruptRun: true,
+                terminateRun: true,
+              },
+            },
+          },
+        };
+      }
+
+      return { data: { data: [] } };
+    });
+
+    renderAgentGatewayPage(AgentGatewayRunsPage, request, {
+      auth: {
+        token: 'browser-token',
+        getAuthenticator: () => 'basic',
+        role: 'root',
+      },
+    });
+
+    expect(await screen.findByText('run-no-terminal-output')).toBeTruthy();
+    fireEvent.click((await screen.findAllByLabelText('View run details'))[0]);
+    expect(await screen.findByText('Terminal output is not supported by this provider')).toBeTruthy();
+    expect(await screen.findByLabelText('Interrupt')).toBeTruthy();
+    expect(await screen.findByLabelText('Terminate')).toBeTruthy();
+    await waitFor(() => expect(requestedUrls).toContain('agent-gateway/runs:get/run-id-1'));
+    expect(requestedUrls.some((url) => url.includes('terminal:snapshot'))).toBe(false);
+    expect(requestedUrls.some((url) => url.includes('terminal-stream-tickets:create'))).toBe(false);
+    expect(FakeBrowserWebSocket.instances).toHaveLength(0);
+  });
+
   it('hides cancel actions when the run affordance denies cancel permission', async () => {
     const request = vi.fn(async (config: RequestConfig) => {
       if (config.url === 'agent-gateway/runs:list') {
@@ -2344,6 +2688,9 @@ describe('PluginAgentGatewayClientV2', () => {
               status: 'running',
               requestedAt: '2026-06-30T10:00:00.000Z',
               startedAt: '2026-06-30T10:01:00.000Z',
+              agentGatewayActionPermissionsJson: {
+                readTerminal: true,
+              },
             },
           },
         };
@@ -2424,6 +2771,9 @@ describe('PluginAgentGatewayClientV2', () => {
               terminalStatus: 'active',
               requestedAt: '2026-06-30T10:00:00.000Z',
               startedAt: '2026-06-30T10:01:00.000Z',
+              agentGatewayActionPermissionsJson: {
+                readTerminal: true,
+              },
               agentGatewayControlActionsJson: {
                 interruptRun: true,
                 terminateRun: true,
@@ -2516,6 +2866,9 @@ describe('PluginAgentGatewayClientV2', () => {
               status: 'running',
               requestedAt: '2026-06-30T10:00:00.000Z',
               startedAt: '2026-06-30T10:01:00.000Z',
+              agentGatewayActionPermissionsJson: {
+                readTerminal: true,
+              },
             },
           },
         };
@@ -2681,6 +3034,9 @@ describe('PluginAgentGatewayClientV2', () => {
               status: 'running',
               requestedAt: '2026-06-30T10:00:00.000Z',
               startedAt: '2026-06-30T10:01:00.000Z',
+              agentGatewayActionPermissionsJson: {
+                readTerminal: true,
+              },
             },
           },
         };
@@ -2832,6 +3188,12 @@ describe('PluginAgentGatewayClientV2', () => {
               agentSessionProviderId: 'thread-id-1',
               requestedAt: '2026-06-30T10:00:00.000Z',
               startedAt: '2026-06-30T10:01:00.000Z',
+              agentGatewayActionPermissionsJson: {
+                readTerminal: true,
+                readSessionMessages: true,
+                readArtifacts: true,
+                readRawLogs: true,
+              },
             },
           },
         };
@@ -2926,6 +3288,10 @@ describe('PluginAgentGatewayClientV2', () => {
               status: 'running',
               requestedAt: '2026-06-30T10:00:00.000Z',
               startedAt: '2026-06-30T10:01:00.000Z',
+              agentGatewayActionPermissionsJson: {
+                readSessionMessages: true,
+                readRawLogs: true,
+              },
             },
           },
         };
@@ -3011,6 +3377,10 @@ describe('PluginAgentGatewayClientV2', () => {
               requestedAt: '2026-06-30T10:00:00.000Z',
               startedAt: '2026-06-30T10:01:00.000Z',
               finishedAt: '2026-06-30T10:02:00.000Z',
+              agentGatewayActionPermissionsJson: {
+                readSessionMessages: true,
+                readRawLogs: true,
+              },
             },
           },
         };
@@ -3084,6 +3454,9 @@ describe('PluginAgentGatewayClientV2', () => {
               requestedAt: '2026-06-30T10:00:00.000Z',
               startedAt: '2026-06-30T10:01:00.000Z',
               finishedAt: '2026-06-30T10:02:00.000Z',
+              agentGatewayActionPermissionsJson: {
+                readSessionMessages: true,
+              },
             },
           },
         };
@@ -3156,6 +3529,9 @@ describe('PluginAgentGatewayClientV2', () => {
               agentSessionProviderId: 'thread-id-1',
               requestedAt: '2026-06-30T10:00:00.000Z',
               startedAt: '2026-06-30T10:01:00.000Z',
+              agentGatewayActionPermissionsJson: {
+                readSessionMessages: true,
+              },
             },
           },
         };
@@ -3230,6 +3606,10 @@ describe('PluginAgentGatewayClientV2', () => {
               agentSessionProviderId: 'thread-id-1',
               requestedAt: '2026-06-30T10:00:00.000Z',
               startedAt: '2026-06-30T10:01:00.000Z',
+              agentGatewayActionPermissionsJson: {
+                readSessionMessages: true,
+                readRawLogs: true,
+              },
             },
           },
         };
@@ -3447,6 +3827,10 @@ describe('PluginAgentGatewayClientV2', () => {
               agentSessionProvider: 'codex',
               agentSessionProviderId: 'thread-id-1',
               finishedAt: '2026-07-02T10:00:00.000Z',
+              agentGatewayActionPermissionsJson: {
+                resumeAgentSession: true,
+                readSessionMessages: true,
+              },
             },
           },
         };
@@ -3465,6 +3849,10 @@ describe('PluginAgentGatewayClientV2', () => {
               parentRunId: 'run-id-1',
               resumedFromRunId: 'run-id-1',
               continuationReason: 'user-message',
+              agentGatewayActionPermissionsJson: {
+                resumeAgentSession: true,
+                readSessionMessages: true,
+              },
             },
           },
         };
@@ -3596,6 +3984,10 @@ describe('PluginAgentGatewayClientV2', () => {
               agentSessionId: 'session-id-1',
               agentSessionProvider: 'codex',
               agentSessionProviderId: 'thread-id-1',
+              agentGatewayActionPermissionsJson: {
+                resumeAgentSession: true,
+                readSessionMessages: true,
+              },
             },
           },
         };
@@ -3694,6 +4086,10 @@ describe('PluginAgentGatewayClientV2', () => {
             agentSessionId: 'session-id-2',
             agentSessionProvider: 'codex',
             agentSessionProviderId: 'thread-id-2',
+            agentGatewayActionPermissionsJson: {
+              resumeAgentSession: true,
+              readSessionMessages: true,
+            },
           },
         },
       });
@@ -3738,6 +4134,9 @@ describe('PluginAgentGatewayClientV2', () => {
               agentSessionId: 'session-id-1',
               agentSessionProvider: 'codex',
               agentSessionProviderId: 'thread-id-1',
+              agentGatewayActionPermissionsJson: {
+                resumeAgentSession: true,
+              },
             },
           },
         };
@@ -3816,6 +4215,9 @@ describe('PluginAgentGatewayClientV2', () => {
               agentSessionId: 'session-id-1',
               agentSessionProvider: 'codex',
               agentSessionProviderId: 'thread-id-1',
+              agentGatewayActionPermissionsJson: {
+                resumeAgentSession: true,
+              },
             },
           },
         };
@@ -3904,6 +4306,9 @@ describe('PluginAgentGatewayClientV2', () => {
               agentSessionId: 'session-id-1',
               agentSessionProvider: 'codex',
               agentSessionProviderId: 'thread-id-1',
+              agentGatewayActionPermissionsJson: {
+                resumeAgentSession: true,
+              },
             },
           },
         };
@@ -3954,6 +4359,75 @@ describe('PluginAgentGatewayClientV2', () => {
     expect(resumeCalls.map((config) => config.data?.idempotencyKey)).toEqual(['validation-key-1', 'validation-key-2']);
   });
 
+  it('hides resume controls when provider capabilities do not support resume', async () => {
+    const genericCapabilities = {
+      structuredEvents: false,
+      terminalOutput: true,
+      resumeSession: false,
+      liveSemanticMessage: false,
+      stdinMessage: false,
+      interrupt: false,
+      terminate: true,
+      artifacts: false,
+    };
+    const request = vi.fn(async (config: RequestConfig) => {
+      if (config.url === 'agent-gateway/runs:list') {
+        return {
+          data: {
+            data: [
+              {
+                id: 'run-id-1',
+                runCode: 'run-generic-no-resume',
+                status: 'succeeded',
+                agentProvider: 'generic-cli',
+                agentProviderCapabilitiesJson: genericCapabilities,
+                agentGatewayActionPermissionsJson: {
+                  resumeAgentSession: true,
+                  readSessionMessages: false,
+                  readTerminal: false,
+                },
+              },
+            ],
+          },
+        };
+      }
+
+      if (config.url === 'agent-gateway/runs:get/run-id-1') {
+        return {
+          data: {
+            data: {
+              id: 'run-id-1',
+              runCode: 'run-generic-no-resume',
+              status: 'succeeded',
+              terminalStatus: 'closed',
+              agentSessionId: 'session-id-1',
+              agentSessionProvider: 'generic-cli',
+              agentSessionProviderId: 'thread-id-1',
+              agentProvider: 'generic-cli',
+              agentProviderCapabilitiesJson: genericCapabilities,
+              agentGatewayActionPermissionsJson: {
+                resumeAgentSession: true,
+                readSessionMessages: false,
+                readTerminal: false,
+              },
+            },
+          },
+        };
+      }
+
+      return { data: { data: [] } };
+    });
+
+    renderAgentGatewayPage(AgentGatewayRunsPage, request);
+
+    expect(await screen.findByText('run-generic-no-resume')).toBeTruthy();
+    fireEvent.click((await screen.findAllByLabelText('View run details'))[0]);
+    expect(await screen.findByText('Run summary')).toBeTruthy();
+    expect(screen.queryByText('Resume agent session')).toBeNull();
+    expect(screen.queryByLabelText('Resume message')).toBeNull();
+    expect(screen.queryByText('Resume session')).toBeNull();
+  });
+
   it('disables resume when the agent session does not support resume with message', async () => {
     const request = vi.fn(async (config: RequestConfig) => {
       if (config.url === 'agent-gateway/runs:list') {
@@ -3969,6 +4443,9 @@ describe('PluginAgentGatewayClientV2', () => {
                 agentSessionProviderId: 'thread-id-1',
                 agentSessionCapabilitiesJson: {
                   resumeWithMessage: false,
+                },
+                agentGatewayActionPermissionsJson: {
+                  resumeAgentSession: true,
                 },
               },
             ],
@@ -3988,6 +4465,9 @@ describe('PluginAgentGatewayClientV2', () => {
               agentSessionProviderId: 'thread-id-1',
               agentSessionCapabilitiesJson: {
                 resumeWithMessage: false,
+              },
+              agentGatewayActionPermissionsJson: {
+                resumeAgentSession: true,
               },
             },
           },

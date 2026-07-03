@@ -41,6 +41,11 @@ import {
   requireLoggedIn,
 } from './utils';
 import { cancelRun, validateRunLease } from './runLifecycle';
+import {
+  AGENT_GATEWAY_ACTION_UNSUPPORTED_CODE,
+  getUnsupportedCapabilityMessage,
+} from '../../shared/providerCapabilities';
+import { getRunProviderCapabilitySummary, isRunCapabilitySupported } from './capabilityUtils';
 
 const MAX_TERMINAL_INPUT_CHARS = 4000;
 const DEFAULT_CAPTURE_LINES = 2000;
@@ -285,6 +290,19 @@ async function snapshotTerminal(ctx: Context, runId: string) {
   }
   const sessionName = getTerminalSessionName(ctx, run);
   const lines = getCaptureLines(ctx);
+  const capabilitySummary = await getRunProviderCapabilitySummary(ctx, run);
+  if (!isRunCapabilitySupported(capabilitySummary, 'terminalOutput')) {
+    await auditTerminalRead(ctx, run, {
+      available: false,
+      lines,
+      unsupportedCapability: 'terminalOutput',
+      provider: capabilitySummary.provider,
+    });
+    ctx.throw(409, {
+      code: AGENT_GATEWAY_ACTION_UNSUPPORTED_CODE,
+      message: getUnsupportedCapabilityMessage('terminalOutput'),
+    });
+  }
   if (getModelString(run, 'terminalBackend') !== 'tmux' || !sessionName) {
     ctx.body = getTerminalSnapshotBody(run, null);
     await auditTerminalRead(ctx, run, {
@@ -536,11 +554,17 @@ async function assertControlSupported(ctx: Context, run: ModelRecord, action: 'i
   }
 
   const session = await getSessionForRun(ctx, run);
-  const controlCapability = session
-    ? getControlCapabilityDecision(getRecord(getModelValue(session, 'capabilitiesJson')), action) === true
-    : await getRunnerControlCapability(ctx, run, action);
+  const capabilitySummary = await getRunProviderCapabilitySummary(ctx, run, session);
+  const controlCapability = capabilitySummary.enforceCapabilities
+    ? isRunCapabilitySupported(capabilitySummary, action)
+    : session
+      ? getControlCapabilityDecision(getRecord(getModelValue(session, 'capabilitiesJson')), action) !== false
+      : await getRunnerControlCapability(ctx, run, action);
   if (!controlCapability) {
-    ctx.throw(409, CONTROL_ERROR_CODES.unsupported);
+    ctx.throw(409, {
+      code: AGENT_GATEWAY_ACTION_UNSUPPORTED_CODE,
+      message: getUnsupportedCapabilityMessage(action),
+    });
   }
 }
 
@@ -700,11 +724,6 @@ async function enqueueTerminalControl(ctx: Context, runId: string, action: 'inte
   const reason = getControlReason(ctx, values.reason);
   const idempotencyKey = getRequiredControlIdempotencyKey(ctx, values.idempotencyKey);
   const status = getModelString(run, 'status');
-  const existingControlRequest = await findExistingControlRequestByKey(ctx, runId, action, idempotencyKey);
-  if (existingControlRequest) {
-    respondWithExistingControlRequest(ctx, runId, status, action, existingControlRequest);
-    return;
-  }
   try {
     await assertControlSupported(ctx, run, action);
   } catch (error) {
@@ -712,6 +731,11 @@ async function enqueueTerminalControl(ctx: Context, runId: string, action: 'inte
       reason: error instanceof Error ? error.message : String(error),
     });
     throw error;
+  }
+  const existingControlRequest = await findExistingControlRequestByKey(ctx, runId, action, idempotencyKey);
+  if (existingControlRequest) {
+    respondWithExistingControlRequest(ctx, runId, status, action, existingControlRequest);
+    return;
   }
 
   const { request } = await createOrFindControlRequest({

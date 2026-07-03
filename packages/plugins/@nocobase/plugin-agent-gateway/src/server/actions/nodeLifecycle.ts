@@ -37,6 +37,7 @@ import {
   getString,
   requireManagePermission,
 } from './utils';
+import { getExplicitAgentProviderKey, normalizeAgentProviderCapabilities } from '../../shared/providerCapabilities';
 
 const DEFAULT_INVITATION_TTL_SECONDS = 24 * 60 * 60;
 const DEFAULT_HEARTBEAT_INTERVAL_SECONDS = 30;
@@ -283,14 +284,25 @@ async function syncProfiles(ctx: Context, nodeId: unknown, profiles: unknown[], 
         profileKey,
       },
     })) as ModelRecord | null;
+    const reportedCapabilities = getRecord(profile.capabilitiesJson || profile.capabilities);
+    const explicitProvider =
+      getString(profile.provider) || getString(profile.providerKey) || getString(reportedCapabilities.provider);
+    const profileProvider = getExplicitAgentProviderKey(explicitProvider);
+    if (explicitProvider && !profileProvider) {
+      ctx.throw(400, 'Provider is not supported');
+    }
+    const commandProvider = getExplicitAgentProviderKey(reportedCapabilities.commandKey);
+    const provider = profileProvider || commandProvider || 'generic-cli';
+    const capabilitiesJson = normalizeAgentProviderCapabilities(provider, reportedCapabilities);
     const profileValues = {
       nodeId,
       profileKey,
+      provider,
       displayName: getString(profile.displayName) || profileKey,
       agentType: getString(profile.agentType) || 'code',
       driver: getString(profile.driver) || 'fake',
       status: getString(profile.status) || 'active',
-      capabilitiesJson: getRecord(profile.capabilitiesJson || profile.capabilities),
+      capabilitiesJson,
       runtimeSnapshotJson: {
         reportedAt: now.toISOString(),
         status: getString(profile.status) || 'active',

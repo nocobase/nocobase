@@ -7,14 +7,17 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { AgentProviderKey } from '../shared/providerCapabilities';
+
 export type JsonRecord = Record<string, unknown>;
 
-export type AgentGatewayProfileKey = 'opencode' | 'codex' | 'claude-code';
+export type AgentGatewayProfileKey = string;
 
 export type AgentGatewayProfileStatus = 'active' | 'missing' | 'auth_required' | 'error';
 
 export interface DetectedAgentProfile {
   profileKey: AgentGatewayProfileKey;
+  provider: AgentProviderKey;
   displayName: string;
   agentType: 'code';
   driver: 'exec';
@@ -53,6 +56,9 @@ export interface RunLease extends JsonRecord {
   leaseVersion: number;
   claimed?: boolean;
   run?: JsonRecord;
+  profileKey?: string;
+  profileProvider?: AgentProviderKey;
+  profileCapabilities?: JsonRecord;
   cancelRequested?: boolean;
   cancelReason?: string;
 }

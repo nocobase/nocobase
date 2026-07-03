@@ -105,6 +105,7 @@ describe('agent gateway run observability APIs', () => {
         profiles: [
           {
             profileKey: 'fake-observer',
+            provider: 'opencode',
             displayName: 'Fake Observer',
             agentType: 'code',
             driver: 'fake',

@@ -17,12 +17,15 @@ describe('Codex agent adapter', () => {
     expect(codexAdapter.provider).toBe('codex');
     expect(codexAdapter.capabilities).toEqual({
       structuredEvents: true,
+      terminalOutput: true,
+      resumeSession: true,
       detectSessionId: true,
       resumeWithMessage: true,
       liveSemanticMessage: false,
       stdinMessage: false,
       interrupt: true,
       terminate: true,
+      artifacts: true,
     });
   });
 

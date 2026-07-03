@@ -31,12 +31,17 @@ describe('agent gateway daemon profile detection', () => {
 
     expect(profiles.map((profile) => profile.profileKey)).toEqual(['opencode', 'codex', 'claude-code']);
     expect(profiles.find((profile) => profile.profileKey === 'opencode')).toMatchObject({
+      provider: 'opencode',
       status: 'active',
       driver: 'exec',
       capabilities: {
         commandKey: 'opencode',
         detectedCommand: 'opencode',
         version: 'opencode 1.2.3',
+        structuredEvents: true,
+        terminalOutput: true,
+        resumeSession: false,
+        artifacts: true,
       },
     });
     expect(profiles.find((profile) => profile.profileKey === 'codex')?.status).toBe('missing');
