@@ -63,6 +63,7 @@
   "Record ID is required": "请输入记录 ID",
   "Rendered prompt": "渲染后的 Prompt",
   "Agent Gateway Dispatch": "Agent 网关派发",
+  "Dispatch Agent Run": "派发 Agent 运行",
   "Dispatch": "派发",
   "Dispatch binding": "派发绑定",
   "Select dispatch binding": "选择派发绑定",

@@ -14,7 +14,7 @@ import { Context, Next } from '@nocobase/actions';
 import { Plugin } from '@nocobase/server';
 import { Transaction } from 'sequelize';
 
-import { AGENT_GATEWAY_ACTIONS, AGENT_GATEWAY_PERMISSIONS } from '../security';
+import { AGENT_GATEWAY_ACTIONS, AGENT_GATEWAY_PERMISSIONS, redactText } from '../security';
 import { auditAgentActionBestEffort, auditMutatingAgentAction } from '../audit/agentActionAudit';
 import {
   AGENT_GATEWAY_ERROR_CODES,
@@ -100,6 +100,14 @@ interface DispatchResult {
   bindingKey: string;
   run: JsonRecord;
   idempotent: boolean;
+  runId: string;
+  runCode: string;
+  agentSessionId: string | null;
+  sourceCollection: string;
+  sourceRecordId: string;
+  outputAgentRunField: string;
+  relationUpdated: boolean;
+  deduped: boolean;
 }
 
 interface NodeAndProfileSelection {
@@ -1161,23 +1169,56 @@ function getRunIdempotencyKey(run: ModelRecord) {
   return getString(dispatch.idempotencyKey);
 }
 
+function createDispatchResult(
+  binding: ModelRecord,
+  run: ModelRecord,
+  options: {
+    idempotent: boolean;
+    sourceCollection: string;
+    sourceRecordId: string;
+    outputAgentRunField: string;
+    relationUpdated: boolean;
+  },
+): DispatchResult {
+  const runJson = serializeRun(run);
+  const runId = String(getModelTargetKey(run, 'id'));
+  return {
+    bindingId: getModelTargetKey(binding, 'id'),
+    bindingKey: getModelString(binding, 'bindingKey'),
+    run: runJson,
+    idempotent: options.idempotent,
+    runId,
+    runCode: getModelString(run, 'runCode'),
+    agentSessionId: getString(runJson.agentSessionId) || null,
+    sourceCollection: options.sourceCollection,
+    sourceRecordId: options.sourceRecordId,
+    outputAgentRunField: options.outputAgentRunField,
+    relationUpdated: options.relationUpdated,
+    deduped: options.idempotent,
+  };
+}
+
 function getExistingRunResult(
   ctx: Context,
   binding: ModelRecord,
   existingRun: ModelRecord | null,
   idempotencyKey: string,
+  sourceCollection: string,
+  sourceRecordId: string,
+  outputAgentRunField: string,
 ) {
   if (!existingRun) {
     ctx.throw(409, 'Output relation already references an Agent Gateway run');
   }
 
   if (idempotencyKey && getRunIdempotencyKey(existingRun) === idempotencyKey) {
-    return {
-      bindingId: getModelTargetKey(binding, 'id'),
-      bindingKey: getModelString(binding, 'bindingKey'),
-      run: serializeRun(existingRun),
+    return createDispatchResult(binding, existingRun, {
       idempotent: true,
-    };
+      sourceCollection,
+      sourceRecordId,
+      outputAgentRunField,
+      relationUpdated: true,
+    });
   }
 
   const status = getModelString(existingRun, 'status');
@@ -1255,6 +1296,8 @@ async function createDispatchRun(
           bindingKey: getModelString(binding, 'bindingKey'),
           collectionName,
           recordId,
+          sourceCollection: collectionName,
+          sourceRecordId: recordId,
           outputAgentRunField: output.fieldName,
           idempotencyKey: idempotencyKey || null,
         },
@@ -1265,6 +1308,7 @@ async function createDispatchRun(
       sourceType: 'dispatch',
       sourceCollection: collectionName,
       sourceRecordId: recordId,
+      requestedById: getCurrentUserId(ctx) || null,
       requestedAt: now,
       queuedAt: now,
       nodeId: nodeAndProfile.nodeId,
@@ -1276,29 +1320,34 @@ async function createDispatchRun(
   })) as ModelRecord;
 
   const runId = String(getModelTargetKey(run, 'id'));
-  await ctx.db.getRepository(collectionName).update({
-    filterByTk: recordId,
-    values: {
-      [output.foreignKey]: runId,
-    },
-    transaction,
-  });
+  try {
+    await ctx.db.getRepository(collectionName).update({
+      filterByTk: recordId,
+      values: {
+        [output.foreignKey]: runId,
+      },
+      transaction,
+    });
 
-  const updatedRecord = (await ctx.db.getRepository(collectionName).findOne({
-    filterByTk: recordId,
-    transaction,
-    lock: transaction.LOCK.UPDATE,
-  })) as ModelRecord | null;
-  if (!updatedRecord || getExistingRunId(updatedRecord, output) !== runId) {
-    ctx.throw(500, 'Failed to write Agent Gateway run relation');
+    const updatedRecord = (await ctx.db.getRepository(collectionName).findOne({
+      filterByTk: recordId,
+      transaction,
+      lock: transaction.LOCK.UPDATE,
+    })) as ModelRecord | null;
+    if (!updatedRecord || getExistingRunId(updatedRecord, output) !== runId) {
+      throw new Error('Relation writeback verification failed');
+    }
+  } catch (error) {
+    throw createDispatchWritebackError(error);
   }
 
-  return {
-    bindingId: getModelTargetKey(binding, 'id'),
-    bindingKey: getModelString(binding, 'bindingKey'),
-    run: serializeRun(run),
+  return createDispatchResult(binding, run, {
     idempotent: false,
-  };
+    sourceCollection: collectionName,
+    sourceRecordId: recordId,
+    outputAgentRunField: output.fieldName,
+    relationUpdated: true,
+  });
 }
 
 function getDispatchSelectionAppends(binding: ModelRecord, collection: CollectionLike) {
@@ -1414,6 +1463,41 @@ function getErrorMessage(error: unknown) {
   return error instanceof Error ? error.message : String(error);
 }
 
+interface DispatchWritebackError extends Error {
+  status?: number;
+  statusCode?: number;
+  expose?: boolean;
+  dispatchPhase?: 'relation-writeback';
+  redactedSummary?: string;
+}
+
+function createDispatchWritebackError(error: unknown) {
+  const writebackError = new Error('Failed to write Agent Gateway run relation') as DispatchWritebackError;
+  writebackError.name = 'DispatchWritebackError';
+  writebackError.status = 500;
+  writebackError.statusCode = 500;
+  writebackError.expose = true;
+  writebackError.dispatchPhase = 'relation-writeback';
+  writebackError.redactedSummary = redactText(getErrorMessage(error), {
+    maxStringLength: 500,
+  });
+  return writebackError;
+}
+
+function getDispatchWritebackFailureMetadata(error: unknown) {
+  const writebackError = error as DispatchWritebackError;
+  if (writebackError?.dispatchPhase !== 'relation-writeback') {
+    return null;
+  }
+
+  return {
+    phase: 'relation-writeback',
+    errorName: writebackError.name || 'DispatchWritebackError',
+    errorMessage: writebackError.message,
+    errorSummary: writebackError.redactedSummary || 'Failed to write Agent Gateway run relation',
+  };
+}
+
 function getExpectedDispatchDenialMetadata(error: unknown) {
   const status = getErrorStatus(error);
   const message = getErrorMessage(error);
@@ -1456,9 +1540,9 @@ async function dispatchBinding(ctx: Context, identifier: string) {
   }
 
   const values = getBodyValues(ctx);
-  const recordId = getRequiredTargetKey(ctx, values.recordId, 'recordId');
+  const recordId = getRequiredTargetKey(ctx, values.sourceRecordId ?? values.recordId, 'sourceRecordId');
   const idempotencyKey = getString(values.idempotencyKey);
-  const expectedCollectionName = getString(values.expectedCollectionName);
+  const expectedCollectionName = getString(values.sourceCollection) || getString(values.expectedCollectionName);
 
   await auditMutatingAgentAction(ctx, {
     action: 'dispatch',
@@ -1468,8 +1552,10 @@ async function dispatchBinding(ctx: Context, identifier: string) {
     metadataJson: {
       bindingIdentifier: identifier,
       expectedCollectionName: expectedCollectionName || null,
+      sourceCollection: expectedCollectionName || null,
       hasIdempotencyKey: Boolean(idempotencyKey),
       recordId,
+      sourceRecordId: recordId,
     },
   });
 
@@ -1536,9 +1622,25 @@ async function dispatchBinding(ctx: Context, identifier: string) {
               message: 'Run not found',
             });
           }
-          return getExistingRunResult(ctx, binding, visibleRun, idempotencyKey);
+          return getExistingRunResult(
+            ctx,
+            binding,
+            visibleRun,
+            idempotencyKey,
+            collectionName,
+            recordId,
+            output.fieldName,
+          );
         }
-        return getExistingRunResult(ctx, binding, existingRun, idempotencyKey);
+        return getExistingRunResult(
+          ctx,
+          binding,
+          existingRun,
+          idempotencyKey,
+          collectionName,
+          recordId,
+          output.fieldName,
+        );
       }
 
       return await createDispatchRun(
@@ -1556,6 +1658,7 @@ async function dispatchBinding(ctx: Context, identifier: string) {
   } catch (error) {
     if (!deniedAuditWritten) {
       const expectedDenialMetadata = getExpectedDispatchDenialMetadata(error);
+      const writebackFailureMetadata = getDispatchWritebackFailureMetadata(error);
       await auditAgentActionBestEffort(ctx, {
         action: 'dispatch',
         operatorId: getCurrentUserId(ctx) || undefined,
@@ -1563,12 +1666,17 @@ async function dispatchBinding(ctx: Context, identifier: string) {
         resultStatus: expectedDenialMetadata ? 'denied' : 'failed',
         metadataJson: {
           bindingIdentifier: identifier,
-          ...(expectedDenialMetadata || {
-            errorName: error instanceof Error ? error.name : 'UnknownError',
-            errorMessage: getErrorMessage(error),
-          }),
+          ...(expectedDenialMetadata ||
+            writebackFailureMetadata || {
+              errorName: error instanceof Error ? error.name : 'UnknownError',
+              errorMessage: redactText(getErrorMessage(error), {
+                maxStringLength: 500,
+              }),
+            }),
           expectedCollectionName: expectedCollectionName || null,
+          sourceCollection: expectedCollectionName || null,
           recordId,
+          sourceRecordId: recordId,
         },
       });
     }
@@ -1586,6 +1694,9 @@ async function dispatchBinding(ctx: Context, identifier: string) {
       bindingKey: result.bindingKey,
       idempotent: result.idempotent,
       recordId,
+      sourceCollection: result.sourceCollection,
+      sourceRecordId: result.sourceRecordId,
+      runId: result.runId,
     },
   });
 

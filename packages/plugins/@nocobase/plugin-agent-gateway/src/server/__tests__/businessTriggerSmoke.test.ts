@@ -118,7 +118,7 @@ function getFieldOption(field: CollectionFieldLike | undefined, key: keyof Colle
   return field?.options?.[key] ?? field?.[key];
 }
 
-describe('agent gateway NocoBase UI Build business smoke', () => {
+describe('agent gateway no-code business trigger smoke', () => {
   let app: MockServer;
   let rootAgent: ReturnType<MockServer['agent']>;
   let sequence = 0;
@@ -545,7 +545,7 @@ describe('agent gateway NocoBase UI Build business smoke', () => {
       .send(values);
   }
 
-  it('dispatches a no-code UI Build business record through a fake daemon and exposes related run details', async () => {
+  it('dispatches a no-code business record through a fake daemon and exposes related run details', async () => {
     const buildRunsCollection = getDbCollection(app, 'build_runs');
     const agentRunField = buildRunsCollection?.getField?.('agent_run');
     expect(buildRunsCollection?.hasField?.('promptSnapshot')).toBe(false);
@@ -565,14 +565,22 @@ describe('agent gateway NocoBase UI Build business smoke', () => {
     const dispatchResponse = await businessAgent
       .post(`/api/agent-gateway/dispatch-bindings/${binding.id}:dispatch`)
       .send({
-        recordId: buildRunId,
+        sourceRecordId: buildRunId,
+        sourceCollection: 'build_runs',
         idempotencyKey: 'ui-build-smoke-click',
-        expectedCollectionName: 'build_runs',
       });
     expect(dispatchResponse.status).toBe(200);
     const dispatch = getRecordData(dispatchResponse);
+    expect(dispatch).toMatchObject({
+      sourceCollection: 'build_runs',
+      sourceRecordId: buildRunId,
+      outputAgentRunField: 'agent_run',
+      relationUpdated: true,
+      deduped: false,
+    });
+    const runId = expectString(dispatch.runId);
     const dispatchedRun = dispatch.run as Record<string, unknown>;
-    const runId = expectString(dispatchedRun.id);
+    expect(dispatchedRun.id).toBe(runId);
     expect(dispatchedRun.status).toBe('queued');
     expect(dispatchedRun).not.toHaveProperty('promptSnapshot');
     expect(dispatchedRun).not.toHaveProperty('executionPayloadJson');
@@ -604,6 +612,8 @@ describe('agent gateway NocoBase UI Build business smoke', () => {
         bindingKey: binding.bindingKey,
         collectionName: 'build_runs',
         recordId: buildRunId,
+        sourceCollection: 'build_runs',
+        sourceRecordId: buildRunId,
         outputAgentRunField: 'agent_run',
         idempotencyKey: 'ui-build-smoke-click',
       },

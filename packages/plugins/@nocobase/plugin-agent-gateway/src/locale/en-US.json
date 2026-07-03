@@ -63,6 +63,7 @@
   "Record ID is required": "Record ID is required",
   "Rendered prompt": "Rendered prompt",
   "Agent Gateway Dispatch": "Agent Gateway Dispatch",
+  "Dispatch Agent Run": "Dispatch Agent Run",
   "Dispatch": "Dispatch",
   "Dispatch binding": "Dispatch binding",
   "Select dispatch binding": "Select dispatch binding",

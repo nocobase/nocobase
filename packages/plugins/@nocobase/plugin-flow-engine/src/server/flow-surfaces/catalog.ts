@@ -2585,6 +2585,37 @@ AI_EMPLOYEE_ACTION_CONTRACT.domains.stepParams = groupedDomain({
   },
 });
 
+const AGENT_GATEWAY_DISPATCH_ACTION_CONTRACT = createContract({
+  editableDomains: ['props', 'decoratorProps', 'stepParams', 'flowRegistry'],
+  props: ACTION_PROP_KEYS,
+  decoratorProps: ['labelWidth', 'labelWrap'],
+  stepParams: ['buttonSettings', 'agentGatewayDispatch'],
+  flowRegistry: true,
+  eventCapabilities: {
+    direct: ACTION_DIRECT_EVENTS,
+    object: ACTION_OBJECT_EVENTS,
+  },
+  eventBindings: {
+    buttonSettings: {
+      stepKeys: ['general', 'linkageRules'],
+    },
+    agentGatewayDispatch: {
+      stepKeys: ['dispatch'],
+    },
+  },
+});
+AGENT_GATEWAY_DISPATCH_ACTION_CONTRACT.domains.stepParams = groupedDomain({
+  buttonSettings: ACTION_BUTTON_SETTINGS_GROUP,
+  agentGatewayDispatch: {
+    allowedPaths: ['dispatch.bindingIdentifier'],
+    mergeStrategy: 'deep',
+    eventBindingSteps: ['dispatch'],
+    pathSchemas: {
+      'dispatch.bindingIdentifier': STRING_SCHEMA,
+    },
+  },
+});
+
 const APPROVAL_FORM_BLOCK_CONTRACT = createContract({
   editableDomains: ['props', 'decoratorProps', 'stepParams', 'flowRegistry'],
   props: ['labelWidth', 'labelWrap'],
@@ -2831,6 +2862,7 @@ const NODE_CONTRACT_ENTRIES: Array<[string, FlowSurfaceNodeContract]> = [
   ['FilterFormJSActionModel', JS_ACTION_CONTRACT],
   ['JSItemActionModel', JS_ITEM_ACTION_CONTRACT],
   ['JSActionModel', JS_ACTION_CONTRACT],
+  ['AgentGatewayDispatchActionModel', AGENT_GATEWAY_DISPATCH_ACTION_CONTRACT],
   [AI_EMPLOYEE_ACTION_USE, AI_EMPLOYEE_ACTION_CONTRACT],
   ['ApplyFormSubmitModel', APPROVAL_ACTION_CONTRACT],
   ['ApplyFormSaveDraftModel', APPROVAL_ACTION_CONTRACT],
@@ -3840,6 +3872,16 @@ const actionRegistry: FlowSurfaceActionRegistryItem[] = [
     scene: 'record',
     use: AI_EMPLOYEE_ACTION_USE,
     ownerPlugin: AI_EMPLOYEE_FLOW_SURFACE_OWNER_PLUGIN,
+    allowedContainerUses: RECORD_ACTION_CONTAINER_USES,
+    createSupported: true,
+  },
+  {
+    publicKey: 'dispatchAgentRun',
+    label: 'Dispatch Agent Run',
+    scope: 'record',
+    scene: 'record',
+    use: 'AgentGatewayDispatchActionModel',
+    ownerPlugin: '@nocobase/plugin-agent-gateway',
     allowedContainerUses: RECORD_ACTION_CONTAINER_USES,
     createSupported: true,
   },

@@ -19,10 +19,18 @@ interface DispatchActionParams {
 }
 
 interface DispatchApiResponse {
-  bindingId: string;
-  bindingKey: string;
-  idempotent: boolean;
-  run: {
+  bindingId?: string;
+  bindingKey?: string;
+  idempotent?: boolean;
+  deduped?: boolean;
+  runId?: string;
+  runCode?: string;
+  agentSessionId?: string | null;
+  sourceCollection?: string;
+  sourceRecordId?: string;
+  outputAgentRunField?: string;
+  relationUpdated?: boolean;
+  run?: {
     id: string;
     status?: string;
   };
@@ -82,6 +90,7 @@ interface DispatchActionContext {
 }
 
 const pendingDispatches = new Set<string>();
+const dispatchIdempotencyKeys = new Map<string, string>();
 
 function getString(value: unknown) {
   return typeof value === 'string' ? value.trim() : '';
@@ -102,8 +111,16 @@ function t(ctx: DispatchActionContext, key: string) {
 }
 
 function createIdempotencyKey(bindingIdentifier: string, recordId: string) {
+  const pendingKey = getPendingKey(bindingIdentifier, recordId);
+  const existing = dispatchIdempotencyKeys.get(pendingKey);
+  if (existing) {
+    return existing;
+  }
+
   const randomValue = globalThis.crypto?.randomUUID?.() || Math.random().toString(36).slice(2);
-  return `ag_dispatch:${bindingIdentifier}:${recordId}:${randomValue}`;
+  const idempotencyKey = `dispatch:${bindingIdentifier}:${recordId}:${randomValue}`;
+  dispatchIdempotencyKeys.set(pendingKey, idempotencyKey);
+  return idempotencyKey;
 }
 
 function getPendingKey(bindingIdentifier: string, recordId: string) {
@@ -190,7 +207,7 @@ export async function dispatchAgentGatewayRun(ctx: DispatchActionContext, params
   }
 
   const pendingKey = getPendingKey(bindingIdentifier, recordId);
-  const expectedCollectionName = getRuntimeCollectionName(ctx);
+  const sourceCollection = getRuntimeCollectionName(ctx);
   if (pendingDispatches.has(pendingKey)) {
     ctx.message?.warning?.(t(ctx, 'Agent Gateway dispatch is already running'));
     return null;
@@ -202,9 +219,9 @@ export async function dispatchAgentGatewayRun(ctx: DispatchActionContext, params
       url: `agent-gateway/dispatch-bindings/${encodeURIComponent(bindingIdentifier)}/dispatch`,
       method: 'post',
       data: {
-        recordId,
+        sourceRecordId: recordId,
         idempotencyKey: createIdempotencyKey(bindingIdentifier, recordId),
-        ...(expectedCollectionName ? { expectedCollectionName } : {}),
+        ...(sourceCollection ? { sourceCollection } : {}),
       },
     });
 
@@ -212,10 +229,14 @@ export async function dispatchAgentGatewayRun(ctx: DispatchActionContext, params
     if (resource) {
       await resource.refresh();
     }
+    const dispatch = response.data?.data;
     ctx.message?.success(
-      t(ctx, response.data?.data?.idempotent ? 'Agent Gateway run already exists' : 'Agent Gateway run dispatched'),
+      t(
+        ctx,
+        dispatch?.deduped || dispatch?.idempotent ? 'Agent Gateway run already exists' : 'Agent Gateway run dispatched',
+      ),
     );
-    return response.data?.data || null;
+    return dispatch || null;
   } catch (error) {
     ctx.message?.error(getApiErrorMessage(error, t(ctx, 'Failed to dispatch Agent Gateway run')));
     throw error;
@@ -228,17 +249,17 @@ export class AgentGatewayDispatchActionModel extends ActionModel {
   static scene = ActionSceneEnum.record;
 
   defaultProps: ButtonProps = {
-    children: tExpr('Agent Gateway Dispatch'),
+    children: tExpr('Dispatch Agent Run'),
   };
 }
 
 AgentGatewayDispatchActionModel.define({
-  label: tExpr('Agent Gateway Dispatch'),
+  label: tExpr('Dispatch Agent Run'),
 });
 
 AgentGatewayDispatchActionModel.registerFlow({
   key: 'agentGatewayDispatch',
-  title: tExpr('Agent Gateway Dispatch'),
+  title: tExpr('Dispatch Agent Run'),
   on: 'click',
   steps: {
     dispatch: {

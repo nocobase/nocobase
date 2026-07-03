@@ -15,6 +15,7 @@ export default defineCollection({
   dataCategory: 'business',
   migrationRules: ['schema-only'],
   autoGenId: false,
+  titleField: 'runCode',
   fields: [
     {
       type: 'uuid',
@@ -24,12 +25,14 @@ export default defineCollection({
     {
       type: 'string',
       name: 'runCode',
+      interface: 'input',
       unique: true,
       allowNull: false,
     },
     {
       type: 'string',
       name: 'status',
+      interface: 'input',
       defaultValue: 'queued',
       allowNull: false,
       index: true,
@@ -66,6 +69,7 @@ export default defineCollection({
     {
       type: 'date',
       name: 'lastRunHeartbeatAt',
+      interface: 'datetime',
     },
     {
       type: 'boolean',
@@ -103,18 +107,33 @@ export default defineCollection({
     {
       type: 'string',
       name: 'sourceType',
+      interface: 'input',
     },
     {
       type: 'string',
       name: 'sourceCollection',
+      interface: 'input',
     },
     {
       type: 'string',
       name: 'sourceRecordId',
+      interface: 'input',
     },
     {
       type: 'date',
       name: 'requestedAt',
+      interface: 'datetime',
+    },
+    {
+      type: 'bigInt',
+      name: 'requestedById',
+    },
+    {
+      type: 'belongsTo',
+      name: 'requestedBy',
+      target: 'users',
+      foreignKey: 'requestedById',
+      onDelete: 'SET NULL',
     },
     {
       type: 'date',

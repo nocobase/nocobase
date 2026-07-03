@@ -36,10 +36,22 @@ interface DispatchBindingRecord {
   enabled: boolean;
 }
 
+interface ScopeRecord {
+  id: number;
+}
+
 interface DispatchResponse {
   bindingId: string;
   bindingKey: string;
   idempotent: boolean;
+  deduped: boolean;
+  runId: string;
+  runCode: string;
+  agentSessionId: string | null;
+  sourceCollection: string;
+  sourceRecordId: string;
+  outputAgentRunField: string;
+  relationUpdated: boolean;
   run: {
     id: string;
     status: string;
@@ -57,6 +69,7 @@ function getErrorMessage<T>(response: ResponseLike<T>) {
 describe('agent gateway dispatch binding APIs', () => {
   let app: MockServer;
   let rootAgent: ReturnType<MockServer['agent']>;
+  let rootUserId: string;
   let ticketSequence: number;
 
   beforeEach(async () => {
@@ -80,6 +93,7 @@ describe('agent gateway dispatch binding APIs', () => {
       },
     });
     expect(rootUser).toBeTruthy();
+    rootUserId = String(rootUser.get('id'));
     rootAgent = await app.agent().login(rootUser);
     ticketSequence = 1;
     await seedBusinessCollections();
@@ -227,6 +241,7 @@ describe('agent gateway dispatch binding APIs', () => {
     collectionName: string,
     actionNames: string[],
     fieldsByAction: Record<string, string[]> = {},
+    scopesByAction: Record<string, number> = {},
   ) {
     const response = await rootAgent.resource('roles.resources', roleName).create({
       values: {
@@ -235,10 +250,23 @@ describe('agent gateway dispatch binding APIs', () => {
         actions: actionNames.map((name) => ({
           name,
           ...(fieldsByAction[name] ? { fields: fieldsByAction[name] } : {}),
+          ...(scopesByAction[name] ? { scopeId: scopesByAction[name] } : {}),
         })),
       },
     });
     expect(response.status).toBe(200);
+  }
+
+  async function createCollectionScope(collectionName: string, scopeName: string, scope: Record<string, unknown>) {
+    const response = await rootAgent.resource('dataSourcesRolesResourcesScopes').create({
+      values: {
+        resourceName: collectionName,
+        name: scopeName,
+        scope,
+      },
+    });
+    expect(response.status).toBe(200);
+    return getData(response as ResponseLike<ScopeRecord>);
   }
 
   async function grantRunScope(roleName: string, scopeName: string, scope: Record<string, unknown>) {
@@ -376,13 +404,23 @@ describe('agent gateway dispatch binding APIs', () => {
     });
 
     const dispatchResponse = await rootAgent.post(`/api/agent-gateway/dispatch-bindings/${binding.id}/dispatch`).send({
-      recordId: ticket.get('id'),
+      sourceRecordId: ticket.get('id'),
       idempotencyKey: 'ticket-click-1',
-      expectedCollectionName: 'agDispatchTickets',
+      sourceCollection: 'agDispatchTickets',
     });
     expect(dispatchResponse.status).toBe(200);
     const dispatch = getData(dispatchResponse as ResponseLike<DispatchResponse>);
-    expect(dispatch.idempotent).toBe(false);
+    expect(dispatch).toMatchObject({
+      idempotent: false,
+      deduped: false,
+      runId: dispatch.run.id,
+      sourceCollection: 'agDispatchTickets',
+      sourceRecordId: String(ticket.get('id')),
+      outputAgentRunField: 'agentRun',
+      relationUpdated: true,
+    });
+    expect(dispatch.runCode).toBeTruthy();
+    expect(dispatch.agentSessionId).toBeNull();
     expect(dispatch.run.status).toBe('queued');
     expect(dispatch.run).not.toHaveProperty('promptSnapshot');
     expect(dispatch.run).not.toHaveProperty('executionPayloadJson');
@@ -395,6 +433,7 @@ describe('agent gateway dispatch binding APIs', () => {
     expect(storedRun.get('sourceType')).toBe('dispatch');
     expect(storedRun.get('sourceCollection')).toBe('agDispatchTickets');
     expect(storedRun.get('sourceRecordId')).toBe(String(ticket.get('id')));
+    expect(String(storedRun.get('requestedById'))).toBe(rootUserId);
     expect(storedRun.get('nodeId')).toBe(runner.nodeId);
     expect(storedRun.get('agentProfileId')).toBe(runner.profileId);
     expect(storedRun.get('promptSnapshot')).toMatchObject({
@@ -403,6 +442,11 @@ describe('agent gateway dispatch binding APIs', () => {
     expect(storedRun.get('executionPayloadJson')).toMatchObject({
       dispatch: {
         bindingKey: 'ticket-dispatch',
+        collectionName: 'agDispatchTickets',
+        recordId: String(ticket.get('id')),
+        sourceCollection: 'agDispatchTickets',
+        sourceRecordId: String(ticket.get('id')),
+        outputAgentRunField: 'agentRun',
         idempotencyKey: 'ticket-click-1',
       },
       fields: {
@@ -430,7 +474,7 @@ describe('agent gateway dispatch binding APIs', () => {
         id: ticket.get('id'),
       },
     });
-    expect(updatedTicket.get('agentRunId')).toBe(dispatch.run.id);
+    expect(String(updatedTicket.get('agentRunId'))).toBe(dispatch.runId);
   });
 
   it('dispatches records by the collection filterTargetKey', async () => {
@@ -519,6 +563,12 @@ describe('agent gateway dispatch binding APIs', () => {
     const sameKeyDispatch = getData(sameKeyResponse as ResponseLike<DispatchResponse>);
     expect(sameKeyDispatch).toMatchObject({
       idempotent: true,
+      deduped: true,
+      runId: firstDispatch.run.id,
+      sourceCollection: 'agDispatchTickets',
+      sourceRecordId: String(ticket.get('id')),
+      outputAgentRunField: 'agentRun',
+      relationUpdated: true,
       run: {
         id: firstDispatch.run.id,
       },
@@ -641,8 +691,8 @@ describe('agent gateway dispatch binding APIs', () => {
 
     expect(responses.map((response) => response.status).sort()).toEqual([200, 200]);
     const dispatches = responses.map((response) => getData(response as ResponseLike<DispatchResponse>));
-    expect(new Set(dispatches.map((dispatch) => dispatch.run.id)).size).toBe(1);
-    expect(dispatches.some((dispatch) => dispatch.idempotent)).toBe(true);
+    expect(new Set(dispatches.map((dispatch) => dispatch.runId)).size).toBe(1);
+    expect(dispatches.some((dispatch) => dispatch.deduped)).toBe(true);
 
     const runCount = await app.db.getRepository('agRuns').count({});
     expect(runCount).toBe(1);
@@ -651,7 +701,7 @@ describe('agent gateway dispatch binding APIs', () => {
         id: ticket.get('id'),
       },
     });
-    expect(updatedTicket.get('agentRunId')).toBe(dispatches[0].run.id);
+    expect(String(updatedTicket.get('agentRunId'))).toBe(dispatches[0].runId);
   });
 
   it('does not retry terminal runs until explicit retry policy exists', async () => {
@@ -685,9 +735,10 @@ describe('agent gateway dispatch binding APIs', () => {
   it('rolls back the queued run when business relation writeback fails', async () => {
     const binding = await createBinding();
     const ticket = await createTicket();
+    const secretErrorMessage = 'writeback blocked password=WRITEBACK_SECRET token=WRITEBACK_TOKEN';
     app.db.on('agDispatchTickets.beforeUpdate', async (model: { get(key: string): unknown }) => {
       if (model.get('agentRunId')) {
-        throw new Error('writeback blocked by test');
+        throw new Error(secretErrorMessage);
       }
     });
 
@@ -696,6 +747,9 @@ describe('agent gateway dispatch binding APIs', () => {
       idempotencyKey: 'rollback-click',
     });
     expect(response.status).toBe(500);
+    expect(getErrorMessage(response as ResponseLike<unknown>)).toContain('Failed to write Agent Gateway run relation');
+    expect(JSON.stringify(response.body)).not.toContain('WRITEBACK_SECRET');
+    expect(JSON.stringify(response.body)).not.toContain('WRITEBACK_TOKEN');
 
     const runCount = await app.db.getRepository('agRuns').count({});
     expect(runCount).toBe(0);
@@ -705,6 +759,25 @@ describe('agent gateway dispatch binding APIs', () => {
       },
     });
     expect(unchangedTicket.get('agentRunId')).toBeFalsy();
+    const failedAudit = await app.db.getRepository('agAgentActionAudits').findOne({
+      filter: {
+        action: 'dispatch',
+        permissionKey: 'agentGateway.dispatchRun',
+        resultStatus: 'failed',
+      },
+    });
+    const metadataText = JSON.stringify(failedAudit?.get('metadataJson'));
+    expect(failedAudit?.get('metadataJson')).toMatchObject({
+      bindingIdentifier: binding.bindingKey,
+      errorName: 'DispatchWritebackError',
+      errorMessage: 'Failed to write Agent Gateway run relation',
+      phase: 'relation-writeback',
+      recordId: String(ticket.get('id')),
+      sourceRecordId: String(ticket.get('id')),
+    });
+    expect(metadataText).toContain('[REDACTED]');
+    expect(metadataText).not.toContain('WRITEBACK_SECRET');
+    expect(metadataText).not.toContain('WRITEBACK_TOKEN');
   });
 
   it('requires business collection permissions in addition to agent gateway dispatch permission', async () => {
@@ -757,6 +830,192 @@ describe('agent gateway dispatch binding APIs', () => {
         },
       }),
     ).toBe(0);
+  });
+
+  it('does not create a run when the source record is hidden by business data-scope', async () => {
+    const binding = await createBinding();
+    const visibleTicket = await createTicket({
+      title: 'Visible ticket',
+    });
+    const hiddenTicket = await createTicket({
+      title: 'Hidden ticket',
+    });
+    const roleName = 'agentGatewaySourceScopedDispatcher';
+    await app.db.getRepository('roles').create({
+      values: {
+        name: roleName,
+        snippets: ['agentGateway.dispatchRun'],
+      },
+    });
+    const viewScope = await createCollectionScope('agDispatchTickets', 'visible dispatch tickets', {
+      title: 'Visible ticket',
+    });
+    await grantCollectionActions(
+      roleName,
+      'agDispatchTickets',
+      ['view', 'update'],
+      {
+        view: ['title', 'ticketCode', 'agentRun', 'agentRunId'],
+        update: ['agentRun', 'agentRunId'],
+      },
+      {
+        view: viewScope.id,
+      },
+    );
+    const user = await app.db.getRepository('users').create({
+      values: {
+        username: `${roleName}-user`,
+        roles: [roleName],
+      },
+    });
+    const dispatcherAgent = await app.agent().login(user);
+
+    const response = await dispatcherAgent
+      .post(`/api/agent-gateway/dispatch-bindings/${binding.bindingKey}:dispatch`)
+      .send({
+        sourceCollection: 'agDispatchTickets',
+        sourceRecordId: hiddenTicket.get('id'),
+        idempotencyKey: 'hidden-source-record',
+      });
+    expect(response.status).toBe(404);
+    expect(getErrorMessage(response as ResponseLike<unknown>)).toContain('Dispatch target record not found');
+
+    expect(await app.db.getRepository('agRuns').count({})).toBe(0);
+    const unchangedHiddenTicket = await app.db.getRepository('agDispatchTickets').findOne({
+      filter: {
+        id: hiddenTicket.get('id'),
+      },
+    });
+    expect(unchangedHiddenTicket.get('agentRunId')).toBeFalsy();
+    const unchangedVisibleTicket = await app.db.getRepository('agDispatchTickets').findOne({
+      filter: {
+        id: visibleTicket.get('id'),
+      },
+    });
+    expect(unchangedVisibleTicket.get('agentRunId')).toBeFalsy();
+    const deniedAudit = await app.db.getRepository('agAgentActionAudits').findOne({
+      filter: {
+        action: 'dispatch',
+        permissionKey: 'agentGateway.dispatchRun',
+        resultStatus: 'denied',
+      },
+    });
+    expect(deniedAudit?.get('metadataJson')).toMatchObject({
+      bindingIdentifier: binding.bindingKey,
+      errorMessage: expect.stringContaining('Dispatch target record not found'),
+      phase: 'business-record-visibility',
+      recordId: String(hiddenTicket.get('id')),
+      sourceCollection: 'agDispatchTickets',
+      sourceRecordId: String(hiddenTicket.get('id')),
+    });
+  });
+
+  it('does not create a run when the user cannot update the output relation field', async () => {
+    const binding = await createBinding();
+    const ticket = await createTicket();
+    const roleName = 'agentGatewayRelationReadonlyDispatcher';
+    await app.db.getRepository('roles').create({
+      values: {
+        name: roleName,
+        snippets: ['agentGateway.dispatchRun'],
+      },
+    });
+    await grantCollectionActions(roleName, 'agDispatchTickets', ['view', 'update'], {
+      view: ['title', 'ticketCode', 'agentRun', 'agentRunId'],
+      update: ['status'],
+    });
+    const user = await app.db.getRepository('users').create({
+      values: {
+        username: `${roleName}-user`,
+        roles: [roleName],
+      },
+    });
+    const dispatcherAgent = await app.agent().login(user);
+
+    const response = await dispatcherAgent
+      .post(`/api/agent-gateway/dispatch-bindings/${binding.bindingKey}:dispatch`)
+      .send({
+        sourceCollection: 'agDispatchTickets',
+        sourceRecordId: ticket.get('id'),
+        idempotencyKey: 'no-output-relation-update',
+      });
+    expect(response.status).toBe(403);
+    expect(getErrorMessage(response as ResponseLike<unknown>)).toContain(
+      'No permission to write output relation field: agentRun',
+    );
+
+    expect(await app.db.getRepository('agRuns').count({})).toBe(0);
+    const unchangedTicket = await app.db.getRepository('agDispatchTickets').findOne({
+      filter: {
+        id: ticket.get('id'),
+      },
+    });
+    expect(unchangedTicket.get('agentRunId')).toBeFalsy();
+    const deniedAudit = await app.db.getRepository('agAgentActionAudits').findOne({
+      filter: {
+        action: 'dispatch',
+        permissionKey: 'agentGateway.dispatchRun',
+        resultStatus: 'denied',
+      },
+    });
+    expect(deniedAudit?.get('metadataJson')).toMatchObject({
+      bindingIdentifier: binding.bindingKey,
+      errorMessage: expect.stringContaining('No permission to write output relation field: agentRun'),
+      phase: 'business-permission',
+      recordId: String(ticket.get('id')),
+    });
+  });
+
+  it('does not create a run when the prompt reads a source field hidden from the user', async () => {
+    const template = await createTemplate({
+      templateKey: 'hidden-template-field',
+      templateText: 'Build {{record.title}} with {{record.skillName}}',
+    });
+    const binding = await createBinding({
+      bindingKey: 'hidden-template-field-dispatch',
+      promptTemplateId: template.id,
+    });
+    const ticket = await createTicket({
+      skillName: 'secret-skill-selection',
+    });
+    const roleName = 'agentGatewayPromptFieldScopedDispatcher';
+    await app.db.getRepository('roles').create({
+      values: {
+        name: roleName,
+        snippets: ['agentGateway.dispatchRun'],
+      },
+    });
+    await grantCollectionActions(roleName, 'agDispatchTickets', ['view', 'update'], {
+      view: ['title', 'ticketCode', 'agentRun', 'agentRunId'],
+      update: ['agentRun', 'agentRunId'],
+    });
+    const user = await app.db.getRepository('users').create({
+      values: {
+        username: `${roleName}-user`,
+        roles: [roleName],
+      },
+    });
+    const dispatcherAgent = await app.agent().login(user);
+
+    const response = await dispatcherAgent
+      .post(`/api/agent-gateway/dispatch-bindings/${binding.bindingKey}:dispatch`)
+      .send({
+        sourceCollection: 'agDispatchTickets',
+        sourceRecordId: ticket.get('id'),
+        idempotencyKey: 'hidden-prompt-field',
+      });
+    expect(response.status).toBe(403);
+    expect(getErrorMessage(response as ResponseLike<unknown>)).toContain(
+      'No permission to preview template variable: record.skillName',
+    );
+
+    expect(await app.db.getRepository('agRuns').count({})).toBe(0);
+    const unchangedTicket = await app.db.getRepository('agDispatchTickets').findOne({
+      filter: {
+        id: ticket.get('id'),
+      },
+    });
+    expect(unchangedTicket.get('agentRunId')).toBeFalsy();
   });
 
   it('requires permission to select profile and skill version records', async () => {

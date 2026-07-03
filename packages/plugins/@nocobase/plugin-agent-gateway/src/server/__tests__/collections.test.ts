@@ -205,6 +205,8 @@ describe('agent gateway collections', () => {
         'executionPayloadJson',
         'resultSummaryJson',
         'errorSummary',
+        'requestedById',
+        'requestedBy',
         'finishedAt',
         'terminalBackend',
         'terminalSessionName',

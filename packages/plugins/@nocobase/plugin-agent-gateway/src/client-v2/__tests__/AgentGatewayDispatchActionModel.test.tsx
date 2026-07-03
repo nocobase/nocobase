@@ -82,6 +82,14 @@ describe('AgentGatewayDispatchActionModel', () => {
           bindingId: 'binding-id-1',
           bindingKey: 'ticket-dispatch',
           idempotent: false,
+          deduped: false,
+          runId: 'run-id-1',
+          runCode: 'run-code-1',
+          agentSessionId: null,
+          sourceCollection: 'agDispatchTickets',
+          sourceRecordId: '42',
+          outputAgentRunField: 'agentRun',
+          relationUpdated: true,
           run: {
             id: 'run-id-1',
             status: 'queued',
@@ -96,6 +104,7 @@ describe('AgentGatewayDispatchActionModel', () => {
     });
 
     expect(result).toMatchObject({
+      runId: 'run-id-1',
       run: {
         id: 'run-id-1',
       },
@@ -105,12 +114,15 @@ describe('AgentGatewayDispatchActionModel', () => {
         url: 'agent-gateway/dispatch-bindings/binding-id-1/dispatch',
         method: 'post',
         data: expect.objectContaining({
-          recordId: '42',
-          expectedCollectionName: 'agDispatchTickets',
-          idempotencyKey: expect.stringContaining('ag_dispatch:binding-id-1:42:'),
+          sourceRecordId: '42',
+          sourceCollection: 'agDispatchTickets',
+          idempotencyKey: expect.stringMatching(/^dispatch:binding-id-1:42:/),
         }),
       }),
     );
+    const requestData = (request as unknown as { mock: { calls: Array<[RequestConfig]> } }).mock.calls[0][0].data || {};
+    expect(requestData).not.toHaveProperty('recordId');
+    expect(requestData).not.toHaveProperty('expectedCollectionName');
     expect(ctx.blockModel.resource.refresh).toHaveBeenCalled();
     expect(ctx.message.success).toHaveBeenCalledWith('Agent Gateway run dispatched');
   });
@@ -122,6 +134,14 @@ describe('AgentGatewayDispatchActionModel', () => {
           bindingId: 'binding-id-1',
           bindingKey: 'ticket-dispatch',
           idempotent: false,
+          deduped: false,
+          runId: 'run-id-1',
+          runCode: 'run-code-1',
+          agentSessionId: null,
+          sourceCollection: 'agDispatchTickets',
+          sourceRecordId: 'ticket-filter-key',
+          outputAgentRunField: 'agentRun',
+          relationUpdated: true,
           run: {
             id: 'run-id-1',
             status: 'queued',
@@ -141,7 +161,7 @@ describe('AgentGatewayDispatchActionModel', () => {
     expect(request).toHaveBeenLastCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
-          recordId: 'ticket-filter-key',
+          sourceRecordId: 'ticket-filter-key',
         }),
       }),
     );
@@ -179,7 +199,7 @@ describe('AgentGatewayDispatchActionModel', () => {
     expect(request).toHaveBeenLastCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
-          recordId: 'ticket-code-42',
+          sourceRecordId: 'ticket-code-42',
         }),
       }),
     );
@@ -212,6 +232,14 @@ describe('AgentGatewayDispatchActionModel', () => {
           bindingId: 'binding-id-1',
           bindingKey: 'ticket-dispatch',
           idempotent: false,
+          deduped: false,
+          runId: 'run-id-1',
+          runCode: 'run-code-1',
+          agentSessionId: null,
+          sourceCollection: 'agDispatchTickets',
+          sourceRecordId: '42',
+          outputAgentRunField: 'agentRun',
+          relationUpdated: true,
           run: {
             id: 'run-id-1',
             status: 'queued',
@@ -220,6 +248,50 @@ describe('AgentGatewayDispatchActionModel', () => {
       },
     });
     await first;
+  });
+
+  it('reuses the idempotency key for repeated clicks on the same record', async () => {
+    let callCount = 0;
+    const request: DispatchContext['api']['request'] = vi.fn(async <T,>(_config: RequestConfig) => {
+      callCount += 1;
+      const deduped = callCount > 1;
+      return {
+        data: {
+          data: {
+            bindingId: 'binding-id-repeat',
+            bindingKey: 'ticket-dispatch',
+            idempotent: deduped,
+            deduped,
+            runId: 'run-id-repeat',
+            runCode: 'run-code-repeat',
+            agentSessionId: null,
+            sourceCollection: 'agDispatchTickets',
+            sourceRecordId: '42',
+            outputAgentRunField: 'agentRun',
+            relationUpdated: true,
+            run: {
+              id: 'run-id-repeat',
+              status: 'queued',
+            },
+          } as T,
+        },
+      };
+    });
+    const ctx = createContext(request);
+
+    await dispatchAgentGatewayRun(ctx, {
+      bindingIdentifier: 'binding-id-repeat',
+    });
+    await dispatchAgentGatewayRun(ctx, {
+      bindingIdentifier: 'binding-id-repeat',
+    });
+
+    const requestCalls = (request as unknown as { mock: { calls: Array<[RequestConfig]> } }).mock.calls;
+    const firstKey = requestCalls[0][0].data?.idempotencyKey;
+    const secondKey = requestCalls[1][0].data?.idempotencyKey;
+    expect(firstKey).toEqual(expect.stringMatching(/^dispatch:binding-id-repeat:42:/));
+    expect(secondKey).toBe(firstKey);
+    expect(ctx.message.success).toHaveBeenLastCalledWith('Agent Gateway run already exists');
   });
 
   it('requires both a binding and current record id before dispatching', async () => {
