@@ -7,6 +7,17 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+const markdownIframeBlockPattern = /<iframe\b[^>]*>[\s\S]*?<\/iframe\s*>/gi;
+const markdownIframeTagPattern = /<\/?iframe\b[^>]*>/gi;
+
+export function stripMarkdownIframeTags(markdown: string) {
+  if (!markdown) {
+    return markdown;
+  }
+
+  return markdown.replace(markdownIframeBlockPattern, '').replace(markdownIframeTagPattern, '');
+}
+
 export function stripMarkdownIframes(html: string) {
   if (!html || typeof DOMParser === 'undefined') {
     return html;
