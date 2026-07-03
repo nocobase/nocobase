@@ -282,7 +282,7 @@ const getPopupTemplateDisabledReason = async (
 ): Promise<string | undefined> => {
   const engine = (ctx as any)?.engine;
   const getModelClass = engine?.getModelClass?.bind(engine);
-  const useKey = resolveCurrentActionUseKey(ctx);
+  const useKey = normalizeStr((ctx as any)?.model?.use) || normalizeStr((ctx as any)?.model?.constructor?.name);
   const scene = resolveActionScene(getModelClass, useKey);
   const meta = inferPopupTemplateMeta(ctx, tpl);
 
