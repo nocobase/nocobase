@@ -44,6 +44,7 @@ import {
 } from './collectionTemplateFieldInterfaces';
 import { FieldForm } from './FieldForm';
 import { collectionNeedsRecordUniqueKey, RecordUniqueKeyPrompt } from './RecordUniqueKey';
+import { UnsupportedFields } from './UnsupportedFields';
 
 interface FieldsPageProps {
   dataSourceKey: string;
@@ -946,14 +947,7 @@ function ViewSyncFieldsDrawer(props: {
               />
             </Form.Item>
           ) : null}
-          {unsupportedFields.length ? (
-            <Alert
-              showIcon
-              type="warning"
-              message={t('Unsupported fields')}
-              description={unsupportedFields.map((field) => field.name).join(', ')}
-            />
-          ) : null}
+          <UnsupportedFields dataSource={unsupportedFields} style={{ marginBottom: 24 }} />
           <Form.Item label={t('Preview')}>
             <Spin spinning={previewLoading}>
               <AntdTable
@@ -1102,6 +1096,7 @@ export default function FieldsPage(props: FieldsPageProps) {
   const TemplateSyncFieldsDrawer = collectionTemplate?.configure?.syncFields?.Component;
   const runtimeCollection = dataSource?.collectionManager?.getCollection?.(props.collection.name);
   const inheritedFieldGroups = getInheritedFieldGroups(runtimeCollection);
+  const unsupportedFields = Array.isArray(props.collection.unsupportedFields) ? props.collection.unsupportedFields : [];
 
   const openTemplateSyncFieldsDrawer = useCallback(() => {
     if (!TemplateSyncFieldsDrawer) {
@@ -1651,6 +1646,7 @@ export default function FieldsPage(props: FieldsPageProps) {
             : undefined
         }
       />
+      <UnsupportedFields dataSource={unsupportedFields} />
       {inheritedFieldGroups.some((group) => group.fields.length) ? (
         <AntdTable<InheritedFieldGroup>
           style={{ marginTop: 16 }}
