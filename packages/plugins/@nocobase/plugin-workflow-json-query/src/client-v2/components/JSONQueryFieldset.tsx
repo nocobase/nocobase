@@ -14,6 +14,7 @@ import {
   RadioWithTooltip,
   renderEngineReference,
   WorkflowVariableInput,
+  WorkflowTypedVariableInput,
   type RadioWithTooltipOption,
 } from '@nocobase/plugin-workflow/client-v2';
 
@@ -82,7 +83,7 @@ export function JSONQueryFieldset() {
       </Form.Item>
 
       <Form.Item name={['config', 'source']} label={t('Data source')} rules={[{ required: true }]}>
-        <WorkflowVariableInput />
+        <WorkflowTypedVariableInput types={[]} />
       </Form.Item>
 
       <Form.Item

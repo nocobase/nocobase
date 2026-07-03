@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { act, render, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import { Form } from 'antd';
 import type { FormInstance } from 'antd';
 import React, { Suspense, useEffect } from 'react';
@@ -125,5 +125,20 @@ describe('RequestFieldset', () => {
       expect(getForm()?.getFieldValue(['config', 'method'])).toBe(DEFAULT_REQUEST_METHOD);
       expect(getForm()?.getFieldValue(['config', 'data'])).toBe('');
     });
+  });
+
+  it('renders boolean options inline and keeps timeout input compact', async () => {
+    const { resolveFieldset } = renderLazyFieldset({});
+
+    await resolveFieldset();
+
+    const onlyDataLabel = screen.getByText('Only return response data').closest('label');
+    const ignoreFailLabel = screen.getByText('Ignore failed request and continue workflow').closest('label');
+
+    expect(onlyDataLabel?.querySelector('input[type="checkbox"]')).toBeTruthy();
+    expect(ignoreFailLabel?.querySelector('input[type="checkbox"]')).toBeTruthy();
+    expect(screen.getByRole('spinbutton').closest('.ant-input-number')?.getAttribute('style') ?? '').not.toContain(
+      'width: 100%',
+    );
   });
 });

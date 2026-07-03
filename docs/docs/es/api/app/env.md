@@ -57,6 +57,33 @@ API_BASE_PATH=/api/
 
 ## API_BASE_URL
 
+## SERVER_REQUEST_WHITELIST
+
+Lista blanca de destinos permitidos para solicitudes HTTP salientes iniciadas por el servidor. Aplica a solicitudes del lado del servidor desde funciones como nodos de solicitud HTTP en workflows, solicitudes personalizadas y servicios AI.
+
+Cuando esta variable no está configurada, NocoBase sigue permitiendo solicitudes `http` / `https` para mantener la compatibilidad con despliegues existentes. Sin embargo, si el destino es una dirección loopback, privada, link-local o metadata, o si un dominio resuelve a una de esas direcciones, el servidor escribe un warning en los logs. Versiones futuras pueden endurecer gradualmente el comportamiento predeterminado. Si tu despliegue necesita acceder a servicios internos, configura una lista blanca explícita con antelación.
+
+Entradas admitidas:
+
+- Dirección IPv4 exacta, como `192.168.1.10`
+- Rango CIDR IPv4, como `10.0.0.0/8`
+- Dirección IPv6 exacta, como `::1`
+- Rango CIDR IPv6, como `fc00::/7`
+- Dominio exacto, como `api.example.com`
+- Subdominio comodín de un solo nivel, como `*.example.com`
+
+Usa `,` para separar varios destinos:
+
+```bash
+SERVER_REQUEST_WHITELIST=api.example.com,*.trusted.com,10.0.0.0/8,127.0.0.1
+```
+
+:::warning Note
+
+Si se configura un dominio en la lista blanca, la comprobación usa el host de la URL de la solicitud. En otras palabras, después de configurar `internal.example.com`, se trata como un destino permitido explícitamente aunque el dominio resuelva a `127.0.0.1` o a una dirección privada.
+
+:::
+
 ## CLUSTER_MODE
 
 > `v1.6.0+`

@@ -16,3 +16,11 @@ Untuk tipe file yang tidak mendukung native preview, Anda dapat mengimplementasi
 Plugin file preview yang saat ini disediakan NocoBase:
 
 * [Office File Preview Plugin](../file-preview/ms-office.md)
+
+## Preview PDF dengan storage eksternal
+
+NocoBase menampilkan preview PDF melalui iframe browser. Beberapa browser atau PDF reader mungkin mendukung script, form, atau konten interaktif lain di dalam file PDF. Jika file yang dipreview berasal dari sumber yang tidak tepercaya, perhatikan batas keamanan untuk eksekusi script.
+
+Kami menyarankan agar domain akses file dipisahkan dari domain situs NocoBase dan domain API. Misalnya, sajikan file dari OSS, S3, COS, atau CDN melalui domain khusus, bukan menggunakan origin yang sama dengan frontend atau API NocoBase.
+
+Jika domain file berbeda dari domain API, dan API tidak mengaktifkan akses CORS untuk domain file, script yang berjalan di lingkungan preview PDF biasanya dibatasi oleh same-origin policy browser. Script tersebut tidak dapat langsung membaca halaman NocoBase, storage browser, atau respons API.

@@ -7,9 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { usePlugin } from '@nocobase/client-v2';
+import { normalizeV2RedirectPath, useApp, usePlugin } from '@nocobase/client-v2';
 import { Empty, Space, Spin, Tabs } from 'antd';
-import React, { lazy, Suspense, useContext, useMemo } from 'react';
+import React, { lazy, Suspense, useContext, useEffect, useMemo } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { AuthenticatorsContext, type Authenticator } from '../authenticator';
 import { useDocumentTitle } from '../hooks';
 import { useAuthTranslation, useT } from '../locale';
@@ -43,6 +44,9 @@ function lazyByAuthType<P>(loaderMap: LoaderMap<() => Promise<{ default: React.C
 }
 
 export default function SignInPage() {
+  const app = useApp();
+  const location = useLocation();
+  const navigate = useNavigate();
   const { t } = useAuthTranslation();
   // `authTypeTitle` 从服务端来时是 `tval` 生成的原始模板字符串
   // （`{{t("Password", {"ns":"@nocobase/plugin-auth"})}}`），不展开就会直出到 tab label
@@ -57,6 +61,23 @@ export default function SignInPage() {
   const resolveSignInButton = useMemo(() => lazyByAuthType(signInButtonLoaders), [signInButtonLoaders]);
 
   useDocumentTitle(t('Signin'));
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const redirect = params.get('redirect');
+    const normalized = normalizeV2RedirectPath(app, redirect);
+    if (redirect === normalized) {
+      return;
+    }
+
+    params.set('redirect', normalized);
+    navigate(
+      {
+        pathname: location.pathname,
+        search: `?${params}`,
+      },
+      { replace: true },
+    );
+  }, [app, location.pathname, location.search, navigate]);
 
   const tabs = useMemo(() => {
     return authenticators

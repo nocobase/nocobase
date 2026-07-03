@@ -19,17 +19,8 @@ Atualmente, o NocoBase fornece os seguintes plugins de pré-visualização de ar
 
 ## Pré-visualização de PDF com armazenamento externo
 
-A pré-visualização de PDF usa PDF.js para renderizar arquivos no navegador. O navegador precisa primeiro ler o conteúdo do arquivo PDF e depois passá-lo para o PDF.js para renderização. Portanto, quando os arquivos estão armazenados em armazenamento externo, como OSS, S3, COS ou CDN, e o domínio de acesso ao arquivo é diferente do domínio do site NocoBase, o armazenamento externo precisa permitir que o site NocoBase leia arquivos entre origens.
+A NocoBase pré-visualiza PDFs por meio de um iframe do navegador. Alguns navegadores ou leitores de PDF podem oferecer suporte a scripts, formulários ou outros conteúdos interativos dentro de arquivos PDF. Se o arquivo pré-visualizado vier de uma origem não confiável, preste atenção ao limite de segurança da execução de scripts.
 
-Se o CORS não estiver configurado, o download de PDFs ainda poderá funcionar normalmente, mas a pré-visualização poderá falhar com um erro de carregamento do arquivo.
+Recomendamos isolar o domínio de acesso aos arquivos dos domínios do site NocoBase e da API. Por exemplo, sirva arquivos de OSS, S3, COS ou CDN por um domínio dedicado, em vez de compartilhar a mesma origem com o frontend ou a API da NocoBase.
 
-A configuração CORS do armazenamento externo ou CDN deve incluir:
-
-```http
-Access-Control-Allow-Origin: https://your-nocobase-domain
-Access-Control-Allow-Methods: GET, HEAD
-Access-Control-Allow-Headers: *
-Access-Control-Expose-Headers: Content-Length, Content-Range, Accept-Ranges, Content-Disposition, Content-Type
-```
-
-`Access-Control-Allow-Origin` deve ser configurado com o domínio real usado para acessar o NocoBase. Evite usar `*` a longo prazo para arquivos não públicos, pois isso amplia o conjunto de sites que podem ler os arquivos.
+Se o domínio dos arquivos for diferente do domínio da API, e a API não habilitar CORS para o domínio dos arquivos, os scripts executados no ambiente de pré-visualização de PDF normalmente ficam restritos pela política de mesma origem do navegador. Eles não conseguem ler diretamente a página da NocoBase, o armazenamento do navegador ou as respostas da API.

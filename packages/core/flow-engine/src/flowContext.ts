@@ -3504,11 +3504,12 @@ export class FlowEngineContext extends BaseFlowEngineContext {
     });
     this.defineProperty('auth', {
       get: () => ({
-        roleName: this.api.auth.role,
-        locale: this.api.auth.locale,
-        token: this.api.auth.token,
+        roleName: this.api?.auth?.role,
+        locale: this.api?.auth?.locale,
+        token: this.api?.auth?.token,
         user: this.user,
       }),
+      cache: false,
     });
     this.defineProperty('date', {
       get: () => {

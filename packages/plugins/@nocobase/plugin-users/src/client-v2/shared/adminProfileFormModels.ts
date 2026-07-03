@@ -62,9 +62,6 @@ function buildPasswordFieldItem(): FlowModelTree {
         required: {
           required: true,
         },
-        initialValue: {
-          defaultValue: 'admin123',
-        },
       },
     },
     subModels: {
@@ -73,7 +70,6 @@ function buildPasswordFieldItem(): FlowModelTree {
         props: {
           autoComplete: 'new-password',
           checkStrength: false,
-          initialValue: 'admin123',
         },
       },
     },

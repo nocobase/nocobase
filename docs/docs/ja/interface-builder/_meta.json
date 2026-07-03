@@ -67,6 +67,11 @@
             "type": "custom-link",
             "label": "Gantt",
             "link": "/interface-builder/blocks/data-blocks/gantt"
+          },
+          {
+            "type": "custom-link",
+            "label": "コメント",
+            "link": "/interface-builder/blocks/data-blocks/comment"
           }
         ]
       },

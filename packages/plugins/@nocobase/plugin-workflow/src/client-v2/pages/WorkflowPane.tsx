@@ -23,6 +23,7 @@ import { App, Button, Flex, Form, Input, Space, Switch, Tag, Tooltip, theme } fr
 import type { ColumnsType } from 'antd/es/table';
 import React, { useMemo, useState } from 'react';
 import workflowCollection from '../../common/collections/workflows';
+import { defaultWorkflowFilter } from '../../common/defaultWorkflowFilter';
 import { SyncModeTag } from '../components/SyncModeTag';
 import { useWorkflowRuntimePaths } from '../hooks/useWorkflowRuntimePaths';
 import { useT, useWorkflowTranslation } from '../locale';
@@ -134,7 +135,7 @@ function WorkflowPaneInner() {
     padding: 0;
   `;
   const workflowTabsClassName = css`
-    padding: ${token.padding}px ${token.padding}px 0 calc(${token.padding}px - ${token.lineWidth}px);
+    margin-left: -1px;
     background: ${token.colorBgLayout};
 
     .ant-tabs {
@@ -150,7 +151,7 @@ function WorkflowPaneInner() {
     }
   `;
   const workflowContentClassName = css`
-    margin: 0 ${token.padding}px ${token.padding}px;
+    margin: 0;
     padding: ${token.paddingLG}px;
     background: ${token.colorBgContainer};
     border-radius: 0 ${token.borderRadiusLG}px ${token.borderRadiusLG}px ${token.borderRadiusLG}px;
@@ -350,6 +351,7 @@ function WorkflowPaneInner() {
         <Flex justify="space-between" align="center" style={{ marginBottom: token.margin }}>
           <CollectionFilter
             collection={filterCollection}
+            defaultValue={defaultWorkflowFilter}
             nonfilterableFieldNames={WORKFLOWS_NONFILTERABLE_FIELD_NAMES}
             onChange={handleFilterChange}
             t={compile}

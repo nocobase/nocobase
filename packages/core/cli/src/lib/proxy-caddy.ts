@@ -28,12 +28,14 @@ import {
 import { resolveCliHomeRoot } from './cli-home.js';
 import {
   applyEnvProxyAppEntryOptions,
+  buildManualEnvProxyCaddyBundle,
   buildEnvProxyCaddyBundle,
   buildEnvProxyMainConfig,
   mapProxyPathFromCliRoot,
   resolveEnvProxyMainOutputPath,
   type EnvProxyAppEntryOptions,
   type EnvProxyCaddyBundle,
+  type ManualEnvProxyNginxInput,
 } from './env-proxy.js';
 import { run } from './run-npm.js';
 
@@ -47,6 +49,10 @@ type WritableProxyRuntime = Extract<ManagedAppRuntime, { kind: 'local' | 'docker
 export type CaddyProxyWriteResult = {
   bundle: EnvProxyCaddyBundle;
   status: 'created' | 'updated';
+};
+
+type CaddyProxyWriteOptions = {
+  cdnBaseUrl?: string;
 };
 
 export type CaddyProxyRuntimeContext = {
@@ -128,10 +134,41 @@ export async function writeCaddyProxyBundle(
   runtime: WritableProxyRuntime,
   appEntryOptions: EnvProxyAppEntryOptions,
   runtimeContext: CaddyProxyRuntimeContext,
+  options?: CaddyProxyWriteOptions,
 ): Promise<CaddyProxyWriteResult> {
   const bundle = await buildEnvProxyCaddyBundle(runtime, {
+    cdnBaseUrl: options?.cdnBaseUrl,
     runtimeCliRoot: runtimeContext.runtimeCliRoot,
     upstreamHost: runtimeContext.upstreamHost,
+  });
+  const currentAppConfigContent = await readOptionalTextFile(bundle.appConfigPath);
+  const nextAppConfigContent = applyEnvProxyAppEntryOptions(bundle.appConfigContent, 'caddy', appEntryOptions);
+  const status: CaddyProxyWriteResult['status'] = currentAppConfigContent ? 'updated' : 'created';
+
+  await Promise.all([mkdir(bundle.entryDir, { recursive: true }), mkdir(bundle.publicDir, { recursive: true })]);
+  await Promise.all([
+    writeFile(bundle.appConfigPath, nextAppConfigContent, 'utf8'),
+    writeFile(bundle.indexV1Path, bundle.indexV1Content, 'utf8'),
+    writeFile(bundle.indexV2Path, bundle.indexV2Content, 'utf8'),
+    writeFile(bundle.mainConfigPath, bundle.mainConfigContent, 'utf8'),
+  ]);
+
+  return {
+    bundle,
+    status,
+  };
+}
+
+export async function writeManualCaddyProxyBundle(
+  input: ManualEnvProxyNginxInput,
+  appEntryOptions: EnvProxyAppEntryOptions,
+  runtimeContext: CaddyProxyRuntimeContext,
+  options?: CaddyProxyWriteOptions,
+): Promise<CaddyProxyWriteResult> {
+  const bundle = await buildManualEnvProxyCaddyBundle(input, {
+    cdnBaseUrl: options?.cdnBaseUrl,
+    runtimeCliRoot: runtimeContext.runtimeCliRoot,
+    upstreamHost: input.upstreamHost || runtimeContext.upstreamHost,
   });
   const currentAppConfigContent = await readOptionalTextFile(bundle.appConfigPath);
   const nextAppConfigContent = applyEnvProxyAppEntryOptions(bundle.appConfigContent, 'caddy', appEntryOptions);

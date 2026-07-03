@@ -36,6 +36,7 @@ export interface VariableHybridInputProps {
   value?: string;
   onChange?: (value: string) => void;
   disabled?: boolean;
+  readOnly?: boolean;
   placeholder?: string;
   addonBefore?: React.ReactNode;
   metaTree?: MetaTreeNode[] | (() => MetaTreeNode[] | Promise<MetaTreeNode[]>);
@@ -295,7 +296,7 @@ function getCurrentRange(element: HTMLElement): RangeIndexes {
 }
 
 const VariableHybridInputComponent: React.FC<VariableHybridInputProps> = (props) => {
-  const { addonBefore, className, converters, disabled, metaTree, onChange, placeholder, style } = props;
+  const { addonBefore, className, converters, disabled, metaTree, onChange, placeholder, readOnly, style } = props;
   const { token } = theme.useToken();
   const ctx = useFlowContext();
   const { resolvedMetaTree } = useResolvedMetaTree(metaTree);
@@ -458,12 +459,13 @@ const VariableHybridInputComponent: React.FC<VariableHybridInputProps> = (props)
 
   const handleInput = useCallback(
     ({ currentTarget }: React.FormEvent<HTMLDivElement>) => {
+      if (readOnly) return;
       if (isComposing) return;
       setChanged(true);
       setRange(getCurrentRange(currentTarget));
       emitChange(currentTarget);
     },
-    [emitChange, isComposing],
+    [emitChange, isComposing, readOnly],
   );
 
   const handleBlur = useCallback(({ currentTarget }: React.FocusEvent<HTMLDivElement>) => {
@@ -479,6 +481,7 @@ const VariableHybridInputComponent: React.FC<VariableHybridInputProps> = (props)
   const handlePaste = useCallback(
     (event: React.ClipboardEvent<HTMLDivElement>) => {
       event.preventDefault();
+      if (readOnly) return;
       // Paste as plain text only; variable tags must be inserted via the picker.
       const text = event.clipboardData.getData('text/plain').replace(/\n/g, ' ');
       if (!text) return;
@@ -487,18 +490,19 @@ const VariableHybridInputComponent: React.FC<VariableHybridInputProps> = (props)
       setRange(getCurrentRange(event.currentTarget));
       emitChange(event.currentTarget);
     },
-    [emitChange],
+    [emitChange, readOnly],
   );
 
   const handleCompositionStart = useCallback(() => setIsComposing(true), []);
   const handleCompositionEnd = useCallback(
     ({ currentTarget }: React.CompositionEvent<HTMLDivElement>) => {
       setIsComposing(false);
+      if (readOnly) return;
       setChanged(true);
       setRange(getCurrentRange(currentTarget));
       emitChange(currentTarget);
     },
-    [emitChange],
+    [emitChange, readOnly],
   );
 
   const wrapperClassName = useMemo(
@@ -620,6 +624,14 @@ const VariableHybridInputComponent: React.FC<VariableHybridInputProps> = (props)
         }
       }
 
+      &.is-readonly {
+        cursor: default;
+
+        &:hover {
+          border-color: ${token.colorBorder};
+        }
+      }
+
       &.is-error {
         border-color: ${token.colorError};
 
@@ -660,10 +672,12 @@ const VariableHybridInputComponent: React.FC<VariableHybridInputProps> = (props)
           aria-label="textbox"
           className={cx(editorClassName, {
             'is-disabled': disabled,
+            'is-readonly': readOnly,
             'is-error': effectiveStatus === 'error',
             'is-warning': effectiveStatus === 'warning',
           })}
-          contentEditable={!disabled}
+          contentEditable={!disabled && !readOnly}
+          aria-readonly={readOnly}
           data-placeholder={placeholder}
           onInput={handleInput}
           onBlur={handleBlur}

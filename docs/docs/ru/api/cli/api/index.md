@@ -19,7 +19,7 @@ nb api <command>
 | Команда | Описание |
 | --- | --- |
 | [`nb api resource`](./resource/index.md) | Выполнение универсальных CRUD-операций и агрегатных запросов на любых ресурсах NocoBase |
-| [`nb api Динамические команды`](./dynamic.md) | Команды topic и operation, генерируемые на основе OpenAPI Schema приложения |
+| [`Динамические команды nb api`](./dynamic.md) | Команды topic и operation, генерируемые на основе OpenAPI Schema |
 
 ## Общие параметры
 
@@ -29,7 +29,7 @@ nb api <command>
 | --- | --- | --- |
 | `--api-base-url` | string | Адрес API NocoBase, например `http://localhost:13000/api` |
 | `--env`, `-e` | string | Имя окружения |
-| `--token`, `-t` | string | Переопределение API key |
+| `--token`, `-t` | string | Переопределение ключа API |
 | `--role` | string | Переопределение роли, отправляется как HTTP-заголовок `X-Role` |
 | `--verbose` | boolean | Показать подробный прогресс |
 | `--json-output`, `-j` / `--no-json-output` | boolean | Выводить ли исходный JSON, по умолчанию включено |

@@ -46,6 +46,11 @@
   },
   {
     "type": "custom-link",
+    "label": "Migrer vers S3 Pro",
+    "link": "/file-manager/storage/migrate-to-s3-pro"
+  },
+  {
+    "type": "custom-link",
     "label": "Table de fichiers",
     "link": "/file-manager/file-collection"
   },

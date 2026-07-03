@@ -25,8 +25,7 @@
  *     read from `getPropertyMetaTree()`. Independent of any node/trigger
  *     migration. Serialized as `{{$env.x.y}}` (no inner spaces, workflow style).
  *   - `$context` (Trigger variables)     — trigger outputs from
- *     `useVariables`, plus the legacy workflow-title context path used by
- *     saved trigger task titles.
+ *     `useVariables`.
  *   - `$system` (System variables)       — **stub**: lit when the v2 plugin
  *     gains a `systemVariables` registry.
  *   - `$scopes` (Scope variables)        — **stub**: lit when branch nodes
@@ -40,7 +39,7 @@
 import React, { useMemo } from 'react';
 import type { MetaTreeNode } from '@nocobase/flow-engine';
 import { useFlowEngine } from '@nocobase/flow-engine';
-import { useCurrentWorkflowContext, useNodeContext } from './contexts';
+import { useCurrentWorkflowContext, useNodeContext, useWorkflowVariableSourceContext } from './contexts';
 import { useAvailableUpstreams, useUpstreamScopes, type Instruction } from './Instruction';
 import { adaptVariableOptionToMetaTree, adaptVariableOptionsToMetaTree } from './adaptVariableOptionToMetaTree';
 import { NAMESPACE } from '../locale';
@@ -50,7 +49,6 @@ const ENV_ROOT = '$env';
 const SYSTEM_ROOT = '$system';
 const TRIGGER_ROOT = '$context';
 const SCOPES_ROOT = '$scopes';
-const LEGACY_FLOW_CONTEXT_ROOT = 'useFlowContext()';
 
 /**
  * A system variable as held by either runtime's `systemVariables` registry.
@@ -106,8 +104,7 @@ function extractTooltipFromReactNode(node: React.ReactNode): string {
 /**
  * A trigger as held by either runtime's `triggers` registry. v1 stores a
  * `Trigger` instance carrying a `useVariables(config, options)` hook; v2 stores
- * a plain options object with no `useVariables` (so only the workflow-title
- * fallback is available until the trigger variable migration reaches v2).
+ * a plain options object with no `useVariables`.
  */
 type TriggerLike = { useVariables?(config: any, options?: any): any[] | null | undefined };
 
@@ -234,65 +231,22 @@ function useEnvScope(): MetaTreeNode | null {
   return env ?? null;
 }
 
-function createLegacyWorkflowTitleNode(t: (key: string) => string): MetaTreeNode {
-  return {
-    name: 'workflow',
-    title: t('Workflow'),
-    type: '',
-    paths: [LEGACY_FLOW_CONTEXT_ROOT, 'workflow'],
-    children: [
-      {
-        name: 'title',
-        title: t('Workflow title'),
-        type: 'string',
-        paths: [LEGACY_FLOW_CONTEXT_ROOT, 'workflow', 'title'],
-      },
-    ],
-  };
-}
-
-function appendLegacyWorkflowTitleNode(children: MetaTreeNode[], t: (key: string) => string): MetaTreeNode[] {
-  const workflowNode = children.find((node) => node.name === 'workflow');
-  if (!workflowNode) {
-    return [...children, createLegacyWorkflowTitleNode(t)];
-  }
-  const workflowChildren = workflowNode.children;
-  const legacyWorkflowTitleChildren = createLegacyWorkflowTitleNode(t).children;
-  if (!Array.isArray(workflowChildren) || !Array.isArray(legacyWorkflowTitleChildren)) {
-    return children;
-  }
-  const hasTitle = workflowChildren.some((node) => node.name === 'title');
-  if (hasTitle) {
-    return children;
-  }
-  return children.map((node) =>
-    node === workflowNode
-      ? {
-          ...node,
-          children: [...workflowChildren, ...legacyWorkflowTitleChildren],
-        }
-      : node,
-  );
-}
-
 /**
  * "Trigger variables" (`$context`) — the workflow trigger's output. Resolves the
  * current workflow (threaded into the config drawer via `CurrentWorkflowContext`,
  * since the drawer renders at the React root, outside the canvas `FlowContext`),
  * looks up its trigger, and calls the trigger's `useVariables(config, options)`.
- * Also exposes the legacy `useFlowContext().workflow.title` path so saved
- * trigger task titles render as a readable token instead of raw `{{...}}`.
  *
  * Runtime-neutral, mirroring `useNodeResultScope`: a v1 trigger
  * (`PluginWorkflowClient.triggers`) implements `useVariables` so the scope lights
- * up; a v2 trigger may have no `useVariables`, but still gets the workflow-title
- * fallback while a workflow is in context. Returns null when no workflow is in
- * context.
+ * up. Returns null when no workflow is in context.
  */
 function useTriggerScope(options: UseWorkflowVariableOptions): MetaTreeNode | null {
   const flowEngine = useFlowEngine();
   const plugin = useWorkflowPlugin();
-  const workflow = useCurrentWorkflowContext();
+  const variableSourceWorkflow = useWorkflowVariableSourceContext();
+  const currentWorkflow = useCurrentWorkflowContext();
+  const workflow = variableSourceWorkflow ?? currentWorkflow;
   const t = (key: string) => flowEngine.context.t(key, { ns: NAMESPACE });
   if (!workflow) {
     return null;
@@ -300,7 +254,10 @@ function useTriggerScope(options: UseWorkflowVariableOptions): MetaTreeNode | nu
   const trigger = workflow?.type ? plugin?.triggers?.get(workflow.type) : undefined;
   const subOptions = trigger?.useVariables?.(workflow?.config, options);
   const list = Array.isArray(subOptions) ? subOptions.filter(Boolean) : [];
-  const children = appendLegacyWorkflowTitleNode(adaptVariableOptionsToMetaTree(list, [TRIGGER_ROOT]), t);
+  const children = adaptVariableOptionsToMetaTree(list, [TRIGGER_ROOT]);
+  if (!children.length) {
+    return null;
+  }
   return {
     name: TRIGGER_ROOT,
     title: t('Trigger variables'),
@@ -432,7 +389,9 @@ export function useWorkflowVariableOptions(options: UseWorkflowVariableOptions =
   const env = useEnvScope();
 
   const current = useNodeContext();
-  const workflow = useCurrentWorkflowContext();
+  const variableSourceWorkflow = useWorkflowVariableSourceContext();
+  const currentWorkflow = useCurrentWorkflowContext();
+  const workflow = variableSourceWorkflow ?? currentWorkflow;
   // A signature that changes only when the variable tree's *structure* could change — the current node, its upstream
   // chain (node-result), its branching scopes, and the workflow (trigger). Lazy children resolved into the tree by the
   // picker are NOT part of this key, so they persist until the structure itself changes.

@@ -84,6 +84,7 @@ vi.mock('@nocobase/plugin-workflow/client-v2', () => {
     onChange?: (value: unknown) => void;
     defaultToFirstConstantTypeWhenUndefined?: boolean;
     placeholder?: string;
+    readOnly?: boolean;
     types?: unknown;
   };
 
@@ -111,7 +112,14 @@ vi.mock('@nocobase/plugin-workflow/client-v2', () => {
   }
 
   function WorkflowVariableInput(props: InputProps) {
-    return <input aria-label={props.placeholder ?? 'workflow-variable-input'} readOnly value="" />;
+    return (
+      <input
+        aria-label={props.placeholder ?? 'workflow-variable-input'}
+        readOnly
+        value=""
+        data-read-only={String(!!props.readOnly)}
+      />
+    );
   }
 
   function WorkflowVariableTextArea(props: InputProps) {
@@ -252,6 +260,31 @@ describe('MailerFieldset', () => {
         '{{$jobsMapByNodeKey.query.files.1}}',
         '{{$jobsMapByNodeKey.query.files.0}}',
       ]);
+    });
+  });
+
+  it('renders attachment inputs as variable-only and array add buttons as dashed additions', async () => {
+    dndState.contexts = [];
+    dndState.pendingDragEndHandlers = [];
+    renderWithForm();
+
+    expect(dndState.contexts).toHaveLength(0);
+
+    const addButtons = [
+      ...screen.getAllByRole('button', { name: /Add email address/ }),
+      screen.getByRole('button', { name: /Add attachment/ }),
+    ];
+
+    for (const button of addButtons) {
+      expect(button).toHaveClass('ant-btn-dashed');
+      expect(button).toHaveClass('ant-btn-block');
+    }
+
+    fireEvent.click(screen.getByRole('button', { name: /Add attachment/ }));
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('File record')).toHaveAttribute('data-read-only', 'true');
+      expect(dndState.contexts).toHaveLength(1);
     });
   });
 });

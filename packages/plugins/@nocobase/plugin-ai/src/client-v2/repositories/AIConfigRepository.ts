@@ -8,18 +8,16 @@
  */
 
 import { define, observable } from '@nocobase/flow-engine';
-import type { SkillsEntry, ToolsEntry, ToolsManager } from '@nocobase/client-v2';
+import type { APIClient, SkillsEntry, ToolsEntry, ToolsManager } from '@nocobase/client-v2';
 import type { AIEmployee } from '../ai-employees/types';
 
-type APIResource = {
-  list?: (params?: Record<string, unknown>) => Promise<{ data?: { data?: unknown } }>;
-  listAllEnabledModels?: () => Promise<{ data?: { data?: unknown } }>;
-  listByUser?: () => Promise<{ data?: { data?: unknown } }>;
+type APIListResponse = {
+  data?: {
+    data?: unknown;
+  };
 };
 
-type APIClient = {
-  resource: (name: string) => APIResource;
-};
+type ResourceAction = (params?: Record<string, unknown>) => Promise<unknown>;
 
 export interface LLMServiceItem {
   llmService: string;
@@ -29,6 +27,56 @@ export interface LLMServiceItem {
   enabledModels: { label: string; value: string }[];
   supportWebSearch?: boolean;
   isToolConflict?: boolean;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+function isResourceAction(value: unknown): value is ResourceAction {
+  return typeof value === 'function';
+}
+
+function isAPIListResponse(value: unknown): value is APIListResponse {
+  return isRecord(value) && (value.data === undefined || isRecord(value.data));
+}
+
+function readArrayData(response: unknown): unknown[] {
+  if (!isAPIListResponse(response)) {
+    return [];
+  }
+  return Array.isArray(response.data?.data) ? response.data.data : [];
+}
+
+function isModelOption(value: unknown): value is { label: string; value: string } {
+  return isRecord(value) && typeof value.label === 'string' && typeof value.value === 'string';
+}
+
+function isLLMServiceItem(value: unknown): value is LLMServiceItem {
+  return (
+    isRecord(value) &&
+    typeof value.llmService === 'string' &&
+    typeof value.llmServiceTitle === 'string' &&
+    Array.isArray(value.enabledModels) &&
+    value.enabledModels.every(isModelOption)
+  );
+}
+
+function isAIEmployee(value: unknown): value is AIEmployee {
+  return isRecord(value) && typeof value.username === 'string';
+}
+
+function isToolsEntry(value: unknown): value is ToolsEntry {
+  return (
+    isRecord(value) &&
+    isRecord(value.definition) &&
+    typeof value.definition.name === 'string' &&
+    typeof value.definition.description === 'string'
+  );
+}
+
+function isSkillsEntry(value: unknown): value is SkillsEntry {
+  return isRecord(value) && typeof value.name === 'string' && typeof value.description === 'string';
 }
 
 export class AIConfigRepository {
@@ -52,7 +100,7 @@ export class AIConfigRepository {
   private aiSkillsInFlight: Promise<SkillsEntry[]> | null = null;
 
   constructor(
-    private readonly apiClient: APIClient,
+    private readonly apiClient: Pick<APIClient, 'resource'>,
     private readonly options?: { toolsManager?: Pick<ToolsManager, 'listTools'> },
   ) {
     define(this, {
@@ -204,11 +252,24 @@ export class AIConfigRepository {
     return promise;
   }
 
+  private async callResourceAction(
+    resourceName: string,
+    actionName: string,
+    params?: Record<string, unknown>,
+  ): Promise<unknown> {
+    const resource: Record<string, unknown> = this.apiClient.resource(resourceName);
+    const action = resource[actionName];
+    if (!isResourceAction(action)) {
+      return undefined;
+    }
+    return action(params);
+  }
+
   private async doRefreshLLMServices() {
     this.llmServicesLoading = true;
     try {
-      const res = await this.apiClient.resource('ai').listAllEnabledModels();
-      const data = Array.isArray(res?.data?.data) ? (res.data.data as LLMServiceItem[]) : [];
+      const res = await this.callResourceAction('ai', 'listAllEnabledModels');
+      const data = readArrayData(res).filter(isLLMServiceItem);
       this.llmServices = data;
       this.llmServicesLoaded = true;
     } catch {
@@ -222,8 +283,8 @@ export class AIConfigRepository {
   private async doRefreshAIEmployees() {
     this.aiEmployeesLoading = true;
     try {
-      const res = await this.apiClient.resource('aiEmployees').listByUser();
-      const aiEmployees = Array.isArray(res?.data?.data) ? (res.data.data as AIEmployee[]) : [];
+      const res = await this.callResourceAction('aiEmployees', 'listByUser');
+      const aiEmployees = readArrayData(res).filter(isAIEmployee);
       this.aiEmployees = aiEmployees;
       this.aiEmployeesLoaded = true;
     } catch {
@@ -241,8 +302,8 @@ export class AIConfigRepository {
       if (this.options?.toolsManager) {
         tools = await this.options.toolsManager.listTools({ sessionId });
       } else {
-        const res = await this.apiClient.resource('aiTools').list({ filter: { sessionId } });
-        tools = Array.isArray(res?.data?.data) ? (res.data.data as ToolsEntry[]) : [];
+        const res = await this.callResourceAction('aiTools', 'list', { filter: { sessionId } });
+        tools = readArrayData(res).filter(isToolsEntry);
       }
       this.aiTools = tools;
       this.aiToolsLoaded = true;
@@ -259,8 +320,8 @@ export class AIConfigRepository {
   private async doRefreshAISkills() {
     this.aiSkillsLoading = true;
     try {
-      const res = await this.apiClient.resource('aiSkills').list({});
-      const data = Array.isArray(res?.data?.data) ? (res.data.data as SkillsEntry[]) : [];
+      const res = await this.callResourceAction('aiSkills', 'list', {});
+      const data = readArrayData(res).filter(isSkillsEntry);
       this.aiSkills = data;
       this.aiSkillsLoaded = true;
     } catch {
