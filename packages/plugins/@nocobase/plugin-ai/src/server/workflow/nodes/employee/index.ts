@@ -321,7 +321,7 @@ Do not send another normal assistant response without invoking it.
           username,
         },
         title: userMessage.slice(0, 30),
-        from: 'sub-agent',
+        from: 'main-agent',
         options: {
           systemMessage,
           skillSettings,
