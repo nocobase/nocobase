@@ -9,6 +9,14 @@ keywords: "Amazon S3,AWS,存储桶,AccessKey,云存储,S3 配置,NocoBase"
 
 基于 Amazon S3 的存储引擎，使用前需要准备相关账号和权限。
 
+:::warning 注意
+
+该引擎不支持私有访问。文件上传后，NocoBase 会生成可直接访问的 URL，任何获得该 URL 的用户都可以访问文件。
+
+即使 S3 bucket 本身配置为私有，NocoBase 内置的 Amazon S3 引擎也不会为文件访问生成临时签名 URL。如果需要私有访问，请使用支持签名 URL 的 [S3 Pro](./s3-pro) 存储引擎。已有历史文件时，可参考[迁移到 S3 Pro](./migrate-to-s3-pro.md)。
+
+:::
+
 ## 配置参数
 
 ![Amazon S3 存储引擎配置示例](https://static-docs.nocobase.com/20251031092524.png)

@@ -46,6 +46,11 @@
   },
   {
     "type": "custom-link",
+    "label": "S3 Pro への移行",
+    "link": "/file-manager/storage/migrate-to-s3-pro"
+  },
+  {
+    "type": "custom-link",
     "label": "ファイルテーブル",
     "link": "/file-manager/file-collection"
   },
