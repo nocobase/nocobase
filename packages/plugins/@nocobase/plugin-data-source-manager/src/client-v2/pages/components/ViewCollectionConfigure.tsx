@@ -16,6 +16,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { CollectionTemplateConfigureItemProps } from '../../plugin';
 import { useT } from '../../locale';
 import { compileLegacyTemplate } from '../../utils/compileLegacyTemplate';
+import { UnsupportedFields } from './UnsupportedFields';
 
 type ViewRecord = {
   name: string;
@@ -589,15 +590,7 @@ export function ViewFieldsConfigureItem(props: CollectionTemplateConfigureItemPr
           <Alert showIcon message={t('Please select a database view')} />
         </Form.Item>
       )}
-      {unsupportedFields?.length ? (
-        <Alert
-          showIcon
-          type="warning"
-          message={t('Unsupported fields')}
-          description={unsupportedFields.map((field) => field.name).join(', ')}
-          style={{ marginBottom: 24 }}
-        />
-      ) : null}
+      <UnsupportedFields dataSource={unsupportedFields} style={{ marginBottom: 24 }} />
     </>
   );
 }
