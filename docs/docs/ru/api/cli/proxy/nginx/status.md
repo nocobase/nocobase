@@ -1,12 +1,12 @@
 ---
 title: "nb proxy nginx status"
-description: "Справка по команде nb proxy nginx status: показывает текущий runtime-статус proxy Nginx."
+description: "Справочник по команде nb proxy nginx status: вывод текущего состояния среды выполнения прокси Nginx."
 keywords: "nb proxy nginx status,NocoBase CLI,nginx,status"
 ---
 
 # nb proxy nginx status
 
-Показывает текущий runtime-статус proxy Nginx.
+Показывает текущее состояние среды выполнения прокси Nginx.
 
 ## Использование
 
@@ -22,6 +22,12 @@ nb proxy nginx status
 - `status`
 - `config`
 - `nginx` или `container`
+
+## Примеры
+
+```bash
+nb proxy nginx status
+```
 
 ## Связанные команды
 

@@ -6,7 +6,7 @@ keywords: "nb api resource destroy,NocoBase CLI,удаление записи,CR
 
 # nb api resource destroy
 
-Удаление записи указанного ресурса. Для определения записи можно использовать `--filter-by-tk` или `--filter`.
+Удаление записей из выбранного ресурса. Для поиска записей можно использовать `--filter-by-tk` или `--filter`.
 
 ## Использование
 
