@@ -297,10 +297,14 @@ export function createWebSocket(
     nodeToken?: string;
     authProof?: TestBrowserAuthProof;
     streamTicket?: { ticket: string; ticketProof: string; authProof?: string; authenticator?: string; role?: string };
+    origin?: string;
   } = {},
 ) {
   const headers: Record<string, string> = {};
   let protocols: string[] | undefined;
+  if (options.origin) {
+    headers.Origin = options.origin;
+  }
   if (options.nodeToken) {
     headers.Authorization = `Bearer ${options.nodeToken}`;
   }

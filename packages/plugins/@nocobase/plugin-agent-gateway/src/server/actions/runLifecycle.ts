@@ -293,7 +293,7 @@ function hasActiveTmuxControlSurface(run: ModelRecord) {
   );
 }
 
-async function getRunnerControlCapability(ctx: Context, run: ModelRecord, action: 'interrupt' | 'terminate') {
+async function getRunnerControlCapabilityDecision(ctx: Context, run: ModelRecord, action: 'interrupt' | 'terminate') {
   const decisions: Array<boolean | null> = [];
   const nodeId = getOptionalTargetKey(run, 'nodeId');
   if (nodeId) {
@@ -318,7 +318,7 @@ async function getRunnerControlCapability(ctx: Context, run: ModelRecord, action
   if (decisions.includes(false)) {
     return false;
   }
-  return decisions.includes(true);
+  return decisions.includes(true) ? true : null;
 }
 
 async function getRunControlCapability(
@@ -331,13 +331,20 @@ async function getRunControlCapability(
     return false;
   }
   const capabilitySummary = await getRunProviderCapabilitySummary(ctx, run, session);
+  if (capabilitySummary.providerSource === 'fallback') {
+    const runnerCapabilityDecision = await getRunnerControlCapabilityDecision(ctx, run, action);
+    if (runnerCapabilityDecision !== null) {
+      return runnerCapabilityDecision;
+    }
+    return false;
+  }
   if (capabilitySummary.enforceCapabilities) {
     return isRunCapabilitySupported(capabilitySummary, action);
   }
   if (session) {
     return true;
   }
-  return await getRunnerControlCapability(ctx, run, action);
+  return (await getRunnerControlCapabilityDecision(ctx, run, action)) === true;
 }
 
 async function serializeRunForManagement(ctx: Context, run: ModelRecord) {

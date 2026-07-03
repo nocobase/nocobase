@@ -237,6 +237,37 @@ describe('terminal stream browser ticket auth', () => {
     }
   });
 
+  it('rejects cross-origin browser stream upgrades without consuming the ticket', async () => {
+    const runId = await createRun(app, 'terminal-stream-auth-origin');
+    const server = await createTerminalStreamServer(app);
+    const ticket = await createBrowserStreamTicket(app, {
+      userId: await getRootUserId(app),
+      runId,
+    });
+    const crossOriginBrowser = createWebSocket(server.wsUrl, {
+      streamTicket: ticket,
+      origin: 'https://invalid.agent-gateway.test',
+    });
+
+    try {
+      await expect(waitForOpen(crossOriginBrowser)).rejects.toThrow(/Unexpected server response: 403/);
+      expect(
+        await subscribe({
+          serverUrl: server.wsUrl,
+          runId,
+          ticket,
+          requestId: 'subscribe-after-cross-origin-denied',
+        }),
+      ).toMatchObject({
+        type: 'ack',
+        requestId: 'subscribe-after-cross-origin-denied',
+      });
+    } finally {
+      crossOriginBrowser.close();
+      await server.close();
+    }
+  });
+
   it('rejects browser subscribe auth aliases without consuming a valid ticket', async () => {
     const runId = await createRun(app, 'terminal-stream-auth-frame-aliases');
     const server = await createTerminalStreamServer(app);

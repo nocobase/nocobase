@@ -176,6 +176,31 @@ function getWebSocketProtocolValues(request: IncomingMessage) {
     .filter(Boolean);
 }
 
+function isBrowserStreamUpgrade(request: IncomingMessage) {
+  return getWebSocketProtocolValues(request).includes(TERMINAL_STREAM_BROWSER_SUBPROTOCOL);
+}
+
+function isSameOriginBrowserUpgrade(request: IncomingMessage) {
+  const origin = getHeader(request.headers, 'origin');
+  if (!origin) {
+    return true;
+  }
+  const host = getHeader(request.headers, 'host');
+  if (!host) {
+    return false;
+  }
+  try {
+    return new URL(origin).host.toLowerCase() === host.toLowerCase();
+  } catch {
+    return false;
+  }
+}
+
+function rejectWebSocketUpgrade(socket: Duplex, status: number, message: string) {
+  socket.write(`HTTP/1.1 ${status} ${message}\r\nConnection: close\r\nContent-Length: 0\r\n\r\n`);
+  socket.destroy();
+}
+
 function decodeWebSocketProtocolValue(value: string) {
   try {
     const normalized = value.replace(/-/g, '+').replace(/_/g, '/');
@@ -379,6 +404,11 @@ export class TerminalStreamBroker {
     const pathname = parse(request.url || '').pathname;
     if (pathname !== TERMINAL_STREAM_WS_PATH) {
       return false;
+    }
+
+    if (isBrowserStreamUpgrade(request) && !isSameOriginBrowserUpgrade(request)) {
+      rejectWebSocketUpgrade(socket, 403, 'Forbidden');
+      return true;
     }
 
     this.wss.handleUpgrade(request, socket, head, (ws) => {

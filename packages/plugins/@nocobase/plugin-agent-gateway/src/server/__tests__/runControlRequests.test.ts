@@ -601,6 +601,39 @@ describe('agent gateway run control requests', () => {
     expect(requests[0].get('agentSessionId')).toBeFalsy();
   });
 
+  it('does not use fallback provider defaults when runner control capabilities are unspecified', async () => {
+    const { runner, runId } = await seedActiveRun({ withSession: false });
+    await app.db.getRepository('agNodes').update({
+      filterByTk: runner.nodeId,
+      values: {
+        capabilitiesJson: {
+          maxConcurrency: 1,
+          terminalStream: true,
+        },
+      },
+    });
+
+    const detailResponse = await rootAgent.get(`/api/agent-gateway/runs:get/${runId}`);
+    expect(detailResponse.status).toBe(200);
+    expect(getData(detailResponse)).toMatchObject({
+      agentProviderCapabilitySource: 'fallback',
+      agentGatewayControlActionsJson: {
+        interruptRun: false,
+        terminateRun: false,
+      },
+    });
+
+    const terminateAgent = await loginWithSnippets('agent-gateway-terminate-unspecified-runner', [
+      'agentGateway.terminateRun',
+    ]);
+    const response = await terminateAgent.post(`/api/agent-gateway/runs/${runId}/terminal:terminate`).send({
+      idempotencyKey: 'unspecified-runner-terminate',
+    });
+    expect(response.status).toBe(409);
+    expect(JSON.stringify(response.body)).toContain('AGENT_GATEWAY_ACTION_UNSUPPORTED');
+    expect(await app.db.getRepository('agRunControlRequests').count({ filter: { runId } })).toBe(0);
+  });
+
   it('does not expose or accept controls when the runner terminal capability disables them', async () => {
     const { runId } = await seedActiveRun({ withSession: false, terminalControl: false });
     const detailResponse = await rootAgent.get(`/api/agent-gateway/runs:get/${runId}`);

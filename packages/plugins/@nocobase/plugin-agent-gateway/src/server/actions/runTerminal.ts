@@ -511,7 +511,7 @@ function getControlCapabilityDecision(capabilities: JsonRecord, action: 'interru
   return null;
 }
 
-async function getRunnerControlCapability(ctx: Context, run: ModelRecord, action: 'interrupt' | 'terminate') {
+async function getRunnerControlCapabilityDecision(ctx: Context, run: ModelRecord, action: 'interrupt' | 'terminate') {
   const decisions: Array<boolean | null> = [];
   const nodeId = getModelString(run, 'nodeId');
   if (nodeId) {
@@ -536,7 +536,7 @@ async function getRunnerControlCapability(ctx: Context, run: ModelRecord, action
   if (decisions.includes(false)) {
     return false;
   }
-  return decisions.includes(true);
+  return decisions.includes(true) ? true : null;
 }
 
 async function assertControlSupported(ctx: Context, run: ModelRecord, action: 'interrupt' | 'terminate') {
@@ -555,11 +555,16 @@ async function assertControlSupported(ctx: Context, run: ModelRecord, action: 'i
 
   const session = await getSessionForRun(ctx, run);
   const capabilitySummary = await getRunProviderCapabilitySummary(ctx, run, session);
-  const controlCapability = capabilitySummary.enforceCapabilities
-    ? isRunCapabilitySupported(capabilitySummary, action)
-    : session
-      ? getControlCapabilityDecision(getRecord(getModelValue(session, 'capabilitiesJson')), action) !== false
-      : await getRunnerControlCapability(ctx, run, action);
+  const runnerCapabilityDecision =
+    capabilitySummary.providerSource === 'fallback' ? await getRunnerControlCapabilityDecision(ctx, run, action) : null;
+  const controlCapability =
+    capabilitySummary.providerSource === 'fallback'
+      ? runnerCapabilityDecision === true
+      : capabilitySummary.enforceCapabilities
+        ? isRunCapabilitySupported(capabilitySummary, action)
+        : session
+          ? getControlCapabilityDecision(getRecord(getModelValue(session, 'capabilitiesJson')), action) !== false
+          : (await getRunnerControlCapabilityDecision(ctx, run, action)) === true;
   if (!controlCapability) {
     ctx.throw(409, {
       code: AGENT_GATEWAY_ACTION_UNSUPPORTED_CODE,
@@ -724,15 +729,19 @@ async function enqueueTerminalControl(ctx: Context, runId: string, action: 'inte
   const reason = getControlReason(ctx, values.reason);
   const idempotencyKey = getRequiredControlIdempotencyKey(ctx, values.idempotencyKey);
   const status = getModelString(run, 'status');
+  const existingControlRequest = await findExistingControlRequestByKey(ctx, runId, action, idempotencyKey);
   try {
     await assertControlSupported(ctx, run, action);
   } catch (error) {
+    if (existingControlRequest && action === 'terminate' && status === 'canceling') {
+      respondWithExistingControlRequest(ctx, runId, status, action, existingControlRequest);
+      return;
+    }
     await auditControlDenied(ctx, run, action, permissionKey, {
       reason: error instanceof Error ? error.message : String(error),
     });
     throw error;
   }
-  const existingControlRequest = await findExistingControlRequestByKey(ctx, runId, action, idempotencyKey);
   if (existingControlRequest) {
     respondWithExistingControlRequest(ctx, runId, status, action, existingControlRequest);
     return;
