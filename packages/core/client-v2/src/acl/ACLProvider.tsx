@@ -41,6 +41,20 @@ type ACLStore = {
   setMeta: (meta: ACLMeta) => void;
 };
 
+type ACLFacade = {
+  data?: ACLRoleData;
+  meta?: ACLMeta;
+  setData?: (data: ACLRoleData) => void;
+  setMeta?: (meta: ACLMeta) => void;
+};
+
+const ACL_STORE_CONTEXT_KEY = '__aclStore';
+
+type ACLStoreContext = ReturnType<typeof useApp>['context'] & {
+  [ACL_STORE_CONTEXT_KEY]?: ACLStore;
+  acl?: ACLFacade;
+};
+
 type ACLContextValue = {
   loading: boolean;
   data: {
@@ -67,13 +81,48 @@ function createACLStore(): ACLStore {
 }
 
 function ensureACLStore(app: ReturnType<typeof useApp>) {
-  if (!app.context.acl) {
-    app.context.defineProperty('acl', {
+  const context = app.context as ACLStoreContext;
+  if (!context[ACL_STORE_CONTEXT_KEY]) {
+    context.defineProperty(ACL_STORE_CONTEXT_KEY, {
       value: createACLStore(),
     });
   }
 
-  return app.context.acl as ACLStore;
+  return context[ACL_STORE_CONTEXT_KEY] as ACLStore;
+}
+
+function syncFlowEngineACL(app: ReturnType<typeof useApp>, data: ACLRoleData, meta: ACLMeta) {
+  const acl = (app.context as ACLStoreContext).acl;
+  acl?.setData?.(data);
+  acl?.setMeta?.(meta);
+}
+
+async function loadACLData(app: ReturnType<typeof useApp>) {
+  const res = await app.apiClient.request({
+    url: 'roles:check',
+    skipNotify: true,
+    skipAuth: true,
+  });
+
+  return {
+    data: res?.data?.data || {},
+    meta: res?.data?.meta || {},
+  };
+}
+
+function hasACLData(data: ACLRoleData) {
+  return !!(
+    data?.role ||
+    data?.allowAll ||
+    data?.allowAnonymous ||
+    data?.snippets?.length ||
+    data?.resources?.length ||
+    data?.strategy?.actions?.length
+  );
+}
+
+function shouldShowACLLoading(app: ReturnType<typeof useApp>, aclStore: ACLStore, pathname: string) {
+  return !app.router.isSkippedAuthCheckRoute(pathname) && !hasACLData(aclStore.data);
 }
 
 /**
@@ -83,34 +132,33 @@ export const ACLRolesCheckProvider: FC = ({ children }) => {
   const app = useApp();
   const location = useLocation();
   const aclStore = ensureACLStore(app);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(() => shouldShowACLLoading(app, aclStore, location.pathname));
+  const [checkedPathname, setCheckedPathname] = useState(() =>
+    shouldShowACLLoading(app, aclStore, location.pathname) ? '' : location.pathname,
+  );
   const pathnameRef = useRef(location.pathname);
   pathnameRef.current = location.pathname;
 
   const refresh = useCallback(async () => {
-    if (app.router.isSkippedAuthCheckRoute(pathnameRef.current)) {
+    const pathname = pathnameRef.current;
+    if (app.router.isSkippedAuthCheckRoute(pathname)) {
       // 认证页等免鉴权路由不需要执行 `roles:check`，避免未登录时产生多余的 401 与 loading 闪烁。
+      setCheckedPathname(pathname);
       setLoading(false);
       return;
     }
 
-    const shouldShowLoading = !aclStore.data?.role && !aclStore.data?.snippets?.length;
+    const shouldShowLoading = !hasACLData(aclStore.data);
     if (shouldShowLoading) {
       setLoading(true);
     }
 
     try {
-      const res = await app.apiClient.request({
-        url: 'roles:check',
-        skipNotify: true,
-        skipAuth: true,
-      });
-
-      const nextData = res?.data?.data || {};
-      const nextMeta = res?.data?.meta || {};
+      const { data: nextData, meta: nextMeta } = await loadACLData(app);
 
       aclStore.setData(nextData);
       aclStore.setMeta(nextMeta);
+      syncFlowEngineACL(app, nextData, nextMeta);
       app.pluginSettingsManager.setAclSnippets(nextData?.snippets || []);
 
       if (nextData?.role !== app.apiClient.auth.role) {
@@ -126,6 +174,7 @@ export const ACLRolesCheckProvider: FC = ({ children }) => {
       if (status === 401) {
         aclStore.setData({});
         aclStore.setMeta({});
+        syncFlowEngineACL(app, {}, {});
         app.pluginSettingsManager.setAclSnippets([]);
         app.apiClient.auth.setRole(null);
         return;
@@ -133,13 +182,14 @@ export const ACLRolesCheckProvider: FC = ({ children }) => {
 
       console.error(error);
     } finally {
+      setCheckedPathname(pathname);
       setLoading(false);
     }
   }, [aclStore, app]);
 
   useEffect(() => {
-    void refresh();
-  }, [refresh]);
+    refresh();
+  }, [location.pathname, refresh]);
 
   const value = useMemo<ACLContextValue>(
     () => ({
@@ -153,7 +203,12 @@ export const ACLRolesCheckProvider: FC = ({ children }) => {
     [aclStore.data, aclStore.meta, loading, refresh],
   );
 
-  if (loading) {
+  const waitingForPathCheck =
+    !app.router.isSkippedAuthCheckRoute(location.pathname) &&
+    checkedPathname !== location.pathname &&
+    !hasACLData(aclStore.data);
+
+  if (loading || waitingForPathCheck) {
     return app.renderComponent('AppSpin');
   }
 

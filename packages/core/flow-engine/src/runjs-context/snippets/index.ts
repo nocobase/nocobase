@@ -32,6 +32,7 @@ const snippets: Record<string, RunJSSnippetLoader | undefined> = {
   'scene/block/render-react-jsx': () => import('./scene/block/render-react-jsx.snippet'),
   'scene/block/render-antd-icons': () => import('./scene/block/render-antd-icons.snippet'),
   'scene/block/render-button-handler': () => import('./scene/block/render-button-handler.snippet'),
+  'scene/block/render-acl-buttons': () => import('./scene/block/render-acl-buttons.snippet'),
   'scene/block/add-event-listener': () => import('./scene/block/add-event-listener.snippet'),
   'scene/block/chartjs-bar': () => import('./scene/block/chartjs-bar.snippet'),
   'scene/block/vue-component': () => import('./scene/block/vue-component.snippet'),

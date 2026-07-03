@@ -112,6 +112,7 @@ describe('flowRunJSContext registry and doc', () => {
       const messageText =
         typeof message === 'string' ? message : (message as any)?.description ?? (message as any)?.detail ?? '';
       expect(String(messageText)).toMatch(/Ant Design 全局消息/);
+      expect((doc?.properties?.acl as any)?.description).toContain('ACL 权限辅助对象');
       expect((doc?.methods?.render as any)?.completion?.requires).toContain('element');
       expect((doc?.properties?.viewer as any)?.properties?.popover?.completion?.requires).toContain('element');
       expect(
@@ -243,6 +244,13 @@ describe('flowRunJSContext registry and doc', () => {
       const ctx: any = { model: { constructor: { name: '*' } } };
       const doc = getRunJSDocFor(ctx as any, { version: 'v1' });
       expect(doc?.properties?.message).toBeTruthy();
+    });
+
+    it('should have acl property in base context', () => {
+      const ctx: any = { model: { constructor: { name: '*' } } };
+      const doc = getRunJSDocFor(ctx as any, { version: 'v1' });
+      expect(doc?.properties?.acl).toBeTruthy();
+      expect((doc?.properties?.acl as any)?.properties?.can).toBeTruthy();
     });
 
     it('should have request method in base context', () => {

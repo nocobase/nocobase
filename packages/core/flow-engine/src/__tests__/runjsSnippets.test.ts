@@ -147,6 +147,16 @@ describe('RunJS Snippets', () => {
       expect(body).toBeTruthy();
       expect(body).toContain('resource');
     });
+
+    it('should include ACL-controlled buttons snippet for JS blocks', async () => {
+      const body = await getSnippetBody('scene/block/render-acl-buttons');
+      expect(body).toContain('ctx.acl.can');
+
+      const snippets = await listSnippetsForContext('JSBlockRunJSContext', 'v1', 'zh-CN');
+      const aclButtons = snippets.find((snippet) => snippet.ref === 'scene/block/render-acl-buttons');
+      expect(aclButtons?.name).toBe('权限控制按钮');
+      expect(aclButtons?.body).toContain('ctx.acl.can');
+    });
   });
 
   describe('Removed snippets', () => {

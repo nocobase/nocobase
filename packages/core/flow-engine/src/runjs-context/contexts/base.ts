@@ -181,6 +181,44 @@ export function defineBaseContextMeta() {
           },
         },
       },
+      acl: {
+        description:
+          'ACL helper for permission-aware UI rendering in RunJS. It reads the current ACL cache for synchronous checks; server-side ACL still enforces data operations.',
+        detail: 'ACL',
+        examples: [
+          "ctx.acl.can({ resource: 'posts', action: 'save' })",
+          "ctx.acl.can({ any: ['posts:create', { snippet: 'pm.acl.roles' }] })",
+        ],
+        properties: {
+          can: {
+            type: 'function',
+            description:
+              'Check resource actions, snippets, or boolean expressions. Friendly action aliases include read/list/get/query, write/edit/save, add, delete/remove.',
+            detail: '(input: string | object, options?: object) => boolean',
+            completion: { insertText: "ctx.acl.can({ resource: 'posts', action: 'save' })" },
+          },
+          canSnippet: {
+            type: 'function',
+            description: 'Check whether the current role allows an ACL snippet.',
+            detail: '(snippet: string) => boolean',
+            completion: { insertText: "ctx.acl.canSnippet('pm.acl.roles')" },
+          },
+          refresh: {
+            type: 'function',
+            description: 'Reload ACL role data from `roles:check`.',
+            detail: '() => Promise<void>',
+            completion: { insertText: 'await ctx.acl.refresh()' },
+          },
+          aclCheck: {
+            type: 'function',
+            description: 'Run the existing ACL action check API.',
+            detail: '(options: object) => Promise<boolean | object | null>',
+            completion: {
+              insertText: "await ctx.acl.aclCheck({ resourceName: 'posts', actionName: 'update' })",
+            },
+          },
+        },
+      },
       // TODO: context meta
       resource: {
         description:
@@ -831,6 +869,44 @@ export function defineBaseContextMeta() {
               description: '打开确认对话框。',
               detail: '(config: any) => void',
               completion: { insertText: `ctx.modal.confirm({ title: '确认', content: '...' })` },
+            },
+          },
+        },
+        acl: {
+          description:
+            'ACL 权限辅助对象，用于在 RunJS 中做同步 UI 显示控制。它读取当前 ACL 缓存；数据操作仍以后端 ACL 校验为准。',
+          detail: 'ACL',
+          examples: [
+            "ctx.acl.can({ resource: 'posts', action: 'save' })",
+            "ctx.acl.can({ any: ['posts:create', { snippet: 'pm.acl.roles' }] })",
+          ],
+          properties: {
+            can: {
+              type: 'function',
+              description:
+                '检查资源动作、snippet 或布尔表达式。支持 read/list/get/query、write/edit/save、add、delete/remove 等友好动作别名。',
+              detail: '(input: string | object, options?: object) => boolean',
+              completion: { insertText: "ctx.acl.can({ resource: 'posts', action: 'save' })" },
+            },
+            canSnippet: {
+              type: 'function',
+              description: '检查当前角色是否允许某个 ACL snippet。',
+              detail: '(snippet: string) => boolean',
+              completion: { insertText: "ctx.acl.canSnippet('pm.acl.roles')" },
+            },
+            refresh: {
+              type: 'function',
+              description: '通过 `roles:check` 重新加载 ACL 角色数据。',
+              detail: '() => Promise<void>',
+              completion: { insertText: 'await ctx.acl.refresh()' },
+            },
+            aclCheck: {
+              type: 'function',
+              description: '执行已有 ACL 动作检查 API。',
+              detail: '(options: object) => Promise<boolean | object | null>',
+              completion: {
+                insertText: "await ctx.acl.aclCheck({ resourceName: 'posts', actionName: 'update' })",
+              },
             },
           },
         },

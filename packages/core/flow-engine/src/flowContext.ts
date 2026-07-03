@@ -3113,6 +3113,12 @@ class BaseFlowEngineContext extends FlowContext {
         completion: { insertText: `await ctx.runjs('return 1')` },
       },
     );
+    this.defineProperty('acl', {
+      get: (ctx) => {
+        return new ACL((ctx as BaseFlowEngineContext).engine).withContext(ctx);
+      },
+      cache: false,
+    });
   }
 }
 
@@ -3665,12 +3671,6 @@ export class FlowEngineContext extends BaseFlowEngineContext {
         return def.handler(ctx, combinedParams);
       },
     );
-    this.defineProperty('acl', {
-      get: () => {
-        const acl = new ACL(this.engine);
-        return acl;
-      },
-    });
     this.defineMethod('aclCheck', function (params) {
       if (this.skipAclCheck) {
         return true;

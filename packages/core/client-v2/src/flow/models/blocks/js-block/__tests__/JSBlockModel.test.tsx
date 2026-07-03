@@ -9,6 +9,7 @@
 
 import React from 'react';
 import { App, ConfigProvider } from 'antd';
+import { waitFor } from '@testing-library/react';
 import { render } from '@nocobase/test/client';
 import { describe, expect, it, vi } from 'vitest';
 import { FlowEngine, FlowEngineProvider } from '@nocobase/flow-engine';
@@ -49,6 +50,18 @@ function renderBlock(engine: FlowEngine, model: JSBlockModel) {
       </ConfigProvider>
     </FlowEngineProvider>,
   );
+}
+
+function makeRefReady(model: JSBlockModel) {
+  const element = document.createElement('div');
+  (model.context.ref as React.MutableRefObject<HTMLDivElement | null>).current = element;
+  return element;
+}
+
+async function runConfiguredJSBlock(model: JSBlockModel, code: string) {
+  model.setStepParams('jsSettings', 'runJs', { code, version: 'v2' });
+  makeRefReady(model);
+  await model.dispatchEvent('beforeRender', undefined, { useCache: false });
 }
 
 describe('JSBlockModel', () => {
@@ -146,5 +159,106 @@ describe('JSBlockModel', () => {
         value: originalInnerHeight,
       });
     }
+  });
+
+  it('preloads ACL data before running configured JavaScript', async () => {
+    const { engine, model } = createJSBlock('js-block-acl-preload');
+    const request = vi.fn().mockResolvedValue({
+      data: {
+        data: {
+          allowAll: true,
+          role: 'root',
+        },
+        meta: {},
+      },
+    });
+    engine.context.defineProperty('api', {
+      value: {
+        auth: {
+          token: 'token-1',
+        },
+        request,
+      },
+    });
+
+    await runConfiguredJSBlock(
+      model,
+      `ctx.model.setProps({ aclLoadedBeforeRunJS: ctx.acl.data.allowAll === true && ctx.acl.data.role === 'root' });`,
+    );
+
+    await waitFor(() => {
+      expect(model.props.aclLoadedBeforeRunJS).toBe(true);
+    });
+    expect(request).toHaveBeenCalledWith({
+      url: 'roles:check',
+      skipNotify: true,
+      skipAuth: true,
+    });
+  });
+
+  it('skips ACL preload on routes that skip auth checks', async () => {
+    const { engine, model } = createJSBlock('js-block-acl-skip-route');
+    const request = vi.fn();
+    const isSkippedAuthCheckRoute = vi.fn(() => true);
+    engine.context.defineProperty('api', {
+      value: {
+        auth: {
+          token: 'token-1',
+        },
+        request,
+      },
+    });
+    engine.context.defineProperty('app', {
+      value: {
+        router: {
+          isSkippedAuthCheckRoute,
+        },
+      },
+    });
+    engine.context.defineProperty('location', {
+      value: {
+        pathname: '/signin',
+      },
+    });
+
+    await runConfiguredJSBlock(model, `ctx.model.setProps({ skippedRouteRendered: true });`);
+
+    await waitFor(() => {
+      expect(model.props.skippedRouteRendered).toBe(true);
+    });
+    expect(isSkippedAuthCheckRoute).toHaveBeenCalledWith('/signin');
+    expect(request).not.toHaveBeenCalled();
+  });
+
+  it('keeps running JavaScript when ACL preload returns unauthorized', async () => {
+    const { engine, model } = createJSBlock('js-block-acl-unauthorized');
+    const request = vi.fn().mockRejectedValue({
+      response: {
+        status: 401,
+      },
+    });
+    engine.context.defineProperty('api', {
+      value: {
+        auth: {
+          token: 'token-1',
+        },
+        request,
+      },
+    });
+
+    await runConfiguredJSBlock(
+      model,
+      `ctx.model.setProps({ unauthorizedRendered: true, unauthorizedCanWrite: ctx.acl.can('posts:write') });`,
+    );
+
+    await waitFor(() => {
+      expect(model.props.unauthorizedRendered).toBe(true);
+    });
+    expect(model.props.unauthorizedCanWrite).toBe(false);
+    expect(request).toHaveBeenCalledWith({
+      url: 'roles:check',
+      skipNotify: true,
+      skipAuth: true,
+    });
   });
 });

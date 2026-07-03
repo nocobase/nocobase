@@ -22,6 +22,16 @@ function getCurrentTimezone() {
   return offsetToTimeZone(new Date().getTimezoneOffset() / -60);
 }
 
+function hasRequestHeader(headers: unknown, name: string) {
+  if (typeof headers === 'object' && headers && 'has' in headers) {
+    const has = (headers as { has?: (headerName: string) => boolean }).has;
+    if (typeof has === 'function' && has.call(headers, name)) {
+      return true;
+    }
+  }
+  return hasHeaderValue(headers, name);
+}
+
 export class APIClient extends APIClientSDK {
   appName?: string;
 
@@ -55,6 +65,9 @@ export class APIClient extends APIClientSDK {
 
   interceptors() {
     this.axios.interceptors.request.use((config) => {
+      if (!hasRequestHeader(config.headers, 'X-With-ACL-Meta')) {
+        config.headers['X-With-ACL-Meta'] = true;
+      }
       const headers = this.getHeaders();
       Object.keys(headers).forEach((key) => {
         if (!hasHeaderValue(config.headers, key)) {

@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ElementProxy, tExpr } from '@nocobase/flow-engine';
+import { ElementProxy, tExpr, type FlowContext } from '@nocobase/flow-engine';
 import React from 'react';
 import { BlockModel } from '../../base';
 import { BlockItemCard } from '../../../components';
@@ -15,6 +15,77 @@ import { resolveRunJsParams } from '../../utils/resolveRunJsParams';
 import { CodeEditor } from '../../../components/code-editor';
 
 const NAMESPACE = 'client';
+
+type JSBlockACLContext = FlowContext & {
+  app?: {
+    router?: {
+      isSkippedAuthCheckRoute?: (pathname: string) => boolean;
+    };
+  };
+  location?: {
+    pathname?: string;
+  };
+  acl?: {
+    load?: () => Promise<void>;
+  };
+  logger?: {
+    warn?: (...args: unknown[]) => void;
+  };
+};
+
+function getACLPreloadErrorStatus(error: unknown) {
+  if (!error || typeof error !== 'object') {
+    return undefined;
+  }
+
+  const withStatus = error as {
+    response?: {
+      status?: unknown;
+    };
+    status?: unknown;
+  };
+  const status = withStatus.response?.status ?? withStatus.status;
+  return typeof status === 'number' ? status : undefined;
+}
+
+function getACLPreloadErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : undefined;
+}
+
+function shouldSkipACLPreload(ctx: FlowContext) {
+  const jsBlockCtx = ctx as JSBlockACLContext;
+  const pathname = jsBlockCtx.location?.pathname;
+  if (!pathname) {
+    return false;
+  }
+
+  return jsBlockCtx.app?.router?.isSkippedAuthCheckRoute?.(pathname) === true;
+}
+
+async function preloadACLForJSBlock(ctx: FlowContext) {
+  if (shouldSkipACLPreload(ctx)) {
+    return;
+  }
+
+  const jsBlockCtx = ctx as JSBlockACLContext;
+  const acl = jsBlockCtx.acl;
+  if (typeof acl?.load !== 'function') {
+    return;
+  }
+
+  try {
+    await acl.load();
+  } catch (error) {
+    const status = getACLPreloadErrorStatus(error);
+    if (status === 401 || status === 403) {
+      return;
+    }
+    jsBlockCtx.logger?.warn?.(
+      { status, message: getACLPreloadErrorMessage(error) },
+      '[JSBlockModel] Failed to preload ACL before running JS block.',
+    );
+  }
+}
 
 const getRootElement = (element: HTMLElement | null) => {
   if (!element) return document.documentElement;
@@ -388,6 +459,7 @@ ctx.render(\`
               },
             },
           });
+          await preloadACLForJSBlock(ctx);
           await ctx.runjs(code, undefined, { version });
         });
       },
