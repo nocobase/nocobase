@@ -302,6 +302,85 @@ describe('PluginEmbedClient', () => {
     );
   });
 
+  it('keeps an existing embed session token after refresh without a query token', async () => {
+    const { default: PluginEmbedClient } = await import('../index');
+    const values: Record<string, string> = {
+      auth: 'basic',
+      token: '222',
+    };
+    const originalStorage = {
+      getItem: vi.fn((key: string) => values[`original:${key}`] || null),
+      setItem: vi.fn((key: string, value = '') => {
+        values[`original:${key}`] = value;
+      }),
+    };
+    const embedStorage = {
+      getItem: vi.fn((key: string) => values[key] || null),
+      setItem: vi.fn((key: string, value = '') => {
+        values[key] = value;
+      }),
+    };
+    let activeStorage = originalStorage;
+    const rejectedHandlers: Array<(error: unknown) => unknown> = [];
+    const app = {
+      apiClient: {
+        axios: {
+          interceptors: {
+            response: {
+              use: vi.fn((_fulfilled, rejected) => {
+                rejectedHandlers.push(rejected);
+                return rejectedHandlers.length - 1;
+              }),
+            },
+          },
+        },
+        storagePrefix: 'NOCOBASE_',
+        storage: originalStorage,
+        createStorage: vi.fn(() => {
+          activeStorage = embedStorage;
+          return embedStorage;
+        }),
+        auth: {
+          getToken: vi.fn(() => activeStorage.getItem('token')),
+          getAuthenticator: vi.fn(() => activeStorage.getItem('auth')),
+          setAuthenticator: vi.fn((authenticator: string | null) => activeStorage.setItem('auth', authenticator || '')),
+          setToken: vi.fn((token: string | null) => activeStorage.setItem('token', token || '')),
+        },
+      },
+      getPublicPath: () => '/',
+      router: {
+        add: vi.fn(),
+      },
+      schemaSettingsManager: {
+        addItem: vi.fn(),
+      },
+    };
+    const plugin = new PluginEmbedClient({} as never, app as never);
+
+    window.history.pushState({}, '', '/embed/page-uid');
+    await plugin.beforeLoad();
+    await plugin.load();
+    embedStorage.setItem('token', '');
+    embedStorage.setItem('auth', '');
+
+    const response = rejectedHandlers[0]({
+      config: {
+        url: '/auth:check',
+      },
+      response: {
+        status: 401,
+      },
+    }) as { data?: { data?: unknown } };
+
+    expect(values.token).toBe('222');
+    expect(values.auth).toBe('basic');
+    expect(response?.data?.data).toEqual(
+      expect.objectContaining({
+        id: '__nocobase_embed_unauthorized__',
+      }),
+    );
+  });
+
   it('restores the embed URL token for other 401 requests without swallowing the error', async () => {
     const { default: PluginEmbedClient } = await import('../index');
     const values: Record<string, string> = {};

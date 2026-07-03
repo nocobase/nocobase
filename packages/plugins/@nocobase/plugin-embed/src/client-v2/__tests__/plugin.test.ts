@@ -168,6 +168,51 @@ describe('PluginEmbedClientV2', () => {
     expect(values.token).toBe('111');
   });
 
+  it('restores an existing embed session token after refreshing without a query token', async () => {
+    const { default: PluginEmbedClientV2 } = await import('../plugin');
+    const { restoreEmbedSessionToken } = await import('../embedSession');
+    const values: Record<string, string> = {
+      auth: 'basic',
+      token: '222',
+    };
+    const storage = {
+      getItem: vi.fn((key: string) => values[key] || null),
+      setItem: vi.fn((key: string, value = '') => {
+        values[key] = value;
+      }),
+    };
+    const app = {
+      router: {
+        getBasename: () => '/v2/apps/app1',
+      },
+      getPublicPath: () => '/v2/',
+      apiClient: {
+        storagePrefix: 'NOCOBASE_',
+        storage: {
+          getItem: vi.fn(),
+          setItem: vi.fn(),
+        },
+        createStorage: vi.fn(() => storage),
+        auth: {
+          getToken: vi.fn(() => storage.getItem('token')),
+          getAuthenticator: vi.fn(() => storage.getItem('auth')),
+          setAuthenticator: vi.fn((authenticator: string | null) => storage.setItem('auth', authenticator || '')),
+          setToken: vi.fn((token: string | null) => storage.setItem('token', token || '')),
+        },
+      },
+    };
+    const plugin = new PluginEmbedClientV2({} as any, app as any);
+
+    window.history.pushState({}, '', '/v2/apps/app1/embed/page-uid');
+    await plugin.beforeLoad();
+    storage.setItem('token', '');
+    storage.setItem('auth', '');
+
+    expect(restoreEmbedSessionToken(app as any)).toBe(true);
+    expect(values.token).toBe('222');
+    expect(values.auth).toBe('basic');
+  });
+
   it('uses isolated embed session storage for embed route without query token', async () => {
     const { default: PluginEmbedClientV2 } = await import('../plugin');
     const originalStorage = {};
@@ -193,7 +238,7 @@ describe('PluginEmbedClientV2', () => {
     await plugin.beforeLoad();
 
     expect(app.apiClient.createStorage).toHaveBeenCalledWith('sessionStorage');
-    expect(app.apiClient.auth.getToken).not.toHaveBeenCalled();
+    expect(app.apiClient.auth.getToken).toHaveBeenCalledTimes(1);
     expect(app.apiClient.storagePrefix).toMatch(/^NOCOBASE_EMBED_[0-9A-Z]+_[0-9A-Z]+_$/);
     expect(app.apiClient.storage).toBe(embedStorage);
     expect(app.apiClient.auth.setToken).not.toHaveBeenCalled();

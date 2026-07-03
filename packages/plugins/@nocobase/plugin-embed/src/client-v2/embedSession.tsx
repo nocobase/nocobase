@@ -117,11 +117,23 @@ export function activateEmbedSession(app: EmbedSessionAppLike, search?: string) 
   if (token) {
     session.token = token;
     app.apiClient.auth.setToken(token);
+  } else {
+    const currentToken = app.apiClient.auth.getToken?.();
+
+    if (currentToken) {
+      session.token = currentToken;
+    }
   }
 
   if (authenticator) {
     session.authenticator = authenticator;
     app.apiClient.auth.setAuthenticator?.(authenticator);
+  } else if (!token) {
+    const currentAuthenticator = app.apiClient.auth.getAuthenticator?.();
+
+    if (currentAuthenticator) {
+      session.authenticator = currentAuthenticator;
+    }
   }
 }
 
