@@ -1,9 +1,8 @@
 # Получение данных через API Keys
 
-<iframe width="800" height="436" src="https://player.bilibili.com/player.html?isOutside=true&aid=114233060688108&bvid=BV1m8ZuY4E2V&cid=29092153179&p=1" scrolling="no" border="0" frameborder="no" framespacing="0" allowfullscreen="true"></iframe>
 
-Дорогие друзья, добро пожаловать в этот tutorial.
-В этом документе мы шаг за шагом покажем, как использовать API-ключи в NocoBase для получения данных, на примере «списка задач (Todo)».
+Дорогие друзья, добро пожаловать в этот обучающий материал.
+В этом документе мы шаг за шагом покажем, как использовать API-ключи в NocoBase для получения данных, на примере «списка задач».
 
 ![202503032004-todo1](https://static-docs.nocobase.com/202503032004-todo1.gif)
 
@@ -29,15 +28,15 @@ Authorization: Bearer {API-ключ}
 
 ## 2 Создание API-ключа в NocoBase
 
-### 2.1 Включение plugin [API-ключей](https://docs-cn.nocobase.com/handbook/api-keys)
+### 2.1 Включение плагин [API-ключей](https://docs.nocobase.com/handbook/api-keys)
 
-Сначала убедитесь, что встроенный plugin «Аутентификация: API-ключи» включён. После активации в системных настройках появится страница [API-ключей](https://docs-cn.nocobase.com/handbook/api-keys).
+Сначала убедитесь, что встроенный плагин «Аутентификация: API-ключи» включён. После активации в системных настройках появится страница [API-ключей](https://docs.nocobase.com/handbook/api-keys).
 
 ![20250301003106](https://static-docs.nocobase.com/20250301003106.png)
 
-### 2.2 Создание тестовой таблицы Todo
+### 2.2 Создание тестовой коллекции Todo
 
-Заранее создадим таблицу `todos` со следующими полями:
+Заранее создадим коллекцию `todos` со следующими полями:
 
 - `id`
 - `title` (заголовок)
@@ -56,7 +55,7 @@ Authorization: Bearer {API-ключ}
 ### 2.3 Создание и привязка роли
 
 API-ключи привязаны к ролям пользователей: система определяет права запроса по роли. Поэтому перед созданием ключа нужно создать соответствующую роль и выдать ей права.
-Рекомендуем создать тестовую роль «Todo API Role» и предоставить ей все права на таблицу todos.
+Рекомендуем создать тестовую роль «Todo API Role» и предоставить ей все права на коллекцию todos.
 
 ![20250303180247](https://static-docs.nocobase.com/20250303180247.png)
 
@@ -93,9 +92,9 @@ eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsInJvbGVOYW1lIjoidG9kb3MiLCJ
 
 ## 3 Проверка работы API-ключа
 
-### 3.1 Использование plugin [Документация API](https://docs-cn.nocobase.com/handbook/api-doc)
+### 3.1 Использование плагин [Документация API](https://docs.nocobase.com/handbook/api-doc)
 
-Откройте plugin «Документация API», и Вы увидите для каждого API метод запроса, адрес, параметры и заголовки.
+Откройте плагин «Документация API», и Вы увидите для каждого API метод запроса, адрес, параметры и заголовки.
 
 ![20250303181522](https://static-docs.nocobase.com/20250303181522.png)
 ![20250303181704](https://static-docs.nocobase.com/20250303181704.png)
@@ -104,7 +103,7 @@ eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsInJvbGVOYW1lIjoidG9kb3MiLCJ
 
 Базовые API в NocoBase:
 
-- **Список (list):**
+- **Список:**
 
   ```txt
   GET {baseURL}/{collectionName}:list
@@ -112,7 +111,7 @@ eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsInJvbGVOYW1lIjoidG9kb3MiLCJ
   - Authorization: Bearer <API-ключ>
 
   ```
-- **Создание записи (create):**
+- **Создание записи:**
 
   ```txt
   POST {baseURL}/{collectionName}:create
@@ -125,7 +124,7 @@ eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsInJvbGVOYW1lIjoidG9kb3MiLCJ
           "title": "123"
       }
   ```
-- **Обновление записи (update):**
+- **Обновление записи:**
 
   ```txt
   POST {baseURL}/{collectionName}:update?filterByTk={id}
@@ -138,7 +137,7 @@ eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsInJvbGVOYW1lIjoidG9kb3MiLCJ
           "completed": true
       }
   ```
-- **Удаление записи (destroy):**
+- **Удаление записи:**
 
   ```txt
   POST {baseURL}/{collectionName}:destroy?filterByTk={id}
@@ -146,7 +145,7 @@ eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsInJvbGVOYW1lIjoidG9kb3MiLCJ
   - Authorization: Bearer <API-ключ>
   ```
 
-Где `{baseURL}` — адрес Вашей системы NocoBase, `{collectionName}` — имя таблицы. Например, при локальном тесте адрес `localhost:13000`, таблица `todos`, итоговый адрес запроса:
+Где `{baseURL}` — адрес Вашей системы NocoBase, `{collectionName}` — имя коллекции. Например, при локальном тесте адрес `localhost:13000`, коллекция `todos`, итоговый адрес запроса:
 
 ```txt
 http://localhost:13000/todos:list
@@ -212,7 +211,7 @@ curl --location 'http://localhost:13000/api/todos:list' \
 ![20250303184912](https://static-docs.nocobase.com/20250303184912.png)
 ![20250303184953](https://static-docs.nocobase.com/20250303184953.png)
 
-## 4 Отображение задач в [блоке iframe](https://docs-cn.nocobase.com/handbook/block-iframe)
+## 4 Отображение задач в [блоке iframe](https://docs.nocobase.com/handbook/block-iframe)
 
 Чтобы наглядно увидеть результат API-запроса, можно собрать простую HTML-страницу, которая отобразит список задач, полученных из NocoBase. Пример:
 
@@ -255,7 +254,7 @@ curl --location 'http://localhost:13000/api/todos:list' \
 
 ## 5 Итоги
 
-С помощью описанных шагов мы подробно показали, как создать и использовать API-ключи в NocoBase. От активации plugin до создания таблицы, привязки роли, теста интерфейса и отображения данных в блоке iframe — все шаги важны. В заключение, с помощью DeepSeek мы реализовали простую страницу со списком задач. Вы можете доработать код под собственные нужды.
+С помощью описанных шагов мы подробно показали, как создать и использовать API-ключи в NocoBase. От активации плагин до создания коллекции, привязки роли, теста интерфейса и отображения данных в блоке iframe — все шаги важны. В заключение, с помощью DeepSeek мы реализовали простую страницу со списком задач. Вы можете доработать код под собственные нужды.
 
 ![202503031942-todo](https://static-docs.nocobase.com/202503031942-todo.gif)
 

@@ -1,5 +1,5 @@
 [
-  { "type": "file", "name": "index", "label": "Введение в учебник" },
+  { "type": "file", "name": "index", "label": "Введение в учебные материалы" },
   {
     "type": "file",
     "name": "01-getting-started",
@@ -25,6 +25,6 @@
     "name": "05-roles-and-permissions",
     "label": "Глава 5. Пользователи и права"
   },
-  { "type": "file", "name": "06-workflows", "label": "Глава 6. Workflow" },
+  { "type": "file", "name": "06-workflows", "label": "Глава 6. Рабочий процесс" },
   { "type": "file", "name": "07-dashboard", "label": "Глава 7. Дашборд" }
 ]

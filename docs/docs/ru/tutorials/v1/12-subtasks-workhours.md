@@ -1,6 +1,6 @@
 # Глава 11: Подзадачи и расчёт трудозатрат
 
-<iframe width="800" height="436" src="https://player.bilibili.com/player.html?isOutside=true&aid=114042521847248&bvid=BV13jPcedEic&cid=28510064142&p=1" scrolling="no" border="0" frameborder="no" framespacing="0" allowfullscreen="true"></iframe>
+<iframe width="800" height="436" src="https://www.youtube.com/embed/nR-KTIpqEVQ?si=gOO4ePusb4Zz-Iwc" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 
 Дорогие друзья, перед нами новая глава! По мере роста бизнеса задач становится больше и они усложняются — простого управления уже недостаточно. Нам нужно более детально работать с задачами, разбивая их на уровни и помогая команде работать эффективнее!
 
@@ -10,27 +10,27 @@
 
 ---
 
-### 11.2 Создание таблицы подзадач
+### 11.2 Создание коллекции подзадач
 
 #### 11.2.1 Проектирование структуры подзадач
 
-Создадим «Таблицу подзадач» (Sub Tasks — [**древовидная таблица**](https://docs-cn.nocobase.com/handbook/collection-tree)) с древовидной структурой. Атрибуты подзадачи похожи на основную задачу: «Название», «Статус», «Ответственный», «Прогресс» и т. п. При необходимости можно добавить комментарии, документы и пр.
+Создадим [**коллекцию подзадач**](https://docs.nocobase.com/handbook/collection-tree) с древовидной структурой. Атрибуты подзадачи похожи на основную задачу: «Название», «Статус», «Ответственный», «Прогресс» и т. п. При необходимости можно добавить комментарии, документы и пр.
 
 Чтобы связать подзадачи с основной задачей, создадим связь многие-к-одному: каждая подзадача относится к одной основной задаче. Также добавим обратное отношение, чтобы прямо в основной задаче можно было просматривать и управлять подзадачами.
 
-![](https://static-docs.nocobase.com/nocobase_tutorials_zh/202412210038668.png)
+![](https://static-docs.nocobase.com/Solution/561734342536202416174812.png)
 
 > 💡 Совет: рекомендуется создавать подзадачи в блоке связанных данных на странице основной задачи — так удобнее!
 
 #### 11.2.2 Отображение подзадач на странице управления задачами
 
-Установите способ просмотра «Таблицы задач» в [**режим страницы**](https://docs-cn.nocobase.com/handbook/ui/pop-up#%E9%A1%B5%E9%9D%A2).
+Установите способ просмотра «Коллекции задач» в [**режим страницы**](https://docs.nocobase.com/handbook/ui/pop-up#%E9%A1%B5%E9%9D%A2).
 
-![](https://static-docs.nocobase.com/nocobase_tutorials_zh/202412210038281.png)
+![](https://static-docs.nocobase.com/Solution/171734342677202416175112.png)
 
-На странице создайте новую вкладку «Управление подзадачами», добавьте таблицу подзадач и выберите древовидное представление. Так подзадачи можно будет просматривать и управлять ими прямо на странице задачи.
+На странице создайте новую вкладку «Управление подзадачами», добавьте коллекцию подзадач и выберите древовидное представление. Так подзадачи можно будет просматривать и управлять ими прямо на странице задачи.
 
-![](https://static-docs.nocobase.com/nocobase_tutorials_zh/202412210039360.png)
+![](https://static-docs.nocobase.com/Solution/451734343605202416180612.png)
 
 ---
 
@@ -40,22 +40,22 @@
 
 #### 11.3.1 Добавление полей времени и трудозатрат для подзадач
 
-Добавьте в таблицу подзадач следующие поля:
+Добавьте в коллекцию подзадач следующие поля:
 
 - **Дата начала**
 - **Дата окончания**
 - **Общие трудозатраты**
 - **Оставшиеся трудозатраты**
 
-![](https://static-docs.nocobase.com/nocobase_tutorials_zh/202412210039376.png)
+![](https://static-docs.nocobase.com/Solution/021734344102202416181512.png)
 
 С помощью этих полей можно динамически рассчитывать продолжительность задачи и затраты времени.
 
 #### 11.3.2 Расчёт продолжительности задачи
 
-Создадим в таблице подзадач [поле-формулу](https://docs-cn.nocobase.com/handbook/field-formula) «Дни», вычисляющее продолжительность задачи.
+Создадим в коллекции подзадач [поле-формулу](https://docs.nocobase.com/handbook/field-formula) «Дни», вычисляющее продолжительность задачи.
 
-![](https://static-docs.nocobase.com/nocobase_tutorials_zh/202412210039534.png)
+![](https://static-docs.nocobase.com/Solution/271734344367202416181912.png)
 
 Формулы могут вычисляться разными способами:
 
@@ -82,34 +82,34 @@ DAYS(Дата окончания, Дата начала)
 
 Используйте латиницу в нижнем регистре, чтобы избежать ошибок.
 
-![](https://static-docs.nocobase.com/nocobase_tutorials_zh/202412210039721.png)
+![](https://static-docs.nocobase.com/Solution/471734356267202416213712.png)
 
 Проверим на странице — поле «Дни» уже динамически меняется в зависимости от дат начала и окончания!
 
-![](https://static-docs.nocobase.com/nocobase_tutorials_zh/202412210040540.png)
+![](https://static-docs.nocobase.com/Solution/561734356516202416214112%20(2))
 
 ---
 
 ### 11.4 Ежедневный учёт трудозатрат: отслеживание реального прогресса (опционально)
 
-#### 11.4.1 Создание таблицы ежедневного учёта трудозатрат
+#### 11.4.1 Создание коллекции ежедневного учёта трудозатрат
 
-Создадим таблицу ежедневного учёта трудозатрат для фиксации ежедневных результатов. Поля:
+Создадим коллекцию ежедневного учёта трудозатрат для фиксации ежедневных результатов. Поля:
 
 - **Трудозатраты за день** (hours, рекомендуется целое число)
 - **Дата**
 - **Идеальные трудозатраты** (ideal_hours, рекомендуется целое число)
-- **Связанная подзадача**: связь [многие-к-одному](https://docs-cn.nocobase.com/handbook/data-modeling/collection-fields/associations/m2o) с подзадачами.
+- **Связанная подзадача**: связь [многие-к-одному](https://docs.nocobase.com/handbook/data-modeling/collection-fields/associations/m2o) с подзадачами.
 
-![](https://static-docs.nocobase.com/nocobase_tutorials_zh/202412210040220.png)
+![](https://static-docs.nocobase.com/Solution/421734356922202416214812.png)
 
 #### 11.4.2 Отображение ежедневных трудозатрат на странице подзадачи
 
-Вернитесь на страницу редактирования подзадачи и выведите таблицу ежедневных трудозатрат как [подтаблицу](https://docs-cn.nocobase.com/handbook/ui/fields/specific/sub-table); расставьте остальные поля. Это позволит удобно вводить и просматривать трудозатраты на странице подзадачи.
+Вернитесь на страницу редактирования подзадачи и выведите таблицу ежедневных трудозатрат как [подтаблицу](https://docs.nocobase.com/handbook/ui/fields/specific/sub-table); расставьте остальные поля. Это позволит удобно вводить и просматривать трудозатраты на странице подзадачи.
 
-![](https://static-docs.nocobase.com/nocobase_tutorials_zh/202412210040223.png)
+![](https://static-docs.nocobase.com/Solution/581734357538202416215812.png)
 
-![](https://static-docs.nocobase.com/nocobase_tutorials_zh/202412210040658.png)
+![](https://static-docs.nocobase.com/Solution/421734357822202416220312.png)
 
 ---
 
@@ -117,13 +117,13 @@ DAYS(Дата окончания, Дата начала)
 
 Чтобы точнее оценивать прогресс задач и оставшиеся трудозатраты, выполним несколько ключевых настроек.
 
-#### 11.5.1 Настройка [обязательных полей](https://docs-cn.nocobase.com/handbook/ui/fields/field-settings/required) для подзадачи
+#### 11.5.1 Настройка [обязательных полей](https://docs.nocobase.com/handbook/ui/fields/field-settings/required) для подзадачи
 
-Сделайте поля **Дата начала**, **Дата окончания** и **Прогноз трудозатрат** [обязательными](https://docs-cn.nocobase.com/handbook/ui/fields/field-settings/required), чтобы все данные были заполнены и могли использоваться для расчёта.
+Сделайте поля **Дата начала**, **Дата окончания** и **Прогноз трудозатрат** [обязательными](https://docs.nocobase.com/handbook/ui/fields/field-settings/required), чтобы все данные были заполнены и могли использоваться для расчёта.
 
-#### 11.5.2 Настройка [правил связывания](https://docs-cn.nocobase.com/handbook/ui/actions/action-settings/linkage-rule) для доли выполнения и оставшихся трудозатрат
+#### 11.5.2 Настройка [правил связывания](https://docs.nocobase.com/handbook/ui/actions/action-settings/linkage-rule) для доли выполнения и оставшихся трудозатрат
 
-Добавьте в таблицу подзадач следующие правила:
+Добавьте в коллекцию подзадач следующие правила:
 
 - **Доля выполнения**: сумма ежедневных трудозатрат / прогноз трудозатрат
 
@@ -137,41 +137,41 @@ SUM(【Текущая форма / Ежедневные трудозатраты
 【Текущая форма / Прогноз трудозатрат】 - SUM(【Текущая форма / Ежедневные трудозатраты / Трудозатраты за день】)
 ```
 
-![202411170353551731786835.png](https://static-docs.nocobase.com/nocobase_tutorials_zh/202412210041551.png)
+![202411170353551731786835.png](https://static-docs.nocobase.com/Solution/281734358108202416220812.png)
 
-- Аналогично настроим правило связывания для идеальных трудозатрат в таблице ежедневных трудозатрат:
+- Аналогично настроим правило связывания для идеальных трудозатрат в коллекции ежедневных трудозатрат:
 
 ```html
   【Текущая форма / Прогноз трудозатрат】 / 【Текущая форма / Длительность задачи】
 ```
 
-![](https://static-docs.nocobase.com/nocobase_tutorials_zh/202412210041181.png)
+![](https://static-docs.nocobase.com/Solution/471734358187202416220912.png)
 
-![](https://static-docs.nocobase.com/nocobase_tutorials_zh/202412210041066.png)
+![](https://static-docs.nocobase.com/Solution/041734358384202416221312.png)
 
 Так мы в реальном времени получаем долю выполнения и оставшиеся трудозатраты.
 
-![](https://static-docs.nocobase.com/nocobase_tutorials_zh/202412210041018.png)
+![](https://static-docs.nocobase.com/Solution/411734358601202416221612.png)
 
 ### 11.6 Создание графика прогресса задачи (опционально)
 
-#### 11.6.1 Создание [графика](https://docs-cn.nocobase.com/handbook/data-visualization/user/chart-block) прогресса
+#### 11.6.1 Создание [графика](https://docs.nocobase.com/handbook/data-visualization/user/chart-block) прогресса
 
 Создайте новый блок графика, отображающий **сумму ежедневных трудозатрат** и **сумму идеальных трудозатрат** в динамике по датам.
 
 Установите ограничение 【Связанная задача/Id】 равно 【Текущая запись модального окна/ID】 — так график будет отражать реальную ситуацию по текущей задаче.
 
-![202411170417341731788254.png](https://static-docs.nocobase.com/nocobase_tutorials_zh/202412210042680.png)
+![202411170417341731788254.png](https://static-docs.nocobase.com/Solution/531734359813202416223612.png)
 
-![202411170418231731788303.png](https://static-docs.nocobase.com/nocobase_tutorials_zh/202412210042027.png)
+![202411170418231731788303.png](https://static-docs.nocobase.com/Solution/031734360123202416224212.png)
 
 #### 11.6.2 Отображение базовой информации и динамики прогресса
 
-Помните [блок Markdown](https://docs-cn.nocobase.com/handbook/ui/blocks/other-blocks/markdown)? Через него выведем базовую информацию о задаче и её прогрессе.
+Помните [блок Markdown](https://docs.nocobase.com/handbook/ui/blocks/other-blocks/markdown)? Через него выведем базовую информацию о задаче и её прогрессе.
 
-Используем шаблон [`Handlebars.js`](https://docs-cn.nocobase.com/handbook/template-handlebars), чтобы отрендерить процент:
+Используем шаблон [`Handlebars.js`](https://docs.nocobase.com/handbook/template-handlebars), чтобы отрендерить процент:
 
-![](https://static-docs.nocobase.com/nocobase_tutorials_zh/202412210043291.png)
+![](https://static-docs.nocobase.com/Solution/521734361132202416225812.png)
 
 ```html
 Progress of Last Update:
@@ -181,14 +181,14 @@ Progress of Last Update:
 </p>
 ```
 
-Для динамического рендеринга используется синтаксис [Handlebars.js](https://docs-cn.nocobase.com/handbook/template-handlebars) — подробности в официальной документации.
+Для динамического рендеринга используется синтаксис [Handlebars.js](https://docs.nocobase.com/handbook/template-handlebars) — подробности в официальной документации.
 
 ---
 
 ### 11.7 Итог
 
-Поздравляем! Мы реализовали разбиение задач на подзадачи. Многоуровневое управление, ежедневный учёт трудозатрат и графики позволяют чётко видеть прогресс и помогают команде работать эффективнее. Спасибо за терпение, продолжайте в том же духе — впереди увлекательная [следующая глава](https://www.nocobase.com/cn/tutorials/project-tutorial-meeting-room-booking)!
+Поздравляем! Мы реализовали разбиение задач на подзадачи. Многоуровневое управление, ежедневный учёт трудозатрат и графики позволяют чётко видеть прогресс и помогают команде работать эффективнее. Спасибо за терпение, продолжайте в том же духе — впереди увлекательная [следующая глава](https://www.nocobase.com/ru/tutorials/project-tutorial-meeting-room-booking)!
 
 ---
 
-Продолжайте экспериментировать! Если возникнут вопросы — не забывайте о [официальной документации NocoBase](https://docs-cn.nocobase.com/) и [сообществе NocoBase](https://forum.nocobase.com/).
+Продолжайте экспериментировать! Если возникнут вопросы — не забывайте о [официальной документации NocoBase](https://docs.nocobase.com/) и [сообществе NocoBase](https://forum.nocobase.com/).

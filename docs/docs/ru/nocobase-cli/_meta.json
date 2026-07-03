@@ -5,7 +5,7 @@
     "items": [
       {
         "type": "custom-link",
-        "label": "быстрый старт",
+        "label": "Быстрый старт",
         "link": "/nocobase-cli/"
       },
       {
@@ -19,7 +19,7 @@
           },
           {
             "type": "custom-link",
-            "label": "Подключение старых методов установки к AI и миграция",
+            "label": "Подключение старых методов установки к ИИ и миграция",
             "link": "/nocobase-cli/installation/migration"
           },
           {
@@ -36,7 +36,7 @@
       },
       {
         "type": "custom-link",
-        "label": "Развертывание производственной среды",
+        "label": "Развёртывание производственного окружения",
         "items": [
           {
             "type": "custom-link",
@@ -45,12 +45,12 @@
           },
           {
             "type": "custom-link",
-            "label": "Приложение запускается автоматически",
+            "label": "Автозапуск приложения",
             "link": "/nocobase-cli/production/autostart"
           },
           {
             "type": "custom-link",
-            "label": "обратный прокси",
+            "label": "Обратный прокси",
             "items": [
               {
                 "type": "custom-link",
@@ -59,12 +59,12 @@
               },
               {
                 "type": "custom-link",
-                "label": "Нгинкс",
+                "label": "Nginx",
                 "link": "/nocobase-cli/production/reverse-proxy/nginx"
               },
               {
                 "type": "custom-link",
-                "label": "Кэдди",
+                "label": "Caddy",
                 "link": "/nocobase-cli/production/reverse-proxy/caddy"
               }
             ]
@@ -82,7 +82,7 @@
           },
           {
             "type": "custom-link",
-            "label": "Управление несколькими средами",
+            "label": "Управление несколькими окружениями",
             "link": "/nocobase-cli/operations/multi-environment"
           },
           {
