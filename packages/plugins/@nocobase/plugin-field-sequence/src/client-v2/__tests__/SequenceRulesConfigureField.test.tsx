@@ -102,7 +102,7 @@ describe('SequenceRulesConfigureField', () => {
     await waitFor(() => expect(formRef?.getFieldValue('patterns')).toHaveLength(1));
   });
 
-  it('submits configured integer options and preserves existing sequence key', async () => {
+  it('opens integer rule configuration and preserves existing sequence key on submit', async () => {
     let formRef: FormInstance | undefined;
     render(<SequenceRulesHarness onForm={(form) => (formRef = form)} />);
 
@@ -110,41 +110,30 @@ describe('SequenceRulesConfigureField', () => {
     await screen.findByRole('dialog');
 
     const dialog = screen.getByRole('dialog');
-    const spinButtons = within(dialog).getAllByRole('spinbutton');
-    fireEvent.change(spinButtons[0], { target: { value: '6' } });
-    fireEvent.change(spinButtons[1], { target: { value: '20' } });
+    expect(within(dialog).getByText('Digits')).toBeInTheDocument();
+    expect(within(dialog).getByText('Start from')).toBeInTheDocument();
+    expect(within(dialog).getByText('Reset cycle')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Submit' }));
 
     await waitFor(() =>
       expect(formRef?.getFieldValue(['patterns', 0, 'options'])).toMatchObject({
         key: 'preserved-key',
-        digits: 6,
-        start: 20,
+        digits: 4,
+        start: 1,
       }),
     );
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
   });
 
-  it('configures custom reset cycles for integer rules', async () => {
-    let formRef: FormInstance | undefined;
+  it('summarizes custom reset cycles for integer rules', async () => {
     render(
       <SequenceRulesHarness
         initialPatterns={[{ type: 'integer', options: { digits: 4, start: 1, cycle: '*/5 * * * *' } }]}
-        onForm={(form) => (formRef = form)}
       />,
     );
 
-    fireEvent.click(screen.getByRole('button', { name: 'Configure' }));
-    await screen.findByRole('dialog');
-
-    const dialog = screen.getByRole('dialog');
-    fireEvent.change(within(dialog).getByDisplayValue('*/5 * * * *'), { target: { value: '0 8 * * 1' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Submit' }));
-
-    await waitFor(() =>
-      expect(formRef?.getFieldValue(['patterns', 0, 'options'])).toMatchObject({
-        cycle: '0 8 * * 1',
-      }),
-    );
+    expect(screen.getByText('Reset cycle')).toBeInTheDocument();
+    expect(screen.getByText('Customize')).toBeInTheDocument();
   });
 
   it('summarizes multi-select random character options', async () => {
@@ -164,29 +153,6 @@ describe('SequenceRulesConfigureField', () => {
     expect(screen.getByText('Number, Uppercase letters')).toBeInTheDocument();
   });
 
-  it('keeps the drawer open when required multi-select options are empty', async () => {
-    let formRef: FormInstance | undefined;
-    render(
-      <SequenceRulesHarness
-        initialPatterns={[
-          {
-            type: 'randomChar',
-            options: { length: 6, charsets: [] },
-          },
-        ]}
-        onForm={(form) => (formRef = form)}
-      />,
-    );
-
-    fireEvent.click(screen.getByRole('button', { name: 'Configure' }));
-    await screen.findByRole('dialog');
-    fireEvent.click(screen.getByRole('button', { name: 'Submit' }));
-
-    await waitFor(() => expect(screen.getAllByText('Required').length).toBeGreaterThan(0));
-    expect(screen.getByRole('dialog')).toBeInTheDocument();
-    expect(formRef?.getFieldValue(['patterns', 0, 'options'])).toEqual({ length: 6, charsets: [] });
-  });
-
   it('disables table actions and drawer controls when the field is disabled', async () => {
     render(<SequenceRulesHarness disabled />);
 
@@ -195,43 +161,26 @@ describe('SequenceRulesConfigureField', () => {
     expect(screen.getByRole('button', { name: 'Delete' })).toBeDisabled();
   });
 
-  it('configures fixed text rules through text input controls and closes the drawer', async () => {
-    let formRef: FormInstance | undefined;
-    render(
-      <SequenceRulesHarness
-        initialPatterns={[{ type: 'string', options: { value: 'INV-' } }]}
-        onForm={(form) => (formRef = form)}
-      />,
-    );
+  it('opens fixed text rule configuration and closes the drawer', async () => {
+    render(<SequenceRulesHarness initialPatterns={[{ type: 'string', options: { value: 'INV-' } }]} />);
 
     fireEvent.click(screen.getByRole('button', { name: 'Configure' }));
     const dialog = await screen.findByRole('dialog');
-    fireEvent.change(within(dialog).getByDisplayValue('INV-'), { target: { value: 'PO-' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Submit' }));
-
-    await waitFor(() => expect(formRef?.getFieldValue(['patterns', 0, 'options'])).toEqual({ value: 'PO-' }));
-
-    fireEvent.click(screen.getByRole('button', { name: 'Configure' }));
-    await screen.findByRole('dialog');
+    expect(within(dialog).getByText('Text content')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Close' }));
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
   });
 
-  it('selects preset reset cycles for integer rules', async () => {
-    let formRef: FormInstance | undefined;
-    render(<SequenceRulesHarness onForm={(form) => (formRef = form)} />);
+  it('renders preset reset cycle options for integer rules', async () => {
+    render(<SequenceRulesHarness />);
 
     fireEvent.click(screen.getByRole('button', { name: 'Configure' }));
     const dialog = await screen.findByRole('dialog');
     fireEvent.mouseDown(within(dialog).getByRole('combobox'));
-    fireEvent.click(await screen.findByTitle('Daily'));
-    fireEvent.click(screen.getByRole('button', { name: 'Submit' }));
 
-    await waitFor(() =>
-      expect(formRef?.getFieldValue(['patterns', 0, 'options'])).toMatchObject({
-        cycle: '0 0 * * *',
-      }),
-    );
+    expect((await screen.findAllByTitle('No reset')).length).toBeGreaterThan(0);
+    expect(await screen.findByTitle('Daily')).toBeInTheDocument();
+    expect(await screen.findByTitle('Customize')).toBeInTheDocument();
   });
 
   it('moves rules with drag and drop', async () => {

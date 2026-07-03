@@ -110,10 +110,8 @@ function SequenceRuleOptionControl(props: {
   form: FormInstance;
   ruleType?: Record<string, any>;
   disabled?: boolean;
-  value?: unknown;
-  onChange?: (value: unknown) => void;
 }) {
-  const { field, form, ruleType, disabled, value, onChange } = props;
+  const { field, form, ruleType, disabled } = props;
   const t = useT();
   const digits = Form.useWatch('digits', form);
   const componentProps = { ...(field.componentProps || {}) };
@@ -123,46 +121,18 @@ function SequenceRuleOptionControl(props: {
   }
 
   if (field.component === 'InputNumber') {
-    return (
-      <InputNumber
-        style={{ width: '100%' }}
-        disabled={disabled}
-        value={value as number}
-        onChange={onChange}
-        {...componentProps}
-      />
-    );
+    return <InputNumber style={{ width: '100%' }} disabled={disabled} {...componentProps} />;
   }
 
   if (field.component === 'Select') {
-    return (
-      <Select
-        disabled={disabled}
-        value={value}
-        options={normalizeSchemaEnum(field.enum, t)}
-        onChange={onChange}
-        {...componentProps}
-      />
-    );
+    return <Select disabled={disabled} options={normalizeSchemaEnum(field.enum, t)} {...componentProps} />;
   }
 
   if (field.component === 'CronCycle') {
-    return (
-      <CronCycleEditor
-        disabled={disabled}
-        value={typeof value === 'string' || value === null ? value : undefined}
-        onChange={onChange}
-      />
-    );
+    return <CronCycleEditor disabled={disabled} />;
   }
 
-  return (
-    <Input
-      disabled={disabled}
-      value={typeof value === 'string' || typeof value === 'number' ? value : undefined}
-      onChange={(event) => onChange?.(event.target.value)}
-    />
-  );
+  return <Input disabled={disabled} />;
 }
 
 function SequenceRuleOptionsForm(props: { form: FormInstance; ruleType?: Record<string, any>; disabled?: boolean }) {
@@ -285,12 +255,7 @@ export function SequenceRulesConfigureField(props: FieldConfigurePropertyCompone
   };
 
   const submitConfigure = async () => {
-    let values;
-    try {
-      values = await configForm.validateFields();
-    } catch {
-      return;
-    }
+    const values = await configForm.validateFields();
     if (!editingRule) {
       return;
     }
