@@ -9,10 +9,9 @@
 
 import type { Bubble, Sender } from '@ant-design/x';
 import type { GetProp, GetRef } from 'antd';
-import { create } from 'zustand';
 import type { AIEmployee } from '../../types';
-import { createSelectors } from './create-selectors';
-import { getOrCreateGlobalStore } from './global-store';
+import { getOrCreateGlobalStore } from '../../stores/global-store';
+import { createObservableStore } from './create-selectors';
 
 type RolesType = GetProp<typeof Bubble.List, 'roles'>;
 
@@ -79,8 +78,8 @@ interface ChatBoxActions {
   setShowSenderHint: (show: boolean) => void;
 }
 
-const store = getOrCreateGlobalStore('@nocobase/plugin-ai/chat-box-store', () =>
-  create<ChatBoxState & ChatBoxActions>()((set) => ({
+export const useChatBoxStore = getOrCreateGlobalStore('@nocobase/plugin-ai/chat-box-store', () =>
+  createObservableStore<ChatBoxState & ChatBoxActions>((set) => ({
     open: false,
     expanded: false,
     collapsed: false,
@@ -140,5 +139,3 @@ const store = getOrCreateGlobalStore('@nocobase/plugin-ai/chat-box-store', () =>
     setShowSenderHint: (isShowSenderHint) => set({ isShowSenderHint }),
   })),
 );
-
-export const useChatBoxStore = createSelectors(store);

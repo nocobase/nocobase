@@ -26,6 +26,7 @@ import type { BaseApplication } from './BaseApplication';
 import { BlankComponent, RouterContextCleaner } from './components';
 import { RouterBridge } from './components/RouterBridge';
 import { Router } from '@remix-run/router';
+import { getV2EffectiveBasePath } from './authRedirect';
 
 export interface BrowserRouterOptions extends Omit<BrowserRouterProps, 'children'> {
   type?: 'browser';
@@ -55,6 +56,87 @@ export interface RouteType extends Omit<RouteObject, 'children' | 'Component'> {
 export type RenderComponentType = (Component: ComponentTypeAndString, props?: any) => React.ReactNode;
 export type RouterComponentType = React.FC<{ BaseLayout?: ComponentType }>;
 
+const DEFAULT_ADMIN_ROUTE_PATH = '/admin';
+
+type AdminRouteNavigationTarget = {
+  currentPathname?: string;
+  targetPathname: unknown;
+  basePath?: string;
+  adminRoutePath?: string;
+  replace?: boolean;
+};
+
+function trimPathSearchAndHash(pathname: string) {
+  return pathname.split(/[?#]/)[0];
+}
+
+function splitPathSearchAndHash(pathname: string) {
+  const match = pathname.match(/^([^?#]*)(.*)$/);
+  return {
+    pathname: match?.[1] || '',
+    suffix: match?.[2] || '',
+  };
+}
+
+function normalizeRootPath(pathname?: string) {
+  const trimmed = trimPathSearchAndHash(pathname || '').trim();
+  if (!trimmed || trimmed === '/') {
+    return '/';
+  }
+  return `/${trimmed.replace(/^\/+|\/+$/g, '')}`;
+}
+
+function isRootRelativePath(pathname: string) {
+  return pathname.startsWith('/') && !pathname.startsWith('//') && !pathname.startsWith('/\\');
+}
+
+function removeBasePath(pathname: string, basePath?: string) {
+  const normalizedPathname = normalizeRootPath(pathname);
+  const normalizedBasePath = normalizeRootPath(basePath);
+
+  if (normalizedBasePath === '/') {
+    return normalizedPathname;
+  }
+  if (normalizedPathname === normalizedBasePath) {
+    return '/';
+  }
+  if (normalizedPathname.startsWith(`${normalizedBasePath}/`)) {
+    return normalizeRootPath(normalizedPathname.slice(normalizedBasePath.length));
+  }
+  return normalizedPathname;
+}
+
+function removeAppSegment(pathname: string) {
+  return normalizeRootPath(pathname).replace(/^\/(?:apps|_app)\/[^/]+(?=\/|$)/, '') || '/';
+}
+
+function normalizePortalRoutePath(pathname: string, basePath?: string) {
+  return removeAppSegment(removeBasePath(pathname, basePath));
+}
+
+function isSameOrChildPath(pathname: string, basePath: string) {
+  const normalizedPathname = normalizeRootPath(pathname);
+  const normalizedBasePath = normalizeRootPath(basePath);
+  return normalizedPathname === normalizedBasePath || normalizedPathname.startsWith(`${normalizedBasePath}/`);
+}
+
+export function shouldOpenAdminRouteInNewWindow(options: AdminRouteNavigationTarget) {
+  if (options.replace || typeof options.targetPathname !== 'string') {
+    return false;
+  }
+
+  const targetPathname = options.targetPathname.trim();
+  if (!isRootRelativePath(targetPathname)) {
+    return false;
+  }
+
+  const adminRoutePath = normalizeRootPath(options.adminRoutePath || DEFAULT_ADMIN_ROUTE_PATH);
+  const currentRoutePath = normalizePortalRoutePath(options.currentPathname || '/', options.basePath);
+  const targetRoutePath = normalizePortalRoutePath(targetPathname, options.basePath);
+
+  return !isSameOrChildPath(currentRoutePath, adminRoutePath) && isSameOrChildPath(targetRoutePath, adminRoutePath);
+}
+
 function removeBasename(pathname: string, basename?: string) {
   if (!basename || basename === '/') {
     return pathname;
@@ -72,6 +154,7 @@ function removeBasename(pathname: string, basename?: string) {
 export class RouterManager<TApp extends BaseApplication<any> = BaseApplication<any>> {
   protected routes: Record<string, RouteType> = {};
   protected options: RouterOptions;
+  private routerNavigate?: Router['navigate'];
   public app: TApp;
   public router!: Router;
   get basename() {
@@ -81,13 +164,69 @@ export class RouterManager<TApp extends BaseApplication<any> = BaseApplication<a
     return this.router.state;
   }
   get navigate() {
-    return this.router.navigate;
+    return this.navigateWithPortalPolicy;
   }
 
   constructor(options: RouterOptions = {}, app: TApp) {
     this.options = options;
     this.app = app;
     this.routes = options.routes || {};
+  }
+
+  private navigateWithPortalPolicy: Router['navigate'] = ((to, opts) => {
+    if (this.shouldOpenAdminRouteInNewWindow(to, opts)) {
+      window.open(this.getAdminRouteNavigationHref(to as string), '_blank', 'noopener,noreferrer');
+      return Promise.resolve();
+    }
+
+    const navigate = this.routerNavigate || this.router.navigate.bind(this.router);
+    return navigate(to, opts);
+  }) as Router['navigate'];
+
+  private shouldOpenAdminRouteInNewWindow(
+    to: Parameters<Router['navigate']>[0],
+    opts?: Parameters<Router['navigate']>[1],
+  ) {
+    if (this.options.type && this.options.type !== 'browser') {
+      return false;
+    }
+
+    return shouldOpenAdminRouteInNewWindow({
+      currentPathname:
+        typeof window !== 'undefined' ? window.location.pathname : this.router?.state?.location?.pathname,
+      targetPathname: to,
+      basePath: this.getRuntimeBasePath(),
+      adminRoutePath: this.getAdminRoutePath(),
+      replace: opts?.replace,
+    });
+  }
+
+  private getRuntimeBasePath() {
+    return getV2EffectiveBasePath(this.app);
+  }
+
+  private getAdminRoutePath() {
+    try {
+      return this.app.layoutManager?.getLayout?.('admin')?.routePath || DEFAULT_ADMIN_ROUTE_PATH;
+    } catch {
+      return DEFAULT_ADMIN_ROUTE_PATH;
+    }
+  }
+
+  private getAdminRouteNavigationHref(pathname: string) {
+    const { pathname: rawPathname, suffix } = splitPathSearchAndHash(pathname.trim());
+    const normalizedPathname = normalizeRootPath(rawPathname);
+    const runtimeBasePath = this.getRuntimeBasePath();
+    const normalizedBasePath = normalizeRootPath(runtimeBasePath);
+
+    if (
+      normalizedBasePath !== '/' &&
+      (normalizedPathname === normalizedBasePath || normalizedPathname.startsWith(`${normalizedBasePath}/`))
+    ) {
+      return `${normalizedPathname}${suffix}`;
+    }
+
+    return `${this.app.getHref(normalizePortalRoutePath(normalizedPathname, runtimeBasePath))}${suffix}`;
   }
 
   protected resolveLoadedComponent(moduleOrComponent: ComponentLoaderResult): ComponentTypeAndString | undefined {
@@ -257,6 +396,8 @@ export class RouterManager<TApp extends BaseApplication<any> = BaseApplication<a
       ],
       opts,
     );
+    this.routerNavigate = this.router.navigate.bind(this.router) as Router['navigate'];
+    this.router.navigate = this.navigateWithPortalPolicy;
 
     const RenderRouter: RouterComponentType = ({ BaseLayout = BlankComponent }) => {
       return (

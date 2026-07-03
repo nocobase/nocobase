@@ -19,8 +19,10 @@ const { collection, createModel, mockFieldAssignValueInput, mockFlowEngine, work
     dataSourceKey: 'main',
     getField: vi.fn((name: string) => collection.getFields().find((field) => field.name === name)),
     getFields: vi.fn(() => [
-      { name: 'title', uiSchema: { title: 'Title' }, interface: 'input' },
-      { name: 'status', uiSchema: { title: 'Status' }, interface: 'select' },
+      { name: 'title', type: 'string', uiSchema: { title: 'Title' }, interface: 'input' },
+      { name: 'status', type: 'string', uiSchema: { title: 'Status' }, interface: 'select' },
+      { name: 'author', type: 'belongsTo', uiSchema: { title: 'Author' }, interface: 'm2o' },
+      { name: 'comments', type: 'hasMany', uiSchema: { title: 'Comments' }, interface: 'o2m' },
     ]),
   };
   const createModel = vi.fn((options) => ({
@@ -127,5 +129,27 @@ describe('AssignedFieldsEditor', () => {
 
     expect(onChange).toHaveBeenLastCalledWith({ title: 'old', status: '' });
     expect(collection.getFields).toHaveBeenCalled();
+  });
+
+  it('filters selectable fields and prunes filtered assigned values', async () => {
+    const onChange = vi.fn();
+
+    render(
+      <AssignedFieldsEditor
+        collection="posts"
+        value={{ title: 'old', comments: [1] }}
+        onChange={onChange}
+        fieldFilter={(field) => field.type !== 'hasMany'}
+        pruneFilteredValues
+      />,
+    );
+
+    await waitFor(() => {
+      expect(onChange).toHaveBeenCalledWith({ title: 'old' });
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Add field' }));
+    expect(await screen.findByText('Status')).toBeTruthy();
+    expect(screen.queryByText('Comments')).toBeNull();
   });
 });

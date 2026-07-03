@@ -10,11 +10,13 @@
 import React, { useEffect } from 'react';
 import { Form } from 'antd';
 import { useNodeContext } from '../../canvas/contexts';
-import { AssignedFieldsEditor } from '../../components/collection';
+import { AssignedFieldsEditor, isAssociationField, type AssignedFieldFilter } from '../../components/collection';
 import { RadioWithTooltip, type RadioWithTooltipOption } from '../../components/RadioWithTooltip';
 import { useT } from '../../locale';
 import { NodeCollectionField } from './collection';
 import { NodeFilterField } from './filter';
+
+const batchUpdateFieldFilter: AssignedFieldFilter = (field) => !isAssociationField(field) || field.type === 'belongsTo';
 
 function useUpdateModeOptions(): RadioWithTooltipOption[] {
   const t = useT();
@@ -41,7 +43,9 @@ function UpdateFields() {
   const t = useT();
   const form = Form.useFormInstance();
   const collection = Form.useWatch(['config', 'collection']);
+  const individualHooks = Form.useWatch(['config', 'params', 'individualHooks'], form);
   const updateModeOptions = useUpdateModeOptions();
+  const isBatchUpdateMode = individualHooks !== true;
 
   useEffect(() => {
     if (!collection) {
@@ -67,7 +71,11 @@ function UpdateFields() {
       <NodeFilterField collection={collection} label={t('Only update records matching conditions')} />
 
       <Form.Item name={['config', 'params', 'values']} label={t('Fields values')}>
-        <AssignedFieldsEditor collection={collection} />
+        <AssignedFieldsEditor
+          collection={collection}
+          fieldFilter={isBatchUpdateMode ? batchUpdateFieldFilter : undefined}
+          pruneFilteredValues={isBatchUpdateMode}
+        />
       </Form.Item>
     </>
   );

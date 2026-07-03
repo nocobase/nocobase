@@ -26,6 +26,8 @@ export type RecordCommentAssociationLike = {
   collection?: {
     name?: string;
   };
+  foreignKey?: string;
+  sourceKey?: string;
 };
 
 export type RecordCommentCollection = {
@@ -178,13 +180,36 @@ export const isBelongsToField = (field?: RecordCommentCollectionField) => {
   return field?.type === 'belongsTo' || field?.interface === 'm2o';
 };
 
+const multiValueAssociationTypes = new Set(['belongsToArray', 'belongsToMany', 'hasMany', 'hasOne']);
+const multiValueAssociationInterfaces = new Set(['m2m', 'o2m', 'oho', 'obo']);
+
+export const isCommentOwnerField = (field?: RecordCommentCollectionField) => {
+  if (!field?.name) {
+    return false;
+  }
+
+  if (field.type && multiValueAssociationTypes.has(field.type)) {
+    return false;
+  }
+
+  if (field.interface && multiValueAssociationInterfaces.has(field.interface)) {
+    return false;
+  }
+
+  if (isBelongsToField(field)) {
+    return false;
+  }
+
+  return true;
+};
+
 export const isUserField = (field?: RecordCommentCollectionField) => {
   return isBelongsToField(field) && (field?.target === 'users' || field?.targetCollection?.name === 'users');
 };
 
 export const getCommentOwnerFieldOptions = (collection?: unknown) => {
   return getCollectionFields(collection)
-    .filter((field) => field.name && isBelongsToField(field))
+    .filter(isCommentOwnerField)
     .map((field) => ({
       label: field.title || field.uiSchema?.title || field.name,
       value: field.name,
@@ -250,13 +275,31 @@ export const getAssociationRecordCommentFieldMapping = (options: {
   collection?: unknown;
   association?: RecordCommentAssociationLike;
   associationName?: string;
+  sourceId?: unknown;
 }): DefaultRecordCommentFieldMapping => {
+  const foreignKey = options.association?.foreignKey;
+  if (foreignKey && getCollectionField(options.collection, foreignKey)) {
+    return {
+      ownerField: foreignKey,
+      ownerValueField: options.sourceId ?? COMMENT_OWNER_FILTER_BY_TK_VARIABLE,
+    };
+  }
+
   const sourceCollectionName = getAssociationSourceCollectionName(options);
 
-  return getDefaultRecordCommentFieldMapping({
+  const mapping = getDefaultRecordCommentFieldMapping({
     collection: options.collection,
     currentCollectionName: sourceCollectionName,
   });
+
+  if (mapping.ownerField) {
+    return {
+      ...mapping,
+      ownerValueField: options.sourceId ?? mapping.ownerValueField,
+    };
+  }
+
+  return {};
 };
 
 export const getCollectionFilterTargetKey = (collection?: unknown) => {
@@ -457,10 +500,10 @@ const normalizeFilterValueByFieldType = (value: string | number | boolean, field
   };
 };
 
-const getOwnerTargetField = (collection: unknown, ownerFieldName: string) => {
+const getOwnerValueField = (collection: unknown, ownerFieldName: string) => {
   const ownerField = getCollectionField(collection, ownerFieldName);
   if (!isBelongsToField(ownerField)) {
-    return undefined;
+    return ownerField;
   }
 
   const targetKey =
@@ -473,7 +516,7 @@ export const normalizeOwnerFilterValue = (
   ownerFieldName: string,
   ownerValue: string | number | boolean,
 ) => {
-  return normalizeFilterValueByFieldType(ownerValue, getOwnerTargetField(collection, ownerFieldName));
+  return normalizeFilterValueByFieldType(ownerValue, getOwnerValueField(collection, ownerFieldName));
 };
 
 const extractCurrentRecordVariablePath = (value?: unknown) => {

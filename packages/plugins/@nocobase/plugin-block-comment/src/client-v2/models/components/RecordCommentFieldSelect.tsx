@@ -24,7 +24,7 @@ import {
 type RecordCommentFieldSelectProps = Omit<SelectProps<string | string[]>, 'options'> & {
   value?: string | string[];
   onChange?: (value: string | string[] | undefined) => void;
-  fieldFilter?: 'belongsTo' | 'content' | 'date' | 'user';
+  fieldFilter?: 'content' | 'date' | 'owner' | 'user';
 };
 
 export const RecordCommentFieldSelect = observer((props: RecordCommentFieldSelectProps) => {
@@ -34,7 +34,7 @@ export const RecordCommentFieldSelect = observer((props: RecordCommentFieldSelec
   const model = settingsContext?.model as { collection?: unknown } | undefined;
   const collection = model?.collection || settingsContext?.collection;
   const options = useMemo(() => {
-    if (fieldFilter === 'belongsTo') {
+    if (fieldFilter === 'owner') {
       return getCommentOwnerFieldOptions(collection);
     }
 

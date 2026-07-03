@@ -186,26 +186,36 @@ describe('useWorkflowVariableOptions — runtime-neutral resolution', () => {
     expect(triggerData?.children?.map((child: any) => child.name)).toContain('title');
   });
 
-  it('includes the legacy workflow title context path for saved trigger task titles', () => {
+  it('does not add the legacy workflow title context path to trigger variables', () => {
     setupEngine(makeV1ShapedPlugin());
     holder.currentNode = { key: 'n1', type: 'condition', upstream: null };
-    holder.workflow = { id: 7, type: 'approval', config: {} };
+    holder.workflow = { id: 7, type: 'collection', config: { collection: 'posts' } };
 
     const { result } = renderHook(() => useWorkflowVariableOptions());
     const trigger = result.current.find((n) => n.name === '$context');
     const workflow = trigger?.children?.find((c: any) => c.name === 'workflow');
-    const title = workflow?.children?.find((c: any) => c.name === 'title');
 
     expect(trigger?.title).toBe('Trigger variables');
-    expect(workflow?.title).toBe('Workflow');
-    expect(title?.title).toBe('Workflow title');
-    expect(title?.paths).toEqual(['useFlowContext()', 'workflow', 'title']);
+    expect(trigger?.children?.map((child: any) => child.name)).toEqual(['data']);
+    expect(workflow).toBeUndefined();
   });
 
   it('omits the trigger scope when no workflow is in context (drawer without workflow)', () => {
     setupEngine(makeV1ShapedPlugin());
     holder.currentNode = { key: 'n1', type: 'condition', upstream: null };
     holder.workflow = null;
+
+    const { result } = renderHook(() => useWorkflowVariableOptions());
+    expect(result.current.find((n) => n.name === '$context')).toBeUndefined();
+  });
+
+  it('omits the trigger scope when trigger variables are empty', () => {
+    setupEngine({
+      ...makeV1ShapedPlugin(),
+      triggers: { get: () => ({ useVariables: () => [] }) },
+    });
+    holder.currentNode = { key: 'n1', type: 'condition', upstream: null };
+    holder.workflow = { id: 7, type: 'collection', config: { collection: 'posts' } };
 
     const { result } = renderHook(() => useWorkflowVariableOptions());
     expect(result.current.find((n) => n.name === '$context')).toBeUndefined();

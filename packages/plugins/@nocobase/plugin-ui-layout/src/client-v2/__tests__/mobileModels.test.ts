@@ -3334,11 +3334,14 @@ describe('plugin-ui-layout mobile models', () => {
 
     expect(tabbarRule).toMatch(/display:\s*flex/);
     expect(tabbarRule).toMatch(/min-height:\s*48px/);
+    expect(tabbarRule).toMatch(/overflow-x:\s*auto/);
+    expect(tabbarRule).toMatch(/scrollbar-width:\s*thin/);
     expect(tabbarRule).not.toMatch(/grid-template-columns/);
-    expect(tabbarChildRule).toMatch(/flex:\s*1 1 0%/);
-    expect(tabbarChildRule).toMatch(/min-width:\s*0/);
-    expect(itemShellRule).toMatch(/flex:\s*1 1 0%/);
-    expect(itemShellRule).toMatch(/width:\s*100%/);
+    expect(tabbarChildRule).toMatch(/flex:\s*1 0 64px/);
+    expect(tabbarChildRule).toMatch(/min-width:\s*64px/);
+    expect(itemShellRule).toMatch(/flex:\s*1 0 64px/);
+    expect(itemShellRule).toMatch(/width:\s*auto/);
+    expect(itemShellRule).toMatch(/min-width:\s*64px/);
     expect(itemShellRule).toMatch(/min-height:\s*48px/);
     expect(itemRule).toMatch(/min-height:\s*48px/);
     expect(itemRule).toMatch(/padding:\s*4px 8px/);
@@ -3563,7 +3566,7 @@ describe('plugin-ui-layout mobile models', () => {
     expect(activeTabRule).toContain('#642ab5');
   });
 
-  it('should let mobile tabs share the tab bar width like antd-mobile', async () => {
+  it('should let crowded mobile tabs scroll horizontally', async () => {
     renderMobileLayoutWithRouteRepository({
       listAccessible: () =>
         Array.from({ length: 10 }, (_, index) => ({
@@ -3585,12 +3588,17 @@ describe('plugin-ui-layout mobile models', () => {
     const tabbarRule = styleText.match(/\.nb-ui-layout-mobile-home-tabbar\s*\{[^}]+\}/)?.[0];
     const tabbarChildRule = styleText.match(/\.nb-ui-layout-mobile-home-tabbar\s*>\s*div\s*\{[^}]+\}/)?.[0];
     const itemShellRule = styleText.match(/\.nb-ui-layout-mobile-home-tabbar-item-shell\s*\{[^}]+\}/)?.[0];
+    const addRule = styleText.match(/\.nb-ui-layout-mobile-home-tabbar-add\s*\{[^}]+\}/)?.[0];
 
     expect(tabbarRule).toMatch(/display:\s*flex/);
-    expect(tabbarRule).not.toMatch(/overflow-x:\s*auto/);
-    expect(tabbarChildRule).toMatch(/flex:\s*1 1 0%/);
-    expect(itemShellRule).toMatch(/flex:\s*1 1 0%/);
-    expect(itemShellRule).toMatch(/min-width:\s*0/);
+    expect(tabbarRule).toMatch(/overflow-x:\s*auto/);
+    expect(tabbarRule).toMatch(/overflow-y:\s*hidden/);
+    expect(tabbarChildRule).toMatch(/flex:\s*1 0 64px/);
+    expect(tabbarChildRule).toMatch(/min-width:\s*64px/);
+    expect(itemShellRule).toMatch(/flex:\s*1 0 64px/);
+    expect(itemShellRule).toMatch(/min-width:\s*64px/);
+    expect(addRule).toMatch(/position:\s*sticky/);
+    expect(addRule).toMatch(/right:\s*8px/);
   });
 
   it('should register mobile route pages with the mobile root page model', () => {
