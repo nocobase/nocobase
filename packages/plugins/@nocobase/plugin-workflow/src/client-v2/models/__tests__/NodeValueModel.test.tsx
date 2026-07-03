@@ -55,4 +55,12 @@ describe('NodeValueModel', () => {
     expect(screen.getByText('Translated calculation result')).toBeInTheDocument();
     expect(container).not.toHaveTextContent(calculationResultTemplate);
   });
+
+  it('keeps plain fallback strings untranslated when no execution is available', () => {
+    const model = createNodeValueModel('Calculation result');
+    const { container } = render(<>{model.renderComponent()}</>);
+
+    expect(screen.getByText('Calculation result')).toBeInTheDocument();
+    expect(container).not.toHaveTextContent('Translated calculation result');
+  });
 });

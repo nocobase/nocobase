@@ -26,7 +26,11 @@ export class NodeValueModel extends BlockModel {
   }
 
   renderComponent(): any {
-    const defaultValue = typeof this.defaultValue === 'string' ? this.translate(this.defaultValue) : this.defaultValue;
+    const rawDefaultValue = this.defaultValue;
+    const defaultValue =
+      typeof rawDefaultValue === 'string' && rawDefaultValue.startsWith('{{') && rawDefaultValue.endsWith('}}')
+        ? this.translate(rawDefaultValue)
+        : rawDefaultValue;
     return <Result dataSource={this.dataSource} execution={this.execution} defaultValue={defaultValue} />;
   }
 }
