@@ -76,11 +76,6 @@ export const Edit = (props) => {
         const savedScrollX = window.scrollX || window.pageXOffset;
         const savedScrollY = window.scrollY || window.pageYOffset;
 
-        vditor.setValue(safeValue);
-        if (safeValue !== (value ?? '')) {
-          onChange(safeValue);
-        }
-
         requestAnimationFrame(() => {
           window.scrollTo(savedScrollX, savedScrollY);
         });
@@ -188,9 +183,6 @@ export const Edit = (props) => {
         const savedScrollY = window.scrollY || window.pageYOffset;
 
         editor.setValue(safeValue);
-        if (safeValue !== (value ?? '')) {
-          onChange(safeValue);
-        }
         const preArea = containerRef.current?.querySelector(
           'div.vditor-content > div.vditor-ir > pre',
         ) as HTMLPreElement;
@@ -219,7 +211,7 @@ export const Edit = (props) => {
         }
       }
     }
-  }, [onChange, value, editorReady]);
+  }, [value, editorReady]);
 
   useEffect(() => {
     if (editorReady && vdRef.current) {

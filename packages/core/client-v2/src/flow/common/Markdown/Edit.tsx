@@ -125,10 +125,6 @@ const Edit = (props) => {
       after: () => {
         vdRef.current = vditor;
         setEditorReady(true); // Notify that the editor is ready
-        vditor.setValue(safeValue);
-        if (safeValue !== (value ?? '')) {
-          onChange(safeValue);
-        }
         if (disabled) {
           vditor.disabled();
         } else {
@@ -247,9 +243,6 @@ const Edit = (props) => {
       const safeValue = stripMarkdownIframeTags(value ?? '');
       if (safeValue !== editor.getValue()) {
         editor.setValue(safeValue);
-        if (safeValue !== (value ?? '')) {
-          onChange(safeValue);
-        }
 
         const preArea = containerRef.current?.querySelector(
           'div.vditor-content > div.vditor-ir > pre',
@@ -274,7 +267,7 @@ const Edit = (props) => {
         }
       }
     }
-  }, [onChange, value, editorReady]);
+  }, [value, editorReady]);
 
   useEffect(() => {
     if (editorReady && vdRef.current) {
