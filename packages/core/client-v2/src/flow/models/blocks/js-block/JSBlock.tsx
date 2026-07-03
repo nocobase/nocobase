@@ -294,7 +294,7 @@ JSBlockModel.registerFlow({
             locatorFactory: 'flowModel.step',
             surfaceStyle: 'render',
             scene: 'block',
-            minHeight: '320px',
+            minHeight: 'calc(100vh - 42px)',
             theme: 'light',
             enableLinter: true,
             containerStyle: {
@@ -309,6 +309,9 @@ JSBlockModel.registerFlow({
         type: 'embed',
         props: {
           footer: null,
+          maxWidth: '960px',
+          minWidth: '720px',
+          width: '45%',
           styles: {
             body: {
               transform: 'translateX(0)',
