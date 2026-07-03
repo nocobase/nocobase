@@ -36,6 +36,7 @@ export default defineTools({
     const { provider } = await pluginAI.aiManager.getLLMService({
       ...model,
       webSearch: true,
+      reasoning: { mode: 'off' },
     });
     if (!args.query?.length) {
       return {
