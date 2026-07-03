@@ -154,6 +154,56 @@ describe('RecordCommentsBlockModel field mapping settings', () => {
       ownerValueField: undefined,
     });
   });
+
+  test('field mapping handler updates props and reapplies the owner filter', async () => {
+    const flow: any = (RecordCommentsBlockModel as any).globalFlowRegistry.getFlow('recordCommentsSettings');
+    const step: any = flow?.steps?.fieldMapping;
+    const model = {
+      setProps: vi.fn(),
+      applyOwnerFilter: vi.fn(async () => undefined),
+    };
+
+    await step.handler({ model } as any, {
+      contentField: 'content',
+      commenterField: 'createdBy',
+      ownerField: 'post',
+      ownerValueField: 'ctx.record.id',
+      dateField: 'createdAt',
+    });
+
+    expect(model.setProps).toHaveBeenCalledWith({
+      contentField: 'content',
+      commenterField: 'createdBy',
+      ownerField: 'post',
+      ownerValueField: 'ctx.record.id',
+      dateField: 'createdAt',
+    });
+    expect(model.applyOwnerFilter).toHaveBeenCalled();
+  });
+
+  test('field mapping before-save hook persists pending mapping props', () => {
+    const flow: any = (RecordCommentsBlockModel as any).globalFlowRegistry.getFlow('recordCommentsSettings');
+    const step: any = flow?.steps?.fieldMapping;
+    const model = {
+      setProps: vi.fn(),
+    };
+
+    step.beforeParamsSave({ model } as any, {
+      contentField: 'content',
+      commenterField: 'author',
+      ownerField: 'task',
+      ownerValueField: 'taskId',
+      dateField: 'createdAt',
+    });
+
+    expect(model.setProps).toHaveBeenCalledWith({
+      contentField: 'content',
+      commenterField: 'author',
+      ownerField: 'task',
+      ownerValueField: 'taskId',
+      dateField: 'createdAt',
+    });
+  });
 });
 
 describe('RecordCommentsBlockModel pagination and sorting', () => {
@@ -499,5 +549,110 @@ describe('RecordCommentsBlockModel pagination and sorting', () => {
     await ensurePromise;
 
     expect(RecordCommentsBlockModel.prototype.isPreparingLastPageLoad.call(model)).toBe(false);
+  });
+
+  test('page changes disable automatic last-page loading and refresh the resource', async () => {
+    const resource = {
+      loading: false,
+      setPage: vi.fn(),
+    };
+    const model = {
+      shouldLoadLastPage: true,
+      resource,
+      refresh: vi.fn(async () => undefined),
+    };
+
+    await RecordCommentsBlockModel.prototype.handlePageChange.call(model, 4);
+
+    expect(model.shouldLoadLastPage).toBe(false);
+    expect(resource.setPage).toHaveBeenCalledWith(4);
+    expect(resource.loading).toBe(true);
+    expect(model.refresh).toHaveBeenCalled();
+  });
+});
+
+describe('RecordCommentsBlockModel rendering guards', () => {
+  test('shows a mapping warning before required fields are configured', () => {
+    const element = RecordCommentsBlockModel.prototype.renderComponent.call({
+      mapping: {
+        contentField: 'content',
+      },
+      context: {
+        t: (value: string) => value,
+      },
+    });
+
+    expect(element.props.message).toBe(
+      'Please configure the comment content field, commenter field, comment owner field, and comment date field.',
+    );
+    expect(element.props.type).toBe('warning');
+  });
+
+  test('shows a type warning when the owner value does not match the owner field', () => {
+    const element = RecordCommentsBlockModel.prototype.renderComponent.call({
+      mapping: {
+        contentField: 'content',
+        commenterField: 'createdBy',
+        ownerField: 'post',
+        dateField: 'createdAt',
+      },
+      ownerFilterValueState: {
+        compatible: false,
+      },
+      context: {
+        t: (value: string) => value,
+      },
+    });
+
+    expect(element.props.message).toBe(
+      'The comment owner field value type does not match the comment owner field. Please reconfigure the field mapping.',
+    );
+    expect(element.props.type).toBe('warning');
+  });
+
+  test('shows an empty owner warning when the current record has no owner value', () => {
+    const element = RecordCommentsBlockModel.prototype.renderComponent.call({
+      mapping: {
+        contentField: 'content',
+        commenterField: 'createdBy',
+        ownerField: 'post',
+        dateField: 'createdAt',
+      },
+      ownerFilterValueState: {
+        compatible: true,
+        value: undefined,
+      },
+      context: {
+        t: (value: string) => value,
+      },
+    });
+
+    expect(element.props.message).toBe('The current record value is empty, so comments cannot be loaded.');
+    expect(element.props.type).toBe('warning');
+  });
+
+  test('renders the comment view with current resource data when mapping is valid', () => {
+    const handlePageChange = vi.fn();
+    const records = [{ id: 1, content: 'Hello' }];
+    const element = RecordCommentsBlockModel.prototype.renderComponent.call({
+      mapping: {
+        contentField: 'content',
+        commenterField: 'createdBy',
+        ownerField: 'post',
+        dateField: 'createdAt',
+      },
+      ownerFilterValueState: {
+        compatible: true,
+        value: 10,
+      },
+      resource: {
+        getData: vi.fn(() => records),
+      },
+      handlePageChange,
+    });
+
+    expect(element.props.dataSource).toBe(records);
+    element.props.onPageChange(2);
+    expect(handlePageChange).toHaveBeenCalledWith(2);
   });
 });
