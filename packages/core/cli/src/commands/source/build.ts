@@ -26,7 +26,10 @@ async function resolveTarballPaths(sourcePath: string, packageNames: string[]): 
   for (const packageName of packageNames) {
     const packageJsonPath = path.join(sourcePath, 'packages', 'plugins', ...packageName.split('/'), 'package.json');
     try {
-      const packageJson = JSON.parse(await fsp.readFile(packageJsonPath, 'utf8')) as { name?: string; version?: string };
+      const packageJson = JSON.parse(await fsp.readFile(packageJsonPath, 'utf8')) as {
+        name?: string;
+        version?: string;
+      };
       if (!packageJson.name || !packageJson.version) {
         continue;
       }
@@ -49,20 +52,26 @@ export default class SourceBuild extends Command {
       required: false,
     }),
   };
-  static override description = 'Run the legacy NocoBase build for the local source project (forwards to `npm run build` in the repo root)';
+  static override description =
+    'Run the legacy NocoBase build for the local source project (forwards to `npm run build` in the repo root)';
   static override examples = [
     '<%= config.bin %> <%= command.id %>',
-    '<%= config.bin %> <%= command.id %> --no-dts',
+    '<%= config.bin %> <%= command.id %> --build-dts',
     '<%= config.bin %> <%= command.id %> --sourcemap',
+    '<%= config.bin %> <%= command.id %> --no-verbose',
     '<%= config.bin %> <%= command.id %> @nocobase/acl',
     '<%= config.bin %> <%= command.id %> @nocobase/acl @nocobase/actions',
   ];
   static override flags = {
-    'cwd': Flags.string({ description: 'Current working directory', char: 'c', required: false }),
-    'no-dts': Flags.boolean({ description: 'not generate dts' }),
+    cwd: Flags.string({ description: 'Current working directory', char: 'c', required: false }),
+    'build-dts': Flags.boolean({
+      description: 'Generate TypeScript declaration files during the build',
+      default: false,
+    }),
+    'no-dts': Flags.boolean({ description: 'not generate dts', hidden: true }),
     sourcemap: Flags.boolean({ description: 'generate sourcemap' }),
     tar: Flags.boolean({ description: 'Create plugin tarball artifacts after build' }),
-    verbose: Flags.boolean({ description: 'Show detailed command output', default: false }),
+    verbose: Flags.boolean({ description: 'Show detailed command output', default: true, allowNo: true }),
   };
 
   public async run(): Promise<void> {
@@ -70,7 +79,8 @@ export default class SourceBuild extends Command {
     setVerboseMode(flags.verbose);
     const packages = args.packages ?? [];
     const npmArgs = ['build', ...packages];
-    if (flags['no-dts']) {
+    const shouldBuildDts = Boolean(flags['build-dts']);
+    if (!shouldBuildDts) {
       npmArgs.push('--no-dts');
     }
     if (flags.sourcemap) {

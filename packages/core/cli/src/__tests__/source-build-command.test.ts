@@ -87,10 +87,11 @@ test('source build syncs targeted plugin workspace entries and forwards --tar', 
       },
       flags: {
         cwd: '/tmp/app/source',
+        'build-dts': false,
         'no-dts': false,
         sourcemap: false,
         tar: true,
-        verbose: false,
+        verbose: true,
       },
     })),
     error: (message: string) => {
@@ -110,9 +111,9 @@ test('source build syncs targeted plugin workspace entries and forwards --tar', 
     mode: 'targeted',
     targetPackageNames: ['@my-scope/plugin-a'],
   });
-  expect(mocks.runNocoBaseCommand).toHaveBeenCalledWith(['build', '@my-scope/plugin-a', '--tar'], {
+  expect(mocks.runNocoBaseCommand).toHaveBeenCalledWith(['build', '@my-scope/plugin-a', '--no-dts', '--tar'], {
     cwd: '/tmp/app/source',
-    stdio: 'ignore',
+    stdio: 'inherit',
   });
   expect(mocks.printInfo).toHaveBeenCalledWith(
     `Tarball output directory: ${path.join('/tmp/app/source', 'storage', 'tar')}`,
@@ -129,6 +130,7 @@ test('source build syncs all top-level plugins when no package is specified', as
       },
       flags: {
         cwd: '/tmp/app/source',
+        'build-dts': false,
         'no-dts': false,
         sourcemap: true,
         tar: false,
@@ -148,10 +150,49 @@ test('source build syncs all top-level plugins when no package is specified', as
     mode: 'all',
     targetPackageNames: [],
   });
-  expect(mocks.runNocoBaseCommand).toHaveBeenCalledWith(['build', '--sourcemap'], {
+  expect(mocks.runNocoBaseCommand).toHaveBeenCalledWith(['build', '--no-dts', '--sourcemap'], {
     cwd: '/tmp/app/source',
     stdio: 'inherit',
   });
+});
+
+test('source build forwards build dts when explicitly enabled', async () => {
+  const { default: SourceBuild } = await import('../commands/source/build.js');
+
+  const command = Object.assign(Object.create(SourceBuild.prototype), {
+    parse: vi.fn(async () => ({
+      args: {
+        packages: ['@my-scope/plugin-a'],
+      },
+      flags: {
+        cwd: '/tmp/app/source',
+        'build-dts': true,
+        'no-dts': false,
+        sourcemap: false,
+        tar: false,
+        verbose: true,
+      },
+    })),
+    error: (message: string) => {
+      throw new Error(message);
+    },
+  });
+
+  await SourceBuild.prototype.run.call(command);
+
+  expect(mocks.runNocoBaseCommand).toHaveBeenCalledWith(['build', '@my-scope/plugin-a'], {
+    cwd: '/tmp/app/source',
+    stdio: 'inherit',
+  });
+});
+
+test('source build hides no-dts and enables verbose by default', async () => {
+  const { default: SourceBuild } = await import('../commands/source/build.js');
+
+  expect(SourceBuild.flags['build-dts'].default).toBe(false);
+  expect(SourceBuild.flags['no-dts'].hidden).toBe(true);
+  expect(SourceBuild.flags.verbose.default).toBe(true);
+  expect(SourceBuild.flags.verbose.allowNo).toBe(true);
 });
 
 test('source build prints tarball path summary when target package metadata is available', async () => {
@@ -170,10 +211,11 @@ test('source build prints tarball path summary when target package metadata is a
       },
       flags: {
         cwd: '/tmp/app/source',
+        'build-dts': false,
         'no-dts': false,
         sourcemap: false,
         tar: true,
-        verbose: false,
+        verbose: true,
       },
     })),
     error: (message: string) => {
@@ -203,6 +245,7 @@ test('source build keeps old behavior for plain source repos', async () => {
       },
       flags: {
         cwd: '/tmp/source',
+        'build-dts': false,
         'no-dts': false,
         sourcemap: false,
         tar: false,
@@ -217,7 +260,7 @@ test('source build keeps old behavior for plain source repos', async () => {
   await SourceBuild.prototype.run.call(command);
 
   expect(mocks.syncPluginWorkspace).not.toHaveBeenCalled();
-  expect(mocks.runNocoBaseCommand).toHaveBeenCalledWith(['build', '@my-scope/plugin-a'], {
+  expect(mocks.runNocoBaseCommand).toHaveBeenCalledWith(['build', '@my-scope/plugin-a', '--no-dts'], {
     cwd: '/tmp/source',
     stdio: 'ignore',
   });
