@@ -544,7 +544,7 @@ describe('agent gateway run control requests', () => {
       .post(`/api/agent-gateway/runs/${runId}/terminal:interrupt`)
       .send({});
     expect(unauthorizedResponse.status).toBe(403);
-    expect(JSON.stringify(unauthorizedResponse.body)).toContain('CONTROL_PERMISSION_DENIED');
+    expect(JSON.stringify(unauthorizedResponse.body)).toContain('AGENT_GATEWAY_PERMISSION_DENIED');
 
     const interruptAgent = await loginWithSnippets('agent-gateway-interrupt-disabled', ['agentGateway.interruptRun']);
     expect(

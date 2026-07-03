@@ -13,6 +13,13 @@ import {
   TERMINAL_BROWSER_MAX_DECODED_PAYLOAD_BYTES_PER_FRAME,
   TERMINAL_PAYLOAD_ENCODING,
   TERMINAL_PROTOCOL,
+  TERMINAL_STREAM_BROWSER_AUTHENTICATOR_PROTOCOL_PREFIX,
+  TERMINAL_STREAM_BROWSER_AUTH_PROOF_PROTOCOL_PREFIX,
+  TERMINAL_STREAM_BROWSER_AUTH_PROTOCOL_PREFIX,
+  TERMINAL_STREAM_BROWSER_ROLE_PROTOCOL_PREFIX,
+  TERMINAL_STREAM_BROWSER_SUBPROTOCOL,
+  TERMINAL_STREAM_BROWSER_TICKET_PROOF_PROTOCOL_PREFIX,
+  TERMINAL_STREAM_BROWSER_TICKET_PROTOCOL_PREFIX,
   encodeTerminalPayload,
 } from '../../shared/terminalStreamProtocol';
 import {
@@ -59,37 +66,84 @@ class FakeWebSocket implements TerminalStreamWebSocket {
   }
 }
 
+function createStreamTicketFactory() {
+  return vi.fn(async () => ({
+    ticket: 'ag_stream_client_ticket',
+    ticketProof: 'ag_stream_client_proof',
+    authProof: 'ag_stream_client_auth',
+    authenticator: 'basic',
+    role: 'root',
+  }));
+}
+
+async function waitForFakeWebSocket(index = 0) {
+  for (let i = 0; i < 20 && !FakeWebSocket.instances[index]; i += 1) {
+    await Promise.resolve();
+  }
+  expect(FakeWebSocket.instances[index]).toBeTruthy();
+  return FakeWebSocket.instances[index];
+}
+
 describe('TerminalStreamClient', () => {
   afterEach(() => {
     FakeWebSocket.instances = [];
     vi.useRealTimers();
   });
 
-  it('builds the plugin-owned websocket URL with browser auth query fields', () => {
+  it('builds the plugin-owned websocket URL without browser auth query fields', () => {
     expect(
       buildTerminalStreamUrl({
         baseUrl: 'http://127.0.0.1:23000',
-        token: 'browser-token',
-        authenticator: 'basic',
-        role: 'root',
       }),
-    ).toBe('ws://127.0.0.1:23000/ws/agent-gateway/terminal?token=browser-token&authenticator=basic&role=root');
+    ).toBe('ws://127.0.0.1:23000/ws/agent-gateway/terminal');
   });
 
-  it('subscribes on open and consumes ordered terminal data', () => {
-    const fakeWebSocket = new FakeWebSocket();
+  it('subscribes on open and consumes ordered terminal data', async () => {
     const states: unknown[] = [];
     const onChunk = vi.fn();
+    const protocolsBySocket: string[][] = [];
     const client = new TerminalStreamClient({
       runId: 'run-id-1',
-      token: 'browser-token',
       baseUrl: 'http://127.0.0.1:23000',
-      createWebSocket: () => fakeWebSocket,
+      createStreamTicket: createStreamTicketFactory(),
+      createWebSocket: (_url, protocols) => {
+        protocolsBySocket.push(protocols || []);
+        return new FakeWebSocket();
+      },
       onStateChange: (state) => states.push(state),
       onChunk,
     });
 
     client.connect();
+    const fakeWebSocket = await waitForFakeWebSocket();
+    expect(buildTerminalStreamUrl({ baseUrl: 'http://127.0.0.1:23000' })).not.toContain('token=');
+    expect(protocolsBySocket[0][0]).toBe(TERMINAL_STREAM_BROWSER_SUBPROTOCOL);
+    expect(
+      protocolsBySocket[0].some((protocol) => protocol.startsWith(TERMINAL_STREAM_BROWSER_TICKET_PROTOCOL_PREFIX)),
+    ).toBe(true);
+    expect(
+      protocolsBySocket[0].some((protocol) =>
+        protocol.startsWith(TERMINAL_STREAM_BROWSER_TICKET_PROOF_PROTOCOL_PREFIX),
+      ),
+    ).toBe(true);
+    expect(
+      protocolsBySocket[0].some((protocol) => protocol.startsWith(TERMINAL_STREAM_BROWSER_AUTH_PROOF_PROTOCOL_PREFIX)),
+    ).toBe(true);
+    expect(
+      protocolsBySocket[0].some((protocol) =>
+        protocol.startsWith(TERMINAL_STREAM_BROWSER_AUTHENTICATOR_PROTOCOL_PREFIX),
+      ),
+    ).toBe(true);
+    expect(
+      protocolsBySocket[0].some((protocol) => protocol.startsWith(TERMINAL_STREAM_BROWSER_ROLE_PROTOCOL_PREFIX)),
+    ).toBe(true);
+    expect(
+      protocolsBySocket[0].some((protocol) => protocol.startsWith(TERMINAL_STREAM_BROWSER_AUTH_PROTOCOL_PREFIX)),
+    ).toBe(false);
+    expect(protocolsBySocket[0].join(',')).not.toContain('browser-token');
+    expect(protocolsBySocket[0].join(',')).not.toContain('ag_stream_client_ticket');
+    expect(protocolsBySocket[0].join(',')).not.toContain('ag_stream_client_proof');
+    expect(protocolsBySocket[0].join(',')).not.toContain('ag_stream_client_auth');
     fakeWebSocket.dispatch('open');
     const subscribeFrame = JSON.parse(fakeWebSocket.sent[0]) as Record<string, unknown>;
     expect(subscribeFrame).toMatchObject({
@@ -98,6 +152,17 @@ describe('TerminalStreamClient', () => {
       runId: 'run-id-1',
       lastOffset: 0,
     });
+    expect(JSON.stringify(subscribeFrame)).not.toContain('ag_stream_client_ticket');
+    expect(JSON.stringify(subscribeFrame)).not.toContain('ag_stream_client_proof');
+    expect(JSON.stringify(subscribeFrame)).not.toContain('ag_stream_client_auth');
+    expect(JSON.stringify(subscribeFrame)).not.toContain('browser-token');
+    expect(subscribeFrame).not.toHaveProperty('browserAuth');
+    expect(subscribeFrame).not.toHaveProperty('ticket');
+    expect(subscribeFrame).not.toHaveProperty('ticketProof');
+    expect(subscribeFrame).not.toHaveProperty('authProof');
+    expect(subscribeFrame).not.toHaveProperty('authToken');
+    expect(subscribeFrame).not.toHaveProperty('authenticator');
+    expect(subscribeFrame).not.toHaveProperty('role');
 
     fakeWebSocket.dispatch('message', {
       data: JSON.stringify({
@@ -138,21 +203,21 @@ describe('TerminalStreamClient', () => {
     );
   });
 
-  it('only emits the unconsumed tail from overlapping snapshot frames', () => {
-    const fakeWebSocket = new FakeWebSocket();
+  it('only emits the unconsumed tail from overlapping snapshot frames', async () => {
     const onChunk = vi.fn();
     const prefix = '你好\n';
     const tail = 'world\n';
     const fullOutput = `${prefix}${tail}`;
     const client = new TerminalStreamClient({
       runId: 'run-id-1',
-      token: 'browser-token',
+      createStreamTicket: createStreamTicketFactory(),
       lastOffset: new TextEncoder().encode(prefix).byteLength,
-      createWebSocket: () => fakeWebSocket,
+      createWebSocket: () => new FakeWebSocket(),
       onChunk,
     });
 
     client.connect();
+    const fakeWebSocket = await waitForFakeWebSocket();
     fakeWebSocket.dispatch('message', {
       data: JSON.stringify({
         type: 'terminal.snapshot',
@@ -179,17 +244,17 @@ describe('TerminalStreamClient', () => {
     });
   });
 
-  it('consumes browser terminal frames without sessionName', () => {
-    const fakeWebSocket = new FakeWebSocket();
+  it('consumes browser terminal frames without sessionName', async () => {
     const onChunk = vi.fn();
     const client = new TerminalStreamClient({
       runId: 'run-id-1',
-      token: 'browser-token',
-      createWebSocket: () => fakeWebSocket,
+      createStreamTicket: createStreamTicketFactory(),
+      createWebSocket: () => new FakeWebSocket(),
       onChunk,
     });
 
     client.connect();
+    const fakeWebSocket = await waitForFakeWebSocket();
     fakeWebSocket.dispatch('message', {
       data: JSON.stringify({
         type: 'terminal.data',
@@ -241,18 +306,18 @@ describe('TerminalStreamClient', () => {
     });
   });
 
-  it('splits large decoded payloads into browser frame-sized chunks', () => {
-    const fakeWebSocket = new FakeWebSocket();
+  it('splits large decoded payloads into browser frame-sized chunks', async () => {
     const onChunk = vi.fn();
     const largeText = `${'L'.repeat(TERMINAL_BROWSER_MAX_DECODED_PAYLOAD_BYTES_PER_FRAME)}tail`;
     const client = new TerminalStreamClient({
       runId: 'run-id-1',
-      token: 'browser-token',
-      createWebSocket: () => fakeWebSocket,
+      createStreamTicket: createStreamTicketFactory(),
+      createWebSocket: () => new FakeWebSocket(),
       onChunk,
     });
 
     client.connect();
+    const fakeWebSocket = await waitForFakeWebSocket();
     fakeWebSocket.dispatch('message', {
       data: JSON.stringify({
         type: 'terminal.data',
@@ -284,7 +349,7 @@ describe('TerminalStreamClient', () => {
     const onStateChange = vi.fn();
     const client = new TerminalStreamClient({
       runId: 'run-id-1',
-      token: 'browser-token',
+      createStreamTicket: createStreamTicketFactory(),
       lastOffset: 6,
       reconnectDelayMs: 0,
       maxReconnectAttempts: 1,
@@ -293,7 +358,7 @@ describe('TerminalStreamClient', () => {
     });
 
     client.connect();
-    const fakeWebSocket = FakeWebSocket.instances[0];
+    const fakeWebSocket = await waitForFakeWebSocket();
     fakeWebSocket.dispatch('message', {
       data: JSON.stringify({
         type: 'terminal.data',
@@ -326,7 +391,7 @@ describe('TerminalStreamClient', () => {
       lastErrorCode: 'TERMINAL_OFFSET_GAP',
     });
     await vi.runOnlyPendingTimersAsync();
-    const secondWebSocket = FakeWebSocket.instances[1];
+    const secondWebSocket = await waitForFakeWebSocket(1);
     secondWebSocket.dispatch('open');
     const subscribeFrame = JSON.parse(secondWebSocket.sent[0]) as Record<string, unknown>;
     expect(subscribeFrame).toMatchObject({
@@ -336,15 +401,15 @@ describe('TerminalStreamClient', () => {
     });
   });
 
-  it('exposes protocol permission errors in state', () => {
-    const fakeWebSocket = new FakeWebSocket();
+  it('exposes protocol permission errors in state', async () => {
     const client = new TerminalStreamClient({
       runId: 'run-id-1',
-      token: 'browser-token',
-      createWebSocket: () => fakeWebSocket,
+      createStreamTicket: createStreamTicketFactory(),
+      createWebSocket: () => new FakeWebSocket(),
     });
 
     client.connect();
+    const fakeWebSocket = await waitForFakeWebSocket();
     fakeWebSocket.dispatch('message', {
       data: JSON.stringify({
         type: 'error',
@@ -366,7 +431,7 @@ describe('TerminalStreamClient', () => {
     const states: unknown[] = [];
     const client = new TerminalStreamClient({
       runId: 'run-id-1',
-      token: 'browser-token',
+      createStreamTicket: createStreamTicketFactory(),
       reconnectDelayMs: 0,
       maxReconnectAttempts: 1,
       createWebSocket: () => new FakeWebSocket(),
@@ -374,7 +439,7 @@ describe('TerminalStreamClient', () => {
     });
 
     client.connect();
-    const firstWebSocket = FakeWebSocket.instances[0];
+    const firstWebSocket = await waitForFakeWebSocket();
     firstWebSocket.dispatch('open');
     const firstSubscribeFrame = JSON.parse(firstWebSocket.sent[0]) as Record<string, unknown>;
     firstWebSocket.dispatch('message', {
@@ -404,7 +469,7 @@ describe('TerminalStreamClient', () => {
     });
 
     await vi.runOnlyPendingTimersAsync();
-    const secondWebSocket = FakeWebSocket.instances[1];
+    const secondWebSocket = await waitForFakeWebSocket(1);
     secondWebSocket.dispatch('open');
     const secondSubscribeFrame = JSON.parse(secondWebSocket.sent[0]) as Record<string, unknown>;
 
@@ -420,7 +485,7 @@ describe('TerminalStreamClient', () => {
     vi.useFakeTimers();
     const client = new TerminalStreamClient({
       runId: 'run-id-1',
-      token: 'browser-token',
+      createStreamTicket: createStreamTicketFactory(),
       lastOffset: 9,
       reconnectDelayMs: 0,
       maxReconnectAttempts: 1,
@@ -428,7 +493,7 @@ describe('TerminalStreamClient', () => {
     });
 
     client.connect();
-    const firstWebSocket = FakeWebSocket.instances[0];
+    const firstWebSocket = await waitForFakeWebSocket();
     firstWebSocket.dispatch('error');
     expect(client.getState()).toMatchObject({
       connectionState: 'connecting',
@@ -442,7 +507,7 @@ describe('TerminalStreamClient', () => {
     });
 
     await vi.runOnlyPendingTimersAsync();
-    const secondWebSocket = FakeWebSocket.instances[1];
+    const secondWebSocket = await waitForFakeWebSocket(1);
     secondWebSocket.dispatch('open');
     const subscribeFrame = JSON.parse(secondWebSocket.sent[0]) as Record<string, unknown>;
     expect(subscribeFrame).toMatchObject({

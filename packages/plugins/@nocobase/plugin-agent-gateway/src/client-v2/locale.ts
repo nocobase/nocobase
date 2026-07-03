@@ -8,13 +8,17 @@
  */
 
 import { tExpr as _tExpr, useFlowEngine } from '@nocobase/flow-engine';
+import { useCallback } from 'react';
 
 export const NAMESPACE = 'agent-gateway';
 
 export function useT() {
   const engine = useFlowEngine();
-  return (str: string, options?: Record<string, unknown>) =>
-    engine.context.t(str, { ns: [NAMESPACE, 'client'], ...options });
+  return useCallback(
+    (str: string, options?: Record<string, unknown>) =>
+      engine.context.t(str, { ns: [NAMESPACE, 'client'], ...options }),
+    [engine],
+  );
 }
 
 export function tExpr(key: string, options?: Record<string, unknown>) {

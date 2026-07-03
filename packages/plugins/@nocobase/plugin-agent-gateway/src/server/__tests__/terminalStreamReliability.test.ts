@@ -23,12 +23,13 @@ import {
 import PluginAgentGatewayServer from '../plugin';
 import {
   claimRun,
-  createBrowserToken,
+  createBrowserWebSocketWithTicket,
   createQueuedRun,
   createRunner,
   createTerminalStreamServer,
   createUserWithSnippets,
   createWebSocket,
+  sendBrowserSubscribeFrame,
   sendFrame,
   waitForFrame,
   waitForOpen,
@@ -60,16 +61,32 @@ async function getRootUserId(app: MockServer) {
   return rootUser?.get('id') as string | number;
 }
 
-async function subscribeBrowser(ws: WebSocket, runId: string, requestId: string, lastOffset?: number) {
-  await waitForOpen(ws);
-  sendFrame(ws, {
-    type: 'browser.subscribe',
-    protocol: TERMINAL_PROTOCOL,
-    requestId,
-    runId,
-    lastOffset,
+async function subscribeBrowser(
+  app: MockServer,
+  serverUrl: string,
+  options: {
+    userId: string | number;
+    runId: string;
+    requestId: string;
+    lastOffset?: number;
+    roleName?: string;
+  },
+) {
+  const { browser, ticket } = await createBrowserWebSocketWithTicket(app, serverUrl, {
+    userId: options.userId,
+    runId: options.runId,
+    roleName: options.roleName,
   });
-  return await waitForFrame(ws, (frame) => frame.type === 'ack' || frame.type === 'error');
+  await waitForOpen(browser);
+  sendBrowserSubscribeFrame(browser, ticket, {
+    runId: options.runId,
+    requestId: options.requestId,
+    lastOffset: options.lastOffset,
+  });
+  return {
+    browser,
+    frame: await waitForFrame(browser, (frame) => frame.type === 'ack' || frame.type === 'error'),
+  };
 }
 
 async function registerDaemon(ws: WebSocket, nodeId: string) {
@@ -145,20 +162,29 @@ describe('terminal stream reliability limits', () => {
     const runner = await createRunner(app, { nodeKey: 'terminal-stream-limit-user-node' });
     const runId = await createQueuedRun(app, runner, 'terminal-stream-limit-user-run');
     const server = await createTerminalStreamServer(app);
-    const browserToken = await createBrowserToken(app, await getRootUserId(app));
+    const rootUserId = await getRootUserId(app);
     const browsers: WebSocket[] = [];
 
     try {
       for (let index = 0; index < TERMINAL_MAX_BROWSER_SUBSCRIPTIONS_PER_USER; index += 1) {
-        const browser = createWebSocket(server.wsUrl, { token: browserToken });
+        const { browser, frame } = await subscribeBrowser(app, server.wsUrl, {
+          userId: rootUserId,
+          runId,
+          requestId: `subscribe-user-${index}`,
+        });
         browsers.push(browser);
-        expect(await subscribeBrowser(browser, runId, `subscribe-user-${index}`)).toMatchObject({
+        expect(frame).toMatchObject({
           type: 'ack',
         });
       }
-      const rejected = createWebSocket(server.wsUrl, { token: browserToken });
+      const rejectedResult = await subscribeBrowser(app, server.wsUrl, {
+        userId: rootUserId,
+        runId,
+        requestId: 'subscribe-user-over-limit',
+      });
+      const rejected = rejectedResult.browser;
       browsers.push(rejected);
-      expect(await subscribeBrowser(rejected, runId, 'subscribe-user-over-limit')).toMatchObject({
+      expect(rejectedResult.frame).toMatchObject({
         type: 'error',
         code: 'TERMINAL_SUBSCRIPTION_LIMIT',
         requestId: 'subscribe-user-over-limit',
@@ -175,7 +201,7 @@ describe('terminal stream reliability limits', () => {
     const lease = await claimRun(app, runner, runId);
     const server = await createTerminalStreamServer(app);
     const daemon = createWebSocket(server.wsUrl, { nodeToken: runner.nodeToken });
-    const browserToken = await createBrowserToken(app, await getRootUserId(app));
+    const rootUserId = await getRootUserId(app);
     const browsers: WebSocket[] = [];
 
     try {
@@ -189,16 +215,20 @@ describe('terminal stream reliability limits', () => {
         leaseVersion: lease.leaseVersion,
       });
 
-      for (let index = 0; index < TERMINAL_MAX_BROWSER_SUBSCRIPTIONS_PER_USER + 1; index += 1) {
-        browsers.push(createWebSocket(server.wsUrl, { token: browserToken }));
-      }
+      const browserTickets = await Promise.all(
+        Array.from({ length: TERMINAL_MAX_BROWSER_SUBSCRIPTIONS_PER_USER + 1 }, async (_value, index) =>
+          createBrowserWebSocketWithTicket(app, server.wsUrl, {
+            userId: rootUserId,
+            runId,
+          }),
+        ),
+      );
+      browsers.push(...browserTickets.map(({ browser }) => browser));
       await Promise.all(browsers.map((browser) => waitForOpen(browser)));
-      browsers.forEach((browser, index) => {
-        sendFrame(browser, {
-          type: 'browser.subscribe',
-          protocol: TERMINAL_PROTOCOL,
-          requestId: `subscribe-pending-user-${index}`,
+      browserTickets.forEach(({ browser, ticket }, index) => {
+        sendBrowserSubscribeFrame(browser, ticket, {
           runId,
+          requestId: `subscribe-pending-user-${index}`,
           lastOffset: 0,
         });
       });
@@ -232,16 +262,20 @@ describe('terminal stream reliability limits', () => {
         const user = await createUserWithSnippets(app, `terminal-stream-limit-run-user-${userIndex}`, [
           'agentGateway.readTerminal',
         ]);
-        const token = await createBrowserToken(app, user.userId, user.roleName);
         for (
           let subscriptionIndex = 0;
           subscriptionIndex < TERMINAL_MAX_BROWSER_SUBSCRIPTIONS_PER_USER - 1 &&
           opened < TERMINAL_MAX_BROWSER_SUBSCRIPTIONS_PER_RUN;
           subscriptionIndex += 1
         ) {
-          const browser = createWebSocket(server.wsUrl, { token });
+          const { browser, frame } = await subscribeBrowser(app, server.wsUrl, {
+            userId: user.userId,
+            roleName: user.roleName,
+            runId,
+            requestId: `subscribe-run-${opened}`,
+          });
           browsers.push(browser);
-          expect(await subscribeBrowser(browser, runId, `subscribe-run-${opened}`)).toMatchObject({
+          expect(frame).toMatchObject({
             type: 'ack',
           });
           opened += 1;
@@ -251,10 +285,15 @@ describe('terminal stream reliability limits', () => {
       const overflowUser = await createUserWithSnippets(app, 'terminal-stream-limit-run-user-overflow', [
         'agentGateway.readTerminal',
       ]);
-      const overflowToken = await createBrowserToken(app, overflowUser.userId, overflowUser.roleName);
-      const rejected = createWebSocket(server.wsUrl, { token: overflowToken });
+      const rejectedResult = await subscribeBrowser(app, server.wsUrl, {
+        userId: overflowUser.userId,
+        roleName: overflowUser.roleName,
+        runId,
+        requestId: 'subscribe-run-over-limit',
+      });
+      const rejected = rejectedResult.browser;
       browsers.push(rejected);
-      expect(await subscribeBrowser(rejected, runId, 'subscribe-run-over-limit')).toMatchObject({
+      expect(rejectedResult.frame).toMatchObject({
         type: 'error',
         code: 'TERMINAL_SUBSCRIPTION_LIMIT',
         requestId: 'subscribe-run-over-limit',
@@ -284,32 +323,36 @@ describe('terminal stream reliability limits', () => {
         leaseVersion: lease.leaseVersion,
       });
 
-      const tokens: string[] = [];
-      for (let userIndex = 0; tokens.length < TERMINAL_MAX_BROWSER_SUBSCRIPTIONS_PER_RUN + 1; userIndex += 1) {
+      const subscribers: Array<{ userId: string | number; roleName: string }> = [];
+      for (let userIndex = 0; subscribers.length < TERMINAL_MAX_BROWSER_SUBSCRIPTIONS_PER_RUN + 1; userIndex += 1) {
         const user = await createUserWithSnippets(app, `terminal-stream-pending-limit-run-user-${userIndex}`, [
           'agentGateway.readTerminal',
         ]);
-        const token = await createBrowserToken(app, user.userId, user.roleName);
         for (
           let subscriptionIndex = 0;
           subscriptionIndex < TERMINAL_MAX_BROWSER_SUBSCRIPTIONS_PER_USER - 1 &&
-          tokens.length < TERMINAL_MAX_BROWSER_SUBSCRIPTIONS_PER_RUN + 1;
+          subscribers.length < TERMINAL_MAX_BROWSER_SUBSCRIPTIONS_PER_RUN + 1;
           subscriptionIndex += 1
         ) {
-          tokens.push(token);
+          subscribers.push(user);
         }
       }
 
-      for (const token of tokens) {
-        browsers.push(createWebSocket(server.wsUrl, { token }));
-      }
+      const browserTickets = await Promise.all(
+        subscribers.map((subscriber) =>
+          createBrowserWebSocketWithTicket(app, server.wsUrl, {
+            userId: subscriber.userId,
+            roleName: subscriber.roleName,
+            runId,
+          }),
+        ),
+      );
+      browsers.push(...browserTickets.map(({ browser }) => browser));
       await Promise.all(browsers.map((browser) => waitForOpen(browser)));
-      browsers.forEach((browser, index) => {
-        sendFrame(browser, {
-          type: 'browser.subscribe',
-          protocol: TERMINAL_PROTOCOL,
-          requestId: `subscribe-pending-run-${index}`,
+      browserTickets.forEach(({ browser, ticket }, index) => {
+        sendBrowserSubscribeFrame(browser, ticket, {
           runId,
+          requestId: `subscribe-pending-run-${index}`,
           lastOffset: 0,
         });
       });

@@ -8,6 +8,7 @@
  */
 
 import {
+  AuditOutlined,
   EnterOutlined,
   EyeOutlined,
   PoweroffOutlined,
@@ -85,6 +86,15 @@ interface RunRecord {
   agentSessionProvider?: string | null;
   agentSessionProviderId?: string | null;
   agentSessionCapabilitiesJson?: JsonRecord;
+  agentGatewayActionPermissionsJson?: {
+    resumeAgentSession?: boolean;
+    readSessionMessages?: boolean;
+    readTerminal?: boolean;
+    readArtifacts?: boolean;
+    readRawLogs?: boolean;
+    readAudit?: boolean;
+    cancelRun?: boolean;
+  };
   agentGatewayControlActionsJson?: {
     interruptRun?: boolean;
     terminateRun?: boolean;
@@ -326,15 +336,6 @@ function EmptyInline({ description }: { description: string }) {
   return <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={description} />;
 }
 
-function getTerminalStreamAuth(ctx: AgentGatewayContext) {
-  const auth = ctx.api.auth;
-  return {
-    token: auth?.token || '',
-    authenticator: auth?.getAuthenticator?.() || auth?.authenticator || 'basic',
-    role: auth?.role,
-  };
-}
-
 function getRunIdFromLocationSearch() {
   if (typeof window === 'undefined') {
     return undefined;
@@ -361,6 +362,30 @@ function useInitialRunDetailQuery() {
   return useState(() => getRunIdFromLocationSearch())[0];
 }
 
+function getAgentGatewayAuditPath(pathname: string) {
+  const settingsPrefix = '/settings/agent-gateway';
+  const runsPath = `${settingsPrefix}/runs`;
+  const auditPath = `${settingsPrefix}/audit`;
+  if (pathname.includes(runsPath)) {
+    return pathname.replace(runsPath, auditPath);
+  }
+
+  const adminIndex = pathname.lastIndexOf('/admin');
+  if (adminIndex >= 0) {
+    return `${pathname.slice(0, adminIndex)}/admin${auditPath}`;
+  }
+
+  return `/admin${auditPath}`;
+}
+
+function getRouterPathFromBrowserPath(pathname: string) {
+  return pathname.replace(/^\/v2?(?=\/admin(?:\/|$))/, '');
+}
+
+function canOpenAuditFromRuns(runs: RunRecord[] | undefined) {
+  return Boolean(runs?.some((run) => run.agentGatewayActionPermissionsJson?.readAudit === true));
+}
+
 function RunSessionSummary({ run, t }: { run: RunRecord; t: TFunction }) {
   const providerSummary = [run.agentSessionProvider, run.agentSessionProviderId].filter(Boolean).join(' / ');
   if (providerSummary || run.agentSessionId) {
@@ -378,6 +403,13 @@ function RunSessionSummary({ run, t }: { run: RunRecord; t: TFunction }) {
 function getDetailWarning(error: unknown, fallback: string) {
   const detail = getApiErrorMessage(error, '');
   return detail ? `${fallback}: ${detail}` : fallback;
+}
+
+function getSkippedDetails<T>(fallback: T, warning: string) {
+  return {
+    data: fallback,
+    warning,
+  };
 }
 
 function getControlRequestStatusText(t: TFunction, status: ControlRequestState['status']) {
@@ -422,6 +454,7 @@ function TerminalPanel({
   interrupting,
   terminating,
   controlRequestState,
+  canReadTerminal,
   canInterrupt,
   canTerminate,
   onRefresh,
@@ -436,6 +469,7 @@ function TerminalPanel({
   interrupting: boolean;
   terminating: boolean;
   controlRequestState?: ControlRequestState | null;
+  canReadTerminal: boolean;
   canInterrupt: boolean;
   canTerminate: boolean;
   onRefresh(): void;
@@ -476,14 +510,16 @@ function TerminalPanel({
           <Typography.Text type="secondary">{formatDateTime(snapshot?.capturedAt)}</Typography.Text>
         </Space>
         <Space>
-          <Tooltip title={t('Refresh terminal')}>
-            <Button
-              aria-label={t('Refresh terminal')}
-              icon={<ReloadOutlined />}
-              loading={loading}
-              onClick={onRefresh}
-            />
-          </Tooltip>
+          {canReadTerminal ? (
+            <Tooltip title={t('Refresh terminal')}>
+              <Button
+                aria-label={t('Refresh terminal')}
+                icon={<ReloadOutlined />}
+                loading={loading}
+                onClick={onRefresh}
+              />
+            </Tooltip>
+          ) : null}
           {canInterrupt ? (
             <Tooltip title={t('Interrupt')}>
               <Button
@@ -508,7 +544,12 @@ function TerminalPanel({
         </Space>
       </Space>
 
-      {!terminalAvailable ? <Alert type="info" showIcon message={t('No terminal session yet')} /> : null}
+      {!canReadTerminal ? (
+        <Alert type="warning" showIcon message={t('Agent Gateway terminal read permission required')} />
+      ) : null}
+      {canReadTerminal && !terminalAvailable ? (
+        <Alert type="info" showIcon message={t('No terminal session yet')} />
+      ) : null}
       {controlRequestState ? (
         <Alert
           data-testid="agent-gateway-control-request-state"
@@ -525,13 +566,15 @@ function TerminalPanel({
           message={t('Live output gap detected. Showing saved terminal output when available.')}
         />
       ) : null}
-      <ReadonlyXtermOutput
-        ariaLabel={t('Readonly live terminal output')}
-        chunks={useStreamOutput ? stream.chunks : []}
-        emptyText={t('No terminal output yet')}
-        initialOutput={useStreamOutput ? '' : fallbackOutput}
-        resetKey={xtermResetKey}
-      />
+      {canReadTerminal ? (
+        <ReadonlyXtermOutput
+          ariaLabel={t('Readonly live terminal output')}
+          chunks={useStreamOutput ? stream.chunks : []}
+          emptyText={t('No terminal output yet')}
+          initialOutput={useStreamOutput ? '' : fallbackOutput}
+          resetKey={xtermResetKey}
+        />
+      ) : null}
     </Space>
   );
 }
@@ -703,6 +746,8 @@ export default function AgentGatewayRunsPage() {
   const [runFilters, setRunFilters] = useState<Record<string, unknown>>({});
   const [detailOpen, setDetailOpen] = useState(Boolean(initialRunId));
   const [selectedRunId, setSelectedRunId] = useState<string | undefined>(initialRunId);
+  const [runDetailsError, setRunDetailsError] = useState<string>();
+  const [terminalSnapshotState, setTerminalSnapshotState] = useState<TerminalSnapshotState | null>(null);
   const [conversationEventsState, setConversationEventsState] = useState<ConversationEventsState | null>(null);
   const [conversationEventsWarning, setConversationEventsWarning] = useState<string>();
   const [controlRequestState, setControlRequestState] = useState<ControlRequestState | null>(null);
@@ -716,12 +761,18 @@ export default function AgentGatewayRunsPage() {
     if (!runId) {
       setDetailOpen(false);
       setSelectedRunId(undefined);
+      setRunDetailsError(undefined);
+      setTerminalSnapshotState(null);
       setConversationEventsState(null);
       setConversationEventsWarning(undefined);
       setControlRequestState(null);
       return;
     }
     setSelectedRunId(runId);
+    setRunDetailsError(undefined);
+    setTerminalSnapshotState(null);
+    setConversationEventsState(null);
+    setConversationEventsWarning(undefined);
     setDetailOpen(true);
   }, []);
 
@@ -751,51 +802,68 @@ export default function AgentGatewayRunsPage() {
         method: 'get',
       });
       const run = getRequiredResponseData(runResponse, t('Failed to load run details'));
+      const runActionPermissions = run.agentGatewayActionPermissionsJson || {};
+      const canReadSessionMessages = runActionPermissions.readSessionMessages !== false;
+      const canReadArtifacts = runActionPermissions.readArtifacts !== false;
+      const canReadRawLogs = runActionPermissions.readRawLogs !== false;
       const timelineUrl = run.agentSessionId
         ? `agent-gateway/agent-sessions/${encodeURIComponent(run.agentSessionId)}/conversation-events:list`
         : `agent-gateway/runs/${encodeURIComponent(selectedRunId)}/conversation-events:list`;
       const [conversationEventsResult, eventsResult, artifactsResult, snapshotsResult, apiCallLogsResult] =
         await Promise.all([
-          getOptionalDetails<AgentTimelineEventRecord[]>({
-            request: ctx.api.request<AgentTimelineEventRecord[]>({
-              url: timelineUrl,
-              method: 'get',
-            }),
-            fallback: [],
-            fallbackMessage: t('Agent timeline unavailable'),
-          }),
-          getOptionalDetails<RunEventRecord[]>({
-            request: ctx.api.request<RunEventRecord[]>({
-              url: `agent-gateway/runs/${encodeURIComponent(selectedRunId)}/events:list`,
-              method: 'get',
-            }),
-            fallback: [],
-            fallbackMessage: t('Events unavailable'),
-          }),
-          getOptionalDetails<RunArtifactRecord[]>({
-            request: ctx.api.request<RunArtifactRecord[]>({
-              url: `agent-gateway/runs/${encodeURIComponent(selectedRunId)}/artifacts:list`,
-              method: 'get',
-            }),
-            fallback: [],
-            fallbackMessage: t('Artifacts unavailable'),
-          }),
-          getOptionalDetails<RunSnapshotRecord[]>({
-            request: ctx.api.request<RunSnapshotRecord[]>({
-              url: `agent-gateway/runs/${encodeURIComponent(selectedRunId)}/snapshots:list`,
-              method: 'get',
-            }),
-            fallback: [],
-            fallbackMessage: t('Snapshots unavailable'),
-          }),
-          getOptionalDetails<ApiCallLogRecord[]>({
-            request: ctx.api.request<ApiCallLogRecord[]>({
-              url: `agent-gateway/runs/${encodeURIComponent(selectedRunId)}/api-call-logs:list`,
-              method: 'get',
-            }),
-            fallback: [],
-            fallbackMessage: t('API logs unavailable'),
-          }),
+          canReadSessionMessages
+            ? getOptionalDetails<AgentTimelineEventRecord[]>({
+                request: ctx.api.request<AgentTimelineEventRecord[]>({
+                  url: timelineUrl,
+                  method: 'get',
+                }),
+                fallback: [],
+                fallbackMessage: t('Agent timeline unavailable'),
+              })
+            : getSkippedDetails<AgentTimelineEventRecord[]>(
+                [],
+                t('Agent Gateway session message read permission required'),
+              ),
+          canReadRawLogs
+            ? getOptionalDetails<RunEventRecord[]>({
+                request: ctx.api.request<RunEventRecord[]>({
+                  url: `agent-gateway/runs/${encodeURIComponent(selectedRunId)}/events:list`,
+                  method: 'get',
+                }),
+                fallback: [],
+                fallbackMessage: t('Events unavailable'),
+              })
+            : getSkippedDetails<RunEventRecord[]>([], t('Agent Gateway raw log read permission required')),
+          canReadArtifacts
+            ? getOptionalDetails<RunArtifactRecord[]>({
+                request: ctx.api.request<RunArtifactRecord[]>({
+                  url: `agent-gateway/runs/${encodeURIComponent(selectedRunId)}/artifacts:list`,
+                  method: 'get',
+                }),
+                fallback: [],
+                fallbackMessage: t('Artifacts unavailable'),
+              })
+            : getSkippedDetails<RunArtifactRecord[]>([], t('Agent Gateway artifact read permission required')),
+          canReadArtifacts
+            ? getOptionalDetails<RunSnapshotRecord[]>({
+                request: ctx.api.request<RunSnapshotRecord[]>({
+                  url: `agent-gateway/runs/${encodeURIComponent(selectedRunId)}/snapshots:list`,
+                  method: 'get',
+                }),
+                fallback: [],
+                fallbackMessage: t('Snapshots unavailable'),
+              })
+            : getSkippedDetails<RunSnapshotRecord[]>([], t('Agent Gateway artifact read permission required')),
+          canReadRawLogs
+            ? getOptionalDetails<ApiCallLogRecord[]>({
+                request: ctx.api.request<ApiCallLogRecord[]>({
+                  url: `agent-gateway/runs/${encodeURIComponent(selectedRunId)}/api-call-logs:list`,
+                  method: 'get',
+                }),
+                fallback: [],
+                fallbackMessage: t('API logs unavailable'),
+              })
+            : getSkippedDetails<ApiCallLogRecord[]>([], t('Agent Gateway raw log read permission required')),
         ]);
 
       return {
@@ -820,7 +888,15 @@ export default function AgentGatewayRunsPage() {
         if (!data?.run?.id || data.run.id !== selectedRunId) {
           return;
         }
+        setRunDetailsError(undefined);
+        if (data.run.agentGatewayActionPermissionsJson?.readTerminal === false) {
+          setTerminalSnapshotState(null);
+        }
         if (data.warnings.conversationEvents) {
+          const canReadSessionMessages = data.run.agentGatewayActionPermissionsJson?.readSessionMessages !== false;
+          setConversationEventsState((previous) =>
+            canReadSessionMessages && previous?.runId === data.run.id ? previous : null,
+          );
           setConversationEventsWarning(data.warnings.conversationEvents);
           return;
         }
@@ -833,7 +909,12 @@ export default function AgentGatewayRunsPage() {
         setConversationEventsWarning(undefined);
       },
       onError(error) {
-        ctx.message?.error(getApiErrorMessage(error, t('Failed to load run details')));
+        const message = getApiErrorMessage(error, t('Failed to load run details'));
+        setRunDetailsError(message);
+        setTerminalSnapshotState(null);
+        setConversationEventsState(null);
+        setConversationEventsWarning(undefined);
+        ctx.message?.error(message);
       },
     },
   );
@@ -841,7 +922,10 @@ export default function AgentGatewayRunsPage() {
 
   const terminalSnapshotRequest = useRequest(
     async () => {
-      if (!selectedRunId || !detailOpen) {
+      if (!selectedRunId || !detailOpen || runDetailsError || runDetailsRequest.data?.run.id !== selectedRunId) {
+        return null;
+      }
+      if (runDetailsRequest.data?.run.agentGatewayActionPermissionsJson?.readTerminal === false) {
         return null;
       }
       const runId = selectedRunId;
@@ -856,7 +940,14 @@ export default function AgentGatewayRunsPage() {
     },
     {
       manual: true,
+      onSuccess(data) {
+        if (!data || data.runId !== selectedRunId) {
+          return;
+        }
+        setTerminalSnapshotState(data);
+      },
       onError(error) {
+        setTerminalSnapshotState(null);
         ctx.message?.error(getApiErrorMessage(error, t('Failed to load terminal')));
       },
     },
@@ -865,7 +956,7 @@ export default function AgentGatewayRunsPage() {
 
   const conversationEventsRequest = useRequest(
     async () => {
-      if (!selectedRunId || !detailOpen) {
+      if (!selectedRunId || !detailOpen || runDetailsError || runDetailsRequest.data?.run.id !== selectedRunId) {
         return null;
       }
       const currentRun = runDetailsRequest.data?.run;
@@ -893,6 +984,7 @@ export default function AgentGatewayRunsPage() {
         setConversationEventsWarning(undefined);
       },
       onError(error) {
+        setConversationEventsState((previous) => (previous?.runId === selectedRunId ? previous : null));
         setConversationEventsWarning(getDetailWarning(error, t('Agent timeline unavailable')));
       },
     },
@@ -1086,6 +1178,7 @@ export default function AgentGatewayRunsPage() {
       manual: true,
       onSuccess(result) {
         const nextRunId = String(result.runId);
+        setTerminalSnapshotState(null);
         setConversationEventsState(null);
         setConversationEventsWarning(undefined);
         setSelectedRunId(nextRunId);
@@ -1099,17 +1192,34 @@ export default function AgentGatewayRunsPage() {
       },
     },
   );
+  const selectedRunActionPermissions = runDetailsError
+    ? undefined
+    : runDetailsRequest.data?.run.agentGatewayActionPermissionsJson;
 
   useEffect(() => {
-    if (!detailOpen || !selectedRunId) {
+    if (!detailOpen || !selectedRunId || runDetailsError) {
       return;
     }
+    if (runDetailsRequest.data?.run.id !== selectedRunId) {
+      return;
+    }
+    const pollActionPermissions = selectedRunActionPermissions || {};
+    const canPollTerminal = pollActionPermissions.readTerminal !== false;
+    const canPollSessionMessages = pollActionPermissions.readSessionMessages !== false;
 
-    refreshTerminalSnapshot();
-    refreshConversationEvents();
-    const realtimeTimer = window.setInterval(() => {
+    if (canPollTerminal) {
       refreshTerminalSnapshot();
+    }
+    if (canPollSessionMessages) {
       refreshConversationEvents();
+    }
+    const realtimeTimer = window.setInterval(() => {
+      if (canPollTerminal) {
+        refreshTerminalSnapshot();
+      }
+      if (canPollSessionMessages) {
+        refreshConversationEvents();
+      }
     }, 2000);
     const summaryTimer = window.setInterval(() => {
       refreshRuns();
@@ -1119,9 +1229,21 @@ export default function AgentGatewayRunsPage() {
       window.clearInterval(realtimeTimer);
       window.clearInterval(summaryTimer);
     };
-  }, [detailOpen, refreshConversationEvents, refreshRunDetails, refreshRuns, refreshTerminalSnapshot, selectedRunId]);
+  }, [
+    detailOpen,
+    refreshConversationEvents,
+    refreshRunDetails,
+    refreshRuns,
+    refreshTerminalSnapshot,
+    runDetailsRequest.data?.run.id,
+    runDetailsError,
+    selectedRunId,
+    selectedRunActionPermissions,
+  ]);
 
   const openRunDetails = useCallback((run: RunRecord) => {
+    setRunDetailsError(undefined);
+    setTerminalSnapshotState(null);
     setConversationEventsState(null);
     setConversationEventsWarning(undefined);
     setSelectedRunId(run.id);
@@ -1132,6 +1254,8 @@ export default function AgentGatewayRunsPage() {
   const closeRunDetails = useCallback(() => {
     setDetailOpen(false);
     setSelectedRunId(undefined);
+    setRunDetailsError(undefined);
+    setTerminalSnapshotState(null);
     setConversationEventsState(null);
     setConversationEventsWarning(undefined);
     replaceRunIdInLocationSearch();
@@ -1149,9 +1273,19 @@ export default function AgentGatewayRunsPage() {
     setRunFilters({});
   }, [filterForm]);
 
+  const openAuditPage = useCallback(() => {
+    const browserPath = getAgentGatewayAuditPath(window.location.pathname);
+    if (ctx.router?.navigate) {
+      ctx.router.navigate(getRouterPathFromBrowserPath(browserPath));
+      return;
+    }
+    window.history.pushState(window.history.state, '', browserPath);
+  }, [ctx.router]);
+
   const renderCancelButton = useCallback(
-    (run: RunRecord) =>
-      isCancelableRun(run) ? (
+    (run: RunRecord) => {
+      const canCancelRun = run.agentGatewayActionPermissionsJson?.cancelRun !== false;
+      return isCancelableRun(run) && canCancelRun ? (
         <Tooltip title={t('Cancel run')}>
           <Button
             aria-label={t('Cancel run')}
@@ -1161,7 +1295,8 @@ export default function AgentGatewayRunsPage() {
             onClick={() => cancelRunRequest.run(run)}
           />
         </Tooltip>
-      ) : null,
+      ) : null;
+    },
     [cancelRunRequest, t],
   );
 
@@ -1237,11 +1372,16 @@ export default function AgentGatewayRunsPage() {
     [openRunDetails, renderCancelButton, t],
   );
 
-  const activeRunDetails = runDetailsRequest.data?.run.id === selectedRunId ? runDetailsRequest.data : null;
+  const activeRunDetails =
+    !runDetailsError && runDetailsRequest.data?.run.id === selectedRunId ? runDetailsRequest.data : null;
   const selectedRun = activeRunDetails?.run || runsRequest.data?.find((run) => run.id === selectedRunId);
+  const actionPermissions = activeRunDetails?.run.agentGatewayActionPermissionsJson || {};
+  const canResumeAgentSession = actionPermissions.resumeAgentSession !== false;
+  const canReadSessionMessages = actionPermissions.readSessionMessages !== false;
+  const canReadTerminal = actionPermissions.readTerminal !== false;
   const terminalSnapshot =
-    terminalSnapshotRequest.data && terminalSnapshotRequest.data.runId === selectedRunId
-      ? terminalSnapshotRequest.data.snapshot
+    canReadTerminal && !runDetailsError && terminalSnapshotState && terminalSnapshotState.runId === selectedRunId
+      ? terminalSnapshotState.snapshot
       : null;
   const controlActions = activeRunDetails?.run.agentGatewayControlActionsJson || {};
   const terminalControlAvailable = canUseTerminalControl(activeRunDetails?.run, terminalSnapshot);
@@ -1254,14 +1394,31 @@ export default function AgentGatewayRunsPage() {
     timelineEvents.length,
     Boolean(timelineWarning),
   );
+  const canOpenAuditPage = canOpenAuditFromRuns(runsRequest.data);
   const showTerminalStreamSmoke = isTerminalStreamSmokeEnabled();
-  const terminalStreamAuth = useMemo(() => getTerminalStreamAuth(ctx), [ctx]);
+  const createStreamTicket = useCallback(
+    async (runId: string) => {
+      const response = await ctx.api.request<{
+        ticket: string;
+        ticketProof: string;
+        authProof?: string;
+        authenticator?: string;
+        role?: string | null;
+        runId?: string;
+        protocols?: string[];
+        expiresAt?: string;
+      }>({
+        url: `agent-gateway/runs/${encodeURIComponent(runId)}/terminal-stream-tickets:create`,
+        method: 'post',
+      });
+      return getRequiredResponseData(response, t('Failed to create terminal stream ticket'));
+    },
+    [ctx.api, t],
+  );
   const terminalStream = useTerminalStream({
     runId: selectedRunId,
-    enabled: detailOpen && Boolean(selectedRunId),
-    token: terminalStreamAuth.token,
-    authenticator: terminalStreamAuth.authenticator,
-    role: terminalStreamAuth.role,
+    enabled: detailOpen && canReadTerminal && Boolean(activeRunDetails?.run.id === selectedRunId),
+    createStreamTicket,
   });
 
   useEffect(() => {
@@ -1361,9 +1518,18 @@ export default function AgentGatewayRunsPage() {
           <Typography.Title level={3} style={{ margin: 0 }}>
             {t('Runs')}
           </Typography.Title>
-          <Button icon={<ReloadOutlined />} onClick={runsRequest.refresh}>
-            {t('Refresh')}
-          </Button>
+          <Space wrap>
+            {canOpenAuditPage ? (
+              <Tooltip title={t('Open audit')}>
+                <Button aria-label={t('Open audit')} icon={<AuditOutlined />} onClick={openAuditPage}>
+                  {t('Audit')}
+                </Button>
+              </Tooltip>
+            ) : null}
+            <Button icon={<ReloadOutlined />} onClick={runsRequest.refresh}>
+              {t('Refresh')}
+            </Button>
+          </Space>
         </Space>
 
         <Form<RunFilterFormValues> form={filterForm} layout="inline" onFinish={submitFilters}>
@@ -1414,7 +1580,12 @@ export default function AgentGatewayRunsPage() {
         extra={selectedRun && isCancelableRun(selectedRun) ? renderCancelButton(selectedRun) : null}
         destroyOnClose
       >
-        {runDetailsRequest.loading || (detailOpen && selectedRunId && !activeRunDetails) ? <Spin /> : null}
+        {runDetailsError ? (
+          <Alert type="warning" showIcon message={t('Run details unavailable')} description={runDetailsError} />
+        ) : null}
+        {!runDetailsError && (runDetailsRequest.loading || (detailOpen && selectedRunId && !activeRunDetails)) ? (
+          <Spin />
+        ) : null}
         {activeRunDetails ? (
           <Space direction="vertical" size={16} style={{ width: '100%' }}>
             <Descriptions bordered size="small" column={2} title={t('Run summary')}>
@@ -1468,19 +1639,23 @@ export default function AgentGatewayRunsPage() {
               warning={timelineWarning}
             />
 
-            <AgentSessionResumeBox
-              run={activeRunDetails.run}
-              t={t}
-              loading={resumeSessionRequest.loading}
-              onResume={async (input) => {
-                await resumeSessionRequest.runAsync({
-                  run: activeRunDetails.run,
-                  ...input,
-                });
-              }}
-            />
+            {canResumeAgentSession ? (
+              <AgentSessionResumeBox
+                run={activeRunDetails.run}
+                t={t}
+                loading={resumeSessionRequest.loading}
+                onResume={async (input) => {
+                  await resumeSessionRequest.runAsync({
+                    run: activeRunDetails.run,
+                    ...input,
+                  });
+                }}
+              />
+            ) : null}
 
-            {showTerminalStreamSmoke ? <TerminalStreamSmokePanel runId={activeRunDetails.run.id} /> : null}
+            {showTerminalStreamSmoke && canReadTerminal ? (
+              <TerminalStreamSmokePanel runId={activeRunDetails.run.id} />
+            ) : null}
 
             <FastCollapse
               defaultActiveKey={['live-output']}
@@ -1499,6 +1674,7 @@ export default function AgentGatewayRunsPage() {
                       interrupting={interruptTerminalRequest.loading}
                       terminating={terminateTerminalRequest.loading}
                       controlRequestState={controlRequestState}
+                      canReadTerminal={canReadTerminal}
                       canInterrupt={terminalControlAvailable && controlActions.interruptRun === true}
                       canTerminate={terminalControlAvailable && controlActions.terminateRun === true}
                       onRefresh={refreshTerminalSnapshot}

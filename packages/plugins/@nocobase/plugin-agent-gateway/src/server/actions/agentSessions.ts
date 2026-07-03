@@ -16,6 +16,7 @@ import { Transaction, UniqueConstraintError } from 'sequelize';
 import { AGENT_GATEWAY_ACTIONS, AGENT_GATEWAY_PERMISSIONS, redactObservabilityText } from '../security';
 import { auditAgentActionBestEffort, auditMutatingAgentAction } from '../audit/agentActionAudit';
 import {
+  AGENT_GATEWAY_ERROR_CODES,
   API_PREFIX,
   JsonRecord,
   ModelRecord,
@@ -27,6 +28,7 @@ import {
   getModelValue,
   getRecord,
   getString,
+  getVisibleRunFilter,
   matchStandardCollectionAction,
   requireAgentGatewayPermission,
   requireManagePermission,
@@ -42,6 +44,31 @@ const STANDARD_AGENT_SESSION_COLLECTIONS = ['agAgentSessions'] as const;
 const ROOT_RUN_RESOLUTION_MAX_DEPTH = 50;
 const MAX_RESUME_MESSAGE_LENGTH = 16_000;
 const RESUME_MESSAGE_PREVIEW_LENGTH = 240;
+
+interface ResumeVisibilityAuditState {
+  deniedAuditWritten: boolean;
+}
+
+interface MessageVisibilityAuditBase {
+  action: 'message';
+  sessionId: string;
+  operatorId?: string | number;
+  permissionKey: string;
+  redactedPreview?: string;
+  contentHash?: string;
+  contentSize?: number;
+}
+
+function getErrorCode(error: unknown) {
+  if (!error || typeof error !== 'object') {
+    return '';
+  }
+  return getString((error as { code?: unknown }).code);
+}
+
+function isResourceNotVisibleError(error: unknown) {
+  return getErrorCode(error) === AGENT_GATEWAY_ERROR_CODES.resourceNotVisible;
+}
 
 function serializeModel(model: ModelRecord) {
   return getModelJson(model);
@@ -117,7 +144,7 @@ function assertResumeSupported(ctx: Context, session: ModelRecord) {
   }
 
   const capabilities = getRecord(getModelValue(session, 'capabilitiesJson'));
-  if (capabilities.resumeWithMessage === false) {
+  if (capabilities.resumeWithMessage !== true) {
     ctx.throw(409, 'Agent session does not support resume with message');
   }
 
@@ -144,13 +171,88 @@ async function getSessionForResume(ctx: Context, sessionId: string, transaction:
   return session;
 }
 
-async function getRunForResume(ctx: Context, runId: string, sessionId: string, transaction: Transaction) {
-  const run = (await ctx.db.getRepository('agRuns').findOne({
-    filterByTk: runId,
+async function assertResumeSessionVisible(ctx: Context, sessionId: string, transaction: Transaction) {
+  const visibleRun = (await ctx.db.getRepository('agRuns').findOne({
+    filter: await getVisibleRunFilter(
+      ctx,
+      {
+        agentSessionId: sessionId,
+      },
+      'get',
+    ),
     transaction,
     lock: transaction.LOCK.UPDATE,
   })) as ModelRecord | null;
-  if (!run || getModelString(run, 'agentSessionId') !== sessionId) {
+  if (visibleRun) {
+    return;
+  }
+
+  const existingRun = (await ctx.db.getRepository('agRuns').findOne({
+    filter: {
+      agentSessionId: sessionId,
+    },
+    transaction,
+    lock: transaction.LOCK.UPDATE,
+  })) as ModelRecord | null;
+  if (existingRun) {
+    ctx.throw(404, {
+      code: AGENT_GATEWAY_ERROR_CODES.resourceNotVisible,
+      message: 'Run not found',
+    });
+  }
+}
+
+async function auditMessageSessionVisibilityDenied(options: {
+  ctx: Context;
+  auditBase: MessageVisibilityAuditBase;
+  runId?: string | null;
+  phase: string;
+}) {
+  await auditAgentActionBestEffort(options.ctx, {
+    ...options.auditBase,
+    runId: options.runId || null,
+    resultStatus: 'denied',
+    metadataJson: {
+      phase: options.phase,
+    },
+  });
+}
+
+function throwResourceNotVisible(ctx: Context) {
+  ctx.throw(404, {
+    code: AGENT_GATEWAY_ERROR_CODES.resourceNotVisible,
+    message: 'Run not found',
+  });
+}
+
+async function getRunForResume(ctx: Context, runId: string, sessionId: string, transaction: Transaction) {
+  const filter = await getVisibleRunFilter(
+    ctx,
+    {
+      id: runId,
+    },
+    'get',
+  );
+  const run = (await ctx.db.getRepository('agRuns').findOne({
+    filter,
+    transaction,
+    lock: transaction.LOCK.UPDATE,
+  })) as ModelRecord | null;
+  if (!run) {
+    const existingRunForSession = (await ctx.db.getRepository('agRuns').findOne({
+      filter: {
+        id: runId,
+        agentSessionId: sessionId,
+      },
+      transaction,
+      lock: transaction.LOCK.UPDATE,
+    })) as ModelRecord | null;
+    if (existingRunForSession) {
+      throwResourceNotVisible(ctx);
+    }
+    ctx.throw(400, 'resumedFromRunId must belong to the agent session');
+  }
+  if (getModelString(run, 'agentSessionId') !== sessionId) {
     ctx.throw(400, 'resumedFromRunId must belong to the agent session');
   }
 
@@ -218,6 +320,51 @@ async function findContinuationByRequestKey(ctx: Context, continuationRequestKey
     transaction,
     ...(transaction ? { lock: transaction.LOCK.UPDATE } : {}),
   })) as ModelRecord | null;
+}
+
+async function assertExistingContinuationVisible(options: {
+  ctx: Context;
+  sessionId: string;
+  run: ModelRecord;
+  continuationRequestKey: string;
+  operatorId: string | number;
+  visibilityAuditState: ResumeVisibilityAuditState;
+  transaction?: Transaction;
+}) {
+  const runId = String(getModelTargetKey(options.run, 'id'));
+  const visibleRun = (await options.ctx.db.getRepository('agRuns').findOne({
+    filter: await getVisibleRunFilter(
+      options.ctx,
+      {
+        id: runId,
+      },
+      'get',
+    ),
+    transaction: options.transaction,
+    ...(options.transaction ? { lock: options.transaction.LOCK.UPDATE } : {}),
+  })) as ModelRecord | null;
+
+  if (visibleRun) {
+    return visibleRun;
+  }
+
+  await auditAgentActionBestEffort(options.ctx, {
+    action: 'resume',
+    sessionId: options.sessionId,
+    runId,
+    operatorId: options.operatorId,
+    permissionKey: AGENT_GATEWAY_PERMISSIONS.resumeAgentSession,
+    resultStatus: 'denied',
+    metadataJson: {
+      continuationRequestKey: options.continuationRequestKey,
+      phase: 'existing-run-visibility',
+    },
+  });
+  options.visibilityAuditState.deniedAuditWritten = true;
+  options.ctx.throw(404, {
+    code: AGENT_GATEWAY_ERROR_CODES.resourceNotVisible,
+    message: 'Run not found',
+  });
 }
 
 async function assertNoActiveContinuationForSource(
@@ -603,21 +750,32 @@ async function createOrFindContinuationRun(options: {
   resumedFromRunId: string;
   continuationRequestKey: string;
   operatorId: string | number;
+  visibilityAuditState: ResumeVisibilityAuditState;
 }) {
   try {
     return await options.ctx.db.sequelize.transaction(async (transaction) => {
       const session = await getSessionForResume(options.ctx, options.sessionId, transaction);
-      const { provider, providerSessionId } = assertResumeSupported(options.ctx, session);
+      await assertResumeSessionVisible(options.ctx, options.sessionId, transaction);
       const existingRun = await findContinuationByRequestKey(options.ctx, options.continuationRequestKey, transaction);
       if (existingRun) {
+        const visibleRun = await assertExistingContinuationVisible({
+          ctx: options.ctx,
+          sessionId: options.sessionId,
+          run: existingRun,
+          continuationRequestKey: options.continuationRequestKey,
+          operatorId: options.operatorId,
+          visibilityAuditState: options.visibilityAuditState,
+          transaction,
+        });
+        assertResumeSupported(options.ctx, session);
         assertIdempotentContinuationRequestMatches(
           options.ctx,
-          existingRun,
+          visibleRun,
           options.messageFields,
-          options.resumedFromRunId || getModelString(existingRun, 'resumedFromRunId'),
+          options.resumedFromRunId || getModelString(visibleRun, 'resumedFromRunId'),
         );
         return {
-          run: existingRun,
+          run: visibleRun,
           deduped: true,
         };
       }
@@ -629,6 +787,7 @@ async function createOrFindContinuationRun(options: {
         options.resumedFromRunId,
         transaction,
       );
+      const { provider, providerSessionId } = assertResumeSupported(options.ctx, session);
       await assertNoActiveContinuationForSource(
         options.ctx,
         options.sessionId,
@@ -662,14 +821,22 @@ async function createOrFindContinuationRun(options: {
     if (!existingRun) {
       throw error;
     }
+    const visibleRun = await assertExistingContinuationVisible({
+      ctx: options.ctx,
+      sessionId: options.sessionId,
+      run: existingRun,
+      continuationRequestKey: options.continuationRequestKey,
+      operatorId: options.operatorId,
+      visibilityAuditState: options.visibilityAuditState,
+    });
     assertIdempotentContinuationRequestMatches(
       options.ctx,
-      existingRun,
+      visibleRun,
       options.messageFields,
-      options.resumedFromRunId || getModelString(existingRun, 'resumedFromRunId'),
+      options.resumedFromRunId || getModelString(visibleRun, 'resumedFromRunId'),
     );
     return {
-      run: existingRun,
+      run: visibleRun,
       deduped: true,
     };
   }
@@ -723,6 +890,9 @@ async function resumeAgentSession(ctx: Context, sessionId: string) {
     },
   });
 
+  const visibilityAuditState: ResumeVisibilityAuditState = {
+    deniedAuditWritten: false,
+  };
   try {
     const result = await createOrFindContinuationRun({
       ctx,
@@ -733,6 +903,7 @@ async function resumeAgentSession(ctx: Context, sessionId: string) {
       resumedFromRunId: getString(values.resumedFromRunId),
       continuationRequestKey,
       operatorId,
+      visibilityAuditState,
     });
     await auditAgentActionBestEffort(ctx, {
       ...auditBase,
@@ -748,16 +919,131 @@ async function resumeAgentSession(ctx: Context, sessionId: string) {
     });
     ctx.body = serializeResumeResponse(result.run, sessionId, result.deduped);
   } catch (error) {
+    if (!visibilityAuditState.deniedAuditWritten) {
+      if (isResourceNotVisibleError(error)) {
+        await auditAgentActionBestEffort(ctx, {
+          ...auditBase,
+          resultStatus: 'denied',
+          metadataJson: {
+            continuationRequestKey,
+            phase: 'source-run-visibility',
+            resumedFromRunId: getString(values.resumedFromRunId) || null,
+          },
+        });
+        visibilityAuditState.deniedAuditWritten = true;
+      } else {
+        await auditAgentActionBestEffort(ctx, {
+          ...auditBase,
+          resultStatus: 'failed',
+          metadataJson: {
+            continuationRequestKey,
+            errorName: error instanceof Error ? error.name : 'UnknownError',
+          },
+        });
+      }
+    }
+    throw error;
+  }
+}
+
+async function messageAgentSession(ctx: Context, sessionId: string) {
+  const values = getBodyValues(ctx);
+  const rawMessage = getRawString(values.message);
+  const messageFields = rawMessage ? getMessageAuditFields(rawMessage) : undefined;
+  const getMessageAuditBase = () => ({
+    ...getResumeAuditBase(ctx, sessionId, messageFields),
+    action: 'message' as const,
+    permissionKey: AGENT_GATEWAY_PERMISSIONS.messageAgentSession,
+  });
+  try {
+    await requireAgentGatewayPermission(
+      ctx,
+      AGENT_GATEWAY_ACTIONS.messageAgentSession,
+      'Agent Gateway message permission required',
+    );
+  } catch (error) {
     await auditAgentActionBestEffort(ctx, {
-      ...auditBase,
-      resultStatus: 'failed',
-      metadataJson: {
-        continuationRequestKey,
-        errorName: error instanceof Error ? error.name : 'UnknownError',
-      },
+      ...getMessageAuditBase(),
+      resultStatus: 'denied',
     });
     throw error;
   }
+
+  if (!rawMessage.trim()) {
+    ctx.throw(400, 'message is required');
+  }
+  if (rawMessage.length > MAX_RESUME_MESSAGE_LENGTH) {
+    ctx.throw(413, 'message is too large');
+  }
+
+  const session = (await ctx.db.getRepository('agAgentSessions').findOne({
+    filterByTk: sessionId,
+  })) as ModelRecord | null;
+  if (!session) {
+    ctx.throw(404, 'Agent session not found');
+  }
+  const latestRunId = getModelString(session, 'latestRunId');
+  if (latestRunId) {
+    const visibleRunFilter = await getVisibleRunFilter(
+      ctx,
+      {
+        id: latestRunId,
+      },
+      'get',
+    );
+    const latestRun = await ctx.db.getRepository('agRuns').findOne({
+      filter: visibleRunFilter,
+    });
+    if (!latestRun) {
+      const existingLatestRun = await ctx.db.getRepository('agRuns').findOne({
+        filterByTk: latestRunId,
+      });
+      if (existingLatestRun) {
+        await auditMessageSessionVisibilityDenied({
+          ctx,
+          auditBase: getMessageAuditBase(),
+          runId: latestRunId,
+          phase: 'latest-run-visibility',
+        });
+        throwResourceNotVisible(ctx);
+      }
+      ctx.throw(404, 'Run not found');
+    }
+  } else {
+    const visibleSessionRun = await ctx.db.getRepository('agRuns').findOne({
+      filter: await getVisibleRunFilter(
+        ctx,
+        {
+          agentSessionId: sessionId,
+        },
+        'get',
+      ),
+    });
+    if (!visibleSessionRun) {
+      await auditMessageSessionVisibilityDenied({
+        ctx,
+        auditBase: getMessageAuditBase(),
+        phase: 'session-run-visibility',
+      });
+      throwResourceNotVisible(ctx);
+    }
+  }
+
+  const capabilities = getRecord(getModelValue(session, 'capabilitiesJson'));
+  await auditAgentActionBestEffort(ctx, {
+    ...getMessageAuditBase(),
+    provider: getModelString(session, 'provider') || undefined,
+    resultStatus: 'denied',
+    metadataJson: {
+      reason: 'unsupported-capability',
+      liveSemanticMessage: capabilities.liveSemanticMessage === true,
+      stdinMessage: capabilities.stdinMessage === true,
+    },
+  });
+  ctx.throw(409, {
+    code: 'AGENT_GATEWAY_ACTION_UNSUPPORTED',
+    message: 'Agent session live message is not supported',
+  });
 }
 
 export function registerAgentSessionRoutes(plugin: Plugin) {
@@ -775,6 +1061,7 @@ export function registerAgentSessionRoutes(plugin: Plugin) {
       const routePath = ctx.path.slice(API_PREFIX.length);
       const upsertMatch = routePath.match(/^\/nodes\/([^/]+)\/runs\/([^/]+)\/agent-session:upsert$/);
       const resumeMatch = routePath.match(/^\/agent-sessions\/([^/]+)\/resume$/);
+      const messageMatch = routePath.match(/^\/agent-sessions\/([^/]+)\/message$/);
 
       if (ctx.method === 'POST' && upsertMatch) {
         await upsertAgentSession(ctx, upsertMatch[1], upsertMatch[2]);
@@ -783,6 +1070,11 @@ export function registerAgentSessionRoutes(plugin: Plugin) {
 
       if (ctx.method === 'POST' && resumeMatch) {
         await resumeAgentSession(ctx, resumeMatch[1]);
+        return;
+      }
+
+      if (ctx.method === 'POST' && messageMatch) {
+        await messageAgentSession(ctx, messageMatch[1]);
         return;
       }
 

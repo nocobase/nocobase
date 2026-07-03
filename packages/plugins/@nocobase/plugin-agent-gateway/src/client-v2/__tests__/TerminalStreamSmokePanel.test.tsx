@@ -9,7 +9,7 @@
 
 import { Application } from '@nocobase/client-v2';
 import { FlowEngineProvider } from '@nocobase/flow-engine';
-import { act, cleanup, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, render, screen } from '@testing-library/react';
 import { App as AntdApp } from 'antd';
 import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -17,6 +17,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   TERMINAL_PAYLOAD_ENCODING,
   TERMINAL_PROTOCOL,
+  TERMINAL_STREAM_BROWSER_AUTHENTICATOR_PROTOCOL_PREFIX,
+  TERMINAL_STREAM_BROWSER_AUTH_PROTOCOL_PREFIX,
+  TERMINAL_STREAM_BROWSER_ROLE_PROTOCOL_PREFIX,
+  TERMINAL_STREAM_BROWSER_SUBPROTOCOL,
   encodeTerminalPayload,
 } from '../../shared/terminalStreamProtocol';
 import TerminalStreamSmokePanel from '../components/TerminalStreamSmokePanel';
@@ -33,9 +37,11 @@ class BrowserFakeWebSocket {
   sent: string[] = [];
   private readonly listeners = new Map<string, Set<Listener>>();
 
-  constructor(readonly url: string) {
+  constructor(
+    readonly url: string,
+    readonly protocols?: string[],
+  ) {
     BrowserFakeWebSocket.latest = this;
-    setTimeout(() => this.dispatch('open'), 0);
   }
 
   send(data: string) {
@@ -73,10 +79,30 @@ function renderSmokePanel() {
   setFlowContextValue(app, 'api', {
     auth: {
       token: 'browser-token',
-      role: 'root',
       getAuthenticator: () => 'basic',
+      role: 'root',
     },
-    request: vi.fn(),
+    request: vi.fn(async (config: { url: string; method: 'get' | 'post' }) => {
+      if (config.url === 'agent-gateway/runs/run-id-1/terminal-stream-tickets:create') {
+        return {
+          data: {
+            data: {
+              ticket: 'ag_stream_smoke_ticket',
+              ticketProof: 'ag_stream_smoke_proof',
+              authProof: 'ag_stream_smoke_auth',
+              authenticator: 'basic',
+              role: 'root',
+              expiresAt: '2026-06-30T10:02:00.000Z',
+            },
+          },
+        };
+      }
+      return { data: { data: null } };
+    }),
+  });
+  setFlowContextValue(app, 'message', {
+    success: vi.fn(),
+    error: vi.fn(),
   });
   render(
     <FlowEngineProvider engine={app.flowEngine}>
@@ -85,6 +111,16 @@ function renderSmokePanel() {
       </AntdApp>
     </FlowEngineProvider>,
   );
+}
+
+async function waitForLatestWebSocket() {
+  for (let i = 0; i < 20 && !BrowserFakeWebSocket.latest; i += 1) {
+    await act(async () => {
+      await Promise.resolve();
+    });
+  }
+  expect(BrowserFakeWebSocket.latest).toBeTruthy();
+  return BrowserFakeWebSocket.latest;
 }
 
 describe('TerminalStreamSmokePanel', () => {
@@ -123,20 +159,55 @@ describe('TerminalStreamSmokePanel', () => {
     window.history.pushState({}, '', '/v2/admin/settings/agent-gateway/runs?terminalStreamSmoke=1');
     renderSmokePanel();
 
-    expect(await screen.findByTestId('agent-gateway-terminal-stream-state')).toHaveTextContent('connecting');
-    await waitFor(() => {
-      expect(BrowserFakeWebSocket.latest?.sent.length).toBe(1);
+    await act(async () => {
+      await Promise.resolve();
     });
-    const subscribeFrame = JSON.parse(BrowserFakeWebSocket.latest?.sent[0] || '{}') as Record<string, unknown>;
+    expect(screen.getByTestId('agent-gateway-terminal-stream-state')).toHaveTextContent('connecting');
+    const webSocket = await waitForLatestWebSocket();
     act(() => {
-      BrowserFakeWebSocket.latest?.dispatch('message', {
+      webSocket?.dispatch('open');
+    });
+    expect(webSocket?.sent.length).toBe(1);
+    const subscribeFrame = JSON.parse(webSocket?.sent[0] || '{}') as Record<string, unknown>;
+    expect(webSocket?.url).not.toContain('token=');
+    expect(webSocket?.protocols?.[0]).toBe(TERMINAL_STREAM_BROWSER_SUBPROTOCOL);
+    expect(
+      webSocket?.protocols?.some((protocol) => protocol.startsWith(TERMINAL_STREAM_BROWSER_AUTH_PROTOCOL_PREFIX)),
+    ).toBe(false);
+    expect(
+      webSocket?.protocols?.some((protocol) =>
+        protocol.startsWith(TERMINAL_STREAM_BROWSER_AUTHENTICATOR_PROTOCOL_PREFIX),
+      ),
+    ).toBe(true);
+    expect(
+      webSocket?.protocols?.some((protocol) => protocol.startsWith(TERMINAL_STREAM_BROWSER_ROLE_PROTOCOL_PREFIX)),
+    ).toBe(true);
+    expect(webSocket?.protocols?.join(',')).not.toContain('browser-token');
+    expect(subscribeFrame).toMatchObject({
+      type: 'browser.subscribe',
+      runId: 'run-id-1',
+      lastOffset: 0,
+    });
+    expect(JSON.stringify(subscribeFrame)).not.toContain('ag_stream_smoke_ticket');
+    expect(JSON.stringify(subscribeFrame)).not.toContain('ag_stream_smoke_proof');
+    expect(JSON.stringify(subscribeFrame)).not.toContain('ag_stream_smoke_auth');
+    expect(JSON.stringify(subscribeFrame)).not.toContain('browser-token');
+    expect(subscribeFrame).not.toHaveProperty('browserAuth');
+    expect(subscribeFrame).not.toHaveProperty('ticket');
+    expect(subscribeFrame).not.toHaveProperty('ticketProof');
+    expect(subscribeFrame).not.toHaveProperty('authProof');
+    expect(subscribeFrame).not.toHaveProperty('authToken');
+    expect(subscribeFrame).not.toHaveProperty('authenticator');
+    expect(subscribeFrame).not.toHaveProperty('role');
+    act(() => {
+      webSocket?.dispatch('message', {
         data: JSON.stringify({
           type: 'ack',
           protocol: TERMINAL_PROTOCOL,
           requestId: subscribeFrame.requestId,
         }),
       });
-      BrowserFakeWebSocket.latest?.dispatch('message', {
+      webSocket?.dispatch('message', {
         data: JSON.stringify({
           type: 'terminal.data',
           protocol: TERMINAL_PROTOCOL,
@@ -150,7 +221,7 @@ describe('TerminalStreamSmokePanel', () => {
       });
     });
 
-    expect(await screen.findByTestId('agent-gateway-terminal-stream-state')).toHaveTextContent('live');
+    expect(screen.getByTestId('agent-gateway-terminal-stream-state')).toHaveTextContent('live');
     expect(screen.getByTestId('agent-gateway-terminal-stream-offset')).toHaveTextContent('29');
     expect(screen.getByTestId('agent-gateway-terminal-stream-preview')).toHaveTextContent(
       'AGENT_GATEWAY_STREAM_SMOKE_1',

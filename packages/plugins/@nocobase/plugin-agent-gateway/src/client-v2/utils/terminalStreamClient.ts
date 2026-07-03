@@ -13,6 +13,12 @@ import {
   TERMINAL_RECONNECT_INITIAL_DELAY_MS,
   TERMINAL_RECONNECT_JITTER_RATIO,
   TERMINAL_RECONNECT_MAX_DELAY_MS,
+  TERMINAL_STREAM_BROWSER_AUTHENTICATOR_PROTOCOL_PREFIX,
+  TERMINAL_STREAM_BROWSER_AUTH_PROOF_PROTOCOL_PREFIX,
+  TERMINAL_STREAM_BROWSER_ROLE_PROTOCOL_PREFIX,
+  TERMINAL_STREAM_BROWSER_SUBPROTOCOL,
+  TERMINAL_STREAM_BROWSER_TICKET_PROOF_PROTOCOL_PREFIX,
+  TERMINAL_STREAM_BROWSER_TICKET_PROTOCOL_PREFIX,
   TERMINAL_STREAM_WS_PATH,
   TerminalErrorCode,
   TerminalFrame,
@@ -36,17 +42,26 @@ export interface TerminalStreamChunk {
   text: string;
 }
 
+export interface TerminalStreamTicket {
+  ticket: string;
+  ticketProof: string;
+  authProof?: string;
+  authenticator?: string;
+  role?: string | null;
+  expiresAt?: string;
+  runId?: string;
+  protocols?: string[];
+}
+
 export interface TerminalStreamClientOptions {
   runId: string;
-  token: string;
-  authenticator?: string;
-  role?: string;
   lastOffset?: number;
   baseUrl?: string;
   reconnectDelayMs?: number;
   maxReconnectDelayMs?: number;
   maxReconnectAttempts?: number;
-  createWebSocket?: (url: string) => TerminalStreamWebSocket;
+  createStreamTicket?: (runId: string) => Promise<TerminalStreamTicket>;
+  createWebSocket?: (url: string, protocols?: string[]) => TerminalStreamWebSocket;
   onStateChange?: (state: TerminalStreamClientState) => void;
   onChunk?: (chunk: TerminalStreamChunk) => void;
 }
@@ -76,21 +91,48 @@ function getDefaultBaseUrl() {
   return `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}`;
 }
 
-export function buildTerminalStreamUrl(options: {
-  token: string;
-  authenticator?: string;
-  role?: string;
-  baseUrl?: string;
-}) {
+export function buildTerminalStreamUrl(options: { baseUrl?: string }) {
   const baseUrl = options.baseUrl || getDefaultBaseUrl();
   const url = new URL(TERMINAL_STREAM_WS_PATH, baseUrl);
   url.protocol = url.protocol === 'https:' ? 'wss:' : url.protocol === 'http:' ? 'ws:' : url.protocol;
-  url.searchParams.set('token', options.token);
-  url.searchParams.set('authenticator', options.authenticator || 'basic');
-  if (options.role) {
-    url.searchParams.set('role', options.role);
-  }
   return url.toString();
+}
+
+function encodeWebSocketProtocolValue(value?: string) {
+  if (!value) {
+    return '';
+  }
+  const bytes = textEncoder.encode(value);
+  let binary = '';
+  for (const byte of bytes) {
+    binary += String.fromCharCode(byte);
+  }
+  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+}
+
+export function buildTerminalStreamProtocols(ticket?: TerminalStreamTicket) {
+  const protocols: string[] = [TERMINAL_STREAM_BROWSER_SUBPROTOCOL];
+  const streamTicket = encodeWebSocketProtocolValue(ticket?.ticket);
+  if (streamTicket) {
+    protocols.push(`${TERMINAL_STREAM_BROWSER_TICKET_PROTOCOL_PREFIX}${streamTicket}`);
+  }
+  const ticketProof = encodeWebSocketProtocolValue(ticket?.ticketProof);
+  if (ticketProof) {
+    protocols.push(`${TERMINAL_STREAM_BROWSER_TICKET_PROOF_PROTOCOL_PREFIX}${ticketProof}`);
+  }
+  const authProof = encodeWebSocketProtocolValue(ticket?.authProof);
+  if (authProof) {
+    protocols.push(`${TERMINAL_STREAM_BROWSER_AUTH_PROOF_PROTOCOL_PREFIX}${authProof}`);
+  }
+  const authenticator = encodeWebSocketProtocolValue(ticket?.authenticator || 'basic');
+  if (authenticator) {
+    protocols.push(`${TERMINAL_STREAM_BROWSER_AUTHENTICATOR_PROTOCOL_PREFIX}${authenticator}`);
+  }
+  const role = encodeWebSocketProtocolValue(ticket?.role || undefined);
+  if (role) {
+    protocols.push(`${TERMINAL_STREAM_BROWSER_ROLE_PROTOCOL_PREFIX}${role}`);
+  }
+  return protocols;
 }
 
 function sliceDecodedPayloadByByteOffset(text: string, byteOffset: number) {
@@ -158,6 +200,8 @@ export class TerminalStreamClient {
   private ws?: TerminalStreamWebSocket;
   private readonly state: TerminalStreamClientState;
   private requestId = '';
+  private ticketRequestId = 0;
+  private subscribeTicket?: TerminalStreamTicket;
   private reconnectTimer?: ReturnType<typeof setTimeout>;
   private reconnectAttempts = 0;
   private closedByClient = false;
@@ -176,7 +220,7 @@ export class TerminalStreamClient {
   }
 
   connect() {
-    if (!this.options.token) {
+    if (!this.options.createStreamTicket) {
       this.updateState({
         connectionState: 'error',
         lastErrorCode: 'TERMINAL_AUTH_FAILED',
@@ -192,6 +236,7 @@ export class TerminalStreamClient {
 
   close() {
     this.closedByClient = true;
+    this.ticketRequestId += 1;
     this.clearReconnectTimer();
     this.detachSocket(true);
     this.updateState({ connectionState: 'closed' });
@@ -199,13 +244,39 @@ export class TerminalStreamClient {
 
   private openSocket(connectionState: TerminalStreamConnectionState) {
     this.detachSocket(false);
+    this.subscribeTicket = undefined;
     this.updateState({ connectionState });
-    const ws = this.createWebSocket();
-    this.ws = ws;
-    ws.addEventListener('open', this.handleOpen);
-    ws.addEventListener('message', this.handleMessage);
-    ws.addEventListener('close', this.handleClose);
-    ws.addEventListener('error', this.handleSocketError);
+    const ticketRequestId = (this.ticketRequestId += 1);
+    this.options
+      .createStreamTicket?.(this.options.runId)
+      .then((ticket) => {
+        if (this.closedByClient || this.terminalEnded || this.ticketRequestId !== ticketRequestId) {
+          return;
+        }
+        if (!ticket.ticket || !ticket.ticketProof) {
+          this.updateState({
+            connectionState: 'error',
+            lastErrorCode: 'TERMINAL_AUTH_FAILED',
+          });
+          return;
+        }
+        this.subscribeTicket = ticket;
+        const ws = this.createWebSocket();
+        this.ws = ws;
+        ws.addEventListener('open', this.handleOpen);
+        ws.addEventListener('message', this.handleMessage);
+        ws.addEventListener('close', this.handleClose);
+        ws.addEventListener('error', this.handleSocketError);
+      })
+      .catch(() => {
+        if (this.closedByClient || this.terminalEnded || this.ticketRequestId !== ticketRequestId) {
+          return;
+        }
+        this.updateState({
+          connectionState: 'error',
+          lastErrorCode: 'TERMINAL_AUTH_FAILED',
+        });
+      });
   }
 
   private detachSocket(closeSocket: boolean) {
@@ -233,15 +304,21 @@ export class TerminalStreamClient {
 
   private createWebSocket() {
     const url = buildTerminalStreamUrl({
-      token: this.options.token,
-      authenticator: this.options.authenticator,
-      role: this.options.role,
       baseUrl: this.options.baseUrl,
     });
-    return this.options.createWebSocket ? this.options.createWebSocket(url) : new WebSocket(url);
+    const protocols = buildTerminalStreamProtocols(this.subscribeTicket);
+    return this.options.createWebSocket ? this.options.createWebSocket(url, protocols) : new WebSocket(url, protocols);
   }
 
   private readonly handleOpen = () => {
+    if (!this.subscribeTicket) {
+      this.updateState({
+        connectionState: 'error',
+        lastErrorCode: 'TERMINAL_AUTH_FAILED',
+      });
+      this.detachSocket(true);
+      return;
+    }
     this.requestId = `browser-subscribe-${Date.now()}-${Math.random().toString(16).slice(2)}`;
     this.ws?.send(
       JSON.stringify({

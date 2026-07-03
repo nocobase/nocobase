@@ -94,6 +94,9 @@ describe('agent gateway permission foundation', () => {
     const cancelRun = AGENT_GATEWAY_PERMISSION_DEFINITIONS.find(
       (definition) => definition.name === AGENT_GATEWAY_PERMISSIONS.cancelRun,
     );
+    const readAudit = AGENT_GATEWAY_PERMISSION_DEFINITIONS.find(
+      (definition) => definition.name === AGENT_GATEWAY_PERMISSIONS.readAudit,
+    );
     const rawWrite = AGENT_GATEWAY_PERMISSION_DEFINITIONS.find(
       (definition) => definition.name === AGENT_GATEWAY_PERMISSIONS.writeTerminalRaw,
     );
@@ -112,16 +115,21 @@ describe('agent gateway permission foundation', () => {
         'agentGateway:readRun',
         'agentGateway:readRuns',
         'agentGateway:readRunDetails',
-        'agentGateway:readSessionMessages',
         'agRuns:list',
         'agRuns:get',
       ]),
     );
+    expect(readDetails?.actions).not.toContain('agentGateway:readSessionMessages');
     expect(readDetails?.actions).not.toContain('agentGateway:readTerminal');
     expect(readDetails?.actions).not.toContain('agentGateway:readRawLogs');
-    expect(cancelRun?.actions).toEqual(
-      expect.arrayContaining(['agentGateway:interruptRun', 'agentGateway:terminateRun']),
+    expect(manage?.actions).toEqual(
+      expect.arrayContaining(['agentGateway:cancelRun', 'agentGateway:interruptRun', 'agentGateway:terminateRun']),
     );
+    expect(cancelRun?.actions).toEqual(['agentGateway:cancelRun', 'agRuns:get']);
+    expect(cancelRun?.actions).not.toContain('agentGateway:interruptRun');
+    expect(cancelRun?.actions).not.toContain('agentGateway:terminateRun');
+    expect(readAudit?.actions).toEqual(['agentGateway:readAudit', 'agRuns:list']);
+    expect(readAudit?.actions).not.toContain('agentGateway:readRuns');
     expect(rawWrite?.actions).toEqual([]);
   });
 });

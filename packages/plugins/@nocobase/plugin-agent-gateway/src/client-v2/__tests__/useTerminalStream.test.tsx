@@ -13,6 +13,10 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   TERMINAL_PAYLOAD_ENCODING,
   TERMINAL_PROTOCOL,
+  TERMINAL_STREAM_BROWSER_AUTHENTICATOR_PROTOCOL_PREFIX,
+  TERMINAL_STREAM_BROWSER_AUTH_PROTOCOL_PREFIX,
+  TERMINAL_STREAM_BROWSER_ROLE_PROTOCOL_PREFIX,
+  TERMINAL_STREAM_BROWSER_SUBPROTOCOL,
   encodeTerminalPayload,
 } from '../../shared/terminalStreamProtocol';
 import { TerminalStreamWebSocket, TerminalStreamWebSocketEvent } from '../utils/terminalStreamClient';
@@ -55,6 +59,26 @@ class FakeWebSocket implements TerminalStreamWebSocket {
   }
 }
 
+function createStreamTicketFactory() {
+  return vi.fn(async () => ({
+    ticket: 'ag_stream_ticket',
+    ticketProof: 'ag_stream_proof',
+    authProof: 'ag_stream_auth',
+    authenticator: 'basic',
+    role: 'root',
+  }));
+}
+
+async function waitForFakeWebSocket(index = 0) {
+  for (let i = 0; i < 20 && !FakeWebSocket.instances[index]; i += 1) {
+    await act(async () => {
+      await Promise.resolve();
+    });
+  }
+  expect(FakeWebSocket.instances[index]).toBeTruthy();
+  return FakeWebSocket.instances[index];
+}
+
 describe('useTerminalStream', () => {
   afterEach(() => {
     cleanup();
@@ -64,20 +88,57 @@ describe('useTerminalStream', () => {
   });
 
   it('tracks stream state and decoded chunks', async () => {
-    const createWebSocket = () => new FakeWebSocket();
+    const webSocketUrls: string[] = [];
+    const protocolsBySocket: string[][] = [];
+    const createWebSocket = (url: string, protocols?: string[]) => {
+      webSocketUrls.push(url);
+      protocolsBySocket.push(protocols || []);
+      return new FakeWebSocket();
+    };
+    const createStreamTicket = createStreamTicketFactory();
     const { result } = renderHook(() =>
       useTerminalStream({
         runId: 'run-id-1',
-        token: 'browser-token',
+        createStreamTicket,
         createWebSocket,
       }),
     );
-    const webSocket = FakeWebSocket.instances[0];
+    const webSocket = await waitForFakeWebSocket();
 
     act(() => {
       webSocket.dispatch('open');
     });
     const subscribeFrame = JSON.parse(webSocket.sent[0]) as Record<string, unknown>;
+    expect(subscribeFrame).toMatchObject({
+      type: 'browser.subscribe',
+      runId: 'run-id-1',
+      lastOffset: 0,
+    });
+    expect(JSON.stringify(subscribeFrame)).not.toContain('ag_stream_ticket');
+    expect(JSON.stringify(subscribeFrame)).not.toContain('ag_stream_proof');
+    expect(JSON.stringify(subscribeFrame)).not.toContain('ag_stream_auth');
+    expect(JSON.stringify(subscribeFrame)).not.toContain('browser-token');
+    expect(subscribeFrame).not.toHaveProperty('browserAuth');
+    expect(subscribeFrame).not.toHaveProperty('ticket');
+    expect(subscribeFrame).not.toHaveProperty('ticketProof');
+    expect(subscribeFrame).not.toHaveProperty('authProof');
+    expect(subscribeFrame).not.toHaveProperty('authToken');
+    expect(subscribeFrame).not.toHaveProperty('authenticator');
+    expect(subscribeFrame).not.toHaveProperty('role');
+    expect(webSocketUrls[0]).not.toContain('browser-token');
+    expect(protocolsBySocket[0][0]).toBe(TERMINAL_STREAM_BROWSER_SUBPROTOCOL);
+    expect(
+      protocolsBySocket[0].some((protocol) => protocol.startsWith(TERMINAL_STREAM_BROWSER_AUTH_PROTOCOL_PREFIX)),
+    ).toBe(false);
+    expect(
+      protocolsBySocket[0].some((protocol) =>
+        protocol.startsWith(TERMINAL_STREAM_BROWSER_AUTHENTICATOR_PROTOCOL_PREFIX),
+      ),
+    ).toBe(true);
+    expect(
+      protocolsBySocket[0].some((protocol) => protocol.startsWith(TERMINAL_STREAM_BROWSER_ROLE_PROTOCOL_PREFIX)),
+    ).toBe(true);
+    expect(protocolsBySocket[0].join(',')).not.toContain('browser-token');
     act(() => {
       webSocket.dispatch('message', {
         data: JSON.stringify({
@@ -128,14 +189,15 @@ describe('useTerminalStream', () => {
 
   it('caps retained chunks while preserving monotonically increasing sequence numbers', async () => {
     const createWebSocket = () => new FakeWebSocket();
+    const createStreamTicket = createStreamTicketFactory();
     const { result } = renderHook(() =>
       useTerminalStream({
         runId: 'run-id-1',
-        token: 'browser-token',
+        createStreamTicket,
         createWebSocket,
       }),
     );
-    const webSocket = FakeWebSocket.instances[0];
+    const webSocket = await waitForFakeWebSocket();
 
     act(() => {
       for (let index = 0; index < TERMINAL_STREAM_CHUNK_LIMIT + 2; index += 1) {
@@ -165,16 +227,17 @@ describe('useTerminalStream', () => {
   it('reconnects with the current offset after socket close', async () => {
     vi.useFakeTimers();
     const createWebSocket = () => new FakeWebSocket();
+    const createStreamTicket = createStreamTicketFactory();
     const { result } = renderHook(() =>
       useTerminalStream({
         runId: 'run-id-1',
-        token: 'browser-token',
+        createStreamTicket,
         reconnectDelayMs: 0,
         maxReconnectAttempts: 1,
         createWebSocket,
       }),
     );
-    const firstWebSocket = FakeWebSocket.instances[0];
+    const firstWebSocket = await waitForFakeWebSocket();
     act(() => {
       firstWebSocket.dispatch('message', {
         data: JSON.stringify({
@@ -194,7 +257,7 @@ describe('useTerminalStream', () => {
     await act(async () => {
       await vi.runOnlyPendingTimersAsync();
     });
-    const secondWebSocket = FakeWebSocket.instances[1];
+    const secondWebSocket = await waitForFakeWebSocket(1);
     act(() => {
       secondWebSocket.dispatch('open');
     });
@@ -208,14 +271,15 @@ describe('useTerminalStream', () => {
 
   it('persists the consumed offset and resumes from it after remount', async () => {
     const createWebSocket = () => new FakeWebSocket();
+    const createStreamTicket = createStreamTicketFactory();
     const first = renderHook(() =>
       useTerminalStream({
         runId: 'run-id-1',
-        token: 'browser-token',
+        createStreamTicket,
         createWebSocket,
       }),
     );
-    const firstWebSocket = FakeWebSocket.instances[0];
+    const firstWebSocket = await waitForFakeWebSocket();
 
     act(() => {
       firstWebSocket.dispatch('message', {
@@ -241,11 +305,11 @@ describe('useTerminalStream', () => {
     renderHook(() =>
       useTerminalStream({
         runId: 'run-id-1',
-        token: 'browser-token',
+        createStreamTicket,
         createWebSocket,
       }),
     );
-    const secondWebSocket = FakeWebSocket.instances[1];
+    const secondWebSocket = await waitForFakeWebSocket(1);
 
     act(() => {
       secondWebSocket.dispatch('open');
@@ -262,14 +326,15 @@ describe('useTerminalStream', () => {
   it('does not treat a restored offset as visible stream output before data arrives', async () => {
     window.sessionStorage.setItem('agentGatewayTerminalOffset:run-id-1', '6');
     const createWebSocket = () => new FakeWebSocket();
+    const createStreamTicket = createStreamTicketFactory();
     const { result } = renderHook(() =>
       useTerminalStream({
         runId: 'run-id-1',
-        token: 'browser-token',
+        createStreamTicket,
         createWebSocket,
       }),
     );
-    const webSocket = FakeWebSocket.instances[0];
+    const webSocket = await waitForFakeWebSocket();
 
     act(() => {
       webSocket.dispatch('open');
@@ -285,11 +350,12 @@ describe('useTerminalStream', () => {
   it('does not flush stale stream state after cleanup disables the hook', async () => {
     vi.useFakeTimers();
     const createWebSocket = () => new FakeWebSocket();
+    const createStreamTicket = createStreamTicketFactory();
     const { result, rerender } = renderHook(
       ({ enabled }) =>
         useTerminalStream({
           runId: 'run-id-1',
-          token: 'browser-token',
+          createStreamTicket,
           enabled,
           createWebSocket,
         }),
@@ -299,7 +365,7 @@ describe('useTerminalStream', () => {
         },
       },
     );
-    const webSocket = FakeWebSocket.instances[0];
+    const webSocket = await waitForFakeWebSocket();
 
     act(() => {
       webSocket.dispatch('message', {

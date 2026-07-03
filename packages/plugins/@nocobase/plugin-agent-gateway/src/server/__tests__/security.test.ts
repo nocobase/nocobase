@@ -8,6 +8,7 @@
  */
 
 import {
+  AGENT_GATEWAY_LEGACY_PERMISSIONS,
   AGENT_GATEWAY_NODE_TOKEN_HEADER,
   AGENT_GATEWAY_PERMISSION_DEFINITIONS,
   AGENT_GATEWAY_PERMISSIONS,
@@ -224,7 +225,9 @@ describe('agent gateway ACL registration', () => {
 
     registerAgentGatewayAcl(acl);
 
-    expect(snippets.map((snippet) => snippet.name).sort()).toEqual(Object.values(AGENT_GATEWAY_PERMISSIONS).sort());
+    expect(snippets.map((snippet) => snippet.name).sort()).toEqual(
+      [...Object.values(AGENT_GATEWAY_PERMISSIONS), ...Object.values(AGENT_GATEWAY_LEGACY_PERMISSIONS)].sort(),
+    );
     expect(snippets).toHaveLength(AGENT_GATEWAY_PERMISSION_DEFINITIONS.length);
     expect(snippets.find((snippet) => snippet.name === AGENT_GATEWAY_PERMISSIONS.manage)?.actions).toEqual(
       expect.arrayContaining([
@@ -238,6 +241,9 @@ describe('agent gateway ACL registration', () => {
       ]),
     );
     expect(snippets.find((snippet) => snippet.name === AGENT_GATEWAY_PERMISSIONS.dispatch)?.actions).toEqual([
+      'agentGateway:dispatch',
+    ]);
+    expect(snippets.find((snippet) => snippet.name === AGENT_GATEWAY_LEGACY_PERMISSIONS.dispatch)?.actions).toEqual([
       'agentGateway:dispatch',
     ]);
     expect(snippets.find((snippet) => snippet.name === AGENT_GATEWAY_PERMISSIONS.readRuns)?.actions).toEqual(
@@ -257,19 +263,32 @@ describe('agent gateway ACL registration', () => {
         'agentGateway:readRun',
         'agentGateway:readRuns',
         'agentGateway:readRunDetails',
-        'agentGateway:readSessionMessages',
         'agRuns:list',
         'agRuns:get',
       ]),
     );
     expect(
       snippets.find((snippet) => snippet.name === AGENT_GATEWAY_PERMISSIONS.readRunDetails)?.actions,
+    ).not.toContain('agentGateway:readSessionMessages');
+    expect(
+      snippets.find((snippet) => snippet.name === AGENT_GATEWAY_PERMISSIONS.readRunDetails)?.actions,
     ).not.toContain('agentGateway:readTerminal');
     expect(
       snippets.find((snippet) => snippet.name === AGENT_GATEWAY_PERMISSIONS.readRunDetails)?.actions,
     ).not.toContain('agentGateway:readRawLogs');
-    expect(snippets.find((snippet) => snippet.name === AGENT_GATEWAY_PERMISSIONS.cancelRun)?.actions).toEqual(
+    expect(snippets.find((snippet) => snippet.name === AGENT_GATEWAY_PERMISSIONS.manage)?.actions).toEqual(
       expect.arrayContaining(['agentGateway:cancelRun', 'agentGateway:interruptRun', 'agentGateway:terminateRun']),
+    );
+    expect(snippets.find((snippet) => snippet.name === AGENT_GATEWAY_PERMISSIONS.cancelRun)?.actions).toEqual([
+      'agentGateway:cancelRun',
+      'agRuns:get',
+    ]);
+    expect(snippets.find((snippet) => snippet.name === AGENT_GATEWAY_PERMISSIONS.readAudit)?.actions).toEqual([
+      'agentGateway:readAudit',
+      'agRuns:list',
+    ]);
+    expect(snippets.find((snippet) => snippet.name === AGENT_GATEWAY_PERMISSIONS.readAudit)?.actions).not.toContain(
+      'agentGateway:readRuns',
     );
     expect(snippets.find((snippet) => snippet.name === AGENT_GATEWAY_PERMISSIONS.writeTerminalRaw)?.actions).toEqual(
       [],

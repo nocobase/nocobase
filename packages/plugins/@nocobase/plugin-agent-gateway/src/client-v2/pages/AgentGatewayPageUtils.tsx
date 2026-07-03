@@ -17,12 +17,6 @@ export interface AgentGatewayApiResponse<T> {
 }
 
 export interface AgentGatewayApi {
-  auth?: {
-    token?: string;
-    authenticator?: string;
-    role?: string;
-    getAuthenticator?(): string;
-  };
   request<T>(config: {
     url: string;
     method: 'get' | 'post';
@@ -33,6 +27,9 @@ export interface AgentGatewayApi {
 
 export interface AgentGatewayContext {
   api: AgentGatewayApi;
+  router?: {
+    navigate(path: string): void;
+  };
   message?: {
     success(content: string): void;
     error(content: string): void;
@@ -42,7 +39,7 @@ export interface AgentGatewayContext {
 export type JsonRecord = Record<string, unknown>;
 
 const REDACTED_VALUE = '[REDACTED]';
-const AGENT_GATEWAY_TOKEN_PATTERN = /\bag_(?:inv|node|claim)_[A-Za-z0-9._~+/-]+=*/gi;
+const AGENT_GATEWAY_TOKEN_PATTERN = /\bag_(?:inv|node|claim|stream)_[A-Za-z0-9._~+/-]+=*/gi;
 const EXTERNAL_URL_PATTERN = /\bhttps?:\/\/[^\s"'<>]+/gi;
 const REDACTED_KEY_FRAGMENTS = [
   'token',

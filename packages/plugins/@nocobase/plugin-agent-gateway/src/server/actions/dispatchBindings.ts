@@ -14,12 +14,15 @@ import { Context, Next } from '@nocobase/actions';
 import { Plugin } from '@nocobase/server';
 import { Transaction } from 'sequelize';
 
-import { AGENT_GATEWAY_ACTIONS } from '../security';
+import { AGENT_GATEWAY_ACTIONS, AGENT_GATEWAY_PERMISSIONS } from '../security';
+import { auditAgentActionBestEffort, auditMutatingAgentAction } from '../audit/agentActionAudit';
 import {
+  AGENT_GATEWAY_ERROR_CODES,
   API_PREFIX,
   JsonRecord,
   ModelRecord,
   getBodyValues,
+  getCurrentUserId,
   getCurrentRoleNames,
   getModelJson,
   getModelString,
@@ -27,6 +30,7 @@ import {
   getModelValue,
   getRecord,
   getString,
+  getVisibleRunFilter,
   hasModelGetter,
   requireAgentGatewayPermission,
   requireManagePermission,
@@ -1137,6 +1141,20 @@ async function findRunById(ctx: Context, runId: string, transaction: Transaction
   })) as ModelRecord | null;
 }
 
+async function findVisibleRunById(ctx: Context, runId: string, transaction: Transaction) {
+  return (await ctx.db.getRepository('agRuns').findOne({
+    filter: await getVisibleRunFilter(
+      ctx,
+      {
+        id: runId,
+      },
+      'get',
+    ),
+    transaction,
+    lock: transaction.LOCK.UPDATE,
+  })) as ModelRecord | null;
+}
+
 function getRunIdempotencyKey(run: ModelRecord) {
   const payload = getRecord(getModelValue(run, 'executionPayloadJson'));
   const dispatch = getRecord(payload.dispatch);
@@ -1383,68 +1401,192 @@ async function destroyBinding(ctx: Context, identifier: string) {
   };
 }
 
+function getErrorStatus(error: unknown) {
+  if (!error || typeof error !== 'object') {
+    return null;
+  }
+  const statusCarrier = error as { status?: unknown; statusCode?: unknown };
+  const status = statusCarrier.status || statusCarrier.statusCode;
+  return typeof status === 'number' ? status : null;
+}
+
+function getErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : String(error);
+}
+
+function getExpectedDispatchDenialMetadata(error: unknown) {
+  const status = getErrorStatus(error);
+  const message = getErrorMessage(error);
+  if (status === 403) {
+    return {
+      phase: 'business-permission',
+      errorName: error instanceof Error ? error.name : 'UnknownError',
+      errorMessage: message,
+    };
+  }
+  if (status === 404 && message.includes('Dispatch target record not found')) {
+    return {
+      phase: 'business-record-visibility',
+      errorName: error instanceof Error ? error.name : 'UnknownError',
+      errorMessage: message,
+    };
+  }
+  return null;
+}
+
 async function dispatchBinding(ctx: Context, identifier: string) {
-  await requireAgentGatewayPermission(
-    ctx,
-    AGENT_GATEWAY_ACTIONS.dispatch,
-    'Agent Gateway dispatch permission required',
-  );
+  try {
+    await requireAgentGatewayPermission(
+      ctx,
+      AGENT_GATEWAY_ACTIONS.dispatch,
+      'Agent Gateway dispatch permission required',
+    );
+  } catch (error) {
+    await auditAgentActionBestEffort(ctx, {
+      action: 'dispatch',
+      operatorId: getCurrentUserId(ctx) || undefined,
+      permissionKey: AGENT_GATEWAY_PERMISSIONS.dispatch,
+      resultStatus: 'denied',
+      metadataJson: {
+        bindingIdentifier: identifier,
+        phase: 'permission',
+      },
+    });
+    throw error;
+  }
 
   const values = getBodyValues(ctx);
   const recordId = getRequiredTargetKey(ctx, values.recordId, 'recordId');
   const idempotencyKey = getString(values.idempotencyKey);
   const expectedCollectionName = getString(values.expectedCollectionName);
 
-  const result = await ctx.db.sequelize.transaction(async (transaction) => {
-    const binding = await findBindingByIdentifier(ctx, identifier, transaction, { lock: true });
-    if (!binding) {
-      ctx.throw(404, 'Dispatch binding not found');
-    }
-    if (!getBindingEnabled(binding) || getModelString(binding, 'status') !== ACTIVE_BINDING_STATUS) {
-      ctx.throw(409, 'Dispatch binding is not enabled');
-    }
-
-    const collectionName = getBindingCollectionName(binding);
-    if (expectedCollectionName && expectedCollectionName !== collectionName) {
-      ctx.throw(409, 'Dispatch binding does not match the current record collection');
-    }
-
-    const outputAgentRunField = getModelString(binding, 'outputAgentRunField');
-    const output = assertOutputAgentRunField(ctx, collectionName, outputAgentRunField);
-    const collection = getCollection(ctx, collectionName);
-    const viewAccess = await getCollectionActionAccess(ctx, collectionName, 'view');
-    const updateAccess = await getCollectionActionAccess(ctx, collectionName, 'update');
-    assertWritableOutputField(ctx, updateAccess, output);
-
-    const selectionAppends = getDispatchSelectionAppends(binding, collection);
-    const targetRecord = (await ctx.db.getRepository(collectionName).findOne({
-      filterByTk: recordId,
-      filter: mergeFilters(viewAccess.filter, updateAccess.filter),
-      ...(selectionAppends.length ? { appends: selectionAppends } : {}),
-      transaction,
-      lock: transaction.LOCK.UPDATE,
-    })) as ModelRecord | null;
-    if (!targetRecord) {
-      ctx.throw(404, 'Dispatch target record not found');
-    }
-
-    const existingRunId = getExistingRunId(targetRecord, output);
-    if (existingRunId) {
-      const existingRun = await findRunById(ctx, existingRunId, transaction);
-      return getExistingRunResult(ctx, binding, existingRun, idempotencyKey);
-    }
-
-    return await createDispatchRun(
-      ctx,
-      binding,
-      targetRecord,
-      collection,
-      viewAccess,
-      output,
+  await auditMutatingAgentAction(ctx, {
+    action: 'dispatch',
+    operatorId: getCurrentUserId(ctx) || undefined,
+    permissionKey: AGENT_GATEWAY_PERMISSIONS.dispatch,
+    resultStatus: 'accepted',
+    metadataJson: {
+      bindingIdentifier: identifier,
+      expectedCollectionName: expectedCollectionName || null,
+      hasIdempotencyKey: Boolean(idempotencyKey),
       recordId,
-      idempotencyKey,
-      transaction,
-    );
+    },
+  });
+
+  let result: DispatchResult;
+  let deniedAuditWritten = false;
+  try {
+    result = await ctx.db.sequelize.transaction(async (transaction) => {
+      const binding = await findBindingByIdentifier(ctx, identifier, transaction, { lock: true });
+      if (!binding) {
+        ctx.throw(404, 'Dispatch binding not found');
+      }
+      if (!getBindingEnabled(binding) || getModelString(binding, 'status') !== ACTIVE_BINDING_STATUS) {
+        ctx.throw(409, 'Dispatch binding is not enabled');
+      }
+
+      const collectionName = getBindingCollectionName(binding);
+      if (expectedCollectionName && expectedCollectionName !== collectionName) {
+        ctx.throw(409, 'Dispatch binding does not match the current record collection');
+      }
+
+      const outputAgentRunField = getModelString(binding, 'outputAgentRunField');
+      const output = assertOutputAgentRunField(ctx, collectionName, outputAgentRunField);
+      const collection = getCollection(ctx, collectionName);
+      const viewAccess = await getCollectionActionAccess(ctx, collectionName, 'view');
+      const updateAccess = await getCollectionActionAccess(ctx, collectionName, 'update');
+      assertWritableOutputField(ctx, updateAccess, output);
+
+      const selectionAppends = getDispatchSelectionAppends(binding, collection);
+      const targetRecord = (await ctx.db.getRepository(collectionName).findOne({
+        filterByTk: recordId,
+        filter: mergeFilters(viewAccess.filter, updateAccess.filter),
+        ...(selectionAppends.length ? { appends: selectionAppends } : {}),
+        transaction,
+        lock: transaction.LOCK.UPDATE,
+      })) as ModelRecord | null;
+      if (!targetRecord) {
+        ctx.throw(404, 'Dispatch target record not found');
+      }
+
+      const existingRunId = getExistingRunId(targetRecord, output);
+      if (existingRunId) {
+        const existingRun = await findRunById(ctx, existingRunId, transaction);
+        if (existingRun) {
+          const visibleRun = await findVisibleRunById(ctx, existingRunId, transaction);
+          if (!visibleRun) {
+            await auditAgentActionBestEffort(ctx, {
+              action: 'dispatch',
+              runId: existingRunId,
+              operatorId: getCurrentUserId(ctx) || undefined,
+              permissionKey: AGENT_GATEWAY_PERMISSIONS.dispatch,
+              resultStatus: 'denied',
+              metadataJson: {
+                bindingId: getModelTargetKey(binding, 'id'),
+                bindingIdentifier: identifier,
+                bindingKey: getModelString(binding, 'bindingKey'),
+                existingRunId,
+                phase: 'existing-run-visibility',
+                recordId,
+              },
+            });
+            deniedAuditWritten = true;
+            ctx.throw(404, {
+              code: AGENT_GATEWAY_ERROR_CODES.resourceNotVisible,
+              message: 'Run not found',
+            });
+          }
+          return getExistingRunResult(ctx, binding, visibleRun, idempotencyKey);
+        }
+        return getExistingRunResult(ctx, binding, existingRun, idempotencyKey);
+      }
+
+      return await createDispatchRun(
+        ctx,
+        binding,
+        targetRecord,
+        collection,
+        viewAccess,
+        output,
+        recordId,
+        idempotencyKey,
+        transaction,
+      );
+    });
+  } catch (error) {
+    if (!deniedAuditWritten) {
+      const expectedDenialMetadata = getExpectedDispatchDenialMetadata(error);
+      await auditAgentActionBestEffort(ctx, {
+        action: 'dispatch',
+        operatorId: getCurrentUserId(ctx) || undefined,
+        permissionKey: AGENT_GATEWAY_PERMISSIONS.dispatch,
+        resultStatus: expectedDenialMetadata ? 'denied' : 'failed',
+        metadataJson: {
+          bindingIdentifier: identifier,
+          ...(expectedDenialMetadata || {
+            errorName: error instanceof Error ? error.name : 'UnknownError',
+            errorMessage: getErrorMessage(error),
+          }),
+          expectedCollectionName: expectedCollectionName || null,
+          recordId,
+        },
+      });
+    }
+    throw error;
+  }
+
+  await auditAgentActionBestEffort(ctx, {
+    action: 'dispatch',
+    runId: getString(getRecord(result.run).id) || undefined,
+    operatorId: getCurrentUserId(ctx) || undefined,
+    permissionKey: AGENT_GATEWAY_PERMISSIONS.dispatch,
+    resultStatus: 'succeeded',
+    metadataJson: {
+      bindingId: result.bindingId,
+      bindingKey: result.bindingKey,
+      idempotent: result.idempotent,
+      recordId,
+    },
   });
 
   ctx.body = result;
@@ -1482,7 +1624,9 @@ export function registerDispatchBindingRoutes(plugin: Plugin) {
       const getBindingMatch = routePath.match(/^\/dispatch-bindings:get\/([^/]+)$/);
       const updateBindingMatch = routePath.match(/^\/dispatch-bindings:update\/([^/]+)$/);
       const destroyBindingMatch = routePath.match(/^\/dispatch-bindings:destroy\/([^/]+)$/);
-      const dispatchMatch = routePath.match(/^\/dispatch-bindings\/([^/]+):dispatch$/);
+      const dispatchMatch =
+        routePath.match(/^\/dispatch-bindings\/([^/]+)\/dispatch$/) ||
+        routePath.match(/^\/dispatch-bindings\/([^/]+):dispatch$/);
 
       if (ctx.method === 'GET' && routePath === '/dispatch-bindings:list') {
         await listBindings(ctx);

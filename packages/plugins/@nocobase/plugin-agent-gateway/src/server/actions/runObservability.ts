@@ -18,8 +18,10 @@ import {
   authenticateNodeToken,
   redactArtifactMetadata,
   redactArtifactText,
+  redactJson,
   redactEventPayload,
   redactObservabilityText,
+  redactText,
   redactSnapshotJson,
 } from '../security';
 import { auditReadAgentAction } from '../audit/agentActionAudit';
@@ -35,6 +37,9 @@ import {
   getModelString,
   getRecord,
   getString,
+  assertRunVisible,
+  getVisibleRunFilter,
+  hasAgentGatewayPermission,
   matchStandardCollectionAction,
   requireAgentGatewayPermission,
   requireManagePermission,
@@ -49,6 +54,21 @@ const MAX_METADATA_JSON_CHARS = 16 * 1024;
 const MAX_SNAPSHOT_JSON_CHARS = 64 * 1024;
 const SUPPORTED_SNAPSHOT_TYPES = new Set(['node', 'agent', 'skill', 'nocobase', 'workspace', 'custom']);
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const AUDIT_EXTRA_REDACTED_KEYS = [
+  'prompt',
+  'message',
+  'messages',
+  'content',
+  'input',
+  'instructions',
+  'command',
+  'commandPath',
+  'cwd',
+  'env',
+  'ticket',
+  'ticketProof',
+  'authProof',
+] as const;
 const STANDARD_OBSERVABILITY_COLLECTIONS = [
   'agRunEvents',
   'agRunArtifacts',
@@ -102,6 +122,182 @@ function serializeModel(model: ModelRecord) {
   return getModelJson(model);
 }
 
+function parseQueryFilter(ctx: Context) {
+  const query = getRecord(ctx.query);
+  const filter = query.filter;
+  if (typeof filter === 'string' && filter.trim()) {
+    try {
+      return getRecord(JSON.parse(filter) as unknown);
+    } catch {
+      ctx.throw(400, 'filter must be valid JSON');
+    }
+  }
+  return getRecord(filter);
+}
+
+function getFilterValue(filter: JsonRecord, key: string) {
+  const value = filter[key];
+  if (typeof value === 'string' || typeof value === 'number') {
+    return String(value);
+  }
+  const record = getRecord(value);
+  const eqValue = record.$eq;
+  return typeof eqValue === 'string' || typeof eqValue === 'number' ? String(eqValue) : '';
+}
+
+function getAuditQueryFilter(ctx: Context) {
+  const query = getRecord(ctx.query);
+  const rawFilter = parseQueryFilter(ctx);
+  const filter: JsonRecord = {};
+  const runId = getString(query.runId) || getFilterValue(rawFilter, 'runId');
+  const sessionId = getString(query.sessionId) || getFilterValue(rawFilter, 'sessionId');
+  const action = getString(query.action) || getFilterValue(rawFilter, 'action');
+  const resultStatus = getString(query.resultStatus) || getFilterValue(rawFilter, 'resultStatus');
+  const operatorId = getString(query.operatorId) || getFilterValue(rawFilter, 'operatorId');
+
+  if (runId) {
+    if (!UUID_PATTERN.test(runId)) {
+      ctx.throw(400, 'runId must be a valid UUID');
+    }
+    filter.runId = runId;
+  }
+  if (sessionId) {
+    if (!UUID_PATTERN.test(sessionId)) {
+      ctx.throw(400, 'sessionId must be a valid UUID');
+    }
+    filter.sessionId = sessionId;
+  }
+  if (action) {
+    filter.action = action;
+  }
+  if (resultStatus) {
+    filter.resultStatus = resultStatus;
+  }
+  if (operatorId) {
+    filter.operatorId = operatorId;
+  }
+  return filter;
+}
+
+function prefixRunFilter(filter: JsonRecord): JsonRecord {
+  const prefixed: JsonRecord = {};
+  for (const [key, value] of Object.entries(filter)) {
+    if (key === '$and' || key === '$or') {
+      prefixed[key] = Array.isArray(value) ? value.map((item) => prefixRunFilter(getRecord(item))) : value;
+      continue;
+    }
+    if (key.startsWith('$')) {
+      prefixed[key] = value;
+      continue;
+    }
+    prefixed[`run.${key}`] = value;
+  }
+  return prefixed;
+}
+
+async function getAuditReadFilter(ctx: Context, baseFilter: JsonRecord) {
+  const canManage = await hasAgentGatewayPermission(ctx, AGENT_GATEWAY_ACTIONS.manage);
+  if (canManage) {
+    return baseFilter;
+  }
+
+  const visibleRunFilter = await getVisibleRunFilter(ctx, {}, 'list');
+  const scopedFilter: JsonRecord = {
+    runId: {
+      $ne: null,
+    },
+  };
+  if (visibleRunFilter && Object.keys(visibleRunFilter).length) {
+    return {
+      $and: [baseFilter, scopedFilter, prefixRunFilter(visibleRunFilter)],
+    };
+  }
+  return {
+    $and: [baseFilter, scopedFilter],
+  };
+}
+
+function serializeAuditRecord(audit: ModelRecord) {
+  const json = getModelJson(audit);
+  const redactedPreview = getString(json.redactedPreview);
+  return {
+    id: json.id,
+    action: json.action,
+    runId: json.runId,
+    sessionId: json.sessionId,
+    operatorId: json.operatorId,
+    redactedPreview: redactedPreview
+      ? redactText(redactedPreview, {
+          extraKeys: AUDIT_EXTRA_REDACTED_KEYS,
+          maxStringLength: 1000,
+        })
+      : null,
+    contentSize: json.contentSize,
+    permissionKey: json.permissionKey,
+    resultStatus: json.resultStatus,
+    provider: json.provider,
+    metadataJson: redactJson(getRecord(json.metadataJson), {
+      extraKeys: AUDIT_EXTRA_REDACTED_KEYS,
+      maxStringLength: 2000,
+    }),
+    createdAt: json.createdAt,
+    updatedAt: json.updatedAt,
+  };
+}
+
+function getStandardAuditTargetKey(ctx: Context) {
+  const normalizedPath = ctx.path.startsWith('/api/') ? ctx.path.slice('/api'.length) : ctx.path;
+  const prefix = '/agAgentActionAudits:get/';
+  const pathValue = normalizedPath.startsWith(prefix) ? normalizedPath.slice(prefix.length).split('/')[0] : '';
+  const query = getRecord(ctx.query);
+  const rawId = pathValue || getString(query.filterByTk);
+  if (!rawId) {
+    return '';
+  }
+  try {
+    return decodeURIComponent(rawId);
+  } catch {
+    return rawId;
+  }
+}
+
+async function listAuditRecords(ctx: Context) {
+  await requireAgentGatewayPermission(
+    ctx,
+    AGENT_GATEWAY_ACTIONS.readAudit,
+    'Agent Gateway audit read permission required',
+  );
+  const filter = await getAuditReadFilter(ctx, getAuditQueryFilter(ctx));
+  const audits = (await ctx.db.getRepository('agAgentActionAudits').find({
+    filter,
+    sort: ['-createdAt'],
+    limit: 200,
+  })) as ModelRecord[];
+  ctx.body = audits.map(serializeAuditRecord);
+}
+
+async function getAuditRecord(ctx: Context) {
+  await requireAgentGatewayPermission(
+    ctx,
+    AGENT_GATEWAY_ACTIONS.readAudit,
+    'Agent Gateway audit read permission required',
+  );
+  const auditId = getStandardAuditTargetKey(ctx);
+  if (!auditId) {
+    ctx.throw(400, 'Agent Gateway audit id is required');
+  }
+  const filter = await getAuditReadFilter(ctx, {
+    id: auditId,
+  });
+  const audit = (await ctx.db.getRepository('agAgentActionAudits').findOne({
+    filter,
+  })) as ModelRecord | null;
+  if (!audit) {
+    ctx.throw(404, 'Audit record not found');
+  }
+  ctx.body = serializeAuditRecord(audit);
+}
+
 async function requireObservabilityRead(
   ctx: Context,
   action: string,
@@ -133,14 +329,32 @@ async function requireObservabilityRead(
   }
 }
 
-async function assertRunExists(ctx: Context, runId: string) {
-  const run = (await ctx.db.getRepository('agRuns').findOne({
-    filterByTk: runId,
-  })) as ModelRecord | null;
-  if (!run) {
-    ctx.throw(404, 'Run not found');
+async function assertObservationRunVisible(
+  ctx: Context,
+  runId: string,
+  audit: {
+    auditAction: 'readArtifacts' | 'readRawLogs';
+    permissionKey: string;
+    routeAction: string;
+  },
+) {
+  try {
+    return await assertRunVisible(ctx, runId, 'get');
+  } catch (error) {
+    await auditAgentActionBestEffort(ctx, {
+      action: audit.auditAction,
+      runId,
+      operatorId: getCurrentUserId(ctx) || undefined,
+      permissionKey: audit.permissionKey,
+      resultStatus: 'denied',
+      metadataJson: {
+        routeAction: audit.routeAction,
+        phase: 'visibility',
+        reason: error instanceof Error ? error.message : String(error),
+      },
+    });
+    throw error;
   }
-  return run;
 }
 
 async function auditObservationRead(
@@ -410,7 +624,11 @@ async function listRunEvents(ctx: Context, runId: string) {
       routeAction: 'events:list',
     },
   );
-  const run = await assertRunExists(ctx, runId);
+  const run = await assertObservationRunVisible(ctx, runId, {
+    auditAction: 'readRawLogs',
+    permissionKey: permission.permissionKey,
+    routeAction: 'events:list',
+  });
 
   const events = (await ctx.db.getRepository('agRunEvents').find({
     filter: {
@@ -435,7 +653,11 @@ async function listRunArtifacts(ctx: Context, runId: string) {
       routeAction: 'artifacts:list',
     },
   );
-  const run = await assertRunExists(ctx, runId);
+  const run = await assertObservationRunVisible(ctx, runId, {
+    auditAction: 'readArtifacts',
+    permissionKey: permission.permissionKey,
+    routeAction: 'artifacts:list',
+  });
 
   const artifacts = (await ctx.db.getRepository('agRunArtifacts').find({
     filter: {
@@ -460,7 +682,11 @@ async function listRunSnapshots(ctx: Context, runId: string) {
       routeAction: 'snapshots:list',
     },
   );
-  const run = await assertRunExists(ctx, runId);
+  const run = await assertObservationRunVisible(ctx, runId, {
+    auditAction: 'readArtifacts',
+    permissionKey: permission.permissionKey,
+    routeAction: 'snapshots:list',
+  });
 
   const snapshots = (await ctx.db.getRepository('agRunSnapshots').find({
     filter: {
@@ -485,7 +711,11 @@ async function listRunApiCallLogs(ctx: Context, runId: string) {
       routeAction: 'api-call-logs:list',
     },
   );
-  const run = await assertRunExists(ctx, runId);
+  const run = await assertObservationRunVisible(ctx, runId, {
+    auditAction: 'readRawLogs',
+    permissionKey: permission.permissionKey,
+    routeAction: 'api-call-logs:list',
+  });
 
   const apiCallLogs = (await ctx.db.getRepository('agApiCallLogs').find({
     filter: {
@@ -501,7 +731,18 @@ async function listRunApiCallLogs(ctx: Context, runId: string) {
 export function registerRunObservabilityRoutes(plugin: Plugin) {
   plugin.app.use(
     async (ctx: Context, next: Next) => {
-      if (matchStandardCollectionAction(ctx.path, STANDARD_OBSERVABILITY_COLLECTIONS)) {
+      const standardCollectionAction = matchStandardCollectionAction(ctx.path, STANDARD_OBSERVABILITY_COLLECTIONS);
+      if (standardCollectionAction?.collectionName === 'agAgentActionAudits') {
+        if (ctx.method === 'GET' && standardCollectionAction.action === 'list') {
+          await listAuditRecords(ctx);
+          return;
+        }
+        if (ctx.method === 'GET' && standardCollectionAction.action === 'get') {
+          await getAuditRecord(ctx);
+          return;
+        }
+        await requireManagePermission(ctx);
+      } else if (standardCollectionAction) {
         await requireManagePermission(ctx);
         await next();
         return;
@@ -519,6 +760,11 @@ export function registerRunObservabilityRoutes(plugin: Plugin) {
       const observationReadMatch = routePath.match(
         /^\/runs\/([^/]+)\/(events:list|artifacts:list|snapshots:list|api-call-logs:list)$/,
       );
+      if (ctx.method === 'GET' && routePath === '/audits:list') {
+        await listAuditRecords(ctx);
+        return;
+      }
+
       if (ctx.method === 'GET' && observationReadMatch) {
         const [, runId, action] = observationReadMatch;
         if (!UUID_PATTERN.test(runId)) {

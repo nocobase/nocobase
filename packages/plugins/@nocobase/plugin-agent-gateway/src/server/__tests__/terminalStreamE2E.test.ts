@@ -14,7 +14,6 @@ import { DaemonTerminalStreamClient } from '../../daemon/terminalStreamClient';
 import { TerminalRingBuffer } from '../../daemon/terminalRingBuffer';
 import {
   TERMINAL_DAEMON_TARGET_CHUNK_BYTES,
-  TERMINAL_PROTOCOL,
   TerminalFrame,
   decodeTerminalPayload,
   getTerminalPayloadByteLength,
@@ -22,12 +21,11 @@ import {
 import PluginAgentGatewayServer from '../plugin';
 import {
   claimRun,
-  createBrowserToken,
+  createBrowserWebSocketWithTicket,
   createQueuedRun,
   createRunner,
   createTerminalStreamServer,
-  createWebSocket,
-  sendFrame,
+  sendBrowserSubscribeFrame,
   waitForFrame,
   waitForOpen,
 } from './helpers/terminalStreamHarness';
@@ -58,18 +56,27 @@ async function getRootUserId(app: MockServer) {
   return rootUser?.get('id') as string | number;
 }
 
-async function subscribe(ws: WebSocket, runId: string, requestId: string, lastOffset?: number) {
-  await waitForOpen(ws);
-  sendFrame(ws, {
-    type: 'browser.subscribe',
-    protocol: TERMINAL_PROTOCOL,
-    requestId,
-    runId,
-    lastOffset,
+async function subscribe(
+  app: MockServer,
+  serverUrl: string,
+  options: { userId: string | number; runId: string; requestId: string; lastOffset?: number },
+) {
+  const { browser, ticket } = await createBrowserWebSocketWithTicket(app, serverUrl, {
+    userId: options.userId,
+    runId: options.runId,
   });
-  expect(await waitForFrame(ws, (frame) => frame.type === 'ack' && frame.requestId === requestId)).toMatchObject({
-    requestId,
+  await waitForOpen(browser);
+  sendBrowserSubscribeFrame(browser, ticket, {
+    runId: options.runId,
+    requestId: options.requestId,
+    lastOffset: options.lastOffset,
   });
+  expect(
+    await waitForFrame(browser, (frame) => frame.type === 'ack' && frame.requestId === options.requestId),
+  ).toMatchObject({
+    requestId: options.requestId,
+  });
+  return browser;
 }
 
 async function createStream(
@@ -119,21 +126,30 @@ describe('terminal stream end-to-end reliability', () => {
     const server = await createTerminalStreamServer(app);
     const setup = await createStream(app, { runCode: 'terminal-stream-e2e-reconnect' });
     const stream = setup.createClient(server.serverUrl);
-    const browserToken = await createBrowserToken(app, await getRootUserId(app));
-    const firstBrowser = createWebSocket(server.wsUrl, { token: browserToken });
+    const rootUserId = await getRootUserId(app);
+    let firstBrowser: WebSocket | undefined;
 
     try {
       await stream.start();
-      await subscribe(firstBrowser, setup.runId, 'subscribe-e2e-first');
+      firstBrowser = await subscribe(app, server.wsUrl, {
+        userId: rootUserId,
+        runId: setup.runId,
+        requestId: 'subscribe-e2e-first',
+      });
       await stream.appendText('first line\n');
       const firstData = await waitForFrame(firstBrowser, (frame) => frame.type === 'terminal.data');
       const consumedOffset = firstData.type === 'terminal.data' ? firstData.offsetEnd : 0;
       firstBrowser.close();
 
       await stream.appendText('second line\n');
-      const secondBrowser = createWebSocket(server.wsUrl, { token: browserToken });
+      let secondBrowser: WebSocket | undefined;
       try {
-        await subscribe(secondBrowser, setup.runId, 'subscribe-e2e-reconnect', consumedOffset);
+        secondBrowser = await subscribe(app, server.wsUrl, {
+          userId: rootUserId,
+          runId: setup.runId,
+          requestId: 'subscribe-e2e-reconnect',
+          lastOffset: consumedOffset,
+        });
         const snapshot = await waitForFrame(secondBrowser, (frame) => frame.type === 'terminal.snapshot');
         expect(snapshot).toMatchObject({
           offsetStart: consumedOffset,
@@ -142,11 +158,11 @@ describe('terminal stream end-to-end reliability', () => {
           'second line\n',
         );
       } finally {
-        secondBrowser.close();
+        secondBrowser?.close();
       }
     } finally {
       stream.close();
-      firstBrowser.close();
+      firstBrowser?.close();
       await server.close();
     }
   });
@@ -155,14 +171,17 @@ describe('terminal stream end-to-end reliability', () => {
     const server = await createTerminalStreamServer(app);
     const setup = await createStream(app, { runCode: 'terminal-stream-e2e-large-output' });
     const stream = setup.createClient(server.serverUrl);
-    const browserToken = await createBrowserToken(app, await getRootUserId(app));
-    const browser = createWebSocket(server.wsUrl, { token: browserToken });
+    let browser: WebSocket | undefined;
     const largeOutput = 'L'.repeat(TERMINAL_DAEMON_TARGET_CHUNK_BYTES * 3 + 17);
     const frames: TerminalFrame[] = [];
 
     try {
       await stream.start();
-      await subscribe(browser, setup.runId, 'subscribe-e2e-large');
+      browser = await subscribe(app, server.wsUrl, {
+        userId: await getRootUserId(app),
+        runId: setup.runId,
+        requestId: 'subscribe-e2e-large',
+      });
       await stream.appendText(largeOutput);
       while (
         frames.reduce(
@@ -184,7 +203,7 @@ describe('terminal stream end-to-end reliability', () => {
       ).toBe(largeOutput);
     } finally {
       stream.close();
-      browser.close();
+      browser?.close();
       await server.close();
     }
   });
@@ -197,19 +216,23 @@ describe('terminal stream end-to-end reliability', () => {
       maxSnapshotBytes: 8,
     });
     const stream = setup.createClient(server.serverUrl);
-    const browserToken = await createBrowserToken(app, await getRootUserId(app));
-    const browser = createWebSocket(server.wsUrl, { token: browserToken });
+    let browser: WebSocket | undefined;
 
     try {
       await stream.start();
       await stream.appendText('0123456789abcdef');
-      await subscribe(browser, setup.runId, 'subscribe-e2e-gap', 0);
+      browser = await subscribe(app, server.wsUrl, {
+        userId: await getRootUserId(app),
+        runId: setup.runId,
+        requestId: 'subscribe-e2e-gap',
+        lastOffset: 0,
+      });
       expect(await waitForFrame(browser, (frame) => frame.type === 'error')).toMatchObject({
         code: 'TERMINAL_OFFSET_GAP',
       });
     } finally {
       stream.close();
-      browser.close();
+      browser?.close();
       await server.close();
     }
   });

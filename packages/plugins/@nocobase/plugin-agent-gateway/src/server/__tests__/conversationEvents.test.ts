@@ -683,25 +683,51 @@ describe('agent gateway conversation event APIs', () => {
     expect((await listOnlyAgent.get(`/api/agent-gateway/runs/${run.id}/conversation-events:list`)).status).toBe(403);
 
     const messageReader = await createUserAgent('conversation-message-reader', ['agentGateway.readSessionMessages']);
-    expect((await messageReader.get(`/api/agent-gateway/runs/${run.id}/conversation-events:list`)).status).toBe(403);
+    expect((await messageReader.get(`/api/agent-gateway/runs/${run.id}/conversation-events:list`)).status).toBe(200);
 
     const runAndMessageReader = await createUserAgent('conversation-run-message-reader', [
       'agentGateway.readRun',
       'agentGateway.readSessionMessages',
     ]);
     expect((await runAndMessageReader.get(`/api/agent-gateway/runs/${run.id}/conversation-events:list`)).status).toBe(
-      403,
+      200,
     );
 
     const detailReader = await createUserAgent('conversation-detail-reader', ['agentGateway.readRunDetails']);
-    const allowedResponse = await detailReader.get(`/api/agent-gateway/runs/${run.id}/conversation-events:list`);
-    expect(allowedResponse.status).toBe(200);
-    expect(JSON.stringify(allowedResponse.body.data)).toContain('permission visible message');
+    const deniedResponse = await detailReader.get(`/api/agent-gateway/runs/${run.id}/conversation-events:list`);
+    expect(deniedResponse.status).toBe(403);
 
     const rawConversationSnippet = registerTestSnippet('agentGateway.test.rawConversationEvents', [
       'agAgentConversationEvents:list',
     ]);
     const rawConversationAgent = await createUserAgent('conversation-raw-reader', [rawConversationSnippet]);
     expect((await rawConversationAgent.get('/api/agAgentConversationEvents:list')).status).toBe(403);
+
+    const audits = await app.db.getRepository('agAgentActionAudits').find({
+      filter: {
+        action: 'readSessionMessages',
+        runId: run.id,
+      },
+    });
+    expect(audits.map((audit) => audit.toJSON())).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          permissionKey: 'agentGateway.readSessionMessages',
+          resultStatus: 'succeeded',
+          metadataJson: expect.objectContaining({
+            routeAction: 'listRunConversationEvents',
+            eventCount: 1,
+          }),
+        }),
+        expect.objectContaining({
+          permissionKey: 'agentGateway.readSessionMessages',
+          resultStatus: 'denied',
+          metadataJson: expect.objectContaining({
+            routeAction: 'listRunConversationEvents',
+            phase: 'permission',
+          }),
+        }),
+      ]),
+    );
   });
 });

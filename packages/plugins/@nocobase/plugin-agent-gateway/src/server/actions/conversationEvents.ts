@@ -14,7 +14,14 @@ import { Context, Next } from '@nocobase/actions';
 import { Plugin } from '@nocobase/server';
 import { Transaction, UniqueConstraintError } from 'sequelize';
 
-import { AGENT_GATEWAY_ACTIONS, authenticateNodeToken, redactEventPayload, redactObservabilityText } from '../security';
+import {
+  AGENT_GATEWAY_ACTIONS,
+  AGENT_GATEWAY_PERMISSIONS,
+  authenticateNodeToken,
+  redactEventPayload,
+  redactObservabilityText,
+} from '../security';
+import { auditAgentActionBestEffort, auditReadAgentAction } from '../audit/agentActionAudit';
 import {
   API_PREFIX,
   JsonRecord,
@@ -238,17 +245,59 @@ async function assertSessionExists(ctx: Context, sessionId: string) {
   return session;
 }
 
-async function requireConversationRead(ctx: Context) {
-  await requireAgentGatewayPermission(
-    ctx,
-    AGENT_GATEWAY_ACTIONS.readRunDetails,
-    'Agent Gateway run detail read permission required',
-  );
-  await requireAgentGatewayPermission(
-    ctx,
-    AGENT_GATEWAY_ACTIONS.readSessionMessages,
-    'Agent Gateway session message read permission required',
-  );
+async function auditConversationRead(
+  ctx: Context,
+  options: {
+    runId?: string;
+    sessionId?: string;
+    resultStatus: 'succeeded' | 'denied';
+    routeAction: 'listRunConversationEvents' | 'listSessionConversationEvents';
+    metadataJson?: JsonRecord;
+  },
+) {
+  const input = {
+    action: 'readSessionMessages' as const,
+    runId: options.runId,
+    sessionId: options.sessionId,
+    operatorId: getCurrentUserId(ctx) || undefined,
+    permissionKey: AGENT_GATEWAY_PERMISSIONS.readSessionMessages,
+    resultStatus: options.resultStatus,
+    metadataJson: {
+      routeAction: options.routeAction,
+      ...getRecord(options.metadataJson),
+    },
+  };
+  if (options.resultStatus === 'succeeded') {
+    await auditReadAgentAction(ctx, input);
+    return;
+  }
+  await auditAgentActionBestEffort(ctx, input);
+}
+
+async function requireConversationRead(
+  ctx: Context,
+  audit: {
+    runId?: string;
+    sessionId?: string;
+    routeAction: 'listRunConversationEvents' | 'listSessionConversationEvents';
+  },
+) {
+  try {
+    await requireAgentGatewayPermission(
+      ctx,
+      AGENT_GATEWAY_ACTIONS.readSessionMessages,
+      'Agent Gateway session message read permission required',
+    );
+  } catch (error) {
+    await auditConversationRead(ctx, {
+      ...audit,
+      resultStatus: 'denied',
+      metadataJson: {
+        phase: 'permission',
+      },
+    });
+    throw error;
+  }
 }
 
 async function findReadableSessionRunIds(ctx: Context, sessionId: string) {
@@ -462,8 +511,23 @@ async function appendConversationEvents(ctx: Context, runId: string) {
 }
 
 async function listRunConversationEvents(ctx: Context, runId: string) {
-  await requireConversationRead(ctx);
-  await assertRunReadable(ctx, runId);
+  const routeAction = 'listRunConversationEvents';
+  await requireConversationRead(ctx, { runId, routeAction });
+  let run: ModelRecord;
+  try {
+    run = await assertRunReadable(ctx, runId);
+  } catch (error) {
+    await auditConversationRead(ctx, {
+      runId,
+      resultStatus: 'denied',
+      routeAction,
+      metadataJson: {
+        phase: 'visibility',
+        reason: error instanceof Error ? error.message : String(error),
+      },
+    });
+    throw error;
+  }
 
   const events = (await ctx.db.getRepository('agAgentConversationEvents').find({
     filter: {
@@ -472,13 +536,37 @@ async function listRunConversationEvents(ctx: Context, runId: string) {
     sort: ['createdAt', 'sequence'],
   })) as ModelRecord[];
 
+  await auditConversationRead(ctx, {
+    runId,
+    sessionId: getModelString(run, 'agentSessionId') || undefined,
+    resultStatus: 'succeeded',
+    routeAction,
+    metadataJson: {
+      eventCount: events.length,
+    },
+  });
   ctx.body = events.map(serializeModel);
 }
 
 async function listSessionConversationEvents(ctx: Context, sessionId: string) {
-  await requireConversationRead(ctx);
+  const routeAction = 'listSessionConversationEvents';
+  await requireConversationRead(ctx, { sessionId, routeAction });
   await assertSessionExists(ctx, sessionId);
-  const readableRunIds = await findReadableSessionRunIds(ctx, sessionId);
+  let readableRunIds: string[];
+  try {
+    readableRunIds = await findReadableSessionRunIds(ctx, sessionId);
+  } catch (error) {
+    await auditConversationRead(ctx, {
+      sessionId,
+      resultStatus: 'denied',
+      routeAction,
+      metadataJson: {
+        phase: 'visibility',
+        reason: error instanceof Error ? error.message : String(error),
+      },
+    });
+    throw error;
+  }
 
   const events = (await ctx.db.getRepository('agAgentConversationEvents').find({
     filter: {
@@ -490,6 +578,16 @@ async function listSessionConversationEvents(ctx: Context, sessionId: string) {
     sort: ['createdAt', 'sequence'],
   })) as ModelRecord[];
 
+  await auditConversationRead(ctx, {
+    runId: readableRunIds[0],
+    sessionId,
+    resultStatus: 'succeeded',
+    routeAction,
+    metadataJson: {
+      runCount: readableRunIds.length,
+      eventCount: events.length,
+    },
+  });
   ctx.body = events.map(serializeModel);
 }
 

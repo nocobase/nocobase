@@ -18,11 +18,14 @@ export type AgentActionAuditStatus = 'accepted' | 'denied' | 'succeeded' | 'fail
 export interface AgentActionAuditInput {
   action:
     | 'resume'
+    | 'dispatch'
     | 'message'
     | 'cancel'
     | 'interrupt'
     | 'terminate'
+    | 'readRunDetails'
     | 'readTerminal'
+    | 'readSessionMessages'
     | 'readArtifacts'
     | 'readRawLogs'
     | 'rawTerminalWrite'

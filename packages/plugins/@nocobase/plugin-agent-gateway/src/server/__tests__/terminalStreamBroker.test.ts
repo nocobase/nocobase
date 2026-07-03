@@ -20,7 +20,7 @@ import {
 import PluginAgentGatewayServer from '../plugin';
 import {
   claimRun,
-  createBrowserToken,
+  createBrowserStreamTicket,
   createQueuedRun,
   createRunner,
   createTerminalStreamServer,
@@ -76,6 +76,39 @@ function waitForClose(ws: WebSocket) {
   });
 }
 
+async function createBrowserWithTicket(
+  app: MockServer,
+  serverUrl: string,
+  options: { userId: string | number; runId: string; requestId: string; lastOffset?: number; roleName?: string },
+) {
+  const ticket = await createBrowserStreamTicket(app, {
+    userId: options.userId,
+    runId: options.runId,
+    roleName: options.roleName,
+  });
+  const browser = createWebSocket(serverUrl, {
+    streamTicket: ticket,
+  });
+  return {
+    browser,
+    ticket,
+  };
+}
+
+function sendBrowserSubscribe(
+  ws: WebSocket,
+  ticket: Awaited<ReturnType<typeof createBrowserStreamTicket>>,
+  options: { runId: string; requestId: string; lastOffset?: number },
+) {
+  sendFrame(ws, {
+    type: 'browser.subscribe',
+    protocol: TERMINAL_PROTOCOL,
+    requestId: options.requestId,
+    runId: options.runId,
+    lastOffset: options.lastOffset,
+  });
+}
+
 describe('terminal stream broker', () => {
   let app: MockServer;
   let rootUserId: string | number;
@@ -112,9 +145,12 @@ describe('terminal stream broker', () => {
     const runId = await createQueuedRun(app, runner, 'terminal-stream-broker-run-1');
     const lease = await claimRun(app, runner, runId);
     const server = await createTerminalStreamServer(app);
-    const browserToken = await createBrowserToken(app, rootUserId);
     const daemon = createWebSocket(server.wsUrl, { nodeToken: runner.nodeToken });
-    const browser = createWebSocket(server.wsUrl, { token: browserToken });
+    const browserConnection = await createBrowserWithTicket(app, server.wsUrl, {
+      userId: rootUserId,
+      runId,
+    });
+    const browser = browserConnection.browser;
 
     try {
       await Promise.all([waitForOpen(daemon), waitForOpen(browser)]);
@@ -132,11 +168,9 @@ describe('terminal stream broker', () => {
         requestId: 'register-1',
       });
 
-      sendFrame(browser, {
-        type: 'browser.subscribe',
-        protocol: TERMINAL_PROTOCOL,
-        requestId: 'subscribe-1',
+      sendBrowserSubscribe(browser, browserConnection.ticket, {
         runId,
+        requestId: 'subscribe-1',
         lastOffset: 0,
       });
       expect(await waitForFrame(browser, (frame) => frame.type === 'ack')).toMatchObject({
@@ -193,12 +227,21 @@ describe('terminal stream broker', () => {
     const runner = await createRunner(app, { nodeKey: 'terminal-stream-broker-node-denied' });
     const runId = await createQueuedRun(app, runner, 'terminal-stream-broker-run-denied');
     const server = await createTerminalStreamServer(app);
-    const user = await createUserWithSnippets(app, 'terminal-stream-denied', [
-      'agentGateway.readRuns',
-      'agentGateway.readRunDetails',
-    ]);
-    const browserToken = await createBrowserToken(app, user.userId, user.roleName);
-    const browser = createWebSocket(server.wsUrl, { token: browserToken });
+    const user = await createUserWithSnippets(app, 'terminal-stream-denied', ['agentGateway.readTerminal']);
+    const ticket = await createBrowserStreamTicket(app, {
+      userId: user.userId,
+      runId,
+      roleName: user.roleName,
+    });
+    await app.db.getRepository('roles').update({
+      filterByTk: user.roleName,
+      values: {
+        snippets: ['agentGateway.readRuns'],
+      },
+    });
+    const browser = createWebSocket(server.wsUrl, {
+      streamTicket: ticket,
+    });
 
     try {
       await waitForOpen(browser);
@@ -270,9 +313,12 @@ describe('terminal stream broker', () => {
     const runId = await createQueuedRun(app, runner, 'terminal-stream-broker-run-gap');
     const lease = await claimRun(app, runner, runId);
     const server = await createTerminalStreamServer(app);
-    const browserToken = await createBrowserToken(app, rootUserId);
     const daemon = createWebSocket(server.wsUrl, { nodeToken: runner.nodeToken });
-    const browser = createWebSocket(server.wsUrl, { token: browserToken });
+    const browserConnection = await createBrowserWithTicket(app, server.wsUrl, {
+      userId: rootUserId,
+      runId,
+    });
+    const browser = browserConnection.browser;
 
     try {
       await Promise.all([waitForOpen(daemon), waitForOpen(browser)]);
@@ -299,11 +345,9 @@ describe('terminal stream broker', () => {
       });
       await waitForFrame(daemon, (frame) => frame.type === 'ack' && frame.requestId === 'bind-gap');
 
-      sendFrame(browser, {
-        type: 'browser.subscribe',
-        protocol: TERMINAL_PROTOCOL,
-        requestId: 'subscribe-gap',
+      sendBrowserSubscribe(browser, browserConnection.ticket, {
         runId,
+        requestId: 'subscribe-gap',
         lastOffset: 42,
       });
       await waitForFrame(browser, (frame) => frame.type === 'ack' && frame.requestId === 'subscribe-gap');
@@ -341,9 +385,12 @@ describe('terminal stream broker', () => {
     const runId = await createQueuedRun(app, runner, 'terminal-stream-broker-run-snapshot-order');
     const lease = await claimRun(app, runner, runId);
     const server = await createTerminalStreamServer(app);
-    const browserToken = await createBrowserToken(app, rootUserId);
     const daemon = createWebSocket(server.wsUrl, { nodeToken: runner.nodeToken });
-    const browser = createWebSocket(server.wsUrl, { token: browserToken });
+    const browserConnection = await createBrowserWithTicket(app, server.wsUrl, {
+      userId: rootUserId,
+      runId,
+    });
+    const browser = browserConnection.browser;
     const sessionName = 'agw_terminal_stream_snapshot_order';
 
     try {
@@ -371,11 +418,9 @@ describe('terminal stream broker', () => {
       });
       await waitForFrame(daemon, (frame) => frame.type === 'ack' && frame.requestId === 'bind-snapshot-order');
 
-      sendFrame(browser, {
-        type: 'browser.subscribe',
-        protocol: TERMINAL_PROTOCOL,
-        requestId: 'subscribe-snapshot-order',
+      sendBrowserSubscribe(browser, browserConnection.ticket, {
         runId,
+        requestId: 'subscribe-snapshot-order',
         lastOffset: 0,
       });
       await waitForFrame(browser, (frame) => frame.type === 'ack' && frame.requestId === 'subscribe-snapshot-order');
@@ -441,9 +486,12 @@ describe('terminal stream broker', () => {
     const runId = await createQueuedRun(app, runner, 'terminal-stream-broker-run-snapshot-before-end');
     const lease = await claimRun(app, runner, runId);
     const server = await createTerminalStreamServer(app);
-    const browserToken = await createBrowserToken(app, rootUserId);
     const daemon = createWebSocket(server.wsUrl, { nodeToken: runner.nodeToken });
-    const browser = createWebSocket(server.wsUrl, { token: browserToken });
+    const browserConnection = await createBrowserWithTicket(app, server.wsUrl, {
+      userId: rootUserId,
+      runId,
+    });
+    const browser = browserConnection.browser;
     const sessionName = 'agw_terminal_stream_snapshot_before_end';
 
     try {
@@ -471,11 +519,9 @@ describe('terminal stream broker', () => {
       });
       await waitForFrame(daemon, (frame) => frame.type === 'ack' && frame.requestId === 'bind-snapshot-before-end');
 
-      sendFrame(browser, {
-        type: 'browser.subscribe',
-        protocol: TERMINAL_PROTOCOL,
-        requestId: 'subscribe-snapshot-before-end',
+      sendBrowserSubscribe(browser, browserConnection.ticket, {
         runId,
+        requestId: 'subscribe-snapshot-before-end',
         lastOffset: 0,
       });
       await waitForFrame(
@@ -528,9 +574,12 @@ describe('terminal stream broker', () => {
     const runId = await createQueuedRun(app, runner, 'terminal-stream-broker-run-snapshot-daemon-close');
     const lease = await claimRun(app, runner, runId);
     const server = await createTerminalStreamServer(app);
-    const browserToken = await createBrowserToken(app, rootUserId);
     const daemon = createWebSocket(server.wsUrl, { nodeToken: runner.nodeToken });
-    const browser = createWebSocket(server.wsUrl, { token: browserToken });
+    const browserConnection = await createBrowserWithTicket(app, server.wsUrl, {
+      userId: rootUserId,
+      runId,
+    });
+    const browser = browserConnection.browser;
 
     try {
       await Promise.all([waitForOpen(daemon), waitForOpen(browser)]);
@@ -560,11 +609,9 @@ describe('terminal stream broker', () => {
       });
       await waitForFrame(daemon, (frame) => frame.type === 'ack' && frame.requestId === 'bind-snapshot-daemon-close');
 
-      sendFrame(browser, {
-        type: 'browser.subscribe',
-        protocol: TERMINAL_PROTOCOL,
-        requestId: 'subscribe-snapshot-daemon-close',
+      sendBrowserSubscribe(browser, browserConnection.ticket, {
         runId,
+        requestId: 'subscribe-snapshot-daemon-close',
         lastOffset: 8,
       });
       await waitForFrame(
@@ -587,9 +634,12 @@ describe('terminal stream broker', () => {
     const runId = await createQueuedRun(app, runner, 'terminal-stream-broker-run-end-pending-snapshot');
     const lease = await claimRun(app, runner, runId);
     const server = await createTerminalStreamServer(app);
-    const browserToken = await createBrowserToken(app, rootUserId);
     const daemon = createWebSocket(server.wsUrl, { nodeToken: runner.nodeToken });
-    const browser = createWebSocket(server.wsUrl, { token: browserToken });
+    const browserConnection = await createBrowserWithTicket(app, server.wsUrl, {
+      userId: rootUserId,
+      runId,
+    });
+    const browser = browserConnection.browser;
     const sessionName = 'agw_terminal_stream_end_pending_snapshot';
 
     try {
@@ -620,11 +670,9 @@ describe('terminal stream broker', () => {
       });
       await waitForFrame(daemon, (frame) => frame.type === 'ack' && frame.requestId === 'bind-end-pending-snapshot');
 
-      sendFrame(browser, {
-        type: 'browser.subscribe',
-        protocol: TERMINAL_PROTOCOL,
-        requestId: 'subscribe-end-pending-snapshot',
+      sendBrowserSubscribe(browser, browserConnection.ticket, {
         runId,
+        requestId: 'subscribe-end-pending-snapshot',
         lastOffset: 12,
       });
       await waitForFrame(
@@ -662,9 +710,12 @@ describe('terminal stream broker', () => {
     const runId = await createQueuedRun(app, runner, 'terminal-stream-broker-run-heartbeat');
     const lease = await claimRun(app, runner, runId);
     const server = await createTerminalStreamServer(app);
-    const browserToken = await createBrowserToken(app, rootUserId);
     const daemon = createWebSocket(server.wsUrl, { nodeToken: runner.nodeToken });
-    const browser = createWebSocket(server.wsUrl, { token: browserToken });
+    const browserConnection = await createBrowserWithTicket(app, server.wsUrl, {
+      userId: rootUserId,
+      runId,
+    });
+    const browser = browserConnection.browser;
 
     try {
       await Promise.all([waitForOpen(daemon), waitForOpen(browser)]);
@@ -678,11 +729,9 @@ describe('terminal stream broker', () => {
         },
       });
       await waitForFrame(daemon, (frame) => frame.type === 'ack' && frame.requestId === 'register-heartbeat');
-      sendFrame(browser, {
-        type: 'browser.subscribe',
-        protocol: TERMINAL_PROTOCOL,
-        requestId: 'subscribe-heartbeat',
+      sendBrowserSubscribe(browser, browserConnection.ticket, {
         runId,
+        requestId: 'subscribe-heartbeat',
         lastOffset: 0,
       });
       await waitForFrame(browser, (frame) => frame.type === 'ack' && frame.requestId === 'subscribe-heartbeat');
@@ -738,9 +787,12 @@ describe('terminal stream broker', () => {
     const runId = await createQueuedRun(app, runner, 'terminal-stream-broker-run-expired');
     const lease = await claimRun(app, runner, runId);
     const server = await createTerminalStreamServer(app);
-    const browserToken = await createBrowserToken(app, rootUserId);
     const daemon = createWebSocket(server.wsUrl, { nodeToken: runner.nodeToken });
-    const browser = createWebSocket(server.wsUrl, { token: browserToken });
+    const browserConnection = await createBrowserWithTicket(app, server.wsUrl, {
+      userId: rootUserId,
+      runId,
+    });
+    const browser = browserConnection.browser;
 
     try {
       await Promise.all([waitForOpen(daemon), waitForOpen(browser)]);
@@ -774,11 +826,9 @@ describe('terminal stream broker', () => {
         },
       });
 
-      sendFrame(browser, {
-        type: 'browser.subscribe',
-        protocol: TERMINAL_PROTOCOL,
-        requestId: 'subscribe-expired',
+      sendBrowserSubscribe(browser, browserConnection.ticket, {
         runId,
+        requestId: 'subscribe-expired',
         lastOffset: 42,
       });
       await waitForFrame(browser, (frame) => frame.type === 'ack' && frame.requestId === 'subscribe-expired');
@@ -806,16 +856,17 @@ describe('terminal stream broker', () => {
       },
     });
     const server = await createTerminalStreamServer(app);
-    const browserToken = await createBrowserToken(app, rootUserId);
-    const browser = createWebSocket(server.wsUrl, { token: browserToken });
+    const browserConnection = await createBrowserWithTicket(app, server.wsUrl, {
+      userId: rootUserId,
+      runId,
+    });
+    const browser = browserConnection.browser;
 
     try {
       await waitForOpen(browser);
-      sendFrame(browser, {
-        type: 'browser.subscribe',
-        protocol: TERMINAL_PROTOCOL,
-        requestId: 'subscribe-completed-reconnect',
+      sendBrowserSubscribe(browser, browserConnection.ticket, {
         runId,
+        requestId: 'subscribe-completed-reconnect',
         lastOffset: 1203,
       });
       await waitForFrame(
@@ -840,9 +891,12 @@ describe('terminal stream broker', () => {
     const runId = await createQueuedRun(app, runner, 'terminal-stream-broker-run-end-expired');
     const lease = await claimRun(app, runner, runId);
     const server = await createTerminalStreamServer(app);
-    const browserToken = await createBrowserToken(app, rootUserId);
     const daemon = createWebSocket(server.wsUrl, { nodeToken: runner.nodeToken });
-    const browser = createWebSocket(server.wsUrl, { token: browserToken });
+    const browserConnection = await createBrowserWithTicket(app, server.wsUrl, {
+      userId: rootUserId,
+      runId,
+    });
+    const browser = browserConnection.browser;
 
     try {
       await Promise.all([waitForOpen(daemon), waitForOpen(browser)]);
@@ -869,11 +923,9 @@ describe('terminal stream broker', () => {
       });
       await waitForFrame(daemon, (frame) => frame.type === 'ack' && frame.requestId === 'bind-end-expired');
 
-      sendFrame(browser, {
-        type: 'browser.subscribe',
-        protocol: TERMINAL_PROTOCOL,
-        requestId: 'subscribe-end-expired',
+      sendBrowserSubscribe(browser, browserConnection.ticket, {
         runId,
+        requestId: 'subscribe-end-expired',
       });
       await waitForFrame(browser, (frame) => frame.type === 'ack' && frame.requestId === 'subscribe-end-expired');
 

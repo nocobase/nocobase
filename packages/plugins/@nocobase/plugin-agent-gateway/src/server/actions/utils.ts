@@ -19,10 +19,14 @@ const UNION_ROLE_KEY = '__union__';
 const SYSTEM_ROLE_MODE_DEFAULT = 'default';
 const SYSTEM_ROLE_MODE_ONLY_USE_UNION = 'only-use-union';
 
+export const AGENT_GATEWAY_ERROR_CODES = {
+  permissionDenied: 'AGENT_GATEWAY_PERMISSION_DENIED',
+  resourceNotVisible: 'AGENT_GATEWAY_RESOURCE_NOT_VISIBLE',
+} as const;
+
 export type JsonRecord = Record<string, unknown>;
 
 export const AGENT_GATEWAY_STANDARD_COLLECTIONS = [
-  'agAgentActionAudits',
   'agAgentConversationEvents',
   'agAgentProfiles',
   'agAgentSessions',
@@ -37,6 +41,7 @@ export const AGENT_GATEWAY_STANDARD_COLLECTIONS = [
   'agRunEvents',
   'agRunSnapshots',
   'agRuns',
+  'agTerminalStreamTickets',
   'agSkillVersions',
   'agSkills',
 ] as const;
@@ -383,6 +388,17 @@ export async function requireLoggedIn(ctx: Context) {
 export async function requireAgentGatewayPermission(ctx: Context, action: string, message: string) {
   await requireLoggedIn(ctx);
 
+  if (!(await hasAgentGatewayPermission(ctx, action))) {
+    ctx.throw(403, {
+      code: AGENT_GATEWAY_ERROR_CODES.permissionDenied,
+      message,
+    });
+  }
+}
+
+export async function hasAgentGatewayPermission(ctx: Context, action: string) {
+  await requireLoggedIn(ctx);
+
   const roles = await getCurrentRoleNames(ctx);
   const allowed = ctx.app.acl.can({
     roles,
@@ -390,9 +406,7 @@ export async function requireAgentGatewayPermission(ctx: Context, action: string
     action,
   });
 
-  if (!allowed) {
-    ctx.throw(403, message);
-  }
+  return Boolean(allowed);
 }
 
 export async function requireManagePermission(ctx: Context) {
@@ -412,7 +426,10 @@ export async function getRunAclFilter(ctx: Context, action: 'get' | 'list' = 'ge
   });
 
   if (!permission || typeof permission !== 'object') {
-    ctx.throw(403, 'Agent Gateway run visibility permission required');
+    ctx.throw(403, {
+      code: AGENT_GATEWAY_ERROR_CODES.permissionDenied,
+      message: 'Agent Gateway run visibility permission required',
+    });
   }
 
   const params = getRecord(permission.params);
@@ -426,7 +443,10 @@ export async function getRunAclFilter(ctx: Context, action: 'get' | 'list' = 'ge
     checkFilterParams(collection, rawFilter);
   } catch (error) {
     if (error instanceof NoPermissionError) {
-      ctx.throw(403, 'Agent Gateway run visibility permission required');
+      ctx.throw(403, {
+        code: AGENT_GATEWAY_ERROR_CODES.permissionDenied,
+        message: 'Agent Gateway run visibility permission required',
+      });
     }
     throw error;
   }
@@ -466,7 +486,10 @@ export async function assertRunVisible(ctx: Context, runId: string, action: 'get
     filter,
   })) as ModelRecord | null;
   if (!run) {
-    ctx.throw(404, 'Run not found');
+    ctx.throw(404, {
+      code: AGENT_GATEWAY_ERROR_CODES.resourceNotVisible,
+      message: 'Run not found',
+    });
   }
   return run;
 }

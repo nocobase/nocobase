@@ -11,7 +11,16 @@ import fs from 'fs/promises';
 
 import { chromium, Page } from 'playwright';
 
-import { TERMINAL_PROTOCOL, TERMINAL_STREAM_WS_PATH } from '../src/shared/terminalStreamProtocol';
+import {
+  TERMINAL_PROTOCOL,
+  TERMINAL_STREAM_BROWSER_AUTHENTICATOR_PROTOCOL_PREFIX,
+  TERMINAL_STREAM_BROWSER_AUTH_PROOF_PROTOCOL_PREFIX,
+  TERMINAL_STREAM_BROWSER_ROLE_PROTOCOL_PREFIX,
+  TERMINAL_STREAM_BROWSER_SUBPROTOCOL,
+  TERMINAL_STREAM_BROWSER_TICKET_PROOF_PROTOCOL_PREFIX,
+  TERMINAL_STREAM_BROWSER_TICKET_PROTOCOL_PREFIX,
+  TERMINAL_STREAM_WS_PATH,
+} from '../src/shared/terminalStreamProtocol';
 import {
   JsonRecord,
   findOneByFilter,
@@ -80,14 +89,17 @@ function parseArgs(argv: string[]): StressBrowserArgs {
   };
 }
 
-function buildWsUrl(serverUrl: string, token: string, roleName?: string) {
+interface StreamTicket {
+  ticket: string;
+  ticketProof: string;
+  authProof?: string;
+  authenticator?: string;
+  role?: string;
+}
+
+function buildWsUrl(serverUrl: string) {
   const url = new URL(TERMINAL_STREAM_WS_PATH, serverUrl);
   url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
-  url.searchParams.set('token', token);
-  url.searchParams.set('authenticator', 'basic');
-  if (roleName) {
-    url.searchParams.set('role', roleName);
-  }
   return url.toString();
 }
 
@@ -282,18 +294,85 @@ async function ensureStressUser(serverUrl: string, adminToken: string, index: nu
   return await signInStressUser(serverUrl, email);
 }
 
-async function openSubscriptions(page: Page, options: { wsUrl: string; runId: string; count: number }) {
+async function createStreamTickets(serverUrl: string, token: string, runId: string, count: number) {
+  return await Promise.all(
+    Array.from({ length: count }, async (_value, index) => {
+      const ticket = await requestJson<JsonRecord>(
+        serverUrl,
+        `/api/agent-gateway/runs/${encodeURIComponent(runId)}/terminal-stream-tickets:create`,
+        {
+          method: 'POST',
+          token,
+          body: {},
+        },
+      );
+      const ticketValue = getString(ticket.ticket);
+      const ticketProof = getString(ticket.ticketProof);
+      const authProof = getString(ticket.authProof);
+      const authenticator = getString(ticket.authenticator) || 'basic';
+      const role = getString(ticket.role) || undefined;
+      if (!ticketValue || !ticketProof) {
+        const missingFields = [ticketValue ? '' : 'ticket', ticketProof ? '' : 'ticketProof'].filter(Boolean);
+        throw new Error(
+          `Stream ticket create response is invalid for run ${runId} at index ${index}: missing ${missingFields.join(
+            ', ',
+          )}`,
+        );
+      }
+      return {
+        ticket: ticketValue,
+        ticketProof,
+        authProof,
+        authenticator,
+        role,
+      };
+    }),
+  );
+}
+
+async function openSubscriptions(page: Page, options: { wsUrl: string; runId: string; tickets: StreamTicket[] }) {
   return await page.evaluate(
-    async ({ protocol, wsUrl, runId, count }) => {
+    async ({
+      browserAuthenticatorProtocolPrefix,
+      browserAuthProofProtocolPrefix,
+      browserRoleProtocolPrefix,
+      browserSubprotocol,
+      browserTicketProofProtocolPrefix,
+      browserTicketProtocolPrefix,
+      protocol,
+      wsUrl,
+      runId,
+      tickets,
+    }) => {
       type StoredSocketWindow = Window & {
         __agentGatewayStressSockets?: WebSocket[];
+      };
+      const encodeProtocolValue = (value: string) => {
+        const bytes = new TextEncoder().encode(value);
+        let binary = '';
+        for (const byte of bytes) {
+          binary += String.fromCharCode(byte);
+        }
+        return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
       };
       const storedWindow = window as StoredSocketWindow;
       storedWindow.__agentGatewayStressSockets = storedWindow.__agentGatewayStressSockets || [];
       const results = await Promise.all(
-        Array.from({ length: count }, async (_value, index) => {
+        tickets.map(async (ticket, index) => {
           return await new Promise<{ type: string; code?: string }>((resolve) => {
-            const socket = new WebSocket(wsUrl);
+            const protocols = [
+              browserSubprotocol,
+              `${browserTicketProtocolPrefix}${encodeProtocolValue(ticket.ticket)}`,
+              `${browserTicketProofProtocolPrefix}${encodeProtocolValue(ticket.ticketProof)}`,
+              `${browserAuthenticatorProtocolPrefix}${encodeProtocolValue(ticket.authenticator || 'basic')}`,
+            ];
+            if (ticket.authProof) {
+              protocols.push(`${browserAuthProofProtocolPrefix}${encodeProtocolValue(ticket.authProof)}`);
+            }
+            if (ticket.role) {
+              protocols.push(`${browserRoleProtocolPrefix}${encodeProtocolValue(ticket.role)}`);
+            }
+            const socket = new WebSocket(wsUrl, protocols);
             storedWindow.__agentGatewayStressSockets?.push(socket);
             const requestId = `stress-subscribe-${Date.now()}-${Math.random().toString(16).slice(2)}-${index}`;
             const timer = window.setTimeout(() => {
@@ -334,17 +413,23 @@ async function openSubscriptions(page: Page, options: { wsUrl: string; runId: st
         }),
       );
       return {
-        requested: count,
+        requested: tickets.length,
         ackCount: results.filter((result) => result.type === 'ack').length,
         errorCodes: results.map((result) => result.code).filter(Boolean) as string[],
         timedOut: results.filter((result) => result.type === 'timeout').length,
       };
     },
     {
+      browserAuthenticatorProtocolPrefix: TERMINAL_STREAM_BROWSER_AUTHENTICATOR_PROTOCOL_PREFIX,
+      browserAuthProofProtocolPrefix: TERMINAL_STREAM_BROWSER_AUTH_PROOF_PROTOCOL_PREFIX,
+      browserRoleProtocolPrefix: TERMINAL_STREAM_BROWSER_ROLE_PROTOCOL_PREFIX,
+      browserTicketProtocolPrefix: TERMINAL_STREAM_BROWSER_TICKET_PROTOCOL_PREFIX,
+      browserTicketProofProtocolPrefix: TERMINAL_STREAM_BROWSER_TICKET_PROOF_PROTOCOL_PREFIX,
+      browserSubprotocol: TERMINAL_STREAM_BROWSER_SUBPROTOCOL,
       protocol: TERMINAL_PROTOCOL,
       wsUrl: options.wsUrl,
       runId: options.runId,
-      count: options.count,
+      tickets: options.tickets,
     },
   );
 }
@@ -387,10 +472,11 @@ async function main() {
       pages.push(page);
       await page.goto(args.serverUrl, { waitUntil: 'domcontentloaded' });
       const count = args.limitMode === 'per-user' ? args.subscriptions : args.subscriptionsPerUser;
+      const tickets = await createStreamTickets(args.serverUrl, token, args.runId, count);
       const result = await openSubscriptions(page, {
-        wsUrl: buildWsUrl(args.serverUrl, token, args.limitMode === 'per-user' ? 'root' : STRESS_USER_ROLE_NAME),
+        wsUrl: buildWsUrl(args.serverUrl),
         runId: args.runId,
-        count,
+        tickets,
       });
       results.push(result);
       if (result.errorCodes.includes(args.expectError)) {

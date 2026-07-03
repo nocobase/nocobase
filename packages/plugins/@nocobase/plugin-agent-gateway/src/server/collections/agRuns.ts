@@ -39,12 +39,14 @@ export default defineCollection({
       name: 'claimAttempt',
       defaultValue: 0,
       allowNull: false,
+      hidden: true,
     },
     {
       type: 'integer',
       name: 'leaseVersion',
       defaultValue: 0,
       allowNull: false,
+      hidden: true,
     },
     {
       type: 'string',
@@ -54,10 +56,12 @@ export default defineCollection({
     {
       type: 'string',
       name: 'claimTokenLast4',
+      hidden: true,
     },
     {
       type: 'date',
       name: 'claimExpiresAt',
+      hidden: true,
     },
     {
       type: 'date',
@@ -147,6 +151,7 @@ export default defineCollection({
     {
       type: 'string',
       name: 'terminalSessionName',
+      hidden: true,
     },
     {
       type: 'string',

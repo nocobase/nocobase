@@ -28,6 +28,7 @@ import {
 import {
   AGENT_GATEWAY_STANDARD_COLLECTIONS,
   API_PREFIX,
+  AGENT_GATEWAY_ERROR_CODES,
   JsonRecord,
   ModelRecord,
   getBodyValues,
@@ -43,6 +44,7 @@ import {
   getCurrentRoleNames,
   getVisibleRunFilter,
   matchStandardCollectionAction,
+  normalizeNocoBaseApiPath,
   requireAgentGatewayPermission,
   requireManagePermission,
 } from './utils';
@@ -164,9 +166,78 @@ function serializeRunForUser(run: ModelRecord) {
   return json;
 }
 
-async function getAgentGatewayControlActionPermissions(ctx: Context) {
+function serializeCreatedRunForUser(run: ModelRecord) {
+  return {
+    ...serializeRunForUser(run),
+    claimAttempt: getModelNumber(run, 'claimAttempt'),
+    leaseVersion: getModelNumber(run, 'leaseVersion'),
+  };
+}
+
+async function auditRunDetailReadDenied(
+  ctx: Context,
+  runId: string,
+  options: { permissionKey: string; routeAction: string; phase: 'permission' | 'visibility'; reason?: string },
+) {
+  await auditAgentActionBestEffort(ctx, {
+    action: 'readRunDetails',
+    runId,
+    operatorId: getCurrentUserId(ctx) || undefined,
+    permissionKey: options.permissionKey,
+    resultStatus: 'denied',
+    metadataJson: {
+      routeAction: options.routeAction,
+      phase: options.phase,
+      ...(options.reason ? { reason: options.reason } : {}),
+    },
+  });
+}
+
+async function getAgentGatewayActionPermissions(ctx: Context) {
   const roles = await getCurrentRoleNames(ctx);
   return {
+    resumeAgentSession: Boolean(
+      ctx.app.acl.can({
+        roles,
+        resource: AGENT_GATEWAY_RESOURCE,
+        action: AGENT_GATEWAY_ACTIONS.resumeAgentSession,
+      }),
+    ),
+    readSessionMessages: Boolean(
+      ctx.app.acl.can({
+        roles,
+        resource: AGENT_GATEWAY_RESOURCE,
+        action: AGENT_GATEWAY_ACTIONS.readSessionMessages,
+      }),
+    ),
+    readTerminal: Boolean(
+      ctx.app.acl.can({
+        roles,
+        resource: AGENT_GATEWAY_RESOURCE,
+        action: AGENT_GATEWAY_ACTIONS.readTerminal,
+      }),
+    ),
+    readArtifacts: Boolean(
+      ctx.app.acl.can({
+        roles,
+        resource: AGENT_GATEWAY_RESOURCE,
+        action: AGENT_GATEWAY_ACTIONS.readArtifacts,
+      }),
+    ),
+    readRawLogs: Boolean(
+      ctx.app.acl.can({
+        roles,
+        resource: AGENT_GATEWAY_RESOURCE,
+        action: AGENT_GATEWAY_ACTIONS.readRawLogs,
+      }),
+    ),
+    readAudit: Boolean(
+      ctx.app.acl.can({
+        roles,
+        resource: AGENT_GATEWAY_RESOURCE,
+        action: AGENT_GATEWAY_ACTIONS.readAudit,
+      }),
+    ),
     interruptRun: Boolean(
       ctx.app.acl.can({
         roles,
@@ -179,6 +250,13 @@ async function getAgentGatewayControlActionPermissions(ctx: Context) {
         roles,
         resource: AGENT_GATEWAY_RESOURCE,
         action: AGENT_GATEWAY_ACTIONS.terminateRun,
+      }),
+    ),
+    cancelRun: Boolean(
+      ctx.app.acl.can({
+        roles,
+        resource: AGENT_GATEWAY_RESOURCE,
+        action: AGENT_GATEWAY_ACTIONS.cancelRun,
       }),
     ),
   };
@@ -267,7 +345,7 @@ async function serializeRunForManagement(ctx: Context, run: ModelRecord) {
       })) as ModelRecord | null)
     : null;
   const capabilities = session ? getRecord(getModelValue(session, 'capabilitiesJson')) : {};
-  const controlPermissions = await getAgentGatewayControlActionPermissions(ctx);
+  const actionPermissions = await getAgentGatewayActionPermissions(ctx);
   const interruptCapable = await getRunControlCapability(ctx, run, session, capabilities, 'interrupt');
   const terminateCapable = await getRunControlCapability(ctx, run, session, capabilities, 'terminate');
   return {
@@ -277,9 +355,18 @@ async function serializeRunForManagement(ctx: Context, run: ModelRecord) {
           agentSessionCapabilitiesJson: capabilities,
         }
       : {}),
+    agentGatewayActionPermissionsJson: {
+      resumeAgentSession: actionPermissions.resumeAgentSession,
+      readSessionMessages: actionPermissions.readSessionMessages,
+      readTerminal: actionPermissions.readTerminal,
+      readArtifacts: actionPermissions.readArtifacts,
+      readRawLogs: actionPermissions.readRawLogs,
+      readAudit: actionPermissions.readAudit,
+      cancelRun: actionPermissions.cancelRun,
+    },
     agentGatewayControlActionsJson: {
-      interruptRun: controlPermissions.interruptRun && interruptCapable,
-      terminateRun: controlPermissions.terminateRun && terminateCapable,
+      interruptRun: actionPermissions.interruptRun && interruptCapable,
+      terminateRun: actionPermissions.terminateRun && terminateCapable,
     },
   };
 }
@@ -511,8 +598,8 @@ async function authenticateNodeForRun(
 async function createRun(ctx: Context) {
   await requireAgentGatewayPermission(
     ctx,
-    AGENT_GATEWAY_ACTIONS.dispatch,
-    'Agent Gateway dispatch permission required',
+    AGENT_GATEWAY_ACTIONS.manage,
+    'Agent Gateway management permission required',
   );
 
   const values = getBodyValues(ctx);
@@ -542,7 +629,7 @@ async function createRun(ctx: Context) {
     },
   })) as ModelRecord;
 
-  ctx.body = serializeRunForUser(run);
+  ctx.body = serializeCreatedRunForUser(run);
 }
 
 async function listRuns(ctx: Context) {
@@ -563,11 +650,21 @@ async function listRuns(ctx: Context) {
 }
 
 async function getRun(ctx: Context, runId: string) {
-  await requireAgentGatewayPermission(
-    ctx,
-    AGENT_GATEWAY_ACTIONS.readRunDetails,
-    'Agent Gateway run detail read permission required',
-  );
+  try {
+    await requireAgentGatewayPermission(
+      ctx,
+      AGENT_GATEWAY_ACTIONS.readRunDetails,
+      'Agent Gateway run detail read permission required',
+    );
+  } catch (error) {
+    await auditRunDetailReadDenied(ctx, runId, {
+      permissionKey: AGENT_GATEWAY_PERMISSIONS.readRunDetails,
+      routeAction: 'runs:get',
+      phase: 'permission',
+      reason: error instanceof Error ? error.message : String(error),
+    });
+    throw error;
+  }
 
   const filter = await getVisibleRunFilter(
     ctx,
@@ -580,10 +677,97 @@ async function getRun(ctx: Context, runId: string) {
     filter,
   })) as ModelRecord | null;
   if (!run) {
-    ctx.throw(404, 'Run not found');
+    await auditRunDetailReadDenied(ctx, runId, {
+      permissionKey: AGENT_GATEWAY_PERMISSIONS.readRunDetails,
+      routeAction: 'runs:get',
+      phase: 'visibility',
+      reason: 'Run not found',
+    });
+    ctx.throw(404, {
+      code: AGENT_GATEWAY_ERROR_CODES.resourceNotVisible,
+      message: 'Run not found',
+    });
   }
 
   ctx.body = await serializeRunForManagement(ctx, run);
+}
+
+function getStandardAgRunsTargetKey(ctx: Context, action: 'get') {
+  const normalizedPath = normalizeNocoBaseApiPath(ctx.path);
+  const prefix = `/agRuns:${action}/`;
+  const pathValue = normalizedPath.startsWith(prefix) ? normalizedPath.slice(prefix.length).split('/')[0] : '';
+  const query = getRecord(ctx.query);
+  const rawRunId = pathValue || getString(query.filterByTk);
+  if (!rawRunId) {
+    return '';
+  }
+  try {
+    return decodeURIComponent(rawRunId);
+  } catch {
+    return rawRunId;
+  }
+}
+
+async function listStandardRuns(ctx: Context) {
+  await requireAgentGatewayPermission(
+    ctx,
+    AGENT_GATEWAY_ACTIONS.readRuns,
+    'Agent Gateway run read permission required',
+  );
+  const filter = await getVisibleRunFilter(ctx, getRunListFilter(ctx), 'list');
+  const runs = (await ctx.db.getRepository('agRuns').find({
+    filter,
+    sort: ['-createdAt'],
+    limit: getQueryLimit(ctx),
+  })) as ModelRecord[];
+
+  ctx.body = runs.map((run) => serializeRunForUser(run));
+}
+
+async function getStandardRun(ctx: Context) {
+  const runId = getStandardAgRunsTargetKey(ctx, 'get');
+  if (!runId) {
+    ctx.throw(400, 'Agent Gateway run id is required');
+  }
+  try {
+    await requireAgentGatewayPermission(
+      ctx,
+      AGENT_GATEWAY_ACTIONS.readRun,
+      'Agent Gateway run standard get permission required',
+    );
+  } catch (error) {
+    await auditRunDetailReadDenied(ctx, runId, {
+      permissionKey: AGENT_GATEWAY_PERMISSIONS.readRun,
+      routeAction: 'agRuns:get',
+      phase: 'permission',
+      reason: error instanceof Error ? error.message : String(error),
+    });
+    throw error;
+  }
+  const filter = await getVisibleRunFilter(
+    ctx,
+    {
+      id: runId,
+    },
+    'get',
+  );
+  const run = (await ctx.db.getRepository('agRuns').findOne({
+    filter,
+  })) as ModelRecord | null;
+  if (!run) {
+    await auditRunDetailReadDenied(ctx, runId, {
+      permissionKey: AGENT_GATEWAY_PERMISSIONS.readRun,
+      routeAction: 'agRuns:get',
+      phase: 'visibility',
+      reason: 'Run not found',
+    });
+    ctx.throw(404, {
+      code: AGENT_GATEWAY_ERROR_CODES.resourceNotVisible,
+      message: 'Run not found',
+    });
+  }
+
+  ctx.body = serializeRunForUser(run);
 }
 
 async function getActiveProfiles(ctx: Context, nodeId: string, values: JsonRecord, transaction: Transaction) {
@@ -1336,6 +1520,7 @@ async function auditCancelRun(
 
 export async function cancelRun(ctx: Context, runId: string, options: { requirePermission?: boolean } = {}) {
   const shouldAudit = options.requirePermission !== false;
+  let deniedAuditWritten = false;
   if (options.requirePermission !== false) {
     try {
       await requireAgentGatewayPermission(
@@ -1348,17 +1533,44 @@ export async function cancelRun(ctx: Context, runId: string, options: { requireP
       throw error;
     }
   }
+  const visibleRunFilter = shouldAudit
+    ? await getVisibleRunFilter(
+        ctx,
+        {
+          id: runId,
+        },
+        'get',
+      )
+    : null;
 
   let auditRun: ModelRecord | null = null;
   try {
     const updatedRun = await ctx.db.sequelize.transaction(async (transaction) => {
       const now = new Date();
-      const run = (await ctx.db.getRepository('agRuns').findOne({
-        filterByTk: runId,
-        transaction,
-        lock: transaction.LOCK.UPDATE,
-      })) as ModelRecord | null;
+      const run = shouldAudit
+        ? ((await ctx.db.getRepository('agRuns').findOne({
+            filter: visibleRunFilter || {
+              id: runId,
+            },
+            transaction,
+            lock: transaction.LOCK.UPDATE,
+          })) as ModelRecord | null)
+        : ((await ctx.db.getRepository('agRuns').findOne({
+            filterByTk: runId,
+            transaction,
+            lock: transaction.LOCK.UPDATE,
+          })) as ModelRecord | null);
       if (!run) {
+        if (shouldAudit) {
+          await auditCancelRun(ctx, null, runId, 'denied', {
+            phase: 'visibility',
+          });
+          deniedAuditWritten = true;
+          ctx.throw(404, {
+            code: AGENT_GATEWAY_ERROR_CODES.resourceNotVisible,
+            message: 'Run not found',
+          });
+        }
         ctx.throw(404, 'Run not found');
       }
       auditRun = run;
@@ -1409,7 +1621,9 @@ export async function cancelRun(ctx: Context, runId: string, options: { requireP
     }
   } catch (error) {
     if (shouldAudit) {
-      await auditCancelRun(ctx, auditRun, runId, 'failed');
+      if (!deniedAuditWritten) {
+        await auditCancelRun(ctx, auditRun, runId, 'failed');
+      }
     }
     throw error;
   }
@@ -1500,18 +1714,12 @@ export function registerRunLifecycleRoutes(plugin: Plugin) {
     async (ctx: Context, next: Next) => {
       const standardCollectionAction = matchStandardCollectionAction(ctx.path, AGENT_GATEWAY_STANDARD_COLLECTIONS);
       if (standardCollectionAction?.collectionName === 'agRuns') {
-        if (standardCollectionAction.action === 'list') {
-          await requireAgentGatewayPermission(
-            ctx,
-            AGENT_GATEWAY_ACTIONS.readRuns,
-            'Agent Gateway run read permission required',
-          );
-        } else if (standardCollectionAction.action === 'get') {
-          await requireAgentGatewayPermission(
-            ctx,
-            AGENT_GATEWAY_ACTIONS.readRun,
-            'Agent Gateway run standard get permission required',
-          );
+        if (ctx.method === 'GET' && standardCollectionAction.action === 'list') {
+          await listStandardRuns(ctx);
+          return;
+        } else if (ctx.method === 'GET' && standardCollectionAction.action === 'get') {
+          await getStandardRun(ctx);
+          return;
         } else {
           await requireManagePermission(ctx);
         }

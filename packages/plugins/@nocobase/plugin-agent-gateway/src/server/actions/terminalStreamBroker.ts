@@ -20,6 +20,10 @@ import {
   TERMINAL_MAX_BROWSER_SUBSCRIPTIONS_PER_RUN,
   TERMINAL_MAX_BROWSER_SUBSCRIPTIONS_PER_USER,
   TERMINAL_MAX_DAEMON_STREAM_BINDINGS_PER_NODE,
+  TERMINAL_STREAM_BROWSER_AUTH_PROOF_PROTOCOL_PREFIX,
+  TERMINAL_STREAM_BROWSER_SUBPROTOCOL,
+  TERMINAL_STREAM_BROWSER_TICKET_PROOF_PROTOCOL_PREFIX,
+  TERMINAL_STREAM_BROWSER_TICKET_PROTOCOL_PREFIX,
   TERMINAL_STREAM_WS_PATH,
   TERMINAL_SERVER_MAX_RAW_FRAME_BYTES,
   TERMINAL_SERVER_MAX_DECODED_PAYLOAD_BYTES,
@@ -36,12 +40,14 @@ import {
   parseTerminalFrame,
   parseTerminalFrameJson,
 } from '../../shared/terminalStreamProtocol';
-import { authenticateNodeToken, verifyClaimToken } from '../security';
-import { AGENT_GATEWAY_ACTIONS } from '../security/permissions';
+import { auditAgentActionBestEffort } from '../audit/agentActionAudit';
+import { AGENT_GATEWAY_ACTIONS, authenticateNodeToken, verifyClaimToken } from '../security';
+import { AGENT_GATEWAY_PERMISSIONS } from '../security/permissions';
 import {
   JsonRecord,
   ModelRecord,
   API_PREFIX,
+  assertRunVisible,
   getCurrentUserId,
   getModelNumber,
   getModelString,
@@ -49,9 +55,11 @@ import {
   getModelValue,
   getRecord,
   getString,
+  hasAgentGatewayPermission,
   requireAgentGatewayPermission,
 } from './utils';
 import { validateRunLease } from './runLifecycle';
+import { TerminalStreamTicketError, consumeTerminalStreamTicket } from './terminalStreamTickets';
 
 const MAX_TERMINAL_WEBSOCKET_BUFFERED_BYTES = 1024 * 1024;
 const ACTIVE_TERMINAL_STREAM_RUN_STATUSES = new Set(['claimed', 'syncing_skills', 'running', 'canceling']);
@@ -133,16 +141,6 @@ interface AuthContextShape {
   t(key: string, options?: Record<string, unknown>): string;
 }
 
-interface BrowserAuth {
-  user?: unknown;
-  check(): Promise<unknown>;
-  checkToken?(): Promise<{ user?: unknown }>;
-}
-
-interface BrowserAuthManager {
-  get(name: string, ctx: unknown): Promise<BrowserAuth>;
-}
-
 function getHeader(headers: IncomingMessage['headers'], name: string) {
   const value = headers[name.toLowerCase()];
   if (Array.isArray(value)) {
@@ -159,24 +157,54 @@ function getHeaderRecord(request: IncomingMessage) {
   return headers;
 }
 
-function getQueryValue(request: IncomingMessage, key: string) {
-  const url = new URL(request.url || '/', 'http://127.0.0.1');
-  return url.searchParams.get(key)?.trim() || '';
-}
-
 function getBearerTokenFromRequest(request: IncomingMessage) {
-  const queryToken = getQueryValue(request, 'token');
-  if (queryToken) {
-    return queryToken;
-  }
-
   const authorization = getHeader(request.headers, 'authorization');
   const match = authorization.match(/^Bearer\s+(.+)$/i);
   return match?.[1]?.trim() || '';
 }
 
+function getBearerTokenFromHeaderRecord(headers: Record<string, string>) {
+  const authorization = headers.authorization || '';
+  const match = authorization.match(/^Bearer\s+(.+)$/i);
+  return match?.[1]?.trim() || '';
+}
+
+function getWebSocketProtocolValues(request: IncomingMessage) {
+  return getHeader(request.headers, 'sec-websocket-protocol')
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function decodeWebSocketProtocolValue(value: string) {
+  try {
+    const normalized = value.replace(/-/g, '+').replace(/_/g, '/');
+    const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, '=');
+    return Buffer.from(padded, 'base64').toString('utf8').trim();
+  } catch {
+    return '';
+  }
+}
+
+function getPrefixedWebSocketProtocolValue(request: IncomingMessage, prefix: string) {
+  const protocol = getWebSocketProtocolValues(request).find((item) => item.startsWith(prefix));
+  return protocol ? decodeWebSocketProtocolValue(protocol.slice(prefix.length)) : '';
+}
+
+function getBrowserStreamTicketFromProtocol(request: IncomingMessage) {
+  return getPrefixedWebSocketProtocolValue(request, TERMINAL_STREAM_BROWSER_TICKET_PROTOCOL_PREFIX);
+}
+
+function getBrowserStreamTicketProofFromProtocol(request: IncomingMessage) {
+  return getPrefixedWebSocketProtocolValue(request, TERMINAL_STREAM_BROWSER_TICKET_PROOF_PROTOCOL_PREFIX);
+}
+
+function getBrowserStreamAuthProofFromProtocol(request: IncomingMessage) {
+  return getPrefixedWebSocketProtocolValue(request, TERMINAL_STREAM_BROWSER_AUTH_PROOF_PROTOCOL_PREFIX);
+}
+
 function getAuthenticatorFromRequest(request: IncomingMessage) {
-  return getQueryValue(request, 'authenticator') || getHeader(request.headers, 'x-authenticator') || 'basic';
+  return getHeader(request.headers, 'x-authenticator') || 'basic';
 }
 
 function createAuthContext(app: Application, request: IncomingMessage): AuthContextShape {
@@ -189,7 +217,7 @@ function createAuthContext(app: Application, request: IncomingMessage): AuthCont
   if (authenticator) {
     headers['x-authenticator'] = authenticator;
   }
-  const role = getQueryValue(request, 'role') || getHeader(request.headers, 'x-role');
+  const role = getHeader(request.headers, 'x-role');
   if (role) {
     headers['x-role'] = role;
   }
@@ -213,7 +241,7 @@ function createAuthContext(app: Application, request: IncomingMessage): AuthCont
       return headers[name.toLowerCase()] || '';
     },
     getBearerToken() {
-      return token;
+      return getBearerTokenFromHeaderRecord(headers);
     },
     throw(status: number, message?: string | { message?: string; code?: string }) {
       const error = new Error(typeof message === 'string' ? message : message?.message || `HTTP ${status}`) as Error & {
@@ -232,16 +260,6 @@ function createAuthContext(app: Application, request: IncomingMessage): AuthCont
   };
 }
 
-function getUserId(user: unknown) {
-  if (typeof (user as ModelRecord | null)?.get === 'function') {
-    const id = (user as ModelRecord).get('id');
-    return typeof id === 'string' || typeof id === 'number' ? id : null;
-  }
-  const record = getRecord(user);
-  const id = record.id;
-  return typeof id === 'string' || typeof id === 'number' ? id : null;
-}
-
 function getErrorMessage(error: unknown) {
   return error instanceof Error ? error.message : String(error);
 }
@@ -257,7 +275,12 @@ function getDateFromModel(model: ModelRecord, key: string) {
 
 function isProtocolRawWrite(input: unknown) {
   const record = getRecord(input);
-  return record.type === 'browser.write' || record.type === 'terminal.write' || record.type === 'terminal.input';
+  return (
+    record.type === 'browser.write' ||
+    record.type === 'browser.input' ||
+    record.type === 'terminal.write' ||
+    record.type === 'terminal.input'
+  );
 }
 
 function getRawDataByteLength(data: RawData) {
@@ -290,6 +313,9 @@ export class TerminalStreamBroker {
   private readonly wss = new WebSocketServer({
     noServer: true,
     maxPayload: TERMINAL_SERVER_MAX_RAW_FRAME_BYTES,
+    handleProtocols: (protocols) => {
+      return protocols.has(TERMINAL_STREAM_BROWSER_SUBPROTOCOL) ? TERMINAL_STREAM_BROWSER_SUBPROTOCOL : false;
+    },
   });
   private readonly connections = new Map<WebSocket, TerminalStreamConnection>();
   private readonly boundRuns = new Map<string, BoundRunStream>();
@@ -385,7 +411,13 @@ export class TerminalStreamBroker {
     }
 
     if (isProtocolRawWrite(rawFrame)) {
-      this.sendError(ws, 'TERMINAL_RAW_WRITE_DISABLED', 'Raw terminal write is disabled');
+      this.enqueueRawTerminalWriteDeniedAudit(connection, rawFrame);
+      this.sendError(
+        ws,
+        'TERMINAL_RAW_WRITE_DISABLED',
+        'Raw terminal write is disabled',
+        getString(getRecord(rawFrame).requestId) || undefined,
+      );
       return;
     }
 
@@ -542,14 +574,15 @@ export class TerminalStreamBroker {
   private async handleBrowserSubscribe(connection: TerminalStreamConnection, frame: TerminalClientSubscribe) {
     let reservationId: string | undefined;
     try {
-      const ctx = await this.authenticateBrowser(connection.request);
-      await requireAgentGatewayPermission(
-        ctx,
-        AGENT_GATEWAY_ACTIONS.readTerminal,
-        'Agent Gateway terminal read permission required',
-      );
+      const auth = await consumeTerminalStreamTicket({
+        app: this.app,
+        runId: frame.runId,
+        ticket: getBrowserStreamTicketFromProtocol(connection.request),
+        ticketProof: getBrowserStreamTicketProofFromProtocol(connection.request),
+        authProof: getBrowserStreamAuthProofFromProtocol(connection.request),
+      });
       connection.kind = 'browser';
-      connection.userId = getUserId(ctx.state.currentUser);
+      connection.userId = auth.userId;
       const limitError = this.getBrowserSubscriptionLimitError(connection, frame.runId);
       if (limitError) {
         this.sendError(connection.ws, 'TERMINAL_SUBSCRIPTION_LIMIT', limitError, frame.requestId);
@@ -914,27 +947,6 @@ export class TerminalStreamBroker {
     });
   }
 
-  private async authenticateBrowser(request: IncomingMessage) {
-    const ctx = createAuthContext(this.app, request);
-    if (!ctx.getBearerToken()) {
-      ctx.throw(401, 'Authentication required');
-    }
-    const authManager = ctx.app.authManager as unknown as BrowserAuthManager | undefined;
-    const auth = await authManager?.get(getAuthenticatorFromRequest(request), ctx);
-    if (!auth) {
-      ctx.throw(401, 'Authentication required');
-    }
-    const tokenResult = auth.checkToken ? await auth.checkToken() : { user: await auth.check() };
-    const user = tokenResult.user;
-    if (!user) {
-      ctx.throw(401, 'Authentication required');
-    }
-    auth.user = user;
-    ctx.auth = auth;
-    ctx.state.currentUser = user;
-    return ctx as unknown as Context;
-  }
-
   private validatePayloadOffsets(frame: TerminalData | TerminalSnapshot) {
     const byteLength = getTerminalPayloadByteLength(frame.payload);
     if (byteLength > TERMINAL_SERVER_MAX_DECODED_PAYLOAD_BYTES) {
@@ -1049,6 +1061,88 @@ export class TerminalStreamBroker {
     return count >= TERMINAL_MAX_DAEMON_STREAM_BINDINGS_PER_NODE;
   }
 
+  private enqueueRawTerminalWriteDeniedAudit(connection: TerminalStreamConnection, input: unknown) {
+    const runId = getString(getRecord(input).runId);
+    if (connection.kind !== 'browser' || !connection.userId) {
+      return;
+    }
+    const subscribedRunId = runId && connection.subscriptions.has(runId) ? runId : undefined;
+    const previous = this.frameQueues.get(connection.ws) || Promise.resolve();
+    const next = previous
+      .catch(() => {
+        // Keep the audit path independent from previous frame handling failures.
+      })
+      .then(async () => {
+        await auditAgentActionBestEffort(this.createBrowserAuditContext(connection), {
+          action: 'rawTerminalWriteDenied',
+          runId: subscribedRunId,
+          operatorId: connection.userId,
+          permissionKey: AGENT_GATEWAY_PERMISSIONS.writeTerminalRaw,
+          resultStatus: 'denied',
+          metadataJson: {
+            code: 'TERMINAL_RAW_WRITE_DISABLED',
+            frameType: getString(getRecord(input).type),
+            hasRequestedRunId: Boolean(runId),
+            subscribedRun: Boolean(subscribedRunId),
+          },
+        });
+      })
+      .catch((error) => {
+        this.app.logger?.warn?.('Agent Gateway terminal raw write audit failed', {
+          error: getErrorMessage(error),
+        });
+      });
+    this.frameQueues.set(connection.ws, next);
+    next
+      .finally(() => {
+        if (this.frameQueues.get(connection.ws) === next) {
+          this.frameQueues.delete(connection.ws);
+        }
+      })
+      .catch(() => {
+        // The queue promise already handles audit errors; this keeps cleanup settled.
+      });
+  }
+
+  private createBrowserAuditContext(connection: TerminalStreamConnection) {
+    const headers: Record<string, string> = {};
+    return {
+      app: this.app,
+      db: this.app.db,
+      cache: this.app.cache,
+      logger: this.app.logger,
+      log: this.app.log,
+      headers,
+      state: {},
+      originalUrl: connection.request.url || TERMINAL_STREAM_WS_PATH,
+      req: {
+        headers,
+      },
+      request: {
+        headers,
+      },
+      get(name: string) {
+        return headers[name.toLowerCase()] || '';
+      },
+      throw(status: number, message?: string | { message?: string; code?: string }): never {
+        const error = new Error(
+          typeof message === 'string' ? message : message?.message || `HTTP ${status}`,
+        ) as Error & {
+          status?: number;
+          code?: string;
+        };
+        error.status = status;
+        if (typeof message === 'object' && message?.code) {
+          error.code = message.code;
+        }
+        throw error;
+      },
+      t(key: string) {
+        return key;
+      },
+    } as unknown as Context;
+  }
+
   private broadcastToRun(runId: string, frame: TerminalServerFrameForSend) {
     const subscribers = this.browserSubscriptions.get(runId);
     if (!subscribers?.size) {
@@ -1125,6 +1219,9 @@ export class TerminalStreamBroker {
   }
 
   private mapBrowserAuthError(error: unknown): TerminalError['code'] {
+    if (error instanceof TerminalStreamTicketError) {
+      return error.terminalCode;
+    }
     const status = (error as { status?: number } | null)?.status;
     return status === 403 ? 'TERMINAL_PERMISSION_DENIED' : 'TERMINAL_AUTH_FAILED';
   }
@@ -1137,12 +1234,21 @@ export class TerminalStreamBroker {
     return 'TERMINAL_LEASE_LOST';
   }
 
-  getStats(options: { runId?: string; userId?: string; nodeId?: string } = {}) {
+  getStats(
+    options: {
+      runId?: string;
+      userId?: string;
+      nodeId?: string;
+      includeGlobalStats?: boolean;
+      includeNodeStats?: boolean;
+    } = {},
+  ) {
     let activeBrowserConnections = 0;
     let activeDaemonConnections = 0;
     let activeBrowserSubscriptions = 0;
     let activeBrowserSubscriptionsForUser = 0;
     let activeDaemonBindingsForNode = 0;
+    let pendingSnapshotRequests = 0;
     for (const connection of this.connections.values()) {
       if (connection.kind === 'browser') {
         activeBrowserConnections += 1;
@@ -1160,18 +1266,27 @@ export class TerminalStreamBroker {
         activeDaemonBindingsForNode += 1;
       }
     }
+    for (const request of this.pendingSnapshotRequests.values()) {
+      if (!options.runId || request.runId === options.runId) {
+        pendingSnapshotRequests += 1;
+      }
+    }
     return {
-      activeConnections: this.connections.size,
-      activeBrowserConnections,
-      activeDaemonConnections,
-      activeBrowserSubscriptions,
+      ...(options.includeGlobalStats
+        ? {
+            activeConnections: this.connections.size,
+            activeBrowserConnections,
+            activeDaemonConnections,
+            activeBrowserSubscriptions,
+            activeDaemonBindings: this.boundRuns.size,
+          }
+        : {}),
       activeBrowserSubscriptionsForRun: options.runId
         ? this.getActiveBrowserSubscriptionCountForRun(options.runId)
         : undefined,
       activeBrowserSubscriptionsForUser: options.userId ? activeBrowserSubscriptionsForUser : undefined,
-      activeDaemonBindings: this.boundRuns.size,
-      activeDaemonBindingsForNode: options.nodeId ? activeDaemonBindingsForNode : undefined,
-      pendingSnapshotRequests: this.pendingSnapshotRequests.size,
+      activeDaemonBindingsForNode: options.nodeId && options.includeNodeStats ? activeDaemonBindingsForNode : undefined,
+      pendingSnapshotRequests,
     };
   }
 }
@@ -1215,10 +1330,24 @@ function registerTerminalStreamStatsRoute(plugin: Plugin, broker: TerminalStream
       );
       const query = getRecord(ctx.query);
       const currentUserId = getCurrentUserId(ctx);
+      const runId = getString(query.runId);
+      const nodeId = getString(query.nodeId);
+      const canManage = await hasAgentGatewayPermission(ctx, AGENT_GATEWAY_ACTIONS.manage);
+      if (!canManage && !runId) {
+        ctx.throw(400, 'Agent Gateway terminal stream stats require a runId');
+      }
+      if (!canManage && nodeId) {
+        ctx.throw(403, 'Agent Gateway management permission required for node stream stats');
+      }
+      if (runId) {
+        await assertRunVisible(ctx, runId, 'get');
+      }
       ctx.body = broker.getStats({
-        runId: getString(query.runId),
+        runId,
         userId: currentUserId === null ? undefined : String(currentUserId),
-        nodeId: getString(query.nodeId),
+        nodeId,
+        includeGlobalStats: canManage,
+        includeNodeStats: canManage,
       });
     },
     {

@@ -102,7 +102,7 @@ describe('AgentGatewayDispatchActionModel', () => {
     });
     expect(request).toHaveBeenCalledWith(
       expect.objectContaining({
-        url: 'agent-gateway/dispatch-bindings/binding-id-1:dispatch',
+        url: 'agent-gateway/dispatch-bindings/binding-id-1/dispatch',
         method: 'post',
         data: expect.objectContaining({
           recordId: '42',

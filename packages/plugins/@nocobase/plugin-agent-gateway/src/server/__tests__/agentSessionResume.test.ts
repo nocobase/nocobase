@@ -57,6 +57,10 @@ describe('agent gateway agent session resume API', () => {
   });
 
   async function createUserAgent(username: string, snippets: string[]) {
+    return (await createUserWithRole(username, snippets)).agent;
+  }
+
+  async function createUserWithRole(username: string, snippets: string[]) {
     const roleName = `${username}-role`;
     await app.db.getRepository('roles').create({
       values: {
@@ -70,7 +74,34 @@ describe('agent gateway agent session resume API', () => {
         roles: [roleName],
       },
     });
-    return await app.agent().login(user);
+    return {
+      agent: await app.agent().login(user),
+      roleName,
+    };
+  }
+
+  async function grantRunScope(roleName: string, scopeName: string, scope: Record<string, unknown>) {
+    const scopeResponse = await rootAgent.resource('dataSourcesRolesResourcesScopes').create({
+      values: {
+        resourceName: 'agRuns',
+        name: scopeName,
+        scope,
+      },
+    });
+    expect(scopeResponse.status).toBe(200);
+    const roleResourceResponse = await rootAgent.resource('roles.resources', roleName).create({
+      values: {
+        name: 'agRuns',
+        usingActionsConfig: true,
+        actions: [
+          {
+            name: 'view',
+            scope: scopeResponse.body.data.id,
+          },
+        ],
+      },
+    });
+    expect(roleResourceResponse.status).toBe(200);
   }
 
   async function seedEndedSession(
@@ -265,6 +296,53 @@ describe('agent gateway agent session resume API', () => {
     expect(continuationCount).toBe(1);
   });
 
+  it('does not return idempotent continuation runs hidden by run data-scope', async () => {
+    const { run, session } = await seedEndedSession();
+    const { agent: scopedAgent, roleName } = await createUserWithRole('resume-scoped-user', [
+      'agentGateway.resumeAgentSession',
+    ]);
+    await grantRunScope(roleName, 'resume-visible-source-run-only', {
+      runCode: run.get('runCode'),
+    });
+
+    const first = await scopedAgent.post(`/api/agent-gateway/agent-sessions/${session.get('id')}/resume`).send({
+      message: 'Continue hidden once',
+      idempotencyKey: 'same-hidden-resume-click',
+    });
+    expect(first.status).toBe(200);
+    const firstResult = getData(first);
+
+    const hiddenReplay = await scopedAgent.post(`/api/agent-gateway/agent-sessions/${session.get('id')}/resume`).send({
+      message: 'Continue hidden once',
+      idempotencyKey: 'same-hidden-resume-click',
+    });
+    expect(hiddenReplay.status).toBe(404);
+    expect(JSON.stringify(hiddenReplay.body)).toContain('AGENT_GATEWAY_RESOURCE_NOT_VISIBLE');
+    expect(JSON.stringify(hiddenReplay.body)).not.toContain(String(firstResult.runId));
+
+    const deniedAudit = await app.db.getRepository('agAgentActionAudits').findOne({
+      filter: {
+        action: 'resume',
+        sessionId: session.get('id'),
+        runId: firstResult.runId,
+        permissionKey: 'agentGateway.resumeAgentSession',
+        resultStatus: 'denied',
+      },
+    });
+    expect(deniedAudit?.get('metadataJson')).toMatchObject({
+      continuationRequestKey: expect.stringMatching(/^resume:.+:provided:[0-9a-f]{64}$/),
+      phase: 'existing-run-visibility',
+    });
+    const failedAudits = await app.db.getRepository('agAgentActionAudits').count({
+      filter: {
+        action: 'resume',
+        sessionId: session.get('id'),
+        resultStatus: 'failed',
+      },
+    });
+    expect(failedAudits).toBe(0);
+  });
+
   it('rejects idempotency key reuse with a different resume message', async () => {
     const { session } = await seedEndedSession();
     const first = await resumeSession(session.get('id'), {
@@ -403,6 +481,107 @@ describe('agent gateway agent session resume API', () => {
       idempotencyKey: 'missing-provider-session',
     });
     expect(missingResponse.status).toBe(409);
+  });
+
+  it('checks run visibility before exposing resume capability errors for hidden sessions', async () => {
+    const visible = await seedEndedSession();
+    const hiddenUnsupported = await seedEndedSession({
+      provider: 'opencode',
+      providerSessionId: 'hidden-opencode-session',
+      capabilitiesJson: {
+        resumeWithMessage: false,
+      },
+    });
+    const { agent: scopedAgent, roleName } = await createUserWithRole('resume-hidden-unsupported-user', [
+      'agentGateway.resumeAgentSession',
+    ]);
+    await grantRunScope(roleName, 'resume-hidden-unsupported-visible-source', {
+      runCode: visible.run.get('runCode'),
+    });
+
+    const response = await scopedAgent
+      .post(`/api/agent-gateway/agent-sessions/${hiddenUnsupported.session.get('id')}/resume`)
+      .send({
+        message: 'Continue hidden unsupported session',
+        idempotencyKey: 'hidden-unsupported-resume',
+      });
+
+    expect(response.status).toBe(404);
+    const responseBody = JSON.stringify(response.body);
+    expect(responseBody).toContain('AGENT_GATEWAY_RESOURCE_NOT_VISIBLE');
+    expect(responseBody).not.toContain('provider does not support resume');
+    expect(responseBody).not.toContain('does not support resume with message');
+    expect(responseBody).not.toContain('provider session id');
+
+    const deniedAudit = await app.db.getRepository('agAgentActionAudits').findOne({
+      filter: {
+        action: 'resume',
+        sessionId: hiddenUnsupported.session.get('id'),
+        permissionKey: 'agentGateway.resumeAgentSession',
+        resultStatus: 'denied',
+      },
+    });
+    expect(deniedAudit?.toJSON()).toMatchObject({
+      sessionId: hiddenUnsupported.session.get('id'),
+      runId: null,
+      metadataJson: expect.objectContaining({
+        continuationRequestKey: expect.stringMatching(/^resume:.+:provided:[0-9a-f]{64}$/),
+        phase: 'source-run-visibility',
+        resumedFromRunId: null,
+      }),
+    });
+  });
+
+  it('checks target session visibility before explicit resume source mismatch errors', async () => {
+    const visible = await seedEndedSession();
+    const hidden = await seedEndedSession({
+      providerSessionId: `hidden-mismatch-${randomUUID()}`,
+    });
+    const { agent: scopedAgent, roleName } = await createUserWithRole('resume-hidden-session-mismatch-user', [
+      'agentGateway.resumeAgentSession',
+    ]);
+    await grantRunScope(roleName, 'resume-hidden-session-mismatch-visible-source', {
+      runCode: visible.run.get('runCode'),
+    });
+
+    const response = await scopedAgent
+      .post(`/api/agent-gateway/agent-sessions/${hidden.session.get('id')}/resume`)
+      .send({
+        message: 'Continue with visible run against hidden session',
+        resumedFromRunId: visible.run.get('id'),
+        idempotencyKey: 'hidden-session-visible-source-mismatch',
+      });
+
+    expect(response.status).toBe(404);
+    const responseBody = JSON.stringify(response.body);
+    expect(responseBody).toContain('AGENT_GATEWAY_RESOURCE_NOT_VISIBLE');
+    expect(responseBody).not.toContain('resumedFromRunId must belong to the agent session');
+
+    const deniedAudit = await app.db.getRepository('agAgentActionAudits').findOne({
+      filter: {
+        action: 'resume',
+        sessionId: hidden.session.get('id'),
+        permissionKey: 'agentGateway.resumeAgentSession',
+        resultStatus: 'denied',
+      },
+    });
+    expect(deniedAudit?.toJSON()).toMatchObject({
+      sessionId: hidden.session.get('id'),
+      runId: null,
+      metadataJson: expect.objectContaining({
+        continuationRequestKey: expect.stringMatching(/^resume:.+:provided:[0-9a-f]{64}$/),
+        phase: 'source-run-visibility',
+        resumedFromRunId: visible.run.get('id'),
+      }),
+    });
+    const failedAudits = await app.db.getRepository('agAgentActionAudits').count({
+      filter: {
+        action: 'resume',
+        sessionId: hidden.session.get('id'),
+        resultStatus: 'failed',
+      },
+    });
+    expect(failedAudits).toBe(0);
   });
 
   it('records denied resume audits when the user lacks resume permission', async () => {

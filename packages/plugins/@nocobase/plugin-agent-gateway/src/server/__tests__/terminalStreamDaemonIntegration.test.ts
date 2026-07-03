@@ -12,16 +12,15 @@ import WebSocket from 'ws';
 
 import { DaemonTerminalStreamClient } from '../../daemon/terminalStreamClient';
 import { TerminalRingBuffer } from '../../daemon/terminalRingBuffer';
-import { TERMINAL_PROTOCOL, TerminalFrame, decodeTerminalPayload } from '../../shared/terminalStreamProtocol';
+import { TerminalFrame, decodeTerminalPayload } from '../../shared/terminalStreamProtocol';
 import PluginAgentGatewayServer from '../plugin';
 import {
   claimRun,
-  createBrowserToken,
+  createBrowserWebSocketWithTicket,
   createQueuedRun,
   createRunner,
   createTerminalStreamServer,
-  createWebSocket,
-  sendFrame,
+  sendBrowserSubscribeFrame,
   waitForFrame,
   waitForOpen,
 } from './helpers/terminalStreamHarness';
@@ -89,8 +88,11 @@ describe('terminal stream daemon integration', () => {
     const runId = await createQueuedRun(app, runner, 'terminal-stream-real-daemon-run-1');
     const lease = await claimRun(app, runner, runId);
     const server = await createTerminalStreamServer(app);
-    const browserToken = await createBrowserToken(app, rootUserId);
-    const browser = createWebSocket(server.wsUrl, { token: browserToken });
+    const browserConnection = await createBrowserWebSocketWithTicket(app, server.wsUrl, {
+      userId: rootUserId,
+      runId,
+    });
+    const browser = browserConnection.browser;
     const sessionName = 'agw_terminal_stream_real_daemon_1';
     const stream = new DaemonTerminalStreamClient({
       serverUrl: server.serverUrl,
@@ -107,9 +109,7 @@ describe('terminal stream daemon integration', () => {
 
     try {
       await waitForOpen(browser);
-      sendFrame(browser, {
-        type: 'browser.subscribe',
-        protocol: TERMINAL_PROTOCOL,
+      sendBrowserSubscribeFrame(browser, browserConnection.ticket, {
         requestId: 'subscribe-real-daemon',
         runId,
         lastOffset: 0,
@@ -144,8 +144,11 @@ describe('terminal stream daemon integration', () => {
     const runId = await createQueuedRun(app, runner, 'terminal-stream-real-daemon-run-reconnect');
     const lease = await claimRun(app, runner, runId);
     const server = await createTerminalStreamServer(app);
-    const browserToken = await createBrowserToken(app, rootUserId);
-    const browser = createWebSocket(server.wsUrl, { token: browserToken });
+    const browserConnection = await createBrowserWebSocketWithTicket(app, server.wsUrl, {
+      userId: rootUserId,
+      runId,
+    });
+    const browser = browserConnection.browser;
     const daemonSockets: WebSocket[] = [];
     let resolveRebound: (() => void) | null = null;
     const rebound = new Promise<void>((resolve) => {
@@ -186,9 +189,7 @@ describe('terminal stream daemon integration', () => {
 
     try {
       await waitForOpen(browser);
-      sendFrame(browser, {
-        type: 'browser.subscribe',
-        protocol: TERMINAL_PROTOCOL,
+      sendBrowserSubscribeFrame(browser, browserConnection.ticket, {
         requestId: 'subscribe-reconnect',
         runId,
         lastOffset: 0,
@@ -224,8 +225,11 @@ describe('terminal stream daemon integration', () => {
     const runId = await createQueuedRun(app, runner, 'terminal-stream-real-daemon-run-snapshot-budget');
     const lease = await claimRun(app, runner, runId);
     const server = await createTerminalStreamServer(app);
-    const browserToken = await createBrowserToken(app, rootUserId);
-    const browser = createWebSocket(server.wsUrl, { token: browserToken });
+    const browserConnection = await createBrowserWebSocketWithTicket(app, server.wsUrl, {
+      userId: rootUserId,
+      runId,
+    });
+    const browser = browserConnection.browser;
     const sessionName = 'agw_terminal_stream_snapshot_budget';
     const stream = new DaemonTerminalStreamClient({
       serverUrl: server.serverUrl,
@@ -246,9 +250,7 @@ describe('terminal stream daemon integration', () => {
       await stream.start();
       await stream.appendText('0123456789');
       await waitForOpen(browser);
-      sendFrame(browser, {
-        type: 'browser.subscribe',
-        protocol: TERMINAL_PROTOCOL,
+      sendBrowserSubscribeFrame(browser, browserConnection.ticket, {
         requestId: 'subscribe-snapshot-budget',
         runId,
         lastOffset: 0,

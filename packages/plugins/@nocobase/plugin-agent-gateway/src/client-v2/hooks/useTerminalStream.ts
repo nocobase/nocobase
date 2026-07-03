@@ -13,19 +13,18 @@ import {
   TerminalStreamChunk,
   TerminalStreamClient,
   TerminalStreamClientState,
+  TerminalStreamTicket,
   TerminalStreamWebSocket,
 } from '../utils/terminalStreamClient';
 
 export interface UseTerminalStreamOptions {
   runId?: string;
   enabled?: boolean;
-  token?: string;
-  authenticator?: string;
-  role?: string;
   baseUrl?: string;
   reconnectDelayMs?: number;
   maxReconnectDelayMs?: number;
   maxReconnectAttempts?: number;
+  createStreamTicket?: (runId: string) => Promise<TerminalStreamTicket>;
   createWebSocket?: (url: string) => TerminalStreamWebSocket;
 }
 
@@ -67,22 +66,20 @@ function storeOffset(runId: string, offset: number) {
 
 export function useTerminalStream(options: UseTerminalStreamOptions): UseTerminalStreamState {
   const {
-    authenticator,
     baseUrl,
+    createStreamTicket,
     createWebSocket,
     enabled: enabledOption,
     maxReconnectDelayMs,
     maxReconnectAttempts,
     reconnectDelayMs,
-    role,
     runId,
-    token,
   } = options;
   const enabled = enabledOption !== false;
   const [state, setState] = useState<UseTerminalStreamState>(CLOSED_STATE);
 
   useEffect(() => {
-    if (!enabled || !runId || !token) {
+    if (!enabled || !runId || !createStreamTicket) {
       setState(CLOSED_STATE);
       return;
     }
@@ -126,14 +123,12 @@ export function useTerminalStream(options: UseTerminalStreamOptions): UseTermina
     const lastOffset = getStoredOffset(runId);
     const client = new TerminalStreamClient({
       runId,
-      token,
-      authenticator,
-      role,
       baseUrl,
       lastOffset,
       reconnectDelayMs,
       maxReconnectDelayMs,
       maxReconnectAttempts,
+      createStreamTicket,
       createWebSocket,
       onChunk(chunk) {
         if (disposed) {
@@ -172,16 +167,14 @@ export function useTerminalStream(options: UseTerminalStreamOptions): UseTermina
       pendingChunks = [];
     };
   }, [
-    authenticator,
     baseUrl,
+    createStreamTicket,
     createWebSocket,
     enabled,
     maxReconnectAttempts,
     maxReconnectDelayMs,
     reconnectDelayMs,
-    role,
     runId,
-    token,
   ]);
 
   return state;

@@ -29,6 +29,7 @@ import agRuns from '../collections/agRuns';
 import agRunSnapshots from '../collections/agRunSnapshots';
 import agSkills from '../collections/agSkills';
 import agSkillVersions from '../collections/agSkillVersions';
+import agTerminalStreamTickets from '../collections/agTerminalStreamTickets';
 
 const collections = [
   agNodes,
@@ -48,6 +49,7 @@ const collections = [
   agRunArtifacts,
   agRunSnapshots,
   agApiCallLogs,
+  agTerminalStreamTickets,
 ] as CollectionOptions[];
 
 const collectionByName = new Map(collections.map((collection) => [collection.name, collection]));
@@ -70,6 +72,7 @@ const requiredCollectionNames = [
   'agRunArtifacts',
   'agRunSnapshots',
   'agApiCallLogs',
+  'agTerminalStreamTickets',
 ];
 
 const fieldNamesOf = (collectionName: string) =>
@@ -132,6 +135,7 @@ describe('agent gateway collections', () => {
     expect(getField('agRunControlRequests', 'requestKey')?.unique).toBe(true);
     expect(hasUniqueIndex('agRunEvents', ['runId', 'claimAttempt', 'source', 'sequence'])).toBe(true);
     expect(hasUniqueIndex('agRunArtifacts', ['runId', 'claimAttempt', 'artifactKey'])).toBe(true);
+    expect(hasUniqueIndex('agTerminalStreamTickets', ['ticketHash'])).toBe(true);
     expect(AG_RUN_ARTIFACT_UNIQUE_CONSTRAINT_NOTE).toContain('artifactKey is present');
     expect(AG_AGENT_SESSION_PROVIDER_ID_UNIQUE_CONSTRAINT_NOTE).toContain('providerSessionId is present');
     expect(AG_RUN_CONTROL_REQUEST_UNIQUE_CONSTRAINT_NOTE).toContain('requestKey is present');
@@ -163,6 +167,9 @@ describe('agent gateway collections', () => {
     expectRequiredForeignKey('agAgentConversationEvents', 'runId');
     expectRequiredField('agAgentConversationEvents', 'sequence');
     expectNullableForeignKey('agAgentConversationEvents', 'sessionId');
+    expectRequiredForeignKey('agTerminalStreamTickets', 'runId');
+    expectRequiredField('agTerminalStreamTickets', 'userId');
+    expectRequiredField('agTerminalStreamTickets', 'expiresAt');
   });
 
   it('keeps agent profiles free of raw execution configuration fields', () => {
@@ -302,11 +309,22 @@ describe('agent gateway collections', () => {
     expect(getField('agNodeInvitations', 'tokenHash')?.hidden).toBe(true);
     expect(getField('agNodes', 'nodeTokenHash')?.hidden).toBe(true);
     expect(getField('agRuns', 'claimTokenHash')?.hidden).toBe(true);
+    expect(getField('agRuns', 'claimAttempt')?.hidden).toBe(true);
+    expect(getField('agRuns', 'leaseVersion')?.hidden).toBe(true);
+    expect(getField('agRuns', 'claimTokenLast4')?.hidden).toBe(true);
+    expect(getField('agRuns', 'claimExpiresAt')?.hidden).toBe(true);
+    expect(getField('agRuns', 'terminalSessionName')?.hidden).toBe(true);
+    expect(getField('agTerminalStreamTickets', 'ticketHash')?.hidden).toBe(true);
+    expect(getField('agTerminalStreamTickets', 'ticketProofHash')?.hidden).toBe(true);
+    expect(getField('agTerminalStreamTickets', 'authProofHash')?.hidden).toBe(true);
+    expect(getField('agTerminalStreamTickets', 'authProofHash')?.defaultValue).toBe('');
     expect(getField('agRuns', 'promptSnapshot')?.hidden).toBe(true);
     expect(getField('agRuns', 'executionPayloadJson')?.hidden).toBe(true);
 
-    for (const collectionName of ['agNodeInvitations', 'agNodes', 'agRuns']) {
-      expect(fieldNamesOf(collectionName)).not.toEqual(expect.arrayContaining(['token', 'nodeToken', 'claimToken']));
+    for (const collectionName of ['agNodeInvitations', 'agNodes', 'agRuns', 'agTerminalStreamTickets']) {
+      expect(fieldNamesOf(collectionName)).not.toEqual(
+        expect.arrayContaining(['token', 'nodeToken', 'claimToken', 'ticket', 'ticketProof', 'authProof']),
+      );
     }
   });
 
@@ -343,6 +361,9 @@ describe('agent gateway collections', () => {
         ['agRunArtifacts', 'claimAttempt'],
         ['agRunSnapshots', 'runId'],
         ['agRunSnapshots', 'claimAttempt'],
+        ['agTerminalStreamTickets', 'runId'],
+        ['agTerminalStreamTickets', 'userId'],
+        ['agTerminalStreamTickets', 'expiresAt'],
       ]) {
         expect(db.getCollection(collectionName).model.rawAttributes[fieldName].allowNull).toBe(false);
       }

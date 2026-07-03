@@ -399,7 +399,13 @@ describe('agent gateway NocoBase UI Build business smoke', () => {
     await app.db.getRepository('roles').create({
       values: {
         name: roleName,
-        snippets: ['agentGateway.dispatch', 'agentGateway.readRun', 'agentGateway.readRunDetails'],
+        snippets: [
+          'agentGateway.dispatchRun',
+          'agentGateway.readRun',
+          'agentGateway.readRunDetails',
+          'agentGateway.readArtifacts',
+          'agentGateway.readRawLogs',
+        ],
       },
     });
 

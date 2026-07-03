@@ -64,7 +64,14 @@ export async function requestJson<T>(
     body: options.body ? JSON.stringify(options.body) : undefined,
   });
   const text = await response.text();
-  const json = text ? (JSON.parse(text) as unknown) : {};
+  let json: unknown = {};
+  try {
+    json = text ? (JSON.parse(text) as unknown) : {};
+  } catch {
+    throw new Error(
+      `HTTP ${response.status} ${options.method || 'GET'} ${path} returned non-JSON response: ${text.slice(0, 500)}`,
+    );
+  }
   if (!response.ok) {
     throw new Error(`HTTP ${response.status} ${path}: ${text}`);
   }
@@ -126,8 +133,33 @@ export function parseAdminArgs(argv: string[]): AdminScriptArgs {
 export async function findOneByFilter(baseUrl: string, token: string, collection: string, filter: JsonRecord) {
   const search = new URLSearchParams();
   search.set('filter', JSON.stringify(filter));
+  search.set('pageSize', '200');
   const data = await requestJson<unknown>(baseUrl, `/api/${collection}:list?${search.toString()}`, {
     token,
   });
-  return getListItems(data)[0] || null;
+  return getListItems(data).find((item) => matchesFilter(item, filter)) || null;
+}
+
+function matchesFilter(item: JsonRecord, filter: JsonRecord) {
+  return Object.entries(filter).every(([key, expected]) => matchesFilterValue(item[key], expected));
+}
+
+function matchesFilterValue(actual: unknown, expected: unknown): boolean {
+  if (
+    isRecord(expected) &&
+    Object.keys(expected).length === 1 &&
+    Object.prototype.hasOwnProperty.call(expected, '$eq')
+  ) {
+    return matchesFilterValue(actual, expected.$eq);
+  }
+  if (actual === expected) {
+    return true;
+  }
+  if (
+    (typeof actual === 'number' || typeof actual === 'string') &&
+    (typeof expected === 'number' || typeof expected === 'string')
+  ) {
+    return String(actual) === String(expected);
+  }
+  return false;
 }

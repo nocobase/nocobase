@@ -8,11 +8,11 @@
  */
 
 import { Alert, Descriptions, Typography } from 'antd';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useFlowContext } from '@nocobase/flow-engine';
 
 import { useT } from '../locale';
-import { AgentGatewayContext } from '../pages/AgentGatewayPageUtils';
+import { AgentGatewayContext, getRequiredResponseData } from '../pages/AgentGatewayPageUtils';
 import { TerminalStreamClient, TerminalStreamClientState } from '../utils/terminalStreamClient';
 
 export function isTerminalStreamSmokeEnabled() {
@@ -22,19 +22,28 @@ export function isTerminalStreamSmokeEnabled() {
   return new URLSearchParams(window.location.search).get('terminalStreamSmoke') === '1';
 }
 
-function getAuthFromContext(ctx: AgentGatewayContext) {
-  const auth = ctx.api.auth;
-  return {
-    token: auth?.token || '',
-    authenticator: auth?.getAuthenticator?.() || auth?.authenticator || 'basic',
-    role: auth?.role || undefined,
-  };
-}
-
 export function TerminalStreamSmokePanel({ runId }: { runId: string }) {
   const t = useT();
   const ctx = useFlowContext() as unknown as AgentGatewayContext;
-  const auth = useMemo(() => getAuthFromContext(ctx), [ctx]);
+  const createStreamTicket = useCallback(
+    async (currentRunId: string) => {
+      const response = await ctx.api.request<{
+        ticket: string;
+        ticketProof: string;
+        authProof?: string;
+        authenticator?: string;
+        role?: string | null;
+        runId?: string;
+        protocols?: string[];
+        expiresAt?: string;
+      }>({
+        url: `agent-gateway/runs/${encodeURIComponent(currentRunId)}/terminal-stream-tickets:create`,
+        method: 'post',
+      });
+      return getRequiredResponseData(response, t('Failed to create terminal stream ticket'));
+    },
+    [ctx.api, t],
+  );
   const [state, setState] = useState<TerminalStreamClientState>({
     connectionState: 'closed',
     currentOffset: 0,
@@ -47,16 +56,14 @@ export function TerminalStreamSmokePanel({ runId }: { runId: string }) {
     }
     const client = new TerminalStreamClient({
       runId,
-      token: auth.token,
-      authenticator: auth.authenticator,
-      role: auth.role,
+      createStreamTicket,
       onStateChange: setState,
     });
     client.connect();
     return () => {
       client.close();
     };
-  }, [auth.authenticator, auth.role, auth.token, runId]);
+  }, [createStreamTicket, runId]);
 
   if (!isTerminalStreamSmokeEnabled()) {
     return null;

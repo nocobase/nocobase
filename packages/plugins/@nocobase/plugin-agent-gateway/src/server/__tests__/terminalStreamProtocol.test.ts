@@ -63,6 +63,60 @@ describe('terminal stream protocol contract', () => {
     expect(result.ok ? Object.prototype.hasOwnProperty.call(result.frame, 'details') : true).toBe(false);
   });
 
+  it('accepts stream-ticket browser auth error codes', () => {
+    for (const code of ['TERMINAL_STREAM_TICKET_EXPIRED', 'TERMINAL_STREAM_TICKET_SCOPE_MISMATCH'] as const) {
+      expect(
+        parseTerminalFrame({
+          type: 'error',
+          protocol: TERMINAL_PROTOCOL,
+          requestId: 'browser-subscribe-ticket',
+          code,
+          message: code,
+        }),
+      ).toMatchObject({
+        ok: true,
+        frame: {
+          code,
+        },
+      });
+    }
+  });
+
+  it('rejects browser subscribe frames carrying auth material aliases', () => {
+    for (const field of [
+      'ticket',
+      'ticketProof',
+      'authProof',
+      'browserAuth',
+      'token',
+      'authToken',
+      'bearerToken',
+      'authorization',
+      'authenticator',
+      'role',
+      'xAuthenticator',
+      'x-authenticator',
+      'xRole',
+      'x-role',
+    ]) {
+      const result = parseTerminalFrame({
+        type: 'browser.subscribe',
+        protocol: TERMINAL_PROTOCOL,
+        requestId: `subscribe-${field}`,
+        runId: 'run-id',
+        [field]: 'secret',
+      });
+
+      expect(result).toMatchObject({
+        ok: false,
+        error: {
+          code: 'TERMINAL_PROTOCOL_ERROR',
+          message: 'browser.subscribe auth material must use websocket subprotocols',
+        },
+      });
+    }
+  });
+
   it('encodes payloads as base64 utf8 and advances byte offsets', () => {
     const frame = createTerminalDataFrame({
       runId: 'run-id',

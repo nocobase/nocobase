@@ -19,6 +19,7 @@ import { registerNodeLifecycleRoutes } from './actions/nodeLifecycle';
 import { registerPromptTemplateRoutes } from './actions/promptTemplates';
 import { registerRunLifecycleRoutes } from './actions/runLifecycle';
 import { registerRunObservabilityRoutes } from './actions/runObservability';
+import { registerTerminalStreamTicketRoutes } from './actions/terminalStreamTickets';
 import { registerRunTerminalRoutes } from './actions/runTerminal';
 import { registerSkillInstallRoutes } from './actions/skillInstalls';
 import { registerSkillVersionRoutes } from './actions/skillVersions';
@@ -52,6 +53,7 @@ export class PluginAgentGatewayServer extends Plugin {
     registerAgentSessionRoutes(this);
     registerConversationEventRoutes(this);
     registerRunTerminalRoutes(this);
+    registerTerminalStreamTicketRoutes(this);
     registerRunObservabilityRoutes(this);
     registerPromptTemplateRoutes(this);
     registerDispatchBindingRoutes(this);

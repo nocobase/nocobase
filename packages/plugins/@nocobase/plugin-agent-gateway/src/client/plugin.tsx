@@ -48,6 +48,15 @@ export class PluginAgentGatewayClient extends Plugin {
       sort: 20,
     });
 
+    this.pluginSettingsManager.add(`${AGENT_GATEWAY_SETTINGS_KEY}.audit`, {
+      icon: 'AuditOutlined',
+      title: tval('Audit', { ns: AGENT_GATEWAY_SETTINGS_KEY }),
+      aclSnippet: `pm.${AGENT_GATEWAY_SETTINGS_KEY}.audit`,
+      componentLoader: () => import('../client-v2/pages/AgentGatewayAuditPage'),
+      hidden: true,
+      sort: 25,
+    });
+
     this.pluginSettingsManager.add(`${AGENT_GATEWAY_SETTINGS_KEY}.prompt-templates`, {
       icon: 'FileTextOutlined',
       title: tval('Prompt Templates', { ns: AGENT_GATEWAY_SETTINGS_KEY }),

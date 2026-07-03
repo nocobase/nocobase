@@ -16,8 +16,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   TERMINAL_PAYLOAD_ENCODING,
   TERMINAL_PROTOCOL,
+  TERMINAL_STREAM_BROWSER_AUTHENTICATOR_PROTOCOL_PREFIX,
+  TERMINAL_STREAM_BROWSER_AUTH_PROTOCOL_PREFIX,
+  TERMINAL_STREAM_BROWSER_ROLE_PROTOCOL_PREFIX,
+  TERMINAL_STREAM_BROWSER_SUBPROTOCOL,
   encodeTerminalPayload,
 } from '../../shared/terminalStreamProtocol';
+import AgentGatewayAuditPage from '../pages/AgentGatewayAuditPage';
 import AgentGatewayDispatchBindingsPage from '../pages/AgentGatewayDispatchBindingsPage';
 import AgentGatewayPromptTemplatesPage from '../pages/AgentGatewayPromptTemplatesPage';
 import AgentGatewayRunsPage from '../pages/AgentGatewayRunsPage';
@@ -52,7 +57,10 @@ class FakeBrowserWebSocket {
   sent: string[] = [];
   private readonly listeners = new Map<string, Set<(event: TerminalStreamWebSocketEvent) => void>>();
 
-  constructor(readonly url: string) {
+  constructor(
+    readonly url: string,
+    readonly protocols?: string[],
+  ) {
     FakeBrowserWebSocket.instances.push(this);
   }
 
@@ -190,10 +198,53 @@ function renderSettingsPage(request: (config: RequestConfig) => Promise<unknown>
   renderAgentGatewayPage(AgentGatewaySettingsPage, request);
 }
 
+function stubAnimationFrameWithTimeout() {
+  vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback): number => {
+    return window.setTimeout(() => callback(performance.now()), 0);
+  });
+  vi.stubGlobal('cancelAnimationFrame', (handle: number) => {
+    window.clearTimeout(handle);
+  });
+}
+
+type IntervalCallback = (...args: unknown[]) => void;
+
+function isIntervalCallback(handler: TimerHandler): handler is IntervalCallback {
+  return typeof handler === 'function';
+}
+
+function spyOnPageIntervals() {
+  const intervalCallbacks = new Map<number, () => void>();
+  let nextPageIntervalId = -1;
+  const nativeSetInterval = window.setInterval.bind(window);
+  const nativeClearInterval = window.clearInterval.bind(window);
+
+  vi.spyOn(window, 'setInterval').mockImplementation((handler: TimerHandler, timeout?: number, ...args: unknown[]) => {
+    if (isIntervalCallback(handler) && typeof timeout === 'number' && timeout >= 1000) {
+      const intervalId = nextPageIntervalId;
+      nextPageIntervalId -= 1;
+      intervalCallbacks.set(intervalId, () => handler(...args));
+      return intervalId;
+    }
+    return nativeSetInterval(handler, timeout, ...args);
+  });
+  vi.spyOn(window, 'clearInterval').mockImplementation((intervalId?: number) => {
+    if (typeof intervalId === 'number') {
+      if (intervalCallbacks.delete(intervalId)) {
+        return;
+      }
+    }
+    nativeClearInterval(intervalId);
+  });
+
+  return intervalCallbacks;
+}
+
 describe('PluginAgentGatewayClientV2', () => {
   beforeEach(() => {
     xtermMock.MockTerminal.instances = [];
     fitAddonMock.MockFitAddon.instances = [];
+    stubAnimationFrameWithTimeout();
     window.history.pushState({}, '', '/admin/settings/agent-gateway/runs');
     Object.defineProperty(globalThis.window, 'matchMedia', {
       configurable: true,
@@ -244,6 +295,14 @@ describe('PluginAgentGatewayClientV2', () => {
       expect.objectContaining({
         menuKey: 'agent-gateway',
         key: 'runs',
+      }),
+    );
+    expect(addPageTabItem).toHaveBeenCalledWith(
+      expect.objectContaining({
+        menuKey: 'agent-gateway',
+        key: 'audit',
+        aclSnippet: 'pm.agent-gateway.audit',
+        hidden: true,
       }),
     );
     expect(addPageTabItem).toHaveBeenCalledWith(
@@ -516,6 +575,128 @@ describe('PluginAgentGatewayClientV2', () => {
         }),
       }),
     );
+  });
+
+  it('lists audit records with run filtering and redacted metadata', async () => {
+    const request = vi.fn(async (config: RequestConfig) => {
+      if (config.url === 'agent-gateway/audits:list') {
+        return {
+          data: {
+            data: [
+              {
+                id: 'audit-id-1',
+                action: 'readTerminal',
+                runId: 'run-id-1',
+                sessionId: 'session-id-1',
+                operatorId: '1',
+                redactedPreview: 'token=[REDACTED]',
+                contentSize: 32,
+                permissionKey: 'agentGateway.readTerminal',
+                resultStatus: 'denied',
+                provider: 'codex',
+                metadataJson: {
+                  safe: 'visible audit metadata',
+                  token: 'must-not-render',
+                },
+                createdAt: '2026-07-03T10:00:00.000Z',
+              },
+            ],
+          },
+        };
+      }
+
+      return { data: { data: [] } };
+    });
+
+    renderAgentGatewayPage(AgentGatewayAuditPage, request);
+
+    expect(await screen.findByText('Agent Gateway Audit')).toBeTruthy();
+    expect(await screen.findByText('readTerminal')).toBeTruthy();
+    expect(await screen.findByText('agentGateway.readTerminal')).toBeTruthy();
+    expect(screen.getByText('token=[REDACTED]')).toBeTruthy();
+    expect(screen.queryByText('must-not-render')).toBeNull();
+
+    const expandButton = document.querySelector('.ant-table-row-expand-icon') as HTMLElement | null;
+    expect(expandButton).toBeTruthy();
+    fireEvent.click(expandButton as HTMLElement);
+    expect(await screen.findByText(/visible audit metadata/)).toBeTruthy();
+    expect(screen.queryByText('must-not-render')).toBeNull();
+    expect(screen.getByText(/"token": "\[REDACTED\]"/)).toBeTruthy();
+
+    fireEvent.change(screen.getByPlaceholderText('Filter by run ID'), {
+      target: { value: 'run-id-1' },
+    });
+    fireEvent.click(screen.getByText('Search'));
+
+    await waitFor(() => {
+      expect(request).toHaveBeenCalledWith(
+        expect.objectContaining({
+          url: 'agent-gateway/audits:list',
+          method: 'get',
+          params: expect.objectContaining({
+            runId: 'run-id-1',
+          }),
+        }),
+      );
+    });
+  });
+
+  it('shows the audit shortcut only when the runs response grants audit read permission', async () => {
+    const request = vi.fn(async (config: RequestConfig) => {
+      if (config.url === 'agent-gateway/runs:list') {
+        return {
+          data: {
+            data: [
+              {
+                id: 'run-id-1',
+                runCode: 'run-audit-visible',
+                status: 'succeeded',
+                agentGatewayActionPermissionsJson: {
+                  readAudit: true,
+                },
+              },
+            ],
+          },
+        };
+      }
+
+      return { data: { data: [] } };
+    });
+
+    renderAgentGatewayPage(AgentGatewayRunsPage, request);
+
+    expect(await screen.findByText('run-audit-visible')).toBeTruthy();
+    fireEvent.click(await screen.findByLabelText('Open audit'));
+
+    expect(window.location.pathname).toBe('/admin/settings/agent-gateway/audit');
+  });
+
+  it('hides the audit shortcut when the runs response does not grant audit read permission', async () => {
+    const request = vi.fn(async (config: RequestConfig) => {
+      if (config.url === 'agent-gateway/runs:list') {
+        return {
+          data: {
+            data: [
+              {
+                id: 'run-id-1',
+                runCode: 'run-audit-hidden',
+                status: 'succeeded',
+                agentGatewayActionPermissionsJson: {
+                  readAudit: false,
+                },
+              },
+            ],
+          },
+        };
+      }
+
+      return { data: { data: [] } };
+    });
+
+    renderAgentGatewayPage(AgentGatewayRunsPage, request);
+
+    expect(await screen.findByText('run-audit-hidden')).toBeTruthy();
+    expect(screen.queryByLabelText('Open audit')).toBeNull();
   });
 
   it('lists runs, shows observation details, and requests cancel for active runs', async () => {
@@ -1588,6 +1769,555 @@ describe('PluginAgentGatewayClientV2', () => {
     });
   });
 
+  it('does not render the terminal stream smoke panel without terminal read permission', async () => {
+    window.history.pushState({}, '', '/admin/settings/agent-gateway/runs?terminalStreamSmoke=1&runId=run-id-1');
+    const request = vi.fn(async (config: RequestConfig) => {
+      if (config.url === 'agent-gateway/runs:list') {
+        return {
+          data: {
+            data: [
+              {
+                id: 'run-id-1',
+                runCode: 'run-no-terminal-read',
+                status: 'running',
+              },
+            ],
+          },
+        };
+      }
+
+      if (config.url === 'agent-gateway/runs:get/run-id-1') {
+        return {
+          data: {
+            data: {
+              id: 'run-id-1',
+              runCode: 'run-no-terminal-read',
+              status: 'running',
+              requestedAt: '2026-06-30T10:00:00.000Z',
+              startedAt: '2026-06-30T10:01:00.000Z',
+              agentGatewayActionPermissionsJson: {
+                readTerminal: false,
+                readSessionMessages: false,
+                resumeAgentSession: false,
+              },
+            },
+          },
+        };
+      }
+
+      throw new Error(`Unexpected request: ${config.url}`);
+    });
+
+    renderAgentGatewayPage(AgentGatewayRunsPage, request);
+
+    expect(await screen.findByText('Run summary')).toBeTruthy();
+    expect(screen.queryByTestId('agent-gateway-terminal-stream-smoke-panel')).toBeNull();
+    expect(request).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        url: 'agent-gateway/runs/run-id-1/terminal-stream-tickets:create',
+      }),
+    );
+  });
+
+  it('shows a stable detail access error without polling sensitive endpoints', async () => {
+    const request = vi.fn(async (config: RequestConfig) => {
+      if (config.url === 'agent-gateway/runs:list') {
+        return {
+          data: {
+            data: [
+              {
+                id: 'run-id-1',
+                runCode: 'run-list-only',
+                status: 'succeeded',
+              },
+            ],
+          },
+        };
+      }
+
+      if (config.url === 'agent-gateway/runs:get/run-id-1') {
+        throw Object.assign(new Error('Run details are not allowed'), {
+          response: {
+            data: {
+              errors: [
+                {
+                  message: 'Run details are not allowed',
+                },
+              ],
+            },
+          },
+        });
+      }
+
+      throw new Error(`Unexpected request: ${config.url}`);
+    });
+
+    renderAgentGatewayPage(AgentGatewayRunsPage, request);
+
+    expect(await screen.findByText('run-list-only')).toBeTruthy();
+    fireEvent.click((await screen.findAllByLabelText('View run details'))[0]);
+
+    expect(await screen.findByText('Run details unavailable')).toBeTruthy();
+    expect(await screen.findByText('Run details are not allowed')).toBeTruthy();
+
+    await waitFor(() => {
+      expect(request).toHaveBeenCalledWith(
+        expect.objectContaining({
+          url: 'agent-gateway/runs:get/run-id-1',
+          method: 'get',
+        }),
+      );
+    });
+
+    const requestedUrls = request.mock.calls.map(([config]) => config.url);
+    expect(requestedUrls.filter((url) => url === 'agent-gateway/runs:get/run-id-1')).toHaveLength(1);
+    expect(requestedUrls.some((url) => url?.includes('terminal:snapshot'))).toBe(false);
+    expect(requestedUrls.some((url) => url?.includes('conversation-events:list'))).toBe(false);
+    expect(requestedUrls.some((url) => url?.includes('events:list'))).toBe(false);
+    expect(requestedUrls.some((url) => url?.includes('artifacts:list'))).toBe(false);
+    expect(requestedUrls.some((url) => url?.includes('snapshots:list'))).toBe(false);
+    expect(requestedUrls.some((url) => url?.includes('api-call-logs:list'))).toBe(false);
+    expect(requestedUrls.some((url) => url?.includes('terminal-stream-tickets:create'))).toBe(false);
+    expect(FakeBrowserWebSocket.instances).toHaveLength(0);
+  });
+
+  it('stops sensitive polling and streaming after an already-open detail refresh is denied', async () => {
+    vi.stubGlobal('WebSocket', FakeBrowserWebSocket);
+    let detailCallCount = 0;
+    const requestCounts = new Map<string, number>();
+    const request = vi.fn(async (config: RequestConfig) => {
+      requestCounts.set(config.url, (requestCounts.get(config.url) || 0) + 1);
+      if (config.url === 'agent-gateway/runs:list') {
+        return {
+          data: {
+            data: [
+              {
+                id: 'run-id-1',
+                runCode: 'run-revoked-detail',
+                status: 'running',
+                agentSessionId: 'session-id-1',
+                terminalStatus: 'active',
+              },
+            ],
+          },
+        };
+      }
+
+      if (config.url === 'agent-gateway/runs:get/run-id-1') {
+        detailCallCount += 1;
+        if (detailCallCount > 1) {
+          throw Object.assign(new Error('Run details were revoked'), {
+            response: {
+              data: {
+                code: 'AGENT_GATEWAY_PERMISSION_DENIED',
+                errors: [
+                  {
+                    message: 'Run details were revoked',
+                  },
+                ],
+              },
+            },
+          });
+        }
+        return {
+          data: {
+            data: {
+              id: 'run-id-1',
+              runCode: 'run-revoked-detail',
+              status: 'running',
+              agentSessionId: 'session-id-1',
+              agentSessionProvider: 'codex',
+              terminalStatus: 'active',
+              agentGatewayActionPermissionsJson: {
+                readTerminal: true,
+                readSessionMessages: true,
+                readArtifacts: true,
+                readRawLogs: true,
+              },
+              agentGatewayControlActionsJson: {},
+            },
+          },
+        };
+      }
+
+      if (config.url === 'agent-gateway/runs/run-id-1/terminal:snapshot') {
+        return {
+          data: {
+            data: {
+              backend: 'tmux',
+              terminalStatus: 'active',
+              runStatus: 'running',
+              available: true,
+              output: 'stale snapshot before denial',
+              capturedAt: '2026-06-30T10:01:02.000Z',
+              inputEnabled: false,
+            },
+          },
+        };
+      }
+
+      if (config.url === 'agent-gateway/runs/run-id-1/terminal-stream-tickets:create') {
+        return {
+          data: {
+            data: {
+              ticket: 'ag_stream_revoked_ticket',
+              ticketProof: 'ag_stream_revoked_proof',
+              authProof: 'ag_stream_revoked_auth',
+              expiresAt: '2026-06-30T10:02:00.000Z',
+            },
+          },
+        };
+      }
+
+      if (
+        config.url === 'agent-gateway/agent-sessions/session-id-1/conversation-events:list' ||
+        config.url === 'agent-gateway/runs/run-id-1/conversation-events:list' ||
+        config.url === 'agent-gateway/runs/run-id-1/events:list' ||
+        config.url === 'agent-gateway/runs/run-id-1/artifacts:list' ||
+        config.url === 'agent-gateway/runs/run-id-1/snapshots:list' ||
+        config.url === 'agent-gateway/runs/run-id-1/api-call-logs:list'
+      ) {
+        return { data: { data: [] } };
+      }
+
+      throw new Error(`Unexpected request: ${config.url}`);
+    });
+
+    renderAgentGatewayPage(AgentGatewayRunsPage, request, {
+      auth: {
+        token: 'browser-token',
+        getAuthenticator: () => 'basic',
+        role: 'root',
+      },
+    });
+
+    expect(await screen.findByText('run-revoked-detail')).toBeTruthy();
+    fireEvent.click((await screen.findAllByLabelText('View run details'))[0]);
+    expect(await screen.findByText('stale snapshot before denial')).toBeTruthy();
+    await waitFor(() => {
+      expect(FakeBrowserWebSocket.instances).toHaveLength(1);
+    });
+
+    await new Promise((resolve) => {
+      window.setTimeout(resolve, 5200);
+    });
+
+    expect(await screen.findByText('Run details unavailable')).toBeTruthy();
+    expect(await screen.findByText('Run details were revoked')).toBeTruthy();
+    expect(screen.queryByText('Run summary')).toBeNull();
+    expect(screen.queryByText('stale snapshot before denial')).toBeNull();
+
+    const sensitiveUrls = [
+      'agent-gateway/runs/run-id-1/terminal:snapshot',
+      'agent-gateway/agent-sessions/session-id-1/conversation-events:list',
+      'agent-gateway/runs/run-id-1/terminal-stream-tickets:create',
+    ];
+    const countsAfterDenial = Object.fromEntries(sensitiveUrls.map((url) => [url, requestCounts.get(url) || 0]));
+
+    await new Promise((resolve) => {
+      window.setTimeout(resolve, 2300);
+    });
+
+    for (const url of sensitiveUrls) {
+      expect(requestCounts.get(url) || 0).toBe(countsAfterDenial[url]);
+    }
+    expect(FakeBrowserWebSocket.instances[0].readyState).toBe(3);
+  }, 15000);
+
+  it('clears stale terminal output and session timeline when run affordances are revoked by detail refresh', async () => {
+    vi.stubGlobal('WebSocket', FakeBrowserWebSocket);
+    const intervalCallbacks = spyOnPageIntervals();
+
+    const requestCounts = new Map<string, number>();
+    let detailCallCount = 0;
+    const request = vi.fn(async (config: RequestConfig) => {
+      requestCounts.set(config.url, (requestCounts.get(config.url) || 0) + 1);
+
+      if (config.url === 'agent-gateway/runs:list') {
+        return {
+          data: {
+            data: [
+              {
+                id: 'run-id-1',
+                runCode: 'run-affordance-revoked',
+                status: 'running',
+                agentSessionId: 'session-id-1',
+                terminalStatus: 'active',
+              },
+            ],
+          },
+        };
+      }
+
+      if (config.url === 'agent-gateway/runs:get/run-id-1') {
+        detailCallCount += 1;
+        return {
+          data: {
+            data: {
+              id: 'run-id-1',
+              runCode: 'run-affordance-revoked',
+              status: 'running',
+              agentSessionId: 'session-id-1',
+              agentSessionProvider: 'codex',
+              terminalStatus: 'active',
+              agentGatewayActionPermissionsJson:
+                detailCallCount === 1
+                  ? {
+                      readTerminal: true,
+                      readSessionMessages: true,
+                      readArtifacts: false,
+                      readRawLogs: false,
+                    }
+                  : {
+                      readTerminal: false,
+                      readSessionMessages: false,
+                      readArtifacts: false,
+                      readRawLogs: false,
+                    },
+              agentGatewayControlActionsJson: {},
+            },
+          },
+        };
+      }
+
+      if (config.url === 'agent-gateway/runs/run-id-1/terminal:snapshot') {
+        return {
+          data: {
+            data: {
+              backend: 'tmux',
+              terminalStatus: 'active',
+              runStatus: 'running',
+              available: true,
+              output: 'stale snapshot after affordance revoked',
+              capturedAt: '2026-06-30T10:01:02.000Z',
+              inputEnabled: false,
+            },
+          },
+        };
+      }
+
+      if (config.url === 'agent-gateway/runs/run-id-1/terminal-stream-tickets:create') {
+        return {
+          data: {
+            data: {
+              ticket: 'ag_stream_affordance_ticket',
+              ticketProof: 'ag_stream_affordance_proof',
+              authProof: 'ag_stream_affordance_auth',
+              expiresAt: '2026-06-30T10:02:00.000Z',
+            },
+          },
+        };
+      }
+
+      if (
+        config.url === 'agent-gateway/agent-sessions/session-id-1/conversation-events:list' ||
+        config.url === 'agent-gateway/runs/run-id-1/conversation-events:list'
+      ) {
+        return {
+          data: {
+            data: [
+              {
+                id: 'event-id-1',
+                source: 'codex',
+                sequence: 1,
+                eventType: 'agent.message',
+                contentText: 'stale session event after affordance revoked',
+                createdAt: '2026-07-02T10:00:00.000Z',
+              },
+            ],
+          },
+        };
+      }
+
+      return { data: { data: [] } };
+    });
+
+    renderAgentGatewayPage(AgentGatewayRunsPage, request, {
+      auth: {
+        token: 'browser-token',
+        getAuthenticator: () => 'basic',
+        role: 'root',
+      },
+    });
+
+    expect(await screen.findByText('run-affordance-revoked')).toBeTruthy();
+    fireEvent.click((await screen.findAllByLabelText('View run details'))[0]);
+    expect(await screen.findByText('stale snapshot after affordance revoked')).toBeTruthy();
+    expect(await screen.findByText('stale session event after affordance revoked')).toBeTruthy();
+    await waitFor(() => {
+      expect(FakeBrowserWebSocket.instances).toHaveLength(1);
+    });
+
+    await act(async () => {
+      for (const callback of Array.from(intervalCallbacks.values())) {
+        callback();
+      }
+    });
+
+    expect(await screen.findByText('Agent Gateway terminal read permission required')).toBeTruthy();
+    expect(await screen.findByText('Agent Gateway session message read permission required')).toBeTruthy();
+    expect(screen.queryByText('stale snapshot after affordance revoked')).toBeNull();
+    expect(screen.queryByText('stale session event after affordance revoked')).toBeNull();
+
+    const sensitiveUrls = [
+      'agent-gateway/runs/run-id-1/terminal:snapshot',
+      'agent-gateway/agent-sessions/session-id-1/conversation-events:list',
+      'agent-gateway/runs/run-id-1/terminal-stream-tickets:create',
+    ];
+    const countsAfterRevocation = Object.fromEntries(sensitiveUrls.map((url) => [url, requestCounts.get(url) || 0]));
+
+    await act(async () => {
+      for (const callback of Array.from(intervalCallbacks.values())) {
+        callback();
+      }
+    });
+
+    for (const url of sensitiveUrls) {
+      expect(requestCounts.get(url) || 0).toBe(countsAfterRevocation[url]);
+    }
+    expect(FakeBrowserWebSocket.instances[0].readyState).toBe(3);
+  });
+
+  it('hides detail controls and skips sensitive polling when run affordances deny access', async () => {
+    const request = vi.fn(async (config: RequestConfig) => {
+      if (config.url === 'agent-gateway/runs:list') {
+        return {
+          data: {
+            data: [
+              {
+                id: 'run-id-1',
+                runCode: 'run-detail-only',
+                status: 'succeeded',
+                agentSessionId: 'session-id-1',
+                agentSessionProvider: 'codex',
+                agentSessionProviderId: 'thread-id-1',
+              },
+            ],
+          },
+        };
+      }
+
+      if (config.url === 'agent-gateway/runs:get/run-id-1') {
+        return {
+          data: {
+            data: {
+              id: 'run-id-1',
+              runCode: 'run-detail-only',
+              status: 'succeeded',
+              terminalStatus: 'closed',
+              agentSessionId: 'session-id-1',
+              agentSessionProvider: 'codex',
+              agentSessionProviderId: 'thread-id-1',
+              requestedAt: '2026-06-30T10:00:00.000Z',
+              startedAt: '2026-06-30T10:01:00.000Z',
+              finishedAt: '2026-06-30T10:02:00.000Z',
+              agentGatewayActionPermissionsJson: {
+                resumeAgentSession: false,
+                readSessionMessages: false,
+                readTerminal: false,
+                readArtifacts: false,
+                readRawLogs: false,
+              },
+              agentGatewayControlActionsJson: {
+                interruptRun: false,
+                terminateRun: false,
+              },
+            },
+          },
+        };
+      }
+
+      throw new Error(`Unexpected request: ${config.url}`);
+    });
+
+    renderAgentGatewayPage(AgentGatewayRunsPage, request);
+
+    expect(await screen.findByText('run-detail-only')).toBeTruthy();
+    fireEvent.click((await screen.findAllByLabelText('View run details'))[0]);
+
+    expect(await screen.findByText('Run summary')).toBeTruthy();
+    expect(await screen.findByText('Agent Gateway session message read permission required')).toBeTruthy();
+    expect(await screen.findByText('Agent Gateway terminal read permission required')).toBeTruthy();
+    expect(screen.queryByText('Resume agent session')).toBeNull();
+    expect(screen.queryByLabelText('Refresh terminal')).toBeNull();
+
+    await waitFor(() => {
+      expect(request).toHaveBeenCalledWith(
+        expect.objectContaining({
+          url: 'agent-gateway/runs:get/run-id-1',
+          method: 'get',
+        }),
+      );
+    });
+
+    const requestedUrls = request.mock.calls.map(([config]) => config.url);
+    expect(requestedUrls.some((url) => url?.includes('terminal:snapshot'))).toBe(false);
+    expect(requestedUrls.some((url) => url?.includes('conversation-events:list'))).toBe(false);
+    expect(requestedUrls.some((url) => url?.includes('events:list'))).toBe(false);
+    expect(requestedUrls.some((url) => url?.includes('artifacts:list'))).toBe(false);
+    expect(requestedUrls.some((url) => url?.includes('snapshots:list'))).toBe(false);
+    expect(requestedUrls.some((url) => url?.includes('api-call-logs:list'))).toBe(false);
+    expect(requestedUrls.some((url) => url?.includes('terminal-stream-tickets:create'))).toBe(false);
+    expect(FakeBrowserWebSocket.instances).toHaveLength(0);
+  });
+
+  it('hides cancel actions when the run affordance denies cancel permission', async () => {
+    const request = vi.fn(async (config: RequestConfig) => {
+      if (config.url === 'agent-gateway/runs:list') {
+        return {
+          data: {
+            data: [
+              {
+                id: 'run-id-1',
+                runCode: 'run-no-cancel',
+                status: 'running',
+                agentGatewayActionPermissionsJson: {
+                  cancelRun: false,
+                },
+              },
+            ],
+          },
+        };
+      }
+
+      if (config.url === 'agent-gateway/runs:get/run-id-1') {
+        return {
+          data: {
+            data: {
+              id: 'run-id-1',
+              runCode: 'run-no-cancel',
+              status: 'running',
+              requestedAt: '2026-06-30T10:00:00.000Z',
+              agentGatewayActionPermissionsJson: {
+                cancelRun: false,
+                resumeAgentSession: false,
+                readSessionMessages: false,
+                readTerminal: false,
+                readArtifacts: false,
+                readRawLogs: false,
+              },
+              agentGatewayControlActionsJson: {
+                interruptRun: false,
+                terminateRun: false,
+              },
+            },
+          },
+        };
+      }
+
+      return { data: { data: [] } };
+    });
+
+    renderAgentGatewayPage(AgentGatewayRunsPage, request);
+
+    expect(await screen.findByText('run-no-cancel')).toBeTruthy();
+    expect(screen.queryByLabelText('Cancel run')).toBeNull();
+
+    fireEvent.click((await screen.findAllByLabelText('View run details'))[0]);
+    expect(await screen.findByText('Run summary')).toBeTruthy();
+    expect(screen.queryByLabelText('Cancel run')).toBeNull();
+  });
+
   it('opens run details when the v route receives a runId after mount', async () => {
     window.history.pushState({}, '', '/v/admin/settings/agent-gateway/runs');
     const request = vi.fn(async (config: RequestConfig) => {
@@ -1809,6 +2539,21 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
+      if (config.url === 'agent-gateway/runs/run-id-1/terminal-stream-tickets:create') {
+        return {
+          data: {
+            data: {
+              ticket: 'ag_stream_page_ticket',
+              ticketProof: 'ag_stream_page_proof',
+              authProof: 'ag_stream_page_auth',
+              authenticator: 'basic',
+              role: 'root',
+              expiresAt: '2026-06-30T10:02:00.000Z',
+            },
+          },
+        };
+      }
+
       return { data: { data: [] } };
     });
 
@@ -1829,10 +2574,40 @@ describe('PluginAgentGatewayClientV2', () => {
     });
 
     const webSocket = FakeBrowserWebSocket.instances[0];
+    expect(webSocket.url).not.toContain('token=');
+    expect(webSocket.protocols?.[0]).toBe(TERMINAL_STREAM_BROWSER_SUBPROTOCOL);
+    expect(
+      webSocket.protocols?.some((protocol) => protocol.startsWith(TERMINAL_STREAM_BROWSER_AUTH_PROTOCOL_PREFIX)),
+    ).toBe(false);
+    expect(
+      webSocket.protocols?.some((protocol) =>
+        protocol.startsWith(TERMINAL_STREAM_BROWSER_AUTHENTICATOR_PROTOCOL_PREFIX),
+      ),
+    ).toBe(true);
+    expect(
+      webSocket.protocols?.some((protocol) => protocol.startsWith(TERMINAL_STREAM_BROWSER_ROLE_PROTOCOL_PREFIX)),
+    ).toBe(true);
+    expect(webSocket.protocols?.join(',')).not.toContain('browser-token');
     act(() => {
       webSocket.dispatch('open');
     });
     const subscribeFrame = JSON.parse(webSocket.sent[0]) as Record<string, unknown>;
+    expect(subscribeFrame).toMatchObject({
+      type: 'browser.subscribe',
+      runId: 'run-id-1',
+      lastOffset: 0,
+    });
+    expect(JSON.stringify(subscribeFrame)).not.toContain('ag_stream_page_ticket');
+    expect(JSON.stringify(subscribeFrame)).not.toContain('ag_stream_page_proof');
+    expect(JSON.stringify(subscribeFrame)).not.toContain('ag_stream_page_auth');
+    expect(JSON.stringify(subscribeFrame)).not.toContain('browser-token');
+    expect(subscribeFrame).not.toHaveProperty('browserAuth');
+    expect(subscribeFrame).not.toHaveProperty('ticket');
+    expect(subscribeFrame).not.toHaveProperty('ticketProof');
+    expect(subscribeFrame).not.toHaveProperty('authProof');
+    expect(subscribeFrame).not.toHaveProperty('authToken');
+    expect(subscribeFrame).not.toHaveProperty('authenticator');
+    expect(subscribeFrame).not.toHaveProperty('role');
     act(() => {
       webSocket.dispatch('message', {
         data: JSON.stringify({
@@ -1928,6 +2703,21 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
+      if (config.url === 'agent-gateway/runs/run-id-1/terminal-stream-tickets:create') {
+        return {
+          data: {
+            data: {
+              ticket: 'ag_stream_page_ticket',
+              ticketProof: 'ag_stream_page_proof',
+              authProof: 'ag_stream_page_auth',
+              authenticator: 'basic',
+              role: 'root',
+              expiresAt: '2026-06-30T10:02:00.000Z',
+            },
+          },
+        };
+      }
+
       return { data: { data: [] } };
     });
 
@@ -1948,6 +2738,20 @@ describe('PluginAgentGatewayClientV2', () => {
     });
 
     const webSocket = FakeBrowserWebSocket.instances[0];
+    expect(webSocket.url).not.toContain('token=');
+    expect(webSocket.protocols?.[0]).toBe(TERMINAL_STREAM_BROWSER_SUBPROTOCOL);
+    expect(
+      webSocket.protocols?.some((protocol) => protocol.startsWith(TERMINAL_STREAM_BROWSER_AUTH_PROTOCOL_PREFIX)),
+    ).toBe(false);
+    expect(
+      webSocket.protocols?.some((protocol) =>
+        protocol.startsWith(TERMINAL_STREAM_BROWSER_AUTHENTICATOR_PROTOCOL_PREFIX),
+      ),
+    ).toBe(true);
+    expect(
+      webSocket.protocols?.some((protocol) => protocol.startsWith(TERMINAL_STREAM_BROWSER_ROLE_PROTOCOL_PREFIX)),
+    ).toBe(true);
+    expect(webSocket.protocols?.join(',')).not.toContain('browser-token');
     act(() => {
       webSocket.dispatch('open');
     });
@@ -1957,6 +2761,17 @@ describe('PluginAgentGatewayClientV2', () => {
       runId: 'run-id-1',
       lastOffset: 12,
     });
+    expect(JSON.stringify(subscribeFrame)).not.toContain('ag_stream_page_ticket');
+    expect(JSON.stringify(subscribeFrame)).not.toContain('ag_stream_page_proof');
+    expect(JSON.stringify(subscribeFrame)).not.toContain('ag_stream_page_auth');
+    expect(JSON.stringify(subscribeFrame)).not.toContain('browser-token');
+    expect(subscribeFrame).not.toHaveProperty('browserAuth');
+    expect(subscribeFrame).not.toHaveProperty('ticket');
+    expect(subscribeFrame).not.toHaveProperty('ticketProof');
+    expect(subscribeFrame).not.toHaveProperty('authProof');
+    expect(subscribeFrame).not.toHaveProperty('authToken');
+    expect(subscribeFrame).not.toHaveProperty('authenticator');
+    expect(subscribeFrame).not.toHaveProperty('role');
     act(() => {
       webSocket.dispatch('message', {
         data: JSON.stringify({
@@ -2383,14 +3198,7 @@ describe('PluginAgentGatewayClientV2', () => {
 
   it('keeps the last successful normalized timeline when polling temporarily fails', async () => {
     let conversationEventCallCount = 0;
-    const intervalCallbacks: Array<() => void> = [];
-    vi.spyOn(window, 'setInterval').mockImplementation((handler: TimerHandler) => {
-      if (typeof handler === 'function') {
-        intervalCallbacks.push(() => handler());
-      }
-      return intervalCallbacks.length;
-    });
-    vi.spyOn(window, 'clearInterval').mockImplementation(() => undefined);
+    const intervalCallbacks = spyOnPageIntervals();
 
     const request = vi.fn(async (config: RequestConfig) => {
       if (config.url === 'agent-gateway/runs:list') {
@@ -2494,7 +3302,7 @@ describe('PluginAgentGatewayClientV2', () => {
 
     expect(await screen.findByText('stable normalized event')).toBeTruthy();
     await act(async () => {
-      for (const callback of intervalCallbacks) {
+      for (const callback of intervalCallbacks.values()) {
         callback();
       }
     });
@@ -2511,14 +3319,7 @@ describe('PluginAgentGatewayClientV2', () => {
 
   it('refreshes run summary while the detail drawer remains open', async () => {
     let runDetailsCallCount = 0;
-    const intervalCallbacks: Array<() => void> = [];
-    vi.spyOn(window, 'setInterval').mockImplementation((handler: TimerHandler) => {
-      if (typeof handler === 'function') {
-        intervalCallbacks.push(() => handler());
-      }
-      return intervalCallbacks.length;
-    });
-    vi.spyOn(window, 'clearInterval').mockImplementation(() => undefined);
+    const intervalCallbacks = spyOnPageIntervals();
 
     const request = vi.fn(async (config: RequestConfig) => {
       if (config.url === 'agent-gateway/runs:list') {
@@ -2589,7 +3390,7 @@ describe('PluginAgentGatewayClientV2', () => {
     expect(await screen.findByText('No agent session')).toBeTruthy();
 
     await act(async () => {
-      for (const callback of intervalCallbacks) {
+      for (const callback of intervalCallbacks.values()) {
         callback();
       }
     });
@@ -2753,14 +3554,7 @@ describe('PluginAgentGatewayClientV2', () => {
   });
 
   it('clears stale resume controls and session timeline while switching run details', async () => {
-    const intervalCallbacks: Array<() => void> = [];
-    vi.spyOn(window, 'setInterval').mockImplementation((handler: TimerHandler) => {
-      if (typeof handler === 'function') {
-        intervalCallbacks.push(() => handler());
-      }
-      return intervalCallbacks.length;
-    });
-    vi.spyOn(window, 'clearInterval').mockImplementation(() => undefined);
+    const intervalCallbacks = spyOnPageIntervals();
 
     let resolveRunTwoDetails: ((value: unknown) => void) | undefined;
     let sessionOneTimelineRequests = 0;
@@ -2831,7 +3625,10 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/runs/run-id-2/conversation-events:list') {
+      if (
+        config.url === 'agent-gateway/runs/run-id-2/conversation-events:list' ||
+        config.url === 'agent-gateway/agent-sessions/session-id-2/conversation-events:list'
+      ) {
         runTwoTimelineRequests += 1;
         return {
           data: {
@@ -2878,13 +3675,13 @@ describe('PluginAgentGatewayClientV2', () => {
     expect(screen.queryByText('old session timeline event')).toBeNull();
 
     await act(async () => {
-      for (const callback of intervalCallbacks) {
+      for (const callback of intervalCallbacks.values()) {
         callback();
       }
     });
 
     expect(sessionOneTimelineRequests).toBe(sessionOneRequestsBeforeSwitch);
-    expect(runTwoTimelineRequests).toBeGreaterThan(0);
+    expect(runTwoTimelineRequests).toBe(0);
 
     await act(async () => {
       resolveRunTwoDetails?.({
@@ -2902,6 +3699,9 @@ describe('PluginAgentGatewayClientV2', () => {
       });
     });
 
+    await waitFor(() => {
+      expect(runTwoTimelineRequests).toBeGreaterThan(0);
+    });
     expect(await screen.findByText('target run scoped event')).toBeTruthy();
   });
 
