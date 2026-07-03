@@ -138,6 +138,29 @@ describe('submitHandler', () => {
     expect(ctx.exit).not.toHaveBeenCalled();
   });
 
+  it('falls back to id as the selected record filter key', async () => {
+    const { ctx, update, values } = createContext({
+      rows: [{ id: 3 }],
+    });
+    ctx.collection.filterTargetKey = undefined;
+    ctx.collection.getPrimaryKey.mockReturnValue(undefined);
+
+    await submitHandler(ctx, {});
+
+    expect(update).toHaveBeenCalledWith({
+      filter: {
+        $and: [
+          {
+            id: {
+              $in: [3],
+            },
+          },
+        ],
+      },
+      values,
+    });
+  });
+
   it('exits early when selected mode has no selected records', async () => {
     const { ctx, update } = createContext({
       rows: [],

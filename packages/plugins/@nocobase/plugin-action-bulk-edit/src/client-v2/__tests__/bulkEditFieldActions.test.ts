@@ -141,6 +141,46 @@ describe('bulkEditFieldComponent', () => {
     });
   });
 
+  it('hides read pretty settings when only one association binding is available and no title field is configured', () => {
+    const ctx = createFieldComponentContext({
+      bindings: [{ modelName: 'AssociationReadPrettyModel' }],
+      pattern: 'readPretty',
+    });
+
+    expect(bulkEditFieldComponent.uiMode?.(ctx)).toBeNull();
+    expect(bulkEditFieldComponent.hideInSettings?.(ctx)).toBe(true);
+  });
+
+  it('uses the inner field label as read pretty title field fallback', () => {
+    vi.spyOn(DetailsItemModel, 'getBindingsByField')
+      .mockReturnValueOnce([{ modelName: 'AssociationReadPrettyModel' }, { modelName: 'SubTableFieldModel' }] as never)
+      .mockReturnValueOnce([{ modelName: 'InputFieldModel' }] as never);
+
+    const ctx = createFieldComponentContext({
+      pattern: 'readPretty',
+      titleField: undefined,
+    });
+    ctx.model.subModels.field.props.fieldNames.label = 'nickname';
+
+    expect(bulkEditFieldComponent.uiMode?.(ctx)).toEqual({
+      type: 'select',
+      key: 'use',
+      props: {
+        options: [
+          {
+            label: 't:AssociationField component',
+            options: [{ label: 't:AssociationReadPrettyModel label', value: 'AssociationReadPrettyModel' }],
+          },
+          {
+            label: 't:Title field component',
+            options: [{ label: 't:InputFieldModel label', value: 'InputFieldModel' }],
+          },
+        ],
+      },
+    });
+    expect(ctx.collectionField.targetCollection.getField).toHaveBeenCalledWith('nickname');
+  });
+
   it('prefers the inner field binding as default params', () => {
     const ctx = createFieldComponentContext({
       bindings: [{ modelName: 'DefaultFieldModel' }],
@@ -151,11 +191,274 @@ describe('bulkEditFieldComponent', () => {
       use: 'StoredFieldModel',
     });
   });
+
+  it('falls back to the current inner field use when no stored binding exists', () => {
+    const ctx = createFieldComponentContext({
+      bindings: [{ modelName: 'DefaultFieldModel' }],
+    });
+
+    expect(bulkEditFieldComponent.defaultParams?.(ctx)).toEqual({
+      use: 'FallbackFieldModel',
+    });
+  });
+
+  it('uses a supported binding when the default binding is excluded from bulk edit', () => {
+    const ctx = createFieldComponentContext({
+      bindings: [{ modelName: 'SubTableFieldModel' }, { modelName: 'InputFieldModel' }],
+    });
+    ctx.model.subModels.field.use = undefined;
+
+    expect(bulkEditFieldComponent.defaultParams?.(ctx)).toEqual({
+      use: 'InputFieldModel',
+    });
+  });
+
+  it('keeps the existing field component when params are saved without changing the model use', async () => {
+    const ctx = createFieldComponentContext({
+      bindings: [
+        {
+          defaultProps: () => ({
+            placeholder: 'Title',
+          }),
+          modelName: 'InputFieldModel',
+        },
+      ],
+    });
+
+    await expect(
+      bulkEditFieldComponent.beforeParamsSave?.(
+        ctx as never,
+        {
+          use: 'InputFieldModel',
+        },
+        {
+          use: 'InputFieldModel',
+        },
+      ),
+    ).resolves.toBeUndefined();
+  });
+
+  it('rebuilds the field sub model when the selected component changes', async () => {
+    const dispatchEvent = vi.fn<() => Promise<void>>().mockResolvedValue(undefined);
+    const save = vi.fn<() => Promise<void>>().mockResolvedValue(undefined);
+    const removeModelWithSubModels = vi.fn();
+    const invalidateFlowCache = vi.fn();
+    const ctx = createFieldComponentContext({
+      bindings: [
+        {
+          defaultProps: () => ({
+            placeholder: 'Title',
+          }),
+          modelName: 'InputFieldModel',
+        },
+      ],
+    });
+    Object.assign(ctx.model, {
+      flowEngine: {
+        removeModelWithSubModels,
+      },
+      getFieldSettingsInitParams: vi.fn(() => ({
+        collectionName: 'posts',
+        fieldPath: 'title',
+      })),
+      save,
+      setSubModel: vi.fn(() => ({
+        dispatchEvent,
+      })),
+    });
+    ctx.model.subModels.field = {
+      invalidateFlowCache,
+      serialize: vi.fn(() => ({
+        subModels: {
+          keep: {
+            delegateToParent: true,
+          },
+          remove: {
+            delegateToParent: false,
+          },
+        },
+      })),
+      stepParams: {
+        fieldBinding: {
+          use: 'OldFieldModel',
+        },
+      },
+      uid: 'field-uid',
+    };
+
+    await bulkEditFieldComponent.beforeParamsSave?.(
+      ctx as never,
+      {
+        use: 'InputFieldModel',
+      },
+      {
+        use: 'OldFieldModel',
+      },
+    );
+
+    expect(invalidateFlowCache).toHaveBeenCalledWith('beforeRender', true);
+    expect(removeModelWithSubModels).toHaveBeenCalledWith('field-uid');
+    expect(ctx.model.setSubModel).toHaveBeenCalledWith(
+      'field',
+      expect.objectContaining({
+        props: {
+          placeholder: 'Title',
+        },
+        stepParams: expect.objectContaining({
+          fieldBinding: {
+            use: 'InputFieldModel',
+          },
+          fieldSettings: {
+            init: {
+              collectionName: 'posts',
+              fieldPath: 'title',
+            },
+          },
+        }),
+        subModels: {
+          keep: {
+            delegateToParent: true,
+          },
+        },
+        uid: 'field-uid',
+      }),
+    );
+    expect(dispatchEvent).toHaveBeenCalledWith('beforeRender', undefined, { useCache: false });
+    expect(save).toHaveBeenCalledTimes(1);
+  });
+
+  it('rebuilds read pretty title field components from title-field bindings', async () => {
+    const dispatchEvent = vi.fn<() => Promise<void>>().mockResolvedValue(undefined);
+    const save = vi.fn<() => Promise<void>>().mockResolvedValue(undefined);
+    vi.spyOn(DetailsItemModel, 'getBindingsByField')
+      .mockReturnValueOnce([{ modelName: 'AssociationReadPrettyModel' }] as never)
+      .mockReturnValueOnce([
+        {
+          defaultProps: {
+            ellipsis: true,
+          },
+          modelName: 'DisplayTextFieldModel',
+        },
+      ] as never);
+    const ctx = createFieldComponentContext({
+      pattern: 'readPretty',
+      titleField: 'name',
+    });
+    Object.assign(ctx.model, {
+      flowEngine: {
+        removeModelWithSubModels: vi.fn(),
+      },
+      save,
+      setSubModel: vi.fn(() => ({
+        dispatchEvent,
+      })),
+    });
+    ctx.model.subModels.field = {
+      serialize: vi.fn(() => ({
+        subModels: {},
+      })),
+      uid: undefined,
+    };
+
+    await bulkEditFieldComponent.beforeParamsSave?.(
+      ctx as never,
+      {
+        use: 'DisplayTextFieldModel',
+      },
+      {
+        use: 'AssociationReadPrettyModel',
+      },
+    );
+
+    expect(ctx.collectionField.targetCollection.getField).toHaveBeenCalledWith('name');
+    expect(ctx.model.setSubModel).toHaveBeenCalledWith(
+      'field',
+      expect.objectContaining({
+        props: {
+          ellipsis: true,
+          pattern: 'readPretty',
+        },
+      }),
+    );
+    expect(dispatchEvent).toHaveBeenCalledWith('beforeRender', undefined, { useCache: false });
+    expect(save).toHaveBeenCalledTimes(1);
+  });
 });
 
 describe('bulkEditTitleField', () => {
   afterEach(() => {
     vi.restoreAllMocks();
+  });
+
+  it('rebuilds and saves the display title field before params are persisted', async () => {
+    const saveInnerField = vi.fn<() => Promise<void>>().mockResolvedValue(undefined);
+    const saveWrapperField = vi.fn<() => Promise<void>>().mockResolvedValue(undefined);
+    const dispatchEvent = vi.fn<() => Promise<void>>().mockResolvedValue(undefined);
+    const newDisplayField = {
+      dispatchEvent,
+      save: saveInnerField,
+    };
+    const innerDisplayField = {
+      save: saveWrapperField,
+      setSubModel: vi.fn(() => newDisplayField),
+      subModels: {
+        field: {
+          uid: 'old-title-field',
+        },
+      },
+    };
+    const ctx = {
+      engine: {
+        destroyModel: vi.fn<() => Promise<void>>().mockResolvedValue(undefined),
+      },
+      model: {
+        collectionField: {
+          dataSourceKey: 'main',
+          target: 'users',
+          targetCollection: {
+            getField: vi.fn(() => ({ name: 'nickname' })),
+          },
+        },
+        subModels: {
+          field: {
+            subModels: {
+              field: innerDisplayField,
+            },
+          },
+        },
+      },
+    };
+
+    vi.spyOn(DisplayItemModel, 'getDefaultBindingByField').mockReturnValue({
+      modelName: 'DisplayTextFieldModel',
+    } as never);
+
+    await bulkEditTitleField.beforeParamsSave?.(
+      ctx as never,
+      {
+        label: 'nickname',
+      },
+      {
+        label: 'name',
+      },
+    );
+
+    expect(ctx.engine.destroyModel).toHaveBeenCalledWith('old-title-field');
+    expect(innerDisplayField.setSubModel).toHaveBeenCalledWith('field', {
+      use: 'DisplayTextFieldModel',
+      stepParams: {
+        fieldSettings: {
+          init: {
+            dataSourceKey: 'main',
+            collectionName: 'users',
+            fieldPath: 'nickname',
+          },
+        },
+      },
+    });
+    expect(saveInnerField).toHaveBeenCalledTimes(1);
+    expect(dispatchEvent).toHaveBeenCalledWith('beforeRender');
+    expect(saveWrapperField).toHaveBeenCalledTimes(1);
   });
 
   it('updates association fieldNames and rebuilds the display title field', async () => {

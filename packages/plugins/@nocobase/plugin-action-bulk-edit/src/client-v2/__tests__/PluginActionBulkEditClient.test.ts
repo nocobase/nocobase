@@ -50,8 +50,17 @@ describe('PluginActionBulkEditClient', () => {
 
     const loaders = registerModelLoaders.mock.calls[0][0];
     await expect(loaders.BulkEditActionModel.loader()).resolves.toHaveProperty('BulkEditActionModel');
+    await expect(loaders.BulkEditFormModel.loader()).resolves.toHaveProperty('BulkEditFormModel');
+    await expect(loaders.BulkEditFormItemModel.loader()).resolves.toHaveProperty('BulkEditFormItemModel');
+    await expect(loaders.BulkEditFieldModel.loader()).resolves.toHaveProperty('BulkEditFieldModel');
+    await expect(loaders.BulkEditFormActionGroupModel.loader()).resolves.toHaveProperty('BulkEditFormActionGroupModel');
     await expect(loaders.BulkEditFormSubmitActionModel.loader()).resolves.toHaveProperty(
       'BulkEditFormSubmitActionModel',
     );
+    await expect(loaders.BulkEditChildPageTabModel.loader()).resolves.toHaveProperty('BulkEditChildPageTabModel');
+    await expect(loaders.BulkEditBlockGridModel.loader()).resolves.toHaveProperty('BulkEditBlockGridModel');
+    await expect(loaders.BulkEditFormGridModel.loader()).resolves.toHaveProperty('BulkEditFormGridModel');
+    await expect(loaders.BulkEditDataBlockModel.loader()).resolves.toHaveProperty('BulkEditDataBlockModel');
+    await expect(loaders.BulkEditBlockModel.loader()).resolves.toHaveProperty('BulkEditBlockModel');
   });
 });

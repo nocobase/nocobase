@@ -73,6 +73,18 @@ function createFormItemModel(options: { fieldUse?: string } = {}) {
   };
 }
 
+const ChangeProbe = (props: { onChange?: (value: unknown) => void }) => (
+  <div>
+    <input aria-label="inner-field" onChange={(event) => props.onChange?.(event)} />
+    <button type="button" onClick={() => props.onChange?.({ target: { checked: true } })}>
+      checked value
+    </button>
+    <button type="button" onClick={() => props.onChange?.('direct value')}>
+      direct value
+    </button>
+  </div>
+);
+
 describe('BulkEditFieldV2', () => {
   afterEach(() => {
     cleanup();
@@ -150,5 +162,34 @@ describe('BulkEditFieldV2', () => {
     });
 
     expect(onChange).toHaveBeenCalledWith(false);
+  });
+
+  it('normalizes checked and direct child field values', async () => {
+    const formItemModel = createFormItemModel();
+    const onChange = vi.fn();
+
+    render(<BulkEditFieldV2 formItemModel={formItemModel} field={<ChangeProbe />} onChange={onChange} />);
+
+    fireEvent.change(screen.getByLabelText('bulk-edit-value-type'), {
+      target: {
+        value: String(BulkEditFormItemValueType.ChangedTo),
+      },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'checked value' }));
+    fireEvent.click(screen.getByRole('button', { name: 'direct value' }));
+    fireEvent.change(screen.getByLabelText('bulk-edit-value-type'), {
+      target: {
+        value: String(BulkEditFormItemValueType.Clear),
+      },
+    });
+    fireEvent.change(screen.getByLabelText('bulk-edit-value-type'), {
+      target: {
+        value: String(BulkEditFormItemValueType.RemainsTheSame),
+      },
+    });
+
+    expect(onChange).toHaveBeenCalledWith(true);
+    expect(onChange).toHaveBeenCalledWith('direct value');
+    expect(formItemModel.context.blockModel.form.setFieldValue).toHaveBeenLastCalledWith('title', undefined);
   });
 });
