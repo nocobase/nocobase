@@ -10,8 +10,6 @@ keywords: "数据库视图,Collection View,视图"
 
 连接数据库里的视图，比如由 DBA 维护的财务报表视图、过滤后的客户视图、跨系统同步后的聚合视图。它适合复用数据库已经定义好的查询逻辑。
 
-当前页面连接的是主数据库中已经存在的视图。NocoBase 不负责创建或维护这个视图的 SQL 定义，只会把它作为一个可以配置字段元数据的数据表使用。
-
 :::tip 提示
 
 支持主数据库连接账号所有者范围内的普通视图，不支持物化视图。即使该账号对其他所有者的视图有查询权限，这些视图也不会出现在可连接列表中。连接前需要确认视图字段有稳定的列名，字段类型应能被 NocoBase 识别。
@@ -131,21 +129,15 @@ keywords: "数据库视图,Collection View,视图"
 ![add_view_field](https://static-docs.nocobase.com/add_view_field.png)
 ![add_view_field_configure](https://static-docs.nocobase.com/add_view_field_configure.png)
 
-<!-- 缺少Source collection -->
 | 配置 | 说明 |
 | --- | --- |
 | Field display name | 多对一关系字段在界面中显示的名称。建议使用业务人员能理解的名称，比如「所属客户」「关联订单」。 |
 | Field name | 多对一关系字段在 NocoBase 中保存的标识名称，用于 API、权限、工作流等内部引用。 |
+| Source collection | 源数据表，也就是当前数据库视图数据表。用于确定 `Foreign key` 从哪个数据表字段中选择；数据库视图新增多对一关系字段时，通常保持为当前 view。 |
 | Target collection | 要关联的目标数据表。通常选择普通数据表、外部数据库表等真实数据表，不能选择数据库视图。 |
 | Foreign key | 当前数据库视图中用于保存目标记录标识的字段。这个字段需要在 view 查询结果中稳定返回。 |
 | Target key | 目标数据表中被 `Foreign key` 匹配的字段，通常选择主键或唯一字段。 |
 | Description | 字段说明。适合写关联关系含义、数据来源、维护方式或注意事项。 |
-
-:::warning 注意
-
-新增多对一关系字段只会新增 NocoBase 中的关系元数据，不会修改数据库 view 的 SQL 定义，也不会在数据库中创建外键约束。关联能否正确展示，取决于 view 字段值是否能匹配目标数据表的目标字段。
-
-:::
 
 ### 字段映射
 
@@ -170,7 +162,7 @@ keywords: "数据库视图,Collection View,视图"
 
 ### 从数据库同步
 
-如果数据库侧修改了 view 字段结构，可以进入「Configure fields」，点击「Sync from database」重新读取字段结构。同步后，NocoBase 会更新字段元数据：新增 view 中出现的新字段，清理 view 中已经删除的字段，并重新确认字段类型和字段来源。
+如果数据库侧修改了 view 字段结构，可以进入「Configure fields」，点击「Sync from database」重新读取字段结构。同步后，NocoBase 会更新字段：新增 view 中出现的新字段，清理 view 中已经删除的字段，并重新确认字段类型和字段来源。
 
 ![edit_view_sync_from_database](https://static-docs.nocobase.com/edit_view_sync_from_database.png)
 ![edit_view_sync_from_database_configure](https://static-docs.nocobase.com/edit_view_sync_from_database_configure.png)
@@ -198,7 +190,7 @@ keywords: "数据库视图,Collection View,视图"
 
 ### 删除字段
 
-点击字段右侧的「Delete」可以删除单个字段。删除字段只会移除 NocoBase 中保存的字段元数据，不会删除数据库 view 的真实列。
+点击字段右侧的「Delete」可以删除单个字段。删除字段只会移除 NocoBase 中保存的字段，不会删除数据库 view 的真实列。
 
 [了解更多字段配置信息](../field/field.md)
 
@@ -236,7 +228,7 @@ keywords: "数据库视图,Collection View,视图"
 
 ## 删除视图
 
-在数据表列表中，点击数据库视图右侧的「Delete」，可以删除数据库视图数据表。删除数据库视图数据表只会删除 NocoBase 中的连接配置和字段元数据，不会删除数据库里的 view。
+在数据表列表中，点击数据库视图右侧的「Delete」，可以删除数据库视图数据表。删除数据库视图数据表只会删除 NocoBase 中的连接配置和字段，不会删除数据库里的 view。
 
 主数据库中的数据库视图也支持批量选择后统一删除。删除前需要检查页面区块、图表、权限、工作流和外部 API 是否还在使用这个数据库视图数据表。
 ![delete_view](https://static-docs.nocobase.com/delete_view.png)
