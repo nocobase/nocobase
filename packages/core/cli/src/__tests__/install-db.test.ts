@@ -765,6 +765,8 @@ test('docker app plan uses configured nb image registry and variant defaults', a
     });
 
     expect(plan.imageRef).toBe('registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest-full-no-nginx');
+    expect(plan.args.includes('13000:13000')).toBe(true);
+    expect(plan.args.includes('13000:80')).toBe(false);
   } finally {
     if (previousCliRoot === undefined) {
       delete process.env.NB_CLI_ROOT;

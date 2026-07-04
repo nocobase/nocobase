@@ -15,6 +15,7 @@ import {
   normalizeNbImageVariant,
   normalizeDockerImageTag,
   resolveBuiltinDbImage,
+  resolveDockerImageContainerPort,
   resolveDockerImageRef,
   resolveOfficialDockerRegistry,
   shouldUseFullDockerImageTag,
@@ -66,6 +67,13 @@ test('official image variant mapping supports no-nginx and full-no-nginx', () =>
   expect(resolveDockerImageRef('nocobase/nocobase', 'latest', { variant: 'full-no-nginx' })).toBe(
     'nocobase/nocobase:latest-full-no-nginx',
   );
+});
+
+test('docker image container port follows the resolved nginx variant tag', () => {
+  expect(resolveDockerImageContainerPort('nocobase/nocobase:latest')).toBe('80');
+  expect(resolveDockerImageContainerPort('nocobase/nocobase:latest-full')).toBe('80');
+  expect(resolveDockerImageContainerPort('nocobase/nocobase:latest-no-nginx')).toBe('13000');
+  expect(resolveDockerImageContainerPort('localhost:5000/nocobase/nocobase:latest-full-no-nginx')).toBe('13000');
 });
 
 test('builtin db image mapping follows the selected official image registry', () => {

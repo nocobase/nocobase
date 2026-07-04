@@ -47,6 +47,7 @@ import {
   inferNbImageRegistryFromRepository,
   normalizeNbImageVariant,
   resolveBuiltinDbImage,
+  resolveDockerImageContainerPort,
   resolveDockerImageRef,
   resolveOfficialDockerRegistry,
 } from '../lib/docker-image.ts';
@@ -2346,7 +2347,17 @@ export default class Install extends Command {
       appResults: params.appResults,
       rootResults: params.rootResults,
     });
-    const args = ['run', '-d', '--name', containerName, '--network', params.networkName, '-p', `${appPort}:80`];
+    const containerPort = resolveDockerImageContainerPort(imageRef);
+    const args = [
+      'run',
+      '-d',
+      '--name',
+      containerName,
+      '--network',
+      params.networkName,
+      '-p',
+      `${appPort}:${containerPort}`,
+    ];
 
     if (envFile) {
       args.push('--env-file', envFile);

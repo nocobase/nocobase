@@ -141,6 +141,21 @@ export function resolveDockerImageRef(
   return `${resolvedRegistry}:${normalizedTag}`;
 }
 
+function extractDockerImageTag(imageRef: unknown): string | undefined {
+  const ref = trimValue(imageRef);
+  const lastSlashIndex = ref.lastIndexOf('/');
+  const lastColonIndex = ref.lastIndexOf(':');
+  if (lastColonIndex <= lastSlashIndex) {
+    return undefined;
+  }
+  return ref.slice(lastColonIndex + 1) || undefined;
+}
+
+export function resolveDockerImageContainerPort(imageRef: unknown): '80' | '13000' {
+  const tag = extractDockerImageTag(imageRef);
+  return tag?.endsWith(DOCKER_IMAGE_NO_NGINX_SUFFIX) ? '13000' : '80';
+}
+
 export function resolveBuiltinDbImage(dbDialect: unknown, options?: { registry?: NbImageRegistry | string }): string {
   const dialect = trimValue(dbDialect) || 'postgres';
   const configuredRegistry =
