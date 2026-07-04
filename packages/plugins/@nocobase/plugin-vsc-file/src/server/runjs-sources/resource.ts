@@ -15,7 +15,12 @@ import JSZip from 'jszip';
 import { VscError, isVscError } from '../../shared/errors';
 import { sha256Hex } from '../../shared/hash';
 import { normalizePath, pathHash, pathLowerHash } from '../../shared/path';
-import { runJSManifestPath, validateRunJSWorkspacePathValue } from '../../shared/runjs-workspace-path';
+import {
+  defaultRunJSEntryPath,
+  resolveRunJSClientIndexEntryPath,
+  runJSManifestPath,
+  validateRunJSWorkspacePathValue,
+} from '../../shared/runjs-workspace-path';
 import { maxFileSize, maxFilesPerRepo, maxRepoTextSize } from '../../shared/constants';
 import {
   buildRunJSRuntimeCodeHash,
@@ -304,7 +309,7 @@ const actionRunners: Record<RunJSSourceActionName, RunJSSourceActionRunner> = {
     assertRunJSCompileInputLimits(compileFiles);
     const compiled = compileRunJSSourceWorkspace({
       files: compileFiles,
-      entry: previewInput.entryPath || legacy.entryPath || legacy.entry || selectEntryPath(compileFiles),
+      entry: selectEntryPath(compileFiles),
       runtimeVersion: previewInput.version || legacy.version,
       surfaceStyle: legacy.surfaceStyle,
       locator: previewInput.locator,
@@ -374,12 +379,11 @@ const actionRunners: Record<RunJSSourceActionName, RunJSSourceActionRunner> = {
         },
         serviceCtx,
       );
-      const entryPath =
-        publishInput.entryPath || legacy.entryPath || legacy.entry || selectEntryPath(initialCompileFiles);
+      const entryPath = selectEntryPath(initialCompileFiles);
       const runtimeVersion = publishInput.version || legacy.version;
       const publishFiles = withRunJSManifestChange(
         publishInput.files,
-        runJSManifestFileChange(entryPath, runtimeVersion, legacy.surfaceStyle),
+        runJSManifestFileChange(entryPath, runtimeVersion, legacy.surfaceStyle, publishInput.files),
       );
       const compileFiles = await materializeRunJSCompileFiles(
         db,
@@ -1257,10 +1261,11 @@ function runJSManifestFile(
   entry: string,
   runtimeVersion: string,
   surfaceStyle: RunJSLegacySource['surfaceStyle'],
+  files: VscFileChange[] = [],
 ): VscTreeEntryInput {
   return {
     path: runJSManifestPath,
-    content: `${JSON.stringify(defaultRunJSManifest(entry, runtimeVersion, surfaceStyle), null, 2)}\n`,
+    content: `${JSON.stringify(defaultRunJSManifest(entry, runtimeVersion, surfaceStyle, files), null, 2)}\n`,
     language: 'json',
   };
 }
@@ -1269,9 +1274,10 @@ function runJSManifestFileChange(
   entry: string,
   runtimeVersion: string,
   surfaceStyle: RunJSLegacySource['surfaceStyle'],
+  files: VscFileChange[] = [],
 ): VscFileChange {
   return {
-    ...runJSManifestFile(entry, runtimeVersion, surfaceStyle),
+    ...runJSManifestFile(entry, runtimeVersion, surfaceStyle, files),
     operation: 'upsert',
   };
 }
@@ -1280,8 +1286,9 @@ function defaultRunJSManifest(
   entry: string,
   runtimeVersion: string,
   surfaceStyle: RunJSLegacySource['surfaceStyle'],
+  files: VscFileChange[] = [],
 ): Record<string, unknown> {
-  return {
+  const manifest: Record<string, unknown> = {
     schemaVersion: 1,
     entry,
     runtimeVersion: resolveRunJSManifestRuntimeVersion(surfaceStyle, runtimeVersion),
@@ -1291,10 +1298,60 @@ function defaultRunJSManifest(
       jsx: true,
     },
   };
+  const folders = readRunJSManifestFoldersFromChanges(files);
+  if (folders.length) {
+    manifest.folders = folders;
+  }
+
+  return manifest;
 }
 
-function resolveLegacyEntryPath(legacy: RunJSLegacySource): string {
-  return normalizeAllowedRunJSWorkspacePath(legacy.entryPath || legacy.entry || 'src/main.tsx', 'legacy.entryPath');
+function readRunJSManifestFoldersFromChanges(files: VscFileChange[]): string[] {
+  const manifest = files.find((file) => normalizePath(file.path) === runJSManifestPath);
+  if (!manifest || typeof manifest.content !== 'string' || !manifest.content.trim()) {
+    return [];
+  }
+
+  try {
+    const value = JSON.parse(manifest.content) as Record<string, unknown>;
+    if (!Array.isArray(value.folders)) {
+      return [];
+    }
+
+    const folders = new Set<string>();
+    for (const folder of value.folders) {
+      if (typeof folder !== 'string') {
+        continue;
+      }
+      const normalized = normalizeRunJSWorkspaceFolderPath(folder);
+      if (normalized) {
+        folders.add(normalized);
+      }
+    }
+
+    return Array.from(folders).sort((left, right) => left.localeCompare(right));
+  } catch (_) {
+    return [];
+  }
+}
+
+function normalizeRunJSWorkspaceFolderPath(path: string): string | null {
+  try {
+    const normalized = normalizePath(path.trim().replace(/\/+$/, ''));
+    if (normalized !== 'src' && !normalized.startsWith('src/')) {
+      return null;
+    }
+    if (normalized.split('/').some((segment) => segment.startsWith('.'))) {
+      return null;
+    }
+    return normalized;
+  } catch (_) {
+    return null;
+  }
+}
+
+function resolveLegacyEntryPath(_legacy: RunJSLegacySource): string {
+  return defaultRunJSEntryPath;
 }
 
 function withRunJSManifestChange(files: VscFileChange[], manifestFile: VscFileChange): VscFileChange[] {
@@ -2167,7 +2224,10 @@ function assertRepositoryMatchesIdentity(
 }
 
 function selectEntryPath(files: VscFileChange[]): string {
-  return files.find((file) => file.path === 'src/main.tsx')?.path || files[0]?.path || 'src/main.tsx';
+  return resolveRunJSClientIndexEntryPath(
+    files.filter((file) => file.operation !== 'delete').map((file) => file.path),
+    defaultRunJSEntryPath,
+  );
 }
 
 function getActionInput(ctx: RunJSSourceResourceContext): ResourceActionInput {

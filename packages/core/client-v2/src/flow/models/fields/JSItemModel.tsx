@@ -110,12 +110,14 @@ JSItemModel.registerFlow({
             locatorFactory: 'flowModel.step',
             surfaceStyle: 'render',
             scene: 'block',
+            height: '100%',
             minHeight: '320px',
             theme: 'light',
             enableLinter: true,
-            wrapperStyle: {
-              position: 'fixed',
-              inset: 8,
+            containerStyle: {
+              height: '100%',
+              minHeight: 0,
+              minWidth: 0,
             },
           },
         },
@@ -123,8 +125,15 @@ JSItemModel.registerFlow({
       uiMode: {
         type: 'embed',
         props: {
+          footer: null,
+          maxWidth: '960px',
+          minWidth: '720px',
+          width: '45%',
           styles: {
             body: {
+              display: 'flex',
+              flexDirection: 'column',
+              minHeight: 0,
               transform: 'translateX(0)',
             },
           },

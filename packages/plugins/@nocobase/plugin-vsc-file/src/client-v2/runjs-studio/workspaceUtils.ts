@@ -9,7 +9,10 @@
 
 import { normalizePath } from '../../shared/path';
 import {
+  defaultRunJSEntryPath,
+  defaultRunJSSourceRoot,
   normalizeRunJSWorkspacePathValue,
+  resolveRunJSClientIndexEntryPath,
   runJSManifestPath,
   validateRunJSWorkspacePathValue,
   type RunJSWorkspacePathValidationReason,
@@ -17,7 +20,9 @@ import {
 import type { VscFileChange } from '../../shared/types';
 import type { RunJSChangeSummary, RunJSLineDiffRow, RunJSPathValidationResult, RunJSWorkspaceFile } from './types';
 
-export { runJSManifestPath };
+export { defaultRunJSEntryPath, defaultRunJSSourceRoot, runJSManifestPath };
+
+export const fixedRunJSWorkspaceFolders = ['.nocobase', 'src', defaultRunJSSourceRoot];
 
 export function compareRunJSPaths(left: string, right: string): number {
   return left.localeCompare(right);
@@ -294,6 +299,40 @@ export function normalizeRunJSWorkspacePath(path: string): string {
   return normalizeRunJSWorkspacePathValue(path);
 }
 
+export function normalizeRunJSWorkspaceFolderPath(path: string): string {
+  return normalizePath(path.trim().replace(/\/+$/, ''));
+}
+
+export function validateRunJSWorkspaceFolderPath(path: string, t: (key: string) => string): RunJSPathValidationResult {
+  let normalizedPath: string;
+  try {
+    normalizedPath = normalizeRunJSWorkspaceFolderPath(path);
+  } catch (error) {
+    return {
+      valid: false,
+      message: error instanceof Error && error.message ? error.message : t('Invalid file path'),
+    };
+  }
+
+  if (normalizedPath !== 'src' && !normalizedPath.startsWith('src/')) {
+    return {
+      valid: false,
+      message: t('Folder path must be under src'),
+    };
+  }
+
+  if (hasHiddenRunJSFolderSegment(normalizedPath)) {
+    return {
+      valid: false,
+      message: t('Hidden directories are not allowed'),
+    };
+  }
+
+  return {
+    valid: true,
+  };
+}
+
 export function updateWorkspaceFile(
   files: RunJSWorkspaceFile[],
   path: string,
@@ -370,38 +409,60 @@ export function ensureManifestEntry(
   });
 }
 
-export function resolveInitialEntryPath(
+export function ensureManifestFolders(
   files: RunJSWorkspaceFile[],
-  legacyEntryPath?: string,
-  legacyEntry?: string,
-): string {
-  const manifestEntry = readRunJSManifestEntry(files);
-  if (manifestEntry) {
-    return manifestEntry;
-  }
-  if (legacyEntryPath) {
-    return legacyEntryPath;
-  }
-  if (legacyEntry) {
-    return legacyEntry;
+  folders: string[],
+  entryPath: string,
+  createIfMissing: boolean,
+): RunJSWorkspaceFile[] {
+  const manifest = files.find((file) => file.path === runJSManifestPath);
+  if (!manifest && !createIfMissing) {
+    return files;
   }
 
-  return files.find((file) => file.path !== runJSManifestPath)?.path || 'src/main.tsx';
+  let nextManifest: Record<string, unknown> = {};
+  if (manifest?.content) {
+    try {
+      const parsed = JSON.parse(manifest.content);
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+        nextManifest = parsed as Record<string, unknown>;
+      }
+    } catch (_) {
+      nextManifest = {};
+    }
+  }
+
+  nextManifest.entry = entryPath;
+  nextManifest.folders = normalizeRunJSWorkspaceFolders(folders);
+
+  return upsertWorkspaceFile(files, {
+    path: runJSManifestPath,
+    content: `${JSON.stringify(nextManifest, null, 2)}\n`,
+    language: 'json',
+    mode: manifest?.mode,
+  });
+}
+
+export function resolveInitialEntryPath(
+  files: RunJSWorkspaceFile[],
+  _legacyEntryPath?: string,
+  _legacyEntry?: string,
+): string {
+  return resolveRunJSClientIndexEntryPath(
+    normalizeWorkspaceFiles(files)
+      .filter((file) => file.path !== runJSManifestPath)
+      .map((file) => file.path),
+    defaultRunJSEntryPath,
+  );
 }
 
 export function resolveWorkspaceEntryPath(files: RunJSWorkspaceFile[], currentEntryPath: string): string {
-  const normalizedFiles = normalizeWorkspaceFiles(files);
-  const filePaths = new Set(normalizedFiles.map((file) => file.path));
-  const manifestEntry = readRunJSManifestEntry(normalizedFiles);
-
-  if (manifestEntry && filePaths.has(manifestEntry)) {
-    return manifestEntry;
-  }
-  if (filePaths.has(currentEntryPath)) {
-    return currentEntryPath;
-  }
-
-  return normalizedFiles.find((file) => file.path !== runJSManifestPath)?.path || currentEntryPath;
+  return resolveRunJSClientIndexEntryPath(
+    normalizeWorkspaceFiles(files)
+      .filter((file) => file.path !== runJSManifestPath)
+      .map((file) => file.path),
+    currentEntryPath === defaultRunJSEntryPath ? currentEntryPath : defaultRunJSEntryPath,
+  );
 }
 
 export function formatChangeSummary(summary: RunJSChangeSummary, t: (key: string) => string): string {
@@ -454,8 +515,52 @@ export function readRunJSManifestEntry(files: RunJSWorkspaceFile[]): string | nu
   }
 }
 
+export function readRunJSManifestFolders(files: RunJSWorkspaceFile[]): string[] {
+  const manifest = files.find((file) => file.path === runJSManifestPath);
+  if (!manifest?.content) {
+    return [];
+  }
+
+  try {
+    const parsed = JSON.parse(manifest.content) as Record<string, unknown>;
+    if (!Array.isArray(parsed.folders)) {
+      return [];
+    }
+
+    return normalizeRunJSWorkspaceFolders(
+      parsed.folders.filter((folder): folder is string => typeof folder === 'string'),
+    );
+  } catch (_) {
+    return [];
+  }
+}
+
 function splitLines(content: string): string[] {
   return content ? content.replace(/\r\n/g, '\n').split('\n') : [];
+}
+
+function normalizeRunJSWorkspaceFolders(folders: string[]): string[] {
+  const normalized = new Set<string>();
+  for (const folder of folders) {
+    try {
+      const path = normalizeRunJSWorkspaceFolderPath(folder);
+      if (path !== 'src' && !path.startsWith('src/') && !fixedRunJSWorkspaceFolders.includes(path)) {
+        continue;
+      }
+      if (hasHiddenRunJSFolderSegment(path)) {
+        continue;
+      }
+      normalized.add(path);
+    } catch (_) {
+      continue;
+    }
+  }
+
+  return Array.from(normalized).sort(compareRunJSPaths);
+}
+
+function hasHiddenRunJSFolderSegment(path: string): boolean {
+  return path.split('/').some((segment) => segment.startsWith('.'));
 }
 
 function countChangedLines(oldContent: string, newContent: string): { additions: number; deletions: number } {

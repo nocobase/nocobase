@@ -123,11 +123,16 @@ describe('RunJS FlowModel surfaces', () => {
     });
   });
 
-  it('JSBlockModel uses the RunJS studio embed size while the provider owns the footer', () => {
-    const flow = JSBlockModel.globalFlowRegistry.getFlow('jsSettings');
+  it.each(surfaces)('$name uses the RunJS studio embed size while the provider owns the footer', (spec) => {
+    const flow = spec.modelClass.globalFlowRegistry.getFlow(spec.flowKey);
     const step = flow?.getStep('runJs');
-    const codeSchema = getRunJsCodeSchema(surfaces[0]);
+    const codeSchema = getRunJsCodeSchema(spec);
 
+    if (spec.name === 'JSBlockModel') {
+      expect(codeSchema['x-component-props']?.minHeight).toBe('calc(100vh - 42px)');
+    } else {
+      expect(codeSchema['x-component-props']?.height).toBe('100%');
+    }
     expect(codeSchema['x-component-props']?.wrapperStyle).toBeUndefined();
     expect(codeSchema['x-component-props']?.containerStyle).toMatchObject({
       height: '100%',
@@ -141,11 +146,16 @@ describe('RunJS FlowModel surfaces', () => {
       minWidth: '720px',
       styles: {
         body: {
+          display: 'flex',
+          flexDirection: 'column',
+          minHeight: 0,
           transform: 'translateX(0)',
         },
       },
       width: '45%',
     });
-    expect(props).not.toHaveProperty('title');
+    if (spec.name === 'JSBlockModel') {
+      expect(props).not.toHaveProperty('title');
+    }
   });
 });

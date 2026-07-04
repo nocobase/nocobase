@@ -17,9 +17,12 @@ import {
   EditOutlined,
   FileAddOutlined,
   FileTextOutlined,
+  FolderAddOutlined,
   FolderOpenOutlined,
-  HomeOutlined,
+  FolderOutlined,
+  ImportOutlined,
   ReloadOutlined,
+  RightOutlined,
   UploadOutlined,
   UpOutlined,
 } from '@ant-design/icons';
@@ -74,13 +77,19 @@ import {
   buildWorkspaceChanges,
   buildWorkspaceSnapshotKey,
   compareRunJSPaths,
+  defaultRunJSEntryPath,
+  defaultRunJSSourceRoot,
+  ensureManifestFolders,
   ensureManifestEntry,
+  fixedRunJSWorkspaceFolders,
   formatChangeSummary,
   formatVersion,
   hasWorkspaceChanges,
   inferLanguageFromPath,
+  normalizeRunJSWorkspaceFolderPath,
   normalizeRunJSWorkspacePath,
   normalizeWorkspaceFiles,
+  readRunJSManifestFolders,
   removeWorkspaceFile,
   replaceWorkspaceFilePath,
   resolveInitialEntryPath,
@@ -89,14 +98,31 @@ import {
   summarizeWorkspaceChanges,
   updateWorkspaceFile,
   upsertWorkspaceFile,
+  validateRunJSWorkspaceFolderPath,
   validateRunJSWorkspacePath,
 } from './workspaceUtils';
 
-const defaultEntryPath = 'src/main.tsx';
+const defaultEntryPath = defaultRunJSEntryPath;
 const defaultStudioHeight = 'min(720px, calc(100vh - 112px))';
 const defaultConsolePanelHeight = 180;
 const minConsolePanelHeight = 80;
 const importableRunJSFileExtensions = ['.ts', '.tsx', '.js', '.jsx'];
+const runJSFileTypeIconConfigs: Record<
+  string,
+  {
+    background: string;
+    borderColor: string;
+    color: string;
+    label: string;
+  }
+> = {
+  css: { background: '#e6f4ff', borderColor: '#91caff', color: '#0958d9', label: 'CSS' },
+  html: { background: '#fff2e8', borderColor: '#ffbb96', color: '#d4380d', label: 'H5' },
+  js: { background: '#fffbe6', borderColor: '#ffe58f', color: '#ad8b00', label: 'JS' },
+  jsx: { background: '#f6ffed', borderColor: '#b7eb8f', color: '#389e0d', label: 'JSX' },
+  ts: { background: '#e6f4ff', borderColor: '#91caff', color: '#0958d9', label: 'TS' },
+  tsx: { background: '#f9f0ff', borderColor: '#d3adf7', color: '#722ed1', label: 'TSX' },
+};
 
 export const runJSStudioProvider: RunJSEditorProvider = {
   key: '@nocobase/plugin-vsc-file/runjs-studio',
@@ -112,13 +138,6 @@ type WorkspaceLoadResult = {
 };
 
 type OpenWorkspaceAction = 'open' | 'openLatest';
-
-type FileDialogMode = 'create' | 'rename';
-
-type FileDialogState = {
-  mode: FileDialogMode;
-  sourcePath?: string;
-};
 
 type ActionErrorState = {
   error: unknown;
@@ -193,14 +212,13 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
   const [filesCollapsed, setFilesCollapsed] = useState(true);
   const [historyCollapsed, setHistoryCollapsed] = useState(false);
   const [consoleEntries, setConsoleEntries] = useState<RunJSConsoleEntry[]>([]);
-  const [fileDialog, setFileDialog] = useState<FileDialogState | null>(null);
-  const [fileDialogPath, setFileDialogPath] = useState('');
-  const [fileDialogError, setFileDialogError] = useState<string | null>(null);
   const [publishOpen, setPublishOpen] = useState(false);
   const [commitMessage, setCommitMessage] = useState('');
   const [previewing, setPreviewing] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [previewDiagnostics, setPreviewDiagnostics] = useState<RunJSCompileDiagnostic[]>([]);
+  const [saveDiagnostics, setSaveDiagnostics] = useState<RunJSCompileDiagnostic[]>([]);
+  const [saveDiagnosticsOpen, setSaveDiagnosticsOpen] = useState(false);
   const [previewArtifact, setPreviewArtifact] = useState<PreviewArtifactState | null>(null);
   const [diffView, setDiffView] = useState<DiffViewState | null>(null);
   const [selectedDiffPath, setSelectedDiffPath] = useState<string | undefined>();
@@ -276,6 +294,8 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
   const invalidatePreview = useCallback(() => {
     setPreviewArtifact(null);
     setPreviewDiagnostics([]);
+    setSaveDiagnostics([]);
+    setSaveDiagnosticsOpen(false);
   }, []);
 
   const rememberDialogTrigger = useCallback(() => {
@@ -346,14 +366,13 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
     setOpenPaths([]);
     setActiveTab('code');
     setConsoleEntries([]);
-    setFileDialog(null);
-    setFileDialogPath('');
-    setFileDialogError(null);
     setPublishOpen(false);
     setCommitMessage('');
     setPreviewing(false);
     setPublishing(false);
     setPreviewDiagnostics([]);
+    setSaveDiagnostics([]);
+    setSaveDiagnosticsOpen(false);
     setPreviewArtifact(null);
     setDiffView(null);
     setSelectedDiffPath(undefined);
@@ -666,16 +685,50 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
 
     rememberDialogTrigger();
     setCommitMessage('');
-    setPublishOpen(true);
-    await runPreview();
+    setActionError(null);
+
+    if (publishSummary.files === 0) {
+      message.info(t('No changes to save'));
+      return;
+    }
+
+    const requestFiles = normalizeWorkspaceFiles(files);
+    const requestEntryPath = entryPath;
+    const requestSnapshotKey = currentPreviewSnapshotKey;
+    try {
+      const compiled = await compileForPublish(requestFiles, requestEntryPath, requestSnapshotKey);
+      if (!compiled) {
+        return;
+      }
+
+      setPublishOpen(true);
+    } catch (error) {
+      await handleWorkspaceError(error);
+      reportActionError(error, t('Save failed'), openPublishModal);
+      appendConsole({
+        level: 'error',
+        message: formatVscComponentError(error, t('Save failed')),
+      });
+    }
   };
 
+  const showSaveDiagnostics = useCallback((diagnostics: RunJSCompileDiagnostic[]) => {
+    setSaveDiagnostics(diagnostics);
+    setSaveDiagnosticsOpen(true);
+    setPublishOpen(false);
+  }, []);
+
   const publish = async () => {
-    if (
-      !workspace ||
-      !props.locator ||
-      !canPublish(commitMessage, publishSummary, previewDiagnostics, workspaceEditingDisabled)
-    ) {
+    if (!workspace || !props.locator || workspaceEditingDisabled) {
+      return;
+    }
+
+    if (hasCompileErrorDiagnostics(previewDiagnostics)) {
+      showSaveDiagnostics(previewDiagnostics);
+      return;
+    }
+
+    if (!canPublish(commitMessage, publishSummary, previewDiagnostics, workspaceEditingDisabled)) {
       return;
     }
 
@@ -764,7 +817,8 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
       setPreviewDiagnostics(result.artifact.diagnostics);
       appendDiagnostics(result.artifact.diagnostics, appendConsole);
 
-      if (result.artifact.diagnostics.some((diagnostic) => diagnostic.severity === 'error')) {
+      if (hasCompileErrorDiagnostics(result.artifact.diagnostics)) {
+        showSaveDiagnostics(result.artifact.diagnostics);
         return null;
       }
 
@@ -874,92 +928,202 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
     await loadVersionIntoEditor(commit);
   };
 
-  const createFile = () => {
+  const createFile = (parentPath = defaultRunJSSourceRoot): string | undefined => {
     if (workspaceEditingDisabled) {
-      return;
+      return undefined;
     }
 
-    rememberDialogTrigger();
-    setFileDialog({
-      mode: 'create',
+    const nextPath = buildNewFilePath(files, parentPath);
+    invalidatePreview();
+    setDiffView(null);
+    setFiles((current) => {
+      const nextFiles = upsertWorkspaceFile(current, {
+        path: nextPath,
+        content: '',
+        language: inferLanguageFromPath(nextPath),
+      });
+      const nextEntryPath = resolveWorkspaceEntryPath(nextFiles, entryPath);
+      const syncedFiles = ensureManifestEntry(nextFiles, nextEntryPath, true);
+      syncWorkspaceSnapshotRef(syncedFiles, nextEntryPath);
+      setEntryPath(nextEntryPath);
+      return syncedFiles;
     });
-    setFileDialogPath('src/helper.ts');
-    setFileDialogError(null);
+    openFilePath(nextPath);
+    return nextPath;
   };
 
-  const renameFile = (path: string | undefined = activePath) => {
+  const createFolder = (parentPath = defaultRunJSSourceRoot): string | undefined => {
+    if (workspaceEditingDisabled) {
+      return undefined;
+    }
+
+    const nextPath = buildNewFolderPath(files, parentPath);
+    invalidatePreview();
+    setDiffView(null);
+    setFiles((current) => {
+      const nextEntryPath = resolveWorkspaceEntryPath(current, entryPath);
+      const nextFiles = ensureManifestFolders(
+        current,
+        [...collectRunJSWorkspaceFolders(current), nextPath],
+        nextEntryPath,
+        true,
+      );
+      syncWorkspaceSnapshotRef(nextFiles, nextEntryPath);
+      setEntryPath(nextEntryPath);
+      return nextFiles;
+    });
+    return nextPath;
+  };
+
+  const renameFile = (path: string, nextPath: string): boolean => {
     if (!path || workspaceEditingDisabled) {
-      return;
+      return false;
     }
-    rememberDialogTrigger();
-    setFileDialog({
-      mode: 'rename',
-      sourcePath: path,
+
+    const validation = validateRunJSWorkspacePath(nextPath, t);
+    if (!validation.valid) {
+      message.error(validation.message || t('Invalid file path'));
+      return false;
+    }
+
+    const normalizedNextPath = normalizeRunJSWorkspacePath(nextPath);
+    if (path !== normalizedNextPath && files.some((file) => file.path === normalizedNextPath)) {
+      message.error(t('File already exists'));
+      return false;
+    }
+
+    if (path === normalizedNextPath) {
+      return true;
+    }
+
+    invalidatePreview();
+    setDiffView(null);
+    setFiles((current) => {
+      const renamed = replaceWorkspaceFilePath(current, path, normalizedNextPath);
+      const nextEntryPath = resolveWorkspaceEntryPath(renamed, entryPath);
+      const nextFiles = ensureManifestEntry(renamed, nextEntryPath, true);
+      syncWorkspaceSnapshotRef(nextFiles, nextEntryPath);
+      setEntryPath(nextEntryPath);
+      return nextFiles;
     });
-    setFileDialogPath(path);
-    setFileDialogError(null);
+    replaceOpenFilePath(path, normalizedNextPath);
+    openFilePath(normalizedNextPath);
+    return true;
   };
 
-  const submitFileDialog = () => {
-    if (!fileDialog) {
-      return;
+  const renameFolder = (path: string, nextPath: string): boolean => {
+    if (!path || workspaceEditingDisabled || fixedRunJSWorkspaceFolders.includes(path)) {
+      return false;
     }
 
-    const validation = validateRunJSWorkspacePath(fileDialogPath, t);
+    const validation = validateRunJSWorkspaceFolderPath(nextPath, t);
     if (!validation.valid) {
-      setFileDialogError(validation.message || t('Invalid file path'));
+      message.error(validation.message || t('Invalid file path'));
+      return false;
+    }
+
+    const normalizedNextPath = normalizeRunJSWorkspaceFolderPath(nextPath);
+    if (path === normalizedNextPath) {
+      return true;
+    }
+
+    const currentFolders = collectRunJSWorkspaceFolders(files);
+    if (currentFolders.includes(normalizedNextPath)) {
+      message.error(t('Folder already exists'));
+      return false;
+    }
+
+    invalidatePreview();
+    setDiffView(null);
+    setFiles((current) => {
+      const renamed = current.map((file) => ({
+        ...file,
+        path: replaceRunJSPathPrefix(file.path, path, normalizedNextPath),
+      }));
+      const nextFolders = collectRunJSWorkspaceFolders(current).map((folder) =>
+        replaceRunJSPathPrefix(folder, path, normalizedNextPath),
+      );
+      const nextEntryPath = resolveWorkspaceEntryPath(renamed, entryPath);
+      const nextFiles = ensureManifestFolders(
+        ensureManifestEntry(renamed, nextEntryPath, true),
+        nextFolders,
+        nextEntryPath,
+        true,
+      );
+      syncWorkspaceSnapshotRef(nextFiles, nextEntryPath);
+      setEntryPath(nextEntryPath);
+      return nextFiles;
+    });
+    setOpenPaths((current) => current.map((openPath) => replaceRunJSPathPrefix(openPath, path, normalizedNextPath)));
+    setActivePath((current) => (current ? replaceRunJSPathPrefix(current, path, normalizedNextPath) : current));
+    return true;
+  };
+
+  const deleteFolder = (path: string): boolean => {
+    if (!path || workspaceEditingDisabled || fixedRunJSWorkspaceFolders.includes(path)) {
+      return false;
+    }
+
+    if (files.some((file) => isRunJSPathInsideFolder(file.path, path))) {
+      message.error(t('Folder is not empty'));
+      return false;
+    }
+
+    invalidatePreview();
+    setDiffView(null);
+    setFiles((current) => {
+      const nextFolders = collectRunJSWorkspaceFolders(current).filter((folder) => folder !== path);
+      const nextEntryPath = resolveWorkspaceEntryPath(current, entryPath);
+      const nextFiles = ensureManifestFolders(current, nextFolders, nextEntryPath, true);
+      syncWorkspaceSnapshotRef(nextFiles, nextEntryPath);
+      setEntryPath(nextEntryPath);
+      return nextFiles;
+    });
+    return true;
+  };
+
+  const moveFileToFolder = (path: string, folderPath: string) => {
+    if (!path || workspaceEditingDisabled || path === runJSManifestPath) {
       return;
     }
 
-    const nextPath = normalizeRunJSWorkspacePath(fileDialogPath);
-    if (fileDialog.mode === 'create') {
-      if (files.some((file) => file.path === nextPath)) {
-        setFileDialogError(t('File already exists'));
-        return;
-      }
-
-      invalidatePreview();
-      setDiffView(null);
-      setFiles((current) => {
-        const nextFiles = upsertWorkspaceFile(current, {
-          path: nextPath,
-          content: '',
-          language: inferLanguageFromPath(nextPath),
-        });
-        syncWorkspaceSnapshotRef(nextFiles, entryPath);
-        return nextFiles;
-      });
-      openFilePath(nextPath);
-    } else if (fileDialog.sourcePath) {
-      if (fileDialog.sourcePath !== nextPath && files.some((file) => file.path === nextPath)) {
-        setFileDialogError(t('File already exists'));
-        return;
-      }
-
-      invalidatePreview();
-      setDiffView(null);
-      setFiles((current) => {
-        const renamed = replaceWorkspaceFilePath(current, fileDialog.sourcePath as string, nextPath);
-        const nextEntryPath = fileDialog.sourcePath === entryPath ? nextPath : entryPath;
-        const nextFiles = fileDialog.sourcePath === entryPath ? ensureManifestEntry(renamed, nextPath, true) : renamed;
-        syncWorkspaceSnapshotRef(nextFiles, nextEntryPath);
-        return nextFiles;
-      });
-      if (fileDialog.sourcePath === entryPath) {
-        setEntryPath(nextPath);
-      }
-      replaceOpenFilePath(fileDialog.sourcePath, nextPath);
-      openFilePath(nextPath);
+    const fileName = path.split('/').pop();
+    if (!fileName) {
+      return;
     }
 
-    setFileDialog(null);
+    const nextPath = normalizeRunJSWorkspacePath(`${folderPath}/${fileName}`);
+    if (nextPath === path) {
+      return;
+    }
+
+    const validation = validateRunJSWorkspacePath(nextPath, t);
+    if (!validation.valid) {
+      message.error(validation.message || t('Invalid file path'));
+      return;
+    }
+
+    if (files.some((file) => file.path === nextPath)) {
+      message.error(t('File already exists'));
+      return;
+    }
+
+    invalidatePreview();
+    setDiffView(null);
+    setFiles((current) => {
+      const renamed = replaceWorkspaceFilePath(current, path, nextPath);
+      const nextEntryPath = resolveWorkspaceEntryPath(renamed, entryPath);
+      const nextFiles = ensureManifestEntry(renamed, nextEntryPath, true);
+      syncWorkspaceSnapshotRef(nextFiles, nextEntryPath);
+      setEntryPath(nextEntryPath);
+      return nextFiles;
+    });
+    replaceOpenFilePath(path, nextPath);
+    openFilePath(nextPath);
   };
 
   const deleteFile = (path: string | undefined = activePath) => {
-    if (!path || path === entryPath || workspaceEditingDisabled) {
-      if (path === entryPath) {
-        message.error(t('Entry file cannot be deleted'));
-      }
+    if (!path || workspaceEditingDisabled) {
       return;
     }
 
@@ -967,30 +1131,18 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
     setDiffView(null);
     setFiles((current) => {
       const nextFiles = removeWorkspaceFile(current, path);
-      const nextActivePath = nextFiles[0]?.path;
-      syncWorkspaceSnapshotRef(nextFiles, entryPath);
+      const nextEntryPath = resolveWorkspaceEntryPath(nextFiles, entryPath);
+      const syncedFiles = ensureManifestEntry(nextFiles, nextEntryPath, true);
+      const nextActivePath = syncedFiles.find((file) => file.path === nextEntryPath)?.path || syncedFiles[0]?.path;
+      syncWorkspaceSnapshotRef(syncedFiles, nextEntryPath);
+      setEntryPath(nextEntryPath);
       setActivePath((currentPath) => (currentPath === path ? nextActivePath : currentPath));
       setOpenPaths((paths) => {
         const nextPaths = paths.filter((openPath) => openPath !== path);
         return nextPaths.length ? nextPaths : nextActivePath ? [nextActivePath] : [];
       });
-      return nextFiles;
+      return syncedFiles;
     });
-  };
-
-  const setFileAsEntry = (path: string | undefined = activePath) => {
-    if (!path || workspaceEditingDisabled || path === entryPath) {
-      return;
-    }
-
-    invalidatePreview();
-    setDiffView(null);
-    setFiles((current) => {
-      const nextFiles = ensureManifestEntry(current, path, true);
-      syncWorkspaceSnapshotRef(nextFiles, path);
-      return nextFiles;
-    });
-    setEntryPath(path);
   };
 
   const updateActiveFileContent = (content: string) => {
@@ -1005,9 +1157,8 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
         ...file,
         content,
       }));
-      const nextEntryPath =
-        activePath === runJSManifestPath ? resolveWorkspaceEntryPath(nextFiles, entryPath) : entryPath;
-      if (activePath === runJSManifestPath) {
+      const nextEntryPath = resolveWorkspaceEntryPath(nextFiles, entryPath);
+      if (nextEntryPath !== entryPath) {
         setEntryPath(nextEntryPath);
       }
       syncWorkspaceSnapshotRef(nextFiles, nextEntryPath);
@@ -1507,15 +1658,20 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
                 <FilesPanel
                   activePath={activePath}
                   collapsed={filesCollapsed}
-                  entryPath={entryPath}
+                  exporting={resource.isLoading('exportZip')}
                   files={files}
                   onCollapseChange={setFilesCollapsed}
                   onCreate={createFile}
+                  onCreateFolder={createFolder}
                   onDelete={deleteFile}
+                  onDeleteFolder={deleteFolder}
+                  onExportWorkspace={exportWorkspace}
+                  onImportWorkspace={requestImportWorkspace}
+                  onMoveFile={moveFileToFolder}
                   onOpen={openFilePath}
                   onRefresh={requestRefreshWorkspace}
                   onRename={renameFile}
-                  onSetEntry={setFileAsEntry}
+                  onRenameFolder={renameFolder}
                   readOnly={workspaceEditingDisabled}
                   savedFiles={savedFiles}
                   t={t}
@@ -1556,14 +1712,11 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
                   onChange={updateActiveFileContent}
                   onCloseFile={closeOpenFile}
                   onDiffToggle={toggleDiff}
-                  onExportWorkspace={exportWorkspace}
                   onFilesCollapsedChange={setFilesCollapsed}
-                  onImportWorkspace={requestImportWorkspace}
                   onOpenFile={openFilePath}
                   onRunPreview={runPreview}
                   openPaths={openPaths}
                   previewing={previewing}
-                  exporting={resource.isLoading('exportZip')}
                   readOnly={workspaceEditingDisabled}
                   savedFiles={savedFiles}
                   scene={scene}
@@ -1634,33 +1787,23 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
         </>
       ) : null}
 
-      <FileDialog
-        error={fileDialogError}
-        mode={fileDialog?.mode}
-        onAfterClose={restoreDialogFocus}
-        onCancel={() => setFileDialog(null)}
-        onChange={setFileDialogPath}
-        onSubmit={submitFileDialog}
-        open={Boolean(fileDialog)}
-        t={t}
-        value={fileDialogPath}
-      />
-
       <PublishModal
         commitMessage={commitMessage}
-        diagnostics={previewDiagnostics}
         loading={previewing || publishing}
         onAfterClose={restoreDialogFocus}
         onCancel={() => setPublishOpen(false)}
         onCommitMessageChange={setCommitMessage}
         onPublish={publish}
-        onViewDiagnostics={() => {
-          setPublishOpen(false);
-          setActiveTab('code');
-        }}
         open={publishOpen}
         readOnly={workspaceEditingDisabled || !workspace?.permissions.canPublish}
         summary={publishSummary}
+        t={t}
+      />
+
+      <SaveDiagnosticsModal
+        diagnostics={saveDiagnostics.length > 0 ? saveDiagnostics : previewDiagnostics}
+        onCancel={() => setSaveDiagnosticsOpen(false)}
+        open={saveDiagnosticsOpen}
         t={t}
       />
 
@@ -1744,6 +1887,13 @@ function resolveStudioSize(
   height: string | number | undefined,
   minHeight: string | number | undefined,
 ): { height: string | number; minHeight: string | number } {
+  if (height === '100%') {
+    return {
+      height: 'calc(100vh - 42px)',
+      minHeight: 0,
+    };
+  }
+
   if (isViewportSizedValue(minHeight)) {
     return {
       height: minHeight as string,
@@ -1783,39 +1933,85 @@ type FileTreeFileRow = {
 
 type FileTreeRow = FileTreeFolderRow | FileTreeFileRow;
 
-function buildFileTreeRows(files: RunJSWorkspaceFile[]): FileTreeRow[] {
+type InlineEditTarget = {
+  isNew: boolean;
+  path: string;
+  type: 'file' | 'folder';
+  value: string;
+};
+
+function buildFileTreeRows(
+  files: RunJSWorkspaceFile[],
+  folders: string[],
+  collapsedFolderPaths: Set<string>,
+): FileTreeRow[] {
   const rows: FileTreeRow[] = [];
-  const seenFolders = new Set<string>();
+  const folderPaths = new Set<string>();
+  const folderChildren = new Map<string, Set<string>>();
+  const filesByParent = new Map<string, RunJSWorkspaceFile[]>();
 
-  for (const file of [...files].sort((left, right) => compareRunJSPaths(left.path, right.path))) {
-    const segments = file.path.split('/');
-    let folderPath = '';
+  const addFolder = (path: string) => {
+    const segments = path.split('/');
+    let currentFolderPath = '';
+    segments.forEach((segment) => {
+      const parentPath = currentFolderPath;
+      currentFolderPath = currentFolderPath ? `${currentFolderPath}/${segment}` : segment;
+      folderPaths.add(currentFolderPath);
+      const siblings = folderChildren.get(parentPath) || new Set<string>();
+      siblings.add(currentFolderPath);
+      folderChildren.set(parentPath, siblings);
+    });
+  };
 
-    segments.slice(0, -1).forEach((segment, index) => {
-      folderPath = folderPath ? `${folderPath}/${segment}` : segment;
-      if (seenFolders.has(folderPath)) {
-        return;
+  fixedRunJSWorkspaceFolders.forEach(addFolder);
+  folders.forEach(addFolder);
+
+  for (const file of files) {
+    const folderPath = getRunJSDirectory(file.path);
+    if (folderPath) {
+      addFolder(folderPath);
+    }
+    const siblings = filesByParent.get(folderPath) || [];
+    siblings.push(file);
+    filesByParent.set(folderPath, siblings);
+  }
+
+  const appendChildren = (parentPath: string) => {
+    const childFolders = Array.from(folderChildren.get(parentPath) || []).sort(compareRunJSPaths);
+    for (const folderPath of childFolders) {
+      if (!folderPaths.has(folderPath)) {
+        continue;
       }
-      seenFolders.add(folderPath);
+      const segments = folderPath.split('/');
       rows.push({
         key: `folder:${folderPath}`,
         type: 'folder',
         path: folderPath,
-        name: segment,
-        depth: index,
+        name: segments[segments.length - 1] || folderPath,
+        depth: Math.max(segments.length - 1, 0),
       });
-    });
+      if (!collapsedFolderPaths.has(folderPath)) {
+        appendChildren(folderPath);
+      }
+    }
 
-    rows.push({
-      key: `file:${file.path}`,
-      type: 'file',
-      path: file.path,
-      name: segments[segments.length - 1] || file.path,
-      depth: Math.max(segments.length - 1, 0),
-      file,
-    });
-  }
+    const childFiles = [...(filesByParent.get(parentPath) || [])].sort((left, right) =>
+      compareRunJSPaths(left.path, right.path),
+    );
+    for (const file of childFiles) {
+      const segments = file.path.split('/');
+      rows.push({
+        key: `file:${file.path}`,
+        type: 'file',
+        path: file.path,
+        name: segments[segments.length - 1] || file.path,
+        depth: Math.max(segments.length - 1, 0),
+        file,
+      });
+    }
+  };
 
+  appendChildren('');
   return rows;
 }
 
@@ -1838,6 +2034,142 @@ function stripRunJSExtension(filePath: string): string {
 function getRunJSDirectory(filePath: string): string {
   const index = filePath.lastIndexOf('/');
   return index >= 0 ? filePath.slice(0, index) : '';
+}
+
+function getRunJSBaseName(path: string): string {
+  const index = path.lastIndexOf('/');
+  return index >= 0 ? path.slice(index + 1) : path;
+}
+
+function getRunJSFileExtension(path: string): string {
+  const name = getRunJSBaseName(path).toLowerCase();
+  const index = name.lastIndexOf('.');
+  return index >= 0 ? name.slice(index + 1) : '';
+}
+
+function RunJSFileTypeIcon(props: { path: string }) {
+  const { path } = props;
+  const config = runJSFileTypeIconConfigs[getRunJSFileExtension(path)];
+
+  if (!config) {
+    return <FileTextOutlined />;
+  }
+
+  return (
+    <span
+      aria-hidden="true"
+      style={{
+        alignItems: 'center',
+        background: config.background,
+        border: `1px solid ${config.borderColor}`,
+        borderRadius: 3,
+        color: config.color,
+        display: 'inline-flex',
+        flex: '0 0 26px',
+        fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+        fontSize: 9,
+        fontWeight: 700,
+        height: 16,
+        justifyContent: 'center',
+        lineHeight: '14px',
+        minWidth: 26,
+      }}
+    >
+      {config.label}
+    </span>
+  );
+}
+
+function joinRunJSPath(parentPath: string, name: string): string {
+  return parentPath ? `${parentPath}/${name}` : name;
+}
+
+function isRunJSPathInsideFolder(path: string, folderPath: string): boolean {
+  return path === folderPath || path.startsWith(`${folderPath}/`);
+}
+
+function replaceRunJSPathPrefix(path: string, oldPrefix: string, nextPrefix: string): string {
+  if (path === oldPrefix) {
+    return nextPrefix;
+  }
+
+  if (path.startsWith(`${oldPrefix}/`)) {
+    return `${nextPrefix}${path.slice(oldPrefix.length)}`;
+  }
+
+  return path;
+}
+
+function collectRunJSWorkspaceFolders(files: RunJSWorkspaceFile[]): string[] {
+  const folders = new Set<string>(fixedRunJSWorkspaceFolders);
+  readRunJSManifestFolders(files).forEach((folder) => folders.add(folder));
+
+  for (const file of files) {
+    const directory = getRunJSDirectory(file.path);
+    if (!directory) {
+      continue;
+    }
+
+    const segments = directory.split('/');
+    let current = '';
+    for (const segment of segments) {
+      current = current ? `${current}/${segment}` : segment;
+      folders.add(current);
+    }
+  }
+
+  return Array.from(folders).sort(compareRunJSPaths);
+}
+
+function canCreateRunJSFileInFolder(folderPath: string): boolean {
+  return folderPath === 'src' || folderPath.startsWith('src/');
+}
+
+function resolveRunJSCreateFolder(folderPath: string): string {
+  return canCreateRunJSFileInFolder(folderPath) ? folderPath : defaultRunJSSourceRoot;
+}
+
+function buildUniqueRunJSPath(
+  files: RunJSWorkspaceFile[],
+  folderPath: string,
+  baseName: string,
+  extension: string,
+): string {
+  const targetFolder = resolveRunJSCreateFolder(folderPath);
+  const existingPaths = new Set(files.map((file) => file.path));
+  let index = 0;
+
+  while (index < 1000) {
+    const suffix = index === 0 ? '' : String(index + 1);
+    const candidate = `${targetFolder}/${baseName}${suffix}${extension}`;
+    if (!existingPaths.has(candidate)) {
+      return candidate;
+    }
+    index += 1;
+  }
+
+  return `${targetFolder}/${baseName}${Date.now()}${extension}`;
+}
+
+function buildNewFilePath(files: RunJSWorkspaceFile[], parentPath: string): string {
+  return buildUniqueRunJSPath(files, parentPath, 'helper', '.ts');
+}
+
+function buildNewFolderPath(files: RunJSWorkspaceFile[], parentPath: string): string {
+  const targetFolder = resolveRunJSCreateFolder(parentPath);
+  const existingFolders = new Set(collectRunJSWorkspaceFolders(files));
+  let index = 0;
+
+  while (index < 1000) {
+    const suffix = index === 0 ? '' : String(index + 1);
+    const candidate = `${targetFolder}/folder${suffix}`;
+    if (!existingFolders.has(candidate)) {
+      return candidate;
+    }
+    index += 1;
+  }
+
+  return `${targetFolder}/folder${Date.now()}`;
 }
 
 function buildRelativeRunJSImportSpecifier(fromPath: string, targetPath: string): string {
@@ -1988,15 +2320,20 @@ function buildRunJSTypeScriptProject(
 function FilesPanel(props: {
   activePath?: string;
   collapsed: boolean;
-  entryPath: string;
+  exporting: boolean;
   files: RunJSWorkspaceFile[];
   onCollapseChange: (collapsed: boolean) => void;
-  onCreate: () => void;
+  onCreate: (parentPath?: string) => string | undefined;
+  onCreateFolder: (parentPath?: string) => string | undefined;
   onDelete: (path: string) => void;
+  onDeleteFolder: (path: string) => boolean;
+  onExportWorkspace: () => void;
+  onImportWorkspace: () => void;
+  onMoveFile: (path: string, folderPath: string) => void;
   onOpen: (path: string) => void;
   onRefresh: () => void;
-  onRename: (path: string) => void;
-  onSetEntry: (path: string) => void;
+  onRename: (path: string, nextPath: string) => boolean;
+  onRenameFolder: (path: string, nextPath: string) => boolean;
   readOnly: boolean;
   savedFiles: RunJSWorkspaceFile[];
   t: (key: string) => string;
@@ -2004,22 +2341,36 @@ function FilesPanel(props: {
   const {
     activePath,
     collapsed,
-    entryPath,
+    exporting,
     files,
     onCollapseChange,
     onCreate,
+    onCreateFolder,
     onDelete,
+    onDeleteFolder,
+    onExportWorkspace,
+    onImportWorkspace,
+    onMoveFile,
     onOpen,
     onRefresh,
     onRename,
-    onSetEntry,
+    onRenameFolder,
     readOnly,
     savedFiles,
     t,
   } = props;
   const [hoveredPath, setHoveredPath] = useState<string | null>(null);
   const [actionFocusedPath, setActionFocusedPath] = useState<string | null>(null);
-  const treeRows = React.useMemo(() => buildFileTreeRows(files), [files]);
+  const [inlineEdit, setInlineEdit] = useState<InlineEditTarget | null>(null);
+  const [collapsedFolderPaths, setCollapsedFolderPaths] = useState<Set<string>>(() => new Set());
+  const inlineEditInputRef = useRef<InputRef>(null);
+  const inlineEditCancellingRef = useRef(false);
+  const folderPaths = React.useMemo(() => collectRunJSWorkspaceFolders(files), [files]);
+  const treeRows = React.useMemo(
+    () => buildFileTreeRows(files, folderPaths, collapsedFolderPaths),
+    [collapsedFolderPaths, files, folderPaths],
+  );
+  const inlineEditPath = inlineEdit?.path;
   const fileRows = React.useMemo(
     () => treeRows.filter((row): row is FileTreeFileRow => row.type === 'file'),
     [treeRows],
@@ -2082,6 +2433,119 @@ function FilesPanel(props: {
     },
     [fileRows, selectFileByIndex],
   );
+  const startInlineEdit = React.useCallback((type: InlineEditTarget['type'], path: string, isNew: boolean) => {
+    setInlineEdit({
+      isNew,
+      path,
+      type,
+      value: getRunJSBaseName(path),
+    });
+  }, []);
+  const expandFolderPath = React.useCallback((path: string) => {
+    setCollapsedFolderPaths((current) => {
+      const next = new Set(current);
+      const segments = path.split('/').filter(Boolean);
+      let currentPath = '';
+      for (const segment of segments) {
+        currentPath = currentPath ? `${currentPath}/${segment}` : segment;
+        next.delete(currentPath);
+      }
+      return next;
+    });
+  }, []);
+  const toggleFolderPath = React.useCallback((path: string) => {
+    setCollapsedFolderPaths((current) => {
+      const next = new Set(current);
+      if (next.has(path)) {
+        next.delete(path);
+      } else {
+        next.add(path);
+      }
+      return next;
+    });
+  }, []);
+  const createFileInline = React.useCallback(
+    (parentPath: string) => {
+      expandFolderPath(parentPath);
+      const path = onCreate(parentPath);
+      if (path) {
+        startInlineEdit('file', path, true);
+      }
+    },
+    [expandFolderPath, onCreate, startInlineEdit],
+  );
+  const createFolderInline = React.useCallback(
+    (parentPath: string) => {
+      expandFolderPath(parentPath);
+      const path = onCreateFolder(parentPath);
+      if (path) {
+        startInlineEdit('folder', path, true);
+      }
+    },
+    [expandFolderPath, onCreateFolder, startInlineEdit],
+  );
+  const commitInlineEdit = React.useCallback(() => {
+    if (inlineEditCancellingRef.current) {
+      inlineEditCancellingRef.current = false;
+      return true;
+    }
+
+    if (!inlineEdit) {
+      return true;
+    }
+
+    const parentPath = getRunJSDirectory(inlineEdit.path);
+    const nextName = inlineEdit.value.trim();
+    if (!nextName) {
+      message.error(t('Invalid file path'));
+      inlineEditInputRef.current?.focus();
+      return false;
+    }
+
+    const nextPath = joinRunJSPath(parentPath, nextName);
+    const renamed =
+      inlineEdit.type === 'folder' ? onRenameFolder(inlineEdit.path, nextPath) : onRename(inlineEdit.path, nextPath);
+    if (renamed) {
+      setInlineEdit(null);
+      return true;
+    }
+
+    inlineEditInputRef.current?.focus();
+    return false;
+  }, [inlineEdit, onRename, onRenameFolder, t]);
+  const cancelInlineEdit = React.useCallback(() => {
+    if (!inlineEdit) {
+      return;
+    }
+
+    inlineEditCancellingRef.current = true;
+    if (inlineEdit.isNew) {
+      if (inlineEdit.type === 'folder') {
+        onDeleteFolder(inlineEdit.path);
+      } else {
+        onDelete(inlineEdit.path);
+      }
+    }
+    setInlineEdit(null);
+  }, [inlineEdit, onDelete, onDeleteFolder]);
+
+  useEffect(() => {
+    if (!inlineEditPath) {
+      return;
+    }
+
+    const focus = () => {
+      inlineEditInputRef.current?.focus();
+      inlineEditInputRef.current?.select();
+    };
+
+    if (typeof window !== 'undefined' && typeof window.requestAnimationFrame === 'function') {
+      window.requestAnimationFrame(focus);
+      return;
+    }
+
+    focus();
+  }, [inlineEditPath]);
 
   if (collapsed) {
     return (
@@ -2124,15 +2588,42 @@ function FilesPanel(props: {
     >
       <Space style={{ justifyContent: 'space-between', width: '100%' }}>
         <Typography.Text strong style={{ whiteSpace: 'nowrap' }}>
-          {t('File resource manager')}
+          {t('Files')}
         </Typography.Text>
         <Space size={4}>
+          <Tooltip title={t('Export workspace')}>
+            <Button
+              aria-label={t('Export workspace')}
+              icon={<DownloadOutlined />}
+              loading={exporting}
+              onClick={onExportWorkspace}
+              size="small"
+            />
+          </Tooltip>
+          <Tooltip title={t('Import workspace')}>
+            <Button
+              aria-label={t('Import workspace')}
+              disabled={readOnly}
+              icon={<UploadOutlined />}
+              onClick={onImportWorkspace}
+              size="small"
+            />
+          </Tooltip>
+          <Tooltip title={t('New folder')}>
+            <Button
+              aria-label={t('New folder')}
+              disabled={readOnly}
+              icon={<FolderAddOutlined />}
+              onClick={() => createFolderInline(defaultRunJSSourceRoot)}
+              size="small"
+            />
+          </Tooltip>
           <Tooltip title={t('New file')}>
             <Button
               aria-label={t('New file')}
               disabled={readOnly}
               icon={<FileAddOutlined />}
-              onClick={onCreate}
+              onClick={() => createFileInline(defaultRunJSSourceRoot)}
               size="small"
             />
           </Tooltip>
@@ -2153,7 +2644,12 @@ function FilesPanel(props: {
                   {t('Refresh workspace')}
                 </Button>
                 {!readOnly ? (
-                  <Button icon={<FileAddOutlined />} onClick={onCreate} size="small" type="primary">
+                  <Button
+                    icon={<FileAddOutlined />}
+                    onClick={() => createFileInline(defaultRunJSSourceRoot)}
+                    size="small"
+                    type="primary"
+                  >
                     {t('New file')}
                   </Button>
                 ) : null}
@@ -2166,12 +2662,136 @@ function FilesPanel(props: {
         style={{ flex: '1 1 auto', minHeight: 0, overflow: 'auto' }}
         renderItem={(row) => {
           if (row.type === 'folder') {
+            const actionsVisible = hoveredPath === row.path || actionFocusedPath === row.path;
+            const canCreateInsideFolder = canCreateRunJSFileInFolder(row.path);
+            const folderCollapsed = collapsedFolderPaths.has(row.path);
             return (
-              <List.Item style={{ paddingInline: 0, paddingLeft: row.depth * 14 }}>
-                <Space size={6}>
-                  <FolderOpenOutlined />
-                  <Typography.Text type="secondary">{row.name}</Typography.Text>
-                </Space>
+              <List.Item
+                onDragOver={(event) => {
+                  if (!canCreateInsideFolder) {
+                    return;
+                  }
+                  event.preventDefault();
+                }}
+                onDrop={(event) => {
+                  if (!canCreateInsideFolder) {
+                    return;
+                  }
+                  event.preventDefault();
+                  const movedPath = event.dataTransfer.getData('text/plain');
+                  if (movedPath) {
+                    expandFolderPath(row.path);
+                    onMoveFile(movedPath, row.path);
+                  }
+                }}
+                onMouseEnter={() => setHoveredPath(row.path)}
+                onMouseLeave={() => setHoveredPath((current) => (current === row.path ? null : current))}
+                style={{
+                  paddingInline: 0,
+                  paddingLeft: row.depth * 14,
+                  position: 'relative',
+                }}
+              >
+                <div
+                  aria-expanded={!folderCollapsed}
+                  aria-label={row.path}
+                  onClick={() => toggleFolderPath(row.path)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault();
+                      toggleFolderPath(row.path);
+                    }
+                  }}
+                  role="button"
+                  style={{
+                    alignItems: 'center',
+                    borderRadius: 6,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    minHeight: 28,
+                    paddingInline: 8,
+                    width: '100%',
+                  }}
+                  tabIndex={0}
+                >
+                  <Space size={6} style={{ flex: 1, minWidth: 0 }}>
+                    {folderCollapsed ? <RightOutlined /> : <DownOutlined />}
+                    {folderCollapsed ? <FolderOutlined /> : <FolderOpenOutlined />}
+                    {inlineEdit?.type === 'folder' && inlineEdit.path === row.path ? (
+                      <Input
+                        aria-label={`${t('Rename')} ${row.path}`}
+                        onBlur={commitInlineEdit}
+                        onChange={(event) =>
+                          setInlineEdit((current) =>
+                            current && current.path === row.path ? { ...current, value: event.target.value } : current,
+                          )
+                        }
+                        onClick={(event) => event.stopPropagation()}
+                        onKeyDown={(event) => {
+                          event.stopPropagation();
+                          if (event.key === 'Enter') {
+                            event.preventDefault();
+                            inlineEditInputRef.current?.blur();
+                          } else if (event.key === 'Escape') {
+                            event.preventDefault();
+                            cancelInlineEdit();
+                          }
+                        }}
+                        ref={inlineEditInputRef}
+                        size="small"
+                        style={{ flex: 1, minWidth: 0 }}
+                        value={inlineEdit.value}
+                      />
+                    ) : (
+                      <Typography.Text ellipsis type="secondary">
+                        {row.name}
+                      </Typography.Text>
+                    )}
+                  </Space>
+                  {!readOnly && canCreateInsideFolder ? (
+                    <Space
+                      size={0}
+                      style={{
+                        opacity: actionsVisible ? 1 : 0,
+                        pointerEvents: actionsVisible ? 'auto' : 'none',
+                        transition: 'opacity 120ms ease',
+                      }}
+                    >
+                      <Tooltip title={t('New file')} open={actionsVisible ? undefined : false}>
+                        <Button
+                          aria-label={`${t('New file')} ${row.path}`}
+                          icon={<FileAddOutlined />}
+                          onBlur={() => setActionFocusedPath((current) => (current === row.path ? null : current))}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            createFileInline(row.path);
+                          }}
+                          onFocus={() => setActionFocusedPath(row.path)}
+                          size="small"
+                          style={{ height: 20, padding: 0, width: 20 }}
+                          tabIndex={actionsVisible ? 0 : -1}
+                          type="text"
+                        />
+                      </Tooltip>
+                      <Tooltip title={t('New folder')} open={actionsVisible ? undefined : false}>
+                        <Button
+                          aria-label={`${t('New folder')} ${row.path}`}
+                          icon={<FolderAddOutlined />}
+                          onBlur={() => setActionFocusedPath((current) => (current === row.path ? null : current))}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            createFolderInline(row.path);
+                          }}
+                          onFocus={() => setActionFocusedPath(row.path)}
+                          size="small"
+                          style={{ height: 20, padding: 0, width: 20 }}
+                          tabIndex={actionsVisible ? 0 : -1}
+                          type="text"
+                        />
+                      </Tooltip>
+                    </Space>
+                  ) : null}
+                </div>
               </List.Item>
             );
           }
@@ -2179,9 +2799,13 @@ function FilesPanel(props: {
           const dirty = isWorkspaceFileDirty(savedFiles, row.file);
           const isActive = activePath === row.path;
           const actionsVisible = hoveredPath === row.path || actionFocusedPath === row.path;
-          const isEntry = row.path === entryPath;
           return (
             <List.Item
+              draggable={!readOnly && row.path !== runJSManifestPath}
+              onDragStart={(event) => {
+                event.dataTransfer.setData('text/plain', row.path);
+                event.dataTransfer.effectAllowed = 'move';
+              }}
               onMouseEnter={() => setHoveredPath(row.path)}
               onMouseLeave={() => setHoveredPath((current) => (current === row.path ? null : current))}
               style={{
@@ -2190,30 +2814,74 @@ function FilesPanel(props: {
                 position: 'relative',
               }}
             >
-              <Button
-                aria-label={row.path}
-                aria-pressed={isActive}
-                block
-                onKeyDown={(event) => handleFileKeyDown(event, row.path)}
-                onClick={() => onOpen(row.path)}
-                ref={registerFileButton(row.path)}
-                style={{
-                  background: isActive ? '#e6f4ff' : undefined,
-                  color: isActive ? '#1677ff' : undefined,
-                  justifyContent: 'flex-start',
-                  minWidth: 0,
-                  paddingInlineEnd: readOnly ? undefined : 76,
-                }}
-                type="text"
-              >
-                <Space size={6} style={{ minWidth: 0 }}>
-                  <FileTextOutlined />
-                  <Typography.Text ellipsis style={{ maxWidth: 152 }}>
-                    {row.name}
-                    {dirty ? ' *' : ''}
-                  </Typography.Text>
-                </Space>
-              </Button>
+              {inlineEdit?.type === 'file' && inlineEdit.path === row.path ? (
+                <div
+                  aria-label={row.path}
+                  style={{
+                    alignItems: 'center',
+                    background: isActive ? '#e6f4ff' : undefined,
+                    borderRadius: 6,
+                    display: 'flex',
+                    minHeight: 28,
+                    minWidth: 0,
+                    paddingInline: 12,
+                    paddingInlineEnd: readOnly ? undefined : 76,
+                    width: '100%',
+                  }}
+                >
+                  <Space size={6} style={{ flex: 1, minWidth: 0 }}>
+                    <RunJSFileTypeIcon path={row.path} />
+                    <Input
+                      aria-label={`${t('Rename')} ${row.path}`}
+                      onBlur={commitInlineEdit}
+                      onChange={(event) =>
+                        setInlineEdit((current) =>
+                          current && current.path === row.path ? { ...current, value: event.target.value } : current,
+                        )
+                      }
+                      onClick={(event) => event.stopPropagation()}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Enter') {
+                          event.preventDefault();
+                          inlineEditInputRef.current?.blur();
+                        } else if (event.key === 'Escape') {
+                          event.preventDefault();
+                          cancelInlineEdit();
+                        }
+                      }}
+                      ref={inlineEditInputRef}
+                      size="small"
+                      style={{ flex: 1, minWidth: 0 }}
+                      value={inlineEdit.value}
+                    />
+                  </Space>
+                </div>
+              ) : (
+                <Button
+                  aria-label={row.path}
+                  aria-pressed={isActive}
+                  block
+                  onKeyDown={(event) => handleFileKeyDown(event, row.path)}
+                  onClick={() => onOpen(row.path)}
+                  ref={registerFileButton(row.path)}
+                  style={{
+                    background: isActive ? '#e6f4ff' : undefined,
+                    color: isActive ? '#1677ff' : undefined,
+                    justifyContent: 'flex-start',
+                    minWidth: 0,
+                    paddingInlineEnd: readOnly ? undefined : 76,
+                  }}
+                  type="text"
+                >
+                  <Space size={6} style={{ minWidth: 0 }}>
+                    <RunJSFileTypeIcon path={row.path} />
+                    <Typography.Text ellipsis style={{ maxWidth: 152 }}>
+                      {row.name}
+                      {dirty ? ' *' : ''}
+                    </Typography.Text>
+                  </Space>
+                </Button>
+              )}
               {!readOnly ? (
                 <Space
                   size={0}
@@ -2236,24 +2904,7 @@ function FilesPanel(props: {
                       onBlur={() => setActionFocusedPath((current) => (current === row.path ? null : current))}
                       onClick={(event) => {
                         event.stopPropagation();
-                        onRename(row.path);
-                      }}
-                      onFocus={() => setActionFocusedPath(row.path)}
-                      size="small"
-                      style={{ height: 20, padding: 0, width: 20 }}
-                      tabIndex={actionsVisible ? 0 : -1}
-                      type="text"
-                    />
-                  </Tooltip>
-                  <Tooltip title={t('Set as entry')} open={actionsVisible && !isEntry ? undefined : false}>
-                    <Button
-                      aria-label={`${t('Set as entry')} ${row.path}`}
-                      disabled={isEntry}
-                      icon={<HomeOutlined />}
-                      onBlur={() => setActionFocusedPath((current) => (current === row.path ? null : current))}
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        onSetEntry(row.path);
+                        startInlineEdit('file', row.path, false);
                       }}
                       onFocus={() => setActionFocusedPath(row.path)}
                       size="small"
@@ -2264,7 +2915,6 @@ function FilesPanel(props: {
                   </Tooltip>
                   <Popconfirm
                     cancelText={t('Cancel')}
-                    disabled={isEntry}
                     okText={t('Delete')}
                     onConfirm={() => onDelete(row.path)}
                     title={t('Delete this file?')}
@@ -2272,7 +2922,6 @@ function FilesPanel(props: {
                     <Button
                       aria-label={`${t('Delete')} ${row.path}`}
                       danger
-                      disabled={isEntry}
                       icon={<DeleteOutlined />}
                       onBlur={() => setActionFocusedPath((current) => (current === row.path ? null : current))}
                       onClick={(event) => event.stopPropagation()}
@@ -2302,14 +2951,11 @@ function CodeTab(props: {
   onChange: (content: string) => void;
   onCloseFile: (path: string) => void;
   onDiffToggle: () => void;
-  onExportWorkspace: () => void;
   onFilesCollapsedChange: (collapsed: boolean) => void;
-  onImportWorkspace: () => void;
   onOpenFile: (path: string) => void;
   onRunPreview: () => void;
   openPaths: string[];
   previewing: boolean;
-  exporting: boolean;
   readOnly: boolean;
   savedFiles: RunJSWorkspaceFile[];
   scene: string;
@@ -2326,14 +2972,11 @@ function CodeTab(props: {
     onChange,
     onCloseFile,
     onDiffToggle,
-    onExportWorkspace,
     onFilesCollapsedChange,
-    onImportWorkspace,
     onOpenFile,
     onRunPreview,
     openPaths,
     previewing,
-    exporting,
     readOnly,
     savedFiles,
     scene,
@@ -2387,24 +3030,6 @@ function CodeTab(props: {
   );
   const runAndDiffActions = (
     <Space.Compact>
-      <Tooltip title={t('Export workspace')}>
-        <Button
-          aria-label={t('Export workspace')}
-          icon={<DownloadOutlined />}
-          loading={exporting}
-          onClick={onExportWorkspace}
-          size="small"
-        />
-      </Tooltip>
-      <Tooltip title={t('Import workspace')}>
-        <Button
-          aria-label={t('Import workspace')}
-          disabled={readOnly}
-          icon={<UploadOutlined />}
-          onClick={onImportWorkspace}
-          size="small"
-        />
-      </Tooltip>
       <Button disabled={isDiff} loading={previewing} onClick={onRunPreview} size="small">
         {t('Run')}
       </Button>
@@ -2922,6 +3547,7 @@ function VersionHistoryDock(props: {
             {historyItems.length === 0 ? <Empty description={t('No published versions yet')} /> : null}
             {historyItems.map((commit) => (
               <button
+                aria-label={`${t('Restore')} ${formatCommitTime(commit)} ${formatVersion(commit.seq)}`}
                 key={commit.id}
                 onClick={() => onSelect(commit)}
                 style={{
@@ -2936,18 +3562,23 @@ function VersionHistoryDock(props: {
                 }}
                 type="button"
               >
-                <Space direction="vertical" size={0} style={{ width: '100%' }}>
-                  <Space size={6}>
-                    <Typography.Text strong>{formatCommitTime(commit)}</Typography.Text>
-                    <Typography.Text type="secondary">{formatVersion(commit.seq)}</Typography.Text>
-                    {commit.isPublished || commit.id === publishedCommitId ? (
-                      <Tag color="green">{t('Published')}</Tag>
-                    ) : null}
+                <Space align="start" style={{ justifyContent: 'space-between', width: '100%' }}>
+                  <Space direction="vertical" size={0} style={{ minWidth: 0 }}>
+                    <Space size={6}>
+                      <Typography.Text strong>{formatCommitTime(commit)}</Typography.Text>
+                      <Typography.Text type="secondary">{formatVersion(commit.seq)}</Typography.Text>
+                      {commit.isPublished || commit.id === publishedCommitId ? (
+                        <Tag color="green">{t('Published')}</Tag>
+                      ) : null}
+                    </Space>
+                    <Typography.Text ellipsis type="secondary">
+                      {commit.message}
+                    </Typography.Text>
                   </Space>
-                  <Typography.Text ellipsis type="secondary">
-                    {commit.message}
-                  </Typography.Text>
-                  <Typography.Text type="secondary">{t('Click to restore')}</Typography.Text>
+                  <ImportOutlined
+                    aria-hidden="true"
+                    style={{ color: '#8c8c8c', flex: '0 0 auto', fontSize: 13, marginTop: 3 }}
+                  />
                 </Space>
               </button>
             ))}
@@ -3121,59 +3752,13 @@ function ConsolePanel(props: {
   );
 }
 
-function FileDialog(props: {
-  error: string | null;
-  mode?: FileDialogMode;
-  onAfterClose: () => void;
-  onCancel: () => void;
-  onChange: (value: string) => void;
-  onSubmit: () => void;
-  open: boolean;
-  t: (key: string) => string;
-  value: string;
-}) {
-  const { error, mode, onAfterClose, onCancel, onChange, onSubmit, open, t, value } = props;
-  const inputRef = useRef<InputRef>(null);
-
-  useEffect(() => {
-    if (!open) {
-      return;
-    }
-
-    inputRef.current?.focus();
-  }, [open]);
-
-  return (
-    <Modal
-      afterClose={onAfterClose}
-      okText={mode === 'rename' ? t('Rename') : t('Create')}
-      onCancel={onCancel}
-      onOk={onSubmit}
-      open={open}
-      title={mode === 'rename' ? t('Rename file') : t('New file')}
-    >
-      <Input
-        aria-label={t('File path')}
-        onChange={(event) => onChange(event.target.value)}
-        onPressEnter={onSubmit}
-        ref={inputRef}
-        status={error ? 'error' : undefined}
-        value={value}
-      />
-      {error ? <Typography.Text type="danger">{error}</Typography.Text> : null}
-    </Modal>
-  );
-}
-
 function PublishModal(props: {
   commitMessage: string;
-  diagnostics: RunJSCompileDiagnostic[];
   loading: boolean;
   onAfterClose: () => void;
   onCancel: () => void;
   onCommitMessageChange: (value: string) => void;
   onPublish: () => void;
-  onViewDiagnostics: () => void;
   open: boolean;
   readOnly: boolean;
   summary: RunJSChangeSummary;
@@ -3181,22 +3766,19 @@ function PublishModal(props: {
 }) {
   const {
     commitMessage,
-    diagnostics,
     loading,
     onAfterClose,
     onCancel,
     onCommitMessageChange,
     onPublish,
-    onViewDiagnostics,
     open,
     readOnly,
     summary,
     t,
   } = props;
   const trimmed = commitMessage.trim();
-  const hasCompileErrors = diagnostics.some((diagnostic) => diagnostic.severity === 'error');
   const messageInvalid = trimmed.length === 0 || trimmed.length > 200;
-  const disabled = readOnly || summary.files === 0 || hasCompileErrors || messageInvalid;
+  const disabled = readOnly || summary.files === 0 || messageInvalid;
   const inputRef = useRef<InputRef>(null);
 
   useEffect(() => {
@@ -3206,15 +3788,6 @@ function PublishModal(props: {
 
     inputRef.current?.focus();
   }, [open]);
-
-  const copyDiagnostics = async () => {
-    try {
-      await navigator.clipboard?.writeText(formatCompileDiagnostics(diagnostics));
-      message.success(t('Details copied'));
-    } catch (_) {
-      message.error(t('Copy details failed'));
-    }
-  };
 
   return (
     <Modal
@@ -3231,29 +3804,6 @@ function PublishModal(props: {
         <Typography.Text strong>{t('Changes')}</Typography.Text>
         <Typography.Text>{formatChangeSummary(summary, t)}</Typography.Text>
         {summary.files === 0 ? <Alert message={t('No changes to save')} showIcon type="info" /> : null}
-        {hasCompileErrors ? (
-          <Alert
-            action={
-              <Space>
-                <Button onClick={onViewDiagnostics} size="small">
-                  {t('View diagnostics')}
-                </Button>
-                <Button
-                  aria-label={t('Copy technical details')}
-                  icon={<CopyOutlined />}
-                  onClick={copyDiagnostics}
-                  size="small"
-                >
-                  {t('Copy technical details')}
-                </Button>
-              </Space>
-            }
-            message={t('Compile failed')}
-            role="alert"
-            showIcon
-            type="error"
-          />
-        ) : null}
         <Input
           aria-label={t('Commit message')}
           maxLength={200}
@@ -3264,6 +3814,67 @@ function PublishModal(props: {
           status={commitMessage && messageInvalid ? 'error' : undefined}
           value={commitMessage}
         />
+      </Space>
+    </Modal>
+  );
+}
+
+function SaveDiagnosticsModal(props: {
+  diagnostics: RunJSCompileDiagnostic[];
+  onCancel: () => void;
+  open: boolean;
+  t: (key: string) => string;
+}) {
+  const { diagnostics, onCancel, open, t } = props;
+  const details = formatCompileDiagnostics(diagnostics) || t('No compile diagnostics');
+
+  const copyDiagnostics = async () => {
+    try {
+      await navigator.clipboard?.writeText(details);
+      message.success(t('Details copied'));
+    } catch (_) {
+      message.error(t('Copy details failed'));
+    }
+  };
+
+  return (
+    <Modal
+      footer={[
+        <Button aria-label={t('Copy technical details')} key="copy" icon={<CopyOutlined />} onClick={copyDiagnostics}>
+          {t('Copy technical details')}
+        </Button>,
+        <Button key="dismiss" onClick={onCancel} type="primary">
+          {t('Dismiss')}
+        </Button>,
+      ]}
+      onCancel={onCancel}
+      open={open}
+      title={t('Save failed')}
+      width={720}
+    >
+      <Space direction="vertical" style={{ width: '100%' }}>
+        <Alert message={t('Compile failed')} role="alert" showIcon type="error" />
+        <Typography.Text>{t('Fix compile errors before saving.')}</Typography.Text>
+        <pre
+          aria-label={t('Compile diagnostics')}
+          data-testid="runjs-save-diagnostics"
+          style={{
+            background: '#141414',
+            borderRadius: 6,
+            color: '#f5f5f5',
+            fontFamily: 'monospace',
+            fontSize: 12,
+            lineHeight: 1.6,
+            margin: 0,
+            maxHeight: 'min(520px, calc(100vh - 260px))',
+            overflow: 'auto',
+            padding: 12,
+            whiteSpace: 'pre-wrap',
+            wordBreak: 'break-word',
+          }}
+        >
+          {details}
+        </pre>
       </Space>
     </Modal>
   );
@@ -3533,6 +4144,10 @@ function canPublish(
     length <= 200 &&
     diagnostics.every((item) => item.severity !== 'error')
   );
+}
+
+function hasCompileErrorDiagnostics(diagnostics: RunJSCompileDiagnostic[]): boolean {
+  return diagnostics.some((item) => item.severity === 'error');
 }
 
 function isConflictError(error: unknown): error is RunJSSourceRequestError {

@@ -314,6 +314,9 @@ JSBlockModel.registerFlow({
           width: '45%',
           styles: {
             body: {
+              display: 'flex',
+              flexDirection: 'column',
+              minHeight: 0,
               transform: 'translateX(0)',
             },
           },

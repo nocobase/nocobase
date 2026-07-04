@@ -110,12 +110,12 @@ describe('runJSSources resource', () => {
     expect(firstOpen.body.data.files).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          path: 'src/main.tsx',
+          path: 'src/client/index.tsx',
           content: 'ctx.render("legacy");',
         }),
         expect.objectContaining({
           path: runJSManifestPath,
-          content: expect.stringContaining('"entry": "src/main.tsx"'),
+          content: expect.stringContaining('"entry": "src/client/index.tsx"'),
         }),
       ]),
     );
@@ -140,19 +140,19 @@ describe('runJSSources resource', () => {
         baseCommitId: firstOpen.body.data.repository.publishedCommitId,
         files: [
           {
-            path: 'src/helper.ts',
+            path: 'src/client/helper.ts',
             operation: 'upsert',
             content: 'export const value = "published";',
             language: 'typescript',
           },
           {
-            path: 'src/main.tsx',
+            path: 'src/client/index.tsx',
             operation: 'upsert',
             content: 'import { value } from "./helper";\nctx.render(value);',
             language: 'typescript',
           },
         ],
-        entryPath: 'src/main.tsx',
+        entryPath: 'src/client/index.tsx',
         version: 'v2',
       },
     });
@@ -172,19 +172,19 @@ describe('runJSSources resource', () => {
         message: 'Publish workspace files',
         files: [
           {
-            path: 'src/helper.ts',
+            path: 'src/client/helper.ts',
             operation: 'upsert',
             content: 'export const value = "published";',
             language: 'typescript',
           },
           {
-            path: 'src/main.tsx',
+            path: 'src/client/index.tsx',
             operation: 'upsert',
             content: 'import { value } from "./helper";\nctx.render(value);',
             language: 'typescript',
           },
         ],
-        entryPath: 'src/main.tsx',
+        entryPath: 'src/client/index.tsx',
         version: 'v2',
       },
     });
@@ -225,7 +225,7 @@ describe('runJSSources resource', () => {
     expect(version.body.data.files).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          path: 'src/helper.ts',
+          path: 'src/client/helper.ts',
           content: 'export const value = "published";',
         }),
       ]),
@@ -254,15 +254,16 @@ describe('runJSSources resource', () => {
       [runJSManifestPath]: `${JSON.stringify(
         {
           schemaVersion: 1,
-          entry: 'src/main.tsx',
+          entry: 'src/client/index.tsx',
           runtimeVersion: 'v3',
           surfaceStyle: 'render',
+          folders: ['src/client', 'src/client/widgets'],
         },
         null,
         2,
       )}\n`,
-      'src/helper.ts': 'export const abc = 333;\n',
-      'src/main.tsx': 'import { abc } from "./helper";\nctx.render(abc);\n',
+      'src/client/helper.ts': 'export const abc = 333;\n',
+      'src/client/index.tsx': 'import { abc } from "./helper";\nctx.render(abc);\n',
     });
 
     const imported = await agent.resource('runJSSources').importZip({
@@ -283,13 +284,27 @@ describe('runJSSources resource', () => {
       fileCount: 3,
       filesHash: imported.body.data.artifact.filesHash,
     });
-    expect(imported.body.data.artifact.entryPath).toBe('src/main.tsx');
+    expect(imported.body.data.artifact.entryPath).toBe('src/client/index.tsx');
     expect(publishedArtifacts).toHaveLength(1);
     expect(publishedArtifacts[0]).toMatchObject({
-      entryPath: 'src/main.tsx',
+      entryPath: 'src/client/index.tsx',
       version: 'v3',
     });
     expect(publishedArtifacts[0].code).toContain('333');
+
+    const importedVersion = await agent.resource('runJSSources').getVersion({
+      values: {
+        locator,
+        repoId: opened.body.data.repository.id,
+        commitId: imported.body.data.commit.id,
+        includeFiles: true,
+      },
+    });
+    const importedManifest = importedVersion.body.data.files.find(
+      (file: { path: string }) => file.path === runJSManifestPath,
+    );
+    expect(importedManifest.content).toContain('"folders"');
+    expect(importedManifest.content).toContain('src/client/widgets');
 
     const syncStatus = await agent.resource('runJSSources').syncStatus({
       values: {
@@ -304,7 +319,7 @@ describe('runJSSources resource', () => {
       headCommitId: imported.body.data.commit.id,
       filesHash: imported.body.data.artifact.filesHash,
       runtimeCodeHash: imported.body.data.artifact.runtimeCodeHash,
-      entry: 'src/main.tsx',
+      entry: 'src/client/index.tsx',
       runtimeVersion: 'v3',
       ownerFingerprint: imported.body.data.ownerFingerprint,
     });
@@ -354,7 +369,7 @@ describe('runJSSources resource', () => {
         message: 'Update guarded RunJS source',
         files: [
           {
-            path: 'src/main.tsx',
+            path: 'src/client/index.tsx',
             operation: 'upsert',
             content: 'return guarded;',
             language: 'typescript',
@@ -399,7 +414,7 @@ describe('runJSSources resource', () => {
           label: input.label,
           code: input.readCode(),
           version: 'v2',
-          entryPath: 'src/main.tsx',
+          entryPath: 'src/client/legacy.ts',
           ownerFingerprint,
           surfaceStyle: 'render',
           language: 'typescript',

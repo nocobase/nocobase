@@ -130,7 +130,7 @@ const openResult = {
     label: 'JS block / Write JavaScript',
     surfaceStyle: 'value',
     language: 'typescript',
-    entryPath: 'src/main.tsx',
+    entryPath: 'src/client/index.tsx',
     ownerFingerprint: 'owner-fingerprint-1',
   },
   ownerFingerprint: 'owner-fingerprint-1',
@@ -145,7 +145,7 @@ const openResult = {
   repository,
   files: [
     {
-      path: 'src/main.tsx',
+      path: 'src/client/index.tsx',
       content: 'return 1;',
       language: 'typescript',
       mode: '100644',
@@ -169,7 +169,7 @@ const runJSLocaleMessages = {
 
 function getSubmittedMainContent(data: unknown): string {
   const input = data as { files?: Array<{ path: string; content?: string }> };
-  return input.files?.find((file) => file.path === 'src/main.tsx')?.content || 'return 1;';
+  return input.files?.find((file) => file.path === 'src/client/index.tsx')?.content || 'return 1;';
 }
 
 function renderEditor(onChange = vi.fn(), extraProps: Record<string, unknown> = {}) {
@@ -215,7 +215,7 @@ describe('runJSStudioProvider', () => {
                 sourceMap: previewSourceMap,
                 diagnostics: [],
                 filesHash: 'files-hash-2',
-                entryPath: 'src/main.tsx',
+                entryPath: 'src/client/index.tsx',
               },
             },
           },
@@ -248,7 +248,7 @@ describe('runJSStudioProvider', () => {
                 commitId: 'commit-2',
               },
               artifact: {
-                entryPath: 'src/main.tsx',
+                entryPath: 'src/client/index.tsx',
                 filesHash: 'files-hash-2',
                 runtimeCodeHash: 'runtime-hash-2',
                 diagnostics: [],
@@ -294,7 +294,7 @@ describe('runJSStudioProvider', () => {
                 commitId: 'commit-2',
               },
               artifact: {
-                entryPath: 'src/main.tsx',
+                entryPath: 'src/client/index.tsx',
                 filesHash: 'files-hash-2',
                 runtimeCodeHash: 'runtime-hash-2',
                 diagnostics: [],
@@ -339,6 +339,7 @@ describe('runJSStudioProvider', () => {
       'Current changes',
       'Saved changes',
       'Commit message',
+      'Compile diagnostics',
       'Describe this change',
       'Discard changes',
       'Discard changes and refresh',
@@ -363,6 +364,14 @@ describe('runJSStudioProvider', () => {
       'Import failed',
       'Export workspace',
       'Export failed',
+      'Folder already exists',
+      'Folder is not empty',
+      'Folder path',
+      'Folder path must be under src',
+      'Folder path must be under src/client',
+      'Fix compile errors before saving.',
+      'New folder',
+      'No compile diagnostics',
       'Workspace export is ready',
       'If the download did not start automatically, click Download workspace.',
       'Download workspace',
@@ -388,14 +397,14 @@ describe('runJSStudioProvider', () => {
     renderEditor();
 
     expect(await screen.findByRole('button', { name: 'Expand files' })).toBeTruthy();
-    expect(screen.queryByRole('button', { name: 'src/main.tsx' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'src/client/index.tsx' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Open Studio' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Publish' })).toBeNull();
     expect(screen.getByRole('button', { name: 'Save' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Run' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Diff' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Import workspace' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Export workspace' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Import workspace' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Export workspace' })).toBeNull();
     expect(screen.queryByText('Entry')).toBeNull();
     expect(screen.getByLabelText('Open files').style.overflowY).toBe('hidden');
     expect(screen.getByText('No logs yet. Click Run to execute.')).toBeTruthy();
@@ -405,11 +414,28 @@ describe('runJSStudioProvider', () => {
     expect(screen.getByTestId('runjs-studio-workspace').style.overflow).toBe('hidden');
 
     fireEvent.click(screen.getByRole('button', { name: 'Expand files' }));
-    expect(screen.getByRole('button', { name: 'src/main.tsx' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'src/client/index.tsx' })).toBeTruthy();
     const filesPanel = screen.getByLabelText('File resource manager');
     expect(filesPanel.style.flex).toBe('0 1 auto');
     expect(filesPanel.style.maxHeight).toBe('80%');
     expect(filesPanel.style.minHeight).toBe('140px');
+    expect(within(filesPanel).getByText('Files')).toBeTruthy();
+    expect(within(filesPanel).getByRole('button', { name: 'Import workspace' })).toBeTruthy();
+    expect(within(filesPanel).getByRole('button', { name: 'Export workspace' })).toBeTruthy();
+    expect(within(filesPanel).getByText('TSX')).toBeTruthy();
+    expect(within(filesPanel).getByText('client')).toBeTruthy();
+    fireEvent.mouseEnter(within(filesPanel).getByText('index.tsx'));
+    expect(within(filesPanel).queryByRole('button', { name: /Set as entry/ })).toBeNull();
+    fireEvent.mouseEnter(within(filesPanel).getByText('src'));
+    expect(within(filesPanel).getByRole('button', { name: 'New file src' })).toBeTruthy();
+    expect(within(filesPanel).getByRole('button', { name: 'New folder src' })).toBeTruthy();
+    fireEvent.click(within(filesPanel).getByRole('button', { name: 'src' }));
+    expect(within(filesPanel).queryByText('client')).toBeNull();
+    fireEvent.click(within(filesPanel).getByRole('button', { name: 'src' }));
+    expect(within(filesPanel).getByText('client')).toBeTruthy();
+    fireEvent.mouseEnter(within(filesPanel).getByText('client'));
+    expect(within(filesPanel).getByRole('button', { name: 'New file src/client' })).toBeTruthy();
+    expect(within(filesPanel).getByRole('button', { name: 'New folder src/client' })).toBeTruthy();
     const historyPanel = screen.getByLabelText('Commit history');
     expect(historyPanel.style.flex).toBe('1 1 220px');
     expect(historyPanel.style.minHeight).toBe('180px');
@@ -417,6 +443,7 @@ describe('runJSStudioProvider', () => {
     expect(historyPanel.style.marginTop).toMatch(/^(0|0px)$/);
     expect(historyPanel.style.transition).toContain('flex-basis');
     expect(within(historyPanel).getByRole('button', { name: 'Collapse history' })).toBeTruthy();
+    expect(within(historyPanel).queryByText('Click to restore')).toBeNull();
     expect(screen.getByText(/07-02/)).toBeTruthy();
 
     fireEvent.click(within(historyPanel).getByRole('button', { name: 'Collapse history' }));
@@ -436,6 +463,81 @@ describe('runJSStudioProvider', () => {
     await screen.findByLabelText('Edit file content');
     expect(screen.getByTestId('runjs-studio-editor').style.height).toBe('calc(100vh - 42px)');
     expect(screen.getByTestId('runjs-studio-editor').style.maxHeight).toBe('calc(100vh - 42px)');
+  });
+
+  it('creates folders under src/client and moves files into them', async () => {
+    renderEditor();
+
+    await screen.findByLabelText('Edit file content');
+    fireEvent.click(screen.getByRole('button', { name: 'Expand files' }));
+
+    const filesPanel = screen.getByLabelText('File resource manager');
+    fireEvent.click(within(filesPanel).getByRole('button', { name: 'New file' }));
+
+    const fileNameInput = within(filesPanel).getByRole('textbox', { name: 'Rename src/client/helper.ts' });
+    expect(fileNameInput).toHaveValue('helper.ts');
+    fireEvent.change(fileNameInput, { target: { value: 'helper2.ts' } });
+    fireEvent.blur(fileNameInput);
+
+    expect(within(filesPanel).getByRole('button', { name: 'src/client/helper2.ts' })).toBeTruthy();
+
+    fireEvent.click(within(filesPanel).getByRole('button', { name: 'New folder' }));
+
+    const folderNameInput = within(filesPanel).getByRole('textbox', { name: 'Rename src/client/folder' });
+    expect(folderNameInput).toHaveValue('folder');
+    fireEvent.change(folderNameInput, { target: { value: 'widgets' } });
+    fireEvent.blur(folderNameInput);
+
+    expect(within(filesPanel).getByText('widgets')).toBeTruthy();
+
+    const dataTransfer = {
+      data: new Map<string, string>(),
+      effectAllowed: '',
+      getData(type: string) {
+        return this.data.get(type) || '';
+      },
+      setData(type: string, value: string) {
+        this.data.set(type, value);
+      },
+    };
+    const fileRow = within(filesPanel).getByRole('button', { name: 'src/client/index.tsx' }).closest('.ant-list-item');
+    const folderRow = within(filesPanel).getByText('widgets').closest('.ant-list-item');
+    expect(fileRow).toBeTruthy();
+    expect(folderRow).toBeTruthy();
+
+    fireEvent.dragStart(fileRow as HTMLElement, { dataTransfer });
+    fireEvent.dragOver(folderRow as HTMLElement, { dataTransfer });
+    fireEvent.drop(folderRow as HTMLElement, { dataTransfer });
+
+    expect(within(filesPanel).getByRole('button', { name: 'src/client/widgets/index.tsx' })).toBeTruthy();
+  });
+
+  it('creates files and folders under the clicked source folder', async () => {
+    renderEditor();
+
+    await screen.findByLabelText('Edit file content');
+    fireEvent.click(screen.getByRole('button', { name: 'Expand files' }));
+
+    const filesPanel = screen.getByLabelText('File resource manager');
+    fireEvent.mouseEnter(within(filesPanel).getByText('src'));
+    fireEvent.click(within(filesPanel).getByRole('button', { name: 'New file src' }));
+
+    const fileNameInput = within(filesPanel).getByRole('textbox', { name: 'Rename src/helper.ts' });
+    expect(fileNameInput).toHaveValue('helper.ts');
+    fireEvent.change(fileNameInput, { target: { value: 'root-helper.ts' } });
+    fireEvent.blur(fileNameInput);
+
+    expect(within(filesPanel).getByRole('button', { name: 'src/root-helper.ts' })).toBeTruthy();
+
+    fireEvent.mouseEnter(within(filesPanel).getByText('src'));
+    fireEvent.click(within(filesPanel).getByRole('button', { name: 'New folder src' }));
+
+    const folderNameInput = within(filesPanel).getByRole('textbox', { name: 'Rename src/folder' });
+    expect(folderNameInput).toHaveValue('folder');
+    fireEvent.change(folderNameInput, { target: { value: 'shared' } });
+    fireEvent.blur(folderNameInput);
+
+    expect(within(filesPanel).getByRole('button', { name: 'src/shared' })).toBeTruthy();
   });
 
   it('compiles on Run and appends client-side preview logs', async () => {
@@ -463,6 +565,71 @@ describe('runJSStudioProvider', () => {
     expect(await screen.findByText(/\[log\] hello!/)).toBeTruthy();
   });
 
+  it('resolves the fixed src/client index entry by extension priority', async () => {
+    mocks.request.mockImplementation(({ url, data }: { url: string; data?: unknown }) => {
+      if (url === 'runJSSources:open') {
+        return Promise.resolve({
+          data: {
+            data: {
+              ...openResult,
+              legacy: {
+                ...openResult.legacy,
+                entryPath: 'src/client/legacy.ts',
+              },
+              files: [
+                { path: 'src/client/index.js', content: 'ctx.render("js");', language: 'javascript' },
+                { path: 'src/client/index.ts', content: 'ctx.render("ts");', language: 'typescript' },
+                { path: 'src/client/index.jsx', content: 'ctx.render("jsx");', language: 'javascriptreact' },
+                { path: 'src/client/index.tsx', content: 'ctx.render("tsx");', language: 'typescriptreact' },
+              ],
+            },
+          },
+        });
+      }
+
+      if (url === 'runJSSources:compilePreview') {
+        return Promise.resolve({
+          data: {
+            data: {
+              locator,
+              locatorKind: 'flowModel.step',
+              artifact: {
+                code: 'ctx.render("tsx");',
+                version: 'v2',
+                sourceMap: previewSourceMap,
+                diagnostics: [],
+                filesHash: 'files-hash-priority',
+                entryPath: (data as { entryPath?: string }).entryPath,
+              },
+            },
+          },
+        });
+      }
+
+      return Promise.resolve({
+        data: {
+          data: {},
+        },
+      });
+    });
+
+    renderEditor();
+
+    await screen.findByLabelText('Edit file content');
+    fireEvent.click(screen.getByRole('button', { name: 'Run' }));
+
+    await waitFor(() => {
+      expect(mocks.request).toHaveBeenCalledWith(
+        expect.objectContaining({
+          url: 'runJSSources:compilePreview',
+          data: expect.objectContaining({
+            entryPath: 'src/client/index.tsx',
+          }),
+        }),
+      );
+    });
+  });
+
   it('shows mapped runtime diagnostics as clickable file locations', async () => {
     mocks.diagnoseRunJS.mockResolvedValueOnce({
       execution: { finished: true, started: true, timeout: false },
@@ -470,7 +637,7 @@ describe('runJSStudioProvider', () => {
         {
           type: 'runtime',
           message: 'boom',
-          sourcePath: 'src/main.tsx',
+          sourcePath: 'src/client/index.tsx',
           location: { start: { line: 2, column: 3 } },
         },
       ],
@@ -481,7 +648,7 @@ describe('runJSStudioProvider', () => {
     await screen.findByLabelText('Edit file content');
     fireEvent.click(screen.getByRole('button', { name: 'Run' }));
 
-    expect(await screen.findByText(/\[error\] src\/main\.tsx:2 boom/)).toBeTruthy();
+    expect(await screen.findByText(/\[error\] src\/client\/index\.tsx:2 boom/)).toBeTruthy();
   });
 
   it('toggles the editor area into a diff against the published file', async () => {
@@ -503,6 +670,67 @@ describe('runJSStudioProvider', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Diff' }));
     expect((screen.getByLabelText('Edit file content') as HTMLTextAreaElement).value).toBe('return 2;');
+  });
+
+  it('shows compile diagnostics instead of the commit message dialog when Save preflight fails', async () => {
+    mocks.request.mockImplementation(({ url }: { url: string }) => {
+      if (url === 'runJSSources:open') {
+        return Promise.resolve({
+          data: {
+            data: openResult,
+          },
+        });
+      }
+
+      if (url === 'runJSSources:compilePreview') {
+        return Promise.resolve({
+          data: {
+            data: {
+              locator,
+              locatorKind: 'flowModel.step',
+              artifact: {
+                code: 'return ;',
+                version: 'v2',
+                sourceMap: previewSourceMap,
+                diagnostics: [
+                  {
+                    severity: 'error',
+                    message: "';' expected",
+                    path: 'src/client/index.tsx',
+                    line: 1,
+                    column: 8,
+                    code: 'TS1005',
+                  },
+                ],
+                filesHash: 'files-hash-error',
+                entryPath: 'src/client/index.tsx',
+              },
+            },
+          },
+        });
+      }
+
+      return Promise.resolve({
+        data: {
+          data: {},
+        },
+      });
+    });
+
+    renderEditor();
+    const editor = await screen.findByLabelText('Edit file content');
+
+    fireEvent.change(editor, { target: { value: 'return ;' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    const dialog = await screen.findByRole('dialog', { name: 'Save failed' });
+    expect(within(dialog).queryByRole('textbox', { name: 'Commit message' })).toBeNull();
+    expect(within(dialog).getByText('Compile failed')).toBeTruthy();
+    expect(within(dialog).getByText(/\[error\] src\/client\/index\.tsx:1:8 \(TS1005\) ';' expected/)).toBeTruthy();
+    const diagnostics = within(dialog).getByLabelText('Compile diagnostics');
+    expect(diagnostics.style.overflow).toBe('auto');
+    expect(diagnostics.style.maxHeight).toBe('min(520px, calc(100vh - 260px))');
+    expect(within(dialog).getByRole('button', { name: 'Copy technical details' })).toBeTruthy();
   });
 
   it('requires a commit message before Save publishes', async () => {
@@ -568,7 +796,10 @@ describe('runJSStudioProvider', () => {
     renderEditor();
 
     await screen.findByLabelText('Edit file content');
-    fireEvent.click(screen.getByRole('button', { name: 'Export workspace' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Expand files' }));
+    fireEvent.click(
+      within(screen.getByLabelText('File resource manager')).getByRole('button', { name: 'Export workspace' }),
+    );
 
     await waitFor(() => {
       expect(mocks.request).toHaveBeenCalledWith(
@@ -600,7 +831,10 @@ describe('runJSStudioProvider', () => {
     renderEditor();
 
     await screen.findByLabelText('Edit file content');
-    fireEvent.click(screen.getByRole('button', { name: 'Export workspace' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Expand files' }));
+    fireEvent.click(
+      within(screen.getByLabelText('File resource manager')).getByRole('button', { name: 'Export workspace' }),
+    );
 
     expect(await screen.findByText('Workspace export is ready')).toBeTruthy();
     const downloadLink = screen.getByRole('link', { name: 'Download workspace' }) as HTMLAnchorElement;

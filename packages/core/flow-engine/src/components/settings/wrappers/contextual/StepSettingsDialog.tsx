@@ -26,6 +26,7 @@ import { FlowExitAllException } from '../../../../utils/exceptions';
 import { observer } from '../../../../reactive';
 
 const SchemaField = createSchemaField();
+const fillContentClassName = 'nb-flow-step-settings-fill-content';
 
 /**
  * StepSettingsDialog组件 - 使用 FormDialog 显示单个步骤的配置界面
@@ -118,6 +119,11 @@ const openStepSettingsDialog = async ({
   // 保存旧参数用于 onParamsChange 回调
   const previousParams = { ...toJS(stepParams) };
 
+  const resolvedUiModeProps = toJS(uiModeProps) || {};
+  const { zIndex: uiModeZIndex, ...restUiModeProps } = resolvedUiModeProps;
+  const fillAvailableContent = restUiModeProps.footer === null;
+  const shouldRenderDefaultFooter = restUiModeProps.footer !== null;
+
   // 构建表单Schema
   const formSchema: ISchema = {
     type: 'object',
@@ -127,6 +133,17 @@ const openStepSettingsDialog = async ({
         'x-component': 'FormLayout',
         'x-component-props': {
           layout: 'vertical', // 垂直布局
+          ...(fillAvailableContent
+            ? {
+                style: {
+                  display: 'flex',
+                  flex: '1 1 0',
+                  flexDirection: 'column',
+                  height: '100%',
+                  minHeight: 0,
+                },
+              }
+            : {}),
         },
         properties: mergedUiSchema,
       },
@@ -134,8 +151,6 @@ const openStepSettingsDialog = async ({
   };
 
   const openView = model.context.viewer[mode].bind(model.context.viewer);
-  const resolvedUiModeProps = toJS(uiModeProps) || {};
-  const { zIndex: uiModeZIndex, ...restUiModeProps } = resolvedUiModeProps;
   const resolveDialogZIndex = (rawZIndex?: number) => {
     const nextZIndex =
       typeof model.context.viewer?.getNextZIndex === 'function'
@@ -189,60 +204,103 @@ const openStepSettingsDialog = async ({
         return (
           <FormProvider form={form}>
             <FlowSettingsContextProvider value={flowRuntimeContext}>
-              <SchemaField
-                schema={compiledFormSchema}
-                components={{
-                  ...flowEngine.flowSettings?.components,
-                }}
-                scope={scopes}
-              />
-              <currentDialog.Footer>
-                <Space align="end">
-                  <Button
-                    type="default"
-                    onClick={() => {
-                      currentDialog.close();
-                    }}
-                  >
-                    {t('Cancel')}
-                  </Button>
-                  <Button
-                    type="primary"
-                    onClick={async () => {
-                      try {
-                        await form.submit();
-                        const currentValues = form.values;
-                        model.setStepParams(flowKey, stepKey, currentValues);
-
-                        // Call beforeParamsSave callback if it exists
-                        if (beforeParamsSave) {
-                          await beforeParamsSave(flowRuntimeContext, currentValues, previousParams);
-                        }
-
-                        currentDialog.close();
-                        await model.saveStepParams();
-                        message.success(t('Configuration saved'));
-                        // Call afterParamsSave callback if it exists
-                        if (afterParamsSave) {
-                          await afterParamsSave(flowRuntimeContext, currentValues, previousParams);
-                        }
-                      } catch (error) {
-                        if (error instanceof FlowCancelSaveException) {
-                          return;
-                        }
-                        if (error instanceof FlowExitException || error instanceof FlowExitAllException) {
-                          currentDialog.close();
-                          return;
-                        }
-                        console.error(t('Error saving configuration'), ':', error);
-                        message.error(t('Error saving configuration, please check console'));
+              <div
+                className={fillAvailableContent ? fillContentClassName : undefined}
+                style={
+                  fillAvailableContent
+                    ? {
+                        display: 'flex',
+                        flex: '1 1 0',
+                        flexDirection: 'column',
+                        minHeight: 0,
                       }
-                    }}
-                  >
-                    {t('OK')}
-                  </Button>
-                </Space>
-              </currentDialog.Footer>
+                    : undefined
+                }
+              >
+                {fillAvailableContent ? (
+                  <style>
+                    {`
+                      .${fillContentClassName} > .ant-formily-layout {
+                        display: flex;
+                        flex: 1 1 0%;
+                        flex-direction: column;
+                        height: 100%;
+                        min-height: 0;
+                      }
+                      .${fillContentClassName} > .ant-formily-layout > .ant-formily-item {
+                        display: flex;
+                        flex: 1 1 0%;
+                        flex-direction: column;
+                        margin-bottom: 0;
+                        min-height: 0;
+                      }
+                      .${fillContentClassName} .ant-formily-item-control,
+                      .${fillContentClassName} .ant-formily-item-control-content,
+                      .${fillContentClassName} .ant-formily-item-control-content-component {
+                        display: flex;
+                        flex: 1 1 0%;
+                        min-height: 0;
+                      }
+                    `}
+                  </style>
+                ) : null}
+                <SchemaField
+                  schema={compiledFormSchema}
+                  components={{
+                    ...flowEngine.flowSettings?.components,
+                  }}
+                  scope={scopes}
+                />
+              </div>
+              {shouldRenderDefaultFooter ? (
+                <currentDialog.Footer>
+                  <Space align="end">
+                    <Button
+                      type="default"
+                      onClick={() => {
+                        currentDialog.close();
+                      }}
+                    >
+                      {t('Cancel')}
+                    </Button>
+                    <Button
+                      type="primary"
+                      onClick={async () => {
+                        try {
+                          await form.submit();
+                          const currentValues = form.values;
+                          model.setStepParams(flowKey, stepKey, currentValues);
+
+                          // Call beforeParamsSave callback if it exists
+                          if (beforeParamsSave) {
+                            await beforeParamsSave(flowRuntimeContext, currentValues, previousParams);
+                          }
+
+                          currentDialog.close();
+                          await model.saveStepParams();
+                          message.success(t('Configuration saved'));
+                          // Call afterParamsSave callback if it exists
+                          if (afterParamsSave) {
+                            await afterParamsSave(flowRuntimeContext, currentValues, previousParams);
+                          }
+                        } catch (error) {
+                          if (error instanceof FlowCancelSaveException) {
+                            return;
+                          }
+                          if (error instanceof FlowExitException || error instanceof FlowExitAllException) {
+                            currentDialog.close();
+                            return;
+                          }
+                          console.error(t('Error saving configuration'), ':', error);
+                          message.error(t('Error saving configuration, please check console'));
+                        }
+                      }}
+                    >
+                      {t('OK')}
+                    </Button>
+                  </Space>
+                </currentDialog.Footer>
+              ) : null}
             </FlowSettingsContextProvider>
           </FormProvider>
         );
