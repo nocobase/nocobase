@@ -48,18 +48,24 @@
   },
   {
     "type": "custom-link",
+    "label": "数据表与字段",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "数据表",
+        "link": "/data-sources/collection/collection"
+      },
+      {
+        "type": "custom-link",
+        "label": "字段",
+        "link": "/data-sources/collection/field"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
     "label": "主数据库vs外部数据库",
     "link": "/data-sources/main-vs-external-database"
-  },
-  {
-    "type": "custom-link",
-    "label": "数据表",
-    "link": "/data-sources/collection/collection"
-  },
-  {
-    "type": "custom-link",
-    "label": "字段",
-    "link": "/data-sources/field/field"
   },
   {
     "type": "custom-link",
