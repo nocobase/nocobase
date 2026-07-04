@@ -18,6 +18,7 @@ In this setup, the NocoBase app container and the Nginx container run separately
 
 If you need the `full` image, replace `latest-no-nginx` with `latest-full-no-nginx`.
 
+The `13000:80` mapping is only for convenient local testing, so it does not occupy the standard host ports directly. In production, you usually do not keep using `13000:80`; instead, let the external Nginx container map directly to the host `80` and `443` ports.
 ```yml
 networks:
   nocobase:
@@ -67,7 +68,11 @@ services:
         nginx -g "daemon off;"
       '
     ports:
+      # This is only a local testing example.
       - "13000:80"
+      # In production, usually change it to:
+      # - "80:80"
+      # - "443:443"
 
   postgres:
     image: postgres:16
@@ -90,8 +95,7 @@ services:
 - `NOCOBASE_PROXY_UPSTREAM_HOST=app` lets the Nginx container reach the `app` service through the Compose network
 - `./storage` must be mounted into both the `app` and `nginx` containers so they can share proxy config, static assets, and uploaded files
 - The `nginx` container should wait until `nocobase.conf` is generated, then link it to `/etc/nginx/conf.d/default.conf` with `ln -sf`
-- If you use the built-in Nginx image, the `app` container itself exposes the port with `ports: "13000:80"`
-- If you use an external Nginx container, let the `nginx` container handle the host port mapping, and do not expose the `app` service port to the host
+- If you use an external Nginx container, let the `nginx` container handle the host port mapping. For testing, you can start with `13000:80`; in production, you usually expose the host `80` and `443` ports directly, while the `app` service does not need to expose its port to the host
 
 ## If you use a local host Nginx
 

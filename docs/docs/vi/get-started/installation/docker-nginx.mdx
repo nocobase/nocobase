@@ -18,6 +18,7 @@ Trong cách triển khai này, container ứng dụng NocoBase và container Ngi
 
 Nếu bạn cần image `full`, hãy thay `latest-no-nginx` bằng `latest-full-no-nginx`.
 
+Mapping `13000:80` chỉ dùng để tiện kiểm thử local, tránh chiếm trực tiếp các cổng chuẩn của host. Trong production, thường không tiếp tục dùng `13000:80`; thay vào đó, container Nginx bên ngoài sẽ map trực tiếp tới các cổng `80` và `443` của host.
 ```yml
 networks:
   nocobase:
@@ -67,7 +68,11 @@ services:
         nginx -g "daemon off;"
       '
     ports:
+      # Đây chỉ là ví dụ kiểm thử local.
       - "13000:80"
+      # Trong production, thường đổi thành:
+      # - "80:80"
+      # - "443:443"
 
   postgres:
     image: postgres:16
@@ -90,8 +95,7 @@ services:
 - `NOCOBASE_PROXY_UPSTREAM_HOST=app` cho phép container Nginx truy cập dịch vụ `app` qua mạng Compose
 - `./storage` cần được mount vào cả `app` và `nginx` để cùng dùng cấu hình proxy, tài nguyên tĩnh và tệp tải lên
 - Container `nginx` cần chờ `nocobase.conf` được tạo xong, sau đó dùng `ln -sf` liên kết nó tới `/etc/nginx/conf.d/default.conf`
-- Nếu bạn dùng image có Nginx tích hợp sẵn, chính container `app` sẽ publish cổng bằng `ports: "13000:80"`
-- Nếu bạn dùng container Nginx bên ngoài, hãy để container `nginx` xử lý phần ánh xạ cổng ra host, còn dịch vụ `app` không cần publish cổng ra host
+- Nếu dùng container Nginx bên ngoài, chỉ cần để container `nginx` xử lý mapping cổng host. Khi kiểm thử, bạn có thể bắt đầu với `13000:80`; trong production, thường mở trực tiếp các cổng `80` và `443` của host, còn dịch vụ `app` không cần mở cổng ra host
 
 ## Nếu dùng Nginx cài trực tiếp trên máy host
 

@@ -18,6 +18,7 @@ Neste modo, o contêiner da aplicação NocoBase e o contêiner do Nginx são ex
 
 Se você precisar da imagem `full`, substitua `latest-no-nginx` por `latest-full-no-nginx`.
 
+O mapeamento `13000:80` serve apenas para facilitar testes locais, evitando ocupar diretamente as portas padrão do host. Em produção, normalmente não se mantém `13000:80`; em vez disso, o contêiner externo do Nginx mapeia diretamente as portas `80` e `443` do host.
 ```yml
 networks:
   nocobase:
@@ -67,7 +68,11 @@ services:
         nginx -g "daemon off;"
       '
     ports:
+      # Este é apenas um exemplo para testes locais.
       - "13000:80"
+      # Em produção, normalmente altere para:
+      # - "80:80"
+      # - "443:443"
 
   postgres:
     image: postgres:16
@@ -90,8 +95,7 @@ services:
 - `NOCOBASE_PROXY_UPSTREAM_HOST=app` permite que o contêiner do Nginx acesse o serviço `app` pela rede do Compose
 - `./storage` precisa ser montado em `app` e `nginx` para compartilhar a configuração do proxy, os arquivos estáticos e os uploads
 - O contêiner `nginx` deve esperar até que `nocobase.conf` seja gerado e então criar um link para `/etc/nginx/conf.d/default.conf` com `ln -sf`
-- Se você usar a imagem com Nginx embutido, o próprio contêiner `app` expõe a porta com `ports: "13000:80"`
-- Se você usar um contêiner Nginx externo, deixe o contêiner `nginx` cuidar do mapeamento da porta para o host e não exponha a porta do serviço `app` para o host
+- Se você usar um contêiner externo do Nginx, deixe o contêiner `nginx` cuidar do mapeamento da porta do host. Para testes, você pode começar com `13000:80`; em produção, normalmente exponha diretamente as portas `80` e `443` do host, enquanto o serviço `app` não precisa expor sua porta para o host
 
 ## Se você usar Nginx local no host
 

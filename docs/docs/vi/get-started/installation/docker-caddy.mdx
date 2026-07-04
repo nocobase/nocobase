@@ -18,6 +18,7 @@ Trong cách triển khai này, container ứng dụng NocoBase và container Cad
 
 Nếu bạn cần image `full`, hãy thay `latest-no-nginx` bằng `latest-full-no-nginx`.
 
+Mapping `13000:80` chỉ dùng để tiện kiểm thử local, tránh chiếm trực tiếp các cổng chuẩn của host. Trong production, thường không tiếp tục dùng `13000:80`; thay vào đó, container Caddy bên ngoài sẽ map trực tiếp tới các cổng `80` và `443` của host.
 ```yml
 networks:
   nocobase:
@@ -66,7 +67,11 @@ services:
         caddy run --config /etc/caddy/Caddyfile --adapter caddyfile
       '
     ports:
+      # Đây chỉ là ví dụ kiểm thử local.
       - "13000:80"
+      # Trong production, thường đổi thành:
+      # - "80:80"
+      # - "443:443"
 
   postgres:
     image: postgres:16
@@ -89,7 +94,7 @@ services:
 - `NOCOBASE_PROXY_UPSTREAM_HOST=app` cho phép container Caddy truy cập dịch vụ `app` qua mạng Compose
 - `./storage` cần được mount vào cả `app` và `caddy` để cùng dùng cấu hình proxy, tài nguyên tĩnh và tệp tải lên
 - Container `caddy` cần chờ `nocobase.caddy` được tạo xong, sau đó dùng `ln -sf` liên kết nó tới `/etc/caddy/Caddyfile`
-- Chỉ cần publish cổng của container Caddy ra host. Dịch vụ `app` không cần publish cổng ra host
+- Chỉ cần publish cổng của container Caddy ra host. Khi kiểm thử, bạn có thể bắt đầu với `13000:80`; trong production, thường mở trực tiếp các cổng `80` và `443` của host, còn dịch vụ `app` không cần mở cổng ra host
 
 ## Nếu dùng Caddy cài trực tiếp trên máy host
 

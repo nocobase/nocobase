@@ -18,6 +18,7 @@ Dalam mode ini, kontainer aplikasi NocoBase dan kontainer Nginx berjalan terpisa
 
 Jika Anda membutuhkan image `full`, ganti `latest-no-nginx` dengan `latest-full-no-nginx`.
 
+Mapping `13000:80` hanya untuk memudahkan pengujian lokal, agar tidak langsung memakai port standar host. Di produksi, biasanya jangan terus memakai `13000:80`; biarkan kontainer Nginx eksternal langsung memetakan port host `80` dan `443`.
 ```yml
 networks:
   nocobase:
@@ -67,7 +68,11 @@ services:
         nginx -g "daemon off;"
       '
     ports:
+      # Ini hanya contoh untuk pengujian lokal.
       - "13000:80"
+      # Di produksi, biasanya ubah menjadi:
+      # - "80:80"
+      # - "443:443"
 
   postgres:
     image: postgres:16
@@ -90,8 +95,7 @@ services:
 - `NOCOBASE_PROXY_UPSTREAM_HOST=app` memungkinkan kontainer Nginx mengakses layanan `app` melalui jaringan Compose
 - `./storage` harus dimount ke `app` dan `nginx` agar konfigurasi proxy, aset statis, dan file unggahan bisa dipakai bersama
 - Kontainer `nginx` perlu menunggu sampai `nocobase.conf` dibuat, lalu menautkannya ke `/etc/nginx/conf.d/default.conf` dengan `ln -sf`
-- Jika Anda memakai image dengan Nginx bawaan, kontainer `app` sendiri membuka port dengan `ports: "13000:80"`
-- Jika Anda memakai kontainer Nginx eksternal, biarkan kontainer `nginx` yang menangani pemetaan port ke host, dan layanan `app` tidak perlu membuka port ke host
+- Jika menggunakan kontainer Nginx eksternal, biarkan kontainer `nginx` menangani mapping port host. Untuk pengujian, Anda bisa mulai dengan `13000:80`; di produksi, biasanya langsung ekspos port host `80` dan `443`, sementara layanan `app` tidak perlu membuka port ke host
 
 ## Jika menggunakan Nginx lokal di host
 
