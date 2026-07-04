@@ -1,0 +1,170 @@
+---
+title: "Installation Docker (Caddy externe)"
+description: "Installez NocoBase avec Docker et utilisez un conteneur Caddy externe comme point d'entrée."
+keywords: "Docker,NocoBase,Caddy,installation,proxy inverse"
+---
+
+# Installation Docker (Caddy externe)
+
+Dans ce mode, le conteneur d'application NocoBase et le conteneur Caddy s'exécutent séparément. Vous pouvez commencer par [Installation Docker (Nginx intégré)](./docker.mdx), puis basculer l'entrée vers un conteneur Caddy externe.
+
+## Quand utiliser ce mode
+
+- Vous voulez déployer NocoBase et le serveur web séparément
+- Vous voulez simplifier la configuration du proxy inverse et de HTTPS avec Caddy
+- Vous voulez exposer au réseau public uniquement le conteneur proxy
+
+## Exemple de docker-compose.yml
+
+Si vous avez besoin de l'image `full`, remplacez `latest-no-nginx` par `latest-full-no-nginx`.
+
+```yml
+networks:
+  nocobase:
+    driver: bridge
+
+services:
+  app:
+    image: nocobase/nocobase:latest-no-nginx
+    restart: always
+    depends_on:
+      - postgres
+    networks:
+      - nocobase
+    environment:
+      - APP_KEY=your-secret-key
+      - DB_DIALECT=postgres
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_DATABASE=nocobase
+      - DB_USER=nocobase
+      - DB_PASSWORD=nocobase
+      - TZ=Etc/UTC
+      - NOCOBASE_EXTRACT_CLIENT_ASSETS=true
+      - NOCOBASE_PROXY_PROVIDER=caddy
+      - NOCOBASE_PROXY_STORAGE_PATH=/app/nocobase/storage
+      - NOCOBASE_PROXY_UPSTREAM_HOST=app
+    volumes:
+      - ./storage:/app/nocobase/storage
+
+  caddy:
+    image: caddy:2
+    restart: always
+    depends_on:
+      - app
+    networks:
+      - nocobase
+    volumes:
+      - ./storage:/app/nocobase/storage
+    command: >
+      /bin/sh -c '
+        while [ ! -f /app/nocobase/storage/.nocobase/proxy/caddy/nocobase.caddy ]; do
+          echo "waiting for nocobase.caddy..."
+          sleep 1
+        done
+        ln -sf /app/nocobase/storage/.nocobase/proxy/caddy/nocobase.caddy /etc/caddy/Caddyfile
+        caddy run --config /etc/caddy/Caddyfile --adapter caddyfile
+      '
+    ports:
+      - "13000:80"
+
+  postgres:
+    image: postgres:16
+    restart: always
+    command: postgres -c wal_level=logical
+    environment:
+      POSTGRES_USER: nocobase
+      POSTGRES_DB: nocobase
+      POSTGRES_PASSWORD: nocobase
+    volumes:
+      - ./storage/db/postgres:/var/lib/postgresql/data
+    networks:
+      - nocobase
+```
+
+## Points clés
+
+- `NOCOBASE_EXTRACT_CLIENT_ASSETS=true` extrait les ressources client et génère la configuration du proxy
+- `NOCOBASE_PROXY_PROVIDER=caddy` indique que la configuration Caddy doit être générée
+- `NOCOBASE_PROXY_UPSTREAM_HOST=app` permet au conteneur Caddy d'accéder au service `app` via le réseau Compose
+- `./storage` doit être monté dans `app` et `caddy` afin de partager la configuration du proxy, les ressources statiques et les fichiers téléversés
+- Le conteneur `caddy` doit attendre que `nocobase.caddy` soit généré, puis créer un lien vers `/etc/caddy/Caddyfile` avec `ln -sf`
+- Exposez uniquement le port du conteneur Caddy à l'hôte. Le service `app` n'a pas besoin d'exposer son port à l'hôte
+
+## Si vous utilisez un Caddy local sur l'hôte
+
+Si votre Caddy est installé directement sur l'hôte au lieu de s'exécuter dans un conteneur Docker, il est préférable d'utiliser un `docker-compose.yml` séparé. Dans ce mode, le service `app` doit exposer un port vers l'hôte, et les variables du proxy doivent être définies du point de vue de l'hôte.
+
+Vous pouvez utiliser un `docker-compose.yml` comme celui-ci :
+
+```yml
+networks:
+  nocobase:
+    driver: bridge
+
+services:
+  app:
+    image: nocobase/nocobase:latest-no-nginx
+    restart: always
+    depends_on:
+      - postgres
+    networks:
+      - nocobase
+    environment:
+      - APP_KEY=your-secret-key
+      - DB_DIALECT=postgres
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_DATABASE=nocobase
+      - DB_USER=nocobase
+      - DB_PASSWORD=nocobase
+      - TZ=Etc/UTC
+      - NOCOBASE_EXTRACT_CLIENT_ASSETS=true
+      - NOCOBASE_PROXY_PROVIDER=caddy
+      - NOCOBASE_PROXY_STORAGE_PATH=/path/to/your-project/storage
+      - NOCOBASE_PROXY_UPSTREAM_HOST=127.0.0.1
+      - NOCOBASE_PROXY_UPSTREAM_PORT=13000
+    volumes:
+      - ./storage:/app/nocobase/storage
+    ports:
+      - "13000:13000"
+
+  postgres:
+    image: postgres:16
+    restart: always
+    command: postgres -c wal_level=logical
+    environment:
+      POSTGRES_USER: nocobase
+      POSTGRES_DB: nocobase
+      POSTGRES_PASSWORD: nocobase
+    volumes:
+      - ./storage/db/postgres:/var/lib/postgresql/data
+    networks:
+      - nocobase
+```
+
+Dans cette variante :
+
+- `NOCOBASE_PROXY_STORAGE_PATH` doit être le chemin absolu du répertoire `storage` sur l'hôte
+- `NOCOBASE_PROXY_UPSTREAM_HOST` doit être `127.0.0.1`
+- Le service `app` doit conserver `ports`, afin que le Caddy local puisse atteindre l'application via `127.0.0.1:13000`
+
+Une fois le conteneur `app` démarré, attendez que le fichier de configuration soit généré, puis créez le lien vers le chemin de configuration local de Caddy :
+
+```bash
+while [ ! -f ./storage/.nocobase/proxy/caddy/nocobase.caddy ]; do
+  echo "waiting for nocobase.caddy..."
+  sleep 1
+done
+
+sudo ln -sf "$(pwd)/storage/.nocobase/proxy/caddy/nocobase.caddy" /etc/caddy/Caddyfile
+sudo caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
+sudo systemctl reload caddy
+```
+
+Si votre Caddy local n'utilise pas `/etc/caddy/Caddyfile`, remplacez la cible du lien par votre propre chemin de configuration. En général, il est plus sûr de garder `nocobase.caddy` comme fichier d'entrée principal plutôt que d'en recopier le contenu manuellement.
+
+## Liens associés
+
+- [Installation Docker (Nginx intégré)](./docker.mdx) — Commencez par le déploiement à conteneur unique
+- [Proxy de ressources statiques avec Caddy](../deployment/static-resource-proxy/caddy.md) — En savoir plus sur la configuration Caddy générée

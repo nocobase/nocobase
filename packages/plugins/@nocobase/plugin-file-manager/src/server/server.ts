@@ -309,6 +309,14 @@ export class PluginFileManagerServer extends Plugin {
     this.app.acl.addFixedParams('attachments', 'update', ownMerger);
     this.app.acl.addFixedParams('attachments', 'create', ownMerger);
     this.app.acl.addFixedParams('attachments', 'destroy', ownMerger);
+    this.app.resourcer.define({
+      name: 'attachments',
+      actions: {
+        list(ctx) {
+          ctx.throw(404);
+        },
+      },
+    });
 
     this.app.db.interfaceManager.registerInterfaceType('attachment', AttachmentInterface);
 

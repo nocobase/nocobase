@@ -43,6 +43,7 @@ fi
 NOCOBASE_PROXY_PROVIDER="${NOCOBASE_PROXY_PROVIDER:-nginx}"
 NOCOBASE_PROXY_STORAGE_PATH="${NOCOBASE_PROXY_STORAGE_PATH:-/app/nocobase/storage}"
 NOCOBASE_PROXY_UPSTREAM_HOST="${NOCOBASE_PROXY_UPSTREAM_HOST:-${NGINX_UPSTREAM_HOST:-127.0.0.1}}"
+NOCOBASE_PROXY_UPSTREAM_PORT="${NOCOBASE_PROXY_UPSTREAM_PORT:-${APP_PORT:-13000}}"
 NGINX_CONF_PATH="/app/nocobase/storage/nocobase.conf"
 
 cd /app/nocobase && yarn nocobase db:auth
@@ -76,23 +77,23 @@ case "${NOCOBASE_EXTRACT_CLIENT_ASSETS:-false}" in
           cd /app/nocobase && nb proxy nginx generate \
             --manual \
             --name default \
-            --app-port "${APP_PORT:-13000}" \
             --storage-path "${NOCOBASE_PROXY_STORAGE_PATH}" \
             --dist-root-path /app/nocobase/storage/dist-client \
             --runtime-version "${ACTIVE_VERSION}" \
             --app-public-path "${APP_PUBLIC_PATH_VALUE}" \
             --upstream-host "${NOCOBASE_PROXY_UPSTREAM_HOST}" \
+            --upstream-port "${NOCOBASE_PROXY_UPSTREAM_PORT}" \
             --cdn-base-url "${PROXY_CDN_BASE_URL}"
         else
           cd /app/nocobase && nb proxy nginx generate \
             --manual \
             --name default \
-            --app-port "${APP_PORT:-13000}" \
             --storage-path "${NOCOBASE_PROXY_STORAGE_PATH}" \
             --dist-root-path /app/nocobase/storage/dist-client \
             --runtime-version "${ACTIVE_VERSION}" \
             --app-public-path "${APP_PUBLIC_PATH_VALUE}" \
-            --upstream-host "${NOCOBASE_PROXY_UPSTREAM_HOST}"
+            --upstream-host "${NOCOBASE_PROXY_UPSTREAM_HOST}" \
+            --upstream-port "${NOCOBASE_PROXY_UPSTREAM_PORT}"
         fi
         NGINX_CONF_PATH="${NB_CLI_ROOT}/.nocobase/proxy/nginx/nocobase.conf"
         ;;
@@ -102,23 +103,23 @@ case "${NOCOBASE_EXTRACT_CLIENT_ASSETS:-false}" in
           cd /app/nocobase && nb proxy caddy generate \
             --manual \
             --name default \
-            --app-port "${APP_PORT:-13000}" \
             --storage-path "${NOCOBASE_PROXY_STORAGE_PATH}" \
             --dist-root-path /app/nocobase/storage/dist-client \
             --runtime-version "${ACTIVE_VERSION}" \
             --app-public-path "${APP_PUBLIC_PATH_VALUE}" \
             --upstream-host "${NOCOBASE_PROXY_UPSTREAM_HOST}" \
+            --upstream-port "${NOCOBASE_PROXY_UPSTREAM_PORT}" \
             --cdn-base-url "${PROXY_CDN_BASE_URL}"
         else
           cd /app/nocobase && nb proxy caddy generate \
             --manual \
             --name default \
-            --app-port "${APP_PORT:-13000}" \
             --storage-path "${NOCOBASE_PROXY_STORAGE_PATH}" \
             --dist-root-path /app/nocobase/storage/dist-client \
             --runtime-version "${ACTIVE_VERSION}" \
             --app-public-path "${APP_PUBLIC_PATH_VALUE}" \
-            --upstream-host "${NOCOBASE_PROXY_UPSTREAM_HOST}"
+            --upstream-host "${NOCOBASE_PROXY_UPSTREAM_HOST}" \
+            --upstream-port "${NOCOBASE_PROXY_UPSTREAM_PORT}"
         fi
         ;;
       *)

@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { stripMarkdownIframeTags, stripMarkdownIframes } from '@nocobase/client-v2';
 import { useFlowContext } from '@nocobase/flow-engine';
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import Vditor from 'vditor';
@@ -47,13 +48,20 @@ export const Edit = (props) => {
     if (!containerRef.current) return;
 
     const toolbarConfig = toolbar ?? defaultToolbar;
+    const safeValue = stripMarkdownIframeTags(value ?? '');
 
     const vditor = new Vditor(containerRef.current, {
-      value: value ?? '',
+      value: safeValue,
       lang,
       cache: { enable: false },
       undoDelay: 0,
-      preview: { math: { engine: 'KaTeX' } },
+      preview: {
+        markdown: {
+          sanitize: true,
+        },
+        math: { engine: 'KaTeX' },
+        transform: stripMarkdownIframes,
+      },
       toolbar: toolbarConfig,
       fullscreen: {
         index: 1200,
@@ -68,8 +76,6 @@ export const Edit = (props) => {
         const savedScrollX = window.scrollX || window.pageXOffset;
         const savedScrollY = window.scrollY || window.pageYOffset;
 
-        vditor.setValue(value ?? '');
-
         requestAnimationFrame(() => {
           window.scrollTo(savedScrollX, savedScrollY);
         });
@@ -80,8 +86,12 @@ export const Edit = (props) => {
           vditor.enable();
         }
       },
-      input(value) {
-        onChange(value);
+      input(nextValue) {
+        const safeNextValue = stripMarkdownIframeTags(nextValue);
+        if (safeNextValue !== nextValue) {
+          vditor.setValue(safeNextValue);
+        }
+        onChange(safeNextValue);
       },
       upload: {
         multiple: false,
@@ -167,11 +177,12 @@ export const Edit = (props) => {
   useEffect(() => {
     if (editorReady && vdRef.current) {
       const editor = vdRef.current;
-      if (value !== editor.getValue()) {
+      const safeValue = stripMarkdownIframeTags(value ?? '');
+      if (safeValue !== editor.getValue()) {
         const savedScrollX = window.scrollX || window.pageXOffset;
         const savedScrollY = window.scrollY || window.pageYOffset;
 
-        editor.setValue(value ?? '');
+        editor.setValue(safeValue);
         const preArea = containerRef.current?.querySelector(
           'div.vditor-content > div.vditor-ir > pre',
         ) as HTMLPreElement;
@@ -234,7 +245,8 @@ export const Edit = (props) => {
   }, [zIndex]);
 
   useLayoutEffect(() => {
-    if (!containerRef.current) return;
+    const container = containerRef.current;
+    if (!container) return;
 
     const observer = new ResizeObserver((entries) => {
       for (const entry of entries) {
@@ -249,10 +261,10 @@ export const Edit = (props) => {
       }
     });
 
-    observer.observe(containerRef.current);
+    observer.observe(container);
 
     return () => {
-      observer.unobserve(containerRef.current);
+      observer.unobserve(container);
     };
   }, []);
 
