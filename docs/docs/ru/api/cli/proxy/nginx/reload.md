@@ -1,12 +1,12 @@
 ---
 title: "nb proxy nginx reload"
-description: "Справка по команде nb proxy nginx reload: перезагружает конфигурацию Nginx с текущим driver."
+description: "Справочник по команде nb proxy nginx reload: перезагрузка конфигурации Nginx с текущим драйвером."
 keywords: "nb proxy nginx reload,NocoBase CLI,nginx,reload"
 ---
 
 # nb proxy nginx reload
 
-Перезагружает конфигурацию Nginx с текущим driver.
+Перезагружает конфигурацию Nginx с текущим драйвером.
 
 ## Использование
 
@@ -23,8 +23,8 @@ nb proxy nginx reload
 ## Примечания
 
 - Обычно эту команду используют после повторной генерации конфигурации
-- Для `reload` Nginx уже должен быть запущен; если он еще не запущен, сначала выполните `nb proxy nginx start`
-- Локальный driver перезагружает локальный Nginx, а Docker driver перезагружает Nginx внутри контейнера
+- Для `reload` Nginx уже должен быть запущен; если он ещё не запущен, сначала выполните `nb proxy nginx start`
+- Локальный драйвер перезагружает локальный Nginx, а драйвер `docker` — Nginx внутри контейнера
 
 ## Связанные команды
 

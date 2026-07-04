@@ -303,6 +303,54 @@ describe('AdminLayoutModel runtime', () => {
     });
   });
 
+  it('should keep route state when route page registers after route sync', async () => {
+    const engine = new FlowEngine();
+
+    render(
+      <FlowEngineProvider engine={engine}>
+        <TestAdminLayoutHost />
+      </FlowEngineProvider>,
+    );
+    const model = engine.getModel<TestAdminLayoutModel>('admin-layout-model');
+    const routeState = {
+      __nocobaseOpenViewInputArgs: {
+        popup: {
+          formData: {
+            start: '2026-06-24',
+            end: '2026-06-25',
+          },
+        },
+      },
+    };
+
+    act(() => {
+      model.syncLayoutRoute({
+        name: getLayoutPageViewRouteName('admin'),
+        pathname: '/admin/page-1/view/popup',
+        layoutBasePathname: '/admin',
+        state: routeState,
+      });
+    });
+
+    const coordinator = (model as any).getCoordinator();
+    const syncRoute = vi.spyOn(coordinator, 'syncRoute').mockImplementation(() => undefined);
+
+    act(() => {
+      model.registerRoutePage('page-1', {
+        active: true,
+        layoutContentElement: document.createElement('div'),
+      });
+    });
+
+    expect(syncRoute).toHaveBeenCalledWith(
+      expect.objectContaining({
+        pageUid: 'page-1',
+        pathname: '/admin/page-1/view/popup',
+        state: routeState,
+      }),
+    );
+  });
+
   it('should parse RunJS openView route params into layout route view stack state', async () => {
     const token = encodeOpenViewRouteState('popup', { mode: 'dialog', size: 'large' });
     if (!token) {

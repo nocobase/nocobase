@@ -2,6 +2,15 @@
 
 Los archivos que suba se guardarán en un directorio local del disco duro del servidor. Esta opción es ideal para escenarios donde el volumen total de archivos subidos gestionados por el sistema es pequeño o para fines experimentales.
 
+
+:::warning Nota
+
+El almacenamiento local no admite acceso privado. Después de subir un archivo, NocoBase genera una URL de acceso directo, y cualquier persona que tenga esa URL puede acceder al archivo.
+
+Si necesita guardar contratos, documentos de identidad, materiales internos u otros archivos que no deben ser públicos, utilice [S3 Pro](./s3-pro). Si ya existen archivos históricos, consulte [Migrar a S3 Pro](./migrate-to-s3-pro.md).
+
+:::
+
 ## Parámetros de Configuración
 
 ![Ejemplo de configuración del motor de almacenamiento de archivos](https://static-docs.nocobase.com/20240529115151.png)

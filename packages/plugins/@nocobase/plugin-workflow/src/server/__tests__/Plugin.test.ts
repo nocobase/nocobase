@@ -548,6 +548,60 @@ describe('workflow > Plugin', () => {
       },
     );
 
+    it('should skip non-queueing undispatched executions when fetching from db', async () => {
+      type DbFetchDispatcher = {
+        dispatch(): void;
+        executing: Promise<unknown> | null;
+      };
+      const dispatcher = (plugin as unknown as { dispatcher: DbFetchDispatcher }).dispatcher;
+
+      const w1 = await WorkflowModel.create({
+        enabled: true,
+        type: 'asyncTrigger',
+      });
+      await w1.createNode({
+        type: 'echo',
+      });
+      const aborted = await w1.createExecution({
+        key: w1.key,
+        context: { aborted: true },
+        dispatched: false,
+        status: EXECUTION_STATUS.ABORTED,
+      });
+
+      const w2 = await WorkflowModel.create({
+        enabled: true,
+        type: 'asyncTrigger',
+      });
+      await w2.createNode({
+        type: 'echo',
+      });
+      const queueing = await w2.createExecution({
+        key: w2.key,
+        context: { queueing: true },
+        dispatched: false,
+        status: EXECUTION_STATUS.QUEUEING,
+      });
+
+      dispatcher.dispatch();
+
+      for (let i = 0; i < 20; i++) {
+        await queueing.reload();
+        if (queueing.status === EXECUTION_STATUS.RESOLVED) {
+          break;
+        }
+        await sleep(50);
+      }
+
+      await aborted.reload();
+      expect(aborted.status).toBe(EXECUTION_STATUS.ABORTED);
+      expect(aborted.dispatched).toBe(false);
+      expect(queueing.status).toBe(EXECUTION_STATUS.RESOLVED);
+      expect(queueing.dispatched).toBe(true);
+
+      await dispatcher.executing?.catch(() => null);
+    });
+
     it('multiple triggers in same event', async () => {
       const w1 = await WorkflowModel.create({
         enabled: true,

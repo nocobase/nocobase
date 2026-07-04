@@ -6,7 +6,7 @@ keywords: "nb api resource query,NocoBase CLI,агрегатный запрос,
 
 # nb api resource query
 
-Выполнение агрегатных запросов к указанному ресурсу. `--measures`, `--dimensions` и `--orders` используют формат JSON-массива.
+Выполнение агрегатных запросов к выбранному ресурсу. Параметры `--measures`, `--dimensions` и `--orders` используют формат JSON-массива.
 
 ## Использование
 
@@ -20,14 +20,14 @@ nb api resource query --resource <resource> [flags]
 | --- | --- | --- |
 | `--resource` | string | Имя ресурса, обязательно |
 | `--data-source` | string | Ключ источника данных, по умолчанию `main` |
-| `--measures` | string | Определения мер в виде JSON-массива |
+| `--measures` | string | Определения показателей в виде JSON-массива |
 | `--dimensions` | string | Определения измерений в виде JSON-массива |
 | `--orders` | string | Определения сортировки в виде JSON-массива |
-| `--filter` | string | Условие фильтрации в виде JSON-объекта |
-| `--having` | string | Условие фильтрации после группировки в виде JSON-объекта |
+| `--filter` | string | Условия фильтрации в виде JSON-объекта |
+| `--having` | string | Условия фильтрации после агрегации в виде JSON-объекта |
 | `--limit` | integer | Максимальное количество возвращаемых строк |
 | `--offset` | integer | Количество пропускаемых строк |
-| `--timezone` | string | Часовой пояс для форматирования запроса |
+| `--timezone` | string | Часовой пояс, используемый для форматирования запроса |
 
 Также поддерживаются общие параметры подключения [`nb api resource`](./index.md).
 
@@ -41,4 +41,4 @@ nb api resource query --resource orders --dimensions '[{"field":["status"],"alia
 ## Связанные команды
 
 - [`nb api resource list`](./list.md)
-- [`nb api Динамические команды`](../dynamic.md)
+- [`Динамические команды nb api`](../dynamic.md)

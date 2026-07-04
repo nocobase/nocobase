@@ -19,17 +19,8 @@ pkg: '@nocobase/plugin-file-manager'
 
 ## 外部ストレージでの PDF プレビュー
 
-PDF プレビューは PDF.js を使用してブラウザー内でファイルをレンダリングします。ブラウザーはまず PDF ファイルの内容を読み取り、その後 PDF.js に渡してレンダリングします。そのため、ファイルが OSS、S3、COS、CDN などの外部ストレージに保存されており、ファイルアクセス用のドメインが NocoBase サイトのドメインと異なる場合、外部ストレージは NocoBase サイトからのクロスオリジン読み取りを許可する必要があります。
+NocoBase はブラウザーの iframe で PDF をプレビューします。一部のブラウザーや PDF リーダーは、PDF ファイル内のスクリプト、フォーム、その他のインタラクティブな内容をサポートする場合があります。信頼できない送信元のファイルをプレビューする場合は、スクリプト実行のセキュリティ境界に注意してください。
 
-CORS が設定されていない場合でも PDF のダウンロードは通常どおり機能しますが、プレビューはファイル読み込みエラーで失敗する可能性があります。
+ファイルアクセス用のドメインは、NocoBase サイトおよび API のドメインから分離することを推奨します。たとえば、OSS、S3、COS、CDN のファイルは専用ドメインで配信し、NocoBase のフロントエンドや API と同じ origin を共有しないようにします。
 
-外部ストレージまたは CDN の CORS 設定には、次の内容を含めることを推奨します。
-
-```http
-Access-Control-Allow-Origin: https://your-nocobase-domain
-Access-Control-Allow-Methods: GET, HEAD
-Access-Control-Allow-Headers: *
-Access-Control-Expose-Headers: Content-Length, Content-Range, Accept-Ranges, Content-Disposition, Content-Type
-```
-
-`Access-Control-Allow-Origin` には、NocoBase にアクセスする実際のドメインを設定してください。非公開ファイルに対して長期的に `*` を使用することは推奨されません。ファイルを読み取れるサイトの範囲が広がるためです。
+ファイルドメインが API ドメインと異なり、API がファイルドメインに対して CORS アクセスを有効にしていない場合、PDF プレビュー環境で実行されるスクリプトは通常、ブラウザーの同一オリジンポリシーによって制限されます。NocoBase ページ、ブラウザーストレージ、API レスポンスを直接読み取ることはできません。
