@@ -162,6 +162,11 @@ test('buildEnvProxyNginxBundle renders app.conf and index HTML with CDN-prefixed
   expect(bundle.appConfigContent).toContain('# BEGIN NocoBase managed config');
   expect(bundle.appConfigContent).toContain('location / {');
   expect(bundle.appConfigContent).toContain('return 302 /console$uri$is_args$args;');
+  expect(bundle.appConfigContent).toContain('location = /console/api {');
+  expect(bundle.appConfigContent).toContain('return 308 /console/api/$is_args$args;');
+  expect(bundle.appConfigContent.indexOf('location = /console/api {')).toBeLessThan(
+    bundle.appConfigContent.indexOf('location ^~ /console/api/ {'),
+  );
   expect(bundle.appConfigContent).toContain('location ^~ /console/admin/ {');
   expect(bundle.appConfigContent).toContain('alias /workspace/.nocobase/proxy/nginx/demo/public/;');
   expect(bundle.appConfigContent).toContain('try_files $uri /index-v2.html =404;');
