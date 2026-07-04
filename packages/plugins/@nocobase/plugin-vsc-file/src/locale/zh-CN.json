@@ -148,6 +148,7 @@
   "Refresh history": "刷新历史",
   "Refresh workspace": "刷新工作区",
   "Refresh without saving": "不保存并刷新",
+  "RunJS entry file under src/client was not found": "未找到 src/client 下的 RunJS 入口文件",
   "Rename": "重命名",
   "Rename file": "重命名文件",
   "Resize console": "调整控制台大小",

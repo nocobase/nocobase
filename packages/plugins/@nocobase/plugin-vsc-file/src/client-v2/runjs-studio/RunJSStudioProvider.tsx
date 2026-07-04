@@ -81,7 +81,6 @@ import {
   defaultRunJSSourceRoot,
   ensureManifestFolders,
   ensureManifestEntry,
-  fixedRunJSWorkspaceFolders,
   formatChangeSummary,
   formatVersion,
   hasWorkspaceChanges,
@@ -107,6 +106,8 @@ const defaultStudioHeight = 'min(720px, calc(100vh - 112px))';
 const defaultConsolePanelHeight = 180;
 const minConsolePanelHeight = 80;
 const importableRunJSFileExtensions = ['.ts', '.tsx', '.js', '.jsx'];
+const runJSDragKindDataType = 'application/x-nocobase-runjs-kind';
+const runJSDragPathDataType = 'application/x-nocobase-runjs-path';
 const runJSFileTypeIconConfigs: Record<
   string,
   {
@@ -801,6 +802,14 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
       return null;
     }
 
+    const workspaceDiagnostics = validateRunJSWorkspaceForSave(requestFiles, requestEntryPath, t);
+    if (hasCompileErrorDiagnostics(workspaceDiagnostics)) {
+      setPreviewDiagnostics(workspaceDiagnostics);
+      appendDiagnostics(workspaceDiagnostics, appendConsole);
+      showSaveDiagnostics(workspaceDiagnostics);
+      return null;
+    }
+
     setPreviewing(true);
     try {
       const result = await runJSSourceRequest('compilePreview', {
@@ -1012,7 +1021,7 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
   };
 
   const renameFolder = (path: string, nextPath: string): boolean => {
-    if (!path || workspaceEditingDisabled || fixedRunJSWorkspaceFolders.includes(path)) {
+    if (!path || workspaceEditingDisabled) {
       return false;
     }
 
@@ -1060,7 +1069,7 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
   };
 
   const deleteFolder = (path: string): boolean => {
-    if (!path || workspaceEditingDisabled || fixedRunJSWorkspaceFolders.includes(path)) {
+    if (!path || workspaceEditingDisabled) {
       return false;
     }
 
@@ -1097,12 +1106,6 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
       return;
     }
 
-    const validation = validateRunJSWorkspacePath(nextPath, t);
-    if (!validation.valid) {
-      message.error(validation.message || t('Invalid file path'));
-      return;
-    }
-
     if (files.some((file) => file.path === nextPath)) {
       message.error(t('File already exists'));
       return;
@@ -1120,6 +1123,75 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
     });
     replaceOpenFilePath(path, nextPath);
     openFilePath(nextPath);
+  };
+
+  const moveFolderToFolder = (path: string, folderPath: string) => {
+    if (!path || workspaceEditingDisabled) {
+      return;
+    }
+
+    if (path === folderPath || folderPath.startsWith(`${path}/`)) {
+      return;
+    }
+
+    const folderName = getRunJSBaseName(path);
+    if (!folderName) {
+      return;
+    }
+
+    const currentParentPath = getRunJSDirectory(path);
+    if (currentParentPath === folderPath) {
+      return;
+    }
+
+    const nextPath = normalizeRunJSWorkspaceFolderPath(`${folderPath}/${folderName}`);
+    const currentFolders = collectRunJSWorkspaceFolders(files);
+    if (currentFolders.includes(nextPath)) {
+      message.error(t('Folder already exists'));
+      return;
+    }
+
+    const existingFilePaths = new Set(
+      files.filter((file) => !isRunJSPathInsideFolder(file.path, path)).map((file) => file.path),
+    );
+    const movedFilePaths = files
+      .filter((file) => isRunJSPathInsideFolder(file.path, path))
+      .map((file) => replaceRunJSPathPrefix(file.path, path, nextPath));
+    if (movedFilePaths.some((movedPath) => existingFilePaths.has(movedPath))) {
+      message.error(t('File already exists'));
+      return;
+    }
+
+    invalidatePreview();
+    setDiffView(null);
+    setFiles((current) => {
+      const renamed = normalizeWorkspaceFiles(
+        current.map((file) => {
+          if (!isRunJSPathInsideFolder(file.path, path)) {
+            return file;
+          }
+
+          const nextFilePath = replaceRunJSPathPrefix(file.path, path, nextPath);
+          return {
+            ...file,
+            language: inferLanguageFromPath(nextFilePath),
+            path: nextFilePath,
+          };
+        }),
+      );
+      const nextFolders = collectRunJSWorkspaceFolders(current).map((folder) =>
+        isRunJSPathInsideFolder(folder, path) ? replaceRunJSPathPrefix(folder, path, nextPath) : folder,
+      );
+      const nextEntryPath = resolveWorkspaceEntryPath(renamed, entryPath);
+      const nextFiles = isRunJSPathInsideFolder(runJSManifestPath, path)
+        ? renamed
+        : ensureManifestFolders(ensureManifestEntry(renamed, nextEntryPath, true), nextFolders, nextEntryPath, true);
+      syncWorkspaceSnapshotRef(nextFiles, nextEntryPath);
+      setEntryPath(nextEntryPath);
+      return nextFiles;
+    });
+    setOpenPaths((current) => current.map((openPath) => replaceRunJSPathPrefix(openPath, path, nextPath)));
+    setActivePath((current) => (current ? replaceRunJSPathPrefix(current, path, nextPath) : current));
   };
 
   const deleteFile = (path: string | undefined = activePath) => {
@@ -1668,6 +1740,7 @@ function RunJSStudioEditorEntry(props: RunJSEditorProviderRenderProps) {
                   onExportWorkspace={exportWorkspace}
                   onImportWorkspace={requestImportWorkspace}
                   onMoveFile={moveFileToFolder}
+                  onMoveFolder={moveFolderToFolder}
                   onOpen={openFilePath}
                   onRefresh={requestRefreshWorkspace}
                   onRename={renameFile}
@@ -1940,6 +2013,13 @@ type InlineEditTarget = {
   value: string;
 };
 
+type RunJSTreeDragKind = 'file' | 'folder';
+
+type RunJSTreeDragPayload = {
+  kind: RunJSTreeDragKind;
+  path: string;
+};
+
 function buildFileTreeRows(
   files: RunJSWorkspaceFile[],
   folders: string[],
@@ -1963,7 +2043,6 @@ function buildFileTreeRows(
     });
   };
 
-  fixedRunJSWorkspaceFolders.forEach(addFolder);
   folders.forEach(addFolder);
 
   for (const file of files) {
@@ -2088,6 +2167,22 @@ function isRunJSPathInsideFolder(path: string, folderPath: string): boolean {
   return path === folderPath || path.startsWith(`${folderPath}/`);
 }
 
+function setRunJSTreeDragPayload(dataTransfer: DataTransfer, kind: RunJSTreeDragKind, path: string) {
+  dataTransfer.setData(runJSDragKindDataType, kind);
+  dataTransfer.setData(runJSDragPathDataType, path);
+  dataTransfer.setData('text/plain', path);
+}
+
+function getRunJSTreeDragPayload(dataTransfer: DataTransfer): RunJSTreeDragPayload | null {
+  const path = dataTransfer.getData(runJSDragPathDataType) || dataTransfer.getData('text/plain');
+  if (!path) {
+    return null;
+  }
+
+  const kind = dataTransfer.getData(runJSDragKindDataType) === 'folder' ? 'folder' : 'file';
+  return { kind, path };
+}
+
 function replaceRunJSPathPrefix(path: string, oldPrefix: string, nextPrefix: string): string {
   if (path === oldPrefix) {
     return nextPrefix;
@@ -2101,7 +2196,7 @@ function replaceRunJSPathPrefix(path: string, oldPrefix: string, nextPrefix: str
 }
 
 function collectRunJSWorkspaceFolders(files: RunJSWorkspaceFile[]): string[] {
-  const folders = new Set<string>(fixedRunJSWorkspaceFolders);
+  const folders = new Set<string>();
   readRunJSManifestFolders(files).forEach((folder) => folders.add(folder));
 
   for (const file of files) {
@@ -2119,6 +2214,37 @@ function collectRunJSWorkspaceFolders(files: RunJSWorkspaceFile[]): string[] {
   }
 
   return Array.from(folders).sort(compareRunJSPaths);
+}
+
+function validateRunJSWorkspaceForSave(
+  files: RunJSWorkspaceFile[],
+  entryPath: string,
+  t: (key: string) => string,
+): RunJSCompileDiagnostic[] {
+  const diagnostics: RunJSCompileDiagnostic[] = [];
+
+  for (const file of files) {
+    const validation = validateRunJSWorkspacePath(file.path, t);
+    if (!validation.valid) {
+      diagnostics.push({
+        code: 'RUNJS_WORKSPACE_PATH_INVALID',
+        message: validation.message || t('Invalid file path'),
+        path: file.path,
+        severity: 'error',
+      });
+    }
+  }
+
+  if (!files.some((file) => file.path === entryPath)) {
+    diagnostics.push({
+      code: 'RUNJS_ENTRY_NOT_FOUND',
+      message: t('RunJS entry file under src/client was not found'),
+      path: entryPath,
+      severity: 'error',
+    });
+  }
+
+  return diagnostics;
 }
 
 function canCreateRunJSFileInFolder(folderPath: string): boolean {
@@ -2330,6 +2456,7 @@ function FilesPanel(props: {
   onExportWorkspace: () => void;
   onImportWorkspace: () => void;
   onMoveFile: (path: string, folderPath: string) => void;
+  onMoveFolder: (path: string, folderPath: string) => void;
   onOpen: (path: string) => void;
   onRefresh: () => void;
   onRename: (path: string, nextPath: string) => boolean;
@@ -2351,6 +2478,7 @@ function FilesPanel(props: {
     onExportWorkspace,
     onImportWorkspace,
     onMoveFile,
+    onMoveFolder,
     onOpen,
     onRefresh,
     onRename,
@@ -2667,22 +2795,31 @@ function FilesPanel(props: {
             const folderCollapsed = collapsedFolderPaths.has(row.path);
             return (
               <List.Item
+                draggable={!readOnly}
+                onDragStart={(event) => {
+                  setRunJSTreeDragPayload(event.dataTransfer, 'folder', row.path);
+                  event.dataTransfer.effectAllowed = 'move';
+                }}
                 onDragOver={(event) => {
-                  if (!canCreateInsideFolder) {
-                    return;
-                  }
                   event.preventDefault();
+                  event.stopPropagation();
                 }}
                 onDrop={(event) => {
-                  if (!canCreateInsideFolder) {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  const dragPayload = getRunJSTreeDragPayload(event.dataTransfer);
+                  if (!dragPayload) {
                     return;
                   }
-                  event.preventDefault();
-                  const movedPath = event.dataTransfer.getData('text/plain');
-                  if (movedPath) {
+
+                  if (dragPayload.kind === 'folder') {
                     expandFolderPath(row.path);
-                    onMoveFile(movedPath, row.path);
+                    onMoveFolder(dragPayload.path, row.path);
+                    return;
                   }
+
+                  expandFolderPath(row.path);
+                  onMoveFile(dragPayload.path, row.path);
                 }}
                 onMouseEnter={() => setHoveredPath(row.path)}
                 onMouseLeave={() => setHoveredPath((current) => (current === row.path ? null : current))}
@@ -2706,7 +2843,7 @@ function FilesPanel(props: {
                   style={{
                     alignItems: 'center',
                     borderRadius: 6,
-                    cursor: 'pointer',
+                    cursor: readOnly ? 'pointer' : 'grab',
                     display: 'flex',
                     minHeight: 28,
                     paddingInline: 8,
@@ -2803,7 +2940,7 @@ function FilesPanel(props: {
             <List.Item
               draggable={!readOnly && row.path !== runJSManifestPath}
               onDragStart={(event) => {
-                event.dataTransfer.setData('text/plain', row.path);
+                setRunJSTreeDragPayload(event.dataTransfer, 'file', row.path);
                 event.dataTransfer.effectAllowed = 'move';
               }}
               onMouseEnter={() => setHoveredPath(row.path)}

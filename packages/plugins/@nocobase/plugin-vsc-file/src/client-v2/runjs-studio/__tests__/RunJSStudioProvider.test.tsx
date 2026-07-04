@@ -186,6 +186,19 @@ function renderEditor(onChange = vi.fn(), extraProps: Record<string, unknown> = 
   );
 }
 
+function createDataTransfer() {
+  return {
+    data: new Map<string, string>(),
+    effectAllowed: '',
+    getData(type: string) {
+      return this.data.get(type) || '';
+    },
+    setData(type: string, value: string) {
+      this.data.set(type, value);
+    },
+  };
+}
+
 describe('runJSStudioProvider', () => {
   beforeEach(() => {
     mocks.diagnoseRunJS.mockResolvedValue({
@@ -380,6 +393,7 @@ describe('runJSStudioProvider', () => {
       'Workspace exported',
       'Load latest version',
       'Keep my changes on latest version',
+      'RunJS entry file under src/client was not found',
       'Your changes are based on',
       'Local changes were reapplied to the latest version',
       'Already up to date',
@@ -490,16 +504,7 @@ describe('runJSStudioProvider', () => {
 
     expect(within(filesPanel).getByText('widgets')).toBeTruthy();
 
-    const dataTransfer = {
-      data: new Map<string, string>(),
-      effectAllowed: '',
-      getData(type: string) {
-        return this.data.get(type) || '';
-      },
-      setData(type: string, value: string) {
-        this.data.set(type, value);
-      },
-    };
+    const dataTransfer = createDataTransfer();
     const fileRow = within(filesPanel).getByRole('button', { name: 'src/client/index.tsx' }).closest('.ant-list-item');
     const folderRow = within(filesPanel).getByText('widgets').closest('.ant-list-item');
     expect(fileRow).toBeTruthy();
@@ -538,6 +543,84 @@ describe('runJSStudioProvider', () => {
     fireEvent.blur(folderNameInput);
 
     expect(within(filesPanel).getByRole('button', { name: 'src/shared' })).toBeTruthy();
+  });
+
+  it('moves folders and their children into the dropped folder', async () => {
+    renderEditor();
+
+    await screen.findByLabelText('Edit file content');
+    fireEvent.click(screen.getByRole('button', { name: 'Expand files' }));
+
+    const filesPanel = screen.getByLabelText('File resource manager');
+    fireEvent.click(within(filesPanel).getByRole('button', { name: 'New folder' }));
+
+    const widgetsInput = within(filesPanel).getByRole('textbox', { name: 'Rename src/client/folder' });
+    fireEvent.change(widgetsInput, { target: { value: 'widgets' } });
+    fireEvent.blur(widgetsInput);
+
+    fireEvent.mouseEnter(within(filesPanel).getByText('widgets'));
+    fireEvent.click(within(filesPanel).getByRole('button', { name: 'New file src/client/widgets' }));
+
+    const nestedFileInput = within(filesPanel).getByRole('textbox', { name: 'Rename src/client/widgets/helper.ts' });
+    fireEvent.blur(nestedFileInput);
+
+    fireEvent.mouseEnter(within(filesPanel).getByText('src'));
+    fireEvent.click(within(filesPanel).getByRole('button', { name: 'New folder src' }));
+
+    const sharedInput = within(filesPanel).getByRole('textbox', { name: 'Rename src/folder' });
+    fireEvent.change(sharedInput, { target: { value: 'shared' } });
+    fireEvent.blur(sharedInput);
+
+    const dataTransfer = createDataTransfer();
+    const widgetsRow = within(filesPanel).getByRole('button', { name: 'src/client/widgets' }).closest('.ant-list-item');
+    const sharedRow = within(filesPanel).getByRole('button', { name: 'src/shared' }).closest('.ant-list-item');
+    expect(widgetsRow).toBeTruthy();
+    expect(sharedRow).toBeTruthy();
+
+    fireEvent.dragStart(widgetsRow as HTMLElement, { dataTransfer });
+    fireEvent.dragOver(sharedRow as HTMLElement, { dataTransfer });
+    fireEvent.drop(sharedRow as HTMLElement, { dataTransfer });
+
+    expect(within(filesPanel).getByRole('button', { name: 'src/shared/widgets' })).toBeTruthy();
+    expect(within(filesPanel).getByRole('button', { name: 'src/shared/widgets/helper.ts' })).toBeTruthy();
+    expect(within(filesPanel).queryByRole('button', { name: 'src/client/widgets/helper.ts' })).toBeNull();
+  });
+
+  it('allows moving convention folders and reports convention diagnostics on Save', async () => {
+    renderEditor();
+
+    await screen.findByLabelText('Edit file content');
+    fireEvent.click(screen.getByRole('button', { name: 'Expand files' }));
+
+    const filesPanel = screen.getByLabelText('File resource manager');
+    const clientRow = within(filesPanel).getByRole('button', { name: 'src/client' }).closest('.ant-list-item');
+    expect(clientRow).toHaveAttribute('draggable', 'true');
+
+    fireEvent.mouseEnter(within(filesPanel).getByText('src'));
+    fireEvent.click(within(filesPanel).getByRole('button', { name: 'New folder src' }));
+
+    const sharedInput = within(filesPanel).getByRole('textbox', { name: 'Rename src/folder' });
+    fireEvent.change(sharedInput, { target: { value: 'shared' } });
+    fireEvent.blur(sharedInput);
+
+    const dataTransfer = createDataTransfer();
+    const sharedRow = within(filesPanel).getByRole('button', { name: 'src/shared' }).closest('.ant-list-item');
+    expect(sharedRow).toBeTruthy();
+
+    fireEvent.dragStart(clientRow as HTMLElement, { dataTransfer });
+    fireEvent.dragOver(sharedRow as HTMLElement, { dataTransfer });
+    fireEvent.drop(sharedRow as HTMLElement, { dataTransfer });
+
+    expect(within(filesPanel).getByRole('button', { name: 'src/shared/client/index.tsx' })).toBeTruthy();
+    expect(within(filesPanel).queryByRole('button', { name: 'src/client/index.tsx' })).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    const dialog = await screen.findByRole('dialog', { name: 'Save failed' });
+    const diagnostics = within(dialog).getByLabelText('Compile diagnostics');
+    expect(diagnostics.textContent).toContain('[error] src/client/index.tsx (RUNJS_ENTRY_NOT_FOUND)');
+    expect(diagnostics.textContent).toContain('RunJS entry file under src/client was not found');
+    expect(within(dialog).queryByRole('textbox', { name: 'Commit message' })).toBeNull();
   });
 
   it('compiles on Run and appends client-side preview logs', async () => {

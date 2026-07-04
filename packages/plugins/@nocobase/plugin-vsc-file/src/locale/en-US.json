@@ -148,6 +148,7 @@
   "Refresh history": "Refresh history",
   "Refresh workspace": "Refresh workspace",
   "Refresh without saving": "Refresh without saving",
+  "RunJS entry file under src/client was not found": "RunJS entry file under src/client was not found",
   "Rename": "Rename",
   "Rename file": "Rename file",
   "Resize console": "Resize console",
