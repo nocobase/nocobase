@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { CopyOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons';
+import { CopyOutlined, PlusOutlined, ReloadOutlined, UploadOutlined } from '@ant-design/icons';
 import { useFlowContext } from '@nocobase/flow-engine';
 import { useRequest } from 'ahooks';
 import {
@@ -23,7 +23,9 @@ import {
   Switch,
   Table,
   Typography,
+  Upload,
 } from 'antd';
+import type { UploadProps } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import React, { useCallback, useMemo, useState } from 'react';
 import { useT } from '../locale';
@@ -79,13 +81,46 @@ interface InvitationResult {
   tokenLast4?: string;
 }
 
+interface SkillUploadFormValues {
+  skillKey?: string;
+  displayName?: string;
+  versionLabel?: string;
+}
+
+interface SkillUploadResult {
+  skillId?: string;
+  skillKey?: string;
+  skillVersionId: string;
+  versionLabel?: string;
+  status?: string;
+  idempotent?: boolean;
+}
+
+function readFileAsBase64(file: File) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = typeof reader.result === 'string' ? reader.result : '';
+      resolve(result.includes(',') ? result.split(',').pop() || '' : result);
+    };
+    reader.onerror = () => {
+      reject(reader.error || new Error('Failed to read file'));
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
 export default function AgentGatewaySettingsPage() {
   const t = useT();
   const ctx = useFlowContext() as unknown as AgentGatewayContext;
   const [form] = Form.useForm<InvitationFormValues>();
+  const [skillUploadForm] = Form.useForm<SkillUploadFormValues>();
   const [selectedNodeId, setSelectedNodeId] = useState<string>();
   const [invitationOpen, setInvitationOpen] = useState(false);
   const [invitationResult, setInvitationResult] = useState<InvitationResult | null>(null);
+  const [skillUploadOpen, setSkillUploadOpen] = useState(false);
+  const [skillZipContentBase64, setSkillZipContentBase64] = useState('');
+  const [skillUploadResult, setSkillUploadResult] = useState<SkillUploadResult | null>(null);
 
   const nodesRequest = useRequest(
     async () => {
@@ -170,16 +205,78 @@ export default function AgentGatewaySettingsPage() {
     },
   );
 
+  const uploadSkillVersionRequest = useRequest(
+    async (values: SkillUploadFormValues & { contentBase64: string }) => {
+      const response = await ctx.api.request<SkillUploadResult>({
+        url: 'agent-gateway/skill-versions:upload-zip',
+        method: 'post',
+        data: { ...values },
+      });
+      return getRequiredResponseData(response, t('Failed to upload skill'));
+    },
+    {
+      manual: true,
+      onSuccess(result) {
+        setSkillUploadResult(result);
+        ctx.message?.success(t('Skill uploaded'));
+      },
+      onError() {
+        ctx.message?.error(t('Failed to upload skill'));
+      },
+    },
+  );
+
   const closeInvitationModal = useCallback(() => {
     setInvitationOpen(false);
     setInvitationResult(null);
     form.resetFields();
   }, [form]);
 
+  const closeSkillUploadModal = useCallback(() => {
+    setSkillUploadOpen(false);
+    setSkillZipContentBase64('');
+    setSkillUploadResult(null);
+    skillUploadForm.resetFields();
+  }, [skillUploadForm]);
+
   const submitInvitation = useCallback(async () => {
     const values = await form.validateFields();
     createInvitationRequest.run(values);
   }, [createInvitationRequest, form]);
+
+  const submitSkillUpload = useCallback(async () => {
+    const values = await skillUploadForm.validateFields();
+    if (!skillZipContentBase64) {
+      ctx.message?.error(t('Skill ZIP file is required'));
+      return;
+    }
+    uploadSkillVersionRequest.run({
+      ...values,
+      contentBase64: skillZipContentBase64,
+    });
+  }, [ctx.message, skillUploadForm, skillZipContentBase64, t, uploadSkillVersionRequest]);
+
+  const handleSkillZipBeforeUpload = useCallback<NonNullable<UploadProps['beforeUpload']>>(
+    async (file) => {
+      if (!file) {
+        setSkillZipContentBase64('');
+        return false;
+      }
+      try {
+        setSkillZipContentBase64(await readFileAsBase64(file));
+      } catch {
+        setSkillZipContentBase64('');
+        ctx.message?.error(t('Failed to read skill ZIP file'));
+      }
+      return false;
+    },
+    [ctx.message, t],
+  );
+
+  const handleSkillZipRemove = useCallback(() => {
+    setSkillZipContentBase64('');
+    return true;
+  }, []);
 
   const refreshNodes = useCallback(() => {
     nodesRequest.refresh();
@@ -292,6 +389,9 @@ export default function AgentGatewaySettingsPage() {
             <Button icon={<ReloadOutlined />} onClick={refreshNodes}>
               {t('Refresh')}
             </Button>
+            <Button icon={<UploadOutlined />} onClick={() => setSkillUploadOpen(true)}>
+              {t('Upload skill')}
+            </Button>
             <Button type="primary" icon={<PlusOutlined />} onClick={() => setInvitationOpen(true)}>
               {t('Create invitation')}
             </Button>
@@ -395,6 +495,69 @@ export default function AgentGatewaySettingsPage() {
                   </Typography.Paragraph>
                   <Typography.Text type="secondary">
                     {t('Expires at')}: {formatDateTime(invitationResult.expiresAt)}
+                  </Typography.Text>
+                </Space>
+              }
+            />
+          ) : null}
+        </Space>
+      </Modal>
+
+      <Modal
+        title={t('Upload skill')}
+        open={skillUploadOpen}
+        onCancel={closeSkillUploadModal}
+        onOk={submitSkillUpload}
+        confirmLoading={uploadSkillVersionRequest.loading}
+        okText={t('Upload')}
+        cancelText={t('Close')}
+        destroyOnClose
+      >
+        <Space direction="vertical" size={16} style={{ width: '100%' }}>
+          <Form<SkillUploadFormValues> form={skillUploadForm} layout="vertical">
+            <Form.Item
+              label={t('Skill key')}
+              name="skillKey"
+              rules={[{ required: true, message: t('Skill key is required') }]}
+            >
+              <Input />
+            </Form.Item>
+            <Form.Item label={t('Display name')} name="displayName">
+              <Input />
+            </Form.Item>
+            <Form.Item
+              label={t('Version label')}
+              name="versionLabel"
+              rules={[{ required: true, message: t('Version label is required') }]}
+            >
+              <Input placeholder="v1" />
+            </Form.Item>
+            <Form.Item label={t('Skill ZIP file')} required>
+              <Upload
+                accept=".zip,application/zip"
+                beforeUpload={handleSkillZipBeforeUpload}
+                maxCount={1}
+                onRemove={handleSkillZipRemove}
+              >
+                <Button icon={<UploadOutlined />}>{t('Select ZIP')}</Button>
+              </Upload>
+            </Form.Item>
+          </Form>
+
+          {skillUploadResult ? (
+            <Alert
+              type="success"
+              showIcon
+              message={t('Skill uploaded')}
+              description={
+                <Space direction="vertical" size={8} style={{ width: '100%' }}>
+                  <Typography.Paragraph copyable={{ icon: <CopyOutlined /> }} style={{ margin: 0 }}>
+                    {skillUploadResult.skillVersionId}
+                  </Typography.Paragraph>
+                  <Typography.Text type="secondary">
+                    {[skillUploadResult.skillKey, skillUploadResult.versionLabel, skillUploadResult.status]
+                      .filter(Boolean)
+                      .join(' / ')}
                   </Typography.Text>
                 </Space>
               }

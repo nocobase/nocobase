@@ -213,6 +213,143 @@ describe('agent gateway daemon runner', () => {
     expect(JSON.stringify(requester.calls)).not.toContain('RUNNER_TOKEN_SECRET');
   });
 
+  it('injects installed Skill paths into the agent prompt and registers declared artifacts', async () => {
+    const workspace = path.join(tempDir, 'workspace');
+    const oldRunDir = path.join(workspace, 'runs', 'nb-opencode-ui-batch', 'old-run');
+    const runDir = path.join(workspace, 'runs', 'nb-opencode-ui-batch', 'run-1');
+    await fs.mkdir(oldRunDir, { recursive: true });
+    await fs.mkdir(runDir, { recursive: true });
+    const oldReportPath = path.join(oldRunDir, 'report.html');
+    const oldReportJsonPath = path.join(oldRunDir, 'report.json');
+    await fs.writeFile(oldReportPath, '<html><body>old batch report</body></html>');
+    await fs.writeFile(oldReportJsonPath, '{"durationMs":1}');
+    const oldReportDate = new Date('2020-01-01T00:00:00.000Z');
+    await fs.utimes(oldReportPath, oldReportDate, oldReportDate);
+    await fs.utimes(oldReportJsonPath, oldReportDate, oldReportDate);
+    await fs.writeFile(path.join(runDir, 'report.html'), '<html><body>batch report</body></html>');
+    await fs.writeFile(path.join(runDir, 'report.json'), '{"durationMs":1234,"totalTokens":5678}');
+    const requestedAt = new Date(Date.now() - 1000).toISOString();
+    const requester = new RunnerRequester({
+      claimPayload: {
+        claimed: true,
+        runId: 'run-1',
+        claimToken: 'ag_claim_CLAIM_TOKEN_SECRET',
+        claimAttempt: 1,
+        leaseVersion: 1,
+        run: {
+          id: 'run-1',
+          requestedAt,
+          executionPayloadJson: {
+            commandKey: 'codex',
+            prompt: 'Run the local batch harness',
+            cwd: '.',
+            artifactGlobs: ['runs/nb-opencode-ui-batch/*/report.html', 'runs/nb-opencode-ui-batch/*/report.json'],
+            skillVersions: [
+              {
+                skillVersionId: '55555555-5555-4555-8555-555555555555',
+                versionLabel: 'v1',
+                source: {
+                  type: 'zip',
+                  archivePath: '/skills/opencode.zip',
+                  sha256: 'solidified-sha256',
+                },
+              },
+            ],
+          },
+        },
+      },
+    });
+    const gateway = new AgentGatewayDaemonNodeClient(requester, {
+      serverUrl: 'https://nocobase.example.test',
+      nodeId: 'node-1',
+      nodeKey: 'node-1',
+      nodeToken: 'ag_node_NODE_TOKEN_SECRET',
+      savedAt: new Date().toISOString(),
+    });
+    const executedArgs: string[][] = [];
+    const installedSkillPath = path.join(tempDir, 'skills', '55555555-5555-4555-8555-555555555555');
+
+    const result = await runDaemonOnce({
+      gateway,
+      allowlist: {
+        codex: {
+          commandKey: 'codex',
+          executable: process.execPath,
+          defaultTimeoutMs: 5000,
+        },
+      },
+      workspaceRoot: workspace,
+      skillsRoot: path.join(tempDir, 'skills'),
+      artifactDir: path.join(tempDir, 'artifacts'),
+      runHeartbeatIntervalMs: 60_000,
+      syncSkillVersion: async (options) => ({
+        skillVersionId: options.skillVersion.skillVersionId,
+        installPath: installedSkillPath,
+        idempotent: false,
+        status: 'installed',
+        sourceDigest: 'solidified-sha256',
+      }),
+      executeCommand: async (options) => {
+        executedArgs.push(options.args || []);
+        return {
+          status: 'succeeded',
+          exitCode: 0,
+          signal: null,
+          stdout: {
+            text: '{"type":"turn.completed"}',
+            sizeBytes: 25,
+          },
+          stderr: {
+            text: null,
+            sizeBytes: 0,
+          },
+        };
+      },
+      detectOptions: {
+        probeCommand: async (candidates) => ({
+          available: candidates.includes('codex'),
+          command: candidates[0],
+          version: 'codex 1.0.0',
+        }),
+      },
+    });
+
+    expect(result.status).toBe('succeeded');
+    expect(executedArgs[0].join('\n')).toContain(path.join(installedSkillPath, 'SKILL.md'));
+    const artifactCalls = requester.calls.filter((call) => call.path.endsWith('/artifacts:register'));
+    expect(artifactCalls).toHaveLength(2);
+    expect(artifactCalls.map((call) => call.body?.artifactKey)).not.toEqual(
+      expect.arrayContaining([
+        'declared:runs/nb-opencode-ui-batch/old-run/report.html',
+        'declared:runs/nb-opencode-ui-batch/old-run/report.json',
+      ]),
+    );
+    expect(artifactCalls.map((call) => call.body)).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          artifactKey: 'declared:runs/nb-opencode-ui-batch/run-1/report.html',
+          artifactType: 'html-report',
+          mimeType: 'text/html',
+          contentText: expect.stringContaining('batch report'),
+        }),
+        expect.objectContaining({
+          artifactKey: 'declared:runs/nb-opencode-ui-batch/run-1/report.json',
+          artifactType: 'json-report',
+          mimeType: 'application/json',
+          contentText: '{"durationMs":1234,"totalTokens":5678}',
+        }),
+      ]),
+    );
+    const completeCall = requester.calls.find((call) => call.path.endsWith('/complete'));
+    expect(completeCall?.body).toMatchObject({
+      resultSummary: {
+        declaredArtifacts: {
+          declaredArtifactCount: 2,
+        },
+      },
+    });
+  });
+
   it('passes directed claim filters to the gateway', async () => {
     const workspace = path.join(tempDir, 'workspace');
     await fs.mkdir(workspace, { recursive: true });

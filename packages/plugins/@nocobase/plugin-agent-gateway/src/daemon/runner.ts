@@ -12,7 +12,7 @@ import { createReadStream } from 'fs';
 import { promises as fs } from 'fs';
 import { createInterface } from 'readline';
 
-import { buildTextArtifactUpload } from './artifactUpload';
+import { buildTextArtifactUpload, collectDeclaredArtifactUploads } from './artifactUpload';
 import { getAgentAdapter } from './adapters';
 import { AgentGatewayDaemonNodeClient } from './gateway';
 import { TerminalEnd } from '../shared/terminalStreamProtocol';
@@ -137,6 +137,33 @@ function getStringMap(value: unknown) {
 function getNumber(value: unknown) {
   const numberValue = typeof value === 'number' ? value : Number(value);
   return Number.isFinite(numberValue) && numberValue > 0 ? numberValue : undefined;
+}
+
+function getTimestampMs(value: unknown) {
+  if (value instanceof Date) {
+    return value.getTime();
+  }
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? value : undefined;
+  }
+  if (typeof value === 'string' && value.trim()) {
+    const timestamp = Date.parse(value);
+    return Number.isFinite(timestamp) ? timestamp : undefined;
+  }
+  return undefined;
+}
+
+function getDeclaredArtifactModifiedSinceMs(lease: RunLease, payload: JsonRecord) {
+  if (payload.includeOlderArtifacts === true || payload.collectAllArtifacts === true) {
+    return undefined;
+  }
+  const run = isRecord(lease.run) ? lease.run : {};
+  return (
+    getTimestampMs(payload.artifactModifiedSince) ||
+    getTimestampMs(run.startedAt) ||
+    getTimestampMs(run.requestedAt) ||
+    getTimestampMs(run.createdAt)
+  );
 }
 
 function getRunPrompt(lease: RunLease, payload: JsonRecord) {
@@ -294,6 +321,51 @@ function getSkillVersions(payload: JsonRecord) {
   return versions;
 }
 
+function buildInstalledSkillPromptContext(syncResults: SyncNodeSkillVersionResult[]) {
+  if (!syncResults.length) {
+    return '';
+  }
+  return [
+    '',
+    '',
+    'Custom Agent Gateway skills installed for this run:',
+    ...syncResults.map(
+      (result) =>
+        `- ${result.skillVersionId}: ${path.join(result.installPath, 'SKILL.md')} (${result.status}, ${
+          result.sourceDigest
+        })`,
+    ),
+    'Read and follow the relevant SKILL.md before executing the task when applicable.',
+  ].join('\n');
+}
+
+function withInstalledSkillPromptContext(lease: RunLease, syncResults: SyncNodeSkillVersionResult[]) {
+  const skillContext = buildInstalledSkillPromptContext(syncResults);
+  if (!skillContext) {
+    return lease;
+  }
+  const run = isRecord(lease.run) ? lease.run : {};
+  const payload = getPayload(lease);
+  const prompt = getRunPrompt(lease, payload);
+  return {
+    ...lease,
+    run: {
+      ...run,
+      executionPayloadJson: {
+        ...payload,
+        installedSkills: syncResults.map((result) => ({
+          skillVersionId: result.skillVersionId,
+          installPath: result.installPath,
+          skillMdPath: path.join(result.installPath, 'SKILL.md'),
+          status: result.status,
+          sourceDigest: result.sourceDigest,
+        })),
+        ...(prompt ? { prompt: `${prompt}${skillContext}` } : {}),
+      },
+    },
+  };
+}
+
 async function reportExecOutputs(gateway: AgentGatewayDaemonNodeClient, lease: RunLease, result: ExecDriverResult) {
   let sequence = 1;
   for (const [streamName, output] of [
@@ -322,6 +394,28 @@ async function reportExecOutputs(gateway: AgentGatewayDaemonNodeClient, lease: R
       });
     }
   }
+}
+
+async function reportDeclaredArtifacts(options: {
+  gateway: AgentGatewayDaemonNodeClient;
+  lease: RunLease;
+  payload: JsonRecord;
+  cwd: string;
+  workspaceRoot: string;
+}) {
+  const uploads = await collectDeclaredArtifactUploads({
+    payload: options.payload,
+    cwd: options.cwd,
+    workspaceRoot: options.workspaceRoot,
+    modifiedSinceMs: getDeclaredArtifactModifiedSinceMs(options.lease, options.payload),
+  });
+  for (const upload of uploads) {
+    await options.gateway.registerArtifact(options.lease, upload);
+  }
+  return {
+    declaredArtifactCount: uploads.length,
+    declaredArtifactKeys: uploads.map((upload) => upload.artifactKey),
+  };
 }
 
 async function readOutputForProviderSessionDetection(output: ExecDriverResult['stdout']) {
@@ -781,6 +875,7 @@ async function terminalizeRun(options: {
   leaseLostController: AbortController;
   result: ExecDriverResult;
   observationWarnings?: string[];
+  declaredArtifactSummary?: JsonRecord;
 }) {
   const observationWarnings: string[] = [...(options.observationWarnings || [])];
   try {
@@ -795,6 +890,7 @@ async function terminalizeRun(options: {
         status: options.result.status,
         exitCode: options.result.exitCode,
         signal: options.result.signal,
+        ...(options.declaredArtifactSummary ? { declaredArtifacts: options.declaredArtifactSummary } : {}),
         ...(observationWarnings.length ? { observationWarnings } : {}),
       },
     });
@@ -807,6 +903,7 @@ async function terminalizeRun(options: {
       await options.gateway.completeRun(options.getLease(), {
         status: 'succeeded',
         exitCode: options.result.exitCode,
+        ...(options.declaredArtifactSummary ? { declaredArtifacts: options.declaredArtifactSummary } : {}),
         ...(observationWarnings.length ? { observationWarnings } : {}),
       });
       return 'succeeded';
@@ -826,6 +923,7 @@ async function terminalizeRun(options: {
     await options.gateway.failRun(options.getLease(), `Process exited with ${options.result.status}`, {
       exitCode: options.result.exitCode,
       signal: options.result.signal,
+      ...(options.declaredArtifactSummary ? { declaredArtifacts: options.declaredArtifactSummary } : {}),
     });
     return 'failed';
   } catch (error) {
@@ -912,8 +1010,9 @@ export async function executeClaimedRun(
   claimedLease: RunLease,
 ): Promise<DaemonRunOnceResult> {
   let lease = await options.gateway.heartbeatRun(claimedLease, 'syncing_skills');
+  let executionLeaseBase = claimedLease;
   const activeLease = () => ({
-    ...claimedLease,
+    ...executionLeaseBase,
     ...lease,
   });
 
@@ -938,7 +1037,8 @@ export async function executeClaimedRun(
     intervalMs: options.runHeartbeatIntervalMs || DEFAULT_RUN_HEARTBEAT_INTERVAL_MS,
   });
   try {
-    await syncSkillsForRun(options, activeLease());
+    const syncResults = await syncSkillsForRun(options, activeLease());
+    executionLeaseBase = withInstalledSkillPromptContext(executionLeaseBase, syncResults);
   } catch (error) {
     if (stopSyncHeartbeat) {
       await stopSyncHeartbeat();
@@ -1003,7 +1103,7 @@ export async function executeClaimedRun(
     };
   }
 
-  const payload = getPayload(claimedLease);
+  const payload = getPayload(activeLease());
   const cwd = path.resolve(options.workspaceRoot, getString(payload.cwd) || '.');
   const terminalBackend = options.terminalBackend || 'exec';
   const tmuxSessionName = getManagedTmuxSessionName(claimedLease.runId);
@@ -1015,7 +1115,7 @@ export async function executeClaimedRun(
   let stopControlRequests: (() => Promise<void>) | null = null;
 
   try {
-    const commandSpec = getExecutionCommandSpec(claimedLease, cwd, usesManagedTmux ? 'terminal' : 'structured');
+    const commandSpec = getExecutionCommandSpec(activeLease(), cwd, usesManagedTmux ? 'terminal' : 'structured');
     if (usesManagedTmux) {
       terminalStream = createRunTerminalStream({
         runOptions: options,
@@ -1152,6 +1252,20 @@ export async function executeClaimedRun(
       provider: commandSpec.provider,
       result,
     });
+    let declaredArtifactSummary: JsonRecord | undefined;
+    try {
+      declaredArtifactSummary = await reportDeclaredArtifacts({
+        gateway: options.gateway,
+        lease: activeLease(),
+        payload,
+        cwd: commandSpec.cwd,
+        workspaceRoot: options.workspaceRoot,
+      });
+    } catch (error) {
+      sessionObservationWarnings.push(
+        `Declared artifact upload failed: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
     const terminalResult: ExecDriverResult =
       cancelController.signal.aborted && result.status === 'succeeded'
         ? {
@@ -1169,6 +1283,7 @@ export async function executeClaimedRun(
       leaseLostController,
       result: terminalResult,
       observationWarnings: sessionObservationWarnings,
+      declaredArtifactSummary,
     });
     return {
       status,

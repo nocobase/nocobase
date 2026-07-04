@@ -273,7 +273,9 @@ interface BuildRunOptions {
 
 interface BuildTaskFormValues {
   title?: string;
+  scenario?: string;
   prompt?: string;
+  skillVersionId?: string;
   runner?: string;
   cwd?: string;
 }
@@ -1309,6 +1311,55 @@ function ArtifactContentPreview({ artifact, t }: { artifact: RunArtifactRecord; 
     return <Typography.Text type="secondary">{t('No inline artifact text')}</Typography.Text>;
   }
 
+  if (artifact.mimeType === 'text/html') {
+    return (
+      <Space direction="vertical" size={8} style={{ width: '100%' }}>
+        <Typography.Text type="secondary">{t('HTML artifact preview')}</Typography.Text>
+        <iframe
+          sandbox=""
+          srcDoc={contentText}
+          title={artifact.artifactKey || artifact.id}
+          style={{
+            background: '#fff',
+            border: '1px solid #edf0f2',
+            borderRadius: 6,
+            height: 420,
+            width: '100%',
+          }}
+        />
+        <Collapse
+          size="small"
+          items={[
+            {
+              key: 'raw',
+              label: t('Raw artifact text'),
+              children: <ArtifactPreviewText text={preview.rawPreview} />,
+            },
+          ]}
+        />
+      </Space>
+    );
+  }
+
+  if ((artifact.mimeType || '').startsWith('image/') && contentText.startsWith('data:image/')) {
+    return (
+      <Space direction="vertical" size={8} style={{ width: '100%' }}>
+        <Typography.Text type="secondary">{t('Image artifact preview')}</Typography.Text>
+        <img
+          alt={artifact.artifactKey || artifact.id}
+          src={contentText}
+          style={{
+            border: '1px solid #edf0f2',
+            borderRadius: 6,
+            maxHeight: 420,
+            maxWidth: '100%',
+            objectFit: 'contain',
+          }}
+        />
+      </Space>
+    );
+  }
+
   const defaultActiveKey = preview.items
     .filter((item) => item.defaultOpen)
     .slice(0, 3)
@@ -1465,7 +1516,7 @@ export default function AgentGatewayRunsPage() {
   const buildRunOptionsRequest = useRequest(
     async () => {
       const response = await ctx.api.request<BuildRunOptions>({
-        url: 'agent-gateway/build-runs:options',
+        url: 'agent-gateway/task-runs:options',
         method: 'get',
       });
       return getResponseData(response, {});
@@ -1489,17 +1540,19 @@ export default function AgentGatewayRunsPage() {
     async (values: BuildTaskFormValues) => {
       const runner = parseBuildRunnerValue(values.runner || defaultBuildRunnerValue);
       const response = await ctx.api.request<CreateBuildRunResult>({
-        url: 'agent-gateway/build-runs:create',
+        url: 'agent-gateway/task-runs:create',
         method: 'post',
         data: {
           title: values.title,
+          scenario: values.scenario,
           prompt: values.prompt,
+          skillVersionId: values.skillVersionId,
           cwd: values.cwd,
           nodeId: runner.nodeId,
           agentProfileId: runner.agentProfileId,
         },
       });
-      return getRequiredResponseData(response, t('Failed to create build task'));
+      return getRequiredResponseData(response, t('Failed to create task run'));
     },
     {
       manual: true,
@@ -1518,10 +1571,10 @@ export default function AgentGatewayRunsPage() {
           replaceRunIdInLocationSearch(nextRunId);
         }
         refreshRuns();
-        ctx.message?.success(t('Build task created'));
+        ctx.message?.success(t('Task run created'));
       },
       onError(error) {
-        ctx.message?.error(getApiErrorMessage(error, t('Failed to create build task')));
+        ctx.message?.error(getApiErrorMessage(error, t('Failed to create task run')));
       },
     },
   );
@@ -2067,6 +2120,7 @@ export default function AgentGatewayRunsPage() {
     buildTaskForm.setFieldsValue({
       cwd: buildTaskForm.getFieldValue('cwd') || defaultBuildTaskCwd,
       runner: buildTaskForm.getFieldValue('runner') || defaultBuildRunnerValue,
+      scenario: buildTaskForm.getFieldValue('scenario') || 'generic',
     });
     setBuildTaskOpen(true);
   }, [buildRunOptionsRequest, buildTaskForm, defaultBuildRunnerValue, defaultBuildTaskCwd]);
@@ -2355,7 +2409,7 @@ export default function AgentGatewayRunsPage() {
           </Typography.Title>
           <Space wrap>
             <Button type="primary" icon={<PlusOutlined />} onClick={openBuildTask}>
-              {t('New build task')}
+              {t('New task run')}
             </Button>
             {canOpenAuditPage ? (
               <Tooltip title={t('Open audit')}>
@@ -2532,7 +2586,7 @@ export default function AgentGatewayRunsPage() {
       </Drawer>
 
       <Drawer
-        title={t('New build task')}
+        title={t('New task run')}
         open={buildTaskOpen}
         onClose={closeBuildTask}
         width={640}
@@ -2554,6 +2608,7 @@ export default function AgentGatewayRunsPage() {
             form={buildTaskForm}
             layout="vertical"
             initialValues={{
+              scenario: 'generic',
               cwd: defaultBuildTaskCwd,
               runner: defaultBuildRunnerValue,
             }}
@@ -2561,12 +2616,24 @@ export default function AgentGatewayRunsPage() {
             <Form.Item label={t('Title')} name="title">
               <Input />
             </Form.Item>
+            <Form.Item label={t('Task preset')} name="scenario">
+              <Select
+                options={[
+                  { value: 'generic', label: t('Generic task') },
+                  { value: 'nocobase-ui-build', label: t('NocoBase UI build') },
+                  { value: 'opencode-ui-batch', label: t('OpenCode UI batch harness') },
+                ]}
+              />
+            </Form.Item>
             <Form.Item
-              label={t('Build instruction')}
+              label={t('Instruction')}
               name="prompt"
-              rules={[{ required: true, message: t('Build instruction is required') }]}
+              rules={[{ required: true, message: t('Instruction is required') }]}
             >
               <Input.TextArea autoSize={{ minRows: 6, maxRows: 12 }} />
+            </Form.Item>
+            <Form.Item label={t('Skill version ID')} name="skillVersionId">
+              <Input />
             </Form.Item>
             <Form.Item label={t('Runner')} name="runner">
               <Select

@@ -931,9 +931,9 @@ describe('PluginAgentGatewayClientV2', () => {
     expect(screen.queryByLabelText('Open audit')).toBeNull();
   });
 
-  it('creates a build task from the runs page and opens the run details', async () => {
+  it('creates a task run from the runs page and opens the run details', async () => {
     const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agent-gateway/build-runs:options') {
+      if (config.url === 'agent-gateway/task-runs:options') {
         return {
           data: {
             data: {
@@ -988,7 +988,7 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
-      if (config.url === 'agent-gateway/build-runs:create') {
+      if (config.url === 'agent-gateway/task-runs:create') {
         return {
           data: {
             data: {
@@ -1032,11 +1032,11 @@ describe('PluginAgentGatewayClientV2', () => {
 
     renderAgentGatewayPage(AgentGatewayRunsPage, request);
 
-    fireEvent.click(await screen.findByText('New build task'));
+    fireEvent.click(await screen.findByText('New task run'));
     fireEvent.change(screen.getByLabelText('Title'), {
       target: { value: 'Calendar test' },
     });
-    fireEvent.change(screen.getByLabelText('Build instruction'), {
+    fireEvent.change(screen.getByLabelText('Instruction'), {
       target: { value: '搭建一个日历测试页面' },
     });
     fireEvent.click(screen.getByText('Create'));
@@ -1044,10 +1044,11 @@ describe('PluginAgentGatewayClientV2', () => {
     await waitFor(() => {
       expect(request).toHaveBeenCalledWith(
         expect.objectContaining({
-          url: 'agent-gateway/build-runs:create',
+          url: 'agent-gateway/task-runs:create',
           method: 'post',
           data: expect.objectContaining({
             title: 'Calendar test',
+            scenario: 'generic',
             prompt: '搭建一个日历测试页面',
             cwd: '.',
             nodeId: 'node-id-1',

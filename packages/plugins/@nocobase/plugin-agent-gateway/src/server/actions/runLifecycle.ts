@@ -56,9 +56,25 @@ import { getRunProviderCapabilitySummary, isRunCapabilitySupported } from './cap
 const DEFAULT_CLAIM_LEASE_SECONDS = 60;
 const DEFAULT_MAX_CONCURRENCY = 1;
 const CLAIM_CANDIDATE_PAGE_SIZE = 50;
-const DEFAULT_UI_BUILD_PROFILE_KEY = 'codex';
+const DEFAULT_TASK_RUN_PROFILE_KEY = 'codex';
 const UI_BUILD_SOURCE_TYPE = 'ui-build';
+const TASK_RUN_SOURCE_TYPE = 'task-run';
+const GENERIC_TASK_RUN_SCENARIO = 'generic';
+const UI_BUILD_TASK_RUN_SCENARIO = 'nocobase-ui-build';
+const OPENCODE_UI_BATCH_TASK_RUN_SCENARIO = 'opencode-ui-batch';
 const UI_BUILD_REROUTE_SOURCE_TYPES = new Set([UI_BUILD_SOURCE_TYPE, 'manual-ui-build']);
+const TASK_RUN_SCENARIOS = new Set([
+  GENERIC_TASK_RUN_SCENARIO,
+  UI_BUILD_TASK_RUN_SCENARIO,
+  OPENCODE_UI_BATCH_TASK_RUN_SCENARIO,
+]);
+const OPENCODE_UI_BATCH_ARTIFACT_GLOBS = [
+  'runs/nb-opencode-ui-batch/*/report.html',
+  'runs/nb-opencode-ui-batch/*/report.json',
+  'runs/nb-opencode-ui-batch/*/browser-verification-request.json',
+  'runs/nb-opencode-ui-batch/*/browser-verification-prompt.md',
+  'runs/nb-opencode-ui-batch/*/browser-verification.json',
+];
 const RUNNER_ONLINE_THRESHOLD_MS = 120_000;
 
 const ACTIVE_RUN_STATUSES = ['claimed', 'syncing_skills', 'running', 'canceling'] as const;
@@ -438,7 +454,7 @@ async function listBuildRunOptions(ctx: Context) {
     .sort(compareBuildRunnerNodes);
 
   ctx.body = {
-    defaultProfileKey: DEFAULT_UI_BUILD_PROFILE_KEY,
+    defaultProfileKey: DEFAULT_TASK_RUN_PROFILE_KEY,
     defaultCwd: '.',
     nodes: serializedNodes,
   };
@@ -470,7 +486,7 @@ function getBuildRunProfileKeyFromRun(run: ModelRecord, profile: ModelRecord | n
     getString(payload.profileKey) ||
     getString(payload.commandKey) ||
     (profile ? getModelString(profile, 'profileKey') : '') ||
-    DEFAULT_UI_BUILD_PROFILE_KEY
+    DEFAULT_TASK_RUN_PROFILE_KEY
   );
 }
 
@@ -488,7 +504,7 @@ async function findOnlineBuildRunnerFallback(
   options: { profileKey: string; provider?: string },
   transaction: Transaction | undefined,
 ): Promise<BuildRunnerSelection | null> {
-  const profileKey = options.profileKey || DEFAULT_UI_BUILD_PROFILE_KEY;
+  const profileKey = options.profileKey || DEFAULT_TASK_RUN_PROFILE_KEY;
   const profiles = (await ctx.db.getRepository('agAgentProfiles').find({
     filter: {
       profileKey,
@@ -622,7 +638,7 @@ async function resolveBuildRunnerSelection(
 ): Promise<BuildRunnerSelection> {
   const requestedNodeId = getString(values.nodeId);
   const requestedProfileId = getString(values.agentProfileId);
-  const requestedProfileKey = getString(values.profileKey) || DEFAULT_UI_BUILD_PROFILE_KEY;
+  const requestedProfileKey = getString(values.profileKey) || DEFAULT_TASK_RUN_PROFILE_KEY;
 
   if (requestedProfileId) {
     const profile = await findActiveProfile(ctx, requestedProfileId, transaction);
@@ -697,7 +713,7 @@ async function resolveBuildRunnerSelection(
 }
 
 function buildUiBuildPrompt(values: JsonRecord) {
-  const prompt = getString(values.prompt);
+  const prompt = getTaskInstruction(values);
   if (!prompt) {
     return '';
   }
@@ -715,6 +731,50 @@ function buildUiBuildPrompt(values: JsonRecord) {
   ]
     .filter((line) => line !== '')
     .join('\n');
+}
+
+function getTaskInstruction(values: JsonRecord) {
+  return getString(values.instruction) || getString(values.prompt);
+}
+
+function getTaskRunScenario(values: JsonRecord, defaultScenario: string) {
+  const scenario = getString(values.scenario) || defaultScenario;
+  return TASK_RUN_SCENARIOS.has(scenario) ? scenario : GENERIC_TASK_RUN_SCENARIO;
+}
+
+function buildTaskRunPrompt(values: JsonRecord, scenario: string) {
+  if (scenario === UI_BUILD_TASK_RUN_SCENARIO) {
+    return buildUiBuildPrompt(values);
+  }
+  return getTaskInstruction(values);
+}
+
+function getTaskRunSourceType(scenario: string) {
+  return scenario === UI_BUILD_TASK_RUN_SCENARIO ? UI_BUILD_SOURCE_TYPE : TASK_RUN_SOURCE_TYPE;
+}
+
+function getStringList(value: unknown) {
+  return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string' && Boolean(item)) : [];
+}
+
+function getTaskRunArtifactGlobs(values: JsonRecord, scenario: string) {
+  const declaredGlobs = getStringList(values.artifactGlobs);
+  if (scenario !== OPENCODE_UI_BATCH_TASK_RUN_SCENARIO) {
+    return declaredGlobs;
+  }
+  return [...new Set([...declaredGlobs, ...OPENCODE_UI_BATCH_ARTIFACT_GLOBS])];
+}
+
+function getTaskRunResolvedSkills(values: JsonRecord) {
+  const skillVersionId = getString(values.skillVersionId);
+  if (!skillVersionId) {
+    return undefined;
+  }
+  return [
+    {
+      skillVersionId,
+    },
+  ];
 }
 
 function getControlCapabilityDecision(capabilities: JsonRecord, action: 'interrupt' | 'terminate') {
@@ -1143,7 +1203,7 @@ async function createRun(ctx: Context) {
   ctx.body = serializeCreatedRunForUser(run);
 }
 
-async function createUiBuildRun(ctx: Context) {
+async function createTaskRun(ctx: Context, options: { defaultScenario?: string } = {}) {
   await requireAgentGatewayPermission(
     ctx,
     AGENT_GATEWAY_ACTIONS.dispatch,
@@ -1151,9 +1211,10 @@ async function createUiBuildRun(ctx: Context) {
   );
 
   const values = getBodyValues(ctx);
-  const renderedPrompt = buildUiBuildPrompt(values);
+  const scenario = getTaskRunScenario(values, options.defaultScenario || GENERIC_TASK_RUN_SCENARIO);
+  const renderedPrompt = buildTaskRunPrompt(values, scenario);
   if (!renderedPrompt) {
-    ctx.throw(400, 'prompt is required');
+    ctx.throw(400, 'instruction is required');
   }
 
   const result = await ctx.db.sequelize.transaction(async (transaction) => {
@@ -1164,31 +1225,37 @@ async function createUiBuildRun(ctx: Context) {
     const provider = getModelString(selection.profile, 'provider') || undefined;
     const cwd = getString(values.cwd) || '.';
     const now = new Date();
+    const artifactGlobs = getTaskRunArtifactGlobs(values, scenario);
+    const resolvedSkills = getTaskRunResolvedSkills(values);
     const executionPayloadJson = {
-      scenario: 'nocobase-ui-build',
+      scenario,
       source: 'agent-gateway-ui',
       title: getString(values.title) || null,
       prompt: renderedPrompt,
+      instruction: getTaskInstruction(values),
       profileKey,
       commandKey: getString(values.commandKey) || profileKey,
       ...(provider ? { provider } : {}),
       cwd,
       terminalBackend: 'tmux',
+      ...(artifactGlobs.length ? { artifactGlobs } : {}),
+      ...(resolvedSkills ? { resolvedSkills } : {}),
     };
     const run = (await ctx.db.getRepository('agRuns').create({
       values: {
-        runCode: getString(values.runCode) || `run_ui_build_${randomUUID()}`,
+        runCode: getString(values.runCode) || `run_task_${randomUUID()}`,
         status: CLAIMABLE_RUN_STATUS,
         claimAttempt: 0,
         leaseVersion: 0,
         cancelRequested: false,
         promptSnapshot: {
-          templateKey: 'agent-gateway-ui-build',
+          templateKey: 'agent-gateway-task-run',
           templateText: '{{prompt}}',
           renderedPrompt,
           variables: {
             title: getString(values.title) || null,
-            prompt: getString(values.prompt),
+            instruction: getTaskInstruction(values),
+            scenario,
           },
           renderedAt: now.toISOString(),
         },
@@ -1196,8 +1263,9 @@ async function createUiBuildRun(ctx: Context) {
         resultSummaryJson: {
           title: getString(values.title) || null,
           requestedFrom: 'agent-gateway-ui',
+          scenario,
         },
-        sourceType: UI_BUILD_SOURCE_TYPE,
+        sourceType: getTaskRunSourceType(scenario),
         requestedAt: now,
         queuedAt: now,
         requestedById: getCurrentUserId(ctx) || null,
@@ -2364,13 +2432,20 @@ export function registerRunLifecycleRoutes(plugin: Plugin) {
       const cancelMatch = routePath.match(/^\/runs\/([^/]+)\/cancel$/);
       const getRunMatch = routePath.match(/^\/runs:get\/([^/]+)$/);
 
-      if (ctx.method === 'GET' && routePath === '/build-runs:options') {
+      if (ctx.method === 'GET' && (routePath === '/task-runs:options' || routePath === '/build-runs:options')) {
         await listBuildRunOptions(ctx);
         return;
       }
 
+      if (ctx.method === 'POST' && routePath === '/task-runs:create') {
+        await createTaskRun(ctx);
+        return;
+      }
+
       if (ctx.method === 'POST' && routePath === '/build-runs:create') {
-        await createUiBuildRun(ctx);
+        await createTaskRun(ctx, {
+          defaultScenario: UI_BUILD_TASK_RUN_SCENARIO,
+        });
         return;
       }
 

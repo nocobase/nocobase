@@ -50,6 +50,7 @@ export class PluginAgentGatewayClientV2 extends Plugin {
       key: 'provider-capabilities',
       title: this.t('Provider Capabilities'),
       aclSnippet: 'pm.agent-gateway.nodes',
+      hidden: true,
       componentLoader: () => import('./pages/AgentGatewayProviderCapabilitiesPage'),
       sort: 24,
     });
@@ -68,6 +69,7 @@ export class PluginAgentGatewayClientV2 extends Plugin {
       menuKey: NAMESPACE,
       key: 'prompt-templates',
       title: this.t('Prompt Templates'),
+      hidden: true,
       componentLoader: () => import('./pages/AgentGatewayPromptTemplatesPage'),
       sort: 30,
     });
@@ -76,6 +78,7 @@ export class PluginAgentGatewayClientV2 extends Plugin {
       menuKey: NAMESPACE,
       key: 'dispatch-bindings',
       title: this.t('Dispatch Bindings'),
+      hidden: true,
       componentLoader: () => import('./pages/AgentGatewayDispatchBindingsPage'),
       sort: 40,
     });

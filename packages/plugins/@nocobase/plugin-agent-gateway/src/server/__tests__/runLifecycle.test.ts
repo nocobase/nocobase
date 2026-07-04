@@ -414,6 +414,70 @@ describe('agent gateway run lifecycle APIs', () => {
     });
   });
 
+  it('creates generic task runs without the UI build prompt wrapper', async () => {
+    const runner = await createRunner({
+      nodeKey: 'generic-task-codex',
+      profileKey: 'codex',
+      profileProvider: 'codex',
+    });
+
+    const optionsResponse = await rootAgent.get('/api/agent-gateway/task-runs:options');
+    expect(optionsResponse.status).toBe(200);
+    expect(getData(optionsResponse)).toMatchObject({
+      defaultProfileKey: 'codex',
+      defaultCwd: '.',
+    });
+
+    const createResponse = await rootAgent.post('/api/agent-gateway/task-runs:create').send({
+      title: 'Batch evaluation',
+      scenario: 'opencode-ui-batch',
+      prompt: '运行 nb-opencode-ui-batch harness 并汇总结果',
+      skillVersionId: '11111111-1111-4111-8111-111111111111',
+      cwd: 'myskills/skills/nb-opencode-ui-batch',
+      nodeId: runner.nodeId,
+      agentProfileId: runner.profileId,
+    });
+    expect(createResponse.status).toBe(200);
+    const createResult = getData(createResponse);
+    expect(createResult).toMatchObject({
+      runId: expect.any(String),
+      run: expect.objectContaining({
+        status: 'queued',
+        sourceType: 'task-run',
+        nodeId: runner.nodeId,
+        agentProfileId: runner.profileId,
+      }),
+    });
+
+    const storedRun = await app.db.getRepository('agRuns').findOne({
+      filterByTk: String(createResult.runId),
+    });
+    expect(storedRun.get('promptSnapshot')).toMatchObject({
+      renderedPrompt: '运行 nb-opencode-ui-batch harness 并汇总结果',
+      variables: expect.objectContaining({
+        scenario: 'opencode-ui-batch',
+      }),
+    });
+    expect(storedRun.get('executionPayloadJson')).toMatchObject({
+      scenario: 'opencode-ui-batch',
+      prompt: '运行 nb-opencode-ui-batch harness 并汇总结果',
+      instruction: '运行 nb-opencode-ui-batch harness 并汇总结果',
+      profileKey: 'codex',
+      commandKey: 'codex',
+      provider: 'codex',
+      cwd: 'myskills/skills/nb-opencode-ui-batch',
+      artifactGlobs: expect.arrayContaining([
+        'runs/nb-opencode-ui-batch/*/report.html',
+        'runs/nb-opencode-ui-batch/*/report.json',
+      ]),
+      resolvedSkills: [
+        {
+          skillVersionId: '11111111-1111-4111-8111-111111111111',
+        },
+      ],
+    });
+  });
+
   it('includes agent session capabilities in management run list and details', async () => {
     const now = new Date();
     const session = await app.db.getRepository('agAgentSessions').create({

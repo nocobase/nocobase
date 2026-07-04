@@ -53,6 +53,7 @@ export class PluginAgentGatewayClient extends Plugin {
       title: tval('Provider Capabilities', { ns: AGENT_GATEWAY_SETTINGS_KEY }),
       aclSnippet: `pm.${AGENT_GATEWAY_SETTINGS_KEY}.nodes`,
       componentLoader: () => import('../client-v2/pages/AgentGatewayProviderCapabilitiesPage'),
+      hidden: true,
       sort: 24,
     });
 
@@ -70,6 +71,7 @@ export class PluginAgentGatewayClient extends Plugin {
       title: tval('Prompt Templates', { ns: AGENT_GATEWAY_SETTINGS_KEY }),
       aclSnippet: `pm.${AGENT_GATEWAY_SETTINGS_KEY}.prompt-templates`,
       componentLoader: () => import('../client-v2/pages/AgentGatewayPromptTemplatesPage'),
+      hidden: true,
       sort: 30,
     });
 
@@ -78,6 +80,7 @@ export class PluginAgentGatewayClient extends Plugin {
       title: tval('Dispatch Bindings', { ns: AGENT_GATEWAY_SETTINGS_KEY }),
       aclSnippet: `pm.${AGENT_GATEWAY_SETTINGS_KEY}.dispatch-bindings`,
       componentLoader: () => import('../client-v2/pages/AgentGatewayDispatchBindingsPage'),
+      hidden: true,
       sort: 40,
     });
   }
