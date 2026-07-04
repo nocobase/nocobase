@@ -30,7 +30,7 @@ export default class ProxyCaddyGenerate extends Command {
     '<%= config.bin %> proxy caddy generate --host app1.example.com',
     '<%= config.bin %> proxy caddy generate --env app1 --host app1.example.com',
     '<%= config.bin %> proxy caddy generate --env app1 --host app1.example.com --port 8080',
-    '<%= config.bin %> proxy caddy generate --manual --name default --app-port 13000 --storage-path /path/to/storage --dist-root-path /path/to/dist-client --runtime-version 2.1.0',
+    '<%= config.bin %> proxy caddy generate --manual --name default --storage-path /path/to/storage --dist-root-path /path/to/dist-client --runtime-version 2.1.0 --upstream-port 13000',
   ];
 
   static override flags = {
@@ -44,9 +44,6 @@ export default class ProxyCaddyGenerate extends Command {
     }),
     name: Flags.string({
       description: 'Output bundle name used under .nocobase/proxy/caddy in manual mode',
-    }),
-    'app-port': Flags.string({
-      description: 'Upstream NocoBase app port in manual mode',
     }),
     'storage-path': Flags.string({
       description: 'Path to the NocoBase storage directory in manual mode',
@@ -63,6 +60,9 @@ export default class ProxyCaddyGenerate extends Command {
     }),
     'upstream-host': Flags.string({
       description: 'Upstream host used by caddy reverse_proxy in manual mode',
+    }),
+    'upstream-port': Flags.string({
+      description: 'Upstream port used by caddy reverse_proxy in manual mode',
     }),
     'cdn-base-url': Flags.string({
       description: 'Client asset CDN base URL used when generating runtime HTML',
@@ -92,19 +92,19 @@ export default class ProxyCaddyGenerate extends Command {
 
     if (manual) {
       const name = flags.name?.trim() || undefined;
-      const requestedAppPort = flags['app-port']?.trim() || undefined;
-      const appPort = normalizeProxyListenPort(requestedAppPort);
+      const requestedUpstreamPort = flags['upstream-port']?.trim() || undefined;
+      const upstreamPort = normalizeProxyListenPort(requestedUpstreamPort);
       const storagePath = flags['storage-path']?.trim() || undefined;
       const distRootPath = flags['dist-root-path']?.trim() || undefined;
       const runtimeVersion = flags['runtime-version']?.trim() || undefined;
 
-      if (requestedAppPort && !appPort) {
-        this.error(`Invalid manual app port "${requestedAppPort}". Use an integer between 1 and 65535.`);
+      if (requestedUpstreamPort && !upstreamPort) {
+        this.error(`Invalid manual upstream port "${requestedUpstreamPort}". Use an integer between 1 and 65535.`);
       }
 
-      if (!name || !appPort || !storagePath || !distRootPath || !runtimeVersion) {
+      if (!name || !upstreamPort || !storagePath || !distRootPath || !runtimeVersion) {
         this.error(
-          'Manual mode requires `--name`, `--app-port`, `--storage-path`, `--dist-root-path`, and `--runtime-version`.',
+          'Manual mode requires `--name`, `--upstream-port`, `--storage-path`, `--dist-root-path`, and `--runtime-version`.',
         );
       }
 
@@ -117,12 +117,12 @@ export default class ProxyCaddyGenerate extends Command {
         const { bundle, status } = await writeManualCaddyProxyBundle(
           {
             name,
-            appPort,
             storagePath,
             distRootPath,
             runtimeVersion,
             appPublicPath: flags['app-public-path']?.trim() || undefined,
             upstreamHost: flags['upstream-host']?.trim() || undefined,
+            upstreamPort,
             cdnBaseUrl: flags['cdn-base-url']?.trim() || undefined,
           },
           {

@@ -259,29 +259,32 @@ test('runPromptCatalogWebUI treats host as the browser URL host and listens on a
 test('buildWebFormValuesFromCatalog resolves function defaults for password fields', async () => {
   const { buildWebFormValuesFromCatalog } = await import('../lib/prompt-web-ui.js');
 
-  const values = buildWebFormValuesFromCatalog({
-    rootPassword: {
-      type: 'password',
-      message: 'Root password',
-      required: true,
+  const values = buildWebFormValuesFromCatalog(
+    {
+      rootPassword: {
+        type: 'password',
+        message: 'Root password',
+        required: true,
+      },
+      authType: {
+        type: 'select',
+        message: 'Authentication type',
+        options: ['basic', 'oauth'],
+        initialValue: 'basic',
+        required: true,
+      },
+      installPassword: {
+        type: 'password',
+        message: 'Install password',
+        required: true,
+        hidden: (currentValues) => currentValues.authType !== 'basic',
+        initialValue: (currentValues) => String(currentValues.rootPassword ?? ''),
+      },
     },
-    authType: {
-      type: 'select',
-      message: 'Authentication type',
-      options: ['basic', 'oauth'],
-      initialValue: 'basic',
-      required: true,
+    {
+      rootPassword: 'admin123',
     },
-    installPassword: {
-      type: 'password',
-      message: 'Install password',
-      required: true,
-      hidden: (currentValues) => currentValues.authType !== 'basic',
-      initialValue: (currentValues) => String(currentValues.rootPassword ?? ''),
-    },
-  }, {
-    rootPassword: 'admin123',
-  });
+  );
 
   expect(values.installPassword).toBe('admin123');
 });
@@ -797,7 +800,7 @@ test('reflow recomputes the built-in database image from the current database di
   );
 });
 
-test('reflow uses locale-aware built-in database images when NB_LOCALE is zh-CN', async () => {
+test('reflow uses dockerhub-compatible built-in database images by default', async () => {
   process.env.NB_LOCALE = 'zh-CN';
   const { reflowWebFormState } = await import('../lib/prompt-web-ui.js');
   const { default: Init } = await import('../commands/init.js');
@@ -808,7 +811,7 @@ test('reflow uses locale-aware built-in database images when NB_LOCALE is zh-CN'
     builtinDb: true,
   });
 
-  expect(state.values.builtinDbImage).toBe('registry.cn-shanghai.aliyuncs.com/nocobase/postgres:16');
+  expect(state.values.builtinDbImage).toBe('postgres:16');
 });
 
 test('reflow uses CLI locale-aware docker registry defaults even when app language is en-US', async () => {

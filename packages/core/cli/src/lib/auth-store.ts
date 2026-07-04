@@ -139,6 +139,8 @@ export interface AuthConfig {
     docker?: {
       network?: string;
       containerPrefix?: string;
+      nbImageRegistry?: string;
+      nbImageVariant?: string;
     };
     bin?: {
       docker?: string;
@@ -316,11 +318,18 @@ function normalizeAuthConfig(config: AuthConfig & { dockerResourcePrefix?: strin
       ...(updatePolicy ? { update: { policy: updatePolicy } } : {}),
       ...(settings.license?.pkgUrl ? { license: { pkgUrl: normalizeOptionalString(settings.license.pkgUrl) } } : {}),
       ...(settings.docker?.network || settings.docker?.containerPrefix
+        || settings.docker?.nbImageRegistry || settings.docker?.nbImageVariant
         ? {
             docker: {
               ...(settings.docker?.network ? { network: normalizeOptionalString(settings.docker.network) } : {}),
               ...(settings.docker?.containerPrefix
                 ? { containerPrefix: normalizeOptionalString(settings.docker.containerPrefix) }
+                : {}),
+              ...(settings.docker?.nbImageRegistry
+                ? { nbImageRegistry: normalizeOptionalString(settings.docker.nbImageRegistry) }
+                : {}),
+              ...(settings.docker?.nbImageVariant
+                ? { nbImageVariant: normalizeOptionalString(settings.docker.nbImageVariant) }
                 : {}),
             },
           }
