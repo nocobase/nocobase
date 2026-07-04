@@ -18,6 +18,7 @@ En esta modalidad, el contenedor de la aplicación NocoBase y el contenedor de C
 
 Si necesitas la imagen `full`, sustituye `latest-no-nginx` por `latest-full-no-nginx`.
 
+El mapeo `13000:80` es solo para facilitar las pruebas locales y evitar ocupar directamente los puertos estándar del host. En producción, normalmente no se mantiene `13000:80`; en su lugar, el contenedor externo de Caddy se mapea directamente a los puertos `80` y `443` del host.
 ```yml
 networks:
   nocobase:
@@ -66,7 +67,11 @@ services:
         caddy run --config /etc/caddy/Caddyfile --adapter caddyfile
       '
     ports:
+      # Esto es solo un ejemplo para pruebas locales.
       - "13000:80"
+      # En producción, normalmente cámbialo a:
+      # - "80:80"
+      # - "443:443"
 
   postgres:
     image: postgres:16
@@ -89,7 +94,7 @@ services:
 - `NOCOBASE_PROXY_UPSTREAM_HOST=app` permite que el contenedor de Caddy acceda al servicio `app` mediante la red de Compose
 - `./storage` debe montarse tanto en `app` como en `caddy` para compartir la configuración del proxy, los recursos estáticos y los archivos subidos
 - El contenedor `caddy` debe esperar a que se genere `nocobase.caddy` y luego enlazarlo a `/etc/caddy/Caddyfile` con `ln -sf`
-- Expón al host solo el puerto del contenedor de Caddy. El servicio `app` no necesita exponer su puerto al host
+- Expón al host solo el puerto del contenedor de Caddy. Para pruebas, puedes empezar con `13000:80`; en producción, normalmente se exponen directamente los puertos `80` y `443` del host, mientras que el servicio `app` no necesita exponer su puerto al host
 
 ## Si usas Caddy local en el host
 

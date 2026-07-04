@@ -18,6 +18,7 @@ In this setup, the NocoBase app container and the Caddy container run separately
 
 If you need the `full` image, replace `latest-no-nginx` with `latest-full-no-nginx`.
 
+The `13000:80` mapping is only for convenient local testing, so it does not occupy the standard host ports directly. In production, you usually do not keep using `13000:80`; instead, let the external Caddy container map directly to the host `80` and `443` ports.
 ```yml
 networks:
   nocobase:
@@ -66,7 +67,11 @@ services:
         caddy run --config /etc/caddy/Caddyfile --adapter caddyfile
       '
     ports:
+      # This is only a local testing example.
       - "13000:80"
+      # In production, usually change it to:
+      # - "80:80"
+      # - "443:443"
 
   postgres:
     image: postgres:16
@@ -89,7 +94,7 @@ services:
 - `NOCOBASE_PROXY_UPSTREAM_HOST=app` lets the Caddy container reach the `app` service through the Compose network
 - `./storage` must be mounted into both the `app` and `caddy` containers so they can share proxy config, static assets, and uploaded files
 - The `caddy` container should wait until `nocobase.caddy` is generated, then link it to `/etc/caddy/Caddyfile` with `ln -sf`
-- Expose only the Caddy container port to the host. The `app` service does not need to expose its port to the host
+- Expose only the Caddy container port to the host. For testing, you can start with `13000:80`; in production, you usually expose the host `80` and `443` ports directly, while the `app` service does not need to expose its port to the host
 
 ## If you use a local host Caddy
 
