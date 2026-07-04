@@ -18,6 +18,8 @@ keywords: "Docker,NocoBase,Caddy,インストール,リバースプロキシ"
 
 `full` イメージが必要な場合は、`latest-no-nginx` を `latest-full-no-nginx` に置き換えてください。
 
+
+`13000:80` のマッピングは、ホストの標準ポートを直接使わずにローカルでテストしやすくするためのものです。本番環境では通常 `13000:80` のままにはせず、外部 Caddy コンテナをホストの `80` と `443` に直接マッピングします。
 ```yml
 networks:
   nocobase:
@@ -66,7 +68,11 @@ services:
         caddy run --config /etc/caddy/Caddyfile --adapter caddyfile
       '
     ports:
+      # これはローカルテスト用の例です。
       - "13000:80"
+      # 本番環境では通常、次のように変更します。
+      # - "80:80"
+      # - "443:443"
 
   postgres:
     image: postgres:16
@@ -89,7 +95,7 @@ services:
 - `NOCOBASE_PROXY_UPSTREAM_HOST=app` により、Caddy コンテナは Compose ネットワーク経由で `app` サービスへ接続します
 - `./storage` は `app` と `caddy` の両方にマウントし、プロキシ設定、静的アセット、アップロードファイルを共有できるようにします
 - `caddy` コンテナは `nocobase.caddy` が生成されるまで待機し、その後 `ln -sf` で `/etc/caddy/Caddyfile` にリンクしてから起動します
-- ホストへ公開するのは Caddy コンテナのポートだけで十分です。`app` サービスはホストへポートを公開する必要はありません
+- ホストへ公開するのは Caddy コンテナのポートだけで十分です。テスト時は `13000:80` から始められますが、本番環境では通常ホストの `80` と `443` を直接公開し、`app` サービスはホストへポートを公開する必要はありません
 
 ## ホストにインストールした Caddy を使う場合
 

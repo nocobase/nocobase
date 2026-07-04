@@ -18,6 +18,7 @@ Dalam mode ini, kontainer aplikasi NocoBase dan kontainer Caddy berjalan terpisa
 
 Jika Anda membutuhkan image `full`, ganti `latest-no-nginx` dengan `latest-full-no-nginx`.
 
+Mapping `13000:80` hanya untuk memudahkan pengujian lokal, agar tidak langsung memakai port standar host. Di produksi, biasanya jangan terus memakai `13000:80`; biarkan kontainer Caddy eksternal langsung memetakan port host `80` dan `443`.
 ```yml
 networks:
   nocobase:
@@ -66,7 +67,11 @@ services:
         caddy run --config /etc/caddy/Caddyfile --adapter caddyfile
       '
     ports:
+      # Ini hanya contoh untuk pengujian lokal.
       - "13000:80"
+      # Di produksi, biasanya ubah menjadi:
+      # - "80:80"
+      # - "443:443"
 
   postgres:
     image: postgres:16
@@ -89,7 +94,7 @@ services:
 - `NOCOBASE_PROXY_UPSTREAM_HOST=app` memungkinkan kontainer Caddy mengakses layanan `app` melalui jaringan Compose
 - `./storage` harus dimount ke `app` dan `caddy` agar konfigurasi proxy, aset statis, dan file unggahan bisa dipakai bersama
 - Kontainer `caddy` perlu menunggu sampai `nocobase.caddy` dibuat, lalu menautkannya ke `/etc/caddy/Caddyfile` dengan `ln -sf`
-- Ekspos hanya port kontainer Caddy ke host. Layanan `app` tidak perlu membuka port ke host
+- Ekspos hanya port kontainer Caddy ke host. Untuk pengujian, Anda bisa mulai dengan `13000:80`; di produksi, biasanya langsung ekspos port host `80` dan `443`, sementara layanan `app` tidak perlu membuka port ke host
 
 ## Jika menggunakan Caddy lokal di host
 
