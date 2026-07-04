@@ -12,6 +12,7 @@ import {
   EnterOutlined,
   EyeOutlined,
   PoweroffOutlined,
+  PlusOutlined,
   ReloadOutlined,
   SearchOutlined,
   StopOutlined,
@@ -34,6 +35,7 @@ import {
   Spin,
   Table,
   Tabs,
+  Tag,
   Tooltip,
   Typography,
 } from 'antd';
@@ -107,6 +109,7 @@ interface RunRecord {
     interruptRun?: boolean;
     terminateRun?: boolean;
   };
+  runnerStatusJson?: RunnerStatusRecord;
   requestedAt?: string;
   queuedAt?: string;
   claimedAt?: string;
@@ -228,8 +231,81 @@ interface ControlRequestStatusPoll {
   controlRequestId: string;
 }
 
+interface RunnerStatusRecord {
+  online?: boolean;
+  reason?: string;
+  nodeId?: string | null;
+  nodeKey?: string | null;
+  nodeStatus?: string | null;
+  lastHeartbeatAt?: string | null;
+  agentProfileId?: string | null;
+  profileKey?: string | null;
+  profileProvider?: string | null;
+  profileStatus?: string | null;
+}
+
+type RunDetailTabKey = 'summary' | 'agent-sessions' | 'logs' | 'artifacts' | 'api-logs';
+
+interface BuildRunnerProfileOption {
+  id: string;
+  nodeId: string;
+  profileKey: string;
+  displayName?: string;
+  provider?: string | null;
+  status?: string;
+}
+
+interface BuildRunnerNodeOption {
+  id: string;
+  nodeKey: string;
+  displayName?: string;
+  status?: string;
+  online?: boolean;
+  lastHeartbeatAt?: string | null;
+  profiles?: BuildRunnerProfileOption[];
+}
+
+interface BuildRunOptions {
+  defaultProfileKey?: string;
+  defaultCwd?: string;
+  nodes?: BuildRunnerNodeOption[];
+}
+
+interface BuildTaskFormValues {
+  title?: string;
+  prompt?: string;
+  runner?: string;
+  cwd?: string;
+}
+
+interface CreateBuildRunResult {
+  runId: string;
+  runCode?: string;
+  run?: RunRecord;
+  runnerStatus?: RunnerStatusRecord;
+}
+
 interface DateLike {
   toISOString(): string;
+}
+
+type ReadableArtifactItemKind = 'message' | 'tool' | 'error' | 'event';
+
+interface ReadableArtifactItem {
+  key: string;
+  kind: ReadableArtifactItemKind;
+  label: string;
+  text: string;
+  defaultOpen: boolean;
+}
+
+interface ReadableArtifactPreview {
+  mode: 'jsonl' | 'json' | 'text';
+  summary: string;
+  items: ReadableArtifactItem[];
+  text: string;
+  rawPreview: string;
+  rawTruncated: boolean;
 }
 
 interface RunFilterFormValues {
@@ -257,7 +333,11 @@ const RUN_STATUS_OPTIONS = [
 const CANCELABLE_STATUSES = new Set(['queued', 'claimed', 'syncing_skills', 'running']);
 const TERMINAL_CONTROL_RUN_STATUSES = new Set(['claimed', 'syncing_skills', 'running']);
 const LEGACY_TIMELINE_FALLBACK_STATUSES = new Set(['succeeded']);
+const LIVE_RUN_STATUSES = new Set(['queued', 'claimed', 'syncing_skills', 'running', 'canceling']);
 const RUN_DETAIL_QUERY_PARAM = 'runId';
+const ARTIFACT_PREVIEW_MAX_ITEMS = 80;
+const ARTIFACT_ITEM_TEXT_MAX_CHARS = 4000;
+const ARTIFACT_RAW_PREVIEW_MAX_CHARS = 24 * 1024;
 const NO_COLLAPSE_MOTION: CSSMotionProps = {
   motionName: '',
   motionAppear: false,
@@ -270,6 +350,10 @@ const FastCollapse = Collapse as React.ComponentType<
 
 function isCancelableRun(run: RunRecord) {
   return CANCELABLE_STATUSES.has(run.status);
+}
+
+function isLiveRunStatus(status?: string) {
+  return Boolean(status && LIVE_RUN_STATUSES.has(status));
 }
 
 function canUseLegacyTimelineFallback(run: RunRecord | undefined, eventCount: number, hasWarning: boolean) {
@@ -396,6 +480,122 @@ function getRouterPathFromBrowserPath(pathname: string) {
   return pathname.replace(/^\/v2?(?=\/admin(?:\/|$))/, '');
 }
 
+function getBuildRunnerValue(nodeId: string, profileId: string) {
+  return `${nodeId}:${profileId}`;
+}
+
+function parseBuildRunnerValue(value?: string) {
+  if (!value) {
+    return {};
+  }
+  const [nodeId, agentProfileId] = value.split(':');
+  return {
+    nodeId: nodeId || undefined,
+    agentProfileId: agentProfileId || undefined,
+  };
+}
+
+function compareBuildRunnerNodes(first: BuildRunnerNodeOption, second: BuildRunnerNodeOption) {
+  if (first.online !== second.online) {
+    return first.online ? -1 : 1;
+  }
+  if (first.status !== second.status) {
+    return first.status === 'active' ? -1 : 1;
+  }
+  if (Boolean(first.profiles?.length) !== Boolean(second.profiles?.length)) {
+    return first.profiles?.length ? -1 : 1;
+  }
+  return (first.displayName || first.nodeKey).localeCompare(second.displayName || second.nodeKey);
+}
+
+function getSortedBuildRunnerNodes(options: BuildRunOptions | undefined) {
+  return [...(options?.nodes || [])].sort(compareBuildRunnerNodes);
+}
+
+function getDefaultBuildRunnerValue(options: BuildRunOptions | undefined) {
+  const nodes = getSortedBuildRunnerNodes(options);
+  const activeNodes = nodes.filter((node) => node.status !== 'disabled');
+  const onlineNodes = activeNodes.filter((node) => node.online);
+  const nodePool = onlineNodes.length ? onlineNodes : activeNodes.length ? activeNodes : nodes;
+  for (const node of nodePool) {
+    const profile = (node.profiles || []).find((item) => item.profileKey === (options?.defaultProfileKey || 'codex'));
+    if (profile) {
+      return getBuildRunnerValue(node.id, profile.id);
+    }
+  }
+  for (const node of nodePool) {
+    const profile = node.profiles?.[0];
+    if (profile) {
+      return getBuildRunnerValue(node.id, profile.id);
+    }
+  }
+  return undefined;
+}
+
+function getBuildRunnerSelectOptions(options: BuildRunOptions | undefined, t: TFunction) {
+  return getSortedBuildRunnerNodes(options).flatMap((node) =>
+    (node.profiles || []).map((profile) => ({
+      value: getBuildRunnerValue(node.id, profile.id),
+      label: [
+        node.displayName || node.nodeKey,
+        profile.displayName || profile.profileKey,
+        node.online ? t('Online') : t('Offline'),
+      ].join(' / '),
+    })),
+  );
+}
+
+function findBuildRunnerNodeByValue(options: BuildRunOptions | undefined, value?: string) {
+  const { nodeId, agentProfileId } = parseBuildRunnerValue(value);
+  if (!nodeId || !agentProfileId) {
+    return null;
+  }
+  for (const node of options?.nodes || []) {
+    if (node.id !== nodeId) {
+      continue;
+    }
+    const profile = (node.profiles || []).find((item) => item.id === agentProfileId);
+    if (profile) {
+      return {
+        node,
+        profile,
+      };
+    }
+  }
+  return null;
+}
+
+function shouldUseDefaultBuildRunner(
+  options: BuildRunOptions | undefined,
+  currentValue: string | undefined,
+  defaultValue: string | undefined,
+) {
+  if (!defaultValue || currentValue === defaultValue) {
+    return false;
+  }
+  if (!currentValue) {
+    return true;
+  }
+  const currentRunner = findBuildRunnerNodeByValue(options, currentValue);
+  const defaultRunner = findBuildRunnerNodeByValue(options, defaultValue);
+  if (!currentRunner) {
+    return true;
+  }
+  return currentRunner.node.online === false && defaultRunner?.node.online === true;
+}
+
+function getRunnerReasonMessage(t: TFunction, reason?: string) {
+  const messages: Record<string, string> = {
+    ready: t('Runner is ready'),
+    'missing-node': t('Runner node is not selected or no longer exists'),
+    'node-inactive': t('Runner node is disabled'),
+    'missing-profile': t('Runner profile is not selected or no longer exists'),
+    'profile-inactive': t('Runner profile is disabled'),
+    'heartbeat-stale': t('Runner heartbeat is stale; start or reconnect the daemon'),
+  };
+  return messages[reason || ''] || t('Waiting for runner');
+}
+
 function canOpenAuditFromRuns(runs: RunRecord[] | undefined) {
   return Boolean(runs?.some((run) => run.agentGatewayActionPermissionsJson?.readAudit === true));
 }
@@ -418,12 +618,148 @@ function RunSessionSummary({ run, t }: { run: RunRecord; t: TFunction }) {
     );
   }
 
-  return <Typography.Text type="secondary">{t('Legacy run')}</Typography.Text>;
+  return <Typography.Text type="secondary">{t('No agent session')}</Typography.Text>;
+}
+
+function RunnerQueueAlert({ run, t }: { run: RunRecord; t: TFunction }) {
+  const runnerStatus = run.runnerStatusJson;
+  if (!runnerStatus || (run.status !== 'queued' && runnerStatus.online !== false)) {
+    return null;
+  }
+  const details = [
+    runnerStatus.nodeKey || runnerStatus.nodeId,
+    runnerStatus.profileKey || runnerStatus.agentProfileId,
+    runnerStatus.lastHeartbeatAt ? `${t('Last heartbeat')}: ${formatDateTime(runnerStatus.lastHeartbeatAt)}` : '',
+  ]
+    .filter(Boolean)
+    .join(' / ');
+  return (
+    <Alert
+      type={runnerStatus.online === false ? 'warning' : 'info'}
+      showIcon
+      message={run.status === 'queued' ? t('Queued: waiting for runner') : t('Runner status')}
+      description={[getRunnerReasonMessage(t, runnerStatus.reason), details].filter(Boolean).join('\n')}
+      style={{ whiteSpace: 'pre-line' }}
+    />
+  );
+}
+
+function RunSummaryPanel({ run, t }: { run: RunRecord; t: TFunction }) {
+  return (
+    <Space direction="vertical" size={16} style={{ width: '100%' }}>
+      <Descriptions bordered size="small" column={2} title={t('Run summary')}>
+        <Descriptions.Item label={t('Status')}>{statusTag(run.status)}</Descriptions.Item>
+        <Descriptions.Item label={t('Agent')}>
+          {[run.nodeId, run.agentProfileId].filter(Boolean).join(' / ') || '-'}
+        </Descriptions.Item>
+        <Descriptions.Item label={t('Requested at')}>{formatDateTime(run.requestedAt)}</Descriptions.Item>
+        <Descriptions.Item label={t('Started at')}>{formatDateTime(run.startedAt)}</Descriptions.Item>
+        <Descriptions.Item label={t('Finished at')}>{formatDateTime(run.finishedAt)}</Descriptions.Item>
+        <Descriptions.Item label={t('Terminal status')}>
+          {run.terminalStatus ? statusTag(run.terminalStatus) : '-'}
+        </Descriptions.Item>
+        <Descriptions.Item label={t('Provider capabilities')} span={2}>
+          <Space wrap>
+            {Object.entries(
+              normalizeAgentProviderCapabilities(run.agentProvider || 'generic-cli', run.agentProviderCapabilitiesJson),
+            )
+              .filter(([key]) =>
+                [
+                  'structuredEvents',
+                  'terminalOutput',
+                  'resumeSession',
+                  'liveSemanticMessage',
+                  'stdinMessage',
+                  'interrupt',
+                  'terminate',
+                  'artifacts',
+                ].includes(key),
+              )
+              .map(([key, value]) => (
+                <Typography.Text key={key} type={value === true ? undefined : 'secondary'}>
+                  {t(key)}: {value === true ? t('Yes') : t('No')}
+                </Typography.Text>
+              ))}
+          </Space>
+        </Descriptions.Item>
+        <Descriptions.Item label={t('Continuation')} span={2}>
+          {[run.continuationReason, run.parentRunId].filter(Boolean).join(' / ') || '-'}
+        </Descriptions.Item>
+        <Descriptions.Item label={t('Last terminal activity')}>
+          {formatDateTime(run.terminalLastActivityAt)}
+        </Descriptions.Item>
+        <Descriptions.Item label={t('Error summary')}>{redactPreviewText(run.errorSummary) || '-'}</Descriptions.Item>
+        <Descriptions.Item label={t('Result summary')} span={2}>
+          <JsonPreview value={run.resultSummaryJson} />
+        </Descriptions.Item>
+      </Descriptions>
+    </Space>
+  );
+}
+
+function AgentSessionPanel({
+  run,
+  t,
+  canResumeAgentSession,
+  resumeLoading,
+  onResume,
+}: {
+  run: RunRecord;
+  t: TFunction;
+  canResumeAgentSession: boolean;
+  resumeLoading: boolean;
+  onResume(input: AgentSessionResumeInput): Promise<void>;
+}) {
+  return (
+    <Space direction="vertical" size={16} style={{ width: '100%' }}>
+      <Descriptions bordered size="small" column={1} title={t('Agent Sessions')}>
+        <Descriptions.Item label={t('Session')}>
+          <RunSessionSummary run={run} t={t} />
+          {!run.agentSessionId && !run.agentSessionProvider && !run.agentSessionProviderId ? (
+            <Typography.Text type="secondary" style={{ display: 'block' }}>
+              {t('No agent session')}
+            </Typography.Text>
+          ) : null}
+        </Descriptions.Item>
+        <Descriptions.Item label={t('Continuation')}>
+          {[run.continuationReason, run.parentRunId].filter(Boolean).join(' / ') || '-'}
+        </Descriptions.Item>
+      </Descriptions>
+      {canResumeAgentSession ? (
+        <AgentSessionResumeBox run={run} t={t} loading={resumeLoading} onResume={onResume} />
+      ) : null}
+    </Space>
+  );
 }
 
 function getDetailWarning(error: unknown, fallback: string) {
   const detail = getApiErrorMessage(error, '');
   return detail ? `${fallback}: ${detail}` : fallback;
+}
+
+function getTextFingerprint(text: string) {
+  const sample = text.length > 1024 ? `${text.slice(0, 256)}:${text.slice(-768)}` : text;
+  let hash = 2166136261;
+  for (let index = 0; index < sample.length; index += 1) {
+    hash ^= sample.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return `${text.length}:${(hash >>> 0).toString(36)}`;
+}
+
+function getTerminalResetKey(runId: string, snapshot: TerminalSnapshot | null | undefined, useStreamOutput: boolean) {
+  if (useStreamOutput) {
+    return [runId, 'stream', 'live'].join(':');
+  }
+  const output = snapshot?.output || '';
+  return [
+    runId,
+    'snapshot',
+    snapshot?.terminalStatus || 'unknown',
+    snapshot?.available === false ? 'unavailable' : 'available',
+    snapshot?.unsupportedCapability || 'supported',
+    getTextFingerprint(output),
+  ].join(':');
 }
 
 function getSkippedDetails<T>(fallback: T, warning: string) {
@@ -529,11 +865,12 @@ function TerminalPanel({
     stream.connectionState === 'closed' || stream.connectionState === 'error' || Boolean(stream.lastErrorCode);
   const useSnapshotFallback = !streamHasOutput || (streamUnavailable && snapshotHasOutput);
   const useStreamOutput = streamHasOutput && !useSnapshotFallback;
-  const xtermResetKey = [
-    runId,
-    useStreamOutput ? 'stream' : 'snapshot',
-    useStreamOutput ? 'live' : snapshot?.capturedAt || 'empty',
-  ].join(':');
+  const outputMode = useStreamOutput
+    ? t('Live stream')
+    : snapshotHasOutput
+      ? t('Snapshot fallback')
+      : t('Waiting for output');
+  const xtermResetKey = getTerminalResetKey(runId, snapshot, useStreamOutput);
   const fallbackOutput = output || t('No terminal output yet');
 
   return (
@@ -544,6 +881,9 @@ function TerminalPanel({
           {snapshot?.terminalStatus ? statusTag(snapshot.terminalStatus) : null}
           <Typography.Text type="secondary">{t('Stream')}</Typography.Text>
           {statusTag(stream.connectionState)}
+          <Typography.Text data-testid="agent-gateway-xterm-output-mode" type="secondary">
+            {outputMode}
+          </Typography.Text>
           <Typography.Text data-testid="agent-gateway-xterm-stream-offset" type="secondary">
             {t('Offset')}: {stream.currentOffset}
           </Typography.Text>
@@ -619,6 +959,14 @@ function TerminalPanel({
           message={t('Live output gap detected. Showing saved terminal output when available.')}
         />
       ) : null}
+      {streamUnavailable && snapshotHasOutput ? (
+        <Alert
+          data-testid="agent-gateway-terminal-snapshot-fallback"
+          type="info"
+          showIcon
+          message={t('Live stream unavailable; showing terminal snapshots')}
+        />
+      ) : null}
       {canReadTerminal && terminalOutputSupported ? (
         <ReadonlyXtermOutput
           ariaLabel={t('Readonly live terminal output')}
@@ -632,19 +980,7 @@ function TerminalPanel({
   );
 }
 
-function LogsPanel({
-  t,
-  events,
-  apiCallLogs,
-  eventsWarning,
-  apiCallLogsWarning,
-}: {
-  t: TFunction;
-  events: RunEventRecord[];
-  apiCallLogs: ApiCallLogRecord[];
-  eventsWarning?: string;
-  apiCallLogsWarning?: string;
-}) {
+function LogsPanel({ t, events, eventsWarning }: { t: TFunction; events: RunEventRecord[]; eventsWarning?: string }) {
   return (
     <Space direction="vertical" size={16} style={{ width: '100%' }}>
       {eventsWarning ? <Alert type="warning" showIcon message={eventsWarning} /> : null}
@@ -681,10 +1017,21 @@ function LogsPanel({
       ) : (
         <EmptyInline description={t('No events yet')} />
       )}
+    </Space>
+  );
+}
 
-      <Typography.Title level={5} style={{ margin: 0 }}>
-        {t('API logs')}
-      </Typography.Title>
+function ApiLogsPanel({
+  t,
+  apiCallLogs,
+  apiCallLogsWarning,
+}: {
+  t: TFunction;
+  apiCallLogs: ApiCallLogRecord[];
+  apiCallLogsWarning?: string;
+}) {
+  return (
+    <Space direction="vertical" size={16} style={{ width: '100%' }}>
       {apiCallLogsWarning ? <Alert type="warning" showIcon message={apiCallLogsWarning} /> : null}
       {apiCallLogs.length ? (
         <Table<ApiCallLogRecord>
@@ -724,6 +1071,278 @@ function LogsPanel({
   );
 }
 
+function getStringValue(value: unknown) {
+  return typeof value === 'string' ? value : '';
+}
+
+function truncateArtifactPreviewText(text: string, maxChars: number) {
+  if (text.length <= maxChars) {
+    return text;
+  }
+  return `${text.slice(0, maxChars)}\n\n[${'...'} ${text.length - maxChars} chars truncated]`;
+}
+
+function decodeCommonEscapedWhitespace(text: string) {
+  const escapedNewlineCount = (text.match(/\\n/g) || []).length;
+  const newlineCount = (text.match(/\n/g) || []).length;
+  if (escapedNewlineCount < 2 || escapedNewlineCount < newlineCount) {
+    return text;
+  }
+  return text
+    .replace(/\\r\\n/g, '\n')
+    .replace(/\\n/g, '\n')
+    .replace(/\\r/g, '\r')
+    .replace(/\\t/g, '\t');
+}
+
+function normalizeArtifactReadableText(text: string, maxChars = ARTIFACT_ITEM_TEXT_MAX_CHARS) {
+  return truncateArtifactPreviewText(decodeCommonEscapedWhitespace(redactPreviewText(text) || ''), maxChars);
+}
+
+function getArtifactRawPreview(contentText: string) {
+  const rawPreview = truncateArtifactPreviewText(contentText, ARTIFACT_RAW_PREVIEW_MAX_CHARS);
+  return {
+    rawPreview,
+    rawTruncated: rawPreview.length !== contentText.length,
+  };
+}
+
+function getJsonPreviewText(value: unknown) {
+  return normalizeArtifactReadableText(JSON.stringify(redactExternalUrlPreviewJson(value), null, 2));
+}
+
+function tryParseJson(value: string): unknown {
+  try {
+    return JSON.parse(value) as unknown;
+  } catch {
+    return undefined;
+  }
+}
+
+function parseJsonlArtifact(contentText: string) {
+  const lines = contentText
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+  if (lines.length < 2) {
+    return null;
+  }
+
+  const values: unknown[] = [];
+  let failedCount = 0;
+  for (const line of lines) {
+    const value = tryParseJson(line);
+    if (value === undefined) {
+      failedCount += 1;
+      continue;
+    }
+    values.push(value);
+  }
+
+  if (values.length < 2 || failedCount > Math.max(2, Math.floor(lines.length * 0.1))) {
+    return null;
+  }
+
+  return {
+    values,
+    failedCount,
+    totalCount: lines.length,
+  };
+}
+
+function getArtifactItemLabel(t: TFunction, kind: ReadableArtifactItemKind, label: string) {
+  const colors: Record<ReadableArtifactItemKind, string> = {
+    message: 'blue',
+    tool: 'purple',
+    error: 'red',
+    event: 'default',
+  };
+  const kindLabel: Record<ReadableArtifactItemKind, string> = {
+    message: t('Message'),
+    tool: t('Tool call'),
+    error: t('Error'),
+    event: t('Event'),
+  };
+  return (
+    <Space size={8} wrap>
+      <Tag color={colors[kind]}>{kindLabel[kind]}</Tag>
+      <Typography.Text>{label}</Typography.Text>
+    </Space>
+  );
+}
+
+function getReadableArtifactItem(value: unknown, index: number, t: TFunction): ReadableArtifactItem | null {
+  const record = getObjectRecord(value);
+  const type = getStringValue(record.type);
+  const item = getObjectRecord(record.item);
+  const itemType = getStringValue(item.type);
+  const itemId = getStringValue(item.id) || `${index + 1}`;
+  const status = getStringValue(item.status);
+  const key = `${itemId}-${index}`;
+
+  if (itemType === 'agent_message') {
+    const text = getStringValue(item.text);
+    if (!text) {
+      return null;
+    }
+    return {
+      key,
+      kind: 'message',
+      label: `${t('Agent message')} #${index + 1}`,
+      text: normalizeArtifactReadableText(text),
+      defaultOpen: true,
+    };
+  }
+
+  if (itemType === 'error') {
+    const text = getStringValue(item.message) || getJsonPreviewText(value);
+    return {
+      key,
+      kind: 'error',
+      label: `${t('Error')} #${index + 1}`,
+      text: normalizeArtifactReadableText(text),
+      defaultOpen: true,
+    };
+  }
+
+  if (itemType === 'command_execution') {
+    const output = getStringValue(item.aggregated_output);
+    const command = getStringValue(item.command);
+    if (!output && type === 'item.started') {
+      return null;
+    }
+    return {
+      key,
+      kind: 'tool',
+      label: [t('Tool call'), status, itemId ? `#${itemId}` : null].filter(Boolean).join(' '),
+      text: normalizeArtifactReadableText(output || command || t('No tool output')),
+      defaultOpen: false,
+    };
+  }
+
+  if (['thread.started', 'turn.started', 'turn.completed'].includes(type)) {
+    return null;
+  }
+
+  const text =
+    getStringValue(record.message) ||
+    getStringValue(record.text) ||
+    getStringValue(item.text) ||
+    getStringValue(item.message) ||
+    getJsonPreviewText(value);
+  if (!text) {
+    return null;
+  }
+
+  return {
+    key,
+    kind: 'event',
+    label: type || `${t('Event')} #${index + 1}`,
+    text: normalizeArtifactReadableText(text),
+    defaultOpen: false,
+  };
+}
+
+function buildReadableArtifactPreview(contentText: string, t: TFunction): ReadableArtifactPreview {
+  const { rawPreview, rawTruncated } = getArtifactRawPreview(contentText);
+  const jsonl = parseJsonlArtifact(contentText);
+  if (jsonl) {
+    const items = jsonl.values
+      .map((value, index) => getReadableArtifactItem(value, index, t))
+      .filter((item): item is ReadableArtifactItem => Boolean(item))
+      .slice(0, ARTIFACT_PREVIEW_MAX_ITEMS);
+    return {
+      mode: 'jsonl',
+      summary: `${t('Readable JSONL preview')}: ${items.length}/${jsonl.values.length}`,
+      items,
+      text: items.length ? '' : normalizeArtifactReadableText(contentText),
+      rawPreview,
+      rawTruncated,
+    };
+  }
+
+  const parsedJson = tryParseJson(contentText.trim());
+  if (parsedJson !== undefined) {
+    return {
+      mode: 'json',
+      summary: t('Readable JSON preview'),
+      items: [],
+      text: getJsonPreviewText(parsedJson),
+      rawPreview,
+      rawTruncated,
+    };
+  }
+
+  return {
+    mode: 'text',
+    summary: t('Readable text preview'),
+    items: [],
+    text: normalizeArtifactReadableText(contentText, ARTIFACT_RAW_PREVIEW_MAX_CHARS),
+    rawPreview,
+    rawTruncated,
+  };
+}
+
+function ArtifactPreviewText({ text }: { text: string }) {
+  return (
+    <Typography.Paragraph
+      style={{
+        background: '#f6f8fa',
+        border: '1px solid #edf0f2',
+        borderRadius: 6,
+        margin: 0,
+        maxHeight: 360,
+        overflow: 'auto',
+        padding: 12,
+        whiteSpace: 'pre-wrap',
+      }}
+    >
+      {text}
+    </Typography.Paragraph>
+  );
+}
+
+function ArtifactContentPreview({ artifact, t }: { artifact: RunArtifactRecord; t: TFunction }) {
+  const contentText = artifact.contentText || '';
+  const preview = useMemo(() => buildReadableArtifactPreview(contentText, t), [contentText, t]);
+  if (!contentText) {
+    return <Typography.Text type="secondary">{t('No inline artifact text')}</Typography.Text>;
+  }
+
+  const defaultActiveKey = preview.items
+    .filter((item) => item.defaultOpen)
+    .slice(0, 3)
+    .map((item) => item.key);
+  return (
+    <Space direction="vertical" size={8} style={{ width: '100%' }}>
+      <Typography.Text type="secondary">{preview.summary}</Typography.Text>
+      {preview.items.length ? (
+        <Collapse
+          size="small"
+          defaultActiveKey={defaultActiveKey}
+          items={preview.items.map((item) => ({
+            key: item.key,
+            label: getArtifactItemLabel(t, item.kind, item.label),
+            children: <ArtifactPreviewText text={item.text} />,
+          }))}
+        />
+      ) : (
+        <ArtifactPreviewText text={preview.text} />
+      )}
+      <Collapse
+        size="small"
+        items={[
+          {
+            key: 'raw',
+            label: preview.rawTruncated ? t('Raw artifact text (truncated)') : t('Raw artifact text'),
+            children: <ArtifactPreviewText text={preview.rawPreview} />,
+          },
+        ]}
+      />
+    </Space>
+  );
+}
+
 function ArtifactsPanel({
   t,
   artifacts,
@@ -750,13 +1369,7 @@ function ArtifactsPanel({
                   {[artifact.artifactKey, artifact.artifactType, artifact.mimeType].filter(Boolean).join(' / ') ||
                     artifact.id}
                 </Typography.Text>
-                {artifact.contentText ? (
-                  <Typography.Paragraph style={{ margin: 0, whiteSpace: 'pre-wrap' }}>
-                    {artifact.contentText}
-                  </Typography.Paragraph>
-                ) : (
-                  <Typography.Text type="secondary">{t('No inline artifact text')}</Typography.Text>
-                )}
+                <ArtifactContentPreview artifact={artifact} t={t} />
                 <JsonPreview value={redactExternalUrlPreviewJson(artifact.metadataJson)} />
               </Space>
             </List.Item>
@@ -796,10 +1409,13 @@ export default function AgentGatewayRunsPage() {
   const ctx = useFlowContext() as unknown as AgentGatewayContext;
   const initialRunId = useInitialRunDetailQuery();
   const [filterForm] = Form.useForm<RunFilterFormValues>();
+  const [buildTaskForm] = Form.useForm<BuildTaskFormValues>();
   const [runFilters, setRunFilters] = useState<Record<string, unknown>>({});
+  const [buildTaskOpen, setBuildTaskOpen] = useState(false);
   const [detailOpen, setDetailOpen] = useState(Boolean(initialRunId));
   const [selectedRunId, setSelectedRunId] = useState<string | undefined>(initialRunId);
   const [runDetailsError, setRunDetailsError] = useState<string>();
+  const [activeDetailTab, setActiveDetailTab] = useState<RunDetailTabKey>('summary');
   const [terminalSnapshotState, setTerminalSnapshotState] = useState<TerminalSnapshotState | null>(null);
   const [conversationEventsState, setConversationEventsState] = useState<ConversationEventsState | null>(null);
   const [conversationEventsWarning, setConversationEventsWarning] = useState<string>();
@@ -815,6 +1431,7 @@ export default function AgentGatewayRunsPage() {
       setDetailOpen(false);
       setSelectedRunId(undefined);
       setRunDetailsError(undefined);
+      setActiveDetailTab('summary');
       setTerminalSnapshotState(null);
       setConversationEventsState(null);
       setConversationEventsWarning(undefined);
@@ -823,6 +1440,7 @@ export default function AgentGatewayRunsPage() {
     }
     setSelectedRunId(runId);
     setRunDetailsError(undefined);
+    setActiveDetailTab('summary');
     setTerminalSnapshotState(null);
     setConversationEventsState(null);
     setConversationEventsWarning(undefined);
@@ -843,6 +1461,70 @@ export default function AgentGatewayRunsPage() {
     },
   );
   const { refresh: refreshRuns } = runsRequest;
+
+  const buildRunOptionsRequest = useRequest(
+    async () => {
+      const response = await ctx.api.request<BuildRunOptions>({
+        url: 'agent-gateway/build-runs:options',
+        method: 'get',
+      });
+      return getResponseData(response, {});
+    },
+    {
+      manual: true,
+    },
+  );
+
+  const buildRunnerSelectOptions = useMemo(
+    () => getBuildRunnerSelectOptions(buildRunOptionsRequest.data, t),
+    [buildRunOptionsRequest.data, t],
+  );
+  const defaultBuildRunnerValue = useMemo(
+    () => getDefaultBuildRunnerValue(buildRunOptionsRequest.data),
+    [buildRunOptionsRequest.data],
+  );
+  const defaultBuildTaskCwd = buildRunOptionsRequest.data?.defaultCwd || '';
+
+  const createBuildTaskRequest = useRequest(
+    async (values: BuildTaskFormValues) => {
+      const runner = parseBuildRunnerValue(values.runner || defaultBuildRunnerValue);
+      const response = await ctx.api.request<CreateBuildRunResult>({
+        url: 'agent-gateway/build-runs:create',
+        method: 'post',
+        data: {
+          title: values.title,
+          prompt: values.prompt,
+          cwd: values.cwd,
+          nodeId: runner.nodeId,
+          agentProfileId: runner.agentProfileId,
+        },
+      });
+      return getRequiredResponseData(response, t('Failed to create build task'));
+    },
+    {
+      manual: true,
+      onSuccess(result) {
+        const nextRunId = result.runId || result.run?.id;
+        buildTaskForm.resetFields();
+        setBuildTaskOpen(false);
+        if (nextRunId) {
+          setTerminalSnapshotState(null);
+          setConversationEventsState(null);
+          setConversationEventsWarning(undefined);
+          setRunDetailsError(undefined);
+          setActiveDetailTab('summary');
+          setSelectedRunId(nextRunId);
+          setDetailOpen(true);
+          replaceRunIdInLocationSearch(nextRunId);
+        }
+        refreshRuns();
+        ctx.message?.success(t('Build task created'));
+      },
+      onError(error) {
+        ctx.message?.error(getApiErrorMessage(error, t('Failed to create build task')));
+      },
+    },
+  );
 
   const runDetailsRequest = useRequest(
     async () => {
@@ -1266,6 +1948,7 @@ export default function AgentGatewayRunsPage() {
         setTerminalSnapshotState(null);
         setConversationEventsState(null);
         setConversationEventsWarning(undefined);
+        setActiveDetailTab('summary');
         setSelectedRunId(nextRunId);
         setDetailOpen(true);
         replaceRunIdInLocationSearch(nextRunId);
@@ -1292,7 +1975,8 @@ export default function AgentGatewayRunsPage() {
     }
     const run = pollingRun;
     const pollActionPermissions = selectedRunActionPermissions || {};
-    const canPollTerminal = isRunActionAllowed(pollActionPermissions, 'readTerminal');
+    const canPollTerminal =
+      activeDetailTab === 'agent-sessions' && isRunActionAllowed(pollActionPermissions, 'readTerminal');
     const terminalOutputSupported = getRunCapability(run, 'terminalOutput');
     const canPollSessionMessages = isRunActionAllowed(pollActionPermissions, 'readSessionMessages');
 
@@ -1312,6 +1996,9 @@ export default function AgentGatewayRunsPage() {
     if (canPollSessionMessages) {
       refreshConversationEvents();
     }
+    if (!isLiveRunStatus(run.status)) {
+      return;
+    }
     const realtimeTimer = window.setInterval(() => {
       if (canPollTerminal && terminalOutputSupported) {
         refreshTerminalSnapshot();
@@ -1329,6 +2016,7 @@ export default function AgentGatewayRunsPage() {
       window.clearInterval(summaryTimer);
     };
   }, [
+    activeDetailTab,
     detailOpen,
     refreshConversationEvents,
     refreshRunDetails,
@@ -1342,6 +2030,7 @@ export default function AgentGatewayRunsPage() {
 
   const openRunDetails = useCallback((run: RunRecord) => {
     setRunDetailsError(undefined);
+    setActiveDetailTab('summary');
     setTerminalSnapshotState(null);
     setConversationEventsState(null);
     setConversationEventsWarning(undefined);
@@ -1354,6 +2043,7 @@ export default function AgentGatewayRunsPage() {
     setDetailOpen(false);
     setSelectedRunId(undefined);
     setRunDetailsError(undefined);
+    setActiveDetailTab('summary');
     setTerminalSnapshotState(null);
     setConversationEventsState(null);
     setConversationEventsWarning(undefined);
@@ -1371,6 +2061,24 @@ export default function AgentGatewayRunsPage() {
     filterForm.resetFields();
     setRunFilters({});
   }, [filterForm]);
+
+  const openBuildTask = useCallback(() => {
+    buildRunOptionsRequest.run();
+    buildTaskForm.setFieldsValue({
+      cwd: buildTaskForm.getFieldValue('cwd') || defaultBuildTaskCwd,
+      runner: buildTaskForm.getFieldValue('runner') || defaultBuildRunnerValue,
+    });
+    setBuildTaskOpen(true);
+  }, [buildRunOptionsRequest, buildTaskForm, defaultBuildRunnerValue, defaultBuildTaskCwd]);
+
+  const closeBuildTask = useCallback(() => {
+    setBuildTaskOpen(false);
+  }, []);
+
+  const submitBuildTask = useCallback(async () => {
+    const values = await buildTaskForm.validateFields();
+    createBuildTaskRequest.run(values);
+  }, [buildTaskForm, createBuildTaskRequest]);
 
   const openAuditPage = useCallback(() => {
     const browserPath = getAgentGatewayAuditPath(window.location.pathname);
@@ -1481,7 +2189,10 @@ export default function AgentGatewayRunsPage() {
   const canReadSessionMessages = isRunActionAllowed(actionPermissions, 'readSessionMessages');
   const canReadTerminal = isRunActionAllowed(actionPermissions, 'readTerminal');
   const canStreamTerminal =
-    canReadTerminal && Boolean(activeRunDetails?.run && getRunCapability(activeRunDetails.run, 'terminalOutput'));
+    activeDetailTab === 'agent-sessions' &&
+    canReadTerminal &&
+    isLiveRunStatus(activeRunDetails?.run.status) &&
+    Boolean(activeRunDetails?.run && getRunCapability(activeRunDetails.run, 'terminalOutput'));
   const terminalSnapshot =
     canReadTerminal && !runDetailsError && terminalSnapshotState && terminalSnapshotState.runId === selectedRunId
       ? terminalSnapshotState.snapshot
@@ -1527,6 +2238,27 @@ export default function AgentGatewayRunsPage() {
   useEffect(() => {
     selectedRunIdRef.current = selectedRunId;
   }, [selectedRunId]);
+
+  useEffect(() => {
+    if (
+      !buildTaskOpen ||
+      !shouldUseDefaultBuildRunner(
+        buildRunOptionsRequest.data,
+        buildTaskForm.getFieldValue('runner'),
+        defaultBuildRunnerValue,
+      )
+    ) {
+      return;
+    }
+    buildTaskForm.setFieldValue('runner', defaultBuildRunnerValue);
+  }, [buildRunOptionsRequest.data, buildTaskForm, buildTaskOpen, defaultBuildRunnerValue]);
+
+  useEffect(() => {
+    if (!buildTaskOpen || !defaultBuildTaskCwd || buildTaskForm.getFieldValue('cwd')) {
+      return;
+    }
+    buildTaskForm.setFieldValue('cwd', defaultBuildTaskCwd);
+  }, [buildTaskForm, buildTaskOpen, defaultBuildTaskCwd]);
 
   useEffect(() => {
     syncRunDetailFromLocation();
@@ -1622,6 +2354,9 @@ export default function AgentGatewayRunsPage() {
             {t('Runs')}
           </Typography.Title>
           <Space wrap>
+            <Button type="primary" icon={<PlusOutlined />} onClick={openBuildTask}>
+              {t('New build task')}
+            </Button>
             {canOpenAuditPage ? (
               <Tooltip title={t('Open audit')}>
                 <Button aria-label={t('Open audit')} icon={<AuditOutlined />} onClick={openAuditPage}>
@@ -1668,7 +2403,7 @@ export default function AgentGatewayRunsPage() {
         <Table<RunRecord>
           columns={runColumns}
           dataSource={runsRequest.data || []}
-          loading={runsRequest.loading}
+          loading={runsRequest.loading && !runsRequest.data}
           rowKey="id"
           locale={{ emptyText: <EmptyInline description={t('No runs yet')} /> }}
           pagination={false}
@@ -1686,171 +2421,166 @@ export default function AgentGatewayRunsPage() {
         {runDetailsError ? (
           <Alert type="warning" showIcon message={t('Run details unavailable')} description={runDetailsError} />
         ) : null}
-        {!runDetailsError && (runDetailsRequest.loading || (detailOpen && selectedRunId && !activeRunDetails)) ? (
-          <Spin />
-        ) : null}
+        {!runDetailsError && detailOpen && selectedRunId && !activeRunDetails ? <Spin /> : null}
         {activeRunDetails ? (
-          <Space direction="vertical" size={16} style={{ width: '100%' }}>
-            <Descriptions bordered size="small" column={2} title={t('Run summary')}>
-              <Descriptions.Item label={t('Status')}>{statusTag(activeRunDetails.run.status)}</Descriptions.Item>
-              <Descriptions.Item label={t('Agent')}>
-                {[activeRunDetails.run.nodeId, activeRunDetails.run.agentProfileId].filter(Boolean).join(' / ') || '-'}
-              </Descriptions.Item>
-              <Descriptions.Item label={t('Requested at')}>
-                {formatDateTime(activeRunDetails.run.requestedAt)}
-              </Descriptions.Item>
-              <Descriptions.Item label={t('Started at')}>
-                {formatDateTime(activeRunDetails.run.startedAt)}
-              </Descriptions.Item>
-              <Descriptions.Item label={t('Finished at')}>
-                {formatDateTime(activeRunDetails.run.finishedAt)}
-              </Descriptions.Item>
-              <Descriptions.Item label={t('Terminal status')}>
-                {activeRunDetails.run.terminalStatus ? statusTag(activeRunDetails.run.terminalStatus) : '-'}
-              </Descriptions.Item>
-              <Descriptions.Item label={t('Agent session')} span={2}>
-                <RunSessionSummary run={activeRunDetails.run} t={t} />
-                {!activeRunDetails.run.agentSessionId &&
-                !activeRunDetails.run.agentSessionProvider &&
-                !activeRunDetails.run.agentSessionProviderId ? (
-                  <Typography.Text type="secondary" style={{ display: 'block' }}>
-                    {t('No agent session')}
-                  </Typography.Text>
-                ) : null}
-              </Descriptions.Item>
-              <Descriptions.Item label={t('Provider capabilities')} span={2}>
-                <Space wrap>
-                  {Object.entries(
-                    normalizeAgentProviderCapabilities(
-                      activeRunDetails.run.agentProvider || 'generic-cli',
-                      activeRunDetails.run.agentProviderCapabilitiesJson,
-                    ),
-                  )
-                    .filter(([key]) =>
-                      [
-                        'structuredEvents',
-                        'terminalOutput',
-                        'resumeSession',
-                        'liveSemanticMessage',
-                        'stdinMessage',
-                        'interrupt',
-                        'terminate',
-                        'artifacts',
-                      ].includes(key),
-                    )
-                    .map(([key, value]) => (
-                      <Typography.Text key={key} type={value === true ? undefined : 'secondary'}>
-                        {t(key)}: {value === true ? t('Yes') : t('No')}
-                      </Typography.Text>
-                    ))}
-                </Space>
-              </Descriptions.Item>
-              <Descriptions.Item label={t('Continuation')} span={2}>
-                {[activeRunDetails.run.continuationReason, activeRunDetails.run.parentRunId]
-                  .filter(Boolean)
-                  .join(' / ') || '-'}
-              </Descriptions.Item>
-              <Descriptions.Item label={t('Last terminal activity')}>
-                {formatDateTime(activeRunDetails.run.terminalLastActivityAt)}
-              </Descriptions.Item>
-              <Descriptions.Item label={t('Error summary')}>
-                {redactPreviewText(activeRunDetails.run.errorSummary) || '-'}
-              </Descriptions.Item>
-              <Descriptions.Item label={t('Result summary')} span={2}>
-                <JsonPreview value={activeRunDetails.run.resultSummaryJson} />
-              </Descriptions.Item>
-            </Descriptions>
-
-            <AgentTimeline
-              t={t}
-              events={timelineEvents}
-              legacyEvents={activeRunDetails.events}
-              useLegacyFallback={useLegacyTimelineFallback}
-              warning={timelineWarning}
-            />
-
-            {canResumeAgentSession ? (
-              <AgentSessionResumeBox
-                run={activeRunDetails.run}
-                t={t}
-                loading={resumeSessionRequest.loading}
-                onResume={async (input) => {
-                  await resumeSessionRequest.runAsync({
-                    run: activeRunDetails.run,
-                    ...input,
-                  });
-                }}
-              />
-            ) : null}
-
-            {showTerminalStreamSmoke && canStreamTerminal ? (
-              <TerminalStreamSmokePanel runId={activeRunDetails.run.id} />
-            ) : null}
-
-            <FastCollapse
-              defaultActiveKey={['live-output']}
-              openMotion={NO_COLLAPSE_MOTION}
-              items={[
-                {
-                  key: 'live-output',
-                  label: t('Live CLI Output'),
-                  children: (
-                    <TerminalPanel
-                      runId={activeRunDetails.run.id}
+          <Tabs
+            activeKey={activeDetailTab}
+            onChange={(key) => setActiveDetailTab(key as RunDetailTabKey)}
+            items={[
+              {
+                key: 'summary',
+                label: t('Summary'),
+                children: (
+                  <Space direction="vertical" size={16} style={{ width: '100%' }}>
+                    <RunnerQueueAlert run={activeRunDetails.run} t={t} />
+                    <AgentTimeline
                       t={t}
-                      snapshot={terminalSnapshot}
-                      stream={terminalStream}
-                      loading={terminalSnapshotRequest.loading}
-                      interrupting={interruptTerminalRequest.loading}
-                      terminating={terminateTerminalRequest.loading}
-                      controlRequestState={controlRequestState}
-                      canReadTerminal={canReadTerminal}
-                      canInterrupt={terminalControlAvailable && controlActions.interruptRun === true}
-                      canTerminate={terminalControlAvailable && controlActions.terminateRun === true}
-                      onRefresh={refreshTerminalSnapshot}
-                      onInterrupt={() => interruptTerminalRequest.run(activeRunDetails.run.id)}
-                      onTerminate={() => terminateTerminalRequest.run(activeRunDetails.run.id)}
+                      events={timelineEvents}
+                      legacyEvents={activeRunDetails.events}
+                      useLegacyFallback={useLegacyTimelineFallback}
+                      warning={timelineWarning}
                     />
-                  ),
-                },
-              ]}
-            />
-
-            <Tabs
-              defaultActiveKey="logs"
-              items={[
-                {
-                  key: 'logs',
-                  label: t('Logs'),
-                  forceRender: true,
-                  children: (
-                    <LogsPanel
+                    <RunSummaryPanel run={activeRunDetails.run} t={t} />
+                  </Space>
+                ),
+              },
+              {
+                key: 'agent-sessions',
+                label: t('Agent Sessions'),
+                children: (
+                  <Space direction="vertical" size={16} style={{ width: '100%' }}>
+                    <AgentSessionPanel
+                      run={activeRunDetails.run}
                       t={t}
-                      events={activeRunDetails.events}
-                      apiCallLogs={activeRunDetails.apiCallLogs}
-                      eventsWarning={activeRunDetails.warnings.events}
-                      apiCallLogsWarning={activeRunDetails.warnings.apiCallLogs}
+                      canResumeAgentSession={canResumeAgentSession}
+                      resumeLoading={resumeSessionRequest.loading}
+                      onResume={async (input) => {
+                        await resumeSessionRequest.runAsync({
+                          run: activeRunDetails.run,
+                          ...input,
+                        });
+                      }}
                     />
-                  ),
-                },
-                {
-                  key: 'artifacts',
-                  label: t('Artifacts'),
-                  forceRender: true,
-                  children: (
-                    <ArtifactsPanel
-                      t={t}
-                      artifacts={activeRunDetails.artifacts}
-                      snapshots={activeRunDetails.snapshots}
-                      artifactsWarning={activeRunDetails.warnings.artifacts}
-                      snapshotsWarning={activeRunDetails.warnings.snapshots}
+                    {showTerminalStreamSmoke && canStreamTerminal ? (
+                      <TerminalStreamSmokePanel runId={activeRunDetails.run.id} />
+                    ) : null}
+                    <FastCollapse
+                      defaultActiveKey={['live-output']}
+                      openMotion={NO_COLLAPSE_MOTION}
+                      items={[
+                        {
+                          key: 'live-output',
+                          label: t('Live CLI Output'),
+                          children: (
+                            <TerminalPanel
+                              runId={activeRunDetails.run.id}
+                              t={t}
+                              snapshot={terminalSnapshot}
+                              stream={terminalStream}
+                              loading={terminalSnapshotRequest.loading}
+                              interrupting={interruptTerminalRequest.loading}
+                              terminating={terminateTerminalRequest.loading}
+                              controlRequestState={controlRequestState}
+                              canReadTerminal={canReadTerminal}
+                              canInterrupt={terminalControlAvailable && controlActions.interruptRun === true}
+                              canTerminate={terminalControlAvailable && controlActions.terminateRun === true}
+                              onRefresh={refreshTerminalSnapshot}
+                              onInterrupt={() => interruptTerminalRequest.run(activeRunDetails.run.id)}
+                              onTerminate={() => terminateTerminalRequest.run(activeRunDetails.run.id)}
+                            />
+                          ),
+                        },
+                      ]}
                     />
-                  ),
-                },
-              ]}
-            />
-          </Space>
+                  </Space>
+                ),
+              },
+              {
+                key: 'logs',
+                label: t('Logs'),
+                children: (
+                  <LogsPanel t={t} events={activeRunDetails.events} eventsWarning={activeRunDetails.warnings.events} />
+                ),
+              },
+              {
+                key: 'artifacts',
+                label: t('Artifacts'),
+                children: (
+                  <ArtifactsPanel
+                    t={t}
+                    artifacts={activeRunDetails.artifacts}
+                    snapshots={activeRunDetails.snapshots}
+                    artifactsWarning={activeRunDetails.warnings.artifacts}
+                    snapshotsWarning={activeRunDetails.warnings.snapshots}
+                  />
+                ),
+              },
+              {
+                key: 'api-logs',
+                label: t('API Logs'),
+                children: (
+                  <ApiLogsPanel
+                    t={t}
+                    apiCallLogs={activeRunDetails.apiCallLogs}
+                    apiCallLogsWarning={activeRunDetails.warnings.apiCallLogs}
+                  />
+                ),
+              },
+            ]}
+          />
         ) : null}
+      </Drawer>
+
+      <Drawer
+        title={t('New build task')}
+        open={buildTaskOpen}
+        onClose={closeBuildTask}
+        width={640}
+        destroyOnClose
+        extra={
+          <Space>
+            <Button onClick={closeBuildTask}>{t('Close')}</Button>
+            <Button type="primary" loading={createBuildTaskRequest.loading} onClick={submitBuildTask}>
+              {t('Create')}
+            </Button>
+          </Space>
+        }
+      >
+        <Space direction="vertical" size={16} style={{ width: '100%' }}>
+          {buildRunnerSelectOptions.length ? null : (
+            <Alert type="warning" showIcon message={t('No active runner profiles yet')} />
+          )}
+          <Form<BuildTaskFormValues>
+            form={buildTaskForm}
+            layout="vertical"
+            initialValues={{
+              cwd: defaultBuildTaskCwd,
+              runner: defaultBuildRunnerValue,
+            }}
+          >
+            <Form.Item label={t('Title')} name="title">
+              <Input />
+            </Form.Item>
+            <Form.Item
+              label={t('Build instruction')}
+              name="prompt"
+              rules={[{ required: true, message: t('Build instruction is required') }]}
+            >
+              <Input.TextArea autoSize={{ minRows: 6, maxRows: 12 }} />
+            </Form.Item>
+            <Form.Item label={t('Runner')} name="runner">
+              <Select
+                allowClear
+                loading={buildRunOptionsRequest.loading}
+                options={buildRunnerSelectOptions}
+                placeholder={t('Select runner')}
+              />
+            </Form.Item>
+            <Form.Item label={t('Working directory')} name="cwd">
+              <Input />
+            </Form.Item>
+          </Form>
+        </Space>
       </Drawer>
     </section>
   );

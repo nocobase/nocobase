@@ -44,6 +44,20 @@ describe('OpenCode agent adapter', () => {
     ).toThrow('OpenCode resume is not supported');
   });
 
+  it('builds terminal-friendly commands with the formatted default output', () => {
+    expect(
+      opencodeAdapter.buildStartCommand({
+        prompt: 'Build a page',
+        cwd: '/workspace',
+        outputMode: 'terminal',
+      }),
+    ).toMatchObject({
+      commandKey: 'opencode',
+      args: ['run', 'Build a page'],
+      cwd: '/workspace',
+    });
+  });
+
   it('normalizes simple JSON events and ignores malformed lines', () => {
     expect(parseOpenCodeJsonLine({ rawLine: '{not-json' })).toBeNull();
     expect(

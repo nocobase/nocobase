@@ -167,6 +167,85 @@ describe('agent gateway node lifecycle APIs', () => {
     }
   });
 
+  it('re-registers the same daemon node key without creating duplicate nodes', async () => {
+    const firstInvitation = await createInvitation({
+      expectedNodeKey: 'node-1',
+    });
+    const firstResponse = await registerNode(extractInviteToken(firstInvitation.registerCommand), {
+      displayName: 'Local daemon',
+      capabilities: {
+        maxConcurrency: 1,
+      },
+    });
+    const firstRegistration = getData(firstResponse);
+    const nodeId = String(firstRegistration.nodeId);
+    const firstNodeToken = String(firstRegistration.nodeToken);
+
+    expect(firstResponse.status).toBe(200);
+    expect(await app.db.getRepository('agNodes').count({ filter: { nodeKey: 'node-1' } })).toBe(1);
+
+    await app.db.getRepository('agNodes').update({
+      filterByTk: nodeId,
+      values: {
+        status: 'disabled',
+      },
+    });
+
+    const secondInvitation = await createInvitation({
+      expectedNodeKey: 'node-1',
+    });
+    const secondResponse = await registerNode(extractInviteToken(secondInvitation.registerCommand), {
+      displayName: 'Local daemon reconnected',
+      daemonVersion: 'fake-daemon/2.0.0',
+      hostInfo: {
+        hostname: 'agent-host',
+        platform: 'linux',
+      },
+      capabilities: {
+        maxConcurrency: 4,
+      },
+    });
+    const secondRegistration = getData(secondResponse);
+    const secondNodeToken = String(secondRegistration.nodeToken);
+
+    expect(secondResponse.status).toBe(200);
+    expect(secondRegistration.nodeId).toBe(nodeId);
+    expect(secondNodeToken).toMatch(/^ag_node_/);
+    expect(secondNodeToken).not.toBe(firstNodeToken);
+    expect(await app.db.getRepository('agNodes').count({ filter: { nodeKey: 'node-1' } })).toBe(1);
+
+    const node = await app.db.getRepository('agNodes').findOne({
+      filterByTk: nodeId,
+    });
+    expect(node.get('displayName')).toBe('Local daemon reconnected');
+    expect(node.get('status')).toBe('active');
+    expect(node.get('disabledAt')).toBeFalsy();
+    expect(node.get('capabilitiesJson')).toMatchObject({
+      maxConcurrency: 4,
+    });
+    expect(node.get('metadataJson')).toMatchObject({
+      daemonVersion: 'fake-daemon/2.0.0',
+      hostInfo: {
+        hostname: 'agent-host',
+        platform: 'linux',
+      },
+    });
+
+    const oldTokenHeartbeatResponse = await app
+      .agent()
+      .post(`/api/agent-gateway/nodes/${nodeId}/heartbeat`)
+      .set('Authorization', `Bearer ${firstNodeToken}`)
+      .send({});
+    expect(oldTokenHeartbeatResponse.status).toBe(401);
+
+    const newTokenHeartbeatResponse = await app
+      .agent()
+      .post(`/api/agent-gateway/nodes/${nodeId}/heartbeat`)
+      .set('Authorization', `Bearer ${secondNodeToken}`)
+      .send({});
+    expect(newTokenHeartbeatResponse.status).toBe(200);
+  });
+
   it('accepts valid heartbeats, updates node snapshots, and syncs reported fake profiles', async () => {
     const invitation = await createInvitation();
     const registerResponse = await registerNode(extractInviteToken(invitation.registerCommand));

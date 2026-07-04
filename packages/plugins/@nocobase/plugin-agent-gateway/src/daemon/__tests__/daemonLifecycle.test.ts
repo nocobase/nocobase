@@ -38,6 +38,15 @@ class FakeRequester implements GatewayRequester {
   }
 }
 
+function getExpectedDefaultNodeKey() {
+  const normalizedHostname = os
+    .hostname()
+    .trim()
+    .replace(/[^a-zA-Z0-9_.-]/g, '-')
+    .replace(/-+/g, '-');
+  return `${normalizedHostname || 'local'}-agent-gateway-daemon`;
+}
+
 describe('agent gateway daemon lifecycle client', () => {
   let tempDir: string;
 
@@ -101,6 +110,19 @@ describe('agent gateway daemon lifecycle client', () => {
       nodeToken: 'ag_node_NODE_TOKEN_SECRET',
     });
     expect(JSON.stringify(requester.calls[1].body)).toContain('opencode');
+  });
+
+  it('uses a stable host-level node key when registering without an explicit key', async () => {
+    const requester = new FakeRequester();
+    const configPath = path.join(tempDir, 'config.json');
+    await registerDaemonNode({
+      requester,
+      serverUrl: 'https://nocobase.example.test',
+      inviteToken: 'ag_inv_INVITE_TOKEN_SECRET',
+      configPath,
+    });
+
+    expect((requester.calls[0].body as JsonRecord).nodeKey).toBe(getExpectedDefaultNodeKey());
   });
 
   it('keeps install script token input separate from script download and URL arguments', async () => {

@@ -44,6 +44,20 @@ describe('Claude-style agent adapter', () => {
     ).toThrow('Claude-style resume is not supported');
   });
 
+  it('builds terminal-friendly commands without stream-json output', () => {
+    expect(
+      claudeCodeAdapter.buildStartCommand({
+        prompt: 'Build a page',
+        cwd: '/workspace',
+        outputMode: 'terminal',
+      }),
+    ).toMatchObject({
+      commandKey: 'claude-code',
+      args: ['-p', 'Build a page'],
+      cwd: '/workspace',
+    });
+  });
+
   it('normalizes simple JSON events and ignores malformed lines', () => {
     expect(parseClaudeCodeJsonLine({ rawLine: '{not-json' })).toBeNull();
     expect(

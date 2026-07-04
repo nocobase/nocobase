@@ -25,6 +25,12 @@ function getString(value: unknown) {
   return typeof value === 'string' ? value.trim() : '';
 }
 
+function parseCodexTerminalSessionId(input: ProviderEventInput) {
+  const rawLine = getString(input.rawLine);
+  const match = rawLine.match(/^session id:\s*([0-9a-z-]{8,})$/i);
+  return match?.[1] || null;
+}
+
 export function parseCodexJsonlLine(input: ProviderEventInput): JsonRecord | null {
   if (isRecord(input.event)) {
     return input.event;
@@ -95,31 +101,47 @@ export const codexAdapter: AgentAdapter = {
   provider: 'codex',
   capabilities: normalizeAgentProviderCapabilities('codex'),
   buildStartCommand(input: BuildStartCommandInput) {
+    const structuredArgs = input.outputMode === 'terminal' ? [] : ['--json'];
     return {
       commandKey: 'codex',
-      args: ['exec', '--json', ...(input.extraArgs || []), input.prompt],
+      args: ['exec', ...structuredArgs, ...(input.extraArgs || []), input.prompt],
       cwd: input.cwd,
       timeoutMs: input.timeoutMs,
     };
   },
   buildResumeCommand(input: BuildResumeCommandInput) {
+    const structuredArgs = input.outputMode === 'terminal' ? [] : ['--json'];
     return {
       commandKey: 'codex',
-      args: ['exec', 'resume', '--json', ...(input.extraArgs || []), input.providerSessionId, input.message],
+      args: ['exec', 'resume', ...structuredArgs, ...(input.extraArgs || []), input.providerSessionId, input.message],
       cwd: input.cwd,
       timeoutMs: input.timeoutMs,
     };
   },
   detectSessionId(input: ProviderEventInput) {
     const event = parseCodexJsonlLine(input);
-    if (!event || event.type !== 'thread.started') {
-      return null;
+    if (event?.type === 'thread.started') {
+      return getString(event.thread_id) || null;
     }
-    return getString(event.thread_id) || null;
+    return parseCodexTerminalSessionId(input);
   },
   normalizeEvent(input: ProviderEventInput) {
     const event = parseCodexJsonlLine(input);
     if (!event) {
+      const providerSessionId = parseCodexTerminalSessionId(input);
+      if (providerSessionId) {
+        return [
+          {
+            eventType: 'agent.session.started',
+            level: 'info',
+            providerEventId: `session.id:${providerSessionId}`,
+            message: providerSessionId,
+            payloadJson: {
+              providerSessionId,
+            },
+          },
+        ];
+      }
       return [];
     }
     if (event.type === 'thread.started') {

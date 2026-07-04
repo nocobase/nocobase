@@ -89,6 +89,8 @@ interface TerminalStreamHandle {
   close(): void;
 }
 
+type AgentCommandOutputMode = 'structured' | 'terminal';
+
 interface ExecutionCommandSpec {
   commandKey: string;
   provider?: AgentProviderKey;
@@ -140,7 +142,12 @@ function getNumber(value: unknown) {
 function getRunPrompt(lease: RunLease, payload: JsonRecord) {
   const run = isRecord(lease.run) ? lease.run : {};
   const promptSnapshot = isRecord(run.promptSnapshot) ? run.promptSnapshot : {};
-  return getRawString(payload.prompt) || getRawString(payload.message) || getRawString(promptSnapshot.text);
+  return (
+    getRawString(payload.prompt) ||
+    getRawString(payload.message) ||
+    getRawString(promptSnapshot.renderedPrompt) ||
+    getRawString(promptSnapshot.text)
+  );
 }
 
 function getCanonicalProvider(lease: RunLease, payload: JsonRecord) {
@@ -180,7 +187,11 @@ function getFallbackObservationProvider(payload: JsonRecord, provider: AgentProv
   return undefined;
 }
 
-function getExecutionCommandSpec(lease: RunLease, cwd: string): ExecutionCommandSpec {
+function getExecutionCommandSpec(
+  lease: RunLease,
+  cwd: string,
+  outputMode: AgentCommandOutputMode,
+): ExecutionCommandSpec {
   const payload = getPayload(lease);
   const commandKey = getString(payload.commandKey || payload.profileKey);
   const provider = getCanonicalProvider(lease, payload);
@@ -193,6 +204,7 @@ function getExecutionCommandSpec(lease: RunLease, cwd: string): ExecutionCommand
         cwd,
         extraArgs: getStringArray(payload.extraArgs),
         timeoutMs: getNumber(payload.timeoutMs),
+        outputMode,
       });
       return {
         ...command,
@@ -234,6 +246,7 @@ function getExecutionCommandSpec(lease: RunLease, cwd: string): ExecutionCommand
     cwd,
     extraArgs: getStringArray(payload.extraArgs),
     timeoutMs: getNumber(payload.timeoutMs),
+    outputMode,
   });
   return {
     ...command,
@@ -1002,7 +1015,7 @@ export async function executeClaimedRun(
   let stopControlRequests: (() => Promise<void>) | null = null;
 
   try {
-    const commandSpec = getExecutionCommandSpec(claimedLease, cwd);
+    const commandSpec = getExecutionCommandSpec(claimedLease, cwd, usesManagedTmux ? 'terminal' : 'structured');
     if (usesManagedTmux) {
       terminalStream = createRunTerminalStream({
         runOptions: options,

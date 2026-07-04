@@ -1273,6 +1273,27 @@ async function createDispatchRun(
     transaction,
   );
   const defaultPayload = getRecord(getModelValue(template, 'defaultExecutionPayloadJson'));
+  const executionPayload = {
+    ...defaultPayload,
+    ...(!getString(defaultPayload.prompt) && !getString(defaultPayload.message)
+      ? {
+          prompt: rendered.renderedPrompt,
+        }
+      : {}),
+    dispatch: {
+      bindingId: getModelTargetKey(binding, 'id'),
+      bindingKey: getModelString(binding, 'bindingKey'),
+      collectionName,
+      recordId,
+      sourceCollection: collectionName,
+      sourceRecordId: recordId,
+      outputAgentRunField: output.fieldName,
+      idempotencyKey: idempotencyKey || null,
+    },
+    fields: fieldMappings,
+    skills: skillSelections.values,
+    resolvedSkills: skillSelections.resolved,
+  };
 
   const run = (await ctx.db.getRepository('agRuns').create({
     values: {
@@ -1289,22 +1310,7 @@ async function createDispatchRun(
         variables: rendered.variables,
         renderedAt: now.toISOString(),
       },
-      executionPayloadJson: {
-        ...defaultPayload,
-        dispatch: {
-          bindingId: getModelTargetKey(binding, 'id'),
-          bindingKey: getModelString(binding, 'bindingKey'),
-          collectionName,
-          recordId,
-          sourceCollection: collectionName,
-          sourceRecordId: recordId,
-          outputAgentRunField: output.fieldName,
-          idempotencyKey: idempotencyKey || null,
-        },
-        fields: fieldMappings,
-        skills: skillSelections.values,
-        resolvedSkills: skillSelections.resolved,
-      },
+      executionPayloadJson: executionPayload,
       sourceType: 'dispatch',
       sourceCollection: collectionName,
       sourceRecordId: recordId,

@@ -96,6 +96,28 @@ describe('agent gateway daemon exec driver', () => {
     ).rejects.toThrow(/not allowlisted/);
   });
 
+  it('prepends the cwd node_modules bin directory to PATH', async () => {
+    const localBin = path.join(workspace, 'node_modules', '.bin');
+    await fs.mkdir(localBin, { recursive: true });
+    const localTool = path.join(localBin, 'ag-local-tool');
+    await fs.writeFile(localTool, '#!/bin/sh\nprintf "AG_LOCAL_TOOL_OK:%s" "$PATH"\n', { mode: 0o755 });
+
+    const result = await executeCommand({
+      definition: {
+        commandKey: 'ag-local-tool',
+        executable: 'ag-local-tool',
+        allowedEnvKeys: [],
+        defaultTimeoutMs: 5000,
+      },
+      cwd: workspace,
+      workspaceRoot: workspace,
+    });
+
+    expect(result.status).toBe('succeeded');
+    expect(result.stdout.text).toContain('AG_LOCAL_TOOL_OK');
+    expect(result.stdout.text).toContain(localBin);
+  });
+
   it('stops the process on cancel, timeout, and lease lost', async () => {
     const cancelController = new AbortController();
     setTimeout(() => cancelController.abort(), 50);

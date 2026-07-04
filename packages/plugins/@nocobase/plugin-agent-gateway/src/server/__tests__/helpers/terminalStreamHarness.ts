@@ -298,12 +298,28 @@ export function createWebSocket(
     authProof?: TestBrowserAuthProof;
     streamTicket?: { ticket: string; ticketProof: string; authProof?: string; authenticator?: string; role?: string };
     origin?: string;
+    forwardedHost?: string;
+    forwardedPort?: string;
+    forwardedProto?: string;
+    forwarded?: string;
   } = {},
 ) {
   const headers: Record<string, string> = {};
   let protocols: string[] | undefined;
   if (options.origin) {
     headers.Origin = options.origin;
+  }
+  if (options.forwardedHost) {
+    headers['X-Forwarded-Host'] = options.forwardedHost;
+  }
+  if (options.forwardedPort) {
+    headers['X-Forwarded-Port'] = options.forwardedPort;
+  }
+  if (options.forwardedProto) {
+    headers['X-Forwarded-Proto'] = options.forwardedProto;
+  }
+  if (options.forwarded) {
+    headers.Forwarded = options.forwarded;
   }
   if (options.nodeToken) {
     headers.Authorization = `Bearer ${options.nodeToken}`;

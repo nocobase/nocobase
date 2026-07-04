@@ -39,9 +39,10 @@ export const claudeCodeAdapter: AgentAdapter = {
   provider: 'claude-code',
   capabilities: normalizeAgentProviderCapabilities('claude-code'),
   buildStartCommand(input: BuildStartCommandInput) {
+    const structuredArgs = input.outputMode === 'terminal' ? [] : ['--output-format', 'stream-json'];
     return {
       commandKey: 'claude-code',
-      args: ['-p', input.prompt, '--output-format', 'stream-json', ...(input.extraArgs || [])],
+      args: ['-p', input.prompt, ...structuredArgs, ...(input.extraArgs || [])],
       cwd: input.cwd,
       timeoutMs: input.timeoutMs,
     };

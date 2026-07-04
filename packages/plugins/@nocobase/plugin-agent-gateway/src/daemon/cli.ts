@@ -61,6 +61,20 @@ function getFlagNumber(flags: Record<string, string | boolean>, key: string, fal
   return Number.isFinite(numberValue) && numberValue > 0 ? numberValue : fallback;
 }
 
+async function getRegisterNodeKey(flags: Record<string, string | boolean>) {
+  const explicitNodeKey = getFlagString(flags, 'node-key');
+  if (explicitNodeKey) {
+    return explicitNodeKey;
+  }
+
+  try {
+    const config = await readDaemonConfig(getFlagString(flags, 'config') || undefined);
+    return config.nodeKey;
+  } catch {
+    return undefined;
+  }
+}
+
 function getDaemonDataPath(...segments: string[]) {
   return path.join(path.dirname(getDefaultConfigPath()), ...segments);
 }
@@ -169,12 +183,13 @@ async function handleRegister(flags: Record<string, string | boolean>) {
   }
 
   const requester = new AgentGatewayApiClient(serverUrl);
+  const configPath = getFlagString(flags, 'config') || undefined;
   const result = await registerDaemonNode({
     requester,
     serverUrl,
     inviteToken,
-    configPath: getFlagString(flags, 'config') || undefined,
-    nodeKey: getFlagString(flags, 'node-key') || undefined,
+    configPath,
+    nodeKey: await getRegisterNodeKey(flags),
   });
   printJson(result);
 }

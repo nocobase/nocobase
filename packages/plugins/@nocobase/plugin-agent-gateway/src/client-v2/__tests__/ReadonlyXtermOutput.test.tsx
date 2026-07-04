@@ -14,7 +14,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import ReadonlyXtermOutput from '../components/ReadonlyXtermOutput';
 import { TERMINAL_BROWSER_MAX_DECODED_PAYLOAD_BYTES_PER_FRAME } from '../../shared/terminalStreamProtocol';
 
-const MAX_TEST_VISIBLE_BYTES = Math.min(4 * 1024, TERMINAL_BROWSER_MAX_DECODED_PAYLOAD_BYTES_PER_FRAME);
+const MAX_TEST_VISIBLE_BYTES = Math.min(96 * 1024, TERMINAL_BROWSER_MAX_DECODED_PAYLOAD_BYTES_PER_FRAME);
 
 const xtermMock = vi.hoisted(() => {
   type KeyHandler = (event: KeyboardEvent) => boolean;

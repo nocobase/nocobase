@@ -257,6 +257,94 @@ describe('agent gateway daemon control requests', () => {
     };
   }
 
+  it('uses terminal-friendly adapter commands for managed tmux runs', async () => {
+    const workspace = path.join(tempDir, 'workspace');
+    await fs.mkdir(workspace, { recursive: true });
+    const calls: GatewayRequestOptions[] = [];
+    const requester: GatewayRequester & { calls: GatewayRequestOptions[] } = {
+      calls,
+      async request<T extends JsonRecord = JsonRecord>(options: GatewayRequestOptions): Promise<T> {
+        calls.push(options);
+        if (options.path.endsWith('/runs:claim')) {
+          return {
+            claimed: true,
+            runId: 'run-terminal-codex-1',
+            runCode: 'run-terminal-codex-1',
+            claimToken: 'ag_claim_TERMINAL',
+            claimAttempt: 1,
+            leaseVersion: 1,
+            profileProvider: 'codex',
+            run: {
+              id: 'run-terminal-codex-1',
+              promptSnapshot: {
+                text: 'Build a terminal-readable page',
+              },
+              executionPayloadJson: {
+                commandKey: 'codex',
+                cwd: '.',
+              },
+            },
+          } as T;
+        }
+        if (options.path.includes('/heartbeat') && options.path.includes('/runs/')) {
+          return {
+            runId: 'run-terminal-codex-1',
+            claimToken: 'ag_claim_TERMINAL',
+            claimAttempt: 1,
+            leaseVersion: 1,
+            cancelRequested: false,
+          } as T;
+        }
+        return {
+          ok: true,
+        } as T;
+      },
+    };
+    const gateway = new AgentGatewayDaemonNodeClient(requester, {
+      serverUrl: 'https://nocobase.example.test',
+      nodeId: 'node-control-1',
+      nodeKey: 'node-control-1',
+      nodeToken: 'ag_node_CONTROL',
+      savedAt: new Date().toISOString(),
+    });
+
+    const result = await runDaemonOnce({
+      gateway,
+      allowlist: {
+        codex: {
+          commandKey: 'codex',
+          executable: 'codex',
+          defaultTimeoutMs: 5000,
+        },
+      },
+      workspaceRoot: workspace,
+      skillsRoot: path.join(tempDir, 'skills'),
+      artifactDir: path.join(tempDir, 'artifacts'),
+      runHeartbeatIntervalMs: 20,
+      terminalBackend: 'tmux',
+      terminalStreamClientFactory: () => ({
+        start: async () => undefined,
+        appendText: async () => undefined,
+        end: async () => undefined,
+        close: () => undefined,
+      }),
+      detectOptions: {
+        probeCommand: async () => ({
+          available: true,
+          command: 'codex',
+          version: 'codex 1.0.0',
+        }),
+      },
+    });
+
+    expect(result.status).toBe('succeeded');
+    expect(tmuxMocks.executeTmuxCommand).toHaveBeenCalledWith(
+      expect.objectContaining({
+        args: ['exec', 'Build a terminal-readable page'],
+      }),
+    );
+  });
+
   it('acks delivered and succeeded after executing an interrupt request', async () => {
     const { result, requester } = await runWithControl('interrupt');
     expect(result.status).toBe('succeeded');

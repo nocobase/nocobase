@@ -268,6 +268,142 @@ describe('terminal stream browser ticket auth', () => {
     }
   });
 
+  it('allows same-origin browser stream upgrades through a forwarded host proxy', async () => {
+    const runId = await createRun(app, 'terminal-stream-auth-forwarded-origin');
+    const server = await createTerminalStreamServer(app);
+    const ticket = await createBrowserStreamTicket(app, {
+      userId: await getRootUserId(app),
+      runId,
+    });
+    const proxiedBrowser = createWebSocket(server.wsUrl, {
+      streamTicket: ticket,
+      origin: 'http://localhost:23000',
+      forwardedHost: 'localhost:23000',
+    });
+
+    try {
+      await waitForOpen(proxiedBrowser);
+      sendFrame(proxiedBrowser, {
+        type: 'browser.subscribe',
+        protocol: TERMINAL_PROTOCOL,
+        requestId: 'subscribe-forwarded-origin',
+        runId,
+        lastOffset: 0,
+      });
+      expect(
+        await waitForFrame(proxiedBrowser, (frame) => frame.type === 'ack' || frame.type === 'error'),
+      ).toMatchObject({
+        type: 'ack',
+        requestId: 'subscribe-forwarded-origin',
+      });
+    } finally {
+      proxiedBrowser.close();
+      await server.close();
+    }
+  });
+
+  it('allows same-origin browser stream upgrades through an RFC forwarded host proxy', async () => {
+    const runId = await createRun(app, 'terminal-stream-auth-rfc-forwarded-origin');
+    const server = await createTerminalStreamServer(app);
+    const ticket = await createBrowserStreamTicket(app, {
+      userId: await getRootUserId(app),
+      runId,
+    });
+    const proxiedBrowser = createWebSocket(server.wsUrl, {
+      streamTicket: ticket,
+      origin: 'https://gateway.agent-gateway.test',
+      forwarded: 'for=127.0.0.1;proto=https;host=gateway.agent-gateway.test',
+    });
+
+    try {
+      await waitForOpen(proxiedBrowser);
+      sendFrame(proxiedBrowser, {
+        type: 'browser.subscribe',
+        protocol: TERMINAL_PROTOCOL,
+        requestId: 'subscribe-rfc-forwarded-origin',
+        runId,
+        lastOffset: 0,
+      });
+      expect(
+        await waitForFrame(proxiedBrowser, (frame) => frame.type === 'ack' || frame.type === 'error'),
+      ).toMatchObject({
+        type: 'ack',
+        requestId: 'subscribe-rfc-forwarded-origin',
+      });
+    } finally {
+      proxiedBrowser.close();
+      await server.close();
+    }
+  });
+
+  it('allows loopback dev proxy browser stream upgrades through forwarded proto and port', async () => {
+    const runId = await createRun(app, 'terminal-stream-auth-forwarded-port-origin');
+    const server = await createTerminalStreamServer(app);
+    const ticket = await createBrowserStreamTicket(app, {
+      userId: await getRootUserId(app),
+      runId,
+    });
+    const proxiedBrowser = createWebSocket(server.wsUrl, {
+      streamTicket: ticket,
+      origin: 'http://localhost:23000',
+      forwardedPort: '23000',
+      forwardedProto: 'http',
+    });
+
+    try {
+      await waitForOpen(proxiedBrowser);
+      sendFrame(proxiedBrowser, {
+        type: 'browser.subscribe',
+        protocol: TERMINAL_PROTOCOL,
+        requestId: 'subscribe-forwarded-port-origin',
+        runId,
+        lastOffset: 0,
+      });
+      expect(
+        await waitForFrame(proxiedBrowser, (frame) => frame.type === 'ack' || frame.type === 'error'),
+      ).toMatchObject({
+        type: 'ack',
+        requestId: 'subscribe-forwarded-port-origin',
+      });
+    } finally {
+      proxiedBrowser.close();
+      await server.close();
+    }
+  });
+
+  it('rejects loopback dev proxy browser stream upgrades when forwarded port does not match origin', async () => {
+    const runId = await createRun(app, 'terminal-stream-auth-forwarded-port-mismatch');
+    const server = await createTerminalStreamServer(app);
+    const ticket = await createBrowserStreamTicket(app, {
+      userId: await getRootUserId(app),
+      runId,
+    });
+    const proxiedBrowser = createWebSocket(server.wsUrl, {
+      streamTicket: ticket,
+      origin: 'http://localhost:23000',
+      forwardedPort: '23001',
+      forwardedProto: 'http',
+    });
+
+    try {
+      await expect(waitForOpen(proxiedBrowser)).rejects.toThrow(/Unexpected server response: 403/);
+      expect(
+        await subscribe({
+          serverUrl: server.wsUrl,
+          runId,
+          ticket,
+          requestId: 'subscribe-after-forwarded-port-denied',
+        }),
+      ).toMatchObject({
+        type: 'ack',
+        requestId: 'subscribe-after-forwarded-port-denied',
+      });
+    } finally {
+      proxiedBrowser.close();
+      await server.close();
+    }
+  });
+
   it('rejects browser subscribe auth aliases without consuming a valid ticket', async () => {
     const runId = await createRun(app, 'terminal-stream-auth-frame-aliases');
     const server = await createTerminalStreamServer(app);

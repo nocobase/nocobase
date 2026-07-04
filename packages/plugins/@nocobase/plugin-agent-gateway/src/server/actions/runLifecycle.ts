@@ -56,6 +56,10 @@ import { getRunProviderCapabilitySummary, isRunCapabilitySupported } from './cap
 const DEFAULT_CLAIM_LEASE_SECONDS = 60;
 const DEFAULT_MAX_CONCURRENCY = 1;
 const CLAIM_CANDIDATE_PAGE_SIZE = 50;
+const DEFAULT_UI_BUILD_PROFILE_KEY = 'codex';
+const UI_BUILD_SOURCE_TYPE = 'ui-build';
+const UI_BUILD_REROUTE_SOURCE_TYPES = new Set([UI_BUILD_SOURCE_TYPE, 'manual-ui-build']);
+const RUNNER_ONLINE_THRESHOLD_MS = 120_000;
 
 const ACTIVE_RUN_STATUSES = ['claimed', 'syncing_skills', 'running', 'canceling'] as const;
 const CLAIMABLE_RUN_STATUS = 'queued';
@@ -87,9 +91,32 @@ interface SkillVersionPayload extends JsonRecord {
   source: JsonRecord;
 }
 
+interface BuildRunnerSelection {
+  node: ModelRecord;
+  profile: ModelRecord;
+}
+
+interface BuildRunnerCandidate {
+  node: ModelRecord;
+  profile: ModelRecord;
+  online: boolean;
+}
+
+interface MutableModelRecord extends ModelRecord {
+  set(key: string, value: unknown): void;
+}
+
+interface HookOptions {
+  transaction?: Transaction;
+}
+
 function getOptionalTargetKey(model: ModelRecord, key: string) {
   const value = getModelValue(model, key);
   return typeof value === 'string' || typeof value === 'number' ? String(value) : '';
+}
+
+function isMutableModelRecord(model: ModelRecord): model is MutableModelRecord {
+  return typeof (model as ModelRecord & { set?: unknown }).set === 'function';
 }
 
 function getRequiredInteger(ctx: Context, value: unknown, name: string) {
@@ -121,6 +148,47 @@ function getDateFromModel(model: ModelRecord, key: string) {
 
   const date = value instanceof Date ? value : new Date(String(value));
   return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function isRecentDate(date: Date | null, now = new Date()) {
+  return Boolean(date && now.getTime() - date.getTime() <= RUNNER_ONLINE_THRESHOLD_MS);
+}
+
+function getRunnerOnlineState(node: ModelRecord | null, profile: ModelRecord | null, now = new Date()) {
+  if (!node) {
+    return {
+      online: false,
+      reason: 'missing-node',
+    };
+  }
+  if (getModelString(node, 'status') !== 'active') {
+    return {
+      online: false,
+      reason: 'node-inactive',
+    };
+  }
+  if (!profile) {
+    return {
+      online: false,
+      reason: 'missing-profile',
+    };
+  }
+  if (getModelString(profile, 'status') !== 'active') {
+    return {
+      online: false,
+      reason: 'profile-inactive',
+    };
+  }
+  if (!isRecentDate(getDateFromModel(node, 'lastHeartbeatAt'), now)) {
+    return {
+      online: false,
+      reason: 'heartbeat-stale',
+    };
+  }
+  return {
+    online: true,
+    reason: 'ready',
+  };
 }
 
 function getLeaseExpiresAt(now: Date) {
@@ -263,6 +331,392 @@ async function getAgentGatewayActionPermissions(ctx: Context) {
   };
 }
 
+function isCodexLikeProfile(profile: ModelRecord) {
+  return getModelString(profile, 'provider') === 'codex' || getModelString(profile, 'profileKey') === 'codex';
+}
+
+function serializeBuildRunnerProfile(profile: ModelRecord) {
+  return {
+    id: getModelTargetKey(profile, 'id'),
+    nodeId: getModelString(profile, 'nodeId'),
+    profileKey: getModelString(profile, 'profileKey'),
+    displayName: getModelString(profile, 'displayName') || getModelString(profile, 'profileKey'),
+    provider: getModelString(profile, 'provider') || null,
+    agentType: getModelString(profile, 'agentType'),
+    driver: getModelString(profile, 'driver'),
+    status: getModelString(profile, 'status'),
+  };
+}
+
+function serializeBuildRunnerNode(node: ModelRecord, profiles: ModelRecord[], now = new Date()) {
+  const lastHeartbeatAt = getDateFromModel(node, 'lastHeartbeatAt');
+  return {
+    id: getModelTargetKey(node, 'id'),
+    nodeKey: getModelString(node, 'nodeKey'),
+    displayName: getModelString(node, 'displayName') || getModelString(node, 'nodeKey'),
+    status: getModelString(node, 'status'),
+    lastHeartbeatAt: lastHeartbeatAt ? lastHeartbeatAt.toISOString() : null,
+    online: getModelString(node, 'status') === 'active' && isRecentDate(lastHeartbeatAt, now),
+    profiles: profiles.map(serializeBuildRunnerProfile),
+  };
+}
+
+function compareBuildRunnerCandidates(
+  first: BuildRunnerCandidate,
+  second: BuildRunnerCandidate,
+  requestedProfileKey: string,
+) {
+  const firstProfileKey = getModelString(first.profile, 'profileKey');
+  const secondProfileKey = getModelString(second.profile, 'profileKey');
+  const firstExact = firstProfileKey === requestedProfileKey;
+  const secondExact = secondProfileKey === requestedProfileKey;
+  if (first.online !== second.online) {
+    return first.online ? -1 : 1;
+  }
+  if (firstExact !== secondExact) {
+    return firstExact ? -1 : 1;
+  }
+  const firstCodexLike = isCodexLikeProfile(first.profile);
+  const secondCodexLike = isCodexLikeProfile(second.profile);
+  if (firstCodexLike !== secondCodexLike) {
+    return firstCodexLike ? -1 : 1;
+  }
+  return (
+    getModelString(first.node, 'nodeKey').localeCompare(getModelString(second.node, 'nodeKey')) ||
+    firstProfileKey.localeCompare(secondProfileKey)
+  );
+}
+
+function compareBuildRunnerNodes(
+  first: ReturnType<typeof serializeBuildRunnerNode>,
+  second: ReturnType<typeof serializeBuildRunnerNode>,
+) {
+  if (first.online !== second.online) {
+    return first.online ? -1 : 1;
+  }
+  if (first.status !== second.status) {
+    return first.status === 'active' ? -1 : 1;
+  }
+  if (Boolean(first.profiles.length) !== Boolean(second.profiles.length)) {
+    return first.profiles.length ? -1 : 1;
+  }
+  return first.nodeKey.localeCompare(second.nodeKey);
+}
+
+async function listBuildRunOptions(ctx: Context) {
+  await requireAgentGatewayPermission(
+    ctx,
+    AGENT_GATEWAY_ACTIONS.dispatch,
+    'Agent Gateway dispatch permission required',
+  );
+
+  const [nodes, profiles] = (await Promise.all([
+    ctx.db.getRepository('agNodes').find({
+      sort: ['nodeKey'],
+    }),
+    ctx.db.getRepository('agAgentProfiles').find({
+      filter: {
+        status: 'active',
+      },
+      sort: ['profileKey'],
+    }),
+  ])) as [ModelRecord[], ModelRecord[]];
+  const now = new Date();
+  const profilesByNodeId = new Map<string, ModelRecord[]>();
+  for (const profile of profiles) {
+    const nodeId = getModelString(profile, 'nodeId');
+    if (!nodeId) {
+      continue;
+    }
+    const nodeProfiles = profilesByNodeId.get(nodeId) || [];
+    nodeProfiles.push(profile);
+    profilesByNodeId.set(nodeId, nodeProfiles);
+  }
+
+  const serializedNodes = nodes
+    .map((node) => serializeBuildRunnerNode(node, profilesByNodeId.get(getModelString(node, 'id')) || [], now))
+    .sort(compareBuildRunnerNodes);
+
+  ctx.body = {
+    defaultProfileKey: DEFAULT_UI_BUILD_PROFILE_KEY,
+    defaultCwd: '.',
+    nodes: serializedNodes,
+  };
+}
+
+async function findActiveNode(ctx: Context, nodeId: string, transaction: Transaction | undefined) {
+  if (!nodeId) {
+    return null;
+  }
+  return (await ctx.db.getRepository('agNodes').findOne({
+    filterByTk: nodeId,
+    transaction,
+  })) as ModelRecord | null;
+}
+
+async function findActiveProfile(ctx: Context, profileId: string, transaction: Transaction | undefined) {
+  if (!profileId) {
+    return null;
+  }
+  return (await ctx.db.getRepository('agAgentProfiles').findOne({
+    filterByTk: profileId,
+    transaction,
+  })) as ModelRecord | null;
+}
+
+function getBuildRunProfileKeyFromRun(run: ModelRecord, profile: ModelRecord | null) {
+  const payload = getRecord(getModelValue(run, 'executionPayloadJson'));
+  return (
+    getString(payload.profileKey) ||
+    getString(payload.commandKey) ||
+    (profile ? getModelString(profile, 'profileKey') : '') ||
+    DEFAULT_UI_BUILD_PROFILE_KEY
+  );
+}
+
+function getBuildRunProviderFromRun(run: ModelRecord, profile: ModelRecord | null) {
+  const payload = getRecord(getModelValue(run, 'executionPayloadJson'));
+  return (
+    getString(payload.provider) ||
+    getString(payload.agentProvider) ||
+    (profile ? getModelString(profile, 'provider') : '')
+  );
+}
+
+async function findOnlineBuildRunnerFallback(
+  ctx: Context,
+  options: { profileKey: string; provider?: string },
+  transaction: Transaction | undefined,
+): Promise<BuildRunnerSelection | null> {
+  const profileKey = options.profileKey || DEFAULT_UI_BUILD_PROFILE_KEY;
+  const profiles = (await ctx.db.getRepository('agAgentProfiles').find({
+    filter: {
+      profileKey,
+      status: 'active',
+    },
+    sort: ['profileKey'],
+    transaction,
+  })) as ModelRecord[];
+  if (!profiles.length) {
+    return null;
+  }
+
+  const nodeIds = [...new Set(profiles.map((profile) => getModelString(profile, 'nodeId')).filter(Boolean))];
+  const nodes = (await ctx.db.getRepository('agNodes').find({
+    filter: {
+      id: {
+        $in: nodeIds,
+      },
+      status: 'active',
+    },
+    sort: ['nodeKey'],
+    transaction,
+  })) as ModelRecord[];
+  const nodeById = new Map(nodes.map((node) => [getModelString(node, 'id'), node]));
+  const candidates = profiles
+    .map((profile): BuildRunnerCandidate | null => {
+      const node = nodeById.get(getModelString(profile, 'nodeId'));
+      if (!node) {
+        return null;
+      }
+      const online = getRunnerOnlineState(node, profile).online;
+      return online
+        ? {
+            node,
+            profile,
+            online,
+          }
+        : null;
+    })
+    .filter((candidate): candidate is BuildRunnerCandidate => Boolean(candidate))
+    .sort((first, second) => {
+      if (options.provider) {
+        const firstProviderExact = getModelString(first.profile, 'provider') === options.provider;
+        const secondProviderExact = getModelString(second.profile, 'provider') === options.provider;
+        if (firstProviderExact !== secondProviderExact) {
+          return firstProviderExact ? -1 : 1;
+        }
+      }
+      return compareBuildRunnerCandidates(first, second, profileKey);
+    });
+  const candidate = candidates[0];
+  return candidate
+    ? {
+        node: candidate.node,
+        profile: candidate.profile,
+      }
+    : null;
+}
+
+async function findCurrentRunRunner(
+  ctx: Context,
+  run: ModelRecord,
+  transaction: Transaction | undefined,
+): Promise<BuildRunnerSelection & { profileId: string; nodeId: string }> {
+  const profileId = getOptionalTargetKey(run, 'agentProfileId');
+  const requestedNodeId = getOptionalTargetKey(run, 'nodeId');
+  const profile = profileId ? await findActiveProfile(ctx, profileId, transaction) : null;
+  const nodeId = requestedNodeId || (profile ? getModelString(profile, 'nodeId') : '');
+  const node = nodeId ? await findActiveNode(ctx, nodeId, transaction) : null;
+  return {
+    node: node as ModelRecord,
+    profile: profile as ModelRecord,
+    nodeId,
+    profileId,
+  };
+}
+
+async function findFallbackForQueuedBuildRun(
+  ctx: Context,
+  run: ModelRecord,
+  transaction: Transaction | undefined,
+): Promise<BuildRunnerSelection | null> {
+  const sourceType = getModelString(run, 'sourceType');
+  if (!UI_BUILD_REROUTE_SOURCE_TYPES.has(sourceType)) {
+    return null;
+  }
+  if (getModelString(run, 'status') !== CLAIMABLE_RUN_STATUS) {
+    return null;
+  }
+  if (getModelNumber(run, 'claimAttempt') > 0 || getDateFromModel(run, 'claimedAt')) {
+    return null;
+  }
+
+  const currentRunner = await findCurrentRunRunner(ctx, run, transaction);
+  if (getRunnerOnlineState(currentRunner.node, currentRunner.profile).online) {
+    return null;
+  }
+
+  const profileKey = getBuildRunProfileKeyFromRun(run, currentRunner.profile);
+  const provider = getBuildRunProviderFromRun(run, currentRunner.profile);
+  const fallback = await findOnlineBuildRunnerFallback(ctx, { profileKey, provider }, transaction);
+  if (!fallback) {
+    return null;
+  }
+  const fallbackNodeId = getModelString(fallback.node, 'id');
+  const fallbackProfileId = getModelString(fallback.profile, 'id');
+  if (fallbackNodeId === currentRunner.nodeId && fallbackProfileId === currentRunner.profileId) {
+    return null;
+  }
+  return fallback;
+}
+
+function applyBuildRunnerFallbackToRun(run: MutableModelRecord, fallback: BuildRunnerSelection) {
+  const profileKey = getModelString(fallback.profile, 'profileKey');
+  const provider = getModelString(fallback.profile, 'provider');
+  const payload = getRecord(getModelValue(run, 'executionPayloadJson'));
+  run.set('nodeId', getModelTargetKey(fallback.node, 'id'));
+  run.set('agentProfileId', getModelTargetKey(fallback.profile, 'id'));
+  run.set('executionPayloadJson', {
+    ...payload,
+    profileKey: getString(payload.profileKey) || profileKey,
+    commandKey: getString(payload.commandKey) || profileKey,
+    ...(provider ? { provider } : {}),
+  });
+}
+
+async function resolveBuildRunnerSelection(
+  ctx: Context,
+  values: JsonRecord,
+  transaction: Transaction,
+): Promise<BuildRunnerSelection> {
+  const requestedNodeId = getString(values.nodeId);
+  const requestedProfileId = getString(values.agentProfileId);
+  const requestedProfileKey = getString(values.profileKey) || DEFAULT_UI_BUILD_PROFILE_KEY;
+
+  if (requestedProfileId) {
+    const profile = await findActiveProfile(ctx, requestedProfileId, transaction);
+    if (!profile || getModelString(profile, 'status') !== 'active') {
+      ctx.throw(400, 'Selected agent profile is not active');
+    }
+    if (requestedNodeId && getModelString(profile, 'nodeId') !== requestedNodeId) {
+      ctx.throw(400, 'Selected agent profile does not belong to the selected node');
+    }
+    const node = await findActiveNode(ctx, getModelString(profile, 'nodeId'), transaction);
+    if (!node || getModelString(node, 'status') !== 'active') {
+      ctx.throw(400, 'Selected node is not active');
+    }
+    if (!getRunnerOnlineState(node, profile).online) {
+      const fallback = await findOnlineBuildRunnerFallback(
+        ctx,
+        {
+          profileKey: getModelString(profile, 'profileKey') || requestedProfileKey,
+          provider: getModelString(profile, 'provider'),
+        },
+        transaction,
+      );
+      if (fallback) {
+        return fallback;
+      }
+    }
+    return {
+      node,
+      profile,
+    };
+  }
+
+  const profiles = (await ctx.db.getRepository('agAgentProfiles').find({
+    filter: {
+      ...(requestedNodeId ? { nodeId: requestedNodeId } : {}),
+      status: 'active',
+    },
+    sort: ['profileKey'],
+    transaction,
+  })) as ModelRecord[];
+  const nodes = (await ctx.db.getRepository('agNodes').find({
+    filter: {
+      status: 'active',
+      ...(requestedNodeId ? { id: requestedNodeId } : {}),
+    },
+    sort: ['nodeKey'],
+    transaction,
+  })) as ModelRecord[];
+  const nodeById = new Map(nodes.map((node) => [getModelString(node, 'id'), node]));
+  const candidates = profiles
+    .map((profile): BuildRunnerCandidate | null => {
+      const node = nodeById.get(getModelString(profile, 'nodeId'));
+      if (!node) {
+        return null;
+      }
+      return {
+        node,
+        profile,
+        online: getRunnerOnlineState(node, profile).online,
+      };
+    })
+    .filter((candidate): candidate is BuildRunnerCandidate => Boolean(candidate))
+    .sort((first, second) => compareBuildRunnerCandidates(first, second, requestedProfileKey));
+  const candidate = candidates[0];
+  if (!candidate) {
+    ctx.throw(400, 'No active Agent Gateway runner profile is available');
+  }
+  return {
+    node: candidate.node,
+    profile: candidate.profile,
+  };
+}
+
+function buildUiBuildPrompt(values: JsonRecord) {
+  const prompt = getString(values.prompt);
+  if (!prompt) {
+    return '';
+  }
+  const title = getString(values.title);
+  return [
+    '请在当前 NocoBase 环境中完成以下搭建任务。',
+    '要求：',
+    '- 不要清空已有数据，除非任务明确要求。',
+    '- 如果搭建需要补齐字段、区块配置或数据模型，请按任务需要处理，并在最终结果中说明。',
+    '- 执行过程中持续输出关键步骤，完成后验证页面可以打开。',
+    '',
+    title ? `任务标题：${title}` : '',
+    '搭建指令：',
+    prompt,
+  ]
+    .filter((line) => line !== '')
+    .join('\n');
+}
+
 function getControlCapabilityDecision(capabilities: JsonRecord, action: 'interrupt' | 'terminate') {
   if (capabilities[action] === true) {
     return true;
@@ -347,6 +801,36 @@ async function getRunControlCapability(
   return (await getRunnerControlCapabilityDecision(ctx, run, action)) === true;
 }
 
+async function getRunRunnerStatus(ctx: Context, run: ModelRecord) {
+  const nodeId = getOptionalTargetKey(run, 'nodeId');
+  const profileId = getOptionalTargetKey(run, 'agentProfileId');
+  const [node, profile] = (await Promise.all([
+    nodeId
+      ? ctx.db.getRepository('agNodes').findOne({
+          filterByTk: nodeId,
+        })
+      : null,
+    profileId
+      ? ctx.db.getRepository('agAgentProfiles').findOne({
+          filterByTk: profileId,
+        })
+      : null,
+  ])) as [ModelRecord | null, ModelRecord | null];
+  const state = getRunnerOnlineState(node, profile);
+  const lastHeartbeatAt = node ? getDateFromModel(node, 'lastHeartbeatAt') : null;
+  return {
+    ...state,
+    nodeId: nodeId || null,
+    nodeKey: node ? getModelString(node, 'nodeKey') : null,
+    nodeStatus: node ? getModelString(node, 'status') : null,
+    lastHeartbeatAt: lastHeartbeatAt ? lastHeartbeatAt.toISOString() : null,
+    agentProfileId: profileId || null,
+    profileKey: profile ? getModelString(profile, 'profileKey') : null,
+    profileProvider: profile ? getModelString(profile, 'provider') || null : null,
+    profileStatus: profile ? getModelString(profile, 'status') : null,
+  };
+}
+
 async function serializeRunForManagement(ctx: Context, run: ModelRecord) {
   const json = serializeRunForUser(run);
   const agentSessionId = getOptionalTargetKey(run, 'agentSessionId');
@@ -384,6 +868,7 @@ async function serializeRunForManagement(ctx: Context, run: ModelRecord) {
       interruptRun: actionPermissions.interruptRun && interruptCapable,
       terminateRun: actionPermissions.terminateRun && terminateCapable,
     },
+    runnerStatusJson: await getRunRunnerStatus(ctx, run),
   };
 }
 
@@ -624,6 +1109,16 @@ async function createRun(ctx: Context) {
     ctx.throw(400, `${sourceType} runs must be created by the Agent Gateway node smoke API`);
   }
   const now = new Date();
+  const promptSnapshot = getRecord(values.promptSnapshot);
+  const rawExecutionPayload = getRecord(values.executionPayloadJson || values.executionPayload);
+  const hasExecutionPrompt = Boolean(getString(rawExecutionPayload.prompt) || getString(rawExecutionPayload.message));
+  const renderedPrompt = hasExecutionPrompt ? '' : getString(promptSnapshot.renderedPrompt);
+  const executionPayloadJson = renderedPrompt
+    ? {
+        ...rawExecutionPayload,
+        prompt: renderedPrompt,
+      }
+    : rawExecutionPayload;
   const run = (await ctx.db.getRepository('agRuns').create({
     values: {
       runCode: getString(values.runCode) || `run_${randomUUID()}`,
@@ -631,8 +1126,8 @@ async function createRun(ctx: Context) {
       claimAttempt: 0,
       leaseVersion: 0,
       cancelRequested: false,
-      promptSnapshot: getRecord(values.promptSnapshot),
-      executionPayloadJson: getRecord(values.executionPayloadJson || values.executionPayload),
+      promptSnapshot,
+      executionPayloadJson,
       sourceType,
       sourceCollection: getString(values.sourceCollection) || null,
       sourceRecordId: getString(values.sourceRecordId) || null,
@@ -646,6 +1141,85 @@ async function createRun(ctx: Context) {
   })) as ModelRecord;
 
   ctx.body = serializeCreatedRunForUser(run);
+}
+
+async function createUiBuildRun(ctx: Context) {
+  await requireAgentGatewayPermission(
+    ctx,
+    AGENT_GATEWAY_ACTIONS.dispatch,
+    'Agent Gateway dispatch permission required',
+  );
+
+  const values = getBodyValues(ctx);
+  const renderedPrompt = buildUiBuildPrompt(values);
+  if (!renderedPrompt) {
+    ctx.throw(400, 'prompt is required');
+  }
+
+  const result = await ctx.db.sequelize.transaction(async (transaction) => {
+    const selection = await resolveBuildRunnerSelection(ctx, values, transaction);
+    const nodeId = String(getModelTargetKey(selection.node, 'id'));
+    const agentProfileId = String(getModelTargetKey(selection.profile, 'id'));
+    const profileKey = getModelString(selection.profile, 'profileKey');
+    const provider = getModelString(selection.profile, 'provider') || undefined;
+    const cwd = getString(values.cwd) || '.';
+    const now = new Date();
+    const executionPayloadJson = {
+      scenario: 'nocobase-ui-build',
+      source: 'agent-gateway-ui',
+      title: getString(values.title) || null,
+      prompt: renderedPrompt,
+      profileKey,
+      commandKey: getString(values.commandKey) || profileKey,
+      ...(provider ? { provider } : {}),
+      cwd,
+      terminalBackend: 'tmux',
+    };
+    const run = (await ctx.db.getRepository('agRuns').create({
+      values: {
+        runCode: getString(values.runCode) || `run_ui_build_${randomUUID()}`,
+        status: CLAIMABLE_RUN_STATUS,
+        claimAttempt: 0,
+        leaseVersion: 0,
+        cancelRequested: false,
+        promptSnapshot: {
+          templateKey: 'agent-gateway-ui-build',
+          templateText: '{{prompt}}',
+          renderedPrompt,
+          variables: {
+            title: getString(values.title) || null,
+            prompt: getString(values.prompt),
+          },
+          renderedAt: now.toISOString(),
+        },
+        executionPayloadJson,
+        resultSummaryJson: {
+          title: getString(values.title) || null,
+          requestedFrom: 'agent-gateway-ui',
+        },
+        sourceType: UI_BUILD_SOURCE_TYPE,
+        requestedAt: now,
+        queuedAt: now,
+        requestedById: getCurrentUserId(ctx) || null,
+        nodeId,
+        agentProfileId,
+      },
+      transaction,
+    })) as ModelRecord;
+
+    return {
+      run,
+      node: selection.node,
+      profile: selection.profile,
+    };
+  });
+
+  ctx.body = {
+    runId: getModelTargetKey(result.run, 'id'),
+    runCode: getModelString(result.run, 'runCode'),
+    run: await serializeRunForManagement(ctx, result.run),
+    runnerStatus: getRunnerOnlineState(result.node, result.profile),
+  };
 }
 
 async function listRuns(ctx: Context) {
@@ -1222,6 +1796,13 @@ async function runHeartbeat(ctx: Context, nodeId: string, runId: string) {
       },
       transaction,
     });
+    await ctx.db.getRepository('agNodes').update({
+      filterByTk: nodeId,
+      values: {
+        lastHeartbeatAt: now,
+      },
+      transaction,
+    });
     const cancelRequested = getBoolean(getModelValue(lease.run, 'cancelRequested')) || status === 'canceling';
     const activeTerminateControl = cancelRequested
       ? ((await ctx.db.getRepository('agRunControlRequests').findOne({
@@ -1727,6 +2308,29 @@ async function expireLeases(ctx: Context) {
   };
 }
 
+function createRunLifecycleHookContext(plugin: Plugin): Context {
+  return {
+    app: plugin.app,
+    db: plugin.db,
+  } as unknown as Context;
+}
+
+export function registerRunLifecycleHooks(plugin: Plugin) {
+  plugin.db.on('agRuns.beforeSave', async (model: ModelRecord, options: HookOptions) => {
+    if (!isMutableModelRecord(model)) {
+      return;
+    }
+    const fallback = await findFallbackForQueuedBuildRun(
+      createRunLifecycleHookContext(plugin),
+      model,
+      options?.transaction,
+    );
+    if (fallback) {
+      applyBuildRunnerFallbackToRun(model, fallback);
+    }
+  });
+}
+
 export function registerRunLifecycleRoutes(plugin: Plugin) {
   plugin.app.use(
     async (ctx: Context, next: Next) => {
@@ -1759,6 +2363,16 @@ export function registerRunLifecycleRoutes(plugin: Plugin) {
       const runSkipMatch = routePath.match(/^\/nodes\/([^/]+)\/runs\/([^/]+)\/skip$/);
       const cancelMatch = routePath.match(/^\/runs\/([^/]+)\/cancel$/);
       const getRunMatch = routePath.match(/^\/runs:get\/([^/]+)$/);
+
+      if (ctx.method === 'GET' && routePath === '/build-runs:options') {
+        await listBuildRunOptions(ctx);
+        return;
+      }
+
+      if (ctx.method === 'POST' && routePath === '/build-runs:create') {
+        await createUiBuildRun(ctx);
+        return;
+      }
 
       if (ctx.method === 'GET' && routePath === '/runs:list') {
         await listRuns(ctx);

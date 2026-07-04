@@ -39,9 +39,10 @@ export const opencodeAdapter: AgentAdapter = {
   provider: 'opencode',
   capabilities: normalizeAgentProviderCapabilities('opencode'),
   buildStartCommand(input: BuildStartCommandInput) {
+    const structuredArgs = input.outputMode === 'terminal' ? [] : ['--format', 'json'];
     return {
       commandKey: 'opencode',
-      args: ['run', '--format', 'json', ...(input.extraArgs || []), input.prompt],
+      args: ['run', ...structuredArgs, ...(input.extraArgs || []), input.prompt],
       cwd: input.cwd,
       timeoutMs: input.timeoutMs,
     };

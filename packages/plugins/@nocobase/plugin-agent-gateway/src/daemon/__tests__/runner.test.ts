@@ -372,7 +372,7 @@ describe('agent gateway daemon runner', () => {
         run: {
           id: 'run-1',
           promptSnapshot: {
-            text: 'Build with custom profile',
+            renderedPrompt: 'Build with custom profile',
           },
           executionPayloadJson: {
             profileKey: 'custom-codex',

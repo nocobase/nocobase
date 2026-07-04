@@ -67,12 +67,19 @@ describe('agent gateway run lifecycle APIs', () => {
   });
 
   async function createRunner(
-    options: { nodeKey?: string; maxConcurrency?: number; profileKey?: string; profileProvider?: string } = {},
+    options: {
+      nodeKey?: string;
+      maxConcurrency?: number;
+      profileKey?: string;
+      profileProvider?: string;
+      lastHeartbeatAt?: Date;
+    } = {},
   ): Promise<TestRunner> {
     const nodeKey = options.nodeKey || 'node-1';
     const profileKey = options.profileKey || 'fake-success';
     const nodeToken = createNodeToken();
     const now = new Date();
+    const lastHeartbeatAt = options.lastHeartbeatAt || now;
     const node = await app.db.getRepository('agNodes').create({
       values: {
         nodeKey,
@@ -84,7 +91,7 @@ describe('agent gateway run lifecycle APIs', () => {
           maxConcurrency: options.maxConcurrency || 1,
         },
         registeredAt: now,
-        lastHeartbeatAt: now,
+        lastHeartbeatAt,
       },
     });
     const nodeId = String(node.get('id'));
@@ -238,6 +245,173 @@ describe('agent gateway run lifecycle APIs', () => {
       },
     });
     expect(storedRun.get('queuedAt')).toBeTruthy();
+  });
+
+  it('reroutes manual UI build runs from stale runners to an online matching Codex runner', async () => {
+    const staleRunner = await createRunner({
+      nodeKey: 'aaa-stale-codex',
+      profileKey: 'codex',
+      lastHeartbeatAt: new Date(Date.now() - 10 * 60 * 1000),
+    });
+    const onlineRunner = await createRunner({
+      nodeKey: 'zzz-online-codex',
+      profileKey: 'codex',
+      profileProvider: 'codex',
+    });
+    const now = new Date().toISOString();
+
+    await app.db.getRepository('agRuns').create({
+      values: {
+        runCode: 'manual-ui-build-reroute',
+        status: 'queued',
+        claimAttempt: 0,
+        leaseVersion: 0,
+        cancelRequested: false,
+        sourceType: 'manual-ui-build',
+        requestedAt: now,
+        queuedAt: now,
+        nodeId: staleRunner.nodeId,
+        agentProfileId: staleRunner.profileId,
+        promptSnapshot: {
+          text: 'Build a NocoBase page',
+        },
+        executionPayloadJson: {
+          prompt: 'Build a NocoBase page',
+          cwd: '.',
+        },
+      },
+    });
+
+    const storedRun = await app.db.getRepository('agRuns').findOne({
+      filter: {
+        runCode: 'manual-ui-build-reroute',
+      },
+    });
+    expect(storedRun.get('nodeId')).toBe(onlineRunner.nodeId);
+    expect(storedRun.get('agentProfileId')).toBe(onlineRunner.profileId);
+    expect(storedRun.get('executionPayloadJson')).toMatchObject({
+      prompt: 'Build a NocoBase page',
+      cwd: '.',
+      profileKey: 'codex',
+      commandKey: 'codex',
+      provider: 'codex',
+    });
+  });
+
+  it('creates UI build runs with a default Codex runner payload and runner diagnostics', async () => {
+    const offlineRunner = await createRunner({
+      nodeKey: 'aaa-offline-codex',
+      profileKey: 'codex',
+      profileProvider: 'codex',
+      lastHeartbeatAt: new Date(Date.now() - 10 * 60 * 1000),
+    });
+    const runner = await createRunner({
+      nodeKey: 'zzz-local-codex',
+      profileKey: 'codex',
+      profileProvider: 'codex',
+    });
+
+    const optionsResponse = await rootAgent.get('/api/agent-gateway/build-runs:options');
+    expect(optionsResponse.status).toBe(200);
+    const options = getData(optionsResponse);
+    const nodes = Array.isArray(options.nodes) ? options.nodes : [];
+    expect(options.defaultProfileKey).toBe('codex');
+    expect(options.defaultCwd).toBe('.');
+    expect(nodes[0]).toMatchObject({
+      id: runner.nodeId,
+      online: true,
+      profiles: [
+        expect.objectContaining({
+          id: runner.profileId,
+          profileKey: 'codex',
+          provider: 'codex',
+        }),
+      ],
+    });
+    expect(nodes).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: offlineRunner.nodeId,
+          online: false,
+        }),
+      ]),
+    );
+
+    const createResponse = await rootAgent.post('/api/agent-gateway/build-runs:create').send({
+      title: 'Calendar build',
+      prompt: '搭建一个日历测试页面',
+      cwd: '/root/work/nocobase',
+    });
+    expect(createResponse.status).toBe(200);
+    const createResult = getData(createResponse);
+    expect(createResult).toMatchObject({
+      runId: expect.any(String),
+      run: expect.objectContaining({
+        status: 'queued',
+        sourceType: 'ui-build',
+        nodeId: runner.nodeId,
+        agentProfileId: runner.profileId,
+        runnerStatusJson: expect.objectContaining({
+          online: true,
+          reason: 'ready',
+          profileKey: 'codex',
+        }),
+      }),
+    });
+
+    const storedRun = await app.db.getRepository('agRuns').findOne({
+      filterByTk: String(createResult.runId),
+    });
+    expect(storedRun.get('promptSnapshot')).toMatchObject({
+      renderedPrompt: expect.stringContaining('搭建一个日历测试页面'),
+    });
+    expect(storedRun.get('executionPayloadJson')).toMatchObject({
+      scenario: 'nocobase-ui-build',
+      prompt: expect.stringContaining('搭建一个日历测试页面'),
+      profileKey: 'codex',
+      commandKey: 'codex',
+      provider: 'codex',
+      cwd: '/root/work/nocobase',
+    });
+
+    const reroutedResponse = await rootAgent.post('/api/agent-gateway/build-runs:create').send({
+      title: 'Calendar build from stale runner',
+      prompt: '搭建另一个日历测试页面',
+      nodeId: offlineRunner.nodeId,
+      agentProfileId: offlineRunner.profileId,
+    });
+    expect(reroutedResponse.status).toBe(200);
+    const reroutedResult = getData(reroutedResponse);
+    expect(reroutedResult).toMatchObject({
+      run: expect.objectContaining({
+        sourceType: 'ui-build',
+        nodeId: runner.nodeId,
+        agentProfileId: runner.profileId,
+        runnerStatusJson: expect.objectContaining({
+          online: true,
+          reason: 'ready',
+        }),
+      }),
+      runnerStatus: expect.objectContaining({
+        online: true,
+        reason: 'ready',
+      }),
+    });
+
+    const claimResponse = await claimRun(runner, {
+      profileKey: 'codex',
+    });
+    expect(claimResponse.status).toBe(200);
+    const claim = getData(claimResponse);
+    expect(claim).toMatchObject({
+      claimed: true,
+      runId: createResult.runId,
+      run: expect.objectContaining({
+        executionPayloadJson: expect.objectContaining({
+          prompt: expect.stringContaining('搭建一个日历测试页面'),
+        }),
+      }),
+    });
   });
 
   it('includes agent session capabilities in management run list and details', async () => {
@@ -848,7 +1022,10 @@ describe('agent gateway run lifecycle APIs', () => {
   });
 
   it('extends leases on heartbeat and rejects stale writers without mutation', async () => {
-    const runner = await createRunner();
+    const staleNodeHeartbeatAt = new Date(Date.now() - 10 * 60 * 1000);
+    const runner = await createRunner({
+      lastHeartbeatAt: staleNodeHeartbeatAt,
+    });
     const run = await createRun('run-heartbeat-1', {
       agentProfileId: runner.profileId,
     });
@@ -899,9 +1076,15 @@ describe('agent gateway run lifecycle APIs', () => {
     const storedRun = await app.db.getRepository('agRuns').findOne({
       filterByTk: run.id,
     });
+    const storedNode = await app.db.getRepository('agNodes').findOne({
+      filterByTk: runner.nodeId,
+    });
     expect(storedRun.get('status')).toBe('running');
     expect(storedRun.get('leaseVersion')).toBe(3);
     expect(storedRun.get('lastRunHeartbeatAt')).toBeTruthy();
+    expect(new Date(String(storedNode.get('lastHeartbeatAt'))).getTime()).toBeGreaterThan(
+      staleNodeHeartbeatAt.getTime(),
+    );
   });
 
   it('redacts terminal result and error summaries before exposing them to run readers', async () => {

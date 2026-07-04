@@ -51,6 +51,30 @@ describe('Codex agent adapter', () => {
     });
   });
 
+  it('builds terminal-friendly commands without JSONL flags', () => {
+    expect(
+      codexAdapter.buildStartCommand({
+        prompt: 'Build a page',
+        cwd: '/workspace',
+        outputMode: 'terminal',
+      }),
+    ).toMatchObject({
+      commandKey: 'codex',
+      args: ['exec', 'Build a page'],
+      cwd: '/workspace',
+    });
+    expect(
+      codexAdapter.buildResumeCommand({
+        providerSessionId: '019f1e72-d75c-7c61-a9ba-cc99c653e0a2',
+        message: 'Continue',
+        outputMode: 'terminal',
+      }),
+    ).toMatchObject({
+      commandKey: 'codex',
+      args: ['exec', 'resume', '019f1e72-d75c-7c61-a9ba-cc99c653e0a2', 'Continue'],
+    });
+  });
+
   it('keeps spaces, quotes, and newlines as one resume message argv element', () => {
     const message = 'Continue with spaces, "quotes", and a newline\nthen finish';
     const command = codexAdapter.buildResumeCommand({
@@ -68,6 +92,30 @@ describe('Codex agent adapter', () => {
         rawLine: '{"type":"thread.started","thread_id":"thread-1"}',
       }),
     ).toBe('thread-1');
+  });
+
+  it('detects session ids from terminal-friendly Codex output', () => {
+    const providerSessionId = '019f2d69-1199-7212-a3de-82e3870de7f9';
+    expect(
+      codexAdapter.detectSessionId({
+        rawLine: `session id: ${providerSessionId}`,
+      }),
+    ).toBe(providerSessionId);
+    expect(
+      codexAdapter.normalizeEvent({
+        rawLine: `session id: ${providerSessionId}`,
+      }),
+    ).toEqual([
+      {
+        eventType: 'agent.session.started',
+        level: 'info',
+        providerEventId: `session.id:${providerSessionId}`,
+        message: providerSessionId,
+        payloadJson: {
+          providerSessionId,
+        },
+      },
+    ]);
   });
 
   it('detects session ids from the real captured local Codex JSONL sample', async () => {

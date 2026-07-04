@@ -16,7 +16,12 @@ import { StringDecoder } from 'string_decoder';
 
 import { redactObservabilityText } from '../server/security/redaction';
 import { AGENT_GATEWAY_TERMINATE_CONTROL_CANCEL_REASON } from '../shared/runControl';
-import { ExecCommandDefinition, ExecDriverResult, ExecTerminalStatus } from './execDriver';
+import {
+  ExecCommandDefinition,
+  ExecDriverResult,
+  ExecTerminalStatus,
+  prependWorkspaceNodeBinToPath,
+} from './execDriver';
 
 export interface TmuxCommandOptions {
   runId: string;
@@ -182,6 +187,7 @@ function buildShellCommand(options: {
   definition: ExecCommandDefinition;
   args?: string[];
   env?: Record<string, string>;
+  cwd: string;
   exitCodePath: string;
   doneSignalName: string;
 }) {
@@ -190,7 +196,11 @@ function buildShellCommand(options: {
     ...(options.definition.baseArgs || []).map(shellQuote),
     ...(options.args || []).map(shellQuote),
   ];
-  const envLines = Object.entries(options.env || {})
+  const env = {
+    ...(options.env || {}),
+    PATH: prependWorkspaceNodeBinToPath(options.cwd, options.env?.PATH || process.env.PATH),
+  };
+  const envLines = Object.entries(env)
     .filter(([key]) => SHELL_ENV_KEY_PATTERN.test(key))
     .map(([key, value]) => `export ${key}=${shellQuote(value)};`);
   return [
@@ -743,6 +753,7 @@ export async function executeTmuxCommand(options: TmuxCommandOptions): Promise<E
       definition: options.definition,
       args: options.args,
       env: options.env,
+      cwd: guardedCwd,
       exitCodePath,
       doneSignalName,
     });

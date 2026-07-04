@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Alert, Empty, Space, Tag, Timeline, Typography } from 'antd';
+import { Alert, Collapse, Empty, Space, Tag, Timeline, Typography } from 'antd';
 import React from 'react';
 
 import { JsonPreview, JsonRecord, formatDateTime, redactPreviewText } from '../pages/AgentGatewayPageUtils';
@@ -68,6 +68,24 @@ function getTimelineColor(eventType: string | undefined, level?: string, content
   return 'gray';
 }
 
+function isConversationMessageEvent(eventType?: string) {
+  return eventType === 'agent.message' || eventType === 'agent.user.message';
+}
+
+function isCommandEvent(eventType?: string) {
+  return Boolean(eventType?.startsWith('agent.command.') || eventType?.startsWith('agent.tool.'));
+}
+
+function getConversationTitle(t: TFunction, event: AgentTimelineEventRecord | LegacyRunEventRecord) {
+  if (event.eventType === 'agent.user.message') {
+    return t('You');
+  }
+  if (event.eventType === 'agent.message') {
+    return t('Agent message');
+  }
+  return event.eventType || t('Message');
+}
+
 function TimelineContent({
   title,
   source,
@@ -122,13 +140,18 @@ export function AgentTimeline({
   warning?: string;
 }) {
   const usingLegacyFallback = useLegacyFallback && !events.length && legacyEvents.length > 0;
-  const timelineItems = events.length
-    ? events.map((event) => ({
+  const messageEvents = events.filter((event) => isConversationMessageEvent(event.eventType));
+  const commandEvents = events.filter((event) => isCommandEvent(event.eventType));
+  const legacyMessageEvents = usingLegacyFallback
+    ? legacyEvents.filter((event) => isConversationMessageEvent(event.eventType))
+    : [];
+  const timelineItems = messageEvents.length
+    ? messageEvents.map((event) => ({
         key: event.id,
         color: getTimelineColor(event.eventType, undefined, event.contentJson),
         children: (
           <TimelineContent
-            title={event.eventType || t('Agent event')}
+            title={getConversationTitle(t, event)}
             source={event.source}
             sequence={event.sequence}
             timestamp={event.createdAt}
@@ -138,13 +161,13 @@ export function AgentTimeline({
           />
         ),
       }))
-    : usingLegacyFallback
-      ? legacyEvents.map((event) => ({
+    : legacyMessageEvents.length
+      ? legacyMessageEvents.map((event) => ({
           key: event.id,
           color: getTimelineColor(event.eventType, event.level),
           children: (
             <TimelineContent
-              title={event.eventType || t('Legacy event')}
+              title={getConversationTitle(t, event)}
               source={event.source}
               sequence={event.sequence}
               timestamp={event.emittedAt}
@@ -155,31 +178,52 @@ export function AgentTimeline({
           ),
         }))
       : [];
+  const commandTimelineItems = commandEvents.map((event) => ({
+    key: event.id,
+    color: getTimelineColor(event.eventType, undefined, event.contentJson),
+    children: (
+      <TimelineContent
+        title={event.contentText || event.eventType || t('Tool call')}
+        source={event.source}
+        sequence={event.sequence}
+        timestamp={event.createdAt}
+        contentJson={event.contentJson}
+        detailsLabel={t('Details')}
+      />
+    ),
+  }));
 
   return (
-    <section aria-label={t('Agent Timeline')}>
+    <section aria-label={t('Task conversation')}>
       <Space direction="vertical" size={12} style={{ width: '100%' }}>
         <Space direction="vertical" size={2}>
           <Typography.Title level={5} style={{ margin: 0 }}>
-            {t('Agent Timeline')}
+            {t('Task')}
           </Typography.Title>
           <Typography.Text type="secondary">
             {usingLegacyFallback
-              ? t('Showing legacy run events because no normalized timeline exists')
-              : events.length
-                ? t('Normalized agent activity')
-                : t('No timeline activity yet')}
+              ? t('Showing available conversation messages from legacy events')
+              : t('Conversation between you and the agent')}
           </Typography.Text>
         </Space>
         {warning ? <Alert type="warning" showIcon message={warning} /> : null}
-        {usingLegacyFallback ? (
-          <Alert type="info" showIcon message={t('This run has no normalized agent timeline yet')} />
-        ) : null}
         {timelineItems.length ? (
           <Timeline mode="left" items={timelineItems} />
         ) : (
-          <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('No timeline events yet')} />
+          <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('No task messages yet')} />
         )}
+        {commandTimelineItems.length ? (
+          <Collapse
+            size="small"
+            items={[
+              {
+                key: 'tool-calls',
+                label: `${t('Tool calls')} (${commandTimelineItems.length})`,
+                children: <Timeline mode="left" items={commandTimelineItems} />,
+              },
+            ]}
+          />
+        ) : null}
       </Space>
     </section>
   );

@@ -31,9 +31,10 @@ export class PluginAgentGatewayClientV2 extends Plugin {
 
     this.pluginSettingsManager.addPageTabItem({
       menuKey: NAMESPACE,
-      key: 'index',
+      key: 'nodes',
       title: this.t('Nodes'),
       componentLoader: () => import('./pages/AgentGatewaySettingsPage'),
+      sort: 10,
     });
 
     this.pluginSettingsManager.addPageTabItem({
@@ -41,6 +42,7 @@ export class PluginAgentGatewayClientV2 extends Plugin {
       key: 'runs',
       title: this.t('Runs'),
       componentLoader: () => import('./pages/AgentGatewayRunsPage'),
+      sort: 20,
     });
 
     this.pluginSettingsManager.addPageTabItem({
@@ -49,6 +51,7 @@ export class PluginAgentGatewayClientV2 extends Plugin {
       title: this.t('Provider Capabilities'),
       aclSnippet: 'pm.agent-gateway.nodes',
       componentLoader: () => import('./pages/AgentGatewayProviderCapabilitiesPage'),
+      sort: 24,
     });
 
     this.pluginSettingsManager.addPageTabItem({
@@ -58,6 +61,7 @@ export class PluginAgentGatewayClientV2 extends Plugin {
       aclSnippet: 'pm.agent-gateway.audit',
       hidden: true,
       componentLoader: () => import('./pages/AgentGatewayAuditPage'),
+      sort: 25,
     });
 
     this.pluginSettingsManager.addPageTabItem({
@@ -65,6 +69,7 @@ export class PluginAgentGatewayClientV2 extends Plugin {
       key: 'prompt-templates',
       title: this.t('Prompt Templates'),
       componentLoader: () => import('./pages/AgentGatewayPromptTemplatesPage'),
+      sort: 30,
     });
 
     this.pluginSettingsManager.addPageTabItem({
@@ -72,6 +77,7 @@ export class PluginAgentGatewayClientV2 extends Plugin {
       key: 'dispatch-bindings',
       title: this.t('Dispatch Bindings'),
       componentLoader: () => import('./pages/AgentGatewayDispatchBindingsPage'),
+      sort: 40,
     });
   }
 }

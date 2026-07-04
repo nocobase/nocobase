@@ -180,17 +180,97 @@ function isBrowserStreamUpgrade(request: IncomingMessage) {
   return getWebSocketProtocolValues(request).includes(TERMINAL_STREAM_BROWSER_SUBPROTOCOL);
 }
 
+function parseForwardedHeaderPair(item: string, name: string) {
+  const matcher = new RegExp(`^${name}=(?:"([^"]+)"|([^;]+))$`, 'i');
+  const match = item.match(matcher);
+  return match?.[1] || match?.[2] || '';
+}
+
+function getForwardedHeaderHosts(request: IncomingMessage) {
+  return getHeader(request.headers, 'forwarded')
+    .split(',')
+    .flatMap((entry) => entry.split(';'))
+    .map((item) => item.trim())
+    .map((item) => parseForwardedHeaderPair(item, 'host'))
+    .filter((value): value is string => Boolean(value))
+    .map((value) => value.trim())
+    .filter(Boolean);
+}
+
+function getForwardedHeaderValue(request: IncomingMessage, name: string) {
+  return (
+    getHeader(request.headers, 'forwarded')
+      .split(',')
+      .flatMap((entry) => entry.split(';'))
+      .map((item) => item.trim())
+      .map((item) => parseForwardedHeaderPair(item, name))
+      .find(Boolean) || ''
+  );
+}
+
+function getForwardedHosts(request: IncomingMessage) {
+  return [
+    getHeader(request.headers, 'host'),
+    ...getHeader(request.headers, 'x-forwarded-host')
+      .split(',')
+      .map((value) => value.trim())
+      .filter(Boolean),
+    ...getForwardedHeaderHosts(request),
+  ].filter(Boolean);
+}
+
+function isLoopbackHostname(hostname: string) {
+  const normalized = hostname.toLowerCase();
+  return normalized === 'localhost' || normalized === '127.0.0.1' || normalized === '::1' || normalized === '[::1]';
+}
+
+function getDefaultPort(protocol: string) {
+  return protocol === 'https:' || protocol === 'wss:' ? '443' : '80';
+}
+
+function normalizeForwardedProto(proto: string) {
+  const normalized = proto.trim().toLowerCase();
+  if (normalized === 'ws') {
+    return 'http:';
+  }
+  if (normalized === 'wss') {
+    return 'https:';
+  }
+  return normalized ? `${normalized.replace(/:$/, '')}:` : '';
+}
+
+function isSameOriginThroughLoopbackDevProxy(request: IncomingMessage, originUrl: URL) {
+  if (!isLoopbackHostname(originUrl.hostname)) {
+    return false;
+  }
+
+  const forwardedPort = getHeader(request.headers, 'x-forwarded-port') || '';
+  const forwardedProto =
+    getHeader(request.headers, 'x-forwarded-proto') || getForwardedHeaderValue(request, 'proto') || '';
+  if (!forwardedPort || !forwardedProto) {
+    return false;
+  }
+
+  const originPort = originUrl.port || getDefaultPort(originUrl.protocol);
+  return forwardedPort === originPort && normalizeForwardedProto(forwardedProto) === originUrl.protocol;
+}
+
 function isSameOriginBrowserUpgrade(request: IncomingMessage) {
   const origin = getHeader(request.headers, 'origin');
   if (!origin) {
     return true;
   }
-  const host = getHeader(request.headers, 'host');
-  if (!host) {
+  const hosts = getForwardedHosts(request);
+  if (!hosts.length) {
     return false;
   }
   try {
-    return new URL(origin).host.toLowerCase() === host.toLowerCase();
+    const originUrl = new URL(origin);
+    const originHost = originUrl.host.toLowerCase();
+    if (hosts.some((host) => originHost === host.toLowerCase())) {
+      return true;
+    }
+    return isSameOriginThroughLoopbackDevProxy(request, originUrl);
   } catch {
     return false;
   }

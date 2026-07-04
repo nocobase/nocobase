@@ -8,7 +8,6 @@
  */
 
 import { hostname, platform, arch } from 'os';
-import { randomUUID } from 'crypto';
 
 import { writeDaemonConfig, serializeSafeConfig } from './config';
 import { DaemonConfig, DetectedAgentProfile, GatewayRequester, JsonRecord } from './types';
@@ -34,7 +33,11 @@ export interface HeartbeatDaemonOptions {
 }
 
 function getNodeKey(providedKey?: string) {
-  return providedKey || `${hostname()}-${randomUUID()}`;
+  const normalizedHostname = hostname()
+    .trim()
+    .replace(/[^a-zA-Z0-9_.-]/g, '-')
+    .replace(/-+/g, '-');
+  return providedKey || `${normalizedHostname || 'local'}-agent-gateway-daemon`;
 }
 
 function getDaemonVersion(providedVersion?: string) {

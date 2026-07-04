@@ -316,6 +316,45 @@ describe('agent gateway tmux terminal driver', () => {
     }
   });
 
+  it('prepends the cwd node_modules bin directory to PATH for tmux commands', async () => {
+    if (!tmuxReady) {
+      return;
+    }
+
+    const workspace = path.join(tempDir, 'workspace');
+    const localBin = path.join(workspace, 'node_modules', '.bin');
+    await fs.mkdir(localBin, { recursive: true });
+    const localTool = path.join(localBin, 'ag-local-tmux-tool');
+    await fs.writeFile(localTool, '#!/bin/sh\nprintf "AG_LOCAL_TMUX_TOOL_OK:%s\\n" "$PATH"\n', { mode: 0o755 });
+
+    const runId = `tmux-local-bin-${Date.now()}`;
+    const sessionName = getManagedTmuxSessionName(runId);
+    try {
+      const result = await executeTmuxCommand({
+        runId,
+        definition: {
+          commandKey: 'ag-local-tmux-tool',
+          executable: 'ag-local-tmux-tool',
+        },
+        cwd: workspace,
+        workspaceRoot: workspace,
+        timeoutMs: 5000,
+        artifactDir: tempDir,
+      });
+      const output = result.stdout.artifactPath
+        ? await fs.readFile(result.stdout.artifactPath, 'utf8')
+        : result.stdout.text || '';
+
+      expect(result.status).toBe('succeeded');
+      expect(output).toContain('AG_LOCAL_TMUX_TOOL_OK');
+      expect(output).toContain(localBin);
+    } finally {
+      await terminateTmuxSession(sessionName).catch(() => {
+        // The completed session may already have been removed.
+      });
+    }
+  });
+
   it('emits safe partial-line live output before the tmux command exits', async () => {
     if (!tmuxReady) {
       return;

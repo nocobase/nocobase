@@ -25,6 +25,7 @@ export interface BuildStartCommandInput {
   cwd?: string;
   extraArgs?: string[];
   timeoutMs?: number;
+  outputMode?: 'structured' | 'terminal';
 }
 
 export interface BuildResumeCommandInput {
@@ -33,6 +34,7 @@ export interface BuildResumeCommandInput {
   cwd?: string;
   extraArgs?: string[];
   timeoutMs?: number;
+  outputMode?: 'structured' | 'terminal';
 }
 
 export interface ProviderEventInput {

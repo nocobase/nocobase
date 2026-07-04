@@ -62,6 +62,12 @@ const DEFAULT_TIMEOUT_MS = 30 * 60 * 1000;
 const DEFAULT_MAX_INLINE_LOG_BYTES = 64 * 1024;
 const INHERITED_ENV_KEYS = ['PATH', 'HOME', 'TMPDIR', 'TEMP', 'TMP', 'SystemRoot', 'WINDIR'];
 
+export function prependWorkspaceNodeBinToPath(cwd: string, basePath = '') {
+  const localBin = path.join(cwd, 'node_modules', '.bin');
+  const entries = basePath.split(path.delimiter).filter((entry) => entry && entry !== localBin);
+  return [localBin, ...entries].join(path.delimiter);
+}
+
 class OutputCollector {
   private inlineChunks: string[] = [];
   private artifactPath?: string;
@@ -171,7 +177,7 @@ async function resolveGuardedCwd(workspaceRoot: string, cwd: string) {
   return realCwd;
 }
 
-function buildEnv(definition: ExecCommandDefinition, providedEnv: Record<string, string> = {}) {
+function buildEnv(definition: ExecCommandDefinition, cwd: string, providedEnv: Record<string, string> = {}) {
   const allowedProvidedKeys = new Set(definition.allowedEnvKeys || []);
   const env: NodeJS.ProcessEnv = {};
   for (const key of INHERITED_ENV_KEYS) {
@@ -186,6 +192,7 @@ function buildEnv(definition: ExecCommandDefinition, providedEnv: Record<string,
     }
     env[key] = value;
   }
+  env.PATH = prependWorkspaceNodeBinToPath(cwd, env.PATH);
   return env;
 }
 
@@ -239,7 +246,7 @@ export function getAllowlistedDefinition(allowlist: ExecCommandAllowlist, comman
 
 export async function executeCommand(options: ExecuteCommandOptions): Promise<ExecDriverResult> {
   const cwd = await resolveGuardedCwd(options.workspaceRoot, options.cwd);
-  const env = buildEnv(options.definition, options.env);
+  const env = buildEnv(options.definition, cwd, options.env);
   const timeoutMs = options.timeoutMs || options.definition.defaultTimeoutMs || DEFAULT_TIMEOUT_MS;
   const maxInlineLogBytes = options.maxInlineLogBytes || DEFAULT_MAX_INLINE_LOG_BYTES;
   if (options.artifactDir) {

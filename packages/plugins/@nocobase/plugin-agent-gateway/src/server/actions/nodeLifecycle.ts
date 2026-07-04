@@ -207,6 +207,23 @@ async function registerNode(ctx: Context) {
 
   const { node, nodeToken } = await ctx.db.sequelize.transaction(async (transaction) => {
     const invitation = await validateInvitation(ctx, inviteToken, nodeKey, transaction);
+    const nodeToken = createNodeToken();
+    const now = new Date();
+    const nodeValues = {
+      nodeKey,
+      displayName: getString(values.displayName) || nodeKey,
+      status: 'active',
+      endpointUrl: getString(values.endpointUrl) || null,
+      authMode: 'node-token',
+      ...toStoredTokenFields(nodeToken, 'nodeTokenHash', 'tokenLast4'),
+      capabilitiesJson: getRecord(values.capabilitiesJson || values.capabilities),
+      metadataJson: {
+        daemonVersion: getString(values.daemonVersion) || null,
+        hostInfo: getRecord(values.hostInfo),
+      },
+      lastHeartbeatAt: now,
+      disabledAt: null,
+    };
     const existingNode = await ctx.db.getRepository('agNodes').findOne({
       filter: {
         nodeKey,
@@ -214,30 +231,32 @@ async function registerNode(ctx: Context) {
       transaction,
       lock: transaction.LOCK.UPDATE,
     });
+    let node: ModelRecord;
     if (existingNode) {
-      ctx.throw(409, 'Node key already exists');
-    }
-
-    const nodeToken = createNodeToken();
-    const now = new Date();
-    const node = (await ctx.db.getRepository('agNodes').create({
-      values: {
-        nodeKey,
-        displayName: getString(values.displayName) || nodeKey,
-        status: 'active',
-        endpointUrl: getString(values.endpointUrl) || null,
-        authMode: 'node-token',
-        ...toStoredTokenFields(nodeToken, 'nodeTokenHash', 'tokenLast4'),
-        capabilitiesJson: getRecord(values.capabilitiesJson || values.capabilities),
-        metadataJson: {
-          daemonVersion: getString(values.daemonVersion) || null,
-          hostInfo: getRecord(values.hostInfo),
+      const nodeId = getModelTargetKey(existingNode, 'id');
+      await ctx.db.getRepository('agNodes').update({
+        filterByTk: nodeId,
+        values: nodeValues,
+        transaction,
+      });
+      const updatedNode = (await ctx.db.getRepository('agNodes').findOne({
+        filterByTk: nodeId,
+        transaction,
+        lock: transaction.LOCK.UPDATE,
+      })) as ModelRecord | null;
+      if (!updatedNode) {
+        ctx.throw(404, 'Node not found');
+      }
+      node = updatedNode;
+    } else {
+      node = (await ctx.db.getRepository('agNodes').create({
+        values: {
+          ...nodeValues,
+          registeredAt: now,
         },
-        registeredAt: now,
-        lastHeartbeatAt: now,
-      },
-      transaction,
-    })) as ModelRecord;
+        transaction,
+      })) as ModelRecord;
+    }
 
     await ctx.db.getRepository('agNodeInvitations').update({
       filterByTk: getModelTargetKey(invitation, 'id'),

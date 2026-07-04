@@ -440,6 +440,7 @@ describe('agent gateway dispatch binding APIs', () => {
       renderedPrompt: 'Build Login page',
     });
     expect(storedRun.get('executionPayloadJson')).toMatchObject({
+      prompt: 'Build Login page',
       dispatch: {
         bindingKey: 'ticket-dispatch',
         collectionName: 'agDispatchTickets',

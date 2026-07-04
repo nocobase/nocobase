@@ -17,7 +17,7 @@ import { registerConversationEventRoutes } from './actions/conversationEvents';
 import { registerDispatchBindingRoutes, registerDispatchBindingValidationHooks } from './actions/dispatchBindings';
 import { registerNodeLifecycleRoutes } from './actions/nodeLifecycle';
 import { registerPromptTemplateRoutes } from './actions/promptTemplates';
-import { registerRunLifecycleRoutes } from './actions/runLifecycle';
+import { registerRunLifecycleHooks, registerRunLifecycleRoutes } from './actions/runLifecycle';
 import { registerRunObservabilityRoutes } from './actions/runObservability';
 import { registerTerminalStreamTicketRoutes } from './actions/terminalStreamTickets';
 import { registerRunTerminalRoutes } from './actions/runTerminal';
@@ -42,6 +42,7 @@ export class PluginAgentGatewayServer extends Plugin {
 
     registerAgentGatewayAcl(this.app.acl);
     registerDispatchBindingValidationHooks(this);
+    registerRunLifecycleHooks(this);
   }
 
   async load() {
