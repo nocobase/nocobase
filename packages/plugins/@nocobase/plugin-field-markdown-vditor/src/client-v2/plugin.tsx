@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Application, ensureMarkdownRegistry, Plugin } from '@nocobase/client-v2';
+import { Application, getOrCreateMarkdownRegistry, Plugin } from '@nocobase/client-v2';
 import {
   DisplayVditorFieldModel,
   MarkdownVditor,
@@ -28,7 +28,7 @@ export class PluginFieldMarkdownVditorClient extends Plugin<Record<string, never
     this.runtime = new MarkdownVditorRuntime(this.app, () => this.app.getPublicPath());
     this.app.addComponents({ MarkdownVditor });
     this.app.addFieldInterfaces([MarkdownVditorFieldInterface]);
-    ensureMarkdownRegistry(this.flowEngine.context).register(this.runtime, { default: true });
+    getOrCreateMarkdownRegistry(this.flowEngine.context).register(this.runtime, { default: true });
     registerMarkdownVditorContext(this.flowEngine.context, this.runtime);
     this.flowEngine.registerModels({
       VditorFieldModel,

@@ -142,7 +142,7 @@ export class MarkdownRegistry {
   }
 }
 
-export function ensureMarkdownRegistry(ctx: {
+export function getOrCreateMarkdownRegistry(ctx: {
   markdown?: MarkdownRegistry;
   defineProperty?: (key: string, options: { get?: () => MarkdownRegistry; value?: MarkdownRegistry }) => void;
 }) {

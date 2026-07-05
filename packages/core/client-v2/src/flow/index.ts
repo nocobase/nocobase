@@ -18,7 +18,7 @@ import { FlowModelRepository } from './FlowModelRepository';
 import * as models from './models';
 import * as filterFormActions from './models/blocks/filter-manager/flow-actions';
 import { DynamicFlowsIcon } from './components/DynamicFlowsIcon';
-import { ensureMarkdownRegistry } from './common/Markdown/Markdown';
+import { getOrCreateMarkdownRegistry } from './common/Markdown/Markdown';
 import { LiquidEngine } from './common/Liquid';
 import type { PreviewRunJSResult } from './components/code-editor/runjsDiagnostics';
 import { TextAreaWithContextSelector } from './components/TextAreaWithContextSelector';
@@ -53,7 +53,7 @@ export class PluginFlowEngine<TApp extends BaseApplication<any> = BaseApplicatio
       },
       sort: 0,
     });
-    ensureMarkdownRegistry(this.flowEngine.context);
+    getOrCreateMarkdownRegistry(this.flowEngine.context);
 
     // 创建全局实例
     const liquidInstance = new LiquidEngine({ ctx: this.flowEngine.context });
@@ -107,6 +107,6 @@ export { openViewFlow } from './flows/openViewFlow';
 export { editMarkdownFlow } from './flows/editMarkdownFlow';
 export { resolveDynamicNamePath } from './models/blocks/form/value-runtime/path';
 export type { MarkdownEditorProps, MarkdownEngine, MarkdownPreviewProps } from './common/Markdown/Markdown';
-export { ensureMarkdownRegistry, MarkdownRegistry } from './common/Markdown/Markdown';
+export { getOrCreateMarkdownRegistry, MarkdownRegistry } from './common/Markdown/Markdown';
 
 export { TextAreaWithContextSelector } from './components/TextAreaWithContextSelector';

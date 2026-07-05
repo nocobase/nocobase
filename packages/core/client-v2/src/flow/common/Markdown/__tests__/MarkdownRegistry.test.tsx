@@ -9,7 +9,7 @@
 
 import React from 'react';
 import { describe, expect, it } from 'vitest';
-import { ensureMarkdownRegistry, MarkdownRegistry, type MarkdownEngine } from '../Markdown';
+import { getOrCreateMarkdownRegistry, MarkdownRegistry, type MarkdownEngine } from '../Markdown';
 
 const createEngine = (name: string): MarkdownEngine => ({
   name,
@@ -78,7 +78,7 @@ describe('MarkdownRegistry', () => {
     expect((preview as React.ReactElement).type).toBe('pre');
   });
 
-  it('ensures a stable registry on a flow context-like object', () => {
+  it('gets or creates a stable registry on a flow context-like object', () => {
     const ctx: {
       markdown?: MarkdownRegistry;
       defineProperty: (key: string, options: { get?: () => MarkdownRegistry }) => void;
@@ -91,8 +91,8 @@ describe('MarkdownRegistry', () => {
       },
     };
 
-    const first = ensureMarkdownRegistry(ctx);
-    const second = ensureMarkdownRegistry(ctx);
+    const first = getOrCreateMarkdownRegistry(ctx);
+    const second = getOrCreateMarkdownRegistry(ctx);
 
     expect(second).toBe(first);
   });

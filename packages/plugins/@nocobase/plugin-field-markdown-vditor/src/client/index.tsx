@@ -7,77 +7,62 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ensureMarkdownRegistry } from '@nocobase/client-v2';
-import {
-  DisplayVditorFieldModel,
-  MarkdownVditor,
-  MarkdownVditorFieldInterface,
-  MarkdownVditorRuntime,
-  registerMarkdownVditorContext,
-  type MarkdownVditorRuntimeApp,
-  VditorFieldModel,
-} from '@nocobase/plugin-markdown/client-v2';
+import { lazy, Plugin } from '@nocobase/client';
 import 'vditor/dist/index.css';
-
-type PluginOptionsLike = {
-  name?: string;
-  packageName?: string;
-  [key: string]: unknown;
-};
-
-type LegacyAppLike = MarkdownVditorRuntimeApp & {
-  addComponents?: (components: Record<string, unknown>) => void;
-  dataSourceManager?: {
-    addFieldInterfaces?: (interfaces: unknown[]) => void;
-  };
-  flowEngine?: {
-    context: {
-      defineProperty?: (key: string, options: { get?: () => unknown; value?: unknown }) => void;
-    };
-    registerModels: (models: Record<string, unknown>) => void;
-  };
-  getPublicPath: () => string;
-};
-
-export class PluginFieldMarkdownVditorClient {
-  options: PluginOptionsLike;
-  app?: LegacyAppLike;
+import { DisplayVditorFieldModel } from '../client-v2/models/DisplayVditorFieldModel';
+import { VditorFieldModel } from '../client-v2/models/VditorFieldModel';
+const { MarkdownVditor } = lazy(() => import('./components'), 'MarkdownVditor');
+import { editModeSettingsItem } from './settings/markdownVditorComponentFieldSettings';
+import { MarkdownVditorFieldInterface } from './interfaces/markdown-vditor';
+export class PluginFieldMarkdownVditorClient extends Plugin {
   dependencyLoaded = false;
-  runtime?: MarkdownVditorRuntime;
-
-  constructor(options: PluginOptionsLike = {}, app?: LegacyAppLike) {
-    this.options = options;
-    this.app = app;
-  }
 
   async afterAdd() {}
 
   async beforeLoad() {}
 
   async load() {
-    const app = this.app;
-    if (!app) {
-      return;
-    }
-    this.runtime = new MarkdownVditorRuntime(app, () => app.getPublicPath());
-    app.addComponents?.({ MarkdownVditor });
-    app.dataSourceManager?.addFieldInterfaces?.([MarkdownVditorFieldInterface]);
-    if (app.flowEngine) {
-      ensureMarkdownRegistry(app.flowEngine.context).register(this.runtime, { default: true });
-      registerMarkdownVditorContext(app.flowEngine.context, this.runtime);
-      app.flowEngine.registerModels({
-        VditorFieldModel,
-        DisplayVditorFieldModel,
-      });
-    }
+    this.app.addComponents({ MarkdownVditor });
+    this.app.dataSourceManager.addFieldInterfaces([MarkdownVditorFieldInterface]);
+    this.flowEngine.registerModels({
+      VditorFieldModel,
+      DisplayVditorFieldModel,
+    });
+    this.app.schemaSettingsManager.addItem('fieldSettings:component:MarkdownVditor', 'editMode', editModeSettingsItem);
   }
 
   getCDN() {
-    return this.runtime?.getCDN() || 'https://cdn.jsdelivr.net/npm/vditor@3.11.2';
+    if (process.env.NODE_ENV === 'production') {
+      return this.app.getPublicPath() + 'static/plugins/@nocobase/plugin-block-markdown/dist/client/vditor';
+    }
+    return `https://cdn.jsdelivr.net/npm/vditor@3.11.2`;
   }
 
   initVditorDependency() {
-    return this.runtime?.initVditorDependency();
+    const cdn = this.getCDN();
+    try {
+      const vditorDepdencePrefix = 'plugin-field-markdown-vditor-dep';
+      const vditorDepdence = {
+        [`${vditorDepdencePrefix}.katex`]: `${cdn}/dist/js/katex/katex.min.js?v=0.16.9`,
+        [`${vditorDepdencePrefix}.ABCJS`]: `${cdn}/dist/js/abcjs/abcjs_basic.min`,
+        [`${vditorDepdencePrefix}.plantumlEncoder`]: `${cdn}/dist/js/plantuml/plantuml-encoder.min`,
+        [`${vditorDepdencePrefix}.echarts`]: `${cdn}/dist/js/echarts/echarts.min`,
+        [`${vditorDepdencePrefix}.flowchart`]: `${cdn}/dist/js/flowchart.js/flowchart.min`,
+        [`${vditorDepdencePrefix}.Viz`]: `${cdn}/dist/js/graphviz/viz`,
+        [`${vditorDepdencePrefix}.mermaid`]: `${cdn}/dist/js/mermaid/mermaid.min`,
+      };
+      this.app.requirejs.require.config({
+        waitSeconds: 120,
+        paths: vditorDepdence,
+      });
+      Object.keys(vditorDepdence).forEach((key) => {
+        this.app.requirejs.require([key], (m) => {
+          window[key.split('.')[1]] = m;
+        });
+      });
+    } catch (e) {
+      console.log('initVditorDependency failed', e);
+    }
   }
 }
 

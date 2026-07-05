@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Application, ensureMarkdownRegistry, Plugin } from '@nocobase/client-v2';
+import { Application, getOrCreateMarkdownRegistry, Plugin } from '@nocobase/client-v2';
 import {
   MarkdownVditorRuntime,
   registerMarkdownVditorContext,
@@ -21,7 +21,7 @@ export class PluginBlockMarkdownClient extends Plugin<Record<string, never>, App
 
   async load() {
     this.runtime = new MarkdownVditorRuntime(this.app, () => this.app.getPublicPath());
-    ensureMarkdownRegistry(this.flowEngine.context).register(this.runtime, { default: true });
+    getOrCreateMarkdownRegistry(this.flowEngine.context).register(this.runtime, { default: true });
     registerMarkdownVditorContext(this.flowEngine.context, this.runtime);
     this.flowEngine.registerModelLoaders({
       MarkdownBlockModel: {
