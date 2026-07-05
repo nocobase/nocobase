@@ -223,7 +223,7 @@ afterEach(() => {
   };
 });
 
-const tokenDerivedInterfaceDialogWidth = 'min(1088px, calc(100vw - 96px))';
+const approvalInterfaceDialogWidth = 800;
 const approvalTaskCardDialogWidth = 800;
 const tokenDerivedInterfaceDialogStyles = {
   body: {
@@ -665,7 +665,7 @@ describe('FlowModelConfigInput', () => {
         expect.objectContaining({
           styles: tokenDerivedInterfaceDialogStyles,
           title: 'User interface',
-          width: tokenDerivedInterfaceDialogWidth,
+          width: approvalInterfaceDialogWidth,
         }),
       );
     });
