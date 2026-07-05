@@ -18,16 +18,7 @@ const EMBED_WINDOW_NAME_PREFIX = '__nocobase_embed_';
 
 export type EmbedSessionAppLike = {
   apiClient: Pick<Application['apiClient'], 'createStorage' | 'storage' | 'storagePrefix'> & {
-    axios?: {
-      interceptors?: {
-        response?: {
-          use?: (
-            fulfilled?: (response: ResponseLike) => ResponseLike,
-            rejected?: (error: unknown) => unknown,
-          ) => unknown;
-        };
-      };
-    };
+    axios?: Application['apiClient']['axios'];
     auth: Pick<Application['apiClient']['auth'], 'getAuthenticator' | 'getToken' | 'setAuthenticator' | 'setToken'>;
   };
   router?: {
@@ -53,10 +44,6 @@ type EmbedSessionState = {
 
 type HeadersLike = Record<string, unknown> & {
   get?: (name: string) => unknown;
-};
-
-type ResponseLike = {
-  headers?: HeadersLike;
 };
 
 const sessions = new WeakMap<EmbedSessionAppLike, EmbedSessionState>();
