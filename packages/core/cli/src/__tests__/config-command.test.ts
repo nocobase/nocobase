@@ -614,6 +614,86 @@ test('nb config set/get/delete supports caddy/nginx binaries and proxy settings'
   });
 });
 
+test('nb config set/get/delete supports nb image settings', async () => {
+  await withTempCliHome(async () => {
+    const { default: ConfigSet } = await import('../commands/config/set.js');
+    const { default: ConfigGet } = await import('../commands/config/get.js');
+    const { default: ConfigDelete } = await import('../commands/config/delete.js');
+
+    const setRegistryCommand = Object.assign(Object.create(ConfigSet.prototype), {
+      parse: vi.fn(async () => ({
+        args: {
+          key: 'nb-image-registry',
+          value: 'aliyun',
+        },
+      })),
+      log: vi.fn(),
+    });
+    await ConfigSet.prototype.run.call(setRegistryCommand);
+    expect(setRegistryCommand.log).toHaveBeenCalledWith('nb-image-registry=aliyun');
+
+    const setVariantCommand = Object.assign(Object.create(ConfigSet.prototype), {
+      parse: vi.fn(async () => ({
+        args: {
+          key: 'nb-image-variant',
+          value: 'full-no-nginx',
+        },
+      })),
+      log: vi.fn(),
+    });
+    await ConfigSet.prototype.run.call(setVariantCommand);
+    expect(setVariantCommand.log).toHaveBeenCalledWith('nb-image-variant=full-no-nginx');
+
+    const getRegistryCommand = Object.assign(Object.create(ConfigGet.prototype), {
+      parse: vi.fn(async () => ({
+        args: {
+          key: 'nb-image-registry',
+        },
+      })),
+      log: vi.fn(),
+    });
+    await ConfigGet.prototype.run.call(getRegistryCommand);
+    expect(getRegistryCommand.log).toHaveBeenCalledWith('aliyun');
+
+    const getVariantCommand = Object.assign(Object.create(ConfigGet.prototype), {
+      parse: vi.fn(async () => ({
+        args: {
+          key: 'nb-image-variant',
+        },
+      })),
+      log: vi.fn(),
+    });
+    await ConfigGet.prototype.run.call(getVariantCommand);
+    expect(getVariantCommand.log).toHaveBeenCalledWith('full-no-nginx');
+
+    const deleteRegistryCommand = Object.assign(Object.create(ConfigDelete.prototype), {
+      parse: vi.fn(async () => ({
+        args: {
+          key: 'nb-image-registry',
+        },
+      })),
+      log: vi.fn(),
+    });
+    await ConfigDelete.prototype.run.call(deleteRegistryCommand);
+    expect(deleteRegistryCommand.log).toHaveBeenCalledWith('Deleted nb-image-registry');
+
+    const deleteVariantCommand = Object.assign(Object.create(ConfigDelete.prototype), {
+      parse: vi.fn(async () => ({
+        args: {
+          key: 'nb-image-variant',
+        },
+      })),
+      log: vi.fn(),
+    });
+    await ConfigDelete.prototype.run.call(deleteVariantCommand);
+    expect(deleteVariantCommand.log).toHaveBeenCalledWith('Deleted nb-image-variant');
+
+    const config = await loadAuthConfig({ scope: 'global' });
+    expect(config.settings?.docker?.nbImageRegistry).toBe(undefined);
+    expect(config.settings?.docker?.nbImageVariant).toBe(undefined);
+  });
+});
+
 test('nb config list prints only explicit settings', async () => {
   await withTempCliHome(async () => {
     const { default: ConfigSet } = await import('../commands/config/set.js');

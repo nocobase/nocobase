@@ -20,8 +20,18 @@
     "items": [
       {
         "type": "custom-link",
-        "label": "Cài đặt bằng Docker",
+        "label": "Cài đặt Docker (Nginx tích hợp)",
         "link": "/get-started/installation/docker"
+      },
+      {
+        "type": "custom-link",
+        "label": "Cài đặt Docker (Nginx bên ngoài)",
+        "link": "/get-started/installation/docker-nginx"
+      },
+      {
+        "type": "custom-link",
+        "label": "Cài đặt Docker (Caddy bên ngoài)",
+        "link": "/get-started/installation/docker-caddy"
       },
       {
         "type": "custom-link",

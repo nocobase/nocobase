@@ -18,7 +18,6 @@ import {
   parseValueToPath,
   isRunJSValue,
   normalizeRunJSValue,
-  runjsWithSafeGlobals,
   useFlowContext,
   extractPropertyPath,
   FlowModel,
@@ -240,7 +239,7 @@ export const DefaultValue = connect((props: Props) => {
       if (isRunJSValue(out)) {
         try {
           const { code, version } = normalizeRunJSValue(out);
-          const ret = await runjsWithSafeGlobals(model?.context, code, { version });
+          const ret = await model?.context?.runjs(code, undefined, { version });
           out = ret?.success ? ret.value : undefined;
         } catch {
           out = undefined;

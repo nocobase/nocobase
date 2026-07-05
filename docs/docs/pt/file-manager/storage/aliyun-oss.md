@@ -2,6 +2,15 @@
 
 Um motor de armazenamento baseado no Aliyun OSS. Antes de usá-lo, você precisará preparar a conta e as permissões necessárias.
 
+
+:::warning Observação
+
+Este mecanismo não oferece acesso privado. Depois que um arquivo é enviado, o NocoBase gera uma URL diretamente acessível, e qualquer pessoa com essa URL pode acessar o arquivo.
+
+Mesmo que o bucket OSS seja privado, o mecanismo integrado Aliyun OSS não gera URLs assinadas temporárias para acesso a arquivos. Se precisar de acesso privado, use [S3 Pro](./s3-pro). Se já houver arquivos históricos, consulte [Migrar para S3 Pro](./migrate-to-s3-pro.md).
+
+:::
+
 ## Parâmetros de Configuração
 
 ![Exemplo de Configuração do Motor de Armazenamento Aliyun OSS](https://static-docs.nocobase.com/20240712220011.png)

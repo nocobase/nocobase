@@ -140,13 +140,9 @@ vi.mock('@nocobase/flow-engine', () => {
     jioToJoiSchema: () => ({
       validate: (value: any) => ({ value }),
     }),
-    createSafeWindow: () => window,
-    createSafeDocument: () => document,
-    createSafeNavigator: () => navigator,
     isRunJSValue: () => false,
     isVariableExpression: () => false,
     normalizeRunJSValue: (value: any) => value,
-    runjsWithSafeGlobals: async (handler: any, ...args: any[]) => handler?.(...args),
     parseCtxDateExpression: (value: any) => value,
     setupRunJSContexts: () => undefined,
     getRunJSScenesForContext: () => [],

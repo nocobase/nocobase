@@ -33,19 +33,23 @@ import {
   resolvePathWithinBase,
 } from '../utils';
 
-const BACKUP_METADATA_VERSION = 1;
+const BACKUP_METADATA_VERSION = 2;
 
 export interface BackupSettings {
-  storageId?: string;
+  storageId?: string | number | null;
   encryptionPassword: string;
   enableFilesBackup: boolean;
   keep?: number;
   scheduled: boolean;
   cron: string;
+  /**
+   * @deprecated Prefer excludeTables. includeTables may miss dependent database objects.
+   */
   includeTables?: string[];
   excludeTables?: string[];
   description?: string;
   createdBy?: BackupCreator;
+  metadata?: Record<string, unknown>;
 }
 
 export interface BackupFile {
@@ -67,6 +71,10 @@ export interface BackupTaskResult {
   inProgress: boolean;
 }
 
+type BackupSettingsInput = BackupSettings & {
+  toJSON?: () => Partial<BackupSettings>;
+};
+
 export class BackupManager {
   app: Application;
   ctx: ResourcerContext | null; // when triggered by cron job, ctx is null
@@ -79,10 +87,10 @@ export class BackupManager {
   #uploadDir: string;
   #aesKeyPath: string;
 
-  constructor(app: Application, ctx: ResourcerContext | null, settings: BackupSettings) {
+  constructor(app: Application, ctx: ResourcerContext | null, settings: BackupSettingsInput) {
     this.app = app;
     this.ctx = ctx;
-    this.#settings = settings;
+    this.#settings = this.#normalizeBackupSettings(settings);
     this.#dbAdapter = getDBAdapter(app.db.options);
     this.#backupTasksCacheName = BACKUP_TASKS_CACHE_NAME;
     this.#backupPrefix = 'backup_';
@@ -110,6 +118,14 @@ export class BackupManager {
 
   protected set backupTasksCacheName(backupTasksCacheName: string) {
     this.#backupTasksCacheName = backupTasksCacheName;
+  }
+
+  #normalizeBackupSettings(settings: BackupSettingsInput): BackupSettings {
+    if (typeof settings.toJSON === 'function') {
+      return settings.toJSON() as BackupSettings;
+    }
+
+    return { ...settings };
   }
 
   async createBackupName() {
@@ -239,6 +255,7 @@ export class BackupManager {
       });
 
     const metadata = {
+      ...(opts.metadata ?? {}),
       metadataVersion: BACKUP_METADATA_VERSION,
       enableFilesBackup: opts.enableFilesBackup,
       version: await this.app.version.get(),
@@ -449,7 +466,7 @@ export class BackupManager {
     return output;
   }
 
-  async #uploadFiles(filePath: string, storageId?: string) {
+  async #uploadFiles(filePath: string, storageId?: BackupSettings['storageId']) {
     if (!storageId) {
       return;
     }

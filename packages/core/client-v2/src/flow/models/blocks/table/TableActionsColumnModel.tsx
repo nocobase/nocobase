@@ -22,6 +22,7 @@ import {
   observer,
 } from '@nocobase/flow-engine';
 import { Skeleton, Tooltip } from 'antd';
+import classNames from 'classnames';
 import React from 'react';
 import { ActionModel } from '../../base/ActionModel';
 import { TableCustomColumnModel } from './TableCustomColumnModel';
@@ -33,6 +34,33 @@ const rowActionButtonTypeOptions = [
   { value: 'link', label: '{{t("Link")}}' },
   { value: 'text', label: '{{t("Text")}}' },
 ];
+export const tableRowActionsClassName = css`
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  line-height: inherit;
+  > div:empty {
+    display: none;
+  }
+
+  .nb-table-row-action-button.ant-btn-link,
+  .nb-table-row-action-button.ant-btn-text {
+    display: inline-flex;
+    align-items: center;
+    font: inherit;
+    height: auto;
+    line-height: inherit;
+    padding: 0;
+    border: 0;
+    box-shadow: none;
+    vertical-align: baseline;
+  }
+
+  .nb-table-row-action-button.ant-btn-link > span,
+  .nb-table-row-action-button.ant-btn-text > span {
+    line-height: inherit;
+  }
+`;
 
 const Columns = observer<any>(({ record, model, index }) => {
   const isConfigMode = !!model.context.flowSettingsEnabled;
@@ -42,17 +70,7 @@ const Columns = observer<any>(({ record, model, index }) => {
     <DndProvider>
       <div
         style={{ gap: model.context?.themeToken?.marginSM ?? 16 }}
-        className={css`
-          display: flex;
-          flex-wrap: wrap;
-          align-items: center;
-          > div:empty {
-            display: none;
-          }
-          button {
-            padding: 0;
-          }
-        `}
+        className={`nb-table-row-actions ${tableRowActionsClassName}`}
       >
         {model.mapSubModels('actions', (action: ActionModel) => {
           // Static hidden can be skipped safely; dynamic hidden is handled by fork.beforeRender + model.render wrapper.
@@ -68,7 +86,12 @@ const Columns = observer<any>(({ record, model, index }) => {
             cachedFork.dispose();
           }
 
-          const fork = action.createFork({}, slotKey);
+          const fork = action.createFork(
+            {
+              className: classNames(action.props?.className, 'nb-table-row-action-button'),
+            },
+            slotKey,
+          );
           (fork as any).buttonTypeOptions = rowActionButtonTypeOptions;
           recordIdentityByFork.set(fork, recordIdentity);
 

@@ -91,6 +91,7 @@ export class PluginUiLayoutClientV2 extends Plugin<Record<string, never>, Applic
         return { default: module.MobileRoutesPage };
       },
     });
+    this.pluginSettingsManager.setPluginSettingsLink('ui-layout', 'routes');
 
     registerLayoutAwareDesktopRoutesPermissionsTab(this.app, (key) => this.t(key));
 

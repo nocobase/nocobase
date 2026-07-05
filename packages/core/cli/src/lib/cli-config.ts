@@ -11,6 +11,16 @@ import type { AuthConfig, AuthStoreOptions } from './auth-store.js';
 import { loadExactAuthConfig, saveAuthConfig } from './auth-store.js';
 import { resolveCliHomeRoot, resolveDefaultConfigScope } from './cli-home.js';
 import { CLI_LOCALE_FLAG_OPTIONS, normalizeCliLocale, resolveCliLocale } from './cli-locale.js';
+import {
+  DEFAULT_NB_IMAGE_REGISTRY,
+  DEFAULT_NB_IMAGE_VARIANT,
+  NB_IMAGE_REGISTRY_OPTIONS,
+  NB_IMAGE_VARIANT_OPTIONS,
+  normalizeNbImageRegistry,
+  normalizeNbImageVariant,
+  type NbImageRegistry,
+  type NbImageVariant,
+} from './docker-image.js';
 
 export const DEFAULT_LICENSE_PKG_URL = 'https://pkg.nocobase.com/';
 export const DEFAULT_DOCKER_NETWORK = 'nocobase';
@@ -19,6 +29,7 @@ export const DEFAULT_DOCKER_BIN = 'docker';
 export const DEFAULT_CADDY_BIN = 'caddy';
 export const DEFAULT_GIT_BIN = 'git';
 export const DEFAULT_NGINX_BIN = 'nginx';
+export const DEFAULT_PNPM_BIN = 'pnpm';
 export const PROXY_PROVIDER_OPTIONS = ['nginx', 'caddy'] as const;
 export type ProxyProvider = (typeof PROXY_PROVIDER_OPTIONS)[number];
 export const DEFAULT_PROXY_PROVIDER: ProxyProvider = 'nginx';
@@ -44,10 +55,13 @@ export const SUPPORTED_CLI_CONFIG_KEYS = [
   'license.pkg-url',
   'docker.network',
   'docker.container-prefix',
+  'nb-image-registry',
+  'nb-image-variant',
   'bin.docker',
   'bin.caddy',
   'bin.git',
   'bin.nginx',
+  'bin.pnpm',
   'proxy.nb-cli-root',
   'proxy.caddy-driver',
   'proxy.nginx-driver',
@@ -157,7 +171,13 @@ function pruneSettings(config: AuthConfig): void {
   }
 
   const docker = config.settings?.docker;
-  if (docker && !trimValue(docker.network) && !trimValue(docker.containerPrefix)) {
+  if (
+    docker &&
+    !trimValue(docker.network) &&
+    !trimValue(docker.containerPrefix) &&
+    !trimValue(docker.nbImageRegistry) &&
+    !trimValue(docker.nbImageVariant)
+  ) {
     delete config.settings?.docker;
   }
 
@@ -168,6 +188,7 @@ function pruneSettings(config: AuthConfig): void {
     !trimValue(bin.caddy) &&
     !trimValue(bin.git) &&
     !trimValue(bin.nginx) &&
+    !trimValue(bin.pnpm) &&
     !trimValue(bin.yarn)
   ) {
     delete config.settings?.bin;
@@ -220,6 +241,10 @@ export function getExplicitCliConfigValue(config: AuthConfig, key: SupportedCliC
       return trimValue(config.settings?.docker?.network);
     case 'docker.container-prefix':
       return trimValue(config.settings?.docker?.containerPrefix);
+    case 'nb-image-registry':
+      return normalizeNbImageRegistry(config.settings?.docker?.nbImageRegistry);
+    case 'nb-image-variant':
+      return normalizeNbImageVariant(config.settings?.docker?.nbImageVariant);
     case 'bin.docker':
       return trimValue(config.settings?.bin?.docker);
     case 'bin.caddy':
@@ -228,6 +253,8 @@ export function getExplicitCliConfigValue(config: AuthConfig, key: SupportedCliC
       return trimValue(config.settings?.bin?.git);
     case 'bin.nginx':
       return trimValue(config.settings?.bin?.nginx);
+    case 'bin.pnpm':
+      return trimValue(config.settings?.bin?.pnpm);
     case 'proxy.nb-cli-root':
       return trimValue(config.settings?.proxy?.nbCliRoot);
     case 'proxy.caddy-driver':
@@ -268,6 +295,10 @@ export function getEffectiveCliConfigValue(config: AuthConfig, key: SupportedCli
       return trimValue(config.name) || DEFAULT_DOCKER_NETWORK;
     case 'docker.container-prefix':
       return trimValue(config.name) || DEFAULT_DOCKER_CONTAINER_PREFIX;
+    case 'nb-image-registry':
+      return explicit ?? DEFAULT_NB_IMAGE_REGISTRY;
+    case 'nb-image-variant':
+      return explicit ?? DEFAULT_NB_IMAGE_VARIANT;
     case 'bin.docker':
       return DEFAULT_DOCKER_BIN;
     case 'bin.caddy':
@@ -276,6 +307,8 @@ export function getEffectiveCliConfigValue(config: AuthConfig, key: SupportedCli
       return DEFAULT_GIT_BIN;
     case 'bin.nginx':
       return DEFAULT_NGINX_BIN;
+    case 'bin.pnpm':
+      return DEFAULT_PNPM_BIN;
     case 'proxy.nb-cli-root':
       return explicit ?? resolveCliHomeRoot();
     case 'proxy.caddy-driver':
@@ -356,6 +389,24 @@ export function normalizeCliConfigValue(key: SupportedCliConfigKey, value: strin
     return driver;
   }
 
+  if (key === 'nb-image-registry') {
+    const registry = normalizeNbImageRegistry(normalized);
+    if (!registry) {
+      throw new Error(`Config key "${key}" must be one of: ${NB_IMAGE_REGISTRY_OPTIONS.join(', ')}`);
+    }
+
+    return registry;
+  }
+
+  if (key === 'nb-image-variant') {
+    const variant = normalizeNbImageVariant(normalized);
+    if (!variant) {
+      throw new Error(`Config key "${key}" must be one of: ${NB_IMAGE_VARIANT_OPTIONS.join(', ')}`);
+    }
+
+    return variant;
+  }
+
   return normalized;
 }
 
@@ -434,6 +485,18 @@ export async function setCliConfigValue(
         containerPrefix: normalized,
       };
       break;
+    case 'nb-image-registry':
+      config.settings.docker = {
+        ...(config.settings.docker ?? {}),
+        nbImageRegistry: normalized as NbImageRegistry,
+      };
+      break;
+    case 'nb-image-variant':
+      config.settings.docker = {
+        ...(config.settings.docker ?? {}),
+        nbImageVariant: normalized as NbImageVariant,
+      };
+      break;
     case 'bin.docker':
       config.settings.bin = {
         ...(config.settings.bin ?? {}),
@@ -456,6 +519,12 @@ export async function setCliConfigValue(
       config.settings.bin = {
         ...(config.settings.bin ?? {}),
         nginx: normalized,
+      };
+      break;
+    case 'bin.pnpm':
+      config.settings.bin = {
+        ...(config.settings.bin ?? {}),
+        pnpm: normalized,
       };
       break;
     case 'proxy.nb-cli-root':
@@ -554,6 +623,16 @@ export async function deleteCliConfigValue(
         delete config.settings.docker.containerPrefix;
       }
       break;
+    case 'nb-image-registry':
+      if (config.settings.docker) {
+        delete config.settings.docker.nbImageRegistry;
+      }
+      break;
+    case 'nb-image-variant':
+      if (config.settings.docker) {
+        delete config.settings.docker.nbImageVariant;
+      }
+      break;
     case 'bin.docker':
       if (config.settings.bin) {
         delete config.settings.bin.docker;
@@ -572,6 +651,11 @@ export async function deleteCliConfigValue(
     case 'bin.nginx':
       if (config.settings.bin) {
         delete config.settings.bin.nginx;
+      }
+      break;
+    case 'bin.pnpm':
+      if (config.settings.bin) {
+        delete config.settings.bin.pnpm;
       }
       break;
     case 'proxy.nb-cli-root':
@@ -641,6 +725,7 @@ const CONFIGURABLE_COMMAND_KEYS = {
   caddy: 'bin.caddy',
   git: 'bin.git',
   nginx: 'bin.nginx',
+  pnpm: 'bin.pnpm',
   yarn: 'bin.yarn',
 } as const;
 

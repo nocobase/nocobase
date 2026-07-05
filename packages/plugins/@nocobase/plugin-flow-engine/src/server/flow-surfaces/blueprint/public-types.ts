@@ -30,6 +30,7 @@ export type FlowSurfaceApplyBlueprintNavigationGroup = {
 };
 
 export type FlowSurfaceApplyBlueprintNavigation = {
+  layoutUid?: string;
   group?: FlowSurfaceApplyBlueprintNavigationGroup;
   item?: {
     title?: string;

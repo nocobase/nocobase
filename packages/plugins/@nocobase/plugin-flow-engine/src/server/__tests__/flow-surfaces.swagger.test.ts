@@ -459,6 +459,7 @@ describe('flowSurfaces swagger', () => {
     expect(schemas.FlowSurfaceSetFieldValueRulesRequest.properties.target.description).toContain(
       'outer form block uid',
     );
+    expect(schemas.FlowSurfaceConfigureOption.properties.default).toEqual({});
     expect(schemas.FlowSurfaceSetFieldValueRulesRequest.properties.rules.description).toContain('Pass `[]` to clear');
     expect(schemas.FlowSurfaceSetFieldValueRulesRequest.properties.expectedFingerprint.description).toContain(
       '`getReactionMeta.capabilities[].fingerprint`',
@@ -892,8 +893,14 @@ describe('flowSurfaces swagger', () => {
     expect(schemas.FlowSurfaceApplyBlueprintNavigationGroup.properties.routeId.description).toContain(
       'Preferred existing menu-group route id',
     );
+    expect(schemas.FlowSurfaceApplyBlueprintNavigationGroup.properties.routeId.description).toContain(
+      'Ignored when navigation.layoutUid targets a mobile layout',
+    );
     expect(schemas.FlowSurfaceApplyBlueprintNavigationGroup.properties.title.description).toContain(
       'reuses a same-title group if the match is unique',
+    );
+    expect(schemas.FlowSurfaceApplyBlueprintNavigationGroup.properties.title.description).toContain(
+      'Ignored when navigation.layoutUid targets a mobile layout',
     );
     expect(schemas.FlowSurfaceApplyBlueprintNavigationGroup.properties.title.description).toContain(
       'group metadata is ignored',
@@ -904,6 +911,15 @@ describe('flowSurfaces swagger', () => {
     expect(schemas.FlowSurfaceApplyBlueprintNavigationGroup.properties.icon.description).toContain(
       'Ignored when routeId is present',
     );
+    expect(schemas.FlowSurfaceApplyBlueprintNavigation.properties.layoutUid.description).toContain(
+      'mobile-layout-model',
+    );
+    expect(schemas.FlowSurfaceApplyBlueprintNavigation.properties.layoutUid.description).toContain(
+      'create a root-level tab page',
+    );
+    expect(schemas.FlowSurfaceApplyBlueprintRequest.description).toContain('`navigation.layoutUid`');
+    expect(schemas.FlowSurfaceApplyBlueprintRequest.description).toContain('target layout');
+    expect(schemas.FlowSurfaceApplyBlueprintRequest.description).toContain('`navigation.group` is ignored');
     expect(schemas.FlowSurfaceApplyBlueprintResponse.properties.surface.$ref).toBe(
       '#/components/schemas/FlowSurfaceGetResponse',
     );
@@ -1478,6 +1494,7 @@ describe('flowSurfaces swagger', () => {
       workflowKey: 'employee_status_changed',
       context: 'department',
     });
+    expect(configureRequest.examples.jsBlockSettings.value.changes.showBlockCard).toBe(true);
     expect(configureRequest.examples.jsBlockSettings.value.changes.code).toContain('Users hero');
     expect(configureRequest.examples.jsActionSettings.value.changes.version).toBe('1.0.1');
     expect(configureRequest.examples.jsItemActionSettings.value.changes.code).toContain('ctx.render');
@@ -2267,7 +2284,9 @@ describe('flowSurfaces swagger', () => {
     ]);
     expect(swaggerDocument.components?.schemas?.FlowSurfaceCreateMenuRequest.required).toEqual(['title']);
     expect(swaggerDocument.components?.schemas?.FlowSurfaceUpdateMenuRequest.required).toEqual(['menuRouteId']);
+    expect(schemas.FlowSurfaceCreateMenuRequest.properties.layoutUid.description).toContain('mobile-layout-model');
     expect(schemas.FlowSurfaceCreateMenuRequest.properties.pageUid).toBeUndefined();
+    expect(schemas.FlowSurfaceCreatePageRequest.properties.layoutUid.description).toContain('existing route');
     expect(schemas.FlowSurfaceCreatePageRequest.properties.menuRouteId).toBeTruthy();
   });
 });

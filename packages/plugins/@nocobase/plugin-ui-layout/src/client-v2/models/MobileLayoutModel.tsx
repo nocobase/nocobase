@@ -1810,22 +1810,40 @@ const MobileHomePlaceholder = observer(
           padding: 0 0 env(safe-area-inset-bottom);
           background: ${token.colorBgContainer};
           border-top: 1px solid ${token.colorBorderSecondary};
-          overflow-x: hidden;
+          overflow-x: auto;
           overflow-y: hidden;
+          overscroll-behavior-x: contain;
+          -webkit-overflow-scrolling: touch;
+          scrollbar-width: thin;
+          scrollbar-color: ${token.colorFillSecondary} transparent;
+        }
+
+        .nb-ui-layout-mobile-home-tabbar::-webkit-scrollbar {
+          height: 6px;
+        }
+
+        .nb-ui-layout-mobile-home-tabbar::-webkit-scrollbar-track {
+          background: transparent;
+        }
+
+        .nb-ui-layout-mobile-home-tabbar::-webkit-scrollbar-thumb {
+          border-radius: ${token.borderRadiusSM}px;
+          background: ${token.colorFillSecondary};
         }
 
         .nb-ui-layout-mobile-home-tabbar > div {
-          flex: 1 1 0%;
-          min-width: 0;
+          flex: 1 0 64px;
+          width: auto;
+          min-width: 64px;
           min-height: 48px;
           display: flex;
         }
 
         .nb-ui-layout-mobile-home-tabbar-item-shell {
           position: relative;
-          flex: 1 1 0%;
-          width: 100%;
-          min-width: 0;
+          flex: 1 0 64px;
+          width: auto;
+          min-width: 64px;
           min-height: 48px;
           display: flex;
           align-items: stretch;
@@ -1866,6 +1884,9 @@ const MobileHomePlaceholder = observer(
           display: inline-flex;
           align-self: center;
           flex: 0 0 32px;
+          position: sticky;
+          right: 8px;
+          z-index: 1;
           margin: 8px;
           width: 32px;
           height: 32px;
@@ -1876,7 +1897,7 @@ const MobileHomePlaceholder = observer(
           align-items: center;
           justify-content: center;
           color: ${colorSettings};
-          background: transparent;
+          background: ${token.colorBgContainer};
           cursor: pointer;
           font-size: ${token.fontSize}px;
         }
@@ -1936,6 +1957,7 @@ const MobileHomePlaceholder = observer(
         token.colorBgContainer,
         token.colorBgLayout,
         token.colorBorderSecondary,
+        token.colorFillSecondary,
         token.colorFillTertiary,
         token.colorPrimary,
         token.colorPrimaryBg,

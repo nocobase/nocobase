@@ -30,9 +30,13 @@ Hầu hết các Field đều hỗ trợ cấu hình quy tắc xác thực. Khi 
 
   ![20251028230554](https://static-docs.nocobase.com/20251028230554.png)
 
-### Xác thực phía frontend trong cấu hình Field
+### Quy tắc xác thực phía client trong cài đặt Field
 
 Quy tắc xác thực được cài đặt trong cấu hình Field sẽ kích hoạt xác thực phía frontend, đảm bảo dữ liệu bạn nhập đáp ứng quy định.
+
+Nếu Field Collection tương ứng đã có quy tắc xác thực, các quy tắc đó sẽ hiển thị trong cài đặt xác thực dưới **Quy tắc xác thực Field phía server**. Chúng được kế thừa từ cấu hình Field của Data Source và chỉ đọc tại đây. Nếu cần thay đổi, hãy chỉnh sửa Field Collection trong Data Source → Cấu hình Collection.
+
+Các quy tắc được thêm dưới **Quy tắc xác thực phía client** chỉ áp dụng cho component Field hiện tại. Chúng không thay đổi cấu hình Field Collection. Khi cả hai nhóm quy tắc tồn tại, NocoBase sẽ áp dụng đồng thời quy tắc Field kế thừa và quy tắc xác thực phía client.
 
 ![20251028230105](https://static-docs.nocobase.com/20251028230105.png)
 

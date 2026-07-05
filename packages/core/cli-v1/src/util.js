@@ -84,6 +84,24 @@ exports.run = (command, args, options = {}) => {
   });
 };
 
+function colorizedDevLogEnv(env = process.env, overrides = {}) {
+  const nextEnv = {
+    ...env,
+    ...overrides,
+  };
+  delete nextEnv.NO_COLOR;
+  if (!nextEnv.FORCE_COLOR) {
+    nextEnv.FORCE_COLOR = '1';
+  }
+  return nextEnv;
+}
+
+function createRunWithPrefixLabel(prefix, color) {
+  const forcedChalk = new chalk.Instance({ level: 1 });
+  const colorize = forcedChalk[color] || forcedChalk.cyan;
+  return colorize(`[${prefix}]`);
+}
+
 exports.runWithPrefix = (command, args, options = {}) => {
   if (command === 'tsx') {
     command = 'node';
@@ -92,15 +110,12 @@ exports.runWithPrefix = (command, args, options = {}) => {
 
   const prefix = options.prefix || 'process';
   const color = options.color || 'cyan';
-  const label = chalk[color](`[${prefix}]`);
+  const label = createRunWithPrefixLabel(prefix, color);
   const subprocess = execa(command, args, {
     shell: true,
     stdio: 'pipe',
     ...options,
-    env: {
-      ...process.env,
-      ...options.env,
-    },
+    env: colorizedDevLogEnv(process.env, options.env),
   });
 
   const writePrefixed = (chunk, writer) => {
@@ -121,6 +136,13 @@ exports.runWithPrefix = (command, args, options = {}) => {
 
   return subprocess;
 };
+
+exports._test = {
+  createRunWithPrefixLabel,
+  colorizedDevLogEnv,
+};
+
+exports.colorizedDevLogEnv = colorizedDevLogEnv;
 
 exports.isPortReachable = async (port, { timeout = 1000, host } = {}) => {
   const promise = new Promise((resolve, reject) => {
@@ -434,6 +456,9 @@ function isAppDevHtml() {
 }
 
 function buildIndexHtml(force = false) {
+  if (process.env.NOCOBASE_EXTRACT_CLIENT_ASSETS === 'true') {
+    return;
+  }
   const file = `${process.env.APP_PACKAGE_ROOT}/dist/client/index.html`;
   if (!fs.existsSync(file)) {
     return;

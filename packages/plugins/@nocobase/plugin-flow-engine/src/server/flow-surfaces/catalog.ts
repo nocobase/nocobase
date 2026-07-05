@@ -249,6 +249,15 @@ const RUN_JS_SETTINGS_GROUP = {
     'runJs.version': STRING_SCHEMA,
   },
 };
+const JS_BLOCK_SETTINGS_GROUP = {
+  allowedPaths: [...RUN_JS_ALLOWED_PATHS, 'showBlockCard.showBlockCard'],
+  mergeStrategy: 'deep' as const,
+  eventBindingSteps: ['runJs'],
+  pathSchemas: {
+    ...RUN_JS_SETTINGS_GROUP.pathSchemas,
+    'showBlockCard.showBlockCard': BOOLEAN_SCHEMA,
+  },
+};
 const FIELD_SETTINGS_INIT_GROUP = {
   allowedPaths: [
     'init.dataSourceKey',
@@ -1502,7 +1511,7 @@ const JS_BLOCK_CONTRACT = createContract({
   },
 });
 JS_BLOCK_CONTRACT.domains.stepParams = groupedDomain({
-  jsSettings: RUN_JS_SETTINGS_GROUP,
+  jsSettings: JS_BLOCK_SETTINGS_GROUP,
 });
 
 const MAP_BLOCK_CONTRACT = createContract({

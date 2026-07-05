@@ -79,9 +79,11 @@ const Iframe: any = observer(
       const loadHtml = async () => {
         setLoading(true);
         try {
-          const res = await ctx.api.resource('iframeHtml').get({ filterByTk: htmlId });
+          const res = await ctx.api.request({
+            url: `iframeHtml:getHtml/${htmlId}`,
+          });
           if (!active) return;
-          setHtmlContent(res?.data?.data?.html || res?.data?.html || '');
+          setHtmlContent(typeof res?.data === 'string' ? res.data : '');
         } catch (error) {
           console.error(error);
         } finally {
@@ -91,7 +93,7 @@ const Iframe: any = observer(
         }
       };
 
-      void loadHtml();
+      loadHtml();
 
       return () => {
         active = false;

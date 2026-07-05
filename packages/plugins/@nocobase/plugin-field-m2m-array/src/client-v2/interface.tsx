@@ -53,7 +53,7 @@ export class MBMFieldInterface extends CollectionFieldInterface {
         required: true,
         defaultValue: '{{ useNewId("f_") }}',
         description:
-          "{{t('Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.')}}",
+          "{{t('Randomly generated and can be modified. Support letters, numbers and underscores, must start with a letter.')}}",
         disabled: '{{ !createOnly }}',
         layout: { row: 'keys', column: 'foreignKey', span: 12 },
       },

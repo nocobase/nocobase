@@ -29,8 +29,18 @@ import {
 import {
   DEFAULT_DOCKER_REGISTRY,
   DEFAULT_DOCKER_REGISTRY_ZH_CN,
+  resolveOfficialDockerRegistry,
   resolveDockerImageRef,
 } from '../../lib/docker-image.ts';
+import { getEnv } from '../../lib/auth-store.js';
+import { resolveDefaultConfigScope } from '../../lib/cli-home.js';
+import { getCliConfigValue } from '../../lib/cli-config.js';
+import {
+  buildBeforeDependencyInstallHookContext,
+  runBeforeDependencyInstallHook,
+  type HookCommand,
+  type HookPhase,
+} from '../../lib/hook-script.js';
 import { run } from '../../lib/run-npm.ts';
 import { printVerbose, setVerboseMode, startTask, stopTask, updateTask } from '../../lib/ui.js';
 
@@ -191,6 +201,13 @@ export type DownloadResolvedFlags = Record<string, unknown> & {
   'docker-save'?: boolean;
   /** npm/git: optional; omit or empty string means use npm/yarn default registry */
   'npm-registry'?: string;
+  /** npm/git: optional hook module run after scaffold/clone and before dependency installation */
+  'hook-script'?: string;
+  'hook-phase'?: HookPhase;
+  'hook-command'?: HookCommand;
+  'hook-env-name'?: string;
+  'hook-app-path'?: string;
+  'hook-storage-path'?: string;
 };
 
 /** Return value of `nb source download` (and `runCommand('source:download', …)`): resolved flags plus local project path when applicable. */
@@ -217,6 +234,12 @@ export type DownloadParsedFlags = {
   'docker-platform'?: string;
   'docker-save': boolean;
   'npm-registry'?: string;
+  'hook-script'?: string;
+  'hook-phase'?: string;
+  'hook-command'?: string;
+  'hook-env-name'?: string;
+  'hook-app-path'?: string;
+  'hook-storage-path'?: string;
 };
 
 function normalizeVersionPreset(value: unknown): DownloadVersionPreset {
@@ -334,6 +357,26 @@ export default class SourceDownload extends Command {
     }),
     'npm-registry': Flags.string({
       description: 'npm registry for npm/git downloads and dependency installation.',
+    }),
+    'hook-script': Flags.string({
+      description: 'Hook module to run after npm scaffold or git clone and before dependency installation.',
+    }),
+    'hook-phase': Flags.string({
+      hidden: true,
+      options: ['init', 'upgrade', 'restore', 'source-download', 'app-start'],
+    }),
+    'hook-command': Flags.string({
+      hidden: true,
+      options: ['init', 'source:download', 'app:start', 'app:restart', 'app:upgrade'],
+    }),
+    'hook-env-name': Flags.string({
+      hidden: true,
+    }),
+    'hook-app-path': Flags.string({
+      hidden: true,
+    }),
+    'hook-storage-path': Flags.string({
+      hidden: true,
     }),
     build: Flags.boolean({
       allowNo: true,
@@ -537,9 +580,9 @@ export default class SourceDownload extends Command {
     return outputAbs;
   }
 
-  private dockerTarPath(flags: DownloadResolvedFlags, outputAbs: string): string {
+  private async dockerTarPath(flags: DownloadResolvedFlags, outputAbs: string): Promise<string> {
     const imageRef = resolveDockerImageRef(flags['docker-registry'], flags.version, {
-      defaultRegistry: defaultDockerRegistryForLang(process.env.NB_LOCALE),
+      defaultRegistry: await this.resolveConfiguredDockerRegistryDefault(),
       defaultVersion: 'latest',
     });
     const safeBase = imageRef.replace(/[\\/:]/g, '-');
@@ -550,9 +593,16 @@ export default class SourceDownload extends Command {
    * Defaults for prompts only. Keys present in **`preset`** are omitted so `runPromptCatalog` uses
    * **`values`** (preset) alone for those steps — no duplicate prefill for skipped prompts.
    */
-  private buildInitialValuesFromParsed(flags: DownloadParsedFlags, preset: PromptInitialValues): PromptInitialValues {
+  private async resolveConfiguredDockerRegistryDefault(): Promise<string> {
+    return resolveOfficialDockerRegistry(await getCliConfigValue('nb-image-registry'));
+  }
+
+  private buildInitialValuesFromParsed(
+    flags: DownloadParsedFlags,
+    preset: PromptInitialValues,
+    defaultDockerRegistry: string,
+  ): PromptInitialValues {
     const initialValues: PromptInitialValues = {};
-    const localeDefaultDockerRegistry = defaultDockerRegistryForLang(flags.locale ?? process.env.NB_LOCALE);
 
     const source = flags.source?.trim();
     if (source) {
@@ -581,7 +631,7 @@ export default class SourceDownload extends Command {
     if (flags['docker-registry'] !== undefined) {
       initialValues.dockerRegistry = String(flags['docker-registry'] ?? '').trim();
     } else {
-      initialValues.dockerRegistry = localeDefaultDockerRegistry;
+      initialValues.dockerRegistry = defaultDockerRegistry;
     }
 
     initialValues.dockerPlatform = normalizeDockerPlatform(flags['docker-platform']);
@@ -690,6 +740,7 @@ export default class SourceDownload extends Command {
   private mapCatalogResultsToResolved(
     results: Record<string, PromptValue>,
     flags: DownloadParsedFlags,
+    defaultDockerRegistry: string,
   ): DownloadResolvedFlags {
     const source = String(results.source) as DownloadSource;
     const version = resolveVersionFromResults(results, flags.version) || 'latest';
@@ -713,7 +764,7 @@ export default class SourceDownload extends Command {
       source === 'docker'
         ? results.dockerRegistry !== undefined
           ? String(results.dockerRegistry).trim() || undefined
-          : flags['docker-registry']?.trim() || defaultDockerRegistryForLang(flags.locale ?? process.env.NB_LOCALE)
+          : flags['docker-registry']?.trim() || defaultDockerRegistry
         : undefined;
 
     const dockerPlatform =
@@ -734,6 +785,9 @@ export default class SourceDownload extends Command {
       results.npmRegistry !== undefined ? String(results.npmRegistry) : flags['npm-registry'] ?? '';
     const npmRegistry = npmRegistryRaw.trim() || undefined;
     const npmDevDependencies = devDependencies ?? false;
+    const hookScript = flags['hook-script']?.trim()
+      ? path.resolve(process.cwd(), flags['hook-script'].trim())
+      : undefined;
 
     return {
       source,
@@ -748,6 +802,14 @@ export default class SourceDownload extends Command {
       ...(source === 'docker' ? { 'docker-platform': dockerPlatform } : {}),
       ...(source === 'docker' ? { 'docker-save': dockerSave } : {}),
       ...(npmRegistry ? { 'npm-registry': npmRegistry } : {}),
+      ...(hookScript ? { 'hook-script': hookScript } : {}),
+      ...(flags['hook-phase'] ? { 'hook-phase': flags['hook-phase'] as HookPhase } : {}),
+      ...(flags['hook-command'] ? { 'hook-command': flags['hook-command'] as HookCommand } : {}),
+      ...(flags['hook-env-name'] ? { 'hook-env-name': flags['hook-env-name'].trim() } : {}),
+      ...(flags['hook-app-path'] ? { 'hook-app-path': path.resolve(process.cwd(), flags['hook-app-path']) } : {}),
+      ...(flags['hook-storage-path']
+        ? { 'hook-storage-path': path.resolve(process.cwd(), flags['hook-storage-path']) }
+        : {}),
     } as DownloadResolvedFlags;
   }
 
@@ -761,7 +823,8 @@ export default class SourceDownload extends Command {
     }
 
     const presetValues = this.buildPresetValuesFromFlags(flags);
-    const initialValues = this.buildInitialValuesFromParsed(flags, presetValues);
+    const defaultDockerRegistry = await this.resolveConfiguredDockerRegistryDefault();
+    const initialValues = this.buildInitialValuesFromParsed(flags, presetValues, defaultDockerRegistry);
 
     const results = await runPromptCatalog(SourceDownload.prompts, {
       initialValues,
@@ -792,7 +855,7 @@ export default class SourceDownload extends Command {
       this.error('--docker-save is only available when --source docker is selected.');
     }
 
-    return this.mapCatalogResultsToResolved(results, flags);
+    return this.mapCatalogResultsToResolved(results, flags, defaultDockerRegistry);
   }
 
   private npmRegistryUrl(flags: DownloadResolvedFlags): string | undefined {
@@ -915,9 +978,45 @@ export default class SourceDownload extends Command {
     return argv;
   }
 
+  private async runBeforeDependencyInstallHookIfNeeded(
+    flags: DownloadResolvedFlags,
+    projectRoot: string,
+  ): Promise<void> {
+    const hookScript = flags['hook-script']?.trim();
+    if (!hookScript || (flags.source !== 'npm' && flags.source !== 'git')) {
+      return;
+    }
+
+    const envName = flags['hook-env-name']?.trim() || '';
+    const env = envName ? await getEnv(envName, { scope: resolveDefaultConfigScope() }) : undefined;
+    const appPath = flags['hook-app-path']?.trim() || projectRoot;
+    const storagePath = flags['hook-storage-path']?.trim() || path.join(appPath, 'storage');
+    const context = buildBeforeDependencyInstallHookContext({
+      phase: flags['hook-phase'] ?? 'source-download',
+      command: flags['hook-command'] ?? 'source:download',
+      envName,
+      source: flags.source,
+      version: flags.version,
+      appPath,
+      sourcePath: projectRoot,
+      storagePath,
+      hookScript,
+      envConfig: env?.config ?? {},
+    });
+    if (!context) {
+      return;
+    }
+
+    this.log(`Running hook before dependency install: ${hookScript}`);
+    await runBeforeDependencyInstallHook({
+      hookScriptPath: hookScript,
+      context,
+    });
+  }
+
   async downloadFromDocker(flags: DownloadResolvedFlags): Promise<void> {
     const imageRef = resolveDockerImageRef(flags['docker-registry'], flags.version, {
-      defaultRegistry: defaultDockerRegistryForLang(process.env.NB_LOCALE),
+      defaultRegistry: await this.resolveConfiguredDockerRegistryDefault(),
       defaultVersion: 'latest',
     });
     const platform = dockerPlatformArg(flags['docker-platform']);
@@ -946,7 +1045,7 @@ export default class SourceDownload extends Command {
       await fsp.rm(outAbs, { recursive: true, force: true });
     }
     await fsp.mkdir(outAbs, { recursive: true });
-    const tarPath = this.dockerTarPath(flags, outAbs);
+    const tarPath = await this.dockerTarPath(flags, outAbs);
     this.log(`Saving Docker image tarball to ${tarPath}`);
     await this.runExternalCommand('docker', ['save', '-o', tarPath, imageRef], {
       errorName: 'docker save',
@@ -979,6 +1078,7 @@ export default class SourceDownload extends Command {
       errorName: 'npx create-nocobase-app',
       loadingMessage: 'Creating the app scaffold',
     });
+    await this.runBeforeDependencyInstallHookIfNeeded(flags, projectRoot);
     const installArgs = ['install'];
     if (!flags['dev-dependencies']) {
       installArgs.push('--production');
@@ -1025,6 +1125,7 @@ export default class SourceDownload extends Command {
     });
     const projectRoot = path.resolve(process.cwd(), outputDir);
     const registryEnv = this.npmRegistryEnv(flags);
+    await this.runBeforeDependencyInstallHookIfNeeded(flags, projectRoot);
     this.log(`Installing dependencies in ${projectRoot}`);
     await this.runExternalCommand('yarn', ['install'], {
       ...this.runOptionsWithCwd(projectRoot, registryEnv),

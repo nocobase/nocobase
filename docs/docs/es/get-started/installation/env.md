@@ -357,15 +357,17 @@ TELEMETRY_TRACE_PROCESSOR=console
 
 ### SERVER_REQUEST_WHITELIST
 
-Lista blanca de destinos permitidos para solicitudes HTTP salientes iniciadas desde el servidor, utilizada para prevenir ataques SSRF (Server-Side Request Forgery). Acepta una lista separada por comas de IPs exactas, rangos CIDR, nombres de host exactos y subdominios con comodín de un solo nivel.
+Lista blanca de destinos permitidos para solicitudes HTTP salientes iniciadas por el servidor de NocoBase. Acepta una lista separada por comas de IPs exactas, rangos CIDR, nombres de host exactos y subdominios con comodín de un solo nivel.
 
 ```bash
-SERVER_REQUEST_WHITELIST=1.2.3.4,10.0.0.0/8,api.example.com,*.trusted.com
+SERVER_REQUEST_WHITELIST=api.example.com,*.trusted.com,10.0.0.0/8,127.0.0.1
 ```
 
-**Aplica a**: Nodos de "Solicitud HTTP" en flujos de trabajo y botones de acción de solicitud personalizada. Las solicitudes con ruta relativa (llamadas a la propia API de NocoBase) no se ven afectadas.
+**Aplica a**: Nodos de "Solicitud HTTP" en flujos de trabajo, botones de acción de solicitud personalizada, servicios AI y otras solicitudes del lado del servidor. Las solicitudes con ruta relativa (llamadas a la propia API de NocoBase) no se ven afectadas.
 
-**Sin configurar**: Se permiten todas las solicitudes `http`/`https` salientes (comportamiento existente). **Configurado**: Solo se permiten solicitudes cuyo host coincida con una entrada de la lista blanca; las solicitudes que no coincidan generarán un error.
+**Sin configurar**: Todas las solicitudes salientes `http` / `https` siguen permitidas para conservar el comportamiento existente. Sin embargo, si el destino es una dirección loopback, privada, link-local o metadata, o si un dominio resuelve a una de esas direcciones, el servidor escribe un warning en los logs.
+
+**Configurado**: Solo se permiten solicitudes cuyo host coincida con una entrada de la lista blanca; las solicitudes que no coincidan generarán un error. Versiones futuras pueden endurecer gradualmente el comportamiento predeterminado. Si tu despliegue necesita acceder a servicios internos, configura una lista blanca explícita con antelación.
 
 Formatos admitidos:
 
@@ -373,8 +375,16 @@ Formatos admitidos:
 | --- | --- | --- |
 | IPv4 exacta | `1.2.3.4` | Solo esa IP |
 | IPv4 CIDR | `10.0.0.0/8` | Todas las IPs de la subred |
+| IPv6 exacta | `::1` | Solo esa IP |
+| IPv6 CIDR | `fc00::/7` | Todas las IPs de la subred |
 | Nombre de host exacto | `api.example.com` | Solo ese nombre de host |
 | Subdominio comodín | `*.example.com` | Un nivel de subdominio, p. ej. `foo.example.com`; **no** coincide con `example.com` ni `a.b.example.com` |
+
+:::warning Note
+
+Si se configura un dominio en la lista blanca, la comprobación usa el host de la URL de la solicitud. En otras palabras, después de configurar `internal.example.com`, se trata como un destino permitido explícitamente aunque el dominio resuelva a `127.0.0.1` o a una dirección privada.
+
+:::
 
 ## Variables de Entorno Experimentales
 

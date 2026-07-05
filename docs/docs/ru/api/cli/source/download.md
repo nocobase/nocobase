@@ -1,12 +1,12 @@
 ---
 title: "nb source download"
-description: "Справочник по команде nb source download: получение исходного кода или образа NocoBase из npm, Docker или Git."
-keywords: "nb source download,NocoBase CLI,скачивание,npm,Docker,Git"
+description: "Справочник по команде nb source download: загрузка исходного кода или образов NocoBase из npm, Docker или Git."
+keywords: "nb source download,NocoBase CLI,загрузка,npm,Docker,Git"
 ---
 
 # nb source download
 
-Получает NocoBase из npm, Docker или Git. `--version` — общий параметр версии для всех трёх источников: для npm используется версия пакета, для Docker — tag образа, для Git — git ref.
+Загружает NocoBase из npm, Docker или Git. `--version` — общий параметр для всех трёх типов источника: для npm используется версия пакета, для Docker — тег образа, для Git — git ref.
 
 ## Использование
 
@@ -18,21 +18,22 @@ nb source download [flags]
 
 | Параметр | Тип | Описание |
 | --- | --- | --- |
-| `--yes`, `-y` | boolean | Использовать значения по умолчанию и пропустить интерактивные подсказки |
+| `--yes`, `-y` | boolean | Использовать значения по умолчанию и пропустить интерактивные запросы |
 | `--verbose` | boolean | Показать подробный вывод команд |
 | `--locale` | string | Язык подсказок CLI: `en-US` или `zh-CN` |
-| `--source`, `-s` | string | Способ получения: `docker`, `npm` или `git` |
-| `--version`, `-v` | string | Версия пакета npm, tag образа Docker или Git ref |
-| `--replace`, `-r` | boolean | Заменить, если целевой каталог уже существует |
+| `--source`, `-s` | string | Тип источника: `docker`, `npm` или `git` |
+| `--version`, `-v` | string | Версия пакета npm, тег образа Docker или git ref |
+| `--replace`, `-r` | boolean | Заменить целевой каталог, если он уже существует |
 | `--dev-dependencies`, `-D` / `--no-dev-dependencies` | boolean | Устанавливать ли devDependencies при установке npm/Git |
-| `--output-dir`, `-o` | string | Целевой каталог скачивания или каталог для сохранения tarball Docker |
-| `--git-url` | string | Адрес Git-репозитория |
-| `--docker-registry` | string | Имя Docker-репозитория без tag |
+| `--output-dir`, `-o` | string | Целевой каталог загрузки или каталог для сохранения tarball Docker |
+| `--git-url` | string | URL Git-репозитория |
+| `--docker-registry` | string | Имя репозитория Docker-образа без тега |
 | `--docker-platform` | string | Платформа Docker-образа: `auto`, `linux/amd64`, `linux/arm64` |
-| `--docker-save` / `--no-docker-save` | boolean | Сохранять ли Docker-образ как tarball после загрузки |
-| `--npm-registry` | string | Registry для скачивания и установки зависимостей npm/Git |
+| `--docker-save` / `--no-docker-save` | boolean | Сохранять ли загруженный Docker-образ как tarball |
+| `--npm-registry` | string | Реестр для загрузки и установки зависимостей npm/Git |
 | `--build` / `--no-build` | boolean | Выполнять ли сборку после установки зависимостей npm/Git |
 | `--build-dts` | boolean | Генерировать ли файлы объявлений TypeScript при сборке npm/Git |
+| `--hook-script` | string | Модуль хука, который запускается после npm-шаблона или git clone и перед установкой зависимостей; применяется только к источникам npm/Git |
 
 ## Примеры
 
@@ -47,11 +48,29 @@ nb source download --source git --version alpha --git-url=git@github.com:nocobas
 nb source download --source git --version fix/cli-v2
 nb source download -y --source npm --version alpha --build-dts
 nb source download -y --source npm --version alpha --npm-registry=https://registry.npmmirror.com
+nb source download -y --source git --version beta --hook-script ./hooks.mjs
 ```
+
+## Хук перед установкой
+
+`--hook-script` влияет только на текущий запуск `nb source download`. Если нужно сохранить хук вместе с окружением и повторно использовать его в `nb app upgrade` или при локальном восстановлении исходного кода, передайте его через [`nb init --hook-script`](../init.md).
+
+Файл хука должен экспортировать объект по умолчанию с методом `beforeDependencyInstall(context)`:
+
+```js
+export default {
+  beforeDependencyInstall: async ({ sourcePath, version, envConfig }) => {
+    // Выполняется после git clone / npm-шаблона и перед yarn install.
+  },
+};
+```
+
+При прямом запуске `nb source download --hook-script` хук `beforeDependencyInstall` получает `context.phase` как `source-download` и `context.command` как `source:download`. Эта команда не запускает `beforeAppInstall` или `afterAppStart`; эти хуки относятся к установке, запуску, перезапуску и обновлению приложения.
+
 
 ## Псевдонимы версий
 
-При использовании источника Git распространённые dist-tag разрешаются в соответствующие ветки: `latest` → `main`, `beta` → `next`, `alpha` → `develop`.
+При использовании источника Git распространённые теги дистрибуции разрешаются в соответствующие ветки: `latest` → `main`, `beta` → `next`, `alpha` → `develop`.
 
 ## Связанные команды
 

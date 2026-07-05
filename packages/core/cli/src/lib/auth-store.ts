@@ -78,6 +78,8 @@ export interface EnvConfigEntry {
   build?: boolean;
   /** Whether download emitted declaration files during build. */
   buildDts?: boolean;
+  /** Hook module copied into the app root and reused before dependency installs. */
+  hookScript?: string;
   appPath?: string;
   appRootPath?: string;
   storagePath?: string;
@@ -137,12 +139,15 @@ export interface AuthConfig {
     docker?: {
       network?: string;
       containerPrefix?: string;
+      nbImageRegistry?: string;
+      nbImageVariant?: string;
     };
     bin?: {
       docker?: string;
       caddy?: string;
       git?: string;
       nginx?: string;
+      pnpm?: string;
       yarn?: string;
     };
     proxy?: {
@@ -285,6 +290,19 @@ function normalizeAuthConfig(config: AuthConfig & { dockerResourcePrefix?: strin
       ? settings.log.retentionDays
       : undefined;
   const logEnabled = typeof settings.log?.enabled === 'boolean' ? settings.log.enabled : undefined;
+  const hasBinSettings =
+    settings.bin?.docker ||
+    settings.bin?.caddy ||
+    settings.bin?.git ||
+    settings.bin?.nginx ||
+    settings.bin?.pnpm ||
+    settings.bin?.yarn;
+  const hasProxySettings =
+    settings.proxy?.nbCliRoot ||
+    settings.proxy?.caddyDriver ||
+    settings.proxy?.nginxDriver ||
+    settings.proxy?.upstreamHost ||
+    (settings.proxy as { host?: unknown } | undefined)?.host;
   return {
     name: config.name || config.dockerResourcePrefix,
     settings: {
@@ -300,31 +318,35 @@ function normalizeAuthConfig(config: AuthConfig & { dockerResourcePrefix?: strin
       ...(updatePolicy ? { update: { policy: updatePolicy } } : {}),
       ...(settings.license?.pkgUrl ? { license: { pkgUrl: normalizeOptionalString(settings.license.pkgUrl) } } : {}),
       ...(settings.docker?.network || settings.docker?.containerPrefix
+        || settings.docker?.nbImageRegistry || settings.docker?.nbImageVariant
         ? {
             docker: {
               ...(settings.docker?.network ? { network: normalizeOptionalString(settings.docker.network) } : {}),
               ...(settings.docker?.containerPrefix
                 ? { containerPrefix: normalizeOptionalString(settings.docker.containerPrefix) }
                 : {}),
+              ...(settings.docker?.nbImageRegistry
+                ? { nbImageRegistry: normalizeOptionalString(settings.docker.nbImageRegistry) }
+                : {}),
+              ...(settings.docker?.nbImageVariant
+                ? { nbImageVariant: normalizeOptionalString(settings.docker.nbImageVariant) }
+                : {}),
             },
           }
         : {}),
-      ...(settings.bin?.docker || settings.bin?.caddy || settings.bin?.git || settings.bin?.nginx || settings.bin?.yarn
+      ...(hasBinSettings
         ? {
             bin: {
               ...(settings.bin?.docker ? { docker: normalizeOptionalString(settings.bin.docker) } : {}),
               ...(settings.bin?.caddy ? { caddy: normalizeOptionalString(settings.bin.caddy) } : {}),
               ...(settings.bin?.git ? { git: normalizeOptionalString(settings.bin.git) } : {}),
               ...(settings.bin?.nginx ? { nginx: normalizeOptionalString(settings.bin.nginx) } : {}),
+              ...(settings.bin?.pnpm ? { pnpm: normalizeOptionalString(settings.bin.pnpm) } : {}),
               ...(settings.bin?.yarn ? { yarn: normalizeOptionalString(settings.bin.yarn) } : {}),
             },
           }
         : {}),
-      ...(settings.proxy?.nbCliRoot ||
-      settings.proxy?.caddyDriver ||
-      settings.proxy?.nginxDriver ||
-      settings.proxy?.upstreamHost ||
-      (settings.proxy as { host?: unknown } | undefined)?.host
+      ...(hasProxySettings
         ? {
             proxy: {
               ...(settings.proxy?.nbCliRoot ? { nbCliRoot: normalizeOptionalString(settings.proxy.nbCliRoot) } : {}),

@@ -1,12 +1,12 @@
 ---
 title: "nb proxy nginx use"
-description: "Справка по команде nb proxy nginx use: переключает текущий driver provider Nginx."
-keywords: "nb proxy nginx use,NocoBase CLI,nginx,driver"
+description: "Справочник по команде nb proxy nginx use: переключение текущего драйвера провайдера Nginx."
+keywords: "nb proxy nginx use,NocoBase CLI,nginx,драйвер"
 ---
 
 # nb proxy nginx use
 
-Переключает текущий driver provider Nginx.
+Переключает текущий драйвер провайдера Nginx.
 
 ## Использование
 
@@ -29,8 +29,8 @@ nb proxy nginx use docker
 
 ## Примечания
 
-- Эта команда сохраняет результат в `proxy.nginx-driver`
-- Последующие команды, такие как `start`, `reload`, `stop`, `status` и `info`, будут использовать текущий driver
+- Команда сохраняет результат в `proxy.nginx-driver`
+- Последующие команды, такие как `start`, `reload`, `stop`, `status` и `info`, используют текущий драйвер
 
 ## Связанные команды
 

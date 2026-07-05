@@ -78,6 +78,19 @@ describe('PluginSettingsManager v2', () => {
     expect(app.router.get('admin.settings.demo.advanced')).toMatchObject({ path: 'advanced' });
   });
 
+  it('should resolve plugin settings links for plugin manager entries', () => {
+    const app = createMockClient();
+
+    app.pluginSettingsManager.addMenuItem({ key: 'shared', title: 'Shared' });
+    app.pluginSettingsManager.addPageTabItem({ menuKey: 'shared', key: 'target', title: 'Target' });
+    app.pluginSettingsManager.setPluginSettingsLink('demo-plugin', 'shared.target');
+
+    expect(app.pluginSettingsManager.has('demo-plugin')).toBe(false);
+    expect(app.pluginSettingsManager.hasPluginSettings('demo-plugin')).toBe(true);
+    expect(app.pluginSettingsManager.getPluginSettingsName('demo-plugin')).toBe('shared.target');
+    expect(app.pluginSettingsManager.getPluginSettingsRoutePath('demo-plugin')).toBe('/admin/settings/shared/target');
+  });
+
   it('should render string icon on both menu and page tab via renderIcon', () => {
     // Previously `renderPage` spread the raw `icon` string straight to the antd
     // Menu item, which displayed "LockOutlinedTitle" as text. Both `renderMenuItem`

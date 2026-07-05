@@ -8,6 +8,7 @@
  */
 
 import type { FlowEngine } from '@nocobase/flow-engine';
+import type { FlowModel } from '@nocobase/flow-engine';
 import { randomId } from '@nocobase/flow-engine';
 import { DEFAULT_SUCCESS_MESSAGE, PUBLIC_FORM_PAGE_MODEL, PUBLIC_FORM_SUBMIT_ACTION_MODEL } from './constants';
 
@@ -16,10 +17,11 @@ export interface PublicFormRecord {
   title?: string;
   collection?: string;
   type?: string;
+  version?: string;
   description?: string;
   enabled?: boolean;
   password?: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export function parseCollectionValue(value?: string) {
@@ -34,6 +36,20 @@ export function parseCollectionValue(value?: string) {
 
 function createUid(prefix: string) {
   return randomId(prefix);
+}
+
+function hasSubModels(model?: FlowModel | null) {
+  const subModels = model?.subModels;
+  if (!subModels) {
+    return false;
+  }
+
+  return Object.values(subModels).some((subModel) => {
+    if (Array.isArray(subModel)) {
+      return subModel.length > 0;
+    }
+    return !!subModel;
+  });
 }
 
 export function createPublicFormFlowModelTree(record: PublicFormRecord, t: (key: string) => string) {
@@ -165,8 +181,12 @@ export async function ensurePublicFormFlowModel(
   }
 
   const existing = await flowEngine.loadModel({ uid: key, refresh: true });
-  if (existing) {
+  if (hasSubModels(existing)) {
     return existing;
+  }
+
+  if (existing || flowEngine.getModel(key)) {
+    flowEngine.removeModelWithSubModels(key);
   }
 
   const tree = createPublicFormFlowModelTree(record, t);

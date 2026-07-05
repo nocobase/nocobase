@@ -68,7 +68,7 @@
       "unreachable": "Unable to connect to the API base URL. Check the address and make sure the server is reachable. Details: {{details}}"
     },
     "envKey": {
-      "invalid": "Use letters and numbers only."
+      "invalid": "Use letters, numbers, hyphens, and underscores only."
     },
     "appPublicPath": {
       "invalid": "Use / or a slash-separated path like /nocobase/ or /foo-bar/baz_2/. Each path segment may contain letters, numbers, hyphens, and underscores only."
@@ -263,7 +263,7 @@
         "version": {
           "message": "Which version would you like to use?",
           "latestLabel": "latest",
-          "latestHint": "Stable release. Best for production use and the most predictable experience. Currently unavailable.",
+          "latestHint": "Stable release. Best for production use and the most predictable experience.",
           "betaLabel": "beta",
           "betaHint": "Preview release. Good for trying upcoming features before general release.",
           "alphaLabel": "alpha",

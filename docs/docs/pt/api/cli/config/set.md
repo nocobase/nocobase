@@ -1,7 +1,7 @@
 ---
-title: "nb config set"
-description: "Referência do comando nb config set: defina um item de configuração da CLI."
-keywords: "nb config set,NocoBase CLI,definir configuração"
+title: 'nb config set'
+description: 'Referência do comando nb config set: defina um item de configuração da CLI.'
+keywords: 'nb config set,NocoBase CLI,definir configuração'
 ---
 
 # nb config set
@@ -16,10 +16,10 @@ nb config set <key> <value>
 
 ## Parâmetros
 
-| Parâmetro | Tipo | Descrição |
-| --- | --- | --- |
-| `<key>` | string | Nome do item de configuração. Consulte [`nb config`](./index.md) para ver os valores suportados |
-| `<value>` | string | Valor de configuração; não pode estar vazio |
+| Parâmetro | Tipo   | Descrição                                                                                       |
+| --------- | ------ | ----------------------------------------------------------------------------------------------- |
+| `<key>`   | string | Nome do item de configuração. Consulte [`nb config`](./index.md) para ver os valores suportados |
+| `<value>` | string | Valor de configuração; não pode estar vazio                                                     |
 
 ## Exemplos
 
@@ -29,10 +29,15 @@ nb config set update.policy auto
 nb config set license.pkg-url https://pkg.nocobase.com/
 nb config set docker.network nocobase
 nb config set docker.container-prefix nb
+nb config set nb-image-registry dockerhub
+nb config set nb-image-registry aliyun
+nb config set nb-image-variant full
+nb config set nb-image-variant full-no-nginx
 nb config set bin.docker /usr/local/bin/docker
 nb config set bin.caddy /opt/homebrew/bin/caddy
 nb config set bin.git /usr/bin/git
 nb config set bin.nginx /usr/sbin/nginx
+nb config set bin.pnpm /usr/local/bin/pnpm
 nb config set proxy.nb-cli-root /workspace
 nb config set proxy.upstream-host host.docker.internal
 nb config set bin.yarn yarn
@@ -40,7 +45,9 @@ nb config set bin.yarn yarn
 
 ## Notas
 
-`update.policy` aceita `prompt`, `auto` e `off`, e o valor padrão é `prompt`.
+- `update.policy` aceita `prompt`, `auto` e `off`, e o valor padrão é `prompt`
+- `nb-image-registry` aceita `dockerhub` e `aliyun`, e o valor padrão é `dockerhub`
+- `nb-image-variant` aceita `standard`, `no-nginx`, `full` e `full-no-nginx`, e o valor padrão é `full`
 
 ## Comandos relacionados
 

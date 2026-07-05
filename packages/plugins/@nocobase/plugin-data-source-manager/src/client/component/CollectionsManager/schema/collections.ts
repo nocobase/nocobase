@@ -44,7 +44,7 @@ export const collection: CollectionOptions = {
         type: 'string',
         'x-component': 'CollectionName',
         description:
-          '{{t("Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.")}}',
+          '{{t("Randomly generated and can be modified. Support letters, numbers and underscores, must start with a letter.")}}',
       },
     },
     // {
