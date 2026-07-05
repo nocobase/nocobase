@@ -18,7 +18,7 @@
 
 import { PageTabs, Plugin } from '@nocobase/client';
 import { registerCopyEmbedLinkFlow } from '../client-v2/copyEmbedLinkFlow';
-import { syncEmbedSessionFromLocation } from '../client-v2/embedSession';
+import { EmbedSessionProvider, syncEmbedSessionFromLocation } from '../client-v2/embedSession';
 import { registerEmbedAuthCheckInterceptor } from './embedAuth';
 import { EmbedLayout, EmbedPage, useBlockSettingProps } from './EmbedLayout';
 
@@ -30,6 +30,7 @@ class PluginEmbedClient extends Plugin {
     syncEmbedSessionFromLocation(this.app);
   }
   async load() {
+    this.app.providers.unshift([EmbedSessionProvider, {}]);
     registerEmbedAuthCheckInterceptor(this.app);
 
     this.router.add(Key, {

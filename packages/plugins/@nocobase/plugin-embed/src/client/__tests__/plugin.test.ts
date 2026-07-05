@@ -69,6 +69,7 @@ describe('PluginEmbedClient', () => {
       schemaSettingsManager: {
         addItem: vi.fn(),
       },
+      providers: [],
     };
 
     return {
@@ -79,6 +80,7 @@ describe('PluginEmbedClient', () => {
 
   it('registers the v2 copy embed action for flow pages rendered by the v1 admin route', async () => {
     const { default: PluginEmbedClient } = await import('../index');
+    const { EmbedSessionProvider } = await import('../../client-v2/embedSession');
     const { app } = createApp();
     const plugin = new PluginEmbedClient({} as never, app as never);
 
@@ -123,6 +125,7 @@ describe('PluginEmbedClient', () => {
       type: 'item',
       useComponentProps: expect.any(Function),
     });
+    expect(app.providers[0]).toEqual([EmbedSessionProvider, {}]);
     expect(registerCopyEmbedLinkFlow).toHaveBeenCalledTimes(1);
   });
 
@@ -280,6 +283,7 @@ describe('PluginEmbedClient', () => {
       schemaSettingsManager: {
         addItem: vi.fn(),
       },
+      providers: [],
     };
     const plugin = new PluginEmbedClient({} as never, app as never);
 
@@ -398,6 +402,7 @@ describe('PluginEmbedClient', () => {
       schemaSettingsManager: {
         addItem: vi.fn(),
       },
+      providers: [],
     };
     const plugin = new PluginEmbedClient({} as never, app as never);
 
@@ -474,6 +479,7 @@ describe('PluginEmbedClient', () => {
       schemaSettingsManager: {
         addItem: vi.fn(),
       },
+      providers: [],
     };
     const plugin = new PluginEmbedClient({} as never, app as never);
     const error = {
