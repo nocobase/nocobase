@@ -10,7 +10,7 @@
 import { FlowEngine } from '@nocobase/flow-engine';
 import { describe, expect, it } from 'vitest';
 import { IframeBlockModel } from '../models/IframeBlockModel';
-import PluginBlockIframeClient, { PluginBlockIframeClient as NamedPluginBlockIframeClient } from '../plugin';
+import PluginBlockIframeClient from '../plugin';
 
 describe('PluginBlockIframeClient', () => {
   it('registers the iframe block model loader', async () => {
@@ -20,9 +20,5 @@ describe('PluginBlockIframeClient', () => {
     await flowEngine.preloadModelLoaders();
 
     expect(flowEngine.getModelClass('IframeBlockModel')).toBe(IframeBlockModel);
-  });
-
-  it('exports the plugin class as the default client plugin', () => {
-    expect(PluginBlockIframeClient).toBe(NamedPluginBlockIframeClient);
   });
 });

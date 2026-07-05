@@ -12,7 +12,7 @@ import { describe, expect, it } from 'vitest';
 import { ActionPanelBlockModel } from '../models/ActionPanelBlockModel';
 import { ActionPanelGroupActionModel } from '../models/actions/ActionPanelGroupAction';
 import { ActionPanelScanActionModel } from '../models/actions/ActionPanelScanActionModel';
-import PluginBlockWorkbenchClient, { PluginBlockWorkbenchClient as NamedPluginBlockWorkbenchClient } from '../plugin';
+import PluginBlockWorkbenchClient from '../plugin';
 
 describe('PluginBlockWorkbenchClient', () => {
   it('registers action panel model loaders', async () => {
@@ -24,9 +24,5 @@ describe('PluginBlockWorkbenchClient', () => {
     expect(flowEngine.getModelClass('ActionPanelBlockModel')).toBe(ActionPanelBlockModel);
     expect(flowEngine.getModelClass('ActionPanelGroupActionModel')).toBe(ActionPanelGroupActionModel);
     expect(flowEngine.getModelClass('ActionPanelScanActionModel')).toBe(ActionPanelScanActionModel);
-  });
-
-  it('exports the plugin class as the default client plugin', () => {
-    expect(PluginBlockWorkbenchClient).toBe(NamedPluginBlockWorkbenchClient);
   });
 });

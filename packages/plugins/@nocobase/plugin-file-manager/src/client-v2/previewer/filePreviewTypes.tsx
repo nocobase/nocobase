@@ -591,7 +591,6 @@ interface PdfSession {
   observer?: IntersectionObserver;
 }
 
-/* istanbul ignore next -- @preserve: PDF.js rendering depends on browser canvas, observers, worker resources and is covered by integration-level preview checks. */
 const PdfPreviewer = ({ file }: FilePreviewerProps) => {
   const { t } = useTranslation(NAMESPACE);
   const src = getFileUrl(file);

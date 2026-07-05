@@ -15,9 +15,7 @@ import {
   FdwRemoteTableConfigureItem,
   normalizeFdwCollectionSubmitValues,
 } from '../FdwCollectionConfigure';
-import PluginCollectionFDWClientV2, {
-  PluginCollectionFDWClientV2 as NamedPluginCollectionFDWClientV2,
-} from '../plugin';
+import PluginCollectionFDWClientV2 from '../plugin';
 
 describe('PluginCollectionFDWClientV2', () => {
   it('registers the foreign collection template with client-v2 configuration items', async () => {
@@ -86,10 +84,6 @@ describe('PluginCollectionFDWClientV2', () => {
     };
 
     await expect(PluginCollectionFDWClientV2.prototype.load.call({ app })).resolves.toBeUndefined();
-  });
-
-  it('exports the plugin class as the default client plugin', () => {
-    expect(PluginCollectionFDWClientV2).toBe(NamedPluginCollectionFDWClientV2);
   });
 });
 

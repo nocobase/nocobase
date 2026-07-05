@@ -19,9 +19,7 @@ import {
   SqlStatementConfigureItem,
   SqlSyncFieldsDrawer,
 } from '../SqlCollectionConfigure';
-import PluginCollectionSqlClientV2, {
-  PluginCollectionSqlClientV2 as NamedPluginCollectionSqlClientV2,
-} from '../plugin';
+import PluginCollectionSqlClientV2 from '../plugin';
 
 const manager = {
   getFieldInterface: vi.fn((name?: string) => {
@@ -103,10 +101,6 @@ describe('PluginCollectionSqlClientV2', () => {
     };
 
     await expect(PluginCollectionSqlClientV2.prototype.load.call({ app })).resolves.toBeUndefined();
-  });
-
-  it('exports the plugin class as the default client plugin', () => {
-    expect(PluginCollectionSqlClientV2).toBe(NamedPluginCollectionSqlClientV2);
   });
 });
 

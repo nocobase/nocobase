@@ -7,7 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-/* istanbul ignore file -- @preserve: upload popup UI and FlowEngine runtime hooks are covered by focused tests and integration-level upload checks. */
 import { InboxOutlined, LoadingOutlined } from '@ant-design/icons';
 import { ActionModel, ActionSceneEnum, Icon } from '@nocobase/client-v2';
 import { escapeT, useFlowContext } from '@nocobase/flow-engine';

@@ -14,10 +14,6 @@ vi.mock('@nocobase/client-v2', () => ({
   Plugin: class Plugin {},
 }));
 
-vi.mock('@nocobase/flow-engine', () => ({
-  tExpr: (value: string) => value,
-}));
-
 vi.mock('../locale', () => ({
   tExpr: (value: string) => value,
 }));
