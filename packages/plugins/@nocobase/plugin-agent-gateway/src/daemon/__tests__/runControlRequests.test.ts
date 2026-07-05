@@ -51,6 +51,18 @@ function createCanceledResult(): ExecDriverResult {
   };
 }
 
+function isJsonRecord(value: unknown): value is JsonRecord {
+  return Object.prototype.toString.call(value) === '[object Object]';
+}
+
+function getRequestEvents(call: GatewayRequestOptions | undefined) {
+  if (!isJsonRecord(call?.body)) {
+    return [];
+  }
+  const events = call.body.events;
+  return Array.isArray(events) ? events.filter(isJsonRecord) : [];
+}
+
 const tmuxMocks = vi.hoisted(() => {
   const createResult = (): ExecDriverResult => ({
     status: 'succeeded',
@@ -343,6 +355,110 @@ describe('agent gateway daemon control requests', () => {
         args: ['exec', 'Build a terminal-readable page'],
       }),
     );
+  });
+
+  it('uses the task payload terminal backend for live timeline reporting', async () => {
+    const workspace = path.join(tempDir, 'workspace');
+    await fs.mkdir(workspace, { recursive: true });
+    tmuxMocks.executeTmuxCommand.mockImplementationOnce(async (options: TmuxCommandOptions) => {
+      await options.onSessionStarted?.({
+        backend: 'tmux',
+        sessionName: 'ag-run-run-task-live-1',
+        startedAt: new Date().toISOString(),
+      });
+      await options.onOutputChunk?.('live task output before completion');
+      return createSucceededResult();
+    });
+    const calls: GatewayRequestOptions[] = [];
+    const requester: GatewayRequester & { calls: GatewayRequestOptions[] } = {
+      calls,
+      async request<T extends JsonRecord = JsonRecord>(options: GatewayRequestOptions): Promise<T> {
+        calls.push(options);
+        if (options.path.endsWith('/runs:claim')) {
+          return {
+            claimed: true,
+            runId: 'run-task-live-1',
+            runCode: 'run-task-live-1',
+            claimToken: 'ag_claim_TASK_LIVE',
+            claimAttempt: 1,
+            leaseVersion: 1,
+            profileProvider: 'codex',
+            run: {
+              id: 'run-task-live-1',
+              promptSnapshot: {
+                text: 'Build with live task output',
+              },
+              executionPayloadJson: {
+                commandKey: 'codex',
+                cwd: '.',
+                terminalBackend: 'tmux',
+              },
+            },
+          } as T;
+        }
+        if (options.path.includes('/heartbeat') && options.path.includes('/runs/')) {
+          return {
+            runId: 'run-task-live-1',
+            claimToken: 'ag_claim_TASK_LIVE',
+            claimAttempt: 1,
+            leaseVersion: 1,
+            cancelRequested: false,
+          } as T;
+        }
+        return {
+          ok: true,
+        } as T;
+      },
+    };
+    const gateway = new AgentGatewayDaemonNodeClient(requester, {
+      serverUrl: 'https://nocobase.example.test',
+      nodeId: 'node-control-1',
+      nodeKey: 'node-control-1',
+      nodeToken: 'ag_node_CONTROL',
+      savedAt: new Date().toISOString(),
+    });
+
+    const result = await runDaemonOnce({
+      gateway,
+      allowlist: {
+        codex: {
+          commandKey: 'codex',
+          executable: 'codex',
+          defaultTimeoutMs: 5000,
+        },
+      },
+      workspaceRoot: workspace,
+      skillsRoot: path.join(tempDir, 'skills'),
+      artifactDir: path.join(tempDir, 'artifacts'),
+      runHeartbeatIntervalMs: 60_000,
+      terminalStreamClientFactory: () => ({
+        start: async () => undefined,
+        appendText: async () => undefined,
+        end: async () => undefined,
+        close: () => undefined,
+      }),
+      detectOptions: {
+        probeCommand: async () => ({
+          available: true,
+          command: 'codex',
+          version: 'codex 1.0.0',
+        }),
+      },
+    });
+
+    expect(result.status).toBe('succeeded');
+    expect(tmuxMocks.executeTmuxCommand).toHaveBeenCalled();
+    const liveConversationCallIndex = requester.calls.findIndex((call) =>
+      getRequestEvents(call).some(
+        (event) =>
+          event.source === 'terminal-live' &&
+          event.eventType === 'agent.message' &&
+          event.contentText === 'live task output before completion',
+      ),
+    );
+    const completeCallIndex = requester.calls.findIndex((call) => call.path.endsWith('/complete'));
+    expect(liveConversationCallIndex).toBeGreaterThanOrEqual(0);
+    expect(completeCallIndex).toBeGreaterThan(liveConversationCallIndex);
   });
 
   it('acks delivered and succeeded after executing an interrupt request', async () => {

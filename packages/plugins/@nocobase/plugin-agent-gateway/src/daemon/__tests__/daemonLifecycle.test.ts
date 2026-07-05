@@ -132,6 +132,19 @@ describe('agent gateway daemon lifecycle client', () => {
     );
 
     expect(script).toContain('--invite-token-stdin');
+    expect(script).toContain('AGENT_GATEWAY_NODE_KEY');
+    expect(script).toContain('AGENT_GATEWAY_DAEMON_PACKAGE_URL');
+    expect(script).toContain('/api/agent-gateway/daemon-package.tgz');
+    expect(script).toContain('download_file "$DAEMON_PACKAGE_URL"');
+    expect(script).toContain('tar -xzf "$package_archive"');
+    expect(script).toContain('DAEMON_CMD=(node "$package_dir/package/daemon.js")');
+    expect(script).toContain('Existing Agent Gateway daemon registration is still valid');
+    expect(script).toContain('--node-key "$NODE_KEY"');
+    expect(script).toContain('systemctl --user enable --now');
+    expect(script).toContain('Restart=always');
+    expect(script).toContain('while true; do');
+    expect(script).toContain('Agent Gateway daemon exited with status');
+    expect(script).toContain('tmux new-session');
     expect(script).toContain('AGENT_GATEWAY_INVITE_TOKEN');
     expect(script).not.toMatch(/\?[^ \n]*invite/i);
     expect(script).not.toMatch(/\?[^ \n]*token/i);

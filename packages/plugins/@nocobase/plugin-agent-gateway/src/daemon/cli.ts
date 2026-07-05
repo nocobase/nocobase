@@ -114,6 +114,10 @@ function printJson(value: unknown) {
   process.stdout.write(`${JSON.stringify(value, null, 2)}\n`);
 }
 
+function getErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : String(error);
+}
+
 function parseJsonRecord(rawValue: string, flagName: string) {
   try {
     const parsed = JSON.parse(rawValue) as unknown;
@@ -249,6 +253,18 @@ async function handleRun(flags: Record<string, string | boolean>) {
   await runDaemonLoop({
     ...runOptions,
     stopSignal: stopController.signal,
+    onLoopError: (error, state) => {
+      process.stderr.write(
+        [
+          new Date().toISOString(),
+          'Agent Gateway daemon loop error; retrying',
+          `failureCount=${state.failureCount}`,
+          `retryDelayMs=${state.retryDelayMs}`,
+          `error=${getErrorMessage(error)}`,
+        ].join(' '),
+      );
+      process.stderr.write('\n');
+    },
   });
 }
 

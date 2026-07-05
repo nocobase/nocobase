@@ -355,6 +355,18 @@ describe('PluginAgentGatewayClientV2', () => {
                 },
                 registeredAt: '2026-06-30T10:00:00.000Z',
                 lastHeartbeatAt: '2026-06-30T10:01:00.000Z',
+                online: true,
+                onlineReason: null,
+              },
+              {
+                id: 'node-id-stale',
+                nodeKey: 'node-stale',
+                displayName: 'Stale local runner',
+                status: 'active',
+                registeredAt: '2026-06-30T10:00:00.000Z',
+                lastHeartbeatAt: '2026-06-30T09:55:00.000Z',
+                online: false,
+                onlineReason: 'heartbeat-stale',
               },
             ],
           },
@@ -373,7 +385,8 @@ describe('PluginAgentGatewayClientV2', () => {
                 driver: 'fake',
                 status: 'active',
                 capabilitiesJson: {
-                  mode: 'success',
+                  terminalOutput: true,
+                  artifacts: true,
                 },
                 metadataJson: {
                   command: 'must-not-render',
@@ -414,9 +427,14 @@ describe('PluginAgentGatewayClientV2', () => {
       expect(screen.getAllByText('node-1').length).toBeGreaterThan(0);
     });
     expect(screen.getByText('Local fake runner')).toBeTruthy();
+    expect(screen.getAllByText('Enabled state').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Connection').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Online').length).toBeGreaterThan(0);
+    expect(screen.getByText('Offline - stale heartbeat')).toBeTruthy();
     expect(screen.getByText('fake-daemon/1.0.0')).toBeTruthy();
     expect(await screen.findByText('fake-success')).toBeTruthy();
-    expect(screen.getByText(/"mode": "success"/)).toBeTruthy();
+    expect(await screen.findByText(/^(Terminal output|terminalOutput)$/)).toBeTruthy();
+    expect(await screen.findByText(/^(Artifacts|artifacts)$/)).toBeTruthy();
     expect(screen.queryByText('must-not-render')).toBeNull();
     expect(request).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -431,7 +449,7 @@ describe('PluginAgentGatewayClientV2', () => {
       }),
     );
 
-    fireEvent.click(screen.getByLabelText('Toggle node status'));
+    fireEvent.click(screen.getAllByLabelText('Toggle node status')[0]);
     await waitFor(() => {
       expect(request).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -443,6 +461,18 @@ describe('PluginAgentGatewayClientV2', () => {
         }),
       );
     });
+  });
+
+  it('opens skill upload with NB OpenCode UI Batch defaults', async () => {
+    const request = vi.fn(async () => ({ data: { data: [] } }));
+
+    renderSettingsPage(request);
+
+    fireEvent.click(await screen.findByText('Upload skill'));
+
+    expect(screen.getByLabelText('Skill key')).toHaveValue('nb-opencode-ui-batch');
+    expect(screen.getByLabelText('Display name')).toHaveValue('NB OpenCode UI Batch');
+    expect(screen.getByLabelText('Version label')).toHaveValue('local');
   });
 
   it('renders a compact provider capability matrix', async () => {
@@ -669,8 +699,10 @@ describe('PluginAgentGatewayClientV2', () => {
           data: {
             data: {
               invitationId: 'invitation-id-1',
+              bootstrapCommand:
+                "curl -fsSL 'https://nocobase.example.test/api/agent-gateway/bootstrap.sh' | AGENT_GATEWAY_SERVER_URL='https://nocobase.example.test' AGENT_GATEWAY_NODE_KEY='remote-196' AGENT_GATEWAY_INVITE_TOKEN='ag_inv_once' bash",
               registerCommand:
-                'agent-gateway-daemon register --server-url https://nocobase.example.test --invite-token ag_inv_once',
+                "curl -fsSL 'https://nocobase.example.test/api/agent-gateway/bootstrap.sh' | AGENT_GATEWAY_SERVER_URL='https://nocobase.example.test' AGENT_GATEWAY_NODE_KEY='remote-196' AGENT_GATEWAY_INVITE_TOKEN='ag_inv_once' bash",
               expiresAt: '2026-07-01T10:00:00.000Z',
             },
           },
@@ -683,16 +715,21 @@ describe('PluginAgentGatewayClientV2', () => {
     renderSettingsPage(request);
 
     fireEvent.click(await screen.findByText('Create invitation'));
-    expect(await screen.findByText('Expected node key')).toBeTruthy();
+    const nodeKeyInput = await screen.findByRole('textbox', { name: 'Node key' });
+    expect(nodeKeyInput).toBeTruthy();
+    fireEvent.change(nodeKeyInput, {
+      target: { value: 'remote-196' },
+    });
     fireEvent.click(screen.getByText('Create'));
 
-    expect(await screen.findByText(/agent-gateway-daemon register/)).toBeTruthy();
+    expect(await screen.findByText(/curl -fsSL/)).toBeTruthy();
+    expect(await screen.findByText(/AGENT_GATEWAY_NODE_KEY='remote-196'/)).toBeTruthy();
     expect(request).toHaveBeenCalledWith(
       expect.objectContaining({
         url: 'agent-gateway/node-invitations:create',
         method: 'post',
         data: expect.objectContaining({
-          expiresInSeconds: 86400,
+          expectedNodeKey: 'remote-196',
         }),
       }),
     );
@@ -700,7 +737,7 @@ describe('PluginAgentGatewayClientV2', () => {
     fireEvent.click(screen.getByText('Close'));
 
     await waitFor(() => {
-      expect(screen.queryByText(/agent-gateway-daemon register/)).toBeNull();
+      expect(screen.queryByText(/curl -fsSL/)).toBeNull();
     });
   });
 
@@ -975,6 +1012,15 @@ describe('PluginAgentGatewayClientV2', () => {
                   ],
                 },
               ],
+              skillVersions: [
+                {
+                  id: 'skill-version-id-1',
+                  skillKey: 'nb-opencode-ui-batch',
+                  displayName: 'NB OpenCode UI Batch',
+                  versionLabel: 'v1',
+                  status: 'active',
+                },
+              ],
             },
           },
         };
@@ -1034,11 +1080,14 @@ describe('PluginAgentGatewayClientV2', () => {
 
     fireEvent.click(await screen.findByText('New task run'));
     fireEvent.change(screen.getByLabelText('Title'), {
-      target: { value: 'Calendar test' },
+      target: { value: 'Batch evaluation' },
     });
+    fireEvent.mouseDown(screen.getByLabelText('Task preset'));
+    fireEvent.click(await screen.findByText('OpenCode UI batch harness'));
     fireEvent.change(screen.getByLabelText('Instruction'), {
-      target: { value: '搭建一个日历测试页面' },
+      target: { value: '运行 nb-opencode-ui-batch harness 并汇总结果' },
     });
+    expect(await screen.findByText('NB OpenCode UI Batch / v1')).toBeTruthy();
     fireEvent.click(screen.getByText('Create'));
 
     await waitFor(() => {
@@ -1047,9 +1096,10 @@ describe('PluginAgentGatewayClientV2', () => {
           url: 'agent-gateway/task-runs:create',
           method: 'post',
           data: expect.objectContaining({
-            title: 'Calendar test',
-            scenario: 'generic',
-            prompt: '搭建一个日历测试页面',
+            title: 'Batch evaluation',
+            scenario: 'opencode-ui-batch',
+            prompt: '运行 nb-opencode-ui-batch harness 并汇总结果',
+            skillVersionId: 'skill-version-id-1',
             cwd: '.',
             nodeId: 'node-id-1',
             agentProfileId: 'profile-id-1',
@@ -1060,6 +1110,398 @@ describe('PluginAgentGatewayClientV2', () => {
     expect(await screen.findByText('run-ui-build-created')).toBeTruthy();
     expect(await screen.findByText('Queued: waiting for runner')).toBeTruthy();
     expect(await screen.findByText(/Runner heartbeat is stale; start or reconnect the daemon/)).toBeTruthy();
+  });
+
+  it('does not allow creating a task run when all runners are offline', async () => {
+    const request = vi.fn(async (config: RequestConfig) => {
+      if (config.url === 'agent-gateway/task-runs:options') {
+        return {
+          data: {
+            data: {
+              defaultProfileKey: 'codex',
+              defaultCwd: '.',
+              nodes: [
+                {
+                  id: 'node-id-offline',
+                  nodeKey: 'local-codex',
+                  displayName: 'Local Codex',
+                  status: 'active',
+                  online: false,
+                  profiles: [
+                    {
+                      id: 'profile-id-offline',
+                      nodeId: 'node-id-offline',
+                      profileKey: 'codex',
+                      displayName: 'Codex',
+                      provider: 'codex',
+                      status: 'active',
+                    },
+                  ],
+                },
+              ],
+              skillVersions: [],
+            },
+          },
+        };
+      }
+
+      if (config.url === 'agent-gateway/runs:list') {
+        return {
+          data: {
+            data: [],
+          },
+        };
+      }
+
+      return { data: { data: [] } };
+    });
+
+    renderAgentGatewayPage(AgentGatewayRunsPage, request);
+
+    fireEvent.click(await screen.findByText('New task run'));
+
+    expect(await screen.findByText('No online runner is available. Start or reconnect the daemon.')).toBeTruthy();
+    const createButton = screen.getByRole('button', { name: 'Create' });
+    expect(createButton).toBeDisabled();
+    fireEvent.click(createButton);
+    expect(request).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        url: 'agent-gateway/task-runs:create',
+      }),
+    );
+  });
+
+  it('requires a skill version before creating an OpenCode UI batch task run', async () => {
+    const request = vi.fn(async (config: RequestConfig) => {
+      if (config.url === 'agent-gateway/task-runs:options') {
+        return {
+          data: {
+            data: {
+              defaultProfileKey: 'codex',
+              defaultCwd: '.',
+              nodes: [
+                {
+                  id: 'node-id-1',
+                  nodeKey: 'local-codex',
+                  displayName: 'Local Codex',
+                  status: 'active',
+                  online: true,
+                  profiles: [
+                    {
+                      id: 'profile-id-1',
+                      nodeId: 'node-id-1',
+                      profileKey: 'codex',
+                      displayName: 'Codex',
+                      provider: 'codex',
+                      status: 'active',
+                    },
+                  ],
+                },
+              ],
+              skillVersions: [],
+            },
+          },
+        };
+      }
+
+      if (config.url === 'agent-gateway/runs:list') {
+        return {
+          data: {
+            data: [],
+          },
+        };
+      }
+
+      return { data: { data: [] } };
+    });
+
+    renderAgentGatewayPage(AgentGatewayRunsPage, request);
+
+    fireEvent.click(await screen.findByText('New task run'));
+    fireEvent.mouseDown(screen.getByLabelText('Task preset'));
+    fireEvent.click(await screen.findByText('OpenCode UI batch harness'));
+    fireEvent.change(screen.getByLabelText('Instruction'), {
+      target: { value: '运行 nb-opencode-ui-batch harness 并汇总结果' },
+    });
+    fireEvent.click(screen.getByText('Create'));
+
+    expect(await screen.findByText('Skill version is required for OpenCode UI batch harness')).toBeTruthy();
+    expect(request).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        url: 'agent-gateway/task-runs:create',
+      }),
+    );
+  });
+
+  it('shows a live waiting state when a running run has no task messages yet', async () => {
+    const request = vi.fn(async (config: RequestConfig) => {
+      if (config.url === 'agent-gateway/runs:list') {
+        return {
+          data: {
+            data: [
+              {
+                id: 'run-id-empty',
+                runCode: 'run-empty-task',
+                status: 'running',
+                requestedAt: '2026-06-30T10:00:00.000Z',
+                agentGatewayActionPermissionsJson: {
+                  readSessionMessages: true,
+                },
+              },
+            ],
+          },
+        };
+      }
+
+      if (config.url === 'agent-gateway/runs:get/run-id-empty') {
+        return {
+          data: {
+            data: {
+              id: 'run-id-empty',
+              runCode: 'run-empty-task',
+              status: 'running',
+              requestedAt: '2026-06-30T10:00:00.000Z',
+              agentGatewayActionPermissionsJson: {
+                readSessionMessages: true,
+                readArtifacts: false,
+                readRawLogs: false,
+                readTerminal: false,
+              },
+              agentProviderCapabilitiesJson: {
+                artifacts: false,
+                structuredEvents: false,
+                terminalOutput: false,
+              },
+            },
+          },
+        };
+      }
+
+      if (config.url === 'agent-gateway/runs/run-id-empty/conversation-events:list') {
+        return {
+          data: {
+            data: [],
+          },
+        };
+      }
+
+      return { data: { data: [] } };
+    });
+
+    renderAgentGatewayPage(AgentGatewayRunsPage, request);
+
+    const detailButtons = await screen.findAllByLabelText('View run details');
+    fireEvent.click(detailButtons[0]);
+
+    expect(await screen.findByText('Waiting for live task updates from the agent')).toBeTruthy();
+    expect(screen.queryByText('No task messages yet')).toBeNull();
+  });
+
+  it('refreshes the Summary task timeline while a run is still active', async () => {
+    const intervalCallbacks = spyOnPageIntervals();
+    let conversationEventsCallCount = 0;
+    const request = vi.fn(async (config: RequestConfig) => {
+      if (config.url === 'agent-gateway/runs:list') {
+        return {
+          data: {
+            data: [
+              {
+                id: 'run-id-live',
+                runCode: 'run-live-task',
+                status: 'running',
+                requestedAt: '2026-06-30T10:00:00.000Z',
+                agentGatewayActionPermissionsJson: {
+                  readSessionMessages: true,
+                },
+              },
+            ],
+          },
+        };
+      }
+
+      if (config.url === 'agent-gateway/runs:get/run-id-live') {
+        return {
+          data: {
+            data: {
+              id: 'run-id-live',
+              runCode: 'run-live-task',
+              status: 'running',
+              requestedAt: '2026-06-30T10:00:00.000Z',
+              agentGatewayActionPermissionsJson: {
+                readSessionMessages: true,
+                readArtifacts: false,
+                readRawLogs: false,
+                readTerminal: false,
+              },
+              agentProviderCapabilitiesJson: {
+                artifacts: false,
+                structuredEvents: false,
+                terminalOutput: false,
+              },
+            },
+          },
+        };
+      }
+
+      if (config.url === 'agent-gateway/runs/run-id-live/conversation-events:list') {
+        conversationEventsCallCount += 1;
+        if (conversationEventsCallCount < 3) {
+          return {
+            data: {
+              data: [],
+            },
+          };
+        }
+        return {
+          data: {
+            data: [
+              {
+                id: 'conversation-event-id-live-1',
+                source: 'terminal-live',
+                sequence: 1,
+                eventType: 'agent.message',
+                contentText: 'live task output is visible before completion\n\nexec\n',
+                contentJson: {
+                  live: true,
+                  stream: 'terminal',
+                },
+                createdAt: '2026-06-30T10:01:00.000Z',
+              },
+              {
+                id: 'conversation-event-id-live-2',
+                source: 'terminal-live',
+                sequence: 2,
+                eventType: 'agent.message',
+                contentText:
+                  'yarn test packages/plugins/@nocobase/plugin-agent-gateway/src/shared/__tests__/agentTranscript.test.ts\nsucceeded in 5ms\n\nlive task still running',
+                contentJson: {
+                  live: true,
+                  stream: 'terminal',
+                },
+                createdAt: '2026-06-30T10:01:01.000Z',
+              },
+            ],
+          },
+        };
+      }
+
+      return { data: { data: [] } };
+    });
+
+    renderAgentGatewayPage(AgentGatewayRunsPage, request);
+
+    expect(await screen.findByText('run-live-task')).toBeTruthy();
+    fireEvent.click((await screen.findAllByLabelText('View run details'))[0]);
+
+    expect(await screen.findByText('Waiting for live task updates from the agent')).toBeTruthy();
+    await act(async () => {
+      for (const callback of Array.from(intervalCallbacks.values())) {
+        callback();
+      }
+    });
+
+    const timelineRegion = await screen.findByLabelText('Task conversation');
+    const firstAgentText = await within(timelineRegion as HTMLElement).findByText(
+      /live task output is visible before completion/,
+    );
+    const secondAgentText = await within(timelineRegion as HTMLElement).findByText(/live task still running/);
+    expect(within(timelineRegion as HTMLElement).getAllByText('Tool calls')).toHaveLength(1);
+    const toolCallsText = within(timelineRegion as HTMLElement).getByText('Tool calls');
+    expect(firstAgentText.compareDocumentPosition(toolCallsText) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(toolCallsText.compareDocumentPosition(secondAgentText) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(within(timelineRegion as HTMLElement).queryByText(/yarn test packages/)).toBeNull();
+    fireEvent.click(toolCallsText);
+    expect(await within(timelineRegion as HTMLElement).findAllByText('succeeded')).not.toHaveLength(0);
+    expect(within(timelineRegion as HTMLElement).queryByText('Details')).toBeNull();
+  });
+
+  it('shows run-scoped task events before falling back to an empty session timeline', async () => {
+    const request = vi.fn(async (config: RequestConfig) => {
+      if (config.url === 'agent-gateway/runs:list') {
+        return {
+          data: {
+            data: [
+              {
+                id: 'run-id-task',
+                runCode: 'run-task-with-session',
+                status: 'running',
+                agentSessionId: 'session-id-empty',
+                requestedAt: '2026-06-30T10:00:00.000Z',
+                agentGatewayActionPermissionsJson: {
+                  readSessionMessages: true,
+                },
+              },
+            ],
+          },
+        };
+      }
+
+      if (config.url === 'agent-gateway/runs:get/run-id-task') {
+        return {
+          data: {
+            data: {
+              id: 'run-id-task',
+              runCode: 'run-task-with-session',
+              status: 'running',
+              agentSessionId: 'session-id-empty',
+              requestedAt: '2026-06-30T10:00:00.000Z',
+              agentGatewayActionPermissionsJson: {
+                readSessionMessages: true,
+                readArtifacts: false,
+                readRawLogs: false,
+                readTerminal: false,
+              },
+              agentProviderCapabilitiesJson: {
+                artifacts: false,
+                structuredEvents: false,
+                terminalOutput: false,
+              },
+            },
+          },
+        };
+      }
+
+      if (config.url === 'agent-gateway/runs/run-id-task/conversation-events:list') {
+        return {
+          data: {
+            data: [
+              {
+                id: 'conversation-event-id-task',
+                source: 'agent-gateway-task',
+                sequence: 0,
+                eventType: 'agent.user.message',
+                contentText: 'initial task instruction should be visible',
+                createdAt: '2026-06-30T10:00:00.000Z',
+              },
+            ],
+          },
+        };
+      }
+
+      if (config.url === 'agent-gateway/agent-sessions/session-id-empty/conversation-events:list') {
+        return {
+          data: {
+            data: [],
+          },
+        };
+      }
+
+      return { data: { data: [] } };
+    });
+
+    renderAgentGatewayPage(AgentGatewayRunsPage, request);
+
+    const detailButtons = await screen.findAllByLabelText('View run details');
+    fireEvent.click(detailButtons[0]);
+
+    expect(await screen.findByText('initial task instruction should be visible')).toBeTruthy();
+    expect(screen.queryByText('Waiting for live task updates from the agent')).toBeNull();
+    expect(request).toHaveBeenCalledWith(
+      expect.objectContaining({
+        url: 'agent-gateway/runs/run-id-task/conversation-events:list',
+        method: 'get',
+      }),
+    );
   });
 
   it('lists runs, shows observation details, and requests cancel for active runs', async () => {
@@ -1131,6 +1573,12 @@ describe('PluginAgentGatewayClientV2', () => {
                 },
               },
               resultSummaryJson: {
+                status: 'succeeded',
+                exitCode: 0,
+                declaredArtifacts: {
+                  declaredArtifactCount: 2,
+                  declaredArtifactKeys: ['report.html', 'browser-screenshots/page.png'],
+                },
                 command: 'must-not-render',
                 cwd: '/tmp/must-not-render',
                 env: {
@@ -1206,9 +1654,21 @@ describe('PluginAgentGatewayClientV2', () => {
                 createdAt: '2026-06-30T10:01:02.000Z',
               },
               {
-                id: 'conversation-event-id-turn',
+                id: 'conversation-event-id-tool',
                 source: 'codex',
                 sequence: 3,
+                eventType: 'agent.tool.completed',
+                contentText: 'Tool completed',
+                contentJson: {
+                  status: 'succeeded',
+                  toolName: 'read',
+                },
+                createdAt: '2026-06-30T10:01:02.500Z',
+              },
+              {
+                id: 'conversation-event-id-turn',
+                source: 'codex',
+                sequence: 4,
                 eventType: 'agent.turn.completed',
                 contentText: 'turn lifecycle noise should stay hidden',
                 createdAt: '2026-06-30T10:01:03.000Z',
@@ -1230,6 +1690,17 @@ describe('PluginAgentGatewayClientV2', () => {
                 contentText: 'inline artifact text',
                 metadataJson: {
                   externalUrl: 'https://daemon.example/artifact',
+                },
+              },
+              {
+                id: 'artifact-id-2',
+                artifactKey: 'browser-screenshot',
+                artifactType: 'image',
+                mimeType: 'image/png',
+                contentText:
+                  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII=',
+                metadataJson: {
+                  relativePath: 'runs/nb-opencode-ui-batch/run-1/browser-screenshots/overview.png',
                 },
               },
             ],
@@ -1322,7 +1793,14 @@ describe('PluginAgentGatewayClientV2', () => {
     expect(await screen.findByText('timeline says build started')).toBeTruthy();
     expect(screen.queryByText('session lifecycle noise should stay hidden')).toBeNull();
     expect(screen.queryByText('turn lifecycle noise should stay hidden')).toBeNull();
-    expect(await screen.findByText('Tool calls (1)')).toBeTruthy();
+    const timelineRegion = await screen.findByLabelText('Task conversation');
+    expect(within(timelineRegion as HTMLElement).getAllByText('Tool calls')).toHaveLength(1);
+    expect(within(timelineRegion as HTMLElement).getByText('2')).toBeTruthy();
+    expect(screen.queryByText('Command completed')).toBeNull();
+    fireEvent.click(within(timelineRegion as HTMLElement).getByText('Tool calls'));
+    expect(await within(timelineRegion as HTMLElement).findAllByText('succeeded')).not.toHaveLength(0);
+    expect(within(timelineRegion as HTMLElement).queryByText(/agent\.command\.completed/)).toBeNull();
+    expect(within(timelineRegion as HTMLElement).queryByText('Details')).toBeNull();
     expect(screen.queryByText('Command completed')).toBeNull();
 
     fireEvent.click(await screen.findByRole('tab', { name: 'Agent Sessions' }));
@@ -1335,13 +1813,17 @@ describe('PluginAgentGatewayClientV2', () => {
 
     fireEvent.click(await screen.findByRole('tab', { name: 'Summary' }));
     expect(await screen.findByText('Run summary')).toBeTruthy();
-    expect(await screen.findByText(/visible summary/)).toBeTruthy();
+    expect(await screen.findByText('Exit code: 0')).toBeTruthy();
+    expect(await screen.findByText('Artifacts: 2')).toBeTruthy();
+    expect(screen.queryByText(/visible summary/)).toBeNull();
 
     fireEvent.click(await screen.findByRole('tab', { name: 'Logs' }));
     expect(await screen.findByText('build started')).toBeTruthy();
 
     fireEvent.click(await screen.findByRole('tab', { name: 'Artifacts' }));
     expect(await screen.findByText('inline artifact text')).toBeTruthy();
+    expect(await screen.findByText('Image artifact preview')).toBeTruthy();
+    expect(screen.getByAltText('browser-screenshot').getAttribute('src')).toContain('data:image/png;base64,');
     expect(await screen.findByText(/"files":/)).toBeTruthy();
 
     fireEvent.click(await screen.findByRole('tab', { name: 'API Logs' }));
@@ -2265,7 +2747,7 @@ describe('PluginAgentGatewayClientV2', () => {
 
     renderAgentGatewayPage(AgentGatewayRunsPage, request);
 
-    expect(await screen.findByText('No task messages yet')).toBeTruthy();
+    expect(await screen.findByText('Waiting for live task updates from the agent')).toBeTruthy();
     expect(screen.queryByTestId('agent-gateway-terminal-stream-smoke-panel')).toBeNull();
     expect(request).not.toHaveBeenCalledWith(
       expect.objectContaining({
@@ -2851,7 +3333,7 @@ describe('PluginAgentGatewayClientV2', () => {
     expect(screen.queryByLabelText('Cancel run')).toBeNull();
 
     fireEvent.click((await screen.findAllByLabelText('View run details'))[0]);
-    expect(await screen.findByText('No task messages yet')).toBeTruthy();
+    expect(await screen.findByText('Waiting for live task updates from the agent')).toBeTruthy();
     expect(screen.queryByLabelText('Cancel run')).toBeNull();
   });
 
@@ -3542,7 +4024,7 @@ describe('PluginAgentGatewayClientV2', () => {
     const detailButtons = await screen.findAllByLabelText('View run details');
     fireEvent.click(detailButtons[0]);
 
-    expect(await screen.findByText('No task messages yet')).toBeTruthy();
+    expect(await screen.findByText('Waiting for live task updates from the agent')).toBeTruthy();
     const timelineRegion = await screen.findByLabelText('Task conversation');
     expect(timelineRegion).toBeTruthy();
     expect(within(timelineRegion as HTMLElement).queryByText('raw legacy event must stay out of timeline')).toBeNull();
@@ -3691,12 +4173,16 @@ describe('PluginAgentGatewayClientV2', () => {
     const detailButtons = await screen.findAllByLabelText('View run details');
     fireEvent.click(detailButtons[0]);
 
-    expect(await screen.findByText('Tool calls (1)')).toBeTruthy();
-    expect(screen.queryByText('Command failed')).toBeNull();
-    fireEvent.click(screen.getByText('Tool calls (1)'));
-    const commandText = await screen.findByText('Command failed');
-    const timelineItem = commandText.closest('.ant-timeline-item');
+    const toolCallsText = await screen.findByText('Tool calls');
+    const timelineItem = toolCallsText.closest('.ant-timeline-item');
     expect(timelineItem?.querySelector('.ant-timeline-item-head-red')).toBeTruthy();
+    expect(screen.queryByText('Command failed')).toBeNull();
+    fireEvent.click(toolCallsText);
+    expect(await screen.findAllByText('failed')).not.toHaveLength(0);
+    expect(screen.queryByText(/agent\.command\.completed/)).toBeNull();
+    expect(screen.queryByText(/"status": "failed"/)).toBeNull();
+    expect(screen.queryByText('Details')).toBeNull();
+    expect(screen.queryByText('Command failed')).toBeNull();
   });
 
   it('does not clear the normalized timeline when a later poll returns an empty older snapshot', async () => {

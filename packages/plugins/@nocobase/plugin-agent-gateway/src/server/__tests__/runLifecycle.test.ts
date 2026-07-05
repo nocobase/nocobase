@@ -333,6 +333,7 @@ describe('agent gateway run lifecycle APIs', () => {
         expect.objectContaining({
           id: offlineRunner.nodeId,
           online: false,
+          onlineReason: 'heartbeat-stale',
         }),
       ]),
     );
@@ -372,6 +373,20 @@ describe('agent gateway run lifecycle APIs', () => {
       commandKey: 'codex',
       provider: 'codex',
       cwd: '/root/work/nocobase',
+    });
+    const initialConversationEvents = await app.db.getRepository('agAgentConversationEvents').find({
+      filter: {
+        runId: String(createResult.runId),
+      },
+      sort: ['sequence'],
+    });
+    expect(initialConversationEvents).toHaveLength(1);
+    expect(initialConversationEvents[0].get('eventType')).toBe('agent.user.message');
+    expect(initialConversationEvents[0].get('source')).toBe('agent-gateway-task');
+    expect(initialConversationEvents[0].get('contentText')).toContain('搭建一个日历测试页面');
+    expect(initialConversationEvents[0].get('contentJson')).toMatchObject({
+      scenario: 'nocobase-ui-build',
+      title: 'Calendar build',
     });
 
     const reroutedResponse = await rootAgent.post('/api/agent-gateway/build-runs:create').send({
@@ -414,25 +429,158 @@ describe('agent gateway run lifecycle APIs', () => {
     });
   });
 
+  it('rejects task run creation when no online runner can claim it', async () => {
+    const offlineRunner = await createRunner({
+      nodeKey: 'offline-codex-only',
+      profileKey: 'codex',
+      profileProvider: 'codex',
+      lastHeartbeatAt: new Date(Date.now() - 10 * 60 * 1000),
+    });
+
+    const createResponse = await rootAgent.post('/api/agent-gateway/task-runs:create').send({
+      title: 'Queued forever prevention',
+      scenario: 'generic',
+      prompt: 'This should not be queued when the daemon is offline',
+      nodeId: offlineRunner.nodeId,
+      agentProfileId: offlineRunner.profileId,
+    });
+
+    expect(createResponse.status).toBe(409);
+    expect(JSON.stringify(createResponse.body)).toContain('Selected Agent Gateway runner is offline');
+    expect(await app.db.getRepository('agRuns').count()).toBe(0);
+
+    const implicitCreateResponse = await rootAgent.post('/api/agent-gateway/task-runs:create').send({
+      title: 'Implicit runner also blocked',
+      scenario: 'generic',
+      prompt: 'This should also fail without an online runner',
+    });
+
+    expect(implicitCreateResponse.status).toBe(409);
+    expect(JSON.stringify(implicitCreateResponse.body)).toContain('No online Agent Gateway runner is available');
+    expect(await app.db.getRepository('agRuns').count()).toBe(0);
+  });
+
   it('creates generic task runs without the UI build prompt wrapper', async () => {
     const runner = await createRunner({
       nodeKey: 'generic-task-codex',
       profileKey: 'codex',
       profileProvider: 'codex',
     });
+    const installableSkillSource = {
+      type: 'zip',
+      sha256: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+      archivePath: '/tmp/nb-opencode-ui-batch.zip',
+    };
+    const activeSkill = await app.db.getRepository('agSkills').create({
+      values: {
+        id: randomUUID(),
+        skillKey: 'nb-opencode-ui-batch',
+        displayName: 'NB OpenCode UI Batch',
+        status: 'active',
+      },
+    });
+    const activeSkillVersion = await app.db.getRepository('agSkillVersions').create({
+      values: {
+        id: randomUUID(),
+        skillId: activeSkill.get('id'),
+        versionLabel: 'v1',
+        status: 'active',
+        metadataJson: {
+          source: installableSkillSource,
+        },
+      },
+    });
+    const otherSkill = await app.db.getRepository('agSkills').create({
+      values: {
+        id: randomUUID(),
+        skillKey: 'other-skill',
+        displayName: 'Other Skill',
+        status: 'active',
+      },
+    });
+    const otherSkillVersion = await app.db.getRepository('agSkillVersions').create({
+      values: {
+        id: randomUUID(),
+        skillId: otherSkill.get('id'),
+        versionLabel: 'v1',
+        status: 'active',
+        metadataJson: {
+          source: installableSkillSource,
+        },
+      },
+    });
+    const inactiveSkill = await app.db.getRepository('agSkills').create({
+      values: {
+        id: randomUUID(),
+        skillKey: 'disabled-skill',
+        displayName: 'Disabled Skill',
+        status: 'inactive',
+      },
+    });
+    const inactiveSkillVersion = await app.db.getRepository('agSkillVersions').create({
+      values: {
+        id: randomUUID(),
+        skillId: inactiveSkill.get('id'),
+        versionLabel: 'v1',
+        status: 'active',
+        metadataJson: {},
+      },
+    });
 
     const optionsResponse = await rootAgent.get('/api/agent-gateway/task-runs:options');
     expect(optionsResponse.status).toBe(200);
-    expect(getData(optionsResponse)).toMatchObject({
+    const options = getData(optionsResponse);
+    expect(options).toMatchObject({
       defaultProfileKey: 'codex',
       defaultCwd: '.',
+      skillVersions: expect.arrayContaining([
+        expect.objectContaining({
+          id: activeSkillVersion.get('id'),
+          skillKey: 'nb-opencode-ui-batch',
+          displayName: 'NB OpenCode UI Batch',
+          versionLabel: 'v1',
+        }),
+      ]),
     });
+    expect(JSON.stringify(options)).not.toContain(String(inactiveSkillVersion.get('id')));
+
+    const inactiveSkillResponse = await rootAgent.post('/api/agent-gateway/task-runs:create').send({
+      title: 'Inactive skill evaluation',
+      scenario: 'opencode-ui-batch',
+      prompt: '运行 nb-opencode-ui-batch harness 并汇总结果',
+      skillVersionId: inactiveSkillVersion.get('id'),
+      cwd: 'myskills/skills/nb-opencode-ui-batch',
+      nodeId: runner.nodeId,
+      agentProfileId: runner.profileId,
+    });
+    expect(inactiveSkillResponse.status).toBe(409);
+
+    const missingSkillResponse = await rootAgent.post('/api/agent-gateway/task-runs:create').send({
+      title: 'Missing skill evaluation',
+      scenario: 'opencode-ui-batch',
+      prompt: '运行 nb-opencode-ui-batch harness 并汇总结果',
+      cwd: 'myskills/skills/nb-opencode-ui-batch',
+      nodeId: runner.nodeId,
+      agentProfileId: runner.profileId,
+    });
+    expect(missingSkillResponse.status).toBe(400);
+
+    const wrongSkillResponse = await rootAgent.post('/api/agent-gateway/task-runs:create').send({
+      title: 'Wrong skill evaluation',
+      scenario: 'opencode-ui-batch',
+      prompt: '运行 nb-opencode-ui-batch harness 并汇总结果',
+      skillVersionId: otherSkillVersion.get('id'),
+      cwd: 'myskills/skills/nb-opencode-ui-batch',
+      nodeId: runner.nodeId,
+      agentProfileId: runner.profileId,
+    });
+    expect(wrongSkillResponse.status).toBe(400);
 
     const createResponse = await rootAgent.post('/api/agent-gateway/task-runs:create').send({
       title: 'Batch evaluation',
       scenario: 'opencode-ui-batch',
       prompt: '运行 nb-opencode-ui-batch harness 并汇总结果',
-      skillVersionId: '11111111-1111-4111-8111-111111111111',
+      skillVersionId: activeSkillVersion.get('id'),
       cwd: 'myskills/skills/nb-opencode-ui-batch',
       nodeId: runner.nodeId,
       agentProfileId: runner.profileId,
@@ -453,14 +601,14 @@ describe('agent gateway run lifecycle APIs', () => {
       filterByTk: String(createResult.runId),
     });
     expect(storedRun.get('promptSnapshot')).toMatchObject({
-      renderedPrompt: '运行 nb-opencode-ui-batch harness 并汇总结果',
+      renderedPrompt: expect.stringContaining('Run the uploaded nb-opencode-ui-batch Agent Gateway skill harness.'),
       variables: expect.objectContaining({
         scenario: 'opencode-ui-batch',
       }),
     });
     expect(storedRun.get('executionPayloadJson')).toMatchObject({
       scenario: 'opencode-ui-batch',
-      prompt: '运行 nb-opencode-ui-batch harness 并汇总结果',
+      prompt: expect.stringContaining('browser-screenshots/**'),
       instruction: '运行 nb-opencode-ui-batch harness 并汇总结果',
       profileKey: 'codex',
       commandKey: 'codex',
@@ -469,12 +617,29 @@ describe('agent gateway run lifecycle APIs', () => {
       artifactGlobs: expect.arrayContaining([
         'runs/nb-opencode-ui-batch/*/report.html',
         'runs/nb-opencode-ui-batch/*/report.json',
+        'runs/nb-opencode-ui-batch/*/browser-screenshots/**/*',
       ]),
       resolvedSkills: [
         {
-          skillVersionId: '11111111-1111-4111-8111-111111111111',
+          skillVersionId: activeSkillVersion.get('id'),
         },
       ],
+    });
+    const initialConversationEvents = await app.db.getRepository('agAgentConversationEvents').find({
+      filter: {
+        runId: String(createResult.runId),
+      },
+      sort: ['sequence'],
+    });
+    expect(initialConversationEvents).toHaveLength(1);
+    expect(initialConversationEvents[0].get('eventType')).toBe('agent.user.message');
+    expect(initialConversationEvents[0].get('source')).toBe('agent-gateway-task');
+    expect(initialConversationEvents[0].get('contentText')).toContain(
+      'Run the uploaded nb-opencode-ui-batch Agent Gateway skill harness.',
+    );
+    expect(initialConversationEvents[0].get('contentJson')).toMatchObject({
+      scenario: 'opencode-ui-batch',
+      title: 'Batch evaluation',
     });
   });
 
@@ -627,6 +792,49 @@ describe('agent gateway run lifecycle APIs', () => {
     expect(secondClaim).toMatchObject({
       claimed: false,
       reason: 'node_concurrency_full',
+    });
+  });
+
+  it('recovers expired leased runs before claiming new queued work', async () => {
+    const runner = await createRunner();
+    const expiredRun = await createRun('run-claim-recovery-expired', {
+      agentProfileId: runner.profileId,
+    });
+    const firstClaim = getData(await claimRun(runner));
+    expect(firstClaim.claimed).toBe(true);
+    expect(firstClaim.runId).toBe(expiredRun.id);
+
+    await app.db.getRepository('agRuns').update({
+      filterByTk: expiredRun.id,
+      values: {
+        claimExpiresAt: new Date(Date.now() - 1000),
+      },
+    });
+
+    const queuedRun = await createRun('run-claim-recovery-next', {
+      agentProfileId: runner.profileId,
+    });
+    const secondClaim = getData(await claimRun(runner));
+    expect(secondClaim.claimed).toBe(true);
+    expect(secondClaim.runId).toBe(queuedRun.id);
+
+    const recoveredRun = await app.db.getRepository('agRuns').findOne({
+      filterByTk: expiredRun.id,
+    });
+    expect(recoveredRun.get('status')).toBe('abandoned');
+    expect(recoveredRun.get('terminalStatus')).toBe('abandoned');
+    expect(recoveredRun.get('finishedAt')).toBeTruthy();
+
+    const recoveryEvent = await app.db.getRepository('agRunEvents').findOne({
+      filter: {
+        runId: expiredRun.id,
+        eventType: 'run.lease.abandoned',
+      },
+    });
+    expect(recoveryEvent).toBeTruthy();
+    expect(recoveryEvent.get('payloadJson')).toMatchObject({
+      reason: 'before-claim',
+      previousStatus: 'claimed',
     });
   });
 

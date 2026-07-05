@@ -19,6 +19,8 @@ import {
   AGENT_GATEWAY_RESOURCE,
   createClaimToken,
   extractNodeToken,
+  redactEventPayload,
+  redactObservabilityText,
   redactRunErrorSummary,
   redactRunResultSummary,
   toStoredTokenFields,
@@ -41,6 +43,7 @@ import {
   getModelValue,
   getRecord,
   getString,
+  hasModelGetter,
   getCurrentRoleNames,
   getVisibleRunFilter,
   matchStandardCollectionAction,
@@ -62,6 +65,8 @@ const TASK_RUN_SOURCE_TYPE = 'task-run';
 const GENERIC_TASK_RUN_SCENARIO = 'generic';
 const UI_BUILD_TASK_RUN_SCENARIO = 'nocobase-ui-build';
 const OPENCODE_UI_BATCH_TASK_RUN_SCENARIO = 'opencode-ui-batch';
+const OPENCODE_UI_BATCH_SKILL_KEY = 'nb-opencode-ui-batch';
+const SAME_HOST_NODE_SUPERSEDED_REASON = 'same-host-node-replaced';
 const UI_BUILD_REROUTE_SOURCE_TYPES = new Set([UI_BUILD_SOURCE_TYPE, 'manual-ui-build']);
 const TASK_RUN_SCENARIOS = new Set([
   GENERIC_TASK_RUN_SCENARIO,
@@ -74,8 +79,11 @@ const OPENCODE_UI_BATCH_ARTIFACT_GLOBS = [
   'runs/nb-opencode-ui-batch/*/browser-verification-request.json',
   'runs/nb-opencode-ui-batch/*/browser-verification-prompt.md',
   'runs/nb-opencode-ui-batch/*/browser-verification.json',
+  'runs/nb-opencode-ui-batch/*/browser-screenshots/**/*',
 ];
 const RUNNER_ONLINE_THRESHOLD_MS = 120_000;
+const TASK_RUN_INITIAL_EVENT_SOURCE = 'agent-gateway-task';
+const LEASE_RECOVERY_BATCH_LIMIT = 100;
 
 const ACTIVE_RUN_STATUSES = ['claimed', 'syncing_skills', 'running', 'canceling'] as const;
 const CLAIMABLE_RUN_STATUS = 'queued';
@@ -116,6 +124,20 @@ interface BuildRunnerCandidate {
   node: ModelRecord;
   profile: ModelRecord;
   online: boolean;
+}
+
+interface TaskRunSkillVersionOption {
+  id: string;
+  skillId?: string;
+  skillKey?: string;
+  displayName?: string;
+  versionLabel: string;
+  status: string;
+}
+
+interface ValidatedTaskRunSkillSelection {
+  skillVersionId: string;
+  skillKey?: string;
 }
 
 interface MutableModelRecord extends ModelRecord {
@@ -168,6 +190,19 @@ function getDateFromModel(model: ModelRecord, key: string) {
 
 function isRecentDate(date: Date | null, now = new Date()) {
   return Boolean(date && now.getTime() - date.getTime() <= RUNNER_ONLINE_THRESHOLD_MS);
+}
+
+function getNodeOnlineReason(node: ModelRecord, lastHeartbeatAt: Date | null, now = new Date()) {
+  if (getModelString(node, 'status') !== 'active') {
+    return 'node-disabled';
+  }
+  if (!lastHeartbeatAt) {
+    return 'missing-heartbeat';
+  }
+  if (!isRecentDate(lastHeartbeatAt, now)) {
+    return 'heartbeat-stale';
+  }
+  return null;
 }
 
 function getRunnerOnlineState(node: ModelRecord | null, profile: ModelRecord | null, now = new Date()) {
@@ -366,15 +401,22 @@ function serializeBuildRunnerProfile(profile: ModelRecord) {
 
 function serializeBuildRunnerNode(node: ModelRecord, profiles: ModelRecord[], now = new Date()) {
   const lastHeartbeatAt = getDateFromModel(node, 'lastHeartbeatAt');
+  const onlineReason = getNodeOnlineReason(node, lastHeartbeatAt, now);
   return {
     id: getModelTargetKey(node, 'id'),
     nodeKey: getModelString(node, 'nodeKey'),
     displayName: getModelString(node, 'displayName') || getModelString(node, 'nodeKey'),
     status: getModelString(node, 'status'),
     lastHeartbeatAt: lastHeartbeatAt ? lastHeartbeatAt.toISOString() : null,
-    online: getModelString(node, 'status') === 'active' && isRecentDate(lastHeartbeatAt, now),
+    online: !onlineReason,
+    onlineReason,
     profiles: profiles.map(serializeBuildRunnerProfile),
   };
+}
+
+function isSupersededNode(node: ModelRecord) {
+  const metadataJson = getRecord(getModelValue(node, 'metadataJson'));
+  return getString(metadataJson.supersededReason) === SAME_HOST_NODE_SUPERSEDED_REASON;
 }
 
 function compareBuildRunnerCandidates(
@@ -419,6 +461,30 @@ function compareBuildRunnerNodes(
   return first.nodeKey.localeCompare(second.nodeKey);
 }
 
+function getRelatedSkillString(skillVersion: ModelRecord, key: string) {
+  const skill = getModelValue(skillVersion, 'skill');
+  if (hasModelGetter(skill)) {
+    return getModelString(skill, key);
+  }
+  return getString(getRecord(skill)[key]);
+}
+
+function serializeTaskRunSkillVersion(skillVersion: ModelRecord): TaskRunSkillVersionOption | null {
+  const skillStatus = getRelatedSkillString(skillVersion, 'status');
+  if (skillStatus && skillStatus !== 'active') {
+    return null;
+  }
+  const skillKey = getRelatedSkillString(skillVersion, 'skillKey');
+  return {
+    id: String(getModelTargetKey(skillVersion, 'id')),
+    skillId: getOptionalTargetKey(skillVersion, 'skillId') || undefined,
+    skillKey: skillKey || undefined,
+    displayName: getRelatedSkillString(skillVersion, 'displayName') || skillKey || undefined,
+    versionLabel: getModelString(skillVersion, 'versionLabel'),
+    status: getModelString(skillVersion, 'status') || 'active',
+  };
+}
+
 async function listBuildRunOptions(ctx: Context) {
   await requireAgentGatewayPermission(
     ctx,
@@ -426,7 +492,7 @@ async function listBuildRunOptions(ctx: Context) {
     'Agent Gateway dispatch permission required',
   );
 
-  const [nodes, profiles] = (await Promise.all([
+  const [nodes, profiles, skillVersions] = (await Promise.all([
     ctx.db.getRepository('agNodes').find({
       sort: ['nodeKey'],
     }),
@@ -436,7 +502,14 @@ async function listBuildRunOptions(ctx: Context) {
       },
       sort: ['profileKey'],
     }),
-  ])) as [ModelRecord[], ModelRecord[]];
+    ctx.db.getRepository('agSkillVersions').find({
+      filter: {
+        status: 'active',
+      },
+      appends: ['skill'],
+      sort: ['-createdAt'],
+    }),
+  ])) as [ModelRecord[], ModelRecord[], ModelRecord[]];
   const now = new Date();
   const profilesByNodeId = new Map<string, ModelRecord[]>();
   for (const profile of profiles) {
@@ -450,6 +523,7 @@ async function listBuildRunOptions(ctx: Context) {
   }
 
   const serializedNodes = nodes
+    .filter((node) => !isSupersededNode(node))
     .map((node) => serializeBuildRunnerNode(node, profilesByNodeId.get(getModelString(node, 'id')) || [], now))
     .sort(compareBuildRunnerNodes);
 
@@ -457,6 +531,9 @@ async function listBuildRunOptions(ctx: Context) {
     defaultProfileKey: DEFAULT_TASK_RUN_PROFILE_KEY,
     defaultCwd: '.',
     nodes: serializedNodes,
+    skillVersions: skillVersions
+      .map(serializeTaskRunSkillVersion)
+      .filter((skillVersion): skillVersion is TaskRunSkillVersionOption => Boolean(skillVersion)),
   };
 }
 
@@ -664,6 +741,7 @@ async function resolveBuildRunnerSelection(
       if (fallback) {
         return fallback;
       }
+      ctx.throw(409, 'Selected Agent Gateway runner is offline; start or reconnect the daemon');
     }
     return {
       node,
@@ -694,17 +772,21 @@ async function resolveBuildRunnerSelection(
       if (!node) {
         return null;
       }
+      const online = getRunnerOnlineState(node, profile).online;
+      if (!online) {
+        return null;
+      }
       return {
         node,
         profile,
-        online: getRunnerOnlineState(node, profile).online,
+        online,
       };
     })
     .filter((candidate): candidate is BuildRunnerCandidate => Boolean(candidate))
     .sort((first, second) => compareBuildRunnerCandidates(first, second, requestedProfileKey));
   const candidate = candidates[0];
   if (!candidate) {
-    ctx.throw(400, 'No active Agent Gateway runner profile is available');
+    ctx.throw(409, 'No online Agent Gateway runner is available; start or reconnect the daemon');
   }
   return {
     node: candidate.node,
@@ -733,6 +815,29 @@ function buildUiBuildPrompt(values: JsonRecord) {
     .join('\n');
 }
 
+function buildOpenCodeUiBatchPrompt(values: JsonRecord) {
+  const prompt = getTaskInstruction(values);
+  if (!prompt) {
+    return '';
+  }
+  const title = getString(values.title);
+  return [
+    `Run the uploaded ${OPENCODE_UI_BATCH_SKILL_KEY} Agent Gateway skill harness.`,
+    'Requirements:',
+    '- Read the SKILL.md path injected by Agent Gateway for this run before executing.',
+    '- Execute the harness from that installed skill directory. Use the skill default command unless the instruction below overrides it.',
+    '- After the suite writes browser-verification-request.json, complete the required external Agent Browser verification pass, write browser-verification.json and browser-screenshots/**, then rerender report.html.',
+    '- Preserve generated report.html, report.json, browser-verification-request.json, browser-verification-prompt.md, browser-verification.json, and browser-screenshots/** for Agent Gateway artifact collection.',
+    '- Do not use historical runs/ output as the result of this task.',
+    '',
+    title ? `Task title: ${title}` : '',
+    'Instruction:',
+    prompt,
+  ]
+    .filter((line) => line !== '')
+    .join('\n');
+}
+
 function getTaskInstruction(values: JsonRecord) {
   return getString(values.instruction) || getString(values.prompt);
 }
@@ -745,6 +850,9 @@ function getTaskRunScenario(values: JsonRecord, defaultScenario: string) {
 function buildTaskRunPrompt(values: JsonRecord, scenario: string) {
   if (scenario === UI_BUILD_TASK_RUN_SCENARIO) {
     return buildUiBuildPrompt(values);
+  }
+  if (scenario === OPENCODE_UI_BATCH_TASK_RUN_SCENARIO) {
+    return buildOpenCodeUiBatchPrompt(values);
   }
   return getTaskInstruction(values);
 }
@@ -775,6 +883,70 @@ function getTaskRunResolvedSkills(values: JsonRecord) {
       skillVersionId,
     },
   ];
+}
+
+async function createInitialTaskConversationEvent(
+  ctx: Context,
+  options: {
+    runId: string;
+    renderedPrompt: string;
+    scenario: string;
+    title?: string;
+    transaction: Transaction;
+  },
+) {
+  await ctx.db.getRepository('agAgentConversationEvents').create({
+    values: {
+      id: randomUUID(),
+      runId: options.runId,
+      sequence: 0,
+      eventType: 'agent.user.message',
+      source: TASK_RUN_INITIAL_EVENT_SOURCE,
+      providerEventId: 'initial-task',
+      correlationId: null,
+      confidence: 1,
+      contentText: redactObservabilityText(options.renderedPrompt),
+      contentJson: getRecord(
+        redactEventPayload({
+          scenario: options.scenario,
+          ...(options.title ? { title: options.title } : {}),
+        }),
+      ),
+      createdById: getCurrentUserId(ctx),
+    },
+    transaction: options.transaction,
+  });
+}
+
+async function assertTaskRunSkillVersionActive(
+  ctx: Context,
+  skillVersionId: string,
+  transaction: Transaction,
+): Promise<ValidatedTaskRunSkillSelection> {
+  const skillVersion = (await ctx.db.getRepository('agSkillVersions').findOne({
+    filter: {
+      id: skillVersionId,
+      status: 'active',
+    },
+    appends: ['skill'],
+    transaction,
+    lock: transaction.LOCK.UPDATE,
+  })) as ModelRecord | null;
+  if (!skillVersion) {
+    ctx.throw(409, 'Selected Agent Gateway skill version is not active');
+    throw new Error('Selected Agent Gateway skill version is not active');
+  }
+  const skillStatus = getRelatedSkillString(skillVersion, 'status');
+  if (skillStatus && skillStatus !== 'active') {
+    ctx.throw(409, 'Selected Agent Gateway skill is not active');
+  }
+  if (!serializeSkillVersionPayload(ctx, skillVersion)) {
+    ctx.throw(409, 'Selected Agent Gateway skill version has no installable source');
+  }
+  return {
+    skillVersionId,
+    skillKey: getRelatedSkillString(skillVersion, 'skillKey') || undefined,
+  };
 }
 
 function getControlCapabilityDecision(capabilities: JsonRecord, action: 'interrupt' | 'terminate') {
@@ -1227,6 +1399,21 @@ async function createTaskRun(ctx: Context, options: { defaultScenario?: string }
     const now = new Date();
     const artifactGlobs = getTaskRunArtifactGlobs(values, scenario);
     const resolvedSkills = getTaskRunResolvedSkills(values);
+    if (scenario === OPENCODE_UI_BATCH_TASK_RUN_SCENARIO && !resolvedSkills?.length) {
+      ctx.throw(400, 'skillVersionId is required for OpenCode UI batch harness');
+    }
+    const validatedSkills: ValidatedTaskRunSkillSelection[] = [];
+    if (resolvedSkills) {
+      for (const skillSelection of resolvedSkills) {
+        validatedSkills.push(await assertTaskRunSkillVersionActive(ctx, skillSelection.skillVersionId, transaction));
+      }
+    }
+    if (
+      scenario === OPENCODE_UI_BATCH_TASK_RUN_SCENARIO &&
+      !validatedSkills.some((skillSelection) => skillSelection.skillKey === OPENCODE_UI_BATCH_SKILL_KEY)
+    ) {
+      ctx.throw(400, 'OpenCode UI batch harness requires the nb-opencode-ui-batch skill');
+    }
     const executionPayloadJson = {
       scenario,
       source: 'agent-gateway-ui',
@@ -1274,6 +1461,13 @@ async function createTaskRun(ctx: Context, options: { defaultScenario?: string }
       },
       transaction,
     })) as ModelRecord;
+    await createInitialTaskConversationEvent(ctx, {
+      runId: String(getModelTargetKey(run, 'id')),
+      renderedPrompt,
+      scenario,
+      title: getString(values.title) || undefined,
+      transaction,
+    });
 
     return {
       run,
@@ -1633,6 +1827,9 @@ async function findClaimableCandidate(
 
 async function claimRun(ctx: Context, nodeId: string) {
   const values = getBodyValues(ctx);
+  await reconcileExpiredRunLeases(ctx, {
+    recoveryReason: 'before-claim',
+  });
   const claimResult = await ctx.db.sequelize.transaction(async (transaction) => {
     const { node } = await authenticateNodeForRun(ctx, nodeId, transaction);
     const now = new Date();
@@ -1768,6 +1965,7 @@ export async function validateRunLease(
   runId: string,
   values: JsonRecord,
   transaction: Transaction,
+  options: { allowStaleLeaseVersion?: boolean } = {},
 ): Promise<RunLease | null> {
   await authenticateNodeForRun(ctx, nodeId, transaction, { lock: false });
   const claimToken = getString(values.claimToken);
@@ -1792,7 +1990,8 @@ export async function validateRunLease(
   if (getModelNumber(run, 'claimAttempt') !== claimAttempt) {
     return respondLeaseLost(ctx, 'Claim attempt is stale');
   }
-  if (getModelNumber(run, 'leaseVersion') !== leaseVersion) {
+  const currentLeaseVersion = getModelNumber(run, 'leaseVersion');
+  if (options.allowStaleLeaseVersion ? currentLeaseVersion < leaseVersion : currentLeaseVersion !== leaseVersion) {
     return respondLeaseLost(ctx, 'Lease version is stale');
   }
   if (!verifyClaimToken(claimToken, getModelString(run, 'claimTokenHash'))) {
@@ -1812,7 +2011,7 @@ export async function validateRunLease(
   return {
     run,
     claimAttempt,
-    leaseVersion,
+    leaseVersion: currentLeaseVersion,
   };
 }
 
@@ -2311,9 +2510,53 @@ async function ackCancelRun(ctx: Context, nodeId: string, runId: string) {
   );
 }
 
-async function expireLeases(ctx: Context) {
-  await requireManagePermission(ctx);
+async function appendRunLeaseRecoveryEvent(options: {
+  ctx: Context;
+  run: ModelRecord;
+  now: Date;
+  reason: string;
+  transaction: Transaction;
+}) {
+  const runId = String(getModelTargetKey(options.run, 'id'));
+  const latestEvent = (await options.ctx.db.getRepository('agRunEvents').findOne({
+    filter: {
+      runId,
+      source: 'agent-gateway',
+    },
+    sort: ['-sequence'],
+    transaction: options.transaction,
+    lock: options.transaction.LOCK.UPDATE,
+  })) as ModelRecord | null;
 
+  await options.ctx.db.getRepository('agRunEvents').create({
+    values: {
+      id: randomUUID(),
+      runId,
+      claimAttempt: getModelNumber(options.run, 'claimAttempt'),
+      source: 'agent-gateway',
+      sequence: (latestEvent ? getModelNumber(latestEvent, 'sequence') : 0) + 1,
+      level: 'warn',
+      eventType: 'run.lease.abandoned',
+      message: 'Run lease expired and was marked abandoned',
+      payloadJson: {
+        reason: options.reason,
+        previousStatus: getModelString(options.run, 'status'),
+        leaseVersion: getModelNumber(options.run, 'leaseVersion'),
+        claimExpiresAt: getDateFromModel(options.run, 'claimExpiresAt')?.toISOString() || null,
+      },
+      emittedAt: options.now,
+    },
+    transaction: options.transaction,
+  });
+}
+
+async function reconcileExpiredRunLeases(
+  ctx: Context,
+  options: { requirePermission?: boolean; limit?: number; recoveryReason?: string } = {},
+) {
+  if (options.requirePermission) {
+    await requireManagePermission(ctx);
+  }
   const now = new Date();
   const expiredRuns = (await ctx.db.getRepository('agRuns').find({
     filter: {
@@ -2325,7 +2568,7 @@ async function expireLeases(ctx: Context) {
       },
     },
     sort: ['claimExpiresAt'],
-    limit: 100,
+    limit: options.limit || LEASE_RECOVERY_BATCH_LIMIT,
   })) as ModelRecord[];
 
   let abandonedCount = 0;
@@ -2351,7 +2594,16 @@ async function expireLeases(ctx: Context) {
           status: 'abandoned',
           claimExpiresAt: null,
           finishedAt: now,
+          terminalStatus: 'abandoned',
+          terminalEndedAt: now,
         },
+        transaction,
+      });
+      await appendRunLeaseRecoveryEvent({
+        ctx,
+        run: lockedRun,
+        now,
+        reason: options.recoveryReason || 'lease-expired',
         transaction,
       });
       await failOpenControlRequestsForFinishedRun({
@@ -2370,10 +2622,17 @@ async function expireLeases(ctx: Context) {
     }
   }
 
-  ctx.body = {
+  return {
     abandonedCount,
     scannedAt: now.toISOString(),
   };
+}
+
+async function expireLeases(ctx: Context) {
+  ctx.body = await reconcileExpiredRunLeases(ctx, {
+    requirePermission: true,
+    recoveryReason: 'manual-expire-leases',
+  });
 }
 
 function createRunLifecycleHookContext(plugin: Plugin): Context {
@@ -2381,6 +2640,12 @@ function createRunLifecycleHookContext(plugin: Plugin): Context {
     app: plugin.app,
     db: plugin.db,
   } as unknown as Context;
+}
+
+export async function recoverExpiredRunLeases(plugin: Plugin, recoveryReason = 'server-startup') {
+  return await reconcileExpiredRunLeases(createRunLifecycleHookContext(plugin), {
+    recoveryReason,
+  });
 }
 
 export function registerRunLifecycleHooks(plugin: Plugin) {

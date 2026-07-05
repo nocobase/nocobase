@@ -17,11 +17,11 @@ import {
   Empty,
   Form,
   Input,
-  InputNumber,
   Modal,
   Space,
   Switch,
   Table,
+  Tag,
   Typography,
   Upload,
 } from 'antd';
@@ -31,7 +31,6 @@ import React, { useCallback, useMemo, useState } from 'react';
 import { useT } from '../locale';
 import {
   AgentGatewayContext,
-  JsonPreview,
   getRequiredResponseData,
   getResponseData,
   formatDateTime,
@@ -54,6 +53,8 @@ interface NodeRecord {
   registeredAt?: string;
   lastHeartbeatAt?: string;
   disabledAt?: string | null;
+  online?: boolean;
+  onlineReason?: string | null;
 }
 
 interface AgentProfileRecord {
@@ -69,13 +70,12 @@ interface AgentProfileRecord {
 
 interface InvitationFormValues {
   expectedNodeKey?: string;
-  expiresInSeconds?: number;
-  serverUrl?: string;
 }
 
 interface InvitationResult {
   invitationId: string;
   invitationKey?: string;
+  bootstrapCommand?: string;
   registerCommand: string;
   expiresAt: string;
   tokenLast4?: string;
@@ -96,6 +96,21 @@ interface SkillUploadResult {
   idempotent?: boolean;
 }
 
+const DEFAULT_SKILL_UPLOAD_FORM_VALUES: SkillUploadFormValues = {
+  skillKey: 'nb-opencode-ui-batch',
+  displayName: 'NB OpenCode UI Batch',
+  versionLabel: 'local',
+};
+
+const PROFILE_CAPABILITY_KEYS = [
+  'terminalOutput',
+  'resumeSession',
+  'artifacts',
+  'interrupt',
+  'terminate',
+  'structuredEvents',
+] as const;
+
 function readFileAsBase64(file: File) {
   return new Promise<string>((resolve, reject) => {
     const reader = new FileReader();
@@ -108,6 +123,48 @@ function readFileAsBase64(file: File) {
     };
     reader.readAsDataURL(file);
   });
+}
+
+function renderProfileCapabilities(capabilities: Record<string, unknown> | undefined, t: ReturnType<typeof useT>) {
+  const enabledCapabilities = PROFILE_CAPABILITY_KEYS.filter((key) => capabilities?.[key] === true);
+  if (!enabledCapabilities.length) {
+    return <Typography.Text type="secondary">-</Typography.Text>;
+  }
+  return (
+    <Space size={[4, 4]} wrap>
+      {enabledCapabilities.map((key) => (
+        <Tag key={key}>{t(key)}</Tag>
+      ))}
+    </Space>
+  );
+}
+
+function getConnectionText(node: Pick<NodeRecord, 'online' | 'onlineReason' | 'status'>, t: ReturnType<typeof useT>) {
+  if (node.online === true) {
+    return t('Online');
+  }
+
+  if (node.onlineReason === 'heartbeat-stale') {
+    return t('Offline - stale heartbeat');
+  }
+  if (node.onlineReason === 'missing-heartbeat') {
+    return t('Offline - no heartbeat');
+  }
+  if (node.onlineReason === 'node-disabled' || node.status === 'disabled') {
+    return t('Offline - disabled');
+  }
+
+  return t('Offline');
+}
+
+function renderNodeConnection(node: NodeRecord, t: ReturnType<typeof useT>) {
+  const color = node.online === true ? 'green' : node.status === 'disabled' ? 'red' : 'orange';
+  return <Tag color={color}>{getConnectionText(node, t)}</Tag>;
+}
+
+function renderEnabledState(status: string | undefined, t: ReturnType<typeof useT>) {
+  const enabled = (status || 'active') !== 'disabled';
+  return <Tag color={enabled ? 'green' : 'red'}>{enabled ? t('Enabled') : t('Disabled')}</Tag>;
 }
 
 export default function AgentGatewaySettingsPage() {
@@ -239,6 +296,13 @@ export default function AgentGatewaySettingsPage() {
     skillUploadForm.resetFields();
   }, [skillUploadForm]);
 
+  const openSkillUploadModal = useCallback(() => {
+    setSkillZipContentBase64('');
+    setSkillUploadResult(null);
+    skillUploadForm.setFieldsValue(DEFAULT_SKILL_UPLOAD_FORM_VALUES);
+    setSkillUploadOpen(true);
+  }, [skillUploadForm]);
+
   const submitInvitation = useCallback(async () => {
     const values = await form.validateFields();
     createInvitationRequest.run(values);
@@ -297,22 +361,21 @@ export default function AgentGatewaySettingsPage() {
         render: (value: string | undefined, record) => value || record.nodeKey,
       },
       {
-        title: t('Status'),
+        title: t('Enabled state'),
         dataIndex: 'status',
         key: 'status',
-        render: (value: string | undefined) => statusTag(value),
+        render: (value: string | undefined) => renderEnabledState(value, t),
+      },
+      {
+        title: t('Connection'),
+        key: 'connection',
+        render: (_value: unknown, record) => renderNodeConnection(record, t),
       },
       {
         title: t('Current concurrency'),
         dataIndex: ['metadataJson', 'currentConcurrency'],
         key: 'currentConcurrency',
         render: (value: number | null | undefined) => value ?? '-',
-      },
-      {
-        title: t('Token fingerprint'),
-        dataIndex: 'tokenLast4',
-        key: 'tokenLast4',
-        render: (value: string | undefined) => (value ? `...${value}` : '-'),
       },
       {
         title: t('Last heartbeat'),
@@ -372,7 +435,7 @@ export default function AgentGatewaySettingsPage() {
         title: t('Capabilities'),
         dataIndex: 'capabilitiesJson',
         key: 'capabilitiesJson',
-        render: (value: Record<string, unknown> | undefined) => <JsonPreview value={value} />,
+        render: (value: Record<string, unknown> | undefined) => renderProfileCapabilities(value, t),
       },
     ],
     [t],
@@ -389,7 +452,7 @@ export default function AgentGatewaySettingsPage() {
             <Button icon={<ReloadOutlined />} onClick={refreshNodes}>
               {t('Refresh')}
             </Button>
-            <Button icon={<UploadOutlined />} onClick={() => setSkillUploadOpen(true)}>
+            <Button icon={<UploadOutlined />} onClick={openSkillUploadModal}>
               {t('Upload skill')}
             </Button>
             <Button type="primary" icon={<PlusOutlined />} onClick={() => setInvitationOpen(true)}>
@@ -416,25 +479,44 @@ export default function AgentGatewaySettingsPage() {
         />
 
         {selectedNode ? (
-          <Descriptions bordered size="small" column={2} title={t('Node detail')}>
-            <Descriptions.Item label={t('Node key')}>{selectedNode.nodeKey}</Descriptions.Item>
-            <Descriptions.Item label={t('Status')}>{statusTag(selectedNode.status)}</Descriptions.Item>
-            <Descriptions.Item label={t('Daemon version')}>
-              {selectedNode.metadataJson?.daemonVersion || '-'}
-            </Descriptions.Item>
-            <Descriptions.Item label={t('Registered at')}>
-              {formatDateTime(selectedNode.registeredAt)}
-            </Descriptions.Item>
-            <Descriptions.Item label={t('Last heartbeat')} span={2}>
-              {formatDateTime(selectedNode.lastHeartbeatAt)}
-            </Descriptions.Item>
-            <Descriptions.Item label={t('Disabled at')} span={2}>
-              {formatDateTime(selectedNode.disabledAt || undefined)}
-            </Descriptions.Item>
-            <Descriptions.Item label={t('Capabilities')} span={2}>
-              <JsonPreview value={selectedNode.capabilitiesJson} />
-            </Descriptions.Item>
-          </Descriptions>
+          <Space direction="vertical" size={12} style={{ width: '100%' }}>
+            <Descriptions bordered size="small" column={2} title={t('Node detail')}>
+              <Descriptions.Item label={t('Node key')}>{selectedNode.nodeKey}</Descriptions.Item>
+              <Descriptions.Item label={t('Enabled state')}>
+                {renderEnabledState(selectedNode.status, t)}
+              </Descriptions.Item>
+              <Descriptions.Item label={t('Connection')}>{renderNodeConnection(selectedNode, t)}</Descriptions.Item>
+              <Descriptions.Item label={t('Last heartbeat')}>
+                {formatDateTime(selectedNode.lastHeartbeatAt)}
+              </Descriptions.Item>
+              <Descriptions.Item label={t('Daemon version')}>
+                {selectedNode.metadataJson?.daemonVersion || '-'}
+              </Descriptions.Item>
+              <Descriptions.Item label={t('Registered at')}>
+                {formatDateTime(selectedNode.registeredAt)}
+              </Descriptions.Item>
+              <Descriptions.Item label={t('Disabled at')} span={2}>
+                {formatDateTime(selectedNode.disabledAt || undefined)}
+              </Descriptions.Item>
+            </Descriptions>
+            {selectedNode.online === false ? (
+              <Alert
+                type="warning"
+                showIcon
+                message={t('Daemon is offline')}
+                description={
+                  <Space direction="vertical" size={8} style={{ width: '100%' }}>
+                    <Typography.Text>
+                      {t('Restart the Agent Gateway daemon service on this node or rerun the bootstrap command.')}
+                    </Typography.Text>
+                    <Typography.Paragraph copyable style={{ margin: 0 }}>
+                      systemctl --user restart agent-gateway-daemon.service || ~/.agent-gateway-daemon/run.sh
+                    </Typography.Paragraph>
+                  </Space>
+                }
+              />
+            ) : null}
+          </Space>
         ) : null}
 
         <Table<AgentProfileRecord>
@@ -461,25 +543,13 @@ export default function AgentGatewaySettingsPage() {
         destroyOnClose
       >
         <Space direction="vertical" size={16} style={{ width: '100%' }}>
-          <Form<InvitationFormValues>
-            form={form}
-            layout="vertical"
-            initialValues={{
-              expiresInSeconds: 86400,
-            }}
-          >
-            <Form.Item label={t('Expected node key')} name="expectedNodeKey">
-              <Input placeholder="node-1" />
-            </Form.Item>
+          <Form<InvitationFormValues> form={form} layout="vertical">
             <Form.Item
-              label={t('Expires in seconds')}
-              name="expiresInSeconds"
-              rules={[{ type: 'number', min: 60, message: t('Expiration must be at least 60 seconds') }]}
+              label={t('Node key')}
+              name="expectedNodeKey"
+              rules={[{ required: true, message: t('Node key is required') }]}
             >
-              <InputNumber min={60} style={{ width: '100%' }} />
-            </Form.Item>
-            <Form.Item label={t('Server URL')} name="serverUrl">
-              <Input placeholder="https://nocobase.example.test" />
+              <Input placeholder="remote-196" />
             </Form.Item>
           </Form>
 
@@ -487,11 +557,11 @@ export default function AgentGatewaySettingsPage() {
             <Alert
               type="success"
               showIcon
-              message={t('Register command')}
+              message={t('Bootstrap command')}
               description={
                 <Space direction="vertical" size={8} style={{ width: '100%' }}>
                   <Typography.Paragraph copyable={{ icon: <CopyOutlined /> }} style={{ margin: 0 }}>
-                    {invitationResult.registerCommand}
+                    {invitationResult.bootstrapCommand || invitationResult.registerCommand}
                   </Typography.Paragraph>
                   <Typography.Text type="secondary">
                     {t('Expires at')}: {formatDateTime(invitationResult.expiresAt)}
@@ -514,7 +584,11 @@ export default function AgentGatewaySettingsPage() {
         destroyOnClose
       >
         <Space direction="vertical" size={16} style={{ width: '100%' }}>
-          <Form<SkillUploadFormValues> form={skillUploadForm} layout="vertical">
+          <Form<SkillUploadFormValues>
+            form={skillUploadForm}
+            layout="vertical"
+            initialValues={DEFAULT_SKILL_UPLOAD_FORM_VALUES}
+          >
             <Form.Item
               label={t('Skill key')}
               name="skillKey"

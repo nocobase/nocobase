@@ -97,7 +97,9 @@ function expectString(value: unknown) {
 }
 
 function extractInviteToken(registerCommand: unknown) {
-  const match = String(registerCommand).match(/--invite-token\s+'?([^'\s]+)'?/);
+  const match =
+    String(registerCommand).match(/AGENT_GATEWAY_INVITE_TOKEN='([^']+)'/) ||
+    String(registerCommand).match(/--invite-token\s+'?([^'\s]+)'?/);
   expect(match?.[1]).toBeTruthy();
   return String(match?.[1]);
 }
@@ -233,13 +235,18 @@ describe('agent gateway no-code business trigger smoke', () => {
   }
 
   async function createInvitation() {
+    const nodeKey = nextCode('ui-build-node');
     const response = await rootAgent.post('/api/agent-gateway/node-invitations:create').send({
       invitationKey: nextCode('ui-build-invite'),
       serverUrl: 'http://127.0.0.1:13000',
       expiresInSeconds: 3600,
+      expectedNodeKey: nodeKey,
     });
     expect(response.status).toBe(200);
-    return getRecordData(response);
+    return {
+      ...getRecordData(response),
+      nodeKey,
+    };
   }
 
   async function registerFakeDaemon(): Promise<FakeDaemonRegistration> {
@@ -249,7 +256,7 @@ describe('agent gateway no-code business trigger smoke', () => {
       .post('/api/agent-gateway/nodes:register')
       .send({
         inviteToken: extractInviteToken(invitation.registerCommand),
-        nodeKey: nextCode('ui-build-node'),
+        nodeKey: invitation.nodeKey,
         displayName: 'UI Build Fake Node',
         daemonVersion: 'fake-daemon/1.0.0',
         hostInfo: {

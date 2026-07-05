@@ -442,6 +442,79 @@ describe('agent gateway conversation event APIs', () => {
     );
   });
 
+  it('derives parsed tool calls and stats from conversation events', async () => {
+    const runner = await createRunner();
+    const run = await createRun(runner, 'conversation-run-tool-stats');
+    const claim = await claimRun(runner, run.id);
+
+    const appendResponse = await appendConversationEvents(
+      runner,
+      run.id,
+      leaseValues(claim, {
+        events: [
+          {
+            source: 'terminal-live',
+            sequence: 1,
+            eventType: 'agent.message',
+            contentText:
+              'Preparing the task.\n\nexec\nnb test agentTranscript\nfailed in 12ms with exit code 1\n\nContinuing with a fix.',
+            contentJson: {
+              live: true,
+              stream: 'terminal',
+            },
+          },
+          {
+            source: 'codex',
+            sequence: 2,
+            eventType: 'agent.command.completed',
+            providerEventId: 'item.completed:tool-stats-command',
+            contentJson: {
+              status: 'succeeded',
+              exitCode: 0,
+            },
+          },
+        ],
+      }),
+    );
+    expect(appendResponse.status).toBe(200);
+
+    const toolCallsResponse = await rootAgent.get(`/api/agent-gateway/runs/${run.id}/tool-calls:list`);
+    expect(toolCallsResponse.status).toBe(200);
+    const toolCallsData = getData(toolCallsResponse) as {
+      toolCalls?: Array<Record<string, unknown>>;
+      stats?: Record<string, unknown>;
+    };
+    expect(toolCallsData.toolCalls).toHaveLength(2);
+    expect(toolCallsData.toolCalls?.[0]).toMatchObject({
+      kind: 'exec',
+      status: 'failed',
+      command: 'nb test agentTranscript',
+      exitCode: 1,
+    });
+    expect(toolCallsData.stats).toMatchObject({
+      total: 2,
+      failed: 1,
+      succeeded: 1,
+    });
+
+    const statsResponse = await rootAgent.get('/api/agent-gateway/tool-calls:stats?limit=10');
+    expect(statsResponse.status).toBe(200);
+    const statsData = getData(statsResponse) as {
+      toolCallCount?: number;
+      runs?: Array<Record<string, unknown>>;
+      stats?: Record<string, unknown>;
+    };
+    expect(statsData.toolCallCount).toBeGreaterThanOrEqual(2);
+    expect(statsData.stats).toMatchObject({
+      failed: expect.any(Number),
+      succeeded: expect.any(Number),
+    });
+    expect(statsData.runs?.find((item) => item.runId === run.id)).toMatchObject({
+      runCode: 'conversation-run-tool-stats',
+      toolCallCount: 2,
+    });
+  });
+
   it('applies scoped run visibility to session-level conversation reads', async () => {
     const runner = await createRunner();
     const run = await createRun(runner, 'conversation-run-scoped-hidden');
@@ -635,6 +708,36 @@ describe('agent gateway conversation event APIs', () => {
     await app.db.getRepository('agRuns').update({
       filterByTk: run.id,
       values: {
+        leaseVersion: Number(claim.leaseVersion) + 2,
+      },
+    });
+    const staleButCurrentClaimResponse = await appendConversationEvents(
+      runner,
+      run.id,
+      leaseValues(claim, {
+        source: 'terminal-live',
+        sequence: 1,
+        eventType: 'agent.message',
+        contentText: 'live output written after heartbeat advanced the lease',
+      }),
+    );
+    expect(staleButCurrentClaimResponse.status).toBe(200);
+
+    const futureLeaseResponse = await appendConversationEvents(
+      runner,
+      run.id,
+      leaseValues(claim, {
+        leaseVersion: Number(claim.leaseVersion) + 99,
+        source: 'terminal-live',
+        sequence: 2,
+        eventType: 'agent.message',
+      }),
+    );
+    expect(futureLeaseResponse.status).toBe(409);
+
+    await app.db.getRepository('agRuns').update({
+      filterByTk: run.id,
+      values: {
         claimExpiresAt: new Date(Date.now() - 1000),
       },
     });
@@ -660,7 +763,7 @@ describe('agent gateway conversation event APIs', () => {
       }),
     );
     expect(otherNodeResponse.status).toBe(409);
-    expect(await app.db.getRepository('agAgentConversationEvents').count({ filter: { runId: run.id } })).toBe(0);
+    expect(await app.db.getRepository('agAgentConversationEvents').count({ filter: { runId: run.id } })).toBe(1);
   });
 
   it('enforces readSessionMessages and blocks raw collection bypasses', async () => {

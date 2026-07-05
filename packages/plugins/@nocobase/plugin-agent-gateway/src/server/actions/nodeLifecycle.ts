@@ -8,6 +8,11 @@
  */
 
 import { randomUUID } from 'crypto';
+import { execFile } from 'child_process';
+import { mkdtemp, readFile, rm } from 'fs/promises';
+import { tmpdir } from 'os';
+import { resolve } from 'path';
+import { promisify } from 'util';
 
 import { Context, Next } from '@nocobase/actions';
 import { Plugin } from '@nocobase/server';
@@ -29,6 +34,7 @@ import {
   getBodyValues,
   getDate,
   getModelJson,
+  getModelNumber,
   getModelString,
   getModelTargetKey,
   getModelValue,
@@ -42,15 +48,50 @@ import { getExplicitAgentProviderKey, normalizeAgentProviderCapabilities } from 
 const DEFAULT_INVITATION_TTL_SECONDS = 24 * 60 * 60;
 const DEFAULT_HEARTBEAT_INTERVAL_SECONDS = 30;
 const DEFAULT_CLAIM_INTERVAL_SECONDS = 10;
+const NODE_ONLINE_THRESHOLD_MS = 120_000;
+const PLUGIN_PACKAGE_ROOT = resolve(__dirname, '../../..');
+const BOOTSTRAP_SCRIPT_PATH = resolve(__dirname, '../../../scripts/install-agent-gateway-daemon.sh');
 const RAW_PROFILE_CONFIG_KEYS = new Set(['command', 'commandPath', 'cwd', 'env']);
+const SAME_HOST_NODE_SUPERSEDED_REASON = 'same-host-node-replaced';
+const execFileAsync = promisify(execFile);
 
-function getServerUrl(ctx: Context, values: JsonRecord) {
+function getServerUrl(ctx: Context, values: JsonRecord = {}) {
   const providedServerUrl = getString(values.serverUrl).replace(/\/$/, '');
   if (providedServerUrl) {
     return validateServerUrl(ctx, providedServerUrl);
   }
 
-  return validateServerUrl(ctx, `${ctx.protocol}://${ctx.host}`.replace(/\/$/, ''));
+  const forwardedProto = getString(ctx.get('x-forwarded-proto')).split(',')[0]?.trim();
+  const protocol = forwardedProto || getString(ctx.protocol) || 'http';
+  const host = normalizeDevelopmentProxyHost(
+    ctx,
+    getString(ctx.get('x-forwarded-host')) || getString(ctx.host) || getString(ctx.get('host')),
+  );
+  if (!host) {
+    ctx.throw(400, 'Cannot build Agent Gateway server URL without request host');
+  }
+
+  return validateServerUrl(ctx, `${protocol}://${host}`.replace(/\/$/, ''));
+}
+
+function normalizeDevelopmentProxyHost(ctx: Context, host: string) {
+  const appPort = getString(process.env.APP_PORT);
+  const localPort = ctx.req.socket.localPort;
+  if (!host || !appPort || !localPort) {
+    return host;
+  }
+
+  try {
+    const parsedUrl = new URL(`http://${host}`);
+    if (parsedUrl.port !== appPort || parsedUrl.port === String(localPort)) {
+      return host;
+    }
+
+    parsedUrl.port = String(localPort);
+    return parsedUrl.host;
+  } catch {
+    return host;
+  }
 }
 
 function validateServerUrl(ctx: Context, serverUrl: string) {
@@ -72,6 +113,20 @@ function validateServerUrl(ctx: Context, serverUrl: string) {
 
 function shellQuote(value: string) {
   return `'${value.replace(/'/g, `'\\''`)}'`;
+}
+
+function getBootstrapScriptUrl(serverUrl: string) {
+  return `${serverUrl}${API_PREFIX}/bootstrap.sh`;
+}
+
+function buildBootstrapCommand(options: { serverUrl: string; nodeKey: string; inviteToken: string }) {
+  return [
+    `curl -fsSL ${shellQuote(getBootstrapScriptUrl(options.serverUrl))} |`,
+    `AGENT_GATEWAY_SERVER_URL=${shellQuote(options.serverUrl)}`,
+    `AGENT_GATEWAY_NODE_KEY=${shellQuote(options.nodeKey)}`,
+    `AGENT_GATEWAY_INVITE_TOKEN=${shellQuote(options.inviteToken)}`,
+    'bash',
+  ].join(' ');
 }
 
 function getInvitationExpiry(values: JsonRecord) {
@@ -97,10 +152,58 @@ function sanitizeProfileMetadata(profile: JsonRecord) {
   return sanitized;
 }
 
-function serializeNode(node: ModelRecord) {
+function getDateFromModel(model: ModelRecord, key: string) {
+  const value = getModelValue(model, key);
+  if (!value) {
+    return null;
+  }
+
+  const date = value instanceof Date ? value : new Date(String(value));
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function getNodeOnlineReason(node: ModelRecord, now = new Date()) {
+  if (getModelString(node, 'status') !== 'active') {
+    return 'node-disabled';
+  }
+
+  const lastHeartbeatAt = getDateFromModel(node, 'lastHeartbeatAt');
+  if (!lastHeartbeatAt) {
+    return 'missing-heartbeat';
+  }
+
+  if (now.getTime() - lastHeartbeatAt.getTime() > NODE_ONLINE_THRESHOLD_MS) {
+    return 'heartbeat-stale';
+  }
+
+  return null;
+}
+
+function serializeNode(node: ModelRecord, now = new Date()) {
   const json = getModelJson(node);
   delete json.nodeTokenHash;
-  return json;
+  const onlineReason = getNodeOnlineReason(node, now);
+  return {
+    ...json,
+    online: !onlineReason,
+    onlineReason,
+  };
+}
+
+function getHostIdentity(metadataJson: JsonRecord) {
+  const hostInfo = getRecord(metadataJson.hostInfo);
+  const hostname = getString(hostInfo.hostname).toLowerCase();
+  const hostPlatform = getString(hostInfo.platform).toLowerCase();
+  const hostArch = getString(hostInfo.arch).toLowerCase();
+  if (!hostname || !hostPlatform || !hostArch) {
+    return '';
+  }
+  return [hostname, hostPlatform, hostArch].join('/');
+}
+
+function isSupersededNode(node: ModelRecord) {
+  const metadataJson = getRecord(getModelValue(node, 'metadataJson'));
+  return getString(metadataJson.supersededReason) === SAME_HOST_NODE_SUPERSEDED_REASON;
 }
 
 function serializeProfile(profile: ModelRecord) {
@@ -121,6 +224,11 @@ async function createInvitation(ctx: Context) {
   await requireManagePermission(ctx);
 
   const values = getBodyValues(ctx);
+  const expectedNodeKey = getString(values.expectedNodeKey || values.nodeKey);
+  if (!expectedNodeKey) {
+    ctx.throw(400, 'Node key is required');
+  }
+
   const invitationToken = createInvitationToken();
   const expiresAt = getInvitationExpiry(values);
   const invitationKey = getString(values.invitationKey) || `inv_${randomUUID()}`;
@@ -132,7 +240,7 @@ async function createInvitation(ctx: Context) {
       status: 'pending',
       tokenHash: invitationToken.tokenHash,
       tokenLast4: invitationToken.tokenLast4,
-      expectedNodeKey: getString(values.expectedNodeKey) || null,
+      expectedNodeKey: expectedNodeKey || null,
       maxUses: 1,
       usedCount: 0,
       expiresAt,
@@ -140,16 +248,57 @@ async function createInvitation(ctx: Context) {
       metadataJson: getRecord(values.metadataJson || values.metadata),
     },
   })) as ModelRecord;
+  const bootstrapCommand = buildBootstrapCommand({
+    serverUrl,
+    nodeKey: expectedNodeKey,
+    inviteToken: invitationToken.token,
+  });
 
   ctx.body = {
     invitationId: getModelValue(invitation, 'id'),
     invitationKey,
-    registerCommand: `agent-gateway-daemon register --server-url ${shellQuote(serverUrl)} --invite-token ${shellQuote(
-      invitationToken.token,
-    )}`,
+    bootstrapCommand,
+    registerCommand: bootstrapCommand,
     expiresAt: expiresAt.toISOString(),
     tokenLast4: invitationToken.tokenLast4,
   };
+}
+
+async function serveBootstrapScript(ctx: Context) {
+  ctx.withoutDataWrapping = true;
+  ctx.type = 'application/x-sh';
+  ctx.set('Cache-Control', 'no-store');
+  ctx.body = await readFile(BOOTSTRAP_SCRIPT_PATH, 'utf8');
+}
+
+async function createDaemonPackage() {
+  const tempDir = await mkdtemp(resolve(tmpdir(), 'agent-gateway-daemon-package-'));
+  try {
+    const { stdout } = await execFileAsync(
+      'npm',
+      ['pack', PLUGIN_PACKAGE_ROOT, '--pack-destination', tempDir, '--json'],
+      {
+        cwd: PLUGIN_PACKAGE_ROOT,
+        maxBuffer: 1024 * 1024 * 4,
+      },
+    );
+    const packages = JSON.parse(stdout || '[]') as Array<{ filename?: string }>;
+    const filename = getString(packages[0]?.filename);
+    if (!filename) {
+      throw new Error('npm pack did not return an Agent Gateway daemon package filename');
+    }
+    return await readFile(resolve(tempDir, filename));
+  } finally {
+    await rm(tempDir, { recursive: true, force: true });
+  }
+}
+
+async function serveDaemonPackage(ctx: Context) {
+  ctx.withoutDataWrapping = true;
+  ctx.type = 'application/gzip';
+  ctx.set('Cache-Control', 'no-store');
+  ctx.set('Content-Disposition', 'attachment; filename="agent-gateway-daemon.tgz"');
+  ctx.body = await createDaemonPackage();
 }
 
 async function validateInvitation(ctx: Context, inviteToken: string, nodeKey: string, transaction: Transaction) {
@@ -196,6 +345,186 @@ async function validateInvitation(ctx: Context, inviteToken: string, nodeKey: st
   return invitation;
 }
 
+async function findReusableSameHostNode(ctx: Context, metadataJson: JsonRecord, transaction: Transaction) {
+  const hostIdentity = getHostIdentity(metadataJson);
+  if (!hostIdentity) {
+    return null;
+  }
+
+  const nodes = (await ctx.db.getRepository('agNodes').find({
+    filter: {
+      status: 'active',
+    },
+    transaction,
+    lock: transaction.LOCK.UPDATE,
+  })) as ModelRecord[];
+  return nodes.find((node) => getHostIdentity(getRecord(getModelValue(node, 'metadataJson'))) === hostIdentity) || null;
+}
+
+async function markSameHostNodesSuperseded(
+  ctx: Context,
+  currentNodeId: unknown,
+  metadataJson: JsonRecord,
+  transaction?: Transaction,
+) {
+  const hostIdentity = getHostIdentity(metadataJson);
+  if (!hostIdentity) {
+    return;
+  }
+
+  const nodes = (await ctx.db.getRepository('agNodes').find({
+    transaction,
+    lock: transaction ? transaction.LOCK.UPDATE : undefined,
+  })) as ModelRecord[];
+  const now = new Date();
+  for (const node of nodes) {
+    const nodeId = getModelTargetKey(node, 'id');
+    if (String(nodeId) === String(currentNodeId)) {
+      continue;
+    }
+    const nodeMetadataJson = getRecord(getModelValue(node, 'metadataJson'));
+    const sameHost = getHostIdentity(nodeMetadataJson) === hostIdentity;
+    const supersededByCurrentNode =
+      getString(nodeMetadataJson.supersededReason) === SAME_HOST_NODE_SUPERSEDED_REASON &&
+      getString(nodeMetadataJson.supersededByNodeId) === String(currentNodeId);
+    const activeSameHostNode = getModelString(node, 'status') === 'active' && sameHost;
+    if (!activeSameHostNode && !supersededByCurrentNode) {
+      continue;
+    }
+
+    if (activeSameHostNode) {
+      await ctx.db.getRepository('agNodes').update({
+        filterByTk: nodeId,
+        values: {
+          status: 'disabled',
+          disabledAt: now,
+          metadataJson: {
+            ...nodeMetadataJson,
+            supersededAt: now.toISOString(),
+            supersededByNodeId: String(currentNodeId),
+            supersededReason: SAME_HOST_NODE_SUPERSEDED_REASON,
+          },
+        },
+        transaction,
+      });
+    }
+
+    await rerouteQueuedRunsFromSupersededNode(ctx, {
+      fromNodeId: String(nodeId),
+      toNodeId: String(currentNodeId),
+      transaction,
+    });
+  }
+}
+
+async function appendRunReroutedEvent(
+  ctx: Context,
+  options: {
+    run: ModelRecord;
+    fromNodeId: string;
+    toNodeId: string;
+    fromProfileId: string;
+    toProfileId: string;
+    transaction?: Transaction;
+  },
+) {
+  const runId = String(getModelTargetKey(options.run, 'id'));
+  const latestEvent = (await ctx.db.getRepository('agRunEvents').findOne({
+    filter: {
+      runId,
+      source: 'agent-gateway',
+    },
+    sort: ['-sequence'],
+    transaction: options.transaction,
+    lock: options.transaction ? options.transaction.LOCK.UPDATE : undefined,
+  })) as ModelRecord | null;
+  await ctx.db.getRepository('agRunEvents').create({
+    values: {
+      id: randomUUID(),
+      runId,
+      claimAttempt: getModelNumber(options.run, 'claimAttempt'),
+      source: 'agent-gateway',
+      sequence: (latestEvent ? getModelNumber(latestEvent, 'sequence') : 0) + 1,
+      level: 'info',
+      eventType: 'run.rerouted',
+      message: 'Run rerouted to replacement same-host node',
+      payloadJson: {
+        fromNodeId: options.fromNodeId,
+        toNodeId: options.toNodeId,
+        fromProfileId: options.fromProfileId,
+        toProfileId: options.toProfileId,
+        reason: SAME_HOST_NODE_SUPERSEDED_REASON,
+      },
+      emittedAt: new Date(),
+    },
+    transaction: options.transaction,
+  });
+}
+
+async function rerouteQueuedRunsFromSupersededNode(
+  ctx: Context,
+  options: {
+    fromNodeId: string;
+    toNodeId: string;
+    transaction?: Transaction;
+  },
+) {
+  const queuedRuns = (await ctx.db.getRepository('agRuns').find({
+    filter: {
+      nodeId: options.fromNodeId,
+      status: 'queued',
+    },
+    transaction: options.transaction,
+    lock: options.transaction ? options.transaction.LOCK.UPDATE : undefined,
+  })) as ModelRecord[];
+
+  for (const run of queuedRuns) {
+    const oldProfileId = getModelTargetKey(run, 'agentProfileId');
+    if (!oldProfileId) {
+      continue;
+    }
+
+    const oldProfile = (await ctx.db.getRepository('agAgentProfiles').findOne({
+      filterByTk: oldProfileId,
+      transaction: options.transaction,
+    })) as ModelRecord | null;
+    if (!oldProfile) {
+      continue;
+    }
+
+    const newProfile = (await ctx.db.getRepository('agAgentProfiles').findOne({
+      filter: {
+        nodeId: options.toNodeId,
+        profileKey: getModelString(oldProfile, 'profileKey'),
+        provider: getModelString(oldProfile, 'provider'),
+        status: 'active',
+      },
+      transaction: options.transaction,
+    })) as ModelRecord | null;
+    if (!newProfile) {
+      continue;
+    }
+
+    const newProfileId = String(getModelTargetKey(newProfile, 'id'));
+    await ctx.db.getRepository('agRuns').update({
+      filterByTk: getModelTargetKey(run, 'id'),
+      values: {
+        nodeId: options.toNodeId,
+        agentProfileId: newProfileId,
+      },
+      transaction: options.transaction,
+    });
+    await appendRunReroutedEvent(ctx, {
+      run,
+      fromNodeId: options.fromNodeId,
+      toNodeId: options.toNodeId,
+      fromProfileId: String(oldProfileId),
+      toProfileId: newProfileId,
+      transaction: options.transaction,
+    });
+  }
+}
+
 async function registerNode(ctx: Context) {
   const values = getBodyValues(ctx);
   const inviteToken = getString(values.inviteToken || values.invitationToken);
@@ -209,6 +538,10 @@ async function registerNode(ctx: Context) {
     const invitation = await validateInvitation(ctx, inviteToken, nodeKey, transaction);
     const nodeToken = createNodeToken();
     const now = new Date();
+    const metadataJson = {
+      daemonVersion: getString(values.daemonVersion) || null,
+      hostInfo: getRecord(values.hostInfo),
+    };
     const nodeValues = {
       nodeKey,
       displayName: getString(values.displayName) || nodeKey,
@@ -217,20 +550,18 @@ async function registerNode(ctx: Context) {
       authMode: 'node-token',
       ...toStoredTokenFields(nodeToken, 'nodeTokenHash', 'tokenLast4'),
       capabilitiesJson: getRecord(values.capabilitiesJson || values.capabilities),
-      metadataJson: {
-        daemonVersion: getString(values.daemonVersion) || null,
-        hostInfo: getRecord(values.hostInfo),
-      },
+      metadataJson,
       lastHeartbeatAt: now,
       disabledAt: null,
     };
-    const existingNode = await ctx.db.getRepository('agNodes').findOne({
+    const existingNodeByKey = (await ctx.db.getRepository('agNodes').findOne({
       filter: {
         nodeKey,
       },
       transaction,
       lock: transaction.LOCK.UPDATE,
-    });
+    })) as ModelRecord | null;
+    const existingNode = existingNodeByKey || (await findReusableSameHostNode(ctx, metadataJson, transaction));
     let node: ModelRecord;
     if (existingNode) {
       const nodeId = getModelTargetKey(existingNode, 'id');
@@ -257,6 +588,8 @@ async function registerNode(ctx: Context) {
         transaction,
       })) as ModelRecord;
     }
+
+    await markSameHostNodesSuperseded(ctx, getModelTargetKey(node, 'id'), metadataJson, transaction);
 
     await ctx.db.getRepository('agNodeInvitations').update({
       filterByTk: getModelTargetKey(invitation, 'id'),
@@ -394,6 +727,7 @@ async function heartbeat(ctx: Context, nodeId: string) {
   if (profilesProvided) {
     await syncProfiles(ctx, nodeId, getArray(values.profiles), now);
   }
+  await markSameHostNodesSuperseded(ctx, nodeId, metadataJson);
 
   ctx.body = {
     nodeId,
@@ -407,11 +741,12 @@ async function heartbeat(ctx: Context, nodeId: string) {
 async function listNodes(ctx: Context) {
   await requireManagePermission(ctx);
 
+  const now = new Date();
   const nodes = (await ctx.db.getRepository('agNodes').find({
     sort: ['-createdAt'],
   })) as ModelRecord[];
 
-  ctx.body = nodes.map(serializeNode);
+  ctx.body = nodes.filter((node) => !isSupersededNode(node)).map((node) => serializeNode(node, now));
 }
 
 async function getNode(ctx: Context, nodeId: string) {
@@ -486,6 +821,16 @@ export function registerNodeLifecycleRoutes(plugin: Plugin) {
 
       if (ctx.method === 'POST' && routePath === '/node-invitations:create') {
         await createInvitation(ctx);
+        return;
+      }
+
+      if (ctx.method === 'GET' && routePath === '/bootstrap.sh') {
+        await serveBootstrapScript(ctx);
+        return;
+      }
+
+      if (ctx.method === 'GET' && routePath === '/daemon-package.tgz') {
+        await serveDaemonPackage(ctx);
         return;
       }
 

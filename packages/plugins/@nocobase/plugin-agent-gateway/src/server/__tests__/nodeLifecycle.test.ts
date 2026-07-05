@@ -24,7 +24,9 @@ function getData(response: ResponseLike) {
 }
 
 function extractInviteToken(registerCommand: unknown) {
-  const match = String(registerCommand).match(/--invite-token\s+'?([^'\s]+)'?/);
+  const match =
+    String(registerCommand).match(/AGENT_GATEWAY_INVITE_TOKEN='([^']+)'/) ||
+    String(registerCommand).match(/--invite-token\s+'?([^'\s]+)'?/);
   return match?.[1] || '';
 }
 
@@ -64,6 +66,7 @@ describe('agent gateway node lifecycle APIs', () => {
     const response = await rootAgent.post('/api/agent-gateway/node-invitations:create').send({
       serverUrl: 'https://nocobase.example.test',
       expiresInSeconds: 3600,
+      expectedNodeKey: 'node-1',
       ...values,
     });
 
@@ -96,10 +99,14 @@ describe('agent gateway node lifecycle APIs', () => {
     const inviteToken = extractInviteToken(data.registerCommand);
 
     expect(data.invitationId).toBeTruthy();
-    expect(data.registerCommand).toContain('agent-gateway-daemon register');
-    expect(data.registerCommand).toContain("--server-url 'https://nocobase.example.test'");
-    expect(data.registerCommand).toContain('--invite-token');
-    expect(data.registerCommand).not.toContain('curl');
+    expect(data.bootstrapCommand).toContain(
+      "curl -fsSL 'https://nocobase.example.test/api/agent-gateway/bootstrap.sh'",
+    );
+    expect(data.bootstrapCommand).toContain("AGENT_GATEWAY_SERVER_URL='https://nocobase.example.test'");
+    expect(data.bootstrapCommand).toContain("AGENT_GATEWAY_NODE_KEY='node-1'");
+    expect(data.bootstrapCommand).toContain('AGENT_GATEWAY_INVITE_TOKEN');
+    expect(data.bootstrapCommand).not.toContain('--invite-token');
+    expect(data.registerCommand).toBe(data.bootstrapCommand);
     expect(inviteToken).toMatch(/^ag_inv_/);
 
     const invitation = await app.db.getRepository('agNodeInvitations').findOne({
@@ -109,6 +116,25 @@ describe('agent gateway node lifecycle APIs', () => {
     expect(invitation.get('tokenHash')).not.toBe(inviteToken);
     expect(invitation.get('tokenLast4')).toBe(inviteToken.slice(-4));
     expect(invitation.get('status')).toBe('pending');
+  });
+
+  it('serves the bootstrap script used by invitation commands', async () => {
+    const response = await app.agent().get('/api/agent-gateway/bootstrap.sh');
+
+    expect(response.status).toBe(200);
+    expect(response.text).toMatch(/^#!\/usr\/bin\/env bash/);
+    expect(response.text).toContain('AGENT_GATEWAY_NODE_KEY');
+    expect(response.text).toContain('/api/agent-gateway/daemon-package.tgz');
+    expect(response.text).toContain('--invite-token-stdin');
+    expect(response.text).toContain('tmux new-session');
+  });
+
+  it('serves the daemon package used by the bootstrap script', async () => {
+    const response = await app.agent().get('/api/agent-gateway/daemon-package.tgz');
+
+    expect(response.status).toBe(200);
+    expect(response.header['content-type']).toContain('application/gzip');
+    expect(Number(response.header['content-length'] || 0)).toBeGreaterThan(1000);
   });
 
   it('registers a node once and rejects used, expired, or revoked invitations', async () => {
@@ -244,6 +270,250 @@ describe('agent gateway node lifecycle APIs', () => {
       .set('Authorization', `Bearer ${secondNodeToken}`)
       .send({});
     expect(newTokenHeartbeatResponse.status).toBe(200);
+  });
+
+  it('reuses the same host node when the local daemon is registered with a new node key', async () => {
+    const firstInvitation = await createInvitation({
+      expectedNodeKey: 'node-1',
+    });
+    const firstResponse = await registerNode(extractInviteToken(firstInvitation.registerCommand), {
+      nodeKey: 'node-1',
+      hostInfo: {
+        hostname: 'agent-host',
+        platform: 'linux',
+        arch: 'x64',
+      },
+    });
+    const firstRegistration = getData(firstResponse);
+    const nodeId = String(firstRegistration.nodeId);
+
+    expect(firstResponse.status).toBe(200);
+
+    const secondInvitation = await createInvitation({
+      expectedNodeKey: 'node-2',
+    });
+    const secondResponse = await registerNode(extractInviteToken(secondInvitation.registerCommand), {
+      nodeKey: 'node-2',
+      displayName: 'Renamed local daemon',
+      hostInfo: {
+        hostname: 'agent-host',
+        platform: 'linux',
+        arch: 'x64',
+      },
+    });
+    const secondRegistration = getData(secondResponse);
+
+    expect(secondResponse.status).toBe(200);
+    expect(secondRegistration.nodeId).toBe(nodeId);
+    expect(await app.db.getRepository('agNodes').count()).toBe(1);
+
+    const node = await app.db.getRepository('agNodes').findOne({
+      filterByTk: nodeId,
+    });
+    expect(node.get('nodeKey')).toBe('node-2');
+    expect(node.get('displayName')).toBe('Renamed local daemon');
+  });
+
+  it('hides stale same-host nodes after the active daemon heartbeats', async () => {
+    const firstInvitation = await createInvitation({
+      expectedNodeKey: 'node-1',
+    });
+    const firstResponse = await registerNode(extractInviteToken(firstInvitation.registerCommand), {
+      nodeKey: 'node-1',
+      hostInfo: {
+        hostname: 'agent-host',
+        platform: 'linux',
+        arch: 'x64',
+      },
+    });
+    const firstRegistration = getData(firstResponse);
+
+    await app.db.getRepository('agNodes').create({
+      values: {
+        nodeKey: 'node-2',
+        displayName: 'Duplicate local daemon',
+        status: 'active',
+        authMode: 'node-token',
+        nodeTokenHash: 'duplicate-token-hash',
+        tokenLast4: 'hash',
+        registeredAt: new Date(),
+        lastHeartbeatAt: new Date(),
+        metadataJson: {
+          hostInfo: {
+            hostname: 'agent-host',
+            platform: 'linux',
+            arch: 'x64',
+          },
+        },
+      },
+    });
+
+    const heartbeatResponse = await app
+      .agent()
+      .post(`/api/agent-gateway/nodes/${firstRegistration.nodeId}/heartbeat`)
+      .set('Authorization', `Bearer ${firstRegistration.nodeToken}`)
+      .send({
+        hostInfo: {
+          hostname: 'agent-host',
+          platform: 'linux',
+          arch: 'x64',
+        },
+      });
+    expect(heartbeatResponse.status).toBe(200);
+
+    const listResponse = await rootAgent.get('/api/agent-gateway/nodes:list');
+    expect(listResponse.status).toBe(200);
+    const nodes = listResponse.body.data as Array<Record<string, unknown>>;
+    expect(nodes).toHaveLength(1);
+    expect(nodes[0].nodeKey).toBe('node-1');
+    expect(nodes[0].online).toBe(true);
+    expect(nodes[0].onlineReason).toBeNull();
+
+    const hiddenNode = await app.db.getRepository('agNodes').findOne({
+      filter: {
+        nodeKey: 'node-2',
+      },
+    });
+    expect(hiddenNode.get('status')).toBe('disabled');
+    expect(hiddenNode.get('metadataJson')).toMatchObject({
+      supersededByNodeId: firstRegistration.nodeId,
+      supersededReason: 'same-host-node-replaced',
+    });
+  });
+
+  it('reroutes queued runs from superseded same-host nodes to a matching active profile', async () => {
+    const firstInvitation = await createInvitation({
+      expectedNodeKey: 'node-1',
+    });
+    const firstResponse = await registerNode(extractInviteToken(firstInvitation.registerCommand), {
+      nodeKey: 'node-1',
+      hostInfo: {
+        hostname: 'agent-host',
+        platform: 'linux',
+        arch: 'x64',
+      },
+    });
+    const firstRegistration = getData(firstResponse);
+    const currentNodeId = String(firstRegistration.nodeId);
+
+    const oldNode = await app.db.getRepository('agNodes').create({
+      values: {
+        nodeKey: 'node-2',
+        displayName: 'Duplicate local daemon',
+        status: 'active',
+        authMode: 'node-token',
+        nodeTokenHash: 'duplicate-token-hash',
+        tokenLast4: 'hash',
+        registeredAt: new Date(),
+        lastHeartbeatAt: new Date(),
+        metadataJson: {
+          hostInfo: {
+            hostname: 'agent-host',
+            platform: 'linux',
+            arch: 'x64',
+          },
+        },
+      },
+    });
+    const oldNodeId = String(oldNode.get('id'));
+    const oldProfile = await app.db.getRepository('agAgentProfiles').create({
+      values: {
+        nodeId: oldNodeId,
+        profileKey: 'codex',
+        provider: 'codex',
+        displayName: 'Old Codex',
+        agentType: 'code',
+        driver: 'exec',
+        status: 'active',
+      },
+    });
+    const oldProfileId = String(oldProfile.get('id'));
+    const queuedAt = new Date();
+    const run = await app.db.getRepository('agRuns').create({
+      values: {
+        runCode: 'same-host-reroute-queued-run',
+        status: 'queued',
+        claimAttempt: 0,
+        leaseVersion: 0,
+        cancelRequested: false,
+        sourceType: 'task-run',
+        nodeId: oldNodeId,
+        agentProfileId: oldProfileId,
+        requestedAt: queuedAt,
+        queuedAt,
+      },
+    });
+    await app.db.getRepository('agRunEvents').create({
+      values: {
+        runId: run.get('id'),
+        claimAttempt: 0,
+        source: 'agent-gateway',
+        sequence: 1,
+        level: 'info',
+        eventType: 'run.queued',
+        message: 'Run queued',
+        emittedAt: queuedAt,
+      },
+    });
+
+    const heartbeatResponse = await app
+      .agent()
+      .post(`/api/agent-gateway/nodes/${currentNodeId}/heartbeat`)
+      .set('Authorization', `Bearer ${firstRegistration.nodeToken}`)
+      .send({
+        hostInfo: {
+          hostname: 'agent-host',
+          platform: 'linux',
+          arch: 'x64',
+        },
+        profiles: [
+          {
+            profileKey: 'codex',
+            provider: 'codex',
+            displayName: 'Codex',
+            agentType: 'code',
+            driver: 'exec',
+          },
+        ],
+      });
+    expect(heartbeatResponse.status).toBe(200);
+
+    const newProfile = await app.db.getRepository('agAgentProfiles').findOne({
+      filter: {
+        nodeId: currentNodeId,
+        profileKey: 'codex',
+      },
+    });
+    expect(newProfile).toBeTruthy();
+
+    const updatedRun = await app.db.getRepository('agRuns').findOne({
+      filterByTk: run.get('id'),
+    });
+    expect(updatedRun.get('status')).toBe('queued');
+    expect(updatedRun.get('nodeId')).toBe(currentNodeId);
+    expect(updatedRun.get('agentProfileId')).toBe(newProfile.get('id'));
+
+    const reroutedEvent = await app.db.getRepository('agRunEvents').findOne({
+      filter: {
+        runId: run.get('id'),
+        source: 'agent-gateway',
+        eventType: 'run.rerouted',
+      },
+    });
+    expect(reroutedEvent).toBeTruthy();
+    expect(reroutedEvent.get('sequence')).toBe(2);
+    expect(reroutedEvent.get('payloadJson')).toMatchObject({
+      fromNodeId: oldNodeId,
+      toNodeId: currentNodeId,
+      fromProfileId: oldProfileId,
+      toProfileId: String(newProfile.get('id')),
+      reason: 'same-host-node-replaced',
+    });
+
+    const hiddenNode = await app.db.getRepository('agNodes').findOne({
+      filterByTk: oldNodeId,
+    });
+    expect(hiddenNode.get('status')).toBe('disabled');
   });
 
   it('accepts valid heartbeats, updates node snapshots, and syncs reported fake profiles', async () => {

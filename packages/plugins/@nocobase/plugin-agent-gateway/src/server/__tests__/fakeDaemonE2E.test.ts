@@ -53,7 +53,9 @@ function expectString(value: unknown) {
 }
 
 function extractInviteToken(registerCommand: unknown) {
-  const match = String(registerCommand).match(/--invite-token\s+'?([^'\s]+)'?/);
+  const match =
+    String(registerCommand).match(/AGENT_GATEWAY_INVITE_TOKEN='([^']+)'/) ||
+    String(registerCommand).match(/--invite-token\s+'?([^'\s]+)'?/);
   expect(match?.[1]).toBeTruthy();
   return String(match?.[1]);
 }
@@ -109,6 +111,7 @@ describe('agent gateway fake daemon E2E', () => {
       invitationKey: nextCode('fake-daemon-invite'),
       serverUrl: 'http://127.0.0.1:13000',
       expiresInSeconds: 3600,
+      expectedNodeKey: 'fake-daemon-node',
       ...values,
     });
     expect(response.status).toBe(200);
@@ -121,7 +124,7 @@ describe('agent gateway fake daemon E2E', () => {
       .post('/api/agent-gateway/nodes:register')
       .send({
         inviteToken,
-        nodeKey: nextCode('fake-daemon-node'),
+        nodeKey: 'fake-daemon-node',
         displayName: 'Fake Daemon Node',
         daemonVersion: 'fake-daemon/1.0.0',
         hostInfo: {
@@ -169,9 +172,12 @@ describe('agent gateway fake daemon E2E', () => {
             displayName: 'Fake Success',
             agentType: 'code',
             driver: 'fake',
+            provider: 'opencode',
             status: 'active',
             capabilities: {
+              artifacts: true,
               maxConcurrency,
+              structuredEvents: true,
             },
             metadata: {
               label: 'fake-success-profile',
@@ -413,9 +419,9 @@ describe('agent gateway fake daemon E2E', () => {
     expect(runResponse.status).toBe(200);
     const readableRun = getRecordData(runResponse);
     expect(readableRun.status).toBe('succeeded');
-    expect(readableRun.claimAttempt).toBe(1);
-    expect(readableRun.leaseVersion).toBe(3);
     expect(readableRun.promptTemplateId).toBe(template.id);
+    expect(readableRun).not.toHaveProperty('claimAttempt');
+    expect(readableRun).not.toHaveProperty('leaseVersion');
     expect(readableRun).not.toHaveProperty('promptSnapshot');
     expect(readableRun).not.toHaveProperty('executionPayloadJson');
 

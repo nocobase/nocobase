@@ -72,10 +72,13 @@ describe('agent gateway run observability APIs', () => {
     const invitationResponse = await rootAgent.post('/api/agent-gateway/node-invitations:create').send({
       invitationKey: `invite-observe-${nodeCounter}`,
       serverUrl: 'http://127.0.0.1:13000',
+      expectedNodeKey: nodeKey,
     });
     expect(invitationResponse.status).toBe(200);
     const registerCommand = expectString(getData(invitationResponse).registerCommand);
-    const inviteToken = registerCommand.match(/--invite-token '([^']+)'/)?.[1];
+    const inviteToken =
+      registerCommand.match(/AGENT_GATEWAY_INVITE_TOKEN='([^']+)'/)?.[1] ||
+      registerCommand.match(/--invite-token '([^']+)'/)?.[1];
     expect(inviteToken).toBeTruthy();
 
     const registerResponse = await app

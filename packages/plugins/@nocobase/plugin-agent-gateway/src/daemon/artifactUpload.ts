@@ -228,10 +228,24 @@ async function collectFiles(root: string, options: { maxEntries: number }) {
   return files;
 }
 
+function getGlobStaticDirectory(glob: string) {
+  const wildcardIndex = glob.indexOf('*');
+  if (wildcardIndex < 0) {
+    return path.posix.dirname(glob);
+  }
+  const prefix = glob.slice(0, wildcardIndex);
+  const lastSlashIndex = prefix.lastIndexOf('/');
+  if (lastSlashIndex < 0) {
+    return '';
+  }
+  return prefix.slice(0, lastSlashIndex);
+}
+
 async function findDeclaredArtifacts(options: {
   payload: JsonRecord;
   cwd: string;
   workspaceRoot: string;
+  trustedArtifactRoots?: string[];
   maxArtifacts: number;
   modifiedSinceMs?: number;
 }) {
@@ -242,30 +256,40 @@ async function findDeclaredArtifacts(options: {
 
   const root = getArtifactRoot(options.cwd, options.payload);
   const realWorkspaceRoot = await fs.realpath(options.workspaceRoot);
-  const realRoot = await fs.realpath(root).catch(() => '');
-  if (!realRoot || !isWithin(realWorkspaceRoot, realRoot)) {
+  const realRoots = await collectArtifactSearchRoots({
+    root,
+    workspaceRoot: realWorkspaceRoot,
+    trustedArtifactRoots: options.trustedArtifactRoots,
+  });
+  if (!realRoots.length) {
     return [];
   }
 
   const matches: MatchedArtifactDeclaration[] = [];
-  let cachedFiles: string[] | null = null;
+  const cachedFilesByRoot = new Map<string, string[]>();
+  const maxScanEntries = getPositiveInteger(options.payload.maxArtifactScanEntries, MAX_DECLARED_ARTIFACT_SCAN_ENTRIES);
   for (const declaration of declarations) {
     if (matches.length >= options.maxArtifacts) {
       break;
     }
     const relativePath = normalizeRelativeArtifactPath(declaration.path || '');
     if (relativePath) {
-      const filePath = path.resolve(realRoot, relativePath);
-      if (!isWithin(realRoot, filePath)) {
-        continue;
-      }
-      const stat = await fs.stat(filePath).catch(() => null);
-      if (stat?.isFile()) {
-        matches.push({
-          ...declaration,
-          filePath,
-          relativePath: path.relative(realRoot, filePath).replace(/\\/g, '/'),
-        });
+      for (const realRoot of realRoots) {
+        if (matches.length >= options.maxArtifacts) {
+          break;
+        }
+        const filePath = path.resolve(realRoot, relativePath);
+        if (!isWithin(realRoot, filePath)) {
+          continue;
+        }
+        const stat = await fs.stat(filePath).catch(() => null);
+        if (stat?.isFile()) {
+          matches.push({
+            ...declaration,
+            filePath,
+            relativePath: path.relative(realRoot, filePath).replace(/\\/g, '/'),
+          });
+        }
       }
       continue;
     }
@@ -274,32 +298,69 @@ async function findDeclaredArtifacts(options: {
     if (!glob) {
       continue;
     }
-    cachedFiles =
-      cachedFiles ||
-      (await collectFiles(realRoot, {
-        maxEntries: getPositiveInteger(options.payload.maxArtifactScanEntries, MAX_DECLARED_ARTIFACT_SCAN_ENTRIES),
-      }));
     const matcher = globToRegex(glob);
-    for (const filePath of cachedFiles) {
+    const scanDirectory = normalizeRelativeArtifactPath(getGlobStaticDirectory(glob));
+    for (const realRoot of realRoots) {
       if (matches.length >= options.maxArtifacts) {
         break;
       }
-      const relativeFilePath = path.relative(realRoot, filePath).replace(/\\/g, '/');
-      if (matcher.test(relativeFilePath)) {
-        const stat = await fs.stat(filePath).catch(() => null);
-        if (options.modifiedSinceMs && (!stat?.isFile() || stat.mtimeMs + 1000 < options.modifiedSinceMs)) {
-          continue;
+      const scanRoot = scanDirectory ? path.resolve(realRoot, scanDirectory) : realRoot;
+      if (!isWithin(realRoot, scanRoot)) {
+        continue;
+      }
+      const realScanRoot = await fs.realpath(scanRoot).catch(() => '');
+      if (!realScanRoot || !isWithin(realRoot, realScanRoot)) {
+        continue;
+      }
+      const cacheKey = `${realRoot}:${realScanRoot}`;
+      let cachedFiles = cachedFilesByRoot.get(cacheKey);
+      if (!cachedFiles) {
+        cachedFiles = await collectFiles(realScanRoot, { maxEntries: maxScanEntries });
+        cachedFilesByRoot.set(cacheKey, cachedFiles);
+      }
+      for (const filePath of cachedFiles) {
+        if (matches.length >= options.maxArtifacts) {
+          break;
         }
-        matches.push({
-          ...declaration,
-          filePath,
-          relativePath: relativeFilePath,
-        });
+        const relativeFilePath = path.relative(realRoot, filePath).replace(/\\/g, '/');
+        if (matcher.test(relativeFilePath)) {
+          const stat = await fs.stat(filePath).catch(() => null);
+          if (options.modifiedSinceMs && (!stat?.isFile() || stat.mtimeMs + 1000 < options.modifiedSinceMs)) {
+            continue;
+          }
+          matches.push({
+            ...declaration,
+            filePath,
+            relativePath: relativeFilePath,
+          });
+        }
       }
     }
   }
 
   return matches;
+}
+
+async function collectArtifactSearchRoots(options: {
+  root: string;
+  workspaceRoot: string;
+  trustedArtifactRoots?: string[];
+}) {
+  const roots: string[] = [];
+  const appendRoot = async (root: string, validate: (realRoot: string) => boolean) => {
+    const realRoot = await fs.realpath(root).catch(() => '');
+    if (!realRoot || !validate(realRoot) || roots.includes(realRoot)) {
+      return;
+    }
+    roots.push(realRoot);
+  };
+
+  await appendRoot(options.root, (realRoot) => isWithin(options.workspaceRoot, realRoot));
+  for (const trustedRoot of options.trustedArtifactRoots || []) {
+    await appendRoot(trustedRoot, () => true);
+  }
+
+  return roots;
 }
 
 export async function buildTextArtifactUpload(artifactPath: string, sizeBytes: number) {
@@ -384,6 +445,7 @@ export async function collectDeclaredArtifactUploads(options: {
   payload: JsonRecord;
   cwd: string;
   workspaceRoot: string;
+  trustedArtifactRoots?: string[];
   modifiedSinceMs?: number;
 }) {
   const maxArtifacts = getPositiveInteger(options.payload.maxArtifactUploads, DEFAULT_MAX_DECLARED_ARTIFACT_UPLOADS);
@@ -391,14 +453,17 @@ export async function collectDeclaredArtifactUploads(options: {
     payload: options.payload,
     cwd: options.cwd,
     workspaceRoot: options.workspaceRoot,
+    trustedArtifactRoots: options.trustedArtifactRoots,
     maxArtifacts,
     modifiedSinceMs: options.modifiedSinceMs,
   });
   const uploads: DeclaredArtifactUpload[] = [];
+  const artifactKeys = new Set<string>();
   for (const match of matches) {
     const upload = await buildDeclaredArtifactUpload(match);
-    if (upload) {
+    if (upload && !artifactKeys.has(upload.artifactKey)) {
       uploads.push(upload);
+      artifactKeys.add(upload.artifactKey);
     }
   }
   return uploads;

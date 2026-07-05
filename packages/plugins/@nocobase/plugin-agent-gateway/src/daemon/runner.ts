@@ -67,7 +67,10 @@ export interface RunDaemonOnceOptions {
 
 export interface DaemonRunLoopOptions extends RunDaemonOnceOptions {
   pollIntervalMs?: number;
+  retryInitialDelayMs?: number;
+  retryMaxDelayMs?: number;
   stopSignal?: AbortSignal;
+  onLoopError?: (error: unknown, state: { failureCount: number; retryDelayMs: number }) => void;
 }
 
 export interface DaemonRunOnceResult {
@@ -81,12 +84,24 @@ const MAX_PROVIDER_SESSION_SCAN_BYTES = 256 * 1024;
 const PROVIDER_SESSION_UPSERT_MAX_ATTEMPTS = 3;
 const PROVIDER_SESSION_UPSERT_RETRY_DELAY_MS = 250;
 const MAX_CONVERSATION_EVENTS_PER_APPEND = 100;
+const OPENCODE_UI_BATCH_TASK_RUN_SCENARIO = 'opencode-ui-batch';
+const LIVE_TIMELINE_SOURCE = 'terminal-live';
+const LIVE_TIMELINE_FLUSH_INTERVAL_MS = 2000;
+const LIVE_TIMELINE_MAX_CHARS_PER_EVENT = 4000;
+const DEFAULT_LOOP_RETRY_INITIAL_DELAY_MS = 1000;
+const DEFAULT_LOOP_RETRY_MAX_DELAY_MS = 30_000;
 
 interface TerminalStreamHandle {
   start(): Promise<void>;
   appendText(text: string): Promise<void>;
   end(reason: TerminalEnd['reason']): Promise<void>;
   close(): void;
+}
+
+interface LiveTimelineReporter {
+  appendText(text: string): Promise<void>;
+  flush(): Promise<void>;
+  getWarnings(): string[];
 }
 
 type AgentCommandOutputMode = 'structured' | 'terminal';
@@ -151,6 +166,13 @@ function getTimestampMs(value: unknown) {
     return Number.isFinite(timestamp) ? timestamp : undefined;
   }
   return undefined;
+}
+
+function getRequestedTerminalBackend(payload: JsonRecord, fallback?: RunDaemonOnceOptions['terminalBackend']) {
+  if (fallback) {
+    return fallback;
+  }
+  return getString(payload.terminalBackend) === 'tmux' ? 'tmux' : 'exec';
 }
 
 function getDeclaredArtifactModifiedSinceMs(lease: RunLease, payload: JsonRecord) {
@@ -407,6 +429,7 @@ async function reportDeclaredArtifacts(options: {
     payload: options.payload,
     cwd: options.cwd,
     workspaceRoot: options.workspaceRoot,
+    trustedArtifactRoots: getInstalledSkillArtifactRoots(options.payload),
     modifiedSinceMs: getDeclaredArtifactModifiedSinceMs(options.lease, options.payload),
   });
   for (const upload of uploads) {
@@ -416,6 +439,28 @@ async function reportDeclaredArtifacts(options: {
     declaredArtifactCount: uploads.length,
     declaredArtifactKeys: uploads.map((upload) => upload.artifactKey),
   };
+}
+
+function getInstalledSkillArtifactRoots(payload: JsonRecord) {
+  if (getString(payload.scenario) !== OPENCODE_UI_BATCH_TASK_RUN_SCENARIO) {
+    return [];
+  }
+  const installedSkills = Array.isArray(payload.installedSkills) ? payload.installedSkills : [];
+  const roots: string[] = [];
+  const appendRoot = (root: string) => {
+    if (root && !roots.includes(root)) {
+      roots.push(root);
+    }
+  };
+  for (const skill of installedSkills) {
+    const installPath = isRecord(skill) ? getString(skill.installPath) : '';
+    appendRoot(installPath);
+    const skillsRoot = installPath ? path.dirname(installPath) : '';
+    if (path.basename(skillsRoot) === 'skills') {
+      appendRoot(path.dirname(skillsRoot));
+    }
+  }
+  return roots;
 }
 
 async function readOutputForProviderSessionDetection(output: ExecDriverResult['stdout']) {
@@ -580,6 +625,74 @@ async function reportProviderSessionAndCollectWarnings(options: {
     warnings.push(`Agent timeline append failed: ${error instanceof Error ? error.message : String(error)}`);
   }
   return warnings;
+}
+
+function createLiveTimelineReporter(options: {
+  gateway: AgentGatewayDaemonNodeClient;
+  getLease(): RunLease;
+}): LiveTimelineReporter {
+  let buffer = '';
+  let sequence = 0;
+  let lastFlushAt = 0;
+  const warnings: string[] = [];
+
+  const appendWarning = (error: unknown) => {
+    const message = error instanceof Error ? error.message : String(error);
+    warnings.push(`Live timeline append failed: ${message}`);
+  };
+
+  const flush = async () => {
+    if (!buffer) {
+      return;
+    }
+    const content = buffer;
+    buffer = '';
+    const events: JsonRecord[] = [];
+    for (let offset = 0; offset < content.length; offset += LIVE_TIMELINE_MAX_CHARS_PER_EVENT) {
+      const chunk = content.slice(offset, offset + LIVE_TIMELINE_MAX_CHARS_PER_EVENT);
+      sequence += 1;
+      events.push({
+        source: LIVE_TIMELINE_SOURCE,
+        sequence,
+        eventType: 'agent.message',
+        contentText: chunk,
+        contentJson: {
+          live: true,
+          stream: 'terminal',
+          chunkLength: chunk.length,
+          chunkBytes: Buffer.byteLength(chunk),
+        },
+      });
+    }
+    try {
+      for (let index = 0; index < events.length; index += MAX_CONVERSATION_EVENTS_PER_APPEND) {
+        await options.gateway.appendConversationEvents(options.getLease(), {
+          events: events.slice(index, index + MAX_CONVERSATION_EVENTS_PER_APPEND),
+        });
+      }
+    } catch (error) {
+      appendWarning(error);
+    } finally {
+      lastFlushAt = Date.now();
+    }
+  };
+
+  return {
+    appendText: async (text) => {
+      if (!text) {
+        return;
+      }
+      buffer += text;
+      const shouldFlush =
+        buffer.length >= LIVE_TIMELINE_MAX_CHARS_PER_EVENT ||
+        Date.now() - lastFlushAt >= LIVE_TIMELINE_FLUSH_INTERVAL_MS;
+      if (shouldFlush) {
+        await flush();
+      }
+    },
+    flush,
+    getWarnings: () => [...warnings],
+  };
 }
 
 function dedupeSkillVersions(skillVersions: SkillVersionInstallRecord[]) {
@@ -1105,10 +1218,11 @@ export async function executeClaimedRun(
 
   const payload = getPayload(activeLease());
   const cwd = path.resolve(options.workspaceRoot, getString(payload.cwd) || '.');
-  const terminalBackend = options.terminalBackend || 'exec';
+  const terminalBackend = getRequestedTerminalBackend(payload, options.terminalBackend);
   const tmuxSessionName = getManagedTmuxSessionName(claimedLease.runId);
   const usesManagedTmux = terminalBackend === 'tmux' && !options.executeCommand;
   let terminalStream: TerminalStreamHandle | null = null;
+  let liveTimelineReporter: LiveTimelineReporter | null = null;
   const cancelController = new AbortController();
   const leaseLostController = new AbortController();
   let stopHeartbeat: (() => Promise<void>) | null = null;
@@ -1117,6 +1231,10 @@ export async function executeClaimedRun(
   try {
     const commandSpec = getExecutionCommandSpec(activeLease(), cwd, usesManagedTmux ? 'terminal' : 'structured');
     if (usesManagedTmux) {
+      liveTimelineReporter = createLiveTimelineReporter({
+        gateway: options.gateway,
+        getLease: activeLease,
+      });
       terminalStream = createRunTerminalStream({
         runOptions: options,
         runId: claimedLease.runId,
@@ -1171,6 +1289,7 @@ export async function executeClaimedRun(
           artifactDir: options.artifactDir,
           onOutputChunk: async (chunk) => {
             await terminalStream?.appendText(chunk);
+            await liveTimelineReporter?.appendText(chunk);
           },
           onSessionStarted: async (metadata) => {
             await startManagedTmuxControls(metadata.startedAt);
@@ -1188,6 +1307,7 @@ export async function executeClaimedRun(
           leaseLostSignal: leaseLostController.signal,
           artifactDir: options.artifactDir,
         });
+    await liveTimelineReporter?.flush();
     if (stopHeartbeat) {
       await stopHeartbeat();
       stopHeartbeat = null;
@@ -1246,12 +1366,15 @@ export async function executeClaimedRun(
       await closeTmuxTerminalQuietly(options, activeLease(), claimedLease.runId, result.exitCode);
       await terminalStream?.end(toTerminalEndReason(result.status));
     }
-    const sessionObservationWarnings = await reportProviderSessionAndCollectWarnings({
-      gateway: options.gateway,
-      lease: activeLease(),
-      provider: commandSpec.provider,
-      result,
-    });
+    const sessionObservationWarnings = liveTimelineReporter?.getWarnings() || [];
+    sessionObservationWarnings.push(
+      ...(await reportProviderSessionAndCollectWarnings({
+        gateway: options.gateway,
+        lease: activeLease(),
+        provider: commandSpec.provider,
+        result,
+      })),
+    );
     let declaredArtifactSummary: JsonRecord | undefined;
     try {
       declaredArtifactSummary = await reportDeclaredArtifacts({
@@ -1290,6 +1413,7 @@ export async function executeClaimedRun(
       runId: claimedLease.runId,
     };
   } catch (error) {
+    await liveTimelineReporter?.flush();
     if (stopHeartbeat) {
       await stopHeartbeat();
       stopHeartbeat = null;
@@ -1379,8 +1503,22 @@ function delay(ms: number, signal?: AbortSignal) {
 
 export async function runDaemonLoop(options: DaemonRunLoopOptions) {
   const pollIntervalMs = options.pollIntervalMs || 10_000;
+  const retryInitialDelayMs = options.retryInitialDelayMs || DEFAULT_LOOP_RETRY_INITIAL_DELAY_MS;
+  const retryMaxDelayMs = options.retryMaxDelayMs || DEFAULT_LOOP_RETRY_MAX_DELAY_MS;
+  let failureCount = 0;
   while (!options.stopSignal?.aborted) {
-    await runDaemonOnce(options);
-    await delay(pollIntervalMs, options.stopSignal);
+    try {
+      await runDaemonOnce(options);
+      failureCount = 0;
+      await delay(pollIntervalMs, options.stopSignal);
+    } catch (error) {
+      failureCount += 1;
+      const retryDelayMs = Math.min(retryMaxDelayMs, retryInitialDelayMs * 2 ** Math.max(0, failureCount - 1));
+      options.onLoopError?.(error, {
+        failureCount,
+        retryDelayMs,
+      });
+      await delay(retryDelayMs, options.stopSignal);
+    }
   }
 }

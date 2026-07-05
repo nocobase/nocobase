@@ -8,9 +8,17 @@
  */
 
 import { Alert, Collapse, Empty, Space, Tag, Timeline, Typography } from 'antd';
-import React from 'react';
+import React, { useMemo } from 'react';
 
-import { JsonPreview, JsonRecord, formatDateTime, redactPreviewText } from '../pages/AgentGatewayPageUtils';
+import {
+  AgentTranscriptMessage,
+  AgentTranscriptMessagePart,
+  AgentTranscriptToolCall,
+  AgentTranscriptToolKind,
+  AgentTranscriptToolStatus,
+  buildAgentTranscript,
+} from '../../shared/agentTranscript';
+import { JsonRecord, formatDateTime, redactPreviewText } from '../pages/AgentGatewayPageUtils';
 
 type TFunction = (key: string, options?: Record<string, unknown>) => string;
 
@@ -38,90 +46,230 @@ export interface LegacyRunEventRecord {
   emittedAt?: string;
 }
 
-function getJsonString(value: JsonRecord | undefined, key: string) {
-  const item = value?.[key];
-  return typeof item === 'string' ? item : undefined;
+function getLegacyTimelineEvents(events: LegacyRunEventRecord[]): AgentTimelineEventRecord[] {
+  return events.map((event) => ({
+    id: event.id,
+    source: event.source,
+    sequence: event.sequence,
+    eventType: event.eventType,
+    contentText: event.message,
+    contentJson: event.payloadJson,
+    createdAt: event.emittedAt,
+  }));
 }
 
-function getJsonNumber(value: JsonRecord | undefined, key: string) {
-  const item = value?.[key];
-  return typeof item === 'number' && Number.isFinite(item) ? item : undefined;
-}
-
-function getTimelineColor(eventType: string | undefined, level?: string, contentJson?: JsonRecord) {
-  const status = getJsonString(contentJson, 'status');
-  const exitCode = getJsonNumber(contentJson, 'exitCode');
-  if (
-    level === 'error' ||
-    status === 'failed' ||
-    (typeof exitCode === 'number' && exitCode !== 0) ||
-    eventType?.includes('failed')
-  ) {
+function getToolStatusColor(status: AgentTranscriptToolStatus) {
+  if (status === 'failed') {
     return 'red';
   }
-  if (eventType?.includes('completed')) {
+  if (status === 'succeeded') {
     return 'green';
   }
-  if (eventType?.includes('started')) {
+  if (status === 'running') {
+    return 'blue';
+  }
+  return 'default';
+}
+
+function getTimelineColor(message: AgentTranscriptMessage) {
+  if (message.toolCalls.some((toolCall) => toolCall.status === 'failed')) {
+    return 'red';
+  }
+  if (message.role === 'user') {
+    return 'blue';
+  }
+  if (message.toolCalls.some((toolCall) => toolCall.status === 'running')) {
     return 'blue';
   }
   return 'gray';
 }
 
-function isConversationMessageEvent(eventType?: string) {
-  return eventType === 'agent.message' || eventType === 'agent.user.message';
+function getToolKindLabel(t: TFunction, kind: AgentTranscriptToolKind) {
+  const labels: Record<AgentTranscriptToolKind, string> = {
+    exec: t('Exec'),
+    run: t('Run'),
+    terminal: t('Terminal'),
+    wait: t('Wait'),
+    apply_patch: t('Patch'),
+    tool: t('Tool'),
+    unknown: t('Tool'),
+  };
+  return labels[kind];
 }
 
-function isCommandEvent(eventType?: string) {
-  return Boolean(eventType?.startsWith('agent.command.') || eventType?.startsWith('agent.tool.'));
+function getToolCallTitle(t: TFunction, toolCall: AgentTranscriptToolCall) {
+  return [getToolKindLabel(t, toolCall.kind), toolCall.command || toolCall.title].filter(Boolean).join(' · ');
 }
 
-function getConversationTitle(t: TFunction, event: AgentTimelineEventRecord | LegacyRunEventRecord) {
-  if (event.eventType === 'agent.user.message') {
-    return t('You');
+function getMessageTitle(t: TFunction, message: AgentTranscriptMessage) {
+  return message.role === 'user' ? t('You') : t('Agent');
+}
+
+function TextBlock({ text, maxHeight = 320 }: { text: string; maxHeight?: number }) {
+  if (!text) {
+    return null;
   }
-  if (event.eventType === 'agent.message') {
-    return t('Agent message');
-  }
-  return event.eventType || t('Message');
-}
-
-function TimelineContent({
-  title,
-  source,
-  sequence,
-  timestamp,
-  contentText,
-  contentJson,
-  detailsLabel,
-}: {
-  title: string;
-  source?: string;
-  sequence?: number;
-  timestamp?: string;
-  contentText?: string | null;
-  contentJson?: JsonRecord;
-  detailsLabel: string;
-}) {
   return (
-    <Space direction="vertical" size={4} style={{ width: '100%' }}>
+    <Typography.Paragraph
+      style={{
+        background: '#fafafa',
+        border: '1px solid #edf0f2',
+        borderRadius: 6,
+        margin: 0,
+        maxHeight,
+        overflow: 'auto',
+        padding: '8px 10px',
+        whiteSpace: 'pre-wrap',
+      }}
+    >
+      {redactPreviewText(text)}
+    </Typography.Paragraph>
+  );
+}
+
+function ToolCallBody({ t, toolCall }: { t: TFunction; toolCall: AgentTranscriptToolCall }) {
+  const output = toolCall.output && toolCall.output !== toolCall.command ? toolCall.output : '';
+  return (
+    <Space direction="vertical" size={8} style={{ width: '100%' }}>
       <Space wrap size={6}>
-        <Typography.Text strong>{title}</Typography.Text>
-        {source ? <Tag>{source}</Tag> : null}
-        {typeof sequence === 'number' ? <Tag>#{sequence}</Tag> : null}
-        <Typography.Text type="secondary">{formatDateTime(timestamp)}</Typography.Text>
+        <Tag color={getToolStatusColor(toolCall.status)}>{toolCall.status}</Tag>
+        {toolCall.durationText ? <Tag>{toolCall.durationText}</Tag> : null}
+        {typeof toolCall.exitCode === 'number' ? <Tag>exit {toolCall.exitCode}</Tag> : null}
+        {toolCall.source ? <Tag>{toolCall.source}</Tag> : null}
       </Space>
-      {contentText ? (
-        <Typography.Paragraph style={{ margin: 0, whiteSpace: 'pre-wrap' }}>
-          {redactPreviewText(contentText)}
-        </Typography.Paragraph>
+      {toolCall.command ? (
+        <Space direction="vertical" size={4} style={{ width: '100%' }}>
+          <Typography.Text type="secondary">{t('Command')}</Typography.Text>
+          <TextBlock text={toolCall.command} maxHeight={120} />
+        </Space>
       ) : null}
-      {contentJson && Object.keys(contentJson).length ? (
-        <details>
-          <summary>{detailsLabel}</summary>
-          <JsonPreview value={contentJson} />
-        </details>
+      {output ? (
+        <Space direction="vertical" size={4} style={{ width: '100%' }}>
+          <Typography.Text type="secondary">{t('Output')}</Typography.Text>
+          <TextBlock text={output} maxHeight={300} />
+        </Space>
       ) : null}
+      {!toolCall.command && !output ? (
+        <Typography.Text type="secondary">{t('No parsed tool details')}</Typography.Text>
+      ) : null}
+    </Space>
+  );
+}
+
+function isCollapsePanelActive(activeKey: string | string[] | undefined, key: string) {
+  return Array.isArray(activeKey) ? activeKey.includes(key) : activeKey === key;
+}
+
+function ToolCallCollapse({ t, toolCall }: { t: TFunction; toolCall: AgentTranscriptToolCall }) {
+  const [expanded, setExpanded] = React.useState(false);
+  return (
+    <Collapse
+      size="small"
+      activeKey={expanded ? [toolCall.id] : []}
+      onChange={(activeKey) => {
+        setExpanded(isCollapsePanelActive(activeKey as string | string[] | undefined, toolCall.id));
+      }}
+      items={[
+        {
+          key: toolCall.id,
+          label: (
+            <Space wrap size={6}>
+              <Typography.Text strong>{getToolCallTitle(t, toolCall)}</Typography.Text>
+              <Tag color={getToolStatusColor(toolCall.status)}>{toolCall.status}</Tag>
+              {toolCall.durationText ? <Tag>{toolCall.durationText}</Tag> : null}
+            </Space>
+          ),
+          children: expanded ? <ToolCallBody t={t} toolCall={toolCall} /> : null,
+        },
+      ]}
+    />
+  );
+}
+
+function ToolCallsTimeline({ t, toolCalls }: { t: TFunction; toolCalls: AgentTranscriptToolCall[] }) {
+  return (
+    <Timeline
+      mode="left"
+      items={toolCalls.map((toolCall) => ({
+        key: toolCall.id,
+        color: toolCall.status === 'failed' ? 'red' : toolCall.status === 'running' ? 'blue' : 'gray',
+        children: <ToolCallCollapse t={t} toolCall={toolCall} />,
+      }))}
+    />
+  );
+}
+
+function ToolCallsCollapse({ t, toolCalls }: { t: TFunction; toolCalls: AgentTranscriptToolCall[] }) {
+  const [expanded, setExpanded] = React.useState(false);
+  if (!toolCalls.length) {
+    return null;
+  }
+  const failedCount = toolCalls.filter((toolCall) => toolCall.status === 'failed').length;
+  return (
+    <Collapse
+      size="small"
+      activeKey={expanded ? ['tool-calls'] : []}
+      onChange={(activeKey) => {
+        setExpanded(isCollapsePanelActive(activeKey as string | string[] | undefined, 'tool-calls'));
+      }}
+      items={[
+        {
+          key: 'tool-calls',
+          label: (
+            <Space wrap size={6}>
+              <Typography.Text strong>{t('Tool calls')}</Typography.Text>
+              <Tag>{toolCalls.length}</Tag>
+              {failedCount ? (
+                <Tag color="red">
+                  {t('Failed')}: {failedCount}
+                </Tag>
+              ) : null}
+            </Space>
+          ),
+          children: expanded ? <ToolCallsTimeline t={t} toolCalls={toolCalls} /> : null,
+        },
+      ]}
+    />
+  );
+}
+
+function MessagePart({ t, part }: { t: TFunction; part: AgentTranscriptMessagePart }) {
+  if (part.type === 'tool-calls') {
+    return <ToolCallsCollapse t={t} toolCalls={part.toolCalls} />;
+  }
+  return <TextBlock text={part.text} />;
+}
+
+function MessageContent({ t, message }: { t: TFunction; message: AgentTranscriptMessage }) {
+  const parts = message.parts.length
+    ? message.parts
+    : ([
+        {
+          id: `${message.id}-text`,
+          type: 'text',
+          text: message.text,
+        },
+        message.toolCalls.length
+          ? {
+              id: `${message.id}-tool-calls`,
+              type: 'tool-calls',
+              toolCalls: message.toolCalls,
+            }
+          : null,
+      ].filter(Boolean) as AgentTranscriptMessagePart[]);
+
+  return (
+    <Space direction="vertical" size={8} style={{ width: '100%' }}>
+      <Space wrap size={6}>
+        <Typography.Text strong>{getMessageTitle(t, message)}</Typography.Text>
+        {message.sources.map((source) => (
+          <Tag key={source}>{source}</Tag>
+        ))}
+        <Typography.Text type="secondary">{formatDateTime(message.createdAt)}</Typography.Text>
+      </Space>
+      {parts.map((part) => (
+        <MessagePart key={part.id} t={t} part={part} />
+      ))}
     </Space>
   );
 }
@@ -132,65 +280,22 @@ export function AgentTimeline({
   legacyEvents,
   useLegacyFallback,
   warning,
+  emptyDescription,
 }: {
   t: TFunction;
   events: AgentTimelineEventRecord[];
   legacyEvents: LegacyRunEventRecord[];
   useLegacyFallback: boolean;
   warning?: string;
+  emptyDescription?: React.ReactNode;
 }) {
   const usingLegacyFallback = useLegacyFallback && !events.length && legacyEvents.length > 0;
-  const messageEvents = events.filter((event) => isConversationMessageEvent(event.eventType));
-  const commandEvents = events.filter((event) => isCommandEvent(event.eventType));
-  const legacyMessageEvents = usingLegacyFallback
-    ? legacyEvents.filter((event) => isConversationMessageEvent(event.eventType))
-    : [];
-  const timelineItems = messageEvents.length
-    ? messageEvents.map((event) => ({
-        key: event.id,
-        color: getTimelineColor(event.eventType, undefined, event.contentJson),
-        children: (
-          <TimelineContent
-            title={getConversationTitle(t, event)}
-            source={event.source}
-            sequence={event.sequence}
-            timestamp={event.createdAt}
-            contentText={event.contentText}
-            contentJson={event.contentJson}
-            detailsLabel={t('Details')}
-          />
-        ),
-      }))
-    : legacyMessageEvents.length
-      ? legacyMessageEvents.map((event) => ({
-          key: event.id,
-          color: getTimelineColor(event.eventType, event.level),
-          children: (
-            <TimelineContent
-              title={getConversationTitle(t, event)}
-              source={event.source}
-              sequence={event.sequence}
-              timestamp={event.emittedAt}
-              contentText={event.message}
-              contentJson={event.payloadJson}
-              detailsLabel={t('Details')}
-            />
-          ),
-        }))
-      : [];
-  const commandTimelineItems = commandEvents.map((event) => ({
-    key: event.id,
-    color: getTimelineColor(event.eventType, undefined, event.contentJson),
-    children: (
-      <TimelineContent
-        title={event.contentText || event.eventType || t('Tool call')}
-        source={event.source}
-        sequence={event.sequence}
-        timestamp={event.createdAt}
-        contentJson={event.contentJson}
-        detailsLabel={t('Details')}
-      />
-    ),
+  const transcriptEvents = usingLegacyFallback ? getLegacyTimelineEvents(legacyEvents) : events;
+  const transcript = useMemo(() => buildAgentTranscript(transcriptEvents), [transcriptEvents]);
+  const timelineItems = transcript.messages.map((message) => ({
+    key: message.id,
+    color: getTimelineColor(message),
+    children: <MessageContent t={t} message={message} />,
   }));
 
   return (
@@ -210,20 +315,8 @@ export function AgentTimeline({
         {timelineItems.length ? (
           <Timeline mode="left" items={timelineItems} />
         ) : (
-          <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('No task messages yet')} />
+          <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={emptyDescription || t('No task messages yet')} />
         )}
-        {commandTimelineItems.length ? (
-          <Collapse
-            size="small"
-            items={[
-              {
-                key: 'tool-calls',
-                label: `${t('Tool calls')} (${commandTimelineItems.length})`,
-                children: <Timeline mode="left" items={commandTimelineItems} />,
-              },
-            ]}
-          />
-        ) : null}
       </Space>
     </section>
   );

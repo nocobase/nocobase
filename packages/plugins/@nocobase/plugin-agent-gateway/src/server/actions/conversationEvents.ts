@@ -22,6 +22,7 @@ import {
   redactObservabilityText,
 } from '../security';
 import { auditAgentActionBestEffort, auditReadAgentAction } from '../audit/agentActionAudit';
+import { AgentTranscriptEvent, buildAgentTranscript, getAgentTranscriptToolStats } from '../../shared/agentTranscript';
 import {
   API_PREFIX,
   JsonRecord,
@@ -45,7 +46,15 @@ const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3
 const MAX_CONVERSATION_EVENTS_PER_BATCH = 100;
 const MAX_CONTENT_TEXT_LENGTH = 8000;
 const MAX_CONTENT_JSON_CHARS = 32 * 1024;
+const TOOL_CALL_STATS_DEFAULT_RUN_LIMIT = 100;
+const TOOL_CALL_STATS_MAX_RUN_LIMIT = 500;
 const STANDARD_CONVERSATION_COLLECTIONS = ['agAgentConversationEvents'] as const;
+
+type ConversationReadRouteAction =
+  | 'listRunConversationEvents'
+  | 'listSessionConversationEvents'
+  | 'listRunToolCalls'
+  | 'listToolCallStats';
 
 interface CollectionLike {
   hasField?(name: string): boolean;
@@ -56,8 +65,27 @@ interface DatabaseWithCollections {
   getCollection?(name: string): CollectionLike | undefined;
 }
 
-function serializeModel(model: ModelRecord) {
+function serializeModel(model: ModelRecord): JsonRecord {
   return redactConversationEvent(getModelJson(model));
+}
+
+function toTranscriptEvent(event: JsonRecord): AgentTranscriptEvent {
+  const sequence = getOptionalInteger(event.sequence);
+  return {
+    id: getString(event.id),
+    source: getString(event.source) || undefined,
+    sequence: sequence ?? undefined,
+    eventType: getString(event.eventType) || undefined,
+    providerEventId: getString(event.providerEventId) || null,
+    correlationId: getString(event.correlationId) || null,
+    contentText: typeof event.contentText === 'string' ? event.contentText : null,
+    contentJson: getRecord(event.contentJson),
+    createdAt: getString(event.createdAt) || undefined,
+  };
+}
+
+function toTranscriptEvents(events: JsonRecord[]) {
+  return events.map(toTranscriptEvent).filter((event) => event.id);
 }
 
 function getCommandEventContentText(event: JsonRecord) {
@@ -78,7 +106,7 @@ function getCommandEventContentText(event: JsonRecord) {
   return null;
 }
 
-function redactConversationEvent(event: JsonRecord) {
+function redactConversationEvent(event: JsonRecord): JsonRecord {
   const contentJson =
     event.contentJson === undefined
       ? event.contentJson
@@ -251,7 +279,7 @@ async function auditConversationRead(
     runId?: string;
     sessionId?: string;
     resultStatus: 'succeeded' | 'denied';
-    routeAction: 'listRunConversationEvents' | 'listSessionConversationEvents';
+    routeAction: ConversationReadRouteAction;
     metadataJson?: JsonRecord;
   },
 ) {
@@ -279,7 +307,7 @@ async function requireConversationRead(
   audit: {
     runId?: string;
     sessionId?: string;
-    routeAction: 'listRunConversationEvents' | 'listSessionConversationEvents';
+    routeAction: ConversationReadRouteAction;
   },
 ) {
   try {
@@ -324,6 +352,15 @@ async function findReadableSessionRunIds(ctx: Context, sessionId: string) {
     ctx.throw(404, 'Agent session run not found');
   }
   return runIds;
+}
+
+function getToolCallStatsRunLimit(ctx: Context) {
+  const rawLimit = getString(getRecord(ctx.query).limit);
+  const limit = rawLimit ? Number(rawLimit) : TOOL_CALL_STATS_DEFAULT_RUN_LIMIT;
+  if (!Number.isInteger(limit) || limit <= 0) {
+    ctx.throw(400, 'limit must be a positive integer');
+  }
+  return Math.min(limit, TOOL_CALL_STATS_MAX_RUN_LIMIT);
 }
 
 function getCollection(ctx: Context, collectionName: string) {
@@ -490,7 +527,9 @@ async function appendConversationEvents(ctx: Context, runId: string) {
   const nodeId = String(auth.subject.nodeId);
 
   const result = await ctx.db.sequelize.transaction(async (transaction) => {
-    const lease = await validateRunLease(ctx, nodeId, runId, values, transaction);
+    const lease = await validateRunLease(ctx, nodeId, runId, values, transaction, {
+      allowStaleLeaseVersion: true,
+    });
     if (!lease) {
       return null;
     }
@@ -546,6 +585,146 @@ async function listRunConversationEvents(ctx: Context, runId: string) {
     },
   });
   ctx.body = events.map(serializeModel);
+}
+
+async function listRunToolCalls(ctx: Context, runId: string) {
+  const routeAction = 'listRunToolCalls';
+  await requireConversationRead(ctx, { runId, routeAction });
+  let run: ModelRecord;
+  try {
+    run = await assertRunReadable(ctx, runId);
+  } catch (error) {
+    await auditConversationRead(ctx, {
+      runId,
+      resultStatus: 'denied',
+      routeAction,
+      metadataJson: {
+        phase: 'visibility',
+        reason: error instanceof Error ? error.message : String(error),
+      },
+    });
+    throw error;
+  }
+
+  const events = (await ctx.db.getRepository('agAgentConversationEvents').find({
+    filter: {
+      runId,
+    },
+    sort: ['createdAt', 'sequence'],
+  })) as ModelRecord[];
+  const serializedEvents = events.map(serializeModel);
+  const transcript = buildAgentTranscript(toTranscriptEvents(serializedEvents));
+
+  await auditConversationRead(ctx, {
+    runId,
+    sessionId: getModelString(run, 'agentSessionId') || undefined,
+    resultStatus: 'succeeded',
+    routeAction,
+    metadataJson: {
+      eventCount: events.length,
+      toolCallCount: transcript.toolCalls.length,
+    },
+  });
+  ctx.body = {
+    toolCalls: transcript.toolCalls,
+    stats: transcript.stats,
+  };
+}
+
+async function listToolCallStats(ctx: Context) {
+  const routeAction = 'listToolCallStats';
+  await requireConversationRead(ctx, { routeAction });
+  const limit = getToolCallStatsRunLimit(ctx);
+  let visibilityFilter: JsonRecord | null;
+  try {
+    visibilityFilter = await getRunVisibilityFilter(ctx);
+  } catch (error) {
+    await auditConversationRead(ctx, {
+      resultStatus: 'denied',
+      routeAction,
+      metadataJson: {
+        phase: 'visibility',
+        reason: error instanceof Error ? error.message : String(error),
+      },
+    });
+    throw error;
+  }
+
+  const runs = (await ctx.db.getRepository('agRuns').find({
+    filter: visibilityFilter || {},
+    sort: ['-createdAt'],
+    limit,
+  })) as ModelRecord[];
+  const runIds = runs.map((run) => String(getModelTargetKey(run, 'id')));
+  if (!runIds.length) {
+    ctx.body = {
+      runCount: 0,
+      toolCallCount: 0,
+      stats: buildAgentTranscript([]).stats,
+      runs: [],
+    };
+    return;
+  }
+
+  const events = (await ctx.db.getRepository('agAgentConversationEvents').find({
+    filter: {
+      runId: {
+        $in: runIds,
+      },
+    },
+    sort: ['runId', 'createdAt', 'sequence'],
+  })) as ModelRecord[];
+  const eventsByRunId = new Map<string, JsonRecord[]>();
+  const serializedEvents = events.map(serializeModel);
+  for (const event of serializedEvents) {
+    const eventRunId = getString(event.runId);
+    if (!eventRunId) {
+      continue;
+    }
+    const runEvents = eventsByRunId.get(eventRunId) || [];
+    runEvents.push(event);
+    eventsByRunId.set(eventRunId, runEvents);
+  }
+
+  const runSummaries = runs.map((run) => {
+    const runId = String(getModelTargetKey(run, 'id'));
+    const transcript = buildAgentTranscript(toTranscriptEvents(eventsByRunId.get(runId) || []));
+    return {
+      runId,
+      runCode: getModelString(run, 'runCode'),
+      status: getModelString(run, 'status'),
+      toolCallCount: transcript.toolCalls.length,
+      stats: transcript.stats,
+    };
+  });
+  const allToolCalls = runSummaries.flatMap((summary) =>
+    (eventsByRunId.get(summary.runId)
+      ? buildAgentTranscript(toTranscriptEvents(eventsByRunId.get(summary.runId) || [])).toolCalls
+      : []
+    ).map((toolCall) => ({
+      ...toolCall,
+      runId: summary.runId,
+      runCode: summary.runCode,
+    })),
+  );
+  const aggregateStats = getAgentTranscriptToolStats(allToolCalls);
+
+  await auditConversationRead(ctx, {
+    resultStatus: 'succeeded',
+    routeAction,
+    metadataJson: {
+      runCount: runs.length,
+      eventCount: events.length,
+      toolCallCount: allToolCalls.length,
+    },
+  });
+  ctx.body = {
+    runCount: runs.length,
+    toolCallCount: allToolCalls.length,
+    stats: aggregateStats,
+    runs: runSummaries,
+    toolCalls: allToolCalls,
+  };
 }
 
 async function listSessionConversationEvents(ctx: Context, sessionId: string) {
@@ -608,6 +787,7 @@ export function registerConversationEventRoutes(plugin: Plugin) {
       const routePath = ctx.path.slice(API_PREFIX.length);
       const appendMatch = routePath.match(/^\/runs\/([^/]+)\/conversation-events:append$/);
       const runListMatch = routePath.match(/^\/runs\/([^/]+)\/conversation-events:list$/);
+      const runToolCallsMatch = routePath.match(/^\/runs\/([^/]+)\/tool-calls:list$/);
       const sessionListMatch = routePath.match(/^\/agent-sessions\/([^/]+)\/conversation-events:list$/);
 
       if (ctx.method === 'POST' && appendMatch) {
@@ -625,6 +805,20 @@ export function registerConversationEventRoutes(plugin: Plugin) {
           ctx.throw(400, 'runId must be a valid UUID');
         }
         await listRunConversationEvents(ctx, runId);
+        return;
+      }
+
+      if (ctx.method === 'GET' && runToolCallsMatch) {
+        const [, runId] = runToolCallsMatch;
+        if (!UUID_PATTERN.test(runId)) {
+          ctx.throw(400, 'runId must be a valid UUID');
+        }
+        await listRunToolCalls(ctx, runId);
+        return;
+      }
+
+      if (ctx.method === 'GET' && routePath === '/tool-calls:stats') {
+        await listToolCallStats(ctx);
         return;
       }
 

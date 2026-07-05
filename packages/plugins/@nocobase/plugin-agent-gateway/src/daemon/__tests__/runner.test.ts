@@ -13,7 +13,7 @@ import os from 'os';
 import path from 'path';
 
 import { AgentGatewayDaemonNodeClient } from '../gateway';
-import { runDaemonOnce } from '../runner';
+import { runDaemonLoop, runDaemonOnce } from '../runner';
 import { terminateTmuxSession } from '../tmuxTerminal';
 import { GatewayRequestOptions, GatewayRequester, JsonRecord } from '../types';
 
@@ -38,6 +38,29 @@ async function hasTmux() {
   }
 }
 
+function isJsonRecord(value: unknown): value is JsonRecord {
+  return Object.prototype.toString.call(value) === '[object Object]';
+}
+
+function getRequestEvents(call: GatewayRequestOptions | undefined) {
+  if (!isJsonRecord(call?.body)) {
+    return [];
+  }
+  const events = call.body.events;
+  return Array.isArray(events) ? events.filter(isJsonRecord) : [];
+}
+
+async function waitUntil(predicate: () => boolean, timeoutMs = 500) {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    if (predicate()) {
+      return;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 5));
+  }
+  throw new Error('Timed out waiting for condition');
+}
+
 class RunnerRequester implements GatewayRequester {
   calls: GatewayRequestOptions[] = [];
   private leaseVersion = 1;
@@ -51,6 +74,7 @@ class RunnerRequester implements GatewayRequester {
       heartbeatDelayMs?: number;
       enforceTerminalLeaseVersion?: boolean;
       cancelOnRunHeartbeatCall?: number;
+      failNodeHeartbeatOnce?: boolean;
       failCompleteOnce?: boolean;
       failAgentSessionUpsertOnce?: boolean;
     } = {},
@@ -90,6 +114,10 @@ class RunnerRequester implements GatewayRequester {
 
   async request<T extends JsonRecord = JsonRecord>(options: GatewayRequestOptions): Promise<T> {
     this.calls.push(options);
+    if (this.options.failNodeHeartbeatOnce && options.path === '/api/agent-gateway/nodes/node-1/heartbeat') {
+      this.options.failNodeHeartbeatOnce = false;
+      throw new Error('connect ECONNREFUSED 127.0.0.1:23001');
+    }
     if (options.path.endsWith('/heartbeat') && options.path.includes('/runs/')) {
       if (this.options.heartbeatDelayMs) {
         await new Promise((resolve) => setTimeout(resolve, this.options.heartbeatDelayMs));
@@ -136,6 +164,58 @@ describe('agent gateway daemon runner', () => {
 
   afterEach(async () => {
     await fs.rm(tempDir, { recursive: true, force: true });
+  });
+
+  it('keeps polling when the gateway is temporarily unavailable', async () => {
+    const workspace = path.join(tempDir, 'workspace');
+    await fs.mkdir(workspace, { recursive: true });
+    const requester = new RunnerRequester({
+      claimPayload: {
+        claimed: false,
+      },
+      failNodeHeartbeatOnce: true,
+    });
+    const gateway = new AgentGatewayDaemonNodeClient(requester, {
+      serverUrl: 'http://127.0.0.1:23001',
+      nodeId: 'node-1',
+      nodeKey: 'node-1',
+      nodeToken: 'ag_node_NODE_TOKEN_SECRET',
+      savedAt: new Date().toISOString(),
+    });
+    const errors: string[] = [];
+    const stopController = new AbortController();
+    const loop = runDaemonLoop({
+      gateway,
+      allowlist: {},
+      workspaceRoot: workspace,
+      skillsRoot: path.join(tempDir, 'skills'),
+      artifactDir: path.join(tempDir, 'artifacts'),
+      pollIntervalMs: 1,
+      retryInitialDelayMs: 1,
+      retryMaxDelayMs: 2,
+      stopSignal: stopController.signal,
+      detectOptions: {
+        probeCommand: async () => ({
+          available: false,
+        }),
+      },
+      onLoopError: (error) => {
+        errors.push(error instanceof Error ? error.message : String(error));
+      },
+    });
+
+    try {
+      await waitUntil(() => requester.calls.some((call) => call.path.endsWith('/runs:claim')));
+    } finally {
+      stopController.abort();
+      await loop;
+    }
+
+    const nodeHeartbeatCalls = requester.calls.filter(
+      (call) => call.path === '/api/agent-gateway/nodes/node-1/heartbeat',
+    );
+    expect(nodeHeartbeatCalls.length).toBeGreaterThanOrEqual(2);
+    expect(errors).toEqual(['connect ECONNREFUSED 127.0.0.1:23001']);
   });
 
   it('claims, syncs the selected Skill version, executes through allowlist, and terminalizes the run', async () => {
@@ -215,8 +295,10 @@ describe('agent gateway daemon runner', () => {
 
   it('injects installed Skill paths into the agent prompt and registers declared artifacts', async () => {
     const workspace = path.join(tempDir, 'workspace');
-    const oldRunDir = path.join(workspace, 'runs', 'nb-opencode-ui-batch', 'old-run');
-    const runDir = path.join(workspace, 'runs', 'nb-opencode-ui-batch', 'run-1');
+    const installedSkillPath = path.join(tempDir, 'skills', '55555555-5555-4555-8555-555555555555');
+    const oldRunDir = path.join(tempDir, 'runs', 'nb-opencode-ui-batch', 'old-run');
+    const runDir = path.join(tempDir, 'runs', 'nb-opencode-ui-batch', 'run-1');
+    await fs.mkdir(workspace, { recursive: true });
     await fs.mkdir(oldRunDir, { recursive: true });
     await fs.mkdir(runDir, { recursive: true });
     const oldReportPath = path.join(oldRunDir, 'report.html');
@@ -226,8 +308,16 @@ describe('agent gateway daemon runner', () => {
     const oldReportDate = new Date('2020-01-01T00:00:00.000Z');
     await fs.utimes(oldReportPath, oldReportDate, oldReportDate);
     await fs.utimes(oldReportJsonPath, oldReportDate, oldReportDate);
+    await fs.mkdir(path.join(runDir, 'browser-screenshots'), { recursive: true });
     await fs.writeFile(path.join(runDir, 'report.html'), '<html><body>batch report</body></html>');
     await fs.writeFile(path.join(runDir, 'report.json'), '{"durationMs":1234,"totalTokens":5678}');
+    await fs.writeFile(
+      path.join(runDir, 'browser-screenshots', 'overview.png'),
+      Buffer.from(
+        'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII=',
+        'base64',
+      ),
+    );
     const requestedAt = new Date(Date.now() - 1000).toISOString();
     const requester = new RunnerRequester({
       claimPayload: {
@@ -240,10 +330,15 @@ describe('agent gateway daemon runner', () => {
           id: 'run-1',
           requestedAt,
           executionPayloadJson: {
+            scenario: 'opencode-ui-batch',
             commandKey: 'codex',
             prompt: 'Run the local batch harness',
             cwd: '.',
-            artifactGlobs: ['runs/nb-opencode-ui-batch/*/report.html', 'runs/nb-opencode-ui-batch/*/report.json'],
+            artifactGlobs: [
+              'runs/nb-opencode-ui-batch/*/report.html',
+              'runs/nb-opencode-ui-batch/*/report.json',
+              'runs/nb-opencode-ui-batch/*/browser-screenshots/**/*',
+            ],
             skillVersions: [
               {
                 skillVersionId: '55555555-5555-4555-8555-555555555555',
@@ -267,7 +362,6 @@ describe('agent gateway daemon runner', () => {
       savedAt: new Date().toISOString(),
     });
     const executedArgs: string[][] = [];
-    const installedSkillPath = path.join(tempDir, 'skills', '55555555-5555-4555-8555-555555555555');
 
     const result = await runDaemonOnce({
       gateway,
@@ -317,7 +411,7 @@ describe('agent gateway daemon runner', () => {
     expect(result.status).toBe('succeeded');
     expect(executedArgs[0].join('\n')).toContain(path.join(installedSkillPath, 'SKILL.md'));
     const artifactCalls = requester.calls.filter((call) => call.path.endsWith('/artifacts:register'));
-    expect(artifactCalls).toHaveLength(2);
+    expect(artifactCalls).toHaveLength(3);
     expect(artifactCalls.map((call) => call.body?.artifactKey)).not.toEqual(
       expect.arrayContaining([
         'declared:runs/nb-opencode-ui-batch/old-run/report.html',
@@ -338,16 +432,123 @@ describe('agent gateway daemon runner', () => {
           mimeType: 'application/json',
           contentText: '{"durationMs":1234,"totalTokens":5678}',
         }),
+        expect.objectContaining({
+          artifactKey: 'declared:runs/nb-opencode-ui-batch/run-1/browser-screenshots/overview.png',
+          artifactType: 'image',
+          mimeType: 'image/png',
+          contentText: expect.stringContaining('data:image/png;base64,'),
+          metadata: expect.objectContaining({
+            relativePath: 'runs/nb-opencode-ui-batch/run-1/browser-screenshots/overview.png',
+            inlineEncoding: 'data-url',
+          }),
+        }),
       ]),
     );
     const completeCall = requester.calls.find((call) => call.path.endsWith('/complete'));
     expect(completeCall?.body).toMatchObject({
       resultSummary: {
         declaredArtifacts: {
-          declaredArtifactCount: 2,
+          declaredArtifactCount: 3,
         },
       },
     });
+  });
+
+  it('does not scan installed Skill sibling run directories for generic task artifacts', async () => {
+    const workspace = path.join(tempDir, 'workspace');
+    const installedSkillPath = path.join(tempDir, 'skills', '55555555-5555-4555-8555-555555555555');
+    const runDir = path.join(tempDir, 'runs', 'nb-opencode-ui-batch', 'run-1');
+    await fs.mkdir(workspace, { recursive: true });
+    await fs.mkdir(runDir, { recursive: true });
+    await fs.writeFile(
+      path.join(runDir, 'report.html'),
+      '<html><body>generic task must not collect this</body></html>',
+    );
+    const requester = new RunnerRequester({
+      claimPayload: {
+        claimed: true,
+        runId: 'run-1',
+        claimToken: 'ag_claim_CLAIM_TOKEN_SECRET',
+        claimAttempt: 1,
+        leaseVersion: 1,
+        run: {
+          id: 'run-1',
+          requestedAt: new Date(Date.now() - 1000).toISOString(),
+          executionPayloadJson: {
+            commandKey: 'codex',
+            prompt: 'Run a generic task with a skill',
+            cwd: '.',
+            artifactGlobs: ['runs/nb-opencode-ui-batch/*/report.html'],
+            skillVersions: [
+              {
+                skillVersionId: '55555555-5555-4555-8555-555555555555',
+                versionLabel: 'v1',
+                source: {
+                  type: 'zip',
+                  archivePath: '/skills/opencode.zip',
+                  sha256: 'solidified-sha256',
+                },
+              },
+            ],
+          },
+        },
+      },
+    });
+    const gateway = new AgentGatewayDaemonNodeClient(requester, {
+      serverUrl: 'https://nocobase.example.test',
+      nodeId: 'node-1',
+      nodeKey: 'node-1',
+      nodeToken: 'ag_node_NODE_TOKEN_SECRET',
+      savedAt: new Date().toISOString(),
+    });
+
+    const result = await runDaemonOnce({
+      gateway,
+      allowlist: {
+        codex: {
+          commandKey: 'codex',
+          executable: process.execPath,
+          defaultTimeoutMs: 5000,
+        },
+      },
+      workspaceRoot: workspace,
+      skillsRoot: path.join(tempDir, 'skills'),
+      artifactDir: path.join(tempDir, 'artifacts'),
+      runHeartbeatIntervalMs: 60_000,
+      syncSkillVersion: async (options) => ({
+        skillVersionId: options.skillVersion.skillVersionId,
+        installPath: installedSkillPath,
+        idempotent: false,
+        status: 'installed',
+        sourceDigest: 'solidified-sha256',
+      }),
+      executeCommand: async () => ({
+        status: 'succeeded',
+        exitCode: 0,
+        signal: null,
+        stdout: {
+          text: '{"type":"turn.completed"}',
+          sizeBytes: 25,
+        },
+        stderr: {
+          text: null,
+          sizeBytes: 0,
+        },
+      }),
+      detectOptions: {
+        probeCommand: async (candidates) => ({
+          available: candidates.includes('codex'),
+          command: candidates[0],
+          version: 'codex 1.0.0',
+        }),
+      },
+    });
+
+    expect(result.status).toBe('succeeded');
+    const artifactCalls = requester.calls.filter((call) => call.path.endsWith('/artifacts:register'));
+    expect(artifactCalls.map((call) => String(call.body?.artifactKey))).not.toEqual(
+      expect.arrayContaining(['declared:runs/nb-opencode-ui-batch/run-1/report.html']),
+    );
   });
 
   it('passes directed claim filters to the gateway', async () => {
@@ -1272,10 +1473,19 @@ describe('agent gateway daemon runner', () => {
         provider: 'codex',
         providerSessionId: '019f1eb9-2c3a-7f77-9004-8c81f7abf7b1',
       });
-      const conversationCall = requester.calls.find((call) => call.path.endsWith('/conversation-events:append'));
-      expect(conversationCall?.body).toMatchObject({
+      const liveConversationCallIndex = requester.calls.findIndex((call) =>
+        getRequestEvents(call).some((event) => event.source === 'terminal-live' && event.eventType === 'agent.message'),
+      );
+      const completeCallIndex = requester.calls.findIndex((call) => call.path.endsWith('/complete'));
+      expect(liveConversationCallIndex).toBeGreaterThanOrEqual(0);
+      expect(completeCallIndex).toBeGreaterThan(liveConversationCallIndex);
+      const codexConversationCall = requester.calls.find((call) =>
+        getRequestEvents(call).some((event) => event.providerEventId === 'item.completed:item-tail-tmux'),
+      );
+      expect(codexConversationCall?.body).toMatchObject({
         events: expect.arrayContaining([
           expect.objectContaining({
+            source: 'codex',
             eventType: 'agent.message',
             contentText: 'tail after pane capture',
             providerEventId: 'item.completed:item-tail-tmux',

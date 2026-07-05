@@ -261,14 +261,25 @@ interface BuildRunnerNodeOption {
   displayName?: string;
   status?: string;
   online?: boolean;
+  onlineReason?: string | null;
   lastHeartbeatAt?: string | null;
   profiles?: BuildRunnerProfileOption[];
+}
+
+interface BuildSkillVersionOption {
+  id: string;
+  skillId?: string;
+  skillKey?: string;
+  displayName?: string;
+  versionLabel: string;
+  status?: string;
 }
 
 interface BuildRunOptions {
   defaultProfileKey?: string;
   defaultCwd?: string;
   nodes?: BuildRunnerNodeOption[];
+  skillVersions?: BuildSkillVersionOption[];
 }
 
 interface BuildTaskFormValues {
@@ -337,6 +348,8 @@ const TERMINAL_CONTROL_RUN_STATUSES = new Set(['claimed', 'syncing_skills', 'run
 const LEGACY_TIMELINE_FALLBACK_STATUSES = new Set(['succeeded']);
 const LIVE_RUN_STATUSES = new Set(['queued', 'claimed', 'syncing_skills', 'running', 'canceling']);
 const RUN_DETAIL_QUERY_PARAM = 'runId';
+const OPENCODE_UI_BATCH_SCENARIO = 'opencode-ui-batch';
+const OPENCODE_UI_BATCH_SKILL_KEY = 'nb-opencode-ui-batch';
 const ARTIFACT_PREVIEW_MAX_ITEMS = 80;
 const ARTIFACT_ITEM_TEXT_MAX_CHARS = 4000;
 const ARTIFACT_RAW_PREVIEW_MAX_CHARS = 24 * 1024;
@@ -368,6 +381,13 @@ function canUseLegacyTimelineFallback(run: RunRecord | undefined, eventCount: nu
     !run.agentSessionProvider &&
     !run.agentSessionProviderId
   );
+}
+
+function getTimelineEmptyDescription(run: RunRecord | undefined, t: TFunction) {
+  if (isLiveRunStatus(run?.status)) {
+    return t('Waiting for live task updates from the agent');
+  }
+  return t('No task messages yet');
 }
 
 function canUseTerminalControl(run: RunRecord | undefined, snapshot: TerminalSnapshot | null | undefined) {
@@ -514,19 +534,46 @@ function getSortedBuildRunnerNodes(options: BuildRunOptions | undefined) {
   return [...(options?.nodes || [])].sort(compareBuildRunnerNodes);
 }
 
+function isBuildRunnerProfileSelectable(node: BuildRunnerNodeOption, profile: BuildRunnerProfileOption) {
+  return node.online === true && node.status !== 'disabled' && profile.status === 'active';
+}
+
+function getBuildRunnerConnectionText(node: BuildRunnerNodeOption, t: TFunction) {
+  if (node.online === true) {
+    return t('Online');
+  }
+  if (node.onlineReason === 'heartbeat-stale') {
+    return t('Offline - stale heartbeat');
+  }
+  if (node.onlineReason === 'missing-heartbeat') {
+    return t('Offline - no heartbeat');
+  }
+  if (node.onlineReason === 'node-disabled' || node.status === 'disabled') {
+    return t('Offline - disabled');
+  }
+  return t('Offline');
+}
+
+function hasSelectableBuildRunner(options: BuildRunOptions | undefined) {
+  return getSortedBuildRunnerNodes(options).some((node) =>
+    (node.profiles || []).some((profile) => isBuildRunnerProfileSelectable(node, profile)),
+  );
+}
+
 function getDefaultBuildRunnerValue(options: BuildRunOptions | undefined) {
   const nodes = getSortedBuildRunnerNodes(options);
-  const activeNodes = nodes.filter((node) => node.status !== 'disabled');
-  const onlineNodes = activeNodes.filter((node) => node.online);
-  const nodePool = onlineNodes.length ? onlineNodes : activeNodes.length ? activeNodes : nodes;
+  const nodePool = nodes.filter((node) => node.online === true && node.status !== 'disabled');
   for (const node of nodePool) {
-    const profile = (node.profiles || []).find((item) => item.profileKey === (options?.defaultProfileKey || 'codex'));
+    const profile = (node.profiles || []).find(
+      (item) =>
+        item.profileKey === (options?.defaultProfileKey || 'codex') && isBuildRunnerProfileSelectable(node, item),
+    );
     if (profile) {
       return getBuildRunnerValue(node.id, profile.id);
     }
   }
   for (const node of nodePool) {
-    const profile = node.profiles?.[0];
+    const profile = (node.profiles || []).find((item) => isBuildRunnerProfileSelectable(node, item));
     if (profile) {
       return getBuildRunnerValue(node.id, profile.id);
     }
@@ -536,15 +583,43 @@ function getDefaultBuildRunnerValue(options: BuildRunOptions | undefined) {
 
 function getBuildRunnerSelectOptions(options: BuildRunOptions | undefined, t: TFunction) {
   return getSortedBuildRunnerNodes(options).flatMap((node) =>
-    (node.profiles || []).map((profile) => ({
-      value: getBuildRunnerValue(node.id, profile.id),
-      label: [
-        node.displayName || node.nodeKey,
-        profile.displayName || profile.profileKey,
-        node.online ? t('Online') : t('Offline'),
-      ].join(' / '),
-    })),
+    (node.profiles || []).map((profile) => {
+      const selectable = isBuildRunnerProfileSelectable(node, profile);
+      return {
+        value: getBuildRunnerValue(node.id, profile.id),
+        label: [
+          node.displayName || node.nodeKey,
+          profile.displayName || profile.profileKey,
+          getBuildRunnerConnectionText(node, t),
+        ].join(' / '),
+        disabled: !selectable,
+      };
+    }),
   );
+}
+
+function getBuildSkillVersionSelectOptions(options: BuildRunOptions | undefined) {
+  return (options?.skillVersions || []).map((skillVersion) => ({
+    value: skillVersion.id,
+    label: [skillVersion.displayName || skillVersion.skillKey || skillVersion.id, skillVersion.versionLabel]
+      .filter(Boolean)
+      .join(' / '),
+  }));
+}
+
+function getPreferredBuildSkillVersionId(options: BuildRunOptions | undefined, scenario?: string) {
+  if (scenario !== OPENCODE_UI_BATCH_SCENARIO) {
+    return undefined;
+  }
+  const skillVersions = options?.skillVersions || [];
+  const exactMatch = skillVersions.find((skillVersion) => skillVersion.skillKey === OPENCODE_UI_BATCH_SKILL_KEY);
+  if (exactMatch) {
+    return exactMatch.id;
+  }
+  return skillVersions.find((skillVersion) => {
+    const text = `${skillVersion.skillKey || ''} ${skillVersion.displayName || ''}`.toLowerCase();
+    return text.includes('opencode') && text.includes('batch');
+  })?.id;
 }
 
 function findBuildRunnerNodeByValue(options: BuildRunOptions | undefined, value?: string) {
@@ -692,9 +767,63 @@ function RunSummaryPanel({ run, t }: { run: RunRecord; t: TFunction }) {
         </Descriptions.Item>
         <Descriptions.Item label={t('Error summary')}>{redactPreviewText(run.errorSummary) || '-'}</Descriptions.Item>
         <Descriptions.Item label={t('Result summary')} span={2}>
-          <JsonPreview value={run.resultSummaryJson} />
+          <ResultSummaryPreview t={t} value={run.resultSummaryJson} />
         </Descriptions.Item>
       </Descriptions>
+    </Space>
+  );
+}
+
+function getResultSummaryStatus(value: JsonRecord) {
+  const status = value.status;
+  return typeof status === 'string' && status ? status : '';
+}
+
+function getResultSummaryExitCode(value: JsonRecord) {
+  const exitCode = value.exitCode;
+  return typeof exitCode === 'number' && Number.isFinite(exitCode) ? exitCode : null;
+}
+
+function getDeclaredArtifactCount(value: JsonRecord) {
+  const declaredArtifacts = getObjectRecord(value.declaredArtifacts);
+  const count = declaredArtifacts.declaredArtifactCount;
+  if (typeof count === 'number' && Number.isFinite(count)) {
+    return count;
+  }
+
+  const keys = declaredArtifacts.declaredArtifactKeys;
+  return Array.isArray(keys) ? keys.length : null;
+}
+
+function ResultSummaryPreview({ t, value }: { t: TFunction; value?: JsonRecord }) {
+  const summary = getObjectRecord(value);
+  const status = getResultSummaryStatus(summary);
+  const exitCode = getResultSummaryExitCode(summary);
+  const declaredArtifactCount = getDeclaredArtifactCount(summary);
+  const hasSummary = status || exitCode !== null || declaredArtifactCount !== null;
+
+  if (!hasSummary) {
+    return <Typography.Text type="secondary">{t('No result summary')}</Typography.Text>;
+  }
+
+  return (
+    <Space wrap size={6}>
+      {status ? (
+        <Space size={4}>
+          <Typography.Text type="secondary">{t('Status')}:</Typography.Text>
+          {statusTag(status)}
+        </Space>
+      ) : null}
+      {exitCode !== null ? (
+        <Tag>
+          {t('Exit code')}: {exitCode}
+        </Tag>
+      ) : null}
+      {declaredArtifactCount !== null ? (
+        <Tag>
+          {t('Artifacts')}: {declaredArtifactCount}
+        </Tag>
+      ) : null}
     </Space>
   );
 }
@@ -818,6 +947,19 @@ async function getOptionalDetails<T>(options: {
     const response = await options.request;
     return {
       data: getResponseData(response, options.fallback),
+    };
+  } catch (error) {
+    return {
+      data: options.fallback,
+      warning: getDetailWarning(error, options.fallbackMessage),
+    };
+  }
+}
+
+async function getOptionalLoadedDetails<T>(options: { load: () => Promise<T>; fallback: T; fallbackMessage: string }) {
+  try {
+    return {
+      data: await options.load(),
     };
   } catch (error) {
     return {
@@ -982,11 +1124,53 @@ function TerminalPanel({
   );
 }
 
-function LogsPanel({ t, events, eventsWarning }: { t: TFunction; events: RunEventRecord[]; eventsWarning?: string }) {
+function createRunLifecycleEvents(run: RunRecord, t: TFunction): RunEventRecord[] {
+  const events: RunEventRecord[] = [];
+  const addEvent = (eventType: string, message: string, emittedAt?: string) => {
+    if (!emittedAt) {
+      return;
+    }
+    events.push({
+      id: `${run.id}:${eventType}`,
+      sequence: events.length + 1,
+      source: 'agent-gateway',
+      level: 'info',
+      eventType,
+      message,
+      emittedAt,
+    });
+  };
+
+  addEvent('run.requested', t('Run requested'), run.requestedAt);
+  addEvent('run.queued', t('Run queued'), run.queuedAt);
+  addEvent('run.claimed', t('Run claimed by runner'), run.claimedAt);
+  addEvent('terminal.started', t('Terminal started'), run.terminalStartedAt);
+  addEvent('run.started', t('Run started'), run.startedAt);
+  addEvent('terminal.finished', t('Terminal finished'), run.terminalEndedAt);
+  addEvent(
+    `run.${run.status || 'finished'}`,
+    t('Run finished with status', { status: run.status || 'finished' }),
+    run.finishedAt,
+  );
+  return events;
+}
+
+function LogsPanel({
+  t,
+  run,
+  events,
+  eventsWarning,
+}: {
+  t: TFunction;
+  run: RunRecord;
+  events: RunEventRecord[];
+  eventsWarning?: string;
+}) {
+  const displayEvents = events.length ? events : createRunLifecycleEvents(run, t);
   return (
     <Space direction="vertical" size={16} style={{ width: '100%' }}>
       {eventsWarning ? <Alert type="warning" showIcon message={eventsWarning} /> : null}
-      {events.length ? (
+      {displayEvents.length ? (
         <Table<RunEventRecord>
           columns={[
             { title: t('Sequence'), dataIndex: 'sequence', key: 'sequence', width: 96 },
@@ -1011,7 +1195,7 @@ function LogsPanel({ t, events, eventsWarning }: { t: TFunction; events: RunEven
               render: (value: string | undefined) => formatDateTime(value),
             },
           ]}
-          dataSource={events}
+          dataSource={displayEvents}
           rowKey="id"
           pagination={false}
           size="small"
@@ -1394,6 +1578,55 @@ function ArtifactContentPreview({ artifact, t }: { artifact: RunArtifactRecord; 
   );
 }
 
+function getArtifactDisplayPriority(artifact: RunArtifactRecord) {
+  const mimeType = artifact.mimeType || '';
+  const artifactType = artifact.artifactType || '';
+  const searchableText = [
+    artifact.artifactKey,
+    artifact.artifactType,
+    artifact.mimeType,
+    artifact.metadataJson?.relativePath,
+  ]
+    .filter((value): value is string => typeof value === 'string')
+    .join(' ')
+    .toLowerCase();
+  if (mimeType === 'text/html' || artifactType === 'html-report' || searchableText.includes('report.html')) {
+    return 0;
+  }
+  if (mimeType.startsWith('image/') || artifactType === 'image' || searchableText.includes('browser-screenshots')) {
+    return 1;
+  }
+  if (searchableText.includes('browser-verification')) {
+    return 2;
+  }
+  if (mimeType.includes('json') || artifactType === 'json-report') {
+    return 3;
+  }
+  return 4;
+}
+
+function compareArtifactsForDisplay(first: RunArtifactRecord, second: RunArtifactRecord) {
+  const priorityDelta = getArtifactDisplayPriority(first) - getArtifactDisplayPriority(second);
+  if (priorityDelta !== 0) {
+    return priorityDelta;
+  }
+  const firstLabel = first.artifactKey || first.id;
+  const secondLabel = second.artifactKey || second.id;
+  return firstLabel.localeCompare(secondLabel);
+}
+
+function getArtifactOverviewCounts(artifacts: RunArtifactRecord[]) {
+  return {
+    htmlReports: artifacts.filter((artifact) => getArtifactDisplayPriority(artifact) === 0).length,
+    screenshots: artifacts.filter((artifact) => getArtifactDisplayPriority(artifact) === 1).length,
+    total: artifacts.length,
+  };
+}
+
+function isFormValidationError(value: unknown) {
+  return Array.isArray(getObjectRecord(value).errorFields);
+}
+
 function ArtifactsPanel({
   t,
   artifacts,
@@ -1407,12 +1640,28 @@ function ArtifactsPanel({
   artifactsWarning?: string;
   snapshotsWarning?: string;
 }) {
+  const displayArtifacts = useMemo(() => [...artifacts].sort(compareArtifactsForDisplay), [artifacts]);
+  const overviewCounts = useMemo(() => getArtifactOverviewCounts(displayArtifacts), [displayArtifacts]);
+
   return (
     <Space direction="vertical" size={16} style={{ width: '100%' }}>
       {artifactsWarning ? <Alert type="warning" showIcon message={artifactsWarning} /> : null}
-      {artifacts.length ? (
+      {displayArtifacts.length ? (
+        <Space size={[8, 8]} wrap>
+          <Tag>
+            {t('Artifacts')}: {overviewCounts.total}
+          </Tag>
+          <Tag color={overviewCounts.htmlReports ? 'blue' : undefined}>
+            {t('HTML reports')}: {overviewCounts.htmlReports}
+          </Tag>
+          <Tag color={overviewCounts.screenshots ? 'green' : undefined}>
+            {t('Screenshots')}: {overviewCounts.screenshots}
+          </Tag>
+        </Space>
+      ) : null}
+      {displayArtifacts.length ? (
         <List
-          dataSource={artifacts}
+          dataSource={displayArtifacts}
           renderItem={(artifact) => (
             <List.Item>
               <Space direction="vertical" size={8} style={{ width: '100%' }}>
@@ -1461,6 +1710,7 @@ export default function AgentGatewayRunsPage() {
   const initialRunId = useInitialRunDetailQuery();
   const [filterForm] = Form.useForm<RunFilterFormValues>();
   const [buildTaskForm] = Form.useForm<BuildTaskFormValues>();
+  const buildTaskScenario = Form.useWatch('scenario', buildTaskForm);
   const [runFilters, setRunFilters] = useState<Record<string, unknown>>({});
   const [buildTaskOpen, setBuildTaskOpen] = useState(false);
   const [detailOpen, setDetailOpen] = useState(Boolean(initialRunId));
@@ -1530,6 +1780,18 @@ export default function AgentGatewayRunsPage() {
     () => getBuildRunnerSelectOptions(buildRunOptionsRequest.data, t),
     [buildRunOptionsRequest.data, t],
   );
+  const hasOnlineBuildRunner = useMemo(
+    () => hasSelectableBuildRunner(buildRunOptionsRequest.data),
+    [buildRunOptionsRequest.data],
+  );
+  const buildSkillVersionSelectOptions = useMemo(
+    () => getBuildSkillVersionSelectOptions(buildRunOptionsRequest.data),
+    [buildRunOptionsRequest.data],
+  );
+  const preferredBuildSkillVersionId = useMemo(
+    () => getPreferredBuildSkillVersionId(buildRunOptionsRequest.data, buildTaskScenario),
+    [buildRunOptionsRequest.data, buildTaskScenario],
+  );
   const defaultBuildRunnerValue = useMemo(
     () => getDefaultBuildRunnerValue(buildRunOptionsRequest.data),
     [buildRunOptionsRequest.data],
@@ -1547,7 +1809,7 @@ export default function AgentGatewayRunsPage() {
           scenario: values.scenario,
           prompt: values.prompt,
           skillVersionId: values.skillVersionId,
-          cwd: values.cwd,
+          cwd: values.cwd || defaultBuildTaskCwd || '.',
           nodeId: runner.nodeId,
           agentProfileId: runner.agentProfileId,
         },
@@ -1579,6 +1841,26 @@ export default function AgentGatewayRunsPage() {
     },
   );
 
+  const loadConversationEventsForRun = useCallback(
+    async (run: RunRecord) => {
+      const runResponse = await ctx.api.request<AgentTimelineEventRecord[]>({
+        url: `agent-gateway/runs/${encodeURIComponent(run.id)}/conversation-events:list`,
+        method: 'get',
+      });
+      const runEvents = getResponseData(runResponse, []);
+      if (runEvents.length || !run.agentSessionId) {
+        return runEvents;
+      }
+
+      const sessionResponse = await ctx.api.request<AgentTimelineEventRecord[]>({
+        url: `agent-gateway/agent-sessions/${encodeURIComponent(run.agentSessionId)}/conversation-events:list`,
+        method: 'get',
+      });
+      return getResponseData(sessionResponse, []);
+    },
+    [ctx.api],
+  );
+
   const runDetailsRequest = useRequest(
     async () => {
       if (!selectedRunId || !detailOpen) {
@@ -1596,17 +1878,11 @@ export default function AgentGatewayRunsPage() {
       const canReadRawLogs = isRunActionAllowed(runActionPermissions, 'readRawLogs');
       const supportsArtifacts = getRunCapability(run, 'artifacts');
       const supportsStructuredEvents = getRunCapability(run, 'structuredEvents');
-      const timelineUrl = run.agentSessionId
-        ? `agent-gateway/agent-sessions/${encodeURIComponent(run.agentSessionId)}/conversation-events:list`
-        : `agent-gateway/runs/${encodeURIComponent(selectedRunId)}/conversation-events:list`;
       const [conversationEventsResult, eventsResult, artifactsResult, snapshotsResult, apiCallLogsResult] =
         await Promise.all([
           canReadSessionMessages
-            ? getOptionalDetails<AgentTimelineEventRecord[]>({
-                request: ctx.api.request<AgentTimelineEventRecord[]>({
-                  url: timelineUrl,
-                  method: 'get',
-                }),
+            ? getOptionalLoadedDetails<AgentTimelineEventRecord[]>({
+                load: () => loadConversationEventsForRun(run),
                 fallback: [],
                 fallbackMessage: t('Agent timeline unavailable'),
               })
@@ -1780,18 +2056,12 @@ export default function AgentGatewayRunsPage() {
         return null;
       }
       const currentRun = runDetailsRequest.data?.run;
-      const currentRunMatchesSelection = currentRun?.id === selectedRunId;
-      const timelineUrl =
-        currentRunMatchesSelection && currentRun?.agentSessionId
-          ? `agent-gateway/agent-sessions/${encodeURIComponent(currentRun.agentSessionId)}/conversation-events:list`
-          : `agent-gateway/runs/${encodeURIComponent(selectedRunId)}/conversation-events:list`;
-      const response = await ctx.api.request<AgentTimelineEventRecord[]>({
-        url: timelineUrl,
-        method: 'get',
-      });
+      if (!currentRun) {
+        return null;
+      }
       return {
         runId: selectedRunId,
-        events: getResponseData(response, []),
+        events: await loadConversationEventsForRun(currentRun),
       } satisfies ConversationEventsState;
     },
     {
@@ -2129,10 +2399,25 @@ export default function AgentGatewayRunsPage() {
     setBuildTaskOpen(false);
   }, []);
 
+  const handleBuildTaskScenarioChange = useCallback(
+    (scenario: string) => {
+      if (scenario !== OPENCODE_UI_BATCH_SCENARIO) {
+        buildTaskForm.setFieldValue('skillVersionId', undefined);
+      }
+    },
+    [buildTaskForm],
+  );
+
   const submitBuildTask = useCallback(async () => {
-    const values = await buildTaskForm.validateFields();
-    createBuildTaskRequest.run(values);
-  }, [buildTaskForm, createBuildTaskRequest]);
+    try {
+      const values = await buildTaskForm.validateFields();
+      createBuildTaskRequest.run(values);
+    } catch (error) {
+      if (!isFormValidationError(error)) {
+        ctx.message?.error(t('Failed to create task run'));
+      }
+    }
+  }, [buildTaskForm, createBuildTaskRequest, ctx.message, t]);
 
   const openAuditPage = useCallback(() => {
     const browserPath = getAgentGatewayAuditPath(window.location.pathname);
@@ -2315,6 +2600,13 @@ export default function AgentGatewayRunsPage() {
   }, [buildTaskForm, buildTaskOpen, defaultBuildTaskCwd]);
 
   useEffect(() => {
+    if (!buildTaskOpen || !preferredBuildSkillVersionId || buildTaskForm.getFieldValue('skillVersionId')) {
+      return;
+    }
+    buildTaskForm.setFieldValue('skillVersionId', preferredBuildSkillVersionId);
+  }, [buildTaskForm, buildTaskOpen, preferredBuildSkillVersionId]);
+
+  useEffect(() => {
     syncRunDetailFromLocation();
     window.addEventListener('popstate', syncRunDetailFromLocation);
     return () => {
@@ -2493,6 +2785,7 @@ export default function AgentGatewayRunsPage() {
                       legacyEvents={activeRunDetails.events}
                       useLegacyFallback={useLegacyTimelineFallback}
                       warning={timelineWarning}
+                      emptyDescription={getTimelineEmptyDescription(activeRunDetails.run, t)}
                     />
                     <RunSummaryPanel run={activeRunDetails.run} t={t} />
                   </Space>
@@ -2553,7 +2846,12 @@ export default function AgentGatewayRunsPage() {
                 key: 'logs',
                 label: t('Logs'),
                 children: (
-                  <LogsPanel t={t} events={activeRunDetails.events} eventsWarning={activeRunDetails.warnings.events} />
+                  <LogsPanel
+                    t={t}
+                    run={activeRunDetails.run}
+                    events={activeRunDetails.events}
+                    eventsWarning={activeRunDetails.warnings.events}
+                  />
                 ),
               },
               {
@@ -2594,7 +2892,12 @@ export default function AgentGatewayRunsPage() {
         extra={
           <Space>
             <Button onClick={closeBuildTask}>{t('Close')}</Button>
-            <Button type="primary" loading={createBuildTaskRequest.loading} onClick={submitBuildTask}>
+            <Button
+              type="primary"
+              loading={createBuildTaskRequest.loading}
+              disabled={buildRunOptionsRequest.loading || !hasOnlineBuildRunner}
+              onClick={submitBuildTask}
+            >
               {t('Create')}
             </Button>
           </Space>
@@ -2604,6 +2907,13 @@ export default function AgentGatewayRunsPage() {
           {buildRunnerSelectOptions.length ? null : (
             <Alert type="warning" showIcon message={t('No active runner profiles yet')} />
           )}
+          {buildRunnerSelectOptions.length && !hasOnlineBuildRunner ? (
+            <Alert
+              type="warning"
+              showIcon
+              message={t('No online runner is available. Start or reconnect the daemon.')}
+            />
+          ) : null}
           <Form<BuildTaskFormValues>
             form={buildTaskForm}
             layout="vertical"
@@ -2618,10 +2928,11 @@ export default function AgentGatewayRunsPage() {
             </Form.Item>
             <Form.Item label={t('Task preset')} name="scenario">
               <Select
+                onChange={handleBuildTaskScenarioChange}
                 options={[
                   { value: 'generic', label: t('Generic task') },
                   { value: 'nocobase-ui-build', label: t('NocoBase UI build') },
-                  { value: 'opencode-ui-batch', label: t('OpenCode UI batch harness') },
+                  { value: OPENCODE_UI_BATCH_SCENARIO, label: t('OpenCode UI batch harness') },
                 ]}
               />
             </Form.Item>
@@ -2632,10 +2943,37 @@ export default function AgentGatewayRunsPage() {
             >
               <Input.TextArea autoSize={{ minRows: 6, maxRows: 12 }} />
             </Form.Item>
-            <Form.Item label={t('Skill version ID')} name="skillVersionId">
-              <Input />
+            <Form.Item
+              noStyle
+              shouldUpdate={(previousValues, currentValues) => previousValues.scenario !== currentValues.scenario}
+            >
+              {({ getFieldValue }) => (
+                <Form.Item
+                  label={t('Skill version')}
+                  name="skillVersionId"
+                  rules={
+                    getFieldValue('scenario') === OPENCODE_UI_BATCH_SCENARIO
+                      ? [
+                          {
+                            required: true,
+                            message: t('Skill version is required for OpenCode UI batch harness'),
+                          },
+                        ]
+                      : []
+                  }
+                >
+                  <Select
+                    allowClear
+                    showSearch
+                    loading={buildRunOptionsRequest.loading}
+                    options={buildSkillVersionSelectOptions}
+                    optionFilterProp="label"
+                    placeholder={t('Select skill version')}
+                  />
+                </Form.Item>
+              )}
             </Form.Item>
-            <Form.Item label={t('Runner')} name="runner">
+            <Form.Item label={t('Runner')} name="runner" rules={[{ required: true, message: t('Runner is required') }]}>
               <Select
                 allowClear
                 loading={buildRunOptionsRequest.loading}
@@ -2643,9 +2981,22 @@ export default function AgentGatewayRunsPage() {
                 placeholder={t('Select runner')}
               />
             </Form.Item>
-            <Form.Item label={t('Working directory')} name="cwd">
-              <Input />
-            </Form.Item>
+            <FastCollapse
+              ghost
+              size="small"
+              openMotion={NO_COLLAPSE_MOTION}
+              items={[
+                {
+                  key: 'advanced',
+                  label: t('Advanced'),
+                  children: (
+                    <Form.Item label={t('Working directory')} name="cwd">
+                      <Input />
+                    </Form.Item>
+                  ),
+                },
+              ]}
+            />
           </Form>
         </Space>
       </Drawer>
