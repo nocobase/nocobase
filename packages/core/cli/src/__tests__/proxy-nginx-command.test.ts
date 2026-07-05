@@ -11,6 +11,8 @@ import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
   resolveManagedAppRuntime: vi.fn(),
+  resolveEnvProxyEntry: vi.fn(),
+  setEnvProxyEntry: vi.fn(),
   setNginxProxyDriver: vi.fn(),
   getNginxProxyDriver: vi.fn(),
   resolveNginxProxyRuntimeContext: vi.fn(),
@@ -35,6 +37,11 @@ const mocks = vi.hoisted(() => ({
 vi.mock('../lib/app-runtime.js', () => ({
   resolveManagedAppRuntime: mocks.resolveManagedAppRuntime,
   formatMissingManagedAppEnvMessage: vi.fn((envName?: string) => `missing:${envName ?? ''}`),
+}));
+
+vi.mock('../lib/auth-store.js', () => ({
+  resolveEnvProxyEntry: mocks.resolveEnvProxyEntry,
+  setEnvProxyEntry: mocks.setEnvProxyEntry,
 }));
 
 vi.mock('../lib/proxy-nginx.js', () => ({
@@ -75,6 +82,10 @@ vi.mock('../lib/env-proxy.js', () => ({
   mapProxyPathFromCliRoot: mocks.mapProxyPathFromCliRoot,
 }));
 
+vi.mock('../lib/cli-home.js', () => ({
+  resolveDefaultConfigScope: vi.fn(() => 'local'),
+}));
+
 vi.mock('../lib/cli-config.js', async () => {
   const actual = await vi.importActual<typeof import('../lib/cli-config.js')>('../lib/cli-config.js');
   return {
@@ -85,6 +96,8 @@ vi.mock('../lib/cli-config.js', async () => {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mocks.resolveEnvProxyEntry.mockReturnValue(undefined);
+  mocks.setEnvProxyEntry.mockResolvedValue(undefined);
   mocks.setNginxProxyDriver.mockResolvedValue('docker');
   mocks.getNginxProxyDriver.mockResolvedValue('local');
   mocks.resolveNginxProxyRuntimeContext.mockResolvedValue({
@@ -200,6 +213,15 @@ test('proxy nginx generate writes proxy files with the current runtime context',
       force: false,
     },
   );
+  expect(mocks.setEnvProxyEntry).toHaveBeenCalledWith(
+    'test2',
+    'nginx',
+    {
+      host: 'c.local.nocobase.com',
+      port: undefined,
+    },
+    { scope: 'local' },
+  );
   expect(mocks.succeedTask).toHaveBeenCalledWith(
     'Saved nginx proxy files for env "test2" under /Users/chen/test4/.nocobase/proxy/nginx/test2, and created editable app entry config at /Users/chen/test4/.nocobase/proxy/nginx/test2/app.conf.',
   );
@@ -246,6 +268,61 @@ test('proxy nginx generate defaults to the current env when --env is omitted', a
     {
       force: false,
     },
+  );
+});
+
+test('proxy nginx generate falls back to saved env proxy settings when flags are omitted', async () => {
+  const { default: ProxyNginxGenerate } = await import('../commands/proxy/nginx/generate.js');
+  mocks.resolveManagedAppRuntime.mockResolvedValue({
+    kind: 'local',
+    envName: 'current-env',
+    env: { config: {} },
+  });
+  mocks.resolveEnvProxyEntry.mockReturnValue({
+    host: 'saved.local.nocobase.com',
+    port: 8080,
+  });
+  mocks.writeNginxProxyBundle.mockResolvedValue({
+    status: 'updated',
+    bundle: {
+      entryDir: '/Users/chen/test4/.nocobase/proxy/nginx/current-env',
+      appConfigPath: '/Users/chen/test4/.nocobase/proxy/nginx/current-env/app.conf',
+    },
+  });
+
+  const command = Object.assign(Object.create(ProxyNginxGenerate.prototype), {
+    parse: vi.fn(async () => ({
+      flags: {
+        force: false,
+      },
+    })),
+  });
+
+  await ProxyNginxGenerate.prototype.run.call(command);
+
+  expect(mocks.writeNginxProxyBundle).toHaveBeenCalledWith(
+    expect.objectContaining({ envName: 'current-env' }),
+    {
+      host: 'saved.local.nocobase.com',
+      port: '8080',
+    },
+    {
+      driver: 'local',
+      runtimeCliRoot: '/Users/chen/test4',
+      upstreamHost: '127.0.0.1',
+    },
+    {
+      force: false,
+    },
+  );
+  expect(mocks.setEnvProxyEntry).toHaveBeenCalledWith(
+    'current-env',
+    'nginx',
+    {
+      host: 'saved.local.nocobase.com',
+      port: 8080,
+    },
+    { scope: 'local' },
   );
 });
 

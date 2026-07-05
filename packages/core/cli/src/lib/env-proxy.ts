@@ -794,6 +794,7 @@ type EnvProxyCaddyRenderContext = EnvProxyNginxRenderContext;
 
 function buildNginxManagedConfigBlock(context: EnvProxyNginxRenderContext): string {
   const v2PublicPathNoTrailingSlash = trimTrailingSlash(context.v2PublicPath);
+  const apiBasePathNoTrailingSlash = trimTrailingSlash(context.apiBasePath);
   const appPublicPathNoTrailingSlash = trimTrailingSlash(context.appPublicPath);
   const isRootMounted = context.appPublicPath === '/';
   const appPublicPathRedirectBlock = isRootMounted
@@ -831,6 +832,10 @@ function buildNginxManagedConfigBlock(context: EnvProxyNginxRenderContext): stri
     '',
     `        proxy_pass ${context.backendUrl};`,
     `        include ${context.snippetsDir}/proxy-location.conf;`,
+    '    }',
+    '',
+    `    location = ${apiBasePathNoTrailingSlash} {`,
+    `        return 308 ${context.apiBasePath}$is_args$args;`,
     '    }',
     '',
     `    location ^~ ${context.apiBasePath} {`,
@@ -1429,6 +1434,7 @@ function buildNginxOtherLocation(appPublicPath: string, v2PublicPath: string, mo
 function renderNginxLocationTemplate(context: EnvProxyTemplateContext): string {
   const proxyPassBlock = buildNginxProxyPassBlock(context.proxyHost, context.apiPort);
   const wsProxyPassTarget = `http://${context.proxyHost}:${context.apiPort}${context.wsPath}`;
+  const apiBasePathNoTrailingSlash = trimTrailingSlash(context.apiBasePath);
 
   return `    location ~* ^${context.appPublicPath}storage/uploads/(.*\\.md)$ {
         alias ${context.uploadsPath}/$1;
@@ -1474,6 +1480,10 @@ function renderNginxLocationTemplate(context: EnvProxyTemplateContext): string {
         rewrite ^/\\.well-known/openid-configuration/(.+)$ /$1/.well-known/openid-configuration break;
         ${proxyPassBlock}
     }${context.otherLocation}
+
+    location = ${apiBasePathNoTrailingSlash} {
+        return 308 ${context.apiBasePath}$is_args$args;
+    }
 
     location ^~ ${context.apiBasePath} {
         ${proxyPassBlock}
