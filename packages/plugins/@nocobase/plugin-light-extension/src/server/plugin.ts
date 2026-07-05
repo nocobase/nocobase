@@ -8,15 +8,24 @@
  */
 
 import type { VscPermissionHook } from '@nocobase/plugin-vsc-file';
+import { VscPermissionHookRegistry } from '@nocobase/plugin-vsc-file';
 import { Plugin } from '@nocobase/server';
 import { resolve } from 'path';
 
 import { LIGHT_EXTENSION_ACL_ACTIONS, LIGHT_EXTENSION_ACL_SNIPPET } from '../constants';
+import { createLightExtensionFilesResource, lightExtensionFileActionNames } from './resources/lightExtensionFiles';
+import { createLightExtensionReposResource, lightExtensionRepoActionNames } from './resources/lightExtensionRepos';
 import { LightExtensionAuditService } from './services/LightExtensionAuditService';
+import { LightExtensionFileService } from './services/LightExtensionFileService';
 import { LightExtensionPermissionService } from './services/LightExtensionPermissionService';
+import { LightExtensionRepoService } from './services/LightExtensionRepoService';
 
 type VscPermissionHookRegistrar = {
   registerPermissionHook: (hook: VscPermissionHook) => () => void;
+};
+
+type VscPermissionHookRegistryProvider = {
+  getPermissionHookRegistry: () => VscPermissionHookRegistry;
 };
 
 type PluginManagerLike = {
@@ -28,8 +37,10 @@ type PluginLoadListener = (plugin: unknown, options?: unknown) => void;
 
 type AppWithPluginEvents = {
   pm?: PluginManagerLike;
+  resourceManager?: {
+    define?: (resource: unknown) => void;
+  };
   acl?: {
-    allow?: (resourceName: string, actionNames: readonly string[] | string, condition?: string) => void;
     registerSnippet?: (snippet: { name: string; actions: string[] }) => void;
   };
   on?: (eventName: 'afterLoadPlugin', listener: PluginLoadListener) => unknown;
@@ -43,6 +54,10 @@ export class PluginLightExtensionServer extends Plugin {
   private auditService?: LightExtensionAuditService;
 
   private permissionService?: LightExtensionPermissionService;
+
+  private repoService?: LightExtensionRepoService;
+
+  private fileService?: LightExtensionFileService;
 
   private unregisterVscPermissionHook?: () => void;
 
@@ -69,6 +84,26 @@ export class PluginLightExtensionServer extends Plugin {
 
     this.auditService = new LightExtensionAuditService(db);
     this.permissionService = new LightExtensionPermissionService(this.auditService);
+    const sharedVscPermissionHooks = findVscPermissionHookRegistry((this.app as unknown as AppWithPluginEvents).pm);
+    this.repoService = new LightExtensionRepoService(
+      db,
+      this.auditService,
+      this.permissionService,
+      sharedVscPermissionHooks,
+    );
+    this.fileService = new LightExtensionFileService(
+      db,
+      this.auditService,
+      this.permissionService,
+      this.repoService,
+      sharedVscPermissionHooks,
+    );
+    (this.app as unknown as AppWithPluginEvents).resourceManager?.define?.(
+      createLightExtensionReposResource(this.repoService),
+    );
+    (this.app as unknown as AppWithPluginEvents).resourceManager?.define?.(
+      createLightExtensionFilesResource(this.fileService),
+    );
     this.registerAclActions();
     this.registerVscPermissionHookWhenAvailable();
   }
@@ -87,10 +122,13 @@ export class PluginLightExtensionServer extends Plugin {
 
   private registerAclActions() {
     const app = this.app as unknown as AppWithPluginEvents;
-    app.acl?.allow?.('lightExtension', [...LIGHT_EXTENSION_ACL_ACTIONS], 'loggedIn');
     app.acl?.registerSnippet?.({
       name: LIGHT_EXTENSION_ACL_SNIPPET,
-      actions: LIGHT_EXTENSION_ACL_ACTIONS.map((action) => `lightExtension:${action}`),
+      actions: [
+        ...LIGHT_EXTENSION_ACL_ACTIONS.map((action) => `lightExtension:${action}`),
+        ...lightExtensionRepoActionNames.map((action) => `lightExtensionRepos:${action}`),
+        ...lightExtensionFileActionNames.map((action) => `lightExtensionFiles:${action}`),
+      ],
     });
   }
 
@@ -126,6 +164,11 @@ export class PluginLightExtensionServer extends Plugin {
     this.unregisterVscPermissionHook = registrar.registerPermissionHook(
       this.permissionService.createVscPermissionHook(),
     );
+    const permissionHooks = findVscPermissionHookRegistry((this.app as unknown as AppWithPluginEvents).pm);
+    if (permissionHooks) {
+      this.repoService?.useVscPermissionHookRegistry(permissionHooks);
+      this.fileService?.useVscPermissionHookRegistry(permissionHooks);
+    }
     return true;
   }
 
@@ -176,11 +219,45 @@ function findVscPermissionHookRegistrar(pm?: PluginManagerLike): VscPermissionHo
   return null;
 }
 
+function findVscPermissionHookRegistry(pm?: PluginManagerLike): VscPermissionHookRegistry | undefined {
+  if (!pm) {
+    return undefined;
+  }
+
+  for (const alias of VSC_FILE_PLUGIN_ALIASES) {
+    const plugin = pm.get?.(alias);
+    if (isVscPermissionHookRegistryProvider(plugin)) {
+      return plugin.getPermissionHookRegistry();
+    }
+  }
+
+  const plugins = pm.getPlugins?.();
+  if (!plugins) {
+    return undefined;
+  }
+
+  for (const plugin of plugins.values()) {
+    if (isVscPermissionHookRegistryProvider(plugin)) {
+      return plugin.getPermissionHookRegistry();
+    }
+  }
+
+  return undefined;
+}
+
 function isVscPermissionHookRegistrar(value: unknown): value is VscPermissionHookRegistrar {
   return (
     Boolean(value) &&
     typeof value === 'object' &&
     typeof (value as { registerPermissionHook?: unknown }).registerPermissionHook === 'function'
+  );
+}
+
+function isVscPermissionHookRegistryProvider(value: unknown): value is VscPermissionHookRegistryProvider {
+  return (
+    Boolean(value) &&
+    typeof value === 'object' &&
+    typeof (value as { getPermissionHookRegistry?: unknown }).getPermissionHookRegistry === 'function'
   );
 }
 

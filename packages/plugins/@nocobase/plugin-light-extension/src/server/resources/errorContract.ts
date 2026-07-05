@@ -7,11 +7,4 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './permissions';
-export * from './config';
-export * from './runjs-sources';
-export * from './services/VscFileService';
-export * from '../shared/errors';
-export * from '../shared/types';
-export * from '../shared/runjs-source-types';
-export { default } from './plugin';
+export { toLightExtensionSourceError } from '../services/errorContract';

@@ -47,7 +47,8 @@ export default defineCollection({
       target: 'lightExtensionRepos',
       targetKey: 'id',
       foreignKey: 'repoId',
-      constraints: false,
+      constraints: true,
+      onDelete: 'RESTRICT',
     },
     {
       type: 'string',

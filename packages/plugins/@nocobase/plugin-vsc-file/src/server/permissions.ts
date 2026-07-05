@@ -60,7 +60,13 @@ export interface VscPermissionDenyResult {
   details?: Record<string, unknown>;
 }
 
-export type VscPermissionHookResult = boolean | VscPermissionDenyResult | void;
+export interface VscPermissionAllowResult {
+  allowed: true;
+  ownerType?: string;
+  details?: Record<string, unknown>;
+}
+
+export type VscPermissionHookResult = boolean | VscPermissionDenyResult | VscPermissionAllowResult | void;
 
 export type VscPermissionHook = (
   input: VscPermissionHookInput,
@@ -90,6 +96,8 @@ export class VscPermissionHookRegistry {
   }
 
   async assertAllowed(input: VscPermissionHookInput): Promise<void> {
+    let protectedOwnerExplicitlyAllowed = false;
+
     for (const hook of Array.from(this.hooks)) {
       const result = await hook(input);
       if (result === false) {
@@ -100,10 +108,45 @@ export class VscPermissionHookRegistry {
           details: result.details,
         });
       }
+      if (isProtectedOwnerAllowResult(result, input)) {
+        protectedOwnerExplicitlyAllowed = true;
+      }
+    }
+
+    if (isProtectedOwnerType(input) && !protectedOwnerExplicitlyAllowed) {
+      throw new VscError('PERMISSION_DENIED', 'Protected vsc owner type requires a permission hook', {
+        details: {
+          ownerType: input.repository?.ownerType || input.ownerType,
+          rawResourceAction: buildRawResourceAction(input.request, input.action),
+          result: 'denied',
+          denyReason: 'protected_owner_requires_permission_hook',
+          requestId: input.request?.requestId,
+        },
+      });
     }
   }
 }
 
 function isDenyResult(result: VscPermissionHookResult): result is VscPermissionDenyResult {
   return Boolean(result && typeof result === 'object' && result.allowed === false);
+}
+
+function isAllowResult(result: VscPermissionHookResult): result is VscPermissionAllowResult {
+  return Boolean(result && typeof result === 'object' && result.allowed === true);
+}
+
+function isProtectedOwnerAllowResult(result: VscPermissionHookResult, input: VscPermissionHookInput): boolean {
+  return isAllowResult(result) && result.ownerType === (input.repository?.ownerType || input.ownerType);
+}
+
+function isProtectedOwnerType(input: VscPermissionHookInput): boolean {
+  return (input.repository?.ownerType || input.ownerType) === 'light-extension';
+}
+
+function buildRawResourceAction(request: VscPermissionRequestMetadata | undefined, fallbackAction: string): string {
+  if (request?.resourceName && request.actionName) {
+    return `${request.resourceName}:${request.actionName}`;
+  }
+
+  return request?.actionName || fallbackAction;
 }

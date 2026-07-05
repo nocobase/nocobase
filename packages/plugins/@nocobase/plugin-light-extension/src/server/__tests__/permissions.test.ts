@@ -14,18 +14,28 @@ import { MockServer, createMockServer } from '@nocobase/test';
 import { vi } from 'vitest';
 
 import { LIGHT_EXTENSION_ACL_ACTIONS, LIGHT_EXTENSION_ACL_SNIPPET, NAMESPACE } from '../../constants';
+import { lightExtensionFileActionNames } from '../resources/lightExtensionFiles';
+import { lightExtensionRepoActionNames } from '../resources/lightExtensionRepos';
 import { LightExtensionAuditService } from '../services/LightExtensionAuditService';
 import { LightExtensionPermissionService } from '../services/LightExtensionPermissionService';
 import PluginLightExtensionServer from '../plugin';
 
 describe('plugin-light-extension permission service', () => {
-  it('registers the canonical lightExtension ACL actions as logged-in actions', async () => {
+  it('registers light-extension ACL actions through the management snippet without blanket logged-in access', async () => {
     const app = await createMockServer({
       acl: true,
       plugins: [PluginLightExtensionServer],
     });
 
     try {
+      const adminRole = app.acl.define({
+        role: 'lightExtensionAdmin',
+      });
+      adminRole.snippets.add(LIGHT_EXTENSION_ACL_SNIPPET);
+      app.acl.define({
+        role: 'lightExtensionRestricted',
+      });
+
       for (const action of LIGHT_EXTENSION_ACL_ACTIONS) {
         await expect(
           app.acl.allowManager.isAllowed('lightExtension', action, { state: {} }),
@@ -34,7 +44,23 @@ describe('plugin-light-extension permission service', () => {
         await expect(
           app.acl.allowManager.isAllowed('lightExtension', action, { state: { currentUser: { id: 1 } } }),
           `logged-in ${action}`,
-        ).resolves.toBe(true);
+        ).resolves.toBe(false);
+        expect(
+          app.acl.can({
+            role: 'lightExtensionAdmin',
+            resource: 'lightExtension',
+            action,
+          }),
+          `snippet ${action}`,
+        ).toBeTruthy();
+        expect(
+          app.acl.can({
+            role: 'lightExtensionRestricted',
+            resource: 'lightExtension',
+            action,
+          }),
+          `restricted ${action}`,
+        ).toBeNull();
       }
 
       await expect(
@@ -42,9 +68,25 @@ describe('plugin-light-extension permission service', () => {
           state: { currentUser: { id: 1 } },
         }),
       ).resolves.toBe(false);
-      expect(app.acl.snippetManager.snippets.get(LIGHT_EXTENSION_ACL_SNIPPET)?.actions).toEqual(
-        LIGHT_EXTENSION_ACL_ACTIONS.map((action) => `lightExtension:${action}`),
-      );
+      expect(app.acl.snippetManager.snippets.get(LIGHT_EXTENSION_ACL_SNIPPET)?.actions).toEqual([
+        ...LIGHT_EXTENSION_ACL_ACTIONS.map((action) => `lightExtension:${action}`),
+        ...lightExtensionRepoActionNames.map((action) => `lightExtensionRepos:${action}`),
+        ...lightExtensionFileActionNames.map((action) => `lightExtensionFiles:${action}`),
+      ]);
+      expect(
+        app.acl.can({
+          role: 'lightExtensionAdmin',
+          resource: 'lightExtensionFiles',
+          action: 'readArchivedSource',
+        }),
+      ).toBeTruthy();
+      expect(
+        app.acl.can({
+          role: 'lightExtensionRestricted',
+          resource: 'lightExtensionFiles',
+          action: 'readArchivedSource',
+        }),
+      ).toBeNull();
     } finally {
       await app.destroy();
     }
@@ -120,6 +162,17 @@ describe('plugin-light-extension permission service', () => {
       userId: '1',
       action: 'push',
       repoId: 'vscr_light',
+      repository: {
+        id: 'vscr_light',
+        ownerType: 'light-extension',
+        ownerId: 'ler_demo',
+        name: 'source',
+        status: 'active',
+        defaultRef: 'head',
+        headCommitId: null,
+        publishedCommitId: null,
+        headSeq: 0,
+      },
       ownerType: 'light-extension',
       ownerId: 'ler_demo',
       request: {
@@ -163,11 +216,14 @@ describe('plugin-light-extension permission service', () => {
     });
     expect(payload).toMatchObject({
       ownerType: 'light-extension',
+      ownerId: 'ler_demo',
+      repoId: 'ler_demo',
       rawResourceAction: 'vscFile:push',
       result: 'denied',
       denyReason: 'raw_resource_forbidden',
       requestId: 'req_raw_push',
     });
+    expect(JSON.stringify(payload)).not.toContain('vscr_light');
     expect(JSON.stringify(payload)).not.toContain('secret-settings-value');
     expect(JSON.stringify(payload)).not.toContain('secret-code');
     expect(JSON.stringify(payload)).not.toContain('secret-source-map');
@@ -194,7 +250,10 @@ describe('plugin-light-extension permission service', () => {
         ownerId: 'ler_demo',
         request: internalRequest,
       }),
-    ).resolves.toBeUndefined();
+    ).resolves.toMatchObject({
+      allowed: true,
+      ownerType: 'light-extension',
+    });
 
     const denied = await service.handleVscPermission({
       userId: '1',
@@ -243,6 +302,32 @@ describe('plugin-light-extension permission service', () => {
         requestId: 'req_audit_down',
       },
     });
+  });
+
+  it('does not attribute raw create denials to claimed owner ids without a loaded repository', () => {
+    const auditService = createAuditServiceStub();
+    const payload = auditService.buildRawResourceDeniedPayload({
+      permission: {
+        userId: '1',
+        action: 'createRepository',
+        ownerType: 'light-extension',
+        ownerId: 'ler_claimed',
+        request: {
+          resourceName: 'vscFile',
+          actionName: 'createRepository',
+          requestId: 'req_claimed_owner',
+          requestSource: `api-${'x'.repeat(700)}`,
+        },
+      },
+      denyReason: 'raw_resource_forbidden',
+    });
+
+    expect(payload.repoId).toBeUndefined();
+    expect(payload.details).toMatchObject({
+      claimedOwnerId: 'ler_claimed',
+      rawResourceAction: 'vscFile:createRepository',
+    });
+    expect((payload.details.requestSource as string).length).toBeLessThanOrEqual(512);
   });
 
   function createAuditServiceStub(): LightExtensionAuditService {

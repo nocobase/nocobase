@@ -75,6 +75,28 @@ describe('vsc-file permission hooks and audit registration', () => {
     });
   });
 
+  it('does not let a generic permissive hook open protected light-extension owners', async () => {
+    unregisterHooks.push(getPlugin().registerPermissionHook(() => true));
+
+    const response = await agent.resource('vscFile').createRepository({
+      values: {
+        ownerType: 'light-extension',
+        ownerId: 'ler_protected',
+        name: 'main',
+      },
+    });
+
+    expect(response.status).toBe(403);
+    expect(response.body.errors[0]).toMatchObject({
+      code: 'PERMISSION_DENIED',
+      status: 403,
+      details: {
+        ownerType: 'light-extension',
+        denyReason: 'protected_owner_requires_permission_hook',
+      },
+    });
+  });
+
   it('returns 403 when a permission hook denies a write action with false', async () => {
     unregisterHooks.push(
       getPlugin().registerPermissionHook((input) => {

@@ -8,4 +8,10 @@
  */
 
 export { PluginLightExtensionServer } from './plugin';
+export * from './services/LightExtensionAuditService';
+export * from './services/LightExtensionFileService';
+export * from './services/LightExtensionPermissionService';
+export * from './services/errorContract';
+export * from '../shared/errors';
+export * from '../shared/types';
 export { default } from './plugin';

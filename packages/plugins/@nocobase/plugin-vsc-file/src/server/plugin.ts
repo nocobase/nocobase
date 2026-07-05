@@ -29,6 +29,10 @@ export class PluginVscFileServer extends Plugin {
     return this.permissionHooks.register(hook);
   }
 
+  getPermissionHookRegistry(): VscPermissionHookRegistry {
+    return this.permissionHooks;
+  }
+
   registerRunJSSourceAdapter(adapter: RunJSSourceAdapter): () => void {
     return this.runJSSourceAdapters.register(adapter);
   }

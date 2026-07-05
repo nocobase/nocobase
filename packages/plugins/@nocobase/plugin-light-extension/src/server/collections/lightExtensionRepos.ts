@@ -68,6 +68,12 @@ export default defineCollection({
       name: 'description',
     },
     {
+      type: 'integer',
+      name: 'version',
+      allowNull: false,
+      defaultValue: 1,
+    },
+    {
       type: 'string',
       name: 'lifecycleStatus',
       allowNull: false,

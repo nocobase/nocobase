@@ -9,6 +9,7 @@
 
 import type { RunJSLegacySource, RunJSSourceAdapter, RunJSSourceLocator } from '@nocobase/plugin-vsc-file';
 import PluginVscFileServer from '@nocobase/plugin-vsc-file';
+import { VscFileService } from '@nocobase/plugin-vsc-file';
 import { MockServer, createMockServer } from '@nocobase/test';
 
 import PluginLightExtensionServer from '../plugin';
@@ -139,6 +140,7 @@ describe('plugin-light-extension raw resource bypass guard', () => {
     );
     expect(logs.every((log) => typeof log.get('requestId') === 'string')).toBe(true);
     const serializedLogs = JSON.stringify(logs.map((log) => log.toJSON()));
+    expect(serializedLogs).not.toContain(repoId);
     expect(serializedLogs).not.toContain('raw secret');
     expect(serializedLogs).not.toContain('create secret');
     expect(serializedLogs).not.toContain('create-settings-secret');
@@ -262,7 +264,7 @@ describe('plugin-light-extension raw resource bypass guard', () => {
 
     const logs = await app.db.getRepository('lightExtensionLogs').find({
       filter: {
-        repoId,
+        repoId: 'ler_raw_guard',
         result: 'denied',
       },
     });
@@ -273,6 +275,7 @@ describe('plugin-light-extension raw resource bypass guard', () => {
     );
     expect(serializedLogs).not.toContain('preview secret');
     expect(serializedLogs).not.toContain('publish secret');
+    expect(serializedLogs).not.toContain(repoId);
   });
 
   it('registers the owner hook when vsc-file loads after light-extension', async () => {
@@ -290,16 +293,58 @@ describe('plugin-light-extension raw resource bypass guard', () => {
 
     const log = await app.db.getRepository('lightExtensionLogs').findOne({
       filter: {
-        repoId,
+        repoId: 'ler_raw_guard',
         rawResourceAction: 'vscFile:getRepository',
         result: 'denied',
       },
     });
     expect(log).toBeTruthy();
+    expect(JSON.stringify(log?.toJSON())).not.toContain(repoId);
+  });
+
+  it('keeps light-extension vsc owners protected after the light-extension hook is unregistered', async () => {
+    await getLightExtensionPlugin().afterDisable();
+
+    const response = await agent.resource('vscFile').getRepository({ values: { repoId } });
+
+    expect(response.status).toBe(403);
+    expect(response.body.errors[0]).toMatchObject({
+      code: 'PERMISSION_DENIED',
+      status: 403,
+      details: {
+        ownerType: 'light-extension',
+        rawResourceAction: 'vscFile:getRepository',
+        result: 'denied',
+        denyReason: 'protected_owner_requires_permission_hook',
+      },
+    });
+  });
+
+  it('keeps light-extension vsc owners protected when VscFileService is constructed without hooks', async () => {
+    const service = new VscFileService(app.db);
+
+    await expect(
+      service.getRepository({
+        repoId,
+      }),
+    ).rejects.toMatchObject({
+      code: 'PERMISSION_DENIED',
+      status: 403,
+      details: {
+        ownerType: 'light-extension',
+        rawResourceAction: 'getRepository',
+        result: 'denied',
+        denyReason: 'protected_owner_requires_permission_hook',
+      },
+    });
   });
 
   function getVscPlugin(): PluginVscFileServer {
     return app.pm.get(PluginVscFileServer) as PluginVscFileServer;
+  }
+
+  function getLightExtensionPlugin(): PluginLightExtensionServer {
+    return app.pm.get(PluginLightExtensionServer) as PluginLightExtensionServer;
   }
 
   function registerRunJSSourceAdapter() {

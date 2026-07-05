@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { Database } from '@nocobase/database';
+import type { Database, Transaction } from '@nocobase/database';
 import type { VscPermissionHookInput, VscPermissionRequestMetadata } from '@nocobase/plugin-vsc-file';
 import { randomUUID } from 'crypto';
 
@@ -36,6 +36,40 @@ export interface LightExtensionRawResourceDeniedPayload {
   details: Record<string, unknown>;
 }
 
+export interface LightExtensionLifecycleAuditInput {
+  repoId: string;
+  action: 'repoCreate' | 'repoLifecycleChange' | 'repoDelete';
+  result: 'success' | 'blocked';
+  requestId: string;
+  actorUserId?: string | null;
+  fromStatus?: string | null;
+  toStatus?: string | null;
+  message: string;
+  reasonCode?: string;
+  details?: Record<string, unknown>;
+  transaction?: Transaction;
+}
+
+export interface LightExtensionFileWriteAuditInput {
+  repoId: string;
+  action: 'sourceCreate' | 'sourcePush';
+  result: 'success' | 'blocked';
+  requestId: string;
+  actorUserId?: string | null;
+  baseCommitId?: string | null;
+  commitId?: string | null;
+  message: string;
+  reasonCode?: string;
+  files: Array<{
+    path: string;
+    operation?: string;
+    size?: number;
+    language?: string;
+  }>;
+  details?: Record<string, unknown>;
+  transaction?: Transaction;
+}
+
 export class LightExtensionAuditService {
   constructor(private readonly db: Database) {}
 
@@ -60,6 +94,59 @@ export class LightExtensionAuditService {
     });
   }
 
+  async recordLifecycleEvent(input: LightExtensionLifecycleAuditInput): Promise<void> {
+    await this.db.getRepository('lightExtensionLogs').create({
+      values: {
+        repoId: input.repoId,
+        level: input.result === 'blocked' ? 'warn' : 'info',
+        action: input.action,
+        result: input.result,
+        requestId: input.requestId,
+        actorUserId: input.actorUserId || undefined,
+        reasonCode: sanitizeText(input.reasonCode),
+        message: sanitizeText(input.message),
+        details: compactObject({
+          fromStatus: sanitizeText(input.fromStatus),
+          toStatus: sanitizeText(input.toStatus),
+          ...(input.details ? sanitizeDetails(input.details) : {}),
+        }),
+        createdAt: new Date(),
+      },
+      transaction: input.transaction,
+    });
+  }
+
+  async recordFileWrite(input: LightExtensionFileWriteAuditInput): Promise<void> {
+    await this.db.getRepository('lightExtensionLogs').create({
+      values: {
+        repoId: input.repoId,
+        level: input.result === 'blocked' ? 'warn' : 'info',
+        action: input.action,
+        result: input.result,
+        requestId: input.requestId,
+        actorUserId: input.actorUserId || undefined,
+        reasonCode: sanitizeText(input.reasonCode),
+        message: sanitizeText(input.message),
+        details: compactObject({
+          baseCommitId: sanitizeText(input.baseCommitId),
+          commitId: sanitizeText(input.commitId),
+          fileCount: input.files.length,
+          files: input.files.map((file) =>
+            compactObject({
+              path: sanitizeText(file.path),
+              operation: sanitizeText(file.operation),
+              size: file.size,
+              language: sanitizeText(file.language),
+            }),
+          ),
+          ...(input.details ? sanitizeDetails(input.details) : {}),
+        }),
+        createdAt: new Date(),
+      },
+      transaction: input.transaction,
+    });
+  }
+
   buildRawResourceDeniedPayload(
     input: LightExtensionRawResourceDeniedAuditInput,
   ): LightExtensionRawResourceDeniedPayload {
@@ -69,14 +156,17 @@ export class LightExtensionAuditService {
     const rawResourceAction = buildRawResourceAction(request, permission.action);
     const requestId = input.requestId || request.requestId || randomUUID();
     const denyReason = sanitizeText(input.denyReason) || 'raw_resource_forbidden';
+    const lightExtensionRepoId = permission.repository?.ownerId;
+    const claimedOwnerId =
+      permission.ownerId && permission.ownerId !== lightExtensionRepoId ? permission.ownerId : undefined;
 
     return {
       action: 'rawResourceDenied',
       result: 'denied',
       level: 'warn',
       ownerType: LIGHT_EXTENSION_OWNER_TYPE,
-      ownerId: permission.ownerId,
-      repoId: permission.repoId || permission.repository?.id,
+      ownerId: lightExtensionRepoId || claimedOwnerId,
+      repoId: lightExtensionRepoId,
       actorUserId: permission.userId || undefined,
       rawResource,
       rawResourceAction,
@@ -84,25 +174,28 @@ export class LightExtensionAuditService {
       requestSource: request.requestSource,
       denyReason,
       message: 'Raw light-extension resource access denied',
-      details: compactObject({
-        ownerType: LIGHT_EXTENSION_OWNER_TYPE,
-        ownerId: permission.ownerId,
-        repoId: permission.repoId || permission.repository?.id,
-        rawResource,
-        rawResourceAction,
-        vscAction: permission.action,
-        targetCommitId: permission.targetCommitId,
-        sourceCommitId: permission.sourceCommitId,
-        refName: permission.refName,
-        requestId,
-        requestSource: request.requestSource,
-        path: request.path,
-        method: request.method,
-        dataSource: request.dataSource,
-        roleName: request.roleName,
-        roles: request.roles,
-        denyReason,
-      }),
+      details: sanitizeDetails(
+        compactObject({
+          ownerType: LIGHT_EXTENSION_OWNER_TYPE,
+          ownerId: lightExtensionRepoId,
+          claimedOwnerId,
+          repoId: lightExtensionRepoId,
+          rawResource,
+          rawResourceAction,
+          vscAction: permission.action,
+          targetCommitId: permission.targetCommitId,
+          sourceCommitId: permission.sourceCommitId,
+          refName: permission.refName,
+          requestId,
+          requestSource: request.requestSource,
+          path: request.path,
+          method: request.method,
+          dataSource: request.dataSource,
+          roleName: request.roleName,
+          roles: request.roles,
+          denyReason,
+        }),
+      ),
     };
   }
 }
@@ -125,4 +218,26 @@ function sanitizeText(value: unknown): string | undefined {
 
 function compactObject<T extends Record<string, unknown>>(input: T): T {
   return Object.fromEntries(Object.entries(input).filter(([, value]) => typeof value !== 'undefined')) as T;
+}
+
+function sanitizeDetails(input: Record<string, unknown>): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries(input)
+      .filter(([, value]) => typeof value !== 'undefined')
+      .map(([key, value]) => [key, sanitizeDetailValue(value)]),
+  );
+}
+
+function sanitizeDetailValue(value: unknown): unknown {
+  if (typeof value === 'string') {
+    return sanitizeText(value);
+  }
+  if (Array.isArray(value)) {
+    return value.map(sanitizeDetailValue);
+  }
+  if (!value || typeof value !== 'object') {
+    return value;
+  }
+
+  return sanitizeDetails(value as Record<string, unknown>);
 }

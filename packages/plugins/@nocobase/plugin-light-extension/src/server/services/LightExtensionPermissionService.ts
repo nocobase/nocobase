@@ -72,7 +72,10 @@ export class LightExtensionPermissionService {
 
     const internalContext = this.getInternalVscContext(input.request);
     if (internalContext && isInternalActionAllowed(input, internalContext)) {
-      return;
+      return {
+        allowed: true,
+        ownerType: LIGHT_EXTENSION_OWNER_TYPE,
+      };
     }
 
     const denyReason = internalContext ? 'internal_action_not_allowed' : 'raw_resource_forbidden';
