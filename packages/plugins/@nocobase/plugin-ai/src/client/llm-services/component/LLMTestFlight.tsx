@@ -15,6 +15,7 @@ import { RocketOutlined } from '@ant-design/icons';
 import { getRecommendedModels } from '../../../common/recommended-models';
 import { normalizeEnabledModels } from './EnabledModelsSelect';
 import { useT } from '../../locale';
+import { normalizeLLMServiceOptions } from '../utils';
 
 export const LLMTestFlight: React.FC = observer(() => {
   const t = useT();
@@ -57,7 +58,7 @@ export const LLMTestFlight: React.FC = observer(() => {
       const res = await api.resource('ai').testFlight({
         values: {
           provider,
-          options,
+          options: normalizeLLMServiceOptions(options),
           model,
         },
       });

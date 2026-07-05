@@ -9,6 +9,7 @@
 
 import type { Context } from '@nocobase/actions';
 import type { DynamicToolsProvider } from '@nocobase/ai';
+import { AsyncLocalStorageProviderSingleton } from '@langchain/core/singletons';
 import PluginWorkflowServer, { EXECUTION_STATUS, JOB_STATUS } from '@nocobase/plugin-workflow';
 import type { Plugin } from '@nocobase/server';
 import { AI_WORKFLOW_TASK_STATUS, REQUIRES_APPROVAL } from './constants';
@@ -140,7 +141,18 @@ export const getWorkflowTasks: WorkflowTaskToolProvider = (plugin) => async (reg
         status: JOB_STATUS.RESOLVED,
         result: args.result,
       });
-      await workflowPlugin.resume(job);
+      // This tool runs inside LangGraph's tool runnable context. If workflow resume is called directly here,
+      // the next AI employee node inherits the current checkpoint namespace and is treated as a nested graph,
+      // causing its interrupt to throw GraphInterrupt instead of returning a root-level __interrupt__ result.
+      // More importantly, later aiEmployee.invoke({ userDecisions, signal }) resumes the wrong graph context
+      // instead of the next employee's own root checkpoint.
+      setImmediate(() => {
+        AsyncLocalStorageProviderSingleton.getInstance().run(undefined, () => {
+          workflowPlugin.resume(job).catch((error) => {
+            plugin.app.logger.error(error);
+          });
+        });
+      });
 
       return {
         status: 'success',
