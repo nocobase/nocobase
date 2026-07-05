@@ -686,6 +686,68 @@ describe('FlowSettings.open rendering behavior', () => {
     expect(runtimeSteps).toEqual({});
   });
 
+  it('restores outer ctx.useSettings declarations after nested RunJS execution', async () => {
+    const engine = new FlowEngine();
+    const TestFlowModel = createIsolatedFlowModel('test-runtime-settings-nested-runjs');
+    const model = new TestFlowModel({ uid: 'm-runtime-settings-nested-runjs', flowEngine: engine });
+
+    TestFlowModel.registerFlow({
+      key: 'jsSettings',
+      title: 'JavaScript settings',
+      steps: {
+        runJs: {
+          title: 'Write JavaScript',
+          handler: async (ctx) => {
+            return ctx.runjs(
+              [
+                'function createAfterSettings() {',
+                '  return {',
+                '    afterText: {',
+                "      type: 'string',",
+                "      title: 'Outer after dynamic',",
+                "      default: 'After default',",
+                '    },',
+                '  };',
+                '}',
+                'ctx.useSettings({',
+                '  beforeText: {',
+                "    type: 'string',",
+                "    title: 'Outer before',",
+                "    default: 'Before default',",
+                '  },',
+                '});',
+                'await ctx.runjs(',
+                '  `',
+                'ctx.useSettings({',
+                '  innerText: {',
+                "    type: 'string',",
+                "    title: 'Inner nested',",
+                "    default: 'Inner default',",
+                '  },',
+                '});',
+                '`,',
+                '  undefined,',
+                "  { version: 'v2' },",
+                ');',
+                'ctx.useSettings(createAfterSettings());',
+              ].join('\n'),
+              undefined,
+              { version: 'v2' },
+            );
+          },
+        },
+      },
+    });
+
+    await model.applyFlow('jsSettings');
+
+    const runtimeSteps = engine.flowSettings.getRuntimeSettingSteps(model, 'jsSettings');
+    expect(Object.keys(runtimeSteps)).toEqual(['beforeText', 'afterText']);
+    expect(runtimeSteps.beforeText.defaultParams).toEqual({ value: 'Before default' });
+    expect(runtimeSteps.afterText.defaultParams).toEqual({ value: 'After default' });
+    expect(runtimeSteps.innerText).toBeUndefined();
+  });
+
   it('preloads click action runtime settings from saved RunJS source without executing the action', async () => {
     const engine = new FlowEngine();
     const flowSettings = engine.flowSettings;

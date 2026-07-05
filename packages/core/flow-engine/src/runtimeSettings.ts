@@ -10,7 +10,7 @@
 import type { ISchema } from '@formily/react';
 import _ from 'lodash';
 import type { FlowModel } from './models';
-import type { StepDefinition } from './types';
+import type { ParamObject, StepDefinition } from './types';
 
 export type UseSettingsPrimitive = string | number | boolean | null;
 
@@ -886,9 +886,9 @@ export class RuntimeSettings {
     }
 
     const nextValue = runtimeSetting.valueMode === 'wrapped' ? values?.value : values;
-    model.setStepParams(RUNTIME_SETTINGS_VALUES_FLOW_KEY, RUNTIME_SETTINGS_VALUES_STEP_KEY, {
-      [runtimeSetting.settingKey]: nextValue,
-    });
+    const nextParams: ParamObject = {};
+    nextParams[runtimeSetting.settingKey] = nextValue;
+    model.setStepParams(RUNTIME_SETTINGS_VALUES_FLOW_KEY, RUNTIME_SETTINGS_VALUES_STEP_KEY, nextParams);
     return true;
   }
 

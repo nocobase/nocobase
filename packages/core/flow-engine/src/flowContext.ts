@@ -3120,6 +3120,7 @@ class BaseFlowEngineContext extends FlowContext {
                 currentFlowKey,
               )
             : undefined;
+        const previousRuntimeSettingsDeclaration = runtimeCtx.__runtimeSettingsDeclaration;
         if (runtimeSettingsSession) {
           runtimeCtx.defineProperty('__runtimeSettingsDeclaration', { value: runtimeSettingsSession });
         }
@@ -3141,8 +3142,11 @@ class BaseFlowEngineContext extends FlowContext {
           return await runner.run(jsCode);
         } finally {
           if (runtimeSettingsSession) {
-            runtimeCtx.defineProperty('__runtimeSettingsDeclaration', { value: undefined });
-            flowSettings?.commitRuntimeSettingsDeclaration?.(runtimeSettingsSession);
+            try {
+              flowSettings?.commitRuntimeSettingsDeclaration?.(runtimeSettingsSession);
+            } finally {
+              runtimeCtx.defineProperty('__runtimeSettingsDeclaration', { value: previousRuntimeSettingsDeclaration });
+            }
           }
         }
       },
