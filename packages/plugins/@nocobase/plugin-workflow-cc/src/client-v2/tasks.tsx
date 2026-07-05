@@ -18,13 +18,14 @@ import {
   useWorkflowTaskRecord,
   type TaskTypeOptions,
   type WorkflowTaskApiClient,
+  type WorkflowTaskDetailModalProps,
   type WorkflowTaskFlowContext,
   type WorkflowTaskRecord,
   type WorkflowTaskRequestParams,
   type WorkflowTaskStatus,
 } from '@nocobase/plugin-workflow/client-v2';
 import { useMemoizedFn } from 'ahooks';
-import { App, Button, Card, Descriptions, Flex, Space, Tag, Tooltip, theme } from 'antd';
+import { App, Button, Card, Descriptions, Flex, Modal, Space, Tag, Tooltip, theme } from 'antd';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
@@ -441,16 +442,60 @@ function WorkflowCcTaskFallbackDetail() {
   );
 }
 
+function WorkflowCcTaskDetailModal(props: WorkflowTaskDetailModalProps) {
+  const { children, mobile, onClose, record, title } = props;
+  const { token } = theme.useToken();
+
+  return (
+    <Modal
+      open={Boolean(record)}
+      title={title}
+      footer={null}
+      width="80vw"
+      onCancel={onClose}
+      destroyOnClose
+      styles={{
+        body: {
+          background: token.colorBgLayout,
+          maxHeight: mobile ? `calc(100dvh - ${token.sizeXXL * 2}px)` : undefined,
+          overflow: 'auto',
+          padding: `0 ${token.paddingLG}px ${token.paddingLG}px`,
+        },
+        content: {
+          background: token.colorBgLayout,
+          overflow: 'hidden',
+          padding: 0,
+        },
+        header: {
+          background: token.colorBgLayout,
+          marginBottom: 0,
+          padding: `${token.paddingContentVerticalLG}px ${token.paddingLG}px ${token.paddingContentVertical}px`,
+        },
+      }}
+    >
+      {children}
+    </Modal>
+  );
+}
+
 function WorkflowCcTaskDetail() {
   const { record } = useWorkflowTaskRecord();
   const { availableUpstreams, node, nodes, tempAssociationSources, trigger, workflow } =
     useCcTaskFlowModelContext(record);
   const ccUid = getStringValue(record, 'node.config.ccUid');
+  const recordRef = useRef(record);
+  recordRef.current = record;
 
   const handleModelLoaded = useCallback(
     (model: FlowModel) => {
+      const taskDetailModel = model as CCTaskCardModel;
+      taskDetailModel.getCurrentRecord = () => recordRef.current;
       model.context.defineProperty('flowSettingsEnabled', { value: false });
       model.context.defineProperty('disableBlockGridPadding', { value: true });
+      model.context.defineProperty('record', {
+        get: () => recordRef.current,
+        cache: false,
+      });
       model.context.defineProperty('view', {
         value: {
           inputArgs: {
@@ -672,6 +717,7 @@ export const ccTaskType: TaskTypeOptions = {
   Actions: WorkflowCcTaskActions,
   Item: WorkflowCcTaskItem,
   Detail: WorkflowCcTaskDetail,
+  DetailModal: WorkflowCcTaskDetailModal,
   getPopupRecord: async (apiClient: WorkflowTaskApiClient, { params }: { params: WorkflowTaskRequestParams }) =>
     apiClient.resource('workflowCcTasks').get?.({
       ...params,
