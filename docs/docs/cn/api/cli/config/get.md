@@ -1,7 +1,7 @@
 ---
-title: "nb config get"
-description: "nb config get 命令参考：读取某个 CLI 配置项的生效值。"
-keywords: "nb config get,NocoBase CLI,读取配置"
+title: 'nb config get'
+description: 'nb config get 命令参考：读取某个 CLI 配置项的生效值。'
+keywords: 'nb config get,NocoBase CLI,读取配置'
 ---
 
 # nb config get
@@ -16,8 +16,8 @@ nb config get <key>
 
 ## 参数
 
-| 参数 | 类型 | 说明 |
-| --- | --- | --- |
+| 参数    | 类型   | 说明                                             |
+| ------- | ------ | ------------------------------------------------ |
 | `<key>` | string | 配置项名称；支持的值见 [`nb config`](./index.md) |
 
 ## 示例
@@ -28,6 +28,8 @@ nb config get update.policy
 nb config get license.pkg-url
 nb config get docker.network
 nb config get docker.container-prefix
+nb config get nb-image-registry
+nb config get nb-image-variant
 nb config get proxy.nb-cli-root
 nb config get proxy.upstream-host
 nb config get bin.nginx

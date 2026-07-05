@@ -1,7 +1,7 @@
 ---
-title: "nb config set"
-description: "nb config set command reference: set a CLI configuration item."
-keywords: "nb config set,NocoBase CLI,set configuration"
+title: 'nb config set'
+description: 'nb config set command reference: set a CLI configuration item.'
+keywords: 'nb config set,NocoBase CLI,set configuration'
 ---
 
 # nb config set
@@ -16,10 +16,10 @@ nb config set <key> <value>
 
 ## Parameters
 
-| Parameter | Type | Description |
-| --- | --- | --- |
-| `<key>` | string | Configuration item name. See [`nb config`](./index.md) for supported values |
-| `<value>` | string | Configuration value, cannot be empty |
+| Parameter | Type   | Description                                                                 |
+| --------- | ------ | --------------------------------------------------------------------------- |
+| `<key>`   | string | Configuration item name. See [`nb config`](./index.md) for supported values |
+| `<value>` | string | Configuration value, cannot be empty                                        |
 
 ## Examples
 
@@ -29,6 +29,10 @@ nb config set update.policy auto
 nb config set license.pkg-url https://pkg.nocobase.com/
 nb config set docker.network nocobase
 nb config set docker.container-prefix nb
+nb config set nb-image-registry dockerhub
+nb config set nb-image-registry aliyun
+nb config set nb-image-variant full
+nb config set nb-image-variant full-no-nginx
 nb config set bin.docker /usr/local/bin/docker
 nb config set bin.caddy /opt/homebrew/bin/caddy
 nb config set bin.git /usr/bin/git
@@ -43,7 +47,9 @@ nb config set bin.yarn yarn
 
 ## Notes
 
-`update.policy` supports `prompt`, `auto`, and `off`, and the default value is `prompt`.
+- `update.policy` supports `prompt`, `auto`, and `off`, and the default value is `prompt`
+- `nb-image-registry` supports `dockerhub` and `aliyun`, and the default value is `dockerhub`
+- `nb-image-variant` supports `standard`, `no-nginx`, `full`, and `full-no-nginx`, and the default value is `full`
 
 ## Related commands
 
