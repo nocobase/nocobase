@@ -13,6 +13,8 @@ import {
   resolveManagedAppRuntime,
   type ManagedAppRuntime,
 } from '../../../lib/app-runtime.js';
+import { resolveEnvProxyEntry, setEnvProxyEntry } from '../../../lib/auth-store.js';
+import { resolveDefaultConfigScope } from '../../../lib/cli-home.js';
 import {
   getCaddyProxyDriver,
   writeManualCaddyProxyBundle,
@@ -170,16 +172,27 @@ export default class ProxyCaddyGenerate extends Command {
     startTask(`Generating caddy proxy config for env "${runtime.envName}" with the ${driver} driver...`);
 
     try {
+      const savedAppEntryOptions = resolveEnvProxyEntry(runtime.env.config, 'caddy');
+      const appEntryOptions = {
+        host: flags.host?.trim() || savedAppEntryOptions?.host,
+        port: normalizedPort ?? (savedAppEntryOptions?.port !== undefined ? String(savedAppEntryOptions.port) : undefined),
+      };
       const { bundle, status } = await writeCaddyProxyBundle(
         runtime as WritableProxyRuntime,
-        {
-          host: flags.host?.trim() || undefined,
-          port: normalizedPort,
-        },
+        appEntryOptions,
         runtimeContext,
         {
           cdnBaseUrl: flags['cdn-base-url']?.trim() || undefined,
         },
+      );
+      await setEnvProxyEntry(
+        runtime.envName,
+        'caddy',
+        {
+          host: appEntryOptions.host,
+          port: appEntryOptions.port ? Number(appEntryOptions.port) : undefined,
+        },
+        { scope: resolveDefaultConfigScope() },
       );
       succeedTask(
         status === 'created'
