@@ -18,6 +18,9 @@ describe('RecordCommentsBlockModel field mapping settings', () => {
       subModels?: {
         items?: Array<{
           subModels?: {
+            actions?: Array<{
+              use?: string;
+            }>;
             bodyFields?: {
               use?: string;
             };
@@ -29,6 +32,26 @@ describe('RecordCommentsBlockModel field mapping settings', () => {
     expect(createModelOptions.subModels?.items?.[0]?.subModels?.bodyFields).toEqual({
       use: 'DetailsGridModel',
     });
+  });
+
+  test('creates comment record actions in quote, edit, delete order', () => {
+    const createModelOptions = RecordCommentsBlockModel.meta.createModelOptions as {
+      subModels?: {
+        items?: Array<{
+          subModels?: {
+            actions?: Array<{
+              use?: string;
+            }>;
+          };
+        }>;
+      };
+    };
+
+    expect(createModelOptions.subModels?.items?.[0]?.subModels?.actions?.map((action) => action.use)).toEqual([
+      'QuoteReplyRecordCommentActionModel',
+      'EditRecordCommentActionModel',
+      'DeleteRecordCommentActionModel',
+    ]);
   });
 
   test('hides owner mapping fields when the block is created from an association field', () => {

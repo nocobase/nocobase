@@ -570,10 +570,10 @@ RecordCommentsBlockModel.define({
                 use: 'QuoteReplyRecordCommentActionModel',
               },
               {
-                use: 'DeleteRecordCommentActionModel',
+                use: 'EditRecordCommentActionModel',
               },
               {
-                use: 'EditRecordCommentActionModel',
+                use: 'DeleteRecordCommentActionModel',
               },
             ],
             bodyFields: {
