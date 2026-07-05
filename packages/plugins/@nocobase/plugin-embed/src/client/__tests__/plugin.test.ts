@@ -302,6 +302,44 @@ describe('PluginEmbedClient', () => {
     );
   });
 
+  it('sets the embed authenticator before the URL token', async () => {
+    const { default: PluginEmbedClient } = await import('../index');
+    const values: Record<string, string> = {};
+    let tokenAuthenticator: string | null = null;
+    const embedStorage = {
+      getItem: vi.fn((key: string) => values[key] || null),
+      setItem: vi.fn((key: string, value = '') => {
+        values[key] = value;
+      }),
+    };
+    const app = {
+      getPublicPath: () => '/',
+      apiClient: {
+        storagePrefix: 'NOCOBASE_',
+        storage: {},
+        createStorage: vi.fn(() => embedStorage),
+        auth: {
+          getAuthenticator: vi.fn(() => embedStorage.getItem('auth')),
+          setAuthenticator: vi.fn((authenticator: string | null) => embedStorage.setItem('auth', authenticator || '')),
+          setToken: vi.fn((token: string | null) => {
+            tokenAuthenticator = embedStorage.getItem('auth');
+            embedStorage.setItem('token', token || '');
+          }),
+        },
+      },
+    };
+    const plugin = new PluginEmbedClient({} as never, app as never);
+
+    window.history.pushState({}, '', '/embed/page-uid?token=111&authenticator=basic');
+    await plugin.beforeLoad();
+
+    expect(tokenAuthenticator).toBe('basic');
+    expect(values).toMatchObject({
+      auth: 'basic',
+      token: '111',
+    });
+  });
+
   it('keeps an existing embed session token after refresh without a query token', async () => {
     const { default: PluginEmbedClient } = await import('../index');
     const values: Record<string, string> = {
