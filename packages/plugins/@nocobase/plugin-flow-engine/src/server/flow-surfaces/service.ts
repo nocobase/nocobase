@@ -21851,25 +21851,36 @@ export class FlowSurfacesService {
           description: changes.description,
           className: changes.className,
         }),
-        stepParams: hasDefinedValue(changes, ['code', 'version', 'showBlockCard'])
+        stepParams: hasDefinedValue(changes, ['code', 'version', 'showBlockCard', 'values'])
           ? {
-              jsSettings: buildDefinedPayload({
-                ...(hasDefinedValue(changes, ['code', 'version'])
-                  ? {
-                      runJs: buildDefinedPayload({
-                        code: changes.code,
-                        version: changes.version,
-                      }),
-                    }
-                  : {}),
-                ...(hasOwnDefined(changes, 'showBlockCard')
-                  ? {
-                      showBlockCard: {
-                        showBlockCard: changes.showBlockCard,
-                      },
-                    }
-                  : {}),
-              }),
+              ...(hasDefinedValue(changes, ['code', 'version', 'showBlockCard'])
+                ? {
+                    jsSettings: buildDefinedPayload({
+                      ...(hasDefinedValue(changes, ['code', 'version'])
+                        ? {
+                            runJs: buildDefinedPayload({
+                              code: changes.code,
+                              version: changes.version,
+                            }),
+                          }
+                        : {}),
+                      ...(hasOwnDefined(changes, 'showBlockCard')
+                        ? {
+                            showBlockCard: {
+                              showBlockCard: changes.showBlockCard,
+                            },
+                          }
+                        : {}),
+                    }),
+                  }
+                : {}),
+              ...(hasOwnDefined(changes, 'values')
+                ? {
+                    runjsSettings: {
+                      configure: _.cloneDeep(changes.values),
+                    },
+                  }
+                : {}),
             }
           : undefined,
       },
@@ -21944,6 +21955,13 @@ export class FlowSurfacesService {
                 },
               }
             : {}),
+          ...(hasOwnDefined(changes, 'values')
+            ? {
+                runjsSettings: {
+                  configure: _.cloneDeep(changes.values),
+                },
+              }
+            : {}),
         }),
       },
       options,
@@ -21972,14 +21990,25 @@ export class FlowSurfacesService {
           labelWidth: changes.labelWidth,
           labelWrap: changes.labelWrap,
         }),
-        stepParams: hasDefinedValue(changes, ['code', 'version'])
+        stepParams: hasDefinedValue(changes, ['code', 'version', 'values'])
           ? {
-              jsSettings: {
-                runJs: buildDefinedPayload({
-                  code: changes.code,
-                  version: changes.version,
-                }),
-              },
+              ...(hasDefinedValue(changes, ['code', 'version'])
+                ? {
+                    jsSettings: {
+                      runJs: buildDefinedPayload({
+                        code: changes.code,
+                        version: changes.version,
+                      }),
+                    },
+                  }
+                : {}),
+              ...(hasOwnDefined(changes, 'values')
+                ? {
+                    runjsSettings: {
+                      configure: _.cloneDeep(changes.values),
+                    },
+                  }
+                : {}),
             }
           : undefined,
       },
@@ -22283,7 +22312,7 @@ export class FlowSurfacesService {
       );
     }
 
-    if (hasDefinedValue(changes, ['clickToOpen', 'openView', 'code', 'version'])) {
+    if (hasDefinedValue(changes, ['clickToOpen', 'openView', 'code', 'version', 'values'])) {
       if (!innerUid) {
         throwConflict(
           `flowSurfaces configure field wrapper '${current?.use}' cannot resolve inner field`,
@@ -22294,7 +22323,7 @@ export class FlowSurfacesService {
         {
           uid: innerUid,
         },
-        _.pick(changes, ['clickToOpen', 'openView', 'displayStyle', 'code', 'version']),
+        _.pick(changes, ['clickToOpen', 'openView', 'displayStyle', 'code', 'version', 'values']),
         {
           ...options,
           enabledPackages,
@@ -22335,8 +22364,8 @@ export class FlowSurfacesService {
           includeAsyncNode: true,
         })
       : null;
-    if (hasDefinedValue(changes, ['code', 'version']) && !isJsFieldNode) {
-      throwBadRequest(`flowSurfaces configure field '${current?.use}' does not support code/version`);
+    if (hasDefinedValue(changes, ['code', 'version', 'values']) && !isJsFieldNode) {
+      throwBadRequest(`flowSurfaces configure field '${current?.use}' does not support code/version/values`);
     }
     const currentFieldInit =
       current?.stepParams?.fieldSettings?.init || parentWrapper?.stepParams?.fieldSettings?.init || {};
@@ -22493,6 +22522,13 @@ export class FlowSurfacesService {
                     code: changes.code,
                     version: changes.version,
                   }),
+                },
+              }
+            : {}),
+          ...(hasOwnDefined(changes, 'values')
+            ? {
+                runjsSettings: {
+                  configure: _.cloneDeep(changes.values),
                 },
               }
             : {}),
@@ -24372,6 +24408,14 @@ export class FlowSurfacesService {
       } else {
         stepParams.clickSettings = runJsSettings;
       }
+    }
+    if (hasOwnDefined(changes, 'values')) {
+      if (!JS_ACTION_USES.has(use) && !JS_ITEM_ACTION_USES.has(use)) {
+        throwBadRequest(`flowSurfaces configure action '${use}' does not support values`);
+      }
+      stepParams.runjsSettings = {
+        configure: _.cloneDeep(changes.values),
+      };
     }
 
     const props = buildDefinedPayload({

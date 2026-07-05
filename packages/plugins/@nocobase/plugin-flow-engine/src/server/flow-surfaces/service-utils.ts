@@ -764,6 +764,7 @@ export function splitComposeFieldChanges(changes: Record<string, any>, wrapperUs
     'options',
     'code',
     'version',
+    'values',
   ]);
   return {
     wrapperChanges: _.pickBy(wrapperChanges, (value) => !_.isUndefined(value)),

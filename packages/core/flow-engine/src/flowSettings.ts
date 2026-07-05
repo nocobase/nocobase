@@ -44,7 +44,8 @@ import { FlowStepContext } from './hooks/useFlowStep';
 import { GLOBAL_EMBED_CONTAINER_ID, EMBED_REPLACING_DATA_KEY } from './views';
 import { lazy } from './lazy-helper';
 import { RuntimeSettings } from './runtimeSettings';
-import type { RuntimeSettingsDeclarationSession, UseSettingsConfig } from './runtimeSettings';
+import { getRuntimeSettingStepMeta } from './runtimeSettings';
+import type { RuntimeSettingsDeclarationSession, RuntimeSettingStepMeta, UseSettingsConfig } from './runtimeSettings';
 export type {
   RuntimeSettingsDeclarationSession,
   UseSettingsConfig,
@@ -229,6 +230,14 @@ export class FlowSettings {
 
   public syncRuntimeSettingsFromStepParams(model: FlowModel, flowKey: string, stepKey = 'runJs') {
     this.runtimeSettings.syncRuntimeSettingsFromStepParams(model, flowKey, stepKey);
+  }
+
+  public getRuntimeSettingFormValues(model: FlowModel, step: StepDefinition): Record<string, unknown> {
+    return this.runtimeSettings.getRuntimeSettingFormValues(model, step);
+  }
+
+  public setRuntimeSettingFormValues(model: FlowModel, step: StepDefinition, values: Record<string, unknown>) {
+    return this.runtimeSettings.setRuntimeSettingFormValues(model, step, values);
   }
 
   /**
@@ -762,6 +771,8 @@ export class FlowSettings {
       afterParamsSave?: Function;
       ctx: any; // FlowRuntimeContext
       uiMode: any; // UI 模式
+      step: StepDefinition;
+      runtimeSetting?: RuntimeSettingStepMeta;
     };
 
     const entries: StepEntry[] = [];
@@ -812,6 +823,7 @@ export class FlowSettings {
             uiMode = action.uiMode;
           }
         }
+        const runtimeSetting = getRuntimeSettingStepMeta(step);
 
         // 构建 settings 上下文
         const flowRuntimeContext = new FlowRuntimeContext(model, fk, 'settings');
@@ -824,7 +836,9 @@ export class FlowSettings {
         });
 
         // 解析默认值 + 当前参数
-        const modelStepParams = model.getStepParams(fk, sk) || {};
+        const modelStepParams = runtimeSetting
+          ? this.getRuntimeSettingFormValues(model, step)
+          : model.getStepParams(fk, sk) || {};
         const resolvedDefaultParams = await resolveDefaultParams(step.defaultParams, flowRuntimeContext);
         const resolvedActionDefaults = await resolveDefaultParams(actionDefaultParams, flowRuntimeContext);
         const initialValues = {
@@ -852,6 +866,8 @@ export class FlowSettings {
           afterParamsSave,
           ctx: flowRuntimeContext,
           uiMode: step.uiMode || uiMode,
+          step,
+          runtimeSetting,
         });
       }
     }
@@ -1073,7 +1089,11 @@ export class FlowSettings {
               if (!form) continue;
               await form.submit();
               const currentValues = form.values;
-              model.setStepParams(e.flowKey, e.stepKey, currentValues as ParamObject);
+              if (e.runtimeSetting) {
+                this.setRuntimeSettingFormValues(model, e.step, currentValues as ParamObject);
+              } else {
+                model.setStepParams(e.flowKey, e.stepKey, currentValues as ParamObject);
+              }
 
               if (typeof e.beforeParamsSave === 'function') {
                 await e.beforeParamsSave(e.ctx, currentValues, e.previousParams);

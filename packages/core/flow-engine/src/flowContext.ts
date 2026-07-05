@@ -4664,7 +4664,14 @@ export class FlowRunJSContext extends FlowContext {
     this.defineMethod(
       'useSettings',
       function (this: FlowRunJSContext & RuntimeSettingsContextLike, config: Record<string, unknown>) {
-        const settingsConfig = _.isPlainObject(config) ? config : {};
+        if (!_.isPlainObject(config)) {
+          console.warn('ctx.useSettings(config): config must be a plain object.');
+          if (_.isPlainObject(this.__runtimeSettingsDeclaration)) {
+            (this.__runtimeSettingsDeclaration as { preservePrevious?: boolean }).preservePrevious = true;
+          }
+          return {};
+        }
+
         const flowSettings = this.engine?.flowSettings as RuntimeSettingsApiLike | undefined;
         if (!flowSettings) {
           return {};
@@ -4672,7 +4679,7 @@ export class FlowRunJSContext extends FlowContext {
 
         const session = this.__runtimeSettingsDeclaration;
         if (session && flowSettings.defineRuntimeSettings) {
-          return flowSettings.defineRuntimeSettings(session, settingsConfig);
+          return flowSettings.defineRuntimeSettings(session, config);
         }
 
         const currentFlowKey =
@@ -4688,11 +4695,11 @@ export class FlowRunJSContext extends FlowContext {
             model,
             `${model.uid}:${currentFlowKey}:${currentStepKey}`,
             currentFlowKey,
-            settingsConfig,
+            config,
           );
         }
 
-        return flowSettings.getRuntimeSettingsDefaultValues?.(settingsConfig) || {};
+        return flowSettings.getRuntimeSettingsDefaultValues?.(config) || {};
       },
       {
         description: 'Declare native settings for the current JS surface and read their saved values.',

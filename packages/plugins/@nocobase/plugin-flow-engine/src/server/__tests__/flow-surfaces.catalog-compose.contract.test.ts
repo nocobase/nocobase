@@ -1477,6 +1477,9 @@ describe('flowSurfaces catalog + compose contract', () => {
             title: 'Table tools',
             version: '1.0.0',
             code: 'ctx.render(null);',
+            values: {
+              label: 'Table tools',
+            },
           },
         },
       }),
@@ -1488,6 +1491,11 @@ describe('flowSurfaces catalog + compose contract', () => {
           runJs: {
             version: '1.0.0',
             code: 'ctx.render(null);',
+          },
+        },
+        runjsSettings: {
+          configure: {
+            label: 'Table tools',
           },
         },
       },
@@ -1504,6 +1512,9 @@ describe('flowSurfaces catalog + compose contract', () => {
             title: 'Row tools',
             version: '1.0.1',
             code: 'ctx.render(null);',
+            values: {
+              label: 'Row tools',
+            },
           },
         },
       }),
@@ -1515,6 +1526,11 @@ describe('flowSurfaces catalog + compose contract', () => {
           runJs: {
             version: '1.0.1',
             code: 'ctx.render(null);',
+          },
+        },
+        runjsSettings: {
+          configure: {
+            label: 'Row tools',
           },
         },
       },
@@ -1701,6 +1717,23 @@ describe('flowSurfaces catalog + compose contract', () => {
         },
       }),
     );
+    const configureJsColumnValuesRes = await rootAgent.resource('flowSurfaces').configure({
+      values: {
+        target: {
+          uid: jsColumn.uid,
+        },
+        changes: {
+          values: {
+            label: 'Runtime column',
+          },
+        },
+      },
+    });
+    expect(configureJsColumnValuesRes.status, readErrorMessage(configureJsColumnValuesRes)).toBe(200);
+    expect((await getSurface(rootAgent, { uid: jsColumn.uid })).tree.stepParams?.runjsSettings?.configure).toEqual({
+      label: 'Runtime column',
+    });
+
     const configureJsColumnOpenViewRes = await rootAgent.resource('flowSurfaces').configure({
       values: {
         target: {

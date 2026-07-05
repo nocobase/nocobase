@@ -233,11 +233,12 @@ const JS_BLOCK_ALLOWED_SETTINGS_KEYS = new Set([
   'showBlockCard',
   'code',
   'version',
+  'values',
 ]);
 const JS_BLOCK_TOP_LEVEL_JS_KEYS = ['code', 'version'] as const;
 const JS_BLOCK_INTERNAL_AUTHORING_KEYS = ['props', 'decoratorProps', 'flowRegistry', 'stepParams'];
 const JS_BLOCK_REPAIR_HINT =
-  'This is a jsBlock payload shape problem. Repair this jsBlock using inline settings.code/settings.version/settings.showBlockCard, or applyBlueprint assets.scripts.<key>.code plus block.script with optional settings.showBlockCard. Do not change this block type to table, chart, actionPanel, gridCard, or another block type.';
+  'This is a jsBlock payload shape problem. Repair this jsBlock using inline settings.code/settings.version/settings.showBlockCard/settings.values, or applyBlueprint assets.scripts.<key>.code plus block.script with optional settings.showBlockCard/settings.values. Do not change this block type to table, chart, actionPanel, gridCard, or another block type.';
 const CHART_REPAIR_HINT =
   'This is a chart payload shape problem. Keep using chart and repair this chart using assets.charts.<key>.query/visual plus block.chart, or localized settings.query/settings.visual. Do not change this block type to table, jsBlock, actionPanel, gridCard, or another block type, and do not drop or defer the chart. KPI / summary numbers should use jsBlock; charts are for trends, distributions, rankings, and visual analysis.';
 const REPAIR_ALL_ERRORS_AGENT_INSTRUCTION =
@@ -4840,7 +4841,7 @@ function collectJsBlockPublicContractErrors(
     pushAuthoringError(errors, {
       path: `${path}.${key}`,
       ruleId: `jsBlock-top-level-${key}-unsupported`,
-      message: `flowSurfaces authoring ${path}.${key} is not accepted on public jsBlock blocks; use ${path}.settings.code, ${path}.settings.version, and ${path}.settings.showBlockCard for public JS block settings`,
+      message: `flowSurfaces authoring ${path}.${key} is not accepted on public jsBlock blocks; use ${path}.settings.code, ${path}.settings.version, ${path}.settings.showBlockCard, and ${path}.settings.values for public JS block settings`,
       details: withJsBlockRepairHint({ key }),
     });
   });
@@ -4852,7 +4853,7 @@ function collectJsBlockPublicContractErrors(
     pushAuthoringError(errors, {
       path: `${path}.${key}`,
       ruleId: key === 'stepParams' ? 'jsBlock-stepParams-unsupported' : 'jsBlock-internal-field-unsupported',
-      message: `flowSurfaces authoring ${path}.${key} is not accepted on public jsBlock blocks; use ${path}.settings.code, ${path}.settings.version, and ${path}.settings.showBlockCard instead of internal persisted fields`,
+      message: `flowSurfaces authoring ${path}.${key} is not accepted on public jsBlock blocks; use ${path}.settings.code, ${path}.settings.version, ${path}.settings.showBlockCard, and ${path}.settings.values instead of internal persisted fields`,
       details: withJsBlockRepairHint({
         key,
       }),
@@ -4877,7 +4878,7 @@ function collectJsBlockPublicContractErrors(
       pushAuthoringError(errors, {
         path: `${path}.settings.${key}`,
         ruleId: 'jsBlock-settings-unsupported-key',
-        message: `flowSurfaces authoring ${path}.settings.${key} is not part of the public jsBlock contract; use ${path}.settings.code, ${path}.settings.version, and ${path}.settings.showBlockCard for public JS block settings`,
+        message: `flowSurfaces authoring ${path}.settings.${key} is not part of the public jsBlock contract; use ${path}.settings.code, ${path}.settings.version, ${path}.settings.showBlockCard, and ${path}.settings.values for public JS block settings`,
         details: withJsBlockRepairHint({
           key,
           allowedKeys: Array.from(JS_BLOCK_ALLOWED_SETTINGS_KEYS),
@@ -4926,7 +4927,7 @@ function collectJsBlockConfigurePublicContractErrors(changes: any, path: string,
     pushAuthoringError(errors, {
       path: `${path}.${key}`,
       ruleId: key === 'stepParams' ? 'jsBlock-stepParams-unsupported' : 'jsBlock-internal-field-unsupported',
-      message: `flowSurfaces authoring ${path}.${key} is not accepted on public jsBlock configure changes; use ${path}.code, ${path}.version, and ${path}.showBlockCard instead of internal persisted fields`,
+      message: `flowSurfaces authoring ${path}.${key} is not accepted on public jsBlock configure changes; use ${path}.code, ${path}.version, ${path}.showBlockCard, and ${path}.values instead of internal persisted fields`,
       details: withJsBlockRepairHint({
         key,
       }),
@@ -4964,7 +4965,7 @@ function collectJsBlockConfigurePublicContractErrors(changes: any, path: string,
     pushAuthoringError(errors, {
       path: `${path}.settings`,
       ruleId: 'jsBlock-settings-unsupported-key',
-      message: `flowSurfaces authoring ${path}.settings is not part of the public jsBlock configure contract; use ${path}.code, ${path}.version, and ${path}.showBlockCard`,
+      message: `flowSurfaces authoring ${path}.settings is not part of the public jsBlock configure contract; use ${path}.code, ${path}.version, ${path}.showBlockCard, and ${path}.values`,
       details: withJsBlockRepairHint(),
     });
     return;

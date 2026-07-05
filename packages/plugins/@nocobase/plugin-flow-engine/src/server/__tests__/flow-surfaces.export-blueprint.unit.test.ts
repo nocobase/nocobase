@@ -765,6 +765,11 @@ describe('flowSurfaces exportBlueprint', () => {
             code: "ctx.message.info('Diagnostics ready');",
           },
         },
+        runjsSettings: {
+          configure: {
+            message: 'Diagnostics ready',
+          },
+        },
       },
     });
     await context.flowRepo.upsertModel({
@@ -790,6 +795,11 @@ describe('flowSurfaces exportBlueprint', () => {
             code: "ctx.render('Row diagnostics ready');",
           },
         },
+        runjsSettings: {
+          configure: {
+            label: 'Row diagnostics ready',
+          },
+        },
       },
     });
 
@@ -811,6 +821,9 @@ describe('flowSurfaces exportBlueprint', () => {
         iconOnly: true,
         version: '1.0.1',
         code: "ctx.message.info('Diagnostics ready');",
+        values: {
+          message: 'Diagnostics ready',
+        },
       },
     });
     const jsItemAction = tableDocument.recordActions.find((action) => action?.type === 'jsItem');
@@ -821,6 +834,85 @@ describe('flowSurfaces exportBlueprint', () => {
         iconOnly: true,
         version: '1.0.2',
         code: "ctx.render('Row diagnostics ready');",
+        values: {
+          label: 'Row diagnostics ready',
+        },
+      },
+    });
+    expect(exported.unsupported).toEqual([]);
+
+    const replaceRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: exported.document,
+    });
+    expect(replaceRes.status, readErrorMessage(replaceRes)).toBe(200);
+  });
+
+  it('should export public JS renderer field runtime setting values', async () => {
+    const title = `Export JS renderer field ${Date.now()}`;
+    const createRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        version: '1',
+        mode: 'create',
+        navigation: {
+          item: {
+            title,
+          },
+        },
+        page: {
+          title,
+        },
+        tabs: [
+          {
+            key: 'mainTab',
+            title: 'Main',
+            blocks: [
+              {
+                key: 'employeesTable',
+                type: 'table',
+                collection: 'employees',
+                fields: [
+                  {
+                    key: 'nicknameJsField',
+                    field: 'nickname',
+                    renderer: 'js',
+                    settings: {
+                      version: '1.0.0',
+                      code: 'ctx.render(ctx.record.nickname);',
+                      values: {
+                        fallbackLabel: 'No nickname',
+                      },
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    });
+    expect(createRes.status, readErrorMessage(createRes)).toBe(200);
+    const pageSchemaUid = getData(createRes).target.pageSchemaUid as string;
+
+    const exportRes = await rootAgent.resource('flowSurfaces').exportBlueprint({
+      values: {
+        target: {
+          pageSchemaUid,
+        },
+      },
+    });
+    expect(exportRes.status, readErrorMessage(exportRes)).toBe(200);
+    const exported = getData(exportRes);
+    const [tableDocument] = exported.document.tabs[0].blocks;
+    const nicknameField = tableDocument.fields.find((field) => readFieldName(field) === 'nickname');
+    expect(nicknameField).toMatchObject({
+      field: 'nickname',
+      renderer: 'js',
+      settings: {
+        version: '1.0.0',
+        code: 'ctx.render(ctx.record.nickname);',
+        values: {
+          fallbackLabel: 'No nickname',
+        },
       },
     });
     expect(exported.unsupported).toEqual([]);
@@ -1049,6 +1141,10 @@ describe('flowSurfaces exportBlueprint', () => {
                   showBlockCard: false,
                   version: '1.0.0',
                   code: "ctx.render('Ready');",
+                  values: {
+                    headline: 'Ready',
+                    showBlockCard: 'runtime setting',
+                  },
                 },
               },
               {
@@ -1137,6 +1233,10 @@ describe('flowSurfaces exportBlueprint', () => {
         showBlockCard: false,
         version: '1.0.0',
         code: "ctx.render('Ready');",
+        values: {
+          headline: 'Ready',
+          showBlockCard: 'runtime setting',
+        },
       },
     });
     const recordHistoryBlock = blocks.find((block) => block.key === 'departmentHistory');
@@ -1175,6 +1275,10 @@ describe('flowSurfaces exportBlueprint', () => {
     const replacedBlocks = getData(replacedExportRes).document.tabs[0].blocks;
     const replacedJsBlock = replacedBlocks.find((block) => block.key === 'runtimeBanner');
     expect(replacedJsBlock?.settings?.showBlockCard).toBe(false);
+    expect(replacedJsBlock?.settings?.values).toEqual({
+      headline: 'Ready',
+      showBlockCard: 'runtime setting',
+    });
   });
 
   it('should preserve supported kanban public settings and hidden popup display settings', async () => {

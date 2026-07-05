@@ -61,11 +61,26 @@ export interface RuntimeSettingsDeclarationSession {
   flowKey: string;
   steps: Record<string, StepDefinition>;
   declared: boolean;
+  preservePrevious?: boolean;
 }
+
+type RuntimeSettingValueMode = 'wrapped' | 'direct';
+
+export interface RuntimeSettingStepMeta {
+  settingKey: string;
+  valueMode: RuntimeSettingValueMode;
+}
+
+type RuntimeSettingStepDefinition = StepDefinition & {
+  runtimeSetting?: RuntimeSettingStepMeta;
+};
 
 const RUNTIME_SETTING_KEY_RE = /^[A-Za-z_$][A-Za-z0-9_$-]*$/;
 const RESERVED_RUNTIME_SETTING_KEYS = new Set(['runJs']);
 const RUNTIME_SETTINGS_CALL = 'ctx.useSettings';
+const RUNTIME_SETTINGS_VALUES_FLOW_KEY = 'runjsSettings';
+const RUNTIME_SETTINGS_VALUES_STEP_KEY = 'configure';
+const RUNTIME_SETTINGS_STEP_KEY_PREFIX = '__runtimeSettings__';
 
 type RuntimeSettingsConfigExtraction = {
   hasRuntimeSettingsCall: boolean;
@@ -92,8 +107,11 @@ const getRuntimeSettingType = (
   if (typeof value === 'boolean') {
     return 'boolean';
   }
+  if (Array.isArray(value)) {
+    return 'json';
+  }
   if (_.isPlainObject(value)) {
-    return 'object';
+    return 'json';
   }
   return 'string';
 };
@@ -120,6 +138,9 @@ const getRuntimeSettingComponent = (type: UseSettingsFieldType, definition: UseS
   if (type === 'json') {
     return 'JsonTextArea';
   }
+  if (type === 'object') {
+    return 'JsonTextArea';
+  }
   return 'Input';
 };
 
@@ -129,7 +150,7 @@ const getRuntimeSettingSchemaType = (type: UseSettingsFieldType, defaultValue: u
   if (type === 'multiSelect') {
     return 'array';
   }
-  if (type === 'json') {
+  if (type === 'json' || type === 'object') {
     return Array.isArray(defaultValue) ? 'array' : 'object';
   }
   if (['text', 'select', 'date', 'datetime', 'color'].includes(type)) {
@@ -162,7 +183,11 @@ const getRuntimeSettingComponentProps = (
   if (type === 'multiSelect') {
     props.mode = 'multiple';
   }
-  if (type === 'json' && typeof props.autoSize === 'undefined' && typeof props.rows === 'undefined') {
+  if (
+    (type === 'json' || type === 'object') &&
+    typeof props.autoSize === 'undefined' &&
+    typeof props.rows === 'undefined'
+  ) {
     props.autoSize = { minRows: 4, maxRows: 16 };
   }
 
@@ -446,6 +471,52 @@ const skipRunJsIgnored = (source: string, index: number) => {
 
 const isIdentifierPart = (char: string | undefined) => !!char && /[A-Za-z0-9_$]/.test(char);
 
+const isLikelyRegexLiteralStart = (source: string, index: number) => {
+  let cursor = index - 1;
+  while (cursor >= 0 && /\s/.test(source[cursor])) {
+    cursor -= 1;
+  }
+  if (cursor < 0) {
+    return true;
+  }
+  return /[([{=,:;!&|?+\-*~^<>]/.test(source[cursor]);
+};
+
+const skipRegexLiteral = (source: string, start: number) => {
+  let escaped = false;
+  let inCharacterClass = false;
+  for (let index = start + 1; index < source.length; index += 1) {
+    const char = source[index];
+    if (escaped) {
+      escaped = false;
+      continue;
+    }
+    if (char === '\\') {
+      escaped = true;
+      continue;
+    }
+    if (char === '[') {
+      inCharacterClass = true;
+      continue;
+    }
+    if (char === ']') {
+      inCharacterClass = false;
+      continue;
+    }
+    if (char === '/' && !inCharacterClass) {
+      let cursor = index + 1;
+      while (/[A-Za-z]/.test(source[cursor] || '')) {
+        cursor += 1;
+      }
+      return cursor - 1;
+    }
+    if (char === '\n' || char === '\r') {
+      return start;
+    }
+  }
+  return start;
+};
+
 const findNextRuntimeSettingsCall = (source: string, start: number) => {
   let quote: string | undefined;
   let escaped = false;
@@ -481,9 +552,14 @@ const findNextRuntimeSettingsCall = (source: string, start: number) => {
       index += 1;
       continue;
     }
+    if (char === '/' && isLikelyRegexLiteralStart(source, index)) {
+      index = skipRegexLiteral(source, index);
+      continue;
+    }
 
     if (
       source.startsWith(RUNTIME_SETTINGS_CALL, index) &&
+      source[index - 1] !== '.' &&
       !isIdentifierPart(source[index - 1]) &&
       !isIdentifierPart(source[index + RUNTIME_SETTINGS_CALL.length])
     ) {
@@ -589,6 +665,7 @@ export class RuntimeSettings {
   private normalizeConfig(model: FlowModel | undefined, flowKey: string, config: UseSettingsConfig) {
     const steps: Record<string, StepDefinition> = {};
     const values: Record<string, unknown> = {};
+    const savedValues = model ? this.getSavedValues(model) : {};
 
     if (!_.isPlainObject(config)) {
       console.warn('ctx.useSettings(config): config must be a plain object.');
@@ -610,8 +687,8 @@ export class RuntimeSettings {
       const hasDefault = isObjectDefinition ? Object.prototype.hasOwnProperty.call(definition, 'default') : true;
       const defaultValue = getRuntimeSettingDefaultValue(rawDefinition);
       const title = definition.title || humanizeRuntimeSettingKey(settingKey);
-      const savedParams = model?.getStepParams(flowKey, settingKey) as Record<string, unknown> | undefined;
-      const hasSavedParams = typeof savedParams !== 'undefined';
+      const hasSavedValue = Object.prototype.hasOwnProperty.call(savedValues, settingKey);
+      const savedValue = savedValues[settingKey];
 
       if (_.isPlainObject(definition.uiSchema)) {
         steps[settingKey] = {
@@ -619,8 +696,9 @@ export class RuntimeSettings {
           uiSchema: definition.uiSchema as Record<string, ISchema>,
           defaultParams: _.isPlainObject(defaultValue) ? { ...(defaultValue as Record<string, unknown>) } : {},
           uiMode: 'dialog',
-        };
-        values[settingKey] = hasSavedParams ? savedParams : defaultValue;
+          runtimeSetting: { settingKey, valueMode: 'direct' },
+        } as RuntimeSettingStepDefinition;
+        values[settingKey] = hasSavedValue ? savedValue : defaultValue;
         return;
       }
 
@@ -631,8 +709,9 @@ export class RuntimeSettings {
           uiSchema: toRuntimeSettingPropertiesSchema(definition.properties),
           defaultParams: objectDefaults,
           uiMode: 'dialog',
-        };
-        values[settingKey] = hasSavedParams ? savedParams : objectDefaults;
+          runtimeSetting: { settingKey, valueMode: 'direct' },
+        } as RuntimeSettingStepDefinition;
+        values[settingKey] = hasSavedValue ? savedValue : objectDefaults;
         return;
       }
 
@@ -644,9 +723,9 @@ export class RuntimeSettings {
         },
         defaultParams: hasDefault ? { value: defaultValue } : {},
         uiMode: 'dialog',
-      };
-      values[settingKey] =
-        savedParams && Object.prototype.hasOwnProperty.call(savedParams, 'value') ? savedParams.value : defaultValue;
+        runtimeSetting: { settingKey, valueMode: 'wrapped' },
+      } as RuntimeSettingStepDefinition;
+      values[settingKey] = hasSavedValue ? savedValue : defaultValue;
     });
 
     return { steps, values };
@@ -707,6 +786,9 @@ export class RuntimeSettings {
     const previous = sources.get(session.sourceKey);
     const hasSteps = Object.keys(session.steps).length > 0;
     if (!hasSteps) {
+      if (session.preservePrevious) {
+        return;
+      }
       if (previous) {
         sources.delete(session.sourceKey);
         if (sources.size === 0) {
@@ -738,16 +820,76 @@ export class RuntimeSettings {
     }
 
     const steps: Record<string, StepDefinition> = {};
+    const staticSteps = model.getFlow(flowKey)?.steps || {};
     for (const source of sources.values()) {
       if (source.flowKey === flowKey) {
-        Object.assign(steps, source.steps);
+        Object.entries(source.steps).forEach(([settingKey, step]) => {
+          const stepKey = this.getRuntimeSettingStepKey(settingKey, staticSteps, steps);
+          steps[stepKey] = step;
+        });
       }
     }
     return steps;
   }
 
+  private getRuntimeSettingStepKey(
+    settingKey: string,
+    staticSteps: Record<string, StepDefinition>,
+    runtimeSteps: Record<string, StepDefinition>,
+  ) {
+    if (
+      !Object.prototype.hasOwnProperty.call(staticSteps, settingKey) &&
+      !Object.prototype.hasOwnProperty.call(runtimeSteps, settingKey)
+    ) {
+      return settingKey;
+    }
+
+    const baseKey = `${RUNTIME_SETTINGS_STEP_KEY_PREFIX}${settingKey}`;
+    let nextKey = baseKey;
+    let index = 2;
+    while (
+      Object.prototype.hasOwnProperty.call(staticSteps, nextKey) ||
+      Object.prototype.hasOwnProperty.call(runtimeSteps, nextKey)
+    ) {
+      nextKey = `${baseKey}_${index}`;
+      index += 1;
+    }
+    return nextKey;
+  }
+
   public getRuntimeSettingsDefaultValues(config: UseSettingsConfig): Record<string, unknown> {
     return this.normalizeConfig(undefined, '', config).values;
+  }
+
+  public getRuntimeSettingFormValues(model: FlowModel, step: StepDefinition): Record<string, unknown> {
+    const runtimeSetting = getRuntimeSettingStepMeta(step);
+    if (!runtimeSetting) {
+      return {};
+    }
+
+    const savedValues = this.getSavedValues(model);
+    if (!Object.prototype.hasOwnProperty.call(savedValues, runtimeSetting.settingKey)) {
+      return {};
+    }
+
+    const savedValue = savedValues[runtimeSetting.settingKey];
+    if (runtimeSetting.valueMode === 'wrapped') {
+      return { value: savedValue };
+    }
+    return _.isPlainObject(savedValue) ? { ...(savedValue as Record<string, unknown>) } : {};
+  }
+
+  public setRuntimeSettingFormValues(model: FlowModel, step: StepDefinition, values: Record<string, unknown>) {
+    const runtimeSetting = getRuntimeSettingStepMeta(step);
+    if (!runtimeSetting) {
+      return false;
+    }
+
+    const nextValue = runtimeSetting.valueMode === 'wrapped' ? values?.value : values;
+    model.setStepParams(RUNTIME_SETTINGS_VALUES_FLOW_KEY, RUNTIME_SETTINGS_VALUES_STEP_KEY, {
+      [runtimeSetting.settingKey]: nextValue,
+    });
+    return true;
   }
 
   public syncRuntimeSettingsFromRunJsSource(model: FlowModel, flowKey: string, stepKey: string, code: unknown) {
@@ -777,4 +919,22 @@ export class RuntimeSettings {
     }
     this.syncRuntimeSettingsFromRunJsSource(model, flowKey, stepKey, stepParams?.code);
   }
+
+  private getSavedValues(model: FlowModel): Record<string, unknown> {
+    const values = model.getStepParams(RUNTIME_SETTINGS_VALUES_FLOW_KEY, RUNTIME_SETTINGS_VALUES_STEP_KEY);
+    return _.isPlainObject(values) ? (values as Record<string, unknown>) : {};
+  }
 }
+
+export const getRuntimeSettingStepMeta = (step: StepDefinition | undefined): RuntimeSettingStepMeta | undefined => {
+  const runtimeSetting = (step as RuntimeSettingStepDefinition | undefined)?.runtimeSetting;
+  if (!runtimeSetting || typeof runtimeSetting.settingKey !== 'string') {
+    return undefined;
+  }
+  return runtimeSetting;
+};
+
+export const runtimeSettingsValuesPath = {
+  flowKey: RUNTIME_SETTINGS_VALUES_FLOW_KEY,
+  stepKey: RUNTIME_SETTINGS_VALUES_STEP_KEY,
+} as const;

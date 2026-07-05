@@ -2403,6 +2403,32 @@ describe('flowSurfaces RunJS authoring unit validation', () => {
     );
   });
 
+  it('should allow JS block render code to declare runtime settings with ctx.useSettings', () => {
+    const errors = collectRunJsAuthoringErrors('addBlock', {
+      target: {
+        uid: 'grid',
+      },
+      type: 'jsBlock',
+      settings: {
+        code: [
+          'const settings = ctx.useSettings({',
+          "  title: { type: 'string', title: 'Title', default: 'Orders' },",
+          "  compact: { type: 'boolean', title: 'Compact', default: false },",
+          '});',
+          'const { Card, Typography } = ctx.libs.antd;',
+          'ctx.render(',
+          '  <Card size={settings.compact ? "small" : "default"}>',
+          '    <Typography.Text>{settings.title}</Typography.Text>',
+          '  </Card>,',
+          ');',
+        ].join('\n'),
+        version: 'v2',
+      },
+    });
+
+    expect(errors).toEqual([]);
+  });
+
   it('should collect RunJS authoring errors from flowRegistry step source variants', () => {
     const errors = collectFlowRegistryRunJsAuthoringErrors(
       {

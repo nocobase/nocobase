@@ -245,6 +245,14 @@ const RUN_JS_SETTINGS_GROUP = {
     'runJs.version': STRING_SCHEMA,
   },
 };
+const RUN_JS_VALUES_SETTINGS_GROUP = {
+  allowedPaths: ['configure', 'configure.*'],
+  mergeStrategy: 'replace' as const,
+  eventBindingSteps: [],
+  pathSchemas: {
+    configure: OBJECT_SCHEMA,
+  },
+};
 const JS_BLOCK_SETTINGS_GROUP = {
   allowedPaths: [...RUN_JS_ALLOWED_PATHS, 'showBlockCard.showBlockCard'],
   mergeStrategy: 'deep' as const,
@@ -1450,7 +1458,7 @@ ACTION_PANEL_BLOCK_CONTRACT.domains.stepParams = groupedDomain({
 const JS_BLOCK_CONTRACT = createContract({
   editableDomains: ['decoratorProps', 'stepParams', 'flowRegistry'],
   decoratorProps: ['title', 'description', 'className'],
-  stepParams: ['jsSettings'],
+  stepParams: ['jsSettings', 'runjsSettings'],
   flowRegistry: true,
   eventCapabilities: {
     direct: DEFAULT_DIRECT_EVENTS,
@@ -1463,6 +1471,7 @@ const JS_BLOCK_CONTRACT = createContract({
 });
 JS_BLOCK_CONTRACT.domains.stepParams = groupedDomain({
   jsSettings: JS_BLOCK_SETTINGS_GROUP,
+  runjsSettings: RUN_JS_VALUES_SETTINGS_GROUP,
 });
 
 const MAP_BLOCK_CONTRACT = createContract({
@@ -1712,7 +1721,7 @@ TABLE_COLUMN_CONTRACT.domains.stepParams = groupedDomain({
 const JS_COLUMN_CONTRACT = createContract({
   editableDomains: ['props', 'stepParams', 'flowRegistry'],
   props: ['title', 'tooltip', 'width', 'fixed'],
-  stepParams: ['tableColumnSettings', 'jsSettings'],
+  stepParams: ['tableColumnSettings', 'jsSettings', 'runjsSettings'],
   flowRegistry: true,
   eventCapabilities: {
     direct: DEFAULT_DIRECT_EVENTS,
@@ -1732,6 +1741,7 @@ JS_COLUMN_CONTRACT.domains.stepParams = groupedDomain({
     },
   },
   jsSettings: RUN_JS_SETTINGS_GROUP,
+  runjsSettings: RUN_JS_VALUES_SETTINGS_GROUP,
 });
 
 const FIELD_NODE_CONTRACT = createContract({
@@ -1783,7 +1793,7 @@ const JS_FIELD_NODE_CONTRACT = createContract({
     'options',
   ],
   decoratorProps: ['labelWidth', 'labelWrap'],
-  stepParams: ['fieldSettings', 'displayFieldSettings', 'popupSettings', 'jsSettings'],
+  stepParams: ['fieldSettings', 'displayFieldSettings', 'popupSettings', 'jsSettings', 'runjsSettings'],
   flowRegistry: true,
   eventCapabilities: {
     direct: ACTION_DIRECT_EVENTS,
@@ -1821,13 +1831,14 @@ JS_FIELD_NODE_CONTRACT.domains.stepParams = groupedDomain({
     pathSchemas: OPEN_VIEW_PATH_SCHEMAS,
   },
   jsSettings: RUN_JS_SETTINGS_GROUP,
+  runjsSettings: RUN_JS_VALUES_SETTINGS_GROUP,
 });
 
 const JS_ITEM_CONTRACT = createContract({
   editableDomains: ['props', 'decoratorProps', 'stepParams', 'flowRegistry'],
   props: ['label', 'showLabel', 'tooltip', 'extra'],
   decoratorProps: ['labelWidth', 'labelWrap'],
-  stepParams: ['jsSettings'],
+  stepParams: ['jsSettings', 'runjsSettings'],
   flowRegistry: true,
   eventCapabilities: {
     direct: DEFAULT_DIRECT_EVENTS,
@@ -1840,6 +1851,7 @@ const JS_ITEM_CONTRACT = createContract({
 });
 JS_ITEM_CONTRACT.domains.stepParams = groupedDomain({
   jsSettings: RUN_JS_SETTINGS_GROUP,
+  runjsSettings: RUN_JS_VALUES_SETTINGS_GROUP,
 });
 
 const DIVIDER_ITEM_CONTRACT = createContract({
@@ -2519,7 +2531,7 @@ const JS_ACTION_CONTRACT = createContract({
   editableDomains: ['props', 'decoratorProps', 'stepParams', 'flowRegistry'],
   props: ACTION_PROP_KEYS,
   decoratorProps: ['labelWidth', 'labelWrap'],
-  stepParams: ['buttonSettings', 'clickSettings'],
+  stepParams: ['buttonSettings', 'clickSettings', 'runjsSettings'],
   flowRegistry: true,
   eventCapabilities: {
     direct: ACTION_DIRECT_EVENTS,
@@ -2537,13 +2549,14 @@ const JS_ACTION_CONTRACT = createContract({
 JS_ACTION_CONTRACT.domains.stepParams = groupedDomain({
   buttonSettings: ACTION_BUTTON_SETTINGS_GROUP,
   clickSettings: RUN_JS_SETTINGS_GROUP,
+  runjsSettings: RUN_JS_VALUES_SETTINGS_GROUP,
 });
 
 const JS_ITEM_ACTION_CONTRACT = createContract({
   editableDomains: ['props', 'decoratorProps', 'stepParams', 'flowRegistry'],
   props: ACTION_PROP_KEYS,
   decoratorProps: ['labelWidth', 'labelWrap'],
-  stepParams: ['buttonSettings', 'jsSettings'],
+  stepParams: ['buttonSettings', 'jsSettings', 'runjsSettings'],
   flowRegistry: true,
   eventCapabilities: {
     direct: ACTION_DIRECT_EVENTS,
@@ -2561,6 +2574,7 @@ const JS_ITEM_ACTION_CONTRACT = createContract({
 JS_ITEM_ACTION_CONTRACT.domains.stepParams = groupedDomain({
   buttonSettings: ACTION_BUTTON_SETTINGS_GROUP,
   jsSettings: RUN_JS_SETTINGS_GROUP,
+  runjsSettings: RUN_JS_VALUES_SETTINGS_GROUP,
 });
 
 const AI_EMPLOYEE_ACTION_CONTRACT = createContract({
@@ -2627,7 +2641,7 @@ const PATTERN_FORM_FIELD_NODE_CONTRACT = createContract({
     'options',
   ],
   decoratorProps: ['labelWidth', 'labelWrap'],
-  stepParams: ['fieldSettings', 'fieldBinding', 'displayFieldSettings', 'popupSettings', 'jsSettings'],
+  stepParams: ['fieldSettings', 'fieldBinding', 'displayFieldSettings', 'popupSettings', 'jsSettings', 'runjsSettings'],
   flowRegistry: true,
   eventCapabilities: {
     direct: ACTION_DIRECT_EVENTS,
@@ -2676,6 +2690,7 @@ PATTERN_FORM_FIELD_NODE_CONTRACT.domains.stepParams = groupedDomain({
     pathSchemas: OPEN_VIEW_PATH_SCHEMAS,
   },
   jsSettings: RUN_JS_SETTINGS_GROUP,
+  runjsSettings: RUN_JS_VALUES_SETTINGS_GROUP,
 });
 
 const APPROVAL_ACTION_CONTRACT = createContract({

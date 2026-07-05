@@ -27,6 +27,7 @@ import { useNiceDropdownMaxHeight } from '../../../../hooks';
 import { SwitchWithTitle } from '../component/SwitchWithTitle';
 import { SelectWithTitle } from '../component/SelectWithTitle';
 import type { FlowSettingsContext } from '../../../../flowContext';
+import { getRuntimeSettingStepMeta } from '../../../../runtimeSettings';
 
 const findExtraMenuItemByKey = (
   items: FlowModelExtraMenuItem[],
@@ -819,7 +820,10 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
             const uiMode = stepInfo.uiMode;
             const subModel = stepInfo.modelKey ? findSubModelByKey(model, stepInfo.modelKey) : null;
             const targetModel = subModel || model;
-            const stepParams = targetModel.getStepParams(flow.key, stepInfo.stepKey) || {};
+            const runtimeSetting = getRuntimeSettingStepMeta(stepInfo.step);
+            const stepParams = runtimeSetting
+              ? targetModel.flowEngine?.flowSettings?.getRuntimeSettingFormValues?.(targetModel, stepInfo.step) || {}
+              : targetModel.getStepParams(flow.key, stepInfo.stepKey) || {};
             const itemProps = {
               getDefaultValue: async () => {
                 let defaultParams = await resolveDefaultParams(stepInfo.step.defaultParams, targetModel.context);
@@ -830,7 +834,11 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
                 return { ...defaultParams, ...stepParams };
               },
               onChange: async (val) => {
-                targetModel.setStepParams(flow.key, stepInfo.stepKey, val);
+                if (runtimeSetting) {
+                  targetModel.flowEngine?.flowSettings?.setRuntimeSettingFormValues?.(targetModel, stepInfo.step, val);
+                } else {
+                  targetModel.setStepParams(flow.key, stepInfo.stepKey, val);
+                }
                 if (typeof stepInfo.step.beforeParamsSave === 'function') {
                   await stepInfo.step.beforeParamsSave(targetModel.context as FlowSettingsContext, val, stepParams);
                 }

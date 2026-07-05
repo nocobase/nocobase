@@ -358,6 +358,66 @@ describe('DefaultSettingsIcon - only static flows are shown', () => {
     });
   });
 
+  it('keeps runtime setting menu keys separate from static setting steps', async () => {
+    class TestFlowModel extends FlowModel {}
+
+    const engine = new FlowEngine();
+    const model = new TestFlowModel({ uid: 'model-runtime-settings-collision-menu', flowEngine: engine });
+
+    TestFlowModel.registerFlow({
+      key: 'jsSettings',
+      title: 'JavaScript settings',
+      steps: {
+        runJs: {
+          title: 'Write JavaScript',
+          uiSchema: {
+            code: { type: 'string', 'x-component': 'Input' },
+          },
+        },
+        showBlockCard: {
+          title: 'Show block card',
+          uiSchema: {
+            showBlockCard: { type: 'boolean', 'x-component': 'Switch' },
+          },
+        },
+      },
+    });
+
+    const session = engine.flowSettings.beginRuntimeSettingsDeclaration(
+      model,
+      `${model.uid}:jsSettings:runJs`,
+      'jsSettings',
+    );
+    engine.flowSettings.defineRuntimeSettings(session, {
+      showBlockCard: false,
+    });
+    engine.flowSettings.commitRuntimeSettingsDeclaration(session);
+
+    render(
+      React.createElement(
+        ConfigProvider as any,
+        null,
+        React.createElement(
+          App as any,
+          null,
+          React.createElement(DefaultSettingsIcon as any, {
+            model,
+            showDeleteButton: false,
+            showCopyUidButton: false,
+          }),
+        ),
+      ),
+    );
+
+    await waitFor(() => {
+      const menu = (globalThis as any).__lastDropdownMenu;
+      const items = (menu?.items || []) as any[];
+      const keys = items.map((it) => String(it.key || ''));
+      expect(keys).toContain('jsSettings:showBlockCard');
+      expect(keys.some((key) => key !== 'jsSettings:showBlockCard' && key.includes('showBlockCard'))).toBe(true);
+    });
+  });
+
   it('hydrates runtime setting steps from saved click RunJS code before the action runs', async () => {
     class TestFlowModel extends FlowModel {}
 
@@ -570,6 +630,7 @@ ctx.useSettings({ visible: true });
       code: `
 // ctx.useSettings({ commented: true });
 const text = "ctx.useSettings({ phantom: 'no' })";
+const pattern = /ctx\\.useSettings({ regexOnly: true })/;
 `,
     });
 
@@ -596,6 +657,7 @@ const text = "ctx.useSettings({ phantom: 'no' })";
       expect(keys).toContain('clickSettings:runJs');
       expect(keys).not.toContain('clickSettings:commented');
       expect(keys).not.toContain('clickSettings:phantom');
+      expect(keys).not.toContain('clickSettings:regexOnly');
     });
   });
 

@@ -142,6 +142,7 @@ export const ALLOWED_CTX_ROOTS = new Set([
   'sql',
   't',
   'user',
+  'useSettings',
   'useResource',
   'value',
   'view',
@@ -302,7 +303,14 @@ export const INIT_RESOURCE_CLASS_NAMES = new Set([
   'MultiRecordResource',
   'SQLResource',
 ]);
-export const AST_CTX_METHOD_NAMES = new Set(['runjs', 'makeResource', 'initResource', 'render', 'request']);
+export const AST_CTX_METHOD_NAMES = new Set([
+  'runjs',
+  'makeResource',
+  'initResource',
+  'render',
+  'request',
+  'useSettings',
+]);
 export const RUNJS_CTX_NON_FUNCTION_ROOTS = new Set([
   'acl',
   'antd',

@@ -578,7 +578,7 @@ describe('FlowSettings.open rendering behavior', () => {
     expect(primaryBtn).toBeTruthy();
     await primaryBtn.props.onClick?.();
 
-    expect(setStepParams).toHaveBeenCalledWith('jsSettings', 'title', { value: 'Orders' });
+    expect(setStepParams).toHaveBeenCalledWith('runjsSettings', 'configure', { title: 'Orders' });
     expect(lastDialog.close).toHaveBeenCalled();
 
     await flowSettings.open({ model, flowKey: 'jsSettings', stepKey: 'basic', uiMode: 'dialog' } as any);
@@ -587,10 +587,12 @@ describe('FlowSettings.open rendering behavior', () => {
     expect(basicPrimaryBtn).toBeTruthy();
     await basicPrimaryBtn.props.onClick?.();
 
-    expect(setStepParams).toHaveBeenCalledWith('jsSettings', 'basic', {
-      title: 'Configurable title',
-      subtitle: 'Configurable subtitle',
-      status: 'active',
+    expect(setStepParams).toHaveBeenCalledWith('runjsSettings', 'configure', {
+      basic: {
+        title: 'Configurable title',
+        subtitle: 'Configurable subtitle',
+        status: 'active',
+      },
     });
 
     await flowSettings.open({ model, flowKey: 'jsSettings', stepKey: 'jsonConfig', uiMode: 'dialog' } as any);
@@ -599,7 +601,51 @@ describe('FlowSettings.open rendering behavior', () => {
     expect(jsonPrimaryBtn).toBeTruthy();
     await jsonPrimaryBtn.props.onClick?.();
 
-    expect(setStepParams).toHaveBeenCalledWith('jsSettings', 'jsonConfig', { value: jsonConfigDefault });
+    expect(setStepParams).toHaveBeenCalledWith('runjsSettings', 'configure', { jsonConfig: jsonConfigDefault });
+  });
+
+  it('stores colliding runtime setting values under the RunJS values namespace', () => {
+    const engine = new FlowEngine();
+    const flowSettings = new FlowSettings(engine);
+    const TestFlowModel = createIsolatedFlowModel('test-runtime-settings-collision-save');
+    const model = new TestFlowModel({ uid: 'm-runtime-settings-collision-save', flowEngine: engine });
+
+    TestFlowModel.registerFlow({
+      key: 'jsSettings',
+      title: 'JavaScript settings',
+      steps: {
+        runJs: {
+          title: 'Write JavaScript',
+          uiSchema: {
+            code: { type: 'string', 'x-component': 'Input' },
+          },
+        },
+        showBlockCard: {
+          title: 'Show block card',
+          uiSchema: {
+            showBlockCard: { type: 'boolean', 'x-component': 'Switch' },
+          },
+        },
+      },
+    });
+
+    const session = flowSettings.beginRuntimeSettingsDeclaration(model, `${model.uid}:jsSettings:runJs`, 'jsSettings');
+    flowSettings.defineRuntimeSettings(session, {
+      showBlockCard: false,
+    });
+    flowSettings.commitRuntimeSettingsDeclaration(session);
+
+    const runtimeSteps = flowSettings.getRuntimeSettingSteps(model, 'jsSettings');
+    const runtimeShowBlockCardStepKey = Object.keys(runtimeSteps).find(
+      (key) => key !== 'showBlockCard' && key.includes('showBlockCard'),
+    ) as string;
+    expect(runtimeShowBlockCardStepKey).toBeTruthy();
+
+    const setStepParams = vi.spyOn(model as any, 'setStepParams');
+    expect(
+      flowSettings.setRuntimeSettingFormValues(model, runtimeSteps[runtimeShowBlockCardStepKey], { value: false }),
+    ).toBe(true);
+    expect(setStepParams).toHaveBeenCalledWith('runjsSettings', 'configure', { showBlockCard: false });
   });
 
   it('commits and clears ctx.useSettings declarations during RunJS execution', async () => {
@@ -710,8 +756,7 @@ ctx.message.success(settings.successMessage + ': ' + settings.openCount);
       'openCount',
     ]);
 
-    model.setStepParams('clickSettings', 'successMessage', { value: 'Updated action' });
-    model.setStepParams('clickSettings', 'openCount', { value: 3 });
+    model.setStepParams('runjsSettings', 'configure', { successMessage: 'Updated action', openCount: 3 });
     message.success.mockClear();
 
     await model.applyFlow('clickSettings');

@@ -141,6 +141,11 @@ const JS_CODE = stringOption('JS code', {
 const JS_VERSION = stringOption('JS code version', {
   example: 'v2',
 });
+const JS_VALUES = objectOption('RunJS runtime settings values', {
+  example: {
+    title: 'Runtime title',
+  },
+});
 
 const COMMON_BLOCK_HEADER_OPTIONS: FlowSurfaceConfigureOptions = {
   title: stringOption('Title', { example: 'User Table' }),
@@ -451,6 +456,7 @@ const JS_BLOCK_OPTIONS: FlowSurfaceConfigureOptions = {
   showBlockCard: booleanOption('Whether to show the outer block card', { default: true, example: true }),
   code: JS_CODE,
   version: JS_VERSION,
+  values: JS_VALUES,
 };
 
 const ACTION_COLUMN_OPTIONS: FlowSurfaceConfigureOptions = {
@@ -477,6 +483,7 @@ const TABLE_FIELD_WRAPPER_OPTIONS: FlowSurfaceConfigureOptions = {
   openView: OPEN_VIEW,
   code: JS_CODE,
   version: JS_VERSION,
+  values: JS_VALUES,
 };
 
 const DETAILS_FIELD_WRAPPER_OPTIONS: FlowSurfaceConfigureOptions = {
@@ -496,6 +503,7 @@ const DETAILS_FIELD_WRAPPER_OPTIONS: FlowSurfaceConfigureOptions = {
   openView: OPEN_VIEW,
   code: JS_CODE,
   version: JS_VERSION,
+  values: JS_VALUES,
 };
 
 const FILTER_FIELD_WRAPPER_OPTIONS: FlowSurfaceConfigureOptions = {
@@ -517,6 +525,7 @@ const FILTER_FIELD_WRAPPER_OPTIONS: FlowSurfaceConfigureOptions = {
   openView: OPEN_VIEW,
   code: JS_CODE,
   version: JS_VERSION,
+  values: JS_VALUES,
 };
 
 const FORM_FIELD_WRAPPER_OPTIONS: FlowSurfaceConfigureOptions = {
@@ -543,6 +552,7 @@ const FORM_FIELD_WRAPPER_OPTIONS: FlowSurfaceConfigureOptions = {
   openView: OPEN_VIEW,
   code: JS_CODE,
   version: JS_VERSION,
+  values: JS_VALUES,
 };
 
 const FIELD_NODE_OPTIONS: FlowSurfaceConfigureOptions = {
@@ -574,6 +584,7 @@ const JS_FIELD_NODE_OPTIONS: FlowSurfaceConfigureOptions = {
   ...omitConfigureOptions(FIELD_NODE_OPTIONS, ['openView']),
   code: JS_CODE,
   version: JS_VERSION,
+  values: JS_VALUES,
 };
 
 const JS_COLUMN_OPTIONS: FlowSurfaceConfigureOptions = {
@@ -583,6 +594,7 @@ const JS_COLUMN_OPTIONS: FlowSurfaceConfigureOptions = {
   fixed: stringOption('Fixed position', { example: 'right' }),
   code: JS_CODE,
   version: JS_VERSION,
+  values: JS_VALUES,
 };
 
 const JS_ITEM_OPTIONS: FlowSurfaceConfigureOptions = {
@@ -594,6 +606,7 @@ const JS_ITEM_OPTIONS: FlowSurfaceConfigureOptions = {
   labelWrap: booleanOption('Whether labels should wrap', { example: false }),
   code: JS_CODE,
   version: JS_VERSION,
+  values: JS_VALUES,
 };
 
 const DIVIDER_ITEM_OPTIONS: FlowSurfaceConfigureOptions = {
@@ -658,6 +671,7 @@ const FILTER_ACTION_OPTIONS: FlowSurfaceConfigureOptions = {
 const ACTION_JS_OPTIONS: FlowSurfaceConfigureOptions = {
   code: JS_CODE,
   version: JS_VERSION,
+  values: JS_VALUES,
 };
 
 const APPROVAL_RETURN_ACTION_OPTIONS: FlowSurfaceConfigureOptions = {

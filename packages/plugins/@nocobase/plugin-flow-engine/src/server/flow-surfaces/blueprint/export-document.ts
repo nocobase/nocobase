@@ -157,6 +157,7 @@ const BASIC_ACTION_STEP_PARAM_GROUPS = new Set([
   'filterSettings',
   'clickSettings',
   'jsSettings',
+  'runjsSettings',
 ]);
 const BASIC_ACTION_PROP_KEYS = new Set([
   'title',
@@ -203,6 +204,7 @@ const BASIC_FIELD_STEP_PARAM_GROUPS = new Set([
   'editItemSettings',
   'filterFormItemSettings',
   'jsSettings',
+  'runjsSettings',
 ]);
 const EXPORTED_RESOURCE_SETTING_PATHS = [
   'init.dataSourceKey',
@@ -373,6 +375,7 @@ const EXPORTED_SIMPLE_BLOCK_SETTING_PATHS_BY_TYPE: Record<string, readonly strin
   jsBlock: ['runJs.code', 'runJs.version', 'showBlockCard.showBlockCard'],
   iframe: ['editIframe'],
 };
+const EXPORTED_RUNJS_VALUES_SETTING_PATHS = ['configure.*'];
 const EXPORTED_BLOCK_STEP_PARAM_PATHS_BY_GROUP: Record<string, readonly string[]> = {
   resourceSettings: EXPORTED_RESOURCE_SETTING_PATHS,
   TriggerChildPageSettings: EXPORTED_RESOURCE_SETTING_PATHS,
@@ -558,6 +561,30 @@ function readNumber(value: unknown): number | undefined {
 
 function clonePlainObject(value: unknown): Record<string, unknown> | undefined {
   return _.isPlainObject(value) ? _.cloneDeep(value as Record<string, unknown>) : undefined;
+}
+
+function readRuntimeSettingsValues(node: FlowSurfaceExportNode) {
+  const values = clonePlainObject(getByPath(node, ['stepParams', 'runjsSettings', 'configure']));
+  return values && Object.keys(values).length ? values : undefined;
+}
+
+function isJsRendererFieldNode(
+  node: FlowSurfaceExportNode | undefined,
+): node is FlowSurfaceExportNode & { use: 'JSFieldModel' | 'JSEditableFieldModel' } {
+  return node?.use === 'JSFieldModel' || node?.use === 'JSEditableFieldModel';
+}
+
+function readFieldRunJsSettings(field: FlowSurfaceExportNode | undefined) {
+  if (!isJsRendererFieldNode(field)) {
+    return undefined;
+  }
+  const runJs = clonePlainObject(getByPath(field, ['stepParams', 'jsSettings', 'runJs']));
+  const values = readRuntimeSettingsValues(field);
+  const settings = buildDefinedPayload({
+    ...(runJs || {}),
+    values,
+  });
+  return Object.keys(settings).length ? settings : undefined;
 }
 
 function cloneArray(value: unknown): unknown[] | undefined {
@@ -1277,10 +1304,12 @@ function exportSimpleBlockSettings(block: FlowSurfaceExportNode, type: string) {
 
   if (type === 'jsBlock') {
     const runJs = clonePlainObject(getByPath(block, ['stepParams', 'jsSettings', 'runJs']));
+    const values = readRuntimeSettingsValues(block);
     const showBlockCard = getByPath(block, ['stepParams', 'jsSettings', 'showBlockCard', 'showBlockCard']);
     const settings = buildDefinedPayload({
       ...(runJs || {}),
       showBlockCard: showBlockCard === false ? false : undefined,
+      values,
     });
     return buildDefinedPayload({
       title: readString(block.decoratorProps?.title),
@@ -1308,6 +1337,9 @@ function getAllowedBlockStepParamPaths(type: string, groupKey: string): readonly
     (type === 'iframe' && groupKey === 'iframeBlockSettings')
   ) {
     return simpleBlockSettings || [];
+  }
+  if (type === 'jsBlock' && groupKey === 'runjsSettings') {
+    return EXPORTED_RUNJS_VALUES_SETTING_PATHS;
   }
   return EXPORTED_BLOCK_STEP_PARAM_PATHS_BY_GROUP[groupKey];
 }
@@ -1665,6 +1697,12 @@ function hasUnsupportedFieldStepParams(fieldHost: FlowSurfaceExportNode) {
         hasUnsupportedLeafPath(groupValue, EXPORTED_JS_FIELD_SETTING_PATHS)
       );
     }
+    if (groupKey === 'runjsSettings') {
+      return (
+        (fieldHost.use !== 'JSColumnModel' && fieldHost.use !== 'JSItemModel' && !isEmptyPlainContainer(groupValue)) ||
+        hasUnsupportedLeafPath(groupValue, EXPORTED_RUNJS_VALUES_SETTING_PATHS)
+      );
+    }
     return true;
   });
 }
@@ -1887,10 +1925,15 @@ function exportFieldSettings(fieldHost: FlowSurfaceExportNode, nestedFields?: st
 
   if (fieldHost.use === 'JSColumnModel' || fieldHost.use === 'JSItemModel') {
     const runJs = clonePlainObject(getByPath(fieldHost, ['stepParams', 'jsSettings', 'runJs']));
+    const values = readRuntimeSettingsValues(fieldHost);
     const type = fieldHost.use === 'JSColumnModel' ? 'jsColumn' : 'jsItem';
+    const settings = buildDefinedPayload({
+      ...(runJs || {}),
+      values,
+    });
     return buildDefinedPayload({
       type,
-      settings: runJs,
+      settings: Object.keys(settings).length ? settings : undefined,
     });
   }
 
@@ -1902,6 +1945,11 @@ function exportFieldSettings(fieldHost: FlowSurfaceExportNode, nestedFields?: st
 
   const publicSettings = exportFieldPublicSettings(fieldHost);
   const innerField = getSubNode(fieldHost, 'field');
+  const jsRendererSettings = readFieldRunJsSettings(innerField);
+  const fieldSettings = buildDefinedPayload({
+    ...((publicSettings as { settings?: Record<string, unknown> }).settings || {}),
+    ...(jsRendererSettings || {}),
+  });
   const fieldType = inferExportFieldType(innerField);
   const titleField =
     readString(getByPath(fieldHost, ['stepParams', 'tableColumnSettings', 'fieldNames', 'label'])) ||
@@ -1917,9 +1965,10 @@ function exportFieldSettings(fieldHost: FlowSurfaceExportNode, nestedFields?: st
     fieldType,
     fields:
       fieldType && FIELD_TYPES_WITH_NESTED_FIELDS.has(fieldType) && nestedFields?.length ? nestedFields : undefined,
+    renderer: isJsRendererFieldNode(innerField) ? 'js' : undefined,
     label: (publicSettings as { label?: string }).label,
     titleField,
-    settings: (publicSettings as { settings?: Record<string, unknown> }).settings,
+    settings: Object.keys(fieldSettings).length ? fieldSettings : undefined,
     popup,
   });
 }
@@ -2083,10 +2132,15 @@ function exportDeleteActionSettings(action: FlowSurfaceExportNode, type: string)
 }
 
 function readActionRunJsSettings(action: FlowSurfaceExportNode) {
-  return (
+  const runJs =
     clonePlainObject(getByPath(action, ['stepParams', 'clickSettings', 'runJs'])) ||
-    clonePlainObject(getByPath(action, ['stepParams', 'jsSettings', 'runJs']))
-  );
+    clonePlainObject(getByPath(action, ['stepParams', 'jsSettings', 'runJs']));
+  const values = readRuntimeSettingsValues(action);
+  const settings = buildDefinedPayload({
+    ...(runJs || {}),
+    values,
+  });
+  return Object.keys(settings).length ? settings : undefined;
 }
 
 function hasUnsupportedActionButtonSettings(action: FlowSurfaceExportNode) {
@@ -2150,24 +2204,39 @@ function hasUnsupportedActionDeleteSettings(action: FlowSurfaceExportNode, type:
 function hasUnsupportedActionRunJsSettings(action: FlowSurfaceExportNode, type: string) {
   const clickSettings = getByPath<Record<string, unknown>>(action, ['stepParams', 'clickSettings']);
   const jsSettings = getByPath<Record<string, unknown>>(action, ['stepParams', 'jsSettings']);
-  if (!clickSettings && !jsSettings) {
+  const runjsSettings = getByPath<Record<string, unknown>>(action, ['stepParams', 'runjsSettings']);
+  const hasClickSettings = !isEmptyPlainContainer(clickSettings);
+  const hasJsSettings = !isEmptyPlainContainer(jsSettings);
+  const hasRunjsSettings = !isEmptyPlainContainer(runjsSettings);
+  if (!hasClickSettings && !hasJsSettings && !hasRunjsSettings) {
     return false;
   }
   if (type !== 'js' && type !== 'jsItem') {
     return true;
   }
-  const unsupportedClickSettings = clickSettings && Object.keys(clickSettings).some((key) => key !== 'runJs');
-  const unsupportedJsSettings = jsSettings && Object.keys(jsSettings).some((key) => key !== 'runJs');
-  if (unsupportedClickSettings || unsupportedJsSettings) {
+  const unsupportedClickSettings = hasClickSettings && Object.keys(clickSettings || {}).some((key) => key !== 'runJs');
+  const unsupportedJsSettings = hasJsSettings && Object.keys(jsSettings || {}).some((key) => key !== 'runJs');
+  const unsupportedRunjsSettings =
+    hasRunjsSettings && hasUnsupportedLeafPath(runjsSettings, EXPORTED_RUNJS_VALUES_SETTING_PATHS);
+  if (unsupportedClickSettings || unsupportedJsSettings || unsupportedRunjsSettings) {
     return true;
   }
-  if (clickSettings && !JS_ACTION_USES.has(String(action.use || ''))) {
+  if (hasClickSettings && !JS_ACTION_USES.has(String(action.use || ''))) {
     return true;
   }
-  if (jsSettings && !JS_ITEM_ACTION_USES.has(String(action.use || ''))) {
+  if (hasJsSettings && !JS_ITEM_ACTION_USES.has(String(action.use || ''))) {
     return true;
   }
-  const runJs = readActionRunJsSettings(action);
+  if (
+    hasRunjsSettings &&
+    !JS_ACTION_USES.has(String(action.use || '')) &&
+    !JS_ITEM_ACTION_USES.has(String(action.use || ''))
+  ) {
+    return true;
+  }
+  const runJs =
+    clonePlainObject(getByPath(action, ['stepParams', 'clickSettings', 'runJs'])) ||
+    clonePlainObject(getByPath(action, ['stepParams', 'jsSettings', 'runJs']));
   return !!runJs && Object.keys(runJs).some((key) => key !== 'code' && key !== 'version');
 }
 
