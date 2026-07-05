@@ -19,6 +19,7 @@ import {
   type EnvProxyConfig,
   type EnvProxyProvider,
   type EnvProxyProviderConfig,
+  type EnvResolvedProxyEntry,
 } from './env-proxy-config.js';
 import {
   inferConfiguredAppPathFromLegacyConfig,
@@ -847,13 +848,14 @@ export async function setEnvRuntime(
 export function resolveEnvProxyEntry(
   config: Pick<EnvConfigEntry, 'proxy'> | undefined,
   provider: EnvProxyProvider,
-): EnvProxyProviderConfig | undefined {
+): EnvResolvedProxyEntry | undefined {
   const proxy = normalizeEnvProxyConfig(config?.proxy);
-  return {
+  const resolved: EnvResolvedProxyEntry = {
     ...(proxy?.host ? { host: proxy.host } : {}),
     ...(proxy?.port !== undefined ? { port: proxy.port } : {}),
     ...((provider === 'nginx' ? proxy?.nginx : proxy?.caddy) ?? {}),
   };
+  return Object.keys(resolved).length > 0 ? resolved : undefined;
 }
 
 export async function setEnvProxyEntry(

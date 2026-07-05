@@ -16,6 +16,7 @@ import {
   startDockerContainer,
   stopDockerContainer,
 } from './app-runtime.js';
+import { loadAuthConfig } from './auth-store.js';
 import {
   DEFAULT_NGINX_PROXY_DRIVER,
   getCliConfigValue,
@@ -43,12 +44,14 @@ import {
   type EnvProxyNginxBundle,
   type ManualEnvProxyNginxInput,
 } from './env-proxy.js';
-import { run } from './run-npm.js';
+import { normalizeEnvProxyConfig } from './env-proxy-config.js';
+import { commandOutput, run } from './run-npm.js';
 
 const DOCKER_NGINX_PROXY_CONTAINER_SUFFIX = 'nginx-proxy';
 const DOCKER_NGINX_PROXY_IMAGE = 'nginx:latest';
 const DOCKER_NGINX_PROXY_RUNTIME_ROOT = '/apps';
 const DOCKER_NGINX_PROXY_CONF_DESTINATION = '/etc/nginx/conf.d/default.conf';
+const DEFAULT_DOCKER_NGINX_PROXY_PUBLISHED_PORTS = [80, 443] as const;
 
 type WritableProxyRuntime = Extract<ManagedAppRuntime, { kind: 'local' | 'docker' }>;
 
@@ -366,12 +369,18 @@ async function reloadLocalNginxProxy(runtimeContext: NginxProxyRuntimeContext): 
 
 async function ensureDockerNginxProxyContainer(runtimeContext: NginxProxyRuntimeContext): Promise<void> {
   const containerName = await resolveNginxProxyContainerName();
+  const mainConfigPath = await ensureNginxProxyMainConfig(runtimeContext);
+  const publishedPorts = await resolveDockerNginxPublishedPorts();
   if (await dockerContainerExists(containerName)) {
-    return;
+    if (await dockerNginxProxyContainerMatchesPublishedPorts(containerName, publishedPorts)) {
+      return;
+    }
+
+    await removeDockerNginxProxyContainer(containerName);
   }
 
   const hostCliRoot = String(process.env.NB_CLI_ROOT ?? resolveCliHomeRoot()).trim() || resolveCliHomeRoot();
-  const mainConfigPath = await ensureNginxProxyMainConfig(runtimeContext);
+  const dockerPortArgs = publishedPorts.flatMap((port) => ['-p', `${port}:${port}`]);
 
   await run('docker', [
     'run',
@@ -380,8 +389,7 @@ async function ensureDockerNginxProxyContainer(runtimeContext: NginxProxyRuntime
     containerName,
     '--add-host',
     'host.docker.internal:host-gateway',
-    '-p',
-    '80:80',
+    ...dockerPortArgs,
     '-v',
     `${hostCliRoot}:${DOCKER_NGINX_PROXY_RUNTIME_ROOT}`,
     '-v',
@@ -393,16 +401,71 @@ async function ensureDockerNginxProxyContainer(runtimeContext: NginxProxyRuntime
   });
 }
 
+async function resolveDockerNginxPublishedPorts(): Promise<number[]> {
+  const config = await loadAuthConfig();
+  const ports = new Set<number>(DEFAULT_DOCKER_NGINX_PROXY_PUBLISHED_PORTS);
+
+  for (const envConfig of Object.values(config.envs)) {
+    const port = normalizeEnvProxyConfig(envConfig.proxy)?.port;
+    if (port !== undefined) {
+      ports.add(port);
+    }
+  }
+
+  return Array.from(ports).sort((left, right) => left - right);
+}
+
+async function readDockerNginxPublishedPorts(containerName: string): Promise<number[]> {
+  const output = await commandOutput(
+    'docker',
+    ['inspect', '--format', '{{json .HostConfig.PortBindings}}', containerName],
+    { errorName: 'docker inspect' },
+  );
+  const parsed = JSON.parse(output.trim() || '{}') as Record<string, Array<{ HostPort?: string }> | null>;
+  const ports = new Set<number>();
+
+  for (const bindings of Object.values(parsed)) {
+    if (!Array.isArray(bindings)) {
+      continue;
+    }
+
+    for (const binding of bindings) {
+      const port = Number.parseInt(String(binding?.HostPort ?? '').trim(), 10);
+      if (Number.isInteger(port) && port > 0) {
+        ports.add(port);
+      }
+    }
+  }
+
+  return Array.from(ports).sort((left, right) => left - right);
+}
+
+async function dockerNginxProxyContainerMatchesPublishedPorts(
+  containerName: string,
+  expectedPorts: number[],
+): Promise<boolean> {
+  const currentPorts = await readDockerNginxPublishedPorts(containerName);
+  return currentPorts.length === expectedPorts.length && currentPorts.every((port, index) => port === expectedPorts[index]);
+}
+
+async function removeDockerNginxProxyContainer(containerName: string): Promise<void> {
+  await run('docker', ['rm', '-f', containerName], {
+    errorName: 'docker rm',
+    stdio: 'ignore',
+  });
+}
+
 async function startDockerNginxProxy(runtimeContext: NginxProxyRuntimeContext): Promise<NginxProxyLifecycleResult> {
   const containerName = await resolveNginxProxyContainerName();
   await ensureNginxProxyMainConfig(runtimeContext);
+  const existedBeforeEnsure = await dockerContainerExists(containerName);
+  await ensureDockerNginxProxyContainer(runtimeContext);
 
-  if (await dockerContainerExists(containerName)) {
+  if (existedBeforeEnsure && (await dockerContainerExists(containerName))) {
     const state = await startDockerContainer(containerName, { stdio: 'ignore' });
     return state === 'already-running' ? 'already-running' : 'started';
   }
 
-  await ensureDockerNginxProxyContainer(runtimeContext);
   return 'started';
 }
 

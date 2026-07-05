@@ -13,6 +13,11 @@ export interface EnvProxyProviderConfig {
   [key: string]: unknown;
 }
 
+export interface EnvResolvedProxyEntry extends EnvProxyProviderConfig {
+  host?: string;
+  port?: number;
+}
+
 export interface EnvProxyConfig {
   host?: string;
   port?: number;
