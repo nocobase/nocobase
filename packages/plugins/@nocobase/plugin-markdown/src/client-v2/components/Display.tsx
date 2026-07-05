@@ -1,0 +1,183 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import { Popover } from 'antd';
+import React, { CSSProperties, useCallback, useEffect, useRef, useState } from 'react';
+import Vditor from 'vditor';
+import { useCDN } from './const';
+import { removeMarkdownIframes, stripMarkdownIframes } from './markdownIframe';
+import useStyle from './style';
+
+export interface MarkdownDisplayProps {
+  value?: string;
+  ellipsis?: boolean;
+  style?: CSSProperties;
+}
+
+function convertToText(markdownText: string) {
+  const content = markdownText;
+  let temp = document.createElement('div');
+  temp.innerHTML = content;
+  const text = temp.innerText;
+  temp = null;
+  return text?.replace(/[\n\r]/g, '') || '';
+}
+
+const getContentWidth = (element: HTMLElement) => {
+  const range = document.createRange();
+  range.selectNodeContents(element);
+  return range.getBoundingClientRect().width;
+};
+
+function openCustomPreview(src: string) {
+  if (document.getElementById('custom-image-preview')) return;
+
+  const overlay = document.createElement('span');
+  overlay.id = 'custom-image-preview';
+  Object.assign(overlay.style, {
+    position: 'fixed',
+    inset: '0',
+    backgroundColor: 'rgba(0,0,0,0.85)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: '9999',
+    cursor: 'zoom-out',
+  });
+
+  const img = document.createElement('img');
+  img.src = src;
+  Object.assign(img.style, {
+    maxWidth: '90%',
+    maxHeight: '90%',
+    borderRadius: '8px',
+    boxShadow: '0 0 20px rgba(0,0,0,0.5)',
+    transition: 'transform 0.2s',
+    cursor: 'zoom-out',
+  });
+
+  overlay.addEventListener('click', () => {
+    document.body.removeChild(overlay);
+  });
+
+  overlay.appendChild(img);
+  document.body.appendChild(overlay);
+}
+
+function DisplayInner(props: { value?: string; style?: CSSProperties }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const { wrapSSR, componentCls, hashId } = useStyle();
+  const cdn = useCDN();
+
+  useEffect(() => {
+    Vditor.preview(containerRef.current, props.value ?? '', {
+      mode: 'light',
+      cdn,
+      markdown: {
+        sanitize: true,
+      },
+      transform: stripMarkdownIframes,
+    })
+      .then(() => removeMarkdownIframes(containerRef.current))
+      .catch(() => removeMarkdownIframes(containerRef.current));
+    setTimeout(() => {
+      removeMarkdownIframes(containerRef.current);
+      containerRef.current?.querySelectorAll('img').forEach((img: HTMLImageElement) => {
+        img.style.cursor = 'zoom-in';
+        img.addEventListener('click', () => {
+          openCustomPreview(img.src);
+        });
+      });
+    }, 0);
+  }, [props.value, cdn]);
+
+  return wrapSSR(
+    <span className={`${hashId} ${componentCls}`}>
+      <div ref={containerRef} style={{ border: 'none', ...(props?.style ?? {}) }} />
+    </span>,
+  );
+}
+
+export const Display = (props: MarkdownDisplayProps) => {
+  const value = props.value;
+  const cdn = useCDN();
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [popoverVisible, setPopoverVisible] = useState(false);
+  const [ellipsis, setEllipsis] = useState(false);
+  const [text, setText] = useState('');
+  const elRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!value) return;
+    if (props.ellipsis) {
+      Vditor.md2html(value, {
+        mode: 'light',
+        cdn,
+        markdown: {
+          sanitize: true,
+        },
+      })
+        .then((html) => {
+          setText(convertToText(stripMarkdownIframes(html)));
+        })
+        .catch(() => setText(''));
+    } else {
+      Vditor.preview(containerRef.current, value, {
+        mode: 'light',
+        cdn,
+        markdown: {
+          sanitize: true,
+        },
+        transform: stripMarkdownIframes,
+      })
+        .then(() => removeMarkdownIframes(containerRef.current))
+        .catch(() => removeMarkdownIframes(containerRef.current));
+    }
+  }, [value, props.ellipsis, cdn]);
+
+  const isOverflowTooltip = useCallback(() => {
+    if (!elRef.current) return false;
+    const contentWidth = getContentWidth(elRef.current);
+    const offsetWidth = elRef.current?.offsetWidth;
+    return contentWidth > offsetWidth;
+  }, [elRef]);
+
+  if (props.ellipsis) {
+    return (
+      <Popover
+        open={popoverVisible}
+        onOpenChange={(visible) => {
+          setPopoverVisible(ellipsis && visible);
+        }}
+        content={<DisplayInner value={value} style={{ maxWidth: 500, maxHeight: 400, overflowY: 'auto' }} />}
+      >
+        <div
+          ref={elRef}
+          style={{
+            overflow: 'hidden',
+            overflowWrap: 'break-word',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+            wordBreak: 'break-all',
+          }}
+          onMouseEnter={(e) => {
+            const el = e.currentTarget;
+            const isShowTooltips = isOverflowTooltip();
+            if (isShowTooltips) {
+              setEllipsis(el.scrollWidth >= el.clientWidth);
+            }
+          }}
+        >
+          {text}
+        </div>
+      </Popover>
+    );
+  }
+  return <DisplayInner value={value} />;
+};

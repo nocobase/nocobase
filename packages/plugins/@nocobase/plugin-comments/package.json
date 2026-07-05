@@ -28,6 +28,7 @@
     "@nocobase/client-v2": "2.x",
     "@nocobase/flow-engine": "2.x",
     "@nocobase/plugin-data-source-manager": "2.x",
+    "@nocobase/plugin-markdown": "2.x",
     "@nocobase/server": "2.x",
     "@nocobase/test": "2.x"
   },
