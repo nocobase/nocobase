@@ -13,6 +13,7 @@ import {
   resolveManagedAppRuntime,
   type ManagedAppRuntime,
 } from '../../../lib/app-runtime.js';
+import { resolveDefaultConfigScope } from '../../../lib/cli-home.js';
 import {
   getNginxProxyDriver,
   normalizeProxyListenPort,
@@ -20,6 +21,7 @@ import {
   writeManualNginxProxyBundle,
   writeNginxProxyBundle,
 } from '../../../lib/proxy-nginx.js';
+import { resolveEnvProxyEntry, setEnvProxyEntry } from '../../../lib/auth-store.js';
 import { announceTargetEnv, failTask, startTask, succeedTask } from '../../../lib/ui.js';
 
 type WritableProxyRuntime = Extract<ManagedAppRuntime, { kind: 'local' | 'docker' }>;
@@ -174,17 +176,28 @@ export default class ProxyNginxGenerate extends Command {
     startTask(`Generating nginx proxy config for env "${runtime.envName}" with the ${driver} driver...`);
 
     try {
+      const savedAppEntryOptions = resolveEnvProxyEntry(runtime.env.config, 'nginx');
+      const appEntryOptions = {
+        host: flags.host?.trim() || savedAppEntryOptions?.host,
+        port: normalizedPort ?? (savedAppEntryOptions?.port !== undefined ? String(savedAppEntryOptions.port) : undefined),
+      };
       const { bundle, status } = await writeNginxProxyBundle(
         runtime as WritableProxyRuntime,
-        {
-          host: flags.host?.trim() || undefined,
-          port: normalizedPort,
-        },
+        appEntryOptions,
         runtimeContext,
         {
           cdnBaseUrl: flags['cdn-base-url']?.trim() || undefined,
           force: flags.force,
         },
+      );
+      await setEnvProxyEntry(
+        runtime.envName,
+        'nginx',
+        {
+          host: appEntryOptions.host,
+          port: appEntryOptions.port ? Number(appEntryOptions.port) : undefined,
+        },
+        { scope: resolveDefaultConfigScope() },
       );
       succeedTask(
         status === 'created'

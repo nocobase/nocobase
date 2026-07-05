@@ -18,9 +18,11 @@ import {
   loadAuthConfig,
   replaceEnvConfig,
   removeEnv,
+  resolveEnvProxyEntry,
   saveAuthConfig,
   setCurrentEnv,
   setEnvOauthSession,
+  setEnvProxyEntry,
   updateEnvConnection,
   upsertEnv,
 } from '../lib/auth-store.js';
@@ -131,6 +133,83 @@ test('clearEnvRootSetup removes saved root setup fields while preserving other e
     expect(env).not.toHaveProperty('rootEmail');
     expect(env).not.toHaveProperty('rootPassword');
     expect(env).not.toHaveProperty('rootNickname');
+  });
+});
+
+test('setEnvProxyEntry stores shared proxy host and port', async () => {
+  await withTempCliHome(async () => {
+    await saveAuthConfig(
+      {
+        lastEnv: 'test',
+        envs: {
+          test: {
+            baseUrl: 'http://localhost:13000/api',
+          },
+        },
+      },
+      { scope: 'global' },
+    );
+
+    await setEnvProxyEntry(
+      'test',
+      'nginx',
+      {
+        host: 'c.local.nocobase.com',
+        port: 80,
+      },
+      { scope: 'global' },
+    );
+
+    const env = await getEnv('test', { scope: 'global' });
+    expect(env?.config.proxy).toEqual({
+      host: 'c.local.nocobase.com',
+      port: 80,
+    });
+    expect(resolveEnvProxyEntry(env?.config, 'nginx')).toEqual({
+      host: 'c.local.nocobase.com',
+      port: 80,
+    });
+  });
+});
+
+test('setEnvProxyEntry keeps shared proxy host and port alongside provider-specific settings', async () => {
+  await withTempCliHome(async () => {
+    await saveAuthConfig(
+      {
+        lastEnv: 'test',
+        envs: {
+          test: {
+            baseUrl: 'http://localhost:13000/api',
+          },
+        },
+      },
+      { scope: 'global' },
+    );
+
+    await setEnvProxyEntry(
+      'test',
+      'nginx',
+      {
+        host: 'c.local.nocobase.com',
+        port: 80,
+        ssl: false,
+      },
+      { scope: 'global' },
+    );
+
+    const env = await getEnv('test', { scope: 'global' });
+    expect(env?.config.proxy).toEqual({
+      host: 'c.local.nocobase.com',
+      port: 80,
+      nginx: {
+        ssl: false,
+      },
+    });
+    expect(resolveEnvProxyEntry(env?.config, 'nginx')).toEqual({
+      host: 'c.local.nocobase.com',
+      port: 80,
+      ssl: false,
+    });
   });
 });
 
