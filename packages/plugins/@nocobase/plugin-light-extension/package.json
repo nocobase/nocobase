@@ -1,0 +1,25 @@
+{
+  "name": "@nocobase/plugin-light-extension",
+  "displayName": "Light extensions",
+  "displayName.zh-CN": "轻插件",
+  "description": "Organize and reuse multi-file RunJS entries from light extension repositories.",
+  "description.zh-CN": "组织并复用轻插件仓库中的多文件 RunJS Entry。",
+  "version": "2.1.12",
+  "license": "Apache-2.0",
+  "main": "./dist/server/index.js",
+  "homepage": "https://docs.nocobase.com",
+  "homepage.zh-CN": "https://docs-cn.nocobase.com",
+  "keywords": [
+    "Developer tools"
+  ],
+  "peerDependencies": {
+    "@ant-design/icons": "5.x",
+    "@nocobase/client-v2": "2.x",
+    "@nocobase/plugin-vsc-file": "2.x",
+    "@nocobase/server": "2.x",
+    "@nocobase/test": "2.x",
+    "antd": "5.x",
+    "react": "^18.2.0",
+    "react-i18next": "^11.15.1"
+  }
+}
