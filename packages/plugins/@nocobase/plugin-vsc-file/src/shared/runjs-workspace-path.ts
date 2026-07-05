@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { normalizePath } from './path';
+import { normalizePath } from './path-normalize';
 
 export const runJSManifestPath = '.nocobase/runjs-source.json';
 export const defaultRunJSSourceRoot = 'src/client';
@@ -107,6 +107,31 @@ export function resolveRunJSClientIndexEntryPath(
   return candidates[0]?.path || fallback;
 }
 
+export function resolveRunJSWorkspaceEntryPath(
+  paths: Iterable<string>,
+  options: {
+    fallback?: string;
+    preferredEntries?: Array<string | null | undefined>;
+  } = {},
+): string {
+  const normalizedPaths = Array.from(paths, normalizeRunJSWorkspacePathValue);
+  const fixedClientEntry = resolveRunJSClientIndexEntryPath(normalizedPaths, '');
+
+  if (fixedClientEntry) {
+    return fixedClientEntry;
+  }
+
+  const existingPaths = new Set(normalizedPaths);
+  for (const preferredEntry of options.preferredEntries || []) {
+    const normalizedEntry = normalizeOptionalRunJSEntryPath(preferredEntry);
+    if (normalizedEntry && existingPaths.has(normalizedEntry)) {
+      return normalizedEntry;
+    }
+  }
+
+  return options.fallback ?? defaultRunJSEntryPath;
+}
+
 function isAllowedRunJSPath(path: string): boolean {
   return path === runJSManifestPath || path === 'README.md' || path.startsWith('src/');
 }
@@ -124,6 +149,19 @@ function getRunJSClientIndexExtensionRank(path: string): number {
   const extension = path.slice(path.lastIndexOf('.'));
   const index = runJSClientIndexExtensionPriority.indexOf(extension);
   return index === -1 ? runJSClientIndexExtensionPriority.length : index;
+}
+
+function normalizeOptionalRunJSEntryPath(path: string | null | undefined): string | null {
+  if (!path) {
+    return null;
+  }
+
+  try {
+    const validation = validateRunJSWorkspacePathValue(path);
+    return validation.valid && validation.path ? validation.path : null;
+  } catch (_) {
+    return null;
+  }
 }
 
 function hasHiddenDirectory(path: string): boolean {

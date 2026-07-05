@@ -7,12 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { normalizePath } from '../../shared/path';
+import { normalizePath } from '../../shared/path-normalize';
 import {
   defaultRunJSEntryPath,
   defaultRunJSSourceRoot,
   normalizeRunJSWorkspacePathValue,
-  resolveRunJSClientIndexEntryPath,
+  resolveRunJSWorkspaceEntryPath,
   runJSManifestPath,
   validateRunJSWorkspacePathValue,
   type RunJSWorkspacePathValidationReason,
@@ -445,23 +445,29 @@ export function ensureManifestFolders(
 
 export function resolveInitialEntryPath(
   files: RunJSWorkspaceFile[],
-  _legacyEntryPath?: string,
-  _legacyEntry?: string,
+  legacyEntryPath?: string,
+  legacyEntry?: string,
 ): string {
-  return resolveRunJSClientIndexEntryPath(
+  return resolveRunJSWorkspaceEntryPath(
     normalizeWorkspaceFiles(files)
       .filter((file) => file.path !== runJSManifestPath)
       .map((file) => file.path),
-    defaultRunJSEntryPath,
+    {
+      fallback: defaultRunJSEntryPath,
+      preferredEntries: [readRunJSManifestEntry(files), legacyEntryPath, legacyEntry],
+    },
   );
 }
 
 export function resolveWorkspaceEntryPath(files: RunJSWorkspaceFile[], currentEntryPath: string): string {
-  return resolveRunJSClientIndexEntryPath(
+  return resolveRunJSWorkspaceEntryPath(
     normalizeWorkspaceFiles(files)
       .filter((file) => file.path !== runJSManifestPath)
       .map((file) => file.path),
-    currentEntryPath === defaultRunJSEntryPath ? currentEntryPath : defaultRunJSEntryPath,
+    {
+      fallback: defaultRunJSEntryPath,
+      preferredEntries: [currentEntryPath, readRunJSManifestEntry(files)],
+    },
   );
 }
 

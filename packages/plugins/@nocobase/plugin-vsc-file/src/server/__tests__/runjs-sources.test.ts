@@ -336,6 +336,61 @@ describe('runJSSources resource', () => {
     expect(String(exported.headers['content-disposition'])).toContain('Import-export.zip');
   });
 
+  it('honors a manifest entry outside the fixed src/client index when importing old workspaces', async () => {
+    const publishedArtifacts: RunJSRuntimeArtifact[] = [];
+    const locator = createLocator('fm_import_legacy_entry');
+
+    registerFlowModelAdapter({
+      label: 'JS block / Import legacy entry',
+      modelUid: 'fm_import_legacy_entry',
+      readCode: () => 'ctx.render("legacy");',
+      onPublish: (artifact) => {
+        publishedArtifacts.push(artifact);
+      },
+    });
+
+    const opened = await agent.resource('runJSSources').open({
+      values: {
+        locator,
+      },
+    });
+    const zipBase64 = await createWorkspaceZipBase64({
+      [runJSManifestPath]: `${JSON.stringify(
+        {
+          schemaVersion: 1,
+          entry: 'src/main.tsx',
+          runtimeVersion: 'v2',
+          surfaceStyle: 'render',
+        },
+        null,
+        2,
+      )}\n`,
+      'src/main.tsx': 'ctx.render("main");\n',
+    });
+
+    const imported = await agent.resource('runJSSources').importZip({
+      values: {
+        locator,
+        repoId: opened.body.data.repository.id,
+        baseCommitId: opened.body.data.repository.publishedCommitId,
+        basePublishedCommitId: opened.body.data.repository.publishedCommitId,
+        baseOwnerFingerprint: opened.body.data.ownerFingerprint,
+        basePublishedOwnerFingerprint: opened.body.data.publishedOwnerFingerprint,
+        message: 'Import legacy RunJS workspace',
+        zipBase64,
+      },
+    });
+
+    expect(imported.status).toBe(200);
+    expect(imported.body.data.artifact.entryPath).toBe('src/main.tsx');
+    expect(publishedArtifacts).toHaveLength(1);
+    expect(publishedArtifacts[0]).toMatchObject({
+      entryPath: 'src/main.tsx',
+      version: 'v2',
+    });
+    expect(publishedArtifacts[0].code).toContain('main');
+  });
+
   it('rejects a supplied repository that does not belong to the RunJS source locator', async () => {
     const publishedArtifacts: RunJSRuntimeArtifact[] = [];
 

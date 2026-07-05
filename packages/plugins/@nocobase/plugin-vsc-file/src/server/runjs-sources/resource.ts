@@ -17,7 +17,7 @@ import { sha256Hex } from '../../shared/hash';
 import { normalizePath, pathHash, pathLowerHash } from '../../shared/path';
 import {
   defaultRunJSEntryPath,
-  resolveRunJSClientIndexEntryPath,
+  resolveRunJSWorkspaceEntryPath,
   runJSManifestPath,
   validateRunJSWorkspacePathValue,
 } from '../../shared/runjs-workspace-path';
@@ -309,7 +309,7 @@ const actionRunners: Record<RunJSSourceActionName, RunJSSourceActionRunner> = {
     assertRunJSCompileInputLimits(compileFiles);
     const compiled = compileRunJSSourceWorkspace({
       files: compileFiles,
-      entry: selectEntryPath(compileFiles),
+      entry: selectEntryPath(compileFiles, previewInput.entryPath),
       runtimeVersion: previewInput.version || legacy.version,
       surfaceStyle: legacy.surfaceStyle,
       locator: previewInput.locator,
@@ -379,7 +379,7 @@ const actionRunners: Record<RunJSSourceActionName, RunJSSourceActionRunner> = {
         },
         serviceCtx,
       );
-      const entryPath = selectEntryPath(initialCompileFiles);
+      const entryPath = selectEntryPath(initialCompileFiles, publishInput.entryPath);
       const runtimeVersion = publishInput.version || legacy.version;
       const publishFiles = withRunJSManifestChange(
         publishInput.files,
@@ -2223,11 +2223,34 @@ function assertRepositoryMatchesIdentity(
   });
 }
 
-function selectEntryPath(files: VscFileChange[]): string {
-  return resolveRunJSClientIndexEntryPath(
-    files.filter((file) => file.operation !== 'delete').map((file) => file.path),
-    defaultRunJSEntryPath,
+function selectEntryPath(files: VscFileChange[], preferredEntryPath?: string): string {
+  const activeFiles = files.filter((file) => file.operation !== 'delete');
+  return resolveRunJSWorkspaceEntryPath(
+    activeFiles.map((file) => file.path),
+    {
+      fallback: defaultRunJSEntryPath,
+      preferredEntries: [preferredEntryPath, readRunJSWorkspaceManifestEntry(activeFiles)],
+    },
   );
+}
+
+function readRunJSWorkspaceManifestEntry(files: VscFileChange[]): string | undefined {
+  const manifest = files.find((file) => normalizePath(file.path) === runJSManifestPath);
+  if (!manifest || typeof manifest.content !== 'string' || !manifest.content.trim()) {
+    return undefined;
+  }
+
+  try {
+    const value = JSON.parse(manifest.content) as Record<string, unknown>;
+    const entry = toStringValue(value.entry);
+    if (!entry) {
+      return undefined;
+    }
+    const validation = validateRunJSWorkspacePathValue(entry);
+    return validation.valid ? validation.path : undefined;
+  } catch (_) {
+    return undefined;
+  }
 }
 
 function getActionInput(ctx: RunJSSourceResourceContext): ResourceActionInput {

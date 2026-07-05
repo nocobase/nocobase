@@ -713,6 +713,73 @@ describe('runJSStudioProvider', () => {
     });
   });
 
+  it('keeps an existing manifest entry when no fixed src/client index exists', async () => {
+    mocks.request.mockImplementation(({ url, data }: { url: string; data?: unknown }) => {
+      if (url === 'runJSSources:open') {
+        return Promise.resolve({
+          data: {
+            data: {
+              ...openResult,
+              legacy: {
+                ...openResult.legacy,
+                entryPath: 'src/main.tsx',
+              },
+              files: [
+                {
+                  path: runJSManifestPath,
+                  content: `${JSON.stringify({ entry: 'src/main.tsx', runtimeVersion: 'v2' }, null, 2)}\n`,
+                  language: 'json',
+                },
+                { path: 'src/main.tsx', content: 'ctx.render("main");', language: 'typescriptreact' },
+              ],
+            },
+          },
+        });
+      }
+
+      if (url === 'runJSSources:compilePreview') {
+        return Promise.resolve({
+          data: {
+            data: {
+              locator,
+              locatorKind: 'flowModel.step',
+              artifact: {
+                code: 'ctx.render("main");',
+                version: 'v2',
+                sourceMap: previewSourceMap,
+                diagnostics: [],
+                filesHash: 'files-hash-main',
+                entryPath: (data as { entryPath?: string }).entryPath,
+              },
+            },
+          },
+        });
+      }
+
+      return Promise.resolve({
+        data: {
+          data: {},
+        },
+      });
+    });
+
+    renderEditor();
+
+    await screen.findByLabelText('Edit file content');
+    fireEvent.click(screen.getByRole('button', { name: 'Run' }));
+
+    await waitFor(() => {
+      expect(mocks.request).toHaveBeenCalledWith(
+        expect.objectContaining({
+          url: 'runJSSources:compilePreview',
+          data: expect.objectContaining({
+            entryPath: 'src/main.tsx',
+          }),
+        }),
+      );
+    });
+  });
+
   it('shows mapped runtime diagnostics as clickable file locations', async () => {
     mocks.diagnoseRunJS.mockResolvedValueOnce({
       execution: { finished: true, started: true, timeout: false },

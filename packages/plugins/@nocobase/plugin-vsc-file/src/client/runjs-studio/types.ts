@@ -10,9 +10,9 @@
 import type React from 'react';
 import type { RunJSValue } from '@nocobase/flow-engine';
 
-import type { RunJSSourceLocator, RunJSSurfaceStyle } from '../../shared/runjs-source-types';
+import type { RunJSSourceLocator, RunJSSurfaceStyle } from '../../shared/runjs-source-contracts';
 
-export type { RunJSSourceLocator, RunJSSurfaceStyle } from '../../shared/runjs-source-types';
+export type { RunJSSourceLocator, RunJSSurfaceStyle } from '../../shared/runjs-source-contracts';
 
 export interface LegacyRunJSEditorProviderRenderProps {
   t?: (key: string) => string;

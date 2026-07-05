@@ -17,7 +17,7 @@ import type {
   RunJSSourcePublishInput,
   RunJSSourcePublishResult,
   RunJSSurfaceStyle,
-} from '../../shared/runjs-source-types';
+} from '../../shared/runjs-source-contracts';
 import type { VscCommitRecord, VscFileChange, VscRepositoryIdentity, VscRepositoryRecord } from '../../shared/types';
 import type { VscFileRepoFileDiffResult } from '../hooks';
 
