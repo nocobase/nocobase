@@ -29,6 +29,7 @@ export type VscPermissionAction =
 export interface VscPermissionRequestMetadata {
   resourceName?: string;
   actionName?: string;
+  requestId?: string;
   path?: string;
   method?: string;
   requestSource?: string;

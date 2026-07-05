@@ -194,6 +194,7 @@ function getRequestMetadata(ctx: VscResourceContext): VscPermissionRequestMetada
   return compactObject({
     resourceName: ctx.action?.resourceName,
     actionName: ctx.action?.actionName,
+    requestId: getHeader(headers, 'x-request-id') || getHeader(headers, 'x-correlation-id'),
     path: ctx.request?.path,
     method: ctx.request?.method,
     requestSource: getHeader(headers, 'x-request-source'),
@@ -206,7 +207,7 @@ function getRequestMetadata(ctx: VscResourceContext): VscPermissionRequestMetada
 }
 
 function getHeader(headers: Record<string, string | string[] | undefined>, name: string): string | undefined {
-  const value = headers[name];
+  const value = headers[name] || headers[name.toLowerCase()];
   if (Array.isArray(value)) {
     return value[0];
   }

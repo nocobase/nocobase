@@ -2299,6 +2299,7 @@ function getRequestMetadata(ctx: RunJSSourceResourceContext): Record<string, unk
   return compactObject({
     resourceName: ctx.action?.resourceName,
     actionName: ctx.action?.actionName,
+    requestId: getHeader(headers, 'x-request-id') || getHeader(headers, 'x-correlation-id'),
     path: ctx.request?.path,
     method: ctx.request?.method,
     requestSource: getHeader(headers, 'x-request-source'),
