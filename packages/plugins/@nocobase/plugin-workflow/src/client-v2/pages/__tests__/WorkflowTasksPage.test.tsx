@@ -276,6 +276,42 @@ describe('WorkflowTasksPage', () => {
     expect(holder.navigate).toHaveBeenCalledWith('/mobile/page/workflow-tasks/demo/pending/1');
   });
 
+  it('keeps task type tab navigation on the admin route when only the layout is mobile', async () => {
+    const demoTaskType = createTaskTypes().taskType;
+    const otherTaskType: TaskTypeOptions = {
+      ...createTaskTypes().taskType,
+      key: 'other',
+      title: 'Other tasks',
+      collection: 'otherTasks',
+    };
+    const registry = createMultiTaskTypes({ demo: demoTaskType, other: otherTaskType });
+    const demoTasks = {
+      listMine: vi.fn().mockResolvedValue({
+        data: { data: [{ id: 1, title: 'Task A' }], meta: { count: 1 } },
+      }),
+    };
+    const otherTasks = { listMine: vi.fn().mockResolvedValue({ data: { data: [], meta: { count: 0 } } }) };
+    const userWorkflowTasks = {
+      listMine: vi.fn().mockResolvedValue({
+        data: [
+          { type: 'demo', stats: { pending: 1, all: 1 } },
+          { type: 'other', stats: { pending: 1, all: 1 } },
+        ],
+      }),
+    };
+    holder.location = { pathname: '/admin/workflow/tasks/demo/pending', search: '', hash: '' };
+    holder.isMobileLayout = true;
+    holder.ctx = makeCtx(registry, { demoTasks, otherTasks, userWorkflowTasks });
+
+    renderWithApp(<WorkflowTasksPage />);
+
+    await screen.findByTestId('workflow-tasks-mobile');
+    fireEvent.click(screen.getByText('Other tasks'));
+
+    expect(holder.navigate).toHaveBeenCalledWith('/admin/workflow/tasks/other/pending');
+    expect(holder.navigate).not.toHaveBeenCalledWith('/mobile/page/workflow-tasks/other/pending');
+  });
+
   it('opens a clicked item by updating the workflow tasks route', async () => {
     const { registry } = createTaskTypes();
     const demoTasks = {
@@ -290,12 +326,62 @@ describe('WorkflowTasksPage', () => {
 
     renderWithApp(<WorkflowTasksPage />);
 
-    fireEvent.click(await screen.findByText('Open me'));
+    const taskItem = await screen.findByText('Open me');
+    await act(async () => {
+      fireEvent.click(taskItem);
+    });
 
     await screen.findByText('detail:Open me');
     expect(document.body.querySelector('.ant-modal')).toBeInTheDocument();
     expect(document.body.querySelector('.ant-drawer')).not.toBeInTheDocument();
     expect(holder.navigate).toHaveBeenCalledWith('/admin/workflow/tasks/demo/pending/9');
+  });
+
+  it('renders clicked task details as an inline mobile subpage instead of a modal', async () => {
+    const popupRecord = createDeferred<{ data: { data: { id: number; title: string } } }>();
+    const getPopupRecord = vi.fn().mockReturnValue(popupRecord.promise);
+    const { registry } = createTaskTypes({ getPopupRecord });
+    const demoTasks = {
+      listMine: vi.fn().mockResolvedValue({
+        data: { data: [{ id: 9, title: 'Open me' }], meta: { count: 1 } },
+      }),
+    };
+    const userWorkflowTasks = {
+      listMine: vi.fn().mockResolvedValue({ data: [{ type: 'demo', stats: { pending: 1, all: 1 } }] }),
+    };
+    holder.location = { pathname: '/mobile/page/workflow-tasks/demo/pending', search: '', hash: '' };
+    holder.isMobileLayout = true;
+    holder.ctx = makeCtx(registry, { demoTasks, userWorkflowTasks });
+
+    const { rerender } = renderWithApp(<WorkflowTasksPage />);
+
+    const taskItem = await screen.findByText('Open me');
+    await act(async () => {
+      fireEvent.click(taskItem);
+    });
+
+    expect(holder.navigate).toHaveBeenCalledWith('/mobile/page/workflow-tasks/demo/pending/9');
+    holder.params = { taskType: 'demo', status: 'pending', popupId: '9' };
+    holder.location = { pathname: '/mobile/page/workflow-tasks/demo/pending/9', search: '', hash: '' };
+    rerender(
+      <App>
+        <WorkflowTasksPage />
+      </App>,
+    );
+
+    expect(await screen.findByTestId('workflow-task-mobile-detail-page')).toHaveStyle({
+      position: 'relative',
+    });
+    expect(screen.getByTestId('workflow-task-mobile-detail-content')).toBeInTheDocument();
+    expect(screen.getByText('detail:Open me')).toBeInTheDocument();
+    expect(screen.queryByTestId('workflow-task-list-region')).not.toBeInTheDocument();
+    expect(document.body.querySelector('.ant-modal')).not.toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Back' }));
+    });
+
+    expect(holder.navigate).toHaveBeenCalledWith('/mobile/page/workflow-tasks/demo/pending', { replace: true });
   });
 
   it('keeps the clicked record open while loading the same popup record from the route', async () => {

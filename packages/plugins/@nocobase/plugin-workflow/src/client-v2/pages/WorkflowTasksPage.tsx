@@ -10,6 +10,7 @@
 import { useFlowContext } from '@nocobase/flow-engine';
 import { useMobileLayout } from '@nocobase/client-v2';
 import { LeftOutlined, RightOutlined } from '@ant-design/icons';
+import { css } from '@emotion/css';
 import { useMemoizedFn } from 'ahooks';
 import {
   App,
@@ -177,7 +178,9 @@ function TaskTypeMenu(props: {
   );
 
   const handleMenuClick = useMemoizedFn(({ key }: { key: string }) => {
-    navigate(withCurrentLocationSuffix(getWorkflowTasksPath(key, TASK_STATUS.PENDING, undefined, mobile), route));
+    navigate(
+      withCurrentLocationSuffix(getWorkflowTasksPath(key, TASK_STATUS.PENDING, undefined, route.isMobileRoute), route),
+    );
   });
 
   if (!items?.length) {
@@ -484,6 +487,53 @@ function WorkflowTaskDetailModal(props: WorkflowTaskDetailModalProps) {
   );
 }
 
+function WorkflowTaskMobileDetailPage(props: { children: React.ReactNode; onClose: () => void }) {
+  const { children, onClose } = props;
+  const { token } = theme.useToken();
+  const t = useT();
+  const contentClassName = css`
+    > div > .ant-tabs > .ant-tabs-nav {
+      background: ${token.colorBgContainer};
+      margin: 0;
+      padding-inline: ${token.padding}px ${token.padding}px;
+      padding-left: ${token.controlHeight + token.paddingSM}px;
+    }
+
+    > div > .ant-tabs > .ant-tabs-content-holder {
+      padding: ${token.padding}px;
+    }
+  `;
+
+  return (
+    <div
+      data-testid="workflow-task-mobile-detail-page"
+      style={{
+        background: token.colorBgLayout,
+        flex: '1 1 0%',
+        minHeight: 0,
+        overflow: 'auto',
+        position: 'relative',
+      }}
+    >
+      <Button
+        aria-label={t('Back')}
+        icon={<LeftOutlined />}
+        onClick={onClose}
+        style={{
+          left: token.paddingXS,
+          position: 'absolute',
+          top: token.paddingSM,
+          zIndex: 1,
+        }}
+        type="text"
+      />
+      <div data-testid="workflow-task-mobile-detail-content" className={contentClassName} style={{ minWidth: 0 }}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
 function WorkflowTasksPageContent() {
   const ctx = useFlowContext() as WorkflowTaskFlowContext | undefined;
   const taskTypes = getWorkflowTaskRegistry(ctx);
@@ -761,6 +811,7 @@ function WorkflowTasksPageContent() {
       <Detail />
     </WorkflowTaskRecordContext.Provider>
   ) : null;
+  const renderMobileDetailPage = mobile && Boolean(currentRecord);
 
   return (
     <Layout
@@ -771,7 +822,7 @@ function WorkflowTasksPageContent() {
         background: token.colorBgLayout,
       }}
     >
-      {mobile ? (
+      {mobile && !renderMobileDetailPage ? (
         <Layout.Header
           style={{
             height: 'auto',
@@ -792,7 +843,7 @@ function WorkflowTasksPageContent() {
             <div style={{ padding: token.paddingSM }}>{header}</div>
           </Flex>
         </Layout.Header>
-      ) : (
+      ) : mobile ? null : (
         <TaskTypeMenu
           taskTypes={taskTypes}
           counts={counts}
@@ -812,7 +863,7 @@ function WorkflowTasksPageContent() {
             overflow: 'hidden',
           }}
         >
-          {mobile ? null : (
+          {mobile || renderMobileDetailPage ? null : (
             <div
               style={{
                 padding: `${token.padding}px ${token.paddingLG}px 0`,
@@ -823,39 +874,45 @@ function WorkflowTasksPageContent() {
               {header}
             </div>
           )}
-          <div
-            data-testid="workflow-task-list-region"
-            style={{
-              background: token.colorBgLayout,
-              display: 'flex',
-              flex: '1 1 0%',
-              flexDirection: 'column',
-              minHeight: 0,
-            }}
-          >
-            <WorkflowTaskList
-              records={records}
-              loading={loading}
-              mobile={mobile}
-              total={total}
-              page={page}
-              onPageChange={handlePageChange}
-              onOpenRecord={handleOpenRecord}
-              refresh={refresh}
-              Item={currentTaskType.Item}
-            />
-          </div>
+          {renderMobileDetailPage ? (
+            <WorkflowTaskMobileDetailPage onClose={handleCloseRecord}>{detailContent}</WorkflowTaskMobileDetailPage>
+          ) : (
+            <div
+              data-testid="workflow-task-list-region"
+              style={{
+                background: token.colorBgLayout,
+                display: 'flex',
+                flex: '1 1 0%',
+                flexDirection: 'column',
+                minHeight: 0,
+              }}
+            >
+              <WorkflowTaskList
+                records={records}
+                loading={loading}
+                mobile={mobile}
+                total={total}
+                page={page}
+                onPageChange={handlePageChange}
+                onOpenRecord={handleOpenRecord}
+                refresh={refresh}
+                Item={currentTaskType.Item}
+              />
+            </div>
+          )}
         </Layout.Content>
       </Layout>
-      <DetailModal
-        type={currentTaskType}
-        record={currentRecord}
-        mobile={mobile}
-        title={detailTitle}
-        onClose={handleCloseRecord}
-      >
-        {detailContent}
-      </DetailModal>
+      {renderMobileDetailPage ? null : (
+        <DetailModal
+          type={currentTaskType}
+          record={currentRecord}
+          mobile={mobile}
+          title={detailTitle}
+          onClose={handleCloseRecord}
+        >
+          {detailContent}
+        </DetailModal>
+      )}
     </Layout>
   );
 }
