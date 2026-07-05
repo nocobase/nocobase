@@ -26,17 +26,12 @@ const exportFieldNames = {
 
 const ExportFieldsCascader = (props) => {
   const { optionsCache, value, onChange, onDropdownVisibleChange, ...others } = props;
-  const [cascaderOptions, setCascaderOptions] = React.useState(() => createExportFieldsOptionsSnapshot(optionsCache));
-  const lastPreloadedValueRef = React.useRef<string | null>(null);
-  const cascaderValue = React.useMemo(() => normalizeExportFieldValue(value) || undefined, [value]);
+  const [optionsVersion, setOptionsVersion] = React.useState(0);
+  const cascaderValue = React.useMemo(() => normalizeExportFieldValue(value), [value]);
 
   const refreshOptions = React.useCallback(() => {
-    setCascaderOptions(createExportFieldsOptionsSnapshot(optionsCache));
-  }, [optionsCache]);
-
-  React.useEffect(() => {
-    refreshOptions();
-  }, [refreshOptions]);
+    setOptionsVersion((version) => version + 1);
+  }, []);
 
   const getValueKey = React.useCallback((path) => {
     if (!Array.isArray(path)) {
@@ -44,6 +39,9 @@ const ExportFieldsCascader = (props) => {
     }
     return path.map((item) => item?.name ?? item).join('.');
   }, []);
+
+  optionsCache.preloadPath(cascaderValue);
+  const cascaderOptions = createExportFieldsOptionsSnapshot(optionsCache);
 
   const loadData = React.useCallback(
     (selectedOptions) => {
@@ -60,26 +58,14 @@ const ExportFieldsCascader = (props) => {
     [optionsCache, refreshOptions],
   );
 
-  const preloadSelectedPath = React.useCallback(() => {
-    const valueKey = getValueKey(value);
-    if (!valueKey || lastPreloadedValueRef.current === valueKey) {
-      return;
-    }
-    lastPreloadedValueRef.current = valueKey;
-    const changed = optionsCache.preloadPath(value);
-    if (changed) {
-      refreshOptions();
-    }
-  }, [getValueKey, optionsCache, refreshOptions, value]);
-
   const handleDropdownVisibleChange = React.useCallback(
     (open) => {
       if (open) {
-        preloadSelectedPath();
+        refreshOptions();
       }
       onDropdownVisibleChange?.(open);
     },
-    [onDropdownVisibleChange, preloadSelectedPath],
+    [onDropdownVisibleChange, refreshOptions],
   );
 
   const handleChange = React.useCallback(
@@ -107,7 +93,7 @@ const ExportFieldsCascader = (props) => {
   return (
     <Cascader
       {...others}
-      value={cascaderValue}
+      value={cascaderValue || undefined}
       fieldNames={exportFieldNames}
       options={cascaderOptions}
       loadData={loadData}

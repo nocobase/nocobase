@@ -13,6 +13,7 @@ import {
   resolveManagedAppRuntime,
   type ManagedAppRuntime,
 } from '../../../lib/app-runtime.js';
+import { resolveDefaultConfigScope } from '../../../lib/cli-home.js';
 import {
   getNginxProxyDriver,
   normalizeProxyListenPort,
@@ -20,6 +21,7 @@ import {
   writeManualNginxProxyBundle,
   writeNginxProxyBundle,
 } from '../../../lib/proxy-nginx.js';
+import { resolveEnvProxyEntry, setEnvProxyEntry } from '../../../lib/auth-store.js';
 import { announceTargetEnv, failTask, startTask, succeedTask } from '../../../lib/ui.js';
 
 type WritableProxyRuntime = Extract<ManagedAppRuntime, { kind: 'local' | 'docker' }>;
@@ -30,7 +32,7 @@ export default class ProxyNginxGenerate extends Command {
     '<%= config.bin %> proxy nginx generate --host app1.example.com',
     '<%= config.bin %> proxy nginx generate --env app1 --host app1.example.com',
     '<%= config.bin %> proxy nginx generate --env app1 --host app1.example.com --port 8080',
-    '<%= config.bin %> proxy nginx generate --manual --name default --app-port 13000 --storage-path /path/to/storage --dist-root-path /path/to/dist-client --runtime-version 2.1.0',
+    '<%= config.bin %> proxy nginx generate --manual --name default --storage-path /path/to/storage --dist-root-path /path/to/dist-client --runtime-version 2.1.0 --upstream-port 13000',
   ];
 
   static override flags = {
@@ -44,9 +46,6 @@ export default class ProxyNginxGenerate extends Command {
     }),
     name: Flags.string({
       description: 'Output bundle name used under .nocobase/proxy/nginx in manual mode',
-    }),
-    'app-port': Flags.string({
-      description: 'Upstream NocoBase app port in manual mode',
     }),
     'storage-path': Flags.string({
       description: 'Path to the NocoBase storage directory in manual mode',
@@ -63,6 +62,9 @@ export default class ProxyNginxGenerate extends Command {
     }),
     'upstream-host': Flags.string({
       description: 'Upstream host used by nginx proxy_pass in manual mode',
+    }),
+    'upstream-port': Flags.string({
+      description: 'Upstream port used by nginx proxy_pass in manual mode',
     }),
     'cdn-base-url': Flags.string({
       description: 'Client asset CDN base URL used when generating runtime HTML',
@@ -96,19 +98,19 @@ export default class ProxyNginxGenerate extends Command {
 
     if (manual) {
       const name = flags.name?.trim() || undefined;
-      const requestedAppPort = flags['app-port']?.trim() || undefined;
-      const appPort = normalizeProxyListenPort(requestedAppPort);
+      const requestedUpstreamPort = flags['upstream-port']?.trim() || undefined;
+      const upstreamPort = normalizeProxyListenPort(requestedUpstreamPort);
       const storagePath = flags['storage-path']?.trim() || undefined;
       const distRootPath = flags['dist-root-path']?.trim() || undefined;
       const runtimeVersion = flags['runtime-version']?.trim() || undefined;
 
-      if (requestedAppPort && !appPort) {
-        this.error(`Invalid manual app port "${requestedAppPort}". Use an integer between 1 and 65535.`);
+      if (requestedUpstreamPort && !upstreamPort) {
+        this.error(`Invalid manual upstream port "${requestedUpstreamPort}". Use an integer between 1 and 65535.`);
       }
 
-      if (!name || !appPort || !storagePath || !distRootPath || !runtimeVersion) {
+      if (!name || !upstreamPort || !storagePath || !distRootPath || !runtimeVersion) {
         this.error(
-          'Manual mode requires `--name`, `--app-port`, `--storage-path`, `--dist-root-path`, and `--runtime-version`.',
+          'Manual mode requires `--name`, `--upstream-port`, `--storage-path`, `--dist-root-path`, and `--runtime-version`.',
         );
       }
 
@@ -121,12 +123,12 @@ export default class ProxyNginxGenerate extends Command {
         const { bundle, status } = await writeManualNginxProxyBundle(
           {
             name,
-            appPort,
             storagePath,
             distRootPath,
             runtimeVersion,
             appPublicPath: flags['app-public-path']?.trim() || undefined,
             upstreamHost: flags['upstream-host']?.trim() || undefined,
+            upstreamPort,
             cdnBaseUrl: flags['cdn-base-url']?.trim() || undefined,
           },
           {
@@ -174,17 +176,28 @@ export default class ProxyNginxGenerate extends Command {
     startTask(`Generating nginx proxy config for env "${runtime.envName}" with the ${driver} driver...`);
 
     try {
+      const savedAppEntryOptions = resolveEnvProxyEntry(runtime.env.config, 'nginx');
+      const appEntryOptions = {
+        host: flags.host?.trim() || savedAppEntryOptions?.host,
+        port: normalizedPort ?? (savedAppEntryOptions?.port !== undefined ? String(savedAppEntryOptions.port) : undefined),
+      };
       const { bundle, status } = await writeNginxProxyBundle(
         runtime as WritableProxyRuntime,
-        {
-          host: flags.host?.trim() || undefined,
-          port: normalizedPort,
-        },
+        appEntryOptions,
         runtimeContext,
         {
           cdnBaseUrl: flags['cdn-base-url']?.trim() || undefined,
           force: flags.force,
         },
+      );
+      await setEnvProxyEntry(
+        runtime.envName,
+        'nginx',
+        {
+          host: appEntryOptions.host,
+          port: appEntryOptions.port ? Number(appEntryOptions.port) : undefined,
+        },
+        { scope: resolveDefaultConfigScope() },
       );
       succeedTask(
         status === 'created'

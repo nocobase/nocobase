@@ -7,11 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { removeMarkdownIframes, stripMarkdownIframes } from '@nocobase/client-v2';
 import { Popover } from 'antd';
 import React, { CSSProperties, useCallback, useEffect, useRef, useState } from 'react';
 import Vditor from 'vditor';
 import { useCDN } from './const';
-import { removeMarkdownIframes, stripMarkdownIframes } from './markdownIframe';
 import useStyle from './style';
 
 export interface MarkdownDisplayProps {

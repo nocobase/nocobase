@@ -41,13 +41,13 @@
         "type": "custom-link",
         "label": "S3 Pro",
         "link": "/file-manager/storage/s3-pro"
+      },
+      {
+        "type": "custom-link",
+        "label": "Migrasi ke S3 Pro",
+        "link": "/file-manager/storage/migrate-to-s3-pro"
       }
     ]
-  },
-  {
-    "type": "custom-link",
-    "label": "Migrasi ke S3 Pro",
-    "link": "/file-manager/storage/migrate-to-s3-pro"
   },
   {
     "type": "custom-link",

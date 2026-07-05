@@ -7,13 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { stripMarkdownIframeTags, stripMarkdownIframes } from '@nocobase/client-v2';
 import { useFlowContext } from '@nocobase/flow-engine';
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import Vditor from 'vditor';
 import { defaultToolbar } from '../interface';
 import { useT } from '../locale';
 import { useCDN } from './const';
-import { stripMarkdownIframeTags, stripMarkdownIframes } from './markdownIframe';
 import useStyle from './style';
 
 const locales = ['en_US', 'fr_FR', 'pt_BR', 'ja_JP', 'ko_KR', 'ru_RU', 'sv_SE', 'zh_CN', 'zh_TW'];
