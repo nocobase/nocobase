@@ -8,7 +8,7 @@
  */
 
 import { CheckOutlined, ReloadOutlined } from '@ant-design/icons';
-import { CollectionFilter } from '@nocobase/client-v2';
+import { CollectionFilter, SkeletonFallback } from '@nocobase/client-v2';
 import { useFlowContext, useFlowEngine } from '@nocobase/flow-engine';
 import type { FlowEngine, FlowModel } from '@nocobase/flow-engine';
 import {
@@ -442,6 +442,10 @@ function WorkflowCcTaskFallbackDetail() {
   );
 }
 
+function isCcTaskPopupRecordReady(record: WorkflowTaskRecord) {
+  return Boolean(getRecordValue(record, 'job') || Array.isArray(getValue(record, 'execution.jobs')));
+}
+
 function WorkflowCcTaskDetailModal(props: WorkflowTaskDetailModalProps) {
   const { children, mobile, onClose, record, title } = props;
   const { token } = theme.useToken();
@@ -496,6 +500,10 @@ function WorkflowCcTaskDetail() {
         get: () => recordRef.current,
         cache: false,
       });
+      model.context.defineProperty('workflowCcTaskRecord', {
+        get: () => recordRef.current,
+        cache: false,
+      });
       model.context.defineProperty('view', {
         value: {
           inputArgs: {
@@ -525,6 +533,10 @@ function WorkflowCcTaskDetail() {
   );
 
   if (ccUid && node && workflow) {
+    if (!isCcTaskPopupRecordReady(record)) {
+      return <SkeletonFallback />;
+    }
+
     return (
       <Flex data-testid="workflow-cc-detail-content" vertical gap={0} style={{ gap: 0 }}>
         <RemoteFlowModelRenderer uid={ccUid} onModelLoaded={handleModelLoaded} />

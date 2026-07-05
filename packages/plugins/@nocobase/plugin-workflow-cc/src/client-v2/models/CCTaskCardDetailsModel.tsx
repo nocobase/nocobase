@@ -17,6 +17,10 @@ type DecoratorPropsModel = {
   setDecoratorProps: (props: { description?: string; title?: string }) => void;
 };
 
+function isRecordObject(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
 export class CCTaskCardDetailsModel extends DetailsBlockModel {
   onInit(options: Parameters<DetailsBlockModel['onInit']>[0]): void {
     super.onInit(options);
@@ -37,6 +41,11 @@ export class CCTaskCardDetailsModel extends DetailsBlockModel {
   }
 
   async refresh() {}
+
+  getCurrentRecord() {
+    const record = this.context.workflowCcTaskRecord;
+    return isRecordObject(record) ? record : super.getCurrentRecord();
+  }
 
   renderComponent() {
     const { colon, labelAlign, labelWidth, labelWrap, layout } = this.props;
