@@ -36,6 +36,8 @@ keywords: "字段,Field type,Field interface,字段映射,标题字段,唯一约
 
 ## 字段来源
 
+参考下面的来源路径，了解字段在 NocoBase 中的创建和管理方式：
+
 - **[主数据库配置字段](../main/database.md#配置字段)**
 - **[主数据库同步字段](../main/database.md#从数据库同步)**
 - **[主数据库创建 SQL 数据表映射字段](../main/collection-sql.md)**
