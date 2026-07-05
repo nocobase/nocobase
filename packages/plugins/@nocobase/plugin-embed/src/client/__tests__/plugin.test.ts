@@ -53,7 +53,9 @@ describe('PluginEmbedClient', () => {
           interceptors: {
             response: {
               use: vi.fn((_fulfilled, rejected) => {
-                rejectedHandlers.push(rejected);
+                if (rejected) {
+                  rejectedHandlers.push(rejected);
+                }
                 return rejectedHandlers.length - 1;
               }),
             },
@@ -252,7 +254,9 @@ describe('PluginEmbedClient', () => {
           interceptors: {
             response: {
               use: vi.fn((_fulfilled, rejected) => {
-                rejectedHandlers.push(rejected);
+                if (rejected) {
+                  rejectedHandlers.push(rejected);
+                }
                 return rejectedHandlers.length - 1;
               }),
             },
@@ -366,7 +370,9 @@ describe('PluginEmbedClient', () => {
           interceptors: {
             response: {
               use: vi.fn((_fulfilled, rejected) => {
-                rejectedHandlers.push(rejected);
+                if (rejected) {
+                  rejectedHandlers.push(rejected);
+                }
                 return rejectedHandlers.length - 1;
               }),
             },
@@ -442,7 +448,9 @@ describe('PluginEmbedClient', () => {
           interceptors: {
             response: {
               use: vi.fn((_fulfilled, rejected) => {
-                rejectedHandlers.push(rejected);
+                if (rejected) {
+                  rejectedHandlers.push(rejected);
+                }
                 return rejectedHandlers.length - 1;
               }),
             },

@@ -168,6 +168,60 @@ describe('PluginEmbedClientV2', () => {
     expect(values.token).toBe('111');
   });
 
+  it('restores the renewed embed token after the auth interceptor clears it', async () => {
+    const { default: PluginEmbedClientV2 } = await import('../plugin');
+    const { restoreEmbedSessionToken } = await import('../embedSession');
+    const values: Record<string, string> = {};
+    const fulfilledHandlers: Array<(response: { headers: Record<string, string> }) => unknown> = [];
+    const storage = {
+      getItem: vi.fn((key: string) => values[key] || null),
+      setItem: vi.fn((key: string, value = '') => {
+        values[key] = value;
+      }),
+    };
+    const app = {
+      router: {
+        getBasename: () => '/v2/apps/app1',
+      },
+      getPublicPath: () => '/v2/',
+      apiClient: {
+        axios: {
+          interceptors: {
+            response: {
+              use: vi.fn((fulfilled?: (response: { headers: Record<string, string> }) => unknown) => {
+                if (fulfilled) {
+                  fulfilledHandlers.push(fulfilled);
+                }
+              }),
+            },
+          },
+        },
+        storagePrefix: 'NOCOBASE_',
+        storage: {
+          getItem: vi.fn(),
+          setItem: vi.fn(),
+        },
+        createStorage: vi.fn(() => storage),
+        auth: {
+          getToken: vi.fn(() => storage.getItem('token')),
+          getAuthenticator: vi.fn(() => storage.getItem('auth')),
+          setAuthenticator: vi.fn((authenticator: string | null) => storage.setItem('auth', authenticator || '')),
+          setToken: vi.fn((token: string | null) => storage.setItem('token', token || '')),
+        },
+      },
+    };
+    const plugin = new PluginEmbedClientV2({} as any, app as any);
+
+    window.history.pushState({}, '', '/v2/apps/app1/embed/page-uid?token=111');
+    await plugin.beforeLoad();
+    fulfilledHandlers[0]({ headers: { 'x-new-token': '222' } });
+    window.history.pushState({}, '', '/v2/apps/app1/embed/page-uid');
+    storage.setItem('token', '');
+
+    expect(restoreEmbedSessionToken(app as any)).toBe(true);
+    expect(values.token).toBe('222');
+  });
+
   it('restores an existing embed session token after refreshing without a query token', async () => {
     const { default: PluginEmbedClientV2 } = await import('../plugin');
     const { restoreEmbedSessionToken } = await import('../embedSession');

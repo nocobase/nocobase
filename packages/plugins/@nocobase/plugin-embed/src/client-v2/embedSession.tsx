@@ -18,6 +18,16 @@ const EMBED_WINDOW_NAME_PREFIX = '__nocobase_embed_';
 
 export type EmbedSessionAppLike = {
   apiClient: Pick<Application['apiClient'], 'createStorage' | 'storage' | 'storagePrefix'> & {
+    axios?: {
+      interceptors?: {
+        response?: {
+          use?: (
+            fulfilled?: (response: ResponseLike) => ResponseLike,
+            rejected?: (error: unknown) => unknown,
+          ) => unknown;
+        };
+      };
+    };
     auth: Pick<Application['apiClient']['auth'], 'getAuthenticator' | 'getToken' | 'setAuthenticator' | 'setToken'>;
   };
   router?: {
@@ -41,7 +51,16 @@ type EmbedSessionState = {
   token?: string;
 };
 
+type HeadersLike = Record<string, unknown> & {
+  get?: (name: string) => unknown;
+};
+
+type ResponseLike = {
+  headers?: HeadersLike;
+};
+
 const sessions = new WeakMap<EmbedSessionAppLike, EmbedSessionState>();
+const tokenSyncApps = new WeakSet<EmbedSessionAppLike>();
 
 function hashStorageSegment(value: string) {
   let hash = 0;
@@ -93,6 +112,38 @@ function dispatchTokenChanged(app: EmbedSessionAppLike) {
   );
 }
 
+function getHeaderValue(headers: HeadersLike | undefined, name: string) {
+  const value =
+    headers?.get?.(name) || headers?.get?.(name.toUpperCase()) || headers?.[name] || headers?.[name.toUpperCase()];
+  return typeof value === 'string' && value ? value : undefined;
+}
+
+function syncEmbedSessionTokenFromHeaders(app: EmbedSessionAppLike, headers: HeadersLike | undefined) {
+  const token = getHeaderValue(headers, 'x-new-token');
+  const session = sessions.get(app);
+
+  if (token && session?.active) {
+    session.token = token;
+  }
+}
+
+function registerEmbedSessionTokenSync(app: EmbedSessionAppLike) {
+  if (tokenSyncApps.has(app)) {
+    return;
+  }
+
+  const responseInterceptor = app.apiClient.axios?.interceptors?.response;
+  if (!responseInterceptor?.use) {
+    return;
+  }
+
+  tokenSyncApps.add(app);
+  responseInterceptor.use((response) => {
+    syncEmbedSessionTokenFromHeaders(app, response.headers);
+    return response;
+  });
+}
+
 export function activateEmbedSession(app: EmbedSessionAppLike, search?: string) {
   let session = sessions.get(app);
 
@@ -107,6 +158,7 @@ export function activateEmbedSession(app: EmbedSessionAppLike, search?: string) 
     sessions.set(app, session);
   }
 
+  registerEmbedSessionTokenSync(app);
   app.apiClient.storagePrefix = getEmbedStoragePrefix(app);
   app.apiClient.storage = app.apiClient.createStorage('sessionStorage');
 
