@@ -11,12 +11,18 @@ import type { Context } from '@nocobase/actions';
 import type { HandlerType, ResourceOptions } from '@nocobase/resourcer';
 
 import { LightExtensionError, isLightExtensionError } from '../../shared/errors';
-import type { LightExtensionReferenceListInput, LightExtensionReferenceRebuildInput } from '../../shared/types';
+import type {
+  LightExtensionBulkUpgradeInput,
+  LightExtensionReferenceImpactInput,
+  LightExtensionReferenceListInput,
+  LightExtensionReferenceRebuildInput,
+} from '../../shared/types';
+import { BulkUpgradeService } from '../services/BulkUpgradeService';
 import type { LightExtensionCanFunction } from '../services/LightExtensionPermissionService';
 import { ReferenceService } from '../services/ReferenceService';
 import type { LightExtensionServiceContext } from '../services/LightExtensionRepoService';
 
-export const lightExtensionReferenceActionNames = ['readReferences', 'rebuildIndex'] as const;
+export const lightExtensionReferenceActionNames = ['readReferences', 'rebuildIndex', 'impact', 'bulkUpgrade'] as const;
 
 type LightExtensionReferenceActionName = (typeof lightExtensionReferenceActionNames)[number];
 type ResourceActionInput = Record<string, unknown>;
@@ -42,36 +48,66 @@ type LightExtensionResourceContext = Context & {
 };
 
 type ResourceActionRunner = (
-  service: ReferenceService,
+  services: LightExtensionReferenceActionServices,
   input: ResourceActionInput,
   currentUser: ReturnType<typeof getServiceContext>,
 ) => Promise<unknown>;
 
+interface LightExtensionReferenceActionServices {
+  referenceService: ReferenceService;
+  bulkUpgradeService?: BulkUpgradeService;
+}
+
 const resourceActionRunners: Record<LightExtensionReferenceActionName, ResourceActionRunner> = {
-  readReferences: (service, input, currentUser) => service.readReferences(normalizeListInput(input), currentUser),
-  rebuildIndex: (service, input, currentUser) => service.rebuildIndex(normalizeRebuildInput(input), currentUser),
+  readReferences: (services, input, currentUser) =>
+    services.referenceService.readReferences(normalizeListInput(input), currentUser),
+  rebuildIndex: (services, input, currentUser) =>
+    services.referenceService.rebuildIndex(normalizeRebuildInput(input), currentUser),
+  impact: (services, input, currentUser) => {
+    if (!services.bulkUpgradeService) {
+      throw invalidInput('Light extension bulk upgrade service is not available');
+    }
+    return services.bulkUpgradeService.analyzeImpact(normalizeImpactInput(input), currentUser);
+  },
+  bulkUpgrade: (services, input, currentUser) => {
+    if (!services.bulkUpgradeService) {
+      throw invalidInput('Light extension bulk upgrade service is not available');
+    }
+    return services.bulkUpgradeService.bulkUpgrade(normalizeBulkUpgradeInput(input), currentUser);
+  },
 };
 
-export function createLightExtensionReferencesResource(service: ReferenceService): ResourceOptions {
+export function createLightExtensionReferencesResource(
+  referenceService: ReferenceService,
+  bulkUpgradeService?: BulkUpgradeService,
+): ResourceOptions {
+  const services = {
+    referenceService,
+    bulkUpgradeService,
+  };
+
   return {
     name: 'lightExtensionReferences',
     only: [...lightExtensionReferenceActionNames],
     actions: Object.fromEntries(
       lightExtensionReferenceActionNames.map((actionName) => [
         actionName,
-        createLightExtensionReferenceAction(service, resourceActionRunners[actionName]),
+        createLightExtensionReferenceAction(services, resourceActionRunners[actionName]),
       ]),
     ) as Record<LightExtensionReferenceActionName, HandlerType>,
   };
 }
 
-function createLightExtensionReferenceAction(service: ReferenceService, run: ResourceActionRunner): HandlerType {
+function createLightExtensionReferenceAction(
+  services: LightExtensionReferenceActionServices,
+  run: ResourceActionRunner,
+): HandlerType {
   return async (ctx: Context, next) => {
     const resourceCtx = ctx as LightExtensionResourceContext;
     const input = getActionInput(resourceCtx);
 
     try {
-      resourceCtx.body = await run(service, input, getServiceContext(resourceCtx));
+      resourceCtx.body = await run(services, input, getServiceContext(resourceCtx));
       await next();
     } catch (error) {
       if (!isLightExtensionError(error)) {
@@ -132,6 +168,23 @@ function normalizeRebuildInput(input: ResourceActionInput): LightExtensionRefere
   };
 }
 
+function normalizeImpactInput(input: ResourceActionInput): LightExtensionReferenceImpactInput {
+  return {
+    ...normalizeListInput(input),
+    toPublicationId: requireString(input, 'toPublicationId'),
+    referenceIds: optionalStringArray(input, 'referenceIds'),
+  };
+}
+
+function normalizeBulkUpgradeInput(input: ResourceActionInput): LightExtensionBulkUpgradeInput {
+  return {
+    toPublicationId: requireString(input, 'toPublicationId'),
+    referenceIds: requireStringArray(input, 'referenceIds'),
+    expectedPublicationIdByReference: optionalNullableStringMap(input, 'expectedPublicationIdByReference'),
+    expectedSettingsHashByReference: optionalStringMap(input, 'expectedSettingsHashByReference'),
+  };
+}
+
 function normalizeOwnerLocator(value: unknown): LightExtensionReferenceListInput['ownerLocator'] {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     return undefined;
@@ -174,6 +227,74 @@ function optionalString(input: ResourceActionInput, key: string): string | undef
     throw invalidInput(`${key} must be a string`);
   }
   return value.trim() || undefined;
+}
+
+function requireString(input: ResourceActionInput, key: string): string {
+  const value = optionalString(input, key);
+  if (!value) {
+    throw invalidInput(`${key} is required`);
+  }
+  return value;
+}
+
+function requireStringArray(input: ResourceActionInput, key: string): string[] {
+  const value = optionalStringArray(input, key);
+  if (!value?.length) {
+    throw invalidInput(`${key} are required`);
+  }
+  return value;
+}
+
+function optionalStringArray(input: ResourceActionInput, key: string): string[] | undefined {
+  const value = input[key];
+  if (typeof value === 'undefined' || value === null) {
+    return undefined;
+  }
+  if (!Array.isArray(value)) {
+    throw invalidInput(`${key} must be an array`);
+  }
+  return value.map((item) => {
+    if (typeof item !== 'string' || !item.trim()) {
+      throw invalidInput(`${key} must contain strings`);
+    }
+    return item.trim();
+  });
+}
+
+function optionalStringMap(input: ResourceActionInput, key: string): Record<string, string> | undefined {
+  const value = input[key];
+  if (typeof value === 'undefined' || value === null) {
+    return undefined;
+  }
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    throw invalidInput(`${key} must be an object`);
+  }
+  const output: Record<string, string> = {};
+  for (const [mapKey, mapValue] of Object.entries(value as Record<string, unknown>)) {
+    if (typeof mapValue !== 'string') {
+      throw invalidInput(`${key} values must be strings`);
+    }
+    output[mapKey] = mapValue;
+  }
+  return output;
+}
+
+function optionalNullableStringMap(input: ResourceActionInput, key: string): Record<string, string | null> | undefined {
+  const value = input[key];
+  if (typeof value === 'undefined' || value === null) {
+    return undefined;
+  }
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    throw invalidInput(`${key} must be an object`);
+  }
+  const output: Record<string, string | null> = {};
+  for (const [mapKey, mapValue] of Object.entries(value as Record<string, unknown>)) {
+    if (mapValue !== null && typeof mapValue !== 'string') {
+      throw invalidInput(`${key} values must be strings or null`);
+    }
+    output[mapKey] = mapValue;
+  }
+  return output;
 }
 
 function getHeader(headers: Record<string, string | string[] | undefined>, name: string): string | undefined {

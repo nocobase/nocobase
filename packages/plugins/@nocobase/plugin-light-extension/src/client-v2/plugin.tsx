@@ -20,6 +20,7 @@ import { createLightExtensionJSBlockAddItems } from './add-block/lightExtensionJ
 import { JSBlockLightExtensionSourceField } from './components/JSBlockLightExtensionSourceField';
 import { RepoEntryPublicationSelector } from './components/RepoEntryPublicationSelector';
 import { SettingsAutoForm } from './components/SettingsAutoForm';
+import { VersionPolicyField } from './components/VersionPolicyField';
 import { createLightExtensionRunJSResolver } from './resolvers/LightExtensionRunJSResolver';
 
 let activeLightExtensionClientV2Instance: PluginLightExtensionClientV2 | null = null;
@@ -37,6 +38,7 @@ export class PluginLightExtensionClientV2 extends Plugin<Record<string, never>, 
       [JS_BLOCK_LIGHT_EXTENSION_FULL_SOURCE_FIELD]: JSBlockLightExtensionSourceField,
       RepoEntryPublicationSelector,
       SettingsAutoForm,
+      VersionPolicyField,
     });
     this.disposers.push(
       RunJSSourceResolverRegistry.registerResolver(createLightExtensionRunJSResolver(this.app.apiClient)),
@@ -85,6 +87,14 @@ export class PluginLightExtensionClientV2 extends Plugin<Record<string, never>, 
       title: this.t('Publications'),
       aclSnippet: LIGHT_EXTENSION_ACL_SNIPPET,
       componentLoader: () => import('./pages/LightExtensionPublicationsPage'),
+    });
+
+    this.pluginSettingsManager.addPageTabItem({
+      menuKey: LIGHT_EXTENSION_SETTINGS_KEY,
+      key: 'references',
+      title: this.t('References'),
+      aclSnippet: LIGHT_EXTENSION_ACL_SNIPPET,
+      componentLoader: () => import('./pages/EntryReferencesPanel'),
     });
   }
 

@@ -57,6 +57,8 @@ export const settingsPath = {
     `/admin/settings/${LIGHT_EXTENSION_SETTINGS_KEY}/entries?repoId=${encodeURIComponent(repoId)}`,
   publications: (repoId: string) =>
     `/admin/settings/${LIGHT_EXTENSION_SETTINGS_KEY}/publications?repoId=${encodeURIComponent(repoId)}`,
+  references: (repoId: string) =>
+    `/admin/settings/${LIGHT_EXTENSION_SETTINGS_KEY}/references?repoId=${encodeURIComponent(repoId)}`,
 };
 
 function LightExtensionListPage() {
@@ -210,6 +212,9 @@ function LightExtensionListPage() {
             </Tooltip>
             <Button icon={<EyeOutlined />} size="small">
               <Link to={settingsPath.entries(repo.id)}>{t('Entries')}</Link>
+            </Button>
+            <Button size="small">
+              <Link to={settingsPath.references(repo.id)}>{t('References')}</Link>
             </Button>
             {repo.lifecycleStatus === 'enabled' ? (
               <Button size="small" onClick={() => changeLifecycle(repo, 'disabled')}>

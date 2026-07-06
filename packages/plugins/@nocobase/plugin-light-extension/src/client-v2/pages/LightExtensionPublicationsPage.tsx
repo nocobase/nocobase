@@ -337,6 +337,9 @@ function LightExtensionPublicationsPage() {
           <Button>
             <Link to={settingsPath.entries(repoId)}>{t('Entries')}</Link>
           </Button>
+          <Button>
+            <Link to={settingsPath.references(repoId)}>{t('References')}</Link>
+          </Button>
         </Space>
       </Flex>
 

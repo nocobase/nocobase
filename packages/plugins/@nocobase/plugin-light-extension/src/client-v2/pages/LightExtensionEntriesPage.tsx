@@ -193,6 +193,9 @@ function LightExtensionEntriesPage() {
             <Link to={settingsPath.publications(repoId)}>{t('Publications')}</Link>
           </Button>
           <Button>
+            <Link to={settingsPath.references(repoId)}>{t('References')}</Link>
+          </Button>
+          <Button>
             <Link to={settingsPath.list}>{t('Back to list')}</Link>
           </Button>
         </Space>

@@ -15,11 +15,16 @@ import { useTranslation } from 'react-i18next';
 
 import { useFlowContext } from '@nocobase/flow-engine';
 import { NAMESPACE } from '../../constants';
-import type { LightExtensionPublicationMetadataRecord, LightExtensionRuntimeSourceBinding } from '../../shared/types';
+import type {
+  LightExtensionPublicationMetadataRecord,
+  LightExtensionRuntimeSourceBinding,
+  LightExtensionSourceBindingVersionPolicy,
+} from '../../shared/types';
 import type { ApiClientLike } from '../api/lightExtensionEntriesRequests';
 import { resolveLightExtensionRuntimeSource } from '../resolvers/LightExtensionRunJSResolver';
 import { RepoEntryPublicationSelector } from './RepoEntryPublicationSelector';
 import { formatSettingsValidationErrors, SettingsAutoForm, type SettingsValidationResult } from './SettingsAutoForm';
+import { VersionPolicyField } from './VersionPolicyField';
 
 const INLINE_SOURCE_MODE = 'inline';
 const LIGHT_EXTENSION_SOURCE_MODE = 'light-extension';
@@ -57,7 +62,7 @@ function isLightExtensionBinding(value: unknown): value is LightExtensionRuntime
     value.kind === 'js-block' &&
     typeof value.publicationId === 'string' &&
     value.publicationId.trim().length > 0 &&
-    value.versionPolicy === 'pinned'
+    (value.versionPolicy === 'pinned' || value.versionPolicy === 'follow-active')
   );
 }
 
@@ -196,8 +201,12 @@ export const JSBlockLightExtensionSourceField: React.FC<JSBlockLightExtensionSou
     publication: LightExtensionPublicationMetadataRecord,
     defaults: Record<string, unknown>,
   ) => {
+    const nextVersionPolicy = sourceBinding?.versionPolicy || 'pinned';
     setSelectedPublication(publication);
-    form.setValuesIn('sourceBinding', binding);
+    form.setValuesIn('sourceBinding', {
+      ...binding,
+      versionPolicy: nextVersionPolicy,
+    });
     form.setValuesIn('settings', mergeSettings(defaults, values.settings));
   };
 
@@ -214,6 +223,16 @@ export const JSBlockLightExtensionSourceField: React.FC<JSBlockLightExtensionSou
   const handleSettingsChange = (nextSettings: Record<string, unknown>, validation: SettingsValidationResult) => {
     form.setValuesIn('settings', nextSettings);
     setSettingsValidation(validation);
+  };
+
+  const handleVersionPolicyChange = (versionPolicy: LightExtensionSourceBindingVersionPolicy) => {
+    if (!sourceBinding) {
+      return;
+    }
+    form.setValuesIn('sourceBinding', {
+      ...sourceBinding,
+      versionPolicy,
+    });
   };
 
   const copyPublicationToInline = async () => {
@@ -256,6 +275,13 @@ export const JSBlockLightExtensionSourceField: React.FC<JSBlockLightExtensionSou
             onChange={handleSelectorChange}
             onClear={handleSelectorClear}
           />
+          {sourceBinding ? (
+            <VersionPolicyField
+              disabled={disabled}
+              value={sourceBinding.versionPolicy || 'pinned'}
+              onChange={handleVersionPolicyChange}
+            />
+          ) : null}
           {selectedPublication ? (
             <SettingsAutoForm
               schema={selectedPublication.settingsSchemaSnapshot}

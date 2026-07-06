@@ -8,6 +8,7 @@
  */
 
 export { PluginLightExtensionServer } from './plugin';
+export * from './services/BulkUpgradeService';
 export * from './services/LightExtensionAuditService';
 export * from './services/LightExtensionAuthoringInspector';
 export * from './services/LightExtensionCompilePreviewService';

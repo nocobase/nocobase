@@ -74,10 +74,17 @@ describe('PluginLightExtensionClientV2', () => {
       componentLoader: expect.any(Function),
       aclSnippet: LIGHT_EXTENSION_ACL_SNIPPET,
     });
+    expect(app.pluginSettingsManager.get(`${LIGHT_EXTENSION_SETTINGS_KEY}.references`, false)).toMatchObject({
+      menuKey: LIGHT_EXTENSION_SETTINGS_KEY,
+      pageKey: 'references',
+      componentLoader: expect.any(Function),
+      aclSnippet: LIGHT_EXTENSION_ACL_SNIPPET,
+    });
     expect(app.flowEngine.flowSettings.components).toMatchObject({
       [JS_BLOCK_LIGHT_EXTENSION_FULL_SOURCE_FIELD]: expect.any(Function),
       RepoEntryPublicationSelector: expect.any(Function),
       SettingsAutoForm: expect.any(Function),
+      VersionPolicyField: expect.any(Function),
     });
     expect(warn.mock.calls.flat().join('\n')).not.toContain('JSBlockLightExtensionSourceField');
     expect(RunJSSourceResolverRegistry.getResolver('light-extension')).toBeTruthy();

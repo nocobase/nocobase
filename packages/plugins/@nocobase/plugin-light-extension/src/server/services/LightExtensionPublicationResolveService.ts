@@ -220,7 +220,11 @@ export class LightExtensionPublicationResolveService {
       throw error;
     }
 
-    const publication = await this.loadPublication(sourceBinding.publicationId, ctx);
+    const versionPolicy = sourceBinding.versionPolicy || 'pinned';
+    const publication =
+      versionPolicy === 'follow-active'
+        ? await this.loadActivePublicationForBinding(sourceBinding, ctx)
+        : await this.loadPublication(sourceBinding.publicationId, ctx);
     assertSourceBindingMatches(sourceBinding, publication);
     await this.assertRuntimeStateAllowsPublication(publication, ctx);
     const settings = this.settingsResolver.resolvePublicationSettings(publication, input.settings);
@@ -240,8 +244,98 @@ export class LightExtensionPublicationResolveService {
       version: publication.runtimeVersion || publication.artifact.version,
       ...(publication.artifact.sourceMap ? { sourceMap: publication.artifact.sourceMap } : {}),
       settings,
-      cache: buildRuntimeCacheMetadata(publication, settings),
+      cache: buildRuntimeCacheMetadata(publication, settings, versionPolicy),
     };
+  }
+
+  private async loadActivePublicationForBinding(
+    sourceBinding: LightExtensionRuntimeSourceBinding,
+    ctx: LightExtensionServiceContext,
+  ): Promise<LightExtensionPublicationRecord> {
+    const repo = await this.db.getRepository('lightExtensionRepos').findOne({
+      filterByTk: sourceBinding.repoId,
+      transaction: ctx.transaction,
+    });
+    if (!repo) {
+      throw new LightExtensionError(
+        'LIGHT_EXTENSION_REPO_NOT_FOUND',
+        `Light extension repository "${sourceBinding.repoId}" was not found`,
+        {
+          details: {
+            reasonCode: 'repo_missing',
+            repoId: sourceBinding.repoId,
+            entryId: sourceBinding.entryId,
+          },
+        },
+      );
+    }
+    const repoLifecycleStatus = String(repo.get('lifecycleStatus') || '');
+    if (repoLifecycleStatus === 'disabled' || repoLifecycleStatus === 'archived') {
+      throw runtimeLifecycleError(`Light extension repository lifecycle status is "${repoLifecycleStatus}"`, {
+        reasonCode: repoLifecycleStatus === 'disabled' ? 'repo_disabled' : 'repo_archived',
+        repoId: sourceBinding.repoId,
+        entryId: sourceBinding.entryId,
+        repoLifecycleStatus,
+      });
+    }
+
+    const entry = await this.db.getRepository('lightExtensionEntries').findOne({
+      filterByTk: sourceBinding.entryId,
+      transaction: ctx.transaction,
+    });
+    if (!entry) {
+      throw new LightExtensionError(
+        'LIGHT_EXTENSION_ENTRY_NOT_FOUND',
+        `Light extension entry "${sourceBinding.entryId}" was not found`,
+        {
+          details: {
+            reasonCode: 'entry_missing',
+            repoId: sourceBinding.repoId,
+            entryId: sourceBinding.entryId,
+          },
+        },
+      );
+    }
+
+    const entryRepoId = String(entry.get('repoId') || '');
+    const entryKind = String(entry.get('kind') || '');
+    if (entryRepoId !== sourceBinding.repoId || entryKind !== sourceBinding.kind) {
+      throw new LightExtensionError(
+        'LIGHT_EXTENSION_BINDING_OUTDATED',
+        'Light extension source binding does not match the entry identity',
+        {
+          details: {
+            reasonCode: 'entry_mismatch',
+            repoId: sourceBinding.repoId,
+            entryId: sourceBinding.entryId,
+            entryRepoId,
+            entryKind,
+          },
+        },
+      );
+    }
+
+    const entryHealthStatus = String(entry.get('healthStatus') || '');
+    if (entryHealthStatus !== 'ready') {
+      throw runtimeLifecycleError(`Light extension entry health status is "${entryHealthStatus}"`, {
+        reasonCode: entryHealthStatus === 'disabled' ? 'entry_disabled' : 'entry_missing',
+        repoId: sourceBinding.repoId,
+        entryId: sourceBinding.entryId,
+        entryHealthStatus,
+      });
+    }
+
+    const activePublicationId =
+      typeof entry.get('activePublicationId') === 'string' ? entry.get('activePublicationId') : '';
+    if (!activePublicationId) {
+      throw runtimeLifecycleError('Light extension entry has no active publication', {
+        reasonCode: 'no_active_publication',
+        repoId: sourceBinding.repoId,
+        entryId: sourceBinding.entryId,
+      });
+    }
+
+    return this.loadPublication(activePublicationId, ctx);
   }
 
   private async loadPublication(
@@ -429,19 +523,8 @@ function assertRuntimeResolveInput(input: LightExtensionRuntimeResolveInput): vo
   }
 
   const versionPolicy = sourceBinding.versionPolicy || 'pinned';
-  if (versionPolicy === 'follow-active') {
-    throw new LightExtensionError(
-      'LIGHT_EXTENSION_VERSION_POLICY_UNSUPPORTED',
-      'Light extension follow-active runtime resolution is not available yet',
-      {
-        details: {
-          versionPolicy,
-        },
-      },
-    );
-  }
-  if (versionPolicy !== 'pinned') {
-    throw invalidInput('sourceBinding.versionPolicy must be "pinned"');
+  if (versionPolicy !== 'pinned' && versionPolicy !== 'follow-active') {
+    throw invalidInput('sourceBinding.versionPolicy must be "pinned" or "follow-active"');
   }
   if (
     typeof input.settings !== 'undefined' &&
@@ -498,15 +581,17 @@ function publicationMatchesEntry(
 function buildRuntimeCacheMetadata(
   publication: LightExtensionPublicationRecord,
   settings: Record<string, unknown>,
+  versionPolicy: string,
 ): LightExtensionRuntimeResolveResult['cache'] {
   return {
     etag: `"${stableJsonHash({
+      versionPolicy,
       publicationId: publication.id,
       runtimeCodeHash: publication.runtimeCodeHash,
       settingsDefaultsHash: publication.settingsDefaultsHash,
       settings,
     })}"`,
-    immutable: true,
+    immutable: versionPolicy !== 'follow-active',
   };
 }
 

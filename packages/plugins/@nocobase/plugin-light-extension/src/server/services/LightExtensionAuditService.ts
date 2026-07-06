@@ -173,6 +173,8 @@ export interface LightExtensionReferenceAuditInput {
     | 'referenceRebuild'
     | 'referenceOwnerMissing'
     | 'referenceConflict'
+    | 'referenceImpact'
+    | 'referenceBulkUpgrade'
     | 'readReferences';
   result: 'success' | 'partial_success' | 'blocked' | 'denied';
   requestId: string;

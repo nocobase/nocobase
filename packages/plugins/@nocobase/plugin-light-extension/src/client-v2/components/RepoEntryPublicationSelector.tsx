@@ -54,7 +54,7 @@ function isLightExtensionJSBlockBinding(value: unknown): value is LightExtension
     value.kind === 'js-block' &&
     typeof value.publicationId === 'string' &&
     value.publicationId.trim().length > 0 &&
-    value.versionPolicy === 'pinned'
+    (value.versionPolicy === 'pinned' || value.versionPolicy === 'follow-active')
   );
 }
 

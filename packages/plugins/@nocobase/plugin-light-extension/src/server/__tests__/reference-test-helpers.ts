@@ -13,6 +13,7 @@ import { vi } from 'vitest';
 
 import type { LightExtensionFlowModelOwnerLocator, LightExtensionRuntimeSourceBinding } from '../../shared/types';
 import { LightExtensionAuditService } from '../services/LightExtensionAuditService';
+import { BulkUpgradeService } from '../services/BulkUpgradeService';
 import { LightExtensionPermissionService } from '../services/LightExtensionPermissionService';
 import { ReferenceService } from '../services/ReferenceService';
 
@@ -81,19 +82,54 @@ export function createReferenceServiceFixture(
         repository,
       };
     },
+    sequelize: {
+      transaction: async (run: (transaction: unknown) => Promise<unknown>) => {
+        const snapshot = snapshotRepositories(repositories);
+        try {
+          return await run({ transactionId: 'test_transaction' });
+        } catch (error) {
+          restoreRepositories(repositories, snapshot);
+          throw error;
+        }
+      },
+    },
   } as unknown as Database;
   const auditService = new LightExtensionAuditService(db);
   const recordReferenceEvent = vi.spyOn(auditService, 'recordReferenceEvent').mockResolvedValue(undefined);
   const permissionService = new LightExtensionPermissionService(auditService);
+  const service = new ReferenceService(db, auditService, permissionService);
 
   return {
     db,
-    service: new ReferenceService(db, auditService, permissionService),
+    service,
+    bulkUpgradeService: new BulkUpgradeService(db, auditService, permissionService, undefined, service),
     repositories,
     flowModelTrees,
     auditService,
     recordReferenceEvent,
   };
+}
+
+function snapshotRepositories(repositories: Record<string, { records: MutableModel[] }>) {
+  return Object.fromEntries(
+    Object.entries(repositories).map(([name, repository]) => [
+      name,
+      repository.records.map((record) => record.toJSON()),
+    ]),
+  );
+}
+
+function restoreRepositories(
+  repositories: Record<string, { records: MutableModel[] }>,
+  snapshot: Record<string, Record<string, unknown>[]>,
+) {
+  for (const [name, records] of Object.entries(snapshot)) {
+    const repository = repositories[name];
+    if (!repository) {
+      continue;
+    }
+    repository.records.splice(0, repository.records.length, ...records.map((record) => createMutableModel(record)));
+  }
 }
 
 export function createRepository(input: RepositoryInput = {}) {
@@ -114,6 +150,17 @@ export function createRepository(input: RepositoryInput = {}) {
       records.push(model);
       return model;
     }),
+    update: vi.fn(
+      async (options: { values: Record<string, unknown>; filterByTk?: string; filter?: Record<string, unknown> }) => {
+        const matched = records.filter(
+          (record) => matchesFilterByTk(record, options.filterByTk) && matchesFilter(record, options.filter),
+        );
+        for (const record of matched) {
+          await record.update(options.values);
+        }
+        return matched;
+      },
+    ),
     destroy: vi.fn(async (options: { filterByTk?: string; filter?: Record<string, unknown> } = {}) => {
       const nextRecords = records.filter(
         (record) => !(matchesFilterByTk(record, options.filterByTk) && matchesFilter(record, options.filter)),

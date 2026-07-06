@@ -350,7 +350,7 @@ export interface LightExtensionReferenceRecord {
   ownerKind: 'flowModel.step';
   ownerLocator: LightExtensionFlowModelOwnerLocator;
   ownerLocatorHash: string;
-  versionPolicy: 'pinned';
+  versionPolicy: LightExtensionSourceBindingVersionPolicy;
   settingsHash: string;
   resolvedStatus: LightExtensionReferenceResolvedStatus;
   createdAt?: string | null;
@@ -376,6 +376,64 @@ export interface LightExtensionReferenceRebuildResult {
   removed: number;
   ownerMissing: number;
   statusCounts: Partial<Record<LightExtensionReferenceResolvedStatus, number>>;
+}
+
+export interface LightExtensionSettingsValidationIssue {
+  path: string;
+  code: string;
+  message: string;
+  details?: Record<string, unknown>;
+}
+
+export interface LightExtensionReferenceImpactInput extends LightExtensionReferenceListInput {
+  toPublicationId: string;
+  referenceIds?: string[];
+}
+
+export interface LightExtensionReferenceImpactItem {
+  reference: LightExtensionReferenceRecord;
+  targetPublicationId: string;
+  settingsValidation: {
+    compatible: boolean;
+    settingsHash?: string;
+    issues: LightExtensionSettingsValidationIssue[];
+  };
+  upgradeBlockedReason?: string;
+}
+
+export interface LightExtensionReferenceImpactResult {
+  toPublication: LightExtensionPublicationMetadataRecord;
+  references: LightExtensionReferenceImpactItem[];
+  summary: {
+    total: number;
+    upgradable: number;
+    incompatible: number;
+    skipped: number;
+  };
+}
+
+export interface LightExtensionBulkUpgradeInput {
+  toPublicationId: string;
+  referenceIds: string[];
+  expectedPublicationIdByReference?: Record<string, string | null>;
+  expectedSettingsHashByReference?: Record<string, string>;
+}
+
+export type LightExtensionBulkUpgradeItemStatus = 'upgraded' | 'conflict' | 'incompatible' | 'skipped' | 'missing';
+
+export interface LightExtensionBulkUpgradeItemResult {
+  referenceId: string;
+  status: LightExtensionBulkUpgradeItemStatus;
+  publicationId?: string | null;
+  settingsHash?: string;
+  reasonCode?: string;
+  issues?: LightExtensionSettingsValidationIssue[];
+}
+
+export interface LightExtensionBulkUpgradeResult {
+  toPublication: LightExtensionPublicationMetadataRecord;
+  items: LightExtensionBulkUpgradeItemResult[];
+  summary: Record<LightExtensionBulkUpgradeItemStatus, number>;
 }
 
 export type LightExtensionPublishEntryStatus = 'created' | 'reused' | 'failed' | 'conflict' | 'skipped';

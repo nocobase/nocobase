@@ -63,33 +63,46 @@ describe('plugin-light-extension binding outdated guard', () => {
     expect(JSON.stringify((ctx as { body?: unknown }).body)).not.toContain('sourceMap');
   });
 
-  it('reserves an explicit error for follow-active bindings until that policy is implemented', async () => {
+  it('allows follow-active bindings to be handled by runtime resolution', async () => {
     const { service, publicationsRepository } = createRuntimeResolveService(createPublicationRecord());
 
-    await expect(
-      service.resolveRuntime(
-        {
-          sourceMode: 'light-extension',
-          sourceBinding: createSourceBinding({
-            versionPolicy: 'follow-active',
-          }),
-          settings: {},
-        },
-        {
-          can: ({ action }: { action: string }) => (action === 'usePublication' ? {} : null),
-        },
-      ),
-    ).rejects.toMatchObject({
-      code: 'LIGHT_EXTENSION_VERSION_POLICY_UNSUPPORTED',
-      status: 422,
+    const result = await service.resolveRuntime(
+      {
+        sourceMode: 'light-extension',
+        sourceBinding: createSourceBinding({
+          versionPolicy: 'follow-active',
+        }),
+        settings: {},
+      },
+      {
+        can: ({ action }: { action: string }) => (action === 'usePublication' ? {} : null),
+      },
+    );
+
+    expect(result).toMatchObject({
+      publicationId: 'lep_sales_kpi',
     });
-    expect(publicationsRepository.findOne).not.toHaveBeenCalled();
+    expect(publicationsRepository.findOne).toHaveBeenCalled();
   });
 });
 
 function createRuntimeResolveService(record: Record<string, unknown>) {
   const publicationsRepository = {
     findOne: vi.fn().mockResolvedValue(createModel(record)),
+  };
+  const reposRepository = {
+    findOne: vi.fn().mockResolvedValue(createModel({ id: 'ler_sales', lifecycleStatus: 'enabled' })),
+  };
+  const entriesRepository = {
+    findOne: vi.fn().mockResolvedValue(
+      createModel({
+        id: 'lee_sales_kpi',
+        repoId: 'ler_sales',
+        kind: 'js-block',
+        healthStatus: 'ready',
+        activePublicationId: 'lep_sales_kpi',
+      }),
+    ),
   };
   const logsRepository = {
     create: vi.fn().mockResolvedValue(createModel({})),
@@ -98,6 +111,12 @@ function createRuntimeResolveService(record: Record<string, unknown>) {
     getRepository: (name: string) => {
       if (name === 'lightExtensionEntryPublications') {
         return publicationsRepository;
+      }
+      if (name === 'lightExtensionRepos') {
+        return reposRepository;
+      }
+      if (name === 'lightExtensionEntries') {
+        return entriesRepository;
       }
       if (name === 'lightExtensionLogs') {
         return logsRepository;

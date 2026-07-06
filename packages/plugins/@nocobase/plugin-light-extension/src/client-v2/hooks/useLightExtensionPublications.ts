@@ -201,19 +201,51 @@ export function useLightExtensionPublications(): UseLightExtensionPublicationsRe
     [clearError, ctx.api, t],
   );
 
+  const listPublications = useCallback(
+    (repoId: string) => requestOperation('listPublications', { repoId }),
+    [requestOperation],
+  );
+  const publish = useCallback(
+    (input: LightExtensionPublishInput) => requestOperation('publish', input),
+    [requestOperation],
+  );
+  const activatePublication = useCallback(
+    (input: LightExtensionActivatePublicationInput) => requestOperation('activatePublication', input),
+    [requestOperation],
+  );
+  const emergencyRollback = useCallback(
+    (input: LightExtensionEmergencyRollbackInput) => requestOperation('emergencyRollback', input),
+    [requestOperation],
+  );
+  const isLoading = useCallback(
+    (operation: LightExtensionPublicationOperation) => Boolean(loading[operation]),
+    [loading],
+  );
+  const getError = useCallback((operation: LightExtensionPublicationOperation) => errors[operation] || null, [errors]);
+
   return useMemo<UseLightExtensionPublicationsResult>(
     () => ({
       loading,
       errors,
-      listPublications: (repoId) => requestOperation('listPublications', { repoId }),
-      publish: (input) => requestOperation('publish', input),
-      activatePublication: (input) => requestOperation('activatePublication', input),
-      emergencyRollback: (input) => requestOperation('emergencyRollback', input),
-      isLoading: (operation) => Boolean(loading[operation]),
-      getError: (operation) => errors[operation] || null,
+      listPublications,
+      publish,
+      activatePublication,
+      emergencyRollback,
+      isLoading,
+      getError,
       clearError,
     }),
-    [clearError, errors, loading, requestOperation],
+    [
+      activatePublication,
+      clearError,
+      emergencyRollback,
+      errors,
+      getError,
+      isLoading,
+      listPublications,
+      loading,
+      publish,
+    ],
   );
 }
 

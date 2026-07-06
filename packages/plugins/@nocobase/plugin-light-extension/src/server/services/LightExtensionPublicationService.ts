@@ -65,11 +65,16 @@ export interface LightExtensionActivationResult {
   emergency: boolean;
 }
 
+type ReferenceRefreshService = {
+  refreshReferencesForRepo: (repoId: string, ctx?: LightExtensionServiceContext) => Promise<void>;
+};
+
 export class LightExtensionPublicationService {
   constructor(
     private readonly db: Database,
     private readonly auditService?: LightExtensionAuditService,
     private readonly permissionService?: LightExtensionPermissionService,
+    private readonly referenceService?: ReferenceRefreshService,
   ) {}
 
   async createOrGetPublication(
@@ -258,6 +263,11 @@ export class LightExtensionPublicationService {
             transaction,
           },
         );
+        await this.referenceService?.refreshReferencesForRepo(entryRepoId, {
+          ...ctx,
+          requestId,
+          transaction,
+        });
         await this.recordActivationBestEffort({
           repoId: entryRepoId,
           entryId: input.entryId,

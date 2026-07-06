@@ -33,6 +33,7 @@ import {
   lightExtensionReferenceActionNames,
 } from './resources/lightExtensionReferences';
 import { createLightExtensionsResource, lightExtensionActionNames } from './resources/lightExtensions';
+import { BulkUpgradeService } from './services/BulkUpgradeService';
 import { LightExtensionAuditService } from './services/LightExtensionAuditService';
 import { LightExtensionAuthoringInspector } from './services/LightExtensionAuthoringInspector';
 import { LightExtensionCompilePreviewService } from './services/LightExtensionCompilePreviewService';
@@ -130,6 +131,8 @@ export class PluginLightExtensionServer extends Plugin {
 
   private referenceService?: ReferenceService;
 
+  private bulkUpgradeService?: BulkUpgradeService;
+
   private unregisterVscPermissionHook?: () => void;
 
   private pendingVscPluginListener?: PluginLoadListener;
@@ -215,14 +218,26 @@ export class PluginLightExtensionServer extends Plugin {
       this.workspaceCompilerBridge,
       this.validator,
     );
-    this.publicationService = new LightExtensionPublicationService(db, this.auditService, this.permissionService);
+    this.referenceService = new ReferenceService(db, this.auditService, this.permissionService);
+    this.bulkUpgradeService = new BulkUpgradeService(
+      db,
+      this.auditService,
+      this.permissionService,
+      undefined,
+      this.referenceService,
+    );
+    this.publicationService = new LightExtensionPublicationService(
+      db,
+      this.auditService,
+      this.permissionService,
+      this.referenceService,
+    );
     this.publicationResolveService = new LightExtensionPublicationResolveService(
       db,
       this.auditService,
       this.permissionService,
     );
     this.runtimeResolveService = new RuntimeResolveService(this.publicationResolveService);
-    this.referenceService = new ReferenceService(db, this.auditService, this.permissionService);
     this.publishService = new LightExtensionPublishService(
       db,
       this.fileService,
@@ -243,7 +258,7 @@ export class PluginLightExtensionServer extends Plugin {
       createLightExtensionRuntimeResource(this.runtimeResolveService),
     );
     (this.app as unknown as AppWithPluginEvents).resourceManager?.define?.(
-      createLightExtensionReferencesResource(this.referenceService),
+      createLightExtensionReferencesResource(this.referenceService, this.bulkUpgradeService),
     );
     (this.app as unknown as AppWithPluginEvents).resourceManager?.define?.(
       createLightExtensionReposResource(this.repoService),
