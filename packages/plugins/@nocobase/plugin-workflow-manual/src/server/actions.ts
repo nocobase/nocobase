@@ -8,11 +8,12 @@
  */
 
 import actions, { Context, utils } from '@nocobase/actions';
+import type { Model } from '@nocobase/database';
 import PluginWorkflowServer, { EXECUTION_STATUS, JOB_STATUS } from '@nocobase/plugin-workflow';
 
 import ManualInstruction from './ManualInstruction';
 
-type ManualTaskModel = {
+type ManualTaskModel = Model & {
   id: number | string;
   userId: number | string;
   jobId: number | string;
@@ -79,11 +80,11 @@ function getAnyModeStatus(distribution: StatusDistribution[], assignees: Array<n
 
 async function updateJobByManualTask(task: ManualTaskModel, context: Context) {
   const mode = task.node.config.mode ?? 0;
-  const tasks = (await context.db.getModel('workflowManualTasks').findAll({
+  const tasks = await context.db.getModel<ManualTaskModel>('workflowManualTasks').findAll({
     where: {
       jobId: task.jobId,
     },
-  })) as ManualTaskModel[];
+  });
   const assignees: Array<number | string> = [];
   const distributionMap = new Map<number, number>();
 
