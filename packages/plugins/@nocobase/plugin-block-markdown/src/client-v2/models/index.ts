@@ -7,5 +7,4 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export { default } from './plugin';
-export { MarkdownBlockModel } from './models/MarkdownBlockModel';
+export { MarkdownBlockModel } from './MarkdownBlockModel';
