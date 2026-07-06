@@ -13,6 +13,16 @@ export const LIGHT_EXTENSION_ACL_SNIPPET = 'pm.light-extension';
 
 export const LIGHT_EXTENSION_OWNER_TYPE = 'light-extension';
 
+export const LIGHT_EXTENSION_SUPPORTED_KINDS = [
+  'js-block',
+  'js-field',
+  'js-action',
+  'js-item',
+  'runjs',
+  'event',
+] as const;
+export const LIGHT_EXTENSION_ENABLED_KINDS = ['js-block'] as const;
+
 export const LIGHT_EXTENSION_ACL_ACTIONS = [
   'list',
   'readSource',
@@ -38,7 +48,7 @@ export const LIGHT_EXTENSION_ACL_ACTIONS = [
 
 export const LIGHT_EXTENSION_REPO_LIFECYCLE_STATUSES = ['enabled', 'disabled', 'archived'] as const;
 export const LIGHT_EXTENSION_REPO_HEALTH_STATUSES = ['draft', 'ready', 'partial_failed', 'scan_failed'] as const;
-export const LIGHT_EXTENSION_ENTRY_HEALTH_STATUSES = ['ready', 'failed', 'missing'] as const;
+export const LIGHT_EXTENSION_ENTRY_HEALTH_STATUSES = ['ready', 'failed', 'missing', 'disabled'] as const;
 export const LIGHT_EXTENSION_REFERENCE_RESOLVED_STATUSES = [
   'active',
   'repo_disabled',
@@ -51,3 +61,4 @@ export const LIGHT_EXTENSION_REFERENCE_RESOLVED_STATUSES = [
 ] as const;
 
 export type LightExtensionAclAction = (typeof LIGHT_EXTENSION_ACL_ACTIONS)[number];
+export type LightExtensionKind = (typeof LIGHT_EXTENSION_SUPPORTED_KINDS)[number];

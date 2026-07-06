@@ -65,6 +65,12 @@ const MUTATING_RESOURCE_ACTIONS = [
   'upsert',
 ];
 
+const RESOURCE_ACTION_DIRTY_TARGETS: Record<string, Record<string, string[]>> = {
+  lightExtensionEntries: {
+    scan: ['lightExtensionEntries', 'lightExtensionRepos'],
+  },
+};
+
 function isApiClientLike(value: unknown): value is DirtyAwareAPIClient {
   if (!value || typeof value !== 'object') {
     return false;
@@ -91,6 +97,85 @@ function isMutatingResourceAction(actionName: string): boolean {
     const nextChar = baseActionName[action.length];
     return nextChar === '-' || nextChar === '_' || (nextChar >= 'A' && nextChar <= 'Z');
   });
+}
+
+function normalizeActionBaseName(actionName: string): string {
+  return String(actionName || '')
+    .trim()
+    .split('/')[0]
+    .toLowerCase();
+}
+
+function getSpecialDirtyResourceNames(dirtyResourceAction: DirtyResourceAction): string[] | undefined {
+  return RESOURCE_ACTION_DIRTY_TARGETS[dirtyResourceAction.resourceName]?.[
+    normalizeActionBaseName(dirtyResourceAction.actionName)
+  ];
+}
+
+function isDirtyResourceAction(dirtyResourceAction: DirtyResourceAction): boolean {
+  return (
+    isMutatingResourceAction(dirtyResourceAction.actionName) ||
+    Boolean(getSpecialDirtyResourceNames(dirtyResourceAction))
+  );
+}
+
+function shouldMarkDirtyAfterRejectedResourceAction(dirtyResourceAction: DirtyResourceAction, error: unknown): boolean {
+  if (!getSpecialDirtyResourceNames(dirtyResourceAction)) {
+    return false;
+  }
+
+  return isPersistedLightExtensionScanError(error);
+}
+
+function isPersistedLightExtensionScanError(error: unknown): boolean {
+  return getRejectedErrorStatus(error) === 422 && getRejectedErrorCode(error) === 'LIGHT_EXTENSION_VALIDATION_FAILED';
+}
+
+function getRejectedErrorStatus(error: unknown): number | undefined {
+  if (!isRecord(error)) {
+    return undefined;
+  }
+
+  const status = error.status;
+  if (typeof status === 'number') {
+    return status;
+  }
+
+  const response = error.response;
+  if (!isRecord(response)) {
+    return undefined;
+  }
+
+  const responseStatus = response.status;
+  return typeof responseStatus === 'number' ? responseStatus : undefined;
+}
+
+function getRejectedErrorCode(error: unknown): string | undefined {
+  if (!isRecord(error)) {
+    return undefined;
+  }
+
+  const code = error.code;
+  if (typeof code === 'string') {
+    return code;
+  }
+
+  const response = error.response;
+  if (!isRecord(response)) {
+    return undefined;
+  }
+
+  const data = response.data;
+  if (!isRecord(data) || !Array.isArray(data.errors)) {
+    return undefined;
+  }
+
+  const [firstError] = data.errors;
+  return isRecord(firstError) && typeof firstError.code === 'string' ? firstError.code : undefined;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 }
 
 function getCurrentOrigin(): string | undefined {
@@ -334,12 +419,16 @@ function markResourceActionDataSourceDirty(
   dirtyResourceAction: DirtyResourceAction,
   headers: unknown,
 ) {
-  markDataSourceDirty({
-    engine: context.engine,
-    dataSourceKey: dirtyResourceAction.dataSourceKey || getDataSourceKeyFromHeaders(headers),
-    resourceName: dirtyResourceAction.resourceName,
-    includePreviousEngines: true,
-  });
+  const dataSourceKey = dirtyResourceAction.dataSourceKey || getDataSourceKeyFromHeaders(headers);
+  const resourceNames = getSpecialDirtyResourceNames(dirtyResourceAction) || [dirtyResourceAction.resourceName];
+  for (const resourceName of resourceNames) {
+    markDataSourceDirty({
+      engine: context.engine,
+      dataSourceKey,
+      resourceName,
+      includePreviousEngines: true,
+    });
+  }
 }
 
 function createDirtyAwareResource(
@@ -352,18 +441,27 @@ function createDirtyAwareResource(
   return new Proxy(resource, {
     get(target, prop, receiver) {
       const original = Reflect.get(target, prop, receiver);
-      if (typeof prop !== 'string' || typeof original !== 'function' || !isMutatingResourceAction(prop)) {
+      if (typeof prop !== 'string' || typeof original !== 'function') {
+        return original;
+      }
+
+      const dirtyResourceAction = resolveDirtyResourceActionFromResource(resourceName, resourceOf, prop, context);
+      if (!dirtyResourceAction || !isDirtyResourceAction(dirtyResourceAction)) {
         return original;
       }
 
       const action = original as ResourceActionFn;
       return async (...args: Parameters<ResourceActionFn>) => {
-        const result = await action(...args);
-        const dirtyResourceAction = resolveDirtyResourceActionFromResource(resourceName, resourceOf, prop, context);
-        if (dirtyResourceAction) {
+        try {
+          const result = await action(...args);
           markResourceActionDataSourceDirty(context, dirtyResourceAction, headers);
+          return result;
+        } catch (error) {
+          if (shouldMarkDirtyAfterRejectedResourceAction(dirtyResourceAction, error)) {
+            markResourceActionDataSourceDirty(context, dirtyResourceAction, headers);
+          }
+          throw error;
         }
-        return result;
       };
     },
   });
@@ -380,12 +478,20 @@ function createDirtyAwareApiClient(api: DirtyAwareAPIClient, context: FlowContex
     const skipDataSourceDirty = options?.[SKIP_DATA_SOURCE_DIRTY];
     const dirtyResourceAction = skipDataSourceDirty ? undefined : resolveDirtyResourceAction(options, context);
     const { [SKIP_DATA_SOURCE_DIRTY]: _skipDataSourceDirty, ...cleanConfig } = options;
-    return api.request<T, R, D>(cleanConfig as typeof config).then((result) => {
-      if (dirtyResourceAction && isMutatingResourceAction(dirtyResourceAction.actionName)) {
-        markResourceActionDataSourceDirty(context, dirtyResourceAction, options.headers);
-      }
-      return result;
-    });
+    return api.request<T, R, D>(cleanConfig as typeof config).then(
+      (result) => {
+        if (dirtyResourceAction && isDirtyResourceAction(dirtyResourceAction)) {
+          markResourceActionDataSourceDirty(context, dirtyResourceAction, options.headers);
+        }
+        return result;
+      },
+      (error) => {
+        if (dirtyResourceAction && shouldMarkDirtyAfterRejectedResourceAction(dirtyResourceAction, error)) {
+          markResourceActionDataSourceDirty(context, dirtyResourceAction, options.headers);
+        }
+        throw error;
+      },
+    );
   }) as APIClient['request'];
 
   const proxy = new Proxy(api, {

@@ -66,6 +66,9 @@ describe('plugin-light-extension collections', () => {
       'activePublicationId',
       'healthStatus',
       'diagnostics',
+      'validatorVersion',
+      'lastScannedCommitId',
+      'lastScannedAt',
     ]);
     expectCollectionFields('lightExtensionEntryPublications', [
       'id',
@@ -106,7 +109,7 @@ describe('plugin-light-extension collections', () => {
 
     expect(LIGHT_EXTENSION_REPO_LIFECYCLE_STATUSES).toEqual(['enabled', 'disabled', 'archived']);
     expect(LIGHT_EXTENSION_REPO_HEALTH_STATUSES).toEqual(['draft', 'ready', 'partial_failed', 'scan_failed']);
-    expect(LIGHT_EXTENSION_ENTRY_HEALTH_STATUSES).toEqual(['ready', 'failed', 'missing']);
+    expect(LIGHT_EXTENSION_ENTRY_HEALTH_STATUSES).toEqual(['ready', 'failed', 'missing', 'disabled']);
     expect(LIGHT_EXTENSION_REFERENCE_RESOLVED_STATUSES).toEqual([
       'active',
       'repo_disabled',

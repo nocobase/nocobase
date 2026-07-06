@@ -12,6 +12,8 @@ import type { VscPermissionHookInput, VscPermissionRequestMetadata } from '@noco
 import { randomUUID } from 'crypto';
 
 import { LIGHT_EXTENSION_OWNER_TYPE } from '../../constants';
+import type { LightExtensionDiagnostic } from '../../shared/types';
+import { sortDiagnostics } from './LightExtensionValidator';
 
 export interface LightExtensionRawResourceDeniedAuditInput {
   permission: VscPermissionHookInput;
@@ -67,6 +69,23 @@ export interface LightExtensionFileWriteAuditInput {
     language?: string;
   }>;
   details?: Record<string, unknown>;
+  transaction?: Transaction;
+}
+
+export interface LightExtensionScanAuditInput {
+  repoId: string;
+  action: 'scan';
+  result: 'success' | 'blocked';
+  requestId: string;
+  actorUserId?: string | null;
+  commitId?: string | null;
+  entryCount: number;
+  diagnosticCount: number;
+  errorCount: number;
+  warningCount: number;
+  diagnostics?: LightExtensionDiagnostic[];
+  message: string;
+  reasonCode?: string;
   transaction?: Transaction;
 }
 
@@ -147,6 +166,31 @@ export class LightExtensionAuditService {
     });
   }
 
+  async recordScanEvent(input: LightExtensionScanAuditInput): Promise<void> {
+    await this.db.getRepository('lightExtensionLogs').create({
+      values: {
+        repoId: input.repoId,
+        level: input.result === 'blocked' ? 'warn' : 'info',
+        action: input.action,
+        result: input.result,
+        requestId: input.requestId,
+        actorUserId: input.actorUserId || undefined,
+        reasonCode: sanitizeText(input.reasonCode),
+        message: sanitizeText(input.message),
+        details: compactObject({
+          commitId: sanitizeText(input.commitId),
+          entryCount: input.entryCount,
+          diagnosticCount: input.diagnosticCount,
+          errorCount: input.errorCount,
+          warningCount: input.warningCount,
+          diagnostics: summarizeDiagnostics(input.diagnostics || []),
+        }),
+        createdAt: new Date(),
+      },
+      transaction: input.transaction,
+    });
+  }
+
   buildRawResourceDeniedPayload(
     input: LightExtensionRawResourceDeniedAuditInput,
   ): LightExtensionRawResourceDeniedPayload {
@@ -218,6 +262,26 @@ function sanitizeText(value: unknown): string | undefined {
 
 function compactObject<T extends Record<string, unknown>>(input: T): T {
   return Object.fromEntries(Object.entries(input).filter(([, value]) => typeof value !== 'undefined')) as T;
+}
+
+function summarizeDiagnostics(diagnostics: LightExtensionDiagnostic[]): Array<Record<string, unknown>> | undefined {
+  if (!diagnostics.length) {
+    return undefined;
+  }
+
+  return sortDiagnostics(diagnostics)
+    .slice(0, 20)
+    .map((item) =>
+      compactObject({
+        code: sanitizeText(item.code),
+        severity: sanitizeText(item.severity),
+        path: sanitizeText(item.path),
+        kind: sanitizeText(item.kind),
+        entryName: sanitizeText(item.entryName),
+        line: item.line,
+        column: item.column,
+      }),
+    );
 }
 
 function sanitizeDetails(input: Record<string, unknown>): Record<string, unknown> {

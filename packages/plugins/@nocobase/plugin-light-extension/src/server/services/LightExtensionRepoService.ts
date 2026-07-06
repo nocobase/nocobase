@@ -29,6 +29,7 @@ import type {
 } from '../../shared/types';
 import { LightExtensionAuditService } from './LightExtensionAuditService';
 import { LightExtensionPermissionService } from './LightExtensionPermissionService';
+import { LightExtensionValidator, hasErrorDiagnostic } from './LightExtensionValidator';
 import { normalizeVscBridgeError } from './errorContract';
 
 export interface LightExtensionServiceContext {
@@ -50,6 +51,7 @@ export class LightExtensionRepoService {
     private readonly auditService: LightExtensionAuditService,
     private readonly permissionService: LightExtensionPermissionService,
     permissionHooks?: VscPermissionHookRegistry,
+    private readonly validator = new LightExtensionValidator(),
   ) {
     this.useVscPermissionHookRegistry(
       permissionHooks || createLocalLightExtensionPermissionRegistry(permissionService),
@@ -68,6 +70,7 @@ export class LightExtensionRepoService {
     const normalizedName = normalizeRepoName(input.name);
     const repoId = `ler_${uid()}`;
     const initialFiles = input.initialFiles?.length ? input.initialFiles : undefined;
+    this.assertValidInitialFiles(initialFiles);
 
     return this.withTransaction(ctx.transaction, async (transaction) => {
       await this.assertRepoNameAvailable(input.name.trim(), normalizedName, transaction);
@@ -144,6 +147,26 @@ export class LightExtensionRepoService {
       }
 
       return repo;
+    });
+  }
+
+  private assertValidInitialFiles(files: LightExtensionTreeEntryInput[] | undefined): void {
+    if (!files) {
+      return;
+    }
+
+    const diagnostics = this.validator.validateInitialFiles({
+      files,
+    });
+    if (!hasErrorDiagnostic(diagnostics)) {
+      return;
+    }
+
+    throw new LightExtensionError('LIGHT_EXTENSION_VALIDATION_FAILED', 'Light extension initial source is invalid', {
+      status: 422,
+      details: {
+        diagnostics,
+      },
     });
   }
 

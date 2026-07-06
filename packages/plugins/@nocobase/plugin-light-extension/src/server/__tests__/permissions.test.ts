@@ -14,6 +14,8 @@ import { MockServer, createMockServer } from '@nocobase/test';
 import { vi } from 'vitest';
 
 import { LIGHT_EXTENSION_ACL_ACTIONS, LIGHT_EXTENSION_ACL_SNIPPET, NAMESPACE } from '../../constants';
+import { lightExtensionCapabilitiesActionNames } from '../resources/lightExtensionCapabilities';
+import { lightExtensionEntryActionNames } from '../resources/lightExtensionEntries';
 import { lightExtensionFileActionNames } from '../resources/lightExtensionFiles';
 import { lightExtensionRepoActionNames } from '../resources/lightExtensionRepos';
 import { LightExtensionAuditService } from '../services/LightExtensionAuditService';
@@ -72,12 +74,28 @@ describe('plugin-light-extension permission service', () => {
         ...LIGHT_EXTENSION_ACL_ACTIONS.map((action) => `lightExtension:${action}`),
         ...lightExtensionRepoActionNames.map((action) => `lightExtensionRepos:${action}`),
         ...lightExtensionFileActionNames.map((action) => `lightExtensionFiles:${action}`),
+        ...lightExtensionEntryActionNames.map((action) => `lightExtensionEntries:${action}`),
+        ...lightExtensionCapabilitiesActionNames.map((action) => `lightExtensionCapabilities:${action}`),
       ]);
       expect(
         app.acl.can({
           role: 'lightExtensionAdmin',
           resource: 'lightExtensionFiles',
           action: 'readArchivedSource',
+        }),
+      ).toBeTruthy();
+      expect(
+        app.acl.can({
+          role: 'lightExtensionAdmin',
+          resource: 'lightExtensionEntries',
+          action: 'scan',
+        }),
+      ).toBeTruthy();
+      expect(
+        app.acl.can({
+          role: 'lightExtensionAdmin',
+          resource: 'lightExtensionCapabilities',
+          action: 'get',
         }),
       ).toBeTruthy();
       expect(

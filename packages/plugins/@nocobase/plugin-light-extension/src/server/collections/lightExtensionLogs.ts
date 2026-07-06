@@ -32,6 +32,9 @@ export default defineCollection({
       fields: ['action', 'createdAt'],
     },
     {
+      fields: ['repoId', 'action', 'createdAt'],
+    },
+    {
       fields: ['rawResourceAction'],
     },
   ],

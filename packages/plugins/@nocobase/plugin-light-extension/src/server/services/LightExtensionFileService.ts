@@ -12,6 +12,7 @@ import type { VscCommitRecord, VscFileChange, VscPermissionAction } from '@nocob
 import { isVscError } from '@nocobase/plugin-vsc-file';
 import { VscFileService, VscPermissionHookRegistry } from '@nocobase/plugin-vsc-file';
 import { randomUUID } from 'crypto';
+import { posix as pathPosix } from 'path';
 
 import type { LightExtensionAclAction } from '../../constants';
 import { LightExtensionError, isLightExtensionError } from '../../shared/errors';
@@ -29,6 +30,7 @@ import { LightExtensionAuditService } from './LightExtensionAuditService';
 import { LightExtensionPermissionService } from './LightExtensionPermissionService';
 import type { LightExtensionRepoInternalRecord, LightExtensionServiceContext } from './LightExtensionRepoService';
 import { LightExtensionRepoService, stripInternalRepo } from './LightExtensionRepoService';
+import { LightExtensionValidator, hasErrorDiagnostic } from './LightExtensionValidator';
 import { normalizeVscBridgeError } from './errorContract';
 
 export interface LightExtensionPullInput {
@@ -85,6 +87,7 @@ export class LightExtensionFileService {
     private readonly permissionService: LightExtensionPermissionService,
     repoService?: LightExtensionRepoService,
     permissionHooks?: VscPermissionHookRegistry,
+    private readonly validator = new LightExtensionValidator(),
   ) {
     this.repoService = repoService || new LightExtensionRepoService(db, auditService, permissionService);
     this.useVscPermissionHookRegistry(
@@ -140,6 +143,21 @@ export class LightExtensionFileService {
       return await this.withTransaction(ctx.transaction, async (transaction) => {
         const repo = await this.repoService.lockInternalRepoForUpdate(input.repoId, { ...ctx, transaction });
         assertRepoNotArchived(repo, 'write source');
+        const current = await this.pullInternal(
+          repo,
+          {
+            repoId: repo.id,
+            includeContent: 'all',
+          },
+          {
+            ...ctx,
+            requestId,
+          },
+          transaction,
+          'writeSource',
+        );
+        this.assertValidSyncBatch(input.files, current.files || []);
+        this.assertValidWorkspaceAfterPush(current.files || [], input);
 
         const result = await this.runVsc(repo.id, () =>
           this.vscFileService.push(
@@ -200,6 +218,44 @@ export class LightExtensionFileService {
       await this.recordRejectedPush(input, ctx, requestId, error);
       throw normalizeVscBridgeError(error, input.repoId);
     }
+  }
+
+  private assertValidSyncBatch(
+    files: LightExtensionFileChange[],
+    existingFiles: LightExtensionPulledFile[] = [],
+  ): void {
+    const diagnostics = this.validator.validateSyncBatch({
+      files,
+      existingPaths: existingFiles.map((file) => file.path),
+    });
+    if (!hasErrorDiagnostic(diagnostics)) {
+      return;
+    }
+
+    throw new LightExtensionError('LIGHT_EXTENSION_VALIDATION_FAILED', 'Light extension source batch is invalid', {
+      details: {
+        diagnostics,
+      },
+    });
+  }
+
+  private assertValidWorkspaceAfterPush(
+    currentFiles: LightExtensionPulledFile[],
+    input: LightExtensionPushInput,
+  ): void {
+    const validation = this.validator.validateWorkspace({
+      files: applyLightExtensionFileChanges(currentFiles, input.files),
+    });
+
+    if (!hasErrorDiagnostic(validation.diagnostics)) {
+      return;
+    }
+
+    throw new LightExtensionError('LIGHT_EXTENSION_VALIDATION_FAILED', 'Light extension source workspace is invalid', {
+      details: {
+        diagnostics: validation.diagnostics,
+      },
+    });
   }
 
   async listCommits(
@@ -427,6 +483,9 @@ export class LightExtensionFileService {
     error: unknown,
   ): Promise<void> {
     try {
+      if (!(await this.repoExists(input.repoId))) {
+        return;
+      }
       await this.auditService.recordFileWrite({
         repoId: input.repoId,
         action: 'sourcePush',
@@ -442,6 +501,14 @@ export class LightExtensionFileService {
     } catch {
       // Rejected write audits must not mask the original write failure.
     }
+  }
+
+  private async repoExists(repoId: string): Promise<boolean> {
+    const repo = await this.db.getRepository('lightExtensionRepos').findOne({
+      filterByTk: repoId,
+    });
+
+    return Boolean(repo);
   }
 }
 
@@ -493,6 +560,42 @@ function toVscFileChange(file: LightExtensionFileChange): VscFileChange {
     mode: file.mode,
     operation: file.operation,
   };
+}
+
+function applyLightExtensionFileChanges(
+  baseFiles: LightExtensionPulledFile[],
+  changes: LightExtensionFileChange[],
+): LightExtensionPulledFile[] {
+  const filesByPath = new Map<string, LightExtensionPulledFile>();
+
+  for (const file of baseFiles) {
+    filesByPath.set(normalizeLightExtensionFilePath(file.path), file);
+  }
+
+  for (const change of changes) {
+    const path = normalizeLightExtensionFilePath(change.path);
+    if (change.operation === 'delete') {
+      filesByPath.delete(path);
+      continue;
+    }
+
+    filesByPath.set(path, {
+      path,
+      pathHash: '',
+      pathLowerHash: '',
+      blobHash: change.blobHash || '',
+      size: typeof change.content === 'string' ? Buffer.byteLength(change.content, 'utf8') : change.size ?? 0,
+      language: change.language || filesByPath.get(path)?.language || '',
+      mode: change.mode || filesByPath.get(path)?.mode || '',
+      content: change.content,
+    });
+  }
+
+  return [...filesByPath.values()].sort((left, right) => left.path.localeCompare(right.path));
+}
+
+function normalizeLightExtensionFilePath(path: string): string {
+  return pathPosix.normalize(path.trim()).replace(/^\.\/+/, '');
 }
 
 function summarizeFileChange(file: LightExtensionFileChange) {

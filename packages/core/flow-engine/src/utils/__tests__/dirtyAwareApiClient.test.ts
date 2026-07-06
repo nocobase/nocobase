@@ -30,6 +30,28 @@ type TestApi = {
   resource: (name: string, of?: unknown, headers?: Record<string, string>, cancel?: boolean) => TestResource;
 };
 
+function apiError(
+  status: number,
+  code: string,
+  message: string,
+): Error & { response: { status: number; data: unknown } } {
+  const error = new Error(message) as Error & { response: { status: number; data: unknown } };
+  error.response = {
+    status,
+    data: {
+      errors: [
+        {
+          code,
+          status,
+          message,
+        },
+      ],
+    },
+  };
+
+  return error;
+}
+
 function getWrappedApi(engine: FlowEngine, api: TestApi): TestApi {
   return getDirtyAwareApiClient(api, engine.context) as TestApi;
 }
@@ -119,6 +141,64 @@ describe('dirtyAwareApiClient', () => {
       await getWrappedApi(engine, api).resource('posts')[actionName]();
 
       expect(engine.getDataSourceDirtyVersion('main', 'posts')).toBe(0);
+    }
+  });
+
+  it('should mark light-extension entries and repos dirty after scan succeeds', async () => {
+    const engine = new FlowEngine();
+    const scan = vi.fn(async () => ({ data: { data: { accepted: true } } }));
+    const api: TestApi = {
+      auth: { locale: 'zh-CN' },
+      request: vi.fn(async () => ({ data: { ok: true } })),
+      resource: vi.fn(() => ({ scan })),
+    };
+
+    await getWrappedApi(engine, api).resource('lightExtensionEntries').scan({ filterByTk: 1 });
+
+    expect(scan).toHaveBeenCalledTimes(1);
+    expect(engine.getDataSourceDirtyVersion('main', 'lightExtensionEntries')).toBe(1);
+    expect(engine.getDataSourceDirtyVersion('main', 'lightExtensionRepos')).toBe(1);
+  });
+
+  it('should mark light-extension entries and repos dirty after scan persists validation errors', async () => {
+    const engine = new FlowEngine();
+    const scan = vi.fn(async () => {
+      throw apiError(422, 'LIGHT_EXTENSION_VALIDATION_FAILED', 'scan validation failed');
+    });
+    const api: TestApi = {
+      auth: { locale: 'zh-CN' },
+      request: vi.fn(async () => ({ data: { ok: true } })),
+      resource: vi.fn(() => ({ scan })),
+    };
+
+    await expect(getWrappedApi(engine, api).resource('lightExtensionEntries').scan({ filterByTk: 1 })).rejects.toThrow(
+      'scan validation failed',
+    );
+
+    expect(engine.getDataSourceDirtyVersion('main', 'lightExtensionEntries')).toBe(1);
+    expect(engine.getDataSourceDirtyVersion('main', 'lightExtensionRepos')).toBe(1);
+  });
+
+  it('should not mark light-extension scan targets dirty for non-persisting rejections', async () => {
+    const rejectedStatuses = [400, 403, 404, 409];
+
+    for (const status of rejectedStatuses) {
+      const engine = new FlowEngine();
+      const scan = vi.fn(async () => {
+        throw apiError(status, 'LIGHT_EXTENSION_INVALID_INPUT', `scan rejected ${status}`);
+      });
+      const api: TestApi = {
+        auth: { locale: 'zh-CN' },
+        request: vi.fn(async () => ({ data: { ok: true } })),
+        resource: vi.fn(() => ({ scan })),
+      };
+
+      await expect(getWrappedApi(engine, api).resource('lightExtensionEntries').scan({ ref: 'old' })).rejects.toThrow(
+        `scan rejected ${status}`,
+      );
+
+      expect(engine.getDataSourceDirtyVersion('main', 'lightExtensionEntries')).toBe(0);
+      expect(engine.getDataSourceDirtyVersion('main', 'lightExtensionRepos')).toBe(0);
     }
   });
 
@@ -233,6 +313,70 @@ describe('dirtyAwareApiClient', () => {
     expect(engine.getDataSourceDirtyVersion('external', 'posts')).toBe(1);
     expect(engine.getDataSourceDirtyVersion('analytics', 'posts.tags')).toBe(1);
     expect(engine.getDataSourceDirtyVersion('analytics', 'posts')).toBe(1);
+  });
+
+  it('should mark URL-form light-extension scan targets dirty after success or persisted validation errors', async () => {
+    const engine = new FlowEngine();
+    const request = vi
+      .fn()
+      .mockResolvedValueOnce({ data: { ok: true } })
+      .mockRejectedValueOnce(apiError(422, 'LIGHT_EXTENSION_VALIDATION_FAILED', 'scan validation failed'))
+      .mockRejectedValueOnce(apiError(400, 'LIGHT_EXTENSION_INVALID_INPUT', 'invalid scan input'))
+      .mockRejectedValueOnce(apiError(403, 'LIGHT_EXTENSION_INVALID_INPUT', 'forbidden scan'))
+      .mockRejectedValueOnce(apiError(404, 'LIGHT_EXTENSION_REPO_NOT_FOUND', 'missing repo'))
+      .mockRejectedValueOnce(apiError(409, 'LIGHT_EXTENSION_REPO_CONFLICT', 'conflicting scan'));
+    const api: TestApi = {
+      auth: { locale: 'zh-CN' },
+      request,
+      resource: vi.fn(),
+    };
+    const wrappedApi = getWrappedApi(engine, api);
+
+    await wrappedApi.request({ url: '/api/lightExtensionEntries:scan' });
+    await expect(
+      wrappedApi.request({
+        url: '/api/lightExtensionEntries:scan',
+        headers: { 'x-data-source': 'external' },
+      }),
+    ).rejects.toThrow('scan validation failed');
+    await expect(
+      wrappedApi.request({
+        url: '/api/lightExtensionEntries:scan',
+        headers: { 'x-data-source': 'archive' },
+      }),
+    ).rejects.toThrow('invalid scan input');
+    await expect(
+      wrappedApi.request({
+        url: '/api/lightExtensionEntries:scan',
+        headers: { 'x-data-source': 'forbidden' },
+      }),
+    ).rejects.toThrow('forbidden scan');
+    await expect(
+      wrappedApi.request({
+        url: '/api/lightExtensionEntries:scan',
+        headers: { 'x-data-source': 'missing' },
+      }),
+    ).rejects.toThrow('missing repo');
+    await expect(
+      wrappedApi.request({
+        url: '/api/lightExtensionEntries:scan',
+        headers: { 'x-data-source': 'conflict' },
+      }),
+    ).rejects.toThrow('conflicting scan');
+
+    expect(request).toHaveBeenCalledTimes(6);
+    expect(engine.getDataSourceDirtyVersion('main', 'lightExtensionEntries')).toBe(1);
+    expect(engine.getDataSourceDirtyVersion('main', 'lightExtensionRepos')).toBe(1);
+    expect(engine.getDataSourceDirtyVersion('external', 'lightExtensionEntries')).toBe(1);
+    expect(engine.getDataSourceDirtyVersion('external', 'lightExtensionRepos')).toBe(1);
+    expect(engine.getDataSourceDirtyVersion('archive', 'lightExtensionEntries')).toBe(0);
+    expect(engine.getDataSourceDirtyVersion('archive', 'lightExtensionRepos')).toBe(0);
+    expect(engine.getDataSourceDirtyVersion('forbidden', 'lightExtensionEntries')).toBe(0);
+    expect(engine.getDataSourceDirtyVersion('forbidden', 'lightExtensionRepos')).toBe(0);
+    expect(engine.getDataSourceDirtyVersion('missing', 'lightExtensionEntries')).toBe(0);
+    expect(engine.getDataSourceDirtyVersion('missing', 'lightExtensionRepos')).toBe(0);
+    expect(engine.getDataSourceDirtyVersion('conflict', 'lightExtensionEntries')).toBe(0);
+    expect(engine.getDataSourceDirtyVersion('conflict', 'lightExtensionRepos')).toBe(0);
   });
 
   it('should resolve data source resource URLs to the nested data source target', async () => {
