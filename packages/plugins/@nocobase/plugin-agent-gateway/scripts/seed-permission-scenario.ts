@@ -32,7 +32,6 @@ const DISPATCH_PROMPT_TEMPLATE_KEY = 'agent-gateway-permission-dispatch-template
 const DISPATCH_BINDING_KEY = 'agent-gateway-permission-dispatch';
 const DISPATCH_RELATION_FIELD = 'agentRun';
 const DISPATCH_RELATION_FOREIGN_KEY = 'agentRunId';
-const RESTRICTED_UI_DENY_SNIPPETS = ['!pm.agent-gateway.audit'];
 
 interface PermissionScenarioUser {
   roleName: string;
@@ -68,7 +67,6 @@ interface ExpectedAccessEntry {
   target: string;
   expectedHttpStatus: number;
   expectedApplicationErrorCode: string | null;
-  auditExpected: boolean;
   controlRequestCountMustRemainZero?: boolean;
   dispatchRunCreationMustRemainZero?: boolean;
   sideEffectExpectation: string;
@@ -119,30 +117,26 @@ function buildExpectedAccess(options: {
     {
       action: 'dispatch',
       target: dispatchFixture.bindingKey,
-      auditExpected: true,
       dispatchRunCreationMustRemainZero: true,
     },
-    { action: 'terminal', target: visible.runCode, auditExpected: true },
-    { action: 'artifacts', target: visible.runCode, auditExpected: true },
-    { action: 'raw-logs', target: visible.runCode, auditExpected: true },
-    { action: 'session-messages', target: visible.runCode, auditExpected: true },
-    { action: 'resume', target: visible.sessionId, auditExpected: true },
-    { action: 'message', target: visible.sessionId, auditExpected: true },
+    { action: 'terminal', target: visible.runCode },
+    { action: 'artifacts', target: visible.runCode },
+    { action: 'raw-logs', target: visible.runCode },
+    { action: 'session-messages', target: visible.runCode },
+    { action: 'resume', target: visible.sessionId },
+    { action: 'message', target: visible.sessionId },
     {
       action: 'cancel',
       target: visible.runCode,
-      auditExpected: true,
     },
     {
       action: 'interrupt',
       target: visible.runCode,
-      auditExpected: true,
       controlRequestCountMustRemainZero: true,
     },
     {
       action: 'terminate',
       target: visible.runCode,
-      auditExpected: true,
       controlRequestCountMustRemainZero: true,
     },
   ];
@@ -156,7 +150,6 @@ function buildExpectedAccess(options: {
       target: visible.runCode,
       expectedHttpStatus: hasRunDetails ? 200 : 403,
       expectedApplicationErrorCode: hasRunDetails ? null : 'AGENT_GATEWAY_PERMISSION_DENIED',
-      auditExpected: !hasRunDetails,
       sideEffectExpectation: hasRunDetails ? 'visible run summary is returned' : 'no sensitive run detail is returned',
     });
     entries.push({
@@ -167,7 +160,6 @@ function buildExpectedAccess(options: {
       expectedApplicationErrorCode: hasRunDetails
         ? 'AGENT_GATEWAY_RESOURCE_NOT_VISIBLE'
         : 'AGENT_GATEWAY_PERMISSION_DENIED',
-      auditExpected: true,
       sideEffectExpectation: 'hidden run details are not returned',
     });
     entries.push({
@@ -176,7 +168,6 @@ function buildExpectedAccess(options: {
       target: visible.runCode,
       expectedHttpStatus: 403,
       expectedApplicationErrorCode: 'TERMINAL_RAW_WRITE_DISABLED',
-      auditExpected: true,
       sideEffectExpectation: 'terminal stdin is not written',
     });
     entries.push({
@@ -185,7 +176,6 @@ function buildExpectedAccess(options: {
       target: visible.runCode,
       expectedHttpStatus: 403,
       expectedApplicationErrorCode: 'TERMINAL_RAW_WRITE_DISABLED',
-      auditExpected: true,
       sideEffectExpectation: 'legacy terminal stdin endpoint is disabled',
     });
     entries.push({
@@ -194,7 +184,6 @@ function buildExpectedAccess(options: {
       target: visible.runCode,
       expectedHttpStatus: 403,
       expectedApplicationErrorCode: 'AGENT_GATEWAY_PERMISSION_DENIED',
-      auditExpected: false,
       sideEffectExpectation: 'browser stream raw-write aliases are not reachable without terminal read permission',
     });
     for (const action of deniedActions) {
@@ -204,7 +193,6 @@ function buildExpectedAccess(options: {
         target: action.target,
         expectedHttpStatus: 403,
         expectedApplicationErrorCode: 'AGENT_GATEWAY_PERMISSION_DENIED',
-        auditExpected: action.auditExpected,
         controlRequestCountMustRemainZero: action.controlRequestCountMustRemainZero,
         dispatchRunCreationMustRemainZero: action.dispatchRunCreationMustRemainZero,
         sideEffectExpectation: action.dispatchRunCreationMustRemainZero
@@ -234,7 +222,7 @@ async function upsertRole(baseUrl: string, token: string, scenario: PermissionSc
   const values = {
     name: scenario.roleName,
     title: scenario.title,
-    snippets: [...scenario.grantedSnippets, ...RESTRICTED_UI_DENY_SNIPPETS],
+    snippets: [...scenario.grantedSnippets],
     strategy: {
       actions: [],
     },

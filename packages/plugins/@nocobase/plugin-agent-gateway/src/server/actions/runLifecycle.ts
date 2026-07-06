@@ -15,7 +15,6 @@ import { Transaction } from 'sequelize';
 
 import {
   AGENT_GATEWAY_ACTIONS,
-  AGENT_GATEWAY_PERMISSIONS,
   AGENT_GATEWAY_RESOURCE,
   createClaimToken,
   extractNodeToken,
@@ -52,7 +51,6 @@ import {
   requireManagePermission,
 } from './utils';
 import { serializeSkillVersionSourceForNode } from './skillVersions';
-import { auditAgentActionBestEffort, auditMutatingAgentAction } from '../audit/agentActionAudit';
 import { AGENT_GATEWAY_TERMINATE_CONTROL_CANCEL_REASON } from '../../shared/runControl';
 import { getRunProviderCapabilitySummary, isRunCapabilitySupported } from './capabilityUtils';
 
@@ -146,6 +144,14 @@ interface MutableModelRecord extends ModelRecord {
 
 interface HookOptions {
   transaction?: Transaction;
+}
+
+interface TokenUsageSummary extends JsonRecord {
+  inputTokens?: number;
+  cachedInputTokens?: number;
+  outputTokens?: number;
+  reasoningOutputTokens?: number;
+  totalTokens?: number;
 }
 
 function getOptionalTargetKey(model: ModelRecord, key: string) {
@@ -294,23 +300,191 @@ function serializeCreatedRunForUser(run: ModelRecord) {
   };
 }
 
-async function auditRunDetailReadDenied(
-  ctx: Context,
-  runId: string,
-  options: { permissionKey: string; routeAction: string; phase: 'permission' | 'visibility'; reason?: string },
-) {
-  await auditAgentActionBestEffort(ctx, {
-    action: 'readRunDetails',
-    runId,
-    operatorId: getCurrentUserId(ctx) || undefined,
-    permissionKey: options.permissionKey,
-    resultStatus: 'denied',
-    metadataJson: {
-      routeAction: options.routeAction,
-      phase: options.phase,
-      ...(options.reason ? { reason: options.reason } : {}),
+function getRunTaskTitle(run: ModelRecord, options: { includeRunCode?: boolean } = {}) {
+  const resultSummary = getRecord(getModelValue(run, 'resultSummaryJson'));
+  const executionPayload = getRecord(getModelValue(run, 'executionPayloadJson'));
+  const promptSnapshot = getRecord(getModelValue(run, 'promptSnapshot'));
+  const promptVariables = getRecord(promptSnapshot.variables);
+  const title =
+    getString(resultSummary.title) ||
+    getString(executionPayload.title) ||
+    getString(promptVariables.title) ||
+    getString(promptSnapshot.title);
+  if (title || options.includeRunCode === false) {
+    return title;
+  }
+  return getModelString(run, 'runCode');
+}
+
+function mergeTerminalResultSummary(run: ModelRecord, value: unknown) {
+  const resultSummary = getRecord(redactRunResultSummary(value));
+  if (getString(resultSummary.title)) {
+    return resultSummary;
+  }
+  const existingTitle = getRunTaskTitle(run, { includeRunCode: false });
+  if (existingTitle) {
+    resultSummary.title = existingTitle;
+  }
+  return resultSummary;
+}
+
+function getFiniteTokenNumber(value: unknown) {
+  const numberValue = typeof value === 'number' ? value : typeof value === 'string' ? Number(value) : Number.NaN;
+  if (!Number.isFinite(numberValue) || numberValue < 0) {
+    return null;
+  }
+  return numberValue;
+}
+
+function getTokenNumber(record: JsonRecord, keys: string[]) {
+  for (const key of keys) {
+    const numberValue = getFiniteTokenNumber(record[key]);
+    if (numberValue !== null) {
+      return numberValue;
+    }
+  }
+  return null;
+}
+
+function extractTokenUsageSummary(value: unknown): TokenUsageSummary | null {
+  const record = getRecord(value);
+  if (!isRecordWithValues(record)) {
+    return null;
+  }
+
+  const inputTokens = getTokenNumber(record, ['inputTokens', 'input_tokens', 'promptTokens', 'prompt_tokens']);
+  const cachedInputTokens = getTokenNumber(record, ['cachedInputTokens', 'cached_input_tokens']);
+  const outputTokens = getTokenNumber(record, [
+    'outputTokens',
+    'output_tokens',
+    'completionTokens',
+    'completion_tokens',
+  ]);
+  const reasoningOutputTokens = getTokenNumber(record, ['reasoningOutputTokens', 'reasoning_output_tokens']);
+  const totalTokens = getTokenNumber(record, ['totalTokens', 'total_tokens']);
+  const computedTotal =
+    totalTokens ?? (inputTokens !== null || outputTokens !== null ? (inputTokens ?? 0) + (outputTokens ?? 0) : null);
+
+  const summary: TokenUsageSummary = {};
+  if (inputTokens !== null) {
+    summary.inputTokens = inputTokens;
+  }
+  if (cachedInputTokens !== null) {
+    summary.cachedInputTokens = cachedInputTokens;
+  }
+  if (outputTokens !== null) {
+    summary.outputTokens = outputTokens;
+  }
+  if (reasoningOutputTokens !== null) {
+    summary.reasoningOutputTokens = reasoningOutputTokens;
+  }
+  if (computedTotal !== null) {
+    summary.totalTokens = computedTotal;
+  }
+
+  return isRecordWithValues(summary) ? summary : null;
+}
+
+function getTokenUsageSummaryFromRecord(record: JsonRecord) {
+  const candidates = [record.tokenUsageJson, record.tokenUsage, record.usage, record.tokens, record];
+  for (const candidate of candidates) {
+    const summary = extractTokenUsageSummary(candidate);
+    if (summary) {
+      return summary;
+    }
+  }
+  return null;
+}
+
+function mergeTokenUsageSummary(total: TokenUsageSummary, next: TokenUsageSummary) {
+  for (const key of [
+    'inputTokens',
+    'cachedInputTokens',
+    'outputTokens',
+    'reasoningOutputTokens',
+    'totalTokens',
+  ] as const) {
+    const value = next[key];
+    if (typeof value === 'number') {
+      const currentValue = typeof total[key] === 'number' ? total[key] : 0;
+      total[key] = currentValue + value;
+    }
+  }
+}
+
+function stripAnsiControlSequences(value: string) {
+  const escapeCharacter = String.fromCharCode(27);
+  return value.replace(new RegExp(`${escapeCharacter}\\[[0-?]*[ -/]*[@-~]`, 'g'), '');
+}
+
+function extractCodexTerminalTokenUsageSummary(value: string): TokenUsageSummary | null {
+  const normalizedText = stripAnsiControlSequences(value).replace(/\r/g, '\n');
+  const matches = Array.from(normalizedText.matchAll(/tokens\s+used\s*\n+\s*([0-9][0-9,\s]*)/gi));
+  if (!matches.length) {
+    return null;
+  }
+
+  const tokenText = matches[matches.length - 1]?.[1]?.replace(/[,\s]/g, '') || '';
+  const totalTokens = getFiniteTokenNumber(tokenText);
+  return totalTokens === null ? null : { totalTokens };
+}
+
+async function getRunTerminalTokenUsageSummary(ctx: Context, runId: string) {
+  const events = (await ctx.db.getRepository('agAgentConversationEvents').find({
+    filter: {
+      runId,
+      eventType: 'agent.message',
+      source: 'terminal-live',
     },
-  });
+    sort: ['sequence'],
+  })) as ModelRecord[];
+  const terminalText = events.map((event) => getModelString(event, 'contentText')).join('\n');
+  return extractCodexTerminalTokenUsageSummary(terminalText);
+}
+
+async function getRunTokenUsageSummary(ctx: Context, run: ModelRecord) {
+  const resultSummary = getTokenUsageSummaryFromRecord(getRecord(getModelValue(run, 'resultSummaryJson')));
+  if (resultSummary) {
+    return resultSummary;
+  }
+
+  const runId = getOptionalTargetKey(run, 'id');
+  if (!runId) {
+    return null;
+  }
+
+  const events = (await ctx.db.getRepository('agAgentConversationEvents').find({
+    filter: {
+      runId,
+      eventType: 'agent.turn.completed',
+    },
+    sort: ['sequence'],
+  })) as ModelRecord[];
+  const total: TokenUsageSummary = {};
+  for (const event of events) {
+    const summary = getTokenUsageSummaryFromRecord(getRecord(getModelValue(event, 'contentJson')));
+    if (summary) {
+      mergeTokenUsageSummary(total, summary);
+    }
+  }
+
+  if (isRecordWithValues(total)) {
+    return total;
+  }
+
+  return getRunTerminalTokenUsageSummary(ctx, runId);
+}
+
+function getTaskRunSkillVersionIds(values: JsonRecord) {
+  const result = new Set<string>();
+  const legacySkillVersionId = getString(values.skillVersionId);
+  if (legacySkillVersionId) {
+    result.add(legacySkillVersionId);
+  }
+  for (const skillVersionId of getStringList(values.skillVersionIds)) {
+    result.add(skillVersionId);
+  }
+  return Array.from(result);
 }
 
 async function getAgentGatewayActionPermissions(ctx: Context) {
@@ -349,13 +523,6 @@ async function getAgentGatewayActionPermissions(ctx: Context) {
         roles,
         resource: AGENT_GATEWAY_RESOURCE,
         action: AGENT_GATEWAY_ACTIONS.readRawLogs,
-      }),
-    ),
-    readAudit: Boolean(
-      ctx.app.acl.can({
-        roles,
-        resource: AGENT_GATEWAY_RESOURCE,
-        action: AGENT_GATEWAY_ACTIONS.readAudit,
       }),
     ),
     interruptRun: Boolean(
@@ -874,15 +1041,11 @@ function getTaskRunArtifactGlobs(values: JsonRecord, scenario: string) {
 }
 
 function getTaskRunResolvedSkills(values: JsonRecord) {
-  const skillVersionId = getString(values.skillVersionId);
-  if (!skillVersionId) {
+  const skillVersionIds = getTaskRunSkillVersionIds(values);
+  if (!skillVersionIds.length) {
     return undefined;
   }
-  return [
-    {
-      skillVersionId,
-    },
-  ];
+  return skillVersionIds.map((skillVersionId) => ({ skillVersionId }));
 }
 
 async function createInitialTaskConversationEvent(
@@ -1077,6 +1240,8 @@ async function serializeRunForManagement(ctx: Context, run: ModelRecord) {
   const terminateCapable = await getRunControlCapability(ctx, run, session, 'terminate');
   return {
     ...json,
+    taskTitle: getRunTaskTitle(run) || null,
+    tokenUsageJson: await getRunTokenUsageSummary(ctx, run),
     ...(session
       ? {
           agentSessionCapabilitiesJson: capabilitySummary.capabilities,
@@ -1091,7 +1256,6 @@ async function serializeRunForManagement(ctx: Context, run: ModelRecord) {
       readTerminal: actionPermissions.readTerminal,
       readArtifacts: actionPermissions.readArtifacts,
       readRawLogs: actionPermissions.readRawLogs,
-      readAudit: actionPermissions.readAudit,
       interruptRun: actionPermissions.interruptRun,
       terminateRun: actionPermissions.terminateRun,
       cancelRun: actionPermissions.cancelRun,
@@ -1400,7 +1564,7 @@ async function createTaskRun(ctx: Context, options: { defaultScenario?: string }
     const artifactGlobs = getTaskRunArtifactGlobs(values, scenario);
     const resolvedSkills = getTaskRunResolvedSkills(values);
     if (scenario === OPENCODE_UI_BATCH_TASK_RUN_SCENARIO && !resolvedSkills?.length) {
-      ctx.throw(400, 'skillVersionId is required for OpenCode UI batch harness');
+      ctx.throw(400, 'skillVersionIds is required for OpenCode UI batch harness');
     }
     const validatedSkills: ValidatedTaskRunSkillSelection[] = [];
     if (resolvedSkills) {
@@ -1502,21 +1666,11 @@ async function listRuns(ctx: Context) {
 }
 
 async function getRun(ctx: Context, runId: string) {
-  try {
-    await requireAgentGatewayPermission(
-      ctx,
-      AGENT_GATEWAY_ACTIONS.readRunDetails,
-      'Agent Gateway run detail read permission required',
-    );
-  } catch (error) {
-    await auditRunDetailReadDenied(ctx, runId, {
-      permissionKey: AGENT_GATEWAY_PERMISSIONS.readRunDetails,
-      routeAction: 'runs:get',
-      phase: 'permission',
-      reason: error instanceof Error ? error.message : String(error),
-    });
-    throw error;
-  }
+  await requireAgentGatewayPermission(
+    ctx,
+    AGENT_GATEWAY_ACTIONS.readRunDetails,
+    'Agent Gateway run detail read permission required',
+  );
 
   const filter = await getVisibleRunFilter(
     ctx,
@@ -1529,12 +1683,6 @@ async function getRun(ctx: Context, runId: string) {
     filter,
   })) as ModelRecord | null;
   if (!run) {
-    await auditRunDetailReadDenied(ctx, runId, {
-      permissionKey: AGENT_GATEWAY_PERMISSIONS.readRunDetails,
-      routeAction: 'runs:get',
-      phase: 'visibility',
-      reason: 'Run not found',
-    });
     ctx.throw(404, {
       code: AGENT_GATEWAY_ERROR_CODES.resourceNotVisible,
       message: 'Run not found',
@@ -1581,21 +1729,11 @@ async function getStandardRun(ctx: Context) {
   if (!runId) {
     ctx.throw(400, 'Agent Gateway run id is required');
   }
-  try {
-    await requireAgentGatewayPermission(
-      ctx,
-      AGENT_GATEWAY_ACTIONS.readRun,
-      'Agent Gateway run standard get permission required',
-    );
-  } catch (error) {
-    await auditRunDetailReadDenied(ctx, runId, {
-      permissionKey: AGENT_GATEWAY_PERMISSIONS.readRun,
-      routeAction: 'agRuns:get',
-      phase: 'permission',
-      reason: error instanceof Error ? error.message : String(error),
-    });
-    throw error;
-  }
+  await requireAgentGatewayPermission(
+    ctx,
+    AGENT_GATEWAY_ACTIONS.readRun,
+    'Agent Gateway run standard get permission required',
+  );
   const filter = await getVisibleRunFilter(
     ctx,
     {
@@ -1607,12 +1745,6 @@ async function getStandardRun(ctx: Context) {
     filter,
   })) as ModelRecord | null;
   if (!run) {
-    await auditRunDetailReadDenied(ctx, runId, {
-      permissionKey: AGENT_GATEWAY_PERMISSIONS.readRun,
-      routeAction: 'agRuns:get',
-      phase: 'visibility',
-      reason: 'Run not found',
-    });
     ctx.throw(404, {
       code: AGENT_GATEWAY_ERROR_CODES.resourceNotVisible,
       message: 'Run not found',
@@ -2205,7 +2337,7 @@ async function finishRun(
   nodeId: string,
   runId: string,
   terminalStatus: TerminalRunStatus,
-  terminalValues: (values: JsonRecord, now: Date) => JsonRecord,
+  terminalValues: (values: JsonRecord, now: Date, run: ModelRecord) => JsonRecord,
   allowedStatuses: readonly ActiveRunStatus[],
 ) {
   const values = getBodyValues(ctx);
@@ -2228,7 +2360,7 @@ async function finishRun(
         leaseVersion: nextLeaseVersion,
         claimExpiresAt: null,
         finishedAt: now,
-        ...terminalValues(values, now),
+        ...terminalValues(values, now, lease.run),
       },
       transaction,
     });
@@ -2261,8 +2393,8 @@ async function completeRun(ctx: Context, nodeId: string, runId: string) {
     nodeId,
     runId,
     'succeeded',
-    (values, now) => ({
-      resultSummaryJson: getRecord(redactRunResultSummary(values.resultSummaryJson || values.resultSummary)),
+    (values, now, run) => ({
+      resultSummaryJson: mergeTerminalResultSummary(run, values.resultSummaryJson || values.resultSummary),
       completedAt: now,
     }),
     ['running'],
@@ -2275,8 +2407,8 @@ async function failRun(ctx: Context, nodeId: string, runId: string) {
     nodeId,
     runId,
     'failed',
-    (values, now) => ({
-      resultSummaryJson: getRecord(redactRunResultSummary(values.resultSummaryJson || values.resultSummary)),
+    (values, now, run) => ({
+      resultSummaryJson: mergeTerminalResultSummary(run, values.resultSummaryJson || values.resultSummary),
       errorSummary: getString(values.errorSummary) ? redactRunErrorSummary(getString(values.errorSummary)) : null,
       failedAt: now,
     }),
@@ -2354,66 +2486,29 @@ async function timeoutRun(ctx: Context, nodeId: string, runId: string) {
   );
 }
 
-function getCancelAuditFields(ctx: Context, run: ModelRecord | null, runId: string) {
-  return {
-    action: 'cancel' as const,
-    runId: run ? getModelString(run, 'id') : runId,
-    sessionId: run ? getModelString(run, 'agentSessionId') || undefined : undefined,
-    operatorId: getCurrentUserId(ctx) || undefined,
-    permissionKey: AGENT_GATEWAY_PERMISSIONS.cancelRun,
-    provider: run ? getModelString(run, 'agentSessionProvider') || undefined : undefined,
-  };
-}
-
-async function auditCancelRun(
-  ctx: Context,
-  run: ModelRecord | null,
-  runId: string,
-  resultStatus: 'accepted' | 'denied' | 'failed' | 'succeeded',
-  metadataJson: JsonRecord = {},
-) {
-  const input = {
-    ...getCancelAuditFields(ctx, run, runId),
-    resultStatus,
-    metadataJson,
-  };
-  if (resultStatus === 'accepted') {
-    await auditMutatingAgentAction(ctx, input);
-    return;
-  }
-  await auditAgentActionBestEffort(ctx, input);
-}
-
 export async function cancelRun(ctx: Context, runId: string, options: { requirePermission?: boolean } = {}) {
-  const shouldAudit = options.requirePermission !== false;
-  let deniedAuditWritten = false;
   if (options.requirePermission !== false) {
-    try {
-      await requireAgentGatewayPermission(
-        ctx,
-        AGENT_GATEWAY_ACTIONS.cancelRun,
-        'Agent Gateway cancel permission required',
-      );
-    } catch (error) {
-      await auditCancelRun(ctx, null, runId, 'denied');
-      throw error;
-    }
+    await requireAgentGatewayPermission(
+      ctx,
+      AGENT_GATEWAY_ACTIONS.cancelRun,
+      'Agent Gateway cancel permission required',
+    );
   }
-  const visibleRunFilter = shouldAudit
-    ? await getVisibleRunFilter(
-        ctx,
-        {
-          id: runId,
-        },
-        'get',
-      )
-    : null;
+  const visibleRunFilter =
+    options.requirePermission !== false
+      ? await getVisibleRunFilter(
+          ctx,
+          {
+            id: runId,
+          },
+          'get',
+        )
+      : null;
 
-  let auditRun: ModelRecord | null = null;
-  try {
-    const updatedRun = await ctx.db.sequelize.transaction(async (transaction) => {
-      const now = new Date();
-      const run = shouldAudit
+  const updatedRun = await ctx.db.sequelize.transaction(async (transaction) => {
+    const now = new Date();
+    const run =
+      options.requirePermission !== false
         ? ((await ctx.db.getRepository('agRuns').findOne({
             filter: visibleRunFilter || {
               id: runId,
@@ -2426,73 +2521,49 @@ export async function cancelRun(ctx: Context, runId: string, options: { requireP
             transaction,
             lock: transaction.LOCK.UPDATE,
           })) as ModelRecord | null);
-      if (!run) {
-        if (shouldAudit) {
-          await auditCancelRun(ctx, null, runId, 'denied', {
-            phase: 'visibility',
-          });
-          deniedAuditWritten = true;
-          ctx.throw(404, {
-            code: AGENT_GATEWAY_ERROR_CODES.resourceNotVisible,
-            message: 'Run not found',
-          });
-        }
-        ctx.throw(404, 'Run not found');
-      }
-      auditRun = run;
-
-      const status = getModelString(run, 'status');
-      if (isTerminalRunStatus(status)) {
-        ctx.throw(409, `Run is already ${status}`);
-      }
-
-      if (shouldAudit) {
-        await auditCancelRun(ctx, run, runId, 'accepted', {
-          previousStatus: status,
+    if (!run) {
+      if (options.requirePermission !== false) {
+        ctx.throw(404, {
+          code: AGENT_GATEWAY_ERROR_CODES.resourceNotVisible,
+          message: 'Run not found',
         });
       }
+      ctx.throw(404, 'Run not found');
+    }
 
-      const values: JsonRecord = {
-        cancelRequested: true,
-        cancelRequestedAt: getModelValue(run, 'cancelRequestedAt') || now,
-      };
-      if (status === CLAIMABLE_RUN_STATUS) {
-        values.status = 'canceled';
-        values.canceledAt = now;
-        values.finishedAt = now;
-        values.claimExpiresAt = null;
-      } else if (isActiveRunStatus(status)) {
-        values.status = 'canceling';
-      } else {
-        ctx.throw(409, `Run cannot be canceled from ${status}`);
-      }
+    const status = getModelString(run, 'status');
+    if (isTerminalRunStatus(status)) {
+      ctx.throw(409, `Run is already ${status}`);
+    }
 
-      await ctx.db.getRepository('agRuns').update({
-        filterByTk: runId,
-        values,
-        transaction,
-      });
+    const values: JsonRecord = {
+      cancelRequested: true,
+      cancelRequestedAt: getModelValue(run, 'cancelRequestedAt') || now,
+    };
+    if (status === CLAIMABLE_RUN_STATUS) {
+      values.status = 'canceled';
+      values.canceledAt = now;
+      values.finishedAt = now;
+      values.claimExpiresAt = null;
+    } else if (isActiveRunStatus(status)) {
+      values.status = 'canceling';
+    } else {
+      ctx.throw(409, `Run cannot be canceled from ${status}`);
+    }
 
-      return (await ctx.db.getRepository('agRuns').findOne({
-        filterByTk: runId,
-        transaction,
-        lock: transaction.LOCK.UPDATE,
-      })) as ModelRecord;
+    await ctx.db.getRepository('agRuns').update({
+      filterByTk: runId,
+      values,
+      transaction,
     });
-    ctx.body = serializeRunForUser(updatedRun);
-    if (shouldAudit) {
-      await auditCancelRun(ctx, updatedRun, runId, 'succeeded', {
-        status: getModelString(updatedRun, 'status'),
-      });
-    }
-  } catch (error) {
-    if (shouldAudit) {
-      if (!deniedAuditWritten) {
-        await auditCancelRun(ctx, auditRun, runId, 'failed');
-      }
-    }
-    throw error;
-  }
+
+    return (await ctx.db.getRepository('agRuns').findOne({
+      filterByTk: runId,
+      transaction,
+      lock: transaction.LOCK.UPDATE,
+    })) as ModelRecord;
+  });
+  ctx.body = serializeRunForUser(updatedRun);
 }
 
 async function ackCancelRun(ctx: Context, nodeId: string, runId: string) {

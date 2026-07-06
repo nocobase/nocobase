@@ -10,7 +10,6 @@
 import { CollectionOptions, createMockDatabase, Database } from '@nocobase/database';
 
 import { AGENT_GATEWAY_RETENTION_DEFAULTS_DAYS } from '../constants';
-import agAgentActionAudits from '../collections/agAgentActionAudits';
 import agAgentConversationEvents from '../collections/agAgentConversationEvents';
 import agAgentProfiles from '../collections/agAgentProfiles';
 import agAgentSessions, { AG_AGENT_SESSION_PROVIDER_ID_UNIQUE_CONSTRAINT_NOTE } from '../collections/agAgentSessions';
@@ -36,7 +35,6 @@ const collections = [
   agNodeInvitations,
   agAgentProfiles,
   agAgentSessions,
-  agAgentActionAudits,
   agAgentConversationEvents,
   agSkills,
   agSkillVersions,
@@ -59,7 +57,6 @@ const requiredCollectionNames = [
   'agNodeInvitations',
   'agAgentProfiles',
   'agAgentSessions',
-  'agAgentActionAudits',
   'agAgentConversationEvents',
   'agSkills',
   'agSkillVersions',
@@ -162,8 +159,6 @@ describe('agent gateway collections', () => {
     expectNullableForeignKey('agRunControlRequests', 'agentSessionId');
     expectNullableForeignKey('agAgentSessions', 'rootRunId');
     expectNullableForeignKey('agAgentSessions', 'latestRunId');
-    expectNullableForeignKey('agAgentActionAudits', 'runId');
-    expectNullableForeignKey('agAgentActionAudits', 'sessionId');
     expectRequiredForeignKey('agAgentConversationEvents', 'runId');
     expectRequiredField('agAgentConversationEvents', 'sequence');
     expectNullableForeignKey('agAgentConversationEvents', 'sessionId');
@@ -266,21 +261,6 @@ describe('agent gateway collections', () => {
         'createdById',
       ]),
     );
-    expect(fieldNamesOf('agAgentActionAudits')).toEqual(
-      expect.arrayContaining([
-        'action',
-        'runId',
-        'sessionId',
-        'operatorId',
-        'redactedPreview',
-        'contentHash',
-        'contentSize',
-        'permissionKey',
-        'resultStatus',
-        'provider',
-        'metadataJson',
-      ]),
-    );
     expect(fieldNamesOf('agAgentConversationEvents')).toEqual(
       expect.arrayContaining([
         'sessionId',
@@ -297,9 +277,6 @@ describe('agent gateway collections', () => {
       ]),
     );
     expectRequiredField('agAgentSessions', 'provider');
-    expectRequiredField('agAgentActionAudits', 'action');
-    expectRequiredField('agAgentActionAudits', 'permissionKey');
-    expectRequiredField('agAgentActionAudits', 'resultStatus');
     expectRequiredField('agAgentConversationEvents', 'eventType');
     expectRequiredField('agAgentConversationEvents', 'source');
   });
@@ -554,14 +531,6 @@ describe('agent gateway collections', () => {
         direction: 'inbound',
       });
       expect(nodeLevelApiCallLog.get('runId')).toBeFalsy();
-      const audit = await db.getCollection('agAgentActionAudits').model.create({
-        action: 'readTerminal',
-        permissionKey: 'agentGateway.readTerminal',
-        resultStatus: 'succeeded',
-        provider: 'codex',
-      });
-      expect(audit.get('runId')).toBeFalsy();
-      expect(audit.get('sessionId')).toBeFalsy();
     } finally {
       await db?.close();
     }

@@ -22,7 +22,6 @@ import {
   TERMINAL_STREAM_BROWSER_SUBPROTOCOL,
   encodeTerminalPayload,
 } from '../../shared/terminalStreamProtocol';
-import AgentGatewayAuditPage from '../pages/AgentGatewayAuditPage';
 import AgentGatewayDispatchBindingsPage from '../pages/AgentGatewayDispatchBindingsPage';
 import AgentGatewayProviderCapabilitiesPage from '../pages/AgentGatewayProviderCapabilitiesPage';
 import AgentGatewayPromptTemplatesPage from '../pages/AgentGatewayPromptTemplatesPage';
@@ -311,15 +310,6 @@ describe('PluginAgentGatewayClientV2', () => {
     expect(addPageTabItem).toHaveBeenCalledWith(
       expect.objectContaining({
         menuKey: 'agent-gateway',
-        key: 'audit',
-        aclSnippet: 'pm.agent-gateway.audit',
-        hidden: true,
-        sort: 25,
-      }),
-    );
-    expect(addPageTabItem).toHaveBeenCalledWith(
-      expect.objectContaining({
-        menuKey: 'agent-gateway',
         key: 'prompt-templates',
         sort: 30,
       }),
@@ -473,6 +463,46 @@ describe('PluginAgentGatewayClientV2', () => {
     expect(screen.getByLabelText('Skill key')).toHaveValue('nb-opencode-ui-batch');
     expect(screen.getByLabelText('Display name')).toHaveValue('NB OpenCode UI Batch');
     expect(screen.getByLabelText('Version label')).toHaveValue('local');
+  });
+
+  it('shows uploaded skill versions in the settings Skills tab', async () => {
+    const request = vi.fn(async (config: RequestConfig) => {
+      if (config.url === 'agent-gateway/skill-versions:list') {
+        return {
+          data: {
+            data: [
+              {
+                id: 'skill-version-id-1',
+                skillKey: 'nb-opencode-ui-batch',
+                displayName: 'NB OpenCode UI Batch',
+                versionLabel: 'local',
+                status: 'active',
+                skillStatus: 'active',
+                sourceType: 'zip',
+                sourceSha256: 'abcdef0123456789',
+                updatedAt: '2026-07-05T10:00:00.000Z',
+              },
+            ],
+          },
+        };
+      }
+      return { data: { data: [] } };
+    });
+
+    renderSettingsPage(request);
+
+    fireEvent.click(await screen.findByRole('tab', { name: 'Skills' }));
+
+    expect(await screen.findByText('NB OpenCode UI Batch')).toBeTruthy();
+    expect(await screen.findByText('nb-opencode-ui-batch')).toBeTruthy();
+    expect(await screen.findByText('local')).toBeTruthy();
+    expect(await screen.findByText('zip / abcdef01...')).toBeTruthy();
+    expect(request).toHaveBeenCalledWith(
+      expect.objectContaining({
+        url: 'agent-gateway/skill-versions:list',
+        method: 'get',
+      }),
+    );
   });
 
   it('renders a compact provider capability matrix', async () => {
@@ -700,9 +730,9 @@ describe('PluginAgentGatewayClientV2', () => {
             data: {
               invitationId: 'invitation-id-1',
               bootstrapCommand:
-                "curl -fsSL 'https://nocobase.example.test/api/agent-gateway/bootstrap.sh' | AGENT_GATEWAY_SERVER_URL='https://nocobase.example.test' AGENT_GATEWAY_NODE_KEY='remote-196' AGENT_GATEWAY_INVITE_TOKEN='ag_inv_once' bash",
+                "curl -fsSL 'https://nocobase.example.test/api/agent-gateway/bootstrap.sh' | AGENT_GATEWAY_SERVER_URL='https://nocobase.example.test' AGENT_GATEWAY_NODE_KEY='remote-196' AGENT_GATEWAY_INVITE_TOKEN='ag_inv_once' AGENT_GATEWAY_SERVICE_SCOPE='auto' AGENT_GATEWAY_HEALTH_CHECK='true' bash",
               registerCommand:
-                "curl -fsSL 'https://nocobase.example.test/api/agent-gateway/bootstrap.sh' | AGENT_GATEWAY_SERVER_URL='https://nocobase.example.test' AGENT_GATEWAY_NODE_KEY='remote-196' AGENT_GATEWAY_INVITE_TOKEN='ag_inv_once' bash",
+                "curl -fsSL 'https://nocobase.example.test/api/agent-gateway/bootstrap.sh' | AGENT_GATEWAY_SERVER_URL='https://nocobase.example.test' AGENT_GATEWAY_NODE_KEY='remote-196' AGENT_GATEWAY_INVITE_TOKEN='ag_inv_once' AGENT_GATEWAY_SERVICE_SCOPE='auto' AGENT_GATEWAY_HEALTH_CHECK='true' bash",
               expiresAt: '2026-07-01T10:00:00.000Z',
             },
           },
@@ -846,128 +876,6 @@ describe('PluginAgentGatewayClientV2', () => {
     );
   });
 
-  it('lists audit records with run filtering and redacted metadata', async () => {
-    const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agent-gateway/audits:list') {
-        return {
-          data: {
-            data: [
-              {
-                id: 'audit-id-1',
-                action: 'readTerminal',
-                runId: 'run-id-1',
-                sessionId: 'session-id-1',
-                operatorId: '1',
-                redactedPreview: 'token=[REDACTED]',
-                contentSize: 32,
-                permissionKey: 'agentGateway.readTerminal',
-                resultStatus: 'denied',
-                provider: 'codex',
-                metadataJson: {
-                  safe: 'visible audit metadata',
-                  token: 'must-not-render',
-                },
-                createdAt: '2026-07-03T10:00:00.000Z',
-              },
-            ],
-          },
-        };
-      }
-
-      return { data: { data: [] } };
-    });
-
-    renderAgentGatewayPage(AgentGatewayAuditPage, request);
-
-    expect(await screen.findByText('Agent Gateway Audit')).toBeTruthy();
-    expect(await screen.findByText('readTerminal')).toBeTruthy();
-    expect(await screen.findByText('agentGateway.readTerminal')).toBeTruthy();
-    expect(screen.getByText('token=[REDACTED]')).toBeTruthy();
-    expect(screen.queryByText('must-not-render')).toBeNull();
-
-    const expandButton = document.querySelector('.ant-table-row-expand-icon') as HTMLElement | null;
-    expect(expandButton).toBeTruthy();
-    fireEvent.click(expandButton as HTMLElement);
-    expect(await screen.findByText(/visible audit metadata/)).toBeTruthy();
-    expect(screen.queryByText('must-not-render')).toBeNull();
-    expect(screen.getByText(/"token": "\[REDACTED\]"/)).toBeTruthy();
-
-    fireEvent.change(screen.getByPlaceholderText('Filter by run ID'), {
-      target: { value: 'run-id-1' },
-    });
-    fireEvent.click(screen.getByText('Search'));
-
-    await waitFor(() => {
-      expect(request).toHaveBeenCalledWith(
-        expect.objectContaining({
-          url: 'agent-gateway/audits:list',
-          method: 'get',
-          params: expect.objectContaining({
-            runId: 'run-id-1',
-          }),
-        }),
-      );
-    });
-  });
-
-  it('shows the audit shortcut only when the runs response grants audit read permission', async () => {
-    const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agent-gateway/runs:list') {
-        return {
-          data: {
-            data: [
-              {
-                id: 'run-id-1',
-                runCode: 'run-audit-visible',
-                status: 'succeeded',
-                agentGatewayActionPermissionsJson: {
-                  readAudit: true,
-                },
-              },
-            ],
-          },
-        };
-      }
-
-      return { data: { data: [] } };
-    });
-
-    renderAgentGatewayPage(AgentGatewayRunsPage, request);
-
-    expect(await screen.findByText('run-audit-visible')).toBeTruthy();
-    fireEvent.click(await screen.findByLabelText('Open audit'));
-
-    expect(window.location.pathname).toBe('/admin/settings/agent-gateway/audit');
-  });
-
-  it('hides the audit shortcut when the runs response does not grant audit read permission', async () => {
-    const request = vi.fn(async (config: RequestConfig) => {
-      if (config.url === 'agent-gateway/runs:list') {
-        return {
-          data: {
-            data: [
-              {
-                id: 'run-id-1',
-                runCode: 'run-audit-hidden',
-                status: 'succeeded',
-                agentGatewayActionPermissionsJson: {
-                  readAudit: false,
-                },
-              },
-            ],
-          },
-        };
-      }
-
-      return { data: { data: [] } };
-    });
-
-    renderAgentGatewayPage(AgentGatewayRunsPage, request);
-
-    expect(await screen.findByText('run-audit-hidden')).toBeTruthy();
-    expect(screen.queryByLabelText('Open audit')).toBeNull();
-  });
-
   it('creates a task run from the runs page and opens the run details', async () => {
     const request = vi.fn(async (config: RequestConfig) => {
       if (config.url === 'agent-gateway/task-runs:options') {
@@ -1044,6 +952,9 @@ describe('PluginAgentGatewayClientV2', () => {
                 id: 'run-id-created',
                 runCode: 'run-ui-build-created',
                 status: 'queued',
+                resultSummaryJson: {
+                  title: 'Batch evaluation',
+                },
               },
             },
           },
@@ -1057,6 +968,9 @@ describe('PluginAgentGatewayClientV2', () => {
               id: 'run-id-created',
               runCode: 'run-ui-build-created',
               status: 'queued',
+              resultSummaryJson: {
+                title: 'Batch evaluation',
+              },
               requestedAt: '2026-07-04T10:00:00.000Z',
               nodeId: 'node-id-1',
               agentProfileId: 'profile-id-1',
@@ -1099,7 +1013,7 @@ describe('PluginAgentGatewayClientV2', () => {
             title: 'Batch evaluation',
             scenario: 'opencode-ui-batch',
             prompt: '运行 nb-opencode-ui-batch harness 并汇总结果',
-            skillVersionId: 'skill-version-id-1',
+            skillVersionIds: ['skill-version-id-1'],
             cwd: '.',
             nodeId: 'node-id-1',
             agentProfileId: 'profile-id-1',
@@ -1107,9 +1021,149 @@ describe('PluginAgentGatewayClientV2', () => {
         }),
       );
     });
-    expect(await screen.findByText('run-ui-build-created')).toBeTruthy();
+    expect(await screen.findAllByText('Batch evaluation')).not.toHaveLength(0);
     expect(await screen.findByText('Queued: waiting for runner')).toBeTruthy();
     expect(await screen.findByText(/Runner heartbeat is stale; start or reconnect the daemon/)).toBeTruthy();
+  });
+
+  it('uploads a skill while creating a task run and submits the selected skill version ids', async () => {
+    const request = vi.fn(async (config: RequestConfig) => {
+      if (config.url === 'agent-gateway/task-runs:options') {
+        return {
+          data: {
+            data: {
+              defaultProfileKey: 'codex',
+              defaultCwd: '.',
+              nodes: [
+                {
+                  id: 'node-id-1',
+                  nodeKey: 'local-codex',
+                  displayName: 'Local Codex',
+                  status: 'active',
+                  online: true,
+                  profiles: [
+                    {
+                      id: 'profile-id-1',
+                      nodeId: 'node-id-1',
+                      profileKey: 'codex',
+                      displayName: 'Codex',
+                      provider: 'codex',
+                      status: 'active',
+                    },
+                  ],
+                },
+              ],
+              skillVersions: [],
+            },
+          },
+        };
+      }
+
+      if (config.url === 'agent-gateway/skill-versions:upload-zip') {
+        return {
+          data: {
+            data: {
+              skillVersionId: 'uploaded-skill-version-id',
+              skillKey: 'custom-skill',
+              versionLabel: 'local',
+              status: 'active',
+            },
+          },
+        };
+      }
+
+      if (config.url === 'agent-gateway/task-runs:create') {
+        return {
+          data: {
+            data: {
+              runId: 'run-id-created',
+              runCode: 'run-created',
+              run: {
+                id: 'run-id-created',
+                runCode: 'run-created',
+                status: 'queued',
+                taskTitle: 'Uploaded skill task',
+              },
+            },
+          },
+        };
+      }
+
+      if (config.url === 'agent-gateway/runs:get/run-id-created') {
+        return {
+          data: {
+            data: {
+              id: 'run-id-created',
+              runCode: 'run-created',
+              status: 'queued',
+              taskTitle: 'Uploaded skill task',
+              agentGatewayActionPermissionsJson: {},
+            },
+          },
+        };
+      }
+
+      if (config.url === 'agent-gateway/runs:list') {
+        return { data: { data: [] } };
+      }
+
+      return { data: { data: [] } };
+    });
+
+    renderAgentGatewayPage(AgentGatewayRunsPage, request);
+
+    fireEvent.click(await screen.findByText('New task run'));
+    fireEvent.change(screen.getByLabelText('Title'), {
+      target: { value: 'Uploaded skill task' },
+    });
+    fireEvent.change(screen.getByLabelText('Instruction'), {
+      target: { value: 'Run with uploaded skill' },
+    });
+    fireEvent.click(await screen.findByText('Upload skill'));
+
+    fireEvent.change(screen.getByLabelText('Skill key'), {
+      target: { value: 'custom-skill' },
+    });
+    const fileInput = document.querySelector('input[type="file"]');
+    expect(fileInput).toBeTruthy();
+    await act(async () => {
+      fireEvent.change(fileInput as HTMLInputElement, {
+        target: {
+          files: [new File(['fake zip bytes'], 'custom-skill.zip', { type: 'application/zip' })],
+        },
+      });
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Upload' }));
+
+    await waitFor(() => {
+      expect(request).toHaveBeenCalledWith(
+        expect.objectContaining({
+          url: 'agent-gateway/skill-versions:upload-zip',
+          method: 'post',
+          data: expect.objectContaining({
+            skillKey: 'custom-skill',
+            versionLabel: 'local',
+            contentBase64: expect.any(String),
+          }),
+        }),
+      );
+    });
+
+    fireEvent.click(screen.getByText('Create'));
+
+    await waitFor(() => {
+      expect(request).toHaveBeenCalledWith(
+        expect.objectContaining({
+          url: 'agent-gateway/task-runs:create',
+          method: 'post',
+          data: expect.objectContaining({
+            title: 'Uploaded skill task',
+            prompt: 'Run with uploaded skill',
+            skillVersionIds: ['uploaded-skill-version-id'],
+          }),
+        }),
+      );
+    });
   });
 
   it('does not allow creating a task run when all runners are offline', async () => {
@@ -1516,21 +1570,43 @@ describe('PluginAgentGatewayClientV2', () => {
                 status: 'running',
                 nodeId: 'node-id-1',
                 agentProfileId: 'profile-id-1',
+                runnerStatusJson: {
+                  nodeKey: 'local-codex',
+                  profileKey: 'codex',
+                  profileProvider: 'codex-cli',
+                },
                 agentSessionId: 'session-id-1',
                 agentSessionProvider: 'codex',
                 agentSessionProviderId: 'thread-id-1',
                 sourceType: 'record-action',
                 sourceCollection: 'tickets',
                 sourceRecordId: '1',
+                resultSummaryJson: {
+                  title: 'Build calendar page',
+                },
+                tokenUsageJson: {
+                  inputTokens: 39968,
+                  cachedInputTokens: 18176,
+                  outputTokens: 144,
+                  reasoningOutputTokens: 77,
+                  totalTokens: 40112,
+                },
                 requestedAt: '2026-06-30T10:00:00.000Z',
+                startedAt: '2026-06-30T10:01:00.000Z',
                 agentGatewayActionPermissionsJson: {
                   cancelRun: true,
                 },
               },
               {
                 id: 'run-id-2',
-                runCode: 'run-done-1',
+                runCode: 'run_task_fallback_should_not_render',
+                taskTitle: 'Completed import task',
                 status: 'succeeded',
+                resultSummaryJson: {
+                  status: 'succeeded',
+                },
+                startedAt: '2026-06-30T10:01:00.000Z',
+                finishedAt: '2026-06-30T10:02:00.000Z',
               },
             ],
           },
@@ -1585,6 +1661,13 @@ describe('PluginAgentGatewayClientV2', () => {
                   SECRET: 'must-not-render',
                 },
                 safe: 'visible summary',
+              },
+              tokenUsageJson: {
+                inputTokens: 39968,
+                cachedInputTokens: 18176,
+                outputTokens: 144,
+                reasoningOutputTokens: 77,
+                totalTokens: 40112,
               },
               errorSummary: 'command=must-not-render cwd=/tmp/must-not-render env.SECRET=must-not-render',
               requestedAt: '2026-06-30T10:00:00.000Z',
@@ -1768,10 +1851,20 @@ describe('PluginAgentGatewayClientV2', () => {
 
     renderAgentGatewayPage(AgentGatewayRunsPage, request);
 
-    expect(await screen.findByText('run-build-1')).toBeTruthy();
-    expect(await screen.findByText('run-done-1')).toBeTruthy();
-    expect(await screen.findByText('codex / thread-id-1')).toBeTruthy();
-    expect(await screen.findAllByText('No agent session')).not.toHaveLength(0);
+    expect(await screen.findByText('Build calendar page')).toBeTruthy();
+    expect(await screen.findByText('Completed import task')).toBeTruthy();
+    expect(await screen.findAllByText('Total: 40.1K')).not.toHaveLength(0);
+    expect(await screen.findAllByText('Input: 40.0K / Output: 144 / Cached: 18.2K / Reasoning: 77')).not.toHaveLength(
+      0,
+    );
+    expect(await screen.findByText('local-codex')).toBeTruthy();
+    expect(await screen.findByText('codex / codex-cli')).toBeTruthy();
+    expect(await screen.findByText('1m 00s')).toBeTruthy();
+    expect(screen.queryByText('run_task_fallback_should_not_render')).toBeNull();
+    expect(screen.queryByText('Run code')).toBeNull();
+    expect(screen.queryByText('Finished at')).toBeNull();
+    expect(screen.queryByText('Session')).toBeNull();
+    expect(screen.queryByText('No agent session')).toBeNull();
 
     const cancelButtons = await screen.findAllByLabelText('Cancel run');
     expect(cancelButtons).toHaveLength(1);
@@ -1813,6 +1906,7 @@ describe('PluginAgentGatewayClientV2', () => {
 
     fireEvent.click(await screen.findByRole('tab', { name: 'Summary' }));
     expect(await screen.findByText('Run summary')).toBeTruthy();
+    expect(await screen.findAllByText('Total: 40.1K')).not.toHaveLength(0);
     expect(await screen.findByText('Exit code: 0')).toBeTruthy();
     expect(await screen.findByText('Artifacts: 2')).toBeTruthy();
     expect(screen.queryByText(/visible summary/)).toBeNull();

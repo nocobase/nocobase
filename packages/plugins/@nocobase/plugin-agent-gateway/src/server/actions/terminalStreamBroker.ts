@@ -40,9 +40,7 @@ import {
   parseTerminalFrame,
   parseTerminalFrameJson,
 } from '../../shared/terminalStreamProtocol';
-import { auditAgentActionBestEffort } from '../audit/agentActionAudit';
 import { AGENT_GATEWAY_ACTIONS, authenticateNodeToken, verifyClaimToken } from '../security';
-import { AGENT_GATEWAY_PERMISSIONS } from '../security/permissions';
 import {
   JsonRecord,
   ModelRecord,
@@ -521,7 +519,6 @@ export class TerminalStreamBroker {
     }
 
     if (isProtocolRawWrite(rawFrame)) {
-      this.enqueueRawTerminalWriteDeniedAudit(connection, rawFrame);
       this.sendError(
         ws,
         'TERMINAL_RAW_WRITE_DISABLED',
@@ -1169,88 +1166,6 @@ export class TerminalStreamBroker {
       }
     }
     return count >= TERMINAL_MAX_DAEMON_STREAM_BINDINGS_PER_NODE;
-  }
-
-  private enqueueRawTerminalWriteDeniedAudit(connection: TerminalStreamConnection, input: unknown) {
-    const runId = getString(getRecord(input).runId);
-    if (connection.kind !== 'browser' || !connection.userId) {
-      return;
-    }
-    const subscribedRunId = runId && connection.subscriptions.has(runId) ? runId : undefined;
-    const previous = this.frameQueues.get(connection.ws) || Promise.resolve();
-    const next = previous
-      .catch(() => {
-        // Keep the audit path independent from previous frame handling failures.
-      })
-      .then(async () => {
-        await auditAgentActionBestEffort(this.createBrowserAuditContext(connection), {
-          action: 'rawTerminalWriteDenied',
-          runId: subscribedRunId,
-          operatorId: connection.userId,
-          permissionKey: AGENT_GATEWAY_PERMISSIONS.writeTerminalRaw,
-          resultStatus: 'denied',
-          metadataJson: {
-            code: 'TERMINAL_RAW_WRITE_DISABLED',
-            frameType: getString(getRecord(input).type),
-            hasRequestedRunId: Boolean(runId),
-            subscribedRun: Boolean(subscribedRunId),
-          },
-        });
-      })
-      .catch((error) => {
-        this.app.logger?.warn?.('Agent Gateway terminal raw write audit failed', {
-          error: getErrorMessage(error),
-        });
-      });
-    this.frameQueues.set(connection.ws, next);
-    next
-      .finally(() => {
-        if (this.frameQueues.get(connection.ws) === next) {
-          this.frameQueues.delete(connection.ws);
-        }
-      })
-      .catch(() => {
-        // The queue promise already handles audit errors; this keeps cleanup settled.
-      });
-  }
-
-  private createBrowserAuditContext(connection: TerminalStreamConnection) {
-    const headers: Record<string, string> = {};
-    return {
-      app: this.app,
-      db: this.app.db,
-      cache: this.app.cache,
-      logger: this.app.logger,
-      log: this.app.log,
-      headers,
-      state: {},
-      originalUrl: connection.request.url || TERMINAL_STREAM_WS_PATH,
-      req: {
-        headers,
-      },
-      request: {
-        headers,
-      },
-      get(name: string) {
-        return headers[name.toLowerCase()] || '';
-      },
-      throw(status: number, message?: string | { message?: string; code?: string }): never {
-        const error = new Error(
-          typeof message === 'string' ? message : message?.message || `HTTP ${status}`,
-        ) as Error & {
-          status?: number;
-          code?: string;
-        };
-        error.status = status;
-        if (typeof message === 'object' && message?.code) {
-          error.code = message.code;
-        }
-        throw error;
-      },
-      t(key: string) {
-        return key;
-      },
-    } as unknown as Context;
   }
 
   private broadcastToRun(runId: string, frame: TerminalServerFrameForSend) {

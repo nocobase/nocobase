@@ -46,7 +46,6 @@ const RAW_WS_FRAME_TOKENS = [
 ];
 
 const RAW_HTTP_PATH_PATTERN = /terminal:(send|write|input)|terminal\/(send|write|input)|raw-?terminal/i;
-const CONTROL_AUDIT_ACTIONS = new Set(['rawTerminalWrite', 'rawTerminalWriteDenied', 'interrupt', 'terminate']);
 
 function printHelp() {
   process.stdout.write(`Usage:
@@ -142,20 +141,13 @@ async function listRecords(baseUrl: string, token: string, collection: string, f
 }
 
 async function countControlRecords(baseUrl: string, token: string, runId: string) {
-  const [events, audits] = await Promise.all([
-    listRecords(baseUrl, token, 'agRunEvents', {
-      runId,
-      source: 'terminal-control',
-    }),
-    listRecords(baseUrl, token, 'agAgentActionAudits', {
-      runId,
-    }),
-  ]);
-  const controlAudits = audits.filter((audit) => CONTROL_AUDIT_ACTIONS.has(getString(audit.action)));
+  const events = await listRecords(baseUrl, token, 'agRunEvents', {
+    runId,
+    source: 'terminal-control',
+  });
   return {
     terminalControlEvents: events.length,
-    terminalControlAudits: controlAudits.length,
-    total: events.length + controlAudits.length,
+    total: events.length,
   };
 }
 
@@ -224,7 +216,6 @@ async function main() {
     ];
     const createdRecordCounts = {
       terminalControlEvents: Math.max(0, afterRecords.terminalControlEvents - beforeRecords.terminalControlEvents),
-      terminalControlAudits: Math.max(0, afterRecords.terminalControlAudits - beforeRecords.terminalControlAudits),
       total: Math.max(0, afterRecords.total - beforeRecords.total),
     };
     const terminalOutputEchoes = terminalText.includes(args.marker) ? 1 : 0;

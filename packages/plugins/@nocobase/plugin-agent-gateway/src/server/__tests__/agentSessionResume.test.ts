@@ -319,28 +319,6 @@ describe('agent gateway agent session resume API', () => {
     expect(hiddenReplay.status).toBe(404);
     expect(JSON.stringify(hiddenReplay.body)).toContain('AGENT_GATEWAY_RESOURCE_NOT_VISIBLE');
     expect(JSON.stringify(hiddenReplay.body)).not.toContain(String(firstResult.runId));
-
-    const deniedAudit = await app.db.getRepository('agAgentActionAudits').findOne({
-      filter: {
-        action: 'resume',
-        sessionId: session.get('id'),
-        runId: firstResult.runId,
-        permissionKey: 'agentGateway.resumeAgentSession',
-        resultStatus: 'denied',
-      },
-    });
-    expect(deniedAudit?.get('metadataJson')).toMatchObject({
-      continuationRequestKey: expect.stringMatching(/^resume:.+:provided:[0-9a-f]{64}$/),
-      phase: 'existing-run-visibility',
-    });
-    const failedAudits = await app.db.getRepository('agAgentActionAudits').count({
-      filter: {
-        action: 'resume',
-        sessionId: session.get('id'),
-        resultStatus: 'failed',
-      },
-    });
-    expect(failedAudits).toBe(0);
   });
 
   it('rejects idempotency key reuse with a different resume message', async () => {
@@ -512,24 +490,6 @@ describe('agent gateway agent session resume API', () => {
     expect(responseBody).not.toContain('provider does not support resume');
     expect(responseBody).not.toContain('does not support resume with message');
     expect(responseBody).not.toContain('provider session id');
-
-    const deniedAudit = await app.db.getRepository('agAgentActionAudits').findOne({
-      filter: {
-        action: 'resume',
-        sessionId: hiddenUnsupported.session.get('id'),
-        permissionKey: 'agentGateway.resumeAgentSession',
-        resultStatus: 'denied',
-      },
-    });
-    expect(deniedAudit?.toJSON()).toMatchObject({
-      sessionId: hiddenUnsupported.session.get('id'),
-      runId: null,
-      metadataJson: expect.objectContaining({
-        continuationRequestKey: expect.stringMatching(/^resume:.+:provided:[0-9a-f]{64}$/),
-        phase: 'source-run-visibility',
-        resumedFromRunId: null,
-      }),
-    });
   });
 
   it('checks target session visibility before explicit resume source mismatch errors', async () => {
@@ -556,49 +516,5 @@ describe('agent gateway agent session resume API', () => {
     const responseBody = JSON.stringify(response.body);
     expect(responseBody).toContain('AGENT_GATEWAY_RESOURCE_NOT_VISIBLE');
     expect(responseBody).not.toContain('resumedFromRunId must belong to the agent session');
-
-    const deniedAudit = await app.db.getRepository('agAgentActionAudits').findOne({
-      filter: {
-        action: 'resume',
-        sessionId: hidden.session.get('id'),
-        permissionKey: 'agentGateway.resumeAgentSession',
-        resultStatus: 'denied',
-      },
-    });
-    expect(deniedAudit?.toJSON()).toMatchObject({
-      sessionId: hidden.session.get('id'),
-      runId: null,
-      metadataJson: expect.objectContaining({
-        continuationRequestKey: expect.stringMatching(/^resume:.+:provided:[0-9a-f]{64}$/),
-        phase: 'source-run-visibility',
-        resumedFromRunId: visible.run.get('id'),
-      }),
-    });
-    const failedAudits = await app.db.getRepository('agAgentActionAudits').count({
-      filter: {
-        action: 'resume',
-        sessionId: hidden.session.get('id'),
-        resultStatus: 'failed',
-      },
-    });
-    expect(failedAudits).toBe(0);
-  });
-
-  it('records denied resume audits when the user lacks resume permission', async () => {
-    const { session } = await seedEndedSession();
-    const readOnlyAgent = await createUserAgent('resume-read-only', ['agentGateway.readRuns']);
-    const response = await readOnlyAgent.post(`/api/agent-gateway/agent-sessions/${session.get('id')}/resume`).send({
-      message: 'Continue denied',
-      idempotencyKey: 'denied-click',
-    });
-
-    expect(response.status).toBe(403);
-    const audits = await app.db.getRepository('agAgentActionAudits').find({
-      filter: {
-        action: 'resume',
-        sessionId: session.get('id'),
-      },
-    });
-    expect(audits.map((audit) => audit.get('resultStatus'))).toContain('denied');
   });
 });

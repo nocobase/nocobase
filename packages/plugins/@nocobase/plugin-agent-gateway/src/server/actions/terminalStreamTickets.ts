@@ -21,17 +21,9 @@ import {
   TERMINAL_STREAM_BROWSER_TICKET_PROOF_PROTOCOL_PREFIX,
   TERMINAL_STREAM_BROWSER_TICKET_PROTOCOL_PREFIX,
 } from '../../shared/terminalStreamProtocol';
-import { auditAgentActionBestEffort, auditReadAgentAction } from '../audit/agentActionAudit';
-import {
-  AGENT_GATEWAY_ACTIONS,
-  AGENT_GATEWAY_PERMISSIONS,
-  createStreamToken,
-  hashStreamToken,
-  verifyStreamToken,
-} from '../security';
+import { AGENT_GATEWAY_ACTIONS, createStreamToken, hashStreamToken, verifyStreamToken } from '../security';
 import {
   API_PREFIX,
-  JsonRecord,
   ModelRecord,
   assertRunVisible,
   getCurrentUserId,
@@ -175,39 +167,12 @@ function getRedactedBrowserStreamProtocols(roleName?: string | null) {
   ];
 }
 
-function getTicketAuditFields(ctx: Context, run: ModelRecord) {
-  return {
-    runId: getModelString(run, 'id'),
-    sessionId: getModelString(run, 'agentSessionId') || undefined,
-    operatorId: getCurrentUserId(ctx) || undefined,
-    provider: getModelString(run, 'agentSessionProvider') || undefined,
-  };
-}
-
-async function auditTerminalReadDenied(ctx: Context, runId: string, metadataJson: JsonRecord = {}) {
-  await auditAgentActionBestEffort(ctx, {
-    action: 'readTerminal',
-    runId,
-    operatorId: getCurrentUserId(ctx) || undefined,
-    permissionKey: AGENT_GATEWAY_PERMISSIONS.readTerminal,
-    resultStatus: 'denied',
-    metadataJson,
-  });
-}
-
-async function requireTerminalStreamTicketPermission(ctx: Context, runId: string) {
-  try {
-    await requireAgentGatewayPermission(
-      ctx,
-      AGENT_GATEWAY_ACTIONS.readTerminal,
-      'Agent Gateway terminal read permission required',
-    );
-  } catch (error) {
-    await auditTerminalReadDenied(ctx, runId, {
-      phase: 'stream-ticket-permission',
-    });
-    throw error;
-  }
+async function requireTerminalStreamTicketPermission(ctx: Context) {
+  await requireAgentGatewayPermission(
+    ctx,
+    AGENT_GATEWAY_ACTIONS.readTerminal,
+    'Agent Gateway terminal read permission required',
+  );
 }
 
 async function requireTerminalOutputCapability(
@@ -219,14 +184,6 @@ async function requireTerminalOutputCapability(
   if (isRunCapabilitySupported(capabilitySummary, 'terminalOutput')) {
     return;
   }
-
-  await auditTerminalReadDenied(ctx, getModelString(run, 'id'), {
-    phase,
-    routeAction: phase === 'stream-ticket-create' ? 'terminal-stream-tickets:create' : 'terminal-stream:subscribe',
-    reason: 'unsupported-capability',
-    unsupportedCapability: 'terminalOutput',
-    provider: capabilitySummary.provider,
-  });
 
   if (phase === 'stream-ticket-create') {
     ctx.throw(409, {
@@ -258,17 +215,8 @@ async function cleanupTerminalStreamTickets(app: Application, now = new Date()) 
 }
 
 export async function createTerminalStreamTicket(ctx: Context, runId: string) {
-  await requireTerminalStreamTicketPermission(ctx, runId);
-  let run: ModelRecord;
-  try {
-    run = await assertRunVisible(ctx, runId, 'get');
-  } catch (error) {
-    await auditTerminalReadDenied(ctx, runId, {
-      routeAction: 'terminal-stream-tickets:create',
-      phase: 'visibility',
-    });
-    throw error;
-  }
+  await requireTerminalStreamTicketPermission(ctx);
+  const run = await assertRunVisible(ctx, runId, 'get');
   await requireTerminalOutputCapability(ctx, run, 'stream-ticket-create');
   const userId = getCurrentUserId(ctx);
   if (!userId) {
@@ -297,17 +245,6 @@ export async function createTerminalStreamTicket(ctx: Context, runId: string) {
       metadataJson: {
         ttlMs: DEFAULT_TERMINAL_STREAM_TICKET_TTL_MS,
       },
-    },
-  });
-
-  await auditReadAgentAction(ctx, {
-    action: 'readTerminal',
-    ...getTicketAuditFields(ctx, run),
-    permissionKey: AGENT_GATEWAY_PERMISSIONS.readTerminal,
-    resultStatus: 'succeeded',
-    metadataJson: {
-      phase: 'stream-ticket-create',
-      expiresAt: expiresAt.toISOString(),
     },
   });
 
@@ -443,23 +380,10 @@ export async function consumeTerminalStreamTicket(options: {
     );
     const run = await assertRunVisible(ctx, options.runId, 'get');
     await requireTerminalOutputCapability(ctx, run, 'stream-subscribe');
-    await auditReadAgentAction(ctx, {
-      action: 'readTerminal',
-      ...getTicketAuditFields(ctx, run),
-      permissionKey: AGENT_GATEWAY_PERMISSIONS.readTerminal,
-      resultStatus: 'succeeded',
-      metadataJson: {
-        phase: 'stream-subscribe',
-      },
-    });
   } catch (error) {
     if (error instanceof TerminalStreamTicketError) {
       throw error;
     }
-    await auditTerminalReadDenied(ctx, options.runId, {
-      phase: 'stream-subscribe',
-      reason: error instanceof Error ? error.message : String(error),
-    });
     throw new TerminalStreamTicketError(
       'TERMINAL_PERMISSION_DENIED',
       'Agent Gateway terminal read permission required',

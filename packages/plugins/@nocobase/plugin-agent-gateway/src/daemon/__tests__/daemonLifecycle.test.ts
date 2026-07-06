@@ -8,12 +8,16 @@
  */
 
 import { promises as fs } from 'fs';
+import { execFile } from 'child_process';
 import os from 'os';
 import path from 'path';
+import { promisify } from 'util';
 
 import { readDaemonConfig } from '../config';
 import { heartbeatDaemonNode, registerDaemonNode } from '../registration';
 import { GatewayRequestOptions, GatewayRequester, JsonRecord } from '../types';
+
+const execFileAsync = promisify(execFile);
 
 class FakeRequester implements GatewayRequester {
   calls: GatewayRequestOptions[] = [];
@@ -126,25 +130,40 @@ describe('agent gateway daemon lifecycle client', () => {
   });
 
   it('keeps install script token input separate from script download and URL arguments', async () => {
-    const script = await fs.readFile(
-      path.resolve(__dirname, '../../../scripts/install-agent-gateway-daemon.sh'),
-      'utf8',
-    );
+    const scriptPath = path.resolve(__dirname, '../../../scripts/install-agent-gateway-daemon.sh');
+    const script = await fs.readFile(scriptPath, 'utf8');
 
+    await expect(execFileAsync('bash', ['-n', scriptPath])).resolves.toBeTruthy();
     expect(script).toContain('--invite-token-stdin');
     expect(script).toContain('AGENT_GATEWAY_NODE_KEY');
     expect(script).toContain('AGENT_GATEWAY_DAEMON_PACKAGE_URL');
+    expect(script).toContain('AGENT_GATEWAY_SERVICE_SCOPE');
+    expect(script).toContain('AGENT_GATEWAY_HEALTH_CHECK');
+    expect(script).toContain('AGENT_GATEWAY_AGENT_PATH');
     expect(script).toContain('/api/agent-gateway/daemon-package.tgz');
     expect(script).toContain('download_file "$DAEMON_PACKAGE_URL"');
     expect(script).toContain('tar -xzf "$package_archive"');
     expect(script).toContain('DAEMON_CMD=(node "$package_dir/package/daemon.js")');
     expect(script).toContain('Existing Agent Gateway daemon registration is still valid');
+    expect(script).toContain('Migrated existing Agent Gateway daemon config');
     expect(script).toContain('--node-key "$NODE_KEY"');
+    expect(script).toContain('can_install_system_service');
+    expect(script).toContain('/etc/systemd/system/$SERVICE_NAME.service');
+    expect(script).toContain('systemctl enable --now "$SERVICE_NAME.service"');
     expect(script).toContain('systemctl --user enable --now');
+    expect(script).toContain('EnvironmentFile=$ENV_FILE');
+    expect(script).toContain('write_env_assignment PATH "$EFFECTIVE_PATH"');
+    expect(script).toContain('append_path_dir "$HOME/.fnm/current/bin"');
+    expect(script).toContain('for node_bin_dir in "$HOME"/.nvm/versions/node/*/bin');
+    expect(script).toContain('"$HOME"/.local/share/fnm/node-versions/*/installation/bin');
     expect(script).toContain('Restart=always');
+    expect(script).toContain('ExecStart=$RUN_SCRIPT');
+    expect(script).toContain('exec $DAEMON_COMMAND run');
     expect(script).toContain('while true; do');
     expect(script).toContain('Agent Gateway daemon exited with status');
     expect(script).toContain('tmux new-session');
+    expect(script).toContain('systemctl is-active --quiet');
+    expect(script).toContain('Agent Gateway daemon heartbeat verified');
     expect(script).toContain('AGENT_GATEWAY_INVITE_TOKEN');
     expect(script).not.toMatch(/\?[^ \n]*invite/i);
     expect(script).not.toMatch(/\?[^ \n]*token/i);

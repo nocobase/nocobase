@@ -14,7 +14,7 @@ import path from 'path';
 import { AgentGatewayApiClient } from './apiClient';
 import { getDefaultConfigPath, readDaemonConfig } from './config';
 import { AgentGatewayDaemonNodeClient } from './gateway';
-import { ExecCommandAllowlist, executeAllowlistedCommand } from './execDriver';
+import { DEFAULT_EXEC_TIMEOUT_MS, ExecCommandAllowlist, executeAllowlistedCommand } from './execDriver';
 import { runOpenCodeSmoke } from './openCodeSmoke';
 import { detectAgentProfiles } from './profileDetection';
 import { heartbeatDaemonNode, registerDaemonNode } from './registration';
@@ -85,19 +85,19 @@ function getDefaultAllowlist(): ExecCommandAllowlist {
       commandKey: 'opencode',
       executable: 'opencode',
       allowedEnvKeys: ['NOCOBASE_API_BASE_URL', 'NOCOBASE_ADMIN_URL', 'NOCOBASE_API_TOKEN'],
-      defaultTimeoutMs: 30 * 60 * 1000,
+      defaultTimeoutMs: DEFAULT_EXEC_TIMEOUT_MS,
     },
     codex: {
       commandKey: 'codex',
       executable: 'codex',
       allowedEnvKeys: [],
-      defaultTimeoutMs: 30 * 60 * 1000,
+      defaultTimeoutMs: DEFAULT_EXEC_TIMEOUT_MS,
     },
     'claude-code': {
       commandKey: 'claude-code',
       executable: 'claude',
       allowedEnvKeys: [],
-      defaultTimeoutMs: 30 * 60 * 1000,
+      defaultTimeoutMs: DEFAULT_EXEC_TIMEOUT_MS,
     },
   };
 }

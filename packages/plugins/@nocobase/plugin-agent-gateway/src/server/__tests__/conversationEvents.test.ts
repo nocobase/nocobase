@@ -805,32 +805,5 @@ describe('agent gateway conversation event APIs', () => {
     ]);
     const rawConversationAgent = await createUserAgent('conversation-raw-reader', [rawConversationSnippet]);
     expect((await rawConversationAgent.get('/api/agAgentConversationEvents:list')).status).toBe(403);
-
-    const audits = await app.db.getRepository('agAgentActionAudits').find({
-      filter: {
-        action: 'readSessionMessages',
-        runId: run.id,
-      },
-    });
-    expect(audits.map((audit) => audit.toJSON())).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          permissionKey: 'agentGateway.readSessionMessages',
-          resultStatus: 'succeeded',
-          metadataJson: expect.objectContaining({
-            routeAction: 'listRunConversationEvents',
-            eventCount: 1,
-          }),
-        }),
-        expect.objectContaining({
-          permissionKey: 'agentGateway.readSessionMessages',
-          resultStatus: 'denied',
-          metadataJson: expect.objectContaining({
-            routeAction: 'listRunConversationEvents',
-            phase: 'permission',
-          }),
-        }),
-      ]),
-    );
   });
 });

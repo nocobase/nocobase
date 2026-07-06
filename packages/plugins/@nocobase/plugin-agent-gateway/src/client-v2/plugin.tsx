@@ -57,16 +57,6 @@ export class PluginAgentGatewayClientV2 extends Plugin {
 
     this.pluginSettingsManager.addPageTabItem({
       menuKey: NAMESPACE,
-      key: 'audit',
-      title: this.t('Audit'),
-      aclSnippet: 'pm.agent-gateway.audit',
-      hidden: true,
-      componentLoader: () => import('./pages/AgentGatewayAuditPage'),
-      sort: 25,
-    });
-
-    this.pluginSettingsManager.addPageTabItem({
-      menuKey: NAMESPACE,
       key: 'prompt-templates',
       title: this.t('Prompt Templates'),
       hidden: true,

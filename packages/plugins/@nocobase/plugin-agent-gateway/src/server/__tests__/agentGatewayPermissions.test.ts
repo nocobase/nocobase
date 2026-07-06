@@ -391,51 +391,6 @@ describe('agent gateway permission matrix', () => {
     });
     expect(rawResponse.status).toBe(403);
     expect(JSON.stringify(rawResponse.body)).toContain('TERMINAL_RAW_WRITE_DISABLED');
-
-    const rawAudits = await app.db.getRepository('agAgentActionAudits').find({
-      filter: {
-        action: 'rawTerminalWriteDenied',
-      },
-    });
-    expect(rawAudits.map((audit) => audit.toJSON())).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          action: 'rawTerminalWriteDenied',
-          runId: active.runId,
-          sessionId: null,
-          provider: null,
-          permissionKey: 'agentGateway.writeTerminalRaw',
-          resultStatus: 'denied',
-          metadataJson: expect.objectContaining({
-            code: 'TERMINAL_RAW_WRITE_DISABLED',
-            routeAction: 'terminal:send',
-            runVisible: false,
-          }),
-        }),
-      ]),
-    );
-    expect(JSON.stringify(rawAudits.map((audit) => audit.toJSON()))).not.toContain('must-not-write');
-    const messageAudits = await app.db.getRepository('agAgentActionAudits').find({
-      filter: {
-        action: 'message',
-        sessionId: ended.sessionId,
-      },
-    });
-    expect(messageAudits.map((audit) => audit.toJSON())).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          action: 'message',
-          sessionId: ended.sessionId,
-          permissionKey: 'agentGateway.messageAgentSession',
-          resultStatus: 'denied',
-          metadataJson: expect.objectContaining({
-            reason: 'unsupported-capability',
-            liveSemanticMessage: false,
-            stdinMessage: false,
-          }),
-        }),
-      ]),
-    );
   });
 
   it('enforces run data-scope visibility in addition to permission snippets', async () => {
@@ -545,48 +500,6 @@ describe('agent gateway permission matrix', () => {
     expect(hiddenNoLatestMessageBody).not.toContain('AGENT_GATEWAY_ACTION_UNSUPPORTED');
     expect(hiddenNoLatestMessageBody).not.toContain('liveSemanticMessage');
     expect(hiddenNoLatestMessageBody).not.toContain('stdinMessage');
-    const hiddenSessionMutationAudits = await app.db.getRepository('agAgentActionAudits').find({
-      filter: {
-        resultStatus: 'denied',
-      },
-    });
-    expect(hiddenSessionMutationAudits.map((audit) => audit.toJSON())).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          action: 'resume',
-          sessionId: hiddenEnded.sessionId,
-          permissionKey: 'agentGateway.resumeAgentSession',
-          metadataJson: expect.objectContaining({
-            phase: 'source-run-visibility',
-          }),
-        }),
-        expect.objectContaining({
-          action: 'message',
-          sessionId: hidden.sessionId,
-          runId: hidden.runId,
-          permissionKey: 'agentGateway.messageAgentSession',
-          metadataJson: expect.objectContaining({
-            phase: 'latest-run-visibility',
-          }),
-        }),
-        expect.objectContaining({
-          action: 'message',
-          sessionId: hiddenWithoutLatestRun.sessionId,
-          runId: null,
-          provider: null,
-          permissionKey: 'agentGateway.messageAgentSession',
-          metadataJson: expect.objectContaining({
-            phase: 'session-run-visibility',
-          }),
-        }),
-      ]),
-    );
-    const hiddenNoLatestAudit = hiddenSessionMutationAudits.find(
-      (audit) => audit.get('action') === 'message' && audit.get('sessionId') === hiddenWithoutLatestRun.sessionId,
-    );
-    expect(JSON.stringify(hiddenNoLatestAudit?.toJSON())).not.toContain('unsupported-capability');
-    expect(JSON.stringify(hiddenNoLatestAudit?.toJSON())).not.toContain('liveSemanticMessage');
-    expect(JSON.stringify(hiddenNoLatestAudit?.toJSON())).not.toContain('stdinMessage');
     const hiddenStreamTicketCountBefore = await app.db.getRepository('agTerminalStreamTickets').count({
       filter: {
         runId: hidden.runId,
@@ -612,55 +525,6 @@ describe('agent gateway permission matrix', () => {
     expect(hiddenRunAfterCancel?.get('status')).toBe('running');
     expect(hiddenRunAfterCancel?.get('cancelRequested')).toBe(false);
     expect(hiddenRunAfterCancel?.get('cancelRequestedAt')).toBeFalsy();
-    const hiddenSensitiveReadAudits = await app.db.getRepository('agAgentActionAudits').find({
-      filter: {
-        runId: hidden.runId,
-        resultStatus: 'denied',
-      },
-    });
-    expect(hiddenSensitiveReadAudits.map((audit) => audit.toJSON())).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          action: 'readTerminal',
-          permissionKey: 'agentGateway.readTerminal',
-          metadataJson: expect.objectContaining({
-            routeAction: 'terminal:snapshot',
-            phase: 'visibility',
-          }),
-        }),
-        expect.objectContaining({
-          action: 'readTerminal',
-          permissionKey: 'agentGateway.readTerminal',
-          metadataJson: expect.objectContaining({
-            routeAction: 'terminal-stream-tickets:create',
-            phase: 'visibility',
-          }),
-        }),
-        expect.objectContaining({
-          action: 'cancel',
-          permissionKey: 'agentGateway.cancelRun',
-          metadataJson: expect.objectContaining({
-            phase: 'visibility',
-          }),
-        }),
-        expect.objectContaining({
-          action: 'readArtifacts',
-          permissionKey: 'agentGateway.readArtifacts',
-          metadataJson: expect.objectContaining({
-            routeAction: 'artifacts:list',
-            phase: 'visibility',
-          }),
-        }),
-        expect.objectContaining({
-          action: 'readRawLogs',
-          permissionKey: 'agentGateway.readRawLogs',
-          metadataJson: expect.objectContaining({
-            routeAction: 'events:list',
-            phase: 'visibility',
-          }),
-        }),
-      ]),
-    );
     expect(
       (await scopedAgent.get(`/api/agent-gateway/agent-sessions/${hidden.sessionId}/conversation-events:list`)).status,
     ).toBe(404);
@@ -678,30 +542,6 @@ describe('agent gateway permission matrix', () => {
         })
       ).status,
     ).toBe(404);
-    const hiddenControlAudits = await app.db.getRepository('agAgentActionAudits').find({
-      filter: {
-        runId: hidden.runId,
-        resultStatus: 'denied',
-      },
-    });
-    expect(hiddenControlAudits.map((audit) => audit.toJSON())).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          action: 'interrupt',
-          permissionKey: 'agentGateway.interruptRun',
-          metadataJson: expect.objectContaining({
-            phase: 'visibility',
-          }),
-        }),
-        expect.objectContaining({
-          action: 'terminate',
-          permissionKey: 'agentGateway.terminateRun',
-          metadataJson: expect.objectContaining({
-            phase: 'visibility',
-          }),
-        }),
-      ]),
-    );
     const hiddenRawWriteResponse = await scopedAgent
       .post(`/api/agent-gateway/runs/${hidden.runId}/terminal:send`)
       .send({
@@ -709,26 +549,6 @@ describe('agent gateway permission matrix', () => {
       });
     expect(hiddenRawWriteResponse.status).toBe(403);
     expect(JSON.stringify(hiddenRawWriteResponse.body)).toContain('TERMINAL_RAW_WRITE_DISABLED');
-    const hiddenRawAudits = await app.db.getRepository('agAgentActionAudits').find({
-      filter: {
-        action: 'rawTerminalWriteDenied',
-        runId: hidden.runId,
-      },
-    });
-    expect(hiddenRawAudits).toHaveLength(1);
-    expect(hiddenRawAudits[0].toJSON()).toMatchObject({
-      runId: hidden.runId,
-      sessionId: null,
-      provider: null,
-      permissionKey: 'agentGateway.writeTerminalRaw',
-      resultStatus: 'denied',
-      metadataJson: expect.objectContaining({
-        code: 'TERMINAL_RAW_WRITE_DISABLED',
-        routeAction: 'terminal:send',
-        runVisible: false,
-      }),
-    });
-    expect(JSON.stringify(hiddenRawAudits[0].toJSON())).not.toContain('must-not-link-hidden-run');
     expect(
       await app.db.getRepository('agRunControlRequests').count({
         filter: {
@@ -738,7 +558,7 @@ describe('agent gateway permission matrix', () => {
     ).toBe(0);
   });
 
-  it('audits denied control attempts without creating control requests', async () => {
+  it('rejects denied control attempts without creating control requests', async () => {
     const active = await seedRun({ status: 'running', terminal: true, sessionStatus: 'active' });
     const readOnlyAgent = await createUserAgent('agent-gateway-denied-control', ['agentGateway.readRuns']);
 
@@ -763,23 +583,5 @@ describe('agent gateway permission matrix', () => {
         },
       }),
     ).toBe(0);
-    const audits = await app.db.getRepository('agAgentActionAudits').find({
-      filter: {
-        runId: active.runId,
-        resultStatus: 'denied',
-      },
-    });
-    expect(audits.map((audit) => audit.toJSON())).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          action: 'interrupt',
-          permissionKey: 'agentGateway.interruptRun',
-        }),
-        expect.objectContaining({
-          action: 'terminate',
-          permissionKey: 'agentGateway.terminateRun',
-        }),
-      ]),
-    );
   });
 });

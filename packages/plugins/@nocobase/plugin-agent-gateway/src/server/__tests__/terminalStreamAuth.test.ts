@@ -156,40 +156,6 @@ async function createLegacyDefaultAuthProofTicketRecord(
   };
 }
 
-async function waitForAudit(app: MockServer, filter: Record<string, unknown>) {
-  for (let i = 0; i < 20; i += 1) {
-    const audits = await app.db.getRepository('agAgentActionAudits').find({
-      filter,
-    });
-    if (audits.length) {
-      return audits;
-    }
-    await new Promise((resolve) => {
-      setTimeout(resolve, 25);
-    });
-  }
-  return [];
-}
-
-async function waitForAuditMatch(
-  app: MockServer,
-  filter: Record<string, unknown>,
-  predicate: (audit: { toJSON(): Record<string, unknown> }) => boolean,
-) {
-  for (let i = 0; i < 20; i += 1) {
-    const audits = await app.db.getRepository('agAgentActionAudits').find({
-      filter,
-    });
-    if (audits.some(predicate)) {
-      return audits;
-    }
-    await new Promise((resolve) => {
-      setTimeout(resolve, 25);
-    });
-  }
-  return [];
-}
-
 describe('terminal stream browser ticket auth', () => {
   let app: MockServer;
 
@@ -717,27 +683,12 @@ describe('terminal stream browser ticket auth', () => {
         code: 'TERMINAL_PERMISSION_DENIED',
       });
       expectNoTicketMaterial(frame, ticket);
-
-      const audits = await app.db.getRepository('agAgentActionAudits').find({
-        filter: {
-          action: 'readTerminal',
-          runId,
-          resultStatus: 'denied',
-        },
-      });
-      expect(audits.length).toBeGreaterThan(0);
-      const serializedAudits = JSON.stringify(audits.map((audit) => audit.toJSON()));
-      expect(serializedAudits).not.toContain(ticket.ticket);
-      expect(serializedAudits).not.toContain(ticket.ticketProof);
-      if (ticket.authProof) {
-        expect(serializedAudits).not.toContain(ticket.authProof);
-      }
     } finally {
       await server.close();
     }
   });
 
-  it('rejects raw write aliases over websocket and records denied audits', async () => {
+  it('rejects raw write aliases over websocket', async () => {
     const runId = await createRun(app, 'terminal-stream-auth-browser-input');
     const userId = await getRootUserId(app);
     const server = await createTerminalStreamServer(app);
@@ -781,32 +732,6 @@ describe('terminal stream browser ticket auth', () => {
           requestId,
         });
         expect(JSON.stringify(frame)).not.toContain(secret);
-
-        const audits = await waitForAuditMatch(
-          app,
-          {
-            action: 'rawTerminalWriteDenied',
-            runId,
-            resultStatus: 'denied',
-          },
-          (audit) => {
-            const metadata = audit.toJSON().metadataJson as Record<string, unknown>;
-            return metadata?.frameType === rawFrameType;
-          },
-        );
-        expect(audits.map((audit) => audit.toJSON())).toEqual(
-          expect.arrayContaining([
-            expect.objectContaining({
-              operatorId: userId,
-              permissionKey: 'agentGateway.writeTerminalRaw',
-              metadataJson: expect.objectContaining({
-                code: 'TERMINAL_RAW_WRITE_DISABLED',
-                frameType: rawFrameType,
-              }),
-            }),
-          ]),
-        );
-        expect(JSON.stringify(audits.map((audit) => audit.toJSON()))).not.toContain(secret);
       }
 
       const forgedRunId = randomUUID();
@@ -823,41 +748,6 @@ describe('terminal stream browser ticket auth', () => {
         code: 'TERMINAL_RAW_WRITE_DISABLED',
         requestId: 'browser-input-forged-run-denied',
       });
-      const forgedAudits = await app.db.getRepository('agAgentActionAudits').find({
-        filter: {
-          action: 'rawTerminalWriteDenied',
-          runId: forgedRunId,
-        },
-      });
-      expect(forgedAudits).toHaveLength(0);
-      const unboundAudits = await waitForAuditMatch(
-        app,
-        {
-          action: 'rawTerminalWriteDenied',
-          resultStatus: 'denied',
-        },
-        (audit) => {
-          const json = audit.toJSON();
-          const metadata = json.metadataJson as Record<string, unknown>;
-          return json.runId === null && metadata?.subscribedRun === false;
-        },
-      );
-      expect(unboundAudits.map((audit) => audit.toJSON())).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({
-            runId: null,
-            operatorId: userId,
-            permissionKey: 'agentGateway.writeTerminalRaw',
-            metadataJson: expect.objectContaining({
-              code: 'TERMINAL_RAW_WRITE_DISABLED',
-              frameType: 'browser.input',
-              hasRequestedRunId: true,
-              subscribedRun: false,
-            }),
-          }),
-        ]),
-      );
-      expect(JSON.stringify(unboundAudits.map((audit) => audit.toJSON()))).not.toContain(forgedRunId);
     } finally {
       browser.close();
       await server.close();

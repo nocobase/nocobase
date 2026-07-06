@@ -8,7 +8,6 @@
  */
 
 import {
-  AuditOutlined,
   EnterOutlined,
   EyeOutlined,
   PoweroffOutlined,
@@ -16,6 +15,7 @@ import {
   ReloadOutlined,
   SearchOutlined,
   StopOutlined,
+  UploadOutlined,
 } from '@ant-design/icons';
 import { useFlowContext } from '@nocobase/flow-engine';
 import { useRequest } from 'ahooks';
@@ -30,6 +30,7 @@ import {
   Form,
   Input,
   List,
+  Modal,
   Select,
   Space,
   Spin,
@@ -38,7 +39,9 @@ import {
   Tag,
   Tooltip,
   Typography,
+  Upload,
 } from 'antd';
+import type { UploadProps } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import type { CSSMotionProps } from 'rc-motion';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -71,6 +74,7 @@ import {
 interface RunRecord {
   id: string;
   runCode: string;
+  taskTitle?: string | null;
   status: string;
   nodeId?: string | null;
   agentProfileId?: string | null;
@@ -79,6 +83,7 @@ interface RunRecord {
   sourceRecordId?: string | null;
   cancelRequested?: boolean;
   resultSummaryJson?: JsonRecord;
+  tokenUsageJson?: TokenUsageRecord | null;
   errorSummary?: string | null;
   terminalBackend?: string | null;
   terminalStatus?: string | null;
@@ -102,7 +107,6 @@ interface RunRecord {
     readTerminal?: boolean;
     readArtifacts?: boolean;
     readRawLogs?: boolean;
-    readAudit?: boolean;
     cancelRun?: boolean;
   };
   agentGatewayControlActionsJson?: {
@@ -116,6 +120,14 @@ interface RunRecord {
   startedAt?: string;
   finishedAt?: string;
   createdAt?: string;
+}
+
+interface TokenUsageRecord extends JsonRecord {
+  inputTokens?: number | string | null;
+  cachedInputTokens?: number | string | null;
+  outputTokens?: number | string | null;
+  reasoningOutputTokens?: number | string | null;
+  totalTokens?: number | string | null;
 }
 
 interface RunEventRecord {
@@ -286,9 +298,24 @@ interface BuildTaskFormValues {
   title?: string;
   scenario?: string;
   prompt?: string;
-  skillVersionId?: string;
+  skillVersionIds?: string[];
   runner?: string;
   cwd?: string;
+}
+
+interface SkillUploadFormValues {
+  skillKey?: string;
+  displayName?: string;
+  versionLabel?: string;
+}
+
+interface SkillUploadResult {
+  skillId?: string;
+  skillKey?: string;
+  skillVersionId: string;
+  versionLabel?: string;
+  status?: string;
+  idempotent?: boolean;
 }
 
 interface CreateBuildRunResult {
@@ -350,6 +377,29 @@ const LIVE_RUN_STATUSES = new Set(['queued', 'claimed', 'syncing_skills', 'runni
 const RUN_DETAIL_QUERY_PARAM = 'runId';
 const OPENCODE_UI_BATCH_SCENARIO = 'opencode-ui-batch';
 const OPENCODE_UI_BATCH_SKILL_KEY = 'nb-opencode-ui-batch';
+const DEFAULT_SKILL_UPLOAD_FORM_VALUES: SkillUploadFormValues = {
+  skillKey: OPENCODE_UI_BATCH_SKILL_KEY,
+  displayName: 'NB OpenCode UI Batch',
+  versionLabel: 'local',
+};
+
+function readFileAsBase64(file: File) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = typeof reader.result === 'string' ? reader.result : '';
+      resolve(result.includes(',') ? result.split(',').pop() || '' : result);
+    };
+    reader.onerror = () => {
+      reject(reader.error || new Error('Failed to read file'));
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function getSkillVersionIds(value: unknown) {
+  return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string' && Boolean(item)) : [];
+}
 const ARTIFACT_PREVIEW_MAX_ITEMS = 80;
 const ARTIFACT_ITEM_TEXT_MAX_CHARS = 4000;
 const ARTIFACT_RAW_PREVIEW_MAX_CHARS = 24 * 1024;
@@ -369,6 +419,85 @@ function isCancelableRun(run: RunRecord) {
 
 function isLiveRunStatus(status?: string) {
   return Boolean(status && LIVE_RUN_STATUSES.has(status));
+}
+
+function getTimestampMs(value?: string | null) {
+  if (!value) {
+    return null;
+  }
+  const timestamp = new Date(value).getTime();
+  return Number.isNaN(timestamp) ? null : timestamp;
+}
+
+function getRunDurationStart(run: RunRecord) {
+  return run.startedAt || run.claimedAt || run.queuedAt || run.requestedAt || run.createdAt;
+}
+
+function formatCompactDuration(durationMs: number) {
+  const totalSeconds = Math.max(0, Math.floor(durationMs / 1000));
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  if (hours > 0) {
+    return `${hours}h ${String(minutes).padStart(2, '0')}m`;
+  }
+  if (minutes > 0) {
+    return `${minutes}m ${String(seconds).padStart(2, '0')}s`;
+  }
+  return `${seconds}s`;
+}
+
+function formatRunDuration(run: RunRecord, nowMs = Date.now()) {
+  const startMs = getTimestampMs(getRunDurationStart(run));
+  if (startMs === null) {
+    return '-';
+  }
+  const finishedMs = getTimestampMs(run.finishedAt);
+  const endMs = finishedMs ?? (isLiveRunStatus(run.status) ? nowMs : null);
+  if (endMs === null) {
+    return '-';
+  }
+  return formatCompactDuration(endMs - startMs);
+}
+
+function getTokenUsageNumber(value: unknown) {
+  const numberValue = typeof value === 'number' ? value : typeof value === 'string' ? Number(value) : Number.NaN;
+  return Number.isFinite(numberValue) && numberValue >= 0 ? numberValue : null;
+}
+
+function formatTokenCount(value: unknown) {
+  const numberValue = getTokenUsageNumber(value);
+  if (numberValue === null) {
+    return '-';
+  }
+  if (numberValue >= 1_000_000) {
+    return `${(numberValue / 1_000_000).toFixed(1)}M`;
+  }
+  if (numberValue >= 1_000) {
+    return `${(numberValue / 1_000).toFixed(1)}K`;
+  }
+  return String(Math.round(numberValue));
+}
+
+function getTokenUsageTotal(usage?: TokenUsageRecord | null) {
+  if (!usage) {
+    return null;
+  }
+  const totalTokens = getTokenUsageNumber(usage.totalTokens);
+  if (totalTokens !== null) {
+    return totalTokens;
+  }
+  const inputTokens = getTokenUsageNumber(usage.inputTokens);
+  const outputTokens = getTokenUsageNumber(usage.outputTokens);
+  if (inputTokens !== null || outputTokens !== null) {
+    return (inputTokens || 0) + (outputTokens || 0);
+  }
+  return null;
+}
+
+function hasTokenUsage(usage?: TokenUsageRecord | null) {
+  return getTokenUsageTotal(usage) !== null || getTokenUsageNumber(usage?.cachedInputTokens) !== null;
 }
 
 function canUseLegacyTimelineFallback(run: RunRecord | undefined, eventCount: number, hasWarning: boolean) {
@@ -480,22 +609,6 @@ function replaceRunIdInLocationSearch(runId?: string) {
 
 function useInitialRunDetailQuery() {
   return useState(() => getRunIdFromLocationSearch())[0];
-}
-
-function getAgentGatewayAuditPath(pathname: string) {
-  const settingsPrefix = '/settings/agent-gateway';
-  const runsPath = `${settingsPrefix}/runs`;
-  const auditPath = `${settingsPrefix}/audit`;
-  if (pathname.includes(runsPath)) {
-    return pathname.replace(runsPath, auditPath);
-  }
-
-  const adminIndex = pathname.lastIndexOf('/admin');
-  if (adminIndex >= 0) {
-    return `${pathname.slice(0, adminIndex)}/admin${auditPath}`;
-  }
-
-  return `/admin${auditPath}`;
 }
 
 function getRouterPathFromBrowserPath(pathname: string) {
@@ -673,15 +786,74 @@ function getRunnerReasonMessage(t: TFunction, reason?: string) {
   return messages[reason || ''] || t('Waiting for runner');
 }
 
-function canOpenAuditFromRuns(runs: RunRecord[] | undefined) {
-  return Boolean(runs?.some((run) => run.agentGatewayActionPermissionsJson?.readAudit === true));
-}
-
 function isRunActionAllowed(
   permissions: RunRecord['agentGatewayActionPermissionsJson'] | undefined,
   action: RunActionPermissionKey,
 ) {
   return permissions?.[action] === true;
+}
+
+function getRunTaskTitle(run: RunRecord, t: TFunction) {
+  const title =
+    getStringValue(run.taskTitle).trim() || getStringValue(getObjectRecord(run.resultSummaryJson).title).trim();
+  return title || run.runCode || t('Untitled task');
+}
+
+function RunTaskTitle({ run, t }: { run: RunRecord; t: TFunction }) {
+  const title = getRunTaskTitle(run, t);
+  return (
+    <Typography.Text strong ellipsis={{ tooltip: title }} style={{ display: 'inline-block', maxWidth: 300 }}>
+      {title}
+    </Typography.Text>
+  );
+}
+
+function RunTokenUsageSummary({ usage, t }: { usage?: TokenUsageRecord | null; t: TFunction }) {
+  if (!hasTokenUsage(usage)) {
+    return <Typography.Text type="secondary">-</Typography.Text>;
+  }
+
+  const inputTokens = getTokenUsageNumber(usage?.inputTokens);
+  const outputTokens = getTokenUsageNumber(usage?.outputTokens);
+  const cachedInputTokens = getTokenUsageNumber(usage?.cachedInputTokens);
+  const reasoningOutputTokens = getTokenUsageNumber(usage?.reasoningOutputTokens);
+  const secondaryParts = [
+    inputTokens !== null ? `${t('Input')}: ${formatTokenCount(inputTokens)}` : '',
+    outputTokens !== null ? `${t('Output')}: ${formatTokenCount(outputTokens)}` : '',
+    cachedInputTokens !== null ? `${t('Cached')}: ${formatTokenCount(cachedInputTokens)}` : '',
+    reasoningOutputTokens !== null ? `${t('Reasoning')}: ${formatTokenCount(reasoningOutputTokens)}` : '',
+  ].filter(Boolean);
+
+  return (
+    <Space direction="vertical" size={0}>
+      <Typography.Text>{`${t('Total')}: ${formatTokenCount(getTokenUsageTotal(usage))}`}</Typography.Text>
+      {secondaryParts.length ? <Typography.Text type="secondary">{secondaryParts.join(' / ')}</Typography.Text> : null}
+    </Space>
+  );
+}
+
+function RunRunnerSummary({ run, t }: { run: RunRecord; t: TFunction }) {
+  const runnerStatus = run.runnerStatusJson;
+  const nodeLabel = runnerStatus?.nodeKey || runnerStatus?.nodeId || run.nodeId;
+  const profileLabel = runnerStatus?.profileKey || runnerStatus?.agentProfileId || run.agentProfileId;
+  const profileProvider =
+    runnerStatus?.profileProvider && runnerStatus.profileProvider !== profileLabel
+      ? runnerStatus.profileProvider
+      : null;
+  const profileSummary = [profileLabel, profileProvider].filter(Boolean).join(' / ');
+
+  if (nodeLabel || profileSummary) {
+    return (
+      <Space direction="vertical" size={0}>
+        <Typography.Text>{nodeLabel || t('Waiting for runner')}</Typography.Text>
+        {profileSummary ? <Typography.Text type="secondary">{profileSummary}</Typography.Text> : null}
+      </Space>
+    );
+  }
+
+  return (
+    <Typography.Text type="secondary">{isLiveRunStatus(run.status) ? t('Waiting for runner') : '-'}</Typography.Text>
+  );
 }
 
 function RunSessionSummary({ run, t }: { run: RunRecord; t: TFunction }) {
@@ -725,15 +897,24 @@ function RunSummaryPanel({ run, t }: { run: RunRecord; t: TFunction }) {
   return (
     <Space direction="vertical" size={16} style={{ width: '100%' }}>
       <Descriptions bordered size="small" column={2} title={t('Run summary')}>
+        <Descriptions.Item label={t('Task')} span={2}>
+          <RunTaskTitle run={run} t={t} />
+        </Descriptions.Item>
         <Descriptions.Item label={t('Status')}>{statusTag(run.status)}</Descriptions.Item>
-        <Descriptions.Item label={t('Agent')}>
-          {[run.nodeId, run.agentProfileId].filter(Boolean).join(' / ') || '-'}
+        <Descriptions.Item label={t('Runner')}>
+          <RunRunnerSummary run={run} t={t} />
         </Descriptions.Item>
         <Descriptions.Item label={t('Requested at')}>{formatDateTime(run.requestedAt)}</Descriptions.Item>
         <Descriptions.Item label={t('Started at')}>{formatDateTime(run.startedAt)}</Descriptions.Item>
-        <Descriptions.Item label={t('Finished at')}>{formatDateTime(run.finishedAt)}</Descriptions.Item>
+        <Descriptions.Item label={t('Time')}>{formatRunDuration(run)}</Descriptions.Item>
+        <Descriptions.Item label={t('Tokens')}>
+          <RunTokenUsageSummary usage={run.tokenUsageJson} t={t} />
+        </Descriptions.Item>
         <Descriptions.Item label={t('Terminal status')}>
           {run.terminalStatus ? statusTag(run.terminalStatus) : '-'}
+        </Descriptions.Item>
+        <Descriptions.Item label={t('Last terminal activity')}>
+          {formatDateTime(run.terminalLastActivityAt)}
         </Descriptions.Item>
         <Descriptions.Item label={t('Provider capabilities')} span={2}>
           <Space wrap>
@@ -762,10 +943,9 @@ function RunSummaryPanel({ run, t }: { run: RunRecord; t: TFunction }) {
         <Descriptions.Item label={t('Continuation')} span={2}>
           {[run.continuationReason, run.parentRunId].filter(Boolean).join(' / ') || '-'}
         </Descriptions.Item>
-        <Descriptions.Item label={t('Last terminal activity')}>
-          {formatDateTime(run.terminalLastActivityAt)}
+        <Descriptions.Item label={t('Error summary')} span={2}>
+          {redactPreviewText(run.errorSummary) || '-'}
         </Descriptions.Item>
-        <Descriptions.Item label={t('Error summary')}>{redactPreviewText(run.errorSummary) || '-'}</Descriptions.Item>
         <Descriptions.Item label={t('Result summary')} span={2}>
           <ResultSummaryPreview t={t} value={run.resultSummaryJson} />
         </Descriptions.Item>
@@ -1710,9 +1890,13 @@ export default function AgentGatewayRunsPage() {
   const initialRunId = useInitialRunDetailQuery();
   const [filterForm] = Form.useForm<RunFilterFormValues>();
   const [buildTaskForm] = Form.useForm<BuildTaskFormValues>();
+  const [skillUploadForm] = Form.useForm<SkillUploadFormValues>();
   const buildTaskScenario = Form.useWatch('scenario', buildTaskForm);
   const [runFilters, setRunFilters] = useState<Record<string, unknown>>({});
   const [buildTaskOpen, setBuildTaskOpen] = useState(false);
+  const [skillUploadOpen, setSkillUploadOpen] = useState(false);
+  const [skillZipContentBase64, setSkillZipContentBase64] = useState('');
+  const [skillUploadResult, setSkillUploadResult] = useState<SkillUploadResult | null>(null);
   const [detailOpen, setDetailOpen] = useState(Boolean(initialRunId));
   const [selectedRunId, setSelectedRunId] = useState<string | undefined>(initialRunId);
   const [runDetailsError, setRunDetailsError] = useState<string>();
@@ -1808,7 +1992,7 @@ export default function AgentGatewayRunsPage() {
           title: values.title,
           scenario: values.scenario,
           prompt: values.prompt,
-          skillVersionId: values.skillVersionId,
+          skillVersionIds: values.skillVersionIds,
           cwd: values.cwd || defaultBuildTaskCwd || '.',
           nodeId: runner.nodeId,
           agentProfileId: runner.agentProfileId,
@@ -1837,6 +2021,35 @@ export default function AgentGatewayRunsPage() {
       },
       onError(error) {
         ctx.message?.error(getApiErrorMessage(error, t('Failed to create task run')));
+      },
+    },
+  );
+
+  const uploadSkillVersionRequest = useRequest(
+    async (values: SkillUploadFormValues & { contentBase64: string }) => {
+      const response = await ctx.api.request<SkillUploadResult>({
+        url: 'agent-gateway/skill-versions:upload-zip',
+        method: 'post',
+        data: { ...values },
+      });
+      return getRequiredResponseData(response, t('Failed to upload skill'));
+    },
+    {
+      manual: true,
+      onSuccess(result) {
+        const currentSkillVersionIds = getSkillVersionIds(buildTaskForm.getFieldValue('skillVersionIds'));
+        buildTaskForm.setFieldValue('skillVersionIds', [
+          ...new Set([...currentSkillVersionIds, result.skillVersionId]),
+        ]);
+        setSkillUploadResult(result);
+        setSkillZipContentBase64('');
+        skillUploadForm.resetFields();
+        setSkillUploadOpen(false);
+        buildRunOptionsRequest.run();
+        ctx.message?.success(t('Skill uploaded'));
+      },
+      onError() {
+        ctx.message?.error(t('Failed to upload skill'));
       },
     },
   );
@@ -2399,14 +2612,64 @@ export default function AgentGatewayRunsPage() {
     setBuildTaskOpen(false);
   }, []);
 
+  const openSkillUploadModal = useCallback(() => {
+    setSkillZipContentBase64('');
+    setSkillUploadResult(null);
+    skillUploadForm.setFieldsValue(DEFAULT_SKILL_UPLOAD_FORM_VALUES);
+    setSkillUploadOpen(true);
+  }, [skillUploadForm]);
+
+  const closeSkillUploadModal = useCallback(() => {
+    setSkillUploadOpen(false);
+    setSkillZipContentBase64('');
+    setSkillUploadResult(null);
+    skillUploadForm.resetFields();
+  }, [skillUploadForm]);
+
   const handleBuildTaskScenarioChange = useCallback(
     (scenario: string) => {
       if (scenario !== OPENCODE_UI_BATCH_SCENARIO) {
-        buildTaskForm.setFieldValue('skillVersionId', undefined);
+        buildTaskForm.setFieldValue('skillVersionIds', []);
       }
     },
     [buildTaskForm],
   );
+
+  const submitSkillUpload = useCallback(async () => {
+    try {
+      const values = await skillUploadForm.validateFields();
+      if (!skillZipContentBase64) {
+        ctx.message?.error(t('Skill ZIP file is required'));
+        return;
+      }
+      uploadSkillVersionRequest.run({
+        ...values,
+        contentBase64: skillZipContentBase64,
+      });
+    } catch (error) {
+      if (!isFormValidationError(error)) {
+        ctx.message?.error(t('Failed to upload skill'));
+      }
+    }
+  }, [ctx.message, skillUploadForm, skillZipContentBase64, t, uploadSkillVersionRequest]);
+
+  const handleSkillZipBeforeUpload = useCallback<NonNullable<UploadProps['beforeUpload']>>(
+    async (file) => {
+      try {
+        setSkillZipContentBase64(await readFileAsBase64(file));
+      } catch {
+        setSkillZipContentBase64('');
+        ctx.message?.error(t('Failed to read skill ZIP file'));
+      }
+      return false;
+    },
+    [ctx.message, t],
+  );
+
+  const handleSkillZipRemove = useCallback<NonNullable<UploadProps['onRemove']>>(() => {
+    setSkillZipContentBase64('');
+    return true;
+  }, []);
 
   const submitBuildTask = useCallback(async () => {
     try {
@@ -2418,15 +2681,6 @@ export default function AgentGatewayRunsPage() {
       }
     }
   }, [buildTaskForm, createBuildTaskRequest, ctx.message, t]);
-
-  const openAuditPage = useCallback(() => {
-    const browserPath = getAgentGatewayAuditPath(window.location.pathname);
-    if (ctx.router?.navigate) {
-      ctx.router.navigate(getRouterPathFromBrowserPath(browserPath));
-      return;
-    }
-    window.history.pushState(window.history.state, '', browserPath);
-  }, [ctx.router]);
 
   const renderCancelButton = useCallback(
     (run: RunRecord) => {
@@ -2449,9 +2703,10 @@ export default function AgentGatewayRunsPage() {
   const runColumns = useMemo<ColumnsType<RunRecord>>(
     () => [
       {
-        title: t('Run code'),
-        dataIndex: 'runCode',
-        key: 'runCode',
+        title: t('Task'),
+        key: 'task',
+        width: 320,
+        render: (_value: unknown, record) => <RunTaskTitle run={record} t={t} />,
       },
       {
         title: t('Status'),
@@ -2461,20 +2716,10 @@ export default function AgentGatewayRunsPage() {
         render: (value: string | undefined) => statusTag(value),
       },
       {
-        title: t('Agent'),
-        key: 'agent',
-        render: (_value: unknown, record) => (
-          <Space direction="vertical" size={0}>
-            <Typography.Text>{record.nodeId || '-'}</Typography.Text>
-            <Typography.Text type="secondary">{record.agentProfileId || '-'}</Typography.Text>
-          </Space>
-        ),
-      },
-      {
-        title: t('Session'),
-        key: 'session',
+        title: t('Runner'),
+        key: 'runner',
         width: 220,
-        render: (_value: unknown, record) => <RunSessionSummary run={record} t={t} />,
+        render: (_value: unknown, record) => <RunRunnerSummary run={record} t={t} />,
       },
       {
         title: t('Source'),
@@ -2491,11 +2736,16 @@ export default function AgentGatewayRunsPage() {
         render: (value: string | undefined) => formatDateTime(value),
       },
       {
-        title: t('Finished at'),
-        dataIndex: 'finishedAt',
-        key: 'finishedAt',
+        title: t('Time'),
+        key: 'duration',
+        width: 120,
+        render: (_value: unknown, record) => formatRunDuration(record),
+      },
+      {
+        title: t('Tokens'),
+        key: 'tokens',
         width: 180,
-        render: (value: string | undefined) => formatDateTime(value),
+        render: (_value: unknown, record) => <RunTokenUsageSummary usage={record.tokenUsageJson} t={t} />,
       },
       {
         title: t('Actions'),
@@ -2547,7 +2797,6 @@ export default function AgentGatewayRunsPage() {
     timelineEvents.length,
     Boolean(timelineWarning),
   );
-  const canOpenAuditPage = canOpenAuditFromRuns(runsRequest.data);
   const showTerminalStreamSmoke = isTerminalStreamSmokeEnabled();
   const createStreamTicket = useCallback(
     async (runId: string) => {
@@ -2600,10 +2849,11 @@ export default function AgentGatewayRunsPage() {
   }, [buildTaskForm, buildTaskOpen, defaultBuildTaskCwd]);
 
   useEffect(() => {
-    if (!buildTaskOpen || !preferredBuildSkillVersionId || buildTaskForm.getFieldValue('skillVersionId')) {
+    const currentSkillVersionIds = getSkillVersionIds(buildTaskForm.getFieldValue('skillVersionIds'));
+    if (!buildTaskOpen || !preferredBuildSkillVersionId || currentSkillVersionIds.length) {
       return;
     }
-    buildTaskForm.setFieldValue('skillVersionId', preferredBuildSkillVersionId);
+    buildTaskForm.setFieldValue('skillVersionIds', [preferredBuildSkillVersionId]);
   }, [buildTaskForm, buildTaskOpen, preferredBuildSkillVersionId]);
 
   useEffect(() => {
@@ -2703,13 +2953,6 @@ export default function AgentGatewayRunsPage() {
             <Button type="primary" icon={<PlusOutlined />} onClick={openBuildTask}>
               {t('New task run')}
             </Button>
-            {canOpenAuditPage ? (
-              <Tooltip title={t('Open audit')}>
-                <Button aria-label={t('Open audit')} icon={<AuditOutlined />} onClick={openAuditPage}>
-                  {t('Audit')}
-                </Button>
-              </Tooltip>
-            ) : null}
             <Button icon={<ReloadOutlined />} onClick={runsRequest.refresh}>
               {t('Refresh')}
             </Button>
@@ -2757,7 +3000,7 @@ export default function AgentGatewayRunsPage() {
       </Space>
 
       <Drawer
-        title={selectedRun ? selectedRun.runCode : t('Run details')}
+        title={selectedRun ? getRunTaskTitle(selectedRun, t) : t('Run details')}
         open={detailOpen}
         onClose={closeRunDetails}
         width={1040}
@@ -2949,8 +3192,8 @@ export default function AgentGatewayRunsPage() {
             >
               {({ getFieldValue }) => (
                 <Form.Item
-                  label={t('Skill version')}
-                  name="skillVersionId"
+                  label={t('Skill versions')}
+                  name="skillVersionIds"
                   rules={
                     getFieldValue('scenario') === OPENCODE_UI_BATCH_SCENARIO
                       ? [
@@ -2964,15 +3207,19 @@ export default function AgentGatewayRunsPage() {
                 >
                   <Select
                     allowClear
+                    mode="multiple"
                     showSearch
                     loading={buildRunOptionsRequest.loading}
                     options={buildSkillVersionSelectOptions}
                     optionFilterProp="label"
-                    placeholder={t('Select skill version')}
+                    placeholder={t('Select skill versions')}
                   />
                 </Form.Item>
               )}
             </Form.Item>
+            <Button icon={<UploadOutlined />} onClick={openSkillUploadModal}>
+              {t('Upload skill')}
+            </Button>
             <Form.Item label={t('Runner')} name="runner" rules={[{ required: true, message: t('Runner is required') }]}>
               <Select
                 allowClear
@@ -3000,6 +3247,64 @@ export default function AgentGatewayRunsPage() {
           </Form>
         </Space>
       </Drawer>
+
+      <Modal
+        title={t('Upload skill')}
+        open={skillUploadOpen}
+        onCancel={closeSkillUploadModal}
+        onOk={submitSkillUpload}
+        confirmLoading={uploadSkillVersionRequest.loading}
+        okText={t('Upload')}
+        cancelText={t('Close')}
+        destroyOnClose
+      >
+        <Space direction="vertical" size={16} style={{ width: '100%' }}>
+          <Form<SkillUploadFormValues>
+            form={skillUploadForm}
+            layout="vertical"
+            initialValues={DEFAULT_SKILL_UPLOAD_FORM_VALUES}
+          >
+            <Form.Item
+              label={t('Skill key')}
+              name="skillKey"
+              rules={[{ required: true, message: t('Skill key is required') }]}
+            >
+              <Input />
+            </Form.Item>
+            <Form.Item label={t('Display name')} name="displayName">
+              <Input />
+            </Form.Item>
+            <Form.Item
+              label={t('Version label')}
+              name="versionLabel"
+              rules={[{ required: true, message: t('Version label is required') }]}
+            >
+              <Input placeholder="local" />
+            </Form.Item>
+            <Form.Item label={t('Skill ZIP file')} required>
+              <Upload
+                accept=".zip,application/zip"
+                beforeUpload={handleSkillZipBeforeUpload}
+                maxCount={1}
+                onRemove={handleSkillZipRemove}
+              >
+                <Button icon={<UploadOutlined />}>{t('Select ZIP')}</Button>
+              </Upload>
+            </Form.Item>
+          </Form>
+
+          {skillUploadResult ? (
+            <Alert
+              type="success"
+              showIcon
+              message={t('Skill uploaded')}
+              description={[skillUploadResult.skillKey, skillUploadResult.versionLabel, skillUploadResult.status]
+                .filter(Boolean)
+                .join(' / ')}
+            />
+          ) : null}
+        </Space>
+      </Modal>
     </section>
   );
 }

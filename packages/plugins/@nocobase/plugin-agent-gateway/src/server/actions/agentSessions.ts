@@ -13,8 +13,7 @@ import { Context, Next } from '@nocobase/actions';
 import { Plugin } from '@nocobase/server';
 import { Transaction, UniqueConstraintError } from 'sequelize';
 
-import { AGENT_GATEWAY_ACTIONS, AGENT_GATEWAY_PERMISSIONS, redactObservabilityText } from '../security';
-import { auditAgentActionBestEffort, auditMutatingAgentAction } from '../audit/agentActionAudit';
+import { AGENT_GATEWAY_ACTIONS, redactObservabilityText } from '../security';
 import {
   AGENT_GATEWAY_ERROR_CODES,
   API_PREFIX,
@@ -36,7 +35,6 @@ import {
 import { validateRunLease } from './runLifecycle';
 import {
   AGENT_GATEWAY_ACTION_UNSUPPORTED_CODE,
-  getAgentProviderKey,
   getUnsupportedCapabilityMessage,
   normalizeAgentProviderCapabilities,
 } from '../../shared/providerCapabilities';
@@ -50,31 +48,6 @@ const STANDARD_AGENT_SESSION_COLLECTIONS = ['agAgentSessions'] as const;
 const ROOT_RUN_RESOLUTION_MAX_DEPTH = 50;
 const MAX_RESUME_MESSAGE_LENGTH = 16_000;
 const RESUME_MESSAGE_PREVIEW_LENGTH = 240;
-
-interface ResumeVisibilityAuditState {
-  deniedAuditWritten: boolean;
-}
-
-interface MessageVisibilityAuditBase {
-  action: 'message';
-  sessionId: string;
-  operatorId?: string | number;
-  permissionKey: string;
-  redactedPreview?: string;
-  contentHash?: string;
-  contentSize?: number;
-}
-
-function getErrorCode(error: unknown) {
-  if (!error || typeof error !== 'object') {
-    return '';
-  }
-  return getString((error as { code?: unknown }).code);
-}
-
-function isResourceNotVisibleError(error: unknown) {
-  return getErrorCode(error) === AGENT_GATEWAY_ERROR_CODES.resourceNotVisible;
-}
 
 function serializeModel(model: ModelRecord) {
   return getModelJson(model);
@@ -115,7 +88,7 @@ function hashText(value: string) {
   return createHash('sha256').update(value).digest('hex');
 }
 
-function getMessageAuditFields(message: string) {
+function getResumeMessageFields(message: string) {
   return {
     redactedPreview: redactObservabilityText(message).slice(0, RESUME_MESSAGE_PREVIEW_LENGTH),
     contentHash: hashText(message),
@@ -208,22 +181,6 @@ async function assertResumeSessionVisible(ctx: Context, sessionId: string, trans
       message: 'Run not found',
     });
   }
-}
-
-async function auditMessageSessionVisibilityDenied(options: {
-  ctx: Context;
-  auditBase: MessageVisibilityAuditBase;
-  runId?: string | null;
-  phase: string;
-}) {
-  await auditAgentActionBestEffort(options.ctx, {
-    ...options.auditBase,
-    runId: options.runId || null,
-    resultStatus: 'denied',
-    metadataJson: {
-      phase: options.phase,
-    },
-  });
 }
 
 function throwResourceNotVisible(ctx: Context) {
@@ -351,11 +308,7 @@ async function findContinuationByRequestKey(ctx: Context, continuationRequestKey
 
 async function assertExistingContinuationVisible(options: {
   ctx: Context;
-  sessionId: string;
   run: ModelRecord;
-  continuationRequestKey: string;
-  operatorId: string | number;
-  visibilityAuditState: ResumeVisibilityAuditState;
   transaction?: Transaction;
 }) {
   const runId = String(getModelTargetKey(options.run, 'id'));
@@ -375,19 +328,6 @@ async function assertExistingContinuationVisible(options: {
     return visibleRun;
   }
 
-  await auditAgentActionBestEffort(options.ctx, {
-    action: 'resume',
-    sessionId: options.sessionId,
-    runId,
-    operatorId: options.operatorId,
-    permissionKey: AGENT_GATEWAY_PERMISSIONS.resumeAgentSession,
-    resultStatus: 'denied',
-    metadataJson: {
-      continuationRequestKey: options.continuationRequestKey,
-      phase: 'existing-run-visibility',
-    },
-  });
-  options.visibilityAuditState.deniedAuditWritten = true;
   options.ctx.throw(404, {
     code: AGENT_GATEWAY_ERROR_CODES.resourceNotVisible,
     message: 'Run not found',
@@ -420,7 +360,7 @@ async function assertNoActiveContinuationForSource(
 function assertIdempotentContinuationRequestMatches(
   ctx: Context,
   run: ModelRecord,
-  messageFields: ReturnType<typeof getMessageAuditFields>,
+  messageFields: ReturnType<typeof getResumeMessageFields>,
   resumedFromRunId: string,
 ) {
   const storedHash = getModelString(run, 'continuationMessageHash');
@@ -660,7 +600,7 @@ async function createResumeConversationEvent(options: {
   ctx: Context;
   run: ModelRecord;
   sessionId: string;
-  messageFields: ReturnType<typeof getMessageAuditFields>;
+  messageFields: ReturnType<typeof getResumeMessageFields>;
   operatorId: string | number;
   transaction: Transaction;
 }) {
@@ -695,7 +635,7 @@ async function createContinuationRun(options: {
   provider: string;
   providerSessionId: string;
   message: string;
-  messageFields: ReturnType<typeof getMessageAuditFields>;
+  messageFields: ReturnType<typeof getResumeMessageFields>;
   idempotencyKey: string;
   continuationRequestKey: string;
   operatorId: string | number;
@@ -773,12 +713,11 @@ async function createOrFindContinuationRun(options: {
   ctx: Context;
   sessionId: string;
   message: string;
-  messageFields: ReturnType<typeof getMessageAuditFields>;
+  messageFields: ReturnType<typeof getResumeMessageFields>;
   idempotencyKey: string;
   resumedFromRunId: string;
   continuationRequestKey: string;
   operatorId: string | number;
-  visibilityAuditState: ResumeVisibilityAuditState;
 }) {
   try {
     return await options.ctx.db.sequelize.transaction(async (transaction) => {
@@ -788,11 +727,7 @@ async function createOrFindContinuationRun(options: {
       if (existingRun) {
         const visibleRun = await assertExistingContinuationVisible({
           ctx: options.ctx,
-          sessionId: options.sessionId,
           run: existingRun,
-          continuationRequestKey: options.continuationRequestKey,
-          operatorId: options.operatorId,
-          visibilityAuditState: options.visibilityAuditState,
           transaction,
         });
         const sourceRun = await resolveResumeSourceRunForContinuation({
@@ -859,11 +794,7 @@ async function createOrFindContinuationRun(options: {
     }
     const visibleRun = await assertExistingContinuationVisible({
       ctx: options.ctx,
-      sessionId: options.sessionId,
       run: existingRun,
-      continuationRequestKey: options.continuationRequestKey,
-      operatorId: options.operatorId,
-      visibilityAuditState: options.visibilityAuditState,
     });
     const session = (await options.ctx.db.getRepository('agAgentSessions').findOne({
       filterByTk: options.sessionId,
@@ -892,132 +823,44 @@ async function createOrFindContinuationRun(options: {
   }
 }
 
-function getResumeAuditBase(ctx: Context, sessionId: string, messageFields?: ReturnType<typeof getMessageAuditFields>) {
-  return {
-    action: 'resume' as const,
-    sessionId,
-    operatorId: getCurrentUserId(ctx) || undefined,
-    permissionKey: AGENT_GATEWAY_PERMISSIONS.resumeAgentSession,
-    redactedPreview: messageFields?.redactedPreview,
-    contentHash: messageFields?.contentHash,
-    contentSize: messageFields?.contentSize,
-  };
-}
-
 async function resumeAgentSession(ctx: Context, sessionId: string) {
   const values = getBodyValues(ctx);
-  try {
-    await requireAgentGatewayPermission(
-      ctx,
-      AGENT_GATEWAY_ACTIONS.resumeAgentSession,
-      'Agent Gateway resume permission required',
-    );
-  } catch (error) {
-    const rawMessage = getRawString(values.message);
-    await auditAgentActionBestEffort(ctx, {
-      ...getResumeAuditBase(ctx, sessionId, rawMessage ? getMessageAuditFields(rawMessage) : undefined),
-      resultStatus: 'denied',
-    });
-    throw error;
-  }
+  await requireAgentGatewayPermission(
+    ctx,
+    AGENT_GATEWAY_ACTIONS.resumeAgentSession,
+    'Agent Gateway resume permission required',
+  );
 
   const message = getResumeMessage(ctx, values.message);
-  const messageFields = getMessageAuditFields(message);
+  const messageFields = getResumeMessageFields(message);
   const idempotencyKey = getRequiredIdempotencyKey(ctx, values.idempotencyKey);
   const operatorId = getCurrentUserId(ctx);
   if (!operatorId) {
     ctx.throw(401, 'Authentication required');
   }
   const continuationRequestKey = getContinuationRequestKey(sessionId, operatorId, idempotencyKey);
-  const auditBase = getResumeAuditBase(ctx, sessionId, messageFields);
 
-  await auditMutatingAgentAction(ctx, {
-    ...auditBase,
-    resultStatus: 'accepted',
-    metadataJson: {
-      resumedFromRunId: getString(values.resumedFromRunId) || null,
-      continuationRequestKey,
-    },
+  const result = await createOrFindContinuationRun({
+    ctx,
+    sessionId,
+    message,
+    messageFields,
+    idempotencyKey,
+    resumedFromRunId: getString(values.resumedFromRunId),
+    continuationRequestKey,
+    operatorId,
   });
-
-  const visibilityAuditState: ResumeVisibilityAuditState = {
-    deniedAuditWritten: false,
-  };
-  try {
-    const result = await createOrFindContinuationRun({
-      ctx,
-      sessionId,
-      message,
-      messageFields,
-      idempotencyKey,
-      resumedFromRunId: getString(values.resumedFromRunId),
-      continuationRequestKey,
-      operatorId,
-      visibilityAuditState,
-    });
-    await auditAgentActionBestEffort(ctx, {
-      ...auditBase,
-      runId: getModelTargetKey(result.run, 'id'),
-      provider: getModelString(result.run, 'agentSessionProvider') || undefined,
-      resultStatus: 'succeeded',
-      metadataJson: {
-        deduped: result.deduped,
-        continuationRequestKey,
-        parentRunId: getOptionalModelTargetKey(result.run, 'parentRunId') || null,
-        resumedFromRunId: getOptionalModelTargetKey(result.run, 'resumedFromRunId') || null,
-      },
-    });
-    ctx.body = serializeResumeResponse(result.run, sessionId, result.deduped);
-  } catch (error) {
-    if (!visibilityAuditState.deniedAuditWritten) {
-      if (isResourceNotVisibleError(error)) {
-        await auditAgentActionBestEffort(ctx, {
-          ...auditBase,
-          resultStatus: 'denied',
-          metadataJson: {
-            continuationRequestKey,
-            phase: 'source-run-visibility',
-            resumedFromRunId: getString(values.resumedFromRunId) || null,
-          },
-        });
-        visibilityAuditState.deniedAuditWritten = true;
-      } else {
-        await auditAgentActionBestEffort(ctx, {
-          ...auditBase,
-          resultStatus: 'failed',
-          metadataJson: {
-            continuationRequestKey,
-            errorName: error instanceof Error ? error.name : 'UnknownError',
-          },
-        });
-      }
-    }
-    throw error;
-  }
+  ctx.body = serializeResumeResponse(result.run, sessionId, result.deduped);
 }
 
 async function messageAgentSession(ctx: Context, sessionId: string) {
   const values = getBodyValues(ctx);
   const rawMessage = getRawString(values.message);
-  const messageFields = rawMessage ? getMessageAuditFields(rawMessage) : undefined;
-  const getMessageAuditBase = () => ({
-    ...getResumeAuditBase(ctx, sessionId, messageFields),
-    action: 'message' as const,
-    permissionKey: AGENT_GATEWAY_PERMISSIONS.messageAgentSession,
-  });
-  try {
-    await requireAgentGatewayPermission(
-      ctx,
-      AGENT_GATEWAY_ACTIONS.messageAgentSession,
-      'Agent Gateway message permission required',
-    );
-  } catch (error) {
-    await auditAgentActionBestEffort(ctx, {
-      ...getMessageAuditBase(),
-      resultStatus: 'denied',
-    });
-    throw error;
-  }
+  await requireAgentGatewayPermission(
+    ctx,
+    AGENT_GATEWAY_ACTIONS.messageAgentSession,
+    'Agent Gateway message permission required',
+  );
 
   if (!rawMessage.trim()) {
     ctx.throw(400, 'message is required');
@@ -1049,12 +892,6 @@ async function messageAgentSession(ctx: Context, sessionId: string) {
         filterByTk: latestRunId,
       });
       if (existingLatestRun) {
-        await auditMessageSessionVisibilityDenied({
-          ctx,
-          auditBase: getMessageAuditBase(),
-          runId: latestRunId,
-          phase: 'latest-run-visibility',
-        });
         throwResourceNotVisible(ctx);
       }
       ctx.throw(404, 'Run not found');
@@ -1070,28 +907,10 @@ async function messageAgentSession(ctx: Context, sessionId: string) {
       ),
     });
     if (!visibleSessionRun) {
-      await auditMessageSessionVisibilityDenied({
-        ctx,
-        auditBase: getMessageAuditBase(),
-        phase: 'session-run-visibility',
-      });
       throwResourceNotVisible(ctx);
     }
   }
 
-  const capabilities = getRecord(getModelValue(session, 'capabilitiesJson'));
-  const provider = getAgentProviderKey(getModelString(session, 'provider'));
-  const normalizedCapabilities = normalizeAgentProviderCapabilities(provider, capabilities);
-  await auditAgentActionBestEffort(ctx, {
-    ...getMessageAuditBase(),
-    provider,
-    resultStatus: 'denied',
-    metadataJson: {
-      reason: 'unsupported-capability',
-      liveSemanticMessage: normalizedCapabilities.liveSemanticMessage === true,
-      stdinMessage: normalizedCapabilities.stdinMessage === true,
-    },
-  });
   ctx.throw(409, {
     code: AGENT_GATEWAY_ACTION_UNSUPPORTED_CODE,
     message: getUnsupportedCapabilityMessage('liveSemanticMessage'),

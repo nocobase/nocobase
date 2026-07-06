@@ -21,13 +21,7 @@ import {
   TERMINAL_STREAM_BROWSER_TICKET_PROTOCOL_PREFIX,
   TERMINAL_STREAM_WS_PATH,
 } from '../src/shared/terminalStreamProtocol';
-import {
-  JsonRecord,
-  getListItems,
-  getString,
-  parseAdminFlags,
-  requestJson,
-} from './terminal-stream-smoke-script-utils';
+import { JsonRecord, getListItems, getString, parseAdminFlags } from './terminal-stream-smoke-script-utils';
 
 type DenialAction =
   | 'dispatch'
@@ -77,13 +71,6 @@ interface AttemptResult {
   expectedHttpStatus?: number;
   responseErrorCode?: string;
   expectedApplicationErrorCode?: string | null;
-  expectedAuditAction?: string;
-  expectedAuditStatus?: string;
-  auditExpected?: boolean;
-  auditFilter?: JsonRecord;
-  auditCountBefore?: number | null;
-  auditCountAfter?: number | null;
-  auditCheck?: string;
   controlRequestCount?: number | null;
   controlRequestCheck?: string;
   dispatchRunCountBefore?: number | null;
@@ -98,14 +85,8 @@ interface ExpectedAccessEntry {
   target?: string;
   expectedHttpStatus: number;
   expectedApplicationErrorCode?: string | null;
-  auditExpected?: boolean;
   controlRequestCountMustRemainZero?: boolean;
   dispatchRunCreationMustRemainZero?: boolean;
-}
-
-interface AuditMarker {
-  count: number;
-  latestKey: string;
 }
 
 const ACTIONS = new Set<DenialAction>([
@@ -236,9 +217,6 @@ function parseExpectedAccess(flags: Record<string, string>): ExpectedAccessEntry
       expectedHttpStatus,
       expectedApplicationErrorCode:
         record.expectedApplicationErrorCode === null ? null : getString(record.expectedApplicationErrorCode),
-      auditExpected: Object.prototype.hasOwnProperty.call(record, 'auditExpected')
-        ? Boolean(record.auditExpected)
-        : undefined,
       controlRequestCountMustRemainZero: Boolean(record.controlRequestCountMustRemainZero),
       dispatchRunCreationMustRemainZero: Boolean(record.dispatchRunCreationMustRemainZero),
     };
@@ -353,55 +331,6 @@ function containsSensitiveData(result: RawResult, args: DenialArgs) {
   return false;
 }
 
-function getAuditExpectation(action: DenialAction) {
-  if (action === 'dispatch') {
-    return {
-      expectedAuditAction: 'dispatch',
-      expectedAuditStatus: 'denied',
-    };
-  }
-  if (action === 'raw-write' || action === 'raw-write-legacy' || action === 'raw-write-ws-aliases') {
-    return {
-      expectedAuditAction: 'rawTerminalWriteDenied',
-      expectedAuditStatus: 'denied',
-    };
-  }
-  if (action === 'terminal') {
-    return {
-      expectedAuditAction: 'readTerminal',
-      expectedAuditStatus: 'denied',
-    };
-  }
-  if (action === 'artifacts') {
-    return {
-      expectedAuditAction: 'readArtifacts',
-      expectedAuditStatus: 'denied',
-    };
-  }
-  if (action === 'raw-logs') {
-    return {
-      expectedAuditAction: 'readRawLogs',
-      expectedAuditStatus: 'denied',
-    };
-  }
-  if (action === 'session-messages') {
-    return {
-      expectedAuditAction: 'readSessionMessages',
-      expectedAuditStatus: 'denied',
-    };
-  }
-  if (action === 'run-details' || action === 'hidden-run') {
-    return {
-      expectedAuditAction: 'readRunDetails',
-      expectedAuditStatus: 'denied',
-    };
-  }
-  return {
-    expectedAuditAction: action,
-    expectedAuditStatus: 'denied',
-  };
-}
-
 function findExpectedAccess(args: DenialArgs, action: DenialAction) {
   return args.expectedAccess.find((entry) => entry.userEmail === args.email && entry.action === action);
 }
@@ -430,68 +359,8 @@ function requiresAdminCounts(args: DenialArgs) {
     return true;
   }
   return expectedActions(args).some(({ expected }) =>
-    Boolean(
-      expected &&
-        (expected.auditExpected !== undefined ||
-          expected.controlRequestCountMustRemainZero ||
-          expected.dispatchRunCreationMustRemainZero),
-    ),
+    Boolean(expected && (expected.controlRequestCountMustRemainZero || expected.dispatchRunCreationMustRemainZero)),
   );
-}
-
-async function findOperatorId(args: DenialArgs, adminToken: string | null) {
-  if (!adminToken) {
-    return null;
-  }
-  const search = new URLSearchParams();
-  search.set(
-    'filter',
-    JSON.stringify({
-      email: args.email,
-    }),
-  );
-  const data = await requestJson<unknown>(args.baseUrl, `/api/users:list?${search.toString()}`, {
-    token: adminToken,
-  });
-  const operator = getListItems(data)[0];
-  return getString(operator?.id) || null;
-}
-
-function getAuditTargetFilter(args: DenialArgs, action: DenialAction) {
-  if (action === 'dispatch') {
-    return {};
-  }
-  if (action === 'resume' || action === 'message') {
-    return {
-      sessionId: args.sessionId,
-    };
-  }
-  if (action === 'raw-write' || action === 'raw-write-legacy' || action === 'raw-write-ws-aliases') {
-    return {};
-  }
-  if (action === 'hidden-run') {
-    return {
-      runId: args.hiddenRunId,
-    };
-  }
-  if (action === 'run-details') {
-    return {
-      runId: args.runId,
-    };
-  }
-  return {
-    runId: args.runId,
-  };
-}
-
-function getAuditFilter(args: DenialArgs, action: DenialAction, operatorId: string | null) {
-  const audit = getAuditExpectation(action);
-  return {
-    action: audit.expectedAuditAction,
-    resultStatus: audit.expectedAuditStatus,
-    ...(operatorId ? { operatorId } : {}),
-    ...getAuditTargetFilter(args, action),
-  };
 }
 
 function buildAttempt(action: DenialAction, args: DenialArgs) {
@@ -816,34 +685,6 @@ async function listCollection(args: DenialArgs, adminToken: string, collection: 
   return getListItems(result.body).filter((item) => matchesFilter(item, filter));
 }
 
-async function getAuditMarker(
-  adminToken: string | null,
-  args: DenialArgs,
-  action: DenialAction,
-  operatorId: string | null,
-) {
-  if (!adminToken) {
-    return null;
-  }
-  const records = await listCollection(
-    args,
-    adminToken,
-    'agAgentActionAudits',
-    getAuditFilter(args, action, operatorId),
-  );
-  return {
-    count: records.length,
-    latestKey: getRecordKey(records[0]),
-  };
-}
-
-function getRecordKey(record: JsonRecord | undefined) {
-  if (!record) {
-    return '';
-  }
-  return `${getString(record.createdAt)}:${getString(record.id)}`;
-}
-
 function matchesFilter(item: JsonRecord, filter: JsonRecord) {
   return Object.entries(filter).every(([key, expected]) => matchesFilterValue(item[key], expected));
 }
@@ -885,21 +726,6 @@ function assertExpectedAccess(
   if (!expectedCode && actualCode) {
     throw new Error(`${action} expected no application error code but returned ${actualCode}`);
   }
-  if (
-    expected.auditExpected !== undefined &&
-    (attemptResult.auditCountBefore === null || attemptResult.auditCountAfter === null)
-  ) {
-    throw new Error(`${action} expected auditExpected=${expected.auditExpected} but audit count was not checked`);
-  }
-  if (expected.auditExpected !== undefined) {
-    const auditIncreased = attemptResult.auditCheck === 'recorded';
-    if (Boolean(expected.auditExpected) !== auditIncreased) {
-      throw new Error(
-        `${action} expected auditExpected=${expected.auditExpected} but audit count changed from ` +
-          `${auditCountBefore} to ${auditCountAfter}`,
-      );
-    }
-  }
   if (expected.controlRequestCountMustRemainZero && attemptResult.controlRequestCount === null) {
     throw new Error(`${action} expected zero control requests but control request count was not checked`);
   }
@@ -932,16 +758,12 @@ async function main() {
   const adminToken =
     args.adminEmail && args.adminPassword ? await signIn(args.baseUrl, args.adminEmail, args.adminPassword) : null;
   if (args.expectDenied && !adminToken) {
-    throw new Error('Admin credentials are required with --expect-denied to verify audit and side-effect counts.');
+    throw new Error('Admin credentials are required with --expect-denied to verify side-effect counts.');
   }
   if (!adminToken && requiresAdminCounts(args)) {
     throw new Error(
-      'Admin credentials are required to verify expected audit and side-effect counts. Pass --admin-email and --admin-password.',
+      'Admin credentials are required to verify expected side-effect counts. Pass --admin-email and --admin-password.',
     );
-  }
-  const operatorId = await findOperatorId(args, adminToken);
-  if (adminToken && !operatorId) {
-    throw new Error(`Could not find operator user id for ${args.email}`);
   }
   const attempts: AttemptResult[] = [];
 
@@ -949,7 +771,6 @@ async function main() {
     const attempt = buildAttempt(action, args);
     const expected = findExpectedAccess(args, action);
     const dispatchRunCountBefore = await countDispatchRuns(args, adminToken, action);
-    const auditMarkerBefore = await getAuditMarker(adminToken, args, action, operatorId);
     const result =
       action === 'raw-write-ws-aliases'
         ? await requestWsRawWriteAliases(args, token)
@@ -958,13 +779,8 @@ async function main() {
             token,
             body: attempt.body,
           });
-    const auditMarkerAfter = await getAuditMarker(adminToken, args, action, operatorId);
     const controlRequestCount = await countControlRequests(args, adminToken, action);
     const dispatchRunCountAfter = await countDispatchRuns(args, adminToken, action);
-    const auditExpected = expected?.auditExpected ?? getAuditExpectation(action).expectedAuditStatus === 'denied';
-    const auditRecorded = Boolean(
-      auditMarkerBefore && auditMarkerAfter && auditMarkerAfter.latestKey !== auditMarkerBefore.latestKey,
-    );
     const attemptResult: AttemptResult = {
       action,
       routeOrFrame: attempt.route,
@@ -972,17 +788,6 @@ async function main() {
       expectedHttpStatus: expected?.expectedHttpStatus,
       responseErrorCode: getResponseErrorCode(result) || undefined,
       expectedApplicationErrorCode: expected?.expectedApplicationErrorCode,
-      ...getAuditExpectation(action),
-      auditExpected,
-      auditFilter: getAuditFilter(args, action, operatorId),
-      auditCountBefore: auditMarkerBefore?.count ?? null,
-      auditCountAfter: auditMarkerAfter?.count ?? null,
-      auditCheck:
-        auditMarkerBefore === null || auditMarkerAfter === null
-          ? 'not_checked'
-          : auditRecorded
-            ? 'recorded'
-            : 'not_recorded',
       controlRequestCount,
       controlRequestCheck:
         controlRequestCount === null

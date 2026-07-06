@@ -97,6 +97,8 @@ function normalizeAgentMessage(event: JsonRecord): NormalizedAgentEvent[] {
   ];
 }
 
+const UNATTENDED_EXEC_ARGS = ['--skip-git-repo-check'];
+
 export const codexAdapter: AgentAdapter = {
   provider: 'codex',
   capabilities: normalizeAgentProviderCapabilities('codex'),
@@ -104,7 +106,7 @@ export const codexAdapter: AgentAdapter = {
     const structuredArgs = input.outputMode === 'terminal' ? [] : ['--json'];
     return {
       commandKey: 'codex',
-      args: ['exec', ...structuredArgs, ...(input.extraArgs || []), input.prompt],
+      args: ['exec', ...UNATTENDED_EXEC_ARGS, ...structuredArgs, ...(input.extraArgs || []), input.prompt],
       cwd: input.cwd,
       timeoutMs: input.timeoutMs,
     };
@@ -113,7 +115,15 @@ export const codexAdapter: AgentAdapter = {
     const structuredArgs = input.outputMode === 'terminal' ? [] : ['--json'];
     return {
       commandKey: 'codex',
-      args: ['exec', 'resume', ...structuredArgs, ...(input.extraArgs || []), input.providerSessionId, input.message],
+      args: [
+        'exec',
+        'resume',
+        ...UNATTENDED_EXEC_ARGS,
+        ...structuredArgs,
+        ...(input.extraArgs || []),
+        input.providerSessionId,
+        input.message,
+      ],
       cwd: input.cwd,
       timeoutMs: input.timeoutMs,
     };

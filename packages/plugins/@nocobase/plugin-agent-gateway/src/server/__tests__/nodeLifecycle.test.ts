@@ -105,6 +105,8 @@ describe('agent gateway node lifecycle APIs', () => {
     expect(data.bootstrapCommand).toContain("AGENT_GATEWAY_SERVER_URL='https://nocobase.example.test'");
     expect(data.bootstrapCommand).toContain("AGENT_GATEWAY_NODE_KEY='node-1'");
     expect(data.bootstrapCommand).toContain('AGENT_GATEWAY_INVITE_TOKEN');
+    expect(data.bootstrapCommand).toContain("AGENT_GATEWAY_SERVICE_SCOPE='auto'");
+    expect(data.bootstrapCommand).toContain("AGENT_GATEWAY_HEALTH_CHECK='true'");
     expect(data.bootstrapCommand).not.toContain('--invite-token');
     expect(data.registerCommand).toBe(data.bootstrapCommand);
     expect(inviteToken).toMatch(/^ag_inv_/);
@@ -124,8 +126,13 @@ describe('agent gateway node lifecycle APIs', () => {
     expect(response.status).toBe(200);
     expect(response.text).toMatch(/^#!\/usr\/bin\/env bash/);
     expect(response.text).toContain('AGENT_GATEWAY_NODE_KEY');
+    expect(response.text).toContain('AGENT_GATEWAY_SERVICE_SCOPE');
     expect(response.text).toContain('/api/agent-gateway/daemon-package.tgz');
     expect(response.text).toContain('--invite-token-stdin');
+    expect(response.text).toContain('/etc/systemd/system/$SERVICE_NAME.service');
+    expect(response.text).toContain('systemctl enable --now "$SERVICE_NAME.service"');
+    expect(response.text).toContain('EnvironmentFile=$ENV_FILE');
+    expect(response.text).toContain('Agent Gateway daemon heartbeat verified');
     expect(response.text).toContain('tmux new-session');
   });
 

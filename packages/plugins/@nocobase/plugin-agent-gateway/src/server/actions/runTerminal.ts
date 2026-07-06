@@ -15,13 +15,7 @@ import { UniqueConstraintError } from 'sequelize';
 import type { Transaction } from 'sequelize';
 
 import { captureTmuxSession, isManagedTmuxSessionName } from '../../daemon/tmuxTerminal';
-import {
-  AGENT_GATEWAY_ACTIONS,
-  AGENT_GATEWAY_PERMISSIONS,
-  redactEventPayload,
-  redactObservabilityText,
-} from '../security';
-import { auditAgentActionBestEffort, auditReadAgentAction } from '../audit/agentActionAudit';
+import { AGENT_GATEWAY_ACTIONS, redactEventPayload, redactObservabilityText } from '../security';
 import {
   API_PREFIX,
   JsonRecord,
@@ -47,7 +41,6 @@ import {
 } from '../../shared/providerCapabilities';
 import { getRunProviderCapabilitySummary, isRunCapabilitySupported } from './capabilityUtils';
 
-const MAX_TERMINAL_INPUT_CHARS = 4000;
 const DEFAULT_CAPTURE_LINES = 2000;
 const MAX_CAPTURE_LINES = 5000;
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -64,8 +57,10 @@ const CONTROL_ERROR_CODES = {
   rawWriteDisabled: 'TERMINAL_RAW_WRITE_DISABLED',
 } as const;
 
-function getBoolean(value: unknown) {
-  return value === true;
+interface TerminalSnapshotData {
+  available: boolean;
+  output: string;
+  capturedAt: string;
 }
 
 function getCaptureLines(ctx: Context) {
@@ -103,52 +98,15 @@ function serializeRun(run: ModelRecord) {
 }
 
 async function requireTerminalRead(ctx: Context, runId: string) {
-  try {
-    await requireAgentGatewayPermission(
-      ctx,
-      AGENT_GATEWAY_ACTIONS.readTerminal,
-      'Agent Gateway terminal read permission required',
-    );
-  } catch (error) {
-    await auditAgentActionBestEffort(ctx, {
-      action: 'readTerminal',
-      runId,
-      operatorId: getCurrentUserId(ctx) || undefined,
-      permissionKey: AGENT_GATEWAY_PERMISSIONS.readTerminal,
-      resultStatus: 'denied',
-      metadataJson: {
-        routeAction: 'terminal:snapshot',
-        phase: 'permission',
-      },
-    });
-    throw error;
-  }
+  await requireAgentGatewayPermission(
+    ctx,
+    AGENT_GATEWAY_ACTIONS.readTerminal,
+    'Agent Gateway terminal read permission required',
+  );
 }
 
-async function requireTerminalAction(
-  ctx: Context,
-  action: string,
-  message: string,
-  deniedAudit?: {
-    runId: string;
-    permissionKey: string;
-    action: 'interrupt' | 'rawTerminalWriteDenied' | 'terminate';
-  },
-) {
-  try {
-    await requireAgentGatewayPermission(ctx, action, message);
-  } catch (error) {
-    if (deniedAudit) {
-      await auditAgentActionBestEffort(ctx, {
-        action: deniedAudit.action,
-        runId: deniedAudit.runId,
-        operatorId: getCurrentUserId(ctx) || undefined,
-        permissionKey: deniedAudit.permissionKey,
-        resultStatus: 'denied',
-      });
-    }
-    throw error;
-  }
+async function requireTerminalAction(ctx: Context, action: string, message: string) {
+  await requireAgentGatewayPermission(ctx, action, message);
 }
 
 async function findRun(ctx: Context, runId: string, transaction?: Transaction) {
@@ -178,7 +136,7 @@ function getTerminalSessionName(ctx: Context, run: ModelRecord) {
   return sessionName;
 }
 
-function getTerminalSnapshotBody(run: ModelRecord, snapshot: Awaited<ReturnType<typeof captureTmuxSession>> | null) {
+function getTerminalSnapshotBody(run: ModelRecord, snapshot: TerminalSnapshotData | null) {
   return {
     backend: getModelString(run, 'terminalBackend') || null,
     terminalStatus: getModelString(run, 'terminalStatus') || null,
@@ -190,37 +148,40 @@ function getTerminalSnapshotBody(run: ModelRecord, snapshot: Awaited<ReturnType<
   };
 }
 
-function getRunAuditFields(ctx: Context, run: ModelRecord) {
-  return {
-    runId: getModelString(run, 'id'),
-    sessionId: getModelString(run, 'agentSessionId') || undefined,
-    operatorId: getCurrentUserId(ctx) || undefined,
-    provider: getModelString(run, 'agentSessionProvider') || undefined,
-  };
+function getTailLines(value: string, maxLines: number) {
+  const lines = value.replace(/\r/g, '\n').split('\n');
+  return lines.slice(Math.max(0, lines.length - maxLines)).join('\n');
 }
 
-async function auditTerminalRead(ctx: Context, run: ModelRecord, metadataJson: JsonRecord) {
-  await auditReadAgentAction(ctx, {
-    action: 'readTerminal',
-    ...getRunAuditFields(ctx, run),
-    permissionKey: AGENT_GATEWAY_PERMISSIONS.readTerminal,
-    resultStatus: 'succeeded',
-    metadataJson,
-  });
-}
-
-async function auditTerminalReadDenied(ctx: Context, runId: string, metadataJson: JsonRecord) {
-  await auditAgentActionBestEffort(ctx, {
-    action: 'readTerminal',
-    runId,
-    operatorId: getCurrentUserId(ctx) || undefined,
-    permissionKey: AGENT_GATEWAY_PERMISSIONS.readTerminal,
-    resultStatus: 'denied',
-    metadataJson: {
-      routeAction: 'terminal:snapshot',
-      ...metadataJson,
+async function getTerminalLiveSnapshotFallback(
+  ctx: Context,
+  runId: string,
+  lines: number,
+): Promise<TerminalSnapshotData | null> {
+  const events = (await ctx.db.getRepository('agAgentConversationEvents').find({
+    filter: {
+      runId,
+      source: 'terminal-live',
     },
-  });
+    sort: ['sequence'],
+  })) as ModelRecord[];
+  const output = getTailLines(
+    events
+      .map((event) => {
+        const contentText = getModelValue(event, 'contentText');
+        return typeof contentText === 'string' ? redactObservabilityText(contentText) : '';
+      })
+      .join(''),
+    lines,
+  );
+  if (!output) {
+    return null;
+  }
+  return {
+    available: true,
+    output,
+    capturedAt: new Date().toISOString(),
+  };
 }
 
 async function updateTerminalLastActivity(ctx: Context, runId: string, transaction?: Transaction) {
@@ -278,26 +239,11 @@ async function appendTerminalControlEvent(
 
 async function snapshotTerminal(ctx: Context, runId: string) {
   await requireTerminalRead(ctx, runId);
-  let run: ModelRecord;
-  try {
-    run = await findRunVisible(ctx, runId);
-  } catch (error) {
-    await auditTerminalReadDenied(ctx, runId, {
-      phase: 'visibility',
-      reason: error instanceof Error ? error.message : String(error),
-    });
-    throw error;
-  }
+  const run = await findRunVisible(ctx, runId);
   const sessionName = getTerminalSessionName(ctx, run);
   const lines = getCaptureLines(ctx);
   const capabilitySummary = await getRunProviderCapabilitySummary(ctx, run);
   if (!isRunCapabilitySupported(capabilitySummary, 'terminalOutput')) {
-    await auditTerminalRead(ctx, run, {
-      available: false,
-      lines,
-      unsupportedCapability: 'terminalOutput',
-      provider: capabilitySummary.provider,
-    });
     ctx.throw(409, {
       code: AGENT_GATEWAY_ACTION_UNSUPPORTED_CODE,
       message: getUnsupportedCapabilityMessage('terminalOutput'),
@@ -305,58 +251,16 @@ async function snapshotTerminal(ctx: Context, runId: string) {
   }
   if (getModelString(run, 'terminalBackend') !== 'tmux' || !sessionName) {
     ctx.body = getTerminalSnapshotBody(run, null);
-    await auditTerminalRead(ctx, run, {
-      available: false,
-      lines,
-    });
     return;
   }
 
-  const snapshot = await captureTmuxSession(sessionName, lines);
+  const tmuxSnapshot = await captureTmuxSession(sessionName, lines);
+  const snapshot = tmuxSnapshot.available ? tmuxSnapshot : await getTerminalLiveSnapshotFallback(ctx, runId, lines);
   ctx.body = getTerminalSnapshotBody(run, snapshot);
-  await auditTerminalRead(ctx, run, {
-    available: Boolean(snapshot.available),
-    lines,
-  });
 }
 
-function getRawTerminalWriteAuditMetadata(values: JsonRecord, routeAction: 'terminal:send' | 'terminal:write') {
-  const input = values.input;
-  const inputType = input === null ? 'null' : Array.isArray(input) ? 'array' : typeof input;
-  const inputSizeBytes = typeof input === 'string' ? Buffer.byteLength(input) : null;
-  const inputTooLarge = typeof input === 'string' ? input.length > MAX_TERMINAL_INPUT_CHARS : false;
-  return {
-    routeAction,
-    appendEnter: values.appendEnter === undefined ? true : getBoolean(values.appendEnter),
-    inputPresent: input !== undefined,
-    inputType,
-    inputSizeBytes,
-    inputTooLarge,
-  };
-}
-
-async function auditRawTerminalWriteDenied(ctx: Context, runId: string, metadataJson: JsonRecord = {}) {
-  const run = await assertRunVisible(ctx, runId, 'get').catch(() => null);
-  await auditAgentActionBestEffort(ctx, {
-    action: 'rawTerminalWriteDenied',
-    runId: runId || undefined,
-    sessionId: run ? getModelString(run as ModelRecord, 'agentSessionId') || undefined : undefined,
-    operatorId: getCurrentUserId(ctx) || undefined,
-    permissionKey: AGENT_GATEWAY_PERMISSIONS.writeTerminalRaw,
-    resultStatus: 'denied',
-    provider: run ? getModelString(run as ModelRecord, 'agentSessionProvider') || undefined : undefined,
-    metadataJson: {
-      code: 'TERMINAL_RAW_WRITE_DISABLED',
-      runVisible: Boolean(run),
-      ...metadataJson,
-    },
-  });
-}
-
-async function sendTerminalInput(ctx: Context, runId: string, routeAction: 'terminal:send' | 'terminal:write') {
+async function sendTerminalInput(ctx: Context) {
   await requireLoggedIn(ctx);
-  const values = getBodyValues(ctx);
-  await auditRawTerminalWriteDenied(ctx, runId, getRawTerminalWriteAuditMetadata(values, routeAction));
   ctx.throw(403, {
     code: CONTROL_ERROR_CODES.rawWriteDisabled,
     message: 'Raw terminal write is disabled',
@@ -396,10 +300,6 @@ function getRequiredControlIdempotencyKey(ctx: Context, value: unknown) {
     ctx.throw(413, 'idempotencyKey is too large');
   }
   return idempotencyKey;
-}
-
-function getControlPermissionKey(action: 'interrupt' | 'terminate') {
-  return action === 'interrupt' ? AGENT_GATEWAY_PERMISSIONS.interruptRun : AGENT_GATEWAY_PERMISSIONS.terminateRun;
 }
 
 function getControlRequestKey(
@@ -573,29 +473,12 @@ async function assertControlSupported(ctx: Context, run: ModelRecord, action: 'i
   }
 }
 
-async function auditControlDenied(
-  ctx: Context,
-  run: ModelRecord,
-  action: 'interrupt' | 'terminate',
-  permissionKey: string,
-  metadataJson: JsonRecord = {},
-) {
-  await auditAgentActionBestEffort(ctx, {
-    action,
-    ...getRunAuditFields(ctx, run),
-    permissionKey,
-    resultStatus: 'denied',
-    metadataJson,
-  });
-}
-
 async function createOrFindControlRequest(options: {
   ctx: Context;
   run: ModelRecord;
   action: 'interrupt' | 'terminate';
   reason: string;
   idempotencyKey: string;
-  permissionKey: string;
 }) {
   const operatorId = getCurrentUserId(options.ctx);
   if (!operatorId) {
@@ -641,21 +524,6 @@ async function createOrFindControlRequest(options: {
         transaction,
       })) as ModelRecord;
 
-      await options.ctx.db.getRepository('agAgentActionAudits').create({
-        values: {
-          id: randomUUID(),
-          action: options.action,
-          ...getRunAuditFields(options.ctx, lockedRun),
-          permissionKey: options.permissionKey,
-          resultStatus: 'accepted',
-          metadataJson: {
-            controlRequestId,
-            idempotent: false,
-          },
-        },
-        transaction,
-      });
-
       if (options.action === 'terminate') {
         await options.ctx.db.getRepository('agRuns').update({
           filterByTk: runId,
@@ -695,36 +563,14 @@ async function createOrFindControlRequest(options: {
 async function enqueueTerminalControl(ctx: Context, runId: string, action: 'interrupt' | 'terminate') {
   const permissionAction =
     action === 'interrupt' ? AGENT_GATEWAY_ACTIONS.interruptRun : AGENT_GATEWAY_ACTIONS.terminateRun;
-  const permissionKey = getControlPermissionKey(action);
   await requireTerminalAction(
     ctx,
     permissionAction,
     action === 'interrupt'
       ? 'Agent Gateway interrupt permission required'
       : 'Agent Gateway terminate permission required',
-    {
-      runId,
-      permissionKey,
-      action,
-    },
   );
-  let run: ModelRecord;
-  try {
-    run = await findRunVisible(ctx, runId);
-  } catch (error) {
-    await auditAgentActionBestEffort(ctx, {
-      action,
-      runId,
-      operatorId: getCurrentUserId(ctx) || undefined,
-      permissionKey,
-      resultStatus: 'denied',
-      metadataJson: {
-        phase: 'visibility',
-        reason: error instanceof Error ? error.message : String(error),
-      },
-    });
-    throw error;
-  }
+  const run = await findRunVisible(ctx, runId);
   const values = getBodyValues(ctx);
   const reason = getControlReason(ctx, values.reason);
   const idempotencyKey = getRequiredControlIdempotencyKey(ctx, values.idempotencyKey);
@@ -737,9 +583,6 @@ async function enqueueTerminalControl(ctx: Context, runId: string, action: 'inte
       respondWithExistingControlRequest(ctx, runId, status, action, existingControlRequest);
       return;
     }
-    await auditControlDenied(ctx, run, action, permissionKey, {
-      reason: error instanceof Error ? error.message : String(error),
-    });
     throw error;
   }
   if (existingControlRequest) {
@@ -753,7 +596,6 @@ async function enqueueTerminalControl(ctx: Context, runId: string, action: 'inte
     action,
     reason,
     idempotencyKey,
-    permissionKey,
   });
   if (action === 'terminate') {
     await cancelRun(ctx, runId, { requirePermission: false }).catch(() => {
@@ -817,11 +659,6 @@ async function getControlRequestStatus(ctx: Context, runId: string, requestId: s
     action === 'interrupt'
       ? 'Agent Gateway interrupt permission required'
       : 'Agent Gateway terminate permission required',
-    {
-      runId,
-      permissionKey: getControlPermissionKey(action),
-      action,
-    },
   );
   await findRunVisible(ctx, runId);
 
@@ -876,28 +713,6 @@ function getAckStatus(ctx: Context, value: unknown) {
   return status as 'accepted' | 'delivered' | 'succeeded' | 'failed';
 }
 
-async function auditControlAckResult(
-  ctx: Context,
-  run: ModelRecord,
-  request: ModelRecord,
-  status: 'succeeded' | 'failed',
-) {
-  const action = getModelString(request, 'action') as 'interrupt' | 'terminate';
-  await auditAgentActionBestEffort(ctx, {
-    action,
-    runId: getModelString(run, 'id'),
-    sessionId: getModelString(run, 'agentSessionId') || undefined,
-    operatorId: getModelValue(request, 'requestedById') as string | number | undefined,
-    permissionKey: getControlPermissionKey(action),
-    resultStatus: status,
-    provider: getModelString(run, 'agentSessionProvider') || undefined,
-    metadataJson: {
-      controlRequestId: getModelTargetKey(request, 'id'),
-      ackedByNodeId: getModelString(run, 'nodeId') || undefined,
-    },
-  });
-}
-
 async function ackControlRequest(ctx: Context, nodeId: string, runId: string, requestId: string) {
   const values = getBodyValues(ctx);
   const ackStatus = getAckStatus(ctx, values.status);
@@ -927,9 +742,7 @@ async function ackControlRequest(ctx: Context, nodeId: string, runId: string, re
         ctx.throw(409, 'Control request already completed');
       }
       return {
-        run: lease.run,
         request,
-        finalAuditStatus: null,
       };
     }
     if (currentStatus === 'accepted' && ackStatus !== 'delivered') {
@@ -937,9 +750,7 @@ async function ackControlRequest(ctx: Context, nodeId: string, runId: string, re
     }
     if (currentStatus === 'delivered' && ackStatus === 'delivered') {
       return {
-        run: lease.run,
         request,
-        finalAuditStatus: null,
       };
     }
     const now = new Date();
@@ -978,16 +789,11 @@ async function ackControlRequest(ctx: Context, nodeId: string, runId: string, re
       );
     }
     return {
-      run: lease.run,
       request: updated,
-      finalAuditStatus: ackStatus === 'succeeded' || ackStatus === 'failed' ? ackStatus : null,
     };
   });
   if (!result) {
     return;
-  }
-  if (result.finalAuditStatus) {
-    await auditControlAckResult(ctx, result.run, result.request, result.finalAuditStatus);
   }
   ctx.body = serializeControlRequest(result.request);
 }
@@ -1082,7 +888,7 @@ export function registerRunTerminalRoutes(plugin: Plugin) {
         const [, runId, action] = terminalActionMatch;
         assertRunId(ctx, runId);
         if (action === 'send' || action === 'write') {
-          await sendTerminalInput(ctx, runId, action === 'send' ? 'terminal:send' : 'terminal:write');
+          await sendTerminalInput(ctx);
           return;
         }
         if (action === 'interrupt') {

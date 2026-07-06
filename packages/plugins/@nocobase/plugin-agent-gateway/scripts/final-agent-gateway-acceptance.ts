@@ -965,7 +965,6 @@ function hasRunDetailUiCompleteness(record: JsonRecord | null) {
     result.xtermVisible === true &&
     result.artifactsVisible === true &&
     result.rawLogsVisibleOrClearlyUnavailable === true &&
-    result.auditVisible === true &&
     result.controlsVisibleOrCapabilityExplained === true &&
     result.adminAndVAdminParity === true &&
     result.noDuplicateNavigation === true &&
@@ -1014,18 +1013,6 @@ function hasProviderBrowserEvidence(record: JsonRecord | null) {
     hasExpectedUrl(record, '/agent-gateway/provider-capabilities') &&
     hasExpectedScreenshot(record) &&
     (record?.hasRows === true || record?.hasEmptyState === true)
-  );
-}
-
-function hasAuditBrowserEvidence(record: JsonRecord | null) {
-  const result = getRecordEvidence(record, 'result');
-  return (
-    isBrowserProducedEvidence(record, 'audit-page-browser') &&
-    hasExpectedUrl(record, '/agent-gateway/audit') &&
-    hasExpectedScreenshot(record) &&
-    record?.hasAudit === true &&
-    result?.auditTableVisible === true &&
-    result.redactedPreviewVisible === true
   );
 }
 
@@ -1268,7 +1255,6 @@ async function main() {
   const networkRedaction = await readJsonIfExists(join(args.evidenceDir, 'network-redaction.json'));
   const permissionDeniedFlow = await readJsonIfExists(join(args.evidenceDir, 'permission-denied-flow.json'));
   const providerBrowserEvidence = await readJsonIfExists(join(args.evidenceDir, 'provider-page-browser-evidence.json'));
-  const auditBrowserEvidence = await readJsonIfExists(join(args.evidenceDir, 'audit-page-browser-evidence.json'));
   const dispatchResult = isRecord(businessDispatchResult?.result) ? businessDispatchResult.result : null;
   const expectedNodeManagementNodeId =
     getString(existingSeedOutput?.nodeManagementNodeId) ||
@@ -1312,8 +1298,6 @@ async function main() {
     vRestrictedRunDetailUrl:
       getVAdminUrl(args.baseUrl, restrictedRunDetailUrl) ||
       getString(getProviderRun(providerSeed, 'generic-cli').vRunUrl),
-    auditUrl: buildUrl(args.baseUrl, '/admin/settings/agent-gateway/audit'),
-    vAuditUrl: buildUrl(args.baseUrl, '/v/admin/settings/agent-gateway/audit'),
     nodesUrl: buildUrl(args.baseUrl, '/admin/settings/agent-gateway/nodes'),
     vNodesUrl: buildUrl(args.baseUrl, '/v/admin/settings/agent-gateway/nodes'),
     resumeRunDetailUrl,
@@ -1420,7 +1404,6 @@ async function main() {
     permissionDeniedResult.rawLogDenied === true &&
     permissionDeniedResult.sessionMessageDenied === true;
   const providerDegradationVerified = hasProviderBrowserEvidence(providerBrowserEvidence);
-  const auditBrowserVerified = hasAuditBrowserEvidence(auditBrowserEvidence);
   const businessDispatchRunClaimedByDaemon =
     businessDispatchEvidenceCurrent && getBooleanEvidence(businessDispatchResult, 'result.daemonClaimedRun');
   const businessDispatchLiveOutputObserved =
@@ -1444,7 +1427,6 @@ async function main() {
     networkRedactionPassed &&
     permissionDeniedFlowVerified &&
     providerDegradationVerified &&
-    auditBrowserVerified &&
     wsEvidence.crossOriginWsRejected &&
     adminBrowserContextVerified &&
     restrictedBrowserContextVerified &&
@@ -1478,7 +1460,6 @@ async function main() {
     networkRedactionPassed,
     permissionDeniedFlowVerified,
     providerDegradationVerified,
-    auditBrowserVerified,
     privateFileModesPassed: privateFileModeEvidence.allExpectedFilesPassed,
     privateFileModesMissing: privateFileModeEvidence.missing,
   };

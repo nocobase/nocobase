@@ -37,7 +37,7 @@ describe('Codex agent adapter', () => {
       }),
     ).toMatchObject({
       commandKey: 'codex',
-      args: ['exec', '--json', 'Build a page'],
+      args: ['exec', '--skip-git-repo-check', '--json', 'Build a page'],
       cwd: '/workspace',
     });
     expect(
@@ -47,7 +47,7 @@ describe('Codex agent adapter', () => {
       }),
     ).toMatchObject({
       commandKey: 'codex',
-      args: ['exec', 'resume', '--json', '019f1e72-d75c-7c61-a9ba-cc99c653e0a2', 'Continue'],
+      args: ['exec', 'resume', '--skip-git-repo-check', '--json', '019f1e72-d75c-7c61-a9ba-cc99c653e0a2', 'Continue'],
     });
   });
 
@@ -60,7 +60,7 @@ describe('Codex agent adapter', () => {
       }),
     ).toMatchObject({
       commandKey: 'codex',
-      args: ['exec', 'Build a page'],
+      args: ['exec', '--skip-git-repo-check', 'Build a page'],
       cwd: '/workspace',
     });
     expect(
@@ -71,7 +71,7 @@ describe('Codex agent adapter', () => {
       }),
     ).toMatchObject({
       commandKey: 'codex',
-      args: ['exec', 'resume', '019f1e72-d75c-7c61-a9ba-cc99c653e0a2', 'Continue'],
+      args: ['exec', 'resume', '--skip-git-repo-check', '019f1e72-d75c-7c61-a9ba-cc99c653e0a2', 'Continue'],
     });
   });
 
@@ -82,7 +82,14 @@ describe('Codex agent adapter', () => {
       message,
     });
 
-    expect(command.args).toEqual(['exec', 'resume', '--json', '019f1e72-d75c-7c61-a9ba-cc99c653e0a2', message]);
+    expect(command.args).toEqual([
+      'exec',
+      'resume',
+      '--skip-git-repo-check',
+      '--json',
+      '019f1e72-d75c-7c61-a9ba-cc99c653e0a2',
+      message,
+    ]);
     expect(command.args.at(-1)).toBe(message);
   });
 

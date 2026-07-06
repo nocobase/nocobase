@@ -14,14 +14,7 @@ import { Context, Next } from '@nocobase/actions';
 import { Plugin } from '@nocobase/server';
 import { Transaction, UniqueConstraintError } from 'sequelize';
 
-import {
-  AGENT_GATEWAY_ACTIONS,
-  AGENT_GATEWAY_PERMISSIONS,
-  authenticateNodeToken,
-  redactEventPayload,
-  redactObservabilityText,
-} from '../security';
-import { auditAgentActionBestEffort, auditReadAgentAction } from '../audit/agentActionAudit';
+import { AGENT_GATEWAY_ACTIONS, authenticateNodeToken, redactEventPayload, redactObservabilityText } from '../security';
 import { AgentTranscriptEvent, buildAgentTranscript, getAgentTranscriptToolStats } from '../../shared/agentTranscript';
 import {
   API_PREFIX,
@@ -49,12 +42,6 @@ const MAX_CONTENT_JSON_CHARS = 32 * 1024;
 const TOOL_CALL_STATS_DEFAULT_RUN_LIMIT = 100;
 const TOOL_CALL_STATS_MAX_RUN_LIMIT = 500;
 const STANDARD_CONVERSATION_COLLECTIONS = ['agAgentConversationEvents'] as const;
-
-type ConversationReadRouteAction =
-  | 'listRunConversationEvents'
-  | 'listSessionConversationEvents'
-  | 'listRunToolCalls'
-  | 'listToolCallStats';
 
 interface CollectionLike {
   hasField?(name: string): boolean;
@@ -273,59 +260,12 @@ async function assertSessionExists(ctx: Context, sessionId: string) {
   return session;
 }
 
-async function auditConversationRead(
-  ctx: Context,
-  options: {
-    runId?: string;
-    sessionId?: string;
-    resultStatus: 'succeeded' | 'denied';
-    routeAction: ConversationReadRouteAction;
-    metadataJson?: JsonRecord;
-  },
-) {
-  const input = {
-    action: 'readSessionMessages' as const,
-    runId: options.runId,
-    sessionId: options.sessionId,
-    operatorId: getCurrentUserId(ctx) || undefined,
-    permissionKey: AGENT_GATEWAY_PERMISSIONS.readSessionMessages,
-    resultStatus: options.resultStatus,
-    metadataJson: {
-      routeAction: options.routeAction,
-      ...getRecord(options.metadataJson),
-    },
-  };
-  if (options.resultStatus === 'succeeded') {
-    await auditReadAgentAction(ctx, input);
-    return;
-  }
-  await auditAgentActionBestEffort(ctx, input);
-}
-
-async function requireConversationRead(
-  ctx: Context,
-  audit: {
-    runId?: string;
-    sessionId?: string;
-    routeAction: ConversationReadRouteAction;
-  },
-) {
-  try {
-    await requireAgentGatewayPermission(
-      ctx,
-      AGENT_GATEWAY_ACTIONS.readSessionMessages,
-      'Agent Gateway session message read permission required',
-    );
-  } catch (error) {
-    await auditConversationRead(ctx, {
-      ...audit,
-      resultStatus: 'denied',
-      metadataJson: {
-        phase: 'permission',
-      },
-    });
-    throw error;
-  }
+async function requireConversationRead(ctx: Context) {
+  await requireAgentGatewayPermission(
+    ctx,
+    AGENT_GATEWAY_ACTIONS.readSessionMessages,
+    'Agent Gateway session message read permission required',
+  );
 }
 
 async function findReadableSessionRunIds(ctx: Context, sessionId: string) {
@@ -550,23 +490,8 @@ async function appendConversationEvents(ctx: Context, runId: string) {
 }
 
 async function listRunConversationEvents(ctx: Context, runId: string) {
-  const routeAction = 'listRunConversationEvents';
-  await requireConversationRead(ctx, { runId, routeAction });
-  let run: ModelRecord;
-  try {
-    run = await assertRunReadable(ctx, runId);
-  } catch (error) {
-    await auditConversationRead(ctx, {
-      runId,
-      resultStatus: 'denied',
-      routeAction,
-      metadataJson: {
-        phase: 'visibility',
-        reason: error instanceof Error ? error.message : String(error),
-      },
-    });
-    throw error;
-  }
+  await requireConversationRead(ctx);
+  await assertRunReadable(ctx, runId);
 
   const events = (await ctx.db.getRepository('agAgentConversationEvents').find({
     filter: {
@@ -575,36 +500,12 @@ async function listRunConversationEvents(ctx: Context, runId: string) {
     sort: ['createdAt', 'sequence'],
   })) as ModelRecord[];
 
-  await auditConversationRead(ctx, {
-    runId,
-    sessionId: getModelString(run, 'agentSessionId') || undefined,
-    resultStatus: 'succeeded',
-    routeAction,
-    metadataJson: {
-      eventCount: events.length,
-    },
-  });
   ctx.body = events.map(serializeModel);
 }
 
 async function listRunToolCalls(ctx: Context, runId: string) {
-  const routeAction = 'listRunToolCalls';
-  await requireConversationRead(ctx, { runId, routeAction });
-  let run: ModelRecord;
-  try {
-    run = await assertRunReadable(ctx, runId);
-  } catch (error) {
-    await auditConversationRead(ctx, {
-      runId,
-      resultStatus: 'denied',
-      routeAction,
-      metadataJson: {
-        phase: 'visibility',
-        reason: error instanceof Error ? error.message : String(error),
-      },
-    });
-    throw error;
-  }
+  await requireConversationRead(ctx);
+  await assertRunReadable(ctx, runId);
 
   const events = (await ctx.db.getRepository('agAgentConversationEvents').find({
     filter: {
@@ -615,16 +516,6 @@ async function listRunToolCalls(ctx: Context, runId: string) {
   const serializedEvents = events.map(serializeModel);
   const transcript = buildAgentTranscript(toTranscriptEvents(serializedEvents));
 
-  await auditConversationRead(ctx, {
-    runId,
-    sessionId: getModelString(run, 'agentSessionId') || undefined,
-    resultStatus: 'succeeded',
-    routeAction,
-    metadataJson: {
-      eventCount: events.length,
-      toolCallCount: transcript.toolCalls.length,
-    },
-  });
   ctx.body = {
     toolCalls: transcript.toolCalls,
     stats: transcript.stats,
@@ -632,23 +523,9 @@ async function listRunToolCalls(ctx: Context, runId: string) {
 }
 
 async function listToolCallStats(ctx: Context) {
-  const routeAction = 'listToolCallStats';
-  await requireConversationRead(ctx, { routeAction });
+  await requireConversationRead(ctx);
   const limit = getToolCallStatsRunLimit(ctx);
-  let visibilityFilter: JsonRecord | null;
-  try {
-    visibilityFilter = await getRunVisibilityFilter(ctx);
-  } catch (error) {
-    await auditConversationRead(ctx, {
-      resultStatus: 'denied',
-      routeAction,
-      metadataJson: {
-        phase: 'visibility',
-        reason: error instanceof Error ? error.message : String(error),
-      },
-    });
-    throw error;
-  }
+  const visibilityFilter = await getRunVisibilityFilter(ctx);
 
   const runs = (await ctx.db.getRepository('agRuns').find({
     filter: visibilityFilter || {},
@@ -709,15 +586,6 @@ async function listToolCallStats(ctx: Context) {
   );
   const aggregateStats = getAgentTranscriptToolStats(allToolCalls);
 
-  await auditConversationRead(ctx, {
-    resultStatus: 'succeeded',
-    routeAction,
-    metadataJson: {
-      runCount: runs.length,
-      eventCount: events.length,
-      toolCallCount: allToolCalls.length,
-    },
-  });
   ctx.body = {
     runCount: runs.length,
     toolCallCount: allToolCalls.length,
@@ -728,24 +596,9 @@ async function listToolCallStats(ctx: Context) {
 }
 
 async function listSessionConversationEvents(ctx: Context, sessionId: string) {
-  const routeAction = 'listSessionConversationEvents';
-  await requireConversationRead(ctx, { sessionId, routeAction });
+  await requireConversationRead(ctx);
   await assertSessionExists(ctx, sessionId);
-  let readableRunIds: string[];
-  try {
-    readableRunIds = await findReadableSessionRunIds(ctx, sessionId);
-  } catch (error) {
-    await auditConversationRead(ctx, {
-      sessionId,
-      resultStatus: 'denied',
-      routeAction,
-      metadataJson: {
-        phase: 'visibility',
-        reason: error instanceof Error ? error.message : String(error),
-      },
-    });
-    throw error;
-  }
+  const readableRunIds = await findReadableSessionRunIds(ctx, sessionId);
 
   const events = (await ctx.db.getRepository('agAgentConversationEvents').find({
     filter: {
@@ -757,16 +610,6 @@ async function listSessionConversationEvents(ctx: Context, sessionId: string) {
     sort: ['createdAt', 'sequence'],
   })) as ModelRecord[];
 
-  await auditConversationRead(ctx, {
-    runId: readableRunIds[0],
-    sessionId,
-    resultStatus: 'succeeded',
-    routeAction,
-    metadataJson: {
-      runCount: readableRunIds.length,
-      eventCount: events.length,
-    },
-  });
   ctx.body = events.map(serializeModel);
 }
 

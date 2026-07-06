@@ -260,24 +260,66 @@ describe('agent gateway run terminal APIs', () => {
       inputEnabled: false,
     });
     expect(snapshot).not.toHaveProperty('sessionName');
+  });
 
-    const audits = await app.db.getRepository('agAgentActionAudits').find({
-      filter: {
+  it('falls back to terminal-live conversation events when remote tmux capture is unavailable', async () => {
+    const runner = await createRunner();
+    const { run, claim } = await createAndClaimRun(runner);
+    const sessionName = getSessionName(run.id);
+
+    await app
+      .agent()
+      .post(`/api/agent-gateway/nodes/${runner.nodeId}/runs/${run.id}/terminal:update`)
+      .set('Authorization', `Bearer ${runner.nodeToken}`)
+      .send(
+        leaseValues(claim, {
+          terminalBackend: 'tmux',
+          terminalSessionName: sessionName,
+          terminalStatus: 'closed',
+          terminalStartedAt: '2026-07-01T10:00:00.000Z',
+          terminalEndedAt: '2026-07-01T10:00:10.000Z',
+        }),
+      );
+
+    await app.db.getRepository('agAgentConversationEvents').create({
+      values: {
+        id: randomUUID(),
         runId: run.id,
+        source: 'terminal-live',
+        sequence: 1,
+        eventType: 'agent.message',
+        contentText: 'old remote output\n',
+        contentJson: {
+          live: true,
+        },
       },
     });
-    expect(audits.map((audit) => audit.toJSON())).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          action: 'readTerminal',
-          permissionKey: 'agentGateway.readTerminal',
-          resultStatus: 'succeeded',
-          metadataJson: expect.objectContaining({
-            available: false,
-          }),
-        }),
-      ]),
-    );
+    await app.db.getRepository('agAgentConversationEvents').create({
+      values: {
+        id: randomUUID(),
+        runId: run.id,
+        source: 'terminal-live',
+        sequence: 2,
+        eventType: 'agent.message',
+        contentText: 'latest remote output\n[agent-gateway] process exited with code 0',
+        contentJson: {
+          live: true,
+        },
+      },
+    });
+
+    const snapshotResponse = await rootAgent.get(`/api/agent-gateway/runs/${run.id}/terminal:snapshot?lines=2`);
+    expect(snapshotResponse.status).toBe(200);
+    const snapshot = getData(snapshotResponse);
+    expect(snapshot).toMatchObject({
+      backend: 'tmux',
+      terminalStatus: 'closed',
+      available: true,
+      inputEnabled: false,
+    });
+    expect(String(snapshot.output)).not.toContain('old remote output');
+    expect(String(snapshot.output)).toContain('latest remote output');
+    expect(String(snapshot.output)).toContain('[agent-gateway] process exited with code 0');
   });
 
   it('enforces split terminal permissions before terminal state checks', async () => {
@@ -335,55 +377,6 @@ describe('agent gateway run terminal APIs', () => {
         idempotencyKey: 'inactive-terminate-click',
       });
     expect(terminateResponse.status).toBe(409);
-
-    const audits = await app.db.getRepository('agAgentActionAudits').find();
-    expect(audits.map((audit) => audit.toJSON())).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          action: 'readTerminal',
-          runId,
-          permissionKey: 'agentGateway.readTerminal',
-          resultStatus: 'denied',
-        }),
-        expect.objectContaining({
-          action: 'rawTerminalWriteDenied',
-          runId,
-          sessionId: null,
-          provider: null,
-          permissionKey: 'agentGateway.writeTerminalRaw',
-          resultStatus: 'denied',
-          metadataJson: expect.objectContaining({
-            routeAction: 'terminal:send',
-            runVisible: false,
-          }),
-        }),
-        expect.objectContaining({
-          action: 'interrupt',
-          runId,
-          permissionKey: 'agentGateway.interruptRun',
-          resultStatus: 'denied',
-        }),
-        expect.objectContaining({
-          action: 'terminate',
-          runId,
-          permissionKey: 'agentGateway.terminateRun',
-          resultStatus: 'denied',
-        }),
-        expect.objectContaining({
-          action: 'interrupt',
-          runId: controlRun.id,
-          permissionKey: 'agentGateway.interruptRun',
-          resultStatus: 'denied',
-        }),
-        expect.objectContaining({
-          action: 'terminate',
-          runId: controlRun.id,
-          permissionKey: 'agentGateway.terminateRun',
-          resultStatus: 'denied',
-        }),
-      ]),
-    );
-    expect(JSON.stringify(audits.map((audit) => audit.toJSON()))).not.toContain('must-not-write');
   });
 
   it('controls a managed tmux terminal session for an active run', async () => {
@@ -443,46 +436,6 @@ describe('agent gateway run terminal APIs', () => {
       });
       expect(oversizedResponse.status).toBe(403);
       expect(JSON.stringify(oversizedResponse.body)).toContain('TERMINAL_RAW_WRITE_DISABLED');
-
-      const rawWriteAudits = await app.db.getRepository('agAgentActionAudits').find({
-        filter: {
-          action: 'rawTerminalWriteDenied',
-          runId: run.id,
-          resultStatus: 'denied',
-        },
-      });
-      expect(rawWriteAudits.map((audit) => audit.toJSON())).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({
-            metadataJson: expect.objectContaining({
-              routeAction: 'terminal:send',
-              inputType: 'string',
-              inputTooLarge: false,
-            }),
-          }),
-          expect.objectContaining({
-            metadataJson: expect.objectContaining({
-              routeAction: 'terminal:write',
-              inputType: 'string',
-            }),
-          }),
-          expect.objectContaining({
-            metadataJson: expect.objectContaining({
-              routeAction: 'terminal:send',
-              inputType: 'object',
-              inputSizeBytes: null,
-            }),
-          }),
-          expect.objectContaining({
-            metadataJson: expect.objectContaining({
-              routeAction: 'terminal:send',
-              inputType: 'string',
-              inputTooLarge: true,
-            }),
-          }),
-        ]),
-      );
-      expect(JSON.stringify(rawWriteAudits.map((audit) => audit.toJSON()))).not.toContain('must-not-render');
 
       const terminateResponse = await rootAgent.post(`/api/agent-gateway/runs/${run.id}/terminal:terminate`).send({
         idempotencyKey: 'tmux-terminate-click',

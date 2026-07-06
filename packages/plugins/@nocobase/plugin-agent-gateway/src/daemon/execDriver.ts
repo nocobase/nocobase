@@ -58,7 +58,7 @@ export interface ExecDriverResult {
   stderr: ExecOutputRecord;
 }
 
-const DEFAULT_TIMEOUT_MS = 30 * 60 * 1000;
+export const DEFAULT_EXEC_TIMEOUT_MS = 24 * 60 * 60 * 1000;
 const DEFAULT_MAX_INLINE_LOG_BYTES = 64 * 1024;
 const INHERITED_ENV_KEYS = ['PATH', 'HOME', 'TMPDIR', 'TEMP', 'TMP', 'SystemRoot', 'WINDIR'];
 
@@ -247,7 +247,7 @@ export function getAllowlistedDefinition(allowlist: ExecCommandAllowlist, comman
 export async function executeCommand(options: ExecuteCommandOptions): Promise<ExecDriverResult> {
   const cwd = await resolveGuardedCwd(options.workspaceRoot, options.cwd);
   const env = buildEnv(options.definition, cwd, options.env);
-  const timeoutMs = options.timeoutMs || options.definition.defaultTimeoutMs || DEFAULT_TIMEOUT_MS;
+  const timeoutMs = options.timeoutMs || options.definition.defaultTimeoutMs || DEFAULT_EXEC_TIMEOUT_MS;
   const maxInlineLogBytes = options.maxInlineLogBytes || DEFAULT_MAX_INLINE_LOG_BYTES;
   if (options.artifactDir) {
     await fs.mkdir(options.artifactDir, { recursive: true });

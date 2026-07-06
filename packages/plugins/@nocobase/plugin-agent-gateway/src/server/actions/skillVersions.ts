@@ -29,6 +29,7 @@ import {
   getModelValue,
   getRecord,
   getString,
+  hasModelGetter,
   requireManagePermission,
 } from './utils';
 
@@ -331,6 +332,66 @@ async function uploadSkillVersionZip(ctx: Context) {
   });
 }
 
+function getDateISOString(value: unknown) {
+  if (value instanceof Date) {
+    return value.toISOString();
+  }
+  const text = getString(value);
+  if (!text) {
+    return null;
+  }
+  const date = new Date(text);
+  return Number.isNaN(date.getTime()) ? null : date.toISOString();
+}
+
+function getRelatedSkillString(skillVersion: ModelRecord, key: string) {
+  const skill = getModelValue(skillVersion, 'skill');
+  if (hasModelGetter(skill)) {
+    return getModelString(skill, key);
+  }
+  return getString(getRecord(skill)[key]);
+}
+
+function getRelatedSkillTargetKey(skillVersion: ModelRecord, key: string) {
+  const skill = getModelValue(skillVersion, 'skill');
+  if (hasModelGetter(skill)) {
+    const value = getModelTargetKey(skill, key);
+    return typeof value === 'string' || typeof value === 'number' ? String(value) : '';
+  }
+  const value = getRecord(skill)[key];
+  return typeof value === 'string' || typeof value === 'number' ? String(value) : '';
+}
+
+function serializeSkillVersionForManagement(skillVersion: ModelRecord) {
+  const metadata = getRecord(getModelValue(skillVersion, 'metadataJson'));
+  const source = getRecord(metadata.source);
+  return {
+    id: String(getModelTargetKey(skillVersion, 'id')),
+    skillVersionId: String(getModelTargetKey(skillVersion, 'id')),
+    skillId: getRelatedSkillTargetKey(skillVersion, 'id') || getModelString(skillVersion, 'skillId') || null,
+    skillKey: getRelatedSkillString(skillVersion, 'skillKey') || null,
+    displayName: getRelatedSkillString(skillVersion, 'displayName') || null,
+    skillStatus: getRelatedSkillString(skillVersion, 'status') || null,
+    versionLabel: getModelString(skillVersion, 'versionLabel'),
+    status: getModelString(skillVersion, 'status') || 'active',
+    sourceType: getString(source.type) || null,
+    sourceSha256: getString(source.sha256) || null,
+    sourceSizeBytes: typeof source.sizeBytes === 'number' ? source.sizeBytes : null,
+    sourceUploadedAt: getString(source.uploadedAt) || null,
+    createdAt: getDateISOString(getModelValue(skillVersion, 'createdAt')),
+    updatedAt: getDateISOString(getModelValue(skillVersion, 'updatedAt')),
+  };
+}
+
+async function listSkillVersions(ctx: Context) {
+  await requireManagePermission(ctx);
+  const skillVersions = (await ctx.db.getRepository('agSkillVersions').find({
+    appends: ['skill'],
+    sort: ['-createdAt'],
+  })) as ModelRecord[];
+  ctx.body = skillVersions.map(serializeSkillVersionForManagement);
+}
+
 async function downloadSkillVersionArchive(ctx: Context, skillVersionId: string) {
   await authenticateNodeToken(ctx);
   const skillVersion = (await ctx.db.getRepository('agSkillVersions').findOne({
@@ -395,6 +456,10 @@ export function registerSkillVersionRoutes(plugin: Plugin) {
       const routePath = ctx.path.slice(API_PREFIX.length);
       if (ctx.method === 'POST' && routePath === '/skill-versions:upload-zip') {
         await uploadSkillVersionZip(ctx);
+        return;
+      }
+      if (ctx.method === 'GET' && routePath === '/skill-versions:list') {
+        await listSkillVersions(ctx);
         return;
       }
       const downloadMatch = routePath.match(/^\/skill-versions\/([^/]+)\/archive:download$/);

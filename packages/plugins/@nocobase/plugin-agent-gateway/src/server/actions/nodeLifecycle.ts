@@ -125,6 +125,8 @@ function buildBootstrapCommand(options: { serverUrl: string; nodeKey: string; in
     `AGENT_GATEWAY_SERVER_URL=${shellQuote(options.serverUrl)}`,
     `AGENT_GATEWAY_NODE_KEY=${shellQuote(options.nodeKey)}`,
     `AGENT_GATEWAY_INVITE_TOKEN=${shellQuote(options.inviteToken)}`,
+    "AGENT_GATEWAY_SERVICE_SCOPE='auto'",
+    "AGENT_GATEWAY_HEALTH_CHECK='true'",
     'bash',
   ].join(' ');
 }

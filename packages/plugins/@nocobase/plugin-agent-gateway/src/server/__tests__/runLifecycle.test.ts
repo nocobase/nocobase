@@ -580,7 +580,7 @@ describe('agent gateway run lifecycle APIs', () => {
       title: 'Batch evaluation',
       scenario: 'opencode-ui-batch',
       prompt: '运行 nb-opencode-ui-batch harness 并汇总结果',
-      skillVersionId: activeSkillVersion.get('id'),
+      skillVersionIds: [otherSkillVersion.get('id'), activeSkillVersion.get('id'), activeSkillVersion.get('id')],
       cwd: 'myskills/skills/nb-opencode-ui-batch',
       nodeId: runner.nodeId,
       agentProfileId: runner.profileId,
@@ -620,6 +620,9 @@ describe('agent gateway run lifecycle APIs', () => {
         'runs/nb-opencode-ui-batch/*/browser-screenshots/**/*',
       ]),
       resolvedSkills: [
+        {
+          skillVersionId: otherSkillVersion.get('id'),
+        },
         {
           skillVersionId: activeSkillVersion.get('id'),
         },
@@ -1447,6 +1450,140 @@ describe('agent gateway run lifecycle APIs', () => {
     expect(failedApiLogs).toContain('[REDACTED]');
   });
 
+  it('keeps task titles after completion and reports token usage from conversation events', async () => {
+    const runner = await createRunner({
+      profileProvider: 'codex',
+    });
+    const createResponse = await rootAgent.post('/api/agent-gateway/task-runs:create').send({
+      title: 'Search gold price',
+      prompt: 'Search today gold price',
+      nodeId: runner.nodeId,
+      agentProfileId: runner.profileId,
+    });
+    expect(createResponse.status).toBe(200);
+    const createResult = getData(createResponse);
+    expect(createResult.run).toMatchObject({
+      taskTitle: 'Search gold price',
+      resultSummaryJson: {
+        title: 'Search gold price',
+      },
+    });
+
+    await app.db.getRepository('agAgentConversationEvents').create({
+      values: {
+        id: randomUUID(),
+        runId: String(createResult.runId),
+        sequence: 1,
+        eventType: 'agent.turn.completed',
+        source: 'codex',
+        providerEventId: 'turn-usage-1',
+        contentJson: {
+          type: 'turn.completed',
+          usage: {
+            input_tokens: 39968,
+            cached_input_tokens: 18176,
+            output_tokens: 144,
+            reasoning_output_tokens: 77,
+          },
+        },
+      },
+    });
+
+    const claim = getData(await claimRun(runner));
+    const heartbeat = getData(
+      await runDaemonAction(runner, createResult.runId, 'heartbeat', {
+        claimToken: claim.claimToken,
+        claimAttempt: claim.claimAttempt,
+        leaseVersion: claim.leaseVersion,
+        status: 'running',
+      }),
+    );
+    const completeResponse = await runDaemonAction(runner, createResult.runId, 'complete', {
+      claimToken: claim.claimToken,
+      claimAttempt: claim.claimAttempt,
+      leaseVersion: heartbeat.leaseVersion,
+      resultSummary: {
+        status: 'succeeded',
+      },
+    });
+    expect(completeResponse.status).toBe(200);
+
+    const completedRun = await app.db.getRepository('agRuns').findOne({
+      filterByTk: String(createResult.runId),
+    });
+    expect(completedRun.get('resultSummaryJson')).toMatchObject({
+      title: 'Search gold price',
+      status: 'succeeded',
+    });
+
+    const completedReadResponse = await rootAgent.get(`/api/agent-gateway/runs:get/${createResult.runId}`);
+    expect(completedReadResponse.status).toBe(200);
+    expect(getData(completedReadResponse)).toMatchObject({
+      taskTitle: 'Search gold price',
+      tokenUsageJson: {
+        inputTokens: 39968,
+        cachedInputTokens: 18176,
+        outputTokens: 144,
+        reasoningOutputTokens: 77,
+        totalTokens: 40112,
+      },
+    });
+
+    const listResponse = await rootAgent.get('/api/agent-gateway/runs:list');
+    expect(listResponse.status).toBe(200);
+    const runs = getData(listResponse);
+    expect(Array.isArray(runs)).toBe(true);
+    expect(runs).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: String(createResult.runId),
+          taskTitle: 'Search gold price',
+          tokenUsageJson: expect.objectContaining({
+            totalTokens: 40112,
+          }),
+        }),
+      ]),
+    );
+  });
+
+  it('reports Codex token usage from terminal transcript when structured usage is absent', async () => {
+    const run = await createRun('run-codex-terminal-token-fallback', {
+      status: 'succeeded',
+      resultSummaryJson: {
+        title: 'Terminal token fallback',
+      },
+    });
+
+    await app.db.getRepository('agAgentConversationEvents').create({
+      values: {
+        id: randomUUID(),
+        runId: String(run.id),
+        sequence: 1,
+        eventType: 'agent.message',
+        source: 'terminal-live',
+        contentText: [
+          'OpenAI Codex v0.142.5\r',
+          'Task completed\r',
+          '\u001b[2mtokens used\u001b[0m\r',
+          '11,126\r',
+          '[agent-gateway] process exited with code 0\r',
+        ].join('\n'),
+        contentJson: {
+          live: true,
+          stream: 'terminal',
+        },
+      },
+    });
+
+    const readResponse = await rootAgent.get(`/api/agent-gateway/runs:get/${run.id}`);
+    expect(readResponse.status).toBe(200);
+    expect(getData(readResponse)).toMatchObject({
+      tokenUsageJson: {
+        totalTokens: 11126,
+      },
+    });
+  });
+
   it('moves running runs through canceling and only cancels them after daemon ack', async () => {
     const runner = await createRunner();
     const run = await createRun('run-cancel-1', {
@@ -1499,35 +1636,6 @@ describe('agent gateway run lifecycle APIs', () => {
     expect(storedRun.get('cancelAckAt')).toBeTruthy();
     expect(storedRun.get('canceledAt')).toBeTruthy();
     expect(storedRun.get('finishedAt')).toBeTruthy();
-
-    const cancelAudits = await app.db.getRepository('agAgentActionAudits').find({
-      filter: {
-        runId: run.id,
-        action: 'cancel',
-      },
-    });
-    expect(cancelAudits.map((audit) => audit.toJSON())).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          permissionKey: 'agentGateway.cancelRun',
-          resultStatus: 'denied',
-        }),
-        expect.objectContaining({
-          permissionKey: 'agentGateway.cancelRun',
-          resultStatus: 'accepted',
-          metadataJson: expect.objectContaining({
-            previousStatus: 'running',
-          }),
-        }),
-        expect.objectContaining({
-          permissionKey: 'agentGateway.cancelRun',
-          resultStatus: 'succeeded',
-          metadataJson: expect.objectContaining({
-            status: 'canceling',
-          }),
-        }),
-      ]),
-    );
 
     const failAfterCancelResponse = await runDaemonAction(runner, run.id, 'fail', {
       claimToken: claim.claimToken,

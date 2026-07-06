@@ -10,8 +10,6 @@
 import { randomUUID } from 'crypto';
 
 import { MockServer, createMockServer } from '@nocobase/test';
-import { vi } from 'vitest';
-
 import PluginAgentGatewayServer from '../plugin';
 import { AGENT_GATEWAY_TERMINATE_CONTROL_CANCEL_REASON } from '../../shared/runControl';
 import {
@@ -265,26 +263,6 @@ describe('agent gateway run control requests', () => {
     expect(
       (await otherInterruptAgent.get(`/api/agent-gateway/runs/${runId}/control-requests/${request.id}:get`)).status,
     ).toBe(404);
-
-    const audits = await app.db.getRepository('agAgentActionAudits').find({
-      filter: {
-        runId,
-        action: 'interrupt',
-      },
-      sort: ['createdAt'],
-    });
-    expect(audits.map((audit) => audit.toJSON())).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          resultStatus: 'accepted',
-          permissionKey: 'agentGateway.interruptRun',
-        }),
-        expect.objectContaining({
-          resultStatus: 'succeeded',
-          permissionKey: 'agentGateway.interruptRun',
-        }),
-      ]),
-    );
   });
 
   it('fails open control requests when the run finishes before daemon ack', async () => {
@@ -450,14 +428,6 @@ describe('agent gateway run control requests', () => {
       },
     });
     expect(requests).toHaveLength(1);
-    const acceptedAudits = await app.db.getRepository('agAgentActionAudits').find({
-      filter: {
-        runId,
-        action: 'interrupt',
-        resultStatus: 'accepted',
-      },
-    });
-    expect(acceptedAudits).toHaveLength(1);
   });
 
   it('rejects a fresh control request for a non-active run without pretending it was accepted', async () => {
@@ -476,30 +446,6 @@ describe('agent gateway run control requests', () => {
     });
     expect(response.status).toBe(409);
     expect(await app.db.getRepository('agRunControlRequests').count({ filter: { runId } })).toBe(0);
-  });
-
-  it('rolls back accepted control requests when the accepted audit cannot be written', async () => {
-    const { runId } = await seedActiveRun();
-    const interruptAgent = await loginWithSnippets('agent-gateway-interrupt-audit-failure', [
-      'agentGateway.interruptRun',
-    ]);
-    const initialRun = await app.db.getRepository('agRuns').findOne({
-      filterByTk: runId,
-    });
-    const auditRepository = app.db.getRepository('agAgentActionAudits');
-    const createAudit = vi.spyOn(auditRepository, 'create').mockRejectedValueOnce(new Error('audit unavailable'));
-
-    const response = await interruptAgent.post(`/api/agent-gateway/runs/${runId}/terminal:interrupt`).send({
-      idempotencyKey: 'audit-failure-interrupt',
-    });
-    expect(response.status).toBe(500);
-    expect(await app.db.getRepository('agRunControlRequests').count({ filter: { runId } })).toBe(0);
-
-    const run = await app.db.getRepository('agRuns').findOne({
-      filterByTk: runId,
-    });
-    expect(run.get('status')).toBe(initialRun.get('status'));
-    createAudit.mockRestore();
   });
 
   it('requires idempotencyKey for direct control requests', async () => {
@@ -561,14 +507,6 @@ describe('agent gateway run control requests', () => {
       },
     });
     expect(requests).toHaveLength(0);
-    const deniedAudits = await app.db.getRepository('agAgentActionAudits').find({
-      filter: {
-        runId,
-        action: 'interrupt',
-        resultStatus: 'denied',
-      },
-    });
-    expect(deniedAudits.length).toBeGreaterThanOrEqual(2);
   });
 
   it('exposes and accepts controls for active tmux runs before an agent session is detected', async () => {

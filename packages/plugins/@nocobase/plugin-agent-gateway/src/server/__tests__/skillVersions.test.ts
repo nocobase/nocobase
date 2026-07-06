@@ -297,6 +297,26 @@ describe('agent gateway Skill version upload APIs', () => {
         sha256: sha256(secondContent),
       },
     });
+
+    const listResponse = await rootAgent.get('/api/agent-gateway/skill-versions:list');
+    expect(listResponse.status).toBe(200);
+    const listedSkillVersions = listResponse.body.data as Array<Record<string, unknown>>;
+    expect(listedSkillVersions).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: firstUpload.skillVersionId,
+          skillVersionId: firstUpload.skillVersionId,
+          skillKey: 'nb-opencode-ui-batch',
+          displayName: 'NocoBase OpenCode UI Batch',
+          versionLabel: '2026-07-01',
+          status: 'active',
+          skillStatus: 'active',
+          sourceType: 'zip',
+          sourceSha256: sha256(secondContent),
+          sourceSizeBytes: secondContent.byteLength,
+        }),
+      ]),
+    );
   });
 
   it('rejects ZIP uploads without Agent Gateway management permission', async () => {
@@ -315,6 +335,7 @@ describe('agent gateway Skill version upload APIs', () => {
     });
 
     expect(response.status).toBe(403);
+    expect((await memberAgent.get('/api/agent-gateway/skill-versions:list')).status).toBe(403);
     expect(await app.db.getRepository('agSkillVersions').count()).toBe(0);
   });
 

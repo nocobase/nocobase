@@ -648,29 +648,6 @@ describe('agent gateway dispatch binding APIs', () => {
 
     const runCount = await app.db.getRepository('agRuns').count({});
     expect(runCount).toBe(1);
-    const deniedAudit = await app.db.getRepository('agAgentActionAudits').findOne({
-      filter: {
-        action: 'dispatch',
-        runId: firstDispatch.run.id,
-        permissionKey: 'agentGateway.dispatchRun',
-        resultStatus: 'denied',
-      },
-    });
-    expect(deniedAudit?.get('metadataJson')).toMatchObject({
-      bindingId: binding.id,
-      bindingIdentifier: binding.bindingKey,
-      bindingKey: binding.bindingKey,
-      existingRunId: firstDispatch.run.id,
-      phase: 'existing-run-visibility',
-      recordId: String(ticket.get('id')),
-    });
-    const failedAudits = await app.db.getRepository('agAgentActionAudits').count({
-      filter: {
-        action: 'dispatch',
-        resultStatus: 'failed',
-      },
-    });
-    expect(failedAudits).toBe(0);
   });
 
   it('does not create orphan runs for concurrent duplicate dispatch requests', async () => {
@@ -760,25 +737,6 @@ describe('agent gateway dispatch binding APIs', () => {
       },
     });
     expect(unchangedTicket.get('agentRunId')).toBeFalsy();
-    const failedAudit = await app.db.getRepository('agAgentActionAudits').findOne({
-      filter: {
-        action: 'dispatch',
-        permissionKey: 'agentGateway.dispatchRun',
-        resultStatus: 'failed',
-      },
-    });
-    const metadataText = JSON.stringify(failedAudit?.get('metadataJson'));
-    expect(failedAudit?.get('metadataJson')).toMatchObject({
-      bindingIdentifier: binding.bindingKey,
-      errorName: 'DispatchWritebackError',
-      errorMessage: 'Failed to write Agent Gateway run relation',
-      phase: 'relation-writeback',
-      recordId: String(ticket.get('id')),
-      sourceRecordId: String(ticket.get('id')),
-    });
-    expect(metadataText).toContain('[REDACTED]');
-    expect(metadataText).not.toContain('WRITEBACK_SECRET');
-    expect(metadataText).not.toContain('WRITEBACK_TOKEN');
   });
 
   it('requires business collection permissions in addition to agent gateway dispatch permission', async () => {
@@ -810,27 +768,6 @@ describe('agent gateway dispatch binding APIs', () => {
       'No permission to view collection: agDispatchTickets',
     );
     expect(await app.db.getRepository('agRuns').count({})).toBe(0);
-    const deniedAudit = await app.db.getRepository('agAgentActionAudits').findOne({
-      filter: {
-        action: 'dispatch',
-        permissionKey: 'agentGateway.dispatchRun',
-        resultStatus: 'denied',
-      },
-    });
-    expect(deniedAudit?.get('metadataJson')).toMatchObject({
-      bindingIdentifier: binding.bindingKey,
-      errorMessage: expect.stringContaining('No permission to view collection: agDispatchTickets'),
-      phase: 'business-permission',
-      recordId: String(ticket.get('id')),
-    });
-    expect(
-      await app.db.getRepository('agAgentActionAudits').count({
-        filter: {
-          action: 'dispatch',
-          resultStatus: 'failed',
-        },
-      }),
-    ).toBe(0);
   });
 
   it('does not create a run when the source record is hidden by business data-scope', async () => {
@@ -894,21 +831,6 @@ describe('agent gateway dispatch binding APIs', () => {
       },
     });
     expect(unchangedVisibleTicket.get('agentRunId')).toBeFalsy();
-    const deniedAudit = await app.db.getRepository('agAgentActionAudits').findOne({
-      filter: {
-        action: 'dispatch',
-        permissionKey: 'agentGateway.dispatchRun',
-        resultStatus: 'denied',
-      },
-    });
-    expect(deniedAudit?.get('metadataJson')).toMatchObject({
-      bindingIdentifier: binding.bindingKey,
-      errorMessage: expect.stringContaining('Dispatch target record not found'),
-      phase: 'business-record-visibility',
-      recordId: String(hiddenTicket.get('id')),
-      sourceCollection: 'agDispatchTickets',
-      sourceRecordId: String(hiddenTicket.get('id')),
-    });
   });
 
   it('does not create a run when the user cannot update the output relation field', async () => {
@@ -952,19 +874,6 @@ describe('agent gateway dispatch binding APIs', () => {
       },
     });
     expect(unchangedTicket.get('agentRunId')).toBeFalsy();
-    const deniedAudit = await app.db.getRepository('agAgentActionAudits').findOne({
-      filter: {
-        action: 'dispatch',
-        permissionKey: 'agentGateway.dispatchRun',
-        resultStatus: 'denied',
-      },
-    });
-    expect(deniedAudit?.get('metadataJson')).toMatchObject({
-      bindingIdentifier: binding.bindingKey,
-      errorMessage: expect.stringContaining('No permission to write output relation field: agentRun'),
-      phase: 'business-permission',
-      recordId: String(ticket.get('id')),
-    });
   });
 
   it('does not create a run when the prompt reads a source field hidden from the user', async () => {

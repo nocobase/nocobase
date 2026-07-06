@@ -7,45 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Context } from '@nocobase/actions';
-
-import { auditMutatingAgentAction, auditReadAgentAction, createAgentActionAudit } from '../audit/agentActionAudit';
 import { AGENT_GATEWAY_ACTIONS, AGENT_GATEWAY_PERMISSION_DEFINITIONS, AGENT_GATEWAY_PERMISSIONS } from '../security';
-
-function createAuditContext(options: { failCreate?: boolean } = {}) {
-  const creates: unknown[] = [];
-  const warnings: unknown[] = [];
-  const ctx = {
-    app: {
-      logger: {
-        warn(message: string, meta: Record<string, unknown>) {
-          warnings.push({ message, meta });
-        },
-      },
-    },
-    db: {
-      getRepository(name: string) {
-        if (name !== 'agAgentActionAudits') {
-          throw new Error(`Unexpected repository ${name}`);
-        }
-        return {
-          async create(payload: unknown) {
-            if (options.failCreate) {
-              throw new Error('audit store unavailable');
-            }
-            creates.push(payload);
-            return payload;
-          },
-        };
-      },
-    },
-  } as unknown as Context;
-  return {
-    ctx,
-    creates,
-    warnings,
-  };
-}
 
 describe('agent gateway permission foundation', () => {
   it('defines stable permission snippets and resource actions for session control phases', () => {
@@ -94,9 +56,6 @@ describe('agent gateway permission foundation', () => {
     const cancelRun = AGENT_GATEWAY_PERMISSION_DEFINITIONS.find(
       (definition) => definition.name === AGENT_GATEWAY_PERMISSIONS.cancelRun,
     );
-    const readAudit = AGENT_GATEWAY_PERMISSION_DEFINITIONS.find(
-      (definition) => definition.name === AGENT_GATEWAY_PERMISSIONS.readAudit,
-    );
     const rawWrite = AGENT_GATEWAY_PERMISSION_DEFINITIONS.find(
       (definition) => definition.name === AGENT_GATEWAY_PERMISSIONS.writeTerminalRaw,
     );
@@ -128,78 +87,6 @@ describe('agent gateway permission foundation', () => {
     expect(cancelRun?.actions).toEqual(['agentGateway:cancelRun', 'agRuns:get']);
     expect(cancelRun?.actions).not.toContain('agentGateway:interruptRun');
     expect(cancelRun?.actions).not.toContain('agentGateway:terminateRun');
-    expect(readAudit?.actions).toEqual(['agentGateway:readAudit', 'agRuns:list']);
-    expect(readAudit?.actions).not.toContain('agentGateway:readRuns');
     expect(rawWrite?.actions).toEqual([]);
-  });
-});
-
-describe('agent gateway action audit foundation', () => {
-  it('writes audit records with the expected normalized shape', async () => {
-    const { ctx, creates } = createAuditContext();
-
-    await createAgentActionAudit(ctx, {
-      action: 'readTerminal',
-      runId: '11111111-1111-4111-8111-111111111111',
-      sessionId: '22222222-2222-4222-8222-222222222222',
-      permissionKey: AGENT_GATEWAY_PERMISSIONS.readTerminal,
-      resultStatus: 'succeeded',
-      provider: 'codex',
-      metadataJson: {
-        lines: 200,
-      },
-    });
-
-    expect(creates).toHaveLength(1);
-    expect(creates[0]).toMatchObject({
-      values: {
-        action: 'readTerminal',
-        runId: '11111111-1111-4111-8111-111111111111',
-        sessionId: '22222222-2222-4222-8222-222222222222',
-        permissionKey: AGENT_GATEWAY_PERMISSIONS.readTerminal,
-        resultStatus: 'succeeded',
-        provider: 'codex',
-        metadataJson: {
-          lines: 200,
-        },
-      },
-    });
-  });
-
-  it('fails closed when mutating action audit creation fails', async () => {
-    const { ctx } = createAuditContext({ failCreate: true });
-
-    await expect(
-      auditMutatingAgentAction(ctx, {
-        action: 'resume',
-        permissionKey: AGENT_GATEWAY_PERMISSIONS.resumeAgentSession,
-        resultStatus: 'accepted',
-      }),
-    ).rejects.toThrow('audit store unavailable');
-  });
-
-  it('keeps read action audit best-effort and logs without sensitive payloads', async () => {
-    const { ctx, warnings } = createAuditContext({ failCreate: true });
-
-    const result = await auditReadAgentAction(ctx, {
-      action: 'readRawLogs',
-      permissionKey: AGENT_GATEWAY_PERMISSIONS.readRawLogs,
-      resultStatus: 'failed',
-      redactedPreview: 'token=must-not-render',
-    });
-
-    expect(result).toBeNull();
-    expect(warnings).toEqual([
-      {
-        message: 'Agent Gateway read audit write failed',
-        meta: {
-          action: 'readRawLogs',
-          permissionKey: AGENT_GATEWAY_PERMISSIONS.readRawLogs,
-          resultStatus: 'failed',
-          errorName: 'Error',
-        },
-      },
-    ]);
-    expect(JSON.stringify(warnings)).not.toContain('must-not-render');
   });
 });

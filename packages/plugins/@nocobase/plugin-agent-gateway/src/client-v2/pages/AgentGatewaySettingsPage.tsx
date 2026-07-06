@@ -21,6 +21,7 @@ import {
   Space,
   Switch,
   Table,
+  Tabs,
   Tag,
   Typography,
   Upload,
@@ -96,11 +97,31 @@ interface SkillUploadResult {
   idempotent?: boolean;
 }
 
+interface SkillVersionRecord {
+  id: string;
+  skillVersionId?: string;
+  skillId?: string | null;
+  skillKey?: string | null;
+  displayName?: string | null;
+  skillStatus?: string | null;
+  versionLabel?: string;
+  status?: string;
+  sourceType?: string | null;
+  sourceSha256?: string | null;
+  sourceSizeBytes?: number | null;
+  sourceUploadedAt?: string | null;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+}
+
 const DEFAULT_SKILL_UPLOAD_FORM_VALUES: SkillUploadFormValues = {
   skillKey: 'nb-opencode-ui-batch',
   displayName: 'NB OpenCode UI Batch',
   versionLabel: 'local',
 };
+
+const DAEMON_RESTART_COMMAND =
+  'systemctl restart agent-gateway-daemon.service || systemctl --user restart agent-gateway-daemon.service || tmux attach -t agent-gateway-daemon';
 
 const PROFILE_CAPABILITY_KEYS = [
   'terminalOutput',
@@ -262,6 +283,14 @@ export default function AgentGatewaySettingsPage() {
     },
   );
 
+  const skillVersionsRequest = useRequest(async () => {
+    const response = await ctx.api.request<SkillVersionRecord[]>({
+      url: 'agent-gateway/skill-versions:list',
+      method: 'get',
+    });
+    return getResponseData(response, []);
+  });
+
   const uploadSkillVersionRequest = useRequest(
     async (values: SkillUploadFormValues & { contentBase64: string }) => {
       const response = await ctx.api.request<SkillUploadResult>({
@@ -275,6 +304,7 @@ export default function AgentGatewaySettingsPage() {
       manual: true,
       onSuccess(result) {
         setSkillUploadResult(result);
+        skillVersionsRequest.refresh();
         ctx.message?.success(t('Skill uploaded'));
       },
       onError() {
@@ -346,6 +376,11 @@ export default function AgentGatewaySettingsPage() {
     nodesRequest.refresh();
     profilesRequest.refresh();
   }, [nodesRequest, profilesRequest]);
+
+  const refreshAll = useCallback(() => {
+    refreshNodes();
+    skillVersionsRequest.refresh();
+  }, [refreshNodes, skillVersionsRequest]);
 
   const nodeColumns = useMemo<ColumnsType<NodeRecord>>(
     () => [
@@ -441,6 +476,52 @@ export default function AgentGatewaySettingsPage() {
     [t],
   );
 
+  const skillVersionColumns = useMemo<ColumnsType<SkillVersionRecord>>(
+    () => [
+      {
+        title: t('Skill'),
+        key: 'skill',
+        render: (_value: unknown, record) => (
+          <Space direction="vertical" size={0}>
+            <Typography.Text strong>{record.displayName || record.skillKey || record.skillId || '-'}</Typography.Text>
+            {record.skillKey ? <Typography.Text type="secondary">{record.skillKey}</Typography.Text> : null}
+          </Space>
+        ),
+      },
+      {
+        title: t('Version label'),
+        dataIndex: 'versionLabel',
+        key: 'versionLabel',
+        render: (value: string | undefined) => value || '-',
+      },
+      {
+        title: t('Status'),
+        key: 'status',
+        render: (_value: unknown, record) => (
+          <Space size={4} wrap>
+            {statusTag(record.status)}
+            {record.skillStatus && record.skillStatus !== record.status ? statusTag(record.skillStatus) : null}
+          </Space>
+        ),
+      },
+      {
+        title: t('Source'),
+        key: 'source',
+        render: (_value: unknown, record) =>
+          [record.sourceType, record.sourceSha256 ? `${record.sourceSha256.slice(0, 8)}...` : '']
+            .filter(Boolean)
+            .join(' / ') || '-',
+      },
+      {
+        title: t('Updated at'),
+        dataIndex: 'updatedAt',
+        key: 'updatedAt',
+        render: (value: string | null | undefined) => formatDateTime(value || undefined),
+      },
+    ],
+    [t],
+  );
+
   return (
     <section aria-label={t('Agent Gateway Nodes')}>
       <Space direction="vertical" size={16} style={{ width: '100%' }}>
@@ -449,7 +530,7 @@ export default function AgentGatewaySettingsPage() {
             {t('Agent Gateway')}
           </Typography.Title>
           <Space>
-            <Button icon={<ReloadOutlined />} onClick={refreshNodes}>
+            <Button icon={<ReloadOutlined />} onClick={refreshAll}>
               {t('Refresh')}
             </Button>
             <Button icon={<UploadOutlined />} onClick={openSkillUploadModal}>
@@ -461,74 +542,110 @@ export default function AgentGatewaySettingsPage() {
           </Space>
         </Space>
 
-        <Table<NodeRecord>
-          columns={nodeColumns}
-          dataSource={nodesRequest.data || []}
-          loading={nodesRequest.loading}
-          rowKey="id"
-          locale={{ emptyText: <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('No nodes yet')} /> }}
-          pagination={false}
-          rowSelection={{
-            type: 'radio',
-            selectedRowKeys: selectedNodeId ? [selectedNodeId] : [],
-            onChange: (keys) => setSelectedNodeId(String(keys[0] || '')),
-          }}
-          onRow={(record) => ({
-            onClick: () => setSelectedNodeId(record.id),
-          })}
-        />
+        <Tabs
+          items={[
+            {
+              key: 'nodes',
+              label: t('Nodes'),
+              children: (
+                <Space direction="vertical" size={16} style={{ width: '100%' }}>
+                  <Table<NodeRecord>
+                    columns={nodeColumns}
+                    dataSource={nodesRequest.data || []}
+                    loading={nodesRequest.loading}
+                    rowKey="id"
+                    locale={{
+                      emptyText: <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('No nodes yet')} />,
+                    }}
+                    pagination={false}
+                    rowSelection={{
+                      type: 'radio',
+                      selectedRowKeys: selectedNodeId ? [selectedNodeId] : [],
+                      onChange: (keys) => setSelectedNodeId(String(keys[0] || '')),
+                    }}
+                    onRow={(record) => ({
+                      onClick: () => setSelectedNodeId(record.id),
+                    })}
+                  />
 
-        {selectedNode ? (
-          <Space direction="vertical" size={12} style={{ width: '100%' }}>
-            <Descriptions bordered size="small" column={2} title={t('Node detail')}>
-              <Descriptions.Item label={t('Node key')}>{selectedNode.nodeKey}</Descriptions.Item>
-              <Descriptions.Item label={t('Enabled state')}>
-                {renderEnabledState(selectedNode.status, t)}
-              </Descriptions.Item>
-              <Descriptions.Item label={t('Connection')}>{renderNodeConnection(selectedNode, t)}</Descriptions.Item>
-              <Descriptions.Item label={t('Last heartbeat')}>
-                {formatDateTime(selectedNode.lastHeartbeatAt)}
-              </Descriptions.Item>
-              <Descriptions.Item label={t('Daemon version')}>
-                {selectedNode.metadataJson?.daemonVersion || '-'}
-              </Descriptions.Item>
-              <Descriptions.Item label={t('Registered at')}>
-                {formatDateTime(selectedNode.registeredAt)}
-              </Descriptions.Item>
-              <Descriptions.Item label={t('Disabled at')} span={2}>
-                {formatDateTime(selectedNode.disabledAt || undefined)}
-              </Descriptions.Item>
-            </Descriptions>
-            {selectedNode.online === false ? (
-              <Alert
-                type="warning"
-                showIcon
-                message={t('Daemon is offline')}
-                description={
-                  <Space direction="vertical" size={8} style={{ width: '100%' }}>
-                    <Typography.Text>
-                      {t('Restart the Agent Gateway daemon service on this node or rerun the bootstrap command.')}
-                    </Typography.Text>
-                    <Typography.Paragraph copyable style={{ margin: 0 }}>
-                      systemctl --user restart agent-gateway-daemon.service || ~/.agent-gateway-daemon/run.sh
-                    </Typography.Paragraph>
-                  </Space>
-                }
-              />
-            ) : null}
-          </Space>
-        ) : null}
+                  {selectedNode ? (
+                    <Space direction="vertical" size={12} style={{ width: '100%' }}>
+                      <Descriptions bordered size="small" column={2} title={t('Node detail')}>
+                        <Descriptions.Item label={t('Node key')}>{selectedNode.nodeKey}</Descriptions.Item>
+                        <Descriptions.Item label={t('Enabled state')}>
+                          {renderEnabledState(selectedNode.status, t)}
+                        </Descriptions.Item>
+                        <Descriptions.Item label={t('Connection')}>
+                          {renderNodeConnection(selectedNode, t)}
+                        </Descriptions.Item>
+                        <Descriptions.Item label={t('Last heartbeat')}>
+                          {formatDateTime(selectedNode.lastHeartbeatAt)}
+                        </Descriptions.Item>
+                        <Descriptions.Item label={t('Daemon version')}>
+                          {selectedNode.metadataJson?.daemonVersion || '-'}
+                        </Descriptions.Item>
+                        <Descriptions.Item label={t('Registered at')}>
+                          {formatDateTime(selectedNode.registeredAt)}
+                        </Descriptions.Item>
+                        <Descriptions.Item label={t('Disabled at')} span={2}>
+                          {formatDateTime(selectedNode.disabledAt || undefined)}
+                        </Descriptions.Item>
+                      </Descriptions>
+                      {selectedNode.online === false ? (
+                        <Alert
+                          type="warning"
+                          showIcon
+                          message={t('Daemon is offline')}
+                          description={
+                            <Space direction="vertical" size={8} style={{ width: '100%' }}>
+                              <Typography.Text>
+                                {t(
+                                  'Restart the Agent Gateway daemon service on this node or rerun the bootstrap command.',
+                                )}
+                              </Typography.Text>
+                              <Typography.Paragraph copyable style={{ margin: 0 }}>
+                                {DAEMON_RESTART_COMMAND}
+                              </Typography.Paragraph>
+                            </Space>
+                          }
+                        />
+                      ) : null}
+                    </Space>
+                  ) : null}
 
-        <Table<AgentProfileRecord>
-          columns={profileColumns}
-          dataSource={profilesRequest.data || []}
-          loading={profilesRequest.loading}
-          rowKey="id"
-          locale={{
-            emptyText: <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('No agent profiles yet')} />,
-          }}
-          pagination={false}
-          title={() => t('Agent profiles')}
+                  <Table<AgentProfileRecord>
+                    columns={profileColumns}
+                    dataSource={profilesRequest.data || []}
+                    loading={profilesRequest.loading}
+                    rowKey="id"
+                    locale={{
+                      emptyText: (
+                        <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('No agent profiles yet')} />
+                      ),
+                    }}
+                    pagination={false}
+                    title={() => t('Agent profiles')}
+                  />
+                </Space>
+              ),
+            },
+            {
+              key: 'skills',
+              label: t('Skills'),
+              children: (
+                <Table<SkillVersionRecord>
+                  columns={skillVersionColumns}
+                  dataSource={skillVersionsRequest.data || []}
+                  loading={skillVersionsRequest.loading}
+                  rowKey="id"
+                  locale={{
+                    emptyText: <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('No skills yet')} />,
+                  }}
+                  pagination={false}
+                />
+              ),
+            },
+          ]}
         />
       </Space>
 
