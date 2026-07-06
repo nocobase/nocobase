@@ -96,7 +96,7 @@ function clearPendingWorkflowTaskPopupRecord(taskTypeKey?: string, popupId?: str
 }
 
 function useWorkflowTasksRoute() {
-  const params = useParams<WorkflowTasksRouteParams>();
+  const params = useParams<'taskType' | 'status' | 'popupId'>();
   const location = useLocation();
   const status = normalizeWorkflowTaskStatus(params.status);
   const isMobileRoute = /(^|\/)(mobile\/page|page)\/workflow-tasks(\/|$)/.test(location.pathname);

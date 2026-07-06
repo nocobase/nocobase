@@ -267,9 +267,11 @@ function syncWorkflowTaskCountsEventBus(store: WorkflowTaskCountsStore, eventBus
     if (!isObjectRecord(detail) || typeof detail.type !== 'string') {
       return;
     }
+    const taskType = detail.type;
+    const stats = detail.stats;
     updateWorkflowTaskCountsStore(store, (previous) => ({
       ...previous,
-      [detail.type]: normalizeStats(detail.stats),
+      [taskType]: normalizeStats(stats),
     }));
   };
   store.eventHandler = handleTaskUpdate;
