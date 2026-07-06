@@ -8,6 +8,8 @@
  */
 
 export { default, PluginWorkflowClientV2 } from './plugin';
+export * from './constants';
+export * from './taskCenter';
 export * from './models';
 
 // Workflow node extension contract (shared base class + canvas building blocks) for downstream node plugins migrating

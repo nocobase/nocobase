@@ -15,11 +15,12 @@
  */
 
 import type { ComponentType } from 'react';
-import type { ISchema, JSXComponent } from '@formily/react';
 import type { SubModelItem } from '@nocobase/flow-engine';
 import type { UseVariableOptions, VariableOption } from '../canvas/collectionFieldOptions';
 
 export type LoaderOf<P = {}> = () => Promise<{ default: ComponentType<P> }>;
+type ISchema = import('@formily/react').ISchema;
+type JSXComponent = import('@formily/react').JSXComponent;
 
 export type TriggerTempAssociationSource = {
   collection: string;
