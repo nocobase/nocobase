@@ -14,7 +14,7 @@ import { LIGHT_EXTENSION_ACL_SNIPPET, LIGHT_EXTENSION_SETTINGS_KEY } from '../co
 
 export class PluginLightExtensionClientV2 extends Plugin<Record<string, never>, Application> {
   async load() {
-    const title = this.t('Light extensions') as unknown as string;
+    const title = this.t('Light extensions');
 
     this.pluginSettingsManager.addMenuItem({
       key: LIGHT_EXTENSION_SETTINGS_KEY,
@@ -28,7 +28,23 @@ export class PluginLightExtensionClientV2 extends Plugin<Record<string, never>, 
       key: 'index',
       title,
       aclSnippet: LIGHT_EXTENSION_ACL_SNIPPET,
-      componentLoader: () => import('./pages/LightExtensionHomePage'),
+      componentLoader: () => import('./pages/LightExtensionListPage'),
+    });
+
+    this.pluginSettingsManager.addPageTabItem({
+      menuKey: LIGHT_EXTENSION_SETTINGS_KEY,
+      key: 'source',
+      title: this.t('Source'),
+      aclSnippet: LIGHT_EXTENSION_ACL_SNIPPET,
+      componentLoader: () => import('./pages/LightExtensionWorkspacePage'),
+    });
+
+    this.pluginSettingsManager.addPageTabItem({
+      menuKey: LIGHT_EXTENSION_SETTINGS_KEY,
+      key: 'entries',
+      title: this.t('Entries'),
+      aclSnippet: LIGHT_EXTENSION_ACL_SNIPPET,
+      componentLoader: () => import('./pages/LightExtensionEntriesPage'),
     });
   }
 }

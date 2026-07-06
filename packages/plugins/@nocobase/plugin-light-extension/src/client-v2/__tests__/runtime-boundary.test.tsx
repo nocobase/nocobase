@@ -42,6 +42,18 @@ describe('plugin-light-extension client-v2 boundary', () => {
       componentLoader: expect.any(Function),
       aclSnippet: LIGHT_EXTENSION_ACL_SNIPPET,
     });
+    expect(app.pluginSettingsManager.get(`${LIGHT_EXTENSION_SETTINGS_KEY}.source`, false)).toMatchObject({
+      menuKey: LIGHT_EXTENSION_SETTINGS_KEY,
+      pageKey: 'source',
+      componentLoader: expect.any(Function),
+      aclSnippet: LIGHT_EXTENSION_ACL_SNIPPET,
+    });
+    expect(app.pluginSettingsManager.get(`${LIGHT_EXTENSION_SETTINGS_KEY}.entries`, false)).toMatchObject({
+      menuKey: LIGHT_EXTENSION_SETTINGS_KEY,
+      pageKey: 'entries',
+      componentLoader: expect.any(Function),
+      aclSnippet: LIGHT_EXTENSION_ACL_SNIPPET,
+    });
   });
 
   it('keeps client-v2 code out of the legacy client runtime', () => {
@@ -76,15 +88,20 @@ describe('plugin-light-extension client-v2 boundary', () => {
     expect(rootSource).not.toContain('./sdk/client');
   });
 
-  it('keeps the first settings page scoped to the light-extension empty state', () => {
+  it('keeps the Phase 1 pages scoped out of publication/runtime features', () => {
     const pageSource = [
       path.resolve(__dirname, '../pages/LightExtensionHomePage.tsx'),
+      path.resolve(__dirname, '../pages/LightExtensionListPage.tsx'),
+      path.resolve(__dirname, '../pages/LightExtensionWorkspacePage.tsx'),
+      path.resolve(__dirname, '../pages/LightExtensionEntriesPage.tsx'),
       path.resolve(__dirname, '../../client-shared/LightExtensionHomePage.tsx'),
     ]
       .map((file) => fs.readFileSync(file, 'utf8'))
       .join('\n');
 
-    expect(pageSource).not.toMatch(/install|migration|PluginManager|dependency/i);
+    expect(pageSource).not.toMatch(
+      /\bpublication\b|runtime code|versionPolicy|follow-active|\bCLI(?:\s*\/\s*Sync)?\b|\bSync API\b/i,
+    );
   });
 });
 

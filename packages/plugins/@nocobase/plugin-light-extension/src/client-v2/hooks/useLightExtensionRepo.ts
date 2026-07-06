@@ -1,0 +1,363 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import { useFlowContext } from '@nocobase/flow-engine';
+import { useCallback, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+
+import { NAMESPACE } from '../../constants';
+import type {
+  LightExtensionChangeLifecycleInput,
+  LightExtensionCommitRecord,
+  LightExtensionCreateRepoInput,
+  LightExtensionEntryRecord,
+  LightExtensionFileChange,
+  LightExtensionFileResult,
+  LightExtensionPullResult,
+  LightExtensionPushResult,
+  LightExtensionRepoLifecycleStatus,
+  LightExtensionRepoRecord,
+  LightExtensionScanResult,
+} from '../../shared/types';
+
+export const lightExtensionRepoOperations = [
+  'listRepos',
+  'createRepo',
+  'getRepo',
+  'changeLifecycle',
+  'archiveRepo',
+  'deleteRepo',
+  'pull',
+  'getFile',
+  'push',
+  'scanEntries',
+  'listEntries',
+] as const;
+
+export type LightExtensionRepoOperation = (typeof lightExtensionRepoOperations)[number];
+
+export type LightExtensionOperationState<T> = Partial<Record<LightExtensionRepoOperation, T>>;
+
+export interface LightExtensionHookErrorOptions {
+  operation: LightExtensionRepoOperation;
+  code?: string;
+  status?: number;
+  message: string;
+  details?: Record<string, unknown>;
+}
+
+export class LightExtensionHookError extends Error {
+  readonly operation: LightExtensionRepoOperation;
+
+  readonly code?: string;
+
+  readonly status?: number;
+
+  readonly details?: Record<string, unknown>;
+
+  constructor(options: LightExtensionHookErrorOptions) {
+    super(options.message);
+    this.name = 'LightExtensionHookError';
+    this.operation = options.operation;
+    this.code = options.code;
+    this.status = options.status;
+    this.details = options.details;
+  }
+}
+
+export interface LightExtensionPullInput {
+  repoId: string;
+  ref?: string;
+  knownTreeHash?: string;
+  includeContent?: 'none' | 'selected' | 'all';
+  selectedPaths?: string[];
+}
+
+export interface LightExtensionGetFileInput {
+  repoId: string;
+  ref?: string;
+  path: string;
+}
+
+export interface LightExtensionPushInput {
+  repoId: string;
+  baseCommitId: string | null;
+  message: string;
+  files: LightExtensionFileChange[];
+  allowEmptyCommit?: boolean;
+}
+
+export interface UseLightExtensionRepoResult {
+  loading: LightExtensionOperationState<boolean>;
+  errors: LightExtensionOperationState<LightExtensionHookError>;
+  listRepos(): Promise<LightExtensionRepoRecord[]>;
+  createRepo(input: LightExtensionCreateRepoInput): Promise<LightExtensionRepoRecord>;
+  getRepo(repoId: string): Promise<LightExtensionRepoRecord>;
+  changeLifecycle(input: LightExtensionChangeLifecycleInput): Promise<LightExtensionRepoRecord>;
+  archiveRepo(input: { repoId: string; expectedVersion?: number }): Promise<LightExtensionRepoRecord>;
+  deleteRepo(repoId: string): Promise<{ deleted: boolean; repoId: string }>;
+  pull(input: LightExtensionPullInput): Promise<LightExtensionPullResult>;
+  getFile(input: LightExtensionGetFileInput): Promise<LightExtensionFileResult>;
+  push(input: LightExtensionPushInput): Promise<LightExtensionPushResult>;
+  scanEntries(repoId: string): Promise<LightExtensionScanResult>;
+  listEntries(repoId: string): Promise<LightExtensionEntryRecord[]>;
+  isLoading(operation: LightExtensionRepoOperation): boolean;
+  getError(operation: LightExtensionRepoOperation): LightExtensionHookError | null;
+  clearError(operation?: LightExtensionRepoOperation): void;
+}
+
+type ApiRequestOptions = {
+  url: string;
+  method?: string;
+  data?: unknown;
+};
+
+type ApiClientLike = {
+  request: <TResponse>(options: ApiRequestOptions) => Promise<TResponse>;
+};
+
+type FlowContextWithApi = {
+  api: ApiClientLike;
+};
+
+type ResourceResponse<T> = {
+  data?: {
+    data?: T;
+  };
+};
+
+type OperationInputMap = {
+  listRepos: undefined;
+  createRepo: LightExtensionCreateRepoInput;
+  getRepo: { repoId: string };
+  changeLifecycle: LightExtensionChangeLifecycleInput;
+  archiveRepo: { repoId: string; expectedVersion?: number };
+  deleteRepo: { repoId: string };
+  pull: LightExtensionPullInput;
+  getFile: LightExtensionGetFileInput;
+  push: LightExtensionPushInput;
+  scanEntries: { repoId: string };
+  listEntries: { repoId: string };
+};
+
+type OperationResultMap = {
+  listRepos: LightExtensionRepoRecord[];
+  createRepo: LightExtensionRepoRecord;
+  getRepo: LightExtensionRepoRecord;
+  changeLifecycle: LightExtensionRepoRecord;
+  archiveRepo: LightExtensionRepoRecord;
+  deleteRepo: { deleted: boolean; repoId: string };
+  pull: LightExtensionPullResult;
+  getFile: LightExtensionFileResult;
+  push: LightExtensionPushResult;
+  scanEntries: LightExtensionScanResult;
+  listEntries: LightExtensionEntryRecord[];
+};
+
+const operationResourceActions: Record<LightExtensionRepoOperation, string> = {
+  listRepos: 'lightExtensionRepos:list',
+  createRepo: 'lightExtensionRepos:create',
+  getRepo: 'lightExtensionRepos:get',
+  changeLifecycle: 'lightExtensionRepos:changeLifecycle',
+  archiveRepo: 'lightExtensionRepos:archive',
+  deleteRepo: 'lightExtensionRepos:delete',
+  pull: 'lightExtensionFiles:pull',
+  getFile: 'lightExtensionFiles:getFile',
+  push: 'lightExtensionFiles:push',
+  scanEntries: 'lightExtensionEntries:scan',
+  listEntries: 'lightExtensionEntries:list',
+};
+
+export function useLightExtensionRepo(): UseLightExtensionRepoResult {
+  const ctx = useFlowContext() as FlowContextWithApi;
+  const { t } = useTranslation(NAMESPACE);
+  const [loadingCounts, setLoadingCounts] = useState<LightExtensionOperationState<number>>({});
+  const [errors, setErrors] = useState<LightExtensionOperationState<LightExtensionHookError>>({});
+
+  const loading = useMemo<LightExtensionOperationState<boolean>>(() => {
+    return Object.fromEntries(
+      lightExtensionRepoOperations.map((operation) => [operation, Boolean(loadingCounts[operation])]),
+    ) as LightExtensionOperationState<boolean>;
+  }, [loadingCounts]);
+
+  const clearError = useCallback((operation?: LightExtensionRepoOperation) => {
+    setErrors((current) => {
+      if (!operation) {
+        return {};
+      }
+
+      const next = { ...current };
+      delete next[operation];
+      return next;
+    });
+  }, []);
+
+  const requestOperation = useCallback(
+    async <TOperation extends LightExtensionRepoOperation>(
+      operation: TOperation,
+      input: OperationInputMap[TOperation],
+    ): Promise<OperationResultMap[TOperation]> => {
+      setLoadingCounts((current) => ({
+        ...current,
+        [operation]: (current[operation] || 0) + 1,
+      }));
+      clearError(operation);
+
+      try {
+        const response = await ctx.api.request<ResourceResponse<OperationResultMap[TOperation]>>({
+          url: operationResourceActions[operation],
+          method: 'post',
+          data: input,
+        });
+
+        return unwrapResourceResponse(response);
+      } catch (error) {
+        const hookError = normalizeLightExtensionError(operation, error, t('Light extension request failed'));
+        setErrors((current) => ({
+          ...current,
+          [operation]: hookError,
+        }));
+        throw hookError;
+      } finally {
+        setLoadingCounts((current) => {
+          const nextCount = Math.max((current[operation] || 0) - 1, 0);
+          const next = { ...current };
+
+          if (nextCount) {
+            next[operation] = nextCount;
+          } else {
+            delete next[operation];
+          }
+
+          return next;
+        });
+      }
+    },
+    [clearError, ctx.api, t],
+  );
+
+  return useMemo<UseLightExtensionRepoResult>(
+    () => ({
+      loading,
+      errors,
+      listRepos: () => requestOperation('listRepos', undefined),
+      createRepo: (input) => requestOperation('createRepo', input),
+      getRepo: (repoId) => requestOperation('getRepo', { repoId }),
+      changeLifecycle: (input) => requestOperation('changeLifecycle', input),
+      archiveRepo: (input) => requestOperation('archiveRepo', input),
+      deleteRepo: (repoId) => requestOperation('deleteRepo', { repoId }),
+      pull: (input) => requestOperation('pull', input),
+      getFile: (input) => requestOperation('getFile', input),
+      push: (input) => requestOperation('push', input),
+      scanEntries: (repoId) => requestOperation('scanEntries', { repoId }),
+      listEntries: (repoId) => requestOperation('listEntries', { repoId }),
+      isLoading: (operation) => Boolean(loading[operation]),
+      getError: (operation) => errors[operation] || null,
+      clearError,
+    }),
+    [clearError, errors, loading, requestOperation],
+  );
+}
+
+export function isLightExtensionHookError(error: unknown): error is LightExtensionHookError {
+  return error instanceof LightExtensionHookError;
+}
+
+function unwrapResourceResponse<T>(response: ResourceResponse<T>): T {
+  if (isRecord(response.data) && 'data' in response.data) {
+    return response.data.data as T;
+  }
+
+  return response.data as T;
+}
+
+function normalizeLightExtensionError(
+  operation: LightExtensionRepoOperation,
+  error: unknown,
+  fallbackMessage: string,
+): LightExtensionHookError {
+  const response = getRecordProperty(error, 'response');
+  const responseData = response ? response.data : undefined;
+  const serverError = getFirstServerError(responseData) || getFirstServerError(error);
+  const message = toNonEmptyString(serverError?.message) || fallbackMessage;
+
+  return new LightExtensionHookError({
+    operation,
+    code: toNonEmptyString(serverError?.code),
+    status: toNumber(serverError?.status) ?? toNumber(response?.status),
+    message,
+    details: toRecord(serverError?.details),
+  });
+}
+
+function getFirstServerError(value: unknown): Record<string, unknown> | null {
+  const record = toRecord(value);
+  if (!record) {
+    return null;
+  }
+
+  const errors = record.errors;
+  if (Array.isArray(errors)) {
+    const firstError = errors.find((item) => Boolean(toRecord(item)));
+    return toRecord(firstError);
+  }
+
+  const error = toRecord(record.error);
+  if (error) {
+    return error;
+  }
+
+  return null;
+}
+
+function getRecordProperty(value: unknown, key: string): Record<string, unknown> | null {
+  const record = toRecord(value);
+  return toRecord(record?.[key]);
+}
+
+function toRecord(value: unknown): Record<string, unknown> | null {
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  return value;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+function toNonEmptyString(value: unknown): string | undefined {
+  return typeof value === 'string' && value ? value : undefined;
+}
+
+function toNumber(value: unknown): number | undefined {
+  return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
+}
+
+export function toLifecycleInput(
+  repo: LightExtensionRepoRecord,
+  lifecycleStatus: LightExtensionRepoLifecycleStatus,
+): LightExtensionChangeLifecycleInput {
+  return {
+    repoId: repo.id,
+    lifecycleStatus,
+    expectedLifecycleStatus: repo.lifecycleStatus,
+    expectedVersion: repo.version,
+  };
+}
+
+export function getLightExtensionErrorDiagnostics(error: unknown) {
+  if (!isLightExtensionHookError(error)) {
+    return [];
+  }
+
+  const diagnostics = error.details?.diagnostics;
+  return Array.isArray(diagnostics) ? diagnostics : [];
+}
