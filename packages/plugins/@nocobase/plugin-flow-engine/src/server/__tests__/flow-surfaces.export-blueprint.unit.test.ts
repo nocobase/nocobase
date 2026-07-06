@@ -923,6 +923,91 @@ describe('flowSurfaces exportBlueprint', () => {
     expect(replaceRes.status, readErrorMessage(replaceRes)).toBe(200);
   });
 
+  it('should treat unsupported inner JS renderer field step params as unsupported', async () => {
+    const title = `Export unsupported JS renderer field ${Date.now()}`;
+    const createRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        version: '1',
+        mode: 'create',
+        navigation: {
+          item: {
+            title,
+          },
+        },
+        page: {
+          title,
+        },
+        tabs: [
+          {
+            key: 'mainTab',
+            title: 'Main',
+            blocks: [
+              {
+                key: 'employeesTable',
+                type: 'table',
+                collection: 'employees',
+                fields: [
+                  {
+                    key: 'nicknameJsField',
+                    field: 'nickname',
+                    renderer: 'js',
+                    settings: {
+                      version: '1.0.0',
+                      code: 'ctx.render(ctx.record.nickname);',
+                    },
+                  },
+                  'email',
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    });
+    expect(createRes.status, readErrorMessage(createRes)).toBe(200);
+    const pageSchemaUid = getData(createRes).target.pageSchemaUid as string;
+    const readback = await readPage(rootAgent, pageSchemaUid);
+    const jsField = collectDescendantNodes(readback.tree, (item) => item?.use === 'JSFieldModel')[0];
+    expect(jsField?.uid).toBeTruthy();
+    await context.flowRepo.upsertModel({
+      uid: jsField.uid,
+      use: jsField.use,
+      props: jsField.props,
+      stepParams: {
+        ...(jsField.stepParams || {}),
+        displayFieldSettings: {
+          displayStyle: {
+            displayStyle: 'tag',
+          },
+        },
+      },
+    });
+
+    const exportRes = await rootAgent.resource('flowSurfaces').exportBlueprint({
+      values: {
+        target: {
+          pageSchemaUid,
+        },
+        options: {
+          unsupported: 'warn',
+        },
+      },
+    });
+    expect(exportRes.status, readErrorMessage(exportRes)).toBe(200);
+    const exported = getData(exportRes);
+    const [tableDocument] = exported.document.tabs[0].blocks;
+    expect(tableDocument.fields.map(readFieldName)).toContain('email');
+    expect(tableDocument.fields.map(readFieldName)).not.toContain('nickname');
+    expect(exported.unsupported).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          kind: 'field',
+          reasonCode: 'unsupported-node',
+        }),
+      ]),
+    );
+  });
+
   it('should preserve associated resource default action popup runtime as supported state', async () => {
     const title = `Export associated action popup ${Date.now()}`;
     const createRes = await rootAgent.resource('flowSurfaces').applyBlueprint({

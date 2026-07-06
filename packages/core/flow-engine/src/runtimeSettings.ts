@@ -77,16 +77,9 @@ type RuntimeSettingStepDefinition = StepDefinition & {
 
 const RUNTIME_SETTING_KEY_RE = /^[A-Za-z_$][A-Za-z0-9_$-]*$/;
 const RESERVED_RUNTIME_SETTING_KEYS = new Set(['runJs']);
-const RUNTIME_SETTINGS_CALL = 'ctx.useSettings';
 const RUNTIME_SETTINGS_VALUES_FLOW_KEY = 'runjsSettings';
 const RUNTIME_SETTINGS_VALUES_STEP_KEY = 'configure';
 const RUNTIME_SETTINGS_STEP_KEY_PREFIX = '__runtimeSettings__';
-
-type RuntimeSettingsConfigExtraction = {
-  hasRuntimeSettingsCall: boolean;
-  hasUnsupportedRuntimeSettingsCall: boolean;
-  configs: UseSettingsConfig[];
-};
 
 const humanizeRuntimeSettingKey = (key: string) =>
   key
@@ -260,390 +253,6 @@ const toRuntimeSettingPropertiesSchema = (
     schema[propertyKey] = toRuntimeSettingValueSchema(propertyKey, propertyDefinition);
   });
   return schema;
-};
-
-class RuntimeSettingsLiteralParser {
-  private index = 0;
-
-  constructor(private readonly source: string) {}
-
-  parse(): unknown {
-    const value = this.parseValue();
-    this.skipIgnored();
-    if (this.index < this.source.length) {
-      throw new Error('Unexpected trailing content');
-    }
-    return value;
-  }
-
-  private parseValue(): unknown {
-    this.skipIgnored();
-    const char = this.source[this.index];
-    if (char === '{') {
-      return this.parseObject();
-    }
-    if (char === '[') {
-      return this.parseArray();
-    }
-    if (char === '"' || char === "'" || char === '`') {
-      return this.parseString();
-    }
-    if (char === '-' || /\d/.test(char || '')) {
-      return this.parseNumber();
-    }
-    const identifier = this.readIdentifier();
-    if (identifier === 'true') {
-      return true;
-    }
-    if (identifier === 'false') {
-      return false;
-    }
-    if (identifier === 'null') {
-      return null;
-    }
-    if (identifier === 'undefined') {
-      return undefined;
-    }
-    throw new Error('Unsupported literal value');
-  }
-
-  private parseObject(): Record<string, unknown> {
-    this.expect('{');
-    const value: Record<string, unknown> = {};
-    this.skipIgnored();
-    while (this.source[this.index] !== '}') {
-      const key = this.parseKey();
-      this.skipIgnored();
-      this.expect(':');
-      value[key] = this.parseValue();
-      this.skipIgnored();
-      if (this.source[this.index] === ',') {
-        this.index += 1;
-        this.skipIgnored();
-        continue;
-      }
-      break;
-    }
-    this.expect('}');
-    return value;
-  }
-
-  private parseArray(): unknown[] {
-    this.expect('[');
-    const value: unknown[] = [];
-    this.skipIgnored();
-    while (this.source[this.index] !== ']') {
-      value.push(this.parseValue());
-      this.skipIgnored();
-      if (this.source[this.index] === ',') {
-        this.index += 1;
-        this.skipIgnored();
-        continue;
-      }
-      break;
-    }
-    this.expect(']');
-    return value;
-  }
-
-  private parseKey(): string {
-    this.skipIgnored();
-    const char = this.source[this.index];
-    if (char === '"' || char === "'" || char === '`') {
-      return String(this.parseString());
-    }
-    const identifier = this.readIdentifier();
-    if (!identifier) {
-      throw new Error('Expected object key');
-    }
-    return identifier;
-  }
-
-  private parseString(): string {
-    const quote = this.source[this.index];
-    this.index += 1;
-    let value = '';
-    while (this.index < this.source.length) {
-      const char = this.source[this.index];
-      if (char === quote) {
-        this.index += 1;
-        return value;
-      }
-      if (char === '\\') {
-        this.index += 1;
-        value += this.readEscapedCharacter();
-        continue;
-      }
-      value += char;
-      this.index += 1;
-    }
-    throw new Error('Unterminated string literal');
-  }
-
-  private readEscapedCharacter(): string {
-    const char = this.source[this.index];
-    this.index += 1;
-    switch (char) {
-      case 'n':
-        return '\n';
-      case 'r':
-        return '\r';
-      case 't':
-        return '\t';
-      case 'b':
-        return '\b';
-      case 'f':
-        return '\f';
-      case 'v':
-        return '\v';
-      case '0':
-        return '\0';
-      default:
-        return char || '';
-    }
-  }
-
-  private parseNumber(): number {
-    const match = this.source.slice(this.index).match(/^-?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?/);
-    if (!match) {
-      throw new Error('Invalid number literal');
-    }
-    this.index += match[0].length;
-    return Number(match[0]);
-  }
-
-  private readIdentifier(): string {
-    const match = this.source.slice(this.index).match(/^[A-Za-z_$][A-Za-z0-9_$]*/);
-    if (!match) {
-      return '';
-    }
-    this.index += match[0].length;
-    return match[0];
-  }
-
-  private skipIgnored() {
-    while (this.index < this.source.length) {
-      const char = this.source[this.index];
-      if (/\s/.test(char)) {
-        this.index += 1;
-        continue;
-      }
-      if (char === '/' && this.source[this.index + 1] === '/') {
-        this.index += 2;
-        while (this.index < this.source.length && this.source[this.index] !== '\n') {
-          this.index += 1;
-        }
-        continue;
-      }
-      if (char === '/' && this.source[this.index + 1] === '*') {
-        this.index += 2;
-        while (
-          this.index < this.source.length &&
-          !(this.source[this.index] === '*' && this.source[this.index + 1] === '/')
-        ) {
-          this.index += 1;
-        }
-        if (this.index < this.source.length) {
-          this.index += 2;
-        }
-        continue;
-      }
-      break;
-    }
-  }
-
-  private expect(char: string) {
-    this.skipIgnored();
-    if (this.source[this.index] !== char) {
-      throw new Error(`Expected '${char}'`);
-    }
-    this.index += 1;
-  }
-}
-
-const skipRunJsIgnored = (source: string, index: number) => {
-  let cursor = index;
-  while (cursor < source.length && /\s/.test(source[cursor])) {
-    cursor += 1;
-  }
-  return cursor;
-};
-
-const isIdentifierPart = (char: string | undefined) => !!char && /[A-Za-z0-9_$]/.test(char);
-
-const isLikelyRegexLiteralStart = (source: string, index: number) => {
-  let cursor = index - 1;
-  while (cursor >= 0 && /\s/.test(source[cursor])) {
-    cursor -= 1;
-  }
-  if (cursor < 0) {
-    return true;
-  }
-  return /[([{=,:;!&|?+\-*~^<>]/.test(source[cursor]);
-};
-
-const skipRegexLiteral = (source: string, start: number) => {
-  let escaped = false;
-  let inCharacterClass = false;
-  for (let index = start + 1; index < source.length; index += 1) {
-    const char = source[index];
-    if (escaped) {
-      escaped = false;
-      continue;
-    }
-    if (char === '\\') {
-      escaped = true;
-      continue;
-    }
-    if (char === '[') {
-      inCharacterClass = true;
-      continue;
-    }
-    if (char === ']') {
-      inCharacterClass = false;
-      continue;
-    }
-    if (char === '/' && !inCharacterClass) {
-      let cursor = index + 1;
-      while (/[A-Za-z]/.test(source[cursor] || '')) {
-        cursor += 1;
-      }
-      return cursor - 1;
-    }
-    if (char === '\n' || char === '\r') {
-      return start;
-    }
-  }
-  return start;
-};
-
-const findNextRuntimeSettingsCall = (source: string, start: number) => {
-  let quote: string | undefined;
-  let escaped = false;
-  for (let index = start; index < source.length; index += 1) {
-    const char = source[index];
-    if (quote) {
-      if (escaped) {
-        escaped = false;
-      } else if (char === '\\') {
-        escaped = true;
-      } else if (char === quote) {
-        quote = undefined;
-      }
-      continue;
-    }
-
-    if (char === '"' || char === "'" || char === '`') {
-      quote = char;
-      continue;
-    }
-    if (char === '/' && source[index + 1] === '/') {
-      index += 2;
-      while (index < source.length && source[index] !== '\n') {
-        index += 1;
-      }
-      continue;
-    }
-    if (char === '/' && source[index + 1] === '*') {
-      index += 2;
-      while (index < source.length && !(source[index] === '*' && source[index + 1] === '/')) {
-        index += 1;
-      }
-      index += 1;
-      continue;
-    }
-    if (char === '/' && isLikelyRegexLiteralStart(source, index)) {
-      index = skipRegexLiteral(source, index);
-      continue;
-    }
-
-    if (
-      source.startsWith(RUNTIME_SETTINGS_CALL, index) &&
-      source[index - 1] !== '.' &&
-      !isIdentifierPart(source[index - 1]) &&
-      !isIdentifierPart(source[index + RUNTIME_SETTINGS_CALL.length])
-    ) {
-      return index;
-    }
-  }
-  return -1;
-};
-
-const findRuntimeSettingsObjectEnd = (source: string, start: number) => {
-  let depth = 0;
-  let quote: string | undefined;
-  let escaped = false;
-  for (let index = start; index < source.length; index += 1) {
-    const char = source[index];
-    if (quote) {
-      if (escaped) {
-        escaped = false;
-      } else if (char === '\\') {
-        escaped = true;
-      } else if (char === quote) {
-        quote = undefined;
-      }
-      continue;
-    }
-    if (char === '"' || char === "'" || char === '`') {
-      quote = char;
-      continue;
-    }
-    if (char === '{') {
-      depth += 1;
-      continue;
-    }
-    if (char === '}') {
-      depth -= 1;
-      if (depth === 0) {
-        return index;
-      }
-    }
-  }
-  return -1;
-};
-
-const extractRuntimeSettingsConfigsFromRunJs = (code: string): RuntimeSettingsConfigExtraction => {
-  const configs: UseSettingsConfig[] = [];
-  let hasRuntimeSettingsCall = false;
-  let hasUnsupportedRuntimeSettingsCall = false;
-  let searchFrom = 0;
-  while (searchFrom < code.length) {
-    const callIndex = findNextRuntimeSettingsCall(code, searchFrom);
-    if (callIndex < 0) {
-      break;
-    }
-    hasRuntimeSettingsCall = true;
-    let cursor = skipRunJsIgnored(code, callIndex + RUNTIME_SETTINGS_CALL.length);
-    if (code[cursor] !== '(') {
-      hasUnsupportedRuntimeSettingsCall = true;
-      searchFrom = callIndex + RUNTIME_SETTINGS_CALL.length;
-      continue;
-    }
-    cursor = skipRunJsIgnored(code, cursor + 1);
-    if (code[cursor] !== '{') {
-      hasUnsupportedRuntimeSettingsCall = true;
-      searchFrom = cursor + 1;
-      continue;
-    }
-    const objectEnd = findRuntimeSettingsObjectEnd(code, cursor);
-    if (objectEnd < 0) {
-      hasUnsupportedRuntimeSettingsCall = true;
-      break;
-    }
-    const literal = code.slice(cursor, objectEnd + 1);
-    try {
-      const parsed = new RuntimeSettingsLiteralParser(literal).parse();
-      if (_.isPlainObject(parsed)) {
-        configs.push(parsed as UseSettingsConfig);
-      }
-    } catch (error) {
-      hasUnsupportedRuntimeSettingsCall = true;
-      console.warn('ctx.useSettings(config): only object literal declarations can be preloaded.', error);
-    }
-    searchFrom = objectEnd + 1;
-  }
-  return { configs, hasRuntimeSettingsCall, hasUnsupportedRuntimeSettingsCall };
 };
 
 export class RuntimeSettings {
@@ -821,9 +430,14 @@ export class RuntimeSettings {
 
     const steps: Record<string, StepDefinition> = {};
     const staticSteps = model.getFlow(flowKey)?.steps || {};
+    const runtimeSettingKeys = new Set<string>();
     for (const source of sources.values()) {
       if (source.flowKey === flowKey) {
         Object.entries(source.steps).forEach(([settingKey, step]) => {
+          if (runtimeSettingKeys.has(settingKey)) {
+            return;
+          }
+          runtimeSettingKeys.add(settingKey);
           const stepKey = this.getRuntimeSettingStepKey(settingKey, staticSteps, steps);
           steps[stepKey] = step;
         });
@@ -892,32 +506,19 @@ export class RuntimeSettings {
     return true;
   }
 
-  public syncRuntimeSettingsFromRunJsSource(model: FlowModel, flowKey: string, stepKey: string, code: unknown) {
-    const source = typeof code === 'string' ? code : '';
-    const { configs, hasRuntimeSettingsCall, hasUnsupportedRuntimeSettingsCall } =
-      extractRuntimeSettingsConfigsFromRunJs(source);
-    if (hasRuntimeSettingsCall && configs.length === 0) {
+  public clearRuntimeSettingsDeclaration(model: FlowModel, sourceKey: string) {
+    const sources = this.getSourceMap(model);
+    if (!sources || !sources.delete(sourceKey)) {
       return;
     }
-
-    const sourceKey = `${model.uid}:${flowKey}:${stepKey}`;
-    const session = this.beginRuntimeSettingsDeclaration(model, sourceKey, flowKey);
-    const previous = this.getSourceMap(model)?.get(sourceKey);
-    if (hasUnsupportedRuntimeSettingsCall && previous?.flowKey === flowKey) {
-      session.steps = { ...previous.steps };
+    if (sources.size === 0) {
+      this.registry.delete(model);
     }
-    configs.forEach((config) => {
-      this.defineRuntimeSettings(session, config);
-    });
-    this.commitRuntimeSettingsDeclaration(session);
+    this.emitChanged(model);
   }
 
-  public syncRuntimeSettingsFromStepParams(model: FlowModel, flowKey: string, stepKey = 'runJs') {
-    const stepParams = model.getStepParams(flowKey, stepKey) as { code?: unknown } | undefined;
-    if (!stepParams || !Object.prototype.hasOwnProperty.call(stepParams, 'code')) {
-      return;
-    }
-    this.syncRuntimeSettingsFromRunJsSource(model, flowKey, stepKey, stepParams?.code);
+  public clearRuntimeSettingsFromStep(model: FlowModel, flowKey: string, stepKey = 'runJs') {
+    this.clearRuntimeSettingsDeclaration(model, `${model.uid}:${flowKey}:${stepKey}`);
   }
 
   private getSavedValues(model: FlowModel): Record<string, unknown> {

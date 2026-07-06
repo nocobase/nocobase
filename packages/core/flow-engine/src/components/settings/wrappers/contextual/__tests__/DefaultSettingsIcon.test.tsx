@@ -418,7 +418,7 @@ describe('DefaultSettingsIcon - only static flows are shown', () => {
     });
   });
 
-  it('hydrates runtime setting steps from saved click RunJS code before the action runs', async () => {
+  it('does not hydrate runtime setting steps from saved click RunJS code before the action runs', async () => {
     class TestFlowModel extends FlowModel {}
 
     const engine = new FlowEngine();
@@ -469,12 +469,12 @@ ctx.message.success(settings.successMessage + ': ' + settings.openCount);
       const items = (menu?.items || []) as any[];
       const keys = items.map((it) => String(it.key || ''));
       expect(keys).toContain('clickSettings:runJs');
-      expect(keys).toContain('clickSettings:successMessage');
-      expect(keys).toContain('clickSettings:openCount');
+      expect(keys).not.toContain('clickSettings:successMessage');
+      expect(keys).not.toContain('clickSettings:openCount');
     });
   });
 
-  it('keeps existing dynamic runtime settings when saved RunJS source cannot be statically preloaded', async () => {
+  it('keeps existing runtime settings until changed RunJS source runs again', async () => {
     class TestFlowModel extends FlowModel {}
 
     const engine = new FlowEngine();
@@ -539,7 +539,7 @@ ctx.useSettings(config);
     expect(Object.keys(engine.flowSettings.getRuntimeSettingSteps(model, 'clickSettings'))).toEqual(['helperText']);
   });
 
-  it('keeps dynamic runtime settings when saved RunJS source mixes dynamic and literal declarations', async () => {
+  it('keeps runtime settings registered by the last actual RunJS execution', async () => {
     class TestFlowModel extends FlowModel {}
 
     const engine = new FlowEngine();
@@ -606,7 +606,7 @@ ctx.useSettings({ visible: true });
     ]);
   });
 
-  it('does not hydrate runtime setting steps from comments or strings', async () => {
+  it('does not hydrate runtime setting steps from saved source text', async () => {
     class TestFlowModel extends FlowModel {}
 
     const engine = new FlowEngine();

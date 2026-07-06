@@ -604,7 +604,6 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
           flowsArray.map(async (flow) => {
             const staticSteps = flow.steps || {};
             const flowSettings = targetModel.flowEngine?.flowSettings;
-            flowSettings?.syncRuntimeSettingsFromStepParams?.(targetModel, flow.key, 'runJs');
             const runtimeSteps = flowSettings?.getRuntimeSettingSteps?.(targetModel, flow.key) || {};
             const stepEntries = [
               ...Object.entries(staticSteps),

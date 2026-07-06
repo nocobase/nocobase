@@ -224,12 +224,12 @@ export class FlowSettings {
     return this.runtimeSettings.getRuntimeSettingsDefaultValues(config);
   }
 
-  public syncRuntimeSettingsFromRunJsSource(model: FlowModel, flowKey: string, stepKey: string, code: unknown) {
-    this.runtimeSettings.syncRuntimeSettingsFromRunJsSource(model, flowKey, stepKey, code);
+  public clearRuntimeSettingsDeclaration(model: FlowModel, sourceKey: string) {
+    this.runtimeSettings.clearRuntimeSettingsDeclaration(model, sourceKey);
   }
 
-  public syncRuntimeSettingsFromStepParams(model: FlowModel, flowKey: string, stepKey = 'runJs') {
-    this.runtimeSettings.syncRuntimeSettingsFromStepParams(model, flowKey, stepKey);
+  public clearRuntimeSettingsFromStep(model: FlowModel, flowKey: string, stepKey = 'runJs') {
+    this.runtimeSettings.clearRuntimeSettingsFromStep(model, flowKey, stepKey);
   }
 
   public getRuntimeSettingFormValues(model: FlowModel, step: StepDefinition): Record<string, unknown> {
@@ -1103,7 +1103,7 @@ export class FlowSettings {
             await model.saveStepParams();
             entries.forEach((e) => {
               if (e.stepKey === 'runJs') {
-                this.syncRuntimeSettingsFromStepParams(model, e.flowKey, e.stepKey);
+                this.clearRuntimeSettingsFromStep(model, e.flowKey, e.stepKey);
               }
             });
             message?.success?.(t('Configuration saved'));

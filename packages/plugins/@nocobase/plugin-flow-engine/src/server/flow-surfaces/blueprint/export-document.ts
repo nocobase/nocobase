@@ -587,6 +587,34 @@ function readFieldRunJsSettings(field: FlowSurfaceExportNode | undefined) {
   return Object.keys(settings).length ? settings : undefined;
 }
 
+function hasUnsupportedJsRendererFieldStepParams(field: FlowSurfaceExportNode) {
+  const stepParams = field.stepParams || {};
+  return Object.entries(stepParams).some(([groupKey, groupValue]) => {
+    if (groupKey === FLOW_SURFACE_INTERNAL_META_KEY || isEmptyPlainContainer(groupValue)) {
+      return false;
+    }
+    if (groupKey === 'fieldSettings') {
+      return hasUnsupportedLeafPath(groupValue, [
+        'init.dataSourceKey',
+        'init.collectionName',
+        'init.associationName',
+        'init.associationPathName',
+        'init.sourceId',
+        'init.filterByTk',
+        'init.fieldPath',
+        'fieldType',
+      ]);
+    }
+    if (groupKey === 'jsSettings') {
+      return hasUnsupportedLeafPath(groupValue, EXPORTED_JS_FIELD_SETTING_PATHS);
+    }
+    if (groupKey === 'runjsSettings') {
+      return hasUnsupportedLeafPath(groupValue, EXPORTED_RUNJS_VALUES_SETTING_PATHS);
+    }
+    return true;
+  });
+}
+
 function cloneArray(value: unknown): unknown[] | undefined {
   return Array.isArray(value) ? _.cloneDeep(value) : undefined;
 }
@@ -1723,6 +1751,9 @@ function hasUnsupportedFieldPublicState(fieldHost: FlowSurfaceExportNode) {
   const innerField = getSubNode(fieldHost, 'field');
   if (innerField) {
     if (hasNonEmptyPlainObject(innerField.flowRegistry)) {
+      return true;
+    }
+    if (isJsRendererFieldNode(innerField) && hasUnsupportedJsRendererFieldStepParams(innerField)) {
       return true;
     }
     if (

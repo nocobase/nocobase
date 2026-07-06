@@ -648,6 +648,56 @@ describe('FlowSettings.open rendering behavior', () => {
     expect(setStepParams).toHaveBeenCalledWith('runjsSettings', 'configure', { showBlockCard: false });
   });
 
+  it('deduplicates runtime setting steps with the same setting key across sources', () => {
+    const engine = new FlowEngine();
+    const flowSettings = new FlowSettings(engine);
+    const TestFlowModel = createIsolatedFlowModel('test-runtime-settings-duplicate-keys');
+    const model = new TestFlowModel({ uid: 'm-runtime-settings-duplicate-keys', flowEngine: engine });
+
+    TestFlowModel.registerFlow({
+      key: 'jsSettings',
+      title: 'JavaScript settings',
+      steps: {
+        firstRunJs: {
+          title: 'First JavaScript',
+          uiSchema: {
+            code: { type: 'string', 'x-component': 'Input' },
+          },
+        },
+        secondRunJs: {
+          title: 'Second JavaScript',
+          uiSchema: {
+            code: { type: 'string', 'x-component': 'Input' },
+          },
+        },
+      },
+    });
+
+    const firstSession = flowSettings.beginRuntimeSettingsDeclaration(
+      model,
+      `${model.uid}:jsSettings:firstRunJs`,
+      'jsSettings',
+    );
+    flowSettings.defineRuntimeSettings(firstSession, {
+      title: 'First title',
+    });
+    flowSettings.commitRuntimeSettingsDeclaration(firstSession);
+
+    const secondSession = flowSettings.beginRuntimeSettingsDeclaration(
+      model,
+      `${model.uid}:jsSettings:secondRunJs`,
+      'jsSettings',
+    );
+    flowSettings.defineRuntimeSettings(secondSession, {
+      title: 'Second title',
+    });
+    flowSettings.commitRuntimeSettingsDeclaration(secondSession);
+
+    const runtimeSteps = flowSettings.getRuntimeSettingSteps(model, 'jsSettings');
+    expect(Object.keys(runtimeSteps)).toEqual(['title']);
+    expect(runtimeSteps.title.defaultParams).toEqual({ value: 'First title' });
+  });
+
   it('commits and clears ctx.useSettings declarations during RunJS execution', async () => {
     const engine = new FlowEngine();
     const TestFlowModel = createIsolatedFlowModel('test-runtime-settings-runjs');
@@ -748,7 +798,7 @@ describe('FlowSettings.open rendering behavior', () => {
     expect(runtimeSteps.innerText).toBeUndefined();
   });
 
-  it('preloads click action runtime settings from saved RunJS source without executing the action', async () => {
+  it('registers click action runtime settings only after the action runs', async () => {
     const engine = new FlowEngine();
     const flowSettings = engine.flowSettings;
     const TestFlowModel = createIsolatedFlowModel('test-runtime-settings-click-action');
@@ -792,6 +842,17 @@ ctx.message.success(settings.successMessage + ': ' + settings.openCount);
     vi.spyOn(model as any, 'rerender').mockResolvedValue(undefined);
     model.context.defineProperty('message', { value: message });
 
+    const session = flowSettings.beginRuntimeSettingsDeclaration(
+      model,
+      `${model.uid}:clickSettings:runJs`,
+      'clickSettings',
+    );
+    flowSettings.defineRuntimeSettings(session, {
+      staleMessage: 'Old action',
+    });
+    flowSettings.commitRuntimeSettingsDeclaration(session);
+    expect(Object.keys(flowSettings.getRuntimeSettingSteps(model, 'clickSettings'))).toEqual(['staleMessage']);
+
     let lastTree: any;
     let lastDialog: any;
     model.context.defineProperty('viewer', {
@@ -813,10 +874,7 @@ ctx.message.success(settings.successMessage + ': ' + settings.openCount);
 
     expect(message.success).toHaveBeenCalledWith('Configuration saved');
     expect(message.success).not.toHaveBeenCalledWith('Action executed: 1');
-    expect(Object.keys(flowSettings.getRuntimeSettingSteps(model, 'clickSettings'))).toEqual([
-      'successMessage',
-      'openCount',
-    ]);
+    expect(Object.keys(flowSettings.getRuntimeSettingSteps(model, 'clickSettings'))).toEqual([]);
 
     model.setStepParams('runjsSettings', 'configure', { successMessage: 'Updated action', openCount: 3 });
     message.success.mockClear();
@@ -824,6 +882,10 @@ ctx.message.success(settings.successMessage + ': ' + settings.openCount);
     await model.applyFlow('clickSettings');
 
     expect(message.success).toHaveBeenCalledWith('Updated action: 3');
+    expect(Object.keys(flowSettings.getRuntimeSettingSteps(model, 'clickSettings'))).toEqual([
+      'successMessage',
+      'openCount',
+    ]);
   });
 
   it('calls onSaved callback after successful save', async () => {
