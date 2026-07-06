@@ -349,7 +349,11 @@ describe('ViewCollectionConfigure', () => {
 
     const titleRow = await screen.findByTestId('view-row-title');
     expect(titleRow).toHaveTextContent('title');
-    expect(screen.getByText('t:Unsupported fields')).toBeInTheDocument();
+    expect(screen.getByText('t:Unknown field type')).toBeInTheDocument();
+    expect(
+      screen.getByText('t:The following field types are not compatible and do not support output and display'),
+    ).toBeInTheDocument();
+    expect(screen.getByTestId('view-row-geom')).toHaveTextContent('geom');
 
     fireEvent.click(within(titleRow).getByText('Pick source'));
     fireEvent.change(within(titleRow).getByDisplayValue('Title'), {

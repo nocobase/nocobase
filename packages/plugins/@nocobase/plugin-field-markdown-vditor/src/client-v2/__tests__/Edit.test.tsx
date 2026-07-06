@@ -80,6 +80,8 @@ vi.mock('vditor', () => ({
 
 vi.mock('@nocobase/client-v2', () => ({
   CollectionFieldInterface: class CollectionFieldInterface {},
+  stripMarkdownIframeTags: (value: string) => value,
+  stripMarkdownIframes: (value: string) => value,
 }));
 
 vi.mock('@nocobase/flow-engine', () => ({
@@ -168,7 +170,13 @@ describe('Edit', () => {
       lang: 'en_US',
       cache: { enable: false },
       undoDelay: 0,
-      preview: { math: { engine: 'KaTeX' } },
+      preview: {
+        markdown: {
+          sanitize: true,
+        },
+        math: { engine: 'KaTeX' },
+        transform: expect.any(Function),
+      },
       toolbar: defaultToolbar,
       fullscreen: {
         index: 1200,
@@ -189,7 +197,6 @@ describe('Edit', () => {
       instance.options.after();
     });
 
-    expect(instance.setValue).toHaveBeenCalledWith('initial');
     expect(instance.enable).toHaveBeenCalled();
 
     instance.options.input('changed');

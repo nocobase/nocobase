@@ -19,9 +19,15 @@ vi.mock('vditor', () => ({
       if (element) {
         element.innerHTML = value.includes('image') ? '<img src="https://cdn.example/a.png" />' : `<p>${value}</p>`;
       }
+      return Promise.resolve();
     }),
     md2html: vi.fn(),
   },
+}));
+
+vi.mock('@nocobase/client-v2', () => ({
+  removeMarkdownIframes: vi.fn(),
+  stripMarkdownIframes: (value: string) => value,
 }));
 
 vi.mock('antd', () => ({
@@ -78,6 +84,10 @@ describe('Display', () => {
       expect(Vditor.preview).toHaveBeenCalledWith(expect.any(HTMLDivElement), 'image markdown', {
         mode: 'light',
         cdn: 'https://cdn.example/vditor',
+        markdown: {
+          sanitize: true,
+        },
+        transform: expect.any(Function),
       }),
     );
 
@@ -100,6 +110,10 @@ describe('Display', () => {
       expect(Vditor.preview).toHaveBeenCalledWith(expect.any(HTMLDivElement), '', {
         mode: 'light',
         cdn: 'https://cdn.example/vditor',
+        markdown: {
+          sanitize: true,
+        },
+        transform: expect.any(Function),
       }),
     );
     expect(Vditor.md2html).not.toHaveBeenCalled();
@@ -114,6 +128,9 @@ describe('Display', () => {
     expect(Vditor.md2html).toHaveBeenCalledWith('# Hello', {
       mode: 'light',
       cdn: 'https://cdn.example/vditor',
+      markdown: {
+        sanitize: true,
+      },
     });
   });
 
@@ -147,6 +164,10 @@ describe('Display', () => {
       expect(Vditor.preview).toHaveBeenCalledWith(expect.any(HTMLDivElement), 'Overflow text', {
         mode: 'light',
         cdn: 'https://cdn.example/vditor',
+        markdown: {
+          sanitize: true,
+        },
+        transform: expect.any(Function),
       }),
     );
     createRangeSpy.mockRestore();
