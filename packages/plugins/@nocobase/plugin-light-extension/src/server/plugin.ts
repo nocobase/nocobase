@@ -19,6 +19,10 @@ import {
 } from './resources/lightExtensionCapabilities';
 import { createLightExtensionEntriesResource, lightExtensionEntryActionNames } from './resources/lightExtensionEntries';
 import { createLightExtensionFilesResource, lightExtensionFileActionNames } from './resources/lightExtensionFiles';
+import {
+  createLightExtensionPublicationsResource,
+  lightExtensionPublicationActionNames,
+} from './resources/lightExtensionPublications';
 import { createLightExtensionReposResource, lightExtensionRepoActionNames } from './resources/lightExtensionRepos';
 import { createLightExtensionsResource, lightExtensionActionNames } from './resources/lightExtensions';
 import { LightExtensionAuditService } from './services/LightExtensionAuditService';
@@ -27,6 +31,8 @@ import { LightExtensionCompilePreviewService } from './services/LightExtensionCo
 import { LightExtensionEntryScanner } from './services/LightExtensionEntryScanner';
 import { LightExtensionFileService } from './services/LightExtensionFileService';
 import { LightExtensionPermissionService } from './services/LightExtensionPermissionService';
+import { LightExtensionPublicationResolveService } from './services/LightExtensionPublicationResolveService';
+import { LightExtensionPublicationService } from './services/LightExtensionPublicationService';
 import { LightExtensionRepoService } from './services/LightExtensionRepoService';
 import { LightExtensionValidator } from './services/LightExtensionValidator';
 import { LightExtensionWorkspaceCompilerBridge } from './services/LightExtensionWorkspaceCompilerBridge';
@@ -80,6 +86,7 @@ type LightExtensionRouteContext = {
 const VSC_FILE_PLUGIN_ALIASES = ['@nocobase/plugin-vsc-file', 'vsc-file', 'plugin-vsc-file'];
 const DOCUMENTED_CAPABILITIES_ROUTE = '/light-extensions/capabilities';
 const DOCUMENTED_COMPILE_PREVIEW_ROUTE = /^\/light-extensions\/([^/]+)\/compile-preview$/;
+const DOCUMENTED_PUBLICATION_ROUTE = /^\/light-extension-publications\/([^/]+)$/;
 
 export class PluginLightExtensionServer extends Plugin {
   private auditService?: LightExtensionAuditService;
@@ -97,6 +104,10 @@ export class PluginLightExtensionServer extends Plugin {
   private workspaceCompilerBridge?: LightExtensionWorkspaceCompilerBridge;
 
   private compilePreviewService?: LightExtensionCompilePreviewService;
+
+  private publicationService?: LightExtensionPublicationService;
+
+  private publicationResolveService?: LightExtensionPublicationResolveService;
 
   private entryScanner?: LightExtensionEntryScanner;
 
@@ -167,8 +178,17 @@ export class PluginLightExtensionServer extends Plugin {
       this.workspaceCompilerBridge,
       this.validator,
     );
+    this.publicationService = new LightExtensionPublicationService(db);
+    this.publicationResolveService = new LightExtensionPublicationResolveService(
+      db,
+      this.auditService,
+      this.permissionService,
+    );
     (this.app as unknown as AppWithPluginEvents).resourceManager?.define?.(
       createLightExtensionsResource(this.compilePreviewService),
+    );
+    (this.app as unknown as AppWithPluginEvents).resourceManager?.define?.(
+      createLightExtensionPublicationsResource(this.publicationResolveService),
     );
     (this.app as unknown as AppWithPluginEvents).resourceManager?.define?.(
       createLightExtensionReposResource(this.repoService),
@@ -184,6 +204,7 @@ export class PluginLightExtensionServer extends Plugin {
     );
     this.registerCapabilitiesHttpRoute();
     this.registerCompilePreviewHttpRoute();
+    this.registerPublicationHttpRoute();
     this.registerAclActions();
     this.registerVscPermissionHookWhenAvailable();
   }
@@ -207,6 +228,7 @@ export class PluginLightExtensionServer extends Plugin {
       actions: [
         ...LIGHT_EXTENSION_ACL_ACTIONS.map((action) => `lightExtension:${action}`),
         ...lightExtensionActionNames.map((action) => `lightExtensions:${action}`),
+        ...lightExtensionPublicationActionNames.map((action) => `lightExtensionPublications:${action}`),
         ...lightExtensionRepoActionNames.map((action) => `lightExtensionRepos:${action}`),
         ...lightExtensionFileActionNames.map((action) => `lightExtensionFiles:${action}`),
         ...lightExtensionEntryActionNames.map((action) => `lightExtensionEntries:${action}`),
@@ -243,6 +265,39 @@ export class PluginLightExtensionServer extends Plugin {
       },
       {
         tag: 'light-extension-compile-preview',
+        before: 'dataSource',
+      },
+    );
+  }
+
+  private registerPublicationHttpRoute() {
+    const app = this.app as unknown as AppWithPluginEvents;
+    app.use?.(
+      async (ctx, next) => {
+        const publicationId = getDocumentedPublicationId(ctx.path, app.resourceManager?.options?.prefix);
+        if (ctx.method !== 'GET' || !publicationId) {
+          await next();
+          return;
+        }
+
+        const resourcePath = getPublicationResourcePath(publicationId, app.resourceManager?.options?.prefix);
+        const originalPath = ctx.path;
+        const originalRequestPath = ctx.request?.path;
+        try {
+          ctx.path = resourcePath;
+          if (ctx.request) {
+            ctx.request.path = resourcePath;
+          }
+          await next();
+        } finally {
+          ctx.path = originalPath;
+          if (ctx.request && originalRequestPath) {
+            ctx.request.path = originalRequestPath;
+          }
+        }
+      },
+      {
+        tag: 'light-extension-publications',
         before: 'dataSource',
       },
     );
@@ -364,12 +419,33 @@ function getDocumentedCompilePreviewRepoId(path: string, resourcePrefix?: string
   return decodeURIComponent(match[1]);
 }
 
+function getDocumentedPublicationId(path: string, resourcePrefix?: string): string | null {
+  const basePath = normalizeBasePath(resourcePrefix ?? process.env.API_BASE_PATH ?? '/api');
+  if (!path.startsWith(`${basePath}/`)) {
+    return null;
+  }
+
+  const routePath = path.slice(basePath.length);
+  const match = DOCUMENTED_PUBLICATION_ROUTE.exec(routePath);
+  if (!match?.[1]) {
+    return null;
+  }
+
+  return decodeURIComponent(match[1]);
+}
+
 function getCapabilitiesResourcePath(resourcePrefix?: string): string {
   return `${normalizeBasePath(resourcePrefix ?? '')}/lightExtensionCapabilities:get`;
 }
 
 function getCompilePreviewResourcePath(repoId: string, resourcePrefix?: string): string {
   return `${normalizeBasePath(resourcePrefix ?? '')}/lightExtensions:compilePreview/${encodeURIComponent(repoId)}`;
+}
+
+function getPublicationResourcePath(publicationId: string, resourcePrefix?: string): string {
+  return `${normalizeBasePath(resourcePrefix ?? '')}/lightExtensionPublications:get/${encodeURIComponent(
+    publicationId,
+  )}`;
 }
 
 function normalizeBasePath(path: string): string {

@@ -112,6 +112,15 @@ export interface LightExtensionCompileAuditInput {
   transaction?: Transaction;
 }
 
+export interface LightExtensionPublicationReadDeniedAuditInput {
+  publicationId: string;
+  requestId: string;
+  actorUserId?: string | null;
+  reasonCode: string;
+  requestSource?: string;
+  transaction?: Transaction;
+}
+
 export class LightExtensionAuditService {
   constructor(private readonly db: Database) {}
 
@@ -238,6 +247,26 @@ export class LightExtensionAuditService {
           warningCount: input.warningCount,
           diagnostics: summarizeDiagnostics(input.diagnostics || []),
           ...(input.details ? sanitizeDetails(input.details) : {}),
+        }),
+        createdAt: new Date(),
+      },
+      transaction: input.transaction,
+    });
+  }
+
+  async recordPublicationReadDenied(input: LightExtensionPublicationReadDeniedAuditInput): Promise<void> {
+    await this.db.getRepository('lightExtensionLogs').create({
+      values: {
+        level: 'warn',
+        action: 'readPublication',
+        result: 'denied',
+        requestId: input.requestId,
+        actorUserId: input.actorUserId || undefined,
+        reasonCode: sanitizeText(input.reasonCode),
+        message: 'Light extension publication read denied',
+        details: compactObject({
+          publicationId: sanitizeText(input.publicationId),
+          requestSource: sanitizeText(input.requestSource),
         }),
         createdAt: new Date(),
       },

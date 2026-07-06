@@ -255,3 +255,34 @@ export interface LightExtensionCompilePreviewResult {
   diagnostics: LightExtensionDiagnostic[];
   entries: LightExtensionCompilePreviewEntryResult[];
 }
+
+export interface LightExtensionPublicationArtifactMetadata {
+  version: string;
+  entryPath: string;
+  filesHash?: string;
+  metadata?: Record<string, unknown>;
+  diagnostics?: LightExtensionDiagnostic[];
+}
+
+export interface LightExtensionPublicationMetadataRecord {
+  id: string;
+  repoId: string;
+  entryId: string;
+  commitId: string;
+  entryPath: string;
+  target: 'client';
+  kind: string;
+  surfaceStyle: string;
+  runtimeVersion: string;
+  artifact: LightExtensionPublicationArtifactMetadata;
+  settingsSchemaSnapshot: Record<string, unknown> | null;
+  settingsDefaultsSnapshot: unknown;
+  settingsSchemaHash: string;
+  settingsDefaultsHash: string;
+  filesHash: string;
+  runtimeCodeHash: string;
+  diagnostics: LightExtensionDiagnostic[];
+  createdById?: string | null;
+  createdFromRequestSource?: string | null;
+  createdAt?: string | null;
+}

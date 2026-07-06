@@ -77,6 +77,8 @@ describe('plugin-light-extension collections', () => {
       'commitId',
       'artifact',
       'settingsSchemaSnapshot',
+      'settingsDefaultsSnapshot',
+      'settingsSchemaHash',
       'settingsDefaultsHash',
       'filesHash',
       'runtimeCodeHash',

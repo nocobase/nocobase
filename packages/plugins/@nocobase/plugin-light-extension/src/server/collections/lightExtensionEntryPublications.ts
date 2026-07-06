@@ -28,6 +28,9 @@ export default defineCollection({
     {
       fields: ['runtimeCodeHash'],
     },
+    {
+      fields: ['settingsSchemaHash'],
+    },
   ],
   fields: [
     {
@@ -101,6 +104,14 @@ export default defineCollection({
     {
       type: 'json',
       name: 'settingsSchemaSnapshot',
+    },
+    {
+      type: 'json',
+      name: 'settingsDefaultsSnapshot',
+    },
+    {
+      type: 'string',
+      name: 'settingsSchemaHash',
     },
     {
       type: 'string',
