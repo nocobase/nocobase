@@ -120,7 +120,7 @@ function CCAddBlockButton({ model }: { model: CCBlockGridModel }) {
     if (triggerItems.length) {
       dataBlockChildren.push({
         key: 'triggers',
-        label: '{{t("Triggers", { ns: "workflow" })}}',
+        label: '{{t("Trigger", { ns: "workflow" })}}',
         children: normalizedTriggerItems,
       });
     }

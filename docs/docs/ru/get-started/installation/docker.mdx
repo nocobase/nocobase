@@ -618,3 +618,96 @@ app-postgres-app-1  | 🚀 NocoBase server running at: http://localhost:13000/
 После первого входа сразу смените пароль по умолчанию, чтобы обеспечить безопасность системы.
 
 :::
+
+## 5. Развертывание в production
+
+Если вы используете образ со встроенным Nginx, обычно лучше не публиковать `13000` напрямую в интернет. Более распространенный вариант — оставить порт контейнера доступным только на хосте, а домен, HTTPS и обратный прокси настроить в Nginx на хосте.
+
+### Проксирование корневого пути через Nginx
+
+Следующая конфигурация проксирует запросы к домену на `http://127.0.0.1:13000/`:
+
+```bash
+server {
+    listen 80;
+    server_name your_domain.com;  # Замените your_domain.com на ваш домен
+
+    location / {
+        proxy_pass http://127.0.0.1:13000/;
+        proxy_http_version 1.1;
+
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection $connection_upgrade;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $upstream_x_forwarded_proto;
+        proxy_set_header Host $final_host;
+        proxy_set_header Referer $http_referer;
+        proxy_set_header User-Agent $http_user_agent;
+
+        add_header Cache-Control "no-cache, no-store" always;
+        proxy_cache_bypass $http_upgrade;
+
+        proxy_connect_timeout 600;
+        proxy_send_timeout 600;
+        proxy_read_timeout 600;
+        send_timeout 600;
+        proxy_buffering off;
+    }
+}
+```
+
+Если вы также хотите включить HTTPS, настройте `443` и сертификат в Nginx на хосте. Контейнеру NocoBase не нужно отдельно обрабатывать сертификаты.
+
+### Развертывание в подпути
+
+Если вы хотите развернуть приложение в подпути, например `https://your_domain.com/nocobase/`, сначала настройте переменную окружения `APP_PUBLIC_PATH`:
+
+```diff
+services:
+  app:
+    image: nocobase/nocobase:latest
+    environment:
++     - APP_PUBLIC_PATH=/nocobase/
+```
+
+Сохраните `/` в начале и в конце пути. После настройки URL приложения станет `http://127.0.0.1:13000/nocobase/`.
+
+Затем настройте Nginx на хосте с тем же подпутем:
+
+```bash
+server {
+    listen 80;
+    server_name your_domain.com;  # Замените your_domain.com на ваш домен
+
+    location /nocobase/ {
+        proxy_pass http://127.0.0.1:13000/nocobase/;
+        proxy_http_version 1.1;
+
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection $connection_upgrade;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $upstream_x_forwarded_proto;
+        proxy_set_header Host $final_host;
+        proxy_set_header Referer $http_referer;
+        proxy_set_header User-Agent $http_user_agent;
+
+        add_header Cache-Control "no-cache, no-store" always;
+        proxy_cache_bypass $http_upgrade;
+
+        proxy_connect_timeout 600;
+        proxy_send_timeout 600;
+        proxy_read_timeout 600;
+        send_timeout 600;
+        proxy_buffering off;
+    }
+}
+```
+
+Главное — чтобы `APP_PUBLIC_PATH` и путь в `proxy_pass` совпадали. Если с одной из сторон отсутствует `/nocobase/`, статические ресурсы и маршрутизация обычно работают некорректно.
+
+### Другие варианты
+
+Если вы не хотите использовать встроенный Nginx, можно также посмотреть эти два варианта с отдельным прокси:
+
+- [Установка через Docker (внешний Nginx)](./docker-nginx.mdx)
+- [Установка через Docker (внешний Caddy)](./docker-caddy.mdx)

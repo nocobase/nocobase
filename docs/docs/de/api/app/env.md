@@ -57,6 +57,33 @@ API_BASE_PATH=/api/
 
 ## API_BASE_URL
 
+## SERVER_REQUEST_WHITELIST
+
+Whitelist der erlaubten Ziele für ausgehende HTTP-Anfragen, die vom Server initiiert werden. Sie gilt für serverseitige Anfragen aus Funktionen wie Workflow-Knoten für HTTP-Anfragen, benutzerdefinierten Anfragen und AI-Diensten.
+
+Wenn diese Variable nicht konfiguriert ist, erlaubt NocoBase aus Kompatibilitätsgründen weiterhin `http` / `https`-Anfragen. Wenn das Ziel jedoch eine Loopback-, private, link-local- oder Metadata-Adresse ist oder eine Domain auf eine solche Adresse auflöst, schreibt der Server eine Warnung ins Log. Zukünftige Versionen können das Standardverhalten schrittweise verschärfen. Wenn deine Bereitstellung interne Dienste erreichen muss, konfiguriere vorab eine explizite Whitelist.
+
+Unterstützte Einträge:
+
+- Exakte IPv4-Adresse, z. B. `192.168.1.10`
+- IPv4-CIDR-Bereich, z. B. `10.0.0.0/8`
+- Exakte IPv6-Adresse, z. B. `::1`
+- IPv6-CIDR-Bereich, z. B. `fc00::/7`
+- Exakte Domain, z. B. `api.example.com`
+- Einstufige Platzhalter-Subdomain, z. B. `*.example.com`
+
+Mehrere Ziele werden mit `,` getrennt:
+
+```bash
+SERVER_REQUEST_WHITELIST=api.example.com,*.trusted.com,10.0.0.0/8,127.0.0.1
+```
+
+:::warning Note
+
+Wenn eine Domain in der Whitelist konfiguriert ist, verwendet die Whitelist-Prüfung den Host in der Request-URL. Mit anderen Worten: Nach der Konfiguration von `internal.example.com` gilt dieses Ziel als explizit erlaubt, auch wenn die Domain auf `127.0.0.1` oder eine private Adresse auflöst.
+
+:::
+
 ## CLUSTER_MODE
 
 > `v1.6.0+`

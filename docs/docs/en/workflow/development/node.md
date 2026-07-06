@@ -1,3 +1,9 @@
+---
+title: "Extending Node Types"
+description: "Extending node types: custom node development, node configuration, execution logic, API and lifecycle."
+keywords: "workflow,extending nodes,custom nodes,node development,NocoBase"
+---
+
 # Extending Node Types
 
 A node's type is essentially an operational instruction. Different instructions represent different operations executed in the workflow.
@@ -111,7 +117,7 @@ export class AsyncInstruction extends Instruction {
     // 2. Explicitly call exit() to flush the task to the database and commit the transaction
     await processor.exit();
 
-    // 3. Initiate the async operation (the transaction is now committed, no longer holding the database connection)
+    // 3. Initiate the async operation (transaction is now committed, no longer holding the DB connection)
     const jobDone: IJob = { status: JOB_STATUS.PENDING };
     try {
       const result = await someAsyncOperation(node.config);
@@ -239,44 +245,78 @@ Similar to triggers, the configuration form for an instruction (node type) needs
 
 All instructions need to be derived from the `Instruction` base class. The related properties and methods are used for configuring and using the node.
 
-For example, if we need to provide a configuration interface for the random number string type (`randomString`) node defined on the server-side above, which has a configuration item `digit` representing the number of digits for the random number, we would use a number input box in the configuration form to receive user input.
+For example, if we need to provide a configuration interface for the random number string type (`randomString`) node defined on the server-side above, which has a configuration item `digit` representing the number of digits for the random number:
 
-```tsx pure
-import WorkflowPlugin, { Instruction, VariableOption } from '@nocobase/workflow/client';
+```ts
+import { Instruction } from '@nocobase/plugin-workflow/client-v2';
 
-class MyInstruction extends Instruction {
+class RandomStringInstruction extends Instruction {
   title = 'Random number string';
   type = 'randomString';
   group = 'extended';
-  fieldset = {
-    'digit': {
-      type: 'number',
-      title: 'Digit',
-      name: 'digit',
-      'x-decorator': 'FormItem',
-      'x-component': 'InputNumber',
-      'x-component-props': {
-        min: 1,
-        max: 10,
-      },
-      default: 6,
-    },
-  };
-  useVariables(node, options): VariableOption {
-    return {
-      value: node.key,
-      label: node.title,
-    };
+
+  // Node config form (lazy-loaded component)
+  FieldsetLoader = () => import('./components/RandomStringConfig');
+
+  useVariables(node, options) {
+    return { value: node.key, label: node.title };
   }
 }
+```
 
-export default class MyPlugin extends Plugin {
-  load() {
-    // get workflow plugin instance
-    const workflowPlugin = this.app.getPlugin<WorkflowPlugin>(WorkflowPlugin);
+Here, `FieldsetLoader` is a function that returns `Promise<{ default: ComponentType }>`, implementing lazy loading via dynamic `import()`. The component it points to is a standard React function component that builds the form using antd's `Form.Item`:
 
-    // register instruction
-    workflowPlugin.registerInstruction('randomString', MyInstruction);
+```tsx
+// components/RandomStringConfig.tsx
+import { Form, InputNumber } from 'antd';
+
+export default function RandomStringConfig() {
+  return (
+    <Form.Item
+      name={['config', 'digit']}
+      label="Digit"
+      initialValue={6}
+      rules={[{ required: true }]}
+    >
+      <InputNumber min={1} max={10} />
+    </Form.Item>
+  );
+}
+```
+
+Note that the form field's `name` uses the nested array format `['config', 'fieldName']`, which is the standard antd Form convention.
+
+### Multiple Configuration Interfaces
+
+A node can provide multiple configuration interfaces for different scenarios:
+
+- `FieldsetLoader` — Node configuration drawer form (most commonly used)
+![FieldsetLoader](https://static-docs.nocobase.com/20260701153106.png)
+
+- `PresetFieldsetLoader` — Preset form when creating a node (usually contains only required fields)
+![PresetFieldsetLoader](https://static-docs.nocobase.com/20260701153041.png)
+
+- `ComponentLoader` — Custom node rendering on the canvas (used for branch nodes and other cases requiring special rendering)
+![ComponentLoader](https://static-docs.nocobase.com/20260701153139.png)
+
+When a Loader needs to point to a named export (rather than the default export) in a file, use `.then()` to remap:
+
+```ts
+FieldsetLoader = () => import('./components/MyNodeConfig').then((m) => ({ default: m.MyFieldset }));
+```
+
+### Register the Node
+
+Register the node type with the workflow plugin instance within the extended plugin:
+
+```ts
+import { Plugin } from '@nocobase/client-v2';
+import RandomStringInstruction from './RandomStringInstruction';
+
+export default class extends Plugin {
+  async load() {
+    const workflow = this.app.pm.get('workflow');
+    workflow.registerInstruction('randomString', RandomStringInstruction);
   }
 }
 ```
@@ -287,7 +327,7 @@ The node type identifier registered on the client-side must be consistent with t
 
 ### Providing Node Results as Variables
 
-You may notice the `useVariables` method in the example above. If you need to use the node's result (the `result` part) as a variable for subsequent nodes, you need to implement this method in the inherited instruction class and return an object that conforms to the `VariableOption` type. This object serves as a structural description of the node's execution result, providing variable name mapping for selection and use in subsequent nodes.
+You may notice the `useVariables` method in the example above. If you need to use the node's result (the `result` part) as a variable for subsequent nodes, you need to implement this method in the derived instruction class and return an object that conforms to the `VariableOption` type. This object serves as a structural description of the node's execution result, providing variable name mapping for selection and use in subsequent nodes.
 
 The `VariableOption` type is defined as follows:
 
@@ -302,7 +342,7 @@ export type VariableOption = {
 
 The core is the `value` property, which represents the segmented path value of the variable name. `label` is used for display on the interface, and `children` is used to represent a multi-level variable structure, which is used when the node's result is a deeply nested object.
 
-A usable variable is represented internally in the system as a path template string separated by `.`, for example, `{{jobsMapByNodeKey.2dw92cdf.abc}}`. Here, `jobsMapByNodeKey` represents the result set of all nodes (internally defined, no need to handle), `2dw92cdf` is the node's `key`, and `abc` is a custom property in the node's result object.
+A usable variable is represented internally in the system as a path template string separated by `.`, for example, `{{$jobsMapByNodeKey.2dw92cdf.abc}}`. Here, `$jobsMapByNodeKey` represents the result set of all nodes (internally defined, no need to handle), `2dw92cdf` is the node's `key`, and `abc` is a custom property in the node's result object.
 
 Additionally, since a node's result can also be a simple value, when providing node variables, the first level **must** be the description of the node itself:
 
@@ -313,13 +353,9 @@ Additionally, since a node's result can also be a simple value, when providing n
 }
 ```
 
-That is, the first level is the node's `key` and title. For example, in the calculation node's [code reference](https://github.com/nocobase/nocobase/blob/main/packages/plugins/%40nocobase/plugin-workflow/src/client/nodes/calculation.tsx#L77), when using the result of the calculation node, the interface options are as follows:
-
-
+That is, the first level is the node's `key` and title. For example, in the Calculation node's [code reference](https://github.com/nocobase/nocobase/blob/develop/packages/plugins/%40nocobase/plugin-workflow/src/client-v2/nodes/calculation.tsx), when using the result of the Calculation node, the interface options are as follows:
 
 ![Result of Calculation Node](https://static-docs.nocobase.com/20240514230014.png)
-
-
 
 When the node's result is a complex object, you can use `children` to continue describing nested properties. For example, a custom instruction might return the following JSON data:
 
@@ -328,7 +364,7 @@ When the node's result is a complex object, you can use `children` to continue d
   "message": "ok",
   "data": {
     "id": 1,
-    "name": "test",
+    "name": "test"
   }
 }
 ```
@@ -336,7 +372,7 @@ When the node's result is a complex object, you can use `children` to continue d
 Then you can return it through the `useVariables` method as follows:
 
 ```ts
-useVariables(node, options): VariableOption {
+useVariables(node, options) {
   return {
     value: node.key,
     label: node.title,
@@ -366,11 +402,7 @@ useVariables(node, options): VariableOption {
 
 This way, in subsequent nodes, you can use the following interface to select variables from it:
 
-
-
 ![Mapped Result Variables](https://static-docs.nocobase.com/20240514230103.png)
-
-
 
 :::info{title="Note"}
 When a structure in the result is an array of deeply nested objects, you can also use `children` to describe the path, but it cannot include array indices. This is because in NocoBase workflow's variable handling, the variable path description for an array of objects is automatically flattened into an array of deep values when used, and you cannot access a specific value by its index.
@@ -381,11 +413,6 @@ When a structure in the result is an array of deeply nested objects, you can als
 By default, any node can be added to a workflow. However, in some cases, a node may not be applicable in certain types of workflows or branches. In such situations, you can configure the node's availability using `isAvailable`:
 
 ```ts
-// Type definition
-export abstract class Instruction {
-  isAvailable?(ctx: NodeAvailableContext): boolean;
-}
-
 export type NodeAvailableContext = {
   // Workflow plugin instance
   engine: WorkflowPlugin;
@@ -393,7 +420,7 @@ export type NodeAvailableContext = {
   workflow: object;
   // Upstream node
   upstream: object;
-  // Whether it is a branch node (branch number)
+  // Whether it is a branch node (branch index)
   branchIndex: number;
 };
 ```
@@ -403,11 +430,17 @@ The `isAvailable` method returns `true` if the node is available, and `false` if
 If there are no special requirements, you do not need to implement the `isAvailable` method, as nodes are available by default. The most common scenario requiring configuration is when a node might be a time-consuming operation and is not suitable for execution in a synchronous workflow. You can use the `isAvailable` method to restrict its use. For example:
 
 ```ts
-isAvailable({ engine, workflow, upstream, branchIndex }) {
+isAvailable({ engine, workflow }) {
   return !engine.isWorkflowSync(workflow);
 }
 ```
 
 ### Learn More
 
-For the definitions of various parameters for defining node types, see the Workflow API Reference section.
+For a complete real-world example, refer to: [CalculationInstruction source code](https://github.com/nocobase/nocobase/blob/develop/packages/plugins/%40nocobase/plugin-workflow/src/client-v2/nodes/calculation.tsx)
+
+For the definitions of various parameters for defining node types, see the [Workflow API Reference](./api) section.
+
+:::info{title=Note}
+If you were previously using the legacy (v1) client-side code and want to migrate to the new v2 version, refer to the [v1 to v2 Migration Guide](./migration).
+:::

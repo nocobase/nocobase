@@ -222,6 +222,31 @@ describe('TopbarActionsBar helpers', () => {
     expect(link).toHaveAttribute('rel', expect.stringContaining('noreferrer'));
   });
 
+  it('should open sub-app admin settings in a new tab outside sub-app admin runtime', () => {
+    const items = getTopbarPluginSettingsItems({
+      canManagePlugins: false,
+      t: (key) => key,
+      settings: [
+        {
+          key: 'system-settings',
+          name: 'system-settings',
+          title: 'System settings',
+          path: '/admin/settings/system-settings',
+          icon: null,
+          componentLoader: async () => null,
+        },
+      ] as any,
+    });
+
+    renderSettingsLabel((items as any[])[0].label, '/apps/a_9xlild35jir/crm-amd/ekeisumx1zu');
+
+    const link = screen.getByRole('link', { name: 'System settings' });
+    expect(link).toHaveAttribute('href', '/nocobase/v/apps/a_9xlild35jir/admin/settings/system-settings');
+    expect(link).toHaveAttribute('target', '_blank');
+    expect(link).toHaveAttribute('rel', expect.stringContaining('noopener'));
+    expect(link).toHaveAttribute('rel', expect.stringContaining('noreferrer'));
+  });
+
   it('should keep regular admin settings as SPA links inside admin runtime', () => {
     const items = getTopbarPluginSettingsItems({
       canManagePlugins: false,
@@ -242,6 +267,29 @@ describe('TopbarActionsBar helpers', () => {
 
     const link = screen.getByRole('link', { name: 'Routes' });
     expect(link).toHaveAttribute('href', '/admin/settings/routes');
+    expect(link).not.toHaveAttribute('target', '_blank');
+  });
+
+  it('should keep sub-app admin settings in the current window inside sub-app admin runtime', () => {
+    const items = getTopbarPluginSettingsItems({
+      canManagePlugins: false,
+      t: (key) => key,
+      settings: [
+        {
+          key: 'routes',
+          name: 'routes',
+          title: 'Routes',
+          path: '/admin/settings/routes',
+          icon: null,
+          componentLoader: async () => null,
+        },
+      ] as any,
+    });
+
+    renderSettingsLabel((items as any[])[0].label, '/apps/a_9xlild35jir/admin/settings/routes');
+
+    const link = screen.getByRole('link', { name: 'Routes' });
+    expect(link).toHaveAttribute('href', '/nocobase/v/apps/a_9xlild35jir/admin/settings/routes');
     expect(link).not.toHaveAttribute('target', '_blank');
   });
 

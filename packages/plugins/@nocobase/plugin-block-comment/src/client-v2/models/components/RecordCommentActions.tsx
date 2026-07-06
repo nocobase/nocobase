@@ -20,7 +20,7 @@ import {
 } from '@nocobase/flow-engine';
 import { css } from '@emotion/css';
 import { Space } from 'antd';
-import React, { useEffect } from 'react';
+import React from 'react';
 
 import type { RecordCommentsBlockModel } from '../RecordCommentsBlockModel';
 import type { RecordCommentRecord } from '../utils';
@@ -35,21 +35,10 @@ type FlowModelWithForkId = FlowModel & {
   forkId?: string | number;
 };
 
-type FlowEngineLookup = {
-  getModelClass?: (modelName: string) => unknown;
-  getModelClassAsync?: (modelName: string) => Promise<unknown>;
-};
-
 const getFlowModelRenderKey = (model: FlowModel, fallback: string) => {
   const forkId = (model as FlowModelWithForkId).forkId;
   return `${model.uid}:${forkId ?? fallback}`;
 };
-
-const defaultRecordActionModels = [
-  'QuoteReplyRecordCommentActionModel',
-  'DeleteRecordCommentActionModel',
-  'EditRecordCommentActionModel',
-];
 
 const recordCommentActionsClassName = css`
   .ant-btn-link {
@@ -57,10 +46,6 @@ const recordCommentActionsClassName = css`
     padding: 0;
   }
 `;
-
-const getModelName = (model: FlowModel) => {
-  return (model as FlowModel & { use?: string }).use || model.constructor.name;
-};
 
 export const RecordCommentActions = observer(
   ({
@@ -77,39 +62,6 @@ export const RecordCommentActions = observer(
     setEditing: () => void;
   }) => {
     const recordKey = getRecordPrimaryKeyValue(record, blockModel.collection);
-
-    useEffect(() => {
-      let disposed = false;
-      const actions = itemModel.subModels.actions
-        ? ([] as FlowModel[]).concat(itemModel.subModels.actions as FlowModel | FlowModel[])
-        : [];
-
-      async function ensureDefaultActions() {
-        const flowEngine = (itemModel as FlowModel & { flowEngine?: FlowEngineLookup }).flowEngine;
-
-        for (const [index, use] of defaultRecordActionModels.entries()) {
-          const existing = actions.find((action) => getModelName(action) === use);
-          if (existing) {
-            existing.sortIndex = index;
-            continue;
-          }
-
-          const ModelClass = (await flowEngine?.getModelClassAsync?.(use)) || flowEngine?.getModelClass?.(use);
-          if (!ModelClass || disposed) {
-            continue;
-          }
-
-          const added = itemModel.addSubModel('actions', { use });
-          added.sortIndex = index;
-        }
-      }
-
-      ensureDefaultActions();
-
-      return () => {
-        disposed = true;
-      };
-    }, [itemModel]);
 
     return (
       <DndProvider>

@@ -37,6 +37,7 @@ vi.mock('../../locale', () => ({
 // --- Mock the client-v2 layout primitives with lightweight test doubles ---
 vi.mock('@nocobase/client-v2', () => ({
   DEFAULT_PAGE_SIZE: 20,
+  getRouteRuntimeVersion: () => 'modern',
   FormSubmitActionModel: {
     registerFlow: vi.fn(),
   },

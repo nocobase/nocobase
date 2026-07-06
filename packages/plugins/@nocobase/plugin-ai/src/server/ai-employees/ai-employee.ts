@@ -176,7 +176,9 @@ export class AIEmployee {
 
   // === Chat flow ===
   private buildState(messages: AIMessage[]) {
+    const toolCallMessage = messages.findLast((message) => message.toolCalls?.length);
     return {
+      messageId: toolCallMessage?.messageId,
       lastMessageIndex: {
         lastHumanMessageIndex: messages.filter((m) => m.role === 'user').length,
         lastAIMessageIndex: messages.filter((m) => m.role === this.employee.username).length,
@@ -366,7 +368,7 @@ export class AIEmployee {
       const { threadId } = await this.getCurrentThread();
       const invokeConfig = {
         context: { ctx: this.ctx, decisions: chatContext.decisions, ...context },
-        recursionLimit: 100,
+        recursionLimit: 200,
         configurable: this.from === 'main-agent' ? { thread_id: threadId } : undefined,
         writer,
         signal,
@@ -480,7 +482,7 @@ export class AIEmployee {
           streamMode: ['updates', 'messages', 'custom'],
           configurable: this.from === 'main-agent' ? { thread_id: threadId } : undefined,
           context: { ctx: this.ctx, decisions: chatContext.decisions },
-          recursionLimit: 100,
+          recursionLimit: 200,
           ...config,
         },
         state,

@@ -16,7 +16,12 @@ import {
   WORKFLOW_CANVAS_ROUTE_PATH,
   WORKFLOW_EXECUTION_ROUTE_NAME,
   WORKFLOW_EXECUTION_ROUTE_PATH,
+  WORKFLOW_TASKS_MOBILE_ROUTE_NAME,
+  WORKFLOW_TASKS_MOBILE_ROUTE_PATH,
+  WORKFLOW_TASKS_ROUTE_NAME,
+  WORKFLOW_TASKS_ROUTE_PATH,
 } from './constants';
+import type { TaskTypeOptions } from './taskCenter';
 import type { Instruction } from './canvas/Instruction';
 import type { Trigger } from './triggers';
 import './models/triggerWorkflows';
@@ -115,6 +120,7 @@ export class PluginWorkflowClientV2 extends Plugin {
   instructionGroups = new Registry<InstructionGroup>();
   systemVariables = new Registry<SystemVariableOption>();
   workflowNoticeProviders = new Registry<WorkflowNoticeProvider>();
+  taskTypes = new Registry<TaskTypeOptions>();
 
   /**
    * Register a `$system` scope variable. Mirrors v1's `registerSystemVariable`
@@ -123,6 +129,10 @@ export class PluginWorkflowClientV2 extends Plugin {
    */
   registerSystemVariable(option: SystemVariableOption) {
     this.systemVariables.register(option.key, option);
+  }
+
+  registerTaskType(key: string, option: Omit<TaskTypeOptions, 'key'> | TaskTypeOptions) {
+    this.taskTypes.register(key, { ...option, key });
   }
 
   isWorkflowSync(workflow) {
@@ -229,6 +239,7 @@ export class PluginWorkflowClientV2 extends Plugin {
     this.registerSettingsPage();
     this.registerCanvasRoute();
     this.registerExecutionRoute();
+    this.registerTaskCenterRoutes();
   }
 
   // The three fixed `$system` variables (v1 `client/index.tsx`). Self-registered by the workflow plugin — no external
@@ -281,6 +292,10 @@ export class PluginWorkflowClientV2 extends Plugin {
         extends: 'DetailsCustomItemModel',
         loader: () => import('./models/TaskCardCommonItemModel'),
       },
+      WorkflowTasksTopbarActionModel: {
+        extends: 'TopbarActionModel',
+        loader: () => import('./models/WorkflowTasksTopbarActionModel'),
+      },
     });
   }
 
@@ -328,6 +343,19 @@ export class PluginWorkflowClientV2 extends Plugin {
       componentLoader: () => import('./pages/ExecutionViewPage'),
     });
   }
+
+  private registerTaskCenterRoutes() {
+    this.app.router.add(WORKFLOW_TASKS_ROUTE_NAME, {
+      path: WORKFLOW_TASKS_ROUTE_PATH,
+      componentLoader: () => import('./pages/WorkflowTasksPage'),
+    });
+
+    this.app.router.add(WORKFLOW_TASKS_MOBILE_ROUTE_NAME, {
+      path: WORKFLOW_TASKS_MOBILE_ROUTE_PATH,
+      componentLoader: () => import('./pages/WorkflowTasksPage'),
+    });
+  }
 }
 
 export default PluginWorkflowClientV2;
+export type { TaskTypeOptions } from './taskCenter';

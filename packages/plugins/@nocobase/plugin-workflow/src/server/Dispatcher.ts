@@ -68,7 +68,7 @@ export default class Dispatcher {
     const execution: ExecutionModel = await ExecutionRepo.findOne({
       filterByTk: event.executionId,
     });
-    if (!execution || execution.dispatched) {
+    if (!execution || execution.dispatched || execution.status !== EXECUTION_STATUS.QUEUEING) {
       return;
     }
     this.plugin
@@ -432,8 +432,7 @@ export default class Dispatcher {
     // the transaction boundary is managed externally, so run once without retry.
     if (options.transaction) {
       try {
-        const { execution } = await this.acquireExecution(input, options, options.transaction);
-        return execution;
+        return await this.acquireExecution(input, options, options.transaction);
       } catch (error) {
         if (error instanceof Error) {
           logger.error(`entering execution failed: ${error.message}`, { error });
@@ -455,13 +454,12 @@ export default class Dispatcher {
         async () => {
           const tx = await this.plugin.db.sequelize.transaction({
             isolationLevel:
-              this.plugin.db.options.dialect === 'sqlite' ? undefined : Transaction.ISOLATION_LEVELS.REPEATABLE_READ,
+              this.plugin.db.options.dialect === 'sqlite' ? undefined : Transaction.ISOLATION_LEVELS.READ_COMMITTED,
           });
           try {
-            const { execution, shouldRetry } = await this.acquireExecution(input, options, tx);
+            const execution = await this.acquireExecution(input, options, tx);
             await tx.commit();
             result = execution;
-            return shouldRetry;
           } catch (error) {
             await tx.rollback();
             if (this.isConcurrentAcquireError(error)) {
@@ -471,7 +469,6 @@ export default class Dispatcher {
               logger.error(`entering execution failed: ${error.message}`, { error });
             }
             result = null;
-            return false;
           }
         },
         {
@@ -497,17 +494,25 @@ export default class Dispatcher {
     input: ExecutionModel | null,
     options: { immediate?: boolean },
     transaction: Transaction,
-  ): Promise<{ execution: ExecutionModel | null; shouldRetry: boolean }> {
+  ): Promise<ExecutionModel | null> {
     let execution: ExecutionModel | null = input;
     if (execution) {
       if (!options.immediate || execution.status !== EXECUTION_STATUS.QUEUEING) {
         await execution.reload({ transaction });
       }
     } else {
+      const workflowIds = [...this.plugin.enabledCache.keys()];
+      if (!workflowIds.length) {
+        this.plugin.getLogger('dispatcher').debug(`no enabled workflow to process`);
+        return null;
+      }
+
       execution = (await this.plugin.db.getRepository('executions').findOne({
         filter: {
           dispatched: false,
-          'workflow.enabled': true,
+          status: EXECUTION_STATUS.QUEUEING,
+          startedAt: null,
+          workflowId: workflowIds,
         },
         sort: 'id',
         transaction,
@@ -522,18 +527,14 @@ export default class Dispatcher {
     }
 
     if (!execution) {
-      return { execution: null, shouldRetry: false };
+      return null;
     }
 
-    const entered = await this.enter(execution, transaction);
-    // NOTE: a queued execution was fetched but acquired by another worker first
-    // (conditional update affected 0 rows), retry to pick the next one.
-    const shouldRetry = !input && !entered;
-    return { execution: entered, shouldRetry };
+    return this.enter(execution, transaction);
   }
 
   private async acquireWithRetry(
-    acquire: () => Promise<boolean>,
+    acquire: () => Promise<void>,
     options: {
       logger: AcquireRetryLogger;
       conflictMessage: string;
@@ -541,22 +542,18 @@ export default class Dispatcher {
     },
   ) {
     for (let attempt = 1; attempt <= EXECUTION_ACQUIRE_MAX_ATTEMPTS; attempt++) {
-      let shouldRetry = false;
       try {
-        shouldRetry = await acquire();
+        await acquire();
+        break;
       } catch (error) {
         if (!this.isConcurrentAcquireError(error)) {
           throw error;
         }
-        shouldRetry = true;
         options.logger.warn(options.conflictMessage, { error });
-      }
-      if (!shouldRetry) {
-        break;
-      }
-      if (attempt >= EXECUTION_ACQUIRE_MAX_ATTEMPTS) {
-        options.logger.warn(options.maxAttemptsMessage);
-        break;
+        if (attempt >= EXECUTION_ACQUIRE_MAX_ATTEMPTS) {
+          options.logger.warn(options.maxAttemptsMessage);
+          break;
+        }
       }
     }
   }
@@ -665,7 +662,10 @@ export default class Dispatcher {
       return processor;
     };
 
-    const lock = await this.plugin.app.lockManager.tryAcquire(getExecutionLockKey(execution.id), 60_000);
+    const lockManager = this.plugin.app.lockManager as typeof this.plugin.app.lockManager & {
+      tryAcquire(key: string, timeout?: number): ReturnType<typeof this.plugin.app.lockManager.tryAcquire>;
+    };
+    const lock = await lockManager.tryAcquire(getExecutionLockKey(execution.id), 60_000);
     try {
       return await lock.runExclusive(run, 60_000);
     } catch (error) {

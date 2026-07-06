@@ -11,7 +11,7 @@ import { describe, expect, it } from 'vitest';
 import {
   normalizeBusinessReport,
   normalizeBusinessReportCharts,
-} from '../../ai-employees/business-report/ui/report-utils';
+} from '../../../client-v2/ai-employees/tools/business-report-utils';
 
 describe('business report utils', () => {
   it('should parse chart arrays from string input safely', () => {

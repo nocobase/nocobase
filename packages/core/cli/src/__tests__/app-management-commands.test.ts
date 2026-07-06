@@ -30,7 +30,11 @@ async function createNpmSourceProject(
 ): Promise<string> {
   const actualFsp = await vi.importActual<typeof import('node:fs/promises')>('node:fs/promises');
   const projectRoot = await actualFsp.mkdtemp(path.join(os.tmpdir(), 'nb-source-dev-'));
-  await actualFsp.writeFile(path.join(projectRoot, 'package.json'), `${JSON.stringify(packageJson, null, 2)}\n`, 'utf-8');
+  await actualFsp.writeFile(
+    path.join(projectRoot, 'package.json'),
+    `${JSON.stringify(packageJson, null, 2)}\n`,
+    'utf-8',
+  );
 
   if (options?.devtoolsInstalled) {
     const devtoolsDir = path.join(projectRoot, 'node_modules', '@nocobase', 'devtools');
@@ -1619,6 +1623,49 @@ test('start recreates docker app containers through docker run', async () => {
   ]);
 });
 
+test('start maps no-nginx docker app containers to the app port inside the container', async () => {
+  const { default: Start } = await import('../commands/app/start.js');
+  mocks.resolveManagedAppRuntime.mockResolvedValue({
+    kind: 'docker',
+    envName: 'docker-local',
+    source: 'docker',
+    containerName: 'nb-demo-docker-local-app',
+    workspaceName: 'nb-demo',
+    env: {
+      config: {
+        builtinDb: false,
+        appKey: 'app-key-123',
+        timezone: 'Asia/Shanghai',
+        dbDialect: 'postgres',
+        dbHost: 'nb-demo-docker-local-postgres',
+        dbPort: '5432',
+        dbDatabase: 'nocobase',
+        dbUser: 'nocobase',
+        dbPassword: 'nocobase',
+        dockerRegistry: 'nocobase/nocobase',
+        downloadVersion: 'next-full-no-nginx',
+        storagePath: './docker-local/storage',
+      },
+      appPort: 13000,
+    },
+  });
+
+  const command = createCommandHarness({
+    flags: {
+      env: 'docker-local',
+      verbose: true,
+    },
+  });
+
+  await Start.prototype.run.call(command);
+
+  const dockerRunCall = mocks.run.mock.calls.find(
+    ([bin, args]) => bin === 'docker' && Array.isArray(args) && args[0] === 'run',
+  );
+  expect(dockerRunCall?.[1]).toContain('13000:13000');
+  expect(dockerRunCall?.[1]).not.toContain('13000:80');
+});
+
 test('start enables NOCOBASE_EXTRACT_CLIENT_ASSETS for docker envs by default', async () => {
   const { default: Start } = await import('../commands/app/start.js');
   mocks.resolveManagedAppRuntime.mockResolvedValue({
@@ -2202,10 +2249,7 @@ test('restart forwards app restart hook command for saved hook scripts', async (
   expect(runCommand.mock.calls).toEqual([
     ['license:plugins:sync', ['--env', 'local', '--skip-if-no-license']],
     ['app:stop', ['--env', 'local']],
-    [
-      'app:start',
-      ['--env', 'local', '--quickstart', '--no-sync-licensed-plugins', '--hook-command', 'app:restart'],
-    ],
+    ['app:start', ['--env', 'local', '--quickstart', '--no-sync-licensed-plugins', '--hook-command', 'app:restart']],
   ]);
 });
 

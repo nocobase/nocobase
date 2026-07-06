@@ -12,6 +12,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { RUNJS_OPEN_VIEW_ROUTE_STATE } from '@nocobase/flow-engine';
 import { openView } from '../openView';
 import { FlowPage } from '../../FlowPage';
+import { ROUTE_TRANSIENT_INPUT_ARGS_KEY } from '../../routeTransientInputArgs';
 
 describe('openView action - route mode defineProperties/defineMethods', () => {
   const createRouteManagedCtx = () => {
@@ -172,6 +173,56 @@ describe('openView action - route mode defineProperties/defineMethods', () => {
     expect(defineMethodCalls).toContain('pong');
   });
 
+  it('passes formData through route navigation state', async () => {
+    const navigateTo = vi.fn();
+    const ctx: any = {
+      inputArgs: {
+        formData: {
+          start: '2026-06-24 08:00:00',
+          end: '2026-06-24 09:00:00',
+        },
+      },
+      engine: {
+        context: {},
+      },
+      model: {
+        uid: 'popup-uid',
+        context: {
+          defineProperty: vi.fn(),
+        },
+      },
+      view: {
+        navigation: {
+          navigateTo,
+        },
+      },
+      isNavigationEnabled: true,
+    };
+
+    await openView.handler(ctx, { navigation: true });
+
+    expect(navigateTo).toHaveBeenCalledWith(
+      {
+        viewUid: 'popup-uid',
+        filterByTk: undefined,
+        sourceId: undefined,
+        tabUid: undefined,
+      },
+      {
+        state: {
+          [ROUTE_TRANSIENT_INPUT_ARGS_KEY]: {
+            'popup-uid': {
+              formData: {
+                start: '2026-06-24 08:00:00',
+                end: '2026-06-24 09:00:00',
+              },
+            },
+          },
+        },
+      },
+    );
+  });
+
   it('adds route state to first-stage navigation only for RunJS ctx.openView calls', async () => {
     const { ctx, navigateTo } = createFirstStageCtx({
       mode: 'dialog',
@@ -181,13 +232,16 @@ describe('openView action - route mode defineProperties/defineMethods', () => {
 
     await openView.handler(ctx, { mode: 'drawer', size: 'medium', navigation: true });
 
-    expect(navigateTo).toHaveBeenCalledWith({
-      viewUid: 'popup-uid',
-      filterByTk: undefined,
-      sourceId: undefined,
-      tabUid: undefined,
-      openViewRouteState: { mode: 'dialog', size: 'large' },
-    });
+    expect(navigateTo).toHaveBeenCalledWith(
+      {
+        viewUid: 'popup-uid',
+        filterByTk: undefined,
+        sourceId: undefined,
+        tabUid: undefined,
+        openViewRouteState: { mode: 'dialog', size: 'large' },
+      },
+      undefined,
+    );
   });
 
   it('normalizes first-stage RunJS route state mode on mobile layout', async () => {
@@ -200,13 +254,16 @@ describe('openView action - route mode defineProperties/defineMethods', () => {
 
     await openView.handler(ctx, { mode: 'drawer', size: 'medium', navigation: true });
 
-    expect(navigateTo).toHaveBeenCalledWith({
-      viewUid: 'popup-uid',
-      filterByTk: undefined,
-      sourceId: undefined,
-      tabUid: undefined,
-      openViewRouteState: { mode: 'embed', size: 'large' },
-    });
+    expect(navigateTo).toHaveBeenCalledWith(
+      {
+        viewUid: 'popup-uid',
+        filterByTk: undefined,
+        sourceId: undefined,
+        tabUid: undefined,
+        openViewRouteState: { mode: 'embed', size: 'large' },
+      },
+      undefined,
+    );
   });
 
   it('uses route replay mode and size before persisted openView defaults', async () => {
@@ -246,11 +303,14 @@ describe('openView action - route mode defineProperties/defineMethods', () => {
 
     await openView.handler(ctx, { mode: 'drawer', size: 'medium', navigation: true });
 
-    expect(navigateTo).toHaveBeenCalledWith({
-      viewUid: 'popup-uid',
-      filterByTk: undefined,
-      sourceId: undefined,
-      tabUid: undefined,
-    });
+    expect(navigateTo).toHaveBeenCalledWith(
+      {
+        viewUid: 'popup-uid',
+        filterByTk: undefined,
+        sourceId: undefined,
+        tabUid: undefined,
+      },
+      undefined,
+    );
   });
 });

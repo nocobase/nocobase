@@ -26,3 +26,18 @@ export const WORKFLOW_EXECUTION_ROUTE_PATH = '/admin/workflow/executions/:id';
 export function getWorkflowExecutionPath(id: string | number) {
   return `/admin/workflow/executions/${id}`;
 }
+
+export const WORKFLOW_TASKS_ROUTE_NAME = 'admin.workflow.tasks';
+export const WORKFLOW_TASKS_ROUTE_PATH = '/admin/workflow/tasks/:taskType?/:status?/:popupId?';
+
+export const WORKFLOW_TASKS_MOBILE_ROUTE_NAME = 'mobile.page.workflow.tasks.list';
+export const WORKFLOW_TASKS_MOBILE_ROUTE_PATH = 'page/workflow-tasks/:taskType?/:status?/:popupId?';
+
+export function getWorkflowTasksPath(taskType?: string, status?: string, popupId?: string | number, mobile = false) {
+  const basePath = mobile ? '/mobile/page/workflow-tasks' : '/admin/workflow/tasks';
+  const segments = [taskType, status, popupId]
+    .filter((segment) => segment !== undefined && segment !== null && segment !== '')
+    .map((segment) => encodeURIComponent(String(segment)));
+
+  return segments.length ? `${basePath}/${segments.join('/')}` : basePath;
+}
