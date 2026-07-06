@@ -64,6 +64,7 @@ const GENERIC_TASK_RUN_SCENARIO = 'generic';
 const UI_BUILD_TASK_RUN_SCENARIO = 'nocobase-ui-build';
 const OPENCODE_UI_BATCH_TASK_RUN_SCENARIO = 'opencode-ui-batch';
 const OPENCODE_UI_BATCH_SKILL_KEY = 'nb-opencode-ui-batch';
+const OPENCODE_UI_BATCH_DEFAULT_TIMEOUT_MS = 2 * 60 * 60 * 1000;
 const SAME_HOST_NODE_SUPERSEDED_REASON = 'same-host-node-replaced';
 const UI_BUILD_REROUTE_SOURCE_TYPES = new Set([UI_BUILD_SOURCE_TYPE, 'manual-ui-build']);
 const TASK_RUN_SCENARIOS = new Set([
@@ -178,6 +179,11 @@ function getRequiredInteger(ctx: Context, value: unknown, name: string) {
     ctx.throw(400, `${name} is required`);
   }
   return numberValue;
+}
+
+function getPositiveNumber(value: unknown) {
+  const numberValue = typeof value === 'number' ? value : Number(value);
+  return Number.isFinite(numberValue) && numberValue > 0 ? numberValue : undefined;
 }
 
 function getBoolean(value: unknown) {
@@ -993,7 +999,9 @@ function buildOpenCodeUiBatchPrompt(values: JsonRecord) {
     'Requirements:',
     '- Read the SKILL.md path injected by Agent Gateway for this run before executing.',
     '- Execute the harness from that installed skill directory. Use the skill default command unless the instruction below overrides it.',
+    '- Emit progress lines when possible as: AGW_PROGRESS phase=<phase> status=<started|succeeded|failed> message=<short text>.',
     '- After the suite writes browser-verification-request.json, complete the required external Agent Browser verification pass, write browser-verification.json and browser-screenshots/**, then rerender report.html.',
+    '- Rerender with a bounded command: timeout 10m node scripts/run-suite.mjs --render-run <run_dir> --no-open. If it times out, stop retrying, preserve current artifacts, and report renderRunTimeout: true.',
     '- Preserve generated report.html, report.json, browser-verification-request.json, browser-verification-prompt.md, browser-verification.json, and browser-screenshots/** for Agent Gateway artifact collection.',
     '- Do not use historical runs/ output as the result of this task.',
     '',
@@ -1046,6 +1054,13 @@ function getTaskRunResolvedSkills(values: JsonRecord) {
     return undefined;
   }
   return skillVersionIds.map((skillVersionId) => ({ skillVersionId }));
+}
+
+function getTaskRunTimeoutMs(values: JsonRecord, scenario: string) {
+  return (
+    getPositiveNumber(values.timeoutMs) ||
+    (scenario === OPENCODE_UI_BATCH_TASK_RUN_SCENARIO ? OPENCODE_UI_BATCH_DEFAULT_TIMEOUT_MS : undefined)
+  );
 }
 
 async function createInitialTaskConversationEvent(
@@ -1563,6 +1578,7 @@ async function createTaskRun(ctx: Context, options: { defaultScenario?: string }
     const now = new Date();
     const artifactGlobs = getTaskRunArtifactGlobs(values, scenario);
     const resolvedSkills = getTaskRunResolvedSkills(values);
+    const timeoutMs = getTaskRunTimeoutMs(values, scenario);
     if (scenario === OPENCODE_UI_BATCH_TASK_RUN_SCENARIO && !resolvedSkills?.length) {
       ctx.throw(400, 'skillVersionIds is required for OpenCode UI batch harness');
     }
@@ -1589,6 +1605,7 @@ async function createTaskRun(ctx: Context, options: { defaultScenario?: string }
       ...(provider ? { provider } : {}),
       cwd,
       terminalBackend: 'tmux',
+      ...(timeoutMs ? { timeoutMs } : {}),
       ...(artifactGlobs.length ? { artifactGlobs } : {}),
       ...(resolvedSkills ? { resolvedSkills } : {}),
     };

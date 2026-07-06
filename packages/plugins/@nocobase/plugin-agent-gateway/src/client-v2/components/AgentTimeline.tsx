@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Alert, Collapse, Empty, Space, Tag, Timeline, Typography } from 'antd';
+import { Alert, Button, Collapse, Empty, Space, Tag, Timeline, Typography } from 'antd';
 import React, { useMemo } from 'react';
 
 import {
@@ -21,6 +21,10 @@ import {
 import { JsonRecord, formatDateTime, redactPreviewText } from '../pages/AgentGatewayPageUtils';
 
 type TFunction = (key: string, options?: Record<string, unknown>) => string;
+
+const DEFAULT_VISIBLE_MESSAGE_COUNT = 80;
+const VISIBLE_MESSAGE_COUNT_INCREMENT = 80;
+const LONG_TEXT_PREVIEW_CHARS = 6000;
 
 export interface AgentTimelineEventRecord {
   id: string;
@@ -105,25 +109,44 @@ function getMessageTitle(t: TFunction, message: AgentTranscriptMessage) {
   return message.role === 'user' ? t('You') : t('Agent');
 }
 
-function TextBlock({ text, maxHeight = 320 }: { text: string; maxHeight?: number }) {
+function TextBlock({ t, text, maxHeight = 320 }: { t: TFunction; text: string; maxHeight?: number }) {
+  const [expanded, setExpanded] = React.useState(false);
   if (!text) {
     return null;
   }
+  const shouldTruncate = text.length > LONG_TEXT_PREVIEW_CHARS;
+  const hiddenChars = Math.max(0, text.length - LONG_TEXT_PREVIEW_CHARS);
+  const displayedText =
+    shouldTruncate && !expanded
+      ? `${text.slice(0, LONG_TEXT_PREVIEW_CHARS)}\n\n[... ${hiddenChars.toLocaleString()} ${t('chars hidden')}]`
+      : text;
   return (
-    <Typography.Paragraph
-      style={{
-        background: '#fafafa',
-        border: '1px solid #edf0f2',
-        borderRadius: 6,
-        margin: 0,
-        maxHeight,
-        overflow: 'auto',
-        padding: '8px 10px',
-        whiteSpace: 'pre-wrap',
-      }}
-    >
-      {redactPreviewText(text)}
-    </Typography.Paragraph>
+    <Space direction="vertical" size={4} style={{ width: '100%' }}>
+      <Typography.Paragraph
+        style={{
+          background: '#fafafa',
+          border: '1px solid #edf0f2',
+          borderRadius: 6,
+          margin: 0,
+          maxHeight,
+          overflow: 'auto',
+          padding: '8px 10px',
+          whiteSpace: 'pre-wrap',
+        }}
+      >
+        {redactPreviewText(displayedText)}
+      </Typography.Paragraph>
+      {shouldTruncate ? (
+        <Button
+          type="link"
+          size="small"
+          style={{ alignSelf: 'flex-start', padding: 0 }}
+          onClick={() => setExpanded((value) => !value)}
+        >
+          {expanded ? t('Collapse text') : t('Show full text')}
+        </Button>
+      ) : null}
+    </Space>
   );
 }
 
@@ -140,13 +163,13 @@ function ToolCallBody({ t, toolCall }: { t: TFunction; toolCall: AgentTranscript
       {toolCall.command ? (
         <Space direction="vertical" size={4} style={{ width: '100%' }}>
           <Typography.Text type="secondary">{t('Command')}</Typography.Text>
-          <TextBlock text={toolCall.command} maxHeight={120} />
+          <TextBlock t={t} text={toolCall.command} maxHeight={120} />
         </Space>
       ) : null}
       {output ? (
         <Space direction="vertical" size={4} style={{ width: '100%' }}>
           <Typography.Text type="secondary">{t('Output')}</Typography.Text>
-          <TextBlock text={output} maxHeight={300} />
+          <TextBlock t={t} text={output} maxHeight={300} />
         </Space>
       ) : null}
       {!toolCall.command && !output ? (
@@ -237,7 +260,7 @@ function MessagePart({ t, part }: { t: TFunction; part: AgentTranscriptMessagePa
   if (part.type === 'tool-calls') {
     return <ToolCallsCollapse t={t} toolCalls={part.toolCalls} />;
   }
-  return <TextBlock text={part.text} />;
+  return <TextBlock t={t} text={part.text} />;
 }
 
 function MessageContent({ t, message }: { t: TFunction; message: AgentTranscriptMessage }) {
@@ -292,7 +315,14 @@ export function AgentTimeline({
   const usingLegacyFallback = useLegacyFallback && !events.length && legacyEvents.length > 0;
   const transcriptEvents = usingLegacyFallback ? getLegacyTimelineEvents(legacyEvents) : events;
   const transcript = useMemo(() => buildAgentTranscript(transcriptEvents), [transcriptEvents]);
-  const timelineItems = transcript.messages.map((message) => ({
+  const [visibleMessageCount, setVisibleMessageCount] = React.useState(DEFAULT_VISIBLE_MESSAGE_COUNT);
+  const timelineResetKey = `${usingLegacyFallback ? 'legacy' : 'events'}:${transcriptEvents[0]?.id || 'empty'}`;
+  React.useEffect(() => {
+    setVisibleMessageCount(DEFAULT_VISIBLE_MESSAGE_COUNT);
+  }, [timelineResetKey]);
+  const hiddenMessageCount = Math.max(0, transcript.messages.length - visibleMessageCount);
+  const visibleMessages = hiddenMessageCount ? transcript.messages.slice(hiddenMessageCount) : transcript.messages;
+  const timelineItems = visibleMessages.map((message) => ({
     key: message.id,
     color: getTimelineColor(message),
     children: <MessageContent t={t} message={message} />,
@@ -313,7 +343,17 @@ export function AgentTimeline({
         </Space>
         {warning ? <Alert type="warning" showIcon message={warning} /> : null}
         {timelineItems.length ? (
-          <Timeline mode="left" items={timelineItems} />
+          <>
+            {hiddenMessageCount ? (
+              <Button
+                size="small"
+                onClick={() => setVisibleMessageCount((count) => count + VISIBLE_MESSAGE_COUNT_INCREMENT)}
+              >
+                {t('Load earlier messages')} ({hiddenMessageCount})
+              </Button>
+            ) : null}
+            <Timeline mode="left" items={timelineItems} />
+          </>
         ) : (
           <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={emptyDescription || t('No task messages yet')} />
         )}

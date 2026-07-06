@@ -30,6 +30,11 @@ function expectString(value: unknown) {
   return String(value);
 }
 
+function getTime(value: unknown) {
+  const date = value instanceof Date ? value : new Date(String(value));
+  return date.getTime();
+}
+
 describe('agent gateway conversation event APIs', () => {
   let app: MockServer;
   let rootAgent: ReturnType<MockServer['agent']>;
@@ -271,6 +276,11 @@ describe('agent gateway conversation event APIs', () => {
     });
     expect(JSON.stringify(appended[0])).not.toContain('CONVERSATION_JSON_SECRET');
     expect(JSON.stringify(appended[0])).not.toContain('CONVERSATION_COMMAND_SECRET');
+    const runAfterAppend = await app.db.getRepository('agRuns').findOne({
+      filterByTk: run.id,
+    });
+    const firstTerminalActivityAt = getTime(runAfterAppend.get('terminalLastActivityAt'));
+    expect(Number.isFinite(firstTerminalActivityAt)).toBe(true);
 
     const retryResponse = await appendConversationEvents(
       runner,
@@ -290,6 +300,10 @@ describe('agent gateway conversation event APIs', () => {
       idempotent: true,
     });
     expect(await app.db.getRepository('agAgentConversationEvents').count({ filter: { runId: run.id } })).toBe(2);
+    const runAfterRetry = await app.db.getRepository('agRuns').findOne({
+      filterByTk: run.id,
+    });
+    expect(getTime(runAfterRetry.get('terminalLastActivityAt'))).toBe(firstTerminalActivityAt);
 
     const runListResponse = await rootAgent.get(`/api/agent-gateway/runs/${run.id}/conversation-events:list`);
     expect(runListResponse.status).toBe(200);

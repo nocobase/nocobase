@@ -290,6 +290,25 @@ describe('agent gateway daemon runner', () => {
         '/api/agent-gateway/nodes/node-1/runs/run-1/complete',
       ]),
     );
+    const runEventBodies = requester.calls
+      .filter((call) => call.path.endsWith('/events:append') && isJsonRecord(call.body))
+      .map((call) => call.body as JsonRecord);
+    expect(runEventBodies).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          source: 'agent-gateway-daemon',
+          eventType: 'skill.sync.started',
+        }),
+        expect.objectContaining({
+          source: 'agent-gateway-daemon',
+          eventType: 'agent.process.succeeded',
+        }),
+        expect.objectContaining({
+          source: 'agent-gateway-daemon',
+          eventType: 'run.finalizing.succeeded',
+        }),
+      ]),
+    );
     expect(JSON.stringify(requester.calls)).not.toContain('RUNNER_TOKEN_SECRET');
   });
 
@@ -390,8 +409,8 @@ describe('agent gateway daemon runner', () => {
           exitCode: 0,
           signal: null,
           stdout: {
-            text: '{"type":"turn.completed"}',
-            sizeBytes: 25,
+            text: 'AGW_PROGRESS phase=render_run status=started message=rerendering report\n{"type":"turn.completed"}',
+            sizeBytes: 94,
           },
           stderr: {
             text: null,
@@ -444,6 +463,21 @@ describe('agent gateway daemon runner', () => {
         }),
       ]),
     );
+    const harnessProgressCall = requester.calls.find(
+      (call) =>
+        call.path.endsWith('/events:append') &&
+        isJsonRecord(call.body) &&
+        call.body.source === 'harness' &&
+        call.body.eventType === 'render_run.started',
+    );
+    expect(harnessProgressCall?.body).toMatchObject({
+      message: 'rerendering report',
+      payloadJson: {
+        progress: true,
+        phase: 'render_run',
+        status: 'started',
+      },
+    });
     const completeCall = requester.calls.find((call) => call.path.endsWith('/complete'));
     expect(completeCall?.body).toMatchObject({
       resultSummary: {
@@ -773,7 +807,7 @@ describe('agent gateway daemon runner', () => {
     expect(result.status).toBe('succeeded');
     expect(executedCommands[0]).toMatchObject({
       commandKey: 'codex',
-      args: ['exec', '--json', 'Build with custom profile'],
+      args: ['exec', '--skip-git-repo-check', '--json', 'Build with custom profile'],
     });
     const upsertCall = requester.calls.find((call) => call.path.endsWith('/agent-session:upsert'));
     expect(upsertCall?.body).toMatchObject({
@@ -1015,7 +1049,9 @@ describe('agent gateway daemon runner', () => {
     });
 
     expect(result.status).toBe('succeeded');
-    expect(executedArgs).toEqual([['exec', 'resume', '--json', '019f1e72-d75c-7c61-a9ba-cc99c653e0a2', resumeMessage]]);
+    expect(executedArgs).toEqual([
+      ['exec', 'resume', '--skip-git-repo-check', '--json', '019f1e72-d75c-7c61-a9ba-cc99c653e0a2', resumeMessage],
+    ]);
   });
 
   it('fails malformed resume runs instead of leaving them active', async () => {

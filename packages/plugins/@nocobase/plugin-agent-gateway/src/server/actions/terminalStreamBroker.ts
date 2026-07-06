@@ -60,6 +60,7 @@ import { validateRunLease } from './runLifecycle';
 import { TerminalStreamTicketError, consumeTerminalStreamTicket } from './terminalStreamTickets';
 
 const MAX_TERMINAL_WEBSOCKET_BUFFERED_BYTES = 1024 * 1024;
+const TERMINAL_ACTIVITY_TOUCH_MIN_INTERVAL_MS = 2000;
 const ACTIVE_TERMINAL_STREAM_RUN_STATUSES = new Set(['claimed', 'syncing_skills', 'running', 'canceling']);
 const TERMINALIZED_RUN_END_REASONS = new Map<string, TerminalEnd['reason']>([
   ['succeeded', 'completed'],
@@ -426,6 +427,7 @@ export class TerminalStreamBroker {
   private readonly pendingSnapshotRequests = new Map<string, PendingSnapshotRequest>();
   private readonly pendingBrowserSubscriptionReservations = new Map<string, PendingBrowserSubscriptionReservation>();
   private readonly frameQueues = new Map<WebSocket, Promise<void>>();
+  private readonly terminalActivityTouchedAt = new Map<string, number>();
   private readonly gatewayHandler: (
     request: IncomingMessage,
     socket: Duplex,
@@ -724,6 +726,7 @@ export class TerminalStreamBroker {
       this.send(connection.ws, payloadError);
       return;
     }
+    await this.touchRunTerminalActivity(frame.runId);
     this.broadcastToRun(frame.runId, frame);
   }
 
@@ -770,7 +773,30 @@ export class TerminalStreamBroker {
     }
     this.resolvePendingSnapshotsWithTerminalEnd(connection.ws, frame);
     this.boundRuns.delete(frame.runId);
+    this.terminalActivityTouchedAt.delete(frame.runId);
     this.broadcastToRun(frame.runId, frame);
+  }
+
+  private async touchRunTerminalActivity(runId: string) {
+    const nowMs = Date.now();
+    const previousMs = this.terminalActivityTouchedAt.get(runId) || 0;
+    if (nowMs - previousMs < TERMINAL_ACTIVITY_TOUCH_MIN_INTERVAL_MS) {
+      return;
+    }
+    this.terminalActivityTouchedAt.set(runId, nowMs);
+    try {
+      await this.app.db.getRepository('agRuns').update({
+        filterByTk: runId,
+        values: {
+          terminalLastActivityAt: new Date(nowMs),
+        },
+      });
+    } catch (error) {
+      this.app.logger?.warn?.('Agent Gateway terminal activity update failed', {
+        runId,
+        error: getErrorMessage(error),
+      });
+    }
   }
 
   private resolvePendingSnapshotsWithTerminalEnd(daemon: WebSocket, frame: TerminalEnd) {

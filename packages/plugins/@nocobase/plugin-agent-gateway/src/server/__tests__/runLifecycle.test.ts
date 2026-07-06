@@ -609,6 +609,7 @@ describe('agent gateway run lifecycle APIs', () => {
     expect(storedRun.get('executionPayloadJson')).toMatchObject({
       scenario: 'opencode-ui-batch',
       prompt: expect.stringContaining('browser-screenshots/**'),
+      timeoutMs: 7_200_000,
       instruction: '运行 nb-opencode-ui-batch harness 并汇总结果',
       profileKey: 'codex',
       commandKey: 'codex',
@@ -628,6 +629,12 @@ describe('agent gateway run lifecycle APIs', () => {
         },
       ],
     });
+    expect(String((storedRun.get('executionPayloadJson') as Record<string, unknown>).prompt)).toContain(
+      'timeout 10m node scripts/run-suite.mjs --render-run <run_dir> --no-open',
+    );
+    expect(String((storedRun.get('executionPayloadJson') as Record<string, unknown>).prompt)).toContain(
+      'AGW_PROGRESS phase=<phase> status=<started|succeeded|failed>',
+    );
     const initialConversationEvents = await app.db.getRepository('agAgentConversationEvents').find({
       filter: {
         runId: String(createResult.runId),

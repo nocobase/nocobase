@@ -56,6 +56,13 @@ async function getRootUserId(app: MockServer) {
   return rootUser?.get('id') as string | number;
 }
 
+async function getTerminalLastActivityAt(app: MockServer, runId: string) {
+  const run = await app.db.getRepository('agRuns').findOne({
+    filterByTk: runId,
+  });
+  return run?.get('terminalLastActivityAt') as Date | string | null | undefined;
+}
+
 async function subscribe(
   app: MockServer,
   serverUrl: string,
@@ -138,6 +145,7 @@ describe('terminal stream end-to-end reliability', () => {
       });
       await stream.appendText('first line\n');
       const firstData = await waitForFrame(firstBrowser, (frame) => frame.type === 'terminal.data');
+      await expect(getTerminalLastActivityAt(app, setup.runId)).resolves.toBeTruthy();
       const consumedOffset = firstData.type === 'terminal.data' ? firstData.offsetEnd : 0;
       firstBrowser.close();
 

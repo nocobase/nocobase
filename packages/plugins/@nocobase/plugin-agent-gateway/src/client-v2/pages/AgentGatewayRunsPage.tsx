@@ -1335,6 +1335,35 @@ function createRunLifecycleEvents(run: RunRecord, t: TFunction): RunEventRecord[
   return events;
 }
 
+function isHeartbeatRunEvent(record: RunEventRecord) {
+  const source = record.source || '';
+  const eventType = record.eventType || '';
+  return source.includes('heartbeat') || eventType.includes('heartbeat');
+}
+
+function isHarnessStageRunEvent(record: RunEventRecord) {
+  const payload = getObjectRecord(record.payloadJson);
+  const source = record.source || '';
+  const eventType = record.eventType || '';
+  return (
+    payload.progress === true ||
+    source === 'harness' ||
+    eventType.includes('harness') ||
+    eventType.includes('render_run') ||
+    eventType.includes('skill.sync') ||
+    eventType.includes('agent.process') ||
+    eventType.includes('artifacts.collect') ||
+    eventType.includes('run.finalizing')
+  );
+}
+
+function getRunEventStageLabel(record: RunEventRecord) {
+  const payload = getObjectRecord(record.payloadJson);
+  const phase = getStringValue(payload.phase) || record.eventType || '-';
+  const status = getStringValue(payload.status);
+  return [phase, status].filter(Boolean).join(' / ');
+}
+
 function LogsPanel({
   t,
   run,
@@ -1347,44 +1376,158 @@ function LogsPanel({
   eventsWarning?: string;
 }) {
   const displayEvents = events.length ? events : createRunLifecycleEvents(run, t);
+  const heartbeatEvents = displayEvents.filter(isHeartbeatRunEvent);
+  const visibleEvents = displayEvents.filter((event) => !isHeartbeatRunEvent(event));
+  const harnessStageEvents = visibleEvents.filter(isHarnessStageRunEvent);
+  const columns: ColumnsType<RunEventRecord> = [
+    { title: t('Sequence'), dataIndex: 'sequence', key: 'sequence', width: 96 },
+    { title: t('Source'), dataIndex: 'source', key: 'source', width: 120 },
+    { title: t('Level'), dataIndex: 'level', key: 'level', width: 96 },
+    { title: t('Type'), dataIndex: 'eventType', key: 'eventType', width: 180 },
+    {
+      title: t('Message'),
+      dataIndex: 'message',
+      key: 'message',
+      render: (value: string | null | undefined) => (
+        <Typography.Paragraph style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{value || '-'}</Typography.Paragraph>
+      ),
+    },
+    {
+      title: t('Emitted at'),
+      dataIndex: 'emittedAt',
+      key: 'emittedAt',
+      width: 180,
+      render: (value: string | undefined) => formatDateTime(value),
+    },
+  ];
+  const expandedRowRender = (record: RunEventRecord) => <JsonPreview value={record.payloadJson} />;
   return (
     <Space direction="vertical" size={16} style={{ width: '100%' }}>
       {eventsWarning ? <Alert type="warning" showIcon message={eventsWarning} /> : null}
-      {displayEvents.length ? (
-        <Table<RunEventRecord>
-          columns={[
-            { title: t('Sequence'), dataIndex: 'sequence', key: 'sequence', width: 96 },
-            { title: t('Source'), dataIndex: 'source', key: 'source', width: 120 },
-            { title: t('Level'), dataIndex: 'level', key: 'level', width: 96 },
-            { title: t('Type'), dataIndex: 'eventType', key: 'eventType', width: 180 },
+      {harnessStageEvents.length ? (
+        <Collapse
+          size="small"
+          defaultActiveKey={['harness-stages']}
+          items={[
             {
-              title: t('Message'),
-              dataIndex: 'message',
-              key: 'message',
-              render: (value: string | null | undefined) => (
-                <Typography.Paragraph style={{ margin: 0, whiteSpace: 'pre-wrap' }}>
-                  {value || '-'}
-                </Typography.Paragraph>
+              key: 'harness-stages',
+              label: (
+                <Space wrap size={6}>
+                  <Typography.Text strong>{t('Harness stages')}</Typography.Text>
+                  <Tag>{harnessStageEvents.length}</Tag>
+                </Space>
+              ),
+              children: (
+                <List
+                  size="small"
+                  dataSource={harnessStageEvents}
+                  style={{ maxHeight: 280, overflow: 'auto' }}
+                  renderItem={(event) => (
+                    <List.Item>
+                      <Space direction="vertical" size={2} style={{ width: '100%' }}>
+                        <Space wrap size={6}>
+                          <Typography.Text strong>{getRunEventStageLabel(event)}</Typography.Text>
+                          {event.source ? <Tag>{event.source}</Tag> : null}
+                          {event.level ? <Tag>{event.level}</Tag> : null}
+                          <Typography.Text type="secondary">{formatDateTime(event.emittedAt)}</Typography.Text>
+                        </Space>
+                        {event.message ? (
+                          <Typography.Paragraph style={{ margin: 0, whiteSpace: 'pre-wrap' }}>
+                            {event.message}
+                          </Typography.Paragraph>
+                        ) : null}
+                      </Space>
+                    </List.Item>
+                  )}
+                />
               ),
             },
-            {
-              title: t('Emitted at'),
-              dataIndex: 'emittedAt',
-              key: 'emittedAt',
-              width: 180,
-              render: (value: string | undefined) => formatDateTime(value),
-            },
           ]}
-          dataSource={displayEvents}
+        />
+      ) : null}
+      {visibleEvents.length ? (
+        <Table<RunEventRecord>
+          columns={columns}
+          expandable={{
+            expandedRowRender,
+          }}
+          dataSource={visibleEvents}
           rowKey="id"
           pagination={false}
           size="small"
         />
       ) : (
-        <EmptyInline description={t('No events yet')} />
+        <EmptyInline
+          description={heartbeatEvents.length ? t('Only heartbeat events were recorded') : t('No events yet')}
+        />
       )}
+      {heartbeatEvents.length ? (
+        <Collapse
+          size="small"
+          items={[
+            {
+              key: 'heartbeat-events',
+              label: (
+                <Space wrap size={6}>
+                  <Typography.Text strong>{t('Heartbeat event details')}</Typography.Text>
+                  <Tag>{heartbeatEvents.length}</Tag>
+                </Space>
+              ),
+              children: (
+                <Table<RunEventRecord>
+                  columns={columns}
+                  expandable={{
+                    expandedRowRender,
+                  }}
+                  dataSource={heartbeatEvents}
+                  rowKey="id"
+                  pagination={false}
+                  size="small"
+                />
+              ),
+            },
+          ]}
+        />
+      ) : null}
     </Space>
   );
+}
+
+function isHeartbeatApiCallLog(record: ApiCallLogRecord) {
+  return Boolean(record.path && /\/heartbeat$/.test(record.path));
+}
+
+function getApiLogTimeMs(record: ApiCallLogRecord) {
+  if (!record.createdAt) {
+    return null;
+  }
+  const time = Date.parse(record.createdAt);
+  return Number.isFinite(time) ? time : null;
+}
+
+function getHeartbeatApiLogSummary(apiCallLogs: ApiCallLogRecord[]) {
+  if (!apiCallLogs.length) {
+    return null;
+  }
+  const sortedLogs = [...apiCallLogs].sort((left, right) => {
+    const leftTime = getApiLogTimeMs(left) || 0;
+    const rightTime = getApiLogTimeMs(right) || 0;
+    return leftTime - rightTime;
+  });
+  const durations = apiCallLogs
+    .map((log) => (typeof log.durationMs === 'number' && Number.isFinite(log.durationMs) ? log.durationMs : null))
+    .filter((duration): duration is number => duration !== null);
+  const averageDurationMs = durations.length
+    ? Math.round(durations.reduce((total, duration) => total + duration, 0) / durations.length)
+    : null;
+  const latestLog = sortedLogs[sortedLogs.length - 1];
+  return {
+    count: apiCallLogs.length,
+    firstCreatedAt: sortedLogs[0]?.createdAt,
+    lastCreatedAt: latestLog?.createdAt,
+    latestStatusCode: latestLog?.statusCode,
+    averageDurationMs,
+  };
 }
 
 function ApiLogsPanel({
@@ -1396,43 +1539,109 @@ function ApiLogsPanel({
   apiCallLogs: ApiCallLogRecord[];
   apiCallLogsWarning?: string;
 }) {
+  const heartbeatLogs = apiCallLogs.filter(isHeartbeatApiCallLog);
+  const visibleLogs = apiCallLogs.filter((log) => !isHeartbeatApiCallLog(log));
+  const heartbeatSummary = getHeartbeatApiLogSummary(heartbeatLogs);
+  const columns: ColumnsType<ApiCallLogRecord> = [
+    { title: t('Method'), dataIndex: 'method', key: 'method', width: 96 },
+    { title: t('Path'), dataIndex: 'path', key: 'path' },
+    { title: t('Status code'), dataIndex: 'statusCode', key: 'statusCode', width: 120 },
+    { title: t('Duration ms'), dataIndex: 'durationMs', key: 'durationMs', width: 120 },
+    {
+      title: t('Created at'),
+      dataIndex: 'createdAt',
+      key: 'createdAt',
+      width: 180,
+      render: (value: string | undefined) => formatDateTime(value),
+    },
+  ];
+  const expandedRowRender = (record: ApiCallLogRecord) => (
+    <Space direction="vertical" size={8} style={{ width: '100%' }}>
+      <Typography.Text strong>{t('Request summary')}</Typography.Text>
+      <JsonPreview value={record.requestSummaryJson} />
+      <Typography.Text strong>{t('Response summary')}</Typography.Text>
+      <JsonPreview value={record.responseSummaryJson} />
+      {record.errorSummary ? <Typography.Text type="danger">{record.errorSummary}</Typography.Text> : null}
+    </Space>
+  );
+
   return (
     <Space direction="vertical" size={16} style={{ width: '100%' }}>
       {apiCallLogsWarning ? <Alert type="warning" showIcon message={apiCallLogsWarning} /> : null}
-      {apiCallLogs.length ? (
+      {heartbeatSummary ? (
+        <Alert
+          type="info"
+          showIcon
+          message={t('Heartbeat summary')}
+          description={
+            <Space wrap size={8}>
+              <Tag>
+                {t('Heartbeat calls')}: {heartbeatSummary.count}
+              </Tag>
+              <Tag>
+                {t('First heartbeat')}: {formatDateTime(heartbeatSummary.firstCreatedAt)}
+              </Tag>
+              <Tag>
+                {t('Last heartbeat')}: {formatDateTime(heartbeatSummary.lastCreatedAt)}
+              </Tag>
+              {heartbeatSummary.averageDurationMs !== null ? (
+                <Tag>
+                  {t('Average duration ms')}: {heartbeatSummary.averageDurationMs}
+                </Tag>
+              ) : null}
+              {heartbeatSummary.latestStatusCode ? (
+                <Tag>
+                  {t('Latest status code')}: {heartbeatSummary.latestStatusCode}
+                </Tag>
+              ) : null}
+            </Space>
+          }
+        />
+      ) : null}
+      {visibleLogs.length ? (
         <Table<ApiCallLogRecord>
-          columns={[
-            { title: t('Method'), dataIndex: 'method', key: 'method', width: 96 },
-            { title: t('Path'), dataIndex: 'path', key: 'path' },
-            { title: t('Status code'), dataIndex: 'statusCode', key: 'statusCode', width: 120 },
-            { title: t('Duration ms'), dataIndex: 'durationMs', key: 'durationMs', width: 120 },
-            {
-              title: t('Created at'),
-              dataIndex: 'createdAt',
-              key: 'createdAt',
-              width: 180,
-              render: (value: string | undefined) => formatDateTime(value),
-            },
-          ]}
+          columns={columns}
           expandable={{
-            expandedRowRender: (record) => (
-              <Space direction="vertical" size={8} style={{ width: '100%' }}>
-                <Typography.Text strong>{t('Request summary')}</Typography.Text>
-                <JsonPreview value={record.requestSummaryJson} />
-                <Typography.Text strong>{t('Response summary')}</Typography.Text>
-                <JsonPreview value={record.responseSummaryJson} />
-                {record.errorSummary ? <Typography.Text type="danger">{record.errorSummary}</Typography.Text> : null}
-              </Space>
-            ),
+            expandedRowRender,
           }}
-          dataSource={apiCallLogs}
+          dataSource={visibleLogs}
           rowKey="id"
           pagination={false}
           size="small"
         />
       ) : (
-        <EmptyInline description={t('No API logs yet')} />
+        <EmptyInline
+          description={heartbeatLogs.length ? t('Only heartbeat API calls were recorded') : t('No API logs yet')}
+        />
       )}
+      {heartbeatLogs.length ? (
+        <Collapse
+          size="small"
+          items={[
+            {
+              key: 'heartbeat-details',
+              label: (
+                <Space wrap size={6}>
+                  <Typography.Text strong>{t('Heartbeat details')}</Typography.Text>
+                  <Tag>{heartbeatLogs.length}</Tag>
+                </Space>
+              ),
+              children: (
+                <Table<ApiCallLogRecord>
+                  columns={columns}
+                  expandable={{
+                    expandedRowRender,
+                  }}
+                  dataSource={heartbeatLogs}
+                  rowKey="id"
+                  pagination={false}
+                  size="small"
+                />
+              ),
+            },
+          ]}
+        />
+      ) : null}
     </Space>
   );
 }

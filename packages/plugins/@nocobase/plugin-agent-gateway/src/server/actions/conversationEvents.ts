@@ -461,6 +461,16 @@ async function createConversationEvent(
   };
 }
 
+async function touchRunTerminalLastActivity(ctx: Context, runId: string, transaction: Transaction) {
+  await ctx.db.getRepository('agRuns').update({
+    filterByTk: runId,
+    values: {
+      terminalLastActivityAt: new Date(),
+    },
+    transaction,
+  });
+}
+
 async function appendConversationEvents(ctx: Context, runId: string) {
   const values = getBodyValues(ctx);
   const auth = await authenticateNodeToken(ctx);
@@ -477,6 +487,9 @@ async function appendConversationEvents(ctx: Context, runId: string) {
     const events = [];
     for (const rawEvent of getEventEntries(ctx)) {
       events.push(await createConversationEvent(ctx, lease.run, runId, rawEvent, transaction));
+    }
+    if (events.some((event) => event.idempotent !== true)) {
+      await touchRunTerminalLastActivity(ctx, runId, transaction);
     }
 
     return {

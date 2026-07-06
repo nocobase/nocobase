@@ -22,6 +22,7 @@ import {
   TERMINAL_STREAM_BROWSER_SUBPROTOCOL,
   encodeTerminalPayload,
 } from '../../shared/terminalStreamProtocol';
+import { AgentTimeline } from '../components/AgentTimeline';
 import AgentGatewayDispatchBindingsPage from '../pages/AgentGatewayDispatchBindingsPage';
 import AgentGatewayProviderCapabilitiesPage from '../pages/AgentGatewayProviderCapabilitiesPage';
 import AgentGatewayPromptTemplatesPage from '../pages/AgentGatewayPromptTemplatesPage';
@@ -1696,6 +1697,29 @@ describe('PluginAgentGatewayClientV2', () => {
                 message: 'build started',
                 emittedAt: '2026-06-30T10:01:01.000Z',
               },
+              {
+                id: 'event-harness-render',
+                source: 'harness',
+                sequence: 2,
+                level: 'info',
+                eventType: 'render_run.started',
+                message: 'rerendering report',
+                payloadJson: {
+                  progress: true,
+                  phase: 'render_run',
+                  status: 'started',
+                },
+                emittedAt: '2026-06-30T10:01:04.000Z',
+              },
+              {
+                id: 'event-heartbeat',
+                source: 'heartbeat',
+                sequence: 3,
+                level: 'info',
+                eventType: 'heartbeat.running',
+                message: 'heartbeat noise should stay collapsed',
+                emittedAt: '2026-06-30T10:01:05.000Z',
+              },
             ],
           },
         };
@@ -1817,12 +1841,29 @@ describe('PluginAgentGatewayClientV2', () => {
                 path: '/api/agent-gateway/runs/run-id-1/events:append',
                 statusCode: 200,
                 durationMs: 12,
+                createdAt: '2026-06-30T10:01:02.000Z',
                 requestSummaryJson: {
                   action: 'events:append',
                 },
                 responseSummaryJson: {
                   statusCode: 200,
                 },
+              },
+              {
+                id: 'api-log-heartbeat-1',
+                method: 'POST',
+                path: '/api/agent-gateway/nodes/node-id-1/runs/run-id-1/heartbeat',
+                statusCode: 200,
+                durationMs: 3,
+                createdAt: '2026-06-30T10:01:03.000Z',
+              },
+              {
+                id: 'api-log-heartbeat-2',
+                method: 'POST',
+                path: '/api/agent-gateway/nodes/node-id-1/runs/run-id-1/heartbeat',
+                statusCode: 200,
+                durationMs: 5,
+                createdAt: '2026-06-30T10:01:13.000Z',
               },
             ],
           },
@@ -1913,6 +1954,12 @@ describe('PluginAgentGatewayClientV2', () => {
 
     fireEvent.click(await screen.findByRole('tab', { name: 'Logs' }));
     expect(await screen.findByText('build started')).toBeTruthy();
+    expect(await screen.findByText('Harness stages')).toBeTruthy();
+    expect(await screen.findByText('render_run / started')).toBeTruthy();
+    expect(await screen.findAllByText('rerendering report')).not.toHaveLength(0);
+    expect(screen.queryByText('heartbeat noise should stay collapsed')).toBeNull();
+    fireEvent.click(await screen.findByText('Heartbeat event details'));
+    expect(await screen.findByText('heartbeat noise should stay collapsed')).toBeTruthy();
 
     fireEvent.click(await screen.findByRole('tab', { name: 'Artifacts' }));
     expect(await screen.findByText('inline artifact text')).toBeTruthy();
@@ -1922,6 +1969,11 @@ describe('PluginAgentGatewayClientV2', () => {
 
     fireEvent.click(await screen.findByRole('tab', { name: 'API Logs' }));
     expect(await screen.findByText('/api/agent-gateway/runs/run-id-1/events:append')).toBeTruthy();
+    expect(await screen.findByText('Heartbeat summary')).toBeTruthy();
+    expect(await screen.findByText('Heartbeat calls: 2')).toBeTruthy();
+    expect(screen.queryByText('/api/agent-gateway/nodes/node-id-1/runs/run-id-1/heartbeat')).toBeNull();
+    fireEvent.click(await screen.findByText('Heartbeat details'));
+    expect(await screen.findAllByText('/api/agent-gateway/nodes/node-id-1/runs/run-id-1/heartbeat')).toHaveLength(2);
     expect(screen.queryByText(/must-not-render/)).toBeNull();
     expect(screen.queryByText(/https:\/\/daemon\.example\/artifact/)).toBeNull();
     fireEvent.click(screen.getByLabelText('Close'));
@@ -4277,6 +4329,36 @@ describe('PluginAgentGatewayClientV2', () => {
     expect(screen.queryByText(/"status": "failed"/)).toBeNull();
     expect(screen.queryByText('Details')).toBeNull();
     expect(screen.queryByText('Command failed')).toBeNull();
+  });
+
+  it('lazy renders older timeline messages and long text blocks', async () => {
+    const longText = `${'terminal output '.repeat(500)}visible tail after expansion`;
+    const events = Array.from({ length: 90 }, (_, index) => ({
+      id: `timeline-event-${index + 1}`,
+      source: index % 2 === 0 ? 'agent-gateway-task' : 'codex',
+      sequence: index + 1,
+      eventType: index % 2 === 0 ? 'agent.user.message' : 'agent.message',
+      contentText: index === 89 ? longText : `message ${index + 1}`,
+      createdAt: `2026-06-30T10:00:${String(index % 60).padStart(2, '0')}.000Z`,
+    }));
+
+    render(
+      <AntdApp>
+        <AgentTimeline t={(key) => key} events={events} legacyEvents={[]} useLegacyFallback={false} />
+      </AntdApp>,
+    );
+
+    const timelineRegion = await screen.findByLabelText('Task conversation');
+    expect(within(timelineRegion as HTMLElement).queryByText('message 1')).toBeNull();
+    expect(await within(timelineRegion as HTMLElement).findByText(/Load earlier messages/)).toBeTruthy();
+    expect(await within(timelineRegion as HTMLElement).findByText(/chars hidden/)).toBeTruthy();
+    expect(within(timelineRegion as HTMLElement).queryByText(/visible tail after expansion/)).toBeNull();
+
+    fireEvent.click(await within(timelineRegion as HTMLElement).findByText('Show full text'));
+    expect(await within(timelineRegion as HTMLElement).findByText(/visible tail after expansion/)).toBeTruthy();
+
+    fireEvent.click(await within(timelineRegion as HTMLElement).findByText(/Load earlier messages/));
+    expect(await within(timelineRegion as HTMLElement).findByText('message 1')).toBeTruthy();
   });
 
   it('does not clear the normalized timeline when a later poll returns an empty older snapshot', async () => {

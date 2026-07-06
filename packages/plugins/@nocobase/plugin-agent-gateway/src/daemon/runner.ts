@@ -86,6 +86,9 @@ const PROVIDER_SESSION_UPSERT_RETRY_DELAY_MS = 250;
 const MAX_CONVERSATION_EVENTS_PER_APPEND = 100;
 const OPENCODE_UI_BATCH_TASK_RUN_SCENARIO = 'opencode-ui-batch';
 const LIVE_TIMELINE_SOURCE = 'terminal-live';
+const DAEMON_PROGRESS_SOURCE = 'agent-gateway-daemon';
+const HARNESS_PROGRESS_SOURCE = 'harness';
+const PROGRESS_MARKER_PREFIX = 'AGW_PROGRESS';
 const LIVE_TIMELINE_FLUSH_INTERVAL_MS = 2000;
 const LIVE_TIMELINE_MAX_CHARS_PER_EVENT = 4000;
 const DEFAULT_LOOP_RETRY_INITIAL_DELAY_MS = 1000;
@@ -101,6 +104,23 @@ interface TerminalStreamHandle {
 interface LiveTimelineReporter {
   appendText(text: string): Promise<void>;
   flush(): Promise<void>;
+  getWarnings(): string[];
+}
+
+type RunProgressLevel = 'info' | 'warning' | 'error';
+
+interface RunProgressAppendOptions {
+  source?: string;
+  phase: string;
+  status: string;
+  level?: RunProgressLevel;
+  message?: string;
+  payloadJson?: JsonRecord;
+}
+
+interface RunProgressReporter {
+  append(options: RunProgressAppendOptions): Promise<void>;
+  appendHarnessMarkers(text: string): Promise<void>;
   getWarnings(): string[];
 }
 
@@ -695,6 +715,116 @@ function createLiveTimelineReporter(options: {
   };
 }
 
+function sanitizeProgressPart(value: string) {
+  return value
+    .trim()
+    .replace(/[^a-zA-Z0-9_.:-]/g, '_')
+    .slice(0, 80);
+}
+
+function getProgressLevel(status: string): RunProgressLevel {
+  if (status === 'failed' || status === 'timeout') {
+    return 'error';
+  }
+  if (status === 'canceled' || status === 'skipped') {
+    return 'warning';
+  }
+  return 'info';
+}
+
+function parseHarnessProgressMarker(rawLine: string): RunProgressAppendOptions | null {
+  const trimmed = rawLine.trim();
+  if (!trimmed.startsWith(PROGRESS_MARKER_PREFIX)) {
+    return null;
+  }
+  const rest = trimmed.slice(PROGRESS_MARKER_PREFIX.length).trim();
+  if (!rest) {
+    return null;
+  }
+  const phaseMatch = rest.match(/(?:^|\s)phase=([^\s]+)/);
+  const statusMatch = rest.match(/(?:^|\s)status=([^\s]+)/);
+  const messageMatch = rest.match(/(?:^|\s)message=(.*)$/);
+  const phase = phaseMatch ? sanitizeProgressPart(phaseMatch[1]) : '';
+  const status = statusMatch ? sanitizeProgressPart(statusMatch[1]) : '';
+  if (!phase || !status) {
+    return null;
+  }
+  const message = messageMatch?.[1]?.trim();
+  return {
+    source: HARNESS_PROGRESS_SOURCE,
+    phase,
+    status,
+    message: message || `${phase} ${status}`,
+    payloadJson: {
+      marker: PROGRESS_MARKER_PREFIX,
+      phase,
+      status,
+    },
+  };
+}
+
+function createRunProgressReporter(options: {
+  gateway: AgentGatewayDaemonNodeClient;
+  getLease(): RunLease;
+}): RunProgressReporter {
+  const sequenceBySource = new Map<string, number>();
+  const warnings: string[] = [];
+
+  const appendWarning = (error: unknown) => {
+    const message = error instanceof Error ? error.message : String(error);
+    warnings.push(`Progress event append failed: ${message}`);
+  };
+
+  const getNextSequence = (source: string) => {
+    const sequence = (sequenceBySource.get(source) || 0) + 1;
+    sequenceBySource.set(source, sequence);
+    return sequence;
+  };
+
+  const append = async (event: RunProgressAppendOptions) => {
+    const source = event.source || DAEMON_PROGRESS_SOURCE;
+    const phase = sanitizeProgressPart(event.phase);
+    const status = sanitizeProgressPart(event.status);
+    if (!phase || !status) {
+      return;
+    }
+    try {
+      await options.gateway.appendEvent(options.getLease(), {
+        source,
+        sequence: getNextSequence(source),
+        eventType: `${phase}.${status}`,
+        level: event.level || getProgressLevel(status),
+        message: event.message || `${phase} ${status}`,
+        payloadJson: {
+          progress: true,
+          phase,
+          status,
+          ...(event.payloadJson || {}),
+        },
+        emittedAt: new Date().toISOString(),
+      });
+    } catch (error) {
+      appendWarning(error);
+    }
+  };
+
+  return {
+    append,
+    appendHarnessMarkers: async (text) => {
+      if (!text) {
+        return;
+      }
+      for (const rawLine of text.split(/\r?\n/)) {
+        const event = parseHarnessProgressMarker(rawLine);
+        if (event) {
+          await append(event);
+        }
+      }
+    },
+    getWarnings: () => [...warnings],
+  };
+}
+
 function dedupeSkillVersions(skillVersions: SkillVersionInstallRecord[]) {
   const result: SkillVersionInstallRecord[] = [];
   const seen = new Set<string>();
@@ -987,6 +1117,7 @@ async function terminalizeRun(options: {
   cancelController: AbortController;
   leaseLostController: AbortController;
   result: ExecDriverResult;
+  progressReporter?: RunProgressReporter;
   observationWarnings?: string[];
   declaredArtifactSummary?: JsonRecord;
 }) {
@@ -1013,6 +1144,14 @@ async function terminalizeRun(options: {
 
   try {
     if (options.result.status === 'succeeded') {
+      await options.progressReporter?.append({
+        phase: 'run.finalizing',
+        status: 'succeeded',
+        message: 'Run finalization completed',
+        payloadJson: {
+          exitCode: options.result.exitCode,
+        },
+      });
       await options.gateway.completeRun(options.getLease(), {
         status: 'succeeded',
         exitCode: options.result.exitCode,
@@ -1022,10 +1161,24 @@ async function terminalizeRun(options: {
       return 'succeeded';
     }
     if (options.result.status === 'timeout') {
+      await options.progressReporter?.append({
+        phase: 'run.finalizing',
+        status: 'timeout',
+        message: 'Run finalization timed out the process',
+        payloadJson: {
+          exitCode: options.result.exitCode,
+          signal: options.result.signal,
+        },
+      });
       await options.gateway.timeoutRun(options.getLease(), 'Process timeout confirmed by daemon');
       return 'timeout';
     }
     if (options.result.status === 'canceled') {
+      await options.progressReporter?.append({
+        phase: 'run.finalizing',
+        status: 'canceled',
+        message: 'Run finalization acknowledged cancellation',
+      });
       await options.gateway.cancelAckRun(options.getLease());
       return 'canceled';
     }
@@ -1033,6 +1186,15 @@ async function terminalizeRun(options: {
       return 'lease_lost';
     }
 
+    await options.progressReporter?.append({
+      phase: 'run.finalizing',
+      status: 'failed',
+      message: `Run finalization failed after process exited with ${options.result.status}`,
+      payloadJson: {
+        exitCode: options.result.exitCode,
+        signal: options.result.signal,
+      },
+    });
     await options.gateway.failRun(options.getLease(), `Process exited with ${options.result.status}`, {
       exitCode: options.result.exitCode,
       signal: options.result.signal,
@@ -1128,6 +1290,10 @@ export async function executeClaimedRun(
     ...executionLeaseBase,
     ...lease,
   });
+  const progressReporter = createRunProgressReporter({
+    gateway: options.gateway,
+    getLease: activeLease,
+  });
 
   const syncCancelController = new AbortController();
   const syncLeaseLostController = new AbortController();
@@ -1150,9 +1316,27 @@ export async function executeClaimedRun(
     intervalMs: options.runHeartbeatIntervalMs || DEFAULT_RUN_HEARTBEAT_INTERVAL_MS,
   });
   try {
+    await progressReporter.append({
+      phase: 'skill.sync',
+      status: 'started',
+      message: 'Skill sync started',
+    });
     const syncResults = await syncSkillsForRun(options, activeLease());
     executionLeaseBase = withInstalledSkillPromptContext(executionLeaseBase, syncResults);
+    await progressReporter.append({
+      phase: 'skill.sync',
+      status: 'succeeded',
+      message: 'Skill sync completed',
+      payloadJson: {
+        skillCount: syncResults.length,
+      },
+    });
   } catch (error) {
+    await progressReporter.append({
+      phase: 'skill.sync',
+      status: 'failed',
+      message: error instanceof Error ? error.message : String(error),
+    });
     if (stopSyncHeartbeat) {
       await stopSyncHeartbeat();
       stopSyncHeartbeat = null;
@@ -1230,6 +1414,15 @@ export async function executeClaimedRun(
 
   try {
     const commandSpec = getExecutionCommandSpec(activeLease(), cwd, usesManagedTmux ? 'terminal' : 'structured');
+    await progressReporter.append({
+      phase: 'agent.process',
+      status: 'started',
+      message: 'Agent process started',
+      payloadJson: {
+        commandKey: commandSpec.commandKey,
+        terminalBackend,
+      },
+    });
     if (usesManagedTmux) {
       liveTimelineReporter = createLiveTimelineReporter({
         gateway: options.gateway,
@@ -1290,6 +1483,7 @@ export async function executeClaimedRun(
           onOutputChunk: async (chunk) => {
             await terminalStream?.appendText(chunk);
             await liveTimelineReporter?.appendText(chunk);
+            await progressReporter.appendHarnessMarkers(chunk);
           },
           onSessionStarted: async (metadata) => {
             await startManagedTmuxControls(metadata.startedAt);
@@ -1307,6 +1501,20 @@ export async function executeClaimedRun(
           leaseLostSignal: leaseLostController.signal,
           artifactDir: options.artifactDir,
         });
+    if (!usesManagedTmux) {
+      await progressReporter.appendHarnessMarkers(result.stdout.text || '');
+      await progressReporter.appendHarnessMarkers(result.stderr.text || '');
+    }
+    await progressReporter.append({
+      phase: 'agent.process',
+      status: result.status === 'succeeded' ? 'succeeded' : result.status === 'timeout' ? 'timeout' : 'failed',
+      message: `Agent process finished with ${result.status}`,
+      payloadJson: {
+        status: result.status,
+        exitCode: result.exitCode,
+        signal: result.signal,
+      },
+    });
     await liveTimelineReporter?.flush();
     if (stopHeartbeat) {
       await stopHeartbeat();
@@ -1376,6 +1584,11 @@ export async function executeClaimedRun(
       })),
     );
     let declaredArtifactSummary: JsonRecord | undefined;
+    await progressReporter.append({
+      phase: 'artifacts.collect',
+      status: 'started',
+      message: 'Artifact collection started',
+    });
     try {
       declaredArtifactSummary = await reportDeclaredArtifacts({
         gateway: options.gateway,
@@ -1384,10 +1597,21 @@ export async function executeClaimedRun(
         cwd: commandSpec.cwd,
         workspaceRoot: options.workspaceRoot,
       });
+      await progressReporter.append({
+        phase: 'artifacts.collect',
+        status: 'succeeded',
+        message: 'Artifact collection completed',
+        payloadJson: declaredArtifactSummary,
+      });
     } catch (error) {
       sessionObservationWarnings.push(
         `Declared artifact upload failed: ${error instanceof Error ? error.message : String(error)}`,
       );
+      await progressReporter.append({
+        phase: 'artifacts.collect',
+        status: 'failed',
+        message: error instanceof Error ? error.message : String(error),
+      });
     }
     const terminalResult: ExecDriverResult =
       cancelController.signal.aborted && result.status === 'succeeded'
@@ -1396,6 +1620,14 @@ export async function executeClaimedRun(
             status: 'canceled',
           }
         : result;
+    await progressReporter.append({
+      phase: 'run.finalizing',
+      status: 'started',
+      message: 'Run finalization started',
+      payloadJson: {
+        status: terminalResult.status,
+      },
+    });
     const status = await terminalizeRun({
       gateway: options.gateway,
       getLease: activeLease,
@@ -1405,7 +1637,8 @@ export async function executeClaimedRun(
       cancelController,
       leaseLostController,
       result: terminalResult,
-      observationWarnings: sessionObservationWarnings,
+      progressReporter,
+      observationWarnings: [...sessionObservationWarnings, ...progressReporter.getWarnings()],
       declaredArtifactSummary,
     });
     return {
@@ -1428,6 +1661,11 @@ export async function executeClaimedRun(
     }
     if (!leaseLostController.signal.aborted) {
       try {
+        await progressReporter.append({
+          phase: 'run.finalizing',
+          status: 'failed',
+          message: error instanceof Error ? error.message : String(error),
+        });
         await options.gateway.failRun(activeLease(), error instanceof Error ? error.message : String(error));
       } catch {
         const recoveredStatus = await recoverTerminalConflict({
