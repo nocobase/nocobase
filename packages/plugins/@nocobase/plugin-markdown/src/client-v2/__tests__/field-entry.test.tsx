@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { MarkdownFieldInterface } from '@nocobase/client-v2';
 import { DisplayItemModel, EditableItemModel } from '@nocobase/flow-engine';
 import { describe, expect, it } from 'vitest';
 import { MarkdownVditorFieldInterface } from '../interface';
@@ -66,6 +67,11 @@ describe('Markdown v2 field entry', () => {
     expect(fieldInterface.name).toBe('vditor');
     expect(fieldInterface.default.interface).toBe('vditor');
     expect(fieldInterface.title).toBe('Markdown(Vditor)');
+
+    const legacyMarkdownFieldInterface = new MarkdownFieldInterface(
+      {} as ConstructorParameters<typeof MarkdownFieldInterface>[0],
+    );
+    expect(legacyMarkdownFieldInterface.hidden).toBe(true);
   });
 
   it('keeps historical markdown fields bound to the same Vditor models', () => {
