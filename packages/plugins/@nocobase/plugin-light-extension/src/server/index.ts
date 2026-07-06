@@ -16,6 +16,7 @@ export * from './services/LightExtensionFileService';
 export * from './services/LightExtensionPermissionService';
 export * from './services/LightExtensionPublicationResolveService';
 export * from './services/LightExtensionPublicationService';
+export * from './services/LightExtensionPublishService';
 export * from './services/LightExtensionValidator';
 export * from './services/LightExtensionWorkspaceCompilerBridge';
 export * from './services/errorContract';

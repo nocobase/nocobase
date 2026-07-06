@@ -39,6 +39,11 @@ export interface LightExtensionPublicationRecord extends LightExtensionPublicati
   artifact: RunJSRuntimeArtifact;
 }
 
+export interface LightExtensionPublicationUpsertResult {
+  publication: LightExtensionPublicationRecord;
+  created: boolean;
+}
+
 export class LightExtensionPublicationService {
   constructor(private readonly db: Database) {}
 
@@ -46,6 +51,13 @@ export class LightExtensionPublicationService {
     input: LightExtensionCreatePublicationInput,
     ctx: LightExtensionServiceContext = {},
   ): Promise<LightExtensionPublicationRecord> {
+    return (await this.createOrGetPublicationWithStatus(input, ctx)).publication;
+  }
+
+  async createOrGetPublicationWithStatus(
+    input: LightExtensionCreatePublicationInput,
+    ctx: LightExtensionServiceContext = {},
+  ): Promise<LightExtensionPublicationUpsertResult> {
     assertPublicationInput(input);
     const settingsSchemaSnapshot = cloneRecordOrNull(input.settingsSchemaSnapshot);
     const settingsDefaultsSnapshot =
@@ -68,7 +80,10 @@ export class LightExtensionPublicationService {
     });
 
     if (existing) {
-      return publicationFromModel(existing);
+      return {
+        publication: publicationFromModel(existing),
+        created: false,
+      };
     }
 
     const created = await this.db.getRepository('lightExtensionEntryPublications').create({
@@ -99,7 +114,10 @@ export class LightExtensionPublicationService {
       transaction: ctx.transaction,
     });
 
-    return publicationFromModel(created);
+    return {
+      publication: publicationFromModel(created),
+      created: true,
+    };
   }
 }
 

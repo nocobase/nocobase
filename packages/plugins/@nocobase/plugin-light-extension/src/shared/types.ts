@@ -286,3 +286,25 @@ export interface LightExtensionPublicationMetadataRecord {
   createdFromRequestSource?: string | null;
   createdAt?: string | null;
 }
+
+export type LightExtensionPublishEntryStatus = 'created' | 'reused' | 'failed' | 'conflict' | 'skipped';
+
+export interface LightExtensionPublishEntryResult {
+  entryId: string;
+  entryName: string;
+  kind: string;
+  status: LightExtensionPublishEntryStatus;
+  publication?: LightExtensionPublicationMetadataRecord;
+  diagnostics: LightExtensionDiagnostic[];
+  reasonCode?: string;
+}
+
+export interface LightExtensionPublishResult {
+  repo: LightExtensionRepoRecord;
+  commitId: string;
+  clientRequestId: string;
+  status: 'success' | 'partial_success' | 'failed';
+  httpStatus: 200 | 207 | 422;
+  entryResults: LightExtensionPublishEntryResult[];
+  diagnostics: LightExtensionDiagnostic[];
+}

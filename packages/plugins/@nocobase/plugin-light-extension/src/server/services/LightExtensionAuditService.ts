@@ -121,6 +121,29 @@ export interface LightExtensionPublicationReadDeniedAuditInput {
   transaction?: Transaction;
 }
 
+export interface LightExtensionPublishAuditInput {
+  repoId: string;
+  action: 'publish';
+  result: 'success' | 'partial_success' | 'blocked';
+  requestId: string;
+  actorUserId?: string | null;
+  commitId: string;
+  clientRequestId: string;
+  entryResults: Array<{
+    entryId: string;
+    status: string;
+    reasonCode?: string;
+    publicationId?: string;
+  }>;
+  diagnosticCount: number;
+  errorCount: number;
+  warningCount: number;
+  diagnostics?: LightExtensionDiagnostic[];
+  message: string;
+  reasonCode?: string;
+  transaction?: Transaction;
+}
+
 export class LightExtensionAuditService {
   constructor(private readonly db: Database) {}
 
@@ -267,6 +290,39 @@ export class LightExtensionAuditService {
         details: compactObject({
           publicationId: sanitizeText(input.publicationId),
           requestSource: sanitizeText(input.requestSource),
+        }),
+        createdAt: new Date(),
+      },
+      transaction: input.transaction,
+    });
+  }
+
+  async recordPublishEvent(input: LightExtensionPublishAuditInput): Promise<void> {
+    await this.db.getRepository('lightExtensionLogs').create({
+      values: {
+        repoId: input.repoId,
+        level: input.result === 'success' ? 'info' : 'warn',
+        action: input.action,
+        result: input.result,
+        requestId: input.requestId,
+        actorUserId: input.actorUserId || undefined,
+        reasonCode: sanitizeText(input.reasonCode),
+        message: sanitizeText(input.message),
+        details: compactObject({
+          commitId: sanitizeText(input.commitId),
+          clientRequestId: sanitizeText(input.clientRequestId),
+          diagnosticCount: input.diagnosticCount,
+          errorCount: input.errorCount,
+          warningCount: input.warningCount,
+          entryResults: input.entryResults.map((entry) =>
+            compactObject({
+              entryId: sanitizeText(entry.entryId),
+              status: sanitizeText(entry.status),
+              reasonCode: sanitizeText(entry.reasonCode),
+              publicationId: sanitizeText(entry.publicationId),
+            }),
+          ),
+          diagnostics: summarizeDiagnostics(input.diagnostics || []),
         }),
         createdAt: new Date(),
       },

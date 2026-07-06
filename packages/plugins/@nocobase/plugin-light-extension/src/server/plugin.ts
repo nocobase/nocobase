@@ -33,6 +33,7 @@ import { LightExtensionFileService } from './services/LightExtensionFileService'
 import { LightExtensionPermissionService } from './services/LightExtensionPermissionService';
 import { LightExtensionPublicationResolveService } from './services/LightExtensionPublicationResolveService';
 import { LightExtensionPublicationService } from './services/LightExtensionPublicationService';
+import { LightExtensionPublishService } from './services/LightExtensionPublishService';
 import { LightExtensionRepoService } from './services/LightExtensionRepoService';
 import { LightExtensionValidator } from './services/LightExtensionValidator';
 import { LightExtensionWorkspaceCompilerBridge } from './services/LightExtensionWorkspaceCompilerBridge';
@@ -109,6 +110,8 @@ export class PluginLightExtensionServer extends Plugin {
 
   private publicationResolveService?: LightExtensionPublicationResolveService;
 
+  private publishService?: LightExtensionPublishService;
+
   private entryScanner?: LightExtensionEntryScanner;
 
   private unregisterVscPermissionHook?: () => void;
@@ -184,8 +187,17 @@ export class PluginLightExtensionServer extends Plugin {
       this.auditService,
       this.permissionService,
     );
+    this.publishService = new LightExtensionPublishService(
+      db,
+      this.fileService,
+      this.permissionService,
+      this.workspaceCompilerBridge,
+      this.publicationService,
+      this.validator,
+      this.auditService,
+    );
     (this.app as unknown as AppWithPluginEvents).resourceManager?.define?.(
-      createLightExtensionsResource(this.compilePreviewService),
+      createLightExtensionsResource(this.compilePreviewService, this.publishService),
     );
     (this.app as unknown as AppWithPluginEvents).resourceManager?.define?.(
       createLightExtensionPublicationsResource(this.publicationResolveService),

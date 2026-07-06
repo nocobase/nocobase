@@ -16,9 +16,13 @@ import {
   LightExtensionCompilePreviewService,
 } from '../services/LightExtensionCompilePreviewService';
 import type { LightExtensionCanFunction } from '../services/LightExtensionPermissionService';
+import {
+  type LightExtensionPublishInput,
+  LightExtensionPublishService,
+} from '../services/LightExtensionPublishService';
 import type { LightExtensionServiceContext } from '../services/LightExtensionRepoService';
 
-export const lightExtensionActionNames = ['compilePreview'] as const;
+export const lightExtensionActionNames = ['compilePreview', 'publish'] as const;
 
 type LightExtensionActionName = (typeof lightExtensionActionNames)[number];
 type ResourceActionInput = Record<string, unknown>;
@@ -46,39 +50,64 @@ type LightExtensionResourceContext = Context & {
 };
 
 type ResourceActionRunner = (
-  service: LightExtensionCompilePreviewService,
+  service: LightExtensionActionServices,
   input: ResourceActionInput,
   currentUser: LightExtensionServiceContext,
 ) => Promise<unknown>;
 
+interface LightExtensionActionServices {
+  compilePreviewService: LightExtensionCompilePreviewService;
+  publishService?: LightExtensionPublishService;
+}
+
 const resourceActionRunners: Record<LightExtensionActionName, ResourceActionRunner> = {
-  compilePreview: (service, input, currentUser) =>
-    service.compilePreview(normalizeCompilePreviewInput(input), currentUser),
+  compilePreview: (services, input, currentUser) =>
+    services.compilePreviewService.compilePreview(normalizeCompilePreviewInput(input), currentUser),
+  publish: (services, input, currentUser) => {
+    if (!services.publishService) {
+      throw new LightExtensionError(
+        'LIGHT_EXTENSION_INVALID_INPUT',
+        'Light extension publish service is not available',
+      );
+    }
+
+    return services.publishService.publish(normalizePublishInput(input), currentUser);
+  },
 };
 
-export function createLightExtensionsResource(service: LightExtensionCompilePreviewService): ResourceOptions {
+export function createLightExtensionsResource(
+  compilePreviewService: LightExtensionCompilePreviewService,
+  publishService?: LightExtensionPublishService,
+): ResourceOptions {
+  const services = {
+    compilePreviewService,
+    publishService,
+  };
+
   return {
     name: 'lightExtensions',
     only: [...lightExtensionActionNames],
     actions: Object.fromEntries(
       lightExtensionActionNames.map((actionName) => [
         actionName,
-        createLightExtensionAction(service, resourceActionRunners[actionName]),
+        createLightExtensionAction(services, resourceActionRunners[actionName]),
       ]),
     ) as Record<LightExtensionActionName, HandlerType>,
   };
 }
 
-function createLightExtensionAction(
-  service: LightExtensionCompilePreviewService,
-  run: ResourceActionRunner,
-): HandlerType {
+function createLightExtensionAction(services: LightExtensionActionServices, run: ResourceActionRunner): HandlerType {
   return async (ctx: Context, next) => {
     const resourceCtx = ctx as LightExtensionResourceContext;
     const input = getActionInput(resourceCtx);
 
     try {
-      resourceCtx.body = await run(service, input, getServiceContext(resourceCtx));
+      const result = await run(services, input, getServiceContext(resourceCtx));
+      resourceCtx.body = result;
+      const httpStatus = readHttpStatus(result);
+      if (httpStatus) {
+        resourceCtx.status = httpStatus;
+      }
       await next();
     } catch (error) {
       if (!isLightExtensionError(error)) {
@@ -97,6 +126,17 @@ function normalizeCompilePreviewInput(input: ResourceActionInput): LightExtensio
   return {
     repoId: requireRepoId(input),
     entryIds: optionalStringArray(input, 'entryIds'),
+  };
+}
+
+function normalizePublishInput(input: ResourceActionInput): LightExtensionPublishInput {
+  return {
+    repoId: requireRepoId(input),
+    entryIds: requireStringArray(input, 'entryIds'),
+    commitId: requireString(input, 'commitId'),
+    clientRequestId: requireString(input, 'clientRequestId'),
+    activate: optionalBoolean(input, 'activate'),
+    expectedCurrentPublicationIdByEntry: optionalStringNullRecord(input, 'expectedCurrentPublicationIdByEntry'),
   };
 }
 
@@ -181,10 +221,60 @@ function optionalStringArray(input: ResourceActionInput, key: string): string[] 
   return value.map((item) => item.trim());
 }
 
+function requireStringArray(input: ResourceActionInput, key: string): string[] {
+  const value = optionalStringArray(input, key);
+  if (!value?.length) {
+    throw invalidInput(`${key} is required`);
+  }
+
+  return value;
+}
+
+function optionalBoolean(input: ResourceActionInput, key: string): boolean | undefined {
+  const value = input[key];
+  if (typeof value === 'undefined') {
+    return undefined;
+  }
+  if (typeof value !== 'boolean') {
+    throw invalidInput(`${key} must be a boolean`);
+  }
+
+  return value;
+}
+
+function optionalStringNullRecord(input: ResourceActionInput, key: string): Record<string, string | null> | undefined {
+  const value = input[key];
+  if (typeof value === 'undefined') {
+    return undefined;
+  }
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    throw invalidInput(`${key} must be an object`);
+  }
+
+  const record: Record<string, string | null> = {};
+  for (const [recordKey, recordValue] of Object.entries(value)) {
+    if (typeof recordValue !== 'string' && recordValue !== null) {
+      throw invalidInput(`${key}.${recordKey} must be a string or null`);
+    }
+    record[recordKey] = recordValue;
+  }
+
+  return record;
+}
+
 function toRecord(value: unknown): ResourceActionInput {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value) ? (value as ResourceActionInput) : {};
 }
 
 function invalidInput(message: string): LightExtensionError {
   return new LightExtensionError('LIGHT_EXTENSION_INVALID_INPUT', message);
+}
+
+function readHttpStatus(value: unknown): 200 | 207 | 422 | undefined {
+  if (!value || typeof value !== 'object') {
+    return undefined;
+  }
+
+  const status = (value as { httpStatus?: unknown }).httpStatus;
+  return status === 200 || status === 207 || status === 422 ? status : undefined;
 }
