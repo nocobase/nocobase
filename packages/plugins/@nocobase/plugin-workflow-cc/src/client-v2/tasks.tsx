@@ -652,7 +652,11 @@ function WorkflowCcTaskActions({ onlyIcon, reload }: { onlyIcon?: boolean; reloa
 
   const handleRefresh = useMemoizedFn(async () => {
     try {
-      await reload?.();
+      if (reload) {
+        await reload();
+      } else {
+        await reloadCounts();
+      }
     } catch (error) {
       console.error('Failed to refresh workflow CC tasks', error);
       message.error(t('Load failed'));

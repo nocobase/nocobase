@@ -276,6 +276,32 @@ describe('WorkflowTasksPage', () => {
     expect(holder.navigate).toHaveBeenCalledWith('/mobile/page/workflow-tasks/demo/pending/1');
   });
 
+  it('detects workflow task mobile routes under a route prefix', async () => {
+    const Actions = vi.fn((props: { onlyIcon?: boolean }) => (
+      <button type="button">actions:{String(props.onlyIcon)}</button>
+    ));
+    const { registry } = createTaskTypes({ Actions });
+    const demoTasks = {
+      listMine: vi.fn().mockResolvedValue({
+        data: { data: [{ id: 1, title: 'Task A' }], meta: { count: 1 } },
+      }),
+    };
+    const userWorkflowTasks = {
+      listMine: vi.fn().mockResolvedValue({ data: [{ type: 'demo', stats: { pending: 1, all: 1 } }] }),
+    };
+    holder.location = { pathname: '/v/mobile/page/workflow-tasks/demo/pending', search: '', hash: '' };
+    holder.isMobileLayout = false;
+    holder.ctx = makeCtx(registry, { demoTasks, userWorkflowTasks });
+
+    renderWithApp(<WorkflowTasksPage />);
+
+    await screen.findByTestId('workflow-tasks-mobile');
+    fireEvent.click(await screen.findByText('Task A'));
+
+    expect(Actions.mock.calls.some(([props]) => props.onlyIcon === true)).toBe(true);
+    expect(holder.navigate).toHaveBeenCalledWith('/mobile/page/workflow-tasks/demo/pending/1');
+  });
+
   it('keeps task type tab navigation on the admin route when only the layout is mobile', async () => {
     const demoTaskType = createTaskTypes().taskType;
     const otherTaskType: TaskTypeOptions = {

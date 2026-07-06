@@ -8,7 +8,6 @@
  */
 
 export { default, PluginWorkflowClientV2 } from './plugin';
-export type { TaskTypeOptions } from './plugin';
 export * from './constants';
 export * from './taskCenter';
 export * from './models';

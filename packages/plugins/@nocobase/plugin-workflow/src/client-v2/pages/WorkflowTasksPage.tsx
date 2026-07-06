@@ -99,8 +99,7 @@ function useWorkflowTasksRoute() {
   const params = useParams<WorkflowTasksRouteParams>();
   const location = useLocation();
   const status = normalizeWorkflowTaskStatus(params.status);
-  const isMobileRoute =
-    location.pathname.startsWith('/mobile/page/workflow-tasks') || location.pathname.startsWith('/page/workflow-tasks');
+  const isMobileRoute = /(^|\/)(mobile\/page|page)\/workflow-tasks(\/|$)/.test(location.pathname);
 
   return {
     taskType: params.taskType,

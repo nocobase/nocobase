@@ -182,6 +182,16 @@ describe('workflow-cc v2 task type', () => {
     expect(holder.read).toHaveBeenCalledTimes(1);
   });
 
+  it('falls back to refreshing workflow task counts when list reload is unavailable', async () => {
+    const Actions = ccTaskType.Actions as React.ComponentType<{ reload?: () => Promise<void> }>;
+
+    renderWithApp(<Actions />);
+
+    fireEvent.click(screen.getByRole('button', { name: /Refresh/ }));
+
+    await waitFor(() => expect(holder.reloadCounts).toHaveBeenCalledTimes(1));
+  });
+
   it('disables Mark all as read when the pending CC count is zero', () => {
     holder.counts = { cc: { pending: 0 } };
     const Actions = ccTaskType.Actions as React.ComponentType<{ reload?: () => Promise<void> }>;
