@@ -142,6 +142,35 @@ const JS_VERSION = stringOption('JS code version', {
   example: 'v2',
 });
 
+const JS_BLOCK_SOURCE_MODE = stringOption('JS block source mode', {
+  enum: ['inline', 'light-extension'],
+  example: 'light-extension',
+});
+
+const JS_BLOCK_SOURCE_BINDING = objectOption('Light-extension repository entry binding', {
+  example: {
+    type: 'light-extension-entry',
+    repoId: 'repo_sales',
+    entryId: 'entry_kpi_cards',
+    kind: 'js-block',
+    publicationId: 'publication_sales_kpi_v1',
+    versionPolicy: 'pinned',
+  },
+});
+
+const JS_BLOCK_INSTANCE_SETTINGS = objectOption('JS block instance settings passed to the resolved source', {
+  example: {
+    region: 'APAC',
+  },
+});
+
+const JS_BLOCK_LEGACY_SOURCE_REF = objectOption('Legacy JS block sourceRef binding', {
+  example: {
+    type: 'vsc-file',
+    path: 'packages/plugins/custom/src/blocks/kpi.tsx',
+  },
+});
+
 const COMMON_BLOCK_HEADER_OPTIONS: FlowSurfaceConfigureOptions = {
   title: stringOption('Title', { example: 'User Table' }),
   description: stringOption('Description', { example: 'Team directory and summary' }),
@@ -451,6 +480,10 @@ const JS_BLOCK_OPTIONS: FlowSurfaceConfigureOptions = {
   showBlockCard: booleanOption('Whether to show the outer block card', { default: true, example: true }),
   code: JS_CODE,
   version: JS_VERSION,
+  sourceRef: JS_BLOCK_LEGACY_SOURCE_REF,
+  sourceMode: JS_BLOCK_SOURCE_MODE,
+  sourceBinding: JS_BLOCK_SOURCE_BINDING,
+  settings: JS_BLOCK_INSTANCE_SETTINGS,
 };
 
 const ACTION_COLUMN_OPTIONS: FlowSurfaceConfigureOptions = {

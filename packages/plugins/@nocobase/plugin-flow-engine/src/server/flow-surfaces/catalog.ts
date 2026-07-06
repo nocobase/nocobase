@@ -129,6 +129,8 @@ const GRID_LAYOUT_CAPABILITIES: FlowSurfaceLayoutCapabilities = { supported: tru
 const AI_EMPLOYEE_ACTION_USE = 'AIEmployeeButtonModel';
 const AI_EMPLOYEE_FLOW_SURFACE_OWNER_PLUGIN = '@nocobase/plugin-ai';
 const RUN_JS_ALLOWED_PATHS = ['runJs.code', 'runJs.version'];
+const JS_BLOCK_RUN_JS_ALLOWED_PATHS = [...RUN_JS_ALLOWED_PATHS, 'runJs.sourceRef.*'];
+const JS_BLOCK_SOURCE_ALLOWED_PATHS = ['sourceMode', 'sourceBinding', 'settings.*'];
 const OPEN_VIEW_ALLOWED_PATHS = [
   'openView.mode',
   'openView.size',
@@ -246,11 +248,18 @@ const RUN_JS_SETTINGS_GROUP = {
   },
 };
 const JS_BLOCK_SETTINGS_GROUP = {
-  allowedPaths: [...RUN_JS_ALLOWED_PATHS, 'showBlockCard.showBlockCard'],
+  allowedPaths: [...JS_BLOCK_RUN_JS_ALLOWED_PATHS, ...JS_BLOCK_SOURCE_ALLOWED_PATHS, 'showBlockCard.showBlockCard'],
   mergeStrategy: 'deep' as const,
   eventBindingSteps: ['runJs'],
   pathSchemas: {
     ...RUN_JS_SETTINGS_GROUP.pathSchemas,
+    'runJs.sourceRef': OBJECT_SCHEMA,
+    sourceMode: {
+      type: 'string',
+      enum: ['inline', 'light-extension'],
+    },
+    sourceBinding: OBJECT_SCHEMA,
+    settings: OBJECT_SCHEMA,
     'showBlockCard.showBlockCard': BOOLEAN_SCHEMA,
   },
 };

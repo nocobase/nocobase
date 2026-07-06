@@ -334,6 +334,67 @@ describe('flowSurfaces authoring validation unit', () => {
     expect(unsupportedSettingError?.details?.allowedKeys).toContain('showBlockCard');
   });
 
+  it('should accept light-extension JS block source binding and reject script mixing', async () => {
+    const sourceBinding = {
+      type: 'light-extension-entry',
+      repoId: 'repo_sales',
+      entryId: 'entry_sales_kpi',
+      kind: 'js-block',
+      publicationId: 'publication_sales_kpi_v1',
+      versionPolicy: 'pinned',
+    };
+
+    const repositorySourceErrors = await collectFlowSurfaceAuthoringErrors('applyBlueprint', {
+      mode: 'create',
+      tabs: [
+        {
+          title: 'Overview',
+          blocks: [
+            {
+              type: 'jsBlock',
+              settings: {
+                sourceMode: 'light-extension',
+                sourceBinding,
+                settings: {
+                  region: 'APAC',
+                },
+              },
+            },
+          ],
+        },
+      ],
+    });
+    expect(repositorySourceErrors.map((error) => error.ruleId)).not.toContain('jsBlock-source-required');
+
+    const mixedScriptErrors = await collectFlowSurfaceAuthoringErrors('applyBlueprint', {
+      mode: 'create',
+      assets: {
+        scripts: {
+          kpiScript: {
+            code: 'ctx.render("KPI");',
+            version: 'v2',
+          },
+        },
+      },
+      tabs: [
+        {
+          title: 'Overview',
+          blocks: [
+            {
+              type: 'jsBlock',
+              script: 'kpiScript',
+              settings: {
+                sourceMode: 'light-extension',
+                sourceBinding,
+              },
+            },
+          ],
+        },
+      ],
+    });
+    expect(mixedScriptErrors.map((error) => error.ruleId)).toContain('jsBlock-mixed-script-and-light-extension');
+  });
+
   it('should preserve aggregate authoring repair instructions through inline and batch wrappers', () => {
     const aggregate = new FlowSurfaceAggregateError([
       {

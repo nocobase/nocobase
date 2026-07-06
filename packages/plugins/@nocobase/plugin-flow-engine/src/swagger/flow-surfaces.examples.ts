@@ -976,11 +976,21 @@ export const flowSurfaceExamples = {
     },
     changes: {
       title: 'Users hero',
-      description: 'Rendered from FlowSurfaces configure',
+      description: 'Rendered from a light-extension publication',
       className: 'users-hero',
       showBlockCard: true,
-      version: '1.0.1',
-      code: "ctx.render('<div>Users hero</div>');",
+      sourceMode: 'light-extension',
+      sourceBinding: {
+        type: 'light-extension-entry',
+        repoId: 'repo_users',
+        entryId: 'entry_users_hero',
+        kind: 'js-block',
+        publicationId: 'publication_users_hero_v1',
+        versionPolicy: 'pinned',
+      },
+      settings: {
+        segment: 'active',
+      },
     },
   },
   configureJsAction: {
@@ -1323,10 +1333,20 @@ export const flowSurfaceExamples = {
     type: 'jsBlock',
     settings: {
       title: 'Users banner',
-      description: 'Custom JS rendered banner',
+      description: 'Repository-backed JS rendered banner',
       showBlockCard: true,
-      version: '1.0.0',
-      code: "ctx.render('<div>Users banner</div>');",
+      sourceMode: 'light-extension',
+      sourceBinding: {
+        type: 'light-extension-entry',
+        repoId: 'repo_users',
+        entryId: 'entry_users_banner',
+        kind: 'js-block',
+        publicationId: 'publication_users_banner_v1',
+        versionPolicy: 'pinned',
+      },
+      settings: {
+        segment: 'new-users',
+      },
     },
   },
   addField: {

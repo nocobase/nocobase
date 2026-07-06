@@ -21851,14 +21851,23 @@ export class FlowSurfacesService {
           description: changes.description,
           className: changes.className,
         }),
-        stepParams: hasDefinedValue(changes, ['code', 'version', 'showBlockCard'])
+        stepParams: hasDefinedValue(changes, [
+          'code',
+          'version',
+          'sourceRef',
+          'showBlockCard',
+          'sourceMode',
+          'sourceBinding',
+          'settings',
+        ])
           ? {
               jsSettings: buildDefinedPayload({
-                ...(hasDefinedValue(changes, ['code', 'version'])
+                ...(hasDefinedValue(changes, ['code', 'version', 'sourceRef'])
                   ? {
                       runJs: buildDefinedPayload({
                         code: changes.code,
                         version: changes.version,
+                        sourceRef: changes.sourceRef,
                       }),
                     }
                   : {}),
@@ -21869,6 +21878,9 @@ export class FlowSurfacesService {
                       },
                     }
                   : {}),
+                sourceMode: changes.sourceMode,
+                sourceBinding: changes.sourceBinding,
+                settings: changes.settings,
               }),
             }
           : undefined,

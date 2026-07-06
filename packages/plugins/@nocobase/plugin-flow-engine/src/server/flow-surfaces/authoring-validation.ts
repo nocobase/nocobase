@@ -233,11 +233,27 @@ const JS_BLOCK_ALLOWED_SETTINGS_KEYS = new Set([
   'showBlockCard',
   'code',
   'version',
+  'sourceRef',
+  'sourceMode',
+  'sourceBinding',
+  'settings',
 ]);
-const JS_BLOCK_TOP_LEVEL_JS_KEYS = ['code', 'version'] as const;
+const JS_BLOCK_TOP_LEVEL_JS_KEYS = ['code', 'version', 'sourceRef'] as const;
+const JS_BLOCK_LIGHT_EXTENSION_SOURCE_MODE = 'light-extension';
+const JS_BLOCK_INLINE_SOURCE_MODE = 'inline';
+const JS_BLOCK_LIGHT_EXTENSION_BINDING_TYPE = 'light-extension-entry';
+const JS_BLOCK_LIGHT_EXTENSION_BINDING_KIND = 'js-block';
+const JS_BLOCK_LIGHT_EXTENSION_BINDING_REQUIRED_STRING_KEYS = [
+  'type',
+  'repoId',
+  'entryId',
+  'kind',
+  'publicationId',
+  'versionPolicy',
+] as const;
 const JS_BLOCK_INTERNAL_AUTHORING_KEYS = ['props', 'decoratorProps', 'flowRegistry', 'stepParams'];
 const JS_BLOCK_REPAIR_HINT =
-  'This is a jsBlock payload shape problem. Repair this jsBlock using inline settings.code/settings.version/settings.showBlockCard, or applyBlueprint assets.scripts.<key>.code plus block.script with optional settings.showBlockCard. Do not change this block type to table, chart, actionPanel, gridCard, or another block type.';
+  'This is a jsBlock payload shape problem. Repair this jsBlock using inline settings.code/settings.version/settings.showBlockCard, light-extension settings.sourceMode/settings.sourceBinding/settings.settings, or applyBlueprint assets.scripts.<key>.code plus block.script with optional settings.showBlockCard. Do not change this block type to table, chart, actionPanel, gridCard, or another block type.';
 const CHART_REPAIR_HINT =
   'This is a chart payload shape problem. Keep using chart and repair this chart using assets.charts.<key>.query/visual plus block.chart, or localized settings.query/settings.visual. Do not change this block type to table, jsBlock, actionPanel, gridCard, or another block type, and do not drop or defer the chart. KPI / summary numbers should use jsBlock; charts are for trends, distributions, rankings, and visual analysis.';
 const REPAIR_ALL_ERRORS_AGENT_INSTRUCTION =
@@ -4884,6 +4900,9 @@ function collectJsBlockPublicContractErrors(
         }),
       });
     });
+    collectJsBlockSourceSettingErrors(settings, `${path}.settings`, errors, {
+      requireSourceModeForBinding: true,
+    });
   }
 
   const inlineKeys = settings ? JS_BLOCK_TOP_LEVEL_JS_KEYS.filter((key) => hasOwn(settings, key)) : [];
@@ -4900,15 +4919,32 @@ function collectJsBlockPublicContractErrors(
     });
   }
 
+  const hasLightExtensionSourceInput = hasJsBlockLightExtensionSourceInput(settings);
+  if (hasOwn(block, 'script') && hasLightExtensionSourceInput) {
+    pushAuthoringError(errors, {
+      path: `${path}.script`,
+      ruleId: 'jsBlock-mixed-script-and-light-extension',
+      message: `flowSurfaces authoring ${path} cannot combine script asset references with light-extension settings.sourceBinding; use either applyBlueprint assets.scripts + block.script or light-extension settings.sourceBinding`,
+      details: withJsBlockRepairHint(),
+    });
+  }
+
   const hasInlineCode = typeof settings?.code === 'string' && !!settings.code.trim();
+  const hasLegacySourceRef = _.isPlainObject(settings?.sourceRef);
   const hasApplyBlueprintScriptInput = context.authoringActionName === 'applyBlueprint' && hasOwn(block, 'script');
   const hasScriptReference =
     context.authoringActionName === 'applyBlueprint' && typeof block.script === 'string' && !!block.script.trim();
-  if (!hasInlineCode && !hasScriptReference && !hasApplyBlueprintScriptInput) {
+  if (
+    !hasInlineCode &&
+    !hasLegacySourceRef &&
+    !hasLightExtensionSourceInput &&
+    !hasScriptReference &&
+    !hasApplyBlueprintScriptInput
+  ) {
     pushAuthoringError(errors, {
       path,
       ruleId: 'jsBlock-source-required',
-      message: `flowSurfaces authoring ${path} jsBlock must include inline ${path}.settings.code or, for applyBlueprint only, a block.script asset reference`,
+      message: `flowSurfaces authoring ${path} jsBlock must include inline ${path}.settings.code/sourceRef, light-extension ${path}.settings.sourceMode + ${path}.settings.sourceBinding, or, for applyBlueprint only, a block.script asset reference`,
       details: withJsBlockRepairHint(),
     });
   }
@@ -4956,6 +4992,20 @@ function collectJsBlockConfigurePublicContractErrors(changes: any, path: string,
     });
   }
 
+  collectJsBlockSourceSettingErrors(changes, path, errors, {
+    requireSourceModeForBinding: false,
+  });
+
+  const hasLightExtensionSourceInput = hasJsBlockLightExtensionSourceInput(changes);
+  if (hasOwn(changes, 'script') && hasLightExtensionSourceInput) {
+    pushAuthoringError(errors, {
+      path: `${path}.script`,
+      ruleId: 'jsBlock-mixed-script-and-light-extension',
+      message: `flowSurfaces authoring ${path} cannot combine script asset references with light-extension sourceBinding`,
+      details: withJsBlockRepairHint(),
+    });
+  }
+
   if (!hasOwn(changes, 'settings')) {
     return;
   }
@@ -4964,21 +5014,133 @@ function collectJsBlockConfigurePublicContractErrors(changes: any, path: string,
     pushAuthoringError(errors, {
       path: `${path}.settings`,
       ruleId: 'jsBlock-settings-unsupported-key',
-      message: `flowSurfaces authoring ${path}.settings is not part of the public jsBlock configure contract; use ${path}.code, ${path}.version, and ${path}.showBlockCard`,
+      message: `flowSurfaces authoring ${path}.settings must be an object containing JS block instance settings`,
+      details: withJsBlockRepairHint(),
+    });
+  }
+}
+
+function hasJsBlockLightExtensionSourceInput(settings: any) {
+  return (
+    _.isPlainObject(settings) &&
+    (settings.sourceMode === JS_BLOCK_LIGHT_EXTENSION_SOURCE_MODE || hasOwn(settings, 'sourceBinding'))
+  );
+}
+
+function collectJsBlockSourceSettingErrors(
+  settings: any,
+  path: string,
+  errors: AuthoringErrorInput[],
+  options: {
+    requireSourceModeForBinding: boolean;
+  },
+) {
+  if (!_.isPlainObject(settings)) {
+    return;
+  }
+
+  if (
+    hasOwn(settings, 'sourceMode') &&
+    settings.sourceMode !== JS_BLOCK_INLINE_SOURCE_MODE &&
+    settings.sourceMode !== JS_BLOCK_LIGHT_EXTENSION_SOURCE_MODE
+  ) {
+    pushAuthoringError(errors, {
+      path: `${path}.sourceMode`,
+      ruleId: 'jsBlock-sourceMode-invalid',
+      message: `flowSurfaces authoring ${path}.sourceMode must be "inline" or "light-extension"`,
+      details: withJsBlockRepairHint({
+        allowedValues: [JS_BLOCK_INLINE_SOURCE_MODE, JS_BLOCK_LIGHT_EXTENSION_SOURCE_MODE],
+      }),
+    });
+  }
+
+  const hasSourceBinding = hasOwn(settings, 'sourceBinding');
+  if (settings.sourceMode === JS_BLOCK_INLINE_SOURCE_MODE && hasSourceBinding) {
+    pushAuthoringError(errors, {
+      path: `${path}.sourceBinding`,
+      ruleId: 'jsBlock-inline-sourceBinding-unsupported',
+      message: `flowSurfaces authoring ${path}.sourceBinding requires ${path}.sourceMode="light-extension"; inline JS blocks use ${path}.code or ${path}.sourceRef`,
+      details: withJsBlockRepairHint(),
+    });
+  }
+
+  if (
+    hasSourceBinding &&
+    options.requireSourceModeForBinding &&
+    settings.sourceMode !== JS_BLOCK_LIGHT_EXTENSION_SOURCE_MODE
+  ) {
+    pushAuthoringError(errors, {
+      path: `${path}.sourceMode`,
+      ruleId: 'jsBlock-sourceMode-required-for-sourceBinding',
+      message: `flowSurfaces authoring ${path}.sourceBinding requires ${path}.sourceMode="light-extension"`,
+      details: withJsBlockRepairHint(),
+    });
+  }
+
+  if (settings.sourceMode === JS_BLOCK_LIGHT_EXTENSION_SOURCE_MODE && !hasSourceBinding) {
+    pushAuthoringError(errors, {
+      path: `${path}.sourceBinding`,
+      ruleId: 'jsBlock-sourceBinding-required',
+      message: `flowSurfaces authoring ${path}.sourceBinding is required when ${path}.sourceMode="light-extension"`,
       details: withJsBlockRepairHint(),
     });
     return;
   }
-  Object.keys(settings).forEach((key) => {
+
+  if (!hasSourceBinding) {
+    return;
+  }
+
+  if (!_.isPlainObject(settings.sourceBinding)) {
     pushAuthoringError(errors, {
-      path: `${path}.settings.${key}`,
-      ruleId: 'jsBlock-settings-unsupported-key',
-      message: `flowSurfaces authoring ${path}.settings.${key} is not part of the public jsBlock configure contract; use ${path}.${key}`,
+      path: `${path}.sourceBinding`,
+      ruleId: 'jsBlock-sourceBinding-invalid',
+      message: `flowSurfaces authoring ${path}.sourceBinding must be an object`,
+      details: withJsBlockRepairHint(),
+    });
+    return;
+  }
+
+  JS_BLOCK_LIGHT_EXTENSION_BINDING_REQUIRED_STRING_KEYS.forEach((key) => {
+    if (typeof settings.sourceBinding[key] === 'string' && settings.sourceBinding[key].trim()) {
+      return;
+    }
+    pushAuthoringError(errors, {
+      path: `${path}.sourceBinding.${key}`,
+      ruleId: 'jsBlock-sourceBinding-required-key',
+      message: `flowSurfaces authoring ${path}.sourceBinding.${key} must be a non-empty string`,
       details: withJsBlockRepairHint({
         key,
+        requiredKeys: [...JS_BLOCK_LIGHT_EXTENSION_BINDING_REQUIRED_STRING_KEYS],
       }),
     });
   });
+
+  if (
+    typeof settings.sourceBinding.type === 'string' &&
+    settings.sourceBinding.type.trim() &&
+    settings.sourceBinding.type !== JS_BLOCK_LIGHT_EXTENSION_BINDING_TYPE
+  ) {
+    pushAuthoringError(errors, {
+      path: `${path}.sourceBinding.type`,
+      ruleId: 'jsBlock-sourceBinding-type-invalid',
+      message: `flowSurfaces authoring ${path}.sourceBinding.type must be "${JS_BLOCK_LIGHT_EXTENSION_BINDING_TYPE}"`,
+      details: withJsBlockRepairHint(),
+    });
+  }
+
+  if (
+    typeof settings.sourceBinding.kind === 'string' &&
+    settings.sourceBinding.kind.trim() &&
+    settings.sourceBinding.kind !== JS_BLOCK_LIGHT_EXTENSION_BINDING_KIND
+  ) {
+    pushAuthoringError(errors, {
+      path: `${path}.sourceBinding.kind`,
+      ruleId: 'jsBlock-sourceBinding-kind-invalid',
+      message: `flowSurfaces authoring ${path}.sourceBinding.kind must be "${JS_BLOCK_LIGHT_EXTENSION_BINDING_KIND}"`,
+      details: withJsBlockRepairHint(),
+    });
+  }
 }
 
 function collectRemovedDefaultActionOptOutErrors(block: any, path: string, errors: AuthoringErrorInput[]) {
