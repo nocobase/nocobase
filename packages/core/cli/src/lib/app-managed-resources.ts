@@ -24,6 +24,7 @@ import { resolveDockerEnvFileArg } from './docker-env-file.ts';
 import {
   DEFAULT_DOCKER_REGISTRY,
   DEFAULT_DOCKER_VERSION,
+  resolveDockerImageContainerPort,
   resolveDockerImageRef,
 } from './docker-image.ts';
 import { resolveHookScriptPath, type HookCommand, type HookPhase } from './hook-script.js';
@@ -250,6 +251,7 @@ export async function buildSavedDockerRunArgs(
     defaultRegistry: DEFAULT_DOCKER_REGISTRY,
     defaultVersion: DEFAULT_DOCKER_VERSION,
   });
+  const containerPort = resolveDockerImageContainerPort(imageRef);
 
   const missing: string[] = [];
   if (!storagePath) {
@@ -296,7 +298,7 @@ export async function buildSavedDockerRunArgs(
   }
 
   if (appPort) {
-    args.push('-p', `${appPort}:80`);
+    args.push('-p', `${appPort}:${containerPort}`);
   }
 
   if (envFile) {

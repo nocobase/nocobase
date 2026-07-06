@@ -122,12 +122,13 @@ export type EnvProxyNginxBundle = {
 
 export type ManualEnvProxyNginxInput = {
   name: string;
-  appPort: string;
   storagePath: string;
   distRootPath: string;
   runtimeVersion: string;
   appPublicPath?: string;
   upstreamHost?: string;
+  upstreamPort?: string;
+  appPort?: string;
   cdnBaseUrl?: string;
 };
 
@@ -189,6 +190,7 @@ type EnvProxyProviderOptions = {
   provider?: ProxyProvider;
   runtimeCliRoot?: string;
   upstreamHost?: string;
+  upstreamPort?: string;
   cdnBaseUrl?: string;
 };
 
@@ -536,16 +538,33 @@ function createManualProxyEnvSettings(input: ManualEnvProxyNginxInput): ProxyEnv
 }
 
 function normalizeManualNginxInput(input: ManualEnvProxyNginxInput): ManualEnvProxyNginxInput {
+  const upstreamPort = trimValue(input.upstreamPort) ?? trimValue(input.appPort);
+
   return {
     name: String(input.name).trim(),
-    appPort: String(input.appPort).trim(),
     storagePath: String(input.storagePath).trim(),
     distRootPath: String(input.distRootPath).trim(),
     runtimeVersion: String(input.runtimeVersion).trim(),
     appPublicPath: trimValue(input.appPublicPath),
     upstreamHost: trimValue(input.upstreamHost),
+    upstreamPort,
+    appPort: trimValue(input.appPort),
     cdnBaseUrl: trimValue(input.cdnBaseUrl),
   };
+}
+
+function normalizeProxyPort(value?: string): string | undefined {
+  const normalized = trimValue(value);
+  if (!normalized || !/^\d+$/.test(normalized)) {
+    return undefined;
+  }
+
+  const port = Number(normalized);
+  if (!Number.isInteger(port) || port < 1 || port > 65535) {
+    return undefined;
+  }
+
+  return normalized;
 }
 
 async function parseVersionFromPackageJson(content: string, sourceLabel: string): Promise<string> {
@@ -775,6 +794,7 @@ type EnvProxyCaddyRenderContext = EnvProxyNginxRenderContext;
 
 function buildNginxManagedConfigBlock(context: EnvProxyNginxRenderContext): string {
   const v2PublicPathNoTrailingSlash = trimTrailingSlash(context.v2PublicPath);
+  const apiBasePathNoTrailingSlash = trimTrailingSlash(context.apiBasePath);
   const appPublicPathNoTrailingSlash = trimTrailingSlash(context.appPublicPath);
   const isRootMounted = context.appPublicPath === '/';
   const appPublicPathRedirectBlock = isRootMounted
@@ -812,6 +832,10 @@ function buildNginxManagedConfigBlock(context: EnvProxyNginxRenderContext): stri
     '',
     `        proxy_pass ${context.backendUrl};`,
     `        include ${context.snippetsDir}/proxy-location.conf;`,
+    '    }',
+    '',
+    `    location = ${apiBasePathNoTrailingSlash} {`,
+    `        return 308 ${context.apiBasePath}$is_args$args;`,
     '    }',
     '',
     `    location ^~ ${context.apiBasePath} {`,
@@ -871,7 +895,8 @@ async function buildEnvProxyNginxRenderContext(
   options?: EnvProxyProviderOptions,
 ): Promise<EnvProxyNginxRenderContext> {
   const proxyHost = await resolveProxyUpstreamHost(options);
-  const backendUrl = `http://${proxyHost}:${source.apiPort}`;
+  const upstreamPort = normalizeProxyPort(options?.upstreamPort) ?? source.apiPort;
+  const backendUrl = `http://${proxyHost}:${upstreamPort}`;
   const cdnBaseUrl = source.settings.cdnBaseUrl ?? buildDefaultCdnBaseUrl(source.settings.appPublicPath, source.activeVersion);
   const entryDir = resolveEnvProxyEntryDir(source.envName, { scope: options?.scope });
   const publicDir = resolveEnvProxyNginxPublicOutputDir(source.envName, { scope: options?.scope });
@@ -959,7 +984,7 @@ async function resolveManualNginxBundleSource(input: ManualEnvProxyNginxInput): 
     storagePath: normalized.storagePath,
     distRootPath: normalized.distRootPath,
     settings: createManualProxyEnvSettings(normalized),
-    apiPort: normalized.appPort,
+    apiPort: normalized.upstreamPort,
     activeVersion: normalized.runtimeVersion,
   };
 }
@@ -1067,6 +1092,7 @@ export async function buildManualEnvProxyNginxBundle(
   return await buildNginxBundleFromSource(await resolveManualNginxBundleSource(input), {
     ...options,
     upstreamHost: trimValue(input.upstreamHost) ?? options?.upstreamHost,
+    upstreamPort: normalizeProxyPort(input.upstreamPort) ?? options?.upstreamPort,
   });
 }
 
@@ -1156,6 +1182,7 @@ export async function buildManualEnvProxyCaddyBundle(
   return await buildCaddyBundleFromSource(await resolveManualNginxBundleSource(input), {
     ...options,
     upstreamHost: trimValue(input.upstreamHost) ?? options?.upstreamHost,
+    upstreamPort: normalizeProxyPort(input.upstreamPort) ?? options?.upstreamPort,
   });
 }
 
@@ -1407,6 +1434,7 @@ function buildNginxOtherLocation(appPublicPath: string, v2PublicPath: string, mo
 function renderNginxLocationTemplate(context: EnvProxyTemplateContext): string {
   const proxyPassBlock = buildNginxProxyPassBlock(context.proxyHost, context.apiPort);
   const wsProxyPassTarget = `http://${context.proxyHost}:${context.apiPort}${context.wsPath}`;
+  const apiBasePathNoTrailingSlash = trimTrailingSlash(context.apiBasePath);
 
   return `    location ~* ^${context.appPublicPath}storage/uploads/(.*\\.md)$ {
         alias ${context.uploadsPath}/$1;
@@ -1452,6 +1480,10 @@ function renderNginxLocationTemplate(context: EnvProxyTemplateContext): string {
         rewrite ^/\\.well-known/openid-configuration/(.+)$ /$1/.well-known/openid-configuration break;
         ${proxyPassBlock}
     }${context.otherLocation}
+
+    location = ${apiBasePathNoTrailingSlash} {
+        return 308 ${context.apiBasePath}$is_args$args;
+    }
 
     location ^~ ${context.apiBasePath} {
         ${proxyPassBlock}

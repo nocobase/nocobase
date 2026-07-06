@@ -1,7 +1,7 @@
 ---
-title: "nb config delete"
-description: "nb config delete command reference: delete an explicitly set CLI configuration item."
-keywords: "nb config delete,NocoBase CLI,delete configuration"
+title: 'nb config delete'
+description: 'nb config delete command reference: delete an explicitly set CLI configuration item.'
+keywords: 'nb config delete,NocoBase CLI,delete configuration'
 ---
 
 # nb config delete
@@ -16,9 +16,9 @@ nb config delete <key>
 
 ## Parameters
 
-| Parameter | Type | Description |
-| --- | --- | --- |
-| `<key>` | string | Configuration item name. See [`nb config`](./index.md) for supported values |
+| Parameter | Type   | Description                                                                 |
+| --------- | ------ | --------------------------------------------------------------------------- |
+| `<key>`   | string | Configuration item name. See [`nb config`](./index.md) for supported values |
 
 ## Examples
 
@@ -27,6 +27,8 @@ nb config delete locale
 nb config delete update.policy
 nb config delete docker.network
 nb config delete docker.container-prefix
+nb config delete nb-image-registry
+nb config delete nb-image-variant
 nb config delete proxy.nb-cli-root
 nb config delete proxy.upstream-host
 nb config delete proxy.nginx-driver

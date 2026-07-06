@@ -130,14 +130,10 @@ type FlowEngineWithPluginManager = ReturnType<typeof useFlowEngine> & {
 
 type ThemeToken = ReturnType<typeof theme.useToken>['token'];
 
-function getDialogWidth(kind: FlowModelConfigKind, token: ThemeToken) {
-  if (kind === 'taskCard') {
-    return 800;
-  }
+const FLOW_MODEL_CONFIG_DIALOG_WIDTH = 800;
 
-  const responsiveInset = token.marginXXL * 2;
-  const targetWidth = token.screenLG + token.marginXXL * 2;
-  return `min(${targetWidth}px, calc(100vw - ${responsiveInset}px))`;
+function getDialogWidth() {
+  return FLOW_MODEL_CONFIG_DIALOG_WIDTH;
 }
 
 function getDialogStyles(kind: FlowModelConfigKind, token: ThemeToken) {
@@ -811,7 +807,7 @@ export function FlowModelConfigInput({
       }
 
       ctx.viewer.dialog({
-        width: getDialogWidth(kind, token),
+        width: getDialogWidth(),
         closable: true,
         onClose: releaseDialogGeneratedUidPending,
         title,

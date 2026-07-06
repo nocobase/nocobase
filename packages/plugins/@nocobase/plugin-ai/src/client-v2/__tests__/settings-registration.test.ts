@@ -7,8 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { createMockClient } from '@nocobase/client-v2';
 import { describe, expect, it, vi } from 'vitest';
-import { registerPluginAIPermissionsTab, registerPluginAISettingsPages } from '../plugin';
+import PluginAIClientV2, { registerPluginAIPermissionsTab, registerPluginAISettingsPages } from '../plugin';
 
 describe('plugin-ai v2 settings registration', () => {
   it('registers AI settings menu and page tabs', () => {
@@ -32,12 +33,11 @@ describe('plugin-ai v2 settings registration', () => {
       sort: 400,
       showTabs: true,
     });
-    expect(addPageTabItem).toHaveBeenCalledTimes(5);
+    expect(addPageTabItem).toHaveBeenCalledTimes(4);
     expect(addPageTabItem.mock.calls.map(([item]) => [item.menuKey, item.key, item.aclSnippet])).toEqual([
       ['ai', 'employees', 'pm.ai.employees'],
       ['ai', 'llm-services', 'pm.ai.llm-services'],
       ['ai', 'mcp-settings', 'pm.ai.mcp-settings'],
-      ['ai', 'datasource', 'pm.ai.datasource'],
       ['ai', 'settings', 'pm.ai.settings'],
     ]);
     addPageTabItem.mock.calls.forEach(([item]) => {
@@ -80,5 +80,17 @@ describe('plugin-ai v2 settings registration', () => {
         (key) => key,
       ),
     ).not.toThrow();
+  });
+
+  it('does not register the deprecated datasource work context in v2', async () => {
+    const app = createMockClient({ publicPath: '/v/' });
+
+    await app.pm.add(PluginAIClientV2);
+    await app.load();
+
+    const plugin = app.pm.get(PluginAIClientV2) as PluginAIClientV2;
+
+    expect(plugin.aiManager.getWorkContext('flow-model')).toBeDefined();
+    expect(plugin.aiManager.getWorkContext('datasource')).toBeUndefined();
   });
 });

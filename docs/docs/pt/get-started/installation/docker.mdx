@@ -618,3 +618,96 @@ Use o navegador para abrir [http://localhost:13000](http://localhost:13000). A c
 Após o primeiro login, altere a senha padrão imediatamente para garantir a segurança do sistema.
 
 :::
+
+## 5. Implantação em produção
+
+Se você usa a imagem com Nginx embutido, normalmente é melhor não expor `13000` diretamente à internet pública. O mais comum é manter a porta do contêiner disponível apenas no host e deixar o Nginx do host cuidar do domínio, HTTPS e proxy reverso.
+
+### Fazer proxy da raiz com Nginx
+
+A configuração abaixo faz proxy das requisições do domínio para `http://127.0.0.1:13000/`:
+
+```bash
+server {
+    listen 80;
+    server_name your_domain.com;  # Substitua your_domain.com pelo seu domínio
+
+    location / {
+        proxy_pass http://127.0.0.1:13000/;
+        proxy_http_version 1.1;
+
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection $connection_upgrade;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $upstream_x_forwarded_proto;
+        proxy_set_header Host $final_host;
+        proxy_set_header Referer $http_referer;
+        proxy_set_header User-Agent $http_user_agent;
+
+        add_header Cache-Control "no-cache, no-store" always;
+        proxy_cache_bypass $http_upgrade;
+
+        proxy_connect_timeout 600;
+        proxy_send_timeout 600;
+        proxy_read_timeout 600;
+        send_timeout 600;
+        proxy_buffering off;
+    }
+}
+```
+
+Se você também quiser habilitar HTTPS, configure `443` e o certificado no Nginx do host. O contêiner do NocoBase não precisa lidar com certificados separadamente.
+
+### Implantação em subcaminho
+
+Se você quiser implantar a aplicação em um subcaminho, por exemplo `https://your_domain.com/nocobase/`, configure primeiro a variável de ambiente `APP_PUBLIC_PATH`:
+
+```diff
+services:
+  app:
+    image: nocobase/nocobase:latest
+    environment:
++     - APP_PUBLIC_PATH=/nocobase/
+```
+
+Mantenha o `/` no início e no fim do caminho. Depois da configuração, a URL da aplicação passa a ser `http://127.0.0.1:13000/nocobase/`.
+
+Em seguida, configure o Nginx do host com o mesmo proxy de subcaminho:
+
+```bash
+server {
+    listen 80;
+    server_name your_domain.com;  # Substitua your_domain.com pelo seu domínio
+
+    location /nocobase/ {
+        proxy_pass http://127.0.0.1:13000/nocobase/;
+        proxy_http_version 1.1;
+
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection $connection_upgrade;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $upstream_x_forwarded_proto;
+        proxy_set_header Host $final_host;
+        proxy_set_header Referer $http_referer;
+        proxy_set_header User-Agent $http_user_agent;
+
+        add_header Cache-Control "no-cache, no-store" always;
+        proxy_cache_bypass $http_upgrade;
+
+        proxy_connect_timeout 600;
+        proxy_send_timeout 600;
+        proxy_read_timeout 600;
+        send_timeout 600;
+        proxy_buffering off;
+    }
+}
+```
+
+O ponto principal é que `APP_PUBLIC_PATH` e o caminho em `proxy_pass` precisam permanecer iguais. Se `/nocobase/` faltar em um dos lados, os arquivos estáticos e o roteamento geralmente não funcionarão corretamente.
+
+### Outras opções
+
+Se você não quiser usar o Nginx embutido, também pode consultar estas duas configurações com proxy separado:
+
+- [Instalação com Docker (Nginx externo)](./docker-nginx.mdx)
+- [Instalação com Docker (Caddy externo)](./docker-caddy.mdx)
