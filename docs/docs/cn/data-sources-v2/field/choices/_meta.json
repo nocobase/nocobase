@@ -1,0 +1,37 @@
+[
+  {
+    "type": "custom-link",
+    "label": "介绍",
+    "link": "/data-sources-v2/field/choices/"
+  },
+  {
+    "type": "custom-link",
+    "label": "下拉菜单",
+    "link": "/data-sources-v2/field/choices/select"
+  },
+  {
+    "type": "custom-link",
+    "label": "下拉菜单多选",
+    "link": "/data-sources-v2/field/choices/multiple-select"
+  },
+  {
+    "type": "custom-link",
+    "label": "单选框",
+    "link": "/data-sources-v2/field/choices/radio-group"
+  },
+  {
+    "type": "custom-link",
+    "label": "复选框",
+    "link": "/data-sources-v2/field/choices/checkbox"
+  },
+  {
+    "type": "custom-link",
+    "label": "复选框组",
+    "link": "/data-sources-v2/field/choices/checkbox-group"
+  },
+  {
+    "type": "custom-link",
+    "label": "中国行政区",
+    "link": "/data-sources-v2/field/choices/china-region"
+  }
+]

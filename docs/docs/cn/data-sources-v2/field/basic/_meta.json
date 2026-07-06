@@ -1,0 +1,62 @@
+[
+  {
+    "type": "custom-link",
+    "label": "介绍",
+    "link": "/data-sources-v2/field/basic/"
+  },
+  {
+    "type": "custom-link",
+    "label": "单行文本",
+    "link": "/data-sources-v2/field/basic/input"
+  },
+  {
+    "type": "custom-link",
+    "label": "多行文本",
+    "link": "/data-sources-v2/field/basic/textarea"
+  },
+  {
+    "type": "custom-link",
+    "label": "电子邮箱",
+    "link": "/data-sources-v2/field/basic/email"
+  },
+  {
+    "type": "custom-link",
+    "label": "手机号码",
+    "link": "/data-sources-v2/field/basic/phone"
+  },
+  {
+    "type": "custom-link",
+    "label": "URL",
+    "link": "/data-sources-v2/field/basic/url"
+  },
+  {
+    "type": "custom-link",
+    "label": "密码",
+    "link": "/data-sources-v2/field/basic/password"
+  },
+  {
+    "type": "custom-link",
+    "label": "整数",
+    "link": "/data-sources-v2/field/basic/integer"
+  },
+  {
+    "type": "custom-link",
+    "label": "数字",
+    "link": "/data-sources-v2/field/basic/number"
+  },
+  {
+    "type": "custom-link",
+    "label": "百分比",
+    "link": "/data-sources-v2/field/basic/percent"
+  },
+  {
+    "type": "custom-link",
+    "label": "颜色",
+    "link": "/data-sources-v2/field/basic/color"
+  },
+  {
+    "type": "custom-link",
+    "label": "图标",
+    "link": "/data-sources-v2/field/basic/icon"
+  }
+]

@@ -1,0 +1,28 @@
+[
+  { "type": "custom-link", "label": "介绍", "link": "/data-sources-v2/main/" },
+  {
+    "type": "custom-link",
+    "label": "PostgreSQL",
+    "link": "/data-sources-v2/main/postgresql"
+  },
+  {
+    "type": "custom-link",
+    "label": "MySQL",
+    "link": "/data-sources-v2/main/mysql"
+  },
+  {
+    "type": "custom-link",
+    "label": "MariaDB",
+    "link": "/data-sources-v2/main/mariadb"
+  },
+  {
+    "type": "custom-link",
+    "label": "KingbaseES",
+    "link": "/data-sources-v2/main/kingbase"
+  },
+  {
+    "type": "custom-link",
+    "label": "OceanBase",
+    "link": "/data-sources-v2/main/oceanbase"
+  }
+]

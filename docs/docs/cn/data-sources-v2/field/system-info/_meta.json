@@ -1,0 +1,37 @@
+[
+  {
+    "type": "custom-link",
+    "label": "介绍",
+    "link": "/data-sources-v2/field/system-info/"
+  },
+  {
+    "type": "custom-link",
+    "label": "创建时间",
+    "link": "/data-sources-v2/field/system-info/created-at"
+  },
+  {
+    "type": "custom-link",
+    "label": "创建人",
+    "link": "/data-sources-v2/field/system-info/created-by"
+  },
+  {
+    "type": "custom-link",
+    "label": "更新时间",
+    "link": "/data-sources-v2/field/system-info/updated-at"
+  },
+  {
+    "type": "custom-link",
+    "label": "更新人",
+    "link": "/data-sources-v2/field/system-info/updated-by"
+  },
+  {
+    "type": "custom-link",
+    "label": "表 OID",
+    "link": "/data-sources-v2/field/system-info/table-oid"
+  },
+  {
+    "type": "custom-link",
+    "label": "空间",
+    "link": "/data-sources-v2/field/system-info/space"
+  }
+]

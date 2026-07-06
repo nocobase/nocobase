@@ -1,0 +1,37 @@
+[
+  {
+    "type": "custom-link",
+    "label": "介绍",
+    "link": "/data-sources-v2/field/media/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Markdown",
+    "link": "/data-sources-v2/field/media/markdown"
+  },
+  {
+    "type": "custom-link",
+    "label": "Markdown Vditor",
+    "link": "/data-sources-v2/field/media/markdown-vditor"
+  },
+  {
+    "type": "custom-link",
+    "label": "富文本",
+    "link": "/data-sources-v2/field/media/rich-text"
+  },
+  {
+    "type": "custom-link",
+    "label": "附件",
+    "link": "/data-sources-v2/field/media/attachment"
+  },
+  {
+    "type": "custom-link",
+    "label": "附件 URL",
+    "link": "/data-sources-v2/field/media/attachment-url"
+  },
+  {
+    "type": "custom-link",
+    "label": "签名",
+    "link": "/data-sources-v2/field/media/signature"
+  }
+]

@@ -1,0 +1,37 @@
+[
+  {
+    "type": "custom-link",
+    "label": "概述",
+    "link": "/data-sources-v2/collection/"
+  },
+  {
+    "type": "custom-link",
+    "label": "普通表",
+    "link": "/data-sources-v2/collection/general"
+  },
+  {
+    "type": "custom-link",
+    "label": "继承表",
+    "link": "/data-sources-v2/collection/inheritance"
+  },
+  {
+    "type": "custom-link",
+    "label": "树表",
+    "link": "/data-sources-v2/collection/tree"
+  },
+  {
+    "type": "custom-link",
+    "label": "文件表",
+    "link": "/data-sources-v2/collection/file"
+  },
+  {
+    "type": "custom-link",
+    "label": "视图表",
+    "link": "/data-sources-v2/collection/view"
+  },
+  {
+    "type": "custom-link",
+    "label": "SQL 表",
+    "link": "/data-sources-v2/collection/sql"
+  }
+]

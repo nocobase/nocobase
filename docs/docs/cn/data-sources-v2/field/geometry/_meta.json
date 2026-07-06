@@ -1,0 +1,27 @@
+[
+  {
+    "type": "custom-link",
+    "label": "介绍",
+    "link": "/data-sources-v2/field/geometry/"
+  },
+  {
+    "type": "custom-link",
+    "label": "点",
+    "link": "/data-sources-v2/field/geometry/point"
+  },
+  {
+    "type": "custom-link",
+    "label": "线",
+    "link": "/data-sources-v2/field/geometry/line"
+  },
+  {
+    "type": "custom-link",
+    "label": "多边形",
+    "link": "/data-sources-v2/field/geometry/polygon"
+  },
+  {
+    "type": "custom-link",
+    "label": "圆",
+    "link": "/data-sources-v2/field/geometry/circle"
+  }
+]
