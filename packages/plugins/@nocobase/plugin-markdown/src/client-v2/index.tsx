@@ -17,4 +17,6 @@ export {
   VditorEditor,
   VditorPreview,
 } from './runtime';
+export type { MarkdownVditorRuntimeApp } from './runtime';
+export { getMarkdownRegistry } from './registry';
 export { default } from './plugin';

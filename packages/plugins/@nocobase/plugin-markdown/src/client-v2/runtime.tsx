@@ -8,19 +8,41 @@
  */
 
 import React from 'react';
-import {
-  stripModernClientPrefix,
-  type MarkdownEditorProps,
-  type MarkdownEngine,
-  type MarkdownPreviewProps,
-} from '@nocobase/client-v2';
+import { stripModernClientPrefix } from '@nocobase/client-v2';
 import { css } from '@emotion/css';
 import { Button } from 'antd';
 import { FlowContextSelector, useFlowContext } from '@nocobase/flow-engine';
 import { Display } from './components/Display';
 import { MarkdownVditor } from './components';
+import type { VditorEditorRef } from './components/Edit';
 
 export const VDITOR_MARKDOWN_ENGINE = 'vditor';
+
+export interface MarkdownEditorProps {
+  value?: string;
+  onChange?: (value: string) => void;
+  engine?: string;
+  engineName?: string;
+  [key: string]: unknown;
+}
+
+export interface MarkdownPreviewProps {
+  value?: string;
+  textOnly?: boolean;
+  ellipsis?: boolean;
+  engine?: string;
+  engineName?: string;
+  [key: string]: unknown;
+}
+
+export interface MarkdownEngine {
+  name: string;
+  Editor: React.ComponentType<MarkdownEditorProps>;
+  Preview: React.ComponentType<MarkdownPreviewProps>;
+  dependencies?: Record<string, unknown>;
+  edit?: (props?: MarkdownEditorProps) => React.ReactNode;
+  render?: (text: string, props?: MarkdownPreviewProps) => React.ReactNode;
+}
 
 type RequireJSRuntime = {
   (modules: string[], callback: (module: unknown) => void): void;
@@ -37,13 +59,6 @@ export interface MarkdownVditorRuntimeContext {
   markdownVditor?: MarkdownVditorRuntime;
   markdownVditorDependencies?: Record<string, unknown>;
   defineProperty?: (key: string, options: { get?: () => unknown; value?: unknown }) => void;
-}
-
-interface VditorEditorRef {
-  getCursorPosition: () => { top: number } | undefined;
-  getValue: () => string;
-  insertValue: (value: string) => void;
-  focus: () => void;
 }
 
 export function registerMarkdownVditorContext(ctx: MarkdownVditorRuntimeContext, runtime: MarkdownVditorRuntime) {

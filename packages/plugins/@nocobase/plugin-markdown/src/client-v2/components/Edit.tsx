@@ -16,7 +16,9 @@ import { useT } from '../locale';
 import { useCDN } from './const';
 import useStyle from './style';
 
-const locales = ['en_US', 'fr_FR', 'pt_BR', 'ja_JP', 'ko_KR', 'ru_RU', 'sv_SE', 'zh_CN', 'zh_TW'];
+const locales = ['en_US', 'fr_FR', 'pt_BR', 'ja_JP', 'ko_KR', 'ru_RU', 'sv_SE', 'zh_CN', 'zh_TW'] as const;
+type VditorLang = (typeof locales)[number];
+type VditorMode = 'wysiwyg' | 'ir' | 'sv';
 
 interface FileUploadResult {
   data?: {
@@ -44,7 +46,22 @@ export interface MarkdownEditProps {
   toolbar?: string[];
   editMode?: string;
   mode?: string;
-  vditorRef?: React.MutableRefObject<Vditor | null>;
+  vditorRef?: React.MutableRefObject<VditorEditorRef | null>;
+}
+
+export interface VditorEditorRef {
+  getCursorPosition: () => { top: number } | undefined;
+  getValue: () => string;
+  insertValue: (value: string) => void;
+  focus: () => void;
+}
+
+function isVditorMode(mode: string | undefined): mode is VditorMode {
+  return mode === 'wysiwyg' || mode === 'ir' || mode === 'sv';
+}
+
+function isVditorLang(lang: string): lang is VditorLang {
+  return (locales as readonly string[]).includes(lang);
 }
 
 export const Edit = (props: MarkdownEditProps) => {
@@ -62,12 +79,12 @@ export const Edit = (props: MarkdownEditProps) => {
   const fileManagerPlugin = flowCtx.app.pm.get('@nocobase/plugin-file-manager') as FileManagerPlugin;
   const translateRef = useRef(flowCtx.t.bind(flowCtx));
   translateRef.current = flowCtx.t.bind(flowCtx);
-  const editorMode = mode || editMode;
+  const editorMode: VditorMode = isVditorMode(mode) ? mode : isVditorMode(editMode) ? editMode : 'ir';
   const zIndex = 2200;
 
-  const lang = useMemo(() => {
+  const lang = useMemo<VditorLang>(() => {
     const currentLang = locale.replace(/-/g, '_');
-    if (locales.includes(currentLang)) {
+    if (isVditorLang(currentLang)) {
       return currentLang;
     }
     return 'en_US';
