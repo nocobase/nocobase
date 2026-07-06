@@ -10,7 +10,7 @@
 /**
  * "Test run" action — native-antd rewrite of v1's Formily `TestButton`
  * (`client/nodes/index.tsx`). v1 is deeply Formily-coupled (createForm /
- * SchemaComponent / Action.Modal / observer), so per ADR-0003 it is rebuilt
+ * legacy modal/action wrappers / observer), so per ADR-0003 it is rebuilt
  * here rather than ported.
  *
  * Click opens a centered `ctx.viewer.dialog` (X-to-close only, no footer) that:

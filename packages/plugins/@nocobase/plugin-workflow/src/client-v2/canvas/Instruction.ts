@@ -12,15 +12,15 @@
  * pure logic hooks, relocated to client-v2 so a single definition serves both
  * canvases (ADR-0002 as amended by ADR-0003, doc §2).
  *
- * Only the data/type parts move here. The legacy Formily *rendering*
- * (`Node`, `NodeDefaultView`, the `SchemaComponent` config drawer) stays in
+ * Only the data/type parts move here. The legacy schema-rendering surface
+ * (`Node`, `NodeDefaultView`, the legacy config drawer) stays in
  * `src/client/nodes/index.tsx`. v1 re-exports this class + the pure hooks from
  * here via the allowed `v1 → v2` import direction, so the ~16 node files that
  * `extends Instruction` from the `./nodes` barrel are unchanged.
  *
  * Iron-rule notes:
- *  - `ISchema` is a **type-only** import from `@formily/react` (erased at build,
- *    zero runtime — explicitly allowed; see the migration skill).
+ *  - Legacy schema types are referenced through type queries only (erased at build,
+ *    zero runtime).
  *  - `SchemaInitializerItemType` (the legacy `useInitializers` return type) is
  *    NOT imported from `@nocobase/client` (forbidden). It is typed structurally
  *    as `unknown` here — the modern canvas never calls `useInitializers` (it
@@ -28,12 +28,12 @@
  */
 
 import type { ComponentType } from 'react';
-import type { ISchema } from '@formily/react';
 import type { MetaTreeNode, SubModelItem } from '@nocobase/flow-engine';
 import type { UseVariableOptions, VariableOption } from './collectionFieldOptions';
 
 /** `() => Promise<{ default: Component }>` loader, matching the trigger `*Loader` convention (doc §9.5). */
 export type LoaderOf<P = {}> = () => Promise<{ default: ComponentType<P> }>;
+type ISchema = import('@formily/react').ISchema;
 
 export type NodeAvailableContext = {
   /** The workflow client plugin instance (v1 `WorkflowPlugin` / v2 `PluginWorkflowClientV2`). */
