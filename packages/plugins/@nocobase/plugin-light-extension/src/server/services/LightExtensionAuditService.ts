@@ -121,6 +121,8 @@ export interface LightExtensionPublicationReadDeniedAuditInput {
   transaction?: Transaction;
 }
 
+export type LightExtensionPublicationUseDeniedAuditInput = LightExtensionPublicationReadDeniedAuditInput;
+
 export interface LightExtensionPublishAuditInput {
   repoId: string;
   action: 'publish';
@@ -304,6 +306,27 @@ export class LightExtensionAuditService {
         actorUserId: input.actorUserId || undefined,
         reasonCode: sanitizeText(input.reasonCode),
         message: 'Light extension publication read denied',
+        details: compactObject({
+          publicationId: sanitizeText(input.publicationId),
+          requestSource: sanitizeText(input.requestSource),
+        }),
+        createdAt: new Date(),
+      },
+      transaction: input.transaction,
+    });
+  }
+
+  async recordPublicationUseDenied(input: LightExtensionPublicationUseDeniedAuditInput): Promise<void> {
+    await this.db.getRepository('lightExtensionLogs').create({
+      values: {
+        publicationId: sanitizeText(input.publicationId),
+        level: 'warn',
+        action: 'usePublication',
+        result: 'denied',
+        requestId: input.requestId,
+        actorUserId: input.actorUserId || undefined,
+        reasonCode: sanitizeText(input.reasonCode),
+        message: 'Light extension publication use denied',
         details: compactObject({
           publicationId: sanitizeText(input.publicationId),
           requestSource: sanitizeText(input.requestSource),

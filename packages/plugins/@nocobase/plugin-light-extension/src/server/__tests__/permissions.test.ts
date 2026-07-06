@@ -19,6 +19,7 @@ import { lightExtensionFileActionNames } from '../resources/lightExtensionFiles'
 import { lightExtensionActionNames } from '../resources/lightExtensions';
 import { lightExtensionPublicationActionNames } from '../resources/lightExtensionPublications';
 import { lightExtensionRepoActionNames } from '../resources/lightExtensionRepos';
+import { lightExtensionRuntimeActionNames } from '../resources/lightExtensionRuntime';
 import { LightExtensionAuditService } from '../services/LightExtensionAuditService';
 import { LightExtensionPermissionService } from '../services/LightExtensionPermissionService';
 import PluginLightExtensionServer from '../plugin';
@@ -64,6 +65,7 @@ describe('plugin-light-extension permission service', () => {
         ...LIGHT_EXTENSION_ACL_ACTIONS.map((action) => `lightExtension:${action}`),
         ...lightExtensionActionNames.map((action) => `lightExtensions:${action}`),
         ...lightExtensionPublicationActionNames.map((action) => `lightExtensionPublications:${action}`),
+        ...lightExtensionRuntimeActionNames.map((action) => `lightExtensionRuntime:${action}`),
         ...lightExtensionRepoActionNames.map((action) => `lightExtensionRepos:${action}`),
         ...lightExtensionFileActionNames.map((action) => `lightExtensionFiles:${action}`),
         ...lightExtensionEntryActionNames.map((action) => `lightExtensionEntries:${action}`),
@@ -71,6 +73,7 @@ describe('plugin-light-extension permission service', () => {
       ],
     });
     expect(registeredSnippet?.actions).toContain('lightExtensionPublications:list');
+    expect(registeredSnippet?.actions).toContain('lightExtensionRuntime:resolve');
     expect(registeredSnippet?.actions).toContain('lightExtensionEntries:activatePublication');
     expect(registeredSnippet?.actions).toContain('lightExtensionEntries:emergencyRollback');
     expect(registeredSnippet?.actions).toContain('lightExtensionCapabilities:get');

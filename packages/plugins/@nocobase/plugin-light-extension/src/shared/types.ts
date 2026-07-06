@@ -287,6 +287,39 @@ export interface LightExtensionPublicationMetadataRecord {
   createdAt?: string | null;
 }
 
+export type LightExtensionSourceBindingVersionPolicy = 'pinned' | 'follow-active';
+
+export interface LightExtensionRuntimeSourceBinding {
+  type: 'light-extension-entry';
+  repoId: string;
+  entryId: string;
+  kind: string;
+  publicationId: string;
+  versionPolicy?: LightExtensionSourceBindingVersionPolicy;
+}
+
+export interface LightExtensionRuntimeResolveInput {
+  sourceMode: 'light-extension';
+  sourceBinding: LightExtensionRuntimeSourceBinding;
+  settings?: Record<string, unknown> | null;
+}
+
+export interface LightExtensionRuntimeCacheMetadata {
+  etag: string;
+  immutable: boolean;
+}
+
+export interface LightExtensionRuntimeResolveResult {
+  publicationId: string;
+  entryId: string;
+  runtimeCodeHash: string;
+  code: string;
+  version: string;
+  sourceMap?: string;
+  settings: Record<string, unknown>;
+  cache: LightExtensionRuntimeCacheMetadata;
+}
+
 export type LightExtensionPublishEntryStatus = 'created' | 'reused' | 'failed' | 'conflict' | 'skipped';
 
 export interface LightExtensionPublishEntryResult {
