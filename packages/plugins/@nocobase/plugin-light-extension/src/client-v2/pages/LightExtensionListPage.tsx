@@ -8,10 +8,10 @@
  */
 
 import {
-  ArchiveOutlined,
   DeleteOutlined,
   EditOutlined,
   EyeOutlined,
+  InboxOutlined,
   PlusOutlined,
   ReloadOutlined,
 } from '@ant-design/icons';
@@ -228,7 +228,7 @@ function LightExtensionListPage() {
                 onConfirm={() => archiveRepo(repo)}
                 title={t('Archive this repository?')}
               >
-                <Button icon={<ArchiveOutlined />} size="small">
+                <Button icon={<InboxOutlined />} size="small">
                   {t('Archive')}
                 </Button>
               </Popconfirm>

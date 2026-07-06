@@ -14,6 +14,8 @@ import {
   FlowSettingsButton,
   buildSubModelGroups,
   buildSubModelItems,
+  type CreateModelOptions,
+  type FlowModelContext,
   type SubModelItem,
   type SubModelItemsType,
 } from '@nocobase/flow-engine';
@@ -22,6 +24,43 @@ import { FilterManager } from '../blocks/filter-manager/FilterManager';
 import { GridModel } from './GridModel';
 
 const SELECT_SCENE_ALLOWED_OTHER_BLOCK_MODELS = ['JSBlockModel', 'IframeBlockModel', 'MarkdownBlockModel'] as const;
+
+export type BlockGridSelectSceneAddBlockProvider = (ctx: FlowModelContext) => SubModelItem[] | Promise<SubModelItem[]>;
+
+const selectSceneAddBlockProviders = new Map<string, BlockGridSelectSceneAddBlockProvider>();
+
+export function registerBlockGridSelectSceneAddBlockProvider(
+  key: string,
+  provider: BlockGridSelectSceneAddBlockProvider,
+): () => void {
+  selectSceneAddBlockProviders.set(key, provider);
+  return () => {
+    if (selectSceneAddBlockProviders.get(key) === provider) {
+      selectSceneAddBlockProviders.delete(key);
+    }
+  };
+}
+
+export function clearBlockGridSelectSceneAddBlockProviders() {
+  selectSceneAddBlockProviders.clear();
+}
+
+async function resolveSelectSceneExtensionItems(ctx: FlowModelContext): Promise<SubModelItem[]> {
+  const items: SubModelItem[] = [];
+
+  for (const [key, provider] of selectSceneAddBlockProviders) {
+    try {
+      const provided = await provider(ctx);
+      if (Array.isArray(provided)) {
+        items.push(...provided);
+      }
+    } catch (error) {
+      console.error(`[NocoBase] Failed to resolve select scene add-block provider '${key}':`, error);
+    }
+  }
+
+  return items.sort((a, b) => (a.sort ?? 1000) - (b.sort ?? 1000));
+}
 
 export class BlockGridModel extends GridModel {
   dragOverlayConfig: DragOverlayConfig = {
@@ -37,7 +76,7 @@ export class BlockGridModel extends GridModel {
     },
   };
 
-  onInit(options: any) {
+  onInit(options: CreateModelOptions) {
     super.onInit(options);
     this.context.defineProperty('blockGridModel', {
       value: this,
@@ -70,6 +109,10 @@ export class BlockGridModel extends GridModel {
 
     return async (ctx) => {
       const items = await buildSubModelGroups(['DataBlockModel', 'FilterBlockModel'])(ctx);
+      const extensionItems = await resolveSelectSceneExtensionItems(ctx);
+      if (extensionItems.length > 0) {
+        items.push(...extensionItems);
+      }
       const allowedOtherBlockModels = SELECT_SCENE_ALLOWED_OTHER_BLOCK_MODELS.filter((modelName) =>
         Boolean(ctx.engine.getModelClass(modelName)),
       );
@@ -89,7 +132,7 @@ export class BlockGridModel extends GridModel {
         } satisfies SubModelItem);
       }
 
-      return items;
+      return items.sort((a, b) => (a.sort ?? 1000) - (b.sort ?? 1000));
     };
   }
 

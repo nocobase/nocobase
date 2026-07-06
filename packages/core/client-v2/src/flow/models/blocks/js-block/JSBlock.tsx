@@ -7,14 +7,42 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { observable } from '@formily/reactive';
+import { Alert, Spin } from 'antd';
 import { ElementProxy, tExpr, createSafeDocument, createSafeWindow, createSafeNavigator } from '@nocobase/flow-engine';
 import React from 'react';
 import { BlockModel } from '../../base';
 import { BlockItemCard } from '../../../components';
 import { resolveRunJsParams } from '../../utils/resolveRunJsParams';
 import { RunJSEditorField } from '../../../components/runjs-studio';
+import { resolveRuntimeRunJS } from '../../../components/runjs-source';
 
 const NAMESPACE = 'client';
+
+type JSBlockRuntimeError = {
+  title: string;
+  hint: string;
+  message: string;
+  code?: string;
+  status?: number;
+};
+
+type JSBlockRuntimeState = {
+  loading: boolean;
+  error: JSBlockRuntimeError | null;
+  runId: number;
+};
+
+type RunJSExecutionResult = {
+  success?: boolean;
+  error?: unknown;
+};
+
+type ServerErrorShape = {
+  code?: string;
+  status?: number;
+  message?: string;
+};
 
 const getRootElement = (element: HTMLElement | null) => {
   if (!element) return document.documentElement;
@@ -54,6 +82,95 @@ const getPageHeader = (root: HTMLElement) => {
     (page.querySelector('.pageHeaderCss') as HTMLElement | null)
   );
 };
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+function toNonEmptyString(value: unknown): string | undefined {
+  return typeof value === 'string' && value.trim() ? value.trim() : undefined;
+}
+
+function toNumber(value: unknown): number | undefined {
+  return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
+}
+
+function getFirstServerError(value: unknown): ServerErrorShape | null {
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  if (Array.isArray(value.errors)) {
+    const first = value.errors.find((item) => isRecord(item));
+    return isRecord(first) ? first : null;
+  }
+
+  return isRecord(value.error) ? value.error : null;
+}
+
+function getRuntimeErrorSource(error: unknown): ServerErrorShape {
+  if (isRecord(error)) {
+    const response = isRecord(error.response) ? error.response : null;
+    const serverError = getFirstServerError(response?.data) || getFirstServerError(error);
+    if (serverError) {
+      return {
+        code: toNonEmptyString(serverError.code),
+        status: toNumber(serverError.status) ?? toNumber(response?.status),
+        message: toNonEmptyString(serverError.message),
+      };
+    }
+
+    return {
+      code: toNonEmptyString(error.code),
+      status: toNumber(error.status) ?? toNumber(response?.status),
+      message: toNonEmptyString(error.message),
+    };
+  }
+
+  if (error instanceof Error) {
+    return {
+      message: error.message,
+    };
+  }
+
+  return {
+    message: typeof error === 'string' ? error : undefined,
+  };
+}
+
+function normalizeRuntimeError(error: unknown): JSBlockRuntimeError {
+  const source = getRuntimeErrorSource(error);
+  const code = source.code;
+  const normalizedCode = code?.toLowerCase() || '';
+  const status = source.status;
+
+  let title = 'JavaScript block runtime error';
+  let hint = 'Check the JavaScript block configuration and retry.';
+  if (status === 403 || normalizedCode.includes('permission') || normalizedCode.includes('forbidden')) {
+    title = 'Light extension access denied';
+    hint = 'Ask an administrator for permission to use this light extension publication.';
+  } else if (status === 404 || normalizedCode.includes('publication_not_found') || normalizedCode.includes('missing')) {
+    title = 'Light extension publication missing';
+    hint = 'Choose an available publication or publish this entry again.';
+  } else if (normalizedCode.includes('binding_outdated') || normalizedCode.includes('outdated')) {
+    title = 'Light extension binding is outdated';
+    hint = 'Refresh the block settings and choose the current active publication.';
+  } else if (normalizedCode.includes('settings_invalid')) {
+    title = 'Light extension settings are invalid';
+    hint = 'Open the block settings and fix the light extension settings.';
+  } else if (normalizedCode.includes('repo_archived') || normalizedCode.includes('repository_archived')) {
+    title = 'Light extension repository is archived';
+    hint = 'Restore the repository or choose a publication from another repository.';
+  }
+
+  return {
+    title,
+    hint,
+    message: source.message || 'Failed to run JavaScript block',
+    ...(code ? { code } : {}),
+    ...(typeof status === 'number' ? { status } : {}),
+  };
+}
 
 const getAddBlockContainer = (root: HTMLElement) => {
   const button = root.querySelector('[data-flow-add-block]') as HTMLElement | null;
@@ -190,9 +307,99 @@ const JSBlockPlainHost = ({
 export class JSBlockModel extends BlockModel {
   // Avoid double-run on first mount; only rerun after remounts
   private _mountedOnce = false;
+  readonly runtimeState: JSBlockRuntimeState = observable({
+    loading: false,
+    error: null,
+    runId: 0,
+  });
 
   get showBlockCard() {
     return this.getStepParams('jsSettings', 'showBlockCard')?.showBlockCard !== false;
+  }
+
+  beginRuntimeRun() {
+    const runId = this.runtimeState.runId + 1;
+    this.runtimeState.runId = runId;
+    this.runtimeState.loading = true;
+    this.runtimeState.error = null;
+    return runId;
+  }
+
+  isCurrentRuntimeRun(runId: number) {
+    return this.runtimeState.runId === runId;
+  }
+
+  finishRuntimeRun(runId: number) {
+    if (!this.isCurrentRuntimeRun(runId)) {
+      return;
+    }
+    this.runtimeState.loading = false;
+    this.runtimeState.error = null;
+  }
+
+  failRuntimeRun(runId: number, error: unknown) {
+    if (!this.isCurrentRuntimeRun(runId)) {
+      return;
+    }
+    this.runtimeState.loading = false;
+    this.runtimeState.error = normalizeRuntimeError(error);
+  }
+
+  private renderRuntimeShell(): React.ReactNode {
+    if (this.runtimeState.loading) {
+      return (
+        <div
+          data-testid="js-block-runtime-loading"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            padding: 12,
+          }}
+        >
+          <Spin size="small" />
+          <span>{this.context.t('Resolving JavaScript source')}</span>
+        </div>
+      );
+    }
+
+    if (this.runtimeState.error) {
+      const { title, hint, message, code, status } = this.runtimeState.error;
+      const description = [
+        this.context.t(hint),
+        this.context.t(message),
+        code ? `${this.context.t('Code')}: ${code}` : null,
+        status ? `${this.context.t('Status')}: ${status}` : null,
+      ]
+        .filter(Boolean)
+        .join(' | ');
+
+      return (
+        <Alert
+          data-testid="js-block-runtime-error"
+          type="error"
+          showIcon
+          style={{ marginBottom: 12 }}
+          message={this.context.t(title)}
+          description={description}
+        />
+      );
+    }
+
+    return null;
+  }
+
+  private mergeBeforeContent(beforeContent: React.ReactNode) {
+    const runtimeShell = this.renderRuntimeShell();
+    if (!runtimeShell) {
+      return beforeContent;
+    }
+    return (
+      <>
+        {runtimeShell}
+        {beforeContent}
+      </>
+    );
   }
 
   renderComponent(): React.ReactNode {
@@ -224,7 +431,7 @@ export class JSBlockModel extends BlockModel {
           heightMode={heightMode}
           height={height}
           style={style}
-          beforeContent={beforeContent}
+          beforeContent={this.mergeBeforeContent(beforeContent)}
           afterContent={afterContent}
           contentRef={this.context.ref}
           marginBlock={this.context.themeToken?.marginBlock ?? 0}
@@ -249,6 +456,7 @@ export class JSBlockModel extends BlockModel {
         heightMode={heightMode}
         {...cardProps}
       >
+        {this.renderRuntimeShell()}
         <div ref={this.context.ref} />
       </BlockItemCard>
     );
@@ -286,10 +494,32 @@ JSBlockModel.registerFlow({
       title: tExpr('Write JavaScript'),
       useRawParams: true,
       uiSchema: {
+        sourceMode: {
+          type: 'string',
+          title: tExpr('Source'),
+          'x-decorator': 'FormItem',
+          'x-component': 'JSBlockLightExtensionSourceField',
+        },
+        sourceBinding: {
+          type: 'object',
+          'x-visible': false,
+        },
+        settings: {
+          type: 'object',
+          'x-visible': false,
+        },
         code: {
           type: 'string',
           'x-decorator': 'FormItem',
           'x-component': RunJSEditorField,
+          'x-reactions': {
+            dependencies: ['sourceMode'],
+            fulfill: {
+              state: {
+                hidden: '{{$deps[0] && $deps[0] !== "inline"}}',
+              },
+            },
+          },
           'x-component-props': {
             locatorFactory: 'flowModel.step',
             surfaceStyle: 'render',
@@ -325,6 +555,7 @@ JSBlockModel.registerFlow({
       defaultParams(ctx) {
         return {
           version: 'v2',
+          sourceMode: 'inline',
           code:
             `// Welcome to the JS block
 // Create powerful interactive components with JavaScript
@@ -389,22 +620,70 @@ ctx.render(\`
         };
       },
       async handler(ctx, params) {
-        const { code, version } = resolveRunJsParams(ctx, params);
-        ctx.onRefReady(ctx.ref, async (element) => {
-          ctx.defineProperty('element', {
-            get: () => new ElementProxy(element),
-            info: {
-              deprecated: {
-                replacedBy: 'ctx.render',
+        const model = ctx.model as JSBlockModel;
+        const runId = model.beginRuntimeRun();
+        const inlineRunJs = resolveRunJsParams(ctx, params);
+
+        ctx.onRefReady(ctx.ref, (element) => {
+          const run = async () => {
+            if (!model.isCurrentRuntimeRun(runId)) {
+              return;
+            }
+            element.innerHTML = '';
+            ctx.defineProperty('element', {
+              get: () => new ElementProxy(element),
+              info: {
+                deprecated: {
+                  replacedBy: 'ctx.render',
+                },
               },
-            },
+            });
+            const resolved = await resolveRuntimeRunJS({
+              runJs: inlineRunJs,
+              sourceMode: params?.sourceMode,
+              sourceBinding: params?.sourceBinding,
+              settings: params?.settings,
+              context: {
+                modelUid: ctx.model.uid,
+              },
+            });
+
+            if (!model.isCurrentRuntimeRun(runId)) {
+              return;
+            }
+
+            ctx.defineProperty('settings', {
+              value: resolved.settings,
+            });
+            ctx.defineProperty('runJsSource', {
+              value: {
+                sourceMode: resolved.sourceMode,
+                sourceBinding: resolved.sourceBinding,
+                sourceMap: resolved.sourceMap,
+                context: resolved.context,
+              },
+            });
+
+            const navigator = createSafeNavigator();
+            const result = (await ctx.runjs(
+              resolved.code,
+              { window: createSafeWindow({ navigator }), document: createSafeDocument(), navigator },
+              { version: resolved.version },
+            )) as RunJSExecutionResult;
+
+            if (result?.success === false) {
+              throw result.error || new Error('RunJS execution failed');
+            }
+
+            model.finishRuntimeRun(runId);
+          };
+
+          run().catch((error) => {
+            if (model.isCurrentRuntimeRun(runId)) {
+              element.innerHTML = '';
+            }
+            model.failRuntimeRun(runId, error);
           });
-          const navigator = createSafeNavigator();
-          await ctx.runjs(
-            code,
-            { window: createSafeWindow({ navigator }), document: createSafeDocument(), navigator },
-            { version },
-          );
         });
       },
     },
