@@ -55,6 +55,10 @@ import { FLOW_SURFACE_FILTER_GROUP_EXAMPLE, normalizeFlowSurfaceFilterGroupValue
 import { executeMutateOps } from './executor';
 import { assertNoFlowSurfaceLegacyRef } from './reference-guards';
 import {
+  markLightExtensionReferencesOwnerMissingForNodeTree,
+  syncLightExtensionReferencesForNodeTree,
+} from './light-extension-reference-integration';
+import {
   buildSurfaceFingerprintKeysObject as buildPlanningSurfaceFingerprintKeysObject,
   FLOW_SURFACE_INTERNAL_META_KEY,
   getDeclaredKeyFromNode as getPlanningDeclaredKeyFromNode,
@@ -1291,6 +1295,23 @@ type FlowSurfaceApplyBlueprintResponse = {
   surface: any;
 };
 
+function shouldSyncLightExtensionReferences(
+  currentOptions: Record<string, unknown>,
+  nextOptions: Record<string, unknown>,
+) {
+  if (currentOptions?.use === 'JSBlockModel' || nextOptions?.use === 'JSBlockModel') {
+    return true;
+  }
+  const currentJsSettings = _.get(currentOptions, ['stepParams', 'jsSettings']);
+  const nextJsSettings = _.get(nextOptions, ['stepParams', 'jsSettings']);
+  return (
+    _.get(currentJsSettings, ['sourceMode']) === 'light-extension' ||
+    _.get(nextJsSettings, ['sourceMode']) === 'light-extension' ||
+    _.get(currentJsSettings, ['runJs', 'sourceMode']) === 'light-extension' ||
+    _.get(nextJsSettings, ['runJs', 'sourceMode']) === 'light-extension'
+  );
+}
+
 export class FlowSurfacesService {
   constructor(private readonly plugin: Plugin) {}
 
@@ -1307,8 +1328,14 @@ export class FlowSurfacesService {
   }
 
   private get routeSync() {
-    return new FlowSurfaceRouteSync(this.db, this.repository, (values, options) =>
-      this.patchFlowSurfaceModelOptions(values, options),
+    return new FlowSurfaceRouteSync(
+      this.db,
+      this.repository,
+      (values, options) => this.patchFlowSurfaceModelOptions(values, options),
+      (uid, transaction) =>
+        this.markLightExtensionReferencesOwnerMissingForNodeTree(uid, 'flowSurfaces.routeSync.removeTabAnchorTree', {
+          transaction,
+        }),
     );
   }
 
@@ -1471,6 +1498,45 @@ export class FlowSurfacesService {
     if (values?.['x-server-hooks']) {
       await this.db.emitAsync(`${this.repository.collection.name}.afterSave`, model, options);
     }
+    if (shouldSyncLightExtensionReferences(currentOptions, nextOptions)) {
+      await this.syncLightExtensionReferencesForNodeTree(normalizedUid, 'flowSurfaces.updateSettings', options);
+    }
+  }
+
+  private async syncLightExtensionReferencesForNodeTree(
+    rootUid: string | undefined | null,
+    action: string,
+    options: { transaction?: unknown } = {},
+  ): Promise<void> {
+    await syncLightExtensionReferencesForNodeTree(
+      this.plugin,
+      {
+        rootUid,
+        action,
+      },
+      {
+        transaction: options.transaction,
+        requestSource: 'flowSurfaces',
+      },
+    );
+  }
+
+  private async markLightExtensionReferencesOwnerMissingForNodeTree(
+    rootUid: string | undefined | null,
+    action: string,
+    options: { transaction?: unknown } = {},
+  ): Promise<void> {
+    await markLightExtensionReferencesOwnerMissingForNodeTree(
+      this.plugin,
+      {
+        rootUid,
+        action,
+      },
+      {
+        transaction: options.transaction,
+        requestSource: 'flowSurfaces',
+      },
+    );
   }
 
   private async setFlowModelNodeAsyncFlag(uid: string, asyncFlag: boolean, transaction?: any) {
@@ -5385,6 +5451,12 @@ export class FlowSurfacesService {
       popupTemplateAliasSession,
       popupTemplateTreeCache,
     });
+    const referenceSyncTarget = await this.locator.resolve(pageLocator, options).catch(() => null);
+    await this.syncLightExtensionReferencesForNodeTree(
+      referenceSyncTarget?.uid || pageLocator.uid || pageLocator.pageSchemaUid,
+      'flowSurfaces.applyBlueprint',
+      options,
+    );
     if (resultOptions.readSurface === false) {
       return {
         version: '1',
@@ -6754,6 +6826,9 @@ export class FlowSurfacesService {
       includeAsyncNode: true,
     });
     await this.clearFlowTemplateUsagesForNodeTree(sourceNode, transaction);
+    await this.markLightExtensionReferencesOwnerMissingForNodeTree(sourceNode.uid, 'flowSurfaces.saveTemplate', {
+      transaction,
+    });
     await this.repository.remove(sourceNode.uid, { transaction });
     await this.repository.upsertModel(
       this.createFlowTemplateReferenceBlockModel(sourceNode, template, templateTargetUid),
@@ -6763,6 +6838,7 @@ export class FlowSurfacesService {
     );
     await this.repositionFlowModelInParent(sourceNode, parentNode, transaction);
     await this.syncFlowTemplateUsagesForNodeTree(sourceNode.uid, transaction);
+    await this.syncLightExtensionReferencesForNodeTree(sourceNode.uid, 'flowSurfaces.saveTemplate', { transaction });
     return {
       uid: sourceNode.uid,
       type: 'block' as const,
@@ -7273,6 +7349,7 @@ export class FlowSurfacesService {
         );
       }
       await this.ensurePopupSurface(popupUid, options.transaction);
+      await this.syncLightExtensionReferencesForNodeTree(popupUid, 'flowSurfaces.convertTemplateToCopy', options);
       const nextStepParams = _.cloneDeep(node.stepParams || {});
       const currentGroup = _.isPlainObject(nextStepParams[resolved.openViewStep.flowKey])
         ? _.cloneDeep(nextStepParams[resolved.openViewStep.flowKey])
@@ -7345,6 +7422,9 @@ export class FlowSurfacesService {
         })
       : null;
     await this.clearFlowTemplateUsagesForNodeTree(node, options.transaction);
+    await this.markLightExtensionReferencesOwnerMissingForNodeTree(node.uid, 'flowSurfaces.convertTemplateToCopy', {
+      transaction: options.transaction,
+    });
     await this.repository.remove(node.uid, { transaction: options.transaction });
     await this.repository.upsertModel(
       {
@@ -7357,6 +7437,7 @@ export class FlowSurfacesService {
     );
     await this.repositionFlowModelInParent(node, parentNode, options.transaction);
     await this.syncFlowTemplateUsagesForNodeTree(node.uid, options.transaction);
+    await this.syncLightExtensionReferencesForNodeTree(node.uid, 'flowSurfaces.convertTemplateToCopy', options);
     return {
       uid: node.uid,
       type: 'block',
@@ -7728,6 +7809,7 @@ export class FlowSurfacesService {
     if (approvalRoot) {
       await this.syncApprovalRuntimeConfigForSurfaceRoot(approvalRoot, options.transaction);
     }
+    await this.syncLightExtensionReferencesForNodeTree(gridUid, 'flowSurfaces.compose', options);
     return result;
   }
 
@@ -9096,6 +9178,7 @@ export class FlowSurfacesService {
     if (templateRef) {
       const result = await this.addBlockFromTemplate(values, templateRef, options);
       await this.persistCreatedKeysForAction('addBlock', values, result, options.transaction);
+      await this.syncLightExtensionReferencesForNodeTree(result?.uid, 'flowSurfaces.addBlock', options);
       return result;
     }
     const popupDefaultsMetadata = this.buildPopupDefaultsMetadata(values?.defaults);
@@ -9542,6 +9625,7 @@ export class FlowSurfacesService {
       );
     }
     await this.persistCreatedKeysForAction('addBlock', values, result, options.transaction);
+    await this.syncLightExtensionReferencesForNodeTree(result.uid, 'flowSurfaces.addBlock', options);
     return result;
   }
 
@@ -12377,6 +12461,7 @@ export class FlowSurfacesService {
       }
       if (templateRef.mode === 'copy') {
         await this.ensurePopupSurface(resolvedUid, options.transaction);
+        await this.syncLightExtensionReferencesForNodeTree(resolvedUid, actionName, options);
       }
       let runtimeRecordFilterTargetKey: string | undefined;
       if (options.popupActionContext?.hasCurrentRecord === true) {
@@ -19910,6 +19995,9 @@ export class FlowSurfacesService {
     await this.removeFlowSqlBindingsForNodeTree(node, transaction);
     await this.cleanupNodeBindings(node, transaction);
     await this.clearFlowTemplateUsagesForNodeTree(node, transaction);
+    await this.markLightExtensionReferencesOwnerMissingForNodeTree(node.uid, 'flowSurfaces.removeNode', {
+      transaction,
+    });
     await this.repository.remove(uid, { transaction });
     if (detachedPopupCopyUid && detachedPopupCopyUid !== node.uid) {
       await this.removeNodeTreeWithBindings(detachedPopupCopyUid, transaction);

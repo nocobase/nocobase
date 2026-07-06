@@ -28,6 +28,10 @@ import {
   createLightExtensionRuntimeResource,
   lightExtensionRuntimeActionNames,
 } from './resources/lightExtensionRuntime';
+import {
+  createLightExtensionReferencesResource,
+  lightExtensionReferenceActionNames,
+} from './resources/lightExtensionReferences';
 import { createLightExtensionsResource, lightExtensionActionNames } from './resources/lightExtensions';
 import { LightExtensionAuditService } from './services/LightExtensionAuditService';
 import { LightExtensionAuthoringInspector } from './services/LightExtensionAuthoringInspector';
@@ -42,6 +46,7 @@ import { LightExtensionRepoService } from './services/LightExtensionRepoService'
 import { LightExtensionValidator } from './services/LightExtensionValidator';
 import { LightExtensionWorkspaceCompilerBridge } from './services/LightExtensionWorkspaceCompilerBridge';
 import { RuntimeResolveService } from './services/RuntimeResolveService';
+import { ReferenceService } from './services/ReferenceService';
 
 type VscPermissionHookRegistrar = {
   registerPermissionHook: (hook: VscPermissionHook) => () => void;
@@ -123,12 +128,32 @@ export class PluginLightExtensionServer extends Plugin {
 
   private entryScanner?: LightExtensionEntryScanner;
 
+  private referenceService?: ReferenceService;
+
   private unregisterVscPermissionHook?: () => void;
 
   private pendingVscPluginListener?: PluginLoadListener;
 
   getWorkspaceCompilerBridge(): LightExtensionWorkspaceCompilerBridge | undefined {
     return this.workspaceCompilerBridge;
+  }
+
+  getReferenceService(): ReferenceService | undefined {
+    return this.referenceService;
+  }
+
+  async syncFlowModelReferencesForNodeTree(
+    input: { rootUid: string; action?: string },
+    ctx: Parameters<ReferenceService['syncFlowModelReferencesForNodeTree']>[1] = {},
+  ) {
+    return this.referenceService?.syncFlowModelReferencesForNodeTree(input, ctx);
+  }
+
+  async markFlowModelReferencesOwnerMissingForNodeTree(
+    input: { rootUid: string; action?: string },
+    ctx: Parameters<ReferenceService['markFlowModelReferencesOwnerMissingForNodeTree']>[1] = {},
+  ) {
+    return this.referenceService?.markFlowModelReferencesOwnerMissingForNodeTree(input, ctx);
   }
 
   async afterAdd() {}
@@ -197,6 +222,7 @@ export class PluginLightExtensionServer extends Plugin {
       this.permissionService,
     );
     this.runtimeResolveService = new RuntimeResolveService(this.publicationResolveService);
+    this.referenceService = new ReferenceService(db, this.auditService, this.permissionService);
     this.publishService = new LightExtensionPublishService(
       db,
       this.fileService,
@@ -206,6 +232,7 @@ export class PluginLightExtensionServer extends Plugin {
       this.validator,
       this.auditService,
     );
+    this.repoService.useReferenceService(this.referenceService);
     (this.app as unknown as AppWithPluginEvents).resourceManager?.define?.(
       createLightExtensionsResource(this.compilePreviewService, this.publishService),
     );
@@ -214,6 +241,9 @@ export class PluginLightExtensionServer extends Plugin {
     );
     (this.app as unknown as AppWithPluginEvents).resourceManager?.define?.(
       createLightExtensionRuntimeResource(this.runtimeResolveService),
+    );
+    (this.app as unknown as AppWithPluginEvents).resourceManager?.define?.(
+      createLightExtensionReferencesResource(this.referenceService),
     );
     (this.app as unknown as AppWithPluginEvents).resourceManager?.define?.(
       createLightExtensionReposResource(this.repoService),
@@ -257,6 +287,7 @@ export class PluginLightExtensionServer extends Plugin {
         ...lightExtensionActionNames.map((action) => `lightExtensions:${action}`),
         ...lightExtensionPublicationActionNames.map((action) => `lightExtensionPublications:${action}`),
         ...lightExtensionRuntimeActionNames.map((action) => `lightExtensionRuntime:${action}`),
+        ...lightExtensionReferenceActionNames.map((action) => `lightExtensionReferences:${action}`),
         ...lightExtensionRepoActionNames.map((action) => `lightExtensionRepos:${action}`),
         ...lightExtensionFileActionNames.map((action) => `lightExtensionFiles:${action}`),
         ...lightExtensionEntryActionNames.map((action) => `lightExtensionEntries:${action}`),

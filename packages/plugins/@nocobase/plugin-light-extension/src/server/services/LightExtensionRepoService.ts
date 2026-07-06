@@ -29,6 +29,7 @@ import type {
 } from '../../shared/types';
 import { LightExtensionAuditService } from './LightExtensionAuditService';
 import { LightExtensionPermissionService, type LightExtensionCanFunction } from './LightExtensionPermissionService';
+import type { ReferenceService } from './ReferenceService';
 import { LightExtensionValidator, hasErrorDiagnostic } from './LightExtensionValidator';
 import { normalizeVscBridgeError } from './errorContract';
 
@@ -47,6 +48,8 @@ export interface LightExtensionRepoInternalRecord extends LightExtensionRepoReco
 export class LightExtensionRepoService {
   private vscFileService: VscFileService;
 
+  private referenceService?: ReferenceService;
+
   constructor(
     private readonly db: Database,
     private readonly auditService: LightExtensionAuditService,
@@ -61,6 +64,10 @@ export class LightExtensionRepoService {
 
   useVscPermissionHookRegistry(permissionHooks: VscPermissionHookRegistry): void {
     this.vscFileService = new VscFileService(this.db, permissionHooks);
+  }
+
+  useReferenceService(referenceService: ReferenceService): void {
+    this.referenceService = referenceService;
   }
 
   async createRepo(
@@ -342,6 +349,11 @@ export class LightExtensionRepoService {
       }
 
       const next = await this.getInternalRepo(input.repoId, { ...ctx, transaction });
+      await this.referenceService?.refreshReferencesForRepo(input.repoId, {
+        ...ctx,
+        transaction,
+        requestId,
+      });
       await this.auditService.recordLifecycleEvent({
         repoId: input.repoId,
         action: 'repoLifecycleChange',

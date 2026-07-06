@@ -9,7 +9,7 @@
 
 import type { Database, Transaction } from '@nocobase/database';
 import type { VscPermissionHookInput, VscPermissionRequestMetadata } from '@nocobase/plugin-vsc-file';
-import { randomUUID } from 'crypto';
+import { createHash, randomUUID } from 'crypto';
 
 import { LIGHT_EXTENSION_OWNER_TYPE } from '../../constants';
 import type { LightExtensionDiagnostic } from '../../shared/types';
@@ -163,6 +163,31 @@ export interface LightExtensionActivationAuditInput {
   transaction?: Transaction;
 }
 
+export interface LightExtensionReferenceAuditInput {
+  repoId?: string | null;
+  entryId?: string | null;
+  publicationId?: string | null;
+  action:
+    | 'referenceUpsert'
+    | 'referenceRemove'
+    | 'referenceRebuild'
+    | 'referenceOwnerMissing'
+    | 'referenceConflict'
+    | 'readReferences';
+  result: 'success' | 'partial_success' | 'blocked' | 'denied';
+  requestId: string;
+  actorUserId?: string | null;
+  ownerKind?: string | null;
+  ownerLocatorHash?: string | null;
+  resolvedStatus?: string | null;
+  settingsHash?: string | null;
+  referenceCount?: number;
+  reasonCode?: string;
+  message: string;
+  details?: Record<string, unknown>;
+  transaction?: Transaction;
+}
+
 export class LightExtensionAuditService {
   constructor(private readonly db: Database) {}
 
@@ -232,7 +257,7 @@ export class LightExtensionAuditService {
               language: sanitizeText(file.language),
             }),
           ),
-          ...(input.details ? sanitizeDetails(input.details) : {}),
+          ...(input.details ? sanitizeReferenceAuditDetails(input.details) : {}),
         }),
         createdAt: new Date(),
       },
@@ -288,7 +313,7 @@ export class LightExtensionAuditService {
           errorCount: input.errorCount,
           warningCount: input.warningCount,
           diagnostics: summarizeDiagnostics(input.diagnostics || []),
-          ...(input.details ? sanitizeDetails(input.details) : {}),
+          ...(input.details ? sanitizeReferenceAuditDetails(input.details) : {}),
         }),
         createdAt: new Date(),
       },
@@ -388,6 +413,33 @@ export class LightExtensionAuditService {
           oldPublicationId: sanitizeText(input.oldPublicationId),
           newPublicationId: sanitizeText(input.newPublicationId),
           sanitizedReason: sanitizeText(input.reason),
+        }),
+        createdAt: new Date(),
+      },
+      transaction: input.transaction,
+    });
+  }
+
+  async recordReferenceEvent(input: LightExtensionReferenceAuditInput): Promise<void> {
+    await this.db.getRepository('lightExtensionLogs').create({
+      values: {
+        repoId: sanitizeText(input.repoId),
+        entryId: sanitizeText(input.entryId),
+        publicationId: sanitizeText(input.publicationId),
+        level: input.result === 'success' ? 'info' : 'warn',
+        action: input.action,
+        result: input.result,
+        requestId: input.requestId,
+        actorUserId: input.actorUserId || undefined,
+        reasonCode: sanitizeText(input.reasonCode),
+        message: sanitizeText(input.message),
+        details: compactObject({
+          ownerKind: sanitizeText(input.ownerKind),
+          ownerLocatorHash: sanitizeText(input.ownerLocatorHash),
+          resolvedStatus: sanitizeText(input.resolvedStatus),
+          settingsHash: sanitizeText(input.settingsHash),
+          referenceCount: input.referenceCount,
+          ...(input.details ? sanitizeReferenceAuditDetails(input.details) : {}),
         }),
         createdAt: new Date(),
       },
@@ -496,6 +548,51 @@ function sanitizeDetails(input: Record<string, unknown>): Record<string, unknown
   );
 }
 
+function sanitizeReferenceAuditDetails(input: Record<string, unknown>): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries(input)
+      .filter(([, value]) => typeof value !== 'undefined')
+      .flatMap(([key, value]) => sanitizeReferenceAuditDetailEntry(key, value)),
+  );
+}
+
+function sanitizeReferenceAuditDetailEntry(key: string, value: unknown): Array<[string, unknown]> {
+  if (isReferenceSensitiveDetailKey(key)) {
+    return [[getReferenceSensitiveDetailHashKey(key), hashAuditValue(value)]];
+  }
+  return [[key, sanitizeReferenceAuditDetailValue(value)]];
+}
+
+function getReferenceSensitiveDetailHashKey(key: string): string {
+  if (key === 'modelUid') {
+    return 'modelUidHash';
+  }
+  return `${key}AuditHash`;
+}
+
+function sanitizeReferenceAuditDetailValue(value: unknown): unknown {
+  if (typeof value === 'string') {
+    return sanitizeText(value);
+  }
+  if (Array.isArray(value)) {
+    return value.map(sanitizeReferenceAuditDetailValue);
+  }
+  if (!value || typeof value !== 'object') {
+    return value;
+  }
+  return sanitizeReferenceAuditDetails(value as Record<string, unknown>);
+}
+
+function isReferenceSensitiveDetailKey(key: string): boolean {
+  return ['modelUid', 'ownerLocator', 'settings', 'resolvedSettings', 'settingsDefaults', 'settingsSchema'].includes(
+    key,
+  );
+}
+
+function hashAuditValue(value: unknown): string {
+  return `sha256:${createHash('sha256').update(stableSerialize(value)).digest('hex')}`;
+}
+
 function sanitizeDetailValue(value: unknown): unknown {
   if (typeof value === 'string') {
     return sanitizeText(value);
@@ -508,4 +605,19 @@ function sanitizeDetailValue(value: unknown): unknown {
   }
 
   return sanitizeDetails(value as Record<string, unknown>);
+}
+
+function stableSerialize(value: unknown): string {
+  if (Array.isArray(value)) {
+    return `[${value.map((item) => stableSerialize(item)).join(',')}]`;
+  }
+  if (value && typeof value === 'object') {
+    return `{${Object.keys(value as Record<string, unknown>)
+      .sort()
+      .map((key) => `${JSON.stringify(key)}:${stableSerialize((value as Record<string, unknown>)[key])}`)
+      .join(',')}}`;
+  }
+
+  const serialized = JSON.stringify(value);
+  return typeof serialized === 'undefined' ? 'undefined' : serialized;
 }

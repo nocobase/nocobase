@@ -12,6 +12,7 @@ import type {
   LIGHT_EXTENSION_ENTRY_HEALTH_STATUSES,
   LIGHT_EXTENSION_REPO_HEALTH_STATUSES,
   LIGHT_EXTENSION_REPO_LIFECYCLE_STATUSES,
+  LIGHT_EXTENSION_REFERENCE_RESOLVED_STATUSES,
   LIGHT_EXTENSION_SUPPORTED_KINDS,
 } from '../constants';
 
@@ -24,6 +25,8 @@ export type LightExtensionKind = (typeof LIGHT_EXTENSION_SUPPORTED_KINDS)[number
 export type LightExtensionEnabledKind = (typeof LIGHT_EXTENSION_ENABLED_KINDS)[number];
 
 export type LightExtensionEntryHealthStatus = (typeof LIGHT_EXTENSION_ENTRY_HEALTH_STATUSES)[number];
+
+export type LightExtensionReferenceResolvedStatus = (typeof LIGHT_EXTENSION_REFERENCE_RESOLVED_STATUSES)[number];
 
 export type LightExtensionFileOperation = 'upsert' | 'delete';
 
@@ -329,6 +332,50 @@ export interface LightExtensionRuntimeResolveResult {
   sourceMap?: string;
   settings: Record<string, unknown>;
   cache: LightExtensionRuntimeCacheMetadata;
+}
+
+export interface LightExtensionFlowModelOwnerLocator {
+  kind: 'flowModel.step';
+  modelUid: string;
+  use: 'JSBlockModel';
+  stepPath: ['stepParams', 'jsSettings'];
+}
+
+export interface LightExtensionReferenceRecord {
+  id: string;
+  repoId: string;
+  entryId: string;
+  publicationId: string | null;
+  kind: LightExtensionEnabledKind;
+  ownerKind: 'flowModel.step';
+  ownerLocator: LightExtensionFlowModelOwnerLocator;
+  ownerLocatorHash: string;
+  versionPolicy: 'pinned';
+  settingsHash: string;
+  resolvedStatus: LightExtensionReferenceResolvedStatus;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+}
+
+export interface LightExtensionReferenceListInput {
+  repoId?: string;
+  entryId?: string;
+  publicationId?: string;
+  ownerLocator?: Partial<LightExtensionFlowModelOwnerLocator>;
+}
+
+export interface LightExtensionReferenceRebuildInput {
+  rootUid?: string;
+  ownerLocator?: Partial<LightExtensionFlowModelOwnerLocator>;
+  repoId?: string;
+}
+
+export interface LightExtensionReferenceRebuildResult {
+  scanned: number;
+  upserted: number;
+  removed: number;
+  ownerMissing: number;
+  statusCounts: Partial<Record<LightExtensionReferenceResolvedStatus, number>>;
 }
 
 export type LightExtensionPublishEntryStatus = 'created' | 'reused' | 'failed' | 'conflict' | 'skipped';

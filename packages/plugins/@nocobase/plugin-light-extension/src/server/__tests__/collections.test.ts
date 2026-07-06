@@ -89,10 +89,12 @@ describe('plugin-light-extension collections', () => {
       'repoId',
       'entryId',
       'publicationId',
+      'kind',
       'ownerKind',
       'ownerLocator',
       'ownerLocatorHash',
       'versionPolicy',
+      'settingsHash',
       'resolvedStatus',
     ]);
     expectCollectionFields('lightExtensionLogs', [
@@ -114,6 +116,8 @@ describe('plugin-light-extension collections', () => {
     expect(LIGHT_EXTENSION_ENTRY_HEALTH_STATUSES).toEqual(['ready', 'failed', 'missing', 'disabled']);
     expect(LIGHT_EXTENSION_REFERENCE_RESOLVED_STATUSES).toEqual([
       'active',
+      'binding_outdated',
+      'repo_missing',
       'repo_disabled',
       'repo_archived',
       'entry_missing',
@@ -164,16 +168,17 @@ describe('plugin-light-extension collections', () => {
           repoId: repo.get('id'),
           entryId: `entry_${resolvedStatus}`,
           publicationId: `publication_${resolvedStatus}`,
+          kind: 'js-block',
           ownerKind: 'flowModel.step',
           ownerLocator: {
             kind: 'flowModel.step',
-            flowModelId: `flow_${resolvedStatus}`,
-            stepId: 'step_1',
-            surface: 'js-block',
-            bindingPath: 'props.sourceBinding',
+            modelUid: `flow_${resolvedStatus}`,
+            use: 'JSBlockModel',
+            stepPath: ['stepParams', 'jsSettings'],
           },
           ownerLocatorHash: `owner_${resolvedStatus}`,
           versionPolicy: 'pinned',
+          settingsHash: 'sha256:44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a',
           resolvedStatus,
         },
       });

@@ -12,8 +12,25 @@ import { Plugin } from '@nocobase/server';
 import { tval, uid } from '@nocobase/utils';
 import path, { resolve } from 'path';
 import { uiSchemaActions } from './actions/ui-schema-action';
+import {
+  markLightExtensionReferencesOwnerMissingForNodeTree,
+  syncLightExtensionReferencesForNodeTree,
+} from './flow-surfaces/light-extension-reference-integration';
 import { FlowSchemaModel } from './model';
 import FlowModelRepository from './repository';
+
+type LightExtensionReferenceActionContext = {
+  request?: {
+    headers?: Record<string, string | string[] | undefined>;
+    header?: Record<string, string | string[] | undefined>;
+  };
+  can?: (input: { resource: string; action: string }) => unknown | Promise<unknown>;
+  auth?: {
+    user?: unknown;
+  };
+  state?: Record<string, unknown>;
+  timezone?: string;
+};
 
 export const compile = (title: string) => (title || '').replace(/{{\s*t\(["|'|`](.*)["|'|`]\)\s*}}/g, '$1');
 
@@ -109,6 +126,20 @@ export class PluginUISchemaStorageServer extends Plugin {
       await uiSchemaRepository.remove(model.get('name'), { transaction });
     });
 
+    db.on('flowModels.beforeRemoveTree', async (payload, options) => {
+      await markLightExtensionReferencesOwnerMissingForNodeTree(
+        this,
+        {
+          rootUid: payload?.rootUid,
+          action: 'flowModels.repository.remove',
+        },
+        {
+          transaction: options?.transaction,
+          requestSource: 'flowModels.beforeRemoveTree',
+        },
+      );
+    });
+
     this.app.resourceManager.define({
       name: 'flowModels',
       actions: {
@@ -126,6 +157,14 @@ export class PluginUISchemaStorageServer extends Plugin {
           const { uid } = ctx.action.params;
           const repository = ctx.db.getRepository('flowModels') as FlowModelRepository;
           const duplicated = await repository.duplicate(uid);
+          await syncLightExtensionReferencesForNodeTree(
+            this,
+            {
+              rootUid: duplicated?.uid,
+              action: 'flowModels.duplicate',
+            },
+            getLightExtensionReferenceContext(ctx),
+          );
           ctx.body = duplicated;
           await next();
         },
@@ -152,6 +191,14 @@ export class PluginUISchemaStorageServer extends Plugin {
           const { values } = ctx.action.params;
           const repository = ctx.db.getRepository('flowModels') as FlowModelRepository;
           const uid = await repository.upsertModel(values);
+          await syncLightExtensionReferencesForNodeTree(
+            this,
+            {
+              rootUid: uid,
+              action: 'flowModels.save',
+            },
+            getLightExtensionReferenceContext(ctx),
+          );
           ctx.body = uid;
           // ctx.body = await repository.findModelById(uid);
           await next();
@@ -159,6 +206,14 @@ export class PluginUISchemaStorageServer extends Plugin {
         destroy: async (ctx, next) => {
           const { filterByTk } = ctx.action.params;
           const repository = ctx.db.getRepository('flowModels') as FlowModelRepository;
+          await markLightExtensionReferencesOwnerMissingForNodeTree(
+            this,
+            {
+              rootUid: filterByTk,
+              action: 'flowModels.destroy',
+            },
+            getLightExtensionReferenceContext(ctx),
+          );
           await repository.remove(filterByTk);
           ctx.body = 'ok';
           await next();
@@ -197,6 +252,43 @@ export class PluginUISchemaStorageServer extends Plugin {
       { name: 'flowModels:patch', getSourceAndTarget: getSourceAndTargetForPatchAction },
     ]);
   }
+}
+
+function getLightExtensionReferenceContext(ctx: LightExtensionReferenceActionContext) {
+  const headers = ctx.request?.headers || ctx.request?.header || {};
+  return {
+    can: ctx.can,
+    actorUserId: getCurrentUserId(ctx),
+    requestId: getHeader(headers, 'x-request-id') || getHeader(headers, 'x-correlation-id'),
+    requestSource: getHeader(headers, 'x-request-source') || 'flowModels',
+    currentUser: ctx.auth?.user,
+    state: ctx.state,
+    timezone: ctx.timezone,
+  };
+}
+
+function getCurrentUserId(ctx: LightExtensionReferenceActionContext): string | null {
+  const user = ctx.auth?.user;
+  if (!user || typeof user !== 'object') {
+    return null;
+  }
+  const userRecord = user as { id?: unknown; get?: (key: string) => unknown };
+  if (typeof userRecord.id === 'string' || typeof userRecord.id === 'number') {
+    return String(userRecord.id);
+  }
+  if (typeof userRecord.get === 'function') {
+    const id = userRecord.get('id');
+    return typeof id === 'string' || typeof id === 'number' ? String(id) : null;
+  }
+  return null;
+}
+
+function getHeader(headers: Record<string, string | string[] | undefined>, name: string): string | undefined {
+  const value = headers[name] || headers[name.toLowerCase()];
+  if (Array.isArray(value)) {
+    return value[0];
+  }
+  return value;
 }
 
 export default PluginUISchemaStorageServer;

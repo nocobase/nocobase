@@ -51,6 +51,8 @@ export const LIGHT_EXTENSION_REPO_HEALTH_STATUSES = ['draft', 'ready', 'partial_
 export const LIGHT_EXTENSION_ENTRY_HEALTH_STATUSES = ['ready', 'failed', 'missing', 'disabled'] as const;
 export const LIGHT_EXTENSION_REFERENCE_RESOLVED_STATUSES = [
   'active',
+  'binding_outdated',
+  'repo_missing',
   'repo_disabled',
   'repo_archived',
   'entry_missing',
