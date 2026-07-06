@@ -150,6 +150,7 @@ const providerDescriptions: Record<string, string> = {
   ollama: 'Local models',
   mimo: 'Xiaomi MIMO',
   mistral: 'Mistral models',
+  orcarouter: 'OrcaRouter (model routing gateway)',
 };
 
 const providerSortOrder: string[] = [
@@ -160,6 +161,7 @@ const providerSortOrder: string[] = [
   'dashscope',
   'kimi',
   'mistral',
+  'orcarouter',
   'openai-completions',
   'ollama',
 ];
