@@ -10,6 +10,7 @@
 export { PluginLightExtensionServer } from './plugin';
 export * from './services/LightExtensionAuditService';
 export * from './services/LightExtensionAuthoringInspector';
+export * from './services/LightExtensionCompilePreviewService';
 export * from './services/LightExtensionEntryScanner';
 export * from './services/LightExtensionFileService';
 export * from './services/LightExtensionPermissionService';

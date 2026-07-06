@@ -223,3 +223,35 @@ export interface LightExtensionScanResult {
   entries: LightExtensionScanEntryResult[];
   capabilities: LightExtensionCapabilities;
 }
+
+export interface LightExtensionCompilePreviewArtifactSummary {
+  version: string;
+  entryPath: string;
+  filesHash?: string;
+  metadata?: Record<string, unknown>;
+}
+
+export type LightExtensionCompilePreviewEntryStatus = 'success' | 'failed' | 'skipped';
+
+export interface LightExtensionCompilePreviewEntryResult {
+  entryId: string | null;
+  repoId: string;
+  target: 'client';
+  kind: string;
+  entryName: string;
+  entryPath: string | null;
+  activePublicationId?: string | null;
+  status: LightExtensionCompilePreviewEntryStatus;
+  accepted: boolean;
+  diagnostics: LightExtensionDiagnostic[];
+  failureCode?: string;
+  artifact?: LightExtensionCompilePreviewArtifactSummary;
+}
+
+export interface LightExtensionCompilePreviewResult {
+  repo: LightExtensionRepoRecord;
+  commitId: string | null;
+  accepted: boolean;
+  diagnostics: LightExtensionDiagnostic[];
+  entries: LightExtensionCompilePreviewEntryResult[];
+}
