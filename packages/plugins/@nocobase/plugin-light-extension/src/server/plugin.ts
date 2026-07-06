@@ -21,11 +21,13 @@ import { createLightExtensionEntriesResource, lightExtensionEntryActionNames } f
 import { createLightExtensionFilesResource, lightExtensionFileActionNames } from './resources/lightExtensionFiles';
 import { createLightExtensionReposResource, lightExtensionRepoActionNames } from './resources/lightExtensionRepos';
 import { LightExtensionAuditService } from './services/LightExtensionAuditService';
+import { LightExtensionAuthoringInspector } from './services/LightExtensionAuthoringInspector';
 import { LightExtensionEntryScanner } from './services/LightExtensionEntryScanner';
 import { LightExtensionFileService } from './services/LightExtensionFileService';
 import { LightExtensionPermissionService } from './services/LightExtensionPermissionService';
 import { LightExtensionRepoService } from './services/LightExtensionRepoService';
 import { LightExtensionValidator } from './services/LightExtensionValidator';
+import { LightExtensionWorkspaceCompilerBridge } from './services/LightExtensionWorkspaceCompilerBridge';
 
 type VscPermissionHookRegistrar = {
   registerPermissionHook: (hook: VscPermissionHook) => () => void;
@@ -87,11 +89,19 @@ export class PluginLightExtensionServer extends Plugin {
 
   private validator?: LightExtensionValidator;
 
+  private authoringInspector?: LightExtensionAuthoringInspector;
+
+  private workspaceCompilerBridge?: LightExtensionWorkspaceCompilerBridge;
+
   private entryScanner?: LightExtensionEntryScanner;
 
   private unregisterVscPermissionHook?: () => void;
 
   private pendingVscPluginListener?: PluginLoadListener;
+
+  getWorkspaceCompilerBridge(): LightExtensionWorkspaceCompilerBridge | undefined {
+    return this.workspaceCompilerBridge;
+  }
 
   async afterAdd() {}
 
@@ -115,6 +125,12 @@ export class PluginLightExtensionServer extends Plugin {
     this.auditService = new LightExtensionAuditService(db);
     this.permissionService = new LightExtensionPermissionService(this.auditService);
     this.validator = new LightExtensionValidator();
+    this.authoringInspector = new LightExtensionAuthoringInspector();
+    this.workspaceCompilerBridge = new LightExtensionWorkspaceCompilerBridge(
+      this.auditService,
+      this.permissionService,
+      this.authoringInspector,
+    );
     const sharedVscPermissionHooks = findVscPermissionHookRegistry((this.app as unknown as AppWithPluginEvents).pm);
     this.repoService = new LightExtensionRepoService(
       db,

@@ -89,6 +89,29 @@ export interface LightExtensionScanAuditInput {
   transaction?: Transaction;
 }
 
+export interface LightExtensionCompileAuditInput {
+  repoId?: string;
+  entryId?: string | null;
+  target?: string;
+  kind?: string;
+  name?: string;
+  action: 'compilePreview';
+  result: 'success' | 'blocked';
+  requestId: string;
+  actorUserId?: string | null;
+  entryPath?: string;
+  surfaceStyle?: string;
+  runtimeVersion?: string;
+  diagnosticCount: number;
+  errorCount: number;
+  warningCount: number;
+  diagnostics?: LightExtensionDiagnostic[];
+  message: string;
+  reasonCode?: string;
+  details?: Record<string, unknown>;
+  transaction?: Transaction;
+}
+
 export class LightExtensionAuditService {
   constructor(private readonly db: Database) {}
 
@@ -184,6 +207,37 @@ export class LightExtensionAuditService {
           errorCount: input.errorCount,
           warningCount: input.warningCount,
           diagnostics: summarizeDiagnostics(input.diagnostics || []),
+        }),
+        createdAt: new Date(),
+      },
+      transaction: input.transaction,
+    });
+  }
+
+  async recordCompileEvent(input: LightExtensionCompileAuditInput): Promise<void> {
+    await this.db.getRepository('lightExtensionLogs').create({
+      values: {
+        repoId: input.repoId,
+        entryId: input.entryId || undefined,
+        level: input.result === 'blocked' ? 'warn' : 'info',
+        target: sanitizeText(input.target),
+        kind: sanitizeText(input.kind),
+        name: sanitizeText(input.name),
+        action: input.action,
+        result: input.result,
+        requestId: input.requestId,
+        actorUserId: input.actorUserId || undefined,
+        reasonCode: sanitizeText(input.reasonCode),
+        message: sanitizeText(input.message),
+        details: compactObject({
+          entryPath: sanitizeText(input.entryPath),
+          surfaceStyle: sanitizeText(input.surfaceStyle),
+          runtimeVersion: sanitizeText(input.runtimeVersion),
+          diagnosticCount: input.diagnosticCount,
+          errorCount: input.errorCount,
+          warningCount: input.warningCount,
+          diagnostics: summarizeDiagnostics(input.diagnostics || []),
+          ...(input.details ? sanitizeDetails(input.details) : {}),
         }),
         createdAt: new Date(),
       },

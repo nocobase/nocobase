@@ -28,12 +28,13 @@ import type {
   LightExtensionTreeEntryInput,
 } from '../../shared/types';
 import { LightExtensionAuditService } from './LightExtensionAuditService';
-import { LightExtensionPermissionService } from './LightExtensionPermissionService';
+import { LightExtensionPermissionService, type LightExtensionCanFunction } from './LightExtensionPermissionService';
 import { LightExtensionValidator, hasErrorDiagnostic } from './LightExtensionValidator';
 import { normalizeVscBridgeError } from './errorContract';
 
 export interface LightExtensionServiceContext {
   actorUserId?: string | null;
+  can?: LightExtensionCanFunction;
   requestId?: string;
   requestSource?: string;
   transaction?: Transaction;

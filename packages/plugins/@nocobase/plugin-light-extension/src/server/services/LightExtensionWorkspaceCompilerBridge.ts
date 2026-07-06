@@ -1,0 +1,361 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import type { Transaction } from '@nocobase/database';
+import {
+  buildRunJSFilesHash,
+  compileRunJSSourceWorkspace,
+  type CompileRunJSSourceWorkspaceResult,
+  type RunJSCompileDiagnostic,
+  type RunJSRuntimeArtifact,
+} from '@nocobase/plugin-vsc-file';
+import { randomUUID } from 'crypto';
+import { posix as pathPosix } from 'path';
+
+import type { LightExtensionKind } from '../../constants';
+import { LightExtensionError, isLightExtensionError } from '../../shared/errors';
+import type { LightExtensionDiagnostic } from '../../shared/types';
+import { LightExtensionAuditService } from './LightExtensionAuditService';
+import {
+  LIGHT_EXTENSION_AUTHORING_SURFACES,
+  LightExtensionAuthoringInspector,
+  type LightExtensionAuthoringSurfaceSpec,
+  type LightExtensionSurfaceStyle,
+} from './LightExtensionAuthoringInspector';
+import { LightExtensionPermissionService } from './LightExtensionPermissionService';
+import type { LightExtensionServiceContext } from './LightExtensionRepoService';
+import { hasErrorDiagnostic, sortDiagnostics } from './LightExtensionValidator';
+
+export interface LightExtensionWorkspaceCompileFileInput {
+  path: string;
+  content?: string;
+  language?: string;
+  operation?: 'upsert' | 'delete';
+}
+
+export interface LightExtensionWorkspaceCompileInput {
+  repoId?: string;
+  entryId?: string | null;
+  kind: LightExtensionKind;
+  entryName?: string;
+  entryPath: string;
+  surfaceStyle?: LightExtensionSurfaceStyle;
+  runtimeVersion?: string;
+  files: LightExtensionWorkspaceCompileFileInput[];
+}
+
+export interface LightExtensionWorkspaceCompileResult {
+  accepted: boolean;
+  artifact: RunJSRuntimeArtifact;
+  diagnostics: LightExtensionDiagnostic[];
+  failureCode?: string;
+  surface: LightExtensionAuthoringSurfaceSpec;
+}
+
+export class LightExtensionWorkspaceCompilerBridge {
+  constructor(
+    private readonly auditService: LightExtensionAuditService,
+    private readonly permissionService: LightExtensionPermissionService,
+    private readonly authoringInspector = new LightExtensionAuthoringInspector(),
+  ) {}
+
+  async compileEntry(
+    input: LightExtensionWorkspaceCompileInput,
+    ctx: LightExtensionServiceContext = {},
+  ): Promise<LightExtensionWorkspaceCompileResult> {
+    const requestId = ctx.requestId || randomUUID();
+    const surface = getSurfaceSpec(input.kind);
+
+    try {
+      await this.permissionService.assertActionAllowed({
+        action: 'compilePreview',
+        ctx,
+      });
+    } catch (error) {
+      await this.recordPermissionDenied(input, ctx, requestId, error);
+      throw error;
+    }
+
+    const preflightDiagnostics = this.validateCompileInput(input, surface);
+    if (preflightDiagnostics.length > 0) {
+      const result = this.buildBlockedResult(input, surface, preflightDiagnostics, 'LIGHT_EXTENSION_COMPILE_DENIED');
+      await this.recordCompileAudit(input, ctx, requestId, result, 'compile_denied');
+      return result;
+    }
+    const compilerSurfaceStyle = surface.compilerSurfaceStyle;
+    if (!compilerSurfaceStyle) {
+      throw new LightExtensionError(
+        'LIGHT_EXTENSION_INVALID_INPUT',
+        `Light extension kind "${input.kind}" cannot be compiled`,
+      );
+    }
+
+    const compiled = compileRunJSSourceWorkspace({
+      files: input.files,
+      entry: input.entryPath,
+      runtimeVersion: input.runtimeVersion || 'v2',
+      surfaceStyle: compilerSurfaceStyle,
+      legacy: {
+        version: input.runtimeVersion || 'v2',
+        surfaceStyle: compilerSurfaceStyle,
+        language: inferRunJSLanguage(input.entryPath),
+        metadata: {
+          target: 'client',
+          kind: input.kind,
+          entryName: input.entryName || inferEntryName(input.entryPath),
+          modelUse: surface.modelUse,
+          surface: surface.surface,
+        },
+      },
+      inspectAuthoring: this.authoringInspector.createRunJSSourceInspector(),
+    });
+    const result = this.buildCompileResult(input, surface, compiled);
+    await this.recordCompileAudit(input, ctx, requestId, result, classifyFailureReason(result, compiled.failureCode));
+    return result;
+  }
+
+  private validateCompileInput(
+    input: LightExtensionWorkspaceCompileInput,
+    surface: LightExtensionAuthoringSurfaceSpec,
+  ): LightExtensionDiagnostic[] {
+    const diagnostics: LightExtensionDiagnostic[] = [];
+    const entryPath = normalizeSourcePath(input.entryPath);
+
+    if (!surface.enabled) {
+      diagnostics.push({
+        code: 'light_extension_kind_disabled',
+        severity: 'error',
+        message: `Light extension kind "${input.kind}" is not enabled for compilation`,
+        path: entryPath,
+        kind: input.kind,
+        entryName: input.entryName || inferEntryName(entryPath),
+      });
+    }
+    if (!surface.compilerSurfaceStyle) {
+      diagnostics.push({
+        code: 'light_extension_surface_not_supported',
+        severity: 'error',
+        message: `Light extension surface "${surface.surfaceStyle}" is not supported by the RunJS compiler bridge`,
+        path: entryPath,
+        kind: input.kind,
+        entryName: input.entryName || inferEntryName(entryPath),
+      });
+    }
+    if (input.surfaceStyle && input.surfaceStyle !== surface.surfaceStyle) {
+      diagnostics.push({
+        code: 'light_extension_surface_mismatch',
+        severity: 'error',
+        message: `Light extension kind "${input.kind}" must use "${surface.surfaceStyle}" surface`,
+        path: entryPath,
+        kind: input.kind,
+        entryName: input.entryName || inferEntryName(entryPath),
+        details: {
+          requestedSurfaceStyle: input.surfaceStyle,
+          expectedSurfaceStyle: surface.surfaceStyle,
+        },
+      });
+    }
+    if (!input.files.length) {
+      diagnostics.push({
+        code: 'light_extension_compile_files_required',
+        severity: 'error',
+        message: 'Light extension compile input must include source files',
+        path: entryPath,
+        kind: input.kind,
+        entryName: input.entryName || inferEntryName(entryPath),
+      });
+    }
+
+    return sortDiagnostics(diagnostics);
+  }
+
+  private buildCompileResult(
+    input: LightExtensionWorkspaceCompileInput,
+    surface: LightExtensionAuthoringSurfaceSpec,
+    compiled: CompileRunJSSourceWorkspaceResult,
+  ): LightExtensionWorkspaceCompileResult {
+    const diagnostics = sortDiagnostics(compiled.artifact.diagnostics.map((item) => toLightExtensionDiagnostic(item)));
+    const artifact: RunJSRuntimeArtifact = {
+      ...compiled.artifact,
+      metadata: {
+        ...compiled.artifact.metadata,
+        target: 'client',
+        repoId: input.repoId,
+        entryId: input.entryId || undefined,
+        kind: input.kind,
+        entryName: input.entryName || inferEntryName(input.entryPath),
+        surfaceStyle: surface.surfaceStyle,
+        compilerSurfaceStyle: surface.compilerSurfaceStyle,
+      },
+    };
+
+    return {
+      accepted: !hasErrorDiagnostic(diagnostics),
+      artifact,
+      diagnostics,
+      failureCode: compiled.failureCode,
+      surface,
+    };
+  }
+
+  private buildBlockedResult(
+    input: LightExtensionWorkspaceCompileInput,
+    surface: LightExtensionAuthoringSurfaceSpec,
+    diagnostics: LightExtensionDiagnostic[],
+    failureCode: string,
+  ): LightExtensionWorkspaceCompileResult {
+    return {
+      accepted: false,
+      artifact: {
+        code: '',
+        version: input.runtimeVersion || 'v2',
+        diagnostics,
+        filesHash: buildRunJSFilesHash(input.files),
+        entryPath: input.entryPath,
+        metadata: {
+          target: 'client',
+          repoId: input.repoId,
+          entryId: input.entryId || undefined,
+          kind: input.kind,
+          entryName: input.entryName || inferEntryName(input.entryPath),
+          surfaceStyle: surface.surfaceStyle,
+          compilerSurfaceStyle: surface.compilerSurfaceStyle,
+        },
+      },
+      diagnostics,
+      failureCode,
+      surface,
+    };
+  }
+
+  private async recordPermissionDenied(
+    input: LightExtensionWorkspaceCompileInput,
+    ctx: LightExtensionServiceContext,
+    requestId: string,
+    error: unknown,
+  ): Promise<void> {
+    if (!isLightExtensionError(error)) {
+      return;
+    }
+
+    await this.recordCompileAudit(
+      input,
+      ctx,
+      requestId,
+      this.buildBlockedResult(input, getSurfaceSpec(input.kind), [], error.code),
+      'permission_denied',
+    );
+  }
+
+  private async recordCompileAudit(
+    input: LightExtensionWorkspaceCompileInput,
+    ctx: LightExtensionServiceContext,
+    requestId: string,
+    result: LightExtensionWorkspaceCompileResult,
+    reasonCode?: string,
+  ): Promise<void> {
+    try {
+      const errorCount = result.diagnostics.filter((item) => item.severity === 'error').length;
+      const warningCount = result.diagnostics.filter((item) => item.severity === 'warning').length;
+      await this.auditService.recordCompileEvent({
+        repoId: input.repoId,
+        entryId: input.entryId,
+        target: 'client',
+        kind: input.kind,
+        name: input.entryName || inferEntryName(input.entryPath),
+        action: 'compilePreview',
+        result: result.accepted ? 'success' : 'blocked',
+        requestId,
+        actorUserId: ctx.actorUserId,
+        entryPath: input.entryPath,
+        surfaceStyle: result.surface.surfaceStyle,
+        runtimeVersion: result.artifact.version,
+        diagnosticCount: result.diagnostics.length,
+        errorCount,
+        warningCount,
+        diagnostics: result.diagnostics,
+        message: result.accepted ? 'Light extension entry compiled' : 'Light extension entry compile rejected',
+        reasonCode: result.accepted ? undefined : reasonCode,
+        details: {
+          failureCode: result.failureCode,
+          filesHash: result.artifact.filesHash,
+          artifactEntryPath: result.artifact.entryPath,
+          requestSource: ctx.requestSource,
+          surface: result.surface.surface,
+          modelUse: result.surface.modelUse,
+        },
+        transaction: ctx.transaction as Transaction | undefined,
+      });
+    } catch {
+      // Compile diagnostics must not depend on audit persistence availability.
+    }
+  }
+}
+
+function getSurfaceSpec(kind: LightExtensionKind): LightExtensionAuthoringSurfaceSpec {
+  return LIGHT_EXTENSION_AUTHORING_SURFACES[kind];
+}
+
+function toLightExtensionDiagnostic(input: RunJSCompileDiagnostic): LightExtensionDiagnostic {
+  return {
+    code: input.code || input.ruleId || 'RUNJS_COMPILE_FAILED',
+    severity: input.severity === 'warning' ? 'warning' : 'error',
+    message: input.message,
+    path: input.path,
+    line: input.line,
+    column: input.column,
+    details: {
+      ruleId: input.ruleId,
+      ...(input.details || {}),
+    },
+  };
+}
+
+function classifyFailureReason(result: LightExtensionWorkspaceCompileResult, failureCode?: string): string | undefined {
+  if (result.accepted) {
+    return undefined;
+  }
+  if (
+    failureCode === 'RUNJS_IMPORT_NOT_ALLOWED' ||
+    failureCode === 'RUNJS_DYNAMIC_IMPORT_UNSUPPORTED' ||
+    failureCode === 'RUNJS_IMPORT_NOT_FOUND'
+  ) {
+    return 'unsafe_import_denied';
+  }
+  if (result.failureCode === 'LIGHT_EXTENSION_COMPILE_DENIED') {
+    return 'compile_denied';
+  }
+
+  return 'compile_failed';
+}
+
+function inferRunJSLanguage(path: string): 'typescript' | 'javascript' | 'tsx' | 'jsx' {
+  const extension = pathPosix.extname(normalizeSourcePath(path));
+  if (extension === '.tsx') {
+    return 'tsx';
+  }
+  if (extension === '.jsx') {
+    return 'jsx';
+  }
+  if (extension === '.js') {
+    return 'javascript';
+  }
+
+  return 'typescript';
+}
+
+function inferEntryName(path: string): string {
+  const normalized = normalizeSourcePath(path);
+  const segments = normalized.split('/');
+  return segments.length >= 2 ? segments[segments.length - 2] : normalized;
+}
+
+function normalizeSourcePath(path: string): string {
+  return pathPosix.normalize(path.trim()).replace(/^\.\/+/, '');
+}

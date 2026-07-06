@@ -8,5 +8,6 @@
  */
 
 export { default } from './plugin';
+export { inspectRunJsAuthoringCode } from './flow-surfaces/runjs-authoring';
 export { FlowModelRepository } from './repository';
 export { resolveVariablesBatch, resolveVariablesTemplate } from './variables/resolve';

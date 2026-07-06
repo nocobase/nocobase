@@ -9,10 +9,12 @@
 
 export { PluginLightExtensionServer } from './plugin';
 export * from './services/LightExtensionAuditService';
+export * from './services/LightExtensionAuthoringInspector';
 export * from './services/LightExtensionEntryScanner';
 export * from './services/LightExtensionFileService';
 export * from './services/LightExtensionPermissionService';
 export * from './services/LightExtensionValidator';
+export * from './services/LightExtensionWorkspaceCompilerBridge';
 export * from './services/errorContract';
 export * from '../shared/errors';
 export * from '../shared/types';

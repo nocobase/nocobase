@@ -15,6 +15,7 @@
   "peerDependencies": {
     "@ant-design/icons": "5.x",
     "@nocobase/client-v2": "2.x",
+    "@nocobase/plugin-flow-engine": "2.x",
     "@nocobase/plugin-vsc-file": "2.x",
     "@nocobase/server": "2.x",
     "@nocobase/test": "2.x",

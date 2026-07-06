@@ -18,6 +18,7 @@ import type {
 import { randomUUID } from 'crypto';
 
 import { LIGHT_EXTENSION_OWNER_TYPE, type LightExtensionAclAction } from '../../constants';
+import { LightExtensionError } from '../../shared/errors';
 import { LightExtensionAuditService } from './LightExtensionAuditService';
 
 const LIGHT_EXTENSION_INTERNAL_VSC_CONTEXT = Symbol('@nocobase/plugin-light-extension/internal-vsc-context');
@@ -32,6 +33,17 @@ export interface LightExtensionInternalVscContextInput {
   requestSource?: string;
 }
 
+export type LightExtensionCanFunction = (input: { resource: string; action: string }) => unknown | Promise<unknown>;
+
+export interface LightExtensionActionPermissionContext {
+  can?: LightExtensionCanFunction;
+}
+
+export interface LightExtensionAssertActionAllowedInput {
+  action: LightExtensionAclAction;
+  ctx?: LightExtensionActionPermissionContext;
+}
+
 interface LightExtensionInternalVscContext extends LightExtensionInternalVscContextInput {
   ownerType: typeof LIGHT_EXTENSION_OWNER_TYPE;
   accessToken: symbol;
@@ -44,6 +56,30 @@ export class LightExtensionPermissionService {
 
   createVscPermissionHook(): VscPermissionHook {
     return (input) => this.handleVscPermission(input);
+  }
+
+  async assertActionAllowed(input: LightExtensionAssertActionAllowedInput): Promise<void> {
+    if (!input.ctx?.can) {
+      return;
+    }
+
+    const permission = await input.ctx.can({
+      resource: 'lightExtension',
+      action: input.action,
+    });
+    if (isAllowedPermissionResult(permission)) {
+      return;
+    }
+
+    throw new LightExtensionError(
+      'LIGHT_EXTENSION_PERMISSION_DENIED',
+      `Light extension ${input.action} permission is required`,
+      {
+        details: {
+          action: input.action,
+        },
+      },
+    );
   }
 
   createInternalVscRequestContext(input: LightExtensionInternalVscContextInput): VscPermissionRequestMetadata {
@@ -124,6 +160,10 @@ export class LightExtensionPermissionService {
 
     return context as LightExtensionInternalVscContext;
   }
+}
+
+function isAllowedPermissionResult(value: unknown): boolean {
+  return value !== false && value !== null && typeof value !== 'undefined';
 }
 
 function isLightExtensionOwner(input: VscPermissionHookInput): boolean {
