@@ -54,6 +54,20 @@ describe('RecordCommentsBlockModel field mapping settings', () => {
     ]);
   });
 
+  test('creates a configurable comment submit action by default', () => {
+    const createModelOptions = RecordCommentsBlockModel.meta.createModelOptions as {
+      subModels?: {
+        submitActions?: Array<{
+          use?: string;
+        }>;
+      };
+    };
+
+    expect(createModelOptions.subModels?.submitActions?.map((action) => action.use)).toEqual([
+      'RecordCommentSubmitActionModel',
+    ]);
+  });
+
   test('hides owner mapping fields when the block is created from an association field', () => {
     const flow: any = (RecordCommentsBlockModel as any).globalFlowRegistry.getFlow('recordCommentsSettings');
     const step: any = flow?.steps?.fieldMapping;
