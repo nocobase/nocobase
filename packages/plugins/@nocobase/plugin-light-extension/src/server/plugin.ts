@@ -93,6 +93,7 @@ const VSC_FILE_PLUGIN_ALIASES = ['@nocobase/plugin-vsc-file', 'vsc-file', 'plugi
 const DOCUMENTED_CAPABILITIES_ROUTE = '/light-extensions/capabilities';
 const DOCUMENTED_COMPILE_PREVIEW_ROUTE = /^\/light-extensions\/([^/]+)\/compile-preview$/;
 const DOCUMENTED_PUBLICATION_ROUTE = /^\/light-extension-publications\/([^/]+)$/;
+const DOCUMENTED_ENTRY_PUBLICATIONS_ROUTE = /^\/light-extension-entries\/([^/]+)\/publications$/;
 const DOCUMENTED_RUNTIME_RESOLVE_ROUTE = '/light-extension-runtime/resolve';
 
 export class PluginLightExtensionServer extends Plugin {
@@ -221,7 +222,7 @@ export class PluginLightExtensionServer extends Plugin {
       createLightExtensionFilesResource(this.fileService),
     );
     (this.app as unknown as AppWithPluginEvents).resourceManager?.define?.(
-      createLightExtensionEntriesResource(this.entryScanner, this.publicationService),
+      createLightExtensionEntriesResource(this.entryScanner, this.publicationService, this.publicationResolveService),
     );
     (this.app as unknown as AppWithPluginEvents).resourceManager?.define?.(
       createLightExtensionCapabilitiesResource(this.validator),
@@ -229,6 +230,7 @@ export class PluginLightExtensionServer extends Plugin {
     this.registerCapabilitiesHttpRoute();
     this.registerCompilePreviewHttpRoute();
     this.registerPublicationHttpRoute();
+    this.registerEntryPublicationsHttpRoute();
     this.registerRuntimeResolveHttpRoute();
     this.registerAclActions();
     this.registerVscPermissionHookWhenAvailable();
@@ -359,6 +361,39 @@ export class PluginLightExtensionServer extends Plugin {
       },
       {
         tag: 'light-extension-runtime-resolve',
+        before: 'dataSource',
+      },
+    );
+  }
+
+  private registerEntryPublicationsHttpRoute() {
+    const app = this.app as unknown as AppWithPluginEvents;
+    app.use?.(
+      async (ctx, next) => {
+        const entryId = getDocumentedEntryPublicationsEntryId(ctx.path, app.resourceManager?.options?.prefix);
+        if (ctx.method !== 'GET' || !entryId) {
+          await next();
+          return;
+        }
+
+        const resourcePath = getEntryPublicationsResourcePath(entryId, app.resourceManager?.options?.prefix);
+        const originalPath = ctx.path;
+        const originalRequestPath = ctx.request?.path;
+        try {
+          ctx.path = resourcePath;
+          if (ctx.request) {
+            ctx.request.path = resourcePath;
+          }
+          await next();
+        } finally {
+          ctx.path = originalPath;
+          if (ctx.request && originalRequestPath) {
+            ctx.request.path = originalRequestPath;
+          }
+        }
+      },
+      {
+        tag: 'light-extension-entry-publications',
         before: 'dataSource',
       },
     );
@@ -501,6 +536,21 @@ function getDocumentedPublicationId(path: string, resourcePrefix?: string): stri
   return decodeURIComponent(match[1]);
 }
 
+function getDocumentedEntryPublicationsEntryId(path: string, resourcePrefix?: string): string | null {
+  const basePath = normalizeBasePath(resourcePrefix ?? process.env.API_BASE_PATH ?? '/api');
+  if (!path.startsWith(`${basePath}/`)) {
+    return null;
+  }
+
+  const routePath = path.slice(basePath.length);
+  const match = DOCUMENTED_ENTRY_PUBLICATIONS_ROUTE.exec(routePath);
+  if (!match?.[1]) {
+    return null;
+  }
+
+  return decodeURIComponent(match[1]);
+}
+
 function getCapabilitiesResourcePath(resourcePrefix?: string): string {
   return `${normalizeBasePath(resourcePrefix ?? '')}/lightExtensionCapabilities:get`;
 }
@@ -512,6 +562,12 @@ function getCompilePreviewResourcePath(repoId: string, resourcePrefix?: string):
 function getPublicationResourcePath(publicationId: string, resourcePrefix?: string): string {
   return `${normalizeBasePath(resourcePrefix ?? '')}/lightExtensionPublications:get/${encodeURIComponent(
     publicationId,
+  )}`;
+}
+
+function getEntryPublicationsResourcePath(entryId: string, resourcePrefix?: string): string {
+  return `${normalizeBasePath(resourcePrefix ?? '')}/lightExtensionEntries:listPublications/${encodeURIComponent(
+    entryId,
   )}`;
 }
 

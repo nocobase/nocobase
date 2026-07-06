@@ -287,6 +287,17 @@ export interface LightExtensionPublicationMetadataRecord {
   createdAt?: string | null;
 }
 
+export interface LightExtensionSelectableEntryRecord extends Omit<LightExtensionEntryRecord, 'settingsSchema'> {
+  activePublicationId: string;
+  activePublication: LightExtensionPublicationMetadataRecord;
+}
+
+export interface LightExtensionEntryPublicationsSelectorResult {
+  entryId: string;
+  activePublicationId: string | null;
+  publications: LightExtensionPublicationMetadataRecord[];
+}
+
 export type LightExtensionSourceBindingVersionPolicy = 'pinned' | 'follow-active';
 
 export interface LightExtensionRuntimeSourceBinding {

@@ -14,6 +14,7 @@ import { LightExtensionError, isLightExtensionError } from '../../shared/errors'
 import type { LightExtensionScanResult } from '../../shared/types';
 import { LightExtensionEntryScanner } from '../services/LightExtensionEntryScanner';
 import type { LightExtensionCanFunction } from '../services/LightExtensionPermissionService';
+import { LightExtensionPublicationResolveService } from '../services/LightExtensionPublicationResolveService';
 import { LightExtensionPublicationService } from '../services/LightExtensionPublicationService';
 import type { LightExtensionServiceContext } from '../services/LightExtensionRepoService';
 
@@ -21,6 +22,8 @@ export const lightExtensionEntryActionNames = [
   'scan',
   'list',
   'get',
+  'listSelectable',
+  'listPublications',
   'activatePublication',
   'emergencyRollback',
 ] as const;
@@ -55,6 +58,7 @@ type ResourceActionRunner = (
 interface LightExtensionEntryActionServices {
   scanner: LightExtensionEntryScanner;
   publicationService?: LightExtensionPublicationService;
+  publicationResolveService?: LightExtensionPublicationResolveService;
 }
 
 const resourceActionRunners: Record<LightExtensionEntryActionName, ResourceActionRunner> = {
@@ -68,6 +72,25 @@ const resourceActionRunners: Record<LightExtensionEntryActionName, ResourceActio
     ),
   list: (services, input, currentUser) => services.scanner.listEntries(requireRepoId(input), currentUser),
   get: (services, input, currentUser) => services.scanner.getEntry(requireEntryId(input), currentUser),
+  listSelectable: (services, input, currentUser) => {
+    if (!services.publicationResolveService) {
+      throw invalidInput('Light extension publication resolve service is not available');
+    }
+
+    return services.publicationResolveService.listSelectableEntries(
+      {
+        repoId: optionalString(input, 'repoId'),
+      },
+      currentUser,
+    );
+  },
+  listPublications: (services, input, currentUser) => {
+    if (!services.publicationResolveService) {
+      throw invalidInput('Light extension publication resolve service is not available');
+    }
+
+    return services.publicationResolveService.listSelectablePublicationsByEntry(requireEntryId(input), currentUser);
+  },
   activatePublication: (services, input, currentUser) => {
     if (!services.publicationService) {
       throw invalidInput('Light extension publication service is not available');
@@ -102,10 +125,12 @@ const resourceActionRunners: Record<LightExtensionEntryActionName, ResourceActio
 export function createLightExtensionEntriesResource(
   scanner: LightExtensionEntryScanner,
   publicationService?: LightExtensionPublicationService,
+  publicationResolveService?: LightExtensionPublicationResolveService,
 ): ResourceOptions {
   const services = {
     scanner,
     publicationService,
+    publicationResolveService,
   };
 
   return {
