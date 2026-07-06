@@ -252,6 +252,11 @@ function defaultDbDatabaseForDialect(value: PromptValue | undefined): string {
   return String(value ?? '').trim() === 'kingbase' ? 'kingbase' : DEFAULT_INSTALL_DB_DATABASE;
 }
 
+function supportsDbSchemaPrompt(value: PromptValue | undefined): boolean {
+  const dialect = String(value ?? '').trim();
+  return dialect === 'postgres' || dialect === 'kingbase';
+}
+
 function defaultDbHostForBuiltinDb(values: PromptCatalogValues): string {
   return values.builtinDb ? DEFAULT_INSTALL_BUILTIN_DB_HOST : DEFAULT_INSTALL_DB_HOST;
 }
@@ -819,7 +824,7 @@ export default class Install extends Command {
       type: 'text',
       message: installText('prompts.dbSchema.message'),
       placeholder: installText('prompts.dbSchema.placeholder'),
-      hidden: (values) => String(values.dbDialect ?? '').trim() !== 'postgres',
+      hidden: (values) => !supportsDbSchemaPrompt(values.dbDialect),
     },
     dbTablePrefix: {
       type: 'text',
