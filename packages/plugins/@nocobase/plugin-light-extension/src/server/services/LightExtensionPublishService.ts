@@ -141,32 +141,60 @@ export class LightExtensionPublishService {
         continue;
       }
 
-      const publication = await this.publicationService.createOrGetPublicationWithStatus(
-        {
-          repoId: input.repoId,
+      try {
+        const publication = await this.withTransaction(ctx.transaction, async (transaction) => {
+          const publishContext: LightExtensionServiceContext = {
+            ...ctx,
+            requestSource: ctx.requestSource || 'light-extension-publish',
+            transaction,
+          };
+
+          await this.assertPublishLifecycleStillAllowed(input.repoId, target.entry.id, transaction);
+          const publication = await this.publicationService.createOrGetPublicationWithStatus(
+            {
+              repoId: input.repoId,
+              entryId: target.entry.id,
+              commitId: input.commitId,
+              entryPath: target.validationEntry.entryPath,
+              kind: target.validationEntry.kind,
+              surfaceStyle: compiled.surface.surfaceStyle,
+              runtimeVersion: compiled.artifact.version,
+              artifact: compiled.artifact,
+              settingsSchemaSnapshot: target.validationEntry.settingsSchema,
+              diagnostics: compiled.diagnostics,
+            },
+            publishContext,
+          );
+
+          if (input.activate) {
+            await this.publicationService.activatePublication(
+              {
+                entryId: target.entry.id,
+                toPublicationId: publication.publication.id,
+                expectedCurrentPublicationId: getExpectedCurrentPublicationId(input, target.entry.id),
+              },
+              publishContext,
+            );
+          }
+
+          return publication;
+        });
+
+        entryResults.push({
           entryId: target.entry.id,
-          commitId: input.commitId,
-          entryPath: target.validationEntry.entryPath,
-          kind: target.validationEntry.kind,
-          surfaceStyle: compiled.surface.surfaceStyle,
-          runtimeVersion: compiled.artifact.version,
-          artifact: compiled.artifact,
-          settingsSchemaSnapshot: target.validationEntry.settingsSchema,
-          diagnostics: compiled.diagnostics,
-        },
-        {
-          ...ctx,
-          requestSource: ctx.requestSource || 'light-extension-publish',
-        },
-      );
-      entryResults.push({
-        entryId: target.entry.id,
-        entryName: target.entry.entryName,
-        kind: target.entry.kind,
-        status: publication.created ? 'created' : 'reused',
-        publication: toPublicationMetadata(publication.publication),
-        diagnostics: [],
-      });
+          entryName: target.entry.entryName,
+          kind: target.entry.kind,
+          status: publication.created ? 'created' : 'reused',
+          publication: toPublicationMetadata(publication.publication),
+          diagnostics: [],
+        });
+      } catch (error) {
+        if (!(error instanceof LightExtensionError)) {
+          throw error;
+        }
+
+        entryResults.push(buildServiceErrorResult(target, error));
+      }
     }
 
     const result = buildPublishResult(pull.repo, input, entryResults, validation.diagnostics);
@@ -199,6 +227,45 @@ export class LightExtensionPublishService {
     });
 
     return records.map((record: Model) => entryFromModel(record));
+  }
+
+  private async assertPublishLifecycleStillAllowed(
+    repoId: string,
+    entryId: string,
+    transaction: LightExtensionServiceContext['transaction'],
+  ): Promise<void> {
+    const repo = await this.db.getRepository('lightExtensionRepos').findOne({
+      filterByTk: repoId,
+      transaction,
+      lock: transaction?.LOCK?.UPDATE,
+    });
+    const repoStatus = repo ? String(repo.get('lifecycleStatus')) : 'missing';
+    if (repoStatus !== 'enabled') {
+      throw new LightExtensionError(
+        'LIGHT_EXTENSION_LIFECYCLE_CONFLICT',
+        `Repository lifecycle status is "${repoStatus}"`,
+      );
+    }
+
+    const entry = await this.db.getRepository('lightExtensionEntries').findOne({
+      filterByTk: entryId,
+      transaction,
+      lock: transaction?.LOCK?.UPDATE,
+    });
+    if (!entry) {
+      throw new LightExtensionError(
+        'LIGHT_EXTENSION_ENTRY_NOT_FOUND',
+        `Light extension entry "${entryId}" was not found`,
+      );
+    }
+    if (String(entry.get('repoId')) !== repoId) {
+      throw new LightExtensionError('LIGHT_EXTENSION_LIFECYCLE_CONFLICT', 'Entry does not belong to the repository');
+    }
+
+    const entryStatus = String(entry.get('healthStatus'));
+    if (entryStatus === 'missing' || entryStatus === 'disabled' || entryStatus === 'archived') {
+      throw new LightExtensionError('LIGHT_EXTENSION_LIFECYCLE_CONFLICT', `Entry health status is "${entryStatus}"`);
+    }
   }
 
   private async recordPublishAudit(
@@ -242,6 +309,31 @@ export class LightExtensionPublishService {
       // Publish result must not depend on audit persistence availability.
     }
   }
+
+  private async withTransaction<T>(
+    transaction: LightExtensionServiceContext['transaction'],
+    run: (transaction: NonNullable<LightExtensionServiceContext['transaction']> | undefined) => Promise<T>,
+  ): Promise<T> {
+    if (transaction) {
+      return run(transaction);
+    }
+
+    const sequelize = (
+      this.db as unknown as {
+        sequelize?: {
+          transaction: <R>(
+            run: (transaction: NonNullable<LightExtensionServiceContext['transaction']>) => Promise<R>,
+          ) => Promise<R>;
+        };
+      }
+    ).sequelize;
+
+    if (!sequelize?.transaction) {
+      return run(undefined);
+    }
+
+    return sequelize.transaction(run);
+  }
 }
 
 function assertPublishInput(input: LightExtensionPublishInput): void {
@@ -259,6 +351,24 @@ function assertPublishInput(input: LightExtensionPublishInput): void {
       'LIGHT_EXTENSION_INVALID_INPUT',
       'expectedCurrentPublicationIdByEntry is required when activate is true',
     );
+  }
+  if (input.activate) {
+    for (const entryId of input.entryIds) {
+      if (!Object.prototype.hasOwnProperty.call(input.expectedCurrentPublicationIdByEntry, entryId)) {
+        throw new LightExtensionError(
+          'LIGHT_EXTENSION_INVALID_INPUT',
+          `expectedCurrentPublicationIdByEntry must include "${entryId}" when activate is true`,
+        );
+      }
+
+      const expectedCurrentPublicationId = input.expectedCurrentPublicationIdByEntry[entryId];
+      if (expectedCurrentPublicationId !== null && typeof expectedCurrentPublicationId !== 'string') {
+        throw new LightExtensionError(
+          'LIGHT_EXTENSION_INVALID_INPUT',
+          `expectedCurrentPublicationIdByEntry.${entryId} must be a string or null`,
+        );
+      }
+    }
   }
 }
 
@@ -376,6 +486,32 @@ function buildConflictOrFailedResult(
   };
 }
 
+function buildServiceErrorResult(target: PublishTarget, error: LightExtensionError): LightExtensionPublishEntryResult {
+  if (!target.entry) {
+    throw new LightExtensionError('LIGHT_EXTENSION_INVALID_INPUT', 'Publish target entry is required');
+  }
+
+  const reasonCode = toReasonCode(error);
+  return {
+    entryId: target.entry.id,
+    entryName: target.entry.entryName,
+    kind: target.entry.kind,
+    status: error.status === 409 ? 'conflict' : 'failed',
+    diagnostics: [
+      {
+        code: reasonCode,
+        severity: 'error',
+        message: error.message,
+        path: target.entry.entryPath,
+        kind: target.entry.kind,
+        entryName: target.entry.entryName,
+        details: error.details,
+      },
+    ],
+    reasonCode,
+  };
+}
+
 function buildConflictResult(
   target: PublishTarget,
   diagnostics: LightExtensionDiagnostic[],
@@ -412,6 +548,18 @@ function buildPublishResult(
   };
 }
 
+function getExpectedCurrentPublicationId(input: LightExtensionPublishInput, entryId: string): string | null {
+  const expectedCurrentPublicationId = input.expectedCurrentPublicationIdByEntry?.[entryId];
+  if (expectedCurrentPublicationId !== null && typeof expectedCurrentPublicationId !== 'string') {
+    throw new LightExtensionError(
+      'LIGHT_EXTENSION_INVALID_INPUT',
+      `expectedCurrentPublicationIdByEntry.${entryId} must be a string or null`,
+    );
+  }
+
+  return expectedCurrentPublicationId;
+}
+
 function getEntryCompileFiles(
   files: NonNullable<Awaited<ReturnType<LightExtensionFileService['pull']>>['files']>,
   entry: LightExtensionEntryValidationResult,
@@ -438,6 +586,10 @@ function conflictDiagnostic(code: string, message: string): LightExtensionDiagno
     severity: 'error',
     message,
   };
+}
+
+function toReasonCode(error: LightExtensionError): string {
+  return error.code.replace(/^LIGHT_EXTENSION_/, '').toLowerCase();
 }
 
 function entryKey(entry: { target?: string; kind: string; entryName: string }): string {

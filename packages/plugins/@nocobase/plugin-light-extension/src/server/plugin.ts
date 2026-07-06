@@ -181,7 +181,7 @@ export class PluginLightExtensionServer extends Plugin {
       this.workspaceCompilerBridge,
       this.validator,
     );
-    this.publicationService = new LightExtensionPublicationService(db);
+    this.publicationService = new LightExtensionPublicationService(db, this.auditService, this.permissionService);
     this.publicationResolveService = new LightExtensionPublicationResolveService(
       db,
       this.auditService,
@@ -209,7 +209,7 @@ export class PluginLightExtensionServer extends Plugin {
       createLightExtensionFilesResource(this.fileService),
     );
     (this.app as unknown as AppWithPluginEvents).resourceManager?.define?.(
-      createLightExtensionEntriesResource(this.entryScanner),
+      createLightExtensionEntriesResource(this.entryScanner, this.publicationService),
     );
     (this.app as unknown as AppWithPluginEvents).resourceManager?.define?.(
       createLightExtensionCapabilitiesResource(this.validator),

@@ -17,6 +17,8 @@ import type {
   LightExtensionPublicationArtifactMetadata,
   LightExtensionPublicationMetadataRecord,
 } from '../../shared/types';
+import { LightExtensionAuditService } from './LightExtensionAuditService';
+import { LightExtensionPermissionService } from './LightExtensionPermissionService';
 import type { LightExtensionServiceContext } from './LightExtensionRepoService';
 import { sortDiagnostics } from './LightExtensionValidator';
 
@@ -44,8 +46,31 @@ export interface LightExtensionPublicationUpsertResult {
   created: boolean;
 }
 
+export interface LightExtensionActivatePublicationInput {
+  entryId: string;
+  toPublicationId: string;
+  expectedCurrentPublicationId: string | null;
+}
+
+export interface LightExtensionEmergencyRollbackInput extends LightExtensionActivatePublicationInput {
+  reason: string;
+}
+
+export interface LightExtensionActivationResult {
+  entryId: string;
+  repoId: string;
+  oldPublicationId: string | null;
+  activePublicationId: string;
+  publication: LightExtensionPublicationMetadataRecord;
+  emergency: boolean;
+}
+
 export class LightExtensionPublicationService {
-  constructor(private readonly db: Database) {}
+  constructor(
+    private readonly db: Database,
+    private readonly auditService?: LightExtensionAuditService,
+    private readonly permissionService?: LightExtensionPermissionService,
+  ) {}
 
   async createOrGetPublication(
     input: LightExtensionCreatePublicationInput,
@@ -118,6 +143,246 @@ export class LightExtensionPublicationService {
       publication: publicationFromModel(created),
       created: true,
     };
+  }
+
+  async activatePublication(
+    input: LightExtensionActivatePublicationInput,
+    ctx: LightExtensionServiceContext = {},
+  ): Promise<LightExtensionActivationResult> {
+    await this.permissionService?.assertActionAllowed({
+      action: 'activatePublication',
+      ctx,
+    });
+
+    return this.activateInternal(input, ctx, false);
+  }
+
+  async emergencyRollback(
+    input: LightExtensionEmergencyRollbackInput,
+    ctx: LightExtensionServiceContext = {},
+  ): Promise<LightExtensionActivationResult> {
+    if (!input.reason?.trim()) {
+      throw new LightExtensionError('LIGHT_EXTENSION_INVALID_INPUT', 'Emergency rollback reason is required');
+    }
+    await this.permissionService?.assertActionAllowed({
+      action: 'emergencyRollback',
+      ctx,
+    });
+
+    return this.activateInternal(input, ctx, true);
+  }
+
+  private async activateInternal(
+    input: LightExtensionActivatePublicationInput & { reason?: string },
+    ctx: LightExtensionServiceContext,
+    emergency: boolean,
+  ): Promise<LightExtensionActivationResult> {
+    const requestId = ctx.requestId || input.toPublicationId;
+
+    try {
+      return await this.withTransaction(ctx.transaction, async (transaction) => {
+        const entry = await this.db.getRepository('lightExtensionEntries').findOne({
+          filterByTk: input.entryId,
+          transaction,
+          lock: transaction?.LOCK?.UPDATE,
+        });
+        if (!entry) {
+          throw new LightExtensionError(
+            'LIGHT_EXTENSION_ENTRY_NOT_FOUND',
+            `Light extension entry "${input.entryId}" was not found`,
+          );
+        }
+        const publicationRecord = await this.db.getRepository('lightExtensionEntryPublications').findOne({
+          filterByTk: input.toPublicationId,
+          transaction,
+        });
+        if (!publicationRecord) {
+          throw new LightExtensionError(
+            'LIGHT_EXTENSION_PUBLICATION_NOT_FOUND',
+            `Light extension publication "${input.toPublicationId}" was not found`,
+          );
+        }
+        const publication = publicationFromModel(publicationRecord);
+        const entryRepoId = String(entry.get('repoId'));
+        const entryKind = String(entry.get('kind'));
+        if (
+          publication.entryId !== input.entryId ||
+          publication.repoId !== entryRepoId ||
+          publication.kind !== entryKind
+        ) {
+          throw new LightExtensionError(
+            'LIGHT_EXTENSION_LIFECYCLE_CONFLICT',
+            'Publication does not belong to the entry',
+          );
+        }
+
+        const repo = await this.db.getRepository('lightExtensionRepos').findOne({
+          filterByTk: entryRepoId,
+          transaction,
+          lock: transaction?.LOCK?.UPDATE,
+        });
+        const repoStatus = repo ? String(repo.get('lifecycleStatus')) : 'missing';
+        const entryStatus = String(entry.get('healthStatus'));
+        if (
+          !emergency &&
+          (repoStatus !== 'enabled' ||
+            entryStatus === 'missing' ||
+            entryStatus === 'disabled' ||
+            entryStatus === 'archived')
+        ) {
+          throw new LightExtensionError(
+            'LIGHT_EXTENSION_LIFECYCLE_CONFLICT',
+            'Entry cannot be activated in its current lifecycle state',
+          );
+        }
+
+        const oldPublicationId = nullableString(entry.get('activePublicationId'));
+        if (oldPublicationId !== input.expectedCurrentPublicationId) {
+          throw new LightExtensionError(
+            'LIGHT_EXTENSION_LIFECYCLE_CONFLICT',
+            'Active publication changed before activation',
+            {
+              details: {
+                expectedCurrentPublicationId: input.expectedCurrentPublicationId,
+                currentPublicationId: oldPublicationId,
+              },
+            },
+          );
+        }
+
+        await entry.update(
+          {
+            activePublicationId: publication.id,
+          },
+          {
+            transaction,
+          },
+        );
+        await this.recordActivationBestEffort({
+          repoId: entryRepoId,
+          entryId: input.entryId,
+          publicationId: publication.id,
+          action: emergency ? 'emergencyRollback' : 'activatePublication',
+          result: 'success',
+          requestId,
+          actorUserId: ctx.actorUserId,
+          expectedCurrentPublicationId: input.expectedCurrentPublicationId,
+          oldPublicationId,
+          newPublicationId: publication.id,
+          reason: input.reason,
+          message: emergency ? 'Light extension emergency rollback completed' : 'Light extension publication activated',
+          transaction,
+        });
+
+        return {
+          entryId: input.entryId,
+          repoId: entryRepoId,
+          oldPublicationId,
+          activePublicationId: publication.id,
+          publication: toPublicationMetadata(publication),
+          emergency,
+        };
+      });
+    } catch (error) {
+      await this.recordBlockedActivationBestEffort(input, ctx, emergency, error);
+      throw error;
+    }
+  }
+
+  private async recordBlockedActivationBestEffort(
+    input: LightExtensionActivatePublicationInput & { reason?: string },
+    ctx: LightExtensionServiceContext,
+    emergency: boolean,
+    error: unknown,
+  ): Promise<void> {
+    if (!(error instanceof LightExtensionError) || !this.auditService) {
+      return;
+    }
+
+    const auditContext = await this.resolveBlockedActivationAuditContext(input);
+    await this.recordActivationBestEffort({
+      repoId: auditContext.repoId,
+      entryId: input.entryId,
+      publicationId: input.toPublicationId,
+      action: emergency ? 'emergencyRollback' : 'activatePublication',
+      result: 'blocked',
+      requestId: ctx.requestId || input.toPublicationId,
+      actorUserId: ctx.actorUserId,
+      expectedCurrentPublicationId: input.expectedCurrentPublicationId,
+      oldPublicationId: auditContext.oldPublicationId,
+      newPublicationId: input.toPublicationId,
+      reason: input.reason,
+      reasonCode: error.code,
+      message: error.message,
+    });
+  }
+
+  private async resolveBlockedActivationAuditContext(
+    input: LightExtensionActivatePublicationInput,
+  ): Promise<{ repoId: string; oldPublicationId: string | null }> {
+    let repoId = '';
+    let oldPublicationId: string | null = null;
+
+    try {
+      const entry = await this.db.getRepository('lightExtensionEntries').findOne({
+        filterByTk: input.entryId,
+      });
+      if (entry) {
+        repoId = nullableString(entry.get('repoId')) || '';
+        oldPublicationId = nullableString(entry.get('activePublicationId'));
+      }
+
+      if (!repoId) {
+        const publication = await this.db.getRepository('lightExtensionEntryPublications').findOne({
+          filterByTk: input.toPublicationId,
+        });
+        if (publication) {
+          repoId = nullableString(publication.get('repoId')) || '';
+        }
+      }
+    } catch {
+      // Blocked audit context is best-effort and must not mask the original activation failure.
+    }
+
+    return {
+      repoId,
+      oldPublicationId,
+    };
+  }
+
+  private async recordActivationBestEffort(
+    input: Parameters<NonNullable<LightExtensionAuditService['recordActivationEvent']>>[0],
+  ): Promise<void> {
+    try {
+      await this.auditService?.recordActivationEvent(input);
+    } catch {
+      // Activation result must not depend on audit persistence availability.
+    }
+  }
+
+  private async withTransaction<T>(
+    transaction: LightExtensionServiceContext['transaction'],
+    run: (transaction: NonNullable<LightExtensionServiceContext['transaction']> | undefined) => Promise<T>,
+  ): Promise<T> {
+    if (transaction) {
+      return run(transaction);
+    }
+
+    const sequelize = (
+      this.db as unknown as {
+        sequelize?: {
+          transaction: <R>(
+            run: (transaction: NonNullable<LightExtensionServiceContext['transaction']>) => Promise<R>,
+          ) => Promise<R>;
+        };
+      }
+    ).sequelize;
+
+    if (!sequelize?.transaction) {
+      return run(undefined);
+    }
+
+    return sequelize.transaction(run);
   }
 }
 

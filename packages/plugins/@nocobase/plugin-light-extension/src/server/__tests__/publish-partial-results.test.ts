@@ -82,6 +82,65 @@ describe('plugin-light-extension publish partial results', () => {
     );
   });
 
+  it('activates the created publication when activate is true', async () => {
+    const repo = createRepo();
+    const { db, entryModels, logsRepository } = createDbStub([
+      createEntryRecord({ id: 'lee_sales_kpi', repoId: repo.id, entryName: 'sales-kpi' }),
+    ]);
+    const service = createPublishService(db, createFileServiceStub(repo, validSalesKpiFiles()));
+
+    const result = await service.publish(
+      {
+        repoId: repo.id,
+        entryIds: ['lee_sales_kpi'],
+        commitId: 'vsc_commit_1',
+        clientRequestId: 'publish_req_activate',
+        activate: true,
+        expectedCurrentPublicationIdByEntry: {
+          lee_sales_kpi: null,
+        },
+      },
+      {
+        requestId: 'req_publish_activate',
+        actorUserId: '7',
+        can: () => ({}),
+      },
+    );
+
+    expect(result.status).toBe('success');
+    expect(result.entryResults[0]).toMatchObject({
+      entryId: 'lee_sales_kpi',
+      status: 'created',
+      publication: expect.objectContaining({
+        id: 'lep_created_1',
+      }),
+    });
+    expect(entryModels[0].update).toHaveBeenCalledWith(
+      {
+        activePublicationId: 'lep_created_1',
+      },
+      expect.any(Object),
+    );
+    expect(logsRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        values: expect.objectContaining({
+          action: 'activatePublication',
+          result: 'success',
+          entryId: 'lee_sales_kpi',
+          publicationId: 'lep_created_1',
+        }),
+      }),
+    );
+    expect(logsRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        values: expect.objectContaining({
+          action: 'publish',
+          result: 'success',
+        }),
+      }),
+    );
+  });
+
   it('sets the resource HTTP status from the publish result', async () => {
     const publish = vi.fn().mockResolvedValue({
       httpStatus: 207,

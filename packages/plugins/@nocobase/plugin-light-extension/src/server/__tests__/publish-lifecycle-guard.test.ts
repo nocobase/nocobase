@@ -54,6 +54,44 @@ describe('plugin-light-extension publish lifecycle guard', () => {
     expect(reposRepository.update).not.toHaveBeenCalled();
   });
 
+  it('rechecks repository lifecycle before creating the publication', async () => {
+    const repo = createRepo();
+    const { db, publicationsRepository, reposRepository } = createDbStub(
+      [createEntryRecord({ id: 'lee_sales_kpi', repoId: repo.id, entryName: 'sales-kpi' })],
+      undefined,
+      {
+        repoLifecycleStatus: 'disabled',
+      },
+    );
+    const service = createPublishService(db, createFileServiceStub(repo, validSalesKpiFiles()));
+
+    const result = await service.publish({
+      repoId: repo.id,
+      entryIds: ['lee_sales_kpi'],
+      commitId: 'vsc_commit_1',
+      clientRequestId: 'publish_req_recheck_disabled_repo',
+    });
+
+    expect(result).toMatchObject({
+      status: 'failed',
+      httpStatus: 422,
+      entryResults: [
+        expect.objectContaining({
+          entryId: 'lee_sales_kpi',
+          status: 'conflict',
+          reasonCode: 'lifecycle_conflict',
+          diagnostics: [
+            expect.objectContaining({
+              code: 'lifecycle_conflict',
+            }),
+          ],
+        }),
+      ],
+    });
+    expect(publicationsRepository.create).not.toHaveBeenCalled();
+    expect(reposRepository.update).not.toHaveBeenCalled();
+  });
+
   it('blocks missing or disabled entries independently of ready entries', async () => {
     const repo = createRepo();
     const { db, publicationsRepository } = createDbStub([

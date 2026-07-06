@@ -144,6 +144,23 @@ export interface LightExtensionPublishAuditInput {
   transaction?: Transaction;
 }
 
+export interface LightExtensionActivationAuditInput {
+  repoId: string;
+  entryId: string;
+  publicationId?: string | null;
+  action: 'activatePublication' | 'emergencyRollback';
+  result: 'success' | 'blocked';
+  requestId: string;
+  actorUserId?: string | null;
+  expectedCurrentPublicationId?: string | null;
+  oldPublicationId?: string | null;
+  newPublicationId?: string | null;
+  reason?: string | null;
+  reasonCode?: string;
+  message: string;
+  transaction?: Transaction;
+}
+
 export class LightExtensionAuditService {
   constructor(private readonly db: Database) {}
 
@@ -323,6 +340,31 @@ export class LightExtensionAuditService {
             }),
           ),
           diagnostics: summarizeDiagnostics(input.diagnostics || []),
+        }),
+        createdAt: new Date(),
+      },
+      transaction: input.transaction,
+    });
+  }
+
+  async recordActivationEvent(input: LightExtensionActivationAuditInput): Promise<void> {
+    await this.db.getRepository('lightExtensionLogs').create({
+      values: {
+        repoId: input.repoId,
+        entryId: input.entryId,
+        publicationId: input.publicationId || undefined,
+        level: input.result === 'success' ? 'info' : 'warn',
+        action: input.action,
+        result: input.result,
+        requestId: input.requestId,
+        actorUserId: input.actorUserId || undefined,
+        reasonCode: sanitizeText(input.reasonCode),
+        message: sanitizeText(input.message),
+        details: compactObject({
+          expectedCurrentPublicationId: sanitizeText(input.expectedCurrentPublicationId),
+          oldPublicationId: sanitizeText(input.oldPublicationId),
+          newPublicationId: sanitizeText(input.newPublicationId),
+          sanitizedReason: sanitizeText(input.reason),
         }),
         createdAt: new Date(),
       },

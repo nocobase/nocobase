@@ -13,9 +13,17 @@ import type { HandlerType, ResourceOptions } from '@nocobase/resourcer';
 import { LightExtensionError, isLightExtensionError } from '../../shared/errors';
 import type { LightExtensionScanResult } from '../../shared/types';
 import { LightExtensionEntryScanner } from '../services/LightExtensionEntryScanner';
+import type { LightExtensionCanFunction } from '../services/LightExtensionPermissionService';
+import { LightExtensionPublicationService } from '../services/LightExtensionPublicationService';
 import type { LightExtensionServiceContext } from '../services/LightExtensionRepoService';
 
-export const lightExtensionEntryActionNames = ['scan', 'list', 'get'] as const;
+export const lightExtensionEntryActionNames = [
+  'scan',
+  'list',
+  'get',
+  'activatePublication',
+  'emergencyRollback',
+] as const;
 
 type LightExtensionEntryActionName = (typeof lightExtensionEntryActionNames)[number];
 type ResourceActionInput = Record<string, unknown>;
@@ -27,6 +35,7 @@ type LightExtensionResourceContext = Context & {
   auth?: {
     user?: unknown;
   };
+  can?: LightExtensionCanFunction;
   request?: {
     header?: Record<string, string | string[] | undefined>;
     headers?: Record<string, string | string[] | undefined>;
@@ -38,44 +47,89 @@ type LightExtensionResourceContext = Context & {
 };
 
 type ResourceActionRunner = (
-  scanner: LightExtensionEntryScanner,
+  services: LightExtensionEntryActionServices,
   input: ResourceActionInput,
   currentUser: LightExtensionServiceContext,
 ) => Promise<unknown>;
 
+interface LightExtensionEntryActionServices {
+  scanner: LightExtensionEntryScanner;
+  publicationService?: LightExtensionPublicationService;
+}
+
 const resourceActionRunners: Record<LightExtensionEntryActionName, ResourceActionRunner> = {
-  scan: (scanner, input, currentUser) =>
-    scanner.scanRepo(
+  scan: (services, input, currentUser) =>
+    services.scanner.scanRepo(
       {
         repoId: requireRepoId(input),
         ref: optionalString(input, 'ref'),
       },
       currentUser,
     ),
-  list: (scanner, input, currentUser) => scanner.listEntries(requireRepoId(input), currentUser),
-  get: (scanner, input, currentUser) => scanner.getEntry(requireEntryId(input), currentUser),
+  list: (services, input, currentUser) => services.scanner.listEntries(requireRepoId(input), currentUser),
+  get: (services, input, currentUser) => services.scanner.getEntry(requireEntryId(input), currentUser),
+  activatePublication: (services, input, currentUser) => {
+    if (!services.publicationService) {
+      throw invalidInput('Light extension publication service is not available');
+    }
+
+    return services.publicationService.activatePublication(
+      {
+        entryId: requireEntryId(input),
+        toPublicationId: requireString(input, 'toPublicationId'),
+        expectedCurrentPublicationId: requireNullableString(input, 'expectedCurrentPublicationId'),
+      },
+      currentUser,
+    );
+  },
+  emergencyRollback: (services, input, currentUser) => {
+    if (!services.publicationService) {
+      throw invalidInput('Light extension publication service is not available');
+    }
+
+    return services.publicationService.emergencyRollback(
+      {
+        entryId: requireEntryId(input),
+        toPublicationId: requireString(input, 'toPublicationId'),
+        expectedCurrentPublicationId: requireNullableString(input, 'expectedCurrentPublicationId'),
+        reason: requireString(input, 'reason'),
+      },
+      currentUser,
+    );
+  },
 };
 
-export function createLightExtensionEntriesResource(scanner: LightExtensionEntryScanner): ResourceOptions {
+export function createLightExtensionEntriesResource(
+  scanner: LightExtensionEntryScanner,
+  publicationService?: LightExtensionPublicationService,
+): ResourceOptions {
+  const services = {
+    scanner,
+    publicationService,
+  };
+
   return {
     name: 'lightExtensionEntries',
     only: [...lightExtensionEntryActionNames],
     actions: Object.fromEntries(
       lightExtensionEntryActionNames.map((actionName) => [
         actionName,
-        createLightExtensionEntryAction(scanner, resourceActionRunners[actionName]),
+        createLightExtensionEntryAction(services, resourceActionRunners[actionName]),
       ]),
     ) as Record<LightExtensionEntryActionName, HandlerType>,
   };
 }
 
-function createLightExtensionEntryAction(scanner: LightExtensionEntryScanner, run: ResourceActionRunner): HandlerType {
+function createLightExtensionEntryAction(
+  services: LightExtensionEntryActionServices,
+  run: ResourceActionRunner,
+): HandlerType {
   return async (ctx: Context, next) => {
     const resourceCtx = ctx as LightExtensionResourceContext;
     const input = getActionInput(resourceCtx);
 
     try {
-      const result = await run(scanner, input, getServiceContext(resourceCtx));
+      const result = await run(services, input, getServiceContext(resourceCtx));
       if (isRejectedScanResult(result)) {
         throw new LightExtensionError(
           'LIGHT_EXTENSION_VALIDATION_FAILED',
@@ -132,6 +186,7 @@ function getServiceContext(ctx: LightExtensionResourceContext): LightExtensionSe
     actorUserId: getCurrentUserId(ctx),
     requestId: getHeader(headers, 'x-request-id') || getHeader(headers, 'x-correlation-id'),
     requestSource: getHeader(headers, 'x-request-source'),
+    can: ctx.can,
   };
 }
 
@@ -201,6 +256,15 @@ function requireString(input: ResourceActionInput, key: string): string {
   }
 
   return value.trim();
+}
+
+function requireNullableString(input: ResourceActionInput, key: string): string | null {
+  const value = input[key];
+  if (value === null) {
+    return null;
+  }
+
+  return requireString(input, key);
 }
 
 function toRecord(value: unknown): ResourceActionInput {

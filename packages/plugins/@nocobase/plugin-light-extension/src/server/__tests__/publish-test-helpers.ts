@@ -30,7 +30,7 @@ export function createPublishService(
   vi.spyOn(auditService, 'recordCompileEvent').mockResolvedValue(undefined);
   const permissionService = new LightExtensionPermissionService(auditService);
   const compilerBridge = new LightExtensionWorkspaceCompilerBridge(auditService, permissionService);
-  const publicationService = new LightExtensionPublicationService(db);
+  const publicationService = new LightExtensionPublicationService(db, auditService, permissionService);
 
   return new LightExtensionPublishService(
     db,
@@ -43,27 +43,51 @@ export function createPublishService(
   );
 }
 
-export function createDbStub(entries: Record<string, unknown>[], existingPublication?: Record<string, unknown>) {
+export function createDbStub(
+  entries: Record<string, unknown>[],
+  existingPublication?: Record<string, unknown>,
+  options: {
+    repoLifecycleStatus?: string;
+  } = {},
+) {
   let publicationSeq = 0;
+  const entryModels = entries.map(createModel);
+  const publicationModels = existingPublication ? [createModel(existingPublication)] : [];
+  const repoModel = createModel({
+    id: typeof entries[0]?.repoId === 'string' ? entries[0].repoId : 'ler_sales',
+    lifecycleStatus: options.repoLifecycleStatus || 'enabled',
+  });
   const entriesRepository = {
-    find: vi.fn().mockResolvedValue(entries.map(createModel)),
+    find: vi.fn().mockResolvedValue(entryModels),
+    findOne: vi.fn().mockImplementation((input: { filterByTk?: string }) => {
+      return Promise.resolve(entryModels.find((entry) => entry.get('id') === input.filterByTk) || null);
+    }),
   };
   const reposRepository = {
+    findOne: vi.fn().mockResolvedValue(repoModel),
     update: vi.fn().mockResolvedValue(undefined),
   };
   const logsRepository = {
     create: vi.fn().mockResolvedValue(createModel({})),
   };
   const publicationsRepository = {
-    findOne: vi.fn().mockResolvedValue(existingPublication ? createModel(existingPublication) : null),
+    findOne: vi.fn().mockImplementation((input: { filterByTk?: string }) => {
+      if (input.filterByTk) {
+        return Promise.resolve(
+          publicationModels.find((publication) => publication.get('id') === input.filterByTk) || null,
+        );
+      }
+
+      return Promise.resolve(publicationModels[0] || null);
+    }),
     create: vi.fn().mockImplementation((input: { values: Record<string, unknown> }) => {
       publicationSeq += 1;
-      return Promise.resolve(
-        createModel({
-          ...input.values,
-          id: `lep_created_${publicationSeq}`,
-        }),
-      );
+      const publication = createModel({
+        ...input.values,
+        id: `lep_created_${publicationSeq}`,
+      });
+      publicationModels.push(publication);
+      return Promise.resolve(publication);
     }),
   };
   const db = {
@@ -87,6 +111,7 @@ export function createDbStub(entries: Record<string, unknown>[], existingPublica
 
   return {
     db,
+    entryModels,
     entriesRepository,
     reposRepository,
     logsRepository,
@@ -179,10 +204,17 @@ export function createEntryRecord(input: {
   };
 }
 
-export function createModel(values: Record<string, unknown>): Model {
-  return {
-    get: (key: string) => values[key],
-  } as unknown as Model;
+export function createModel(values: Record<string, unknown>): Model & { update: ReturnType<typeof vi.fn> } {
+  const modelValues = { ...values };
+  const model = {
+    get: (key: string) => modelValues[key],
+    update: vi.fn().mockImplementation((nextValues: Record<string, unknown>) => {
+      Object.assign(modelValues, nextValues);
+      return Promise.resolve(model);
+    }),
+  };
+
+  return model as unknown as Model & { update: ReturnType<typeof vi.fn> };
 }
 
 export function validSalesKpiFiles(): LightExtensionTreeEntryInput[] {
