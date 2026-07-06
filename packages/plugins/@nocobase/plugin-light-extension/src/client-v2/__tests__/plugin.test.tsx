@@ -13,7 +13,7 @@ import { LIGHT_EXTENSION_ACL_SNIPPET, LIGHT_EXTENSION_SETTINGS_KEY, NAMESPACE } 
 import PluginLightExtensionClientV2 from '../plugin';
 
 describe('PluginLightExtensionClientV2', () => {
-  it('registers Phase 1 settings pages', async () => {
+  it('registers light extension settings pages', async () => {
     const app = createMockClient({
       plugins: [
         [
@@ -48,6 +48,12 @@ describe('PluginLightExtensionClientV2', () => {
     expect(app.pluginSettingsManager.get(`${LIGHT_EXTENSION_SETTINGS_KEY}.entries`, false)).toMatchObject({
       menuKey: LIGHT_EXTENSION_SETTINGS_KEY,
       pageKey: 'entries',
+      componentLoader: expect.any(Function),
+      aclSnippet: LIGHT_EXTENSION_ACL_SNIPPET,
+    });
+    expect(app.pluginSettingsManager.get(`${LIGHT_EXTENSION_SETTINGS_KEY}.publications`, false)).toMatchObject({
+      menuKey: LIGHT_EXTENSION_SETTINGS_KEY,
+      pageKey: 'publications',
       componentLoader: expect.any(Function),
       aclSnippet: LIGHT_EXTENSION_ACL_SNIPPET,
     });

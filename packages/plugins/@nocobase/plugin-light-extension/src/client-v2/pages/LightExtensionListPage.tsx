@@ -55,6 +55,8 @@ export const settingsPath = {
     `/admin/settings/${LIGHT_EXTENSION_SETTINGS_KEY}/source?repoId=${encodeURIComponent(repoId)}`,
   entries: (repoId: string) =>
     `/admin/settings/${LIGHT_EXTENSION_SETTINGS_KEY}/entries?repoId=${encodeURIComponent(repoId)}`,
+  publications: (repoId: string) =>
+    `/admin/settings/${LIGHT_EXTENSION_SETTINGS_KEY}/publications?repoId=${encodeURIComponent(repoId)}`,
 };
 
 function LightExtensionListPage() {

@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { EditOutlined, ReloadOutlined, ScanOutlined } from '@ant-design/icons';
+import { CheckCircleOutlined, EditOutlined, ReloadOutlined, ScanOutlined } from '@ant-design/icons';
 import { Alert, Button, Empty, Flex, Space, Table, Tag, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
@@ -123,6 +123,18 @@ function LightExtensionEntriesPage() {
           value ? <Tag color="success">{t('Settings schema')}</Tag> : <Tag>{t('No settings')}</Tag>,
       },
       {
+        title: t('Active publication'),
+        dataIndex: 'activePublicationId',
+        render: (value: string | null) =>
+          value ? (
+            <Tag color="success" icon={<CheckCircleOutlined />}>
+              {shortId(value)}
+            </Tag>
+          ) : (
+            <Tag>{t('No active publication')}</Tag>
+          ),
+      },
+      {
         title: t('Diagnostics'),
         dataIndex: 'diagnostics',
         render: (value: LightExtensionDiagnostic[]) => {
@@ -178,6 +190,9 @@ function LightExtensionEntriesPage() {
             <Link to={settingsPath.source(repoId)}>{t('Source')}</Link>
           </Button>
           <Button>
+            <Link to={settingsPath.publications(repoId)}>{t('Publications')}</Link>
+          </Button>
+          <Button>
             <Link to={settingsPath.list}>{t('Back to list')}</Link>
           </Button>
         </Space>
@@ -205,3 +220,7 @@ function LightExtensionEntriesPage() {
 }
 
 export default LightExtensionEntriesPage;
+
+function shortId(value: string): string {
+  return value.length > 12 ? value.slice(0, 12) : value;
+}

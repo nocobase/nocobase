@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { Database } from '@nocobase/database';
+import type { Database, Model } from '@nocobase/database';
 import { randomUUID } from 'crypto';
 
 import { LightExtensionError, isLightExtensionError } from '../../shared/errors';
@@ -33,6 +33,32 @@ export class LightExtensionPublicationResolveService {
     ctx: LightExtensionServiceContext = {},
   ): Promise<LightExtensionPublicationMetadataRecord> {
     return toPublicationMetadata(await this.getPublication(publicationId, ctx));
+  }
+
+  async listMetadataByRepo(
+    repoId: string,
+    ctx: LightExtensionServiceContext = {},
+  ): Promise<LightExtensionPublicationMetadataRecord[]> {
+    const requestId = ctx.requestId || randomUUID();
+    try {
+      await this.permissionService.assertActionAllowed({
+        action: 'readPublication',
+        ctx,
+      });
+    } catch (error) {
+      await this.recordReadDenied(`repo:${repoId}`, { ...ctx, requestId }, error);
+      throw error;
+    }
+
+    const records = await this.db.getRepository('lightExtensionEntryPublications').find({
+      filter: {
+        repoId,
+      },
+      sort: ['entryId', '-createdAt'],
+      transaction: ctx.transaction,
+    });
+
+    return records.map((record: Model) => toPublicationMetadata(publicationFromModel(record)));
   }
 
   async getPublication(

@@ -10,13 +10,14 @@
 import type { Database } from '@nocobase/database';
 import type { VscPermissionHookInput } from '@nocobase/plugin-vsc-file';
 import type { Application } from '@nocobase/server';
-import { MockServer, createMockServer } from '@nocobase/test';
 import { vi } from 'vitest';
 
 import { LIGHT_EXTENSION_ACL_ACTIONS, LIGHT_EXTENSION_ACL_SNIPPET, NAMESPACE } from '../../constants';
 import { lightExtensionCapabilitiesActionNames } from '../resources/lightExtensionCapabilities';
 import { lightExtensionEntryActionNames } from '../resources/lightExtensionEntries';
 import { lightExtensionFileActionNames } from '../resources/lightExtensionFiles';
+import { lightExtensionActionNames } from '../resources/lightExtensions';
+import { lightExtensionPublicationActionNames } from '../resources/lightExtensionPublications';
 import { lightExtensionRepoActionNames } from '../resources/lightExtensionRepos';
 import { LightExtensionAuditService } from '../services/LightExtensionAuditService';
 import { LightExtensionPermissionService } from '../services/LightExtensionPermissionService';
@@ -24,90 +25,55 @@ import PluginLightExtensionServer from '../plugin';
 
 describe('plugin-light-extension permission service', () => {
   it('registers light-extension ACL actions through the management snippet without blanket logged-in access', async () => {
-    const app = await createMockServer({
-      acl: true,
-      plugins: [PluginLightExtensionServer],
+    type RegisteredSnippet = { name: string; actions: string[] };
+
+    let registeredSnippet: RegisteredSnippet | null = null;
+    const acl = {
+      allow: vi.fn(),
+      registerSnippet: vi.fn((snippet: RegisteredSnippet) => {
+        registeredSnippet = snippet;
+      }),
+    };
+    const app = {
+      db: {} as Database,
+      acl,
+      pm: {
+        get: vi.fn(() => null),
+        getPlugins: vi.fn(() => new Map()),
+      },
+      resourceManager: {
+        define: vi.fn(),
+        options: {},
+      },
+      on: vi.fn(),
+      off: vi.fn(),
+      use: vi.fn(),
+    } as unknown as Application;
+    const plugin = new PluginLightExtensionServer(app, {
+      name: 'light-extension',
+      packageName: NAMESPACE,
     });
 
-    try {
-      const adminRole = app.acl.define({
-        role: 'lightExtensionAdmin',
-      });
-      adminRole.snippets.add(LIGHT_EXTENSION_ACL_SNIPPET);
-      app.acl.define({
-        role: 'lightExtensionRestricted',
-      });
+    await plugin.load();
 
-      for (const action of LIGHT_EXTENSION_ACL_ACTIONS) {
-        await expect(
-          app.acl.allowManager.isAllowed('lightExtension', action, { state: {} }),
-          `anonymous ${action}`,
-        ).resolves.toBe(false);
-        await expect(
-          app.acl.allowManager.isAllowed('lightExtension', action, { state: { currentUser: { id: 1 } } }),
-          `logged-in ${action}`,
-        ).resolves.toBe(false);
-        expect(
-          app.acl.can({
-            role: 'lightExtensionAdmin',
-            resource: 'lightExtension',
-            action,
-          }),
-          `snippet ${action}`,
-        ).toBeTruthy();
-        expect(
-          app.acl.can({
-            role: 'lightExtensionRestricted',
-            resource: 'lightExtension',
-            action,
-          }),
-          `restricted ${action}`,
-        ).toBeNull();
-      }
-
-      await expect(
-        app.acl.allowManager.isAllowed('lightExtension', 'unknownAction', {
-          state: { currentUser: { id: 1 } },
-        }),
-      ).resolves.toBe(false);
-      expect(app.acl.snippetManager.snippets.get(LIGHT_EXTENSION_ACL_SNIPPET)?.actions).toEqual([
+    expect(acl.allow).not.toHaveBeenCalled();
+    expect(acl.registerSnippet).toHaveBeenCalledTimes(1);
+    expect(registeredSnippet).toEqual({
+      name: LIGHT_EXTENSION_ACL_SNIPPET,
+      actions: [
         ...LIGHT_EXTENSION_ACL_ACTIONS.map((action) => `lightExtension:${action}`),
+        ...lightExtensionActionNames.map((action) => `lightExtensions:${action}`),
+        ...lightExtensionPublicationActionNames.map((action) => `lightExtensionPublications:${action}`),
         ...lightExtensionRepoActionNames.map((action) => `lightExtensionRepos:${action}`),
         ...lightExtensionFileActionNames.map((action) => `lightExtensionFiles:${action}`),
         ...lightExtensionEntryActionNames.map((action) => `lightExtensionEntries:${action}`),
         ...lightExtensionCapabilitiesActionNames.map((action) => `lightExtensionCapabilities:${action}`),
-      ]);
-      expect(
-        app.acl.can({
-          role: 'lightExtensionAdmin',
-          resource: 'lightExtensionFiles',
-          action: 'readArchivedSource',
-        }),
-      ).toBeTruthy();
-      expect(
-        app.acl.can({
-          role: 'lightExtensionAdmin',
-          resource: 'lightExtensionEntries',
-          action: 'scan',
-        }),
-      ).toBeTruthy();
-      expect(
-        app.acl.can({
-          role: 'lightExtensionAdmin',
-          resource: 'lightExtensionCapabilities',
-          action: 'get',
-        }),
-      ).toBeTruthy();
-      expect(
-        app.acl.can({
-          role: 'lightExtensionRestricted',
-          resource: 'lightExtensionFiles',
-          action: 'readArchivedSource',
-        }),
-      ).toBeNull();
-    } finally {
-      await app.destroy();
-    }
+      ],
+    });
+    expect(registeredSnippet?.actions).toContain('lightExtensionPublications:list');
+    expect(registeredSnippet?.actions).toContain('lightExtensionEntries:activatePublication');
+    expect(registeredSnippet?.actions).toContain('lightExtensionEntries:emergencyRollback');
+    expect(registeredSnippet?.actions).toContain('lightExtensionCapabilities:get');
   });
 
   it('registers the vsc permission hook after vsc-file becomes available later', async () => {

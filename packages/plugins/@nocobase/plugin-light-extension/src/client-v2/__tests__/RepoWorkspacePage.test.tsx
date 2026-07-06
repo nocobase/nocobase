@@ -21,6 +21,7 @@ const mocks = vi.hoisted(() => ({
     getRepo: vi.fn(),
     pull: vi.fn(),
     push: vi.fn(),
+    compilePreview: vi.fn(),
     scanEntries: vi.fn(),
   },
 }));
@@ -103,6 +104,13 @@ describe('LightExtensionWorkspacePage', () => {
       repo: { id: 'ler_sales' },
       commit: { id: 'commit-2' },
       tree: { hash: 'tree-2', entryCount: 1, byteSize: 55 },
+    });
+    mocks.api.compilePreview.mockResolvedValue({
+      repo: { id: 'ler_sales' },
+      commitId: 'commit-1',
+      accepted: true,
+      diagnostics: [],
+      entries: [],
     });
     mocks.api.scanEntries.mockResolvedValue({
       repo: { id: 'ler_sales' },
@@ -197,5 +205,53 @@ describe('LightExtensionWorkspacePage', () => {
 
     await screen.findByText('Import "react" is not allowed');
     expect(screen.getByText('import_not_allowed')).toBeInTheDocument();
+  });
+
+  it('runs compile preview and opens diagnostic source locations', async () => {
+    mocks.api.compilePreview.mockResolvedValueOnce({
+      repo: { id: 'ler_sales' },
+      commitId: 'commit-1',
+      accepted: false,
+      diagnostics: [],
+      entries: [
+        {
+          entryId: 'lee_sales',
+          repoId: 'ler_sales',
+          target: 'client',
+          kind: 'js-block',
+          entryName: 'sales-kpi',
+          entryPath: 'src/client/js-blocks/sales-kpi/index.tsx',
+          activePublicationId: null,
+          status: 'failed',
+          accepted: false,
+          diagnostics: [
+            {
+              code: 'RUNJS_IMPORT_NOT_FOUND',
+              severity: 'error',
+              message: 'Import target was not found',
+              path: 'src/client/js-blocks/sales-kpi/index.tsx',
+              line: 1,
+              column: 8,
+              kind: 'js-block',
+              entryName: 'sales-kpi',
+            },
+          ],
+        },
+      ],
+    });
+
+    render(
+      <MemoryRouter initialEntries={['/admin/settings/light-extension/source?repoId=ler_sales']}>
+        <LightExtensionWorkspacePage />
+      </MemoryRouter>,
+    );
+
+    await screen.findByText('src/client/js-blocks/sales-kpi/index.tsx');
+    fireEvent.click(screen.getByRole('button', { name: /Compile preview/ }));
+
+    await waitFor(() => expect(mocks.api.compilePreview).toHaveBeenCalledWith({ repoId: 'ler_sales' }));
+    expect(await screen.findByText('Import target was not found')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /Line 1/ }));
+    expect(await screen.findByText('Opened diagnostic source')).toBeInTheDocument();
   });
 });

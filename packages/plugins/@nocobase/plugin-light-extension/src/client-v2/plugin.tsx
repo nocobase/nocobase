@@ -46,6 +46,14 @@ export class PluginLightExtensionClientV2 extends Plugin<Record<string, never>, 
       aclSnippet: LIGHT_EXTENSION_ACL_SNIPPET,
       componentLoader: () => import('./pages/LightExtensionEntriesPage'),
     });
+
+    this.pluginSettingsManager.addPageTabItem({
+      menuKey: LIGHT_EXTENSION_SETTINGS_KEY,
+      key: 'publications',
+      title: this.t('Publications'),
+      aclSnippet: LIGHT_EXTENSION_ACL_SNIPPET,
+      componentLoader: () => import('./pages/LightExtensionPublicationsPage'),
+    });
   }
 }
 

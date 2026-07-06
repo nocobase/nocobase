@@ -7,7 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Alert, Empty, List, Space, Tag, Typography } from 'antd';
+import { AimOutlined } from '@ant-design/icons';
+import { Alert, Button, Empty, List, Space, Tag, Typography } from 'antd';
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -17,10 +18,11 @@ import type { LightExtensionDiagnostic } from '../../shared/types';
 export interface DiagnosticsPanelProps {
   diagnostics?: LightExtensionDiagnostic[];
   title?: string;
+  onOpenDiagnostic?: (diagnostic: LightExtensionDiagnostic) => void;
 }
 
 export function DiagnosticsPanel(props: DiagnosticsPanelProps) {
-  const { diagnostics = [], title } = props;
+  const { diagnostics = [], onOpenDiagnostic, title } = props;
   const { t } = useTranslation(NAMESPACE);
   const sortedDiagnostics = useMemo(
     () =>
@@ -65,11 +67,15 @@ export function DiagnosticsPanel(props: DiagnosticsPanelProps) {
                 description={
                   <Space direction="vertical" size={2}>
                     <Typography.Text>{item.message}</Typography.Text>
-                    <Typography.Text type="secondary">
-                      {[item.path, item.kind, item.entryName, item.line ? `${t('Line')} ${item.line}` : null]
-                        .filter(Boolean)
-                        .join(' / ')}
-                    </Typography.Text>
+                    {item.path ? (
+                      onOpenDiagnostic ? (
+                        <Button icon={<AimOutlined />} onClick={() => onOpenDiagnostic(item)} size="small" type="link">
+                          {formatDiagnosticLocation(item, t)}
+                        </Button>
+                      ) : (
+                        <Typography.Text type="secondary">{formatDiagnosticLocation(item, t)}</Typography.Text>
+                      )
+                    ) : null}
                   </Space>
                 }
                 message={
@@ -91,3 +97,15 @@ export function DiagnosticsPanel(props: DiagnosticsPanelProps) {
 }
 
 export default DiagnosticsPanel;
+
+function formatDiagnosticLocation(diagnostic: LightExtensionDiagnostic, t: (key: string) => string): string {
+  return [
+    diagnostic.path,
+    diagnostic.kind,
+    diagnostic.entryName,
+    diagnostic.line ? `${t('Line')} ${diagnostic.line}` : null,
+    diagnostic.column ? `${t('Column')} ${diagnostic.column}` : null,
+  ]
+    .filter(Boolean)
+    .join(' / ');
+}

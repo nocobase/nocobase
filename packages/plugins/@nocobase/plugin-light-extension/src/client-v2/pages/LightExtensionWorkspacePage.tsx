@@ -9,6 +9,7 @@
 
 import {
   DeleteOutlined,
+  ExperimentOutlined,
   FileAddOutlined,
   FileTextOutlined,
   FolderAddOutlined,
@@ -62,6 +63,7 @@ function LightExtensionWorkspacePage() {
   const [diagnostics, setDiagnostics] = useState<LightExtensionDiagnostic[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [previewing, setPreviewing] = useState(false);
   const [scanning, setScanning] = useState(false);
   const [newFileOpen, setNewFileOpen] = useState(false);
   const [notice, setNotice] = useState<{ type: 'success' | 'info' | 'warning' | 'error'; message: string } | null>(
@@ -196,6 +198,48 @@ function LightExtensionWorkspacePage() {
     }
   };
 
+  const compilePreview = async () => {
+    if (!repoId) {
+      return;
+    }
+
+    setPreviewing(true);
+    setNotice(null);
+    try {
+      const result = await api.compilePreview({ repoId });
+      const nextDiagnostics = [...result.diagnostics, ...result.entries.flatMap((entry) => entry.diagnostics || [])];
+      setDiagnostics(nextDiagnostics);
+      if (result.repo) {
+        setRepo(result.repo);
+      }
+      setNotice({
+        type: result.accepted ? 'success' : 'warning',
+        message: result.accepted ? t('Compile preview completed') : t('Compile preview completed with diagnostics'),
+      });
+    } catch (error) {
+      setDiagnostics(getLightExtensionErrorDiagnostics(error) as LightExtensionDiagnostic[]);
+      setNotice({ type: 'error', message: error instanceof Error ? error.message : t('Failed to compile preview') });
+    } finally {
+      setPreviewing(false);
+    }
+  };
+
+  const openDiagnosticSource = useCallback(
+    (diagnostic: LightExtensionDiagnostic) => {
+      if (!diagnostic.path) {
+        return;
+      }
+      if (!files.some((file) => file.path === diagnostic.path)) {
+        setNotice({ type: 'warning', message: t('Diagnostic source is not loaded') });
+        return;
+      }
+
+      setActivePath(diagnostic.path);
+      setNotice({ type: 'info', message: t('Opened diagnostic source') });
+    },
+    [files, t],
+  );
+
   if (!repoId) {
     return (
       <Flex vertical gap={16} style={{ padding: 24 }}>
@@ -241,8 +285,14 @@ function LightExtensionWorkspacePage() {
           <Button icon={<ScanOutlined />} loading={scanning} onClick={scanEntries}>
             {t('Scan')}
           </Button>
+          <Button icon={<ExperimentOutlined />} loading={previewing} onClick={compilePreview}>
+            {t('Compile preview')}
+          </Button>
           <Button>
             <Link to={settingsPath.entries(repoId)}>{t('Entries')}</Link>
+          </Button>
+          <Button>
+            <Link to={settingsPath.publications(repoId)}>{t('Publications')}</Link>
           </Button>
         </Space>
       </Flex>
@@ -317,7 +367,7 @@ function LightExtensionWorkspacePage() {
         </section>
       </Flex>
 
-      <DiagnosticsPanel diagnostics={diagnostics} />
+      <DiagnosticsPanel diagnostics={diagnostics} onOpenDiagnostic={openDiagnosticSource} />
 
       <Modal
         okText={t('Create')}

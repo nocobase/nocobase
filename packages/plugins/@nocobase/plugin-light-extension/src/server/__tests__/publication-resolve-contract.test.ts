@@ -57,6 +57,72 @@ describe('plugin-light-extension publication resolve contract', () => {
     expect(runtime.artifact.sourceMap).toBe('{"version":3}');
   });
 
+  it('lists repo publications as metadata-only records', async () => {
+    const { service, publicationsRepository } = createResolveService(createPublicationRecord());
+
+    const publications = await service.listMetadataByRepo('ler_sales', {
+      can: () => ({}),
+    });
+
+    expect(publicationsRepository.find).toHaveBeenCalledWith(
+      expect.objectContaining({
+        filter: {
+          repoId: 'ler_sales',
+        },
+        sort: ['entryId', '-createdAt'],
+      }),
+    );
+    expect(publications).toEqual([
+      expect.objectContaining({
+        id: 'lep_sales_kpi',
+        repoId: 'ler_sales',
+        entryId: 'lee_sales_kpi',
+      }),
+    ]);
+    expect(JSON.stringify(publications[0].artifact)).not.toContain('runtime secret');
+    expect(JSON.stringify(publications[0].artifact)).not.toContain('sourceMap');
+  });
+
+  it('normalizes metadata-only resource list reads', async () => {
+    const service = {
+      listMetadataByRepo: vi.fn().mockResolvedValue([{ id: 'lep_sales_kpi' }]),
+    } as unknown as LightExtensionPublicationResolveService;
+    const resource = createLightExtensionPublicationsResource(service);
+    const can = vi.fn().mockReturnValue({});
+    const ctx = {
+      action: {
+        params: {
+          filterByTk: 'ler_sales',
+        },
+      },
+      auth: {
+        user: {
+          id: '7',
+        },
+      },
+      can,
+      request: {
+        headers: {
+          'x-request-id': 'req_publication_list',
+          'x-request-source': 'unit-resource',
+        },
+      },
+    } as unknown as Context;
+
+    await resource.actions?.list?.(ctx, async () => {});
+
+    expect(service.listMetadataByRepo).toHaveBeenCalledWith(
+      'ler_sales',
+      expect.objectContaining({
+        actorUserId: '7',
+        requestId: 'req_publication_list',
+        requestSource: 'unit-resource',
+        can,
+      }),
+    );
+    expect((ctx as { body?: unknown }).body).toEqual([{ id: 'lep_sales_kpi' }]);
+  });
+
   it('normalizes metadata-only resource reads and preserves the readPublication permission context', async () => {
     const service = {
       getMetadata: vi.fn().mockResolvedValue({ id: 'lep_sales_kpi' }),
@@ -99,12 +165,14 @@ describe('plugin-light-extension publication resolve contract', () => {
 });
 
 function createResolveService(record: Record<string, unknown>) {
+  const publicationsRepository = {
+    find: vi.fn().mockResolvedValue([createModel(record)]),
+    findOne: vi.fn().mockResolvedValue(createModel(record)),
+  };
   const db = {
     getRepository: (name: string) => {
       if (name === 'lightExtensionEntryPublications') {
-        return {
-          findOne: vi.fn().mockResolvedValue(createModel(record)),
-        };
+        return publicationsRepository;
       }
       if (name === 'lightExtensionLogs') {
         return {
@@ -120,6 +188,7 @@ function createResolveService(record: Record<string, unknown>) {
 
   return {
     service: new LightExtensionPublicationResolveService(db, auditService, permissionService),
+    publicationsRepository,
   };
 }
 

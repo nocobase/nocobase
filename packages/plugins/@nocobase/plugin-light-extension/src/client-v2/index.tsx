@@ -10,6 +10,7 @@
 export { default as LightExtensionEntriesPage } from './pages/LightExtensionEntriesPage';
 export { default as LightExtensionHomePage } from './pages/LightExtensionHomePage';
 export { default as LightExtensionListPage } from './pages/LightExtensionListPage';
+export { default as LightExtensionPublicationsPage } from './pages/LightExtensionPublicationsPage';
 export { default as LightExtensionWorkspacePage } from './pages/LightExtensionWorkspacePage';
 export { PluginLightExtensionClientV2 } from './plugin';
 export { default } from './plugin';

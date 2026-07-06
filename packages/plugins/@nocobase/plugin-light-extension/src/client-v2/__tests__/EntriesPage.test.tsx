@@ -72,7 +72,7 @@ describe('LightExtensionEntriesPage', () => {
         tags: ['sales'],
         sort: 10,
         settingsSchema: { type: 'object' },
-        activePublicationId: null,
+        activePublicationId: 'lep_active',
         healthStatus: 'failed',
         diagnostics: [
           {
@@ -144,6 +144,7 @@ describe('LightExtensionEntriesPage', () => {
     expect(screen.getByText('sales-kpi')).toBeTruthy();
     expect(screen.getByText('src/client/js-blocks/sales-kpi/index.tsx')).toBeTruthy();
     expect(screen.getByText('Settings schema')).toBeTruthy();
+    expect(screen.getByText('lep_active')).toBeTruthy();
     expect(screen.getAllByText('Errors: 1').length).toBeGreaterThan(0);
     expect(screen.getByText('settings.json keyword "x-reactions" is not supported')).toBeTruthy();
   });

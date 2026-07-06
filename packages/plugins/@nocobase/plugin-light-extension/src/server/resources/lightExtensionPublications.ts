@@ -15,7 +15,7 @@ import type { LightExtensionCanFunction } from '../services/LightExtensionPermis
 import { LightExtensionPublicationResolveService } from '../services/LightExtensionPublicationResolveService';
 import type { LightExtensionServiceContext } from '../services/LightExtensionRepoService';
 
-export const lightExtensionPublicationActionNames = ['get'] as const;
+export const lightExtensionPublicationActionNames = ['list', 'get'] as const;
 
 type LightExtensionPublicationActionName = (typeof lightExtensionPublicationActionNames)[number];
 type ResourceActionInput = Record<string, unknown>;
@@ -49,6 +49,7 @@ type ResourceActionRunner = (
 ) => Promise<unknown>;
 
 const resourceActionRunners: Record<LightExtensionPublicationActionName, ResourceActionRunner> = {
+  list: (service, input, currentUser) => service.listMetadataByRepo(requireRepoId(input), currentUser),
   get: (service, input, currentUser) => service.getMetadata(requirePublicationId(input), currentUser),
 };
 
@@ -148,6 +149,15 @@ function requirePublicationId(input: ResourceActionInput): string {
       publicationId: input.publicationId || input.filterByTk,
     },
     'publicationId',
+  );
+}
+
+function requireRepoId(input: ResourceActionInput): string {
+  return requireString(
+    {
+      repoId: input.repoId || input.filterByTk,
+    },
+    'repoId',
   );
 }
 

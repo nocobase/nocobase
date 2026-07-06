@@ -15,6 +15,7 @@ import { NAMESPACE } from '../../constants';
 import type {
   LightExtensionChangeLifecycleInput,
   LightExtensionCommitRecord,
+  LightExtensionCompilePreviewResult,
   LightExtensionCreateRepoInput,
   LightExtensionEntryRecord,
   LightExtensionFileChange,
@@ -36,6 +37,7 @@ export const lightExtensionRepoOperations = [
   'pull',
   'getFile',
   'push',
+  'compilePreview',
   'scanEntries',
   'listEntries',
 ] as const;
@@ -105,6 +107,7 @@ export interface UseLightExtensionRepoResult {
   pull(input: LightExtensionPullInput): Promise<LightExtensionPullResult>;
   getFile(input: LightExtensionGetFileInput): Promise<LightExtensionFileResult>;
   push(input: LightExtensionPushInput): Promise<LightExtensionPushResult>;
+  compilePreview(input: { repoId: string; entryIds?: string[] }): Promise<LightExtensionCompilePreviewResult>;
   scanEntries(repoId: string): Promise<LightExtensionScanResult>;
   listEntries(repoId: string): Promise<LightExtensionEntryRecord[]>;
   isLoading(operation: LightExtensionRepoOperation): boolean;
@@ -142,6 +145,7 @@ type OperationInputMap = {
   pull: LightExtensionPullInput;
   getFile: LightExtensionGetFileInput;
   push: LightExtensionPushInput;
+  compilePreview: { repoId: string; entryIds?: string[] };
   scanEntries: { repoId: string };
   listEntries: { repoId: string };
 };
@@ -156,6 +160,7 @@ type OperationResultMap = {
   pull: LightExtensionPullResult;
   getFile: LightExtensionFileResult;
   push: LightExtensionPushResult;
+  compilePreview: LightExtensionCompilePreviewResult;
   scanEntries: LightExtensionScanResult;
   listEntries: LightExtensionEntryRecord[];
 };
@@ -170,6 +175,7 @@ const operationResourceActions: Record<LightExtensionRepoOperation, string> = {
   pull: 'lightExtensionFiles:pull',
   getFile: 'lightExtensionFiles:getFile',
   push: 'lightExtensionFiles:push',
+  compilePreview: 'lightExtensions:compilePreview',
   scanEntries: 'lightExtensionEntries:scan',
   listEntries: 'lightExtensionEntries:list',
 };
@@ -255,6 +261,7 @@ export function useLightExtensionRepo(): UseLightExtensionRepoResult {
       pull: (input) => requestOperation('pull', input),
       getFile: (input) => requestOperation('getFile', input),
       push: (input) => requestOperation('push', input),
+      compilePreview: (input) => requestOperation('compilePreview', input),
       scanEntries: (repoId) => requestOperation('scanEntries', { repoId }),
       listEntries: (repoId) => requestOperation('listEntries', { repoId }),
       isLoading: (operation) => Boolean(loading[operation]),
