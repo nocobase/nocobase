@@ -93,20 +93,20 @@
     "envAdd": {
       "prompts": {
         "name": {
-          "message": "你想如何命名这个环境？",
+          "message": "应用环境标识",
           "placeholder": "default"
         },
         "scope": {
-          "message": "这个连接要保存到哪里？",
+          "message": "连接保存位置",
           "globalLabel": "全局",
           "globalHint": "保存在用户级配置中"
         },
         "apiBaseUrl": {
-          "message": "API 基础地址是什么？",
+          "message": "API 基础地址",
           "placeholder": "https://demo.example.com/api 或 https://demo.example.com/api/__app/<subapp>"
         },
         "authType": {
-          "message": "你想使用哪种认证方式？",
+          "message": "认证方式",
           "basicLabel": "Basic 认证（用户名 + 密码）",
           "basicHint": "保存后会用用户名和密码换取 Token",
           "oauthLabel": "OAuth（浏览器认证）",
@@ -114,14 +114,14 @@
           "tokenLabel": "API Token / API Key"
         },
         "username": {
-          "message": "请输入 Basic 登录用户名",
+          "message": "Basic 登录用户名",
           "placeholder": "admin"
         },
         "password": {
-          "message": "请输入 Basic 登录密码"
+          "message": "Basic 登录密码"
         },
         "accessToken": {
-          "message": "请输入 API Token 或 API Key",
+          "message": "API Token 或 API Key",
           "placeholder": "请输入你的 API Token / API Key"
         }
       }
@@ -179,7 +179,7 @@
           },
           "prompts": {
             "provideMethod": {
-              "message": "你想通过哪种方式提供 license key？",
+              "message": "License key 提供方式",
               "keyOption": "直接粘贴 license key",
               "fileOption": "从文件读取 key"
             },
@@ -252,7 +252,7 @@
       },
       "prompts": {
         "source": {
-          "message": "你想通过哪种方式获取 NocoBase？",
+          "message": "NocoBase 获取方式",
           "dockerLabel": "Docker 安装（推荐）",
           "dockerHint": "适合无代码或低维护成本场景。后续升级时，拉取新镜像并重启应用即可。",
           "npmLabel": "create-nocobase-app 安装",
@@ -261,7 +261,7 @@
           "gitHint": "适合体验最新未发布版本、参与贡献，或直接修改和调试 NocoBase 源码。这个方式更偏向开发者使用。"
         },
         "version": {
-          "message": "你想使用哪个版本？",
+          "message": "NocoBase 版本",
           "latestLabel": "latest",
           "latestHint": "稳定版。适合生产环境和希望获得稳定体验的场景。",
           "betaLabel": "beta",
@@ -272,15 +272,15 @@
           "otherHint": "手动填写其他版本号、Docker tag 或 Git ref，例如分支名。"
         },
         "otherVersion": {
-          "message": "请输入你想使用的版本号、Docker tag 或 Git ref。",
+          "message": "自定义版本号、Docker tag 或 Git ref",
           "placeholder": "例如：fix/cli-v2"
         },
         "dockerRegistry": {
-          "message": "你想使用哪个 Docker registry？镜像 tag 请单独在 Version 中填写。",
+          "message": "Docker registry（镜像 tag 在版本中单独设置）",
           "placeholder": "registry.cn-shanghai.aliyuncs.com/nocobase/nocobase"
         },
         "dockerPlatform": {
-          "message": "要使用哪个 Docker 镜像平台？",
+          "message": "架构",
           "autoLabel": "自动",
           "autoHint": "由 Docker 根据当前机器自动选择"
         },
@@ -323,79 +323,79 @@
       },
       "prompts": {
         "env": {
-          "message": "你想如何命名这个应用？",
+          "message": "应用环境标识",
           "placeholder": "local"
         },
         "lang": {
-          "message": "你希望应用使用哪种语言？"
+          "message": "应用语言"
         },
         "appPath": {
-          "message": "应用要放到哪里？（相对路径基于 {{root}}）",
+          "message": "应用目录（相对路径基于 {{root}}）",
           "placeholder": "./<env>/"
         },
         "appPort": {
-          "message": "应用要使用哪个端口？",
+          "message": "应用端口",
           "placeholder": "13000"
         },
         "appPublicPath": {
-          "message": "应用的子路径是什么？（例如 /nocobase/）",
+          "message": "应用子路径（例如 /nocobase/）",
           "placeholder": "/ 或 /nocobase/"
         },
         "storagePath": {
-          "message": "上传文件和本地存储目录要放到哪里？",
+          "message": "上传文件和本地存储目录",
           "placeholder": "./<env>/storage/"
         },
         "dbDialect": {
-          "message": "你想使用哪种数据库？"
+          "message": "数据库类型"
         },
         "builtinDb": {
-          "message": "是否使用内置数据库？"
+          "message": "使用内置数据库"
         },
         "builtinDbImage": {
-          "message": "内置数据库要使用哪个 Docker 镜像？",
+          "message": "内置数据库 Docker 镜像",
           "placeholder": "postgres:16"
         },
         "dbHost": {
-          "message": "数据库主机地址是什么？",
+          "message": "数据库主机地址",
           "placeholder": "127.0.0.1"
         },
         "dbPort": {
-          "message": "数据库端口是什么？",
+          "message": "数据库端口",
           "placeholder": "5432"
         },
         "dbDatabase": {
-          "message": "数据库名称是什么？"
+          "message": "数据库名称"
         },
         "dbUser": {
-          "message": "数据库用户名是什么？"
+          "message": "数据库用户名"
         },
         "dbPassword": {
-          "message": "数据库密码是什么？"
+          "message": "数据库密码"
         },
         "dbSchema": {
-          "message": "数据库 schema 是什么？（仅 PostgreSQL，可选）",
+          "message": "数据库 schema（仅 PostgreSQL/KingbaseES，可选）",
           "placeholder": "留空则使用默认 schema"
         },
         "dbTablePrefix": {
-          "message": "要使用什么数据表前缀？（可选）",
+          "message": "数据表前缀（可选）",
           "placeholder": "例如：nb_"
         },
         "dbUnderscored": {
-          "message": "数据库表名和字段名是否使用下划线风格？"
+          "message": "数据库表名和字段名使用下划线风格"
         },
         "rootUsername": {
-          "message": "设置初始管理员用户名",
+          "message": "初始管理员用户名",
           "placeholder": "nocobase"
         },
         "rootEmail": {
-          "message": "初始管理员邮箱是什么？",
+          "message": "初始管理员邮箱",
           "placeholder": "admin@nocobase.com"
         },
         "rootPassword": {
-          "message": "设置初始管理员密码"
+          "message": "初始管理员密码"
         },
         "rootNickname": {
-          "message": "初始管理员显示名称是什么？",
+          "message": "初始管理员显示名称",
           "placeholder": "Super Admin"
         }
       }
@@ -419,11 +419,11 @@
       },
       "prompts": {
         "appName": {
-          "message": "这个环境要使用什么 `--env` 标识？",
+          "message": "应用环境唯一标识（CLI 将通过该标识定位并操作对应环境）",
           "placeholder": "local"
         },
         "setupMode": {
-          "message": "你想用哪种方式配置这个环境？",
+          "message": "应用环境配置方式",
           "installNewLabel": "新安装",
           "installNewHint": "从零安装一个新的应用，适合首次部署、试用或新建本地开发环境。",
           "manageLocalLabel": "本机接管",
@@ -432,7 +432,7 @@
           "connectRemoteHint": "只保存远程应用的连接信息，不在本机安装或接管应用。"
         },
         "installSkills": {
-          "message": "是否安装 NocoBase AI coding skills（nocobase/skills）？"
+          "message": "安装 NocoBase AI coding skills（nocobase/skills）"
         },
         "apiBaseUrl": {
           "message": "API 基础地址",
