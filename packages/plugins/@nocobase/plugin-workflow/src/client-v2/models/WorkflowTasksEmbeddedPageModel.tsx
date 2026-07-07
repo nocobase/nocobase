@@ -21,6 +21,10 @@ function WorkflowTasksEmbeddedPage() {
 }
 
 export class WorkflowTasksEmbeddedPageModel extends ChildPageModel {
+  render() {
+    return <WorkflowTasksEmbeddedPage />;
+  }
+
   renderFirstTab() {
     return <WorkflowTasksEmbeddedPage />;
   }
