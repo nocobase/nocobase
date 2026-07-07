@@ -44,6 +44,12 @@ const mocks = vi.hoisted(() => {
   };
 });
 
+const jsQrMocks = vi.hoisted(() => {
+  return {
+    default: vi.fn(),
+  };
+});
+
 vi.mock('html5-qrcode', () => ({
   Html5Qrcode: mocks.Html5Qrcode,
   Html5QrcodeScannerState: {
@@ -66,17 +72,15 @@ vi.mock('html5-qrcode', () => ({
   },
 }));
 
-function ScannerHost({
-  onCameraStartFailure,
-  scanBoxSize,
-}: { onCameraStartFailure?: (error: unknown) => void; scanBoxSize?: { width: number; height: number } } = {}) {
+vi.mock('jsqr', () => jsQrMocks);
+
+function ScannerHost({ scanBoxSize }: { scanBoxSize?: { width: number; height: number } } = {}) {
   const handleScanSuccess = useCallback(() => undefined, []);
 
   useCodeScanner({
     elementId: 'scanner',
     enabled: true,
     scanBoxSize,
-    onCameraStartFailure,
     onScanSuccess: handleScanSuccess,
   });
 
@@ -98,9 +102,54 @@ function FileScannerHost({ onScanSuccess }: { onScanSuccess: (text: string) => v
   );
 }
 
+function stubSafariBrowser() {
+  vi.spyOn(window.navigator, 'vendor', 'get').mockReturnValue('Apple Computer, Inc.');
+  vi.spyOn(window.navigator, 'userAgent', 'get').mockReturnValue(
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15',
+  );
+}
+
+function stubImageElement(size: { width: number; height: number } = { width: 600, height: 400 }) {
+  vi.stubGlobal(
+    'Image',
+    class MockImage {
+      onabort: ((event: Event) => void) | null = null;
+      onerror: ((event: Event) => void) | null = null;
+      onload: (() => void) | null = null;
+      height = size.height;
+      naturalHeight = size.height;
+      naturalWidth = size.width;
+      width = size.width;
+
+      set src(_value: string) {
+        this.onload?.();
+      }
+    },
+  );
+  vi.stubGlobal('URL', {
+    ...URL,
+    createObjectURL: vi.fn(() => 'blob:qr'),
+    revokeObjectURL: vi.fn(),
+  });
+}
+
+function stubCanvas() {
+  const canvasContext = {
+    drawImage: vi.fn(),
+    getImageData: vi.fn((_x: number, _y: number, width: number, height: number) => ({
+      data: new Uint8ClampedArray(width * height * 4),
+      height,
+      width,
+    })),
+  } as unknown as CanvasRenderingContext2D;
+
+  vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(canvasContext);
+}
+
 describe('useCodeScanner', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    jsQrMocks.default.mockReturnValue(undefined);
   });
 
   afterEach(() => {
@@ -145,68 +194,66 @@ describe('useCodeScanner', () => {
     expect(config?.qrbox?.(1200, 844)).toEqual({ width: 319, height: 240 });
   });
 
-  it('does not return a qrbox larger than the camera viewfinder', async () => {
-    render(<ScannerHost scanBoxSize={{ width: 520, height: 240 }} />);
+  it('uses jsQR first for Safari uploaded QR images', async () => {
+    const handleScanSuccess = vi.fn();
+    jsQrMocks.default.mockReturnValueOnce({ data: 'JSQR-CODE' });
+    stubSafariBrowser();
+    stubImageElement();
+    stubCanvas();
 
+    render(<FileScannerHost onScanSuccess={handleScanSuccess} />);
     await waitFor(() => expect(mocks.start).toHaveBeenCalled());
 
-    const config = mocks.start.mock.calls[0]?.[1] as
-      | { qrbox?: (width: number, height: number) => { width: number; height: number } }
-      | undefined;
+    fireEvent.click(screen.getByText('scan file'));
 
-    expect(config?.qrbox?.(320, 180)).toEqual({ width: 320, height: 180 });
+    await waitFor(() => expect(handleScanSuccess).toHaveBeenCalledWith('JSQR-CODE'));
+    expect(jsQrMocks.default).toHaveBeenCalledWith(expect.any(Uint8ClampedArray), 600, 400, {
+      inversionAttempts: 'attemptBoth',
+    });
+    expect(mocks.scanFileV2).not.toHaveBeenCalled();
   });
 
-  it('reports camera start failures separately from decode failures', async () => {
-    const handleCameraStartFailure = vi.fn();
-    const error = new Error('camera busy');
-    mocks.start.mockRejectedValueOnce(error);
-
-    render(<ScannerHost onCameraStartFailure={handleCameraStartFailure} />);
-
-    await waitFor(() => expect(handleCameraStartFailure).toHaveBeenCalledWith(error));
-  });
-
-  it('retries file scanning with an enhanced image when the original upload is not decoded', async () => {
+  it('falls back to html5-qrcode for Safari uploaded files when jsQR does not decode a QR code', async () => {
     const handleScanSuccess = vi.fn();
-    const originalError = new Error('not found');
-    mocks.scanFileV2.mockRejectedValueOnce(originalError).mockResolvedValueOnce({ decodedText: 'ENHANCED-CODE' });
+    mocks.scanFileV2.mockResolvedValueOnce({ decodedText: 'BARCODE-CODE' });
+    stubSafariBrowser();
+    stubImageElement();
+    stubCanvas();
 
-    vi.stubGlobal(
-      'Image',
-      class MockImage {
-        onabort: ((event: Event) => void) | null = null;
-        onerror: ((event: Event) => void) | null = null;
-        onload: (() => void) | null = null;
-        height = 400;
-        naturalHeight = 400;
-        naturalWidth = 600;
-        width = 600;
+    render(<FileScannerHost onScanSuccess={handleScanSuccess} />);
+    await waitFor(() => expect(mocks.start).toHaveBeenCalled());
 
-        set src(_value: string) {
-          this.onload?.();
-        }
-      },
-    );
-    vi.stubGlobal('URL', {
-      ...URL,
-      createObjectURL: vi.fn(() => 'blob:qr'),
-      revokeObjectURL: vi.fn(),
+    fireEvent.click(screen.getByText('scan file'));
+
+    await waitFor(() => expect(handleScanSuccess).toHaveBeenCalledWith('BARCODE-CODE'));
+    expect(jsQrMocks.default).toHaveBeenCalled();
+    expect(mocks.scanFileV2).toHaveBeenCalled();
+  });
+
+  it('tries multiple image scales before falling back from Safari jsQR scanning', async () => {
+    const handleScanSuccess = vi.fn();
+    Array.from({ length: 8 }).forEach((_, index) => {
+      jsQrMocks.default.mockReturnValueOnce(index === 7 ? { data: 'SCALED-CODE' } : undefined);
     });
+    stubSafariBrowser();
+    stubImageElement({ width: 4000, height: 3000 });
+    stubCanvas();
 
-    const canvasContext = {
-      canvas: { height: 0, width: 0 },
-      drawImage: vi.fn(),
-      getImageData: vi.fn(() => ({
-        data: new Uint8ClampedArray([80, 80, 80, 255]),
-      })),
-      putImageData: vi.fn(),
-    } as unknown as CanvasRenderingContext2D;
+    render(<FileScannerHost onScanSuccess={handleScanSuccess} />);
+    await waitFor(() => expect(mocks.start).toHaveBeenCalled());
 
-    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(canvasContext);
-    vi.spyOn(HTMLCanvasElement.prototype, 'toBlob').mockImplementation((callback) => {
-      callback(new Blob(['enhanced'], { type: 'image/png' }));
-    });
+    fireEvent.click(screen.getByText('scan file'));
+
+    await waitFor(() => expect(handleScanSuccess).toHaveBeenCalledWith('SCALED-CODE'));
+    expect(jsQrMocks.default).toHaveBeenCalledTimes(8);
+  });
+
+  it('tries enhanced grayscale QR images for blurry Safari uploads', async () => {
+    const handleScanSuccess = vi.fn();
+    jsQrMocks.default.mockReturnValueOnce(undefined).mockReturnValueOnce({ data: 'ENHANCED-CODE' });
+    stubSafariBrowser();
+    stubImageElement();
+    stubCanvas();
 
     render(<FileScannerHost onScanSuccess={handleScanSuccess} />);
     await waitFor(() => expect(mocks.start).toHaveBeenCalled());
@@ -214,7 +261,6 @@ describe('useCodeScanner', () => {
     fireEvent.click(screen.getByText('scan file'));
 
     await waitFor(() => expect(handleScanSuccess).toHaveBeenCalledWith('ENHANCED-CODE'));
-    expect(mocks.scanFileV2).toHaveBeenCalledTimes(2);
-    expect(mocks.scanFileV2.mock.calls[1]?.[0]).toBeInstanceOf(File);
+    expect(jsQrMocks.default).toHaveBeenCalledTimes(2);
   });
 });

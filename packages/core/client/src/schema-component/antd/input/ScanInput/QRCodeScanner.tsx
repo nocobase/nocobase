@@ -7,12 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useCallback, useEffect, useMemo, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
 import ReactDOM from 'react-dom';
 import { LeftOutlined, FileImageOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
-import { getVisibleQRCodeScanBoxSize, useScanner } from './useScanner';
+import { useScanner } from './useScanner';
 export function ScanBox({ style = {} }: { style: React.CSSProperties }) {
   const commonStyle: React.CSSProperties = {
     position: 'absolute',
@@ -41,11 +41,7 @@ interface QRCodeScannerProps {
 const qrcodeEleId = 'qrcode-scanner';
 const MAX_QR_CODE_IMAGE_SIZE = 10 * 1024 * 1024;
 
-type QRCodeScannerInnerProps = QRCodeScannerProps & {
-  containerRef: React.RefObject<HTMLDivElement>;
-};
-
-const QRCodeScannerInner = ({ visible, onClose, onScanSuccess, containerRef }: QRCodeScannerInnerProps) => {
+const QRCodeScannerInner = ({ visible, onClose, onScanSuccess, containerRef }) => {
   const imgUploaderRef = useRef<HTMLInputElement>(null);
   const { t } = useTranslation('block-workbench');
   const [cameraAvailable, setCameraAvailable] = useState(false);
@@ -53,37 +49,14 @@ const QRCodeScannerInner = ({ visible, onClose, onScanSuccess, containerRef }: Q
 
   const vw = Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0);
   const vh = Math.max(document.documentElement.clientHeight || 0, window.innerHeight || 0);
-  const scanBoxSize = useMemo(() => getVisibleQRCodeScanBoxSize(vw, vh), [vh, vw]);
 
-  const handleCameraStartFailure = useCallback(
-    (error: unknown) => {
-      const errorMap: Record<string, string> = {
-        NotFoundError: t('No camera device detected'),
-        NotAllowedError: t('You have not granted permission to use the camera'),
-      };
-      const errorName = error instanceof Error ? error.name : '';
-      const errorMessage = error instanceof Error ? error.message : typeof error === 'string' ? error : '';
-      alert(errorMap[errorName] || errorMessage || t('You have not granted permission to use the camera'));
-      onClose();
-    },
-    [onClose, t],
-  );
-
-  const handleScanSuccess = useCallback(
-    (text: string) => {
+  const { startScanFile } = useScanner({
+    elementId: qrcodeEleId,
+    onScannerSizeChanged: setOriginVideoSize,
+    onScanSuccess: (text) => {
       onScanSuccess(text);
       onClose();
     },
-    [onClose, onScanSuccess],
-  );
-
-  const { startScanFile } = useScanner({
-    enabled: visible && cameraAvailable,
-    elementId: qrcodeEleId,
-    scanBoxSize,
-    onScannerSizeChanged: setOriginVideoSize,
-    onCameraStartFailure: handleCameraStartFailure,
-    onScanSuccess: handleScanSuccess,
   });
 
   useEffect(() => {
@@ -140,10 +113,10 @@ const QRCodeScannerInner = ({ visible, onClose, onScanSuccess, containerRef }: Q
       <ScanBox
         style={{
           position: 'fixed',
-          top: `${(vh - scanBoxSize.height) / 2}px`,
-          left: `${(vw - scanBoxSize.width) / 2}px`,
-          width: `${scanBoxSize.width}px`,
-          height: `${scanBoxSize.height}px`,
+          top: `${(vh - vw * 0.6) / 2}px`,
+          left: `${(vw - vw * 0.6) / 2}px`,
+          width: `${vw * 0.6}px`,
+          height: `${vw * 0.6}px`,
         }}
       />
 

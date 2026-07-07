@@ -49,20 +49,6 @@ function CodeScannerContent({ visible, formatsToSupport, onClose, onScanSuccess 
     message.error(t('Code recognition failed, please scan again'));
   }, [t]);
 
-  const showCameraStartFailure = useCallback(
-    (error: unknown) => {
-      const errorMap: Record<string, string> = {
-        NotFoundError: t('No camera device detected'),
-        NotAllowedError: t('You have not granted permission to use the camera'),
-      };
-      const errorName = error instanceof Error ? error.name : '';
-      const errorMessage = error instanceof Error ? error.message : typeof error === 'string' ? error : '';
-      message.error(errorMap[errorName] || errorMessage || t('You have not granted permission to use the camera'));
-      onClose();
-    },
-    [onClose, t],
-  );
-
   const handleScanSuccess = useCallback(
     (text: string) => {
       onScanSuccess(text);
@@ -78,7 +64,6 @@ function CodeScannerContent({ visible, formatsToSupport, onClose, onScanSuccess 
     scanBoxSize,
     onScanSuccess: handleScanSuccess,
     onScanFailure: showScanFailure,
-    onCameraStartFailure: showCameraStartFailure,
   });
 
   useEffect(() => {
