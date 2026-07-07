@@ -32,7 +32,11 @@ function matchesMimePattern(mimetype: string, pattern: string | string[] = '*') 
   if (!normalizedPattern || normalizedPattern === '*') {
     return true;
   }
-  return normalizedPattern.split(',').filter(Boolean).some(match(mimetype));
+  return normalizedPattern
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean)
+    .some(match(mimetype));
 }
 
 function isDisallowedActiveContentFilename(filename: string, pattern: string | string[] = '*') {
