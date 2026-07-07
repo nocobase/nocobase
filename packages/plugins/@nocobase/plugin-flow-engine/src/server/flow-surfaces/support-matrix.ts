@@ -180,7 +180,7 @@ export const FLOW_SURFACE_BLOCK_SUPPORT_MATRIX: FlowSurfaceBlockSupportEntry[] =
     formalKey: 'markdown',
     label: 'Markdown',
     modelUse: 'MarkdownBlockModel',
-    ownerPlugin: '@nocobase/plugin-markdown',
+    ownerPlugin: '@nocobase/plugin-block-markdown',
     topLevelAddable: true,
     formalBuiltin: true,
     fixtureCaptured: true,

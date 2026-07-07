@@ -7,28 +7,34 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Plugin, stripModernClientPrefix } from '@nocobase/client-v2';
+import React from 'react';
+import { stripModernClientPrefix } from '@nocobase/client-v2';
+import { Display } from './components/Display';
+import { MarkdownVditor } from './components';
 
-export class PluginBlockMarkdownClient extends Plugin {
-  async load() {
-    this.flowEngine.registerModelLoaders({
-      MarkdownBlockModel: {
-        loader: () => import('./models/MarkdownBlockModel'),
-      },
-    });
+export class MarkdownVditorRuntime {
+  constructor(
+    private app: any,
+    private getPublicPath: () => string,
+  ) {}
+
+  get dependencies() {
+    return {
+      cdn: this.getCDN(),
+    };
   }
 
   getCDN() {
     if (process.env.NODE_ENV === 'production') {
       return this.app.getCdnUrl() + 'static/plugins/@nocobase/plugin-block-markdown/dist/client/vditor';
     }
-    return `https://cdn.jsdelivr.net/npm/vditor@3.11.2`;
+    return 'https://cdn.jsdelivr.net/npm/vditor@3.11.2';
   }
 
   initVditorDependency() {
     const cdn = this.getCDN();
     try {
-      const vditorDepdencePrefix = 'plugin-block-markdown-dep';
+      const vditorDepdencePrefix = 'plugin-field-markdown-vditor-dep';
       const vditorDepdence = {
         [`${vditorDepdencePrefix}.katex`]: `${cdn}/dist/js/katex/katex.min.js?v=0.16.9`,
         [`${vditorDepdencePrefix}.ABCJS`]: `${cdn}/dist/js/abcjs/abcjs_basic.min`,
@@ -51,5 +57,13 @@ export class PluginBlockMarkdownClient extends Plugin {
       console.log('initVditorDependency failed', e);
     }
   }
+
+  render(text, props = {}) {
+    if (!text) return null;
+    return <Display value={text} {...props} />;
+  }
+
+  edit(props = {}) {
+    return <MarkdownVditor {...props} />;
+  }
 }
-export default PluginBlockMarkdownClient;

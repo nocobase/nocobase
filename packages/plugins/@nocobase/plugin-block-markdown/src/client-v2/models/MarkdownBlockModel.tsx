@@ -11,7 +11,7 @@ import { BlockModel, editMarkdownFlow } from '@nocobase/client-v2';
 import { tExpr } from '../locale';
 
 export class MarkdownBlockModel extends BlockModel {
-  _previousStepParams: unknown; // 上一次持久化的 stepParams，用于 preview 时回滚
+  _previousStepParams: any; // 上一次持久化的 stepParams，用于 preview 时回滚
 
   renderComponent() {
     const { content } = this.props;

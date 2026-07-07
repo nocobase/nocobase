@@ -90,8 +90,8 @@ export const PLUGIN_REQUIREMENTS: Record<string, { runtimeName: string; packageN
     capability: 'comment collection template',
   },
   vditor: {
-    runtimeName: 'markdown',
-    packageName: '@nocobase/plugin-markdown',
+    runtimeName: 'field-markdown-vditor',
+    packageName: '@nocobase/plugin-field-markdown-vditor',
     capability: 'vditor field',
   },
   point: {

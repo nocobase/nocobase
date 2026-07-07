@@ -7,9 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 import { FieldModel } from '@nocobase/client-v2';
-import { EditableItemModel, largeField } from '@nocobase/flow-engine';
+import { largeField, EditableItemModel } from '@nocobase/flow-engine';
 import { tExpr } from '../locale';
-
 @largeField()
 export class VditorFieldModel extends FieldModel {
   render() {

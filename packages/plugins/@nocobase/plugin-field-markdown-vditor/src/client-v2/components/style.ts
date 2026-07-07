@@ -11,7 +11,7 @@ import { useStyleRegister } from '@ant-design/cssinjs';
 import { theme } from 'antd';
 import { useMemo } from 'react';
 
-const COMPONENT_CLS = 'nb-markdown-vditor';
+const COMPONENT_CLS = 'nb-field-markdown-vditor';
 
 export default function useStyle() {
   const { theme: antdTheme, token, hashId } = theme.useToken();
@@ -21,7 +21,7 @@ export default function useStyle() {
       theme: antdTheme as any,
       token,
       hashId,
-      path: ['plugin-markdown', COMPONENT_CLS],
+      path: ['field-markdown-vditor', COMPONENT_CLS],
     },
     () => ({
       [`.${COMPONENT_CLS}`]: {
@@ -64,7 +64,7 @@ export default function useStyle() {
     }),
   );
 
-  const memoizedWrapSSR = useMemo(() => wrapSSR, [wrapSSR]);
+  const memoizedWrapSSR = useMemo(() => wrapSSR, [wrapSSR, antdTheme, token, hashId]);
 
   return {
     wrapSSR: memoizedWrapSSR,

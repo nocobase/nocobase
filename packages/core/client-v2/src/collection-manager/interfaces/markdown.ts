@@ -15,7 +15,6 @@ export class MarkdownFieldInterface extends CollectionFieldInterface {
   type = 'object';
   title = '{{t("Markdown")}}';
   group = 'media';
-  hidden = true;
   default = {
     type: 'text',
     // name,
