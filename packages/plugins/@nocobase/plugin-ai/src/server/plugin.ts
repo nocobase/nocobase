@@ -45,6 +45,7 @@ import type PluginFileManagerServer from '@nocobase/plugin-file-manager';
 import { CheckpointCleaner, SequelizeCollectionSaver } from './ai-employees/checkpoints';
 import { mimoProviderOptions } from './llm-providers/mimo';
 import { mistralProviderOptions } from './llm-providers/mistral';
+import { orcarouterProviderOptions } from './llm-providers/orcarouter';
 import { SubAgentsDispatcher } from './ai-employees/sub-agents';
 import {
   AIEmployeeInstruction,
@@ -180,6 +181,7 @@ export class PluginAIServer extends Plugin {
     this.aiManager.registerLLMProvider('openai-completions', openaiCompletionsProviderOptions);
     this.aiManager.registerLLMProvider('kimi', kimiProviderOptions);
     this.aiManager.registerLLMProvider('xai', xaiProviderOptions);
+    this.aiManager.registerLLMProvider('orcarouter', orcarouterProviderOptions);
   }
 
   registerTools() {
