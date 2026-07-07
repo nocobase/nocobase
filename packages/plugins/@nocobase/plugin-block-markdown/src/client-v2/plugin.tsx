@@ -20,9 +20,7 @@ export class PluginBlockMarkdownClient extends Plugin {
 
   getCDN() {
     if (process.env.NODE_ENV === 'production') {
-      // @ts-ignore 这里需要同时兼容有 CDN_BASE_URL 和没有 CDN_BASE_URL 的情况
-      const base = window['__webpack_public_path__'] || stripModernClientPrefix(this.app.getPublicPath());
-      return `${base}static/plugins/@nocobase/plugin-block-markdown/dist/client/vditor`;
+      return this.app.getCdnUrl() + 'static/plugins/@nocobase/plugin-block-markdown/dist/client/vditor';
     }
     return `https://cdn.jsdelivr.net/npm/vditor@3.11.2`;
   }
