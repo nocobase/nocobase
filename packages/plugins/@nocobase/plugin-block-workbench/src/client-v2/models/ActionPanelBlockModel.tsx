@@ -16,6 +16,7 @@ import {
   FlowModelRenderer,
   DndProvider,
   observer,
+  reaction,
   type SubModelItem,
   type SubModelItemsType,
 } from '@nocobase/flow-engine';
@@ -83,6 +84,18 @@ export function ActionPanelBadge({
     </Badge>
   );
 }
+
+const ActionPanelActionBadge = ({ action, children }: { action: ActionModel; children: React.ReactNode }) => {
+  const [badge, setBadge] = React.useState(() => getActionPanelBadge(action));
+
+  React.useEffect(() => {
+    return reaction(() => getActionPanelBadge(action), setBadge, {
+      fireImmediately: true,
+    });
+  }, [action]);
+
+  return <ActionPanelBadge badge={badge}>{children}</ActionPanelBadge>;
+};
 
 function isEntryActionUnavailable(action: ActionModel) {
   const candidate = action as ActionModel & EntryActionAvailability;
@@ -257,25 +270,26 @@ export class ActionPanelBlockModel extends BlockModel {
                       background-color: ${color};
                     `;
                     const horizontal = itemLayout === WorkbenchItemLayout.Horizontal;
-                    const badge = getActionPanelBadge(action);
-                    const renderActionContent = (compact = false) => (
-                      <div
-                        className={`${
-                          horizontal ? `${gridHorizontalContentClass} ${gridHorizontalCardClass}` : gridContentClass
-                        } ${compact ? hiddenClass : ''}`}
-                      >
-                        <ActionPanelBadge badge={badge}>
-                          <Avatar className={avatarClass} size={gridIconSize} icon={<Icon type={icon as any} />} />
-                        </ActionPanelBadge>
+                    const renderActionContent = (compact = false) => {
+                      return (
                         <div
-                          className={`${gridTitleClass} ${horizontal ? gridHorizontalTitleClass : ''} ${
-                            ellipsis ? textEllipsisClass : textWrapClass
-                          }`}
+                          className={`${
+                            horizontal ? `${gridHorizontalContentClass} ${gridHorizontalCardClass}` : gridContentClass
+                          } ${compact ? hiddenClass : ''}`}
                         >
-                          {title}
+                          <ActionPanelActionBadge action={action}>
+                            <Avatar className={avatarClass} size={gridIconSize} icon={<Icon type={icon as any} />} />
+                          </ActionPanelActionBadge>
+                          <div
+                            className={`${gridTitleClass} ${horizontal ? gridHorizontalTitleClass : ''} ${
+                              ellipsis ? textEllipsisClass : textWrapClass
+                            }`}
+                          >
+                            {title}
+                          </div>
                         </div>
-                      </div>
-                    );
+                      );
+                    };
 
                     action.enableEditDanger = false;
                     action.enableEditType = false;
@@ -359,24 +373,25 @@ export class ActionPanelBlockModel extends BlockModel {
                     const avatarClass = css`
                       background-color: ${color};
                     `;
-                    const badge = getActionPanelBadge(action);
-                    const renderActionContent = (compact = false) => (
-                      <List.Item
-                        prefix={
-                          (
-                            <ActionPanelBadge badge={badge}>
-                              <Avatar className={avatarClass} icon={<Icon type={icon as any} />} />
-                            </ActionPanelBadge>
-                          ) as any
-                        }
-                      >
-                        <div
-                          className={`${compact ? hiddenClass : ''} ${ellipsis ? textEllipsisClass : textWrapClass}`}
+                    const renderActionContent = (compact = false) => {
+                      return (
+                        <List.Item
+                          prefix={
+                            (
+                              <ActionPanelActionBadge action={action}>
+                                <Avatar className={avatarClass} icon={<Icon type={icon as any} />} />
+                              </ActionPanelActionBadge>
+                            ) as any
+                          }
                         >
-                          {title}
-                        </div>
-                      </List.Item>
-                    );
+                          <div
+                            className={`${compact ? hiddenClass : ''} ${ellipsis ? textEllipsisClass : textWrapClass}`}
+                          >
+                            {title}
+                          </div>
+                        </List.Item>
+                      );
+                    };
 
                     action.enableEditDanger = false;
                     action.enableEditType = false;

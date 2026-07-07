@@ -23,6 +23,12 @@ const holder = vi.hoisted(() => ({
     getKeys: () => [],
     get: (_key: string) => undefined,
   },
+  observable: Object.assign(
+    vi.fn((value: unknown) => value),
+    {
+      ref: 'ref',
+    },
+  ),
 }));
 
 vi.mock('@nocobase/client-v2', () => ({
@@ -76,9 +82,7 @@ vi.mock('@nocobase/client-v2', () => ({
 
 vi.mock('@nocobase/flow-engine', () => ({
   define: vi.fn(),
-  observable: {
-    ref: 'ref',
-  },
+  observable: holder.observable,
   tExpr: (key: string) => key,
 }));
 

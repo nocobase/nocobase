@@ -8,7 +8,7 @@
  */
 
 import { ActionModel, openViewFlow } from '@nocobase/client-v2';
-import { define, observable } from '@nocobase/flow-engine';
+import { observable } from '@nocobase/flow-engine';
 import type { ButtonProps } from 'antd/es/button';
 import { getWorkflowTasksPath } from '../constants';
 import { tExpr } from '../locale';
@@ -27,7 +27,9 @@ type WorkflowTaskCountsSubscription = {
 };
 
 export class WorkflowTasksEntryActionModel extends ActionModel {
-  actionPanelBadge: ActionPanelBadgeOptions | null = null;
+  private readonly actionPanelBadgeState = observable<{ value: ActionPanelBadgeOptions | null }>({
+    value: null,
+  });
   private countsSubscription?: WorkflowTaskCountsSubscription;
 
   defaultProps: ButtonProps = {
@@ -39,11 +41,12 @@ export class WorkflowTasksEntryActionModel extends ActionModel {
   enableEditDanger = false;
   enableEditIconOnly = false;
 
-  onInit(options: Parameters<ActionModel['onInit']>[0]): void {
-    super.onInit(options);
-    define(this, {
-      actionPanelBadge: observable.ref,
-    });
+  get actionPanelBadge() {
+    return this.actionPanelBadgeState.value;
+  }
+
+  set actionPanelBadge(value: ActionPanelBadgeOptions | null) {
+    this.actionPanelBadgeState.value = value;
   }
 
   async afterAddAsSubModel() {
