@@ -60,6 +60,7 @@ import { setupDataModeling } from './ai-employees/data-modeling/setup';
 import { AIEmployeeInstruction } from './workflow/nodes/employee';
 import { mimoProviderOptions } from './llm-providers/mimo';
 import { mistralProviderOptions } from './llm-providers/mistral';
+import { orcarouterProviderOptions } from './llm-providers/orcarouter';
 const { AIEmployeesProvider } = lazy(() => import('./ai-employees/AIEmployeesProvider'), 'AIEmployeesProvider');
 const { Employees } = lazy(() => import('./ai-employees/admin/Employees'), 'Employees');
 const { LLMServices } = lazy(() => import('./llm-services/LLMServices'), 'LLMServices');
@@ -170,6 +171,7 @@ export class PluginAIClient extends Plugin {
     this.aiManager.registerLLMProvider('xai', xaiProviderOptions);
     this.aiManager.registerLLMProvider('mimo', mimoProviderOptions);
     this.aiManager.registerLLMProvider('mistral', mistralProviderOptions);
+    this.aiManager.registerLLMProvider('orcarouter', orcarouterProviderOptions);
     this.aiManager.chatSettings.set('messages', {
       title: tval('Messages'),
       Component: MessagesSettings,
