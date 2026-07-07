@@ -34,7 +34,7 @@ export const MobilePopup: FC<MobilePopupProps> = (props) => {
   const bodyStyles = (props as MobilePopupProps & { styles?: { body?: React.CSSProperties } }).styles?.body;
   const popupStyle = useMemo(() => {
     return {
-      minHeight: bodyStyles?.minHeight || minHeight,
+      minHeight: bodyStyles?.minHeight ?? minHeight,
       height: bodyStyles?.height,
       maxHeight: bodyStyles?.maxHeight,
     };

@@ -28,21 +28,22 @@ describe('QuickEditFormModel - quick edit save triggers API (regression)', () =>
   });
 
   const mockMatchMedia = (matches: boolean) => {
+    const matchMediaMock = vi.fn((query: string) => {
+      return {
+        matches,
+        media: query,
+        onchange: null,
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      } as unknown as MediaQueryList;
+    });
+
     Object.defineProperty(window, 'matchMedia', {
-      configurable: true,
-      writable: true,
-      value: vi.fn((query: string) => {
-        return {
-          matches,
-          media: query,
-          onchange: null,
-          addListener: vi.fn(),
-          removeListener: vi.fn(),
-          addEventListener: vi.fn(),
-          removeEventListener: vi.fn(),
-          dispatchEvent: vi.fn(),
-        } as unknown as MediaQueryList;
-      }),
+      ...(originalMatchMediaDescriptor || { configurable: true, writable: true }),
+      value: matchMediaMock,
     });
   };
 
