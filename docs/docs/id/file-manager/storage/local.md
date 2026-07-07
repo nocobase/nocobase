@@ -16,6 +16,8 @@ Local Storage tidak mendukung akses privat. Setelah file di-upload, NocoBase mem
 
 Jika perlu menyimpan kontrak, dokumen identitas, materi internal, atau file lain yang tidak boleh publik, gunakan [S3 Pro](./s3-pro). Jika file historis sudah ada, lihat [Migrasi ke S3 Pro](./migrate-to-s3-pro.md).
 
+Jika tidak menggunakan Docker atau konfigurasi nginx resmi, dan mengakses file upload lokal melalui proxy kustom, pastikan path `/storage/uploads/` mengatur `X-Content-Type-Options: nosniff` dan mengembalikan file active content seperti `html`, `svg`, `xhtml`, dan `pdf` sebagai attachment. Untuk detail, lihat [panduan keamanan: File Storage](../../security/guide.md).
+
 :::
 
 ## Parameter Konfigurasi

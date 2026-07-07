@@ -9,6 +9,8 @@ O armazenamento local não oferece acesso privado. Depois que um arquivo é envi
 
 Se você precisa armazenar contratos, documentos de identidade, materiais internos ou outros arquivos que não devem ser públicos, use [S3 Pro](./s3-pro). Se já houver arquivos históricos, consulte [Migrar para S3 Pro](./migrate-to-s3-pro.md).
 
+Se você não usa Docker nem a configuração oficial do nginx, e acessa arquivos locais enviados por meio de um proxy personalizado, confirme que o caminho `/storage/uploads/` define `X-Content-Type-Options: nosniff` e retorna arquivos com conteúdo ativo, como `html`, `svg`, `xhtml` e `pdf`, como anexos. Para mais detalhes, consulte o [guia de segurança: armazenamento de arquivos](../../security/guide.md).
+
 :::
 
 ## Parâmetros de Configuração
