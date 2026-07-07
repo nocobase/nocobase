@@ -24,7 +24,7 @@ export class OrcaRouterProvider extends LLMProvider {
   }
 
   createModel() {
-    const { apiKey } = this.serviceOptions || {};
+    const { apiKey, httpReferer, xTitle } = this.serviceOptions || {};
     const { responseFormat, structuredOutput } = this.modelOptions || {};
     const { name, schema } = structuredOutput || {};
     const responseFormatOptions: Record<string, any> = {
@@ -32,6 +32,14 @@ export class OrcaRouterProvider extends LLMProvider {
     };
     if (responseFormat === 'json_schema' && schema) {
       responseFormatOptions['json_schema'] = { schema, name: name ?? 'schema' };
+    }
+
+    const defaultHeaders: Record<string, string> = {};
+    if (httpReferer) {
+      defaultHeaders['HTTP-Referer'] = httpReferer;
+    }
+    if (xTitle) {
+      defaultHeaders['X-Title'] = xTitle;
     }
 
     return new ChatOrcaRouterCompletions({
@@ -42,10 +50,7 @@ export class OrcaRouterProvider extends LLMProvider {
       },
       configuration: {
         baseURL: this.getResolvedBaseURL(),
-        defaultHeaders: {
-          'HTTP-Referer': 'https://www.nocobase.com',
-          'X-Title': 'NocoBase',
-        },
+        ...(Object.keys(defaultHeaders).length ? { defaultHeaders } : {}),
       },
     });
   }

@@ -9,7 +9,7 @@
 
 import { LLMProviderOptions } from '../../manager/ai-manager';
 import { formatModelLabel } from '../../llm-services/component/EnabledModelsSelect';
-import { ProviderSettingsForm } from '../openai/components/ProviderSettings';
+import { ProviderSettingsForm } from './ProviderSettings';
 import { ModelSettingsForm } from './ModelSettings';
 
 export const orcarouterProviderOptions: LLMProviderOptions = {
