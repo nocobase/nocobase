@@ -136,6 +136,7 @@ export class PluginWorkflowClientV2 extends Plugin {
     this.registerCanvasRoute();
     this.registerExecutionRoute();
     this.registerTaskCenterRoutes();
+    this.registerTaskCenterEntryActions();
   }
 
   // The three fixed `$system` variables (v1 `client/index.tsx`). Self-registered by the workflow plugin — no external
@@ -191,6 +192,14 @@ export class PluginWorkflowClientV2 extends Plugin {
       WorkflowTasksTopbarActionModel: {
         extends: 'TopbarActionModel',
         loader: () => import('./models/WorkflowTasksTopbarActionModel'),
+      },
+      WorkflowTasksEntryActionModel: {
+        extends: 'ActionModel',
+        loader: () => import('./models/WorkflowTasksEntryActionModel'),
+      },
+      WorkflowTasksEmbeddedPageModel: {
+        extends: 'ChildPageModel',
+        loader: () => import('./models/WorkflowTasksEmbeddedPageModel'),
       },
     });
   }
@@ -249,6 +258,38 @@ export class PluginWorkflowClientV2 extends Plugin {
     this.app.router.add(WORKFLOW_TASKS_MOBILE_ROUTE_NAME, {
       path: WORKFLOW_TASKS_MOBILE_ROUTE_PATH,
       componentLoader: () => import('./pages/WorkflowTasksPage'),
+    });
+  }
+
+  private registerTaskCenterEntryActions() {
+    if (!this.app.entryActionManager) {
+      return;
+    }
+    const t = (key: string) => this.app.i18n.t(key, { ns: NAMESPACE });
+    this.app.entryActionManager.register('workflow:tasks:action-panel', {
+      scope: 'action-panel',
+      sort: 300,
+      provider: async () => [
+        {
+          key: 'workflow:tasks',
+          label: t('Workflow todos'),
+          createModelOptions: {
+            use: 'WorkflowTasksEntryActionModel',
+            props: {
+              title: tpl('Workflow todos'),
+              icon: 'CheckCircleOutlined',
+            },
+            stepParams: {
+              popupSettings: {
+                openView: {
+                  mode: 'embed',
+                  pageModelClass: 'WorkflowTasksEmbeddedPageModel',
+                },
+              },
+            },
+          },
+        },
+      ],
     });
   }
 }

@@ -58,7 +58,7 @@ vi.mock('../../locale', () => ({
   tExpr: (key: string) => key,
 }));
 
-import WorkflowTasksPage from '../WorkflowTasksPage';
+import WorkflowTasksPage, { WorkflowTasksContent, WorkflowTasksEmbeddedRouteProvider } from '../WorkflowTasksPage';
 
 function renderWithApp(node: React.ReactNode) {
   return render(<App>{node}</App>);
@@ -408,6 +408,48 @@ describe('WorkflowTasksPage', () => {
     });
 
     expect(holder.navigate).toHaveBeenCalledWith('/mobile/page/workflow-tasks/demo/pending', { replace: true });
+  });
+
+  it('reuses the mobile task content in embedded view routes', async () => {
+    const { registry } = createTaskTypes();
+    const demoTasks = {
+      listMine: vi.fn().mockResolvedValue({
+        data: { data: [{ id: 9, title: 'Embedded task' }], meta: { count: 1 } },
+      }),
+    };
+    const userWorkflowTasks = {
+      listMine: vi.fn().mockResolvedValue({ data: [{ type: 'demo', stats: { pending: 1, all: 1 } }] }),
+    };
+    holder.params = { taskType: undefined, status: undefined, popupId: undefined };
+    holder.location = {
+      pathname: '/admin/home/view/workflow-entry/tasktype/demo/status/pending',
+      search: '',
+      hash: '',
+    };
+    holder.isMobileLayout = false;
+    holder.ctx = {
+      ...makeCtx(registry, { demoTasks, userWorkflowTasks }),
+      view: {
+        inputArgs: {
+          viewUid: 'workflow-entry',
+        },
+      },
+    } as WorkflowTaskFlowContext;
+
+    renderWithApp(
+      <WorkflowTasksEmbeddedRouteProvider>
+        <WorkflowTasksContent forceMobile />
+      </WorkflowTasksEmbeddedRouteProvider>,
+    );
+
+    await screen.findByTestId('workflow-tasks-mobile');
+    fireEvent.click(await screen.findByText('Embedded task'));
+
+    expect(holder.navigate).toHaveBeenCalledWith(
+      '/admin/home/view/workflow-entry/tasktype/demo/status/pending/popupid/9',
+    );
+    expect(await screen.findByTestId('workflow-task-mobile-detail-page')).toBeInTheDocument();
+    expect(screen.getByText('detail:Embedded task')).toBeInTheDocument();
   });
 
   it('keeps the clicked record open while loading the same popup record from the route', async () => {

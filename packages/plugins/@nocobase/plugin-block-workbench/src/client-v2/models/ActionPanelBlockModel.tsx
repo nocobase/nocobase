@@ -20,7 +20,7 @@ import {
   type SubModelItemsType,
 } from '@nocobase/flow-engine';
 import { css } from '@emotion/css';
-import { Space, Avatar, Button, Tooltip, ConfigProvider } from 'antd';
+import { Space, Avatar, Badge, Button, Tooltip, ConfigProvider } from 'antd';
 import { Grid, List } from 'antd-mobile';
 import React from 'react';
 import { BlockModel, Icon, ActionModel } from '@nocobase/client-v2';
@@ -44,6 +44,45 @@ type EntryActionAvailability = {
   isEntryActionAvailable?: () => boolean;
   getEntryActionUnavailableMessage?: () => string | undefined;
 };
+
+export type ActionPanelBadgeOptions = {
+  count?: number | string;
+  dot?: boolean;
+  overflowCount?: number;
+  showZero?: boolean;
+  title?: string;
+};
+
+export type ActionPanelBadgeAction = {
+  actionPanelBadge?: ActionPanelBadgeOptions | null;
+};
+
+function getActionPanelBadge(action: ActionModel) {
+  return (action as ActionModel & ActionPanelBadgeAction).actionPanelBadge || null;
+}
+
+export function ActionPanelBadge({
+  badge,
+  children,
+}: {
+  badge?: ActionPanelBadgeOptions | null;
+  children: React.ReactNode;
+}) {
+  if (!badge) {
+    return <>{children}</>;
+  }
+  return (
+    <Badge
+      count={badge.count}
+      dot={badge.dot}
+      overflowCount={badge.overflowCount}
+      showZero={badge.showZero}
+      title={badge.title}
+    >
+      {children}
+    </Badge>
+  );
+}
 
 function isEntryActionUnavailable(action: ActionModel) {
   const candidate = action as ActionModel & EntryActionAvailability;
@@ -218,13 +257,16 @@ export class ActionPanelBlockModel extends BlockModel {
                       background-color: ${color};
                     `;
                     const horizontal = itemLayout === WorkbenchItemLayout.Horizontal;
+                    const badge = getActionPanelBadge(action);
                     const renderActionContent = (compact = false) => (
                       <div
                         className={`${
                           horizontal ? `${gridHorizontalContentClass} ${gridHorizontalCardClass}` : gridContentClass
                         } ${compact ? hiddenClass : ''}`}
                       >
-                        <Avatar className={avatarClass} size={gridIconSize} icon={<Icon type={icon as any} />} />
+                        <ActionPanelBadge badge={badge}>
+                          <Avatar className={avatarClass} size={gridIconSize} icon={<Icon type={icon as any} />} />
+                        </ActionPanelBadge>
                         <div
                           className={`${gridTitleClass} ${horizontal ? gridHorizontalTitleClass : ''} ${
                             ellipsis ? textEllipsisClass : textWrapClass
@@ -317,9 +359,16 @@ export class ActionPanelBlockModel extends BlockModel {
                     const avatarClass = css`
                       background-color: ${color};
                     `;
+                    const badge = getActionPanelBadge(action);
                     const renderActionContent = (compact = false) => (
                       <List.Item
-                        prefix={(<Avatar className={avatarClass} icon={<Icon type={icon as any} />} />) as any}
+                        prefix={
+                          (
+                            <ActionPanelBadge badge={badge}>
+                              <Avatar className={avatarClass} icon={<Icon type={icon as any} />} />
+                            </ActionPanelBadge>
+                          ) as any
+                        }
                       >
                         <div
                           className={`${compact ? hiddenClass : ''} ${ellipsis ? textEllipsisClass : textWrapClass}`}

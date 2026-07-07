@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { TaskTypeOptions, WorkflowTaskRegistry } from '../../taskCenter';
@@ -19,6 +19,27 @@ const holder = vi.hoisted(() => ({
     getKeys: () => [],
     get: (_key: string) => undefined,
   } as WorkflowTaskRegistry,
+  eventBus: new EventTarget(),
+  resources: {
+    userWorkflowTasks: {
+      listMine: vi.fn(),
+    },
+  },
+}));
+
+const flowContext = vi.hoisted(() => ({
+  api: {
+    resource: (name: string) =>
+      (holder.resources as Record<string, { listMine?: ReturnType<typeof vi.fn> } | undefined>)[name] || {},
+  },
+  app: {
+    eventBus: holder.eventBus,
+    pm: {
+      get: () => ({
+        taskTypes: holder.taskTypes,
+      }),
+    },
+  },
 }));
 
 vi.mock('@nocobase/client-v2', () => ({
@@ -45,20 +66,12 @@ vi.mock('@nocobase/flow-engine', () => ({
   observer: (component: unknown) => component,
   tExpr: (key: string) => key,
   useFlowEngine: () => ({
-    context: {
-      api: {
-        resource: () => ({}),
-      },
-      app: {
-        eventBus: new EventTarget(),
-        pm: {
-          get: () => ({
-            taskTypes: holder.taskTypes,
-          }),
-        },
-      },
-    },
+    context: flowContext,
   }),
+}));
+
+vi.mock('../../locale', () => ({
+  tExpr: (key: string) => key,
 }));
 
 import { WorkflowTasksTopbarActionModel } from '../WorkflowTasksTopbarActionModel';
@@ -71,6 +84,8 @@ describe('WorkflowTasksTopbarActionModel', () => {
       getKeys: () => [],
       get: (_key: string) => undefined,
     };
+    holder.resources.userWorkflowTasks.listMine.mockReset();
+    holder.resources.userWorkflowTasks.listMine.mockResolvedValue({ data: [] });
   });
 
   it('does not render the workflow todos entry before task types are registered', () => {
@@ -83,7 +98,7 @@ describe('WorkflowTasksTopbarActionModel', () => {
     expect(screen.queryByTestId('workflow-tasks-button')).toBeNull();
   });
 
-  it('renders the workflow todos entry after a task type is registered', () => {
+  it('renders the workflow todos entry after a task type is registered', async () => {
     const taskType = {
       key: 'demo',
       title: 'Demo',
@@ -102,6 +117,7 @@ describe('WorkflowTasksTopbarActionModel', () => {
     render(<>{model.render()}</>);
 
     const button = screen.getByTestId('workflow-tasks-button');
+    await waitFor(() => expect(holder.resources.userWorkflowTasks.listMine).toHaveBeenCalledTimes(1));
     fireEvent.click(button);
 
     expect(holder.navigate).toHaveBeenCalledWith('/admin/workflow/tasks');

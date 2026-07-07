@@ -29,7 +29,7 @@ import {
   theme,
 } from 'antd';
 import type { MenuProps } from 'antd';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { getWorkflowTasksPath } from '../constants';
 import {
@@ -52,11 +52,31 @@ import {
   type WorkflowTaskStatus,
 } from '../taskCenter';
 import { useT } from '../locale';
+import {
+  buildWorkflowTasksEmbeddedPath,
+  parseWorkflowTasksEmbeddedRoute,
+  type WorkflowTasksEmbeddedRoute,
+} from './workflowTasksEmbeddedRoute';
 
 interface WorkflowTasksRouteParams {
   taskType?: string;
   status?: string;
   popupId?: string;
+}
+
+type WorkflowTasksRouteState = WorkflowTasksEmbeddedRoute & {
+  isMobileRoute: boolean;
+};
+
+type WorkflowTasksRouteTarget = {
+  taskType?: string;
+  status?: string;
+  popupId?: string | number;
+};
+
+interface WorkflowTasksRouteAdapterValue {
+  route: WorkflowTasksRouteState;
+  navigate: (target: WorkflowTasksRouteTarget, options?: { replace?: boolean }) => void;
 }
 
 const MOBILE_TASK_TYPE_MENU_HEIGHT = 42;
@@ -95,19 +115,105 @@ function clearPendingWorkflowTaskPopupRecord(taskTypeKey?: string, popupId?: str
   }
 }
 
-function useWorkflowTasksRoute() {
+const WorkflowTasksRouteContext = createContext<WorkflowTasksRouteAdapterValue | null>(null);
+
+function useReactRouterWorkflowTasksRouteAdapter(): WorkflowTasksRouteAdapterValue {
   const params = useParams<'taskType' | 'status' | 'popupId'>();
   const location = useLocation();
+  const navigate = useNavigate();
   const status = normalizeWorkflowTaskStatus(params.status);
   const isMobileRoute = /(^|\/)(mobile\/page|page)\/workflow-tasks(\/|$)/.test(location.pathname);
+  const route = useMemo(
+    () => ({
+      taskType: params.taskType,
+      status,
+      popupId: params.popupId,
+      isMobileRoute,
+      search: location.search,
+      hash: location.hash,
+    }),
+    [isMobileRoute, location.hash, location.search, params.popupId, params.taskType, status],
+  );
+  const navigateToRoute = useMemoizedFn((target: WorkflowTasksRouteTarget, options?: { replace?: boolean }) => {
+    const path = withCurrentLocationSuffix(
+      getWorkflowTasksPath(target.taskType, target.status, target.popupId, route.isMobileRoute),
+      route,
+    );
+    if (options) {
+      navigate(path, options);
+      return;
+    }
+    navigate(path);
+  });
 
+  return useMemo(
+    () => ({
+      route,
+      navigate: navigateToRoute,
+    }),
+    [navigateToRoute, route],
+  );
+}
+
+function getEmbeddedViewUid(ctx?: WorkflowTaskFlowContext | null) {
+  const viewUid = (ctx as { view?: { inputArgs?: { viewUid?: unknown } } } | undefined)?.view?.inputArgs?.viewUid;
+  return typeof viewUid === 'string' ? viewUid : undefined;
+}
+
+export function WorkflowTasksEmbeddedRouteProvider({ children }: { children: React.ReactNode }) {
+  const ctx = useFlowContext() as WorkflowTaskFlowContext | undefined;
+  const location = useLocation();
+  const navigate = useNavigate();
+  const viewUid = getEmbeddedViewUid(ctx);
+  const route = useMemo<WorkflowTasksRouteState>(() => {
+    const embeddedRoute = parseWorkflowTasksEmbeddedRoute({
+      pathname: location.pathname,
+      search: location.search,
+      hash: location.hash,
+      viewUid,
+    });
+    return {
+      ...embeddedRoute,
+      isMobileRoute: true,
+    };
+  }, [location.hash, location.pathname, location.search, viewUid]);
+  const navigateToRoute = useMemoizedFn((target: WorkflowTasksRouteTarget, options?: { replace?: boolean }) => {
+    if (!viewUid) {
+      return;
+    }
+    const path = buildWorkflowTasksEmbeddedPath({
+      pathname: location.pathname,
+      viewUid,
+      route: target,
+    });
+    const nextPath = `${path}${location.search || ''}${location.hash || ''}`;
+    if (options) {
+      navigate(nextPath, options);
+      return;
+    }
+    navigate(nextPath);
+  });
+  const value = useMemo(
+    () => ({
+      route,
+      navigate: navigateToRoute,
+    }),
+    [navigateToRoute, route],
+  );
+
+  return <WorkflowTasksRouteContext.Provider value={value}>{children}</WorkflowTasksRouteContext.Provider>;
+}
+
+function useWorkflowTasksRouteAdapter() {
+  const context = useContext(WorkflowTasksRouteContext);
+  const reactRouterAdapter = useReactRouterWorkflowTasksRouteAdapter();
+  return context || reactRouterAdapter;
+}
+
+function useWorkflowTasksRoute() {
+  const { route } = useWorkflowTasksRouteAdapter();
   return {
-    taskType: params.taskType,
-    status,
-    popupId: params.popupId,
-    isMobileRoute,
-    search: location.search,
-    hash: location.hash,
+    ...route,
   };
 }
 
@@ -154,10 +260,10 @@ function TaskTypeMenu(props: {
   mobile: boolean;
 }) {
   const { taskTypes, counts, selectedKey, status, mobile } = props;
-  const navigate = useNavigate();
   const t = useT();
   const { token } = theme.useToken();
   const route = useWorkflowTasksRoute();
+  const routeAdapter = useWorkflowTasksRouteAdapter();
   const taskTypeKeys = useMemo(() => getAvailableWorkflowTaskTypeKeys(taskTypes, counts), [counts, taskTypes]);
   const items = useMemo<MenuProps['items']>(
     () =>
@@ -177,9 +283,7 @@ function TaskTypeMenu(props: {
   );
 
   const handleMenuClick = useMemoizedFn(({ key }: { key: string }) => {
-    navigate(
-      withCurrentLocationSuffix(getWorkflowTasksPath(key, TASK_STATUS.PENDING, undefined, route.isMobileRoute), route),
-    );
+    routeAdapter.navigate({ taskType: key, status: TASK_STATUS.PENDING });
   });
 
   if (!items?.length) {
@@ -234,11 +338,11 @@ function TaskStatusControls(props: {
   reload: () => Promise<void>;
 }) {
   const { type, status, mobile, reload } = props;
-  const navigate = useNavigate();
   const t = useT();
   const { token } = theme.useToken();
   const Actions = type.Actions;
   const route = useWorkflowTasksRoute();
+  const routeAdapter = useWorkflowTasksRouteAdapter();
   const statusItems = useMemo(
     () =>
       TASK_STATUS_VALUES.map((value) => ({
@@ -250,9 +354,7 @@ function TaskStatusControls(props: {
   );
 
   const handleStatusChange = useMemoizedFn((value: string | number) => {
-    navigate(
-      withCurrentLocationSuffix(getWorkflowTasksPath(type.key, String(value), undefined, route.isMobileRoute), route),
-    );
+    routeAdapter.navigate({ taskType: type.key, status: String(value) });
   });
 
   if (mobile) {
@@ -533,16 +635,16 @@ function WorkflowTaskMobileDetailPage(props: { children: React.ReactNode; onClos
   );
 }
 
-function WorkflowTasksPageContent() {
+export function WorkflowTasksContent({ forceMobile = false }: { forceMobile?: boolean } = {}) {
   const ctx = useFlowContext() as WorkflowTaskFlowContext | undefined;
   const taskTypes = getWorkflowTaskRegistry(ctx);
   const countsState = useWorkflowTaskCounts(ctx, taskTypes);
   const { counts, reload: reloadCounts } = countsState;
   const { currentTaskType, currentTaskTypeKey, availableTaskTypeKeys } = useCurrentTaskType(taskTypes, counts);
   const route = useWorkflowTasksRoute();
+  const routeAdapter = useWorkflowTasksRouteAdapter();
   const { isMobileLayout } = useMobileLayout();
-  const mobile = route.isMobileRoute || isMobileLayout;
-  const navigate = useNavigate();
+  const mobile = forceMobile || route.isMobileRoute || isMobileLayout;
   const { message } = App.useApp();
   const t = useT();
   const { token } = theme.useToken();
@@ -579,17 +681,17 @@ function WorkflowTasksPageContent() {
 
   useEffect(() => {
     if (!route.taskType && availableTaskTypeKeys.length) {
-      navigate(
-        withCurrentLocationSuffix(
-          getWorkflowTasksPath(availableTaskTypeKeys[0], route.status, undefined, route.isMobileRoute),
-          route,
-        ),
+      routeAdapter.navigate(
+        {
+          taskType: availableTaskTypeKeys[0],
+          status: route.status,
+        },
         {
           replace: true,
         },
       );
     }
-  }, [availableTaskTypeKeys, navigate, route, route.isMobileRoute, route.status, route.taskType]);
+  }, [availableTaskTypeKeys, route.status, route.taskType, routeAdapter]);
 
   useEffect(() => {
     if (paginationState.signature !== listSignature) {
@@ -749,12 +851,11 @@ function WorkflowTasksPageContent() {
       : null;
     setCurrentRecord(record);
     if (recordKey !== undefined && recordKey !== null) {
-      navigate(
-        withCurrentLocationSuffix(
-          getWorkflowTasksPath(currentTaskType.key, route.status, String(recordKey), route.isMobileRoute),
-          route,
-        ),
-      );
+      routeAdapter.navigate({
+        taskType: currentTaskType.key,
+        status: route.status,
+        popupId: String(recordKey),
+      });
     }
   });
 
@@ -765,11 +866,11 @@ function WorkflowTasksPageContent() {
     clearPendingWorkflowTaskPopupRecord();
     setCurrentRecord(null);
     if (currentTaskType) {
-      navigate(
-        withCurrentLocationSuffix(
-          getWorkflowTasksPath(currentTaskType.key, route.status, undefined, route.isMobileRoute),
-          route,
-        ),
+      routeAdapter.navigate(
+        {
+          taskType: currentTaskType.key,
+          status: route.status,
+        },
         { replace: true },
       );
     }
@@ -917,5 +1018,5 @@ function WorkflowTasksPageContent() {
 }
 
 export default function WorkflowTasksPage() {
-  return <WorkflowTasksPageContent />;
+  return <WorkflowTasksContent />;
 }

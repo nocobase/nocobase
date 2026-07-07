@@ -286,6 +286,103 @@ function clearWorkflowTaskCountsEventBus(store: WorkflowTaskCountsStore) {
   store.eventHandler = undefined;
 }
 
+export function getWorkflowTaskCountsTotal(counts: WorkflowTaskCounts) {
+  return Object.values(counts).reduce((sum, item) => sum + (item.pending || 0), 0);
+}
+
+async function loadWorkflowTaskCounts(
+  ctx: WorkflowTaskFlowContext | undefined,
+  taskTypeKeys: string[],
+  store: WorkflowTaskCountsStore | undefined,
+  dedupeInflight: boolean,
+) {
+  if (!ctx?.api || !taskTypeKeys.length || !store) {
+    if (store) {
+      setWorkflowTaskCountsStore(store, {});
+    }
+    return;
+  }
+  const listMine = ctx.api.resource('userWorkflowTasks').listMine;
+  if (!listMine) {
+    setWorkflowTaskCountsStore(store, {});
+    return;
+  }
+
+  if (store.inflight) {
+    if (dedupeInflight) {
+      await store.inflight;
+      return;
+    }
+    await store.inflight.catch(() => undefined);
+  }
+
+  const requestVersion = store.version;
+  const promise = listMine({
+    filter: {
+      type: taskTypeKeys,
+    },
+  })
+    .then((response) => {
+      if (store.version === requestVersion) {
+        setWorkflowTaskCountsStore(store, normalizeWorkflowTaskCountsResponse(response));
+      }
+    })
+    .finally(() => {
+      if (store.inflight === promise) {
+        store.inflight = undefined;
+      }
+    });
+  store.inflight = promise;
+  await promise;
+}
+
+export function subscribeWorkflowTaskCounts(
+  ctx: WorkflowTaskFlowContext | undefined,
+  taskTypes: WorkflowTaskRegistry | undefined,
+  listener: (state: { counts: WorkflowTaskCounts; total: number }) => void,
+) {
+  const taskTypeKeys = getWorkflowTaskTypeKeys(taskTypes);
+  const taskTypeKeySignature = taskTypeKeys.join('\n');
+  const store = ctx && taskTypeKeySignature ? getWorkflowTaskCountsStore(ctx, taskTypeKeySignature) : undefined;
+
+  if (!ctx || !store) {
+    listener({ counts: {}, total: 0 });
+    return {
+      reload: async () => undefined,
+      unsubscribe: () => undefined,
+    };
+  }
+
+  const notify = () => {
+    listener({
+      counts: store.counts,
+      total: getWorkflowTaskCountsTotal(store.counts),
+    });
+  };
+  store.listeners.add(notify);
+  syncWorkflowTaskCountsEventBus(store, ctx.app?.eventBus);
+  notify();
+
+  const reload = async (dedupeInflight = false) => {
+    await loadWorkflowTaskCounts(ctx, taskTypeKeys, store, dedupeInflight);
+  };
+  reload(true).catch((error) => {
+    console.error('Failed to load workflow task counts', error);
+  });
+
+  return {
+    reload: async () => {
+      await reload(false);
+    },
+    unsubscribe: () => {
+      store.listeners.delete(notify);
+      if (store.listeners.size === 0) {
+        clearWorkflowTaskCountsEventBus(store);
+      }
+    },
+  };
+}
+
 export function useWorkflowTaskCounts(
   ctx: WorkflowTaskFlowContext | undefined,
   taskTypes: WorkflowTaskRegistry | undefined,
@@ -299,46 +396,11 @@ export function useWorkflowTaskCounts(
   const [counts, setCounts] = useState<WorkflowTaskCounts>(() => store?.counts ?? {});
 
   const loadCounts = useMemoizedFn(async (dedupeInflight: boolean) => {
-    if (!ctx?.api || !taskTypeKeys.length || !store) {
-      if (store) {
-        setWorkflowTaskCountsStore(store, {});
-      } else {
-        setCounts({});
-      }
+    if (!store) {
+      setCounts({});
       return;
     }
-    const listMine = ctx.api.resource('userWorkflowTasks').listMine;
-    if (!listMine) {
-      setWorkflowTaskCountsStore(store, {});
-      return;
-    }
-
-    if (store.inflight) {
-      if (dedupeInflight) {
-        await store.inflight;
-        return;
-      }
-      await store.inflight.catch(() => undefined);
-    }
-
-    const requestVersion = store.version;
-    const promise = listMine({
-      filter: {
-        type: taskTypeKeys,
-      },
-    })
-      .then((response) => {
-        if (store.version === requestVersion) {
-          setWorkflowTaskCountsStore(store, normalizeWorkflowTaskCountsResponse(response));
-        }
-      })
-      .finally(() => {
-        if (store.inflight === promise) {
-          store.inflight = undefined;
-        }
-      });
-    store.inflight = promise;
-    await promise;
+    await loadWorkflowTaskCounts(ctx, taskTypeKeys, store, dedupeInflight);
   });
 
   const reload = useMemoizedFn(async () => {
@@ -376,7 +438,7 @@ export function useWorkflowTaskCounts(
     syncWorkflowTaskCountsEventBus(store, ctx?.app?.eventBus);
   }, [ctx?.app?.eventBus, store]);
 
-  const total = useMemo(() => Object.values(counts).reduce((sum, item) => sum + (item.pending || 0), 0), [counts]);
+  const total = useMemo(() => getWorkflowTaskCountsTotal(counts), [counts]);
 
   return {
     counts,
