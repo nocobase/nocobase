@@ -33,7 +33,7 @@ export class MarkdownVditorFieldInterface extends CollectionFieldInterface {
   group = 'media';
   order = 1;
   title = 'Markdown(Vditor)';
-  sortable = false;
+  sortable = true;
   default = {
     interface: 'vditor',
     type: 'text',

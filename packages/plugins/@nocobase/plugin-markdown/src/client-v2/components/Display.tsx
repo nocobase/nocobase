@@ -14,6 +14,12 @@ import Vditor from 'vditor';
 import { useCDN } from './const';
 import useStyle from './style';
 
+export interface MarkdownDisplayProps {
+  value?: string;
+  ellipsis?: boolean;
+  style?: CSSProperties;
+}
+
 function convertToText(markdownText: string) {
   const content = markdownText;
   let temp = document.createElement('div');
@@ -23,12 +29,10 @@ function convertToText(markdownText: string) {
   return text?.replace(/[\n\r]/g, '') || '';
 }
 
-const getContentWidth = (element) => {
-  if (element) {
-    const range = document.createRange();
-    range.selectNodeContents(element);
-    return range.getBoundingClientRect().width;
-  }
+const getContentWidth = (element: HTMLElement) => {
+  const range = document.createRange();
+  range.selectNodeContents(element);
+  return range.getBoundingClientRect().width;
 };
 
 function openCustomPreview(src: string) {
@@ -66,7 +70,7 @@ function openCustomPreview(src: string) {
   document.body.appendChild(overlay);
 }
 
-function DisplayInner(props: { value: string; style?: CSSProperties }) {
+function DisplayInner(props: { value?: string; style?: CSSProperties }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const { wrapSSR, componentCls, hashId } = useStyle();
   const cdn = useCDN();
@@ -100,14 +104,14 @@ function DisplayInner(props: { value: string; style?: CSSProperties }) {
   );
 }
 
-export const Display = (props) => {
+export const Display = (props: MarkdownDisplayProps) => {
   const value = props.value;
   const cdn = useCDN();
   const containerRef = useRef<HTMLDivElement>(null);
   const [popoverVisible, setPopoverVisible] = useState(false);
   const [ellipsis, setEllipsis] = useState(false);
   const [text, setText] = useState('');
-  const elRef = useRef<HTMLDivElement>();
+  const elRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!value) return;
@@ -163,7 +167,7 @@ export const Display = (props) => {
             wordBreak: 'break-all',
           }}
           onMouseEnter={(e) => {
-            const el = e.target as any;
+            const el = e.currentTarget;
             const isShowTooltips = isOverflowTooltip();
             if (isShowTooltips) {
               setEllipsis(el.scrollWidth >= el.clientWidth);

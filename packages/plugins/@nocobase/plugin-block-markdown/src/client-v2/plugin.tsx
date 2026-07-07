@@ -7,49 +7,39 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Plugin, stripModernClientPrefix } from '@nocobase/client-v2';
+import { Application, Plugin } from '@nocobase/client-v2';
+import {
+  getMarkdownRegistry,
+  MarkdownVditorRuntime,
+  registerMarkdownVditorContext,
+  type MarkdownVditorRuntimeApp,
+} from '@nocobase/plugin-markdown/client-v2';
 
-export class PluginBlockMarkdownClient extends Plugin {
+export class PluginBlockMarkdownClient extends Plugin<Record<string, never>, Application> {
+  declare app: Application & MarkdownVditorRuntimeApp;
+  dependencyLoaded = false;
+  runtime: MarkdownVditorRuntime;
+
   async load() {
+    this.runtime = new MarkdownVditorRuntime(this.app, () => this.app.getPublicPath());
+    getMarkdownRegistry(this.flowEngine.context).register(this.runtime, { default: true });
+    registerMarkdownVditorContext(this.flowEngine.context, this.runtime);
     this.flowEngine.registerModelLoaders({
       MarkdownBlockModel: {
-        loader: () => import('./models/MarkdownBlockModel'),
+        loader: () =>
+          import('@nocobase/plugin-markdown/client-v2').then((module) => ({
+            MarkdownBlockModel: module.MarkdownBlockModel,
+          })),
       },
     });
   }
 
   getCDN() {
-    if (process.env.NODE_ENV === 'production') {
-      return this.app.getCdnUrl() + 'static/plugins/@nocobase/plugin-block-markdown/dist/client/vditor';
-    }
-    return `https://cdn.jsdelivr.net/npm/vditor@3.11.2`;
+    return this.runtime.getCDN();
   }
 
   initVditorDependency() {
-    const cdn = this.getCDN();
-    try {
-      const vditorDepdencePrefix = 'plugin-block-markdown-dep';
-      const vditorDepdence = {
-        [`${vditorDepdencePrefix}.katex`]: `${cdn}/dist/js/katex/katex.min.js?v=0.16.9`,
-        [`${vditorDepdencePrefix}.ABCJS`]: `${cdn}/dist/js/abcjs/abcjs_basic.min`,
-        [`${vditorDepdencePrefix}.plantumlEncoder`]: `${cdn}/dist/js/plantuml/plantuml-encoder.min`,
-        [`${vditorDepdencePrefix}.echarts`]: `${cdn}/dist/js/echarts/echarts.min`,
-        [`${vditorDepdencePrefix}.flowchart`]: `${cdn}/dist/js/flowchart.js/flowchart.min`,
-        [`${vditorDepdencePrefix}.Viz`]: `${cdn}/dist/js/graphviz/viz`,
-        [`${vditorDepdencePrefix}.mermaid`]: `${cdn}/dist/js/mermaid/mermaid.min`,
-      };
-      this.app.requirejs.require.config({
-        waitSeconds: 120,
-        paths: vditorDepdence,
-      });
-      Object.keys(vditorDepdence).forEach((key) => {
-        this.app.requirejs.require([key], (m) => {
-          window[key.split('.')[1]] = m;
-        });
-      });
-    } catch (e) {
-      console.log('initVditorDependency failed', e);
-    }
+    return this.runtime.initVditorDependency();
   }
 }
 export default PluginBlockMarkdownClient;

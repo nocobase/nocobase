@@ -50,7 +50,7 @@ const CODE_PLUGIN = '@nocobase/plugin-field-code';
 const FORMULA_PLUGIN = '@nocobase/plugin-field-formula';
 const CHINA_REGION_PLUGIN = '@nocobase/plugin-field-china-region';
 const MAP_PLUGIN = '@nocobase/plugin-map';
-const MARKDOWN_VDITOR_PLUGIN = '@nocobase/plugin-field-markdown-vditor';
+const MARKDOWN_PLUGIN = '@nocobase/plugin-markdown';
 const SORT_PLUGIN = '@nocobase/plugin-field-sort';
 
 function getCollectionTemplate(collection: any) {
@@ -174,14 +174,14 @@ const FIELD_BINDING_RULE_DEFINITIONS = [
     scope: 'editable',
     modelClassName: 'VditorFieldModel',
     interfaces: ['vditor', 'markdown'],
-    ownerPlugin: MARKDOWN_VDITOR_PLUGIN,
+    ownerPlugin: MARKDOWN_PLUGIN,
     isDefault: true,
   },
   {
     scope: 'display',
     modelClassName: 'DisplayVditorFieldModel',
     interfaces: ['vditor', 'markdown'],
-    ownerPlugin: MARKDOWN_VDITOR_PLUGIN,
+    ownerPlugin: MARKDOWN_PLUGIN,
     isDefault: true,
   },
   {

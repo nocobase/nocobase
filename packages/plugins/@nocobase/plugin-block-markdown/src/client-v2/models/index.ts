@@ -7,6 +7,4 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { MarkdownBlockModel } from './MarkdownBlockModel';
-
-export { MarkdownBlockModel };
+export { MarkdownBlockModel } from './MarkdownBlockModel';

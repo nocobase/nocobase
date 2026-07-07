@@ -23,7 +23,7 @@ describe('vditor:check', () => {
       cors: {
         origin: '*',
       },
-      plugins: ['field-sort', 'users', 'auth', 'file-manager', 'field-markdown-vditor'],
+      plugins: ['field-sort', 'users', 'auth', 'file-manager', 'markdown'],
     });
 
     await app.load();
@@ -106,7 +106,7 @@ describe('vditor:check', () => {
   });
 
   afterEach(async () => {
-    await app.destroy();
+    await app?.destroy();
   });
 
   it('should return default storage when no fileCollectionName provided', async () => {

@@ -7,10 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { connect, mapReadPretty } from '@formily/react';
-import { Display } from './Display';
-import { Edit } from './Edit';
-
-export const MarkdownVditor = connect(Edit, mapReadPretty(Display));
-
-export default MarkdownVditor;
+export * from './VditorFieldModel';
+export * from './DisplayVditorFieldModel';
+export * from './MarkdownBlockModel';
