@@ -1027,6 +1027,67 @@ describe('PluginAgentGatewayClientV2', () => {
     expect(await screen.findByText(/Runner heartbeat is stale; start or reconnect the daemon/)).toBeTruthy();
   });
 
+  it('paginates the runs table through the run list API', async () => {
+    const request = vi.fn(async (config: RequestConfig) => {
+      if (config.url === 'agent-gateway/runs:list') {
+        const page = Number(config.params?.page || 1);
+        const pageSize = Number(config.params?.pageSize || 20);
+        return {
+          data: {
+            data: [
+              {
+                id: `run-page-${page}`,
+                runCode: `run-code-page-${page}`,
+                status: 'queued',
+                taskTitle: `Run page ${page}`,
+                agentGatewayActionPermissionsJson: {},
+              },
+            ],
+            meta: {
+              count: 42,
+              page,
+              pageSize,
+              totalPage: Math.ceil(42 / pageSize),
+            },
+          },
+        };
+      }
+
+      return { data: { data: [] } };
+    });
+
+    renderAgentGatewayPage(AgentGatewayRunsPage, request);
+
+    expect(await screen.findByText('Run page 1')).toBeTruthy();
+    await waitFor(() => {
+      expect(request).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          url: 'agent-gateway/runs:list',
+          params: expect.objectContaining({
+            page: 1,
+            pageSize: 20,
+          }),
+        }),
+      );
+    });
+    expect(await screen.findByText('Total 42 runs')).toBeTruthy();
+
+    fireEvent.click(screen.getByTitle('2'));
+
+    expect(await screen.findByText('Run page 2')).toBeTruthy();
+    await waitFor(() => {
+      expect(request).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          url: 'agent-gateway/runs:list',
+          params: expect.objectContaining({
+            page: 2,
+            pageSize: 20,
+          }),
+        }),
+      );
+    });
+  });
+
   it('uploads a skill while creating a task run and submits the selected skill version ids', async () => {
     const request = vi.fn(async (config: RequestConfig) => {
       if (config.url === 'agent-gateway/task-runs:options') {
@@ -1757,6 +1818,8 @@ describe('PluginAgentGatewayClientV2', () => {
                 contentJson: {
                   status: 'succeeded',
                   exitCode: 0,
+                  command: 'node scripts/run-suite.mjs --tasks tasks.yaml',
+                  output: 'suite completed',
                 },
                 createdAt: '2026-06-30T10:01:02.000Z',
               },
@@ -1769,6 +1832,10 @@ describe('PluginAgentGatewayClientV2', () => {
                 contentJson: {
                   status: 'succeeded',
                   toolName: 'read',
+                  input: {
+                    path: 'packages/plugins/@nocobase/plugin-agent-gateway/src/shared/agentTranscript.ts',
+                  },
+                  output: 'agentTranscript.ts',
                 },
                 createdAt: '2026-06-30T10:01:02.500Z',
               },
@@ -1923,7 +1990,7 @@ describe('PluginAgentGatewayClientV2', () => {
     fireEvent.click(detailButtons[0]);
     expect(new URLSearchParams(window.location.search).get('runId')).toBe('run-id-1');
 
-    expect(await screen.findByText('Conversation between you and the agent')).toBeTruthy();
+    expect(await screen.findByText('Task conversation')).toBeTruthy();
     expect(await screen.findByText('timeline says build started')).toBeTruthy();
     expect(screen.queryByText('session lifecycle noise should stay hidden')).toBeNull();
     expect(screen.queryByText('turn lifecycle noise should stay hidden')).toBeNull();
@@ -1933,8 +2000,19 @@ describe('PluginAgentGatewayClientV2', () => {
     expect(screen.queryByText('Command completed')).toBeNull();
     fireEvent.click(within(timelineRegion as HTMLElement).getByText('Tool calls'));
     expect(await within(timelineRegion as HTMLElement).findAllByText('succeeded')).not.toHaveLength(0);
-    expect(within(timelineRegion as HTMLElement).queryByText(/agent\.command\.completed/)).toBeNull();
-    expect(within(timelineRegion as HTMLElement).queryByText('Details')).toBeNull();
+    const commandToolTitles = await within(timelineRegion as HTMLElement).findAllByText((_, element) => {
+      return (
+        element?.tagName.toLowerCase() === 'strong' &&
+        element.textContent === 'Exec · node scripts/run-suite.mjs --tasks tasks.yaml'
+      );
+    });
+    fireEvent.click(commandToolTitles[0]);
+    expect(await within(timelineRegion as HTMLElement).findByText('suite completed')).toBeTruthy();
+    expect(await within(timelineRegion as HTMLElement).findByText(/agent\.command\.completed/)).toBeTruthy();
+    fireEvent.click(await within(timelineRegion as HTMLElement).findByText(/Tool · read/));
+    expect(await within(timelineRegion as HTMLElement).findAllByText(/agentTranscript\.ts/)).not.toHaveLength(0);
+    expect(within(timelineRegion as HTMLElement).queryByText('No command details available')).toBeNull();
+    expect(await within(timelineRegion as HTMLElement).findAllByText('Details')).not.toHaveLength(0);
     expect(screen.queryByText('Command completed')).toBeNull();
 
     fireEvent.click(await screen.findByRole('tab', { name: 'Agent Sessions' }));
@@ -1951,6 +2029,8 @@ describe('PluginAgentGatewayClientV2', () => {
     expect(await screen.findByText('Exit code: 0')).toBeTruthy();
     expect(await screen.findByText('Artifacts: 2')).toBeTruthy();
     expect(screen.queryByText(/visible summary/)).toBeNull();
+    expect(screen.queryByLabelText('Run progress')).toBeNull();
+    expect(screen.queryByText('rerendering report')).toBeNull();
 
     fireEvent.click(await screen.findByRole('tab', { name: 'Logs' }));
     expect(await screen.findByText('build started')).toBeTruthy();
@@ -4359,6 +4439,83 @@ describe('PluginAgentGatewayClientV2', () => {
 
     fireEvent.click(await within(timelineRegion as HTMLElement).findByText(/Load earlier messages/));
     expect(await within(timelineRegion as HTMLElement).findByText('message 1')).toBeTruthy();
+  });
+
+  it('shows dangling running tool calls as unknown when the run is no longer live', async () => {
+    render(
+      <AntdApp>
+        <AgentTimeline
+          t={(key) => key}
+          events={[
+            {
+              id: 'started-tool',
+              source: 'codex',
+              sequence: 1,
+              eventType: 'agent.command.started',
+              correlationId: 'item-stalled',
+              contentJson: {
+                command: 'node scripts/run-suite.mjs --tasks tasks.yaml',
+                status: 'in_progress',
+              },
+              createdAt: '2026-06-30T10:00:00.000Z',
+            },
+          ]}
+          legacyEvents={[]}
+          useLegacyFallback={false}
+          closeDanglingToolCalls
+        />
+      </AntdApp>,
+    );
+
+    const timelineRegion = await screen.findByLabelText('Task conversation');
+    fireEvent.click(await within(timelineRegion as HTMLElement).findByText('Tool calls'));
+    const toolTitle = await within(timelineRegion as HTMLElement).findByText(
+      'Exec · node scripts/run-suite.mjs --tasks tasks.yaml',
+    );
+    expect(toolTitle).toBeTruthy();
+    expect(within(timelineRegion as HTMLElement).getAllByText('unknown')).not.toHaveLength(0);
+    fireEvent.click(toolTitle);
+    expect(await within(timelineRegion as HTMLElement).findByText(/agent\.command\.started/)).toBeTruthy();
+    expect(within(timelineRegion as HTMLElement).queryByText('No command details available')).toBeNull();
+  });
+
+  it('shows root agent and child agent messages as separate timeline participants', async () => {
+    render(
+      <AntdApp>
+        <AgentTimeline
+          t={(key) => key}
+          events={[
+            {
+              id: 'timeline-user',
+              source: 'agent-gateway-task',
+              sequence: 1,
+              eventType: 'agent.user.message',
+              contentText: '启动 2 个子 agent 分别说一句 hi',
+              createdAt: '2026-06-30T10:00:00.000Z',
+            },
+            {
+              id: 'timeline-root',
+              source: 'terminal-live',
+              sequence: 2,
+              eventType: 'agent.message',
+              contentText: 'I will start two child agents.\ncollab: SpawnAgent\nAquinas: hi\nBacon: hi',
+              createdAt: '2026-06-30T10:00:01.000Z',
+            },
+          ]}
+          legacyEvents={[]}
+          useLegacyFallback={false}
+        />
+      </AntdApp>,
+    );
+
+    const timelineRegion = await screen.findByLabelText('Task conversation');
+    expect(await within(timelineRegion as HTMLElement).findByText('You')).toBeTruthy();
+    expect(await within(timelineRegion as HTMLElement).findByText('Agent')).toBeTruthy();
+    expect(await within(timelineRegion as HTMLElement).findByText('Sub-agent: Aquinas')).toBeTruthy();
+    expect(await within(timelineRegion as HTMLElement).findByText('Sub-agent: Bacon')).toBeTruthy();
+    expect(within(timelineRegion as HTMLElement).getAllByText('hi')).toHaveLength(2);
+    expect(await within(timelineRegion as HTMLElement).findByText('Tool calls')).toBeTruthy();
+    expect(within(timelineRegion as HTMLElement).queryByText('Aquinas: hi')).toBeNull();
   });
 
   it('does not clear the normalized timeline when a later poll returns an empty older snapshot', async () => {

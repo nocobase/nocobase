@@ -42,7 +42,7 @@ import {
   Upload,
 } from 'antd';
 import type { UploadProps } from 'antd';
-import type { ColumnsType } from 'antd/es/table';
+import type { ColumnsType, TablePaginationConfig } from 'antd/es/table';
 import type { CSSMotionProps } from 'rc-motion';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -147,6 +147,11 @@ interface RunArtifactRecord {
   artifactType?: string;
   mimeType?: string | null;
   sizeBytes?: number | string | null;
+  originalSizeBytes?: number | string | null;
+  previewBytes?: number | string | null;
+  truncated?: boolean | null;
+  storageMode?: string | null;
+  contentSha256?: string | null;
   contentText?: string | null;
   metadataJson?: JsonRecord;
 }
@@ -256,6 +261,18 @@ interface RunnerStatusRecord {
   profileStatus?: string | null;
 }
 
+interface RunListMeta {
+  count?: number;
+  page?: number;
+  pageSize?: number;
+  totalPage?: number;
+}
+
+interface RunListData {
+  runs: RunRecord[];
+  meta: RunListMeta;
+}
+
 type RunDetailTabKey = 'summary' | 'agent-sessions' | 'logs' | 'artifacts' | 'api-logs';
 
 interface BuildRunnerProfileOption {
@@ -362,7 +379,9 @@ const RUN_STATUS_OPTIONS = [
   'claimed',
   'syncing_skills',
   'running',
+  'finalizing',
   'canceling',
+  'stalled',
   'succeeded',
   'failed',
   'canceled',
@@ -370,11 +389,28 @@ const RUN_STATUS_OPTIONS = [
   'abandoned',
 ];
 
-const CANCELABLE_STATUSES = new Set(['queued', 'claimed', 'syncing_skills', 'running']);
+const CANCELABLE_STATUSES = new Set(['queued', 'claimed', 'syncing_skills', 'running', 'finalizing', 'stalled']);
 const TERMINAL_CONTROL_RUN_STATUSES = new Set(['claimed', 'syncing_skills', 'running']);
 const LEGACY_TIMELINE_FALLBACK_STATUSES = new Set(['succeeded']);
-const LIVE_RUN_STATUSES = new Set(['queued', 'claimed', 'syncing_skills', 'running', 'canceling']);
+const LIVE_RUN_STATUSES = new Set([
+  'queued',
+  'claimed',
+  'syncing_skills',
+  'running',
+  'finalizing',
+  'canceling',
+  'stalled',
+]);
+const DANGLING_TOOL_LIVE_RUN_STATUSES = new Set([
+  'queued',
+  'claimed',
+  'syncing_skills',
+  'running',
+  'finalizing',
+  'canceling',
+]);
 const RUN_DETAIL_QUERY_PARAM = 'runId';
+const DEFAULT_RUNS_PAGE_SIZE = 20;
 const OPENCODE_UI_BATCH_SCENARIO = 'opencode-ui-batch';
 const OPENCODE_UI_BATCH_SKILL_KEY = 'nb-opencode-ui-batch';
 const DEFAULT_SKILL_UPLOAD_FORM_VALUES: SkillUploadFormValues = {
@@ -419,6 +455,10 @@ function isCancelableRun(run: RunRecord) {
 
 function isLiveRunStatus(status?: string) {
   return Boolean(status && LIVE_RUN_STATUSES.has(status));
+}
+
+function shouldCloseDanglingToolCalls(status?: string) {
+  return !status || !DANGLING_TOOL_LIVE_RUN_STATUSES.has(status);
 }
 
 function getTimestampMs(value?: string | null) {
@@ -579,6 +619,20 @@ function normalizeRunFilters(values: RunFilterFormValues) {
     filters.createdAtTo = values.createdAtRange[1].toISOString();
   }
   return filters;
+}
+
+function getNumberMetaValue(value: unknown) {
+  return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
+}
+
+function getRunListMeta(value: unknown): RunListMeta {
+  const record = getObjectRecord(value);
+  return {
+    count: getNumberMetaValue(record.count),
+    page: getNumberMetaValue(record.page),
+    pageSize: getNumberMetaValue(record.pageSize),
+    totalPage: getNumberMetaValue(record.totalPage),
+  };
 }
 
 function EmptyInline({ description }: { description: string }) {
@@ -1358,10 +1412,15 @@ function isHarnessStageRunEvent(record: RunEventRecord) {
 }
 
 function getRunEventStageLabel(record: RunEventRecord) {
+  const { phase, status } = getRunEventStageParts(record);
+  return [phase, status].filter(Boolean).join(' / ');
+}
+
+function getRunEventStageParts(record: RunEventRecord) {
   const payload = getObjectRecord(record.payloadJson);
   const phase = getStringValue(payload.phase) || record.eventType || '-';
   const status = getStringValue(payload.status);
-  return [phase, status].filter(Boolean).join(' / ');
+  return { phase, status };
 }
 
 function LogsPanel({
@@ -2008,6 +2067,10 @@ function getArtifactOverviewCounts(artifacts: RunArtifactRecord[]) {
   return {
     htmlReports: artifacts.filter((artifact) => getArtifactDisplayPriority(artifact) === 0).length,
     screenshots: artifacts.filter((artifact) => getArtifactDisplayPriority(artifact) === 1).length,
+    manifests: artifacts.filter((artifact) => artifact.artifactType === 'artifact-manifest').length,
+    truncated: artifacts.filter(
+      (artifact) => artifact.truncated === true || getObjectRecord(artifact.metadataJson).truncated === true,
+    ).length,
     total: artifacts.length,
   };
 }
@@ -2046,6 +2109,12 @@ function ArtifactsPanel({
           <Tag color={overviewCounts.screenshots ? 'green' : undefined}>
             {t('Screenshots')}: {overviewCounts.screenshots}
           </Tag>
+          <Tag color={overviewCounts.manifests ? 'purple' : undefined}>
+            {t('Artifact manifests')}: {overviewCounts.manifests}
+          </Tag>
+          <Tag color={overviewCounts.truncated ? 'orange' : undefined}>
+            {t('Truncated')}: {overviewCounts.truncated}
+          </Tag>
         </Space>
       ) : null}
       {displayArtifacts.length ? (
@@ -2058,6 +2127,20 @@ function ArtifactsPanel({
                   {[artifact.artifactKey, artifact.artifactType, artifact.mimeType].filter(Boolean).join(' / ') ||
                     artifact.id}
                 </Typography.Text>
+                <Space wrap size={6}>
+                  {artifact.storageMode ? <Tag>{artifact.storageMode}</Tag> : null}
+                  {artifact.truncated ? <Tag color="orange">{t('Truncated')}</Tag> : null}
+                  {artifact.originalSizeBytes ? (
+                    <Tag>
+                      {t('Original size')}: {String(artifact.originalSizeBytes)}
+                    </Tag>
+                  ) : null}
+                  {artifact.previewBytes ? (
+                    <Tag>
+                      {t('Preview size')}: {String(artifact.previewBytes)}
+                    </Tag>
+                  ) : null}
+                </Space>
                 <ArtifactContentPreview artifact={artifact} t={t} />
                 <JsonPreview value={redactExternalUrlPreviewJson(artifact.metadataJson)} />
               </Space>
@@ -2102,6 +2185,10 @@ export default function AgentGatewayRunsPage() {
   const [skillUploadForm] = Form.useForm<SkillUploadFormValues>();
   const buildTaskScenario = Form.useWatch('scenario', buildTaskForm);
   const [runFilters, setRunFilters] = useState<Record<string, unknown>>({});
+  const [runPagination, setRunPagination] = useState({
+    current: 1,
+    pageSize: DEFAULT_RUNS_PAGE_SIZE,
+  });
   const [buildTaskOpen, setBuildTaskOpen] = useState(false);
   const [skillUploadOpen, setSkillUploadOpen] = useState(false);
   const [skillZipContentBase64, setSkillZipContentBase64] = useState('');
@@ -2146,12 +2233,19 @@ export default function AgentGatewayRunsPage() {
       const response = await ctx.api.request<RunRecord[]>({
         url: 'agent-gateway/runs:list',
         method: 'get',
-        params: runFilters,
+        params: {
+          ...runFilters,
+          page: runPagination.current,
+          pageSize: runPagination.pageSize,
+        },
       });
-      return getResponseData(response, []);
+      return {
+        runs: getResponseData(response, []),
+        meta: getRunListMeta(response.data?.meta),
+      };
     },
     {
-      refreshDeps: [runFilters],
+      refreshDeps: [runFilters, runPagination.current, runPagination.pageSize],
     },
   );
   const { refresh: refreshRuns } = runsRequest;
@@ -2797,6 +2891,10 @@ export default function AgentGatewayRunsPage() {
 
   const submitFilters = useCallback(
     (values: RunFilterFormValues) => {
+      setRunPagination((current) => ({
+        ...current,
+        current: 1,
+      }));
       setRunFilters(normalizeRunFilters(values));
     },
     [setRunFilters],
@@ -2804,8 +2902,19 @@ export default function AgentGatewayRunsPage() {
 
   const resetFilters = useCallback(() => {
     filterForm.resetFields();
+    setRunPagination((current) => ({
+      ...current,
+      current: 1,
+    }));
     setRunFilters({});
   }, [filterForm]);
+
+  const handleRunPageChange = useCallback((page: number, pageSize: number) => {
+    setRunPagination({
+      current: page,
+      pageSize,
+    });
+  }, []);
 
   const openBuildTask = useCallback(() => {
     buildRunOptionsRequest.run();
@@ -2979,7 +3088,23 @@ export default function AgentGatewayRunsPage() {
 
   const activeRunDetails =
     !runDetailsError && runDetailsRequest.data?.run.id === selectedRunId ? runDetailsRequest.data : null;
-  const selectedRun = activeRunDetails?.run || runsRequest.data?.find((run) => run.id === selectedRunId);
+  const runListData: RunListData = runsRequest.data || { runs: [], meta: {} };
+  const runListTotal = runListData.meta.count ?? runListData.runs.length;
+  const { current: runPageCurrent, pageSize: runPageSize } = runPagination;
+  const runTablePagination = useMemo<TablePaginationConfig>(
+    () => ({
+      current: runPageCurrent,
+      pageSize: runPageSize,
+      total: runListTotal,
+      showSizeChanger: true,
+      pageSizeOptions: ['10', '20', '50', '100'],
+      showTotal: (total) => t('Total {{count}} runs', { count: total }),
+      onChange: handleRunPageChange,
+      onShowSizeChange: handleRunPageChange,
+    }),
+    [handleRunPageChange, runListTotal, runPageCurrent, runPageSize, t],
+  );
+  const selectedRun = activeRunDetails?.run || runListData.runs.find((run) => run.id === selectedRunId);
   const actionPermissions = activeRunDetails?.run.agentGatewayActionPermissionsJson || {};
   const canResumeAgentSession =
     isRunActionAllowed(actionPermissions, 'resumeAgentSession') &&
@@ -3200,11 +3325,11 @@ export default function AgentGatewayRunsPage() {
 
         <Table<RunRecord>
           columns={runColumns}
-          dataSource={runsRequest.data || []}
+          dataSource={runListData.runs}
           loading={runsRequest.loading && !runsRequest.data}
           rowKey="id"
           locale={{ emptyText: <EmptyInline description={t('No runs yet')} /> }}
-          pagination={false}
+          pagination={runTablePagination}
         />
       </Space>
 
@@ -3236,6 +3361,7 @@ export default function AgentGatewayRunsPage() {
                       events={timelineEvents}
                       legacyEvents={activeRunDetails.events}
                       useLegacyFallback={useLegacyTimelineFallback}
+                      closeDanglingToolCalls={shouldCloseDanglingToolCalls(activeRunDetails.run.status)}
                       warning={timelineWarning}
                       emptyDescription={getTimelineEmptyDescription(activeRunDetails.run, t)}
                     />

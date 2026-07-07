@@ -19,7 +19,6 @@ import {
   createClaimToken,
   extractNodeToken,
   redactEventPayload,
-  redactObservabilityText,
   redactRunErrorSummary,
   redactRunResultSummary,
   toStoredTokenFields,
@@ -57,6 +56,8 @@ import { getRunProviderCapabilitySummary, isRunCapabilitySupported } from './cap
 const DEFAULT_CLAIM_LEASE_SECONDS = 60;
 const DEFAULT_MAX_CONCURRENCY = 1;
 const CLAIM_CANDIDATE_PAGE_SIZE = 50;
+const DEFAULT_RUN_LIST_PAGE_SIZE = 50;
+const MAX_RUN_LIST_PAGE_SIZE = 100;
 const DEFAULT_TASK_RUN_PROFILE_KEY = 'codex';
 const UI_BUILD_SOURCE_TYPE = 'ui-build';
 const TASK_RUN_SOURCE_TYPE = 'task-run';
@@ -79,16 +80,20 @@ const OPENCODE_UI_BATCH_ARTIFACT_GLOBS = [
   'runs/nb-opencode-ui-batch/*/browser-verification-prompt.md',
   'runs/nb-opencode-ui-batch/*/browser-verification.json',
   'runs/nb-opencode-ui-batch/*/browser-screenshots/**/*',
+  'runs/nb-opencode-ui-batch/*/logs/**/*',
+  'runs/nb-opencode-ui-batch/*/tasks/**/*',
 ];
 const RUNNER_ONLINE_THRESHOLD_MS = 120_000;
 const TASK_RUN_INITIAL_EVENT_SOURCE = 'agent-gateway-task';
 const LEASE_RECOVERY_BATCH_LIMIT = 100;
+const LEASE_RECOVERY_STALLED_GRACE_MS = 5 * 60 * 1000;
 
-const ACTIVE_RUN_STATUSES = ['claimed', 'syncing_skills', 'running', 'canceling'] as const;
+const ACTIVE_RUN_STATUSES = ['claimed', 'syncing_skills', 'running', 'finalizing', 'canceling'] as const;
+const STALLED_RUN_STATUS = 'stalled';
 const CLAIMABLE_RUN_STATUS = 'queued';
 const CONTROL_RUN_STATUSES = new Set(['claimed', 'syncing_skills', 'running']);
 const TERMINAL_RUN_STATUSES = ['succeeded', 'failed', 'canceled', 'timeout', 'abandoned'] as const;
-const HEARTBEAT_RUN_STATUSES = ['claimed', 'syncing_skills', 'running'] as const;
+const HEARTBEAT_RUN_STATUSES = ['claimed', 'syncing_skills', 'running', 'finalizing'] as const;
 const NODE_OWNED_INLINE_SKILL_SOURCE_TYPES = new Set(['opencode-smoke']);
 
 type ActiveRunStatus = (typeof ACTIVE_RUN_STATUSES)[number];
@@ -1083,11 +1088,16 @@ async function createInitialTaskConversationEvent(
       providerEventId: 'initial-task',
       correlationId: null,
       confidence: 1,
-      contentText: redactObservabilityText(options.renderedPrompt),
+      contentText: options.renderedPrompt,
       contentJson: getRecord(
         redactEventPayload({
           scenario: options.scenario,
           ...(options.title ? { title: options.title } : {}),
+          participant: {
+            id: 'user:requester',
+            type: 'user',
+            name: 'You',
+          },
         }),
       ),
       createdById: getCurrentUserId(ctx),
@@ -1415,11 +1425,38 @@ function getQueryString(ctx: Context, key: string) {
 }
 
 function getQueryLimit(ctx: Context) {
-  const value = Number(getQueryValue(ctx, 'limit') || 50);
+  const value = Number(getQueryValue(ctx, 'limit') || DEFAULT_RUN_LIST_PAGE_SIZE);
   if (!Number.isInteger(value) || value <= 0) {
-    return 50;
+    return DEFAULT_RUN_LIST_PAGE_SIZE;
   }
-  return Math.min(value, 100);
+  return Math.min(value, MAX_RUN_LIST_PAGE_SIZE);
+}
+
+function getPositiveQueryInteger(ctx: Context, key: string, defaultValue: number, maxValue?: number) {
+  const value = Number(getQueryValue(ctx, key) || defaultValue);
+  if (!Number.isInteger(value) || value <= 0) {
+    return defaultValue;
+  }
+  return maxValue ? Math.min(value, maxValue) : value;
+}
+
+function getRunListPagination(ctx: Context) {
+  const page = getPositiveQueryInteger(ctx, 'page', 1);
+  const pageSizeValue = getQueryValue(ctx, 'pageSize') ?? getQueryValue(ctx, 'limit');
+  const pageSize = Number(pageSizeValue || DEFAULT_RUN_LIST_PAGE_SIZE);
+  const normalizedPageSize =
+    Number.isInteger(pageSize) && pageSize > 0
+      ? Math.min(pageSize, MAX_RUN_LIST_PAGE_SIZE)
+      : DEFAULT_RUN_LIST_PAGE_SIZE;
+  return {
+    page,
+    pageSize: normalizedPageSize,
+    offset: (page - 1) * normalizedPageSize,
+  };
+}
+
+function getTotalPage(count: number, pageSize: number) {
+  return Math.ceil(count / pageSize);
 }
 
 function getRunListFilter(ctx: Context) {
@@ -1672,14 +1709,28 @@ async function listRuns(ctx: Context) {
     'Agent Gateway run read permission required',
   );
   const filter = await getVisibleRunFilter(ctx, getRunListFilter(ctx), 'list');
+  const { page, pageSize, offset } = getRunListPagination(ctx);
+  const runRepo = ctx.db.getRepository('agRuns');
 
-  const runs = (await ctx.db.getRepository('agRuns').find({
-    filter,
-    sort: ['-createdAt'],
-    limit: getQueryLimit(ctx),
-  })) as ModelRecord[];
+  const [count, runs] = await Promise.all([
+    runRepo.count({
+      filter,
+    }),
+    runRepo.find({
+      filter,
+      sort: ['-createdAt'],
+      limit: pageSize,
+      offset,
+    }) as Promise<ModelRecord[]>,
+  ]);
 
-  ctx.body = await Promise.all(runs.map((run) => serializeRunForManagement(ctx, run)));
+  ctx.body = {
+    rows: await Promise.all(runs.map((run) => serializeRunForManagement(ctx, run))),
+    count,
+    page,
+    pageSize,
+    totalPage: getTotalPage(count, pageSize),
+  };
 }
 
 async function getRun(ctx: Context, runId: string) {
@@ -2114,7 +2165,12 @@ export async function validateRunLease(
   runId: string,
   values: JsonRecord,
   transaction: Transaction,
-  options: { allowStaleLeaseVersion?: boolean } = {},
+  options: {
+    allowExpiredLease?: boolean;
+    allowExpiredLeaseStatuses?: readonly string[];
+    allowStaleLeaseVersion?: boolean;
+    allowedStatuses?: readonly string[];
+  } = {},
 ): Promise<RunLease | null> {
   await authenticateNodeForRun(ctx, nodeId, transaction, { lock: false });
   const claimToken = getString(values.claimToken);
@@ -2148,12 +2204,14 @@ export async function validateRunLease(
   }
 
   const status = getModelString(run, 'status');
-  if (!isActiveRunStatus(status)) {
+  const statusAllowed = isActiveRunStatus(status) || Boolean(options.allowedStatuses?.includes(status));
+  if (!statusAllowed) {
     return respondLeaseLost(ctx, 'Run is no longer active');
   }
 
   const claimExpiresAt = getDateFromModel(run, 'claimExpiresAt');
-  if (!claimExpiresAt || claimExpiresAt.getTime() <= Date.now()) {
+  const allowExpiredLease = options.allowExpiredLease || Boolean(options.allowExpiredLeaseStatuses?.includes(status));
+  if (!allowExpiredLease && (!claimExpiresAt || claimExpiresAt.getTime() <= Date.now())) {
     return respondLeaseLost(ctx, 'Run lease has expired');
   }
 
@@ -2184,6 +2242,7 @@ function getHeartbeatStatus(ctx: Context, currentStatus: string, requestedStatus
     claimed: 0,
     syncing_skills: 1,
     running: 2,
+    finalizing: 3,
   };
   return statusOrder[requestedStatus] > statusOrder[currentStatus] ? requestedStatus : currentStatus;
 }
@@ -2251,7 +2310,7 @@ function assertTerminalAllowed(
   ctx: Context,
   run: ModelRecord,
   terminalStatus: TerminalRunStatus,
-  allowedStatuses: readonly ActiveRunStatus[],
+  allowedStatuses: readonly string[],
 ) {
   const currentStatus = getModelString(run, 'status');
   if (isTerminalRunStatus(currentStatus)) {
@@ -2355,15 +2414,22 @@ async function finishRun(
   runId: string,
   terminalStatus: TerminalRunStatus,
   terminalValues: (values: JsonRecord, now: Date, run: ModelRecord) => JsonRecord,
-  allowedStatuses: readonly ActiveRunStatus[],
+  allowedStatuses: readonly string[],
 ) {
   const values = getBodyValues(ctx);
   const result = await ctx.db.sequelize.transaction(async (transaction) => {
-    const lease = await validateRunLease(ctx, nodeId, runId, values, transaction);
+    const lease = await validateRunLease(ctx, nodeId, runId, values, transaction, {
+      allowExpiredLease: true,
+      allowStaleLeaseVersion: true,
+      allowedStatuses: [...allowedStatuses, STALLED_RUN_STATUS],
+    });
     if (!lease) {
       return null;
     }
-    const terminalAllowed = assertTerminalAllowed(ctx, lease.run, terminalStatus, allowedStatuses);
+    const terminalAllowed = assertTerminalAllowed(ctx, lease.run, terminalStatus, [
+      ...allowedStatuses,
+      STALLED_RUN_STATUS,
+    ]);
     if (terminalAllowed !== true) {
       return null;
     }
@@ -2414,7 +2480,7 @@ async function completeRun(ctx: Context, nodeId: string, runId: string) {
       resultSummaryJson: mergeTerminalResultSummary(run, values.resultSummaryJson || values.resultSummary),
       completedAt: now,
     }),
-    ['running'],
+    ['running', 'finalizing'],
   );
 }
 
@@ -2429,7 +2495,7 @@ async function failRun(ctx: Context, nodeId: string, runId: string) {
       errorSummary: getString(values.errorSummary) ? redactRunErrorSummary(getString(values.errorSummary)) : null,
       failedAt: now,
     }),
-    ['claimed', 'syncing_skills', 'running'],
+    ['claimed', 'syncing_skills', 'running', 'finalizing'],
   );
 }
 
@@ -2499,7 +2565,7 @@ async function timeoutRun(ctx: Context, nodeId: string, runId: string) {
         ? redactRunErrorSummary(getString(values.errorSummary))
         : 'Process timeout confirmed by daemon',
     }),
-    ['running'],
+    ['running', 'finalizing'],
   );
 }
 
@@ -2603,6 +2669,9 @@ async function appendRunLeaseRecoveryEvent(options: {
   run: ModelRecord;
   now: Date;
   reason: string;
+  eventType: 'run.lease.stalled' | 'run.lease.failed';
+  message: string;
+  nextStatus: string;
   transaction: Transaction;
 }) {
   const runId = String(getModelTargetKey(options.run, 'id'));
@@ -2624,11 +2693,12 @@ async function appendRunLeaseRecoveryEvent(options: {
       source: 'agent-gateway',
       sequence: (latestEvent ? getModelNumber(latestEvent, 'sequence') : 0) + 1,
       level: 'warn',
-      eventType: 'run.lease.abandoned',
-      message: 'Run lease expired and was marked abandoned',
+      eventType: options.eventType,
+      message: options.message,
       payloadJson: {
         reason: options.reason,
         previousStatus: getModelString(options.run, 'status'),
+        nextStatus: options.nextStatus,
         leaseVersion: getModelNumber(options.run, 'leaseVersion'),
         claimExpiresAt: getDateFromModel(options.run, 'claimExpiresAt')?.toISOString() || null,
       },
@@ -2649,7 +2719,7 @@ async function reconcileExpiredRunLeases(
   const expiredRuns = (await ctx.db.getRepository('agRuns').find({
     filter: {
       status: {
-        $in: [...ACTIVE_RUN_STATUSES],
+        $in: [...ACTIVE_RUN_STATUSES, STALLED_RUN_STATUS],
       },
       claimExpiresAt: {
         $lte: now,
@@ -2659,31 +2729,57 @@ async function reconcileExpiredRunLeases(
     limit: options.limit || LEASE_RECOVERY_BATCH_LIMIT,
   })) as ModelRecord[];
 
-  let abandonedCount = 0;
+  let stalledCount = 0;
+  let failedCount = 0;
   for (const run of expiredRuns) {
-    const abandoned = await ctx.db.sequelize.transaction(async (transaction) => {
+    const recoveryResult = await ctx.db.sequelize.transaction(async (transaction) => {
       const lockedRun = (await ctx.db.getRepository('agRuns').findOne({
         filterByTk: getModelTargetKey(run, 'id'),
         transaction,
         lock: transaction.LOCK.UPDATE,
       })) as ModelRecord | null;
-      if (!lockedRun || !isActiveRunStatus(getModelString(lockedRun, 'status'))) {
-        return false;
+      const currentStatus = lockedRun ? getModelString(lockedRun, 'status') : '';
+      if (!lockedRun || (!isActiveRunStatus(currentStatus) && currentStatus !== STALLED_RUN_STATUS)) {
+        return null;
       }
 
       const claimExpiresAt = getDateFromModel(lockedRun, 'claimExpiresAt');
       if (!claimExpiresAt || claimExpiresAt.getTime() > now.getTime()) {
-        return false;
+        return null;
+      }
+
+      if (currentStatus !== STALLED_RUN_STATUS) {
+        const stalledUntil = new Date(now.getTime() + LEASE_RECOVERY_STALLED_GRACE_MS);
+        await ctx.db.getRepository('agRuns').update({
+          filterByTk: getModelTargetKey(lockedRun, 'id'),
+          values: {
+            status: STALLED_RUN_STATUS,
+            claimExpiresAt: stalledUntil,
+          },
+          transaction,
+        });
+        await appendRunLeaseRecoveryEvent({
+          ctx,
+          run: lockedRun,
+          now,
+          reason: options.recoveryReason || 'lease-expired',
+          eventType: 'run.lease.stalled',
+          message: 'Run lease expired and was marked stalled',
+          nextStatus: STALLED_RUN_STATUS,
+          transaction,
+        });
+        return 'stalled' as const;
       }
 
       await ctx.db.getRepository('agRuns').update({
         filterByTk: getModelTargetKey(lockedRun, 'id'),
         values: {
-          status: 'abandoned',
+          status: 'failed',
           claimExpiresAt: null,
+          failedAt: now,
           finishedAt: now,
-          terminalStatus: 'abandoned',
           terminalEndedAt: now,
+          errorSummary: redactRunErrorSummary('Runner lost after lease stalled grace period'),
         },
         transaction,
       });
@@ -2692,26 +2788,33 @@ async function reconcileExpiredRunLeases(
         run: lockedRun,
         now,
         reason: options.recoveryReason || 'lease-expired',
+        eventType: 'run.lease.failed',
+        message: 'Run lease remained stalled and was marked failed',
+        nextStatus: 'failed',
         transaction,
       });
       await failOpenControlRequestsForFinishedRun({
         ctx,
         run: lockedRun,
         runId: String(getModelTargetKey(lockedRun, 'id')),
-        terminalStatus: 'abandoned',
+        terminalStatus: 'failed',
         now,
         transaction,
       });
-      return true;
+      return 'failed' as const;
     });
 
-    if (abandoned) {
-      abandonedCount += 1;
+    if (recoveryResult === 'stalled') {
+      stalledCount += 1;
+    }
+    if (recoveryResult === 'failed') {
+      failedCount += 1;
     }
   }
 
   return {
-    abandonedCount,
+    stalledCount,
+    failedCount,
     scannedAt: now.toISOString(),
   };
 }

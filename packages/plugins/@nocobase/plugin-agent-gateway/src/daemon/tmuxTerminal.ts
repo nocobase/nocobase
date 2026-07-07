@@ -14,7 +14,6 @@ import os from 'os';
 import path from 'path';
 import { StringDecoder } from 'string_decoder';
 
-import { redactObservabilityText } from '../server/security/redaction';
 import { AGENT_GATEWAY_TERMINATE_CONTROL_CANCEL_REASON } from '../shared/runControl';
 import {
   ExecCommandDefinition,
@@ -35,6 +34,7 @@ export interface TmuxCommandOptions {
   cancelSignal?: AbortSignal;
   leaseLostSignal?: AbortSignal;
   liveOutputPollIntervalMs?: number;
+  outputMode?: 'terminal' | 'structured';
   onOutputChunk?(chunk: string): Promise<void> | void;
   onSessionStarted?(metadata: TmuxSessionMetadata): Promise<void> | void;
   onSessionEnded?(metadata: TmuxSessionEndMetadata): Promise<void> | void;
@@ -65,34 +65,8 @@ const TERMINAL_CAPTURE_LIMIT = 64 * 1024;
 const DEFAULT_CAPTURE_LINES = 2000;
 const TMUX_SESSION_PATTERN = /^ag-run-[a-z0-9-]{1,80}$/i;
 const SHELL_ENV_KEY_PATTERN = /^[A-Za-z_][A-Za-z0-9_]*$/;
-const REDACTION_STREAM_HIGH_WATER_MARK = 16 * 1024;
-const MAX_REDACTION_PENDING_LINE_CHARS = 64 * 1024;
-const REDACTED_OVERSIZED_TERMINAL_LINE = '[REDACTED_OVERSIZED_TERMINAL_LINE]\n';
+const TERMINAL_STREAM_HIGH_WATER_MARK = 16 * 1024;
 const DEFAULT_LIVE_OUTPUT_POLL_INTERVAL_MS = 100;
-const PARTIAL_LINE_SENSITIVE_PATTERN =
-  /\b(?:Authorization|Cookie|Set-Cookie)\b|\bBearer\b|\b(?:token|secret|password|api[_-]?key|private[_-]?key|access[_-]?key|command|commandPath|cwd|env)(?:\.[A-Za-z0-9_-]+)?\b/i;
-const PARTIAL_LINE_SENSITIVE_PREFIXES = [
-  'authorization',
-  'cookie',
-  'set-cookie',
-  'bearer',
-  'token',
-  'secret',
-  'password',
-  'api_key',
-  'api-key',
-  'apikey',
-  'private_key',
-  'private-key',
-  'privatekey',
-  'access_key',
-  'access-key',
-  'accesskey',
-  'commandpath',
-  'command',
-  'cwd',
-  'env',
-];
 
 function isTerminateCancelReason(reason: unknown) {
   return reason === TMUX_TERMINATE_CANCEL_REASON;
@@ -128,23 +102,6 @@ function shellQuote(value: string) {
 function getExitCode(rawValue: string) {
   const parsed = Number(rawValue.trim());
   return Number.isInteger(parsed) ? parsed : null;
-}
-
-function shouldDeferPartialLiveLine(lineText: string) {
-  return PARTIAL_LINE_SENSITIVE_PATTERN.test(lineText);
-}
-
-function getSensitivePrefixSuffixLength(lineText: string) {
-  const normalized = lineText.toLowerCase();
-  const maxPrefixLength = Math.max(...PARTIAL_LINE_SENSITIVE_PREFIXES.map((prefix) => prefix.length));
-  const maxSuffixLength = Math.min(maxPrefixLength - 1, normalized.length);
-  for (let length = maxSuffixLength; length > 0; length -= 1) {
-    const suffix = normalized.slice(-length);
-    if (PARTIAL_LINE_SENSITIVE_PREFIXES.some((prefix) => prefix.startsWith(suffix))) {
-      return length;
-    }
-  }
-  return 0;
 }
 
 function isWithin(parent: string, child: string) {
@@ -189,6 +146,7 @@ function buildShellCommand(options: {
   env?: Record<string, string>;
   cwd: string;
   exitCodePath: string;
+  outputFifoPath?: string;
   doneSignalName: string;
 }) {
   const commandParts = [
@@ -203,13 +161,41 @@ function buildShellCommand(options: {
   const envLines = Object.entries(env)
     .filter(([key]) => SHELL_ENV_KEY_PATTERN.test(key))
     .map(([key, value]) => `export ${key}=${shellQuote(value)};`);
+  const outputFifoPath = options.outputFifoPath;
+  const relaySetup = outputFifoPath
+    ? [
+        'relay_pid=;',
+        `output_fifo=${shellQuote(outputFifoPath)};`,
+        'cleanup_relay() {',
+        '  if [ -n "$relay_pid" ]; then',
+        '    kill "$relay_pid" >/dev/null 2>&1 || true;',
+        '    wait "$relay_pid" 2>/dev/null || true;',
+        '  fi;',
+        '  rm -f "$output_fifo";',
+        '};',
+        'rm -f "$output_fifo";',
+        'mkfifo "$output_fifo";',
+        'cat "$output_fifo" &',
+        'relay_pid=$!;',
+      ]
+    : [];
+  const commandLine = outputFifoPath
+    ? `${commandParts.join(' ')} < /dev/null > "$output_fifo" 2>&1;`
+    : `${commandParts.join(' ')};`;
+  const relayTeardown = outputFifoPath
+    ? ['wait "$relay_pid" 2>/dev/null || true;', 'relay_pid=;', 'cleanup_relay;']
+    : [];
   return [
-    "trap 'stty echo 2>/dev/null || true' EXIT;",
+    outputFifoPath
+      ? "trap 'cleanup_relay; stty echo 2>/dev/null || true' EXIT INT TERM;"
+      : "trap 'stty echo 2>/dev/null || true' EXIT;",
     'tmux set-option -w remain-on-exit on >/dev/null 2>&1 || true;',
     'set +e;',
     ...envLines,
-    `${commandParts.join(' ')};`,
+    ...relaySetup,
+    commandLine,
     'code=$?;',
+    ...relayTeardown,
     `printf '%s' "$code" > ${shellQuote(options.exitCodePath)};`,
     `printf '\\n[agent-gateway] process exited with code %s\\n' "$code";`,
     `tmux wait-for -S ${shellQuote(options.doneSignalName)};`,
@@ -371,11 +357,7 @@ async function appendFallbackOutputIfMissing(paneCapturePath: string, fallbackOu
     return;
   }
 
-  if (
-    fallbackOutput.includes(REDACTED_OVERSIZED_TERMINAL_LINE.trim()) ||
-    shouldDeferPartialLiveLine(fallbackOutput) ||
-    Buffer.byteLength(fallbackOutput) > TERMINAL_CAPTURE_LIMIT
-  ) {
+  if (Buffer.byteLength(fallbackOutput) > TERMINAL_CAPTURE_LIMIT) {
     return;
   }
 
@@ -409,7 +391,7 @@ async function writeTextArtifact(artifactDir: string | undefined, fileName: stri
   return artifactPath;
 }
 
-async function writeArtifactChunk(writer: ReturnType<typeof createWriteStream>, content: string) {
+async function writeArtifactChunk(writer: ReturnType<typeof createWriteStream>, content: string | Buffer) {
   if (!content) {
     return;
   }
@@ -433,14 +415,12 @@ async function closeArtifactWriter(writer: ReturnType<typeof createWriteStream>)
   });
 }
 
-function createRedactedLiveOutputTailer(options: {
+function createLiveOutputTailer(options: {
   sourcePath: string;
   pollIntervalMs?: number;
   onChunk(chunk: string): Promise<void> | void;
 }) {
   const decoder = new StringDecoder('utf8');
-  let pendingLineText = '';
-  let droppingOversizedLine = false;
   let readOffset = 0;
   let readPromise: Promise<void> | null = null;
   let stopped = false;
@@ -449,65 +429,6 @@ function createRedactedLiveOutputTailer(options: {
     if (chunk) {
       await options.onChunk(chunk);
     }
-  };
-
-  const emitCompleteLine = async (lineText: string) => {
-    if (lineText.length > MAX_REDACTION_PENDING_LINE_CHARS) {
-      await emitChunk(REDACTED_OVERSIZED_TERMINAL_LINE);
-      return;
-    }
-    await emitChunk(redactObservabilityText(lineText));
-  };
-
-  const consumeDecodedText = async (decodedText: string) => {
-    let text = decodedText;
-    while (text.length > 0) {
-      if (droppingOversizedLine) {
-        const newlineIndex = text.indexOf('\n');
-        if (newlineIndex === -1) {
-          return;
-        }
-        droppingOversizedLine = false;
-        text = text.slice(newlineIndex + 1);
-        continue;
-      }
-
-      const newlineIndex = text.indexOf('\n');
-      if (newlineIndex === -1) {
-        pendingLineText += text;
-        if (pendingLineText.length > MAX_REDACTION_PENDING_LINE_CHARS) {
-          await emitChunk(REDACTED_OVERSIZED_TERMINAL_LINE);
-          pendingLineText = '';
-          droppingOversizedLine = true;
-        }
-        return;
-      }
-
-      await emitCompleteLine(pendingLineText + text.slice(0, newlineIndex + 1));
-      pendingLineText = '';
-      text = text.slice(newlineIndex + 1);
-    }
-  };
-
-  const flushPartialLine = async (force = false) => {
-    if (!pendingLineText || droppingOversizedLine) {
-      return;
-    }
-    if (force) {
-      await emitChunk(redactObservabilityText(pendingLineText));
-      pendingLineText = '';
-      return;
-    }
-    if (shouldDeferPartialLiveLine(pendingLineText)) {
-      return;
-    }
-    const retainedSuffixLength = getSensitivePrefixSuffixLength(pendingLineText);
-    const flushLength = pendingLineText.length - retainedSuffixLength;
-    if (flushLength <= 0) {
-      return;
-    }
-    await emitChunk(redactObservabilityText(pendingLineText.slice(0, flushLength)));
-    pendingLineText = pendingLineText.slice(flushLength);
   };
 
   const readAvailable = async () => {
@@ -519,17 +440,14 @@ function createRedactedLiveOutputTailer(options: {
     const file = await fs.open(options.sourcePath, 'r');
     try {
       while (readOffset < stat.size) {
-        const length = Math.min(REDACTION_STREAM_HIGH_WATER_MARK, stat.size - readOffset);
+        const length = Math.min(TERMINAL_STREAM_HIGH_WATER_MARK, stat.size - readOffset);
         const buffer = Buffer.alloc(length);
         const { bytesRead } = await file.read(buffer, 0, length, readOffset);
         if (!bytesRead) {
           return;
         }
         readOffset += bytesRead;
-        await consumeDecodedText(decoder.write(buffer.subarray(0, bytesRead)));
-      }
-      if (!stopped) {
-        await flushPartialLine(false);
+        await emitChunk(decoder.write(buffer.subarray(0, bytesRead)));
       }
     } finally {
       await file.close();
@@ -561,75 +479,28 @@ function createRedactedLiveOutputTailer(options: {
     clearInterval(timer);
     await readPromise;
     await readSafely();
-    await consumeDecodedText(decoder.end());
-    await flushPartialLine(true);
+    await emitChunk(decoder.end());
   };
 }
 
-export async function writeRedactedArtifactFromFile(options: {
+export async function writeTerminalArtifactFromFile(options: {
   sourcePath: string;
   artifactDir: string;
   fileName: string;
 }) {
   await fs.mkdir(options.artifactDir, { recursive: true });
   const artifactPath = path.join(options.artifactDir, options.fileName);
-  const decoder = new StringDecoder('utf8');
   const reader = createReadStream(options.sourcePath, {
-    highWaterMark: REDACTION_STREAM_HIGH_WATER_MARK,
+    highWaterMark: TERMINAL_STREAM_HIGH_WATER_MARK,
   });
   const writer = createWriteStream(artifactPath, {
     flags: 'w',
   });
-  let pendingLineText = '';
-  let droppingOversizedLine = false;
-
-  const writeCompleteLine = async (lineText: string) => {
-    if (lineText.length > MAX_REDACTION_PENDING_LINE_CHARS) {
-      await writeArtifactChunk(writer, REDACTED_OVERSIZED_TERMINAL_LINE);
-      return;
-    }
-    await writeArtifactChunk(writer, redactObservabilityText(lineText));
-  };
-
-  const writeDecodedText = async (decodedText: string) => {
-    let text = decodedText;
-    while (text.length > 0) {
-      if (droppingOversizedLine) {
-        const newlineIndex = text.indexOf('\n');
-        if (newlineIndex === -1) {
-          return;
-        }
-        droppingOversizedLine = false;
-        text = text.slice(newlineIndex + 1);
-        continue;
-      }
-
-      const newlineIndex = text.indexOf('\n');
-      if (newlineIndex === -1) {
-        pendingLineText += text;
-        if (pendingLineText.length > MAX_REDACTION_PENDING_LINE_CHARS) {
-          await writeArtifactChunk(writer, REDACTED_OVERSIZED_TERMINAL_LINE);
-          pendingLineText = '';
-          droppingOversizedLine = true;
-        }
-        return;
-      }
-
-      await writeCompleteLine(pendingLineText + text.slice(0, newlineIndex + 1));
-      pendingLineText = '';
-      text = text.slice(newlineIndex + 1);
-    }
-  };
 
   try {
     for await (const chunk of reader) {
       const chunkBuffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(String(chunk));
-      await writeDecodedText(decoder.write(chunkBuffer));
-    }
-
-    await writeDecodedText(decoder.end());
-    if (!droppingOversizedLine) {
-      await writeArtifactChunk(writer, redactObservabilityText(pendingLineText));
+      await writeArtifactChunk(writer, chunkBuffer);
     }
   } finally {
     await closeArtifactWriter(writer);
@@ -646,7 +517,7 @@ async function buildTmuxStdoutOutput(options: {
   const rawPaneStat = await fs.stat(options.paneCapturePath).catch(() => null);
   if (rawPaneStat?.size) {
     if (options.artifactDir) {
-      const artifactPath = await writeRedactedArtifactFromFile({
+      const artifactPath = await writeTerminalArtifactFromFile({
         sourcePath: options.paneCapturePath,
         artifactDir: options.artifactDir,
         fileName: `${options.sessionName}-terminal.log`,
@@ -663,7 +534,7 @@ async function buildTmuxStdoutOutput(options: {
       const buffer = Buffer.alloc(Math.min(rawPaneStat.size, TERMINAL_CAPTURE_LIMIT));
       const { bytesRead } = await file.read(buffer, 0, buffer.length, 0);
       return {
-        text: redactObservabilityText(buffer.subarray(0, bytesRead).toString('utf8')),
+        text: buffer.subarray(0, bytesRead).toString('utf8'),
         sizeBytes: bytesRead,
       };
     } finally {
@@ -671,7 +542,7 @@ async function buildTmuxStdoutOutput(options: {
     }
   }
 
-  const stdoutText = redactObservabilityText(options.fallbackOutput);
+  const stdoutText = options.fallbackOutput;
   const artifactPath = await writeTextArtifact(options.artifactDir, `${options.sessionName}-terminal.log`, stdoutText);
   return {
     text: artifactPath ? null : stdoutText,
@@ -693,13 +564,9 @@ export async function captureTmuxSession(sessionName: string, lines = DEFAULT_CA
   }
 
   const { stdout } = await execTmux(['capture-pane', '-t', sessionName, '-p', '-S', `-${lines}`]);
-  const redactedOutput = redactObservabilityText(stdout);
   return {
     available: true,
-    output:
-      Buffer.byteLength(redactedOutput) > TERMINAL_CAPTURE_LIMIT
-        ? redactedOutput.slice(-TERMINAL_CAPTURE_LIMIT)
-        : redactedOutput,
+    output: Buffer.byteLength(stdout) > TERMINAL_CAPTURE_LIMIT ? stdout.slice(-TERMINAL_CAPTURE_LIMIT) : stdout,
     sessionName,
     capturedAt,
   };
@@ -741,6 +608,7 @@ export async function executeTmuxCommand(options: TmuxCommandOptions): Promise<E
   const exitCodePath = path.join(tempDir, 'exit-code');
   const paneCapturePath = path.join(tempDir, 'pane-output.raw.log');
   const commandScriptPath = path.join(tempDir, 'command.sh');
+  const outputFifoPath = options.outputMode === 'structured' ? path.join(tempDir, 'command-output.fifo') : undefined;
   const doneSignalName = getDoneSignalName(sessionName);
   const guardedCwd = await resolveGuardedCwd(options.workspaceRoot, options.cwd);
   let terminalStatus: ExecTerminalStatus | null = null;
@@ -755,6 +623,7 @@ export async function executeTmuxCommand(options: TmuxCommandOptions): Promise<E
       env: options.env,
       cwd: guardedCwd,
       exitCodePath,
+      outputFifoPath,
       doneSignalName,
     });
     await fs.writeFile(commandScriptPath, `${shellCommand}\n`, { mode: 0o700 });
@@ -775,7 +644,7 @@ export async function executeTmuxCommand(options: TmuxCommandOptions): Promise<E
     });
     await startPaneCapture(sessionName, paneCapturePath);
     if (options.onOutputChunk) {
-      stopLiveOutputTailer = createRedactedLiveOutputTailer({
+      stopLiveOutputTailer = createLiveOutputTailer({
         sourcePath: paneCapturePath,
         pollIntervalMs: options.liveOutputPollIntervalMs,
         onChunk: options.onOutputChunk,

@@ -566,7 +566,7 @@ describe('agent gateway fake daemon E2E', () => {
     expect(secondClaim.runId).not.toBe(run.id);
   });
 
-  it('marks lease-expired claimed runs as abandoned', async () => {
+  it('marks lease-expired claimed runs as stalled before failing them', async () => {
     const daemon = await registerFakeDaemon();
     const run = await createRun(daemon);
     const claimResponse = await claimRun(daemon);
@@ -581,13 +581,36 @@ describe('agent gateway fake daemon E2E', () => {
 
     const expireResponse = await rootAgent.post('/api/agent-gateway/runs:expire-leases').send({});
     expect(expireResponse.status).toBe(200);
-    expect(getRecordData(expireResponse).abandonedCount).toBe(1);
+    expect(getRecordData(expireResponse)).toMatchObject({
+      stalledCount: 1,
+      failedCount: 0,
+    });
 
-    const abandonedRun = await app.db.getRepository('agRuns').findOne({
+    const stalledRun = await app.db.getRepository('agRuns').findOne({
       filterByTk: run.id,
     });
-    expect(abandonedRun.get('status')).toBe('abandoned');
-    expect(abandonedRun.get('finishedAt')).toBeTruthy();
+    expect(stalledRun.get('status')).toBe('stalled');
+    expect(stalledRun.get('finishedAt')).toBeFalsy();
+
+    await app.db.getRepository('agRuns').update({
+      filterByTk: run.id,
+      values: {
+        claimExpiresAt: new Date(Date.now() - 1000),
+      },
+    });
+
+    const failExpiredResponse = await rootAgent.post('/api/agent-gateway/runs:expire-leases').send({});
+    expect(failExpiredResponse.status).toBe(200);
+    expect(getRecordData(failExpiredResponse)).toMatchObject({
+      stalledCount: 0,
+      failedCount: 1,
+    });
+
+    const failedRun = await app.db.getRepository('agRuns').findOne({
+      filterByTk: run.id,
+    });
+    expect(failedRun.get('status')).toBe('failed');
+    expect(failedRun.get('finishedAt')).toBeTruthy();
   });
 
   it('keeps canceling runs non-terminal until fake daemon acknowledges cancellation', async () => {

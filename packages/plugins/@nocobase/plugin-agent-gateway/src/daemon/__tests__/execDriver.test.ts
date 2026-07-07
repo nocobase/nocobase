@@ -34,7 +34,7 @@ describe('agent gateway daemon exec driver', () => {
     await fs.rm(tempDir, { recursive: true, force: true });
   });
 
-  it('runs an allowlisted command with spawn args and redacts stdout/stderr', async () => {
+  it('runs an allowlisted command with spawn args and preserves stdout/stderr', async () => {
     const result = await executeAllowlistedCommand({
       commandKey: 'node',
       allowlist: {
@@ -55,10 +55,8 @@ describe('agent gateway daemon exec driver', () => {
     });
 
     expect(result.status).toBe('succeeded');
-    expect(result.stdout.text).toContain('hello token=[REDACTED]');
-    expect(result.stderr.text).toContain('error password=[REDACTED]');
-    expect(JSON.stringify(result)).not.toContain('STDOUT_TOKEN_SECRET');
-    expect(JSON.stringify(result)).not.toContain('STDERR_PASSWORD_SECRET');
+    expect(result.stdout.text).toContain('hello token=STDOUT_TOKEN_SECRET');
+    expect(result.stderr.text).toContain('error password=STDERR_PASSWORD_SECRET');
 
     await expect(
       executeAllowlistedCommand({

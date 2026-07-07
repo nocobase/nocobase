@@ -269,7 +269,7 @@ describe('agent gateway daemon control requests', () => {
     };
   }
 
-  it('uses terminal-friendly adapter commands for managed tmux runs', async () => {
+  it('uses structured Codex adapter commands for managed tmux runs', async () => {
     const workspace = path.join(tempDir, 'workspace');
     await fs.mkdir(workspace, { recursive: true });
     const calls: GatewayRequestOptions[] = [];
@@ -352,7 +352,7 @@ describe('agent gateway daemon control requests', () => {
     expect(result.status).toBe('succeeded');
     expect(tmuxMocks.executeTmuxCommand).toHaveBeenCalledWith(
       expect.objectContaining({
-        args: ['exec', 'Build a terminal-readable page'],
+        args: ['exec', '--skip-git-repo-check', '--json', 'Build a terminal-readable page'],
       }),
     );
   });

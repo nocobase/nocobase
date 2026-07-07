@@ -321,7 +321,7 @@ describe('agent gateway run observability APIs', () => {
     expect(await app.db.getRepository('agRunEvents').count({ filter: { runId: run.id } })).toBe(1);
   });
 
-  it('registers artifacts idempotently and redacts artifact text before persistence', async () => {
+  it('registers artifacts idempotently and preserves artifact text before persistence', async () => {
     const runner = await registerRunner();
     const { run, claim } = await createAndClaimRun(runner);
 
@@ -373,28 +373,30 @@ describe('agent gateway run observability APIs', () => {
     const storedArtifact = await app.db.getRepository('agRunArtifacts').findOne({
       filterByTk: artifact.id,
     });
-    expect(String(storedArtifact.get('contentText'))).not.toContain('ARTIFACT_SECRET');
-    expect(String(storedArtifact.get('contentText'))).not.toContain('ARTIFACT_COMMAND_SECRET');
-    expect(String(storedArtifact.get('contentText'))).not.toContain('ARTIFACT_CWD_SECRET');
-    expect(String(storedArtifact.get('contentText'))).not.toContain('ARTIFACT_ENV_SECRET');
-    expect(String(storedArtifact.get('contentText'))).toContain('Authorization: [REDACTED]');
+    expect(String(storedArtifact.get('contentText'))).toContain('ARTIFACT_SECRET');
+    expect(String(storedArtifact.get('contentText'))).toContain('ARTIFACT_COMMAND_SECRET');
+    expect(String(storedArtifact.get('contentText'))).toContain('ARTIFACT_CWD_SECRET');
+    expect(String(storedArtifact.get('contentText'))).toContain('ARTIFACT_ENV_SECRET');
+    expect(String(storedArtifact.get('contentText'))).toContain('Authorization: Bearer ARTIFACT_SECRET');
     expect(storedArtifact.get('metadataJson')).toMatchObject({
-      externalUrl: '[REDACTED]',
-      downloadUrl: '[REDACTED]',
+      externalUrl: 'https://daemon.example/artifacts/stdout-main',
+      downloadUrl: 'https://daemon.example/download/stdout-main',
       nested: {
-        href: '[REDACTED]',
-        note: 'see [REDACTED]',
+        href: 'https://daemon.example/href/stdout-main',
+        note: 'see https://daemon.example/inline/stdout-main',
       },
-      command: '[REDACTED]',
-      cwd: '[REDACTED]',
-      env: '[REDACTED]',
-      password: '[REDACTED]',
+      command: 'ARTIFACT_METADATA_COMMAND_SECRET',
+      cwd: '/tmp/ARTIFACT_METADATA_CWD_SECRET',
+      env: {
+        SECRET: 'ARTIFACT_METADATA_ENV_SECRET',
+      },
+      password: 'METADATA_SECRET',
     });
     const serializedMetadata = JSON.stringify(storedArtifact.get('metadataJson'));
-    expect(serializedMetadata).not.toContain('daemon.example');
-    expect(serializedMetadata).not.toContain('ARTIFACT_METADATA_COMMAND_SECRET');
-    expect(serializedMetadata).not.toContain('ARTIFACT_METADATA_CWD_SECRET');
-    expect(serializedMetadata).not.toContain('ARTIFACT_METADATA_ENV_SECRET');
+    expect(serializedMetadata).toContain('daemon.example');
+    expect(serializedMetadata).toContain('ARTIFACT_METADATA_COMMAND_SECRET');
+    expect(serializedMetadata).toContain('ARTIFACT_METADATA_CWD_SECRET');
+    expect(serializedMetadata).toContain('ARTIFACT_METADATA_ENV_SECRET');
   });
 
   it('registers snapshots with nested secret redaction', async () => {
@@ -685,9 +687,9 @@ describe('agent gateway run observability APIs', () => {
     const artifacts = artifactsResponse.body.data as Array<Record<string, unknown>>;
     expect(artifacts[0].contentText).toBe('inline artifact');
     expect(artifacts[0].metadataJson).toMatchObject({
-      externalUrl: '[REDACTED]',
+      externalUrl: 'https://daemon.example/artifacts/stdout',
     });
-    expect(JSON.stringify(artifacts[0])).not.toContain('https://daemon.example/artifacts/stdout');
+    expect(JSON.stringify(artifacts[0])).toContain('https://daemon.example/artifacts/stdout');
 
     const snapshotsResponse = await rootAgent.get(`/api/agent-gateway/runs/${runId}/snapshots:list`);
     expect(snapshotsResponse.status).toBe(200);

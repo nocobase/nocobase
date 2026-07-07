@@ -17,6 +17,7 @@ interface ResponseLike {
   status: number;
   body: {
     data?: Record<string, unknown>;
+    meta?: Record<string, unknown>;
   };
 }
 
@@ -30,6 +31,11 @@ interface TestRunner {
 
 function getData(response: ResponseLike) {
   return response.body.data || response.body || {};
+}
+
+function getTime(value: unknown) {
+  const date = value instanceof Date ? value : new Date(String(value));
+  return date.getTime();
 }
 
 describe('agent gateway run lifecycle APIs', () => {
@@ -715,6 +721,31 @@ describe('agent gateway run lifecycle APIs', () => {
     });
   });
 
+  it('paginates the management run list with total metadata', async () => {
+    await seedQueuedRun('run-list-page-1', {
+      createdAt: new Date('2026-07-01T00:00:01.000Z'),
+    });
+    await seedQueuedRun('run-list-page-2', {
+      createdAt: new Date('2026-07-01T00:00:02.000Z'),
+    });
+    await seedQueuedRun('run-list-page-3', {
+      createdAt: new Date('2026-07-01T00:00:03.000Z'),
+    });
+
+    const listResponse = await rootAgent.get('/api/agent-gateway/runs:list?page=2&pageSize=2');
+
+    expect(listResponse.status).toBe(200);
+    expect((listResponse.body.data as Array<Record<string, unknown>>).map((run) => run.runCode)).toEqual([
+      'run-list-page-1',
+    ]);
+    expect(listResponse.body.meta).toMatchObject({
+      count: 3,
+      page: 2,
+      pageSize: 2,
+      totalPage: 2,
+    });
+  });
+
   it('ignores session and continuation lineage fields when dispatch creates queued runs', async () => {
     const parentRun = await seedQueuedRun('run-parent-for-continuation');
     const continuationRequestedAt = '2026-07-01T00:00:00.000Z';
@@ -831,20 +862,21 @@ describe('agent gateway run lifecycle APIs', () => {
     const recoveredRun = await app.db.getRepository('agRuns').findOne({
       filterByTk: expiredRun.id,
     });
-    expect(recoveredRun.get('status')).toBe('abandoned');
-    expect(recoveredRun.get('terminalStatus')).toBe('abandoned');
-    expect(recoveredRun.get('finishedAt')).toBeTruthy();
+    expect(recoveredRun.get('status')).toBe('stalled');
+    expect(recoveredRun.get('finishedAt')).toBeFalsy();
+    expect(getTime(recoveredRun.get('claimExpiresAt'))).toBeGreaterThan(Date.now());
 
     const recoveryEvent = await app.db.getRepository('agRunEvents').findOne({
       filter: {
         runId: expiredRun.id,
-        eventType: 'run.lease.abandoned',
+        eventType: 'run.lease.stalled',
       },
     });
     expect(recoveryEvent).toBeTruthy();
     expect(recoveryEvent.get('payloadJson')).toMatchObject({
       reason: 'before-claim',
       previousStatus: 'claimed',
+      nextStatus: 'stalled',
     });
   });
 
@@ -1714,14 +1746,14 @@ describe('agent gateway run lifecycle APIs', () => {
     });
   });
 
-  it('marks expired leases abandoned and allows daemon-confirmed process timeout only from active leases', async () => {
+  it('marks expired leases stalled before failing them and allows daemon-confirmed process timeout only from active leases', async () => {
     const runner = await createRunner();
-    const abandonedRun = await createRun('run-abandon-1', {
+    const stalledRun = await createRun('run-stalled-1', {
       agentProfileId: runner.profileId,
     });
     await claimRun(runner);
     await app.db.getRepository('agRuns').update({
-      filterByTk: abandonedRun.id,
+      filterByTk: stalledRun.id,
       values: {
         claimExpiresAt: new Date(Date.now() - 1000),
       },
@@ -1730,13 +1762,35 @@ describe('agent gateway run lifecycle APIs', () => {
     const expireResponse = await rootAgent.post('/api/agent-gateway/runs:expire-leases').send({});
     const expire = getData(expireResponse);
     expect(expireResponse.status).toBe(200);
-    expect(expire.abandonedCount).toBe(1);
+    expect(expire.stalledCount).toBe(1);
+    expect(expire.failedCount).toBe(0);
 
-    const abandoned = await app.db.getRepository('agRuns').findOne({
-      filterByTk: abandonedRun.id,
+    const stalled = await app.db.getRepository('agRuns').findOne({
+      filterByTk: stalledRun.id,
     });
-    expect(abandoned.get('status')).toBe('abandoned');
-    expect(abandoned.get('finishedAt')).toBeTruthy();
+    expect(stalled.get('status')).toBe('stalled');
+    expect(stalled.get('finishedAt')).toBeFalsy();
+
+    await app.db.getRepository('agRuns').update({
+      filterByTk: stalledRun.id,
+      values: {
+        claimExpiresAt: new Date(Date.now() - 1000),
+      },
+    });
+
+    const failExpiredResponse = await rootAgent.post('/api/agent-gateway/runs:expire-leases').send({});
+    const failExpired = getData(failExpiredResponse);
+    expect(failExpiredResponse.status).toBe(200);
+    expect(failExpired.stalledCount).toBe(0);
+    expect(failExpired.failedCount).toBe(1);
+
+    const failed = await app.db.getRepository('agRuns').findOne({
+      filterByTk: stalledRun.id,
+    });
+    expect(failed.get('status')).toBe('failed');
+    expect(failed.get('failedAt')).toBeTruthy();
+    expect(failed.get('finishedAt')).toBeTruthy();
+    expect(failed.get('errorSummary')).toBe('Runner lost after lease stalled grace period');
 
     const timeoutRunner = await createRunner({
       nodeKey: 'node-timeout',

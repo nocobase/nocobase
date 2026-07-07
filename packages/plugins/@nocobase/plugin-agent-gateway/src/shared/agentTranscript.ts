@@ -26,9 +26,30 @@ export interface AgentTranscriptEvent {
   payloadJson?: AgentTranscriptJsonRecord;
 }
 
-export type AgentTranscriptMessageRole = 'user' | 'agent';
+export type AgentTranscriptParticipantType = 'user' | 'root-agent' | 'sub-agent' | 'tool' | 'system' | 'unknown';
+export type AgentTranscriptMessageRole = 'user' | 'agent' | 'system';
 export type AgentTranscriptToolKind = 'exec' | 'run' | 'terminal' | 'wait' | 'apply_patch' | 'tool' | 'unknown';
 export type AgentTranscriptToolStatus = 'running' | 'succeeded' | 'failed' | 'unknown';
+
+export interface AgentTranscriptParticipant {
+  id: string;
+  type: AgentTranscriptParticipantType;
+  name: string;
+  parentId?: string;
+  provider?: string;
+  confidence?: number | null;
+  sources: string[];
+  eventIds: string[];
+}
+
+interface AgentTranscriptParticipantSeed {
+  id?: string;
+  type: AgentTranscriptParticipantType;
+  name?: string;
+  parentId?: string;
+  provider?: string;
+  confidence?: number | null;
+}
 
 export interface AgentTranscriptToolCall {
   id: string;
@@ -36,7 +57,9 @@ export interface AgentTranscriptToolCall {
   title: string;
   status: AgentTranscriptToolStatus;
   command?: string;
+  input?: string;
   output?: string;
+  details?: string;
   durationText?: string;
   durationMs?: number;
   exitCode?: number;
@@ -63,6 +86,8 @@ export type AgentTranscriptMessagePart = AgentTranscriptTextPart | AgentTranscri
 export interface AgentTranscriptMessage {
   id: string;
   role: AgentTranscriptMessageRole;
+  participantId: string;
+  participant: AgentTranscriptParticipant;
   text: string;
   parts: AgentTranscriptMessagePart[];
   createdAt?: string;
@@ -91,21 +116,23 @@ export interface AgentTranscriptToolStats {
 }
 
 export interface AgentTranscript {
+  participants: AgentTranscriptParticipant[];
   messages: AgentTranscriptMessage[];
   toolCalls: AgentTranscriptToolCall[];
   stats: AgentTranscriptToolStats;
 }
 
+export interface AgentTranscriptBuildOptions {
+  closeDanglingToolCalls?: boolean;
+}
+
 interface MutableTranscriptMessage {
   id: string;
   role: AgentTranscriptMessageRole;
+  participantId: string;
+  participant: AgentTranscriptParticipant;
   textParts: string[];
   parts: AgentTranscriptMessagePart[];
-  terminalTextParts: string[];
-  terminalEventIds: string[];
-  terminalSources: string[];
-  terminalStartedAt?: string;
-  terminalFinishedAt?: string;
   createdAt?: string;
   updatedAt?: string;
   eventIds: string[];
@@ -130,6 +157,23 @@ interface MutableTerminalToolBlock {
   sawBlankLine: boolean;
 }
 
+interface MutableTerminalMessageSegment {
+  participant: AgentTranscriptParticipantSeed;
+  textParts: string[];
+  parts: AgentTranscriptMessagePart[];
+  toolCalls: AgentTranscriptToolCall[];
+  eventIds: string[];
+  sources: string[];
+  startedAt?: string;
+  finishedAt?: string;
+}
+
+interface CollabAgentState {
+  threadId: string;
+  status?: string;
+  message?: string | null;
+}
+
 const ANSI_PATTERN =
   // eslint-disable-next-line no-control-regex
   /[\u001b\u009b][[\]()#;?]*(?:(?:(?:[a-zA-Z\d]*(?:;[a-zA-Z\d]*)*)?\u0007)|(?:(?:\d{1,4}(?:;\d{0,4})*)?[\dA-PR-TZcf-nq-uy=><~]))/g;
@@ -138,6 +182,38 @@ const TOOL_COMMAND_START_PATTERN =
   /^\s*(?:\$|\/|(?:yarn|npm|pnpm|node|python|python3|bash|sh|git|rg|sed|cat|find|curl|nb|npx|tsx|docker|tmux)\b)/i;
 const CODEX_PREAMBLE_LINE_PATTERN =
   /^(?:OpenAI Codex\b|-{3,}|(?:workdir|model|provider|approval|sandbox|reasoning effort|reasoning summaries|session id):)/i;
+const ROOT_AGENT_PARTICIPANT_ID = 'agent:root';
+const USER_PARTICIPANT_ID = 'user:requester';
+const TERMINAL_PARTICIPANT_ID = 'system:terminal';
+const RESERVED_SPEAKER_NAMES = new Set([
+  'agent',
+  'assistant',
+  'codex',
+  'collab',
+  'command',
+  'error',
+  'exec',
+  'info',
+  'instruction',
+  'note',
+  'notes',
+  'output',
+  'progress',
+  'requirements',
+  'result',
+  'results',
+  'status',
+  'stderr',
+  'stdout',
+  'summary',
+  'system',
+  'terminal',
+  'tool',
+  'tools',
+  'user',
+  'warning',
+  'you',
+]);
 
 function isRecord(value: unknown): value is AgentTranscriptJsonRecord {
   return Object.prototype.toString.call(value) === '[object Object]';
@@ -145,6 +221,29 @@ function isRecord(value: unknown): value is AgentTranscriptJsonRecord {
 
 function getRecord(value: unknown): AgentTranscriptJsonRecord {
   return isRecord(value) ? value : {};
+}
+
+function getNestedRecord(record: AgentTranscriptJsonRecord, key: string) {
+  return getRecord(record[key]);
+}
+
+function getNestedValue(record: AgentTranscriptJsonRecord, path: readonly string[]) {
+  let current: unknown = record;
+  for (const key of path) {
+    if (!isRecord(current)) {
+      return undefined;
+    }
+    current = current[key];
+  }
+  return current;
+}
+
+function getRecordArray(value: unknown) {
+  return Array.isArray(value) ? value.map(getRecord).filter((record) => Object.keys(record).length) : [];
+}
+
+function getStringArray(value: unknown) {
+  return Array.isArray(value) ? value.map(getString).filter(Boolean) : [];
 }
 
 function getString(value: unknown) {
@@ -198,6 +297,158 @@ function uniqueAppend(values: string[], value?: string) {
   if (value && !values.includes(value)) {
     values.push(value);
   }
+}
+
+function getParticipantType(value: unknown): AgentTranscriptParticipantType | undefined {
+  const type = getString(value).toLowerCase();
+  if (type === 'user' || type === 'root-agent' || type === 'sub-agent' || type === 'tool' || type === 'system') {
+    return type;
+  }
+  if (type === 'agent' || type === 'assistant' || type === 'root_agent' || type === 'rootagent') {
+    return 'root-agent';
+  }
+  if (
+    type === 'subagent' ||
+    type === 'sub_agent' ||
+    type === 'child-agent' ||
+    type === 'child_agent' ||
+    type === 'childagent'
+  ) {
+    return 'sub-agent';
+  }
+  return undefined;
+}
+
+function slugParticipantId(value: string) {
+  const slug = value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9_.:-]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 80);
+  return slug || 'unknown';
+}
+
+function getDefaultParticipantName(type: AgentTranscriptParticipantType) {
+  if (type === 'user') {
+    return 'You';
+  }
+  if (type === 'root-agent') {
+    return 'Agent';
+  }
+  if (type === 'sub-agent') {
+    return 'Sub-agent';
+  }
+  if (type === 'tool') {
+    return 'Tool';
+  }
+  if (type === 'system') {
+    return 'System';
+  }
+  return 'Unknown';
+}
+
+function normalizeParticipantSeed(seed: AgentTranscriptParticipantSeed): AgentTranscriptParticipantSeed {
+  const type = seed.type || 'unknown';
+  const name = getString(seed.name) || getDefaultParticipantName(type);
+  const id =
+    getString(seed.id) ||
+    (type === 'user'
+      ? USER_PARTICIPANT_ID
+      : type === 'root-agent'
+        ? ROOT_AGENT_PARTICIPANT_ID
+        : type === 'system' && name === 'Terminal'
+          ? TERMINAL_PARTICIPANT_ID
+          : `${type}:${slugParticipantId(name)}`);
+  return {
+    ...seed,
+    id,
+    type,
+    name,
+  };
+}
+
+function participantSeedFromRecord(value: AgentTranscriptJsonRecord): AgentTranscriptParticipantSeed | null {
+  const type =
+    getParticipantType(value.type) ||
+    getParticipantType(value.kind) ||
+    (getString(value.parentId) ? 'sub-agent' : undefined);
+  const name =
+    getString(value.name) ||
+    getString(value.displayName) ||
+    getString(value.label) ||
+    getString(value.agentName) ||
+    getString(value.subAgentName);
+  const id = getString(value.id) || getString(value.participantId) || getString(value.agentId);
+  if (!type && !name && !id) {
+    return null;
+  }
+  return normalizeParticipantSeed({
+    id,
+    type: type || 'unknown',
+    name,
+    parentId: getString(value.parentId) || getString(value.parentParticipantId) || undefined,
+    provider: getString(value.provider) || undefined,
+    confidence: getNumber(value.confidence) ?? null,
+  });
+}
+
+function getEventParticipantSeed(
+  event: AgentTranscriptEvent,
+  defaultSeed: AgentTranscriptParticipantSeed,
+): AgentTranscriptParticipantSeed {
+  const contentJson = getEventJson(event);
+  const participant =
+    participantSeedFromRecord(getNestedRecord(contentJson, 'participant')) ||
+    participantSeedFromRecord({
+      id: contentJson.participantId,
+      type: contentJson.participantType,
+      name: contentJson.participantName,
+      parentId: contentJson.parentParticipantId,
+      provider: contentJson.provider,
+      confidence: contentJson.participantConfidence,
+    }) ||
+    participantSeedFromRecord(getNestedRecord(contentJson, 'agent')) ||
+    participantSeedFromRecord(getNestedRecord(contentJson, 'subAgent'));
+  return normalizeParticipantSeed(participant || defaultSeed);
+}
+
+function getUserParticipantSeed(event: AgentTranscriptEvent) {
+  return getEventParticipantSeed(event, {
+    id: USER_PARTICIPANT_ID,
+    type: 'user',
+    name: 'You',
+    provider: event.source,
+    confidence: event.confidence,
+  });
+}
+
+function getRootAgentParticipantSeed(event: AgentTranscriptEvent) {
+  return getEventParticipantSeed(event, {
+    id: ROOT_AGENT_PARTICIPANT_ID,
+    type: 'root-agent',
+    name: 'Agent',
+    provider: event.source,
+    confidence: event.confidence,
+  });
+}
+
+function getTerminalParticipantSeed() {
+  return normalizeParticipantSeed({
+    id: TERMINAL_PARTICIPANT_ID,
+    type: 'system',
+    name: 'Terminal',
+  });
+}
+
+function getMessageRole(participantType: AgentTranscriptParticipantType): AgentTranscriptMessageRole {
+  if (participantType === 'user') {
+    return 'user';
+  }
+  if (participantType === 'system' || participantType === 'tool') {
+    return 'system';
+  }
+  return 'agent';
 }
 
 function trimTextBlock(text: string) {
@@ -403,6 +654,37 @@ function stripCodexTerminalPreamble(text: string) {
   return keptLines.join('\n');
 }
 
+function isCodexJsonTerminalOutput(text: string) {
+  const lines = stripTerminalControlSequences(text)
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .filter((line) => !/^Reading additional input from stdin/i.test(line))
+    .filter((line) => !/^\[agent-gateway\] process exited with code \d+\b/i.test(line));
+  if (!lines.length) {
+    return true;
+  }
+  let jsonLineCount = 0;
+  for (const line of lines) {
+    if (!line.startsWith('{') || !line.endsWith('}')) {
+      return false;
+    }
+    try {
+      const parsed = JSON.parse(line) as unknown;
+      if (!isRecord(parsed) || !getString(parsed.type)) {
+        return false;
+      }
+      jsonLineCount += 1;
+    } catch {
+      if (!/"type"\s*:/.test(line)) {
+        return false;
+      }
+      jsonLineCount += 1;
+    }
+  }
+  return jsonLineCount > 0;
+}
+
 function extractCommandFromLine(line: string) {
   const trimmed = line.trim();
   const backtickMatch = trimmed.match(/`([^`]+)`/);
@@ -449,6 +731,54 @@ function buildTerminalToolCall(
   };
 }
 
+function buildInlineTerminalToolCall(options: {
+  id: string;
+  title: string;
+  kind?: AgentTranscriptToolKind;
+  source?: string;
+  eventIds: string[];
+  startedAt?: string;
+  finishedAt?: string;
+}): AgentTranscriptToolCall {
+  return {
+    id: options.id,
+    kind: options.kind || 'tool',
+    title: options.title,
+    status: 'unknown',
+    command: options.title,
+    source: options.source,
+    startedAt: options.startedAt,
+    finishedAt: options.finishedAt,
+    eventIds: options.eventIds,
+  };
+}
+
+function detectInlineTerminalToolCall(line: string) {
+  const match = line.trim().match(/^collab:\s*(.+)$/i);
+  if (!match) {
+    return null;
+  }
+  const title = truncateInline(match[1]);
+  return {
+    kind: /^wait\b/i.test(title) ? ('wait' as const) : ('tool' as const),
+    title,
+  };
+}
+
+function detectSubAgentSpeakerLine(line: string): { name: string; text: string } | null {
+  const match = line.trim().match(/^([\p{L}\p{N}][\p{L}\p{N} ._-]{1,60}):\s+(.+)$/u);
+  if (!match) {
+    return null;
+  }
+  const name = match[1].trim();
+  const normalizedName = name.toLowerCase().replace(/\s+/g, ' ');
+  if (RESERVED_SPEAKER_NAMES.has(normalizedName)) {
+    return null;
+  }
+  const text = match[2].trim();
+  return text ? { name, text } : null;
+}
+
 function updateToolBlockFromLine(block: MutableTerminalToolBlock, line: string) {
   block.status = mergeStatus(block.status, getStatusFromText(line));
   const durationText = getDurationText(line);
@@ -468,6 +798,79 @@ function updateToolBlockFromLine(block: MutableTerminalToolBlock, line: string) 
   }
 }
 
+function createTerminalRootSegment(options: {
+  eventIds: string[];
+  sources: string[];
+  startedAt?: string;
+  finishedAt?: string;
+}): MutableTerminalMessageSegment {
+  return {
+    participant: {
+      id: ROOT_AGENT_PARTICIPANT_ID,
+      type: 'root-agent',
+      name: 'Agent',
+      provider: options.sources.includes('terminal-live') ? 'terminal-live' : options.sources[0],
+    },
+    textParts: [],
+    parts: [],
+    toolCalls: [],
+    eventIds: options.eventIds,
+    sources: options.sources,
+    startedAt: options.startedAt,
+    finishedAt: options.finishedAt,
+  };
+}
+
+function createSubAgentSegment(options: {
+  name: string;
+  text: string;
+  eventIds: string[];
+  sources: string[];
+  startedAt?: string;
+  finishedAt?: string;
+}): MutableTerminalMessageSegment {
+  const participant = normalizeParticipantSeed({
+    type: 'sub-agent',
+    name: options.name,
+    parentId: ROOT_AGENT_PARTICIPANT_ID,
+    provider: options.sources.includes('terminal-live') ? 'terminal-live' : options.sources[0],
+    confidence: 0.6,
+  });
+  return {
+    participant,
+    textParts: [options.text],
+    parts: [
+      {
+        id: `terminal-sub-agent-text-${options.eventIds[0] || 'event'}-${slugParticipantId(options.name)}`,
+        type: 'text',
+        text: options.text,
+      },
+    ],
+    toolCalls: [],
+    eventIds: options.eventIds,
+    sources: options.sources,
+    startedAt: options.startedAt,
+    finishedAt: options.finishedAt,
+  };
+}
+
+function finalizeTerminalSegment(segment: MutableTerminalMessageSegment) {
+  const text = trimTextBlock(segment.textParts.join('\n\n'));
+  if (!text && !segment.toolCalls.length) {
+    return null;
+  }
+  return {
+    participant: normalizeParticipantSeed(segment.participant),
+    text,
+    parts: segment.parts,
+    toolCalls: segment.toolCalls,
+    eventIds: segment.eventIds,
+    sources: segment.sources,
+    startedAt: segment.startedAt,
+    finishedAt: segment.finishedAt,
+  };
+}
+
 function parseTerminalText(options: {
   text: string;
   eventIds: string[];
@@ -475,13 +878,28 @@ function parseTerminalText(options: {
   startedAt?: string;
   finishedAt?: string;
 }) {
-  const textParts: string[] = [];
-  const parts: AgentTranscriptMessagePart[] = [];
-  const toolCalls: AgentTranscriptToolCall[] = [];
+  if (isCodexJsonTerminalOutput(options.text)) {
+    return {
+      text: '',
+      parts: [],
+      toolCalls: [],
+      segments: [],
+    };
+  }
+
+  const segments: Array<
+    ReturnType<typeof finalizeTerminalSegment> extends infer Segment ? NonNullable<Segment> : never
+  > = [];
+  let rootSegment = createTerminalRootSegment({
+    eventIds: options.eventIds,
+    sources: [options.source].filter(Boolean) as string[],
+    startedAt: options.startedAt,
+    finishedAt: options.finishedAt,
+  });
   let pendingTextLines: string[] = [];
   let currentTool: MutableTerminalToolBlock | null = null;
 
-  const getPartId = (type: string) => `${type}-${options.eventIds[0] || 'event'}-${parts.length + 1}`;
+  const getPartId = (type: string) => `${type}-${options.eventIds[0] || 'event'}-${rootSegment.parts.length + 1}`;
 
   const flushText = () => {
     const text = trimTextBlock(pendingTextLines.join('\n'));
@@ -489,8 +907,8 @@ function parseTerminalText(options: {
     if (!text) {
       return;
     }
-    textParts.push(text);
-    parts.push({
+    rootSegment.textParts.push(text);
+    rootSegment.parts.push({
       id: getPartId('terminal-text'),
       type: 'text',
       text,
@@ -498,12 +916,13 @@ function parseTerminalText(options: {
   };
 
   const appendToolCallPart = (toolCall: AgentTranscriptToolCall) => {
-    const lastPart = parts[parts.length - 1];
+    rootSegment.toolCalls.push(toolCall);
+    const lastPart = rootSegment.parts[rootSegment.parts.length - 1];
     if (lastPart?.type === 'tool-calls') {
       lastPart.toolCalls.push(toolCall);
       return;
     }
-    parts.push({
+    rootSegment.parts.push({
       id: getPartId('terminal-tool-calls'),
       type: 'tool-calls',
       toolCalls: [toolCall],
@@ -516,19 +935,70 @@ function parseTerminalText(options: {
     }
     const toolCall = buildTerminalToolCall(
       currentTool,
-      toolCalls.length + 1,
+      rootSegment.toolCalls.length + 1,
       options.eventIds,
       options.source,
       options.startedAt,
       options.finishedAt,
     );
-    toolCalls.push(toolCall);
     appendToolCallPart(toolCall);
     currentTool = null;
   };
 
+  const flushRootSegment = () => {
+    const segment = finalizeTerminalSegment(rootSegment);
+    if (segment) {
+      segments.push(segment);
+    }
+    rootSegment = createTerminalRootSegment({
+      eventIds: options.eventIds,
+      sources: [options.source].filter(Boolean) as string[],
+      startedAt: options.startedAt,
+      finishedAt: options.finishedAt,
+    });
+  };
+
   const lines = stripCodexTerminalPreamble(stripTerminalControlSequences(options.text)).split(/\r?\n/);
   for (const line of lines) {
+    if (!currentTool) {
+      const inlineToolCall = detectInlineTerminalToolCall(line);
+      if (inlineToolCall) {
+        flushText();
+        appendToolCallPart(
+          buildInlineTerminalToolCall({
+            id: `terminal-inline-tool-${options.eventIds[0] || 'event'}-${rootSegment.toolCalls.length + 1}`,
+            kind: inlineToolCall.kind,
+            title: inlineToolCall.title,
+            source: options.source,
+            eventIds: options.eventIds,
+            startedAt: options.startedAt,
+            finishedAt: options.finishedAt,
+          }),
+        );
+        continue;
+      }
+
+      const subAgentLine = detectSubAgentSpeakerLine(line);
+      if (subAgentLine) {
+        flushText();
+        flushRootSegment();
+        const subAgentSegment = finalizeTerminalSegment(
+          createSubAgentSegment({
+            name: subAgentLine.name,
+            text: subAgentLine.text,
+            eventIds: options.eventIds,
+            sources: [options.source].filter(Boolean) as string[],
+            startedAt: options.startedAt,
+            finishedAt: options.finishedAt,
+          }),
+        );
+        if (subAgentSegment) {
+          segments.push(subAgentSegment);
+        }
+        continue;
+      }
+    }
+
     const header = detectToolHeader(line);
     if (header) {
       if (currentTool?.kind === 'tool' && header.kind === 'tool' && !currentTool.command && !currentTool.sawBlankLine) {
@@ -573,26 +1043,28 @@ function parseTerminalText(options: {
 
   flushTool();
   flushText();
+  flushRootSegment();
 
   return {
-    text: trimTextBlock(textParts.join('\n')),
-    parts,
-    toolCalls,
+    text: trimTextBlock(segments.map((segment) => segment.text).join('\n\n')),
+    parts: segments.flatMap((segment) => segment.parts),
+    toolCalls: segments.flatMap((segment) => segment.toolCalls),
+    segments,
   };
 }
 
-function createMutableMessage(event: AgentTranscriptEvent, role: AgentTranscriptMessageRole): MutableTranscriptMessage {
+function createMutableMessage(
+  event: AgentTranscriptEvent,
+  participant: AgentTranscriptParticipant,
+): MutableTranscriptMessage {
   const eventTime = getEventTime(event);
   return {
-    id: `${role}-${event.id}`,
-    role,
+    id: `${participant.id}-${event.id}`,
+    role: getMessageRole(participant.type),
+    participantId: participant.id,
+    participant,
     textParts: [],
     parts: [],
-    terminalTextParts: [],
-    terminalEventIds: [],
-    terminalSources: [],
-    terminalStartedAt: undefined,
-    terminalFinishedAt: undefined,
     createdAt: eventTime,
     updatedAt: eventTime,
     eventIds: [],
@@ -628,9 +1100,69 @@ function appendToolCallPart(message: MutableTranscriptMessage, toolCall: AgentTr
   });
 }
 
+function isTerminalToolStatus(status: AgentTranscriptToolStatus) {
+  return status === 'succeeded' || status === 'failed';
+}
+
+function mergeToolStatus(
+  currentStatus: AgentTranscriptToolStatus,
+  nextStatus: AgentTranscriptToolStatus,
+): AgentTranscriptToolStatus {
+  if (nextStatus === 'unknown') {
+    return currentStatus;
+  }
+  if (nextStatus === 'failed') {
+    return 'failed';
+  }
+  if (currentStatus === 'unknown' || currentStatus === 'running') {
+    return nextStatus;
+  }
+  if (!isTerminalToolStatus(currentStatus)) {
+    return nextStatus;
+  }
+  return currentStatus;
+}
+
+function mergeToolCallIntoMessage(message: MutableTranscriptMessage, toolCall: AgentTranscriptToolCall) {
+  const existing = message.toolCalls.find((item) => item.id === toolCall.id);
+  if (!existing) {
+    appendToolCallPart(message, toolCall);
+    return;
+  }
+
+  existing.status = mergeToolStatus(existing.status, toolCall.status);
+  existing.command = existing.command || toolCall.command;
+  existing.input = existing.input || toolCall.input;
+  existing.output = toolCall.output || existing.output;
+  existing.details = existing.details || toolCall.details;
+  existing.title =
+    existing.title === 'Command' || existing.title === 'Tool call' ? toolCall.title || existing.title : existing.title;
+  existing.durationMs = toolCall.durationMs ?? existing.durationMs;
+  existing.durationText = toolCall.durationText || existing.durationText;
+  existing.exitCode = toolCall.exitCode ?? existing.exitCode;
+  existing.source = existing.source || toolCall.source;
+  existing.startedAt = existing.startedAt || toolCall.startedAt;
+  existing.finishedAt = toolCall.finishedAt || existing.finishedAt;
+  for (const eventId of toolCall.eventIds) {
+    uniqueAppend(existing.eventIds, eventId);
+  }
+}
+
+function closeRunningToolCalls(message: { toolCalls: AgentTranscriptToolCall[] }, finishedAt?: string) {
+  for (const toolCall of message.toolCalls) {
+    if (toolCall.status !== 'running') {
+      continue;
+    }
+    toolCall.status = 'unknown';
+    toolCall.finishedAt = toolCall.finishedAt || finishedAt;
+  }
+}
+
 function appendEventMetadata(message: MutableTranscriptMessage, event: AgentTranscriptEvent) {
   message.eventIds.push(event.id);
   uniqueAppend(message.sources, event.source);
+  uniqueAppend(message.participant.sources, event.source);
+  uniqueAppend(message.participant.eventIds, event.id);
   const eventTime = getEventTime(event);
   if (!message.createdAt || (eventTime && eventTime < message.createdAt)) {
     message.createdAt = eventTime;
@@ -640,46 +1172,7 @@ function appendEventMetadata(message: MutableTranscriptMessage, event: AgentTran
   }
 }
 
-function appendTerminalEvent(message: MutableTranscriptMessage, event: AgentTranscriptEvent) {
-  message.terminalTextParts.push(getEventText(event));
-  message.terminalEventIds.push(event.id);
-  uniqueAppend(message.terminalSources, event.source);
-  const eventTime = getEventTime(event);
-  if (!message.terminalStartedAt || (eventTime && eventTime < message.terminalStartedAt)) {
-    message.terminalStartedAt = eventTime;
-  }
-  if (!message.terminalFinishedAt || (eventTime && eventTime > message.terminalFinishedAt)) {
-    message.terminalFinishedAt = eventTime;
-  }
-}
-
-function flushTerminalParts(message: MutableTranscriptMessage) {
-  if (!message.terminalTextParts.length) {
-    return;
-  }
-
-  const terminal = parseTerminalText({
-    text: message.terminalTextParts.join(''),
-    eventIds: message.terminalEventIds,
-    source: message.terminalSources.includes('terminal-live') ? 'terminal-live' : message.terminalSources[0],
-    startedAt: message.terminalStartedAt,
-    finishedAt: message.terminalFinishedAt,
-  });
-  if (terminal.text) {
-    message.textParts.push(terminal.text);
-  }
-  message.parts.push(...terminal.parts);
-  message.toolCalls.push(...terminal.toolCalls);
-  message.terminalTextParts = [];
-  message.terminalEventIds = [];
-  message.terminalSources = [];
-  message.terminalStartedAt = undefined;
-  message.terminalFinishedAt = undefined;
-}
-
 function finalizeMutableMessage(message: MutableTranscriptMessage): AgentTranscriptMessage | null {
-  flushTerminalParts(message);
-
   const text = trimTextBlock(message.textParts.join('\n\n'));
   if (!text && !message.toolCalls.length) {
     return null;
@@ -688,6 +1181,8 @@ function finalizeMutableMessage(message: MutableTranscriptMessage): AgentTranscr
   return {
     id: message.id,
     role: message.role,
+    participantId: message.participantId,
+    participant: message.participant,
     text,
     parts: message.parts,
     createdAt: message.createdAt,
@@ -718,26 +1213,268 @@ function getExplicitToolKind(event: AgentTranscriptEvent): AgentTranscriptToolKi
     return 'exec';
   }
   const contentJson = getEventJson(event);
-  const toolName = getString(contentJson.toolName || contentJson.name).toLowerCase();
+  const toolName = getNormalizedToolName(contentJson.toolName || contentJson.name);
   if (toolName === 'apply_patch') {
     return 'apply_patch';
   }
-  if (toolName === 'terminal' || toolName === 'write_stdin') {
+  if (toolName === 'terminal' || toolName === 'write_stdin' || toolName === 'terminal_stream') {
     return 'terminal';
   }
-  if (toolName === 'exec' || toolName === 'exec_command') {
+  if (toolName === 'exec' || toolName === 'exec_command' || toolName === 'bash' || toolName === 'shell') {
     return 'exec';
+  }
+  if (toolName === 'wait' || toolName === 'wait_agent') {
+    return 'wait';
   }
   return event.eventType?.startsWith('agent.tool.') ? 'tool' : 'unknown';
 }
 
+function stringifyToolValue(value: unknown) {
+  if (typeof value === 'string') {
+    return value.trim() ? value : '';
+  }
+  if (value === undefined || value === null) {
+    return '';
+  }
+  try {
+    return JSON.stringify(value, null, 2);
+  } catch {
+    return String(value);
+  }
+}
+
+function getFirstToolTextByPath(contentJson: AgentTranscriptJsonRecord, paths: readonly (readonly string[])[]) {
+  for (const path of paths) {
+    const value = stringifyToolValue(getNestedValue(contentJson, path));
+    if (value) {
+      return value;
+    }
+  }
+  return '';
+}
+
+function parseJsonRecordString(value: unknown) {
+  if (typeof value !== 'string') {
+    return {};
+  }
+  const trimmed = value.trim();
+  if (!trimmed || !trimmed.startsWith('{')) {
+    return {};
+  }
+  try {
+    const parsed = JSON.parse(trimmed) as unknown;
+    return getRecord(parsed);
+  } catch {
+    return {};
+  }
+}
+
+function getToolArgumentsRecord(contentJson: AgentTranscriptJsonRecord) {
+  const directArguments = getRecord(contentJson.arguments);
+  if (Object.keys(directArguments).length) {
+    return directArguments;
+  }
+  return parseJsonRecordString(contentJson.arguments);
+}
+
+function getNormalizedToolName(value: unknown) {
+  const toolName = getString(value).toLowerCase();
+  return toolName.split(/[./]/).filter(Boolean).pop() || toolName;
+}
+
+function getCommandFromRecord(record: AgentTranscriptJsonRecord) {
+  const command = getString(record.command || record.commandLine || record.command_line || record.cmd);
+  if (command) {
+    return command;
+  }
+  const argv = getStringArray(record.argv || record.args);
+  return argv.join(' ');
+}
+
+function getCommandFromToolUses(value: unknown) {
+  for (const toolUse of getRecordArray(value)) {
+    const directCommand = getCommandFromRecord(toolUse);
+    if (directCommand) {
+      return directCommand;
+    }
+    const parameters = getRecord(toolUse.parameters || toolUse.input || toolUse.arguments);
+    const parameterCommand = getCommandFromRecord(parameters);
+    if (parameterCommand) {
+      return parameterCommand;
+    }
+  }
+  return '';
+}
+
+function getExplicitToolCommand(contentJson: AgentTranscriptJsonRecord) {
+  const command = getCommandFromRecord(contentJson);
+  if (command) {
+    return command;
+  }
+  const nestedRecords = [
+    getRecord(contentJson.input),
+    getRecord(contentJson.parameters),
+    getRecord(contentJson.payload),
+    getRecord(contentJson.state),
+    getRecord(getNestedRecord(contentJson, 'state').input),
+    getToolArgumentsRecord(contentJson),
+  ];
+  for (const record of nestedRecords) {
+    const nestedCommand = getCommandFromRecord(record);
+    if (nestedCommand) {
+      return nestedCommand;
+    }
+    const toolUseCommand = getCommandFromToolUses(record.tool_uses || record.toolUses);
+    if (toolUseCommand) {
+      return toolUseCommand;
+    }
+  }
+  return '';
+}
+
+function getExplicitToolInput(contentJson: AgentTranscriptJsonRecord) {
+  return getFirstToolTextByPath(contentJson, [
+    ['input'],
+    ['arguments'],
+    ['parameters'],
+    ['payload'],
+    ['prompt'],
+    ['collab', 'prompt'],
+    ['collab', 'receiverThreadIds'],
+    ['collab', 'receiver_thread_ids'],
+    ['state', 'input'],
+    ['metadata', 'input'],
+  ]);
+}
+
+function getExplicitToolOutput(contentJson: AgentTranscriptJsonRecord) {
+  return getFirstToolTextByPath(contentJson, [
+    ['output'],
+    ['aggregated_output'],
+    ['aggregatedOutput'],
+    ['stdout'],
+    ['stderr'],
+    ['result'],
+    ['error'],
+    ['response'],
+    ['data'],
+    ['result', 'output'],
+    ['result', 'stdout'],
+    ['result', 'stderr'],
+    ['state', 'output'],
+    ['state', 'result'],
+    ['metadata', 'output'],
+    ['collab', 'agents'],
+  ]);
+}
+
+const DISPLAYED_TOOL_OUTPUT_KEYS = new Set([
+  'output',
+  'aggregated_output',
+  'aggregatedOutput',
+  'stdout',
+  'stderr',
+  'result',
+  'error',
+  'response',
+  'data',
+]);
+
+function shouldOmitDisplayedToolDetail(key: string, value: unknown, displayedOutput: string) {
+  return Boolean(
+    displayedOutput && DISPLAYED_TOOL_OUTPUT_KEYS.has(key) && stringifyToolValue(value) === displayedOutput,
+  );
+}
+
+function omitDisplayedToolOutput(value: unknown, displayedOutput: string): unknown {
+  if (!displayedOutput) {
+    return value;
+  }
+  if (Array.isArray(value)) {
+    return value.map((item) => omitDisplayedToolOutput(item, displayedOutput));
+  }
+  if (!isRecord(value)) {
+    return value;
+  }
+  const record: AgentTranscriptJsonRecord = {};
+  for (const [key, entryValue] of Object.entries(value)) {
+    if (shouldOmitDisplayedToolDetail(key, entryValue, displayedOutput)) {
+      record[`${key}ShownSeparately`] = true;
+      continue;
+    }
+    record[key] = omitDisplayedToolOutput(entryValue, displayedOutput);
+  }
+  return record;
+}
+
+function getToolEventMetadataDetails(
+  event: AgentTranscriptEvent,
+  contentJson: AgentTranscriptJsonRecord,
+  displayedOutput: string,
+) {
+  const details: AgentTranscriptJsonRecord = {};
+  const eventType = getString(event.eventType);
+  const source = getString(event.source);
+  const providerEventId = getString(event.providerEventId);
+  const correlationId = getString(event.correlationId);
+  const contentText = getEventText(event);
+  const detailContentJson = getRecord(omitDisplayedToolOutput(contentJson, displayedOutput));
+  if (eventType) {
+    details.eventType = eventType;
+  }
+  if (source) {
+    details.source = source;
+  }
+  if (providerEventId) {
+    details.providerEventId = providerEventId;
+  }
+  if (correlationId) {
+    details.correlationId = correlationId;
+  }
+  if (contentText) {
+    details.contentText = contentText;
+  }
+  if (Object.keys(detailContentJson).length) {
+    details.contentJson = detailContentJson;
+  }
+  return details;
+}
+
+function getExplicitToolDetails(
+  event: AgentTranscriptEvent,
+  contentJson: AgentTranscriptJsonRecord,
+  command: string,
+  input: string,
+  output: string,
+) {
+  return stringifyToolValue(getToolEventMetadataDetails(event, contentJson, output));
+}
+
+function getExplicitToolCorrelationKey(event: AgentTranscriptEvent) {
+  const correlationId = getString(event.correlationId);
+  if (correlationId) {
+    return correlationId;
+  }
+  const contentJson = getEventJson(event);
+  const payloadCorrelationId = getString(contentJson.callId || contentJson.call_id || contentJson.itemId);
+  if (payloadCorrelationId) {
+    return payloadCorrelationId;
+  }
+  const providerEventId = getString(event.providerEventId);
+  const providerParts = providerEventId.split(':');
+  if (providerParts.length > 1 && providerParts[providerParts.length - 1]) {
+    return providerParts[providerParts.length - 1];
+  }
+  return event.id;
+}
+
 function buildExplicitToolCall(event: AgentTranscriptEvent): AgentTranscriptToolCall {
   const contentJson = getEventJson(event);
-  const command = getString(contentJson.command);
+  const command = getExplicitToolCommand(contentJson);
+  const input = getExplicitToolInput(contentJson);
   const toolName = getString(contentJson.toolName || contentJson.name);
-  const output = event.eventType?.startsWith('agent.command.')
-    ? getString(contentJson.output || contentJson.result)
-    : getString(contentJson.output || contentJson.result || getEventText(event));
+  const output = getExplicitToolOutput(contentJson);
+  const details = getExplicitToolDetails(event, contentJson, command, input, output);
   const exitCode = getInteger(contentJson.exitCode ?? contentJson.exit_code);
   const durationMs = getInteger(contentJson.durationMs ?? contentJson.duration_ms);
   const status = getExplicitToolStatus(event.eventType, contentJson);
@@ -747,19 +1484,100 @@ function buildExplicitToolCall(event: AgentTranscriptEvent): AgentTranscriptTool
     (event.eventType?.startsWith('agent.command.') ? 'Command' : getEventText(event)) ||
     'Tool call';
   return {
-    id: `event-tool-${event.id}`,
+    id: `event-tool-${getExplicitToolCorrelationKey(event)}`,
     kind: getExplicitToolKind(event),
     title: truncateInline(title),
     status,
     command: command || undefined,
+    input: input || undefined,
     output: output || undefined,
+    details: details || undefined,
     durationMs,
     exitCode,
     source: event.source,
     startedAt: getEventTime(event),
-    finishedAt: getEventTime(event),
+    finishedAt: status === 'running' ? undefined : getEventTime(event),
     eventIds: [event.id],
   };
+}
+
+function getCollabRecord(event: AgentTranscriptEvent) {
+  return getNestedRecord(getEventJson(event), 'collab');
+}
+
+function getCollabTool(event: AgentTranscriptEvent) {
+  return getString(getCollabRecord(event).tool).toLowerCase();
+}
+
+function getCollabReceiverThreadIds(event: AgentTranscriptEvent) {
+  const collab = getCollabRecord(event);
+  return getStringArray(collab.receiverThreadIds || collab.receiver_thread_ids);
+}
+
+function getCollabAgentStates(event: AgentTranscriptEvent): CollabAgentState[] {
+  const collab = getCollabRecord(event);
+  const agents: CollabAgentState[] = [];
+  for (const agent of getRecordArray(collab.agents || collab.agentsStates || collab.agents_states)) {
+    const threadId = getString(agent.threadId || agent.thread_id || agent.id);
+    if (!threadId) {
+      continue;
+    }
+    agents.push({
+      threadId,
+      status: getString(agent.status) || undefined,
+      message: typeof agent.message === 'string' ? agent.message : null,
+    });
+  }
+  return agents;
+}
+
+function rememberCollabParticipants(
+  event: AgentTranscriptEvent,
+  subAgentSeedsByThreadId: Map<string, AgentTranscriptParticipantSeed>,
+) {
+  if (getCollabTool(event) !== 'spawn_agent') {
+    return;
+  }
+  const collab = getCollabRecord(event);
+  const spawnedAgentName = getString(collab.spawnedAgentName || collab.spawned_agent_name);
+  const receiverThreadIds = getCollabReceiverThreadIds(event);
+  for (const threadId of receiverThreadIds) {
+    const name = spawnedAgentName || threadId;
+    subAgentSeedsByThreadId.set(threadId, {
+      id: spawnedAgentName
+        ? `sub-agent:${slugParticipantId(spawnedAgentName)}`
+        : `sub-agent:${slugParticipantId(threadId)}`,
+      type: 'sub-agent',
+      name,
+      parentId: ROOT_AGENT_PARTICIPANT_ID,
+      provider: event.source,
+      confidence: spawnedAgentName ? 0.95 : 0.7,
+    });
+  }
+}
+
+function getCollabSubAgentMessages(
+  event: AgentTranscriptEvent,
+  subAgentSeedsByThreadId: Map<string, AgentTranscriptParticipantSeed>,
+) {
+  if (getCollabTool(event) !== 'wait') {
+    return [];
+  }
+  return getCollabAgentStates(event)
+    .filter((agent) => agent.status === 'completed' && typeof agent.message === 'string' && agent.message.trim())
+    .map((agent) => ({
+      participant:
+        subAgentSeedsByThreadId.get(agent.threadId) ||
+        normalizeParticipantSeed({
+          id: `sub-agent:${slugParticipantId(agent.threadId)}`,
+          type: 'sub-agent',
+          name: agent.threadId,
+          parentId: ROOT_AGENT_PARTICIPANT_ID,
+          provider: event.source,
+          confidence: 0.7,
+        }),
+      text: agent.message || '',
+    }));
 }
 
 function createEmptyStats(): AgentTranscriptToolStats {
@@ -803,9 +1621,91 @@ export function getAgentTranscriptToolStats(toolCalls: AgentTranscriptToolCall[]
   return stats;
 }
 
-export function buildAgentTranscript(events: AgentTranscriptEvent[]): AgentTranscript {
+function ensureToolCallHasDetails(toolCall: AgentTranscriptToolCall) {
+  if (toolCall.command || toolCall.input || toolCall.output || toolCall.details) {
+    return;
+  }
+  const details: AgentTranscriptJsonRecord = {
+    title: toolCall.title,
+    kind: toolCall.kind,
+    status: toolCall.status,
+  };
+  if (toolCall.source) {
+    details.source = toolCall.source;
+  }
+  if (toolCall.startedAt) {
+    details.startedAt = toolCall.startedAt;
+  }
+  if (toolCall.finishedAt) {
+    details.finishedAt = toolCall.finishedAt;
+  }
+  if (typeof toolCall.durationMs === 'number') {
+    details.durationMs = toolCall.durationMs;
+  }
+  if (typeof toolCall.exitCode === 'number') {
+    details.exitCode = toolCall.exitCode;
+  }
+  if (toolCall.eventIds.length) {
+    details.eventIds = toolCall.eventIds;
+  }
+  toolCall.details = stringifyToolValue(details);
+}
+
+function upsertParticipant(
+  participants: Map<string, AgentTranscriptParticipant>,
+  seed: AgentTranscriptParticipantSeed,
+  event?: AgentTranscriptEvent,
+): AgentTranscriptParticipant {
+  const normalized = normalizeParticipantSeed(seed);
+  const existing = participants.get(normalized.id);
+  if (existing) {
+    if (normalized.name && existing.name === getDefaultParticipantName(existing.type)) {
+      existing.name = normalized.name;
+    }
+    if (normalized.parentId && !existing.parentId) {
+      existing.parentId = normalized.parentId;
+    }
+    if (normalized.provider && !existing.provider) {
+      existing.provider = normalized.provider;
+    }
+    if (normalized.confidence !== undefined) {
+      existing.confidence = normalized.confidence;
+    }
+    if (event) {
+      uniqueAppend(existing.sources, event.source);
+      uniqueAppend(existing.eventIds, event.id);
+    }
+    return existing;
+  }
+
+  const participant: AgentTranscriptParticipant = {
+    id: normalized.id || `${normalized.type}:unknown`,
+    type: normalized.type,
+    name: normalized.name || getDefaultParticipantName(normalized.type),
+    parentId: normalized.parentId,
+    provider: normalized.provider,
+    confidence: normalized.confidence,
+    sources: [],
+    eventIds: [],
+  };
+  if (event) {
+    uniqueAppend(participant.sources, event.source);
+    uniqueAppend(participant.eventIds, event.id);
+  }
+  participants.set(participant.id, participant);
+  return participant;
+}
+
+export function buildAgentTranscript(
+  events: AgentTranscriptEvent[],
+  options: AgentTranscriptBuildOptions = {},
+): AgentTranscript {
+  const participants = new Map<string, AgentTranscriptParticipant>();
+  const subAgentSeedsByThreadId = new Map<string, AgentTranscriptParticipantSeed>();
+  const toolCallMessages = new Map<string, MutableTranscriptMessage>();
   const messages: AgentTranscriptMessage[] = [];
   let currentAgentMessage: MutableTranscriptMessage | null = null;
+  let pendingTerminalEvents: AgentTranscriptEvent[] = [];
 
   const flushAgentMessage = () => {
     if (!currentAgentMessage) {
@@ -818,18 +1718,91 @@ export function buildAgentTranscript(events: AgentTranscriptEvent[]): AgentTrans
     currentAgentMessage = null;
   };
 
-  const ensureAgentMessage = (event: AgentTranscriptEvent) => {
+  const closeDanglingToolCalls = (event?: AgentTranscriptEvent) => {
+    const finishedAt = event ? getEventTime(event) : undefined;
+    for (const message of toolCallMessages.values()) {
+      closeRunningToolCalls(message, finishedAt);
+    }
+    if (currentAgentMessage) {
+      closeRunningToolCalls(currentAgentMessage, finishedAt);
+    }
+    for (const message of messages) {
+      closeRunningToolCalls(message, finishedAt);
+    }
+  };
+
+  const ensureMessage = (event: AgentTranscriptEvent, participantSeed: AgentTranscriptParticipantSeed) => {
+    const participant = upsertParticipant(participants, participantSeed, event);
+    if (currentAgentMessage && currentAgentMessage.participantId !== participant.id) {
+      flushAgentMessage();
+    }
     if (!currentAgentMessage) {
-      currentAgentMessage = createMutableMessage(event, 'agent');
+      currentAgentMessage = createMutableMessage(event, participant);
     }
     appendEventMetadata(currentAgentMessage, event);
     return currentAgentMessage;
   };
 
+  const appendStandaloneAgentMessage = (
+    event: AgentTranscriptEvent,
+    participantSeed: AgentTranscriptParticipantSeed,
+    text: string,
+  ) => {
+    const participant = upsertParticipant(participants, participantSeed, event);
+    const message = createMutableMessage(event, participant);
+    appendEventMetadata(message, event);
+    appendTextPart(message, text, `text-${event.id}-${messages.length + 1}`);
+    const finalized = finalizeMutableMessage(message);
+    if (finalized) {
+      messages.push(finalized);
+    }
+  };
+
+  const flushTerminalEvents = () => {
+    if (!pendingTerminalEvents.length) {
+      return;
+    }
+    flushAgentMessage();
+    const sortedTerminalEvents = [...pendingTerminalEvents].sort(compareEvents);
+    const firstEvent = sortedTerminalEvents[0];
+    const terminal = parseTerminalText({
+      text: sortedTerminalEvents.map(getEventText).join(''),
+      eventIds: sortedTerminalEvents.map((event) => event.id),
+      source: sortedTerminalEvents.some((event) => event.source === 'terminal-live')
+        ? 'terminal-live'
+        : sortedTerminalEvents[0]?.source,
+      startedAt: getEventTime(firstEvent),
+      finishedAt: getEventTime(sortedTerminalEvents[sortedTerminalEvents.length - 1]),
+    });
+    for (const segment of terminal.segments) {
+      const participant = upsertParticipant(participants, segment.participant);
+      for (const event of sortedTerminalEvents) {
+        uniqueAppend(participant.sources, event.source);
+        uniqueAppend(participant.eventIds, event.id);
+      }
+      messages.push({
+        id: `${participant.id}-${segment.eventIds[0] || firstEvent.id}-${messages.length + 1}`,
+        role: getMessageRole(participant.type),
+        participantId: participant.id,
+        participant,
+        text: segment.text,
+        parts: segment.parts,
+        createdAt: segment.startedAt,
+        updatedAt: segment.finishedAt,
+        eventIds: segment.eventIds,
+        sources: segment.sources,
+        toolCalls: segment.toolCalls,
+      });
+    }
+    pendingTerminalEvents = [];
+  };
+
   for (const event of [...events].sort(compareEvents)) {
     if (event.eventType === 'agent.user.message') {
+      flushTerminalEvents();
       flushAgentMessage();
-      const userMessage = createMutableMessage(event, 'user');
+      const userParticipant = upsertParticipant(participants, getUserParticipantSeed(event), event);
+      const userMessage = createMutableMessage(event, userParticipant);
       appendEventMetadata(userMessage, event);
       appendTextPart(userMessage, getEventText(event), `text-${event.id}`);
       const finalized = finalizeMutableMessage(userMessage);
@@ -839,15 +1812,37 @@ export function buildAgentTranscript(events: AgentTranscriptEvent[]): AgentTrans
       continue;
     }
 
+    if (event.eventType === 'agent.message' && event.source === 'terminal-live') {
+      pendingTerminalEvents.push(event);
+      continue;
+    }
+
     if (event.eventType?.startsWith('agent.command.') || event.eventType?.startsWith('agent.tool.')) {
-      if (currentAgentMessage) {
-        flushTerminalParts(currentAgentMessage);
+      flushTerminalEvents();
+      const toolCall = buildExplicitToolCall(event);
+      const existingToolCallMessage = toolCallMessages.get(toolCall.id);
+      if (existingToolCallMessage) {
+        appendEventMetadata(existingToolCallMessage, event);
+        mergeToolCallIntoMessage(existingToolCallMessage, toolCall);
+      } else {
+        const message = ensureMessage(event, getRootAgentParticipantSeed(event));
+        mergeToolCallIntoMessage(message, toolCall);
+        toolCallMessages.set(toolCall.id, message);
       }
-      appendToolCallPart(ensureAgentMessage(event), buildExplicitToolCall(event));
+      rememberCollabParticipants(event, subAgentSeedsByThreadId);
+      const subAgentMessages = getCollabSubAgentMessages(event, subAgentSeedsByThreadId);
+      if (subAgentMessages.length) {
+        flushAgentMessage();
+        for (const subAgentMessage of subAgentMessages) {
+          appendStandaloneAgentMessage(event, subAgentMessage.participant, subAgentMessage.text);
+        }
+      }
       continue;
     }
 
     if (event.eventType === 'agent.turn.completed') {
+      flushTerminalEvents();
+      closeDanglingToolCalls(event);
       flushAgentMessage();
       continue;
     }
@@ -856,19 +1851,23 @@ export function buildAgentTranscript(events: AgentTranscriptEvent[]): AgentTrans
       continue;
     }
 
-    const agentMessage = ensureAgentMessage(event);
-    if (event.source === 'terminal-live') {
-      appendTerminalEvent(agentMessage, event);
-      continue;
-    }
-    flushTerminalParts(agentMessage);
+    flushTerminalEvents();
+    const agentMessage = ensureMessage(event, getRootAgentParticipantSeed(event));
     appendTextPart(agentMessage, getEventText(event), `text-${event.id}`);
   }
 
+  flushTerminalEvents();
   flushAgentMessage();
+  if (options.closeDanglingToolCalls) {
+    closeDanglingToolCalls();
+  }
 
   const toolCalls = messages.flatMap((message) => message.toolCalls);
+  for (const toolCall of toolCalls) {
+    ensureToolCallHasDetails(toolCall);
+  }
   return {
+    participants: [...participants.values()],
     messages,
     toolCalls,
     stats: getAgentTranscriptToolStats(toolCalls),

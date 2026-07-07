@@ -15,8 +15,6 @@ import { Plugin } from '@nocobase/server';
 import {
   AGENT_GATEWAY_ACTIONS,
   authenticateNodeToken,
-  redactArtifactMetadata,
-  redactArtifactText,
   redactEventPayload,
   redactObservabilityText,
   redactSnapshotJson,
@@ -58,6 +56,7 @@ const STANDARD_OBSERVABILITY_COLLECTIONS = [
   'agApiCallLogs',
 ] as const;
 const DIRECT_OBSERVABILITY_READ_ACTIONS = new Set(['get', 'list']);
+const OBSERVABILITY_WRITE_RUN_STATUSES = ['claimed', 'syncing_skills', 'running', 'finalizing', 'stalled'] as const;
 
 function getRequiredString(ctx: Context, value: unknown, name: string) {
   const stringValue = getString(value);
@@ -149,6 +148,10 @@ function getBoundedRedactedJson(
   return redactedValue;
 }
 
+function preserveJson(source: unknown) {
+  return source;
+}
+
 function getEventMessage(ctx: Context, value: unknown) {
   const message = getString(value);
   if (message.length > MAX_EVENT_MESSAGE_LENGTH) {
@@ -166,7 +169,11 @@ async function appendEvent(ctx: Context, runId: string) {
   const nodeId = await getCurrentNodeId(ctx);
   const values = getBodyValues(ctx);
   const result = await ctx.db.sequelize.transaction(async (transaction) => {
-    const lease = await validateRunLease(ctx, nodeId, runId, values, transaction);
+    const lease = await validateRunLease(ctx, nodeId, runId, values, transaction, {
+      allowExpiredLeaseStatuses: ['finalizing', 'stalled'],
+      allowStaleLeaseVersion: true,
+      allowedStatuses: OBSERVABILITY_WRITE_RUN_STATUSES,
+    });
     if (!lease) {
       return null;
     }
@@ -231,16 +238,37 @@ async function appendEvent(ctx: Context, runId: string) {
   }
 }
 
-function getArtifactContentText(ctx: Context, value: unknown) {
+function getArtifactContentText(ctx: Context, value: unknown, mimeType: string) {
   const contentText = typeof value === 'string' ? value : '';
   const sizeBytes = Buffer.byteLength(contentText);
   if (sizeBytes > MAX_ARTIFACT_TEXT_BYTES) {
     ctx.throw(413, 'Artifact text is too large for plugin-hosted P0 storage');
   }
 
+  if (contentText && mimeType.includes('json')) {
+    try {
+      const formattedJsonText = JSON.stringify(JSON.parse(contentText), null, 2);
+      return {
+        contentText: formattedJsonText,
+        computedSizeBytes: sizeBytes,
+        previewBytes: Buffer.byteLength(formattedJsonText),
+        jsonValid: true,
+      };
+    } catch {
+      return {
+        contentText,
+        computedSizeBytes: sizeBytes,
+        previewBytes: Buffer.byteLength(contentText),
+        jsonValid: false,
+      };
+    }
+  }
+
   return {
-    contentText: contentText ? redactArtifactText(contentText) : null,
+    contentText: contentText || null,
     computedSizeBytes: sizeBytes,
+    previewBytes: contentText ? Buffer.byteLength(contentText) : 0,
+    jsonValid: null,
   };
 }
 
@@ -248,7 +276,11 @@ async function registerArtifact(ctx: Context, runId: string) {
   const nodeId = await getCurrentNodeId(ctx);
   const values = getBodyValues(ctx);
   const result = await ctx.db.sequelize.transaction(async (transaction) => {
-    const lease = await validateRunLease(ctx, nodeId, runId, values, transaction);
+    const lease = await validateRunLease(ctx, nodeId, runId, values, transaction, {
+      allowExpiredLeaseStatuses: ['finalizing', 'stalled'],
+      allowStaleLeaseVersion: true,
+      allowedStatuses: OBSERVABILITY_WRITE_RUN_STATUSES,
+    });
     if (!lease) {
       return null;
     }
@@ -273,8 +305,30 @@ async function registerArtifact(ctx: Context, runId: string) {
       }
     }
 
-    const { contentText, computedSizeBytes } = getArtifactContentText(ctx, values.contentText);
+    const mimeType = getString(values.mimeType) || 'text/plain';
+    const rawMetadata = getRecord(getPayloadValue(values, 'metadataJson', 'metadata'));
+    const metadataWithJsonStatus = {
+      ...rawMetadata,
+    };
+    const { contentText, computedSizeBytes, previewBytes, jsonValid } = getArtifactContentText(
+      ctx,
+      values.contentText,
+      mimeType,
+    );
+    if (jsonValid !== null) {
+      metadataWithJsonStatus.jsonValid = jsonValid;
+    }
     const providedSizeBytes = getOptionalNonNegativeInteger(ctx, values.sizeBytes, 'sizeBytes');
+    const metadataOriginalSizeBytes = getOptionalNonNegativeInteger(
+      ctx,
+      rawMetadata.originalSizeBytes,
+      'metadata.originalSizeBytes',
+    );
+    const metadataUploadedBytes = getOptionalNonNegativeInteger(
+      ctx,
+      rawMetadata.uploadedBytes,
+      'metadata.uploadedBytes',
+    );
     const artifact = (await artifactRepo.create({
       values: {
         id: randomUUID(),
@@ -282,15 +336,20 @@ async function registerArtifact(ctx: Context, runId: string) {
         claimAttempt: lease.claimAttempt,
         artifactKey,
         artifactType: getRequiredString(ctx, values.artifactType || values.type, 'artifactType'),
-        mimeType: getString(values.mimeType) || 'text/plain',
+        mimeType,
         sizeBytes: providedSizeBytes ?? computedSizeBytes,
+        originalSizeBytes: metadataOriginalSizeBytes ?? providedSizeBytes ?? computedSizeBytes,
+        previewBytes: metadataUploadedBytes ?? previewBytes,
+        truncated: rawMetadata.truncated === true,
+        storageMode: getString(rawMetadata.storageMode) || (rawMetadata.truncated === true ? 'preview' : 'inline'),
+        contentSha256: getString(rawMetadata.sha256) || null,
         contentText,
         metadataJson: getBoundedRedactedJson(
           ctx,
-          getPayloadValue(values, 'metadataJson', 'metadata'),
+          metadataWithJsonStatus,
           'Artifact metadata',
           MAX_METADATA_JSON_CHARS,
-          redactArtifactMetadata,
+          preserveJson,
         ),
       },
       transaction,
@@ -311,7 +370,11 @@ async function registerSnapshot(ctx: Context, runId: string) {
   const nodeId = await getCurrentNodeId(ctx);
   const values = getBodyValues(ctx);
   const result = await ctx.db.sequelize.transaction(async (transaction) => {
-    const lease = await validateRunLease(ctx, nodeId, runId, values, transaction);
+    const lease = await validateRunLease(ctx, nodeId, runId, values, transaction, {
+      allowExpiredLeaseStatuses: ['finalizing', 'stalled'],
+      allowStaleLeaseVersion: true,
+      allowedStatuses: OBSERVABILITY_WRITE_RUN_STATUSES,
+    });
     if (!lease) {
       return null;
     }

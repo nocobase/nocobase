@@ -210,6 +210,12 @@ export function redactArtifactText(contentText: string) {
   return redactObservabilityText(contentText);
 }
 
+export function redactArtifactJson(content: unknown) {
+  return redactJson(content, {
+    extraKeys: EXECUTION_CONFIG_REDACTED_KEYS,
+  });
+}
+
 export function redactArtifactMetadata(metadata: unknown) {
   const redactedMetadata = redactJson(metadata, {
     extraKeys: [...EXECUTION_CONFIG_REDACTED_KEYS, ...ARTIFACT_METADATA_URL_KEYS],

@@ -12,8 +12,6 @@ import { createWriteStream, WriteStream } from 'fs';
 import { promises as fs } from 'fs';
 import path from 'path';
 
-import { redactObservabilityText } from '../server/security/redaction';
-
 export type ExecTerminalStatus = 'succeeded' | 'failed' | 'timeout' | 'canceled' | 'lease_lost';
 
 export interface ExecCommandDefinition {
@@ -107,7 +105,7 @@ class OutputCollector {
   }
 
   write(rawChunk: unknown, pause?: () => void, resume?: () => void) {
-    const text = redactObservabilityText(String(rawChunk));
+    const text = String(rawChunk);
     const nextSizeBytes = this.sizeBytes + Buffer.byteLength(text);
     const shouldInline = !this.writeStream && nextSizeBytes <= this.options.maxInlineLogBytes;
 

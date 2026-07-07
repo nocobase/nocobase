@@ -309,7 +309,12 @@ describe('agent gateway daemon runner', () => {
         }),
       ]),
     );
-    expect(JSON.stringify(requester.calls)).not.toContain('RUNNER_TOKEN_SECRET');
+    expect(
+      runEventBodies.some(
+        (body) =>
+          body.source === 'stdout' && typeof body.message === 'string' && body.message.includes('RUNNER_TOKEN_SECRET'),
+      ),
+    ).toBe(true);
   });
 
   it('injects installed Skill paths into the agent prompt and registers declared artifacts', async () => {
@@ -330,6 +335,18 @@ describe('agent gateway daemon runner', () => {
     await fs.mkdir(path.join(runDir, 'browser-screenshots'), { recursive: true });
     await fs.writeFile(path.join(runDir, 'report.html'), '<html><body>batch report</body></html>');
     await fs.writeFile(path.join(runDir, 'report.json'), '{"durationMs":1234,"totalTokens":5678}');
+    await fs.writeFile(
+      path.join(runDir, 'browser-verification.json'),
+      JSON.stringify({
+        status: 'passed',
+        tasks: [
+          {
+            taskId: 'ai-product-intel-light',
+            screenshots: ['browser-screenshots/overview.png'],
+          },
+        ],
+      }),
+    );
     await fs.writeFile(
       path.join(runDir, 'browser-screenshots', 'overview.png'),
       Buffer.from(
@@ -356,6 +373,7 @@ describe('agent gateway daemon runner', () => {
             artifactGlobs: [
               'runs/nb-opencode-ui-batch/*/report.html',
               'runs/nb-opencode-ui-batch/*/report.json',
+              'runs/nb-opencode-ui-batch/*/browser-verification.json',
               'runs/nb-opencode-ui-batch/*/browser-screenshots/**/*',
             ],
             skillVersions: [
@@ -430,7 +448,7 @@ describe('agent gateway daemon runner', () => {
     expect(result.status).toBe('succeeded');
     expect(executedArgs[0].join('\n')).toContain(path.join(installedSkillPath, 'SKILL.md'));
     const artifactCalls = requester.calls.filter((call) => call.path.endsWith('/artifacts:register'));
-    expect(artifactCalls).toHaveLength(3);
+    expect(artifactCalls).toHaveLength(5);
     expect(artifactCalls.map((call) => call.body?.artifactKey)).not.toEqual(
       expect.arrayContaining([
         'declared:runs/nb-opencode-ui-batch/old-run/report.html',
@@ -439,6 +457,11 @@ describe('agent gateway daemon runner', () => {
     );
     expect(artifactCalls.map((call) => call.body)).toEqual(
       expect.arrayContaining([
+        expect.objectContaining({
+          artifactKey: 'declared:artifact-manifest.json',
+          artifactType: 'artifact-manifest',
+          mimeType: 'application/json',
+        }),
         expect.objectContaining({
           artifactKey: 'declared:runs/nb-opencode-ui-batch/run-1/report.html',
           artifactType: 'html-report',
@@ -452,6 +475,12 @@ describe('agent gateway daemon runner', () => {
           contentText: '{"durationMs":1234,"totalTokens":5678}',
         }),
         expect.objectContaining({
+          artifactKey: 'declared:runs/nb-opencode-ui-batch/run-1/browser-verification.json',
+          artifactType: 'json-report',
+          mimeType: 'application/json',
+          contentText: expect.stringContaining('"status":"passed"'),
+        }),
+        expect.objectContaining({
           artifactKey: 'declared:runs/nb-opencode-ui-batch/run-1/browser-screenshots/overview.png',
           artifactType: 'image',
           mimeType: 'image/png',
@@ -463,6 +492,13 @@ describe('agent gateway daemon runner', () => {
         }),
       ]),
     );
+    const manifestCall = artifactCalls.find((call) => call.body?.artifactKey === 'declared:artifact-manifest.json');
+    expect(manifestCall?.body?.contentText).toBeTruthy();
+    const manifest = JSON.parse(String(manifestCall?.body?.contentText)) as JsonRecord;
+    expect(manifest).toMatchObject({
+      referencedScreenshots: ['runs/nb-opencode-ui-batch/run-1/browser-screenshots/overview.png'],
+      missingReferencedScreenshots: [],
+    });
     const harnessProgressCall = requester.calls.find(
       (call) =>
         call.path.endsWith('/events:append') &&
@@ -482,7 +518,7 @@ describe('agent gateway daemon runner', () => {
     expect(completeCall?.body).toMatchObject({
       resultSummary: {
         declaredArtifacts: {
-          declaredArtifactCount: 3,
+          declaredArtifactCount: 5,
         },
       },
     });
@@ -1535,6 +1571,116 @@ describe('agent gateway daemon runner', () => {
     }
   });
 
+  it('runs structured Codex tmux commands with non-TTY stdout and parses child-agent events', async () => {
+    if (!(await hasTmux())) {
+      return;
+    }
+
+    const workspace = path.join(tempDir, 'workspace');
+    await fs.mkdir(workspace, { recursive: true });
+    const fakeCodexPath = path.join(tempDir, 'fake-codex.js');
+    await fs.writeFile(
+      fakeCodexPath,
+      [
+        'if (process.stdout.isTTY) {',
+        '  process.stdout.write("session id: terminal-mode\\ncollab: SpawnAgent\\nAquinas replied Hi\\n");',
+        '  process.exit(0);',
+        '}',
+        'const events = [',
+        '  { type: "thread.started", thread_id: "019f1eb9-2c3a-7f77-9004-8c81f7abf7b1" },',
+        '  { type: "item.completed", item: { id: "spawn-aquinas", type: "collab_tool_call", tool: "spawn_agent", sender_thread_id: "root-thread", receiver_thread_ids: ["thread-aquinas"], prompt: "You are a sub-agent named Aquinas. Reply exactly: Hi", agents_states: { "thread-aquinas": { status: "pending_init", message: null } }, status: "completed" } },',
+        '  { type: "item.completed", item: { id: "wait-aquinas", type: "collab_tool_call", tool: "wait", sender_thread_id: "root-thread", receiver_thread_ids: ["thread-aquinas"], prompt: null, agents_states: { "thread-aquinas": { status: "completed", message: "Hi" } }, status: "completed" } },',
+        '  { type: "item.completed", item: { id: "cmd-progress", type: "command_execution", command: "node scripts/run-suite.mjs", aggregated_output: "AGW_PROGRESS phase=batch status=started message=hello\\n", exit_code: 0, status: "completed" } },',
+        '  { type: "item.completed", item: { id: "final-message", type: "agent_message", text: "Aquinas replied Hi." } }',
+        '];',
+        'for (const event of events) process.stdout.write(`${JSON.stringify(event)}\\n`);',
+      ].join('\n'),
+    );
+
+    const requester = new RunnerRequester({
+      claimPayload: {
+        claimed: true,
+        runId: 'run-1',
+        claimToken: 'ag_claim_CLAIM_TOKEN_SECRET',
+        claimAttempt: 1,
+        leaseVersion: 1,
+        run: {
+          id: 'run-1',
+          executionPayloadJson: {
+            commandKey: 'codex',
+            prompt: 'Start one sub-agent named Aquinas and ask it to say Hi.',
+            cwd: '.',
+          },
+        },
+      },
+    });
+    const gateway = new AgentGatewayDaemonNodeClient(requester, {
+      serverUrl: 'https://nocobase.example.test',
+      nodeId: 'node-1',
+      nodeKey: 'node-1',
+      nodeToken: 'ag_node_NODE_TOKEN_SECRET',
+      savedAt: new Date().toISOString(),
+    });
+
+    try {
+      const result = await runDaemonOnce({
+        gateway,
+        allowlist: {
+          codex: {
+            commandKey: 'codex',
+            executable: process.execPath,
+            baseArgs: [fakeCodexPath],
+            defaultTimeoutMs: 5000,
+          },
+        },
+        workspaceRoot: workspace,
+        skillsRoot: path.join(tempDir, 'skills'),
+        artifactDir: path.join(tempDir, 'artifacts'),
+        terminalBackend: 'tmux',
+        runHeartbeatIntervalMs: 60_000,
+        detectOptions: {
+          probeCommand: async (candidates) => ({
+            available: candidates.includes('codex'),
+            command: candidates[0],
+            version: 'codex 1.0.0',
+          }),
+        },
+      });
+
+      expect(result.status).toBe('succeeded');
+      expect(
+        requester.calls.some((call) => call.body?.message === 'hello' && call.body?.eventType === 'batch.started'),
+      ).toBe(true);
+      const conversationEvents = requester.calls.flatMap((call) => getRequestEvents(call));
+      expect(conversationEvents).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            source: 'codex',
+            eventType: 'agent.tool.completed',
+            providerEventId: 'item.completed:wait-aquinas',
+            contentJson: expect.objectContaining({
+              collab: expect.objectContaining({
+                tool: 'wait',
+              }),
+            }),
+          }),
+          expect.objectContaining({
+            source: 'codex',
+            eventType: 'agent.command.completed',
+            providerEventId: 'item.completed:cmd-progress',
+            contentJson: expect.objectContaining({
+              output: expect.stringContaining('AGW_PROGRESS phase=batch status=started message=hello'),
+            }),
+          }),
+        ]),
+      );
+    } finally {
+      await terminateTmuxSession('ag-run-run-1').catch(() => {
+        // The completed session may already have been removed.
+      });
+    }
+  });
+
   it('truncates multi-megabyte log artifacts and still completes the run', async () => {
     const workspace = path.join(tempDir, 'workspace');
     await fs.mkdir(workspace, { recursive: true });
@@ -1602,7 +1748,9 @@ describe('agent gateway daemon runner', () => {
     });
 
     expect(result.status).toBe('succeeded');
-    const artifactCall = requester.calls.find((call) => call.path.endsWith('/artifacts:register'));
+    const artifactCall = requester.calls.find(
+      (call) => call.path.endsWith('/artifacts:register') && call.body?.artifactKey === 'stdout-main',
+    );
     expect(artifactCall).toBeTruthy();
     const artifactBody = (artifactCall?.body || {}) as JsonRecord;
     expect(String(artifactBody.contentText).length).toBeLessThan(1024 * 1024);
@@ -1934,7 +2082,7 @@ describe('agent gateway daemon runner', () => {
     const workspace = path.join(tempDir, 'workspace');
     await fs.mkdir(workspace, { recursive: true });
     const requester = new RunnerRequester({
-      cancelOnRunHeartbeatCall: 4,
+      cancelOnRunHeartbeatCall: 5,
       failCompleteOnce: true,
       claimPayload: {
         claimed: true,

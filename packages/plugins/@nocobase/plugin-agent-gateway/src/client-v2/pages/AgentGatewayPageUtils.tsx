@@ -13,6 +13,7 @@ import React from 'react';
 export interface AgentGatewayApiResponse<T> {
   data?: {
     data?: T;
+    meta?: Record<string, unknown>;
   };
 }
 
@@ -203,7 +204,9 @@ export function statusTag(value?: string) {
     claimed: 'cyan',
     syncing_skills: 'geekblue',
     running: 'processing',
+    finalizing: 'purple',
     canceling: 'orange',
+    stalled: 'orange',
     succeeded: 'green',
     failed: 'red',
     canceled: 'default',

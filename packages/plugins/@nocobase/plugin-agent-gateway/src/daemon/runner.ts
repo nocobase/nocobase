@@ -12,8 +12,8 @@ import { createReadStream } from 'fs';
 import { promises as fs } from 'fs';
 import { createInterface } from 'readline';
 
-import { buildTextArtifactUpload, collectDeclaredArtifactUploads } from './artifactUpload';
-import { getAgentAdapter } from './adapters';
+import { buildTextArtifactUpload, collectDeclaredArtifactCollection } from './artifactUpload';
+import { getAgentAdapter, type AgentAdapter, type NormalizedAgentEvent } from './adapters';
 import { AgentGatewayDaemonNodeClient } from './gateway';
 import { TerminalEnd } from '../shared/terminalStreamProtocol';
 import {
@@ -124,6 +124,7 @@ interface RunProgressReporter {
   getWarnings(): string[];
 }
 
+type RunHeartbeatStatus = 'syncing_skills' | 'running' | 'finalizing';
 type AgentCommandOutputMode = 'structured' | 'terminal';
 
 interface ExecutionCommandSpec {
@@ -445,19 +446,20 @@ async function reportDeclaredArtifacts(options: {
   cwd: string;
   workspaceRoot: string;
 }) {
-  const uploads = await collectDeclaredArtifactUploads({
+  const collection = await collectDeclaredArtifactCollection({
     payload: options.payload,
     cwd: options.cwd,
     workspaceRoot: options.workspaceRoot,
     trustedArtifactRoots: getInstalledSkillArtifactRoots(options.payload),
     modifiedSinceMs: getDeclaredArtifactModifiedSinceMs(options.lease, options.payload),
   });
-  for (const upload of uploads) {
+  for (const upload of collection.uploads) {
     await options.gateway.registerArtifact(options.lease, upload);
   }
   return {
-    declaredArtifactCount: uploads.length,
-    declaredArtifactKeys: uploads.map((upload) => upload.artifactKey),
+    declaredArtifactCount: collection.uploads.length,
+    declaredArtifactKeys: collection.uploads.map((upload) => upload.artifactKey),
+    artifactManifest: collection.manifest,
   };
 }
 
@@ -564,22 +566,26 @@ async function collectProviderConversationEvents(provider: string | undefined, r
   for (const outputRecord of [result.stdout, result.stderr]) {
     for await (const rawLine of readOutputLinesForProviderEvents(outputRecord)) {
       for (const event of adapter.normalizeEvent({ rawLine, source: provider })) {
-        events.push({
-          source: adapter.provider,
-          sequence,
-          eventType: event.eventType,
-          providerEventId: event.providerEventId || undefined,
-          correlationId: event.correlationId || undefined,
-          confidence: event.confidence ?? undefined,
-          contentText: event.message || undefined,
-          contentJson: event.payloadJson || {},
-        });
+        events.push(buildConversationEventRecord(adapter.provider, sequence, event));
         sequence += 1;
       }
     }
   }
 
   return events;
+}
+
+function buildConversationEventRecord(source: string, sequence: number, event: NormalizedAgentEvent): JsonRecord {
+  return {
+    source,
+    sequence,
+    eventType: event.eventType,
+    providerEventId: event.providerEventId || undefined,
+    correlationId: event.correlationId || undefined,
+    confidence: event.confidence ?? undefined,
+    contentText: event.message || undefined,
+    contentJson: event.payloadJson || {},
+  };
 }
 
 async function reportProviderSessionIfDetected(options: {
@@ -650,47 +656,126 @@ async function reportProviderSessionAndCollectWarnings(options: {
 function createLiveTimelineReporter(options: {
   gateway: AgentGatewayDaemonNodeClient;
   getLease(): RunLease;
+  provider?: string;
 }): LiveTimelineReporter {
-  let buffer = '';
-  let sequence = 0;
+  const adapter: AgentAdapter | null = options.provider ? getAgentAdapter(options.provider) : null;
+  const structuredAdapter = adapter?.capabilities.structuredEvents ? adapter : null;
+  let lineBuffer = '';
+  let fallbackBuffer = '';
+  let fallbackSequence = 0;
+  let structuredSequence = 0;
+  const pendingStructuredEvents: JsonRecord[] = [];
   let lastFlushAt = 0;
   const warnings: string[] = [];
+
+  const isPayloadTooLargeError = (error: unknown) => {
+    const message = error instanceof Error ? error.message : String(error);
+    return /(?:HTTP\s*413|413\b|too large)/i.test(message);
+  };
 
   const appendWarning = (error: unknown) => {
     const message = error instanceof Error ? error.message : String(error);
     warnings.push(`Live timeline append failed: ${message}`);
   };
 
-  const flush = async () => {
-    if (!buffer) {
+  const queueFallbackText = (text: string) => {
+    if (!text) {
       return;
     }
-    const content = buffer;
-    buffer = '';
-    const events: JsonRecord[] = [];
-    for (let offset = 0; offset < content.length; offset += LIVE_TIMELINE_MAX_CHARS_PER_EVENT) {
-      const chunk = content.slice(offset, offset + LIVE_TIMELINE_MAX_CHARS_PER_EVENT);
-      sequence += 1;
-      events.push({
-        source: LIVE_TIMELINE_SOURCE,
-        sequence,
-        eventType: 'agent.message',
-        contentText: chunk,
-        contentJson: {
-          live: true,
-          stream: 'terminal',
-          chunkLength: chunk.length,
-          chunkBytes: Buffer.byteLength(chunk),
-        },
+    fallbackBuffer += fallbackBuffer ? `\n${text}` : text;
+  };
+
+  const queueStructuredLine = (line: string) => {
+    const normalizedEvents =
+      structuredAdapter?.normalizeEvent({ rawLine: line, source: structuredAdapter.provider }) || [];
+    if (!normalizedEvents.length) {
+      queueFallbackText(line);
+      return;
+    }
+    for (const event of normalizedEvents) {
+      structuredSequence += 1;
+      pendingStructuredEvents.push(buildConversationEventRecord(structuredAdapter.provider, structuredSequence, event));
+    }
+  };
+
+  const processCompleteLines = (text: string) => {
+    if (!text) {
+      return;
+    }
+    if (!structuredAdapter) {
+      queueFallbackText(text);
+      return;
+    }
+
+    lineBuffer += text;
+    const lines = lineBuffer.split(/\r?\n/);
+    lineBuffer = lines.pop() || '';
+    for (const line of lines) {
+      queueStructuredLine(line);
+    }
+  };
+
+  const processRemainingLine = () => {
+    if (!lineBuffer) {
+      return;
+    }
+    const line = lineBuffer;
+    lineBuffer = '';
+    queueStructuredLine(line);
+  };
+
+  const flushQueuedEvents = async (events: JsonRecord[]) => {
+    if (!events.length) {
+      return;
+    }
+    for (let index = 0; index < events.length; index += MAX_CONVERSATION_EVENTS_PER_APPEND) {
+      await options.gateway.appendConversationEvents(options.getLease(), {
+        events: events.slice(index, index + MAX_CONVERSATION_EVENTS_PER_APPEND),
       });
     }
-    try {
-      for (let index = 0; index < events.length; index += MAX_CONVERSATION_EVENTS_PER_APPEND) {
-        await options.gateway.appendConversationEvents(options.getLease(), {
-          events: events.slice(index, index + MAX_CONVERSATION_EVENTS_PER_APPEND),
+  };
+
+  const flush = async (includePartialLine: boolean) => {
+    if (includePartialLine) {
+      processRemainingLine();
+    }
+    if (!pendingStructuredEvents.length && !fallbackBuffer) {
+      return;
+    }
+    const structuredEvents = pendingStructuredEvents.splice(0, pendingStructuredEvents.length);
+    const fallbackText = fallbackBuffer;
+    fallbackBuffer = '';
+    const fallbackEvents: JsonRecord[] = [];
+    if (fallbackText) {
+      for (let offset = 0; offset < fallbackText.length; offset += LIVE_TIMELINE_MAX_CHARS_PER_EVENT) {
+        const chunk = fallbackText.slice(offset, offset + LIVE_TIMELINE_MAX_CHARS_PER_EVENT);
+        fallbackSequence += 1;
+        fallbackEvents.push({
+          source: LIVE_TIMELINE_SOURCE,
+          sequence: fallbackSequence,
+          eventType: 'agent.message',
+          contentText: chunk,
+          contentJson: {
+            live: true,
+            stream: 'terminal',
+            chunkLength: chunk.length,
+            chunkBytes: Buffer.byteLength(chunk),
+          },
         });
       }
+    }
+
+    try {
+      await flushQueuedEvents([...structuredEvents, ...fallbackEvents]);
     } catch (error) {
+      if (!isPayloadTooLargeError(error)) {
+        pendingStructuredEvents.unshift(...structuredEvents);
+        fallbackBuffer = fallbackText
+          ? fallbackBuffer
+            ? `${fallbackText}\n${fallbackBuffer}`
+            : fallbackText
+          : fallbackBuffer;
+      }
       appendWarning(error);
     } finally {
       lastFlushAt = Date.now();
@@ -702,15 +787,16 @@ function createLiveTimelineReporter(options: {
       if (!text) {
         return;
       }
-      buffer += text;
+      processCompleteLines(text);
       const shouldFlush =
-        buffer.length >= LIVE_TIMELINE_MAX_CHARS_PER_EVENT ||
+        fallbackBuffer.length >= LIVE_TIMELINE_MAX_CHARS_PER_EVENT ||
+        pendingStructuredEvents.length >= MAX_CONVERSATION_EVENTS_PER_APPEND ||
         Date.now() - lastFlushAt >= LIVE_TIMELINE_FLUSH_INTERVAL_MS;
       if (shouldFlush) {
-        await flush();
+        await flush(false);
       }
     },
-    flush,
+    flush: async () => flush(true),
     getWarnings: () => [...warnings],
   };
 }
@@ -763,12 +849,57 @@ function parseHarnessProgressMarker(rawLine: string): RunProgressAppendOptions |
   };
 }
 
+function collectStringValues(value: unknown, strings: string[]) {
+  if (typeof value === 'string') {
+    strings.push(value);
+    return;
+  }
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      collectStringValues(item, strings);
+    }
+    return;
+  }
+  if (!isRecord(value)) {
+    return;
+  }
+  for (const item of Object.values(value)) {
+    collectStringValues(item, strings);
+  }
+}
+
+function extractHarnessProgressMarkerLines(rawLine: string) {
+  const trimmed = rawLine.trim();
+  if (!trimmed) {
+    return [];
+  }
+  if (trimmed.startsWith(PROGRESS_MARKER_PREFIX)) {
+    return [trimmed];
+  }
+  if (!trimmed.includes(PROGRESS_MARKER_PREFIX) || !trimmed.startsWith('{')) {
+    return [];
+  }
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(trimmed) as unknown;
+  } catch {
+    return [];
+  }
+  const strings: string[] = [];
+  collectStringValues(parsed, strings);
+  return strings
+    .flatMap((value) => value.split(/\r?\n/))
+    .map((value) => value.trim())
+    .filter((value) => value.startsWith(PROGRESS_MARKER_PREFIX));
+}
+
 function createRunProgressReporter(options: {
   gateway: AgentGatewayDaemonNodeClient;
   getLease(): RunLease;
 }): RunProgressReporter {
   const sequenceBySource = new Map<string, number>();
   const warnings: string[] = [];
+  let harnessLineBuffer = '';
 
   const appendWarning = (error: unknown) => {
     const message = error instanceof Error ? error.message : String(error);
@@ -814,10 +945,15 @@ function createRunProgressReporter(options: {
       if (!text) {
         return;
       }
-      for (const rawLine of text.split(/\r?\n/)) {
-        const event = parseHarnessProgressMarker(rawLine);
-        if (event) {
-          await append(event);
+      harnessLineBuffer += text;
+      const rawLines = harnessLineBuffer.split(/\r?\n/);
+      harnessLineBuffer = rawLines.pop() || '';
+      for (const rawLine of rawLines) {
+        for (const markerLine of extractHarnessProgressMarkerLines(rawLine)) {
+          const event = parseHarnessProgressMarker(markerLine);
+          if (event) {
+            await append(event);
+          }
         }
       }
     },
@@ -868,7 +1004,7 @@ function heartbeatWhileRunPhase(options: {
   gateway: AgentGatewayDaemonNodeClient;
   getLease(): RunLease;
   setLease(lease: RunLease): void;
-  status: 'syncing_skills' | 'running';
+  status: RunHeartbeatStatus | (() => RunHeartbeatStatus);
   cancelController: AbortController;
   leaseLostController: AbortController;
   intervalMs: number;
@@ -879,7 +1015,7 @@ function heartbeatWhileRunPhase(options: {
       return;
     }
     inFlight = options.gateway
-      .heartbeatRun(options.getLease(), options.status)
+      .heartbeatRun(options.getLease(), typeof options.status === 'function' ? options.status() : options.status)
       .then((lease) => {
         options.setLease({
           ...options.getLease(),
@@ -1405,15 +1541,20 @@ export async function executeClaimedRun(
   const terminalBackend = getRequestedTerminalBackend(payload, options.terminalBackend);
   const tmuxSessionName = getManagedTmuxSessionName(claimedLease.runId);
   const usesManagedTmux = terminalBackend === 'tmux' && !options.executeCommand;
+  const requestedProvider = getCanonicalProvider(activeLease(), payload);
+  const requestedAdapter = requestedProvider ? getAgentAdapter(requestedProvider) : null;
+  const commandOutputMode: AgentCommandOutputMode =
+    !usesManagedTmux || requestedAdapter?.capabilities.structuredEvents ? 'structured' : 'terminal';
   let terminalStream: TerminalStreamHandle | null = null;
   let liveTimelineReporter: LiveTimelineReporter | null = null;
   const cancelController = new AbortController();
   const leaseLostController = new AbortController();
   let stopHeartbeat: (() => Promise<void>) | null = null;
   let stopControlRequests: (() => Promise<void>) | null = null;
+  let runHeartbeatStatus: RunHeartbeatStatus = 'running';
 
   try {
-    const commandSpec = getExecutionCommandSpec(activeLease(), cwd, usesManagedTmux ? 'terminal' : 'structured');
+    const commandSpec = getExecutionCommandSpec(activeLease(), cwd, commandOutputMode);
     await progressReporter.append({
       phase: 'agent.process',
       status: 'started',
@@ -1427,6 +1568,7 @@ export async function executeClaimedRun(
       liveTimelineReporter = createLiveTimelineReporter({
         gateway: options.gateway,
         getLease: activeLease,
+        provider: commandSpec.provider,
       });
       terminalStream = createRunTerminalStream({
         runOptions: options,
@@ -1462,7 +1604,7 @@ export async function executeClaimedRun(
       setLease: (nextLease) => {
         lease = nextLease;
       },
-      status: 'running',
+      status: () => runHeartbeatStatus,
       cancelController,
       leaseLostController,
       intervalMs: options.runHeartbeatIntervalMs || DEFAULT_RUN_HEARTBEAT_INTERVAL_MS,
@@ -1480,6 +1622,7 @@ export async function executeClaimedRun(
           cancelSignal: cancelController.signal,
           leaseLostSignal: leaseLostController.signal,
           artifactDir: options.artifactDir,
+          outputMode: commandOutputMode,
           onOutputChunk: async (chunk) => {
             await terminalStream?.appendText(chunk);
             await liveTimelineReporter?.appendText(chunk);
@@ -1516,9 +1659,18 @@ export async function executeClaimedRun(
       },
     });
     await liveTimelineReporter?.flush();
-    if (stopHeartbeat) {
-      await stopHeartbeat();
-      stopHeartbeat = null;
+    runHeartbeatStatus = 'finalizing';
+    try {
+      const finalizingLease = await options.gateway.heartbeatRun(activeLease(), 'finalizing');
+      lease = {
+        ...activeLease(),
+        ...finalizingLease,
+      };
+      if (finalizingLease.cancelRequested) {
+        abortForRunCancel(cancelController, finalizingLease);
+      }
+    } catch {
+      leaseLostController.abort();
     }
     if (stopControlRequests) {
       await stopControlRequests();
@@ -1531,42 +1683,6 @@ export async function executeClaimedRun(
       }
       return {
         status: 'lease_lost',
-        runId: claimedLease.runId,
-      };
-    }
-    const refreshedLeaseStatus = await refreshRunLeaseBeforeTerminal({
-      gateway: options.gateway,
-      getLease: activeLease,
-      setLease: (nextLease) => {
-        lease = nextLease;
-      },
-      cancelController,
-      leaseLostController,
-    });
-    if (refreshedLeaseStatus === 'lease_lost') {
-      if (usesManagedTmux) {
-        await closeTmuxTerminalQuietly(options, activeLease(), claimedLease.runId, result.exitCode);
-        await terminalStream?.end('disconnected');
-      }
-      return {
-        status: 'lease_lost',
-        runId: claimedLease.runId,
-      };
-    }
-    if (refreshedLeaseStatus === 'cancel_requested') {
-      if (usesManagedTmux) {
-        await closeTmuxTerminalQuietly(options, activeLease(), claimedLease.runId, result.exitCode);
-        await terminalStream?.end('canceled');
-      }
-      await reportProviderSessionAndCollectWarnings({
-        gateway: options.gateway,
-        lease: activeLease(),
-        provider: commandSpec.provider,
-        result,
-      });
-      await options.gateway.cancelAckRun(activeLease());
-      return {
-        status: 'canceled',
         runId: claimedLease.runId,
       };
     }
@@ -1612,6 +1728,38 @@ export async function executeClaimedRun(
         status: 'failed',
         message: error instanceof Error ? error.message : String(error),
       });
+    }
+    if (stopHeartbeat) {
+      await stopHeartbeat();
+      stopHeartbeat = null;
+    }
+    if (leaseLostController.signal.aborted) {
+      return {
+        status: 'lease_lost',
+        runId: claimedLease.runId,
+      };
+    }
+    const refreshedLeaseStatus = await refreshRunLeaseBeforeTerminal({
+      gateway: options.gateway,
+      getLease: activeLease,
+      setLease: (nextLease) => {
+        lease = nextLease;
+      },
+      cancelController,
+      leaseLostController,
+    });
+    if (refreshedLeaseStatus === 'lease_lost') {
+      return {
+        status: 'lease_lost',
+        runId: claimedLease.runId,
+      };
+    }
+    if (refreshedLeaseStatus === 'cancel_requested') {
+      await options.gateway.cancelAckRun(activeLease());
+      return {
+        status: 'canceled',
+        runId: claimedLease.runId,
+      };
     }
     const terminalResult: ExecDriverResult =
       cancelController.signal.aborted && result.status === 'succeeded'

@@ -213,7 +213,7 @@ describe('agent gateway conversation event APIs', () => {
     };
   }
 
-  it('appends, dedupes, redacts, and lists normalized conversation events by run and session', async () => {
+  it('appends, dedupes, preserves, and lists normalized conversation events by run and session', async () => {
     const runner = await createRunner();
     const run = await createRun(runner, 'conversation-run-1');
     const claim = await claimRun(runner, run.id);
@@ -259,6 +259,13 @@ describe('agent gateway conversation event APIs', () => {
             contentText: 'visible timeline message',
             contentJson: {
               note: 'safe',
+              participant: {
+                id: 'sub-agent:aquinas',
+                type: 'sub-agent',
+                name: 'Aquinas',
+                parentId: 'agent:root',
+                provider: 'codex',
+              },
             },
           },
         ],
@@ -268,14 +275,14 @@ describe('agent gateway conversation event APIs', () => {
     const appended = getData(appendResponse).events as Array<Record<string, unknown>>;
     expect(appended).toHaveLength(2);
     expect(appended[0].sessionId).toBe(sessionId);
-    expect(String(appended[0].contentText)).toContain('Authorization: [REDACTED]');
-    expect(JSON.stringify(appended[0])).not.toContain('CONVERSATION_TEXT_SECRET');
+    expect(String(appended[0].contentText)).toContain('Authorization: Bearer CONVERSATION_TEXT_SECRET');
     expect(appended[0].contentJson).toMatchObject({
-      token: '[REDACTED]',
-      command: '[REDACTED]',
+      token: 'CONVERSATION_JSON_SECRET',
+      command: 'CONVERSATION_COMMAND_SECRET',
     });
-    expect(JSON.stringify(appended[0])).not.toContain('CONVERSATION_JSON_SECRET');
-    expect(JSON.stringify(appended[0])).not.toContain('CONVERSATION_COMMAND_SECRET');
+    expect(JSON.stringify(appended[0])).toContain('CONVERSATION_TEXT_SECRET');
+    expect(JSON.stringify(appended[0])).toContain('CONVERSATION_JSON_SECRET');
+    expect(JSON.stringify(appended[0])).toContain('CONVERSATION_COMMAND_SECRET');
     const runAfterAppend = await app.db.getRepository('agRuns').findOne({
       filterByTk: run.id,
     });
@@ -312,6 +319,15 @@ describe('agent gateway conversation event APIs', () => {
     expect(runEvents[1]).toMatchObject({
       contentText: 'visible timeline message',
       correlationId: 'item-1',
+      contentJson: {
+        participant: {
+          id: 'sub-agent:aquinas',
+          type: 'sub-agent',
+          name: 'Aquinas',
+          parentId: 'agent:root',
+          provider: 'codex',
+        },
+      },
     });
 
     const sessionListResponse = await rootAgent.get(
@@ -320,7 +336,7 @@ describe('agent gateway conversation event APIs', () => {
     expect(sessionListResponse.status).toBe(200);
     const sessionEvents = sessionListResponse.body.data as Array<Record<string, unknown>>;
     expect(sessionEvents).toHaveLength(2);
-    expect(JSON.stringify(sessionEvents)).not.toContain('CONVERSATION_TEXT_SECRET');
+    expect(JSON.stringify(sessionEvents)).toContain('CONVERSATION_TEXT_SECRET');
 
     const orphanSession = await app.db.getRepository('agAgentSessions').create({
       values: {
@@ -336,10 +352,11 @@ describe('agent gateway conversation event APIs', () => {
     expect(orphanSessionListResponse.status).toBe(404);
   });
 
-  it('downgrades command events to semantic timeline text', async () => {
+  it('keeps command events semantic in timeline text while preserving command details', async () => {
     const runner = await createRunner();
     const run = await createRun(runner, 'conversation-run-command-text');
     const claim = await claimRun(runner, run.id);
+    const rawCommandOutput = 'RAW_COMMAND_AGGREGATED_OUTPUT_SHOULD_BE_TOOL_OUTPUT';
 
     const appendResponse = await appendConversationEvents(
       runner,
@@ -351,10 +368,18 @@ describe('agent gateway conversation event APIs', () => {
         providerEventId: 'item.completed:command-1',
         contentText: 'RAW_COMMAND_OUTPUT_SHOULD_NOT_BE_TIMELINE',
         contentJson: {
+          command: 'node scripts/run-suite.mjs --tasks tasks.yaml',
           status: 'completed',
           exitCode: 0,
-          stdout: 'RAW_COMMAND_STDOUT_SHOULD_NOT_BE_TIMELINE',
-          aggregated_output: 'RAW_COMMAND_AGGREGATED_OUTPUT_SHOULD_NOT_BE_TIMELINE',
+          participant: {
+            id: 'sub-agent:aquinas',
+            type: 'sub-agent',
+            name: 'Aquinas',
+          },
+          stdout: 'RAW_COMMAND_STDOUT_SHOULD_BE_TOOL_OUTPUT',
+          stderr: 'RAW_COMMAND_STDERR_SHOULD_BE_TOOL_OUTPUT',
+          aggregated_output: rawCommandOutput,
+          durationMs: 1234,
         },
       }),
     );
@@ -364,13 +389,23 @@ describe('agent gateway conversation event APIs', () => {
       eventType: 'agent.command.completed',
       contentText: 'Command completed',
       contentJson: {
+        participant: {
+          id: 'sub-agent:aquinas',
+          type: 'sub-agent',
+          name: 'Aquinas',
+        },
         status: 'completed',
         exitCode: 0,
+        command: 'node scripts/run-suite.mjs --tasks tasks.yaml',
+        stdout: 'RAW_COMMAND_STDOUT_SHOULD_BE_TOOL_OUTPUT',
+        stderr: 'RAW_COMMAND_STDERR_SHOULD_BE_TOOL_OUTPUT',
+        aggregated_output: rawCommandOutput,
+        durationMs: 1234,
       },
     });
     expect(JSON.stringify(appended)).not.toContain('RAW_COMMAND_OUTPUT_SHOULD_NOT_BE_TIMELINE');
-    expect(JSON.stringify(appended)).not.toContain('RAW_COMMAND_STDOUT_SHOULD_NOT_BE_TIMELINE');
-    expect(JSON.stringify(appended)).not.toContain('RAW_COMMAND_AGGREGATED_OUTPUT_SHOULD_NOT_BE_TIMELINE');
+    expect(JSON.stringify(appended)).toContain('RAW_COMMAND_STDOUT_SHOULD_BE_TOOL_OUTPUT');
+    expect(JSON.stringify(appended)).toContain('RAW_COMMAND_AGGREGATED_OUTPUT_SHOULD_BE_TOOL_OUTPUT');
 
     const storedEvent = await app.db.getRepository('agAgentConversationEvents').findOne({
       filterByTk: appended[0].id,
@@ -379,10 +414,14 @@ describe('agent gateway conversation event APIs', () => {
     expect(storedEvent?.get('contentJson')).toMatchObject({
       status: 'completed',
       exitCode: 0,
+      command: 'node scripts/run-suite.mjs --tasks tasks.yaml',
+      stdout: 'RAW_COMMAND_STDOUT_SHOULD_BE_TOOL_OUTPUT',
+      aggregated_output: rawCommandOutput,
+      durationMs: 1234,
     });
     expect(JSON.stringify(storedEvent?.toJSON())).not.toContain('RAW_COMMAND_OUTPUT_SHOULD_NOT_BE_TIMELINE');
-    expect(JSON.stringify(storedEvent?.toJSON())).not.toContain('RAW_COMMAND_STDOUT_SHOULD_NOT_BE_TIMELINE');
-    expect(JSON.stringify(storedEvent?.toJSON())).not.toContain('RAW_COMMAND_AGGREGATED_OUTPUT_SHOULD_NOT_BE_TIMELINE');
+    expect(JSON.stringify(storedEvent?.toJSON())).toContain('RAW_COMMAND_STDOUT_SHOULD_BE_TOOL_OUTPUT');
+    expect(JSON.stringify(storedEvent?.toJSON())).toContain('RAW_COMMAND_AGGREGATED_OUTPUT_SHOULD_BE_TOOL_OUTPUT');
 
     const runListResponse = await rootAgent.get(`/api/agent-gateway/runs/${run.id}/conversation-events:list`);
     expect(runListResponse.status).toBe(200);
@@ -392,13 +431,15 @@ describe('agent gateway conversation event APIs', () => {
       contentJson: {
         status: 'completed',
         exitCode: 0,
+        command: 'node scripts/run-suite.mjs --tasks tasks.yaml',
+        stdout: 'RAW_COMMAND_STDOUT_SHOULD_BE_TOOL_OUTPUT',
+        aggregated_output: rawCommandOutput,
+        durationMs: 1234,
       },
     });
     expect(JSON.stringify(runListResponse.body.data)).not.toContain('RAW_COMMAND_OUTPUT_SHOULD_NOT_BE_TIMELINE');
-    expect(JSON.stringify(runListResponse.body.data)).not.toContain('RAW_COMMAND_STDOUT_SHOULD_NOT_BE_TIMELINE');
-    expect(JSON.stringify(runListResponse.body.data)).not.toContain(
-      'RAW_COMMAND_AGGREGATED_OUTPUT_SHOULD_NOT_BE_TIMELINE',
-    );
+    expect(JSON.stringify(runListResponse.body.data)).toContain('RAW_COMMAND_STDOUT_SHOULD_BE_TOOL_OUTPUT');
+    expect(JSON.stringify(runListResponse.body.data)).toContain('RAW_COMMAND_AGGREGATED_OUTPUT_SHOULD_BE_TOOL_OUTPUT');
 
     await app.db.getRepository('agAgentConversationEvents').update({
       filterByTk: appended[0].id,
@@ -407,8 +448,9 @@ describe('agent gateway conversation event APIs', () => {
         contentJson: {
           status: 'failed',
           exitCode: 1,
-          stdout: 'OLD_RAW_COMMAND_STDOUT_SHOULD_NOT_BE_TIMELINE',
-          aggregated_output: 'OLD_RAW_COMMAND_AGGREGATED_OUTPUT_SHOULD_NOT_BE_TIMELINE',
+          command: 'cat old.log',
+          stdout: 'OLD_RAW_COMMAND_STDOUT_SHOULD_BE_TOOL_OUTPUT',
+          aggregated_output: 'OLD_RAW_COMMAND_AGGREGATED_OUTPUT_SHOULD_BE_TOOL_OUTPUT',
         },
       },
     });
@@ -433,11 +475,14 @@ describe('agent gateway conversation event APIs', () => {
       contentJson: {
         status: 'failed',
         exitCode: 1,
+        command: 'cat old.log',
+        stdout: 'OLD_RAW_COMMAND_STDOUT_SHOULD_BE_TOOL_OUTPUT',
+        aggregated_output: 'OLD_RAW_COMMAND_AGGREGATED_OUTPUT_SHOULD_BE_TOOL_OUTPUT',
       },
     });
     expect(JSON.stringify(oldRowRetryEvents)).not.toContain('OLD_RAW_COMMAND_TEXT_SHOULD_NOT_BE_TIMELINE');
-    expect(JSON.stringify(oldRowRetryEvents)).not.toContain('OLD_RAW_COMMAND_STDOUT_SHOULD_NOT_BE_TIMELINE');
-    expect(JSON.stringify(oldRowRetryEvents)).not.toContain('OLD_RAW_COMMAND_AGGREGATED_OUTPUT_SHOULD_NOT_BE_TIMELINE');
+    expect(JSON.stringify(oldRowRetryEvents)).toContain('OLD_RAW_COMMAND_STDOUT_SHOULD_BE_TOOL_OUTPUT');
+    expect(JSON.stringify(oldRowRetryEvents)).toContain('OLD_RAW_COMMAND_AGGREGATED_OUTPUT_SHOULD_BE_TOOL_OUTPUT');
 
     const oldRowListResponse = await rootAgent.get(`/api/agent-gateway/runs/${run.id}/conversation-events:list`);
     expect(oldRowListResponse.status).toBe(200);
@@ -447,13 +492,199 @@ describe('agent gateway conversation event APIs', () => {
       contentJson: {
         status: 'failed',
         exitCode: 1,
+        command: 'cat old.log',
+        stdout: 'OLD_RAW_COMMAND_STDOUT_SHOULD_BE_TOOL_OUTPUT',
+        aggregated_output: 'OLD_RAW_COMMAND_AGGREGATED_OUTPUT_SHOULD_BE_TOOL_OUTPUT',
       },
     });
     expect(JSON.stringify(oldRowListResponse.body.data)).not.toContain('OLD_RAW_COMMAND_TEXT_SHOULD_NOT_BE_TIMELINE');
-    expect(JSON.stringify(oldRowListResponse.body.data)).not.toContain('OLD_RAW_COMMAND_STDOUT_SHOULD_NOT_BE_TIMELINE');
-    expect(JSON.stringify(oldRowListResponse.body.data)).not.toContain(
-      'OLD_RAW_COMMAND_AGGREGATED_OUTPUT_SHOULD_NOT_BE_TIMELINE',
+    expect(JSON.stringify(oldRowListResponse.body.data)).toContain('OLD_RAW_COMMAND_STDOUT_SHOULD_BE_TOOL_OUTPUT');
+    expect(JSON.stringify(oldRowListResponse.body.data)).toContain(
+      'OLD_RAW_COMMAND_AGGREGATED_OUTPUT_SHOULD_BE_TOOL_OUTPUT',
     );
+  });
+
+  it('accepts command output beyond the normal small contentJson limit', async () => {
+    const runner = await createRunner();
+    const run = await createRun(runner, 'conversation-run-large-command-output');
+    const claim = await claimRun(runner, run.id);
+    const largeOutput = 'LARGE_COMMAND_OUTPUT_LINE\n'.repeat(2048);
+
+    const appendResponse = await appendConversationEvents(
+      runner,
+      run.id,
+      leaseValues(claim, {
+        source: 'codex',
+        sequence: 1,
+        eventType: 'agent.command.completed',
+        providerEventId: 'item.completed:large-output-command',
+        contentText: 'raw output should not become timeline text',
+        contentJson: {
+          command: 'node scripts/noisy-command.mjs',
+          status: 'completed',
+          exitCode: 0,
+          output: largeOutput,
+        },
+      }),
+    );
+
+    expect(appendResponse.status).toBe(200);
+    const appended = getData(appendResponse).events as Array<Record<string, unknown>>;
+    expect(appended[0]).toMatchObject({
+      eventType: 'agent.command.completed',
+      contentText: 'Command completed',
+      contentJson: {
+        command: 'node scripts/noisy-command.mjs',
+        output: largeOutput,
+      },
+    });
+
+    const storedEvent = await app.db.getRepository('agAgentConversationEvents').findOne({
+      filterByTk: appended[0].id,
+    });
+    expect(storedEvent?.get('contentJson')).toMatchObject({
+      command: 'node scripts/noisy-command.mjs',
+      output: largeOutput,
+    });
+  });
+
+  it('preserves full tool call input and output for transcript rendering', async () => {
+    const runner = await createRunner();
+    const run = await createRun(runner, 'conversation-run-tool-details');
+    const claim = await claimRun(runner, run.id);
+    const largeOutput = 'TOOL_OUTPUT_LINE\n'.repeat(2048);
+
+    const appendResponse = await appendConversationEvents(
+      runner,
+      run.id,
+      leaseValues(claim, {
+        events: [
+          {
+            source: 'codex',
+            sequence: 1,
+            eventType: 'agent.tool.started',
+            providerEventId: 'response_item:function_call:call-tool-details',
+            correlationId: 'call-tool-details',
+            contentText: 'exec_command',
+            contentJson: {
+              callId: 'call-tool-details',
+              toolName: 'exec_command',
+              input: {
+                cmd: 'node scripts/run-suite.mjs --tasks tasks.yaml',
+                workdir: '/root/work/myskills/skills/nb-opencode-ui-batch',
+              },
+              arguments: {
+                cmd: 'node scripts/run-suite.mjs --tasks tasks.yaml',
+              },
+              command: 'node scripts/run-suite.mjs --tasks tasks.yaml',
+              env: {
+                OPENAI_API_KEY: 'raw-key-is-accepted-for-internal-mvp',
+              },
+            },
+          },
+          {
+            source: 'codex',
+            sequence: 2,
+            eventType: 'agent.tool.completed',
+            providerEventId: 'response_item:function_call_output:call-tool-details',
+            correlationId: 'call-tool-details',
+            contentText: 'function_call_output',
+            contentJson: {
+              callId: 'call-tool-details',
+              output: largeOutput,
+              result: {
+                exitCode: 0,
+              },
+            },
+          },
+        ],
+      }),
+    );
+
+    expect(appendResponse.status).toBe(200);
+    const appended = getData(appendResponse).events as Array<Record<string, unknown>>;
+    expect(JSON.stringify(appended)).toContain('raw-key-is-accepted-for-internal-mvp');
+    expect(appended[0]).toMatchObject({
+      eventType: 'agent.tool.started',
+      contentJson: {
+        command: 'node scripts/run-suite.mjs --tasks tasks.yaml',
+        input: {
+          cmd: 'node scripts/run-suite.mjs --tasks tasks.yaml',
+          workdir: '/root/work/myskills/skills/nb-opencode-ui-batch',
+        },
+        env: {
+          OPENAI_API_KEY: 'raw-key-is-accepted-for-internal-mvp',
+        },
+      },
+    });
+    expect(appended[1]).toMatchObject({
+      eventType: 'agent.tool.completed',
+      contentJson: {
+        output: largeOutput,
+      },
+    });
+
+    const toolCallsResponse = await rootAgent.get(`/api/agent-gateway/runs/${run.id}/tool-calls:list`);
+    expect(toolCallsResponse.status).toBe(200);
+    const toolCallsData = getData(toolCallsResponse) as {
+      toolCalls?: Array<Record<string, unknown>>;
+    };
+    expect(toolCallsData.toolCalls).toHaveLength(1);
+    expect(toolCallsData.toolCalls?.[0]).toMatchObject({
+      status: 'succeeded',
+      command: 'node scripts/run-suite.mjs --tasks tasks.yaml',
+      output: largeOutput,
+      eventIds: [appended[0].id, appended[1].id],
+    });
+  });
+
+  it('closes dangling running tool calls when a run has stalled', async () => {
+    const runner = await createRunner();
+    const run = await createRun(runner, 'conversation-run-stalled-tool');
+    const claim = await claimRun(runner, run.id);
+
+    const appendResponse = await appendConversationEvents(
+      runner,
+      run.id,
+      leaseValues(claim, {
+        events: [
+          {
+            source: 'codex',
+            sequence: 1,
+            eventType: 'agent.command.started',
+            providerEventId: 'item.started:item-stalled',
+            correlationId: 'item-stalled',
+            contentJson: {
+              command: 'node scripts/run-suite.mjs --tasks tasks.yaml',
+              status: 'in_progress',
+            },
+          },
+        ],
+      }),
+    );
+    expect(appendResponse.status).toBe(200);
+
+    await app.db.getRepository('agRuns').update({
+      filterByTk: run.id,
+      values: {
+        status: 'stalled',
+      },
+    });
+
+    const toolCallsResponse = await rootAgent.get(`/api/agent-gateway/runs/${run.id}/tool-calls:list`);
+    expect(toolCallsResponse.status).toBe(200);
+    const toolCallsData = getData(toolCallsResponse) as {
+      toolCalls?: Array<Record<string, unknown>>;
+      stats?: Record<string, unknown>;
+    };
+    expect(toolCallsData.toolCalls?.[0]).toMatchObject({
+      status: 'unknown',
+      command: 'node scripts/run-suite.mjs --tasks tasks.yaml',
+    });
+    expect(toolCallsData.stats).toMatchObject({
+      running: 0,
+      unknown: 1,
+    });
   });
 
   it('derives parsed tool calls and stats from conversation events', async () => {

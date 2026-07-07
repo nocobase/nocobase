@@ -13,12 +13,13 @@ import React, { useMemo } from 'react';
 import {
   AgentTranscriptMessage,
   AgentTranscriptMessagePart,
+  AgentTranscriptParticipantType,
   AgentTranscriptToolCall,
   AgentTranscriptToolKind,
   AgentTranscriptToolStatus,
   buildAgentTranscript,
 } from '../../shared/agentTranscript';
-import { JsonRecord, formatDateTime, redactPreviewText } from '../pages/AgentGatewayPageUtils';
+import { JsonRecord, formatDateTime } from '../pages/AgentGatewayPageUtils';
 
 type TFunction = (key: string, options?: Record<string, unknown>) => string;
 
@@ -79,13 +80,31 @@ function getTimelineColor(message: AgentTranscriptMessage) {
   if (message.toolCalls.some((toolCall) => toolCall.status === 'failed')) {
     return 'red';
   }
-  if (message.role === 'user') {
+  if (message.participant.type === 'user') {
     return 'blue';
+  }
+  if (message.participant.type === 'sub-agent') {
+    return 'green';
+  }
+  if (message.participant.type === 'system' || message.participant.type === 'tool') {
+    return 'gray';
   }
   if (message.toolCalls.some((toolCall) => toolCall.status === 'running')) {
     return 'blue';
   }
   return 'gray';
+}
+
+function getParticipantTypeLabel(t: TFunction, type: AgentTranscriptParticipantType) {
+  const labels: Record<AgentTranscriptParticipantType, string> = {
+    user: t('You'),
+    'root-agent': t('Agent'),
+    'sub-agent': t('Sub-agent'),
+    tool: t('Tool'),
+    system: t('System'),
+    unknown: t('Unknown'),
+  };
+  return labels[type];
 }
 
 function getToolKindLabel(t: TFunction, kind: AgentTranscriptToolKind) {
@@ -106,7 +125,16 @@ function getToolCallTitle(t: TFunction, toolCall: AgentTranscriptToolCall) {
 }
 
 function getMessageTitle(t: TFunction, message: AgentTranscriptMessage) {
-  return message.role === 'user' ? t('You') : t('Agent');
+  if (message.participant.type === 'sub-agent') {
+    return `${t('Sub-agent')}: ${message.participant.name || t('Unknown')}`;
+  }
+  if (message.participant.type === 'root-agent') {
+    return t('Agent');
+  }
+  if (message.participant.type === 'user') {
+    return t('You');
+  }
+  return message.participant.name || getParticipantTypeLabel(t, message.participant.type);
 }
 
 function TextBlock({ t, text, maxHeight = 320 }: { t: TFunction; text: string; maxHeight?: number }) {
@@ -134,7 +162,7 @@ function TextBlock({ t, text, maxHeight = 320 }: { t: TFunction; text: string; m
           whiteSpace: 'pre-wrap',
         }}
       >
-        {redactPreviewText(displayedText)}
+        {displayedText}
       </Typography.Paragraph>
       {shouldTruncate ? (
         <Button
@@ -150,8 +178,46 @@ function TextBlock({ t, text, maxHeight = 320 }: { t: TFunction; text: string; m
   );
 }
 
+function getToolCallFallbackDetails(toolCall: AgentTranscriptToolCall) {
+  const details: JsonRecord = {
+    title: toolCall.title,
+    kind: toolCall.kind,
+    status: toolCall.status,
+  };
+  if (toolCall.source) {
+    details.source = toolCall.source;
+  }
+  if (toolCall.startedAt) {
+    details.startedAt = toolCall.startedAt;
+  }
+  if (toolCall.finishedAt) {
+    details.finishedAt = toolCall.finishedAt;
+  }
+  if (typeof toolCall.durationMs === 'number') {
+    details.durationMs = toolCall.durationMs;
+  }
+  if (typeof toolCall.exitCode === 'number') {
+    details.exitCode = toolCall.exitCode;
+  }
+  if (toolCall.eventIds.length) {
+    details.eventIds = toolCall.eventIds;
+  }
+  return JSON.stringify(details, null, 2);
+}
+
 function ToolCallBody({ t, toolCall }: { t: TFunction; toolCall: AgentTranscriptToolCall }) {
   const output = toolCall.output && toolCall.output !== toolCall.command ? toolCall.output : '';
+  const input =
+    toolCall.input && toolCall.input !== toolCall.command && toolCall.input !== output ? toolCall.input : '';
+  const details =
+    toolCall.details &&
+    toolCall.details !== toolCall.command &&
+    toolCall.details !== input &&
+    toolCall.details !== output
+      ? toolCall.details
+      : '';
+  const fallbackDetails =
+    !toolCall.command && !input && !output && !details ? getToolCallFallbackDetails(toolCall) : '';
   return (
     <Space direction="vertical" size={8} style={{ width: '100%' }}>
       <Space wrap size={6}>
@@ -166,14 +232,29 @@ function ToolCallBody({ t, toolCall }: { t: TFunction; toolCall: AgentTranscript
           <TextBlock t={t} text={toolCall.command} maxHeight={120} />
         </Space>
       ) : null}
+      {input ? (
+        <Space direction="vertical" size={4} style={{ width: '100%' }}>
+          <Typography.Text type="secondary">{t('Input')}</Typography.Text>
+          <TextBlock t={t} text={input} maxHeight={220} />
+        </Space>
+      ) : null}
       {output ? (
         <Space direction="vertical" size={4} style={{ width: '100%' }}>
           <Typography.Text type="secondary">{t('Output')}</Typography.Text>
           <TextBlock t={t} text={output} maxHeight={300} />
         </Space>
       ) : null}
-      {!toolCall.command && !output ? (
-        <Typography.Text type="secondary">{t('No parsed tool details')}</Typography.Text>
+      {details ? (
+        <Space direction="vertical" size={4} style={{ width: '100%' }}>
+          <Typography.Text type="secondary">{t('Details')}</Typography.Text>
+          <TextBlock t={t} text={details} maxHeight={220} />
+        </Space>
+      ) : null}
+      {fallbackDetails ? (
+        <Space direction="vertical" size={4} style={{ width: '100%' }}>
+          <Typography.Text type="secondary">{t('Details')}</Typography.Text>
+          <TextBlock t={t} text={fallbackDetails} maxHeight={220} />
+        </Space>
       ) : null}
     </Space>
   );
@@ -285,6 +366,9 @@ function MessageContent({ t, message }: { t: TFunction; message: AgentTranscript
     <Space direction="vertical" size={8} style={{ width: '100%' }}>
       <Space wrap size={6}>
         <Typography.Text strong>{getMessageTitle(t, message)}</Typography.Text>
+        {message.participant.type !== 'user' && message.participant.type !== 'root-agent' ? (
+          <Tag>{getParticipantTypeLabel(t, message.participant.type)}</Tag>
+        ) : null}
         {message.sources.map((source) => (
           <Tag key={source}>{source}</Tag>
         ))}
@@ -302,6 +386,7 @@ export function AgentTimeline({
   events,
   legacyEvents,
   useLegacyFallback,
+  closeDanglingToolCalls,
   warning,
   emptyDescription,
 }: {
@@ -309,12 +394,16 @@ export function AgentTimeline({
   events: AgentTimelineEventRecord[];
   legacyEvents: LegacyRunEventRecord[];
   useLegacyFallback: boolean;
+  closeDanglingToolCalls?: boolean;
   warning?: string;
   emptyDescription?: React.ReactNode;
 }) {
   const usingLegacyFallback = useLegacyFallback && !events.length && legacyEvents.length > 0;
   const transcriptEvents = usingLegacyFallback ? getLegacyTimelineEvents(legacyEvents) : events;
-  const transcript = useMemo(() => buildAgentTranscript(transcriptEvents), [transcriptEvents]);
+  const transcript = useMemo(
+    () => buildAgentTranscript(transcriptEvents, { closeDanglingToolCalls }),
+    [closeDanglingToolCalls, transcriptEvents],
+  );
   const [visibleMessageCount, setVisibleMessageCount] = React.useState(DEFAULT_VISIBLE_MESSAGE_COUNT);
   const timelineResetKey = `${usingLegacyFallback ? 'legacy' : 'events'}:${transcriptEvents[0]?.id || 'empty'}`;
   React.useEffect(() => {
@@ -338,7 +427,7 @@ export function AgentTimeline({
           <Typography.Text type="secondary">
             {usingLegacyFallback
               ? t('Showing available conversation messages from legacy events')
-              : t('Conversation between you and the agent')}
+              : t('Task conversation')}
           </Typography.Text>
         </Space>
         {warning ? <Alert type="warning" showIcon message={warning} /> : null}

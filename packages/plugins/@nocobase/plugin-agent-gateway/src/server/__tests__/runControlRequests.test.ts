@@ -344,7 +344,22 @@ describe('agent gateway run control requests', () => {
     const expireResponse = await rootAgent.post('/api/agent-gateway/runs:expire-leases').send({});
     expect(expireResponse.status).toBe(200);
     expect(getData(expireResponse)).toMatchObject({
-      abandonedCount: 1,
+      stalledCount: 1,
+      failedCount: 0,
+    });
+
+    await app.db.getRepository('agRuns').update({
+      filterByTk: runId,
+      values: {
+        claimExpiresAt: new Date(Date.now() - 1000),
+      },
+    });
+
+    const failExpiredResponse = await rootAgent.post('/api/agent-gateway/runs:expire-leases').send({});
+    expect(failExpiredResponse.status).toBe(200);
+    expect(getData(failExpiredResponse)).toMatchObject({
+      stalledCount: 0,
+      failedCount: 1,
     });
 
     const request = await app.db.getRepository('agRunControlRequests').findOne({
@@ -365,7 +380,7 @@ describe('agent gateway run control requests', () => {
     expect(failedEvent?.get('payloadJson')).toMatchObject({
       controlRequestId,
       reason: 'run-finished',
-      terminalStatus: 'abandoned',
+      terminalStatus: 'failed',
     });
   });
 

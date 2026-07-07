@@ -90,6 +90,7 @@ function hashText(value: string) {
 
 function getResumeMessageFields(message: string) {
   return {
+    contentText: message,
     redactedPreview: redactObservabilityText(message).slice(0, RESUME_MESSAGE_PREVIEW_LENGTH),
     contentHash: hashText(message),
     contentSize: Buffer.byteLength(message),
@@ -615,7 +616,7 @@ async function createResumeConversationEvent(options: {
       providerEventId: `resume.message:${getModelTargetKey(options.run, 'id')}`,
       correlationId: getString(options.messageFields.contentHash).slice(0, 32) || null,
       confidence: 1,
-      contentText: options.messageFields.redactedPreview,
+      contentText: options.messageFields.contentText,
       contentJson: {
         contentHash: options.messageFields.contentHash,
         contentSize: options.messageFields.contentSize,

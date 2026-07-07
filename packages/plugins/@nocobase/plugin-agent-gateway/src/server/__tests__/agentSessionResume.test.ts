@@ -213,7 +213,7 @@ describe('agent gateway agent session resume API', () => {
     return run;
   }
 
-  it('creates a continuation run with persisted idempotency, redacted preview, and user timeline event', async () => {
+  it('creates a continuation run with persisted idempotency, redacted preview, and raw user timeline event', async () => {
     const { run, session } = await seedEndedSession();
     const message = 'Continue with token=RESUME_SECRET and say "done"';
     const response = await resumeSession(session.get('id'), {
@@ -266,8 +266,8 @@ describe('agent gateway agent session resume API', () => {
     expect(conversationEvents).toHaveLength(1);
     expect(conversationEvents[0].get('sessionId')).toBe(session.get('id'));
     expect(conversationEvents[0].get('eventType')).toBe('agent.user.message');
-    expect(conversationEvents[0].get('contentText')).toContain('[REDACTED]');
-    expect(JSON.stringify(conversationEvents[0].toJSON())).not.toContain('RESUME_SECRET');
+    expect(conversationEvents[0].get('contentText')).toBe(message);
+    expect(JSON.stringify(conversationEvents[0].toJSON())).toContain('RESUME_SECRET');
   });
 
   it('dedupes duplicate resume requests by persisted continuationRequestKey', async () => {

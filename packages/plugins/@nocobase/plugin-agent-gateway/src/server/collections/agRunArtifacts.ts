@@ -70,6 +70,27 @@ export default defineCollection({
       name: 'sizeBytes',
     },
     {
+      type: 'bigInt',
+      name: 'originalSizeBytes',
+    },
+    {
+      type: 'bigInt',
+      name: 'previewBytes',
+    },
+    {
+      type: 'boolean',
+      name: 'truncated',
+      defaultValue: false,
+    },
+    {
+      type: 'string',
+      name: 'storageMode',
+    },
+    {
+      type: 'string',
+      name: 'contentSha256',
+    },
+    {
       type: 'text',
       name: 'contentText',
       length: 'long',

@@ -47,6 +47,7 @@ const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3
 const TERMINAL_BACKENDS = new Set(['tmux']);
 const TERMINAL_STATUSES = new Set(['active', 'closed', 'unavailable']);
 const TERMINAL_CONTROL_RUN_STATUSES = new Set(['claimed', 'syncing_skills', 'running']);
+const TERMINAL_UPDATE_RUN_STATUSES = ['claimed', 'syncing_skills', 'running', 'finalizing', 'stalled'] as const;
 const CONTROL_REQUEST_STATUSES = new Set(['accepted', 'delivered', 'succeeded', 'failed']);
 const MAX_CONTROL_REASON_CHARS = 1000;
 const MAX_CONTROL_IDEMPOTENCY_KEY_CHARS = 200;
@@ -717,7 +718,11 @@ async function ackControlRequest(ctx: Context, nodeId: string, runId: string, re
   const values = getBodyValues(ctx);
   const ackStatus = getAckStatus(ctx, values.status);
   const result = await ctx.db.sequelize.transaction(async (transaction) => {
-    const lease = await validateRunLease(ctx, nodeId, runId, values, transaction);
+    const lease = await validateRunLease(ctx, nodeId, runId, values, transaction, {
+      allowExpiredLeaseStatuses: ['finalizing', 'stalled'],
+      allowStaleLeaseVersion: true,
+      allowedStatuses: TERMINAL_UPDATE_RUN_STATUSES,
+    });
     if (!lease) {
       return null;
     }
@@ -843,7 +848,11 @@ function getTerminalUpdateValues(ctx: Context, values: JsonRecord) {
 async function updateRunTerminal(ctx: Context, nodeId: string, runId: string) {
   const values = getBodyValues(ctx);
   const result = await ctx.db.sequelize.transaction(async (transaction) => {
-    const lease = await validateRunLease(ctx, nodeId, runId, values, transaction);
+    const lease = await validateRunLease(ctx, nodeId, runId, values, transaction, {
+      allowExpiredLeaseStatuses: ['finalizing', 'stalled'],
+      allowStaleLeaseVersion: true,
+      allowedStatuses: TERMINAL_UPDATE_RUN_STATUSES,
+    });
     if (!lease) {
       return null;
     }

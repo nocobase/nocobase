@@ -79,4 +79,124 @@ describe('OpenCode agent adapter', () => {
       },
     ]);
   });
+
+  it('normalizes OpenCode text and step events into agent transcript events', () => {
+    expect(
+      opencodeAdapter.normalizeEvent({
+        rawLine: JSON.stringify({
+          type: 'text',
+          timestamp: 1783179088364,
+          sessionID: 'ses_1',
+          part: {
+            id: 'prt_text_1',
+            messageID: 'msg_1',
+            type: 'text',
+            text: 'Page created successfully. Let me verify the result.',
+          },
+        }),
+      }),
+    ).toEqual([
+      {
+        eventType: 'agent.message',
+        level: 'info',
+        providerEventId: 'text:prt_text_1',
+        correlationId: 'msg_1',
+        message: 'Page created successfully. Let me verify the result.',
+        payloadJson: {
+          itemId: 'prt_text_1',
+          sessionId: 'ses_1',
+        },
+      },
+    ]);
+
+    expect(
+      opencodeAdapter.normalizeEvent({
+        rawLine: JSON.stringify({
+          type: 'step_start',
+          sessionID: 'ses_1',
+          part: {
+            id: 'prt_step_1',
+            messageID: 'msg_1',
+          },
+        }),
+      }),
+    ).toEqual([
+      {
+        eventType: 'agent.turn.started',
+        level: 'info',
+        providerEventId: 'step_start:prt_step_1',
+        correlationId: 'msg_1',
+        message: 'step_start',
+        payloadJson: {
+          type: 'step_start',
+          sessionID: 'ses_1',
+          part: {
+            id: 'prt_step_1',
+            messageID: 'msg_1',
+          },
+        },
+      },
+    ]);
+  });
+
+  it('normalizes OpenCode tool_use events with command, output, and status details', () => {
+    expect(
+      opencodeAdapter.normalizeEvent({
+        rawLine: JSON.stringify({
+          type: 'tool_use',
+          sessionID: 'ses_1',
+          part: {
+            type: 'tool',
+            tool: 'bash',
+            callID: 'call_1',
+            id: 'prt_tool_1',
+            state: {
+              status: 'completed',
+              input: {
+                command: 'nb api flow-surfaces get --page-schema-uid page-1 -j',
+                description: 'Verify page structure',
+              },
+              output: 'Page OK',
+              metadata: {
+                output: 'Page OK',
+                exit: 0,
+                truncated: false,
+              },
+              time: {
+                start: 1783178595689,
+                end: 1783178595701,
+              },
+            },
+          },
+        }),
+      }),
+    ).toEqual([
+      {
+        eventType: 'agent.tool.completed',
+        level: 'info',
+        providerEventId: 'tool_use:call_1',
+        correlationId: 'call_1',
+        message: 'bash',
+        payloadJson: {
+          itemId: 'prt_tool_1',
+          callId: 'call_1',
+          toolName: 'bash',
+          status: 'succeeded',
+          command: 'nb api flow-surfaces get --page-schema-uid page-1 -j',
+          input: {
+            command: 'nb api flow-surfaces get --page-schema-uid page-1 -j',
+            description: 'Verify page structure',
+          },
+          output: 'Page OK',
+          exitCode: 0,
+          durationMs: 12,
+          metadata: {
+            output: 'Page OK',
+            exit: 0,
+            truncated: false,
+          },
+        },
+      },
+    ]);
+  });
 });

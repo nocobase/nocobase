@@ -119,10 +119,11 @@ export class PluginAgentGatewayServer extends Plugin {
           return;
         }
         const result = await recoverExpiredRunLeases(this, reason);
-        if (result.abandonedCount > 0) {
+        if (result.stalledCount > 0 || result.failedCount > 0) {
           this.app.logger?.info?.('Agent Gateway recovered expired run leases', {
             reason,
-            abandonedCount: result.abandonedCount,
+            stalledCount: result.stalledCount,
+            failedCount: result.failedCount,
             scannedAt: result.scannedAt,
           });
         }

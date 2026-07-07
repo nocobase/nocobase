@@ -17,7 +17,7 @@ import {
   getManagedTmuxSessionName,
   TMUX_TERMINATE_CANCEL_REASON,
   terminateTmuxSession,
-  writeRedactedArtifactFromFile,
+  writeTerminalArtifactFromFile,
 } from '../tmuxTerminal';
 
 function execTmux(args: string[]) {
@@ -99,7 +99,7 @@ describe('agent gateway tmux terminal driver', () => {
     }
   });
 
-  it('writes redacted tmux artifacts and cleans internal raw capture files', async () => {
+  it('writes complete tmux artifacts and cleans internal raw capture files', async () => {
     if (!tmuxReady) {
       return;
     }
@@ -131,11 +131,10 @@ describe('agent gateway tmux terminal driver', () => {
       expect(result.stdout.artifactPath).toBeTruthy();
       const artifactText = await fs.readFile(String(result.stdout.artifactPath), 'utf8');
       expect(artifactText).toContain('visible tmux line');
-      expect(artifactText).toContain('Authorization: [REDACTED]');
-      expect(artifactText).not.toContain('TMUX_ARTIFACT_SECRET');
-      expect(artifactText).not.toContain('TMUX_COMMAND_SECRET');
-      expect(artifactText).not.toContain('TMUX_CWD_SECRET');
-      expect(artifactText).not.toContain('TMUX_ENV_SECRET');
+      expect(artifactText).toContain('Authorization: Bearer TMUX_ARTIFACT_SECRET');
+      expect(artifactText).toContain('TMUX_COMMAND_SECRET');
+      expect(artifactText).toContain('TMUX_CWD_SECRET');
+      expect(artifactText).toContain('TMUX_ENV_SECRET');
 
       const tempEntries = await fs.readdir(os.tmpdir());
       expect(tempEntries.filter((entry) => entry.startsWith(`${sessionName}-`))).toHaveLength(0);
@@ -146,7 +145,7 @@ describe('agent gateway tmux terminal driver', () => {
     }
   });
 
-  it('does not leak oversized bearer token tails when redacting tmux artifacts', async () => {
+  it('keeps oversized terminal lines intact in tmux artifacts', async () => {
     if (!tmuxReady) {
       return;
     }
@@ -177,11 +176,10 @@ describe('agent gateway tmux terminal driver', () => {
       expect(result.status).toBe('succeeded');
       expect(result.stdout.artifactPath).toBeTruthy();
       const artifactText = await fs.readFile(String(result.stdout.artifactPath), 'utf8');
-      expect(artifactText).toContain('[REDACTED_OVERSIZED_TERMINAL_LINE]');
+      expect(artifactText).toContain('TMUX_LONG_SECRET_');
+      expect(artifactText).toContain('_TAIL');
       expect(artifactText).toContain('visible after long token');
-      expect(artifactText).not.toContain('TMUX_LONG_SECRET_');
-      expect(artifactText).not.toContain('_TAIL');
-      expect(artifactText).not.toContain('xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx');
+      expect(artifactText).toContain('xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx');
     } finally {
       await terminateTmuxSession(sessionName).catch(() => {
         // The completed session may already have been cleaned up by the test environment.
@@ -189,27 +187,26 @@ describe('agent gateway tmux terminal driver', () => {
     }
   });
 
-  it('redacts an oversized terminal line before writing it when the newline arrives later', async () => {
+  it('copies terminal artifact files without content redaction', async () => {
     const sourcePath = path.join(tempDir, 'raw-terminal.log');
     const longSecret = `ARBITRARY_TERMINAL_SECRET_${'x'.repeat(70 * 1024)}_TAIL`;
     await fs.writeFile(sourcePath, `before boundary\n${longSecret}\nafter boundary\n`);
 
-    const artifactPath = await writeRedactedArtifactFromFile({
+    const artifactPath = await writeTerminalArtifactFromFile({
       sourcePath,
       artifactDir: tempDir,
-      fileName: 'redacted-terminal.log',
+      fileName: 'terminal.log',
     });
     const artifactText = await fs.readFile(artifactPath, 'utf8');
 
     expect(artifactText).toContain('before boundary');
-    expect(artifactText).toContain('[REDACTED_OVERSIZED_TERMINAL_LINE]');
+    expect(artifactText).toContain('ARBITRARY_TERMINAL_SECRET_');
+    expect(artifactText).toContain('_TAIL');
     expect(artifactText).toContain('after boundary');
-    expect(artifactText).not.toContain('ARBITRARY_TERMINAL_SECRET_');
-    expect(artifactText).not.toContain('_TAIL');
-    expect(artifactText).not.toContain('xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx');
+    expect(artifactText).toContain('xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx');
   });
 
-  it('emits redacted live output chunks before the tmux command exits', async () => {
+  it('emits complete live output chunks before the tmux command exits', async () => {
     if (!tmuxReady) {
       return;
     }
@@ -255,8 +252,7 @@ describe('agent gateway tmux terminal driver', () => {
       expect(result.status).toBe('succeeded');
       const joined = chunks.join('');
       expect(joined).toContain('AGENT_GATEWAY_TMUX_LIVE_DONE');
-      expect(joined).toContain('Authorization: [REDACTED]');
-      expect(joined).not.toContain('TMUX_LIVE_SECRET');
+      expect(joined).toContain('Authorization: Bearer TMUX_LIVE_SECRET');
     } finally {
       await terminateTmuxSession(sessionName).catch(() => {
         // The completed session may already have been removed.
@@ -401,7 +397,7 @@ describe('agent gateway tmux terminal driver', () => {
     }
   });
 
-  it('does not leak a sensitive key split across partial-line live flushes', async () => {
+  it('streams partial-line live output without redaction', async () => {
     if (!tmuxReady) {
       return;
     }
@@ -429,12 +425,10 @@ describe('agent gateway tmux terminal driver', () => {
 
       expect(result.status).toBe('succeeded');
       const liveOutput = chunks.join('');
-      expect(liveOutput).toContain('token=[REDACTED]');
-      expect(liveOutput).not.toContain('TMUX_SPLIT_SECRET');
+      expect(liveOutput).toContain('token=TMUX_SPLIT_SECRET');
       expect(result.stdout.artifactPath).toBeTruthy();
       const artifactText = await fs.readFile(String(result.stdout.artifactPath), 'utf8');
-      expect(artifactText).toContain('token=[REDACTED]');
-      expect(artifactText).not.toContain('TMUX_SPLIT_SECRET');
+      expect(artifactText).toContain('token=TMUX_SPLIT_SECRET');
     } finally {
       await terminateTmuxSession(sessionName).catch(() => {
         // The completed session may already have been removed.

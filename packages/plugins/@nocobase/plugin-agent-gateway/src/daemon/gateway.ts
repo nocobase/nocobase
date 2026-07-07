@@ -94,7 +94,7 @@ export class AgentGatewayDaemonNodeClient {
     return response;
   }
 
-  async heartbeatRun(lease: RunLease, status: 'claimed' | 'syncing_skills' | 'running') {
+  async heartbeatRun(lease: RunLease, status: 'claimed' | 'syncing_skills' | 'running' | 'finalizing') {
     return await this.requester.request<RunLease>({
       method: 'POST',
       path: `/api/agent-gateway/nodes/${this.config.nodeId}/runs/${lease.runId}/heartbeat`,

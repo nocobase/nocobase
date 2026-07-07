@@ -8,6 +8,7 @@
  */
 
 import path from 'path';
+import { createHash } from 'crypto';
 import { promises as fs } from 'fs';
 
 import { JsonRecord } from './types';
@@ -23,6 +24,11 @@ export interface DeclaredArtifactUpload extends JsonRecord {
   sizeBytes: number;
   contentText: string;
   metadata: JsonRecord;
+}
+
+export interface DeclaredArtifactCollectionResult {
+  uploads: DeclaredArtifactUpload[];
+  manifest: JsonRecord;
 }
 
 interface ArtifactDeclaration {
@@ -48,6 +54,10 @@ function getString(value: unknown) {
 
 function getStringArray(value: unknown) {
   return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : [];
+}
+
+function uniqueStrings(values: string[]) {
+  return [...new Set(values.filter(Boolean))];
 }
 
 function getPositiveInteger(value: unknown, fallback: number) {
@@ -120,6 +130,24 @@ function getArtifactType(filePath: string, declaredType?: string) {
     return 'markdown-report';
   }
   return 'file';
+}
+
+function getStorageMode(contentText: string, metadata: JsonRecord) {
+  if (getString(metadata.inlineEncoding) === 'data-url') {
+    return 'inline';
+  }
+  if (contentText) {
+    return getBoolean(metadata.truncated) ? 'preview' : 'inline';
+  }
+  return 'local-path';
+}
+
+function getBoolean(value: unknown) {
+  return value === true;
+}
+
+function getSha256(content: Buffer) {
+  return createHash('sha256').update(content).digest('hex');
 }
 
 function sanitizeArtifactKey(value: string) {
@@ -246,7 +274,6 @@ async function findDeclaredArtifacts(options: {
   cwd: string;
   workspaceRoot: string;
   trustedArtifactRoots?: string[];
-  maxArtifacts: number;
   modifiedSinceMs?: number;
 }) {
   const declarations = getArtifactDeclarations(options.payload);
@@ -269,15 +296,9 @@ async function findDeclaredArtifacts(options: {
   const cachedFilesByRoot = new Map<string, string[]>();
   const maxScanEntries = getPositiveInteger(options.payload.maxArtifactScanEntries, MAX_DECLARED_ARTIFACT_SCAN_ENTRIES);
   for (const declaration of declarations) {
-    if (matches.length >= options.maxArtifacts) {
-      break;
-    }
     const relativePath = normalizeRelativeArtifactPath(declaration.path || '');
     if (relativePath) {
       for (const realRoot of realRoots) {
-        if (matches.length >= options.maxArtifacts) {
-          break;
-        }
         const filePath = path.resolve(realRoot, relativePath);
         if (!isWithin(realRoot, filePath)) {
           continue;
@@ -301,9 +322,6 @@ async function findDeclaredArtifacts(options: {
     const matcher = globToRegex(glob);
     const scanDirectory = normalizeRelativeArtifactPath(getGlobStaticDirectory(glob));
     for (const realRoot of realRoots) {
-      if (matches.length >= options.maxArtifacts) {
-        break;
-      }
       const scanRoot = scanDirectory ? path.resolve(realRoot, scanDirectory) : realRoot;
       if (!isWithin(realRoot, scanRoot)) {
         continue;
@@ -319,9 +337,6 @@ async function findDeclaredArtifacts(options: {
         cachedFilesByRoot.set(cacheKey, cachedFiles);
       }
       for (const filePath of cachedFiles) {
-        if (matches.length >= options.maxArtifacts) {
-          break;
-        }
         const relativeFilePath = path.relative(realRoot, filePath).replace(/\\/g, '/');
         if (matcher.test(relativeFilePath)) {
           const stat = await fs.stat(filePath).catch(() => null);
@@ -363,6 +378,181 @@ async function collectArtifactSearchRoots(options: {
   return roots;
 }
 
+async function hashFile(filePath: string) {
+  const content = await fs.readFile(filePath);
+  return getSha256(content);
+}
+
+function isBrowserVerificationArtifact(match: MatchedArtifactDeclaration) {
+  return /(?:^|\/)browser-verification\.json$/.test(match.relativePath);
+}
+
+function isScreenshotPath(value: string) {
+  return /(?:^|\/)browser-screenshots\/.+\.(?:png|jpe?g|webp|gif)$/i.test(value);
+}
+
+function resolveReferencedArtifactPath(referencePath: string, baseRelativeDir: string) {
+  const normalized = normalizeRelativeArtifactPath(referencePath);
+  if (!isScreenshotPath(normalized)) {
+    return '';
+  }
+  if (!normalized.startsWith('browser-screenshots/')) {
+    return normalized;
+  }
+  if (!baseRelativeDir || baseRelativeDir === '.') {
+    return normalized;
+  }
+  return normalizeRelativeArtifactPath(path.posix.join(baseRelativeDir, normalized));
+}
+
+function extractReferencedArtifactPaths(value: unknown, baseRelativeDir: string): string[] {
+  const paths: string[] = [];
+  const visit = (current: unknown) => {
+    if (typeof current === 'string') {
+      const artifactPath = resolveReferencedArtifactPath(current, baseRelativeDir);
+      if (artifactPath) {
+        paths.push(artifactPath);
+      }
+      return;
+    }
+    if (Array.isArray(current)) {
+      for (const item of current) {
+        visit(item);
+      }
+      return;
+    }
+    if (!current || typeof current !== 'object') {
+      return;
+    }
+    for (const item of Object.values(current)) {
+      visit(item);
+    }
+  };
+  visit(value);
+  return uniqueStrings(paths);
+}
+
+async function getReferencedScreenshotPaths(matches: MatchedArtifactDeclaration[]) {
+  const referencedPaths: string[] = [];
+  for (const match of matches.filter(isBrowserVerificationArtifact)) {
+    try {
+      const parsed = JSON.parse(await fs.readFile(match.filePath, 'utf8')) as unknown;
+      referencedPaths.push(...extractReferencedArtifactPaths(parsed, path.posix.dirname(match.relativePath)));
+    } catch {
+      // The manifest reports the collected file; invalid JSON is handled by the UI preview.
+    }
+  }
+  return uniqueStrings(referencedPaths);
+}
+
+function getArtifactPriority(match: MatchedArtifactDeclaration, referencedScreenshots: Set<string>) {
+  const relativePath = match.relativePath;
+  if (referencedScreenshots.has(relativePath)) {
+    return 0;
+  }
+  if (/(?:^|\/)report\.html$/.test(relativePath)) {
+    return 1;
+  }
+  if (isBrowserVerificationArtifact(match)) {
+    return 2;
+  }
+  if (/(?:^|\/)browser-verification-(?:request|prompt)\.(?:json|md)$/.test(relativePath)) {
+    return 3;
+  }
+  if (/(?:^|\/)report\.json$/.test(relativePath)) {
+    return 4;
+  }
+  if (isScreenshotPath(relativePath)) {
+    return 5;
+  }
+  if (/(?:^|\/)(?:logs|tasks)\//.test(relativePath)) {
+    return 6;
+  }
+  return 10;
+}
+
+function dedupeMatches(matches: MatchedArtifactDeclaration[]) {
+  const seen = new Set<string>();
+  const result: MatchedArtifactDeclaration[] = [];
+  for (const match of matches) {
+    const key = `${getArtifactKey(match)}:${match.relativePath}`;
+    if (seen.has(key)) {
+      continue;
+    }
+    seen.add(key);
+    result.push(match);
+  }
+  return result;
+}
+
+async function buildManifest(options: {
+  matches: MatchedArtifactDeclaration[];
+  selectedMatches: MatchedArtifactDeclaration[];
+  uploads: DeclaredArtifactUpload[];
+  maxArtifacts: number;
+  referencedScreenshots: string[];
+}) {
+  const selectedPaths = new Set(options.selectedMatches.map((match) => match.relativePath));
+  const matchedPaths = new Set(options.matches.map((match) => match.relativePath));
+  const skipped = options.matches
+    .filter((match) => !selectedPaths.has(match.relativePath))
+    .map((match) => ({
+      relativePath: match.relativePath,
+      reason: 'max-artifact-uploads',
+    }));
+  const missingReferencedScreenshots = options.referencedScreenshots.filter(
+    (relativePath) => !matchedPaths.has(relativePath),
+  );
+  return {
+    schema: 'agent-gateway-artifact-manifest/v1',
+    generatedAt: new Date().toISOString(),
+    maxArtifactUploads: options.maxArtifacts,
+    counts: {
+      matched: options.matches.length,
+      selected: options.selectedMatches.length,
+      uploaded: options.uploads.length,
+      skipped: skipped.length,
+      referencedScreenshots: options.referencedScreenshots.length,
+      missingReferencedScreenshots: missingReferencedScreenshots.length,
+    },
+    referencedScreenshots: options.referencedScreenshots,
+    missingReferencedScreenshots,
+    artifacts: options.uploads.map((upload) => ({
+      artifactKey: upload.artifactKey,
+      artifactType: upload.artifactType,
+      mimeType: upload.mimeType,
+      sizeBytes: upload.sizeBytes,
+      relativePath: getString(upload.metadata.relativePath),
+      storageMode: getString(upload.metadata.storageMode),
+      sha256: getString(upload.metadata.sha256),
+      truncated: upload.metadata.truncated === true,
+    })),
+    skipped,
+  };
+}
+
+function buildManifestUpload(manifest: JsonRecord): DeclaredArtifactUpload {
+  const contentText = JSON.stringify(manifest, null, 2);
+  return {
+    artifactKey: 'declared:artifact-manifest.json',
+    artifactType: 'artifact-manifest',
+    mimeType: 'application/json',
+    sizeBytes: Buffer.byteLength(contentText),
+    contentText,
+    metadata: {
+      declaredArtifact: true,
+      relativePath: 'artifact-manifest.json',
+      fileName: 'artifact-manifest.json',
+      originalSizeBytes: Buffer.byteLength(contentText),
+      uploadedBytes: Buffer.byteLength(contentText),
+      truncated: false,
+      storageMode: 'inline',
+      sha256: getSha256(Buffer.from(contentText)),
+      generated: true,
+    },
+  };
+}
+
 export async function buildTextArtifactUpload(artifactPath: string, sizeBytes: number) {
   const bytesToRead = Math.min(Math.max(sizeBytes, 0), MAX_INLINE_ARTIFACT_UPLOAD_BYTES);
   let contentText = '';
@@ -381,6 +571,7 @@ export async function buildTextArtifactUpload(artifactPath: string, sizeBytes: n
     originalSizeBytes: sizeBytes,
     uploadedBytes: Buffer.byteLength(contentText),
     truncated: sizeBytes > MAX_INLINE_ARTIFACT_UPLOAD_BYTES,
+    sha256: await hashFile(artifactPath),
   };
 
   return {
@@ -390,6 +581,7 @@ export async function buildTextArtifactUpload(artifactPath: string, sizeBytes: n
 }
 
 async function buildImageArtifactUpload(artifactPath: string, sizeBytes: number, mimeType: string) {
+  const sha256 = await hashFile(artifactPath);
   if (sizeBytes > MAX_INLINE_ARTIFACT_UPLOAD_BYTES) {
     return {
       contentText: '',
@@ -399,6 +591,7 @@ async function buildImageArtifactUpload(artifactPath: string, sizeBytes: number,
         truncated: true,
         inlineEncoding: 'none',
         inlineSkippedReason: 'image-too-large',
+        sha256,
       },
     };
   }
@@ -411,6 +604,7 @@ async function buildImageArtifactUpload(artifactPath: string, sizeBytes: number,
       uploadedBytes: Buffer.byteLength(contentText),
       truncated: false,
       inlineEncoding: 'data-url',
+      sha256,
     },
   };
 }
@@ -437,6 +631,7 @@ async function buildDeclaredArtifactUpload(match: MatchedArtifactDeclaration): P
       declaredArtifact: true,
       relativePath: match.relativePath,
       fileName: path.basename(match.filePath),
+      storageMode: getStorageMode(upload.contentText, upload.metadata),
     },
   };
 }
@@ -447,24 +642,55 @@ export async function collectDeclaredArtifactUploads(options: {
   workspaceRoot: string;
   trustedArtifactRoots?: string[];
   modifiedSinceMs?: number;
-}) {
+}): Promise<DeclaredArtifactUpload[]> {
+  const result = await collectDeclaredArtifactCollection(options);
+  return result.uploads;
+}
+
+export async function collectDeclaredArtifactCollection(options: {
+  payload: JsonRecord;
+  cwd: string;
+  workspaceRoot: string;
+  trustedArtifactRoots?: string[];
+  modifiedSinceMs?: number;
+}): Promise<DeclaredArtifactCollectionResult> {
   const maxArtifacts = getPositiveInteger(options.payload.maxArtifactUploads, DEFAULT_MAX_DECLARED_ARTIFACT_UPLOADS);
-  const matches = await findDeclaredArtifacts({
-    payload: options.payload,
-    cwd: options.cwd,
-    workspaceRoot: options.workspaceRoot,
-    trustedArtifactRoots: options.trustedArtifactRoots,
-    maxArtifacts,
-    modifiedSinceMs: options.modifiedSinceMs,
-  });
+  const matches = dedupeMatches(
+    await findDeclaredArtifacts({
+      payload: options.payload,
+      cwd: options.cwd,
+      workspaceRoot: options.workspaceRoot,
+      trustedArtifactRoots: options.trustedArtifactRoots,
+      modifiedSinceMs: options.modifiedSinceMs,
+    }),
+  );
+  const referencedScreenshots = await getReferencedScreenshotPaths(matches);
+  const referencedScreenshotSet = new Set(referencedScreenshots);
+  const selectedMatches = [...matches]
+    .sort((first, second) => {
+      const priorityDelta =
+        getArtifactPriority(first, referencedScreenshotSet) - getArtifactPriority(second, referencedScreenshotSet);
+      return priorityDelta || first.relativePath.localeCompare(second.relativePath);
+    })
+    .slice(0, maxArtifacts);
   const uploads: DeclaredArtifactUpload[] = [];
   const artifactKeys = new Set<string>();
-  for (const match of matches) {
+  for (const match of selectedMatches) {
     const upload = await buildDeclaredArtifactUpload(match);
     if (upload && !artifactKeys.has(upload.artifactKey)) {
       uploads.push(upload);
       artifactKeys.add(upload.artifactKey);
     }
   }
-  return uploads;
+  const manifest = await buildManifest({
+    matches,
+    selectedMatches,
+    uploads,
+    maxArtifacts,
+    referencedScreenshots,
+  });
+  return {
+    uploads: [...uploads, buildManifestUpload(manifest)],
+    manifest,
+  };
 }
