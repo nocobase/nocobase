@@ -1,11 +1,6 @@
 [
   {
     "type": "custom-link",
-    "label": "介绍",
-    "link": "/data-sources-v2/field/media/"
-  },
-  {
-    "type": "custom-link",
     "label": "Markdown",
     "link": "/data-sources-v2/field/media/markdown"
   },

@@ -34,17 +34,6 @@ keywords: "字段,Field type,Field interface,字段映射,标题字段,唯一约
 | 任务 | 任务标题、截止时间、优先级、执行人 |
 | 文件 | 文件名、大小、MIME 类型、URL |
 
-## 字段来源
-
-参考下面的来源路径，了解字段在 NocoBase 中的创建和管理方式：
-
-- **[主数据库配置字段](../main/database.md#配置字段)**
-- **[主数据库同步字段](../main/database.md#从数据库同步)**
-- **[主数据库创建 SQL 数据表映射字段](../main/collection-sql.md)**
-- **[主数据库连接数据库视图映射字段](../main/collection-view.md)**
-- **[外部数据库同步字段](../external/database.md#从数据库同步)**
-- **[REST API 数据源映射字段](../external/rest-api.md#字段映射)**
-
 ## 适用场景
 
 下面按字段分类整理常见适用场景。这里先帮助你判断该选哪一类字段，具体配置、类型映射和注意事项，可以进入对应分类文档继续查看。
@@ -62,3 +51,31 @@ keywords: "字段,Field type,Field interface,字段映射,标题字段,唯一约
 | [几何图形字段](./field-geometry.md) | 适合保存空间或地理信息，比如门店位置、配送路线、服务范围。 |
 | [系统字段](./field-system.md) | 适合保存由 NocoBase 或数据库维护的系统信息，比如 ID、创建时间、创建人、更新时间。 |
 | [其他字段](./field-other.md) | 适合处理排序、公式、JSON 等不直接归入其他分类的字段需求。 |
+
+## 字段的 Interface 类型
+
+NocoBase 从 Interface 视角将字段分为了以下几类：
+
+![20240512110352](https://static-docs.nocobase.com/20240512110352.png)
+
+## 字段数据类型
+
+每个 Field Interface 都有一个默认的数据类型，例如 Interface 为数字（Number）的字段，数据类型默认是 double，但也可以是 float、decimal 等。目前支持的数据类型有：
+
+![20240512103733](https://static-docs.nocobase.com/20240512103733.png)
+
+## 字段类型映射
+
+主数据库新增字段的流程为：
+
+1. 选择 Interface 类型
+2. 配置当前 Interface 可选数据类型
+
+![20240512172416](https://static-docs.nocobase.com/20240512172416.png)
+
+外部数据源的字段映射流程为：
+
+1. 自动根据外部数据库的字段类型，映射相对应的数据类型（Field type）和 UI 类型（Field Interface）。
+2. 按需修改为更合适的数据类型和 Interface 类型
+
+![20240512172759](https://static-docs.nocobase.com/20240512172759.png)

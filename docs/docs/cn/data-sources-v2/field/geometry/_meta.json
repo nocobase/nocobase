@@ -1,11 +1,6 @@
 [
   {
     "type": "custom-link",
-    "label": "介绍",
-    "link": "/data-sources-v2/field/geometry/"
-  },
-  {
-    "type": "custom-link",
     "label": "点",
     "link": "/data-sources-v2/field/geometry/point"
   },

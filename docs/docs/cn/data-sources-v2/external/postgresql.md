@@ -63,19 +63,6 @@ PostgreSQL 可以作为外部数据库接入 NocoBase。接入后，NocoBase 会
 
 :::
 
-## 数据库账号权限
-
-连接账号至少需要能读取目标 schema、数据表、视图和字段信息。通常来说，需要给账号授予这些权限：
-
-- 对目标 schema 有 `USAGE` 权限
-- 对需要接入的数据表或视图有 `SELECT` 权限
-- 如果需要在 NocoBase 中新增记录，需要有 `INSERT` 权限
-- 如果需要编辑记录，需要有 `UPDATE` 权限
-- 如果需要删除记录，需要有 `DELETE` 权限
-- 如果表使用序列生成主键，写入时可能还需要对应 sequence 的使用权限
-
-如果只做查询、统计或报表展示，通常只授予 `USAGE` 和 `SELECT` 就够了。不要为了接入方便直接使用高权限账号。
-
 ## 选择数据表
 
 填写连接信息后，可以点击「Load Collections」读取 PostgreSQL 中可用的数据表和视图。读取结果会受到连接账号、`Schema`、`Table prefix` 和「Collections」配置影响。

@@ -1,11 +1,6 @@
 [
   {
     "type": "custom-link",
-    "label": "介绍",
-    "link": "/data-sources-v2/field/advanced/"
-  },
-  {
-    "type": "custom-link",
     "label": "UUID",
     "link": "/data-sources-v2/field/advanced/uuid"
   },

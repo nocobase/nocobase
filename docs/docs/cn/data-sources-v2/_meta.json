@@ -139,6 +139,16 @@
       },
       {
         "type": "custom-link",
+        "label": "日历表",
+        "link": "/data-sources-v2/collection/calendar"
+      },
+      {
+        "type": "custom-link",
+        "label": "评论表",
+        "link": "/data-sources-v2/collection/comment"
+      },
+      {
+        "type": "custom-link",
         "label": "文件表",
         "link": "/data-sources-v2/collection/file"
       },
@@ -172,11 +182,6 @@
         "type": "custom-link",
         "label": "基本类型",
         "items": [
-          {
-            "type": "custom-link",
-            "label": "介绍",
-            "link": "/data-sources-v2/field/basic/"
-          },
           {
             "type": "custom-link",
             "label": "单行文本",
@@ -240,11 +245,6 @@
         "items": [
           {
             "type": "custom-link",
-            "label": "介绍",
-            "link": "/data-sources-v2/field/choices/"
-          },
-          {
-            "type": "custom-link",
             "label": "勾选",
             "link": "/data-sources-v2/field/choices/checkbox"
           },
@@ -279,11 +279,6 @@
         "type": "custom-link",
         "label": "多媒体",
         "items": [
-          {
-            "type": "custom-link",
-            "label": "介绍",
-            "link": "/data-sources-v2/field/media/"
-          },
           {
             "type": "custom-link",
             "label": "Markdown",
@@ -322,7 +317,7 @@
         "items": [
           {
             "type": "custom-link",
-            "label": "概述",
+            "label": "介绍",
             "link": "/data-sources-v2/field/datetime/"
           },
           {
@@ -358,7 +353,7 @@
         "items": [
           {
             "type": "custom-link",
-            "label": "概述",
+            "label": "介绍",
             "link": "/data-sources-v2/field/relation/"
           },
           {
@@ -394,11 +389,6 @@
         "items": [
           {
             "type": "custom-link",
-            "label": "介绍",
-            "link": "/data-sources-v2/field/geometry/"
-          },
-          {
-            "type": "custom-link",
             "label": "点",
             "link": "/data-sources-v2/field/geometry/point"
           },
@@ -423,11 +413,6 @@
         "type": "custom-link",
         "label": "高级类型",
         "items": [
-          {
-            "type": "custom-link",
-            "label": "介绍",
-            "link": "/data-sources-v2/field/advanced/"
-          },
           {
             "type": "custom-link",
             "label": "Snowflake ID (53-bit)",
@@ -484,11 +469,6 @@
         "type": "custom-link",
         "label": "系统信息",
         "items": [
-          {
-            "type": "custom-link",
-            "label": "介绍",
-            "link": "/data-sources-v2/field/system-info/"
-          },
           {
             "type": "custom-link",
             "label": "创建日期",

@@ -21,6 +21,16 @@
   },
   {
     "type": "custom-link",
+    "label": "日历表",
+    "link": "/data-sources-v2/collection/calendar"
+  },
+  {
+    "type": "custom-link",
+    "label": "评论表",
+    "link": "/data-sources-v2/collection/comment"
+  },
+  {
+    "type": "custom-link",
     "label": "文件表",
     "link": "/data-sources-v2/collection/file"
   },

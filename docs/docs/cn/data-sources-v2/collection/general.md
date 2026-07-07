@@ -31,24 +31,7 @@ keywords: "普通表,General Collection,系统字段,数据表,NocoBase"
 - 报销单、采购单、付款申请等流程数据
 - 设备、资产、产品、门店等基础资料
 
-## 可用区块
 
-普通表可以用于大多数数据区块和筛选区块。
-
-| 区块 | 用途 |
-| --- | --- |
-| [表格区块](../../interface-builder/blocks/data-blocks/table.md) | 查看、筛选、排序、批量处理记录。 |
-| [表单区块](../../interface-builder/blocks/data-blocks/form.md) | 新增或编辑单条记录。 |
-| [详情区块](../../interface-builder/blocks/data-blocks/details.md) | 查看单条记录详情。 |
-| [列表区块](../../interface-builder/blocks/data-blocks/list.md) | 以列表方式展示记录。 |
-| [网格卡片区块](../../interface-builder/blocks/data-blocks/grid-card.md) | 以卡片网格展示图片、文件、商品、资产等记录。 |
-| [看板区块](../../interface-builder/blocks/data-blocks/kanban.md) | 按状态、阶段、负责人等字段分组展示记录。 |
-| [日历区块](../../interface-builder/blocks/data-blocks/calendar.md) | 按日期或时间范围展示记录。 |
-| [图表区块](../../interface-builder/blocks/data-blocks/chart.md) | 基于记录生成统计图表。 |
-| [地图区块](../../interface-builder/blocks/data-blocks/map.md) | 按地理位置展示记录。 |
-| [甘特图区块](../../interface-builder/blocks/data-blocks/gantt.md) | 按开始、结束时间展示项目计划、任务排期。 |
-| [表单筛选区块](../../interface-builder/blocks/filter-blocks/form.md) | 使用表单条件筛选页面中的数据区块。 |
-| [树筛选区块](../../interface-builder/blocks/filter-blocks/tree.md) | 使用树结构筛选页面中的数据区块，常用于分类、组织、地区等层级筛选。 |
 
 ## 创建配置
 
@@ -102,8 +85,65 @@ keywords: "普通表,General Collection,系统字段,数据表,NocoBase"
 
 :::
 
-## 相关链接
+## 编辑配置
 
-- [数据表字段](../field/index.md) — 配置普通表字段
-- [主数据库](../main/index.md) — 创建和管理主数据库中的普通表
-- [外部数据库](../external/index.md) — 接入外部数据库已有表
+在数据表列表中，点击普通表右侧的「Edit」，可以修改数据表的基础配置。编辑数据表主要用于调整数据表元信息和部分运行配置，不用于批量修改字段结构。
+
+如果要新增字段、修改字段类型、调整字段界面类型或删除字段，需要进入「Configure fields」处理。
+
+![edit_collection](https://static-docs.nocobase.com/edit_collection.png)
+
+![edit_collection_configure](https://static-docs.nocobase.com/edit_collection_configure.png)
+
+| 配置 | 允许编辑 | 说明 |
+| --- | --- | --- |
+| Collection display name | 是 | 数据表在界面中显示的名称，比如「客户」「订单」「合同附件」。修改后只影响界面展示，不修改数据表标识名称。 |
+| Collection name | 否 | 数据表的标识名称，用于 API、关系字段、权限、工作流等内部引用。创建后不能在编辑表单中修改。 |
+| Inherits | 条件支持 | 选择要继承的父表。只有主数据库是 PostgreSQL 且界面显示该配置时可用。已有数据表调整继承关系前，需要确认字段结构、页面区块、权限和工作流是否依赖原来的结构。 |
+| Categories | 是 | 数据表分类。分类只影响数据表管理界面的组织方式，不改变数据表结构。 |
+| Description | 是 | 数据表说明。适合补充数据表用途、维护人、数据来源和相关业务流程。 |
+| Use simple pagination mode | 是 | 简单分页模式。启用后，表格区块分页时会跳过总记录数统计，适合数据量很大的表。 |
+| Record unique key | 是 | 记录唯一标识。用于在区块中定位一条记录，通常选择主键或唯一字段。无主键数据表必须配置，否则无法正确创建区块、查看或编辑记录。 |
+
+:::warning 注意
+
+编辑数据表不会自动调整已有字段。`Preset fields` 只在创建表时生效；如果创建后还需要补充创建时间、创建人、更新时间、更新人等字段，需要在「Configure fields」中单独新增。
+
+:::
+
+## 删除数据表
+
+在数据表列表中，点击普通表右侧的「Delete」，可以删除数据表。主数据库中的普通表还支持批量选择后统一删除。
+
+![delete_collection](https://static-docs.nocobase.com/delete_collection.png)
+
+删除时会出现二次确认。确认后，NocoBase 会删除这张普通表的 Collection 元数据，并删除主数据库中的真实数据表及其中的数据。
+
+![delete_collection_second_confirmation](https://static-docs.nocobase.com/delete_collection_second_confirmation.png)
+
+删除确认框里有一个可选项：自动删除依赖该数据表的对象。启用后，NocoBase 会尝试一并删除依赖这张表的数据库对象，比如基于这张表创建的数据库视图，以及继续依赖这些对象的其他对象。
+
+:::danger 警告
+
+删除普通表是高风险操作。删除后，表结构、表数据、字段元数据，以及依赖这张表的页面区块、关系字段、权限、工作流和 API 调用都可能失效。勾选自动删除依赖对象前，先确认这些对象也可以被删除。
+
+:::
+
+## 页面配置使用
+
+普通表可以用于大多数数据区块和筛选区块。
+
+| 区块 | 用途 |
+| --- | --- |
+| [表格区块](../../interface-builder/blocks/data-blocks/table.md) | 查看、筛选、排序、批量处理记录。 |
+| [表单区块](../../interface-builder/blocks/data-blocks/form.md) | 新增或编辑单条记录。 |
+| [详情区块](../../interface-builder/blocks/data-blocks/details.md) | 查看单条记录详情。 |
+| [列表区块](../../interface-builder/blocks/data-blocks/list.md) | 以列表方式展示记录。 |
+| [网格卡片区块](../../interface-builder/blocks/data-blocks/grid-card.md) | 以卡片网格展示图片、文件、商品、资产等记录。 |
+| [看板区块](../../interface-builder/blocks/data-blocks/kanban.md) | 按状态、阶段、负责人等字段分组展示记录。 |
+| [日历区块](../../interface-builder/blocks/data-blocks/calendar.md) | 按日期或时间范围展示记录。 |
+| [图表区块](../../interface-builder/blocks/data-blocks/chart.md) | 基于记录生成统计图表。 |
+| [地图区块](../../interface-builder/blocks/data-blocks/map.md) | 按地理位置展示记录。 |
+| [甘特图区块](../../interface-builder/blocks/data-blocks/gantt.md) | 按开始、结束时间展示项目计划、任务排期。 |
+| [表单筛选区块](../../interface-builder/blocks/filter-blocks/form.md) | 使用表单条件筛选页面中的数据区块。 |
+| [树筛选区块](../../interface-builder/blocks/filter-blocks/tree.md) | 使用树结构筛选页面中的数据区块，常用于分类、组织、地区等层级筛选。 |

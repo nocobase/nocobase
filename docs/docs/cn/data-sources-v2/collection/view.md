@@ -16,10 +16,6 @@ keywords: "数据库视图,Collection View,视图"
 
 :::
 
-## 插件安装
-
-内置插件，无需单独安装。
-
 ## 连接数据库视图
 
 1. 点击系统功能中的数据源菜单，访问数据源主页。
@@ -55,7 +51,7 @@ keywords: "数据库视图,Collection View,视图"
 ### 字段映射
 
 字段映射是连接数据库视图后必须确认的配置。连接 view 后，NocoBase 会先推断每个视图字段的来源和数据库类型：能推断到来源字段时，会自动带出已有字段的 Field type、Field interface 和 Field display name；不能推断时，则根据数据库字段类型给出初始 Field type，需要手动确认字段类型和界面配置。
-[了解更多字段配置信息](../field/index.md)
+[了解更多字段配置信息](../collection/field-overview.md)
 
 ![connect_view_configure_field_source](https://static-docs.nocobase.com/connect_view_configure_field_source.png)
 ![connect_view_configure_field_interface](https://static-docs.nocobase.com/connect_view_configure_field_interface.png)
@@ -114,7 +110,7 @@ keywords: "数据库视图,Collection View,视图"
 
 数据库视图的普通字段来自数据库 view，NocoBase 不会在 view 中直接新增、修改或删除真实列。在字段配置页中，只支持新增多对一关系字段，用来补充 NocoBase 中的业务关联。数据库视图不支持作为关系字段的目标数据表，标题字段通常不需要配置。
 
-[了解更多字段配置信息](../field/index.md)
+[了解更多字段配置信息](../collection/field-overview.md)
 
 ![configure_view](https://static-docs.nocobase.com/configure_view.png)
 
@@ -124,7 +120,7 @@ keywords: "数据库视图,Collection View,视图"
 
 点击「Add field」可以新增多对一关系字段。
 
-[了解更多字段配置信息](../field/index.md)
+[了解更多字段配置信息](../collection/field-overview.md)
 
 ![add_view_field](https://static-docs.nocobase.com/add_view_field.png)
 ![add_view_field_configure](https://static-docs.nocobase.com/add_view_field_configure.png)
@@ -143,7 +139,7 @@ keywords: "数据库视图,Collection View,视图"
 
 数据库视图连接后，NocoBase 会根据 view 字段和来源字段推断 Field type，并匹配一个默认 Field interface。如果字段来源、展示方式或业务含义不符合预期，可以在字段配置中调整映射。
 
-[了解更多字段配置信息](../field/index.md)
+[了解更多字段配置信息](../collection/field-overview.md)
 
 ![edit_view_field_configure](https://static-docs.nocobase.com/edit_view_field_configure.png)
 
@@ -176,7 +172,7 @@ keywords: "数据库视图,Collection View,视图"
 ### 编辑字段
 
 点击字段右侧的「Edit」可以编辑字段配置。编辑字段适合调整字段在 NocoBase 中的展示和使用方式，比如修改显示名称、描述、校验规则或字段专属配置。
-[了解更多字段配置信息](../field/index.md)
+[了解更多字段配置信息](../collection/field-overview.md)
 
 ![edit_field](https://static-docs.nocobase.com/edit_field.png)
 ![edit_field_configure](https://static-docs.nocobase.com/edit_field_configure.png)
@@ -191,7 +187,7 @@ keywords: "数据库视图,Collection View,视图"
 
 点击字段右侧的「Delete」可以删除单个字段。删除字段只会移除 NocoBase 中保存的字段，不会删除数据库 view 的真实列。
 
-[了解更多字段配置信息](../field/index.md)
+[了解更多字段配置信息](../collection/field-overview.md)
 
 ![delete_field](https://static-docs.nocobase.com/delete_field.png)
 

@@ -1,11 +1,6 @@
 [
   {
     "type": "custom-link",
-    "label": "介绍",
-    "link": "/data-sources-v2/field/basic/"
-  },
-  {
-    "type": "custom-link",
     "label": "单行文本",
     "link": "/data-sources-v2/field/basic/input"
   },

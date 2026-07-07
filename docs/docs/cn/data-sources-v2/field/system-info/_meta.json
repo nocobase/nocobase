@@ -1,11 +1,6 @@
 [
   {
     "type": "custom-link",
-    "label": "介绍",
-    "link": "/data-sources-v2/field/system-info/"
-  },
-  {
-    "type": "custom-link",
     "label": "创建时间",
     "link": "/data-sources-v2/field/system-info/created-at"
   },
