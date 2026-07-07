@@ -90,7 +90,10 @@ export class OptionsParser {
       return {};
     }
 
-    const filterTargetKey = this.context.targetKey || this.collection.filterTargetKey;
+    const _rawFilterTargetKey = this.context.targetKey || this.collection.filterTargetKey;
+    const filterTargetKey = Array.isArray(_rawFilterTargetKey) && _rawFilterTargetKey.length === 1
+      ? _rawFilterTargetKey[0]
+      : _rawFilterTargetKey;
 
     // multi filter target key array
     // [{ a: 1, b: 2}, { a: 1, b: 3}]
