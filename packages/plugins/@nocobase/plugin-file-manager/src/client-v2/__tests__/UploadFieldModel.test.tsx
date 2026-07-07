@@ -125,6 +125,12 @@ vi.mock('antd', async (importOriginal) => {
 describe('UploadFieldModel', () => {
   afterEach(() => {
     cleanup();
+    vi.unstubAllGlobals();
+    (
+      document.createElement as typeof document.createElement & {
+        mockRestore?: () => void;
+      }
+    ).mockRestore?.();
   });
 
   it('renders card upload, syncs completed files and opens existing-record selector', () => {

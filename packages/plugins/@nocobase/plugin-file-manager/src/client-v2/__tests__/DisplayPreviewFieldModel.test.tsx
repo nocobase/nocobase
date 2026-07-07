@@ -89,6 +89,12 @@ function createModel(props: Record<string, unknown>) {
 describe('DisplayPreviewFieldModel', () => {
   afterEach(() => {
     cleanup();
+    vi.unstubAllGlobals();
+    (
+      document.createElement as typeof document.createElement & {
+        mockRestore?: () => void;
+      }
+    ).mockRestore?.();
   });
 
   it('renders file previews and opens the preview renderer from thumbnails', async () => {
