@@ -184,6 +184,7 @@ export class PluginCalendarClient extends Plugin<any, Application> {
       title: tExpr('Calendar collection'),
       order: 20,
       color: 'orange',
+      creatable: false,
       collection: {
         options: {
           template: 'calendar',
