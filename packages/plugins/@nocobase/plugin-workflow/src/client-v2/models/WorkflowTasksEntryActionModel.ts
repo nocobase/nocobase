@@ -12,7 +12,16 @@ import { observable } from '@nocobase/flow-engine';
 import type { ButtonProps } from 'antd/es/button';
 import { getWorkflowTasksPath } from '../constants';
 import { tExpr } from '../locale';
-import { getWorkflowTaskRegistry, subscribeWorkflowTaskCounts, type WorkflowTaskFlowContext } from '../taskCenter';
+import {
+  getAvailableWorkflowTaskTypeKeys,
+  getWorkflowTaskRegistry,
+  getWorkflowTaskTypeKeys,
+  subscribeWorkflowTaskCounts,
+  TASK_STATUS,
+  type WorkflowTaskCounts,
+  type WorkflowTaskFlowContext,
+} from '../taskCenter';
+import { buildWorkflowTasksEmbeddedPath } from '../pages/workflowTasksEmbeddedRoute';
 
 const WORKFLOW_TASKS_EMBEDDED_PAGE_MODEL = 'WorkflowTasksEmbeddedPageModel';
 
@@ -31,6 +40,7 @@ export class WorkflowTasksEntryActionModel extends ActionModel {
     value: null,
   });
   private countsSubscription?: WorkflowTaskCountsSubscription;
+  private workflowTaskCounts: WorkflowTaskCounts = {};
 
   defaultProps: ButtonProps = {
     title: tExpr('Workflow todos'),
@@ -67,6 +77,12 @@ export class WorkflowTasksEntryActionModel extends ActionModel {
 
   async onClick(event?: unknown) {
     if (this.context.isMobileLayout) {
+      const embeddedPath = await this.getWorkflowTasksEmbeddedPath();
+      if (embeddedPath) {
+        this.context.router.navigate(embeddedPath);
+        return;
+      }
+
       await this.dispatchEvent(
         'click',
         {
@@ -93,11 +109,92 @@ export class WorkflowTasksEntryActionModel extends ActionModel {
     });
   }
 
+  private async getWorkflowTasksEmbeddedPath() {
+    const ctx = this.context as WorkflowTaskFlowContext | undefined;
+    const taskTypes = getWorkflowTaskRegistry(ctx);
+    let defaultTaskType = this.getDefaultWorkflowTaskType(taskTypes);
+
+    if (!getAvailableWorkflowTaskTypeKeys(taskTypes, this.workflowTaskCounts).length) {
+      this.ensureWorkflowTaskCountsSubscription();
+      await this.countsSubscription?.reload().catch((error) => {
+        console.error('Failed to load workflow task counts', error);
+      });
+      defaultTaskType = this.getDefaultWorkflowTaskType(taskTypes);
+    }
+
+    if (!defaultTaskType || !this.uid) {
+      return null;
+    }
+
+    const location = this.getCurrentLocation();
+    if (!location.pathname) {
+      return null;
+    }
+
+    const basePathname = this.ensureCurrentViewPathname(location.pathname);
+    const pathname = buildWorkflowTasksEmbeddedPath({
+      pathname: basePathname,
+      viewUid: this.uid,
+      route: {
+        taskType: defaultTaskType,
+        status: TASK_STATUS.PENDING,
+      },
+    });
+
+    return `${pathname}${location.search}${location.hash}`;
+  }
+
+  private getDefaultWorkflowTaskType(taskTypes: ReturnType<typeof getWorkflowTaskRegistry>) {
+    return (
+      getAvailableWorkflowTaskTypeKeys(taskTypes, this.workflowTaskCounts)[0] ?? getWorkflowTaskTypeKeys(taskTypes)[0]
+    );
+  }
+
+  private ensureWorkflowTaskCountsSubscription() {
+    if (!this.countsSubscription) {
+      this.subscribeWorkflowTaskCounts();
+    }
+  }
+
+  private getCurrentLocation() {
+    const contextLocation = (this.context as { location?: { pathname?: string; search?: string; hash?: string } })
+      .location;
+    const contextRoute = (this.context as { route?: { pathname?: string; search?: string; hash?: string } }).route;
+    const windowLocation = typeof window === 'undefined' ? undefined : window.location;
+
+    return {
+      pathname: contextLocation?.pathname || contextRoute?.pathname || windowLocation?.pathname || '',
+      search: contextLocation?.search || contextRoute?.search || windowLocation?.search || '',
+      hash: contextLocation?.hash || contextRoute?.hash || windowLocation?.hash || '',
+    };
+  }
+
+  private ensureCurrentViewPathname(pathname: string) {
+    const segments = pathname.replace(/^\/+/, '').replace(/\/+$/, '').split('/').filter(Boolean);
+    const hasCurrentView = segments.some((segment, index) => {
+      if (index === 0 || segments[index - 1] !== 'view') {
+        return false;
+      }
+      try {
+        return decodeURIComponent(segment) === this.uid;
+      } catch {
+        return segment === this.uid;
+      }
+    });
+
+    if (hasCurrentView) {
+      return pathname;
+    }
+
+    return `${pathname.replace(/\/+$/, '')}/view/${encodeURIComponent(this.uid)}`;
+  }
+
   private subscribeWorkflowTaskCounts() {
     this.countsSubscription?.unsubscribe();
     const ctx = this.context as WorkflowTaskFlowContext | undefined;
     const taskTypes = getWorkflowTaskRegistry(ctx);
-    this.countsSubscription = subscribeWorkflowTaskCounts(ctx, taskTypes, ({ total }) => {
+    this.countsSubscription = subscribeWorkflowTaskCounts(ctx, taskTypes, ({ counts, total }) => {
+      this.workflowTaskCounts = counts;
       this.actionPanelBadge = total > 0 ? { count: total, overflowCount: 99 } : null;
     });
   }

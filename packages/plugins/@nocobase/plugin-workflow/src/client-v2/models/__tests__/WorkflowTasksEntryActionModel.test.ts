@@ -18,6 +18,7 @@ const holder = vi.hoisted(() => ({
       listMine: vi.fn(),
     },
   },
+  location: { pathname: '/admin/page', search: '', hash: '' },
   stepParams: {} as Record<string, Record<string, unknown>>,
   taskTypes: {
     getKeys: () => [],
@@ -51,6 +52,7 @@ vi.mock('@nocobase/client-v2', () => ({
         },
       },
       isMobileLayout: false,
+      location: holder.location,
       router: {
         navigate: holder.navigate,
       },
@@ -95,6 +97,7 @@ describe('WorkflowTasksEntryActionModel', () => {
     holder.dispatchEvent.mockResolvedValue(undefined);
     holder.resources.userWorkflowTasks.listMine.mockReset();
     holder.resources.userWorkflowTasks.listMine.mockResolvedValue({ data: [] });
+    holder.location = { pathname: '/admin/page', search: '', hash: '' };
     holder.stepParams = {};
     holder.taskTypes = {
       getKeys: () => [],
@@ -111,11 +114,91 @@ describe('WorkflowTasksEntryActionModel', () => {
     expect(holder.dispatchEvent).not.toHaveBeenCalled();
   });
 
-  it('uses the normal openView click flow in mobile layout', () => {
+  it('directly navigates to the full embedded route in mobile layout when counts are ready', async () => {
+    const taskType = {
+      key: 'demo',
+      title: 'Demo',
+      collection: 'demoTasks',
+      Item: () => null,
+      Detail: () => null,
+    };
+    holder.taskTypes = {
+      getKeys: () => ['demo'],
+      get: (key: string) => (key === 'demo' ? taskType : undefined),
+    };
+    holder.resources.userWorkflowTasks.listMine.mockResolvedValue({
+      data: [{ type: 'demo', stats: { pending: 2, all: 2 } }],
+    });
+    const model = new WorkflowTasksEntryActionModel();
+    model.context.isMobileLayout = true;
+    model.uid = 'workflow-entry';
+
+    (model as unknown as { onMount: () => void }).onMount();
+    await vi.waitFor(() => expect(model.actionPanelBadge).toEqual({ count: 2, overflowCount: 99 }));
+    await model.onClick({ type: 'click' });
+
+    expect(holder.navigate).toHaveBeenCalledWith('/admin/page/view/workflow-entry/tasktype/demo/status/pending');
+    expect(holder.dispatchEvent).not.toHaveBeenCalled();
+  });
+
+  it('reloads counts before direct mobile navigation when counts are not ready', async () => {
+    const taskType = {
+      key: 'demo',
+      title: 'Demo',
+      collection: 'demoTasks',
+      Item: () => null,
+      Detail: () => null,
+    };
+    holder.taskTypes = {
+      getKeys: () => ['demo'],
+      get: (key: string) => (key === 'demo' ? taskType : undefined),
+    };
+    holder.resources.userWorkflowTasks.listMine.mockResolvedValue({
+      data: [{ type: 'demo', stats: { pending: 2, all: 2 } }],
+    });
+    const model = new WorkflowTasksEntryActionModel();
+    model.context.isMobileLayout = true;
+    model.uid = 'workflow-entry';
+
+    await model.onClick({ type: 'click' });
+
+    expect(holder.resources.userWorkflowTasks.listMine).toHaveBeenCalledWith({ filter: { type: ['demo'] } });
+    expect(holder.navigate).toHaveBeenCalledWith('/admin/page/view/workflow-entry/tasktype/demo/status/pending');
+    expect(holder.dispatchEvent).not.toHaveBeenCalled();
+  });
+
+  it('preserves current search and hash during direct mobile navigation', async () => {
+    const taskType = {
+      key: 'demo',
+      title: 'Demo',
+      collection: 'demoTasks',
+      Item: () => null,
+      Detail: () => null,
+      alwaysShow: true,
+    };
+    holder.location = { pathname: '/admin/page', search: '?foo=1', hash: '#section' };
+    holder.taskTypes = {
+      getKeys: () => ['demo'],
+      get: (key: string) => (key === 'demo' ? taskType : undefined),
+    };
+    const model = new WorkflowTasksEntryActionModel();
+    model.context.isMobileLayout = true;
+    model.context.location = holder.location;
+    model.uid = 'workflow-entry';
+
+    await model.onClick({ type: 'click' });
+
+    expect(holder.navigate).toHaveBeenCalledWith(
+      '/admin/page/view/workflow-entry/tasktype/demo/status/pending?foo=1#section',
+    );
+    expect(holder.dispatchEvent).not.toHaveBeenCalled();
+  });
+
+  it('keeps the normal openView click flow in mobile layout when no task types exist', async () => {
     const model = new WorkflowTasksEntryActionModel();
     model.context.isMobileLayout = true;
 
-    model.onClick({ type: 'click' });
+    await model.onClick({ type: 'click' });
 
     expect(holder.navigate).not.toHaveBeenCalled();
     expect(holder.dispatchEvent).toHaveBeenCalledWith(
