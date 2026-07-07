@@ -113,6 +113,18 @@ describe('VariableInput', () => {
     expect(selectorButton).toBeInTheDocument();
   });
 
+  it('disables the FlowContextSelector button when disabled', async () => {
+    const flowContext = createTestFlowContext();
+    render(
+      <TestFlowContextWrapper context={flowContext}>
+        <VariableInput value="test" metaTree={() => flowContext.getPropertyMetaTree()} disabled />
+      </TestFlowContextWrapper>,
+    );
+
+    const selectorButton = await screen.findByRole('button');
+    expect(selectorButton).toBeDisabled();
+  });
+
   it('should not highlight the selector button for synthetic constant/null paths', async () => {
     const flowContext = createTestFlowContext();
 
