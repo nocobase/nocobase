@@ -67,11 +67,6 @@ calculators.register('startsWith', { name: '{{t("starts with")}}', type: 'boolea
 calculators.register('notStartsWith', { name: '{{t("not starts with")}}', type: 'boolean', group: 'string' });
 calculators.register('endsWith', { name: '{{t("ends with")}}', type: 'boolean', group: 'string' });
 calculators.register('notEndsWith', { name: '{{t("not ends with")}}', type: 'boolean', group: 'string' });
-calculators.register('concat', {
-  name: `{{t("Concatenate", { ns: "${NAMESPACE}" })}}`,
-  type: 'string',
-  group: 'string',
-});
 
 const calculatorGroups = [
   { value: 'boolean', title: '{{t("Comparision")}}' },
