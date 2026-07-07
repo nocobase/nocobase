@@ -84,6 +84,22 @@ export type FlowSurfaceAuthoringWriteAction = 'applyBlueprint' | 'compose' | 'ad
 
 type AuthoringErrorInput = Omit<FlowSurfaceErrorItemInput, 'message'> & { message: string };
 
+const FLOW_SURFACE_DATA_SCOPE_DATE_EMPTY_OPERATORS = new Set(['$empty', '$notEmpty']);
+const FLOW_SURFACE_DATA_SCOPE_DATE_ALLOWED_OPERATORS = new Set([
+  ...FLOW_SURFACE_DATE_FILTER_OPERATORS,
+  ...FLOW_SURFACE_DATA_SCOPE_DATE_EMPTY_OPERATORS,
+]);
+const FLOW_SURFACE_DATA_SCOPE_DATE_UI_INCOMPATIBLE_OPERATORS = new Set([
+  '$eq',
+  '$ne',
+  '$lt',
+  '$lte',
+  '$gt',
+  '$gte',
+  '$in',
+  '$notIn',
+]);
+
 export interface FlowSurfaceAuthoringValidationContext {
   authoringActionName?: FlowSurfaceAuthoringWriteAction;
   applyBlueprintScriptAssets?: Record<string, any>;
@@ -5310,6 +5326,95 @@ function collectDefaultFilterDateValueError(
   }
 }
 
+function collectPublicDataScopeDateOperatorError(
+  operator: any,
+  value: any,
+  path: string,
+  errors: AuthoringErrorInput[],
+  fieldContext?: FlowSurfaceDateConditionFieldContext | null,
+) {
+  const fieldMeta = getDateConditionFieldContextMeta(fieldContext);
+  if (!isFlowSurfaceDateLikeFieldMeta(fieldMeta)) {
+    return;
+  }
+  const normalizedOperator = typeof operator === 'string' ? operator.trim() : '';
+  if (FLOW_SURFACE_DATA_SCOPE_DATE_ALLOWED_OPERATORS.has(normalizedOperator)) {
+    return;
+  }
+
+  const isComparisonOperator = FLOW_SURFACE_DATA_SCOPE_DATE_UI_INCOMPATIBLE_OPERATORS.has(normalizedOperator);
+  const suggestedOperator = isComparisonOperator
+    ? getSuggestedPublicDataScopeDateOperator(normalizedOperator)
+    : undefined;
+  const suggestedValue = getSuggestedPublicDataScopeDateValue(value);
+  pushAuthoringError(errors, {
+    path,
+    ruleId: 'dataScope-date-operator-ui-incompatible',
+    message: `flowSurfaces authoring ${path} cannot use operator '${normalizedOperator}' for a date/datetime DataScope condition`,
+    details: {
+      fieldPath: fieldContext?.fieldPath,
+      fieldType: fieldMeta.type,
+      fieldInterface: fieldMeta.interface,
+      invalidOperator: normalizedOperator,
+      invalidValue: value,
+      allowedOperators: Array.from(FLOW_SURFACE_DATA_SCOPE_DATE_ALLOWED_OPERATORS),
+      ...(suggestedOperator ? { suggestedOperator } : {}),
+      ...(typeof suggestedValue !== 'undefined' ? { suggestedValue } : {}),
+      repairHint:
+        'For public settings.dataScope date/datetime fields, use UI date operators such as $dateOn with UI date values like "2026-07-05"; do not move fixed data-range conditions to defaultFilter.',
+      repairExample: {
+        logic: '$and',
+        items: [
+          {
+            path: fieldContext?.fieldPath || 'createdAt',
+            operator: suggestedOperator || '$dateOn',
+            value: typeof suggestedValue !== 'undefined' ? suggestedValue : '2026-07-05',
+          },
+        ],
+      },
+      agentInstruction:
+        'Replace date/datetime DataScope comparison operators with $dateOn/$dateNotOn/$dateBefore/$dateAfter/$dateNotBefore/$dateNotAfter/$dateBetween and UI date values. Keep the condition in dataScope when it is a fixed data range.',
+    },
+  });
+}
+
+function getSuggestedPublicDataScopeDateOperator(operator: string) {
+  switch (operator) {
+    case '$eq':
+      return '$dateOn';
+    case '$ne':
+      return '$dateNotOn';
+    case '$lt':
+      return '$dateBefore';
+    case '$lte':
+      return '$dateNotAfter';
+    case '$gt':
+      return '$dateAfter';
+    case '$gte':
+      return '$dateNotBefore';
+    default:
+      return undefined;
+  }
+}
+
+function getSuggestedPublicDataScopeDateValue(value: any) {
+  if (typeof value === 'string') {
+    const match = /^(\d{4}-\d{2}-\d{2})/.exec(value.trim());
+    if (match) {
+      return match[1];
+    }
+  }
+  if (Array.isArray(value)) {
+    const suggested = value
+      .map((item) => (typeof item === 'string' ? /^(\d{4}-\d{2}-\d{2})/.exec(item.trim())?.[1] : undefined))
+      .filter(Boolean);
+    if (suggested.length === value.length && suggested.length > 0) {
+      return suggested;
+    }
+  }
+  return undefined;
+}
+
 function collectTopLevelLayoutErrors(
   actionName: FlowSurfaceAuthoringWriteAction,
   values: any,
@@ -7294,13 +7399,9 @@ function collectFilterGroupDateConditionErrors(
     return;
   }
   const fieldPath = String(value.path || value.field || '').trim();
-  collectDefaultFilterDateValueError(
-    value.operator,
-    value.value,
-    `${path}.value`,
-    errors,
-    fieldPath ? resolveDefaultFilterDateConditionField(fieldPath, block, context) : undefined,
-  );
+  const fieldContext = fieldPath ? resolveDefaultFilterDateConditionField(fieldPath, block, context) : undefined;
+  collectPublicDataScopeDateOperatorError(value.operator, value.value, `${path}.operator`, errors, fieldContext);
+  collectDefaultFilterDateValueError(value.operator, value.value, `${path}.value`, errors, fieldContext);
 }
 
 function collectGridCardSettingsErrors(

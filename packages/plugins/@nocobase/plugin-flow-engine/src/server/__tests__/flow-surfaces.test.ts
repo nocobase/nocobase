@@ -11311,6 +11311,85 @@ describe('flowSurfaces resource', () => {
       expect(readErrorMessage(response)).toContain(testCase.reason);
     }
   });
+
+  it('should reject UI-incompatible date operators in public DataScope before persistence', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Date DataScope contract page',
+      tabTitle: 'Date DataScope contract tab',
+    });
+
+    const createdTable = getData(
+      await rootAgent.resource('flowSurfaces').addBlock({
+        values: {
+          target: {
+            uid: page.tabSchemaUid,
+          },
+          type: 'table',
+          resourceInit: {
+            dataSourceKey: 'main',
+            collectionName: 'calendar_events',
+          },
+          defaultFilter: buildFlowSurfaceTestDefaultFilter({ collectionName: 'calendar_events' }),
+          fields: ['title', 'status', 'startsAt'],
+          settings: {
+            dataScope: {},
+          },
+        },
+      }),
+    );
+
+    const invalidDateDataScope = await rootAgent.resource('flowSurfaces').configure({
+      values: {
+        target: {
+          uid: createdTable.uid,
+        },
+        changes: {
+          dataScope: {
+            logic: '$and',
+            items: [{ path: 'startsAt', operator: '$eq', value: '2026-07-05T05:19:14.887Z' }],
+          },
+        },
+      },
+    });
+    expect(invalidDateDataScope.status).toBe(400);
+    expectFlowSurfaceError(
+      invalidDateDataScope,
+      'dataScope-date-operator-ui-incompatible',
+      '$.changes.dataScope.items[0].operator',
+    );
+
+    let tableSurface = await getSurface(rootAgent, {
+      uid: createdTable.uid,
+    });
+    expect(tableSurface.tree.stepParams?.tableSettings?.dataScope?.filter).toEqual({
+      logic: '$and',
+      items: [],
+    });
+
+    const validDateDataScope = {
+      logic: '$and',
+      items: [
+        { path: 'startsAt', operator: '$dateOn', value: '2026-07-05' },
+        { path: 'endsAt', operator: '$dateBetween', value: ['2026-07-01', '2026-07-31'] },
+      ],
+    };
+    const validDateDataScopeResponse = await rootAgent.resource('flowSurfaces').configure({
+      values: {
+        target: {
+          uid: createdTable.uid,
+        },
+        changes: {
+          dataScope: validDateDataScope,
+        },
+      },
+    });
+    expect(validDateDataScopeResponse.status).toBe(200);
+
+    tableSurface = await getSurface(rootAgent, {
+      uid: createdTable.uid,
+    });
+    expect(tableSurface.tree.stepParams?.tableSettings?.dataScope?.filter).toEqual(validDateDataScope);
+  });
 });
 
 function getData(response: any) {
