@@ -61,12 +61,6 @@ calculators.register('gte', { name: '≥', type: 'boolean', group: 'boolean' });
 calculators.register('lt', { name: '<', type: 'boolean', group: 'boolean' });
 calculators.register('lte', { name: '≤', type: 'boolean', group: 'boolean' });
 
-calculators.register('add', { name: '+', type: 'number', group: 'number' });
-calculators.register('minus', { name: '-', type: 'number', group: 'number' });
-calculators.register('multiple', { name: '*', type: 'number', group: 'number' });
-calculators.register('divide', { name: '/', type: 'number', group: 'number' });
-calculators.register('mod', { name: '%', type: 'number', group: 'number' });
-
 calculators.register('includes', { name: '{{t("contains")}}', type: 'boolean', group: 'string' });
 calculators.register('notIncludes', { name: '{{t("does not contain")}}', type: 'boolean', group: 'string' });
 calculators.register('startsWith', { name: '{{t("starts with")}}', type: 'boolean', group: 'string' });
