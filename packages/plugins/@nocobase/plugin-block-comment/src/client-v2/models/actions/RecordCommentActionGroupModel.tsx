@@ -19,8 +19,14 @@ import {
 import { buildSubModelItem, type FlowModelContext } from '@nocobase/flow-engine';
 
 import { tExpr } from '../../locale';
+import { RecordCommentSubmitActionModel } from './RecordCommentSubmitActionModel';
 
-const ALLOWED_RECORD_COMMENT_SUBMIT_ACTIONS = ['AIEmployeeActionModel', 'JSItemActionModel', 'JSActionModel'];
+const ALLOWED_RECORD_COMMENT_SUBMIT_ACTIONS = [
+  'RecordCommentSubmitActionModel',
+  'AIEmployeeActionModel',
+  'JSItemActionModel',
+  'JSActionModel',
+];
 const ALLOWED_RECORD_COMMENT_RECORD_ACTIONS = ['AIEmployeeActionModel'];
 
 const getRecordCommentActionModelClass = (
@@ -103,6 +109,7 @@ RecordCommentActionGroupModel.registerActionModels({
 });
 
 RecordCommentSubmitActionGroupModel.registerActionModels({
+  RecordCommentSubmitActionModel,
   JSActionModel,
   JSItemActionModel,
 });

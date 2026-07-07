@@ -126,6 +126,7 @@ const RenderCell = observer<any>((props) => {
                 fieldPath: dataIndex,
                 record: record,
                 fieldProps: { ...columnModel.props, ...columnModel.subModels.field.props },
+                sourceFieldModelUid: columnModel.subModels.field.uid,
                 onOk: (values) => {
                   record[dataIndex] = values[dataIndex];
                   // 仅重渲染单元格

@@ -433,6 +433,10 @@ export abstract class BaseApplication<
     return getSubAppName(this.getPublicPath()) || null;
   }
 
+  getCdnUrl() {
+    return window['__webpack_public_path__'] || this.getPublicPath();
+  }
+
   getPublicPath() {
     let publicPath = this.options.publicPath || '/';
     if (!publicPath.endsWith('/')) {

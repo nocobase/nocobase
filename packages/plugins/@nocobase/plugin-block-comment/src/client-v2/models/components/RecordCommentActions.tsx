@@ -47,26 +47,43 @@ const recordCommentActionsClassName = css`
   }
 `;
 
+const UNIQUE_RECORD_COMMENT_ACTION_MODELS = new Set([
+  'QuoteReplyRecordCommentActionModel',
+  'EditRecordCommentActionModel',
+  'DeleteRecordCommentActionModel',
+]);
+
 export const RecordCommentActions = observer(
   ({
     blockModel,
     record,
     itemModel,
+    actionSettingsModel = itemModel,
     forkKeyPrefix,
     setEditing,
   }: {
     blockModel: RecordCommentsBlockModel;
     record: RecordCommentRecord;
     itemModel: FlowModel;
+    actionSettingsModel?: FlowModel;
     forkKeyPrefix: string;
     setEditing: () => void;
   }) => {
     const recordKey = getRecordPrimaryKeyValue(record, blockModel.collection);
+    const renderedUniqueActionModels = new Set<string>();
 
     return (
       <DndProvider>
         <Space size={4} className={recordCommentActionsClassName}>
           {itemModel.mapSubModels('actions', (action, index) => {
+            const actionModelName = action.constructor.name;
+            if (UNIQUE_RECORD_COMMENT_ACTION_MODELS.has(actionModelName)) {
+              if (renderedUniqueActionModels.has(actionModelName)) {
+                return null;
+              }
+              renderedUniqueActionModels.add(actionModelName);
+            }
+
             const forkKey = [forkKeyPrefix, recordKey || 'record', action.uid, index]
               .map(normalizeForkKeyPart)
               .join('_');
@@ -104,11 +121,13 @@ export const RecordCommentActions = observer(
           {itemModel.context.flowSettingsEnabled ? (
             <AddSubModelButton
               key="record-comment-actions-add"
-              model={itemModel}
+              model={actionSettingsModel}
               subModelKey="actions"
               subModelBaseClasses={['RecordCommentActionGroupModel']}
             >
-              <FlowSettingsButton icon={<SettingOutlined />}>{itemModel.translate('Actions')}</FlowSettingsButton>
+              <FlowSettingsButton icon={<SettingOutlined />}>
+                {actionSettingsModel.translate('Actions')}
+              </FlowSettingsButton>
             </AddSubModelButton>
           ) : null}
         </Space>

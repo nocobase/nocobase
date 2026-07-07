@@ -45,6 +45,13 @@ type FlowModelsResource = {
   save: (params: { values: Record<string, unknown> }) => Promise<unknown>;
 };
 
+class UserFormSubmitInterruptedError extends Error {
+  constructor() {
+    super('User form submission was interrupted.');
+    this.name = 'UserFormSubmitInterruptedError';
+  }
+}
+
 const userFormBlockClassName = css`
   width: 100%;
   border: none !important;
@@ -225,6 +232,7 @@ export default function UserFormDrawer(props: UserFormDrawerProps) {
     }
     setSubmitting(true);
     try {
+      let submitted = false;
       await model.submit({}, async (values) => {
         const nextValues = normalizeSubmitValues(values || {});
         if (isEdit && user?.id != null) {
@@ -232,10 +240,15 @@ export default function UserFormDrawer(props: UserFormDrawerProps) {
             filterByTk: user.id,
             values: nextValues,
           });
+          submitted = true;
           return;
         }
         await ctx.api.resource('users').create({ values: nextValues });
+        submitted = true;
       });
+      if (!submitted) {
+        throw new UserFormSubmitInterruptedError();
+      }
       ctx.message.success(t('Saved successfully'));
       await onSubmitted();
     } finally {

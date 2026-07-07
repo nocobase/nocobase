@@ -30,6 +30,9 @@ export class PluginRecordCommentsClientV2 extends Plugin {
       RecordCommentSubmitActionGroupModel: {
         loader: () => import('./models/actions'),
       },
+      RecordCommentSubmitActionModel: {
+        loader: () => import('./models/actions'),
+      },
       EditRecordCommentActionModel: {
         loader: () => import('./models/actions'),
       },
