@@ -16,56 +16,10 @@ import { useT } from '../locale';
 import { useCDN } from './const';
 import useStyle from './style';
 
-const locales = ['en_US', 'fr_FR', 'pt_BR', 'ja_JP', 'ko_KR', 'ru_RU', 'sv_SE', 'zh_CN', 'zh_TW'] as const;
-type VditorLang = (typeof locales)[number];
-type VditorMode = 'wysiwyg' | 'ir' | 'sv';
+const locales = ['en_US', 'fr_FR', 'pt_BR', 'ja_JP', 'ko_KR', 'ru_RU', 'sv_SE', 'zh_CN', 'zh_TW'];
 
-interface FileUploadResult {
-  data?: {
-    filename: string;
-    url: string;
-  };
-  errorMessage?: string;
-}
-
-interface FileManagerPlugin {
-  uploadFile: (params: {
-    file: File;
-    fileCollectionName?: string;
-    storageId?: number | string;
-    storageType?: string;
-    storageRules?: unknown;
-  }) => Promise<FileUploadResult>;
-}
-
-export interface MarkdownEditProps {
-  disabled?: boolean;
-  onChange?: (value: string) => void;
-  value?: string;
-  fileCollection?: string;
-  toolbar?: string[];
-  editMode?: string;
-  mode?: string;
-  vditorRef?: React.MutableRefObject<VditorEditorRef | null>;
-}
-
-export interface VditorEditorRef {
-  getCursorPosition: () => { top: number } | undefined;
-  getValue: () => string;
-  insertValue: (value: string) => void;
-  focus: () => void;
-}
-
-function isVditorMode(mode: string | undefined): mode is VditorMode {
-  return mode === 'wysiwyg' || mode === 'ir' || mode === 'sv';
-}
-
-function isVditorLang(lang: string): lang is VditorLang {
-  return (locales as readonly string[]).includes(lang);
-}
-
-export const Edit = (props: MarkdownEditProps) => {
-  const { disabled, onChange, value, fileCollection, toolbar, editMode = 'ir', mode, vditorRef } = props;
+export const Edit = (props) => {
+  const { disabled, onChange, value, fileCollection, toolbar, editMode = 'ir', mode } = props;
   const flowCtx = useFlowContext();
   const t = useT();
   const [editorReady, setEditorReady] = useState(false);
@@ -76,15 +30,15 @@ export const Edit = (props: MarkdownEditProps) => {
   const cdn = useCDN();
   const { wrapSSR, hashId, componentCls: containerClassName } = useStyle();
   const locale = flowCtx.api?.auth?.locale || 'en-US';
-  const fileManagerPlugin = flowCtx.app.pm.get('@nocobase/plugin-file-manager') as FileManagerPlugin;
+  const fileManagerPlugin: any = flowCtx.app.pm.get('@nocobase/plugin-file-manager');
   const translateRef = useRef(flowCtx.t.bind(flowCtx));
   translateRef.current = flowCtx.t.bind(flowCtx);
-  const editorMode: VditorMode = isVditorMode(mode) ? mode : isVditorMode(editMode) ? editMode : 'ir';
+  const editorMode = mode || editMode;
   const zIndex = 2200;
 
-  const lang = useMemo<VditorLang>(() => {
+  const lang: any = useMemo(() => {
     const currentLang = locale.replace(/-/g, '_');
-    if (isVditorLang(currentLang)) {
+    if (locales.includes(currentLang)) {
       return currentLang;
     }
     return 'en_US';
@@ -137,7 +91,7 @@ export const Edit = (props: MarkdownEditProps) => {
         if (safeNextValue !== nextValue) {
           vditor.setValue(safeNextValue);
         }
-        onChange?.(safeNextValue);
+        onChange(safeNextValue);
       },
       upload: {
         multiple: false,
@@ -190,9 +144,6 @@ export const Edit = (props: MarkdownEditProps) => {
         },
       },
     });
-    if (vditorRef) {
-      vditorRef.current = vditor;
-    }
     const editorEl = containerRef.current;
     if (!editorEl) return;
 

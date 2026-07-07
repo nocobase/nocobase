@@ -8,20 +8,13 @@
  */
 
 import { Application, Plugin } from '@nocobase/client-v2';
-import {
-  DisplayVditorFieldModel,
-  getMarkdownRegistry,
-  MarkdownVditor,
-  MarkdownVditorFieldInterface,
-  MarkdownVditorRuntime,
-  registerMarkdownVditorContext,
-  type MarkdownVditorRuntimeApp,
-  VditorFieldModel,
-} from '@nocobase/plugin-markdown/client-v2';
 import 'vditor/dist/index.css';
+import { MarkdownVditor } from './components';
+import { MarkdownVditorFieldInterface } from './interface';
+import { MarkdownVditorRuntime } from './runtime';
 
-export class PluginFieldMarkdownVditorClient extends Plugin<Record<string, never>, Application> {
-  declare app: Application & MarkdownVditorRuntimeApp;
+export class PluginFieldMarkdownVditorClient extends Plugin<any, Application> {
+  declare app: any;
   dependencyLoaded = false;
   runtime: MarkdownVditorRuntime;
 
@@ -29,11 +22,19 @@ export class PluginFieldMarkdownVditorClient extends Plugin<Record<string, never
     this.runtime = new MarkdownVditorRuntime(this.app, () => this.app.getPublicPath());
     this.app.addComponents({ MarkdownVditor });
     this.app.addFieldInterfaces([MarkdownVditorFieldInterface]);
-    getMarkdownRegistry(this.flowEngine.context).register(this.runtime, { default: true });
-    registerMarkdownVditorContext(this.flowEngine.context, this.runtime);
-    this.flowEngine.registerModels({
-      VditorFieldModel,
-      DisplayVditorFieldModel,
+    this.flowEngine.context.defineProperty('markdownVditor', {
+      get: () => this.runtime,
+    });
+    this.flowEngine.context.defineProperty('markdownVditorDependencies', {
+      get: () => this.runtime.dependencies,
+    });
+    this.flowEngine.registerModelLoaders({
+      VditorFieldModel: {
+        loader: () => import('./models/VditorFieldModel'),
+      },
+      DisplayVditorFieldModel: {
+        loader: () => import('./models/DisplayVditorFieldModel'),
+      },
     });
   }
 
