@@ -85,11 +85,6 @@ calculators.register('notEndsWith', {
   type: 'boolean',
   group: 'string',
 });
-calculators.register('concat', {
-  name: `{{t("Concatenate", { ns: "${NAMESPACE}" })}}`,
-  type: 'string',
-  group: 'string',
-});
 
 const calculatorGroups = [
   {
