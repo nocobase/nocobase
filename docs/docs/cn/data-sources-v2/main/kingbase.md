@@ -1,35 +1,123 @@
 ---
-title: "主数据源 - KingbaseES"
-description: "了解 KingbaseES 作为 NocoBase 主数据库时的支持版本、插件安装方式和使用说明。"
-keywords: "主数据源,KingbaseES,主数据库,NocoBase"
+pkg: "@nocobase/plugin-data-source-kingbase"
+title: "数据源 - 人大金仓（KingbaseES）"
+description: "使用人大金仓 KingbaseES 作为主数据库或外部数据库，支持 pg 模式，环境变量配置与 Docker 部署。"
+keywords: "人大金仓,KingbaseES,主数据库,外部数据库,国产数据库,NocoBase"
 ---
-
-# KingbaseES
+# 数据源 - 人大金仓（KingbaseES）
 
 ## 介绍
 
-KingbaseES 可以作为 NocoBase 的主数据库使用，用于存储 NocoBase 系统表数据和主数据源中的业务数据。主数据库在部署 NocoBase 时配置，应用运行后不可删除。
+使用人大金仓（KingbaseES）数据库作为数据源，可以作为主数据库，也可以作为外部数据库使用。
 
-| 配置项 | 说明 |
-| --- | --- |
-| 支持版本 | >= V9。 |
-| 商业版本 | 专业版、企业版支持。 |
-| 数据库类型 | PostgreSQL 兼容模式。 |
-
-:::warning 注意
-
-KingbaseES 作为主数据库时只支持 PostgreSQL 兼容模式。
-
+:::warning
+目前只支持 pg 模式运行的人大金仓（KingbaseES）数据库。
 :::
 
-## 插件安装
+## 安装
 
-KingbaseES 由 `@nocobase/plugin-data-source-kingbase` 提供，需要商业授权。
+### 作为主数据库使用
 
-## 使用说明
+安装流程参考安装文档，区别主要在于环境变量。
 
-1. 部署 NocoBase 时，在数据库连接配置中选择或填写 KingbaseES 对应的连接参数。
-2. 启动 NocoBase 后，在「数据源管理」中进入「Main」数据源，可以管理主数据库中的数据表和字段。
-3. 如需接入数据库中已经存在的表，可以在主数据库管理页使用「从数据库同步」。
+#### 环境变量
 
-更多通用配置见[主数据源介绍](/data-sources-v2/main/)。
+修改 .env 文件添加或修改以下相关环境变量配置
+
+```bash
+# 根据实际情况调整 DB 相关参数
+DB_DIALECT=kingbase
+DB_HOST=localhost
+DB_PORT=54321
+DB_DATABASE=kingbase
+DB_USER=nocobase
+DB_PASSWORD=nocobase
+```
+
+#### Docker 安装
+
+```yml
+networks:
+  nocobase:
+    driver: bridge
+
+services:
+  app:
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest
+    restart: always
+    networks:
+      - nocobase
+    depends_on:
+      - kingbase
+    environment:
+      # Application key for generating user tokens, etc.
+      # Changing APP_KEY invalidates old tokens
+      # Use a random string and keep it confidential
+      - APP_KEY=your-secret-key
+      # Database type
+      - DB_DIALECT=kingbase
+      # Database host, replace with existing database server IP if needed
+      - DB_HOST=kingbase
+      - DB_PORT=54321
+      # Database name
+      - DB_DATABASE=kingbase
+      # Database user
+      - DB_USER=nocobase
+      # Database password
+      - DB_PASSWORD=nocobase
+      # Timezone
+      - TZ=UTC
+    volumes:
+      - ./storage:/app/nocobase/storage
+    ports:
+      - "11000:80"
+
+  # Kingbase service for testing purposes only
+  kingbase:
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/kingbase:v009r001c001b0030_single_x86
+    platform: linux/amd64
+    restart: always
+    privileged: true
+    networks:
+      - nocobase
+    volumes:
+      - ./storage/db/kingbase:/home/kingbase/userdata
+    environment:
+      ENABLE_CI: no # Must be set to no
+      DB_USER: nocobase
+      DB_PASSWORD: nocobase
+      DB_MODE: pg  # pg only
+      NEED_START: yes
+    command: ["/usr/sbin/init"]
+```
+
+#### 使用 create-nocobase-app 安装
+
+```bash
+yarn create nocobase-app my-nocobase-app -d kingbase \
+   -e DB_HOST=localhost \
+   -e DB_PORT=54321 \
+   -e DB_DATABASE=kingbase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+### 作为外部数据库使用
+
+执行安装或升级命令
+
+```bash
+yarn nocobase install
+# or
+yarn nocobase upgrade
+```
+
+激活插件
+
+![20241024121815](https://static-docs.nocobase.com/20241024121815.png)
+
+## 使用手册
+
+- 主数据库：查阅 主数据源
+- 外部数据库：查阅 [数据源 / 外部数据库](/data-sources/data-source-manager/external-database) 

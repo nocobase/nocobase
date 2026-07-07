@@ -1,4 +1,5 @@
 ---
+pkg: "@nocobase/plugin-data-source-external-postgres"
 title: "外部数据源 - PostgreSQL"
 description: "了解如何把 PostgreSQL 作为 NocoBase 外部数据库接入，包括支持版本、插件安装、连接配置、Schema、SSL、权限和字段映射。"
 keywords: "外部数据源,PostgreSQL,外部数据库,Schema,SSL,字段映射,NocoBase"
@@ -17,7 +18,6 @@ PostgreSQL 可以作为外部数据库接入 NocoBase。接入后，NocoBase 会
 | 支持版本 | PostgreSQL >= 9.5。 |
 | 商业版本 | 标准版、专业版、企业版支持。 |
 | 对应插件 | `@nocobase/plugin-data-source-external-postgres`。 |
-| 写入能力 | 支持读取和写入，具体能力取决于数据库账号权限、表结构、主键和视图是否可写。 |
 
 适合使用外部 PostgreSQL 的场景：
 
@@ -34,16 +34,9 @@ PostgreSQL 可以作为外部数据库接入 NocoBase。接入后，NocoBase 会
 
 ## 插件安装
 
-外部 PostgreSQL 数据源由 `@nocobase/plugin-data-source-external-postgres` 插件提供。安装并启用插件后，可以在「数据源管理」的「Add new」菜单中选择 PostgreSQL。
+该插件为商业插件，详细的激活方式请参考：[商业插件激活指南](https://www.nocobase.com/cn/blog/nocobase-commercial-license-activation-guide)
 
-如果「Add new」菜单里没有 PostgreSQL，通常需要先确认：
-
-- 插件是否已经安装
-- 插件是否已经启用
-- 当前商业授权是否包含该插件
-- 当前用户是否有数据源管理权限
-
-## 添加 PostgreSQL 数据源
+## 添加数据源
 
 在「数据源管理」中点击「Add new」，选择 PostgreSQL，然后填写连接信息。
 

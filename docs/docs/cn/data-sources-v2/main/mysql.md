@@ -1,4 +1,5 @@
 ---
+pkg: "@nocobase/plugin-data-source-manager"
 title: "主数据源 - MySQL"
 description: "了解 MySQL 作为 NocoBase 主数据库时的支持版本、插件安装方式和使用说明。"
 keywords: "主数据源,MySQL,主数据库,NocoBase"

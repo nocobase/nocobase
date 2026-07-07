@@ -1,4 +1,5 @@
 ---
+pkg: "@nocobase/plugin-data-source-manager"
 title: "主数据源 - MariaDB"
 description: "了解 MariaDB 作为 NocoBase 主数据库时的支持版本、插件安装方式和使用说明。"
 keywords: "主数据源,MariaDB,主数据库,NocoBase"
