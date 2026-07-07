@@ -9,7 +9,7 @@
 
 import React, { useEffect } from 'react';
 import { Form } from 'antd';
-import { useNodeContext } from '../../canvas/contexts';
+import { useCurrentWorkflowContext, useNodeContext } from '../../canvas/contexts';
 import { AppendsSelect, AssignedFieldsEditor } from '../../components/collection';
 import { useT } from '../../locale';
 import { NodeCollectionField } from './collection';
@@ -17,7 +17,9 @@ import { NodeCollectionField } from './collection';
 function CreateFields() {
   const t = useT();
   const form = Form.useFormInstance();
+  const workflow = useCurrentWorkflowContext();
   const collection = Form.useWatch(['config', 'collection']);
+  const disabled = Boolean(workflow?.versionStats?.executed);
 
   useEffect(() => {
     if (collection) {
@@ -35,7 +37,7 @@ function CreateFields() {
           'Unassigned fields will be set to default values, and those without default values will be set to null.',
         )}
       >
-        <AssignedFieldsEditor collection={collection} />
+        <AssignedFieldsEditor collection={collection} disabled={disabled} />
       </Form.Item>
       {collection ? (
         <Form.Item

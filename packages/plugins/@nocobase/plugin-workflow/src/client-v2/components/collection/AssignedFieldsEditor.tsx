@@ -98,12 +98,14 @@ export function AssignedFieldsEditor({
   onChange,
   fieldFilter = defaultFieldFilter,
   pruneFilteredValues,
+  disabled = false,
 }: {
   collection?: string;
   value?: AssignedValues;
   onChange?: (value: AssignedValues) => void;
   fieldFilter?: AssignedFieldFilter;
   pruneFilteredValues?: boolean;
+  disabled?: boolean;
 }) {
   const flowEngine = useFlowEngine();
   const t = useT();
@@ -130,7 +132,7 @@ export function AssignedFieldsEditor({
   );
 
   useEffect(() => {
-    if (!pruneFilteredValues) {
+    if (!pruneFilteredValues || disabled) {
       return;
     }
 
@@ -142,13 +144,19 @@ export function AssignedFieldsEditor({
     }
 
     onChange?.(Object.fromEntries(nextEntries));
-  }, [fields, normalizedValue, onChange, pruneFilteredValues]);
+  }, [disabled, fields, normalizedValue, onChange, pruneFilteredValues]);
 
   const updateValue = (fieldName: string, nextValue: unknown) => {
+    if (disabled) {
+      return;
+    }
     onChange?.({ ...normalizedValue, [fieldName]: nextValue === undefined ? '' : nextValue });
   };
 
   const removeField = (fieldName: string) => {
+    if (disabled) {
+      return;
+    }
     const { [fieldName]: _, ...rest } = normalizedValue;
     onChange?.(rest);
   };
@@ -156,6 +164,9 @@ export function AssignedFieldsEditor({
   const menu = useMemo<MenuProps>(
     () => ({
       onClick: ({ key }) => {
+        if (disabled) {
+          return;
+        }
         onChange?.({ ...normalizedValue, [String(key)]: '' });
       },
       style: {
@@ -164,10 +175,11 @@ export function AssignedFieldsEditor({
       },
       items: unassignedFields.map((field) => ({
         key: field.name,
+        disabled,
         label: getFieldTitle(field, t),
       })),
     }),
-    [normalizedValue, onChange, t, unassignedFields],
+    [disabled, normalizedValue, onChange, t, unassignedFields],
   );
 
   if (!collection) {
@@ -196,12 +208,14 @@ export function AssignedFieldsEditor({
                 value={normalizedValue[field.name]}
                 onChange={(nextValue) => updateValue(field.name, nextValue)}
                 allowRunJS={false}
+                disabled={disabled}
               />
             </Form.Item>
             <Button
               aria-label={t('Remove field')}
               type="link"
               icon={<CloseCircleOutlined />}
+              disabled={disabled}
               onClick={() => removeField(field.name)}
               style={{
                 position: 'absolute',
@@ -213,8 +227,8 @@ export function AssignedFieldsEditor({
           </div>
         ))}
         {unassignedFields.length ? (
-          <Dropdown menu={menu} trigger={['click']}>
-            <Button aria-label={t('Add field')} icon={<PlusOutlined />}>
+          <Dropdown disabled={disabled} menu={menu} trigger={['click']}>
+            <Button aria-label={t('Add field')} icon={<PlusOutlined />} disabled={disabled}>
               {t('Add field')}
             </Button>
           </Dropdown>
