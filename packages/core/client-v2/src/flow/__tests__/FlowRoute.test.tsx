@@ -1666,7 +1666,7 @@ describe('FlowRoute', () => {
     expect(engine.getModel('public-form-1')).toBeUndefined();
   });
 
-  it('should not skip accessible route loading just because layout authCheck is false', async () => {
+  it('should skip accessible route loading when layout authCheck is false', async () => {
     const engine = new FlowEngine();
     const ensureAccessibleLoaded = vi.fn().mockRejectedValue(new Error('cannot load accessible routes'));
     const getRouteBySchemaUid = vi.fn();
@@ -1735,7 +1735,7 @@ describe('FlowRoute', () => {
     await waitFor(() => {
       expect(layoutModel.registerRoutePage).toHaveBeenCalledWith('public-form-1', expect.any(Object));
     });
-    expect(ensureAccessibleLoaded).toHaveBeenCalledTimes(1);
+    expect(ensureAccessibleLoaded).not.toHaveBeenCalled();
     expect(getRouteBySchemaUid).not.toHaveBeenCalled();
   });
 

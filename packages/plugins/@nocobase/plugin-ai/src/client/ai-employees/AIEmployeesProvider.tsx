@@ -13,13 +13,16 @@ import { AISettingsProvider } from './AISettingsProvider';
 import { ChatBoxLayout } from './chatbox/ChatBoxLayout';
 import { AISelection } from './AISelection';
 import { AISelectionControl } from './AISelectionControl';
-import { CurrentUserContext } from '@nocobase/client';
+import { CurrentUserContext, useApp } from '@nocobase/client';
+import { useLocation } from 'react-router-dom';
 
 export const AIEmployeesProvider: React.FC<{
   children: React.ReactNode;
 }> = (props) => {
+  const app = useApp();
+  const location = useLocation();
   const currentUserCtx = useContext(CurrentUserContext);
-  if (!currentUserCtx?.data?.data) {
+  if (app.router.isSkippedAuthCheckRoute(location.pathname) || !currentUserCtx?.data?.data) {
     return <>{props.children}</>;
   }
 
