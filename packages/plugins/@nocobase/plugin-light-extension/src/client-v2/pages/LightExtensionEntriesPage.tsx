@@ -7,18 +7,21 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { CheckCircleOutlined, EditOutlined, ReloadOutlined, ScanOutlined } from '@ant-design/icons';
+import { CheckCircleOutlined, ReloadOutlined, ScanOutlined } from '@ant-design/icons';
 import { Alert, Button, Empty, Flex, Space, Table, Tag, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
 import { NAMESPACE } from '../../constants';
 import type { LightExtensionDiagnostic, LightExtensionEntryRecord, LightExtensionRepoRecord } from '../../shared/types';
 import DiagnosticsPanel from '../components/DiagnosticsPanel';
 import { getLightExtensionErrorDiagnostics, useLightExtensionRepo } from '../hooks/useLightExtensionRepo';
-import { settingsPath } from './LightExtensionListPage';
+
+interface LightExtensionEntriesPageProps {
+  embedded?: boolean;
+}
 
 const healthColor: Record<string, string> = {
   ready: 'success',
@@ -27,11 +30,11 @@ const healthColor: Record<string, string> = {
   disabled: 'default',
 };
 
-function LightExtensionEntriesPage() {
+function LightExtensionEntriesPage({ embedded = false }: LightExtensionEntriesPageProps) {
   const { t } = useTranslation(NAMESPACE);
   const [searchParams] = useSearchParams();
   const repoId = searchParams.get('repoId') || '';
-  const api = useLightExtensionRepo();
+  const { getRepo, listEntries, scanEntries: scanEntriesRequest } = useLightExtensionRepo();
   const [repo, setRepo] = useState<LightExtensionRepoRecord | null>(null);
   const [entries, setEntries] = useState<LightExtensionEntryRecord[]>([]);
   const [diagnostics, setDiagnostics] = useState<LightExtensionDiagnostic[]>([]);
@@ -49,7 +52,7 @@ function LightExtensionEntriesPage() {
     setLoading(true);
     setNotice(null);
     try {
-      const [nextRepo, nextEntries] = await Promise.all([api.getRepo(repoId), api.listEntries(repoId)]);
+      const [nextRepo, nextEntries] = await Promise.all([getRepo(repoId), listEntries(repoId)]);
       setRepo(nextRepo);
       setEntries(nextEntries);
       setDiagnostics(nextEntries.flatMap((entry) => entry.diagnostics || []));
@@ -58,7 +61,7 @@ function LightExtensionEntriesPage() {
     } finally {
       setLoading(false);
     }
-  }, [api, repoId, t]);
+  }, [getRepo, listEntries, repoId, t]);
 
   useEffect(() => {
     loadEntries();
@@ -72,7 +75,7 @@ function LightExtensionEntriesPage() {
     setScanning(true);
     setNotice(null);
     try {
-      const result = await api.scanEntries(repoId);
+      const result = await scanEntriesRequest(repoId);
       setRepo(result.repo);
       setEntries(result.entries.map((item) => item.entry));
       setDiagnostics(result.diagnostics);
@@ -158,20 +161,19 @@ function LightExtensionEntriesPage() {
 
   if (!repoId) {
     return (
-      <Flex vertical gap={16} style={{ padding: 24 }}>
-        <Typography.Title level={3} style={{ margin: 0 }}>
-          {t('Entries')}
-        </Typography.Title>
+      <Flex vertical gap={16} style={{ padding: embedded ? 0 : 24 }}>
+        {!embedded ? (
+          <Typography.Title level={3} style={{ margin: 0 }}>
+            {t('Entries')}
+          </Typography.Title>
+        ) : null}
         <Empty description={t('Select a repository from the light extension list')} />
-        <Button>
-          <Link to={settingsPath.list}>{t('Back to list')}</Link>
-        </Button>
       </Flex>
     );
   }
 
   return (
-    <Flex vertical gap={16} style={{ padding: 24 }}>
+    <Flex vertical gap={16} style={{ padding: embedded ? 0 : 24 }}>
       <Flex align="center" justify="space-between" wrap="wrap" gap={12}>
         <Space direction="vertical" size={0}>
           <Typography.Title level={3} style={{ margin: 0 }}>
@@ -185,18 +187,6 @@ function LightExtensionEntriesPage() {
           </Button>
           <Button icon={<ScanOutlined />} loading={scanning} onClick={scanEntries} type="primary">
             {t('Scan')}
-          </Button>
-          <Button icon={<EditOutlined />}>
-            <Link to={settingsPath.source(repoId)}>{t('Source')}</Link>
-          </Button>
-          <Button>
-            <Link to={settingsPath.publications(repoId)}>{t('Publications')}</Link>
-          </Button>
-          <Button>
-            <Link to={settingsPath.references(repoId)}>{t('References')}</Link>
-          </Button>
-          <Button>
-            <Link to={settingsPath.list}>{t('Back to list')}</Link>
           </Button>
         </Space>
       </Flex>

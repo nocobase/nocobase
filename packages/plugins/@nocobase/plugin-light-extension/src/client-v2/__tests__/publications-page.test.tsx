@@ -115,7 +115,7 @@ describe('LightExtensionPublicationsPage', () => {
 
   it('renders publications and rolls back by activating an old publication', async () => {
     render(
-      <MemoryRouter initialEntries={['/admin/settings/light-extension/publications?repoId=ler_sales']}>
+      <MemoryRouter initialEntries={['/admin/settings/light-extension?panel=publications&repoId=ler_sales']}>
         <LightExtensionPublicationsPage />
       </MemoryRouter>,
     );
@@ -139,7 +139,7 @@ describe('LightExtensionPublicationsPage', () => {
 
   it('publishes and activates current head with per-entry CAS expectations', async () => {
     render(
-      <MemoryRouter initialEntries={['/admin/settings/light-extension/publications?repoId=ler_sales']}>
+      <MemoryRouter initialEntries={['/admin/settings/light-extension?panel=publications&repoId=ler_sales']}>
         <LightExtensionPublicationsPage />
       </MemoryRouter>,
     );

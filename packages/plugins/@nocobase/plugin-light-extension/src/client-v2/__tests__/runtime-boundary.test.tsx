@@ -35,6 +35,7 @@ describe('plugin-light-extension client-v2 boundary', () => {
       key: LIGHT_EXTENSION_SETTINGS_KEY,
       title: 'Light extensions',
       aclSnippet: LIGHT_EXTENSION_ACL_SNIPPET,
+      showTabs: false,
     });
     expect(app.pluginSettingsManager.get(`${LIGHT_EXTENSION_SETTINGS_KEY}.index`, false)).toMatchObject({
       menuKey: LIGHT_EXTENSION_SETTINGS_KEY,
@@ -42,18 +43,10 @@ describe('plugin-light-extension client-v2 boundary', () => {
       componentLoader: expect.any(Function),
       aclSnippet: LIGHT_EXTENSION_ACL_SNIPPET,
     });
-    expect(app.pluginSettingsManager.get(`${LIGHT_EXTENSION_SETTINGS_KEY}.source`, false)).toMatchObject({
-      menuKey: LIGHT_EXTENSION_SETTINGS_KEY,
-      pageKey: 'source',
-      componentLoader: expect.any(Function),
-      aclSnippet: LIGHT_EXTENSION_ACL_SNIPPET,
-    });
-    expect(app.pluginSettingsManager.get(`${LIGHT_EXTENSION_SETTINGS_KEY}.entries`, false)).toMatchObject({
-      menuKey: LIGHT_EXTENSION_SETTINGS_KEY,
-      pageKey: 'entries',
-      componentLoader: expect.any(Function),
-      aclSnippet: LIGHT_EXTENSION_ACL_SNIPPET,
-    });
+    expect(app.pluginSettingsManager.get(`${LIGHT_EXTENSION_SETTINGS_KEY}.source`, false)).toBeNull();
+    expect(app.pluginSettingsManager.get(`${LIGHT_EXTENSION_SETTINGS_KEY}.entries`, false)).toBeNull();
+    expect(app.pluginSettingsManager.get(`${LIGHT_EXTENSION_SETTINGS_KEY}.publications`, false)).toBeNull();
+    expect(app.pluginSettingsManager.get(`${LIGHT_EXTENSION_SETTINGS_KEY}.references`, false)).toBeNull();
   });
 
   it('keeps client-v2 code out of the legacy client runtime', () => {
@@ -88,20 +81,21 @@ describe('plugin-light-extension client-v2 boundary', () => {
     expect(rootSource).not.toContain('./sdk/client');
   });
 
-  it('keeps the Phase 1 pages scoped out of publication/runtime features', () => {
-    const pageSource = [
-      path.resolve(__dirname, '../pages/LightExtensionHomePage.tsx'),
-      path.resolve(__dirname, '../pages/LightExtensionListPage.tsx'),
-      path.resolve(__dirname, '../pages/LightExtensionWorkspacePage.tsx'),
-      path.resolve(__dirname, '../pages/LightExtensionEntriesPage.tsx'),
-      path.resolve(__dirname, '../../client-shared/LightExtensionHomePage.tsx'),
-    ]
-      .map((file) => fs.readFileSync(file, 'utf8'))
-      .join('\n');
+  it('keeps publication authoring pages out of the legacy client while sharing runtime JS block bridges', () => {
+    const pluginSource = fs.readFileSync(path.resolve(__dirname, '../plugin.tsx'), 'utf8');
 
-    expect(pageSource).not.toMatch(
-      /\bpublication\b|runtime code|versionPolicy|follow-active|\bCLI(?:\s*\/\s*Sync)?\b|\bSync API\b/i,
-    );
+    expect(pluginSource).toContain('createLightExtensionRunJSResolver');
+    expect(pluginSource).toContain('registerBlockGridSelectSceneAddBlockProvider');
+    expect(pluginSource).not.toContain('LightExtensionPublicationsPage');
+    expect(pluginSource).not.toContain('EntryReferencesPanel');
+
+    const legacySource = fs.readFileSync(path.resolve(__dirname, '../../client/index.ts'), 'utf8');
+    expect(legacySource).toContain('createLightExtensionRunJSResolver');
+    expect(legacySource).toContain('RunJSSourceResolverRegistry');
+    expect(legacySource).toContain('registerBlockGridSelectSceneAddBlockProvider');
+    expect(legacySource).toContain('JS_BLOCK_LIGHT_EXTENSION_FULL_SOURCE_FIELD');
+    expect(legacySource).not.toContain('LightExtensionPublicationsPage');
+    expect(legacySource).not.toContain('EntryReferencesPanel');
   });
 });
 

@@ -22,6 +22,8 @@ import {
   shouldHideStepInSettings,
   resolveDefaultParams,
   resolveUiMode,
+  createFlowWithSettingSteps,
+  getFlowSettingSteps,
 } from '../../../../utils';
 import { useNiceDropdownMaxHeight } from '../../../../hooks';
 import { SwitchWithTitle } from '../component/SwitchWithTitle';
@@ -570,19 +572,25 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
 
         const flows = flowsMap;
 
-        const flowsArray = Array.from(flows.values());
+        const flowsArray = Array.from(flows.entries());
 
         const flowsWithSteps = await Promise.all(
-          flowsArray.map(async (flow) => {
+          flowsArray.map(async ([flowKey, flow]) => {
+            const flowSteps = await getFlowSettingSteps(targetModel, flow as any, flowKey);
+            const flowForSettings = createFlowWithSettingSteps(flow as any, flowSteps, flowKey);
             const configurableSteps = await Promise.all(
-              Object.entries(flow.steps).map(async ([stepKey, stepDefinition]) => {
+              Object.entries(flowSteps).map(async ([stepKey, stepDefinition]) => {
                 const actionStep = stepDefinition;
                 let step = actionStep;
                 // 支持静态与动态 hideInSettings
-                if (await shouldHideStepInSettings(targetModel, flow, actionStep)) {
+                if (await shouldHideStepInSettings(targetModel, flowForSettings, actionStep)) {
                   return null;
                 }
-                const disabledState = await resolveStepDisabledInSettings(targetModel, flow, actionStep as any);
+                const disabledState = await resolveStepDisabledInSettings(
+                  targetModel,
+                  flowForSettings,
+                  actionStep as any,
+                );
                 let uiMode: any = await resolveUiMode(actionStep.uiMode, (targetModel as any).context);
                 // 检查是否有uiSchema（静态或动态）
                 const hasStepUiSchema = actionStep.uiSchema != null;
@@ -613,7 +621,7 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
 
                 try {
                   // 使用提取的工具函数解析并合并uiSchema
-                  const resolvedSchema = await resolveStepUiSchema(targetModel, flow, actionStep);
+                  const resolvedSchema = await resolveStepUiSchema(targetModel, flowForSettings, actionStep);
 
                   // 如果解析后没有可配置的UI Schema，跳过此步骤
                   if (!resolvedSchema && !selectOrSwitchMode) {
@@ -638,7 +646,9 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
               }),
             ).then((steps) => steps.filter(Boolean));
 
-            return configurableSteps.length > 0 ? ({ flow, steps: configurableSteps, modelKey } as FlowInfo) : null;
+            return configurableSteps.length > 0
+              ? ({ flow: flowForSettings, steps: configurableSteps, modelKey } as FlowInfo)
+              : null;
           }),
         ).then((flows) => flows.filter(Boolean));
 
@@ -965,12 +975,13 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
       overlayStyle={{ width: 'max-content', minWidth: 'max-content' }}
       onOpenChange={handleOpenChange}
       open={visible}
+      destroyPopupOnHide
       menu={{
         items: finalMenuItems,
         onClick: handleMenuClick,
         style: { maxHeight: dropdownMaxHeight, overflowY: 'auto' },
       }}
-      trigger={['hover']}
+      trigger={['hover', 'click']}
       placement="bottomRight"
     >
       <MenuOutlined role="button" aria-label="flows-settings" style={{ cursor: 'pointer', fontSize: 12 }} />

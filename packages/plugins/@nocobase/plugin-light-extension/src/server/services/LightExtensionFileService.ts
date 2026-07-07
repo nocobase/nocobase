@@ -41,6 +41,14 @@ export interface LightExtensionPullInput {
   selectedPaths?: string[];
 }
 
+export interface LightExtensionPullCommitInput {
+  repoId: string;
+  commitId: string;
+  knownTreeHash?: string;
+  includeContent?: LightExtensionIncludeContentMode;
+  selectedPaths?: string[];
+}
+
 export interface LightExtensionGetFileInput {
   repoId: string;
   ref?: string;
@@ -108,6 +116,17 @@ export class LightExtensionFileService {
       const repo = await this.repoService.getInternalRepo(input.repoId, { ...ctx, transaction });
       assertRepoNotArchived(repo, 'read source');
       return this.pullInternal(repo, input, ctx, transaction, 'readSource');
+    });
+  }
+
+  async pullCommit(
+    input: LightExtensionPullCommitInput,
+    ctx: LightExtensionServiceContext = {},
+  ): Promise<LightExtensionPullResult> {
+    return this.withTransaction(ctx.transaction, async (transaction) => {
+      const repo = await this.repoService.getInternalRepo(input.repoId, { ...ctx, transaction });
+      assertRepoNotArchived(repo, 'read source');
+      return this.pullCommitInternal(repo, input, ctx, transaction, 'readSource');
     });
   }
 
@@ -390,6 +409,43 @@ export class LightExtensionFileService {
           repoId: repo.id,
           aclAction,
           reason: 'read light-extension source tree',
+          allowedActions: ['pull'],
+        }),
+      ),
+    );
+
+    return {
+      repo: stripInternalRepo(repo),
+      commit: result.commit ? toPublicCommit(result.commit, repo.id) : null,
+      tree: result.tree,
+      unchanged: result.unchanged,
+      files: result.files as LightExtensionPulledFile[] | undefined,
+    };
+  }
+
+  private async pullCommitInternal(
+    repo: LightExtensionRepoInternalRecord,
+    input: LightExtensionPullCommitInput,
+    ctx: LightExtensionServiceContext,
+    transaction: Transaction,
+    aclAction: LightExtensionAclAction,
+  ): Promise<LightExtensionPullResult> {
+    const result = await this.runVsc(repo.id, () =>
+      this.vscFileService.pullCommit(
+        {
+          repoId: repo.vscRepoId,
+          commitId: input.commitId,
+          knownTreeHash: input.knownTreeHash,
+          includeContent: input.includeContent,
+          selectedPaths: input.selectedPaths,
+        },
+        this.createVscContext({
+          ctx,
+          transaction,
+          requestId: getRequestId(ctx),
+          repoId: repo.id,
+          aclAction,
+          reason: 'read light-extension source commit tree',
           allowedActions: ['pull'],
         }),
       ),

@@ -103,11 +103,18 @@ export class BlockGridModel extends GridModel {
   }
 
   get addBlockItems(): SubModelItemsType | undefined {
-    if (this.context.view?.inputArgs?.scene !== 'select') {
-      return undefined;
-    }
+    const isSelectScene = this.context.view?.inputArgs?.scene === 'select';
 
     return async (ctx) => {
+      if (!isSelectScene) {
+        const items = await buildSubModelGroups(this.subModelBaseClasses)(ctx);
+        const extensionItems = await resolveSelectSceneExtensionItems(ctx);
+        if (extensionItems.length > 0) {
+          items.push(...extensionItems);
+        }
+        return items.sort((a, b) => (a.sort ?? 1000) - (b.sort ?? 1000));
+      }
+
       const items = await buildSubModelGroups(['DataBlockModel', 'FilterBlockModel'])(ctx);
       const extensionItems = await resolveSelectSceneExtensionItems(ctx);
       if (extensionItems.length > 0) {

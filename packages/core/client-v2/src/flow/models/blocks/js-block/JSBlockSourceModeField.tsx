@@ -16,6 +16,7 @@ import { useTranslation } from 'react-i18next';
 const INLINE_SOURCE_MODE = 'inline';
 const LIGHT_EXTENSION_SOURCE_MODE = 'light-extension';
 export const JS_BLOCK_LIGHT_EXTENSION_FULL_SOURCE_FIELD = 'JSBlockLightExtensionFullSourceField';
+export const JS_BLOCK_LIGHT_EXTENSION_SETTINGS_STEP_FIELD = 'JSBlockLightExtensionSettingsStepField';
 
 export interface JSBlockSourceModeFieldProps {
   value?: string;

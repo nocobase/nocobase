@@ -24,8 +24,13 @@ import type { RunJSEditorFieldProps, RunJSEditorProviderRenderProps, RunJSSource
 
 type FlowModelStepLocator = Extract<RunJSSourceLocator, { kind: 'flowModel.step' }>;
 type StepParams = Record<string, unknown>;
-type RunJSSettingsContext = FlowRuntimeContext<FlowModel, 'runtime' | 'settings'>;
+type RunJSSettingsContext = FlowRuntimeContext<FlowModel, 'runtime' | 'settings'> & {
+  getStepFormValues?: (flowKey: string, stepKey: string) => unknown;
+};
 type RunJSEditorValueMode = 'code' | 'runjsValue';
+type PublishedRunJSValue = RunJSValue & {
+  sourceRef?: unknown;
+};
 
 function isRecord(value: unknown): value is StepParams {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
@@ -43,6 +48,13 @@ function resolveVersionPath(paramPath: string[], versionPath?: string[]): string
     return [...paramPath.slice(0, -1), 'version'];
   }
   return ['version'];
+}
+
+function resolveSourceRefPath(paramPath: string[]): string[] {
+  if (paramPath.length > 1) {
+    return [...paramPath.slice(0, -1), 'sourceRef'];
+  }
+  return ['sourceRef'];
 }
 
 function getAtPath(root: unknown, path: string[]): unknown {
@@ -138,23 +150,52 @@ function createFlowModelStepLocator(
 function syncFlowModelStepValue(
   model: FlowModel | undefined,
   locator: FlowModelStepLocator | undefined,
-  value: RunJSValue,
+  value: PublishedRunJSValue,
   surfaceStyle: RunJSEditorFieldProps['surfaceStyle'],
+  stepParams: unknown,
 ) {
   if (!model || !locator) {
     return;
   }
 
-  const currentStepParams = cloneRecord(model.getStepParams(locator.flowKey, locator.stepKey));
+  const currentStepParams = {
+    ...cloneRecord(model.getStepParams(locator.flowKey, locator.stepKey)),
+    ...cloneRecord(stepParams),
+  };
   setAtPath(currentStepParams, locator.paramPath, value.code);
   setAtPath(currentStepParams, resolveVersionPath(locator.paramPath, locator.versionPath), value.version);
+  if (value.sourceRef !== undefined) {
+    setAtPath(currentStepParams, resolveSourceRefPath(locator.paramPath), value.sourceRef);
+  }
   model.setStepParams(locator.flowKey, locator.stepKey, currentStepParams);
   model.invalidateFlowCache('beforeRender', true);
-  if (surfaceStyle === 'render') {
-    model.rerender().catch((error) => {
+
+  const saveAndRefresh = async () => {
+    await model.saveStepParams();
+    if (surfaceStyle === 'render') {
+      await model.rerender();
+    }
+  };
+
+  saveAndRefresh().catch((error) => {
+    if (surfaceStyle === 'render') {
       console.error('RunJSEditorField: failed to refresh published RunJS surface', error);
-    });
+      return;
+    }
+    console.error('RunJSEditorField: failed to save published RunJS source', error);
+  });
+}
+
+function resolveCurrentStepParams(
+  flowContext: RunJSSettingsContext | null,
+  locator: FlowModelStepLocator | undefined,
+  fallbackParams: unknown,
+): unknown {
+  if (!flowContext || !locator || typeof flowContext.getStepFormValues !== 'function') {
+    return fallbackParams;
   }
+
+  return flowContext.getStepFormValues(locator.flowKey, locator.stepKey) ?? fallbackParams;
 }
 
 export const RunJSEditorField: React.FC<RunJSEditorFieldProps> = (props) => {
@@ -183,7 +224,13 @@ export const RunJSEditorField: React.FC<RunJSEditorFieldProps> = (props) => {
   const label = props.sourceLabel ?? props.label;
   const handleProviderChange = (nextValue: RunJSValue) => {
     onChange?.(toFieldChangeValue(valueMode, nextValue));
-    syncFlowModelStepValue(flowContext?.model, generatedLocator, nextValue, props.surfaceStyle);
+    syncFlowModelStepValue(
+      flowContext?.model,
+      generatedLocator,
+      nextValue,
+      props.surfaceStyle,
+      resolveCurrentStepParams(flowContext, generatedLocator, flowStep?.params),
+    );
   };
   const providerProps: RunJSEditorProviderRenderProps = {
     ...props,

@@ -10,15 +10,54 @@
 import fs from 'fs';
 import path from 'path';
 
+import { render, screen } from '@testing-library/react';
+import {
+  JS_BLOCK_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
+  JS_BLOCK_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
+  RunJSSourceResolverRegistry,
+  registerBlockGridSelectSceneAddBlockProvider,
+} from '@nocobase/client-v2';
+import React from 'react';
+
 import PluginLightExtensionClient from '..';
 
+vi.mock('@nocobase/client-v2', async () => {
+  const actual = await vi.importActual<typeof import('@nocobase/client-v2')>('@nocobase/client-v2');
+  return {
+    ...actual,
+    registerBlockGridSelectSceneAddBlockProvider: vi.fn(() => vi.fn()),
+  };
+});
+
+vi.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (text: string) => text,
+  }),
+}));
+
 describe('plugin-light-extension legacy client boundary', () => {
-  it('registers only a thin settings bridge without importing the v1 client runtime', async () => {
+  afterEach(() => {
+    RunJSSourceResolverRegistry.clear();
+    vi.restoreAllMocks();
+    vi.clearAllMocks();
+  });
+
+  it('registers a thin settings bridge, runtime resolver, source editor, and add-block provider without importing the v1 client runtime', async () => {
     const add = vi.fn();
+    const registerComponents = vi.fn();
+    const apiClient = {
+      request: vi.fn(),
+    };
     const plugin = new PluginLightExtensionClient(
       { name: 'light-extension' },
       {
+        apiClient,
         pluginSettingsManager: { add },
+        flowEngine: {
+          flowSettings: {
+            registerComponents,
+          },
+        },
         i18n: {
           t: (text, options) => `${options?.ns}:${text}`,
         },
@@ -39,9 +78,57 @@ describe('plugin-light-extension legacy client boundary', () => {
         aclSnippet: 'pm.light-extension',
       }),
     );
+    expect(RunJSSourceResolverRegistry.getResolver('light-extension')).toBeTruthy();
+    expect(registerComponents).toHaveBeenCalledWith({
+      [JS_BLOCK_LIGHT_EXTENSION_FULL_SOURCE_FIELD]: expect.any(Function),
+      [JS_BLOCK_LIGHT_EXTENSION_SETTINGS_STEP_FIELD]: expect.any(Function),
+      RepoEntryPublicationSelector: expect.any(Function),
+      SettingsAutoForm: expect.any(Function),
+      VersionPolicyField: expect.any(Function),
+    });
+    expect(registerBlockGridSelectSceneAddBlockProvider).toHaveBeenCalledWith(
+      'light-extension-js-blocks',
+      expect.any(Function),
+    );
+
+    await expect(plugin.beforeLoad()).resolves.toBeUndefined();
+    expect(RunJSSourceResolverRegistry.getResolver('light-extension')).toBeNull();
+    expect(vi.mocked(registerBlockGridSelectSceneAddBlockProvider).mock.results[0].value).toHaveBeenCalledTimes(1);
 
     const source = fs.readFileSync(path.resolve(__dirname, '../index.ts'), 'utf8');
 
     expect(source).not.toMatch(/from\s+['"]@nocobase\/client['"]|require\(['"]@nocobase\/client['"]\)/);
+  });
+
+  it('links the legacy empty-state create button to the v2 creation flow', async () => {
+    Object.defineProperty(window, '__nocobase_modern_client_prefix__', {
+      configurable: true,
+      value: 'v',
+    });
+    Object.defineProperty(window, '__nocobase_public_path__', {
+      configurable: true,
+      value: '/',
+    });
+
+    const add = vi.fn();
+    const plugin = new PluginLightExtensionClient(
+      { name: 'light-extension' },
+      {
+        pluginSettingsManager: { add },
+        i18n: {
+          t: (text, options) => `${options?.ns}:${text}`,
+        },
+      },
+    );
+
+    await plugin.load();
+
+    const Component = add.mock.calls[0][1].Component;
+    render(React.createElement(Component));
+
+    expect(screen.getByRole('link', { name: 'Create light extension' })).toHaveAttribute(
+      'href',
+      '/v/admin/settings/light-extension?create=1',
+    );
   });
 });

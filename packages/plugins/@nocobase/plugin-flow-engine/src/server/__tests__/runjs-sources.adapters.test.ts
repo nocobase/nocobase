@@ -115,6 +115,104 @@ describe('flow-engine RunJS source adapters', () => {
     );
   });
 
+  it('allows FlowModel publish after light-extension source metadata changes without changing code', async () => {
+    await repository.insertModel({
+      uid: 'js-step-light-extension-metadata-model',
+      title: 'Light extension metadata JS block',
+      use: 'JSBlockModel',
+      stepParams: {
+        jsSettings: {
+          runJs: {
+            code: 'return oldValue;',
+            version: 'v2',
+            sourceMode: 'light-extension',
+            sourceBinding: {
+              type: 'light-extension-entry',
+              repoId: 'repo_old',
+              entryId: 'entry_old',
+              kind: 'js-block',
+              publicationId: 'pub_old',
+              versionPolicy: 'follow-active',
+            },
+            sourceRef: {
+              type: 'vsc-file',
+              repoId: 'repo_old',
+              publishedCommitId: 'commit_old',
+              entry: 'src/main.tsx',
+            },
+            settings: {
+              message: 'old',
+            },
+            keep: 'preserved',
+          },
+        },
+      },
+    });
+
+    const locator: RunJSSourceLocator = {
+      kind: 'flowModel.step',
+      modelUid: 'js-step-light-extension-metadata-model',
+      flowKey: 'jsSettings',
+      stepKey: 'runJs',
+      paramPath: ['code'],
+    };
+    const open = await openSource(locator);
+    expect(open.status).toBe(200);
+
+    await repository.patch({
+      uid: 'js-step-light-extension-metadata-model',
+      stepParams: {
+        jsSettings: {
+          runJs: {
+            code: 'return oldValue;',
+            version: 'v2',
+            sourceMode: 'light-extension',
+            sourceBinding: {
+              type: 'light-extension-entry',
+              repoId: 'repo_new',
+              entryId: 'entry_new',
+              kind: 'js-block',
+              publicationId: 'pub_new',
+              versionPolicy: 'follow-active',
+            },
+            sourceRef: {
+              type: 'vsc-file',
+              repoId: 'repo_new',
+              publishedCommitId: 'commit_new',
+              entry: 'src/main.tsx',
+            },
+            settings: {
+              message: 'new',
+            },
+            keep: 'preserved',
+          },
+        },
+      },
+    });
+
+    const publish = await publishSource(locator, open.body.data.ownerFingerprint, 'ctx.render("newValue");');
+    expect(publish.status).toBe(200);
+
+    const updated = await repository.findModelById('js-step-light-extension-metadata-model');
+    expect(getAtPath(updated, ['stepParams', 'jsSettings', 'runJs'])).toMatchObject({
+      code: 'ctx.render("newValue");',
+      keep: 'preserved',
+      sourceBinding: {
+        repoId: 'repo_new',
+        entryId: 'entry_new',
+      },
+      settings: {
+        message: 'new',
+      },
+      sourceRef: {
+        type: 'vsc-file',
+        repoId: publish.body.data.repository.id,
+        publishedCommitId: publish.body.data.commit.id,
+        entry: 'src/main.tsx',
+      },
+    });
+  });
+
   it('rejects FlowModel publish when sibling owner settings changed after open', async () => {
     await repository.insertModel({
       uid: 'js-step-stale-model',

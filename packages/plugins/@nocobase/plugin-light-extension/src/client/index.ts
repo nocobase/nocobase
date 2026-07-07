@@ -8,9 +8,21 @@
  */
 
 import type React from 'react';
+import {
+  JS_BLOCK_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
+  JS_BLOCK_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
+  RunJSSourceResolverRegistry,
+  registerBlockGridSelectSceneAddBlockProvider,
+} from '@nocobase/client-v2';
 
 import LightExtensionHomePage from '../client-shared/LightExtensionHomePage';
 import { LIGHT_EXTENSION_ACL_SNIPPET, LIGHT_EXTENSION_SETTINGS_KEY, NAMESPACE } from '../constants';
+import { createLightExtensionJSBlockAddItems } from '../client-v2/add-block/lightExtensionJsBlockItems';
+import { JSBlockLightExtensionSourceField } from '../client-v2/components/JSBlockLightExtensionSourceField';
+import { RepoEntryPublicationSelector } from '../client-v2/components/RepoEntryPublicationSelector';
+import { SettingsAutoForm, SettingsSingleField } from '../client-v2/components/SettingsAutoForm';
+import { VersionPolicyField } from '../client-v2/components/VersionPolicyField';
+import { createLightExtensionRunJSResolver } from '../client-v2/resolvers/LightExtensionRunJSResolver';
 
 interface LightExtensionLegacyClientOptions {
   name?: string;
@@ -36,6 +48,12 @@ interface LegacyI18n {
 interface LegacyApp {
   pluginSettingsManager?: LegacySettingsManager;
   i18n?: LegacyI18n;
+  apiClient?: Parameters<typeof createLightExtensionRunJSResolver>[0];
+  flowEngine?: {
+    flowSettings?: {
+      registerComponents?: (components: Record<string, React.ElementType>) => void;
+    };
+  };
 }
 
 function translate(app: LegacyApp | undefined, text: string) {
@@ -51,6 +69,9 @@ function translate(app: LegacyApp | undefined, text: string) {
  * behavior.
  */
 export class PluginLightExtensionClient {
+  private unregisterRunJSResolver?: () => void;
+  private unregisterAddBlockProvider?: () => void;
+
   constructor(
     public readonly options: LightExtensionLegacyClientOptions = {},
     protected readonly app?: LegacyApp,
@@ -58,9 +79,33 @@ export class PluginLightExtensionClient {
 
   async afterAdd() {}
 
-  async beforeLoad() {}
+  async beforeLoad() {
+    this.unregisterRunJSResolver?.();
+    this.unregisterRunJSResolver = undefined;
+    this.unregisterAddBlockProvider?.();
+    this.unregisterAddBlockProvider = undefined;
+  }
 
   async load() {
+    this.app?.flowEngine?.flowSettings?.registerComponents?.({
+      [JS_BLOCK_LIGHT_EXTENSION_FULL_SOURCE_FIELD]: JSBlockLightExtensionSourceField,
+      [JS_BLOCK_LIGHT_EXTENSION_SETTINGS_STEP_FIELD]: SettingsSingleField,
+      RepoEntryPublicationSelector,
+      SettingsAutoForm,
+      VersionPolicyField,
+    });
+
+    if (this.app?.apiClient) {
+      this.unregisterRunJSResolver = RunJSSourceResolverRegistry.registerResolver(
+        createLightExtensionRunJSResolver(this.app.apiClient),
+      );
+    }
+
+    this.unregisterAddBlockProvider = registerBlockGridSelectSceneAddBlockProvider(
+      'light-extension-js-blocks',
+      createLightExtensionJSBlockAddItems,
+    );
+
     this.app?.pluginSettingsManager?.add(LIGHT_EXTENSION_SETTINGS_KEY, {
       icon: 'CodeOutlined',
       title: translate(this.app, 'Light extensions'),

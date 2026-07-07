@@ -19,10 +19,7 @@ import type {
   LightExtensionSelectableEntryRecord,
 } from '../../shared/types';
 import type { ApiClientLike } from '../api/lightExtensionEntriesRequests';
-import {
-  listLightExtensionEntryPublications,
-  listSelectableLightExtensionEntries,
-} from '../api/lightExtensionEntriesRequests';
+import { listSelectableLightExtensionEntries } from '../api/lightExtensionEntriesRequests';
 
 export interface RepoEntryPublicationSelectorProps {
   value?: LightExtensionRuntimeSourceBinding | null;
@@ -39,11 +36,18 @@ type FlowContextWithApi = {
   api: ApiClientLike;
 };
 
+type LightExtensionJSBlockSelection = Pick<LightExtensionRuntimeSourceBinding, 'type' | 'repoId' | 'entryId' | 'kind'> &
+  Partial<Pick<LightExtensionRuntimeSourceBinding, 'publicationId' | 'versionPolicy'>>;
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 }
 
-function isLightExtensionJSBlockBinding(value: unknown): value is LightExtensionRuntimeSourceBinding {
+function isEmptyRecord(value: unknown): value is Record<string, never> {
+  return isRecord(value) && Object.keys(value).length === 0;
+}
+
+function isLightExtensionJSBlockSelection(value: unknown): value is LightExtensionJSBlockSelection {
   return (
     isRecord(value) &&
     value.type === 'light-extension-entry' &&
@@ -51,10 +55,31 @@ function isLightExtensionJSBlockBinding(value: unknown): value is LightExtension
     value.repoId.trim().length > 0 &&
     typeof value.entryId === 'string' &&
     value.entryId.trim().length > 0 &&
-    value.kind === 'js-block' &&
+    value.kind === 'js-block'
+  );
+}
+
+function isLightExtensionJSBlockBinding(value: unknown): value is LightExtensionRuntimeSourceBinding {
+  return (
+    isLightExtensionJSBlockSelection(value) &&
     typeof value.publicationId === 'string' &&
     value.publicationId.trim().length > 0 &&
-    (value.versionPolicy === 'pinned' || value.versionPolicy === 'follow-active')
+    (typeof value.versionPolicy === 'undefined' ||
+      value.versionPolicy === 'pinned' ||
+      value.versionPolicy === 'follow-active')
+  );
+}
+
+function hasActivePublication(
+  entry: LightExtensionSelectableEntryRecord,
+): entry is LightExtensionSelectableEntryRecord & { activePublication: LightExtensionPublicationMetadataRecord } {
+  return Boolean(
+    entry.activePublicationId &&
+      entry.activePublication &&
+      entry.activePublication.id === entry.activePublicationId &&
+      entry.activePublication.entryId === entry.id &&
+      entry.activePublication.repoId === entry.repoId &&
+      entry.activePublication.kind === entry.kind,
   );
 }
 
@@ -76,10 +101,13 @@ function toBinding(
   return {
     type: 'light-extension-entry',
     repoId: entry.repoId,
+    repoTitle: entry.repoId,
     entryId: entry.id,
+    entryTitle: getEntryLabel(entry),
+    entryName: entry.entryName,
     kind: 'js-block',
     publicationId: publication.id,
-    versionPolicy: 'pinned',
+    versionPolicy: 'follow-active',
   };
 }
 
@@ -91,25 +119,26 @@ export const RepoEntryPublicationSelector: React.FC<RepoEntryPublicationSelector
 }) => {
   const { t } = useTranslation(NAMESPACE);
   const ctx = useFlowContext<FlowContextWithApi>();
-  const latestValueRef = React.useRef(value);
+  const controlledValue = value && !isEmptyRecord(value) ? value : undefined;
+  const latestValueRef = React.useRef(controlledValue);
   const onClearRef = React.useRef(onClear);
   const lastClearedBindingRef = React.useRef<string | null>(null);
   const lastEmittedBindingRef = React.useRef<string | null>(null);
-  const hadControlledValueRef = React.useRef(Boolean(value?.entryId));
+  const hadControlledValueRef = React.useRef(Boolean(controlledValue?.entryId));
   const autoSelectionBlockedRef = React.useRef(false);
   const keepSelectionOnControlledClearRef = React.useRef(false);
   const [entries, setEntries] = React.useState<LightExtensionSelectableEntryRecord[]>([]);
-  const [publications, setPublications] = React.useState<LightExtensionPublicationMetadataRecord[]>([]);
-  const [repoId, setRepoId] = React.useState<string | undefined>(value?.repoId);
-  const [entryId, setEntryId] = React.useState<string | undefined>(value?.entryId);
-  const [publicationId, setPublicationId] = React.useState<string | undefined>(value?.publicationId);
+  const [repoId, setRepoId] = React.useState<string | undefined>(controlledValue?.repoId);
+  const [entryId, setEntryId] = React.useState<string | undefined>(controlledValue?.entryId);
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
-  const valueRepoId = value?.repoId;
-  const valueEntryId = value?.entryId;
-  const valuePublicationId = value?.publicationId;
+  const valueRepoId = controlledValue?.repoId;
+  const valueEntryId = controlledValue?.entryId;
 
-  const jsBlockEntries = React.useMemo(() => entries.filter((entry) => entry.kind === 'js-block'), [entries]);
+  const jsBlockEntries = React.useMemo(
+    () => entries.filter((entry) => entry.kind === 'js-block' && hasActivePublication(entry)),
+    [entries],
+  );
   const repoIds = React.useMemo(
     () => Array.from(new Set(jsBlockEntries.map((entry) => entry.repoId))),
     [jsBlockEntries],
@@ -122,22 +151,18 @@ export const RepoEntryPublicationSelector: React.FC<RepoEntryPublicationSelector
     () => jsBlockEntries.find((entry) => entry.id === entryId) || null,
     [entryId, jsBlockEntries],
   );
-  const selectedPublication = React.useMemo(
-    () =>
-      publications.find((publication) => publication.id === publicationId && publication.entryId === entryId) || null,
-    [entryId, publicationId, publications],
-  );
+  const selectedPublication = selectedEntry?.activePublication || null;
 
   React.useEffect(() => {
-    latestValueRef.current = value;
-  }, [value]);
+    latestValueRef.current = controlledValue;
+  }, [controlledValue]);
 
   React.useEffect(() => {
     onClearRef.current = onClear;
   }, [onClear]);
 
-  const notifyClear = React.useCallback((binding?: LightExtensionRuntimeSourceBinding | null) => {
-    const bindingKey = binding ? getBindingKey(binding) : null;
+  const notifyClear = React.useCallback((binding?: unknown) => {
+    const bindingKey = isLightExtensionJSBlockBinding(binding) ? getBindingKey(binding) : null;
     if (bindingKey && lastClearedBindingRef.current === bindingKey) {
       return;
     }
@@ -147,28 +172,24 @@ export const RepoEntryPublicationSelector: React.FC<RepoEntryPublicationSelector
   }, []);
 
   const clearInvalidControlledBinding = React.useCallback(
-    (binding: LightExtensionRuntimeSourceBinding) => {
+    (binding?: unknown) => {
       autoSelectionBlockedRef.current = true;
-      setPublications([]);
       setRepoId(undefined);
       setEntryId(undefined);
-      setPublicationId(undefined);
       notifyClear(binding);
     },
     [notifyClear],
   );
 
-  const clearPublicationSelection = React.useCallback(() => {
-    setPublications([]);
-    setPublicationId(undefined);
+  const clearEntrySelection = React.useCallback(() => {
     keepSelectionOnControlledClearRef.current = Boolean(latestValueRef.current?.entryId);
     notifyClear(latestValueRef.current);
   }, [notifyClear]);
 
   React.useEffect(() => {
-    if (value && !isLightExtensionJSBlockBinding(value)) {
+    if (controlledValue && !isLightExtensionJSBlockSelection(controlledValue)) {
       hadControlledValueRef.current = false;
-      clearInvalidControlledBinding(value);
+      clearInvalidControlledBinding(controlledValue);
       return;
     }
     if (!valueEntryId) {
@@ -179,10 +200,8 @@ export const RepoEntryPublicationSelector: React.FC<RepoEntryPublicationSelector
           return;
         }
         autoSelectionBlockedRef.current = true;
-        setPublications([]);
         setRepoId(undefined);
         setEntryId(undefined);
-        setPublicationId(undefined);
       }
       return;
     }
@@ -191,8 +210,7 @@ export const RepoEntryPublicationSelector: React.FC<RepoEntryPublicationSelector
     lastClearedBindingRef.current = null;
     setRepoId(valueRepoId);
     setEntryId(valueEntryId);
-    setPublicationId(valuePublicationId);
-  }, [clearInvalidControlledBinding, value, valueEntryId, valuePublicationId, valueRepoId]);
+  }, [clearInvalidControlledBinding, controlledValue, valueEntryId, valueRepoId]);
 
   React.useEffect(() => {
     let mounted = true;
@@ -204,10 +222,10 @@ export const RepoEntryPublicationSelector: React.FC<RepoEntryPublicationSelector
         if (!mounted) {
           return;
         }
-        const filtered = nextEntries.filter((entry) => entry.kind === 'js-block');
+        const filtered = nextEntries.filter((entry) => entry.kind === 'js-block' && hasActivePublication(entry));
         setEntries(filtered);
         const currentValue = latestValueRef.current;
-        if (currentValue && !isLightExtensionJSBlockBinding(currentValue)) {
+        if (currentValue && !isLightExtensionJSBlockSelection(currentValue)) {
           clearInvalidControlledBinding(currentValue);
           return;
         }
@@ -226,7 +244,7 @@ export const RepoEntryPublicationSelector: React.FC<RepoEntryPublicationSelector
           setEntryId(undefined);
           return;
         }
-        const nextEntry = entryFromValue || filtered.find((entry) => entry.activePublicationId) || filtered[0];
+        const nextEntry = entryFromValue || filtered[0];
         setRepoId(nextEntry?.repoId);
         setEntryId(nextEntry?.id);
       } catch (requestError) {
@@ -247,18 +265,19 @@ export const RepoEntryPublicationSelector: React.FC<RepoEntryPublicationSelector
   }, [clearInvalidControlledBinding, ctx.api, t]);
 
   React.useEffect(() => {
-    if (value && !isLightExtensionJSBlockBinding(value)) {
-      clearInvalidControlledBinding(value);
+    if (controlledValue && !isLightExtensionJSBlockSelection(controlledValue)) {
+      clearInvalidControlledBinding(controlledValue);
       return;
     }
-    if (!value?.entryId || jsBlockEntries.length === 0) {
+    if (!controlledValue?.entryId || jsBlockEntries.length === 0) {
       return;
     }
     const entryFromValue = jsBlockEntries.find(
-      (entry) => entry.id === value.entryId && (!value.repoId || entry.repoId === value.repoId),
+      (entry) =>
+        entry.id === controlledValue.entryId && (!controlledValue.repoId || entry.repoId === controlledValue.repoId),
     );
     if (!entryFromValue) {
-      clearInvalidControlledBinding(value);
+      clearInvalidControlledBinding(controlledValue);
       return;
     }
     if (repoId !== entryFromValue.repoId) {
@@ -267,92 +286,7 @@ export const RepoEntryPublicationSelector: React.FC<RepoEntryPublicationSelector
     if (entryId !== entryFromValue.id) {
       setEntryId(entryFromValue.id);
     }
-  }, [clearInvalidControlledBinding, entryId, jsBlockEntries, repoId, value]);
-
-  React.useEffect(() => {
-    setPublications([]);
-    setPublicationId(undefined);
-    if (!entryId) {
-      return;
-    }
-
-    let mounted = true;
-    setLoading(true);
-    setError(null);
-    const loadPublications = async () => {
-      try {
-        const result = await listLightExtensionEntryPublications(ctx.api, entryId);
-        if (!mounted) {
-          return;
-        }
-        const nextPublications = result.publications || [];
-        setPublications(nextPublications);
-        const currentValue = latestValueRef.current;
-        if (currentValue && !isLightExtensionJSBlockBinding(currentValue)) {
-          clearInvalidControlledBinding(currentValue);
-          return;
-        }
-        const publicationFromValue =
-          currentValue?.entryId === entryId && currentValue.publicationId
-            ? nextPublications.find(
-                (publication) =>
-                  publication.id === currentValue.publicationId &&
-                  publication.entryId === entryId &&
-                  (!currentValue.repoId || publication.repoId === currentValue.repoId),
-              )
-            : null;
-        if (currentValue?.entryId === entryId && currentValue.publicationId && !publicationFromValue) {
-          clearInvalidControlledBinding(currentValue);
-          return;
-        }
-        if (!currentValue?.entryId && autoSelectionBlockedRef.current) {
-          setPublicationId(undefined);
-          return;
-        }
-        const activePublication = result.activePublicationId
-          ? nextPublications.find((publication) => publication.id === result.activePublicationId)
-          : null;
-        setPublicationId((publicationFromValue || activePublication || nextPublications[0])?.id);
-      } catch (requestError) {
-        if (!mounted) {
-          return;
-        }
-        setError(getErrorMessage(requestError) || t('Failed to load publications'));
-      } finally {
-        if (mounted) {
-          setLoading(false);
-        }
-      }
-    };
-    loadPublications();
-
-    return () => {
-      mounted = false;
-    };
-  }, [clearInvalidControlledBinding, ctx.api, entryId, t]);
-
-  React.useEffect(() => {
-    if (value && !isLightExtensionJSBlockBinding(value)) {
-      clearInvalidControlledBinding(value);
-      return;
-    }
-    if (!value?.entryId || !value.publicationId || value.entryId !== entryId || publications.length === 0) {
-      return;
-    }
-    const publicationFromValue = publications.find(
-      (publication) =>
-        publication.id === value.publicationId &&
-        publication.entryId === value.entryId &&
-        (!value.repoId || publication.repoId === value.repoId),
-    );
-    if (publicationFromValue) {
-      if (publicationId !== publicationFromValue.id) {
-        setPublicationId(publicationFromValue.id);
-      }
-      return;
-    }
-    clearInvalidControlledBinding(value);
-  }, [clearInvalidControlledBinding, entryId, publicationId, publications, value]);
+  }, [clearInvalidControlledBinding, controlledValue, entryId, jsBlockEntries, repoId]);
 
   React.useEffect(() => {
     if (!selectedEntry || !selectedPublication) {
@@ -379,18 +313,22 @@ export const RepoEntryPublicationSelector: React.FC<RepoEntryPublicationSelector
 
   const handleRepoChange = (nextRepoId: string) => {
     autoSelectionBlockedRef.current = false;
-    clearPublicationSelection();
     setRepoId(nextRepoId);
     const nextEntry = jsBlockEntries.find((entry) => entry.repoId === nextRepoId);
     setEntryId(nextEntry?.id);
+    if (!nextEntry) {
+      clearEntrySelection();
+    }
   };
 
   const handleEntryChange = (nextEntryId: string) => {
     autoSelectionBlockedRef.current = false;
-    clearPublicationSelection();
     const nextEntry = jsBlockEntries.find((entry) => entry.id === nextEntryId);
     setRepoId(nextEntry?.repoId);
     setEntryId(nextEntryId);
+    if (!nextEntry) {
+      clearEntrySelection();
+    }
   };
 
   return (
@@ -413,29 +351,12 @@ export const RepoEntryPublicationSelector: React.FC<RepoEntryPublicationSelector
         options={entriesInRepo.map((entry) => ({ label: getEntryLabel(entry), value: entry.id }))}
         onChange={handleEntryChange}
       />
-      <Select
-        aria-label={t('Publication')}
-        disabled={disabled || loading || !entryId}
-        placeholder={t('Publication')}
-        value={publicationId}
-        options={publications.map((publication) => ({
-          label:
-            publication.id === selectedEntry?.activePublicationId
-              ? `${publication.id} (${t('Active')})`
-              : publication.id,
-          value: publication.id,
-        }))}
-        onChange={(nextPublicationId) => {
-          autoSelectionBlockedRef.current = false;
-          setPublicationId(nextPublicationId);
-        }}
-      />
     </Space>
   );
 };
 
 function getBindingKey(binding: LightExtensionRuntimeSourceBinding): string {
-  return [binding.repoId, binding.entryId, binding.publicationId].join(':');
+  return [binding.repoId, binding.entryId, binding.publicationId, binding.versionPolicy || 'pinned'].join(':');
 }
 
 function getErrorMessage(error: unknown): string | undefined {

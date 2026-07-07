@@ -167,4 +167,44 @@ describe('BlockGridModel - select scene add block menu', () => {
       },
     });
   });
+
+  it('includes registered light extension groups in regular block grids', async () => {
+    registerBlockGridSelectSceneAddBlockProvider('test-light-extension', () => [
+      {
+        key: 'select-scene-light-extension-js-blocks',
+        type: 'group',
+        label: 'From light extension',
+        sort: 900,
+        children: [
+          {
+            key: 'light-extension-js-block:entry_sales:pub_sales',
+            label: 'Sales KPI',
+            createModelOptions: {
+              use: 'JSBlockModel',
+            },
+          },
+        ],
+      },
+    ]);
+    engine.context.defineProperty('view', { value: { inputArgs: {} } });
+    const model = engine.createModel<BlockGridModel>({ use: 'BlockGridModel' });
+
+    const itemsSource = model.addBlockItems;
+    expect(typeof itemsSource).toBe('function');
+    if (typeof itemsSource !== 'function') {
+      throw new Error('Expected regular add-block items source');
+    }
+    const items = await itemsSource(model.context);
+    const providerGroup = items.find((item) => item.key === 'select-scene-light-extension-js-blocks');
+    const dataBlocks = items.find((item) => item.key === 'DataBlockModel');
+    const filterBlocks = items.find((item) => item.key === 'FilterBlockModel');
+
+    expect(dataBlocks).toBeTruthy();
+    expect(filterBlocks).toBeTruthy();
+    expect(providerGroup).toMatchObject({
+      type: 'group',
+      label: 'From light extension',
+    });
+    expect(Array.isArray(providerGroup?.children)).toBe(true);
+  });
 });

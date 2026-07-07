@@ -9,7 +9,12 @@
 
 import type { FlowSurfaceErrorItemInput } from '../../errors';
 import type { RunJsAuthoringSurfaceStyle } from '../types';
-import { ALLOWED_CTX_ROOTS, BLOCKED_CTX_CAPABILITIES, CHART_CTX_ROOTS } from '../runtime/constants';
+import {
+  ALLOWED_CTX_ROOTS,
+  BLOCKED_CTX_CAPABILITIES,
+  CHART_CTX_ROOTS,
+  RUNJS_CTX_NON_FUNCTION_ROOTS_BY_MODEL_USE,
+} from '../runtime/constants';
 import type { RunJsInspectionRuntime, RunJsInspectionValidator, RunJsScanResult } from '../runtime/types';
 import { buildRunJsAuthoringError } from '../runtime/errors';
 import { getResourceLikeCtxRunjsEntrypoint, isResourceLikeCtxRequest } from '../scan/source-patterns';
@@ -867,6 +872,7 @@ function collectSurfaceStyleErrors(
 function isAllowedCtxRoot(member: string, modelUse: string) {
   return (
     ALLOWED_CTX_ROOTS.has(member) ||
+    Boolean(modelUse && RUNJS_CTX_NON_FUNCTION_ROOTS_BY_MODEL_USE[modelUse]?.has(member)) ||
     ((modelUse === 'ChartOptionModel' || modelUse === 'ChartEventsModel') && CHART_CTX_ROOTS.has(member))
   );
 }

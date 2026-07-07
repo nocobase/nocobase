@@ -25,7 +25,7 @@ import {
   UploadOutlined,
   CopyOutlined,
 } from '@ant-design/icons';
-import { CodeEditor } from '@nocobase/client-v2';
+import { CodeEditor, type CodeEditorFullscreenControl } from '@nocobase/client-v2';
 import { Button, Empty, Input, List, Modal, Popconfirm, Space, Tag, Tooltip, Typography, message, Alert } from 'antd';
 import type { InputRef } from 'antd/es/input';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
@@ -64,6 +64,7 @@ export function FilesPanel(props: {
   collapsed: boolean;
   exporting: boolean;
   files: RunJSWorkspaceFile[];
+  folders?: string[];
   onCollapseChange: (collapsed: boolean) => void;
   onCreate: (parentPath?: string) => string | undefined;
   onCreateFolder: (parentPath?: string) => string | undefined;
@@ -86,6 +87,7 @@ export function FilesPanel(props: {
     collapsed,
     exporting,
     files,
+    folders,
     onCollapseChange,
     onCreate,
     onCreateFolder,
@@ -109,7 +111,7 @@ export function FilesPanel(props: {
   const [collapsedFolderPaths, setCollapsedFolderPaths] = useState<Set<string>>(() => new Set());
   const inlineEditInputRef = useRef<InputRef>(null);
   const inlineEditCancellingRef = useRef(false);
-  const folderPaths = React.useMemo(() => collectRunJSWorkspaceFolders(files), [files]);
+  const folderPaths = React.useMemo(() => folders || collectRunJSWorkspaceFolders(files), [files, folders]);
   const treeRows = React.useMemo(
     () => buildFileTreeRows(files, folderPaths, collapsedFolderPaths),
     [collapsedFolderPaths, files, folderPaths],
@@ -712,9 +714,11 @@ export function CodeTab(props: {
   readOnly: boolean;
   savedFiles: RunJSWorkspaceFile[];
   scene: string;
+  showRunButton?: boolean;
   t: (key: string) => string;
   version: string;
   workspaceFiles: RunJSWorkspaceFile[];
+  fullscreenControl?: CodeEditorFullscreenControl;
 }) {
   const {
     activeFile,
@@ -733,9 +737,11 @@ export function CodeTab(props: {
     readOnly,
     savedFiles,
     scene,
+    showRunButton = true,
     t,
     version,
     workspaceFiles,
+    fullscreenControl,
   } = props;
   const openFiles = openPaths
     .map((path) => workspaceFiles.find((file) => file.path === path))
@@ -783,9 +789,11 @@ export function CodeTab(props: {
   );
   const runAndDiffActions = (
     <Space.Compact>
-      <Button disabled={isDiff} loading={previewing} onClick={onRunPreview} size="small">
-        {t('Run')}
-      </Button>
+      {showRunButton ? (
+        <Button disabled={isDiff} loading={previewing} onClick={onRunPreview} size="small">
+          {t('Run')}
+        </Button>
+      ) : null}
       <Tooltip title={t('Diff')}>
         <Button
           aria-label={t('Diff')}
@@ -862,6 +870,7 @@ export function CodeTab(props: {
         typescriptProject={typescriptProject}
         value={activeFile.content}
         version={version}
+        fullscreenControl={fullscreenControl}
         wrapperStyle={{ flex: 1, height: '100%', minHeight: 0, minWidth: 0, overflow: 'hidden' }}
       />
     </section>

@@ -119,6 +119,63 @@ describe('JSBlockLightExtensionSourceField source mode errors', () => {
     vi.restoreAllMocks();
   });
 
+  it('sets a settings footer for light-extension mode when the inline editor is hidden', async () => {
+    const setFooter = vi.fn();
+    const close = vi.fn();
+    const submit = vi.fn();
+    const engine = new FlowEngine();
+    engine.context.defineProperty('api', {
+      value: {
+        request: mocks.request,
+      },
+    });
+    engine.context.defineProperty('view', {
+      value: {
+        close,
+        setFooter,
+        submit,
+      },
+    });
+    const form = createForm({
+      initialValues: {
+        sourceMode: 'light-extension',
+      },
+    });
+
+    render(
+      <FlowEngineProvider engine={engine}>
+        <FormProvider form={form}>
+          <SchemaField
+            schema={{
+              type: 'object',
+              properties: {
+                sourceMode: {
+                  type: 'string',
+                  'x-component': 'JSBlockLightExtensionSourceField',
+                },
+              },
+            }}
+          />
+        </FormProvider>
+      </FlowEngineProvider>,
+    );
+
+    await waitFor(() => {
+      expect(setFooter).toHaveBeenCalledWith(expect.anything());
+    });
+
+    const footer = setFooter.mock.calls.find(([node]) => React.isValidElement(node))?.[0];
+    expect(footer).toBeTruthy();
+
+    const footerView = render(<>{footer}</>);
+    fireEvent.click(footerView.getByRole('button', { name: 'Save' }));
+    fireEvent.click(footerView.getByRole('button', { name: 'Cancel' }));
+
+    expect(submit).toHaveBeenCalledTimes(1);
+    expect(close).toHaveBeenCalledTimes(1);
+    footerView.unmount();
+  });
+
   it('clears stale light-extension settings errors after switching back to inline mode', async () => {
     vi.spyOn(Modal, 'confirm').mockImplementation((config) => {
       config.onCancel?.(() => {});
@@ -180,7 +237,7 @@ describe('JSBlockLightExtensionSourceField source mode errors', () => {
     });
   });
 
-  it('requires a publication binding in light-extension mode', async () => {
+  it('requires an entry binding in light-extension mode', async () => {
     mocks.request.mockImplementation((options: { url: string }) => {
       if (options.url === 'lightExtensionEntries:listSelectable') {
         return Promise.resolve({
@@ -222,7 +279,7 @@ describe('JSBlockLightExtensionSourceField source mode errors', () => {
     );
 
     await waitFor(() => {
-      expect(form.query('sourceMode').take()?.selfErrors).toContain('Select a publication');
+      expect(form.query('sourceMode').take()?.selfErrors).toContain('Select a light extension entry');
     });
   });
 
@@ -266,10 +323,121 @@ describe('JSBlockLightExtensionSourceField source mode errors', () => {
     );
 
     await waitFor(() => {
-      expect(form.query('sourceMode').take()?.selfErrors).toContain('Select a publication');
+      expect(form.query('sourceMode').take()?.selfErrors).toContain('Select a light extension entry');
     });
     await waitFor(() => {
       expect(form.values.sourceBinding).toBeUndefined();
+    });
+  });
+
+  it('repairs reusable entry selections that have stale binding metadata', async () => {
+    const engine = new FlowEngine();
+    engine.context.defineProperty('api', {
+      value: {
+        request: mocks.request,
+      },
+    });
+    const form = createForm({
+      initialValues: {
+        sourceMode: 'light-extension',
+        sourceBinding: {
+          type: 'light-extension-entry',
+          repoId: 'repo_sales',
+          entryId: 'entry_sales',
+          kind: 'js-block',
+          publicationId: 'pub_sales',
+          versionPolicy: 'active',
+        },
+      },
+    });
+
+    render(
+      <FlowEngineProvider engine={engine}>
+        <FormProvider form={form}>
+          <SchemaField
+            schema={{
+              type: 'object',
+              properties: {
+                sourceMode: {
+                  type: 'string',
+                  'x-component': 'JSBlockLightExtensionSourceField',
+                },
+              },
+            }}
+          />
+        </FormProvider>
+      </FlowEngineProvider>,
+    );
+
+    await waitFor(() => {
+      expect(form.values.sourceBinding?.publicationId).toBe('pub_sales');
+      expect(form.values.sourceBinding?.versionPolicy).toBe('follow-active');
+    });
+    await waitFor(() => {
+      expect(form.query('sourceMode').take()?.selfErrors || []).not.toContain('Select a light extension entry');
+    });
+  });
+
+  it('persists the selected entry into hidden sibling fields inside the flow settings layout', async () => {
+    const engine = new FlowEngine();
+    engine.context.defineProperty('api', {
+      value: {
+        request: mocks.request,
+      },
+    });
+    const form = createForm({
+      initialValues: {
+        sourceMode: 'light-extension',
+      },
+    });
+
+    render(
+      <FlowEngineProvider engine={engine}>
+        <FormProvider form={form}>
+          <SchemaField
+            schema={{
+              type: 'object',
+              properties: {
+                layout: {
+                  type: 'void',
+                  properties: {
+                    sourceMode: {
+                      type: 'string',
+                      'x-component': 'JSBlockLightExtensionSourceField',
+                    },
+                    sourceBinding: {
+                      type: 'object',
+                      'x-display': 'hidden',
+                    },
+                    settings: {
+                      type: 'object',
+                      'x-display': 'hidden',
+                    },
+                  },
+                },
+              },
+            }}
+          />
+        </FormProvider>
+      </FlowEngineProvider>,
+    );
+
+    await waitFor(() => {
+      expect(form.values.sourceBinding).toMatchObject({
+        type: 'light-extension-entry',
+        repoId: 'repo_sales',
+        entryId: 'entry_sales',
+        kind: 'js-block',
+        publicationId: 'pub_sales',
+        versionPolicy: 'follow-active',
+      });
+      expect(form.values.settings).toMatchObject({
+        plan: 'basic',
+      });
+    });
+    await waitFor(() => {
+      expect(form.query('sourceMode').take()?.selfErrors || []).not.toContain('Select a light extension entry');
+      expect(screen.getByText('plan')).toBeTruthy();
     });
   });
 
@@ -325,7 +493,7 @@ describe('JSBlockLightExtensionSourceField source mode errors', () => {
 
     await waitFor(() => {
       expect(screen.queryByText('plan')).toBeNull();
-      expect(form.query('sourceMode').take()?.selfErrors).toContain('Select a publication');
+      expect(form.query('sourceMode').take()?.selfErrors).toContain('Select a light extension entry');
     });
   });
 
@@ -368,8 +536,8 @@ describe('JSBlockLightExtensionSourceField source mode errors', () => {
       </FlowEngineProvider>,
     );
 
-    expect(screen.getByText('Copy selected publication code').closest('button')).toHaveProperty('disabled', true);
-    fireEvent.click(screen.getByText('Copy selected publication code'));
+    expect(screen.getByText('Copy selected light extension code').closest('button')).toHaveProperty('disabled', true);
+    fireEvent.click(screen.getByText('Copy selected light extension code'));
 
     expect(mocks.request).not.toHaveBeenCalledWith(
       expect.objectContaining({
@@ -418,7 +586,7 @@ describe('JSBlockLightExtensionSourceField source mode errors', () => {
     );
 
     await waitFor(() => {
-      expect(form.query('sourceMode').take()?.selfErrors).toContain('Select a publication');
+      expect(form.query('sourceMode').take()?.selfErrors).toContain('Select a light extension entry');
     });
   });
 });

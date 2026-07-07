@@ -10,6 +10,7 @@
 import type { Application } from '@nocobase/client-v2';
 import {
   JS_BLOCK_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
+  JS_BLOCK_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
   Plugin,
   RunJSSourceResolverRegistry,
   registerBlockGridSelectSceneAddBlockProvider,
@@ -19,7 +20,7 @@ import { LIGHT_EXTENSION_ACL_SNIPPET, LIGHT_EXTENSION_SETTINGS_KEY } from '../co
 import { createLightExtensionJSBlockAddItems } from './add-block/lightExtensionJsBlockItems';
 import { JSBlockLightExtensionSourceField } from './components/JSBlockLightExtensionSourceField';
 import { RepoEntryPublicationSelector } from './components/RepoEntryPublicationSelector';
-import { SettingsAutoForm } from './components/SettingsAutoForm';
+import { SettingsAutoForm, SettingsSingleField } from './components/SettingsAutoForm';
 import { VersionPolicyField } from './components/VersionPolicyField';
 import { createLightExtensionRunJSResolver } from './resolvers/LightExtensionRunJSResolver';
 
@@ -36,6 +37,7 @@ export class PluginLightExtensionClientV2 extends Plugin<Record<string, never>, 
   async load() {
     this.flowEngine.flowSettings.registerComponents({
       [JS_BLOCK_LIGHT_EXTENSION_FULL_SOURCE_FIELD]: JSBlockLightExtensionSourceField,
+      [JS_BLOCK_LIGHT_EXTENSION_SETTINGS_STEP_FIELD]: SettingsSingleField,
       RepoEntryPublicationSelector,
       SettingsAutoForm,
       VersionPolicyField,
@@ -55,6 +57,7 @@ export class PluginLightExtensionClientV2 extends Plugin<Record<string, never>, 
       title,
       icon: 'CodeOutlined',
       aclSnippet: LIGHT_EXTENSION_ACL_SNIPPET,
+      showTabs: false,
     });
 
     this.pluginSettingsManager.addPageTabItem({
@@ -63,38 +66,6 @@ export class PluginLightExtensionClientV2 extends Plugin<Record<string, never>, 
       title,
       aclSnippet: LIGHT_EXTENSION_ACL_SNIPPET,
       componentLoader: () => import('./pages/LightExtensionListPage'),
-    });
-
-    this.pluginSettingsManager.addPageTabItem({
-      menuKey: LIGHT_EXTENSION_SETTINGS_KEY,
-      key: 'source',
-      title: this.t('Source'),
-      aclSnippet: LIGHT_EXTENSION_ACL_SNIPPET,
-      componentLoader: () => import('./pages/LightExtensionWorkspacePage'),
-    });
-
-    this.pluginSettingsManager.addPageTabItem({
-      menuKey: LIGHT_EXTENSION_SETTINGS_KEY,
-      key: 'entries',
-      title: this.t('Entries'),
-      aclSnippet: LIGHT_EXTENSION_ACL_SNIPPET,
-      componentLoader: () => import('./pages/LightExtensionEntriesPage'),
-    });
-
-    this.pluginSettingsManager.addPageTabItem({
-      menuKey: LIGHT_EXTENSION_SETTINGS_KEY,
-      key: 'publications',
-      title: this.t('Publications'),
-      aclSnippet: LIGHT_EXTENSION_ACL_SNIPPET,
-      componentLoader: () => import('./pages/LightExtensionPublicationsPage'),
-    });
-
-    this.pluginSettingsManager.addPageTabItem({
-      menuKey: LIGHT_EXTENSION_SETTINGS_KEY,
-      key: 'references',
-      title: this.t('References'),
-      aclSnippet: LIGHT_EXTENSION_ACL_SNIPPET,
-      componentLoader: () => import('./pages/EntryReferencesPanel'),
     });
   }
 

@@ -10,7 +10,6 @@
 import {
   CheckCircleOutlined,
   CloudUploadOutlined,
-  EditOutlined,
   ReloadOutlined,
   RollbackOutlined,
   RocketOutlined,
@@ -18,7 +17,7 @@ import {
 import { Alert, Button, Empty, Flex, Popconfirm, Space, Table, Tag, Tooltip, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
 import { NAMESPACE } from '../../constants';
@@ -34,19 +33,27 @@ import {
   LightExtensionPublicationHookError,
   useLightExtensionPublications,
 } from '../hooks/useLightExtensionPublications';
-import { settingsPath } from './LightExtensionListPage';
 
 type Notice = {
   type: 'success' | 'info' | 'warning' | 'error';
   message: string;
 };
 
-function LightExtensionPublicationsPage() {
+interface LightExtensionPublicationsPageProps {
+  embedded?: boolean;
+}
+
+function LightExtensionPublicationsPage({ embedded = false }: LightExtensionPublicationsPageProps) {
   const { t } = useTranslation(NAMESPACE);
   const [searchParams] = useSearchParams();
   const repoId = searchParams.get('repoId') || '';
-  const repoApi = useLightExtensionRepo();
-  const publicationApi = useLightExtensionPublications();
+  const { getRepo, listEntries } = useLightExtensionRepo();
+  const {
+    activatePublication: activatePublicationRequest,
+    isLoading: isPublicationOperationLoading,
+    listPublications,
+    publish,
+  } = useLightExtensionPublications();
   const [repo, setRepo] = useState<LightExtensionRepoRecord | null>(null);
   const [entries, setEntries] = useState<LightExtensionEntryRecord[]>([]);
   const [publications, setPublications] = useState<LightExtensionPublicationMetadataRecord[]>([]);
@@ -66,9 +73,9 @@ function LightExtensionPublicationsPage() {
       }
       try {
         const [nextRepo, nextEntries, nextPublications] = await Promise.all([
-          repoApi.getRepo(repoId),
-          repoApi.listEntries(repoId),
-          publicationApi.listPublications(repoId),
+          getRepo(repoId),
+          listEntries(repoId),
+          listPublications(repoId),
         ]);
         setRepo(nextRepo);
         setEntries(nextEntries);
@@ -85,7 +92,7 @@ function LightExtensionPublicationsPage() {
         setLoading(false);
       }
     },
-    [publicationApi, repoApi, repoId, t],
+    [getRepo, listEntries, listPublications, repoId, t],
   );
 
   useEffect(() => {
@@ -110,7 +117,7 @@ function LightExtensionPublicationsPage() {
 
     setNotice(null);
     try {
-      const result = await publicationApi.publish({
+      const result = await publish({
         repoId,
         entryIds: publishableEntries.map((entry) => entry.id),
         commitId: repo.headCommitId,
@@ -147,7 +154,7 @@ function LightExtensionPublicationsPage() {
 
       setNotice(null);
       try {
-        await publicationApi.activatePublication({
+        await activatePublicationRequest({
           entryId: publication.entryId,
           toPublicationId: publication.id,
           expectedCurrentPublicationId: entry.activePublicationId,
@@ -168,7 +175,7 @@ function LightExtensionPublicationsPage() {
         });
       }
     },
-    [entryById, loadData, publicationApi, t],
+    [activatePublicationRequest, entryById, loadData, t],
   );
 
   const columns = useMemo<ColumnsType<LightExtensionPublicationMetadataRecord>>(
@@ -260,7 +267,7 @@ function LightExtensionPublicationsPage() {
                 <Button
                   disabled={isActive}
                   icon={entry?.activePublicationId ? <RollbackOutlined /> : <RocketOutlined />}
-                  loading={publicationApi.isLoading('activatePublication')}
+                  loading={isPublicationOperationLoading('activatePublication')}
                   onClick={() => activatePublication(publication)}
                   size="small"
                 >
@@ -272,25 +279,24 @@ function LightExtensionPublicationsPage() {
         },
       },
     ],
-    [activatePublication, entryById, publicationApi, t],
+    [activatePublication, entryById, isPublicationOperationLoading, t],
   );
 
   if (!repoId) {
     return (
-      <Flex vertical gap={16} style={{ padding: 24 }}>
-        <Typography.Title level={3} style={{ margin: 0 }}>
-          {t('Publications')}
-        </Typography.Title>
+      <Flex vertical gap={16} style={{ padding: embedded ? 0 : 24 }}>
+        {!embedded ? (
+          <Typography.Title level={3} style={{ margin: 0 }}>
+            {t('Publications')}
+          </Typography.Title>
+        ) : null}
         <Empty description={t('Select a repository from the light extension list')} />
-        <Button>
-          <Link to={settingsPath.list}>{t('Back to list')}</Link>
-        </Button>
       </Flex>
     );
   }
 
   return (
-    <Flex vertical gap={16} style={{ padding: 24 }}>
+    <Flex vertical gap={16} style={{ padding: embedded ? 0 : 24 }}>
       <Flex align="center" justify="space-between" wrap="wrap" gap={12}>
         <Space direction="vertical" size={0}>
           <Typography.Title level={3} style={{ margin: 0 }}>
@@ -311,7 +317,7 @@ function LightExtensionPublicationsPage() {
             <Button
               disabled={!repo?.headCommitId || publishableEntries.length === 0}
               icon={<CloudUploadOutlined />}
-              loading={publicationApi.isLoading('publish')}
+              loading={isPublicationOperationLoading('publish')}
             >
               {t('Publish')}
             </Button>
@@ -325,21 +331,12 @@ function LightExtensionPublicationsPage() {
             <Button
               disabled={!repo?.headCommitId || publishableEntries.length === 0}
               icon={<RocketOutlined />}
-              loading={publicationApi.isLoading('publish')}
+              loading={isPublicationOperationLoading('publish')}
               type="primary"
             >
               {t('Publish and activate')}
             </Button>
           </Popconfirm>
-          <Button icon={<EditOutlined />}>
-            <Link to={settingsPath.source(repoId)}>{t('Source')}</Link>
-          </Button>
-          <Button>
-            <Link to={settingsPath.entries(repoId)}>{t('Entries')}</Link>
-          </Button>
-          <Button>
-            <Link to={settingsPath.references(repoId)}>{t('References')}</Link>
-          </Button>
         </Space>
       </Flex>
 

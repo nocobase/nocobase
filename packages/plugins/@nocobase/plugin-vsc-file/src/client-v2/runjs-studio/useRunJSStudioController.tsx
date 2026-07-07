@@ -8,10 +8,11 @@
  */
 
 import { CopyOutlined, DownloadOutlined, FolderOpenOutlined, ReloadOutlined } from '@ant-design/icons';
-import { diagnoseRunJS, type RunJSEditorProviderRenderProps } from '@nocobase/client-v2';
+import { diagnoseRunJS, useFullscreenOverlay, type RunJSEditorProviderRenderProps } from '@nocobase/client-v2';
 import { useFlowContext, type FlowContext, type FlowEngineContext, type RunJSValue } from '@nocobase/flow-engine';
 import { Alert, Button, Modal, Space, Spin, Typography, message } from 'antd';
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 
 import type { RunJSCompileDiagnostic } from './types';
 import { formatVscComponentError } from '../components/utils';
@@ -101,6 +102,30 @@ import {
   validateRunJSWorkspacePath,
 } from './workspaceUtils';
 
+type PublishedRunJSValue = RunJSValue & {
+  sourceRef?: {
+    type: 'vsc-file';
+    repoId: string;
+    publishedCommitId: string;
+    entry: string;
+  };
+};
+
+function withPublishedSourceRef(
+  value: RunJSValue,
+  result: { repository: { id: string }; commit: { id: string }; artifact: { entryPath: string | null } },
+): PublishedRunJSValue {
+  return {
+    ...value,
+    sourceRef: {
+      type: 'vsc-file',
+      repoId: result.repository.id,
+      publishedCommitId: result.commit.id,
+      entry: result.artifact.entryPath || defaultEntryPath,
+    },
+  };
+}
+
 export function useRunJSStudioController(props: RunJSEditorProviderRenderProps) {
   const { t: hostT, value, onChange, scene = 'formValue', readOnly, disabled, containerStyle } = props;
   const pluginT = useT();
@@ -139,6 +164,9 @@ export function useRunJSStudioController(props: RunJSEditorProviderRenderProps) 
   const [previewArtifact, setPreviewArtifact] = useState<PreviewArtifactState | null>(null);
   const [diffView, setDiffView] = useState<DiffViewState | null>(null);
   const [selectedDiffPath, setSelectedDiffPath] = useState<string | undefined>();
+  const [notice, setNotice] = useState<{ type: 'success' | 'info' | 'warning' | 'error'; message: string } | null>(
+    null,
+  );
   const [historyLoading, setHistoryLoading] = useState(false);
   const [restoreCommit, setRestoreCommit] = useState<RunJSSourceHistoryItem | null>(null);
   const [restoringVersion, setRestoringVersion] = useState(false);
@@ -147,6 +175,7 @@ export function useRunJSStudioController(props: RunJSEditorProviderRenderProps) 
   const [conflict, setConflict] = useState<ConflictState | null>(null);
   const [consoleHeight, setConsoleHeight] = useState(defaultConsolePanelHeight);
   const [exportDownload, setExportDownload] = useState<ExportDownloadState | null>(null);
+  const workspaceFullscreen = useFullscreenOverlay();
 
   const workspaceReadOnly = Boolean(readOnly || disabled || (workspace && !workspace.permissions.canWrite));
   const workspaceEditingDisabled = workspaceReadOnly || publishing;
@@ -168,14 +197,20 @@ export function useRunJSStudioController(props: RunJSEditorProviderRenderProps) 
   useLayoutEffect(() => {
     const view = flowCtx?.view as ClosableView | undefined;
     view?.setFooter?.(null);
+    if (props.label) {
+      view?.setHeader?.({ title: props.label });
+    }
     const timer = window.setTimeout(() => {
       view?.setFooter?.(null);
+      if (props.label) {
+        view?.setHeader?.({ title: props.label });
+      }
     }, 0);
 
     return () => {
       window.clearTimeout(timer);
     };
-  }, [flowCtx?.view]);
+  }, [flowCtx?.view, props.label]);
 
   useEffect(() => {
     return () => {
@@ -293,6 +328,7 @@ export function useRunJSStudioController(props: RunJSEditorProviderRenderProps) 
     setPreviewArtifact(null);
     setDiffView(null);
     setSelectedDiffPath(undefined);
+    setNotice(null);
     setHistoryLoading(false);
     setRestoreCommit(null);
     setRestoringVersion(false);
@@ -689,11 +725,16 @@ export function useRunJSStudioController(props: RunJSEditorProviderRenderProps) 
         level: 'info',
         message: t('Saved successfully'),
       });
-      onChange?.({
-        ...value,
-        code: compiled.code,
-        version: compiled.version,
-      } as RunJSValue);
+      onChange?.(
+        withPublishedSourceRef(
+          {
+            ...value,
+            code: compiled.code,
+            version: compiled.version,
+          },
+          result,
+        ),
+      );
       await loadWorkspace();
       setPreviewDiagnostics(result.artifact.diagnostics);
       await closeEditorView();
@@ -795,7 +836,7 @@ export function useRunJSStudioController(props: RunJSEditorProviderRenderProps) 
   };
 
   const loadVersionIntoEditor = async (commit: RunJSSourceHistoryItem) => {
-    if (!workspace || !props.locator || workspaceEditingDisabled || hasUnsavedLocalChanges) {
+    if (!workspace || !props.locator || workspaceEditingDisabled) {
       return;
     }
     const restoreSnapshotKey = latestWorkspaceSnapshotRef.current;
@@ -827,6 +868,7 @@ export function useRunJSStudioController(props: RunJSEditorProviderRenderProps) 
       setActiveTab('code');
       setDiffView(null);
       invalidatePreview();
+      setNotice({ type: 'info', message: `${t('Restored from')} ${formatVersion(commit.seq)}` });
       appendConsole({
         level: 'info',
         message: `${t('Restored from')} ${formatVersion(commit.seq)}`,
@@ -1280,11 +1322,16 @@ export function useRunJSStudioController(props: RunJSEditorProviderRenderProps) 
       });
       setPreviewDiagnostics(result.artifact.diagnostics);
       const loaded = await loadWorkspace();
-      onChange?.({
-        ...value,
-        code: loaded?.opened.legacy.code || value.code,
-        version: loaded?.opened.legacy.version || value.version,
-      } as RunJSValue);
+      onChange?.(
+        withPublishedSourceRef(
+          {
+            ...value,
+            code: loaded?.opened.legacy.code || value.code,
+            version: loaded?.opened.legacy.version || value.version,
+          },
+          result,
+        ),
+      );
     } catch (error) {
       await handleWorkspaceError(error);
       reportActionError(error, t('Import failed'), requestImportWorkspace);
@@ -1595,6 +1642,9 @@ export function useRunJSStudioController(props: RunJSEditorProviderRenderProps) 
             type="success"
           />
         ) : null}
+        {notice ? (
+          <Alert closable message={notice.message} onClose={() => setNotice(null)} showIcon type={notice.type} />
+        ) : null}
       </div>
 
       {loadingWorkspace && !workspace ? (
@@ -1620,119 +1670,134 @@ export function useRunJSStudioController(props: RunJSEditorProviderRenderProps) 
             />
           ) : null}
           <div
-            data-testid="runjs-studio-workspace"
-            style={{
-              background: '#fff',
-              display: 'grid',
-              flex: '1 1 0',
-              gridTemplateColumns: workspaceGridColumns,
-              minHeight: 0,
-              overflow: 'hidden',
-            }}
-          >
-            {!filesCollapsed ? (
-              <div
-                style={{
-                  background: '#fafafa',
-                  borderRight: '1px solid #f0f0f0',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  height: '100%',
-                  minHeight: 0,
-                  minWidth: 0,
-                  overflow: 'hidden',
-                }}
-              >
-                <FilesPanel
-                  activePath={activePath}
-                  collapsed={filesCollapsed}
-                  exporting={resource.isLoading('exportZip')}
-                  files={files}
-                  onCollapseChange={setFilesCollapsed}
-                  onCreate={createFile}
-                  onCreateFolder={createFolder}
-                  onDelete={deleteFile}
-                  onDeleteFolder={deleteFolder}
-                  onExportWorkspace={exportWorkspace}
-                  onImportWorkspace={requestImportWorkspace}
-                  onMoveFile={moveFileToFolder}
-                  onMoveFolder={moveFolderToFolder}
-                  onOpen={openFilePath}
-                  onRefresh={requestRefreshWorkspace}
-                  onRename={renameFile}
-                  onRenameFolder={renameFolder}
-                  readOnly={workspaceEditingDisabled}
-                  savedFiles={savedFiles}
-                  t={t}
-                />
-                <VersionHistoryDock
-                  baseVersion={formatVersion(baseCommit?.seq)}
-                  collapsed={historyCollapsed}
-                  hasUnsavedLocalChanges={hasUnsavedLocalChanges}
-                  historyItems={historyItems}
-                  loading={historyLoading}
-                  onCollapsedChange={setHistoryCollapsed}
-                  onRefresh={refreshHistory}
-                  onSelect={setRestoreCommit}
-                  onViewChanges={toggleDiff}
-                  publishedCommitId={workspace.repository.publishedCommitId}
-                  t={t}
-                />
-              </div>
-            ) : null}
+            ref={workspaceFullscreen.placeholderRef}
+            style={workspaceFullscreen.isFullscreen ? workspaceFullscreen.placeholderStyle : { display: 'contents' }}
+          />
+          {workspaceFullscreen.container
+            ? createPortal(
+                <div
+                  data-testid="runjs-studio-workspace"
+                  style={{
+                    background: '#fff',
+                    display: 'grid',
+                    flex: '1 1 0',
+                    gridTemplateColumns: workspaceGridColumns,
+                    height: workspaceFullscreen.isFullscreen ? '100%' : undefined,
+                    minHeight: 0,
+                    overflow: 'hidden',
+                    width: workspaceFullscreen.isFullscreen ? '100%' : undefined,
+                  }}
+                >
+                  {!filesCollapsed ? (
+                    <div
+                      style={{
+                        background: '#fafafa',
+                        borderRight: '1px solid #f0f0f0',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        height: '100%',
+                        minHeight: 0,
+                        minWidth: 0,
+                        overflow: 'hidden',
+                      }}
+                    >
+                      <FilesPanel
+                        activePath={activePath}
+                        collapsed={filesCollapsed}
+                        exporting={resource.isLoading('exportZip')}
+                        files={files}
+                        onCollapseChange={setFilesCollapsed}
+                        onCreate={createFile}
+                        onCreateFolder={createFolder}
+                        onDelete={deleteFile}
+                        onDeleteFolder={deleteFolder}
+                        onExportWorkspace={exportWorkspace}
+                        onImportWorkspace={requestImportWorkspace}
+                        onMoveFile={moveFileToFolder}
+                        onMoveFolder={moveFolderToFolder}
+                        onOpen={openFilePath}
+                        onRefresh={requestRefreshWorkspace}
+                        onRename={renameFile}
+                        onRenameFolder={renameFolder}
+                        readOnly={workspaceEditingDisabled}
+                        savedFiles={savedFiles}
+                        t={t}
+                      />
+                      <VersionHistoryDock
+                        baseVersion={formatVersion(baseCommit?.seq)}
+                        collapsed={historyCollapsed}
+                        hasUnsavedLocalChanges={hasUnsavedLocalChanges}
+                        historyItems={historyItems}
+                        loading={historyLoading}
+                        onCollapsedChange={setHistoryCollapsed}
+                        onRefresh={refreshHistory}
+                        onSelect={setRestoreCommit}
+                        onViewChanges={toggleDiff}
+                        publishedCommitId={workspace.repository.publishedCommitId}
+                        t={t}
+                      />
+                    </div>
+                  ) : null}
 
-            <main
-              style={{
-                display: 'flex',
-                flex: '1 1 0',
-                flexDirection: 'column',
-                minHeight: 0,
-                minWidth: 0,
-                overflow: 'hidden',
-              }}
-            >
-              <div style={{ flex: 1, minHeight: 0, minWidth: 0, overflow: 'hidden', padding: 12 }}>
-                <CodeTab
-                  activeFile={activeFile}
-                  activePath={activePath}
-                  diffRows={lineDiffRows}
-                  isDiff={showDiff}
-                  filesCollapsed={filesCollapsed}
-                  onChange={updateActiveFileContent}
-                  onCloseFile={closeOpenFile}
-                  onDiffToggle={toggleDiff}
-                  onFilesCollapsedChange={setFilesCollapsed}
-                  onOpenFile={openFilePath}
-                  onRunPreview={runPreview}
-                  openPaths={openPaths}
-                  previewing={previewing}
-                  readOnly={workspaceEditingDisabled}
-                  savedFiles={savedFiles}
-                  scene={scene}
-                  t={t}
-                  version={value.version}
-                  workspaceFiles={files}
-                />
-              </div>
+                  <main
+                    style={{
+                      display: 'flex',
+                      flex: '1 1 0',
+                      flexDirection: 'column',
+                      minHeight: 0,
+                      minWidth: 0,
+                      overflow: 'hidden',
+                    }}
+                  >
+                    <div style={{ flex: 1, minHeight: 0, minWidth: 0, overflow: 'hidden', padding: 12 }}>
+                      <CodeTab
+                        activeFile={activeFile}
+                        activePath={activePath}
+                        diffRows={lineDiffRows}
+                        isDiff={showDiff}
+                        filesCollapsed={filesCollapsed}
+                        fullscreenControl={{
+                          isFullscreen: workspaceFullscreen.isFullscreen,
+                          toggleFullscreen: workspaceFullscreen.toggleFullscreen,
+                        }}
+                        onChange={updateActiveFileContent}
+                        onCloseFile={closeOpenFile}
+                        onDiffToggle={toggleDiff}
+                        onFilesCollapsedChange={setFilesCollapsed}
+                        onOpenFile={openFilePath}
+                        onRunPreview={runPreview}
+                        openPaths={openPaths}
+                        previewing={previewing}
+                        readOnly={workspaceEditingDisabled}
+                        savedFiles={savedFiles}
+                        scene={scene}
+                        t={t}
+                        version={value.version}
+                        workspaceFiles={files}
+                      />
+                    </div>
 
-              <ConsolePanel
-                entries={consoleEntries}
-                height={consoleHeight}
-                maxHeight="40%"
-                minHeight={minConsolePanelHeight}
-                onClear={clearConsole}
-                onCopy={copyLogs}
-                onJump={(entry) => {
-                  if (entry.path) {
-                    openFilePath(entry.path);
-                    setActiveTab('code');
-                  }
-                }}
-                onResize={setConsoleHeight}
-                t={t}
-              />
-            </main>
-          </div>
+                    <ConsolePanel
+                      entries={consoleEntries}
+                      height={consoleHeight}
+                      maxHeight="40%"
+                      minHeight={minConsolePanelHeight}
+                      onClear={clearConsole}
+                      onCopy={copyLogs}
+                      onJump={(entry) => {
+                        if (entry.path) {
+                          openFilePath(entry.path);
+                          setActiveTab('code');
+                        }
+                      }}
+                      onResize={setConsoleHeight}
+                      t={t}
+                    />
+                  </main>
+                </div>,
+                workspaceFullscreen.container,
+              )
+            : null}
 
           <footer
             style={{

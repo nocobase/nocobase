@@ -21,6 +21,39 @@ const SOURCE_BINDING = {
 };
 
 describe('LightExtensionRunJSResolver error state', () => {
+  it('uses selectable entry metadata as the binding title', async () => {
+    const api = {
+      request: vi.fn().mockResolvedValue({
+        data: {
+          data: [
+            {
+              id: 'entry_sales',
+              repoId: 'repo_sales',
+              kind: 'js-block',
+              entryName: 'sales-kpi',
+              title: 'Sales KPI',
+            },
+          ],
+        },
+      }),
+    };
+    const resolver = createLightExtensionRunJSResolver(api);
+
+    await expect(
+      resolver.getBindingTitle?.({
+        sourceMode: 'light-extension',
+        sourceBinding: SOURCE_BINDING,
+      }),
+    ).resolves.toBe('Sales KPI');
+    expect(api.request).toHaveBeenCalledWith({
+      url: 'lightExtensionEntries:listSelectable',
+      method: 'post',
+      data: {
+        repoId: 'repo_sales',
+      },
+    });
+  });
+
   it('uses the documented runtime resolve route and lets request errors surface to the block runtime', async () => {
     const requestError = {
       response: {
@@ -59,6 +92,71 @@ describe('LightExtensionRunJSResolver error state', () => {
           title: 'Sales',
         },
       },
+    });
+  });
+
+  it('returns the active publication settings descriptor for dynamic JS block settings', async () => {
+    const api = {
+      request: vi.fn().mockResolvedValue({
+        data: {
+          data: [
+            {
+              id: 'entry_sales',
+              repoId: 'repo_sales',
+              kind: 'js-block',
+              entryName: 'sales-kpi',
+              title: 'Sales KPI',
+              activePublicationId: 'pub_active',
+              activePublication: {
+                id: 'pub_active',
+                repoId: 'repo_sales',
+                entryId: 'entry_sales',
+                kind: 'js-block',
+                settingsSchemaSnapshot: {
+                  type: 'object',
+                  properties: {
+                    message: {
+                      type: 'string',
+                      title: 'Message',
+                    },
+                  },
+                },
+                settingsDefaultsSnapshot: {
+                  message: 'Hello',
+                },
+                settingsSchemaHash: 'schema_active',
+              },
+            },
+          ],
+        },
+      }),
+    };
+    const resolver = createLightExtensionRunJSResolver(api);
+
+    await expect(
+      resolver.getSettingsDescriptor?.({
+        sourceMode: 'light-extension',
+        sourceBinding: {
+          ...SOURCE_BINDING,
+          publicationId: 'pub_pinned',
+          versionPolicy: 'pinned',
+        },
+      }),
+    ).resolves.toEqual({
+      publicationId: 'pub_active',
+      schema: {
+        type: 'object',
+        properties: {
+          message: {
+            type: 'string',
+            title: 'Message',
+          },
+        },
+      },
+      defaults: {
+        message: 'Hello',
+      },
+      schemaHash: 'schema_active',
     });
   });
 });

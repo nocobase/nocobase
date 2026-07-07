@@ -131,20 +131,30 @@ export function createFileServiceStub(repo: LightExtensionRepoRecord, files: Lig
     content: file.content,
   }));
 
+  const pullResult = {
+    repo,
+    commit: {
+      id: 'vsc_commit_1',
+    },
+    tree: {
+      hash: 'tree_hash_1',
+      entryCount: pulledFiles.length,
+      byteSize: pulledFiles.reduce((total, file) => total + file.size, 0),
+    },
+    unchanged: false,
+    files: pulledFiles,
+  };
+
   return {
-    pull: vi.fn().mockResolvedValue({
-      repo,
-      commit: {
-        id: 'vsc_commit_1',
-      },
-      tree: {
-        hash: 'tree_hash_1',
-        entryCount: pulledFiles.length,
-        byteSize: pulledFiles.reduce((total, file) => total + file.size, 0),
-      },
-      unchanged: false,
-      files: pulledFiles,
-    }),
+    pull: vi.fn().mockRejectedValue(new Error('publish should read a commit, not a ref')),
+    pullCommit: vi.fn().mockImplementation((input: { commitId: string }) =>
+      Promise.resolve({
+        ...pullResult,
+        commit: {
+          id: input.commitId,
+        },
+      }),
+    ),
   } as unknown as LightExtensionFileService;
 }
 

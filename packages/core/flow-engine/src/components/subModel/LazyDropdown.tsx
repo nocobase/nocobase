@@ -955,6 +955,7 @@ const LazyDropdown: React.FC<Omit<DropdownProps, 'menu'> & { menu: LazyDropdownM
   return (
     <Dropdown
       {...props}
+      trigger={props.trigger ?? ['hover', 'click']}
       open={menuVisible}
       destroyPopupOnHide
       overlayClassName={overlayClassName}

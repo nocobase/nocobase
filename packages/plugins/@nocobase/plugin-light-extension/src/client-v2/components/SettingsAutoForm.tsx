@@ -60,6 +60,15 @@ export interface SettingsAutoFormProps {
   disabled?: boolean;
 }
 
+export interface SettingsSingleFieldProps {
+  fieldName?: string;
+  fieldSchema?: Record<string, unknown> | JsonSchema | null;
+  required?: boolean;
+  value?: unknown;
+  onChange?: (value: unknown, validation: SettingsValidationResult) => void;
+  disabled?: boolean;
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 }
@@ -366,6 +375,75 @@ export const SettingsAutoForm: React.FC<SettingsAutoFormProps> = ({ schema, valu
           disabled={disabled}
         />
       ))}
+    </Space>
+  );
+};
+
+export const SettingsSingleField: React.FC<SettingsSingleFieldProps> = ({
+  fieldName = 'value',
+  fieldSchema,
+  required,
+  value,
+  onChange,
+  disabled,
+}) => {
+  const { t } = useTranslation(NAMESPACE);
+  const schema = React.useMemo(() => asSchema(fieldSchema), [fieldSchema]);
+  const rootSchema = React.useMemo(
+    () => ({
+      type: 'object',
+      required: required ? [fieldName] : [],
+      properties: {
+        [fieldName]: schema,
+      },
+    }),
+    [fieldName, required, schema],
+  );
+  const current = React.useMemo(
+    () => normalizeSettingsForSchema(rootSchema, { [fieldName]: value }).value,
+    [fieldName, rootSchema, value],
+  );
+  const validation = React.useMemo(() => normalizeSettingsForSchema(rootSchema, current), [rootSchema, current]);
+  const lastReportedRef = React.useRef<string>();
+  const validationErrors = React.useMemo(
+    () => formatSettingsValidationErrors(validation.errors, t),
+    [t, validation.errors],
+  );
+
+  React.useEffect(() => {
+    const reportKey = JSON.stringify({
+      value: current[fieldName],
+      errors: validation.errors,
+    });
+    if (lastReportedRef.current === reportKey) {
+      return;
+    }
+    lastReportedRef.current = reportKey;
+    onChange?.(current[fieldName], validation);
+  }, [current, fieldName, onChange, validation]);
+
+  const handleChange = (path: string[], nextValue: unknown) => {
+    const next = updateAtPath(current, path, nextValue);
+    onChange?.(next[fieldName], normalizeSettingsForSchema(rootSchema, next));
+  };
+
+  return (
+    <Space direction="vertical" style={{ width: '100%' }} size={12}>
+      {validation.errors.length > 0 ? (
+        <Alert
+          type="error"
+          showIcon
+          message={t('Settings validation failed')}
+          description={validationErrors.join('\n')}
+        />
+      ) : null}
+      <SettingsField
+        path={[fieldName]}
+        schema={schema}
+        value={current[fieldName]}
+        onChange={handleChange}
+        disabled={disabled}
+      />
     </Space>
   );
 };

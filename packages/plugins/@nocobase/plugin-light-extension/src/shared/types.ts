@@ -306,7 +306,10 @@ export type LightExtensionSourceBindingVersionPolicy = 'pinned' | 'follow-active
 export interface LightExtensionRuntimeSourceBinding {
   type: 'light-extension-entry';
   repoId: string;
+  repoTitle?: string | null;
   entryId: string;
+  entryTitle?: string | null;
+  entryName?: string | null;
   kind: string;
   publicationId: string;
   versionPolicy?: LightExtensionSourceBindingVersionPolicy;

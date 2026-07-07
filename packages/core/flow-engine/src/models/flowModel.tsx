@@ -29,6 +29,7 @@ import type {
   ParentFlowModel,
   PersistOptions,
   ResolveUseResult,
+  StepDefinition,
   StepParams,
 } from '../types';
 import { IModelComponentProps, ReadonlyModelProps } from '../types';
@@ -769,6 +770,12 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     const merged: [string, FlowDefinition][] = [...instanceEntriesWithIndex.map(({ e }) => e), ...staticEntries];
 
     return new Map<string, FlowDefinition>(merged);
+  }
+
+  public getRuntimeFlowSettingSteps(
+    _flowKey: string,
+  ): Record<string, StepDefinition> | Promise<Record<string, StepDefinition> | undefined> | undefined {
+    return undefined;
   }
 
   setProps(props: IModelComponentProps): void;

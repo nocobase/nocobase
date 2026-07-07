@@ -53,7 +53,8 @@ export type {
   RunJSSourceResolver,
   RunJSSourceResolverInput,
   RunJSSourceResolverResult,
+  RunJSSourceSettingsDescriptor,
   RunJSSourceSettings,
 } from './flow/components/runjs-source';
-export { DEFAULT_DATA_SOURCE_KEY, isTitleField, isTitleFieldInterface } from './flow-compat';
+export { DEFAULT_DATA_SOURCE_KEY, isTitleField, isTitleFieldInterface, useFullscreenOverlay } from './flow-compat';
 export { default as AntdAppProvider } from './theme/AntdAppProvider';

@@ -31,6 +31,8 @@ import {
   compileUiSchema,
   FlowCancelSaveException,
   FlowExitException,
+  createFlowWithSettingSteps,
+  getFlowSettingSteps,
   getT,
   resolveDefaultParams,
   resolveStepUiSchema,
@@ -707,17 +709,20 @@ export class FlowSettings {
         continue;
       }
 
+      const flowSteps = await getFlowSettingSteps(model, flow, fk);
+      const flowForSettings = createFlowWithSettingSteps(flow as any, flowSteps, fk);
+
       // 遍历步骤，筛选有可配置 UI 的步骤
-      for (const sk of Object.keys(flow.steps || {})) {
+      for (const sk of Object.keys(flowSteps || {})) {
         // 如明确指定了 stepKey，则仅处理对应步骤
         if (stepKey && sk !== stepKey) continue;
-        const step = (flow.steps as any)[sk];
-        if (!preset && (!step || (await shouldHideStepInSettings(model, flow, step)))) continue;
+        const step = flowSteps[sk];
+        if (!preset && (!step || (await shouldHideStepInSettings(model, flowForSettings, step)))) continue;
         // 当指定仅打开预设步骤时，过滤掉未标记 preset 的步骤
         if (preset && !step.preset) continue;
 
         // 解析合并后的 uiSchema（包含 action 的 schema）
-        const mergedUiSchema = await resolveStepUiSchema(model, flow, step);
+        const mergedUiSchema = await resolveStepUiSchema(model, flowForSettings, step);
         // 计算标题与 hooks
         let stepTitle: string = step.title;
         let beforeParamsSave = step.beforeParamsSave;
@@ -737,7 +742,7 @@ export class FlowSettings {
 
         // 构建 settings 上下文
         const flowRuntimeContext = new FlowRuntimeContext(model, fk, 'settings');
-        setupRuntimeContextSteps(flowRuntimeContext, flow.steps, model, fk);
+        setupRuntimeContextSteps(flowRuntimeContext, flowSteps, model, fk);
         flowRuntimeContext.defineProperty('currentStep', { value: step });
         flowRuntimeContext.defineMethod('getStepFormValues', (flowKey: string, stepKey: string) => {
           return forms.get(keyOf({ flowKey, stepKey }))?.values;
@@ -760,7 +765,7 @@ export class FlowSettings {
         }
         entries.push({
           flowKey: fk,
-          flowTitle: t(flow.title) || fk,
+          flowTitle: t(flowForSettings.title) || fk,
           stepKey: sk,
           stepTitle: t(stepTitle) || sk,
           initialValues,

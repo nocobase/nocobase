@@ -7,7 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { createMockClient, JS_BLOCK_LIGHT_EXTENSION_FULL_SOURCE_FIELD } from '@nocobase/client-v2';
+import {
+  createMockClient,
+  JS_BLOCK_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
+  JS_BLOCK_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
+} from '@nocobase/client-v2';
 import { RunJSSourceResolverRegistry, registerBlockGridSelectSceneAddBlockProvider } from '@nocobase/client-v2';
 import { afterEach, vi } from 'vitest';
 
@@ -49,6 +53,7 @@ describe('PluginLightExtensionClientV2', () => {
       key: LIGHT_EXTENSION_SETTINGS_KEY,
       title: 'Light extensions',
       aclSnippet: LIGHT_EXTENSION_ACL_SNIPPET,
+      showTabs: false,
     });
     expect(app.pluginSettingsManager.get(`${LIGHT_EXTENSION_SETTINGS_KEY}.index`, false)).toMatchObject({
       menuKey: LIGHT_EXTENSION_SETTINGS_KEY,
@@ -56,32 +61,13 @@ describe('PluginLightExtensionClientV2', () => {
       componentLoader: expect.any(Function),
       aclSnippet: LIGHT_EXTENSION_ACL_SNIPPET,
     });
-    expect(app.pluginSettingsManager.get(`${LIGHT_EXTENSION_SETTINGS_KEY}.source`, false)).toMatchObject({
-      menuKey: LIGHT_EXTENSION_SETTINGS_KEY,
-      pageKey: 'source',
-      componentLoader: expect.any(Function),
-      aclSnippet: LIGHT_EXTENSION_ACL_SNIPPET,
-    });
-    expect(app.pluginSettingsManager.get(`${LIGHT_EXTENSION_SETTINGS_KEY}.entries`, false)).toMatchObject({
-      menuKey: LIGHT_EXTENSION_SETTINGS_KEY,
-      pageKey: 'entries',
-      componentLoader: expect.any(Function),
-      aclSnippet: LIGHT_EXTENSION_ACL_SNIPPET,
-    });
-    expect(app.pluginSettingsManager.get(`${LIGHT_EXTENSION_SETTINGS_KEY}.publications`, false)).toMatchObject({
-      menuKey: LIGHT_EXTENSION_SETTINGS_KEY,
-      pageKey: 'publications',
-      componentLoader: expect.any(Function),
-      aclSnippet: LIGHT_EXTENSION_ACL_SNIPPET,
-    });
-    expect(app.pluginSettingsManager.get(`${LIGHT_EXTENSION_SETTINGS_KEY}.references`, false)).toMatchObject({
-      menuKey: LIGHT_EXTENSION_SETTINGS_KEY,
-      pageKey: 'references',
-      componentLoader: expect.any(Function),
-      aclSnippet: LIGHT_EXTENSION_ACL_SNIPPET,
-    });
+    expect(app.pluginSettingsManager.get(`${LIGHT_EXTENSION_SETTINGS_KEY}.source`, false)).toBeNull();
+    expect(app.pluginSettingsManager.get(`${LIGHT_EXTENSION_SETTINGS_KEY}.entries`, false)).toBeNull();
+    expect(app.pluginSettingsManager.get(`${LIGHT_EXTENSION_SETTINGS_KEY}.publications`, false)).toBeNull();
+    expect(app.pluginSettingsManager.get(`${LIGHT_EXTENSION_SETTINGS_KEY}.references`, false)).toBeNull();
     expect(app.flowEngine.flowSettings.components).toMatchObject({
       [JS_BLOCK_LIGHT_EXTENSION_FULL_SOURCE_FIELD]: expect.any(Function),
+      [JS_BLOCK_LIGHT_EXTENSION_SETTINGS_STEP_FIELD]: expect.any(Function),
       RepoEntryPublicationSelector: expect.any(Function),
       SettingsAutoForm: expect.any(Function),
       VersionPolicyField: expect.any(Function),

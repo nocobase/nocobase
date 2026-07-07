@@ -13,9 +13,10 @@ import type {
   LightExtensionRuntimeResolveInput,
   LightExtensionRuntimeResolveResult,
   LightExtensionRuntimeSourceBinding,
+  LightExtensionSelectableEntryRecord,
 } from '../../shared/types';
 import type { ApiClientLike } from '../api/lightExtensionEntriesRequests';
-import { unwrapResourceResponse } from '../api/lightExtensionEntriesRequests';
+import { listSelectableLightExtensionEntries, unwrapResourceResponse } from '../api/lightExtensionEntriesRequests';
 
 type ResourceResponse<T> = {
   data?: {
@@ -44,6 +45,38 @@ export function createLightExtensionRunJSResolver(api: ApiClientLike): RunJSSour
         },
       } satisfies RunJSSourceResolverResult;
     },
+    async getBindingTitle(input) {
+      const binding = input.sourceBinding as unknown as LightExtensionRuntimeSourceBinding | null | undefined;
+      if (!binding?.repoId || !binding.entryId) {
+        return undefined;
+      }
+
+      const entries = await listSelectableLightExtensionEntries(api, { repoId: binding.repoId });
+      const entry = entries.find((item) => item.id === binding.entryId);
+      return entry ? getEntryLabel(entry) : binding.entryTitle || binding.entryName || binding.entryId;
+    },
+    async getSettingsDescriptor(input) {
+      const binding = input.sourceBinding as unknown as LightExtensionRuntimeSourceBinding | null | undefined;
+      if (!binding?.repoId || !binding.entryId) {
+        return undefined;
+      }
+
+      const entries = await listSelectableLightExtensionEntries(api, { repoId: binding.repoId });
+      const entry = entries.find((item) => item.id === binding.entryId);
+      const publication = entry?.activePublication;
+      if (!publication) {
+        return undefined;
+      }
+
+      return {
+        publicationId: publication.id,
+        schema: publication.settingsSchemaSnapshot,
+        defaults: isRecord(publication.settingsDefaultsSnapshot)
+          ? cloneRecord(publication.settingsDefaultsSnapshot)
+          : undefined,
+        schemaHash: publication.settingsSchemaHash,
+      };
+    },
   };
 }
 
@@ -63,4 +96,16 @@ export async function resolveLightExtensionRuntimeSource(
   });
 
   return unwrapResourceResponse(response);
+}
+
+function getEntryLabel(entry: LightExtensionSelectableEntryRecord): string {
+  return entry.title || entry.entryName || entry.id;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+function cloneRecord(value: Record<string, unknown>): Record<string, unknown> {
+  return JSON.parse(JSON.stringify(value)) as Record<string, unknown>;
 }

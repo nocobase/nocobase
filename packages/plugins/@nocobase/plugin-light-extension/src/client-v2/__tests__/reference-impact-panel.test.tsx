@@ -107,7 +107,7 @@ describe('ReferenceImpactPanel', () => {
 
   it('renders the references page empty state when no repository is selected', () => {
     renderWithEngine(
-      <MemoryRouter initialEntries={['/admin/settings/light-extension/references']}>
+      <MemoryRouter initialEntries={['/admin/settings/light-extension?panel=references']}>
         <EntryReferencesPanel />
       </MemoryRouter>,
     );
@@ -143,7 +143,9 @@ describe('ReferenceImpactPanel', () => {
     });
 
     renderWithEngine(
-      <MemoryRouter initialEntries={['/admin/settings/light-extension/references?repoId=ler_sales&entryId=lee_sales']}>
+      <MemoryRouter
+        initialEntries={['/admin/settings/light-extension?panel=references&repoId=ler_sales&entryId=lee_sales']}
+      >
         <EntryReferencesPanel />
       </MemoryRouter>,
     );
@@ -206,7 +208,7 @@ describe('ReferenceImpactPanel', () => {
     });
 
     renderWithEngine(
-      <MemoryRouter initialEntries={['/admin/settings/light-extension/references?repoId=ler_sales']}>
+      <MemoryRouter initialEntries={['/admin/settings/light-extension?panel=references&repoId=ler_sales']}>
         <EntryReferencesPanel />
       </MemoryRouter>,
     );

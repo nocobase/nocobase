@@ -8,5 +8,14 @@
  */
 
 export * from './RunJSStudioProvider';
+export {
+  CloseConfirmModal,
+  CodeTab,
+  ConsolePanel,
+  FilesPanel,
+  PublishModal,
+  RestoreVersionModal,
+  VersionHistoryDock,
+} from './RunJSStudioComponents';
 export * from './types';
 export * from './useRunJSSourceResource';

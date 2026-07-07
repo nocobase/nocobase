@@ -76,10 +76,10 @@ export class LightExtensionPublishService {
       });
     }
 
-    const pull = await this.fileService.pull(
+    const pull = await this.fileService.pullCommit(
       {
         repoId: input.repoId,
-        ref: input.commitId,
+        commitId: input.commitId,
         includeContent: 'all',
       },
       {

@@ -20,6 +20,7 @@ import type {
   LightExtensionGetCommitInput,
   LightExtensionGetFileInput,
   LightExtensionListCommitsInput,
+  LightExtensionPullCommitInput,
   LightExtensionPullInput,
 } from '../services/LightExtensionFileService';
 import { LightExtensionFileService } from '../services/LightExtensionFileService';
@@ -28,6 +29,7 @@ import { toLightExtensionSourceError } from './errorContract';
 
 export const lightExtensionFileActionNames = [
   'pull',
+  'pullCommit',
   'getFile',
   'readArchivedSource',
   'push',
@@ -71,6 +73,7 @@ type ResourceActionRunner = (
 
 const resourceActionRunners: Record<LightExtensionFileActionName, ResourceActionRunner> = {
   pull: (service, input, currentUser) => service.pull(normalizePullInput(input), currentUser),
+  pullCommit: (service, input, currentUser) => service.pullCommit(normalizePullCommitInput(input), currentUser),
   getFile: (service, input, currentUser) => service.getFile(normalizeGetFileInput(input), currentUser),
   readArchivedSource: (service, input, currentUser) =>
     service.readArchivedSource(normalizeGetFileInput(input), currentUser),
@@ -131,6 +134,16 @@ function normalizePullInput(input: ResourceActionInput): LightExtensionPullInput
   return compactObject({
     repoId: requireRepoId(input),
     ref: optionalString(input, 'ref'),
+    knownTreeHash: optionalString(input, 'knownTreeHash'),
+    includeContent: optionalIncludeContent(input),
+    selectedPaths: optionalStringArray(input, 'selectedPaths'),
+  });
+}
+
+function normalizePullCommitInput(input: ResourceActionInput): LightExtensionPullCommitInput {
+  return compactObject({
+    repoId: requireRepoId(input),
+    commitId: requireString(input, 'commitId'),
     knownTreeHash: optionalString(input, 'knownTreeHash'),
     includeContent: optionalIncludeContent(input),
     selectedPaths: optionalStringArray(input, 'selectedPaths'),

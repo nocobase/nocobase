@@ -1433,6 +1433,11 @@ describe('flowSurfaces RunJS authoring unit validation', () => {
         path: '$.runjs.recordCall.code',
       },
       {
+        code: 'const settings = ctx.settings();\nctx.render(String(settings?.title ?? ""));',
+        member: 'settings',
+        path: '$.runjs.settingsCall.code',
+      },
+      {
         code: "const total = ctx['collection']('customers');\nctx.render(String(total));",
         member: 'collection',
         path: '$.runjs.bracketCollectionCall.code',
@@ -1510,11 +1515,12 @@ describe('flowSurfaces RunJS authoring unit validation', () => {
         code: [
           'const collectionName = ctx.collection?.name || "customers";',
           'const recordId = ctx.record?.id;',
+          'const configuredTitle = ctx.settings?.title || ctx.runJsSource?.context?.lightExtension?.publicationId;',
           'const resource = ctx.makeResource("MultiRecordResource");',
           'resource.setResourceName(collectionName);',
           'await resource.refresh({ params: { pageSize: 1 } });',
           'ctx.message.info("Loaded");',
-          'ctx.render(String(recordId ?? resource.getMeta()?.count ?? ""));',
+          'ctx.render(String(configuredTitle ?? recordId ?? resource.getMeta()?.count ?? ""));',
         ].join('\n'),
         path: '$.runjs.readCtxValues.code',
         modelUse: 'JSBlockModel',

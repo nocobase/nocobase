@@ -9,15 +9,46 @@
 
 import { observable } from '@formily/reactive';
 import { Alert, Spin } from 'antd';
-import { ElementProxy, tExpr, createSafeDocument, createSafeWindow, createSafeNavigator } from '@nocobase/flow-engine';
+import {
+  ElementProxy,
+  FlowCancelSaveException,
+  tExpr,
+  createSafeDocument,
+  createSafeWindow,
+  createSafeNavigator,
+  type FlowRuntimeContext,
+  type FlowSettingsContext,
+  type StepDefinition,
+} from '@nocobase/flow-engine';
 import React from 'react';
 import { BlockModel } from '../../base';
 import { BlockItemCard } from '../../../components';
 import { resolveRunJsParams } from '../../utils/resolveRunJsParams';
 import { RunJSEditorField } from '../../../components/runjs-studio';
-import { resolveRuntimeRunJS } from '../../../components/runjs-source';
+import {
+  resolveRuntimeRunJS,
+  RunJSSourceResolverRegistry,
+  type RunJSSourceBinding,
+  type RunJSSourceSettings,
+  type RunJSSourceSettingsDescriptor,
+} from '../../../components/runjs-source';
+import { JS_BLOCK_LIGHT_EXTENSION_SETTINGS_STEP_FIELD } from './JSBlockSourceModeField';
 
 const NAMESPACE = 'client';
+const INLINE_SOURCE_MODE = 'inline';
+const LIGHT_EXTENSION_SOURCE_MODE = 'light-extension';
+
+type JSBlockSourceMode = typeof INLINE_SOURCE_MODE | typeof LIGHT_EXTENSION_SOURCE_MODE;
+type JSBlockSourceModeParams = {
+  sourceMode?: string;
+};
+type JSBlockLightExtensionSourceBinding = {
+  repoId?: unknown;
+  repoTitle?: unknown;
+  entryId?: unknown;
+  entryTitle?: unknown;
+  entryName?: unknown;
+};
 
 type JSBlockRuntimeError = {
   title: string;
@@ -31,6 +62,13 @@ type JSBlockRuntimeState = {
   loading: boolean;
   error: JSBlockRuntimeError | null;
   runId: number;
+};
+
+type JsonSchemaLike = Record<string, unknown>;
+
+type SettingsValidationError = {
+  label: string;
+  message: string;
 };
 
 type RunJSExecutionResult = {
@@ -85,6 +123,227 @@ const getPageHeader = (root: HTMLElement) => {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+function cloneJsonValue<T>(value: T): T {
+  if (value === undefined) {
+    return value;
+  }
+  try {
+    return JSON.parse(JSON.stringify(value)) as T;
+  } catch {
+    return value;
+  }
+}
+
+function stableSerialize(value: unknown): string {
+  if (Array.isArray(value)) {
+    return `[${value.map((item) => stableSerialize(item)).join(',')}]`;
+  }
+  if (isRecord(value)) {
+    return `{${Object.keys(value)
+      .sort()
+      .map((key) => `${JSON.stringify(key)}:${stableSerialize(value[key])}`)
+      .join(',')}}`;
+  }
+
+  const serialized = JSON.stringify(value);
+  return typeof serialized === 'undefined' ? 'undefined' : serialized;
+}
+
+function shortHash(input: string): string {
+  let hash = 0x811c9dc5;
+  for (let index = 0; index < input.length; index++) {
+    hash ^= input.charCodeAt(index);
+    hash = Math.imul(hash, 0x01000193);
+  }
+  return (hash >>> 0).toString(36).padStart(6, '0').slice(0, 8);
+}
+
+function sanitizeSettingFieldName(fieldName: string): string {
+  const sanitized = fieldName
+    .replace(/[^a-zA-Z0-9_]/g, '_')
+    .replace(/_+/g, '_')
+    .replace(/^_+|_+$/g, '');
+  return (sanitized || 'field').slice(0, 48);
+}
+
+function getLightExtensionSettingStepKey(fieldName: string, schemaHash: string): string {
+  return `leSetting__${sanitizeSettingFieldName(fieldName)}__${shortHash(`${fieldName}:${schemaHash}`)}`;
+}
+
+function normalizeSchemaType(schema: JsonSchemaLike): string | undefined {
+  const schemaType = schema.type;
+  if (Array.isArray(schemaType)) {
+    return schemaType.find((item): item is string => typeof item === 'string' && item !== 'null');
+  }
+  if (typeof schemaType === 'string') {
+    return schemaType;
+  }
+  if (isRecord(schema.properties) || Array.isArray(schema.required)) {
+    return 'object';
+  }
+  if (isRecord(schema.items)) {
+    return 'array';
+  }
+  return undefined;
+}
+
+function getSettingsSchemaProperties(schema: unknown): Record<string, JsonSchemaLike> {
+  if (!isRecord(schema) || !isRecord(schema.properties)) {
+    return {};
+  }
+  return Object.fromEntries(
+    Object.entries(schema.properties).filter(([, childSchema]) => isRecord(childSchema)),
+  ) as Record<string, JsonSchemaLike>;
+}
+
+function getSettingsSchemaRequired(schema: unknown): Set<string> {
+  if (!isRecord(schema) || !Array.isArray(schema.required)) {
+    return new Set();
+  }
+  return new Set(schema.required.filter((item): item is string => typeof item === 'string'));
+}
+
+function getSchemaTitle(schema: JsonSchemaLike, fallback: string): string {
+  return toNonEmptyString(schema.title) || fallback;
+}
+
+function getDescriptorSchemaHash(descriptor: RunJSSourceSettingsDescriptor): string {
+  return toNonEmptyString(descriptor.schemaHash) || shortHash(stableSerialize(descriptor.schema || null));
+}
+
+function cloneRecord(value: unknown): Record<string, unknown> {
+  return isRecord(value) ? cloneJsonValue(value) : {};
+}
+
+function validateSettingValue(
+  schema: JsonSchemaLike,
+  value: unknown,
+  required: boolean,
+  label: string,
+): SettingsValidationError[] {
+  const errors: SettingsValidationError[] = [];
+  const type = normalizeSchemaType(schema);
+
+  if (required && value === undefined) {
+    errors.push({ label, message: 'Required' });
+    return errors;
+  }
+
+  if (value === undefined) {
+    return errors;
+  }
+
+  if (type === 'string' && typeof value !== 'string') {
+    errors.push({ label, message: 'Must be a string' });
+  }
+  if ((type === 'number' || type === 'integer') && typeof value !== 'number') {
+    errors.push({ label, message: 'Must be a number' });
+  }
+  if (type === 'integer' && typeof value === 'number' && !Number.isInteger(value)) {
+    errors.push({ label, message: 'Must be an integer' });
+  }
+  if (type === 'boolean' && typeof value !== 'boolean') {
+    errors.push({ label, message: 'Must be a boolean' });
+  }
+  if (type === 'array' && !Array.isArray(value)) {
+    errors.push({ label, message: 'Must be an array' });
+  }
+  if (type === 'object' && !isRecord(value)) {
+    errors.push({ label, message: 'Must be an object' });
+  }
+  if (type === 'object' && isRecord(value)) {
+    errors.push(...validateObjectSettingValue(schema, value, label));
+  }
+
+  const enumValues = Array.isArray(schema.enum) ? schema.enum : null;
+  if (enumValues && !enumValues.some((item) => stableSerialize(item) === stableSerialize(value))) {
+    errors.push({ label, message: 'Must be one of the allowed values' });
+  }
+
+  if (typeof value === 'string') {
+    const minLength = typeof schema.minLength === 'number' ? schema.minLength : undefined;
+    const maxLength = typeof schema.maxLength === 'number' ? schema.maxLength : undefined;
+    if (typeof minLength === 'number' && value.length < minLength) {
+      errors.push({ label, message: 'Too short' });
+    }
+    if (typeof maxLength === 'number' && value.length > maxLength) {
+      errors.push({ label, message: 'Too long' });
+    }
+    if (!isValidSettingStringFormat(toNonEmptyString(schema.format), value)) {
+      errors.push({ label, message: 'Must match the required format' });
+    }
+  }
+
+  if (typeof value === 'number') {
+    const minimum = typeof schema.minimum === 'number' ? schema.minimum : undefined;
+    const maximum = typeof schema.maximum === 'number' ? schema.maximum : undefined;
+    if (typeof minimum === 'number' && value < minimum) {
+      errors.push({ label, message: 'Too small' });
+    }
+    if (typeof maximum === 'number' && value > maximum) {
+      errors.push({ label, message: 'Too large' });
+    }
+  }
+
+  if (Array.isArray(value) && isRecord(schema.items)) {
+    value.forEach((item, index) => {
+      const itemLabel = `${label}[${index}]`;
+      if (normalizeSchemaType(schema.items as JsonSchemaLike) === 'object') {
+        if (!isRecord(item)) {
+          errors.push({ label: itemLabel, message: 'Must be an object' });
+          return;
+        }
+        errors.push(...validateObjectSettingValue(schema.items as JsonSchemaLike, item, itemLabel));
+        return;
+      }
+      errors.push(...validateSettingValue(schema.items as JsonSchemaLike, item, false, itemLabel));
+    });
+  }
+
+  return errors;
+}
+
+function validateObjectSettingValue(
+  schema: JsonSchemaLike,
+  value: Record<string, unknown>,
+  labelPrefix: string,
+): SettingsValidationError[] {
+  const properties = getSettingsSchemaProperties(schema);
+  const requiredFields = getSettingsSchemaRequired(schema);
+  return Object.entries(properties).flatMap(([childName, childSchema]) => {
+    const childLabel = getSchemaTitle(childSchema, `${labelPrefix}.${childName}`);
+    const childValue = Object.prototype.hasOwnProperty.call(value, childName) ? value[childName] : undefined;
+    return validateSettingValue(childSchema, childValue, requiredFields.has(childName), childLabel);
+  });
+}
+
+function isValidSettingStringFormat(format: string | undefined, value: string): boolean {
+  if (!format) {
+    return true;
+  }
+  if (format === 'date') {
+    return /^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(Date.parse(`${value}T00:00:00.000Z`));
+  }
+  if (format === 'date-time') {
+    return !Number.isNaN(Date.parse(value));
+  }
+  if (format === 'email') {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+  }
+  if (format === 'time') {
+    return /^([01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d{1,3})?)?$/.test(value);
+  }
+  if (format === 'uri' || format === 'url') {
+    try {
+      const url = new URL(value);
+      return Boolean(url.protocol && url.hostname);
+    } catch {
+      return false;
+    }
+  }
+  return true;
 }
 
 function toNonEmptyString(value: unknown): string | undefined {
@@ -313,6 +572,14 @@ export class JSBlockModel extends BlockModel {
     runId: 0,
   });
 
+  public async getRuntimeFlowSettingSteps(flowKey: string): Promise<Record<string, StepDefinition> | undefined> {
+    if (flowKey !== 'jsSettings') {
+      return undefined;
+    }
+
+    return getLightExtensionRuntimeSettingSteps(this);
+  }
+
   get showBlockCard() {
     return this.getStepParams('jsSettings', 'showBlockCard')?.showBlockCard !== false;
   }
@@ -472,6 +739,264 @@ export class JSBlockModel extends BlockModel {
   }
 }
 
+function normalizeJSBlockSourceMode(value: unknown): JSBlockSourceMode {
+  return value === LIGHT_EXTENSION_SOURCE_MODE ? LIGHT_EXTENSION_SOURCE_MODE : INLINE_SOURCE_MODE;
+}
+
+function getRunJsStepParams(model: JSBlockModel): Record<string, unknown> {
+  const params = model.getStepParams('jsSettings', 'runJs');
+  return isRecord(params) ? { ...params } : {};
+}
+
+async function getLightExtensionSettingsDescriptor(
+  model: JSBlockModel,
+  params: Record<string, unknown>,
+): Promise<RunJSSourceSettingsDescriptor | null> {
+  if (
+    normalizeJSBlockSourceMode(params.sourceMode) !== LIGHT_EXTENSION_SOURCE_MODE ||
+    !isRecord(params.sourceBinding)
+  ) {
+    return null;
+  }
+
+  const resolver = RunJSSourceResolverRegistry.getResolver(LIGHT_EXTENSION_SOURCE_MODE);
+  if (typeof resolver?.getSettingsDescriptor !== 'function') {
+    return null;
+  }
+
+  const descriptor = await resolver.getSettingsDescriptor({
+    sourceMode: LIGHT_EXTENSION_SOURCE_MODE,
+    sourceBinding: params.sourceBinding as RunJSSourceBinding,
+    settings: isRecord(params.settings) ? (params.settings as RunJSSourceSettings) : undefined,
+    context: {
+      modelUid: model.uid,
+    },
+  });
+
+  if (!descriptor || !isRecord(descriptor)) {
+    return null;
+  }
+
+  return descriptor;
+}
+
+function getLightExtensionSettingDefaultValue(
+  fieldName: string,
+  fieldSchema: JsonSchemaLike,
+  descriptorDefaults: Record<string, unknown>,
+  legacySettings: Record<string, unknown>,
+): unknown {
+  if (Object.prototype.hasOwnProperty.call(legacySettings, fieldName)) {
+    return cloneJsonValue(legacySettings[fieldName]);
+  }
+  if (Object.prototype.hasOwnProperty.call(descriptorDefaults, fieldName)) {
+    return cloneJsonValue(descriptorDefaults[fieldName]);
+  }
+  if (Object.prototype.hasOwnProperty.call(fieldSchema, 'default')) {
+    return cloneJsonValue(fieldSchema.default);
+  }
+  return undefined;
+}
+
+function createLightExtensionSettingStep(options: {
+  fieldName: string;
+  fieldSchema: JsonSchemaLike;
+  required: boolean;
+  schemaHash: string;
+  defaultValue: unknown;
+  sort: number;
+}): [string, StepDefinition] {
+  const { fieldName, fieldSchema, required, schemaHash, defaultValue, sort } = options;
+  const stepKey = getLightExtensionSettingStepKey(fieldName, schemaHash);
+  const title = getSchemaTitle(fieldSchema, fieldName);
+  const fieldType = normalizeSchemaType(fieldSchema);
+
+  return [
+    stepKey,
+    {
+      key: stepKey,
+      title,
+      sort,
+      uiSchema: {
+        value: {
+          type: fieldType || 'string',
+          title,
+          'x-decorator': 'FormItem',
+          'x-component': JS_BLOCK_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
+          'x-component-props': {
+            fieldName,
+            fieldSchema,
+            required,
+          },
+        },
+      },
+      defaultParams() {
+        return {
+          value: cloneJsonValue(defaultValue),
+        };
+      },
+      beforeParamsSave(ctx: FlowSettingsContext<JSBlockModel>, params: Record<string, unknown>) {
+        const errors = validateSettingValue(fieldSchema, params?.value, required, title);
+        if (errors.length === 0) {
+          return;
+        }
+        ctx.model.context?.message?.error?.(ctx.model.context.t('Settings validation failed'));
+        throw new FlowCancelSaveException('Light extension settings validation failed.');
+      },
+      afterParamsSave: refreshJSBlockAfterSettingsSave,
+    },
+  ];
+}
+
+async function getLightExtensionRuntimeSettingSteps(
+  model: JSBlockModel,
+): Promise<Record<string, StepDefinition> | undefined> {
+  const params = getRunJsStepParams(model);
+  const descriptor = await getLightExtensionSettingsDescriptor(model, params);
+  if (!descriptor?.schema) {
+    return undefined;
+  }
+
+  const properties = getSettingsSchemaProperties(descriptor.schema);
+  if (Object.keys(properties).length === 0) {
+    return undefined;
+  }
+
+  const requiredFields = getSettingsSchemaRequired(descriptor.schema);
+  const schemaHash = getDescriptorSchemaHash(descriptor);
+  const descriptorDefaults = cloneRecord(descriptor.defaults);
+  const legacySettings = isRecord(params.settings) ? params.settings : {};
+
+  return Object.fromEntries(
+    Object.entries(properties).map(([fieldName, fieldSchema], index) =>
+      createLightExtensionSettingStep({
+        fieldName,
+        fieldSchema,
+        required: requiredFields.has(fieldName),
+        schemaHash,
+        defaultValue: getLightExtensionSettingDefaultValue(fieldName, fieldSchema, descriptorDefaults, legacySettings),
+        sort: 700 + index,
+      }),
+    ),
+  );
+}
+
+async function resolveLightExtensionRuntimeSettings(
+  model: JSBlockModel,
+  params: Record<string, unknown>,
+): Promise<RunJSSourceSettings> {
+  const legacySettings = isRecord(params.settings) ? params.settings : {};
+  if (normalizeJSBlockSourceMode(params.sourceMode) !== LIGHT_EXTENSION_SOURCE_MODE) {
+    return cloneRecord(legacySettings);
+  }
+
+  const descriptor = await getLightExtensionSettingsDescriptor(model, params);
+  if (!descriptor?.schema) {
+    return cloneRecord(legacySettings);
+  }
+
+  const properties = getSettingsSchemaProperties(descriptor.schema);
+  const schemaHash = getDescriptorSchemaHash(descriptor);
+  const resolvedSettings: Record<string, unknown> = {
+    ...cloneRecord(descriptor.defaults),
+    ...cloneRecord(legacySettings),
+  };
+
+  for (const fieldName of Object.keys(properties)) {
+    const stepKey = getLightExtensionSettingStepKey(fieldName, schemaHash);
+    const paramsForStep = model.getStepParams('jsSettings', stepKey);
+    if (isRecord(paramsForStep) && Object.prototype.hasOwnProperty.call(paramsForStep, 'value')) {
+      resolvedSettings[fieldName] = cloneJsonValue(paramsForStep.value);
+    }
+  }
+
+  return resolvedSettings;
+}
+
+function getLightExtensionStoredBindingTitle(binding: unknown): string | undefined {
+  if (!isRecord(binding)) {
+    return undefined;
+  }
+
+  const sourceBinding = binding as JSBlockLightExtensionSourceBinding;
+  return (
+    toNonEmptyString(sourceBinding.entryTitle) ||
+    toNonEmptyString(sourceBinding.entryName) ||
+    toNonEmptyString(sourceBinding.repoTitle)
+  );
+}
+
+function getLightExtensionFallbackBindingTitle(binding: unknown): string | undefined {
+  if (!isRecord(binding)) {
+    return undefined;
+  }
+
+  const sourceBinding = binding as JSBlockLightExtensionSourceBinding;
+  return toNonEmptyString(sourceBinding.entryId) || toNonEmptyString(sourceBinding.repoId);
+}
+
+async function resolveLightExtensionBindingTitle(ctx: { model: JSBlockModel }, params: Record<string, unknown>) {
+  if (!isRecord(params.sourceBinding)) {
+    return undefined;
+  }
+
+  const resolver = RunJSSourceResolverRegistry.getResolver(LIGHT_EXTENSION_SOURCE_MODE);
+  if (typeof resolver?.getBindingTitle !== 'function') {
+    return undefined;
+  }
+
+  try {
+    const title = await resolver.getBindingTitle({
+      sourceMode: LIGHT_EXTENSION_SOURCE_MODE,
+      sourceBinding: params.sourceBinding as RunJSSourceBinding,
+      settings: isRecord(params.settings) ? (params.settings as RunJSSourceSettings) : undefined,
+      context: {
+        modelUid: ctx.model.uid,
+      },
+    });
+    return toNonEmptyString(title);
+  } catch (error) {
+    console.warn('[NocoBase] Failed to resolve RunJS source binding title:', error);
+    return undefined;
+  }
+}
+
+async function getRunJsEditorTitle(ctx: { model: JSBlockModel }): Promise<string> {
+  const t = ctx.model.context.t.bind(ctx.model.context);
+  const params = getRunJsStepParams(ctx.model);
+  const baseTitle = t('Write JavaScript');
+  if (normalizeJSBlockSourceMode(params.sourceMode) !== LIGHT_EXTENSION_SOURCE_MODE) {
+    return baseTitle;
+  }
+
+  const sourceTitle =
+    getLightExtensionStoredBindingTitle(params.sourceBinding) ||
+    (await resolveLightExtensionBindingTitle(ctx, params)) ||
+    getLightExtensionFallbackBindingTitle(params.sourceBinding);
+  return sourceTitle
+    ? `${baseTitle} (${t('Light extension')}: ${sourceTitle})`
+    : `${baseTitle} (${t('Light extension')})`;
+}
+
+function getSourceModeDefaultParams(ctx: FlowSettingsContext<JSBlockModel>): JSBlockSourceModeParams {
+  return {
+    sourceMode: normalizeJSBlockSourceMode(getRunJsStepParams(ctx.model).sourceMode),
+  };
+}
+
+function syncSourceModeToRunJs(ctx: FlowSettingsContext<JSBlockModel>, params: JSBlockSourceModeParams) {
+  const sourceMode = normalizeJSBlockSourceMode(params?.sourceMode);
+  ctx.model.setStepParams('jsSettings', 'runJs', {
+    ...getRunJsStepParams(ctx.model),
+    sourceMode,
+  });
+}
+
+async function refreshJSBlockAfterSettingsSave(ctx: FlowSettingsContext<JSBlockModel>) {
+  ctx.model.invalidateFlowCache('beforeRender', true);
+  await ctx.model.rerender();
+}
+
 JSBlockModel.define({
   label: tExpr('JS block'),
   createModelOptions: {
@@ -490,36 +1015,42 @@ JSBlockModel.registerFlow({
         showBlockCard: true,
       },
     },
+    sourceMode: {
+      title: tExpr('Code source'),
+      uiMode: {
+        type: 'select',
+        key: 'sourceMode',
+        props: {
+          options: [
+            { label: 'Light extension', value: LIGHT_EXTENSION_SOURCE_MODE },
+            { label: 'Inline Code', value: INLINE_SOURCE_MODE },
+          ],
+        },
+      },
+      defaultParams: getSourceModeDefaultParams,
+      beforeParamsSave: syncSourceModeToRunJs,
+      afterParamsSave: refreshJSBlockAfterSettingsSave,
+    },
     runJs: {
       title: tExpr('Write JavaScript'),
       useRawParams: true,
       uiSchema: {
         sourceMode: {
           type: 'string',
-          title: tExpr('Source'),
-          'x-decorator': 'FormItem',
-          'x-component': 'JSBlockLightExtensionSourceField',
+          'x-display': 'hidden',
         },
         sourceBinding: {
           type: 'object',
-          'x-visible': false,
+          'x-display': 'hidden',
         },
         settings: {
           type: 'object',
-          'x-visible': false,
+          'x-display': 'hidden',
         },
         code: {
           type: 'string',
           'x-decorator': 'FormItem',
           'x-component': RunJSEditorField,
-          'x-reactions': {
-            dependencies: ['sourceMode'],
-            fulfill: {
-              state: {
-                hidden: '{{$deps[0] && $deps[0] !== "inline"}}',
-              },
-            },
-          },
           'x-component-props': {
             locatorFactory: 'flowModel.step',
             surfaceStyle: 'render',
@@ -535,9 +1066,10 @@ JSBlockModel.registerFlow({
           },
         },
       },
-      uiMode: {
+      uiMode: async (ctx: FlowRuntimeContext<JSBlockModel>) => ({
         type: 'embed',
         props: {
+          title: await getRunJsEditorTitle(ctx),
           footer: null,
           maxWidth: '960px',
           minWidth: '720px',
@@ -551,11 +1083,11 @@ JSBlockModel.registerFlow({
             },
           },
         },
-      },
+      }),
       defaultParams(ctx) {
         return {
           version: 'v2',
-          sourceMode: 'inline',
+          sourceMode: INLINE_SOURCE_MODE,
           code:
             `// Welcome to the JS block
 // Create powerful interactive components with JavaScript
@@ -638,11 +1170,12 @@ ctx.render(\`
                 },
               },
             });
+            const runtimeSettings = await resolveLightExtensionRuntimeSettings(model, params || {});
             const resolved = await resolveRuntimeRunJS({
               runJs: inlineRunJs,
               sourceMode: params?.sourceMode,
               sourceBinding: params?.sourceBinding,
-              settings: params?.settings,
+              settings: runtimeSettings,
               context: {
                 modelUid: ctx.model.uid,
               },

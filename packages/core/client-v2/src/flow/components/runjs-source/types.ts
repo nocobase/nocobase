@@ -43,6 +43,13 @@ export interface RunJSSourceResolverResult {
   context?: RunJSSourceContext;
 }
 
+export interface RunJSSourceSettingsDescriptor {
+  publicationId?: string;
+  schema?: Record<string, unknown> | null;
+  defaults?: Record<string, unknown>;
+  schemaHash?: string;
+}
+
 export interface ResolvedRuntimeRunJS {
   code: string;
   version: string;
@@ -56,6 +63,10 @@ export interface ResolvedRuntimeRunJS {
 export interface RunJSSourceResolver {
   sourceMode: RunJSSourceMode;
   resolve: (input: RunJSSourceResolverInput) => RunJSSourceResolverResult | Promise<RunJSSourceResolverResult>;
+  getBindingTitle?: (input: RunJSSourceResolverInput) => string | undefined | Promise<string | undefined>;
+  getSettingsDescriptor?: (
+    input: RunJSSourceResolverInput,
+  ) => RunJSSourceSettingsDescriptor | undefined | Promise<RunJSSourceSettingsDescriptor | undefined>;
 }
 
 export type RunJSSourceResolverErrorCode =

@@ -9,7 +9,7 @@
 
 import { createForm } from '@formily/core';
 import { createSchemaField, FormProvider } from '@formily/react';
-import { render, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { FlowEngine, FlowEngineProvider } from '@nocobase/flow-engine';
@@ -68,6 +68,7 @@ const publication = {
 
 describe('JSBlockLightExtensionSourceField save behavior', () => {
   beforeEach(() => {
+    mocks.request.mockReset();
     mocks.request
       .mockResolvedValueOnce({
         data: {
@@ -143,6 +144,57 @@ describe('JSBlockLightExtensionSourceField save behavior', () => {
       expect(form.values.sourceBinding?.publicationId).toBe('pub_sales');
     });
 
+    expect(form.values.settings).toEqual({
+      title: 'Sales',
+    });
+    expect(form.values.code).toBe('ctx.render("keep inline");');
+    expect(form.values.version).toBe('v2');
+  });
+
+  it('renders as a binding editor without source mode controls when bound to sourceBinding', async () => {
+    const engine = new FlowEngine();
+    engine.context.defineProperty('api', {
+      value: {
+        request: mocks.request,
+      },
+    });
+    const form = createForm({
+      initialValues: {
+        sourceMode: 'light-extension',
+        code: 'ctx.render("keep inline");',
+        version: 'v2',
+      },
+    });
+
+    render(
+      <FlowEngineProvider engine={engine}>
+        <FormProvider form={form}>
+          <SchemaField
+            schema={{
+              type: 'object',
+              properties: {
+                sourceMode: {
+                  type: 'string',
+                  'x-display': 'hidden',
+                },
+                sourceBinding: {
+                  type: 'object',
+                  'x-component': 'JSBlockLightExtensionSourceField',
+                },
+              },
+            }}
+          />
+        </FormProvider>
+      </FlowEngineProvider>,
+    );
+
+    await waitFor(() => {
+      expect(form.values.sourceBinding?.publicationId).toBe('pub_sales');
+    });
+
+    expect(screen.queryByText('Inline code')).toBeNull();
+    expect(screen.queryByText('Light extension')).toBeNull();
+    expect(screen.queryByText('Copy selected light extension code')).toBeNull();
     expect(form.values.settings).toEqual({
       title: 'Sales',
     });

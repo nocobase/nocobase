@@ -142,7 +142,7 @@ describe('createLightExtensionJSBlockAddItems', () => {
               entryId: 'entry_sales',
               kind: 'js-block',
               publicationId: 'pub_sales',
-              versionPolicy: 'pinned',
+              versionPolicy: 'follow-active',
             },
             settings: {
               title: 'Sales',

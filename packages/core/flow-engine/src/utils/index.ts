@@ -45,6 +45,12 @@ export {
 
 // Runtime Context Steps 设置
 export { setupRuntimeContextSteps } from './setupRuntimeContextSteps';
+export {
+  createFlowWithSettingSteps,
+  getFlowSettingSteps,
+  mergeFlowSettingSteps,
+  resolveRuntimeFlowSettingSteps,
+} from './runtimeFlowSettingSteps';
 
 // Record Proxy 工具
 export { createCollectionContextMeta } from './createCollectionContextMeta';

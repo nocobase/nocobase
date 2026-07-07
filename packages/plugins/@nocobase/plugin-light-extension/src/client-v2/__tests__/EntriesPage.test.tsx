@@ -135,7 +135,7 @@ describe('LightExtensionEntriesPage', () => {
 
   it('renders entry metadata, settings presence, and diagnostics summary', async () => {
     render(
-      <MemoryRouter initialEntries={['/admin/settings/light-extension/entries?repoId=ler_sales']}>
+      <MemoryRouter initialEntries={['/admin/settings/light-extension?panel=entries&repoId=ler_sales']}>
         <LightExtensionEntriesPage />
       </MemoryRouter>,
     );
@@ -151,7 +151,7 @@ describe('LightExtensionEntriesPage', () => {
 
   it('refreshes entries from scan results', async () => {
     render(
-      <MemoryRouter initialEntries={['/admin/settings/light-extension/entries?repoId=ler_sales']}>
+      <MemoryRouter initialEntries={['/admin/settings/light-extension?panel=entries&repoId=ler_sales']}>
         <LightExtensionEntriesPage />
       </MemoryRouter>,
     );

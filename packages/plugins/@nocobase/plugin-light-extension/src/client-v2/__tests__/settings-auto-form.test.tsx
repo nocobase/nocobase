@@ -12,7 +12,12 @@ import dayjs from 'dayjs';
 import React from 'react';
 import { describe, expect, it, vi } from 'vitest';
 
-import { normalizeSettingsForSchema, serializeDatePickerValue, SettingsAutoForm } from '../components/SettingsAutoForm';
+import {
+  normalizeSettingsForSchema,
+  serializeDatePickerValue,
+  SettingsAutoForm,
+  SettingsSingleField,
+} from '../components/SettingsAutoForm';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -21,6 +26,40 @@ vi.mock('react-i18next', () => ({
 }));
 
 describe('SettingsAutoForm', () => {
+  it('renders and validates a single schema field for runtime flow steps', async () => {
+    const onChange = vi.fn();
+    render(
+      <SettingsSingleField
+        fieldName="pageSize"
+        required
+        fieldSchema={{
+          type: 'integer',
+          title: 'Page size',
+          minimum: 1,
+        }}
+        value={0}
+        onChange={onChange}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(onChange).toHaveBeenCalledWith(
+        0,
+        expect.objectContaining({
+          value: {
+            pageSize: 0,
+          },
+          errors: [
+            expect.objectContaining({
+              label: 'Page size',
+              message: 'Too small',
+            }),
+          ],
+        }),
+      );
+    });
+  });
+
   it('reports validation changes when the selected publication schema changes without changing settings', async () => {
     const onChange = vi.fn();
     const value = {

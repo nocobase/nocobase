@@ -63,6 +63,7 @@ export type ClosableView = {
   beforeClose?: (options?: unknown) => boolean | void | Promise<boolean | void>;
   destroy?: () => void;
   setFooter?: (footer: ReactNode) => void;
+  setHeader?: (header: { title?: ReactNode; extra?: ReactNode } | null) => void;
 };
 
 export type RestoreCommitState = RunJSSourceHistoryItem | null;

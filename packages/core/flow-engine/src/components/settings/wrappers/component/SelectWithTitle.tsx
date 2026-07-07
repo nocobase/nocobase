@@ -66,6 +66,7 @@ export function SelectWithTitle({
 
   const handleChange = (val: any) => {
     setValue(val);
+    setOpen(false);
     onChange?.({ [itemKey]: val });
   };
   const titleNode = (
@@ -112,6 +113,9 @@ export function SelectWithTitle({
         labelRender={(props) => ctx.t(props.label)}
         optionRender={(o) => ctx.t(o.label)}
         style={{ textAlign: 'right', minWidth: 100 }}
+        onBlur={() => {
+          setOpen(false);
+        }}
         onMouseEnter={() => {
           clearTimeout(timerRef.current);
         }}

@@ -45,6 +45,7 @@ vi.mock('@nocobase/client-v2', () => ({
     readonly,
     toolbarLeftExtra,
     runButton,
+    fullscreenControl,
   }: {
     value?: string;
     onChange?: (value: string) => void;
@@ -52,11 +53,17 @@ vi.mock('@nocobase/client-v2', () => ({
     readonly?: boolean;
     toolbarLeftExtra?: React.ReactNode;
     runButton?: React.ReactNode;
+    fullscreenControl?: { isFullscreen: boolean; toggleFullscreen: () => void };
   }) => (
     <div>
       <div>
         {toolbarLeftExtra}
         {runButton}
+        {fullscreenControl ? (
+          <button onClick={fullscreenControl.toggleFullscreen} type="button">
+            {fullscreenControl.isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
+          </button>
+        ) : null}
       </div>
       <textarea
         aria-label={placeholder}
@@ -67,6 +74,36 @@ vi.mock('@nocobase/client-v2', () => ({
     </div>
   ),
   diagnoseRunJS: mocks.diagnoseRunJS,
+  useFullscreenOverlay: () => {
+    const [placeholderEl, setPlaceholderEl] = React.useState<HTMLDivElement | null>(null);
+    const [overlayEl, setOverlayEl] = React.useState<HTMLDivElement | null>(null);
+    const [isFullscreen, setIsFullscreen] = React.useState(false);
+
+    React.useEffect(() => {
+      if (!isFullscreen) {
+        setOverlayEl(null);
+        return undefined;
+      }
+
+      const el = document.createElement('div');
+      document.body.appendChild(el);
+      setOverlayEl(el);
+
+      return () => {
+        el.remove();
+      };
+    }, [isFullscreen]);
+
+    return {
+      isFullscreen,
+      toggleFullscreen: () => setIsFullscreen((current) => !current),
+      enterFullscreen: () => setIsFullscreen(true),
+      exitFullscreen: () => setIsFullscreen(false),
+      placeholderRef: setPlaceholderEl,
+      placeholderStyle: { height: 320 },
+      container: isFullscreen ? overlayEl : placeholderEl,
+    };
+  },
 }));
 
 vi.mock('../../locale', () => ({
@@ -275,6 +312,27 @@ describe('runJSStudioProvider', () => {
         });
       }
 
+      if (url === 'runJSSources:getVersion') {
+        return Promise.resolve({
+          data: {
+            data: {
+              locator,
+              locatorKind: 'flowModel.step',
+              repository,
+              commit,
+              files: [
+                {
+                  path: 'src/client/index.tsx',
+                  content: 'return restored;',
+                  language: 'typescript',
+                  mode: '100644',
+                },
+              ],
+            },
+          },
+        });
+      }
+
       if (url === 'runJSSources:exportZip') {
         return Promise.resolve({
           data: new Blob(['zip'], { type: 'application/zip' }),
@@ -477,6 +535,19 @@ describe('runJSStudioProvider', () => {
     await screen.findByLabelText('Edit file content');
     expect(screen.getByTestId('runjs-studio-editor').style.height).toBe('calc(100vh - 42px)');
     expect(screen.getByTestId('runjs-studio-editor').style.maxHeight).toBe('calc(100vh - 42px)');
+  });
+
+  it('keeps the files panel expandable while the workspace is fullscreen', async () => {
+    renderEditor();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Fullscreen' }));
+    expect(await screen.findByRole('button', { name: 'Exit fullscreen' })).toBeTruthy();
+    expect(screen.getByTestId('runjs-studio-workspace').style.height).toBe('100%');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Expand files' }));
+
+    const filesPanel = await screen.findByLabelText('File resource manager');
+    expect(within(filesPanel).getByRole('button', { name: 'src/client/index.tsx' })).toBeTruthy();
   });
 
   it('creates folders under src/client and moves files into them', async () => {
@@ -912,6 +983,30 @@ describe('runJSStudioProvider', () => {
     });
     expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ code: 'return 2;', version: 'v2' }));
     expect(mocks.closeView).toHaveBeenCalled();
+  });
+
+  it('confirms and restores a history version even when the editor is dirty', async () => {
+    renderEditor();
+    const editor = await screen.findByLabelText('Edit file content');
+
+    fireEvent.change(editor, { target: { value: 'return dirty;' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Expand files' }));
+    const historyButton = screen.getByText('Initial import').closest('button');
+    expect(historyButton).toBeTruthy();
+    fireEvent.click(historyButton as HTMLButtonElement);
+
+    const dialog = await screen.findByRole('dialog', { name: 'Restore v1?' });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Restore' }));
+
+    await waitFor(() => {
+      expect(mocks.request).toHaveBeenCalledWith(
+        expect.objectContaining({
+          url: 'runJSSources:getVersion',
+        }),
+      );
+    });
+    expect(screen.getByLabelText('Edit file content')).toHaveValue('return restored;');
+    expect(screen.getByText('Restored from v1')).toBeTruthy();
   });
 
   it('exports the current published workspace as a ZIP', async () => {

@@ -568,11 +568,25 @@ function buildStepFingerprint(locator: FlowModelStepLocator, model: JsonRecord):
       stepKey: locator.stepKey,
       paramPath: locator.paramPath,
       versionPath,
-      ownerState: step,
+      ownerState: buildStepFingerprintOwnerState(step, locator.paramPath),
     },
     selectedLegacyValue: getAtPath(step, locator.paramPath),
     selectedVersion: getAtPath(step, versionPath),
   });
+}
+
+function buildStepFingerprintOwnerState(step: unknown, paramPath: JsonPath): unknown {
+  if (!isRecord(step)) {
+    return step;
+  }
+
+  const ownerState = cloneJsonRecord(step);
+  delete ownerState.sourceMode;
+  delete ownerState.sourceBinding;
+  delete ownerState.settings;
+  unsetAtPath(ownerState, resolveSourceRefPath(paramPath));
+
+  return ownerState;
 }
 
 function buildNestedFingerprint(locator: FlowModelNestedLocator, model: JsonRecord): string {
@@ -1069,6 +1083,36 @@ function setChild(parent: unknown, segment: string | number, value: unknown): vo
   }
   if (isRecord(parent) && typeof segment === 'string') {
     parent[segment] = value;
+  }
+}
+
+function unsetAtPath(root: JsonRecord, path: JsonPath): void {
+  if (!path.length) {
+    return;
+  }
+
+  let current: unknown = root;
+  for (const segment of path.slice(0, -1)) {
+    current = getChild(current, segment);
+    if (typeof current === 'undefined') {
+      return;
+    }
+  }
+
+  const lastSegment = path[path.length - 1];
+  if (Array.isArray(current) && typeof lastSegment === 'number') {
+    current.splice(lastSegment, 1);
+    return;
+  }
+  if (Array.isArray(current) && typeof lastSegment === 'string') {
+    const index = current.findIndex((item) => isRecord(item) && item.key === lastSegment);
+    if (index >= 0) {
+      current.splice(index, 1);
+    }
+    return;
+  }
+  if (isRecord(current) && typeof lastSegment === 'string') {
+    delete current[lastSegment];
   }
 }
 

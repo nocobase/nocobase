@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { FlowEngine, FlowEngineProvider } from '@nocobase/flow-engine';
@@ -24,16 +24,6 @@ vi.mock('react-i18next', () => ({
     t: mocks.t,
   }),
 }));
-
-function createDeferred<T>() {
-  let resolveDeferred!: (value: T) => void;
-  let rejectDeferred!: (error: unknown) => void;
-  const promise = new Promise<T>((resolve, reject) => {
-    resolveDeferred = resolve;
-    rejectDeferred = reject;
-  });
-  return { promise, resolve: resolveDeferred, reject: rejectDeferred };
-}
 
 const salesPublication = {
   id: 'pub_sales',
@@ -176,6 +166,14 @@ function renderStatefulSelector({
   );
 }
 
+async function flushAsyncEffects() {
+  await act(async () => {
+    await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
+  });
+}
+
 describe('RepoEntryPublicationSelector state consistency', () => {
   it('syncs selection when the controlled binding changes after mount', async () => {
     const onChange = vi.fn();
@@ -224,16 +222,15 @@ describe('RepoEntryPublicationSelector state consistency', () => {
       onChange,
     });
 
-    await waitFor(() => {
-      expect(onChange).toHaveBeenCalledWith(
-        expect.objectContaining({
-          entryId: 'entry_sales',
-          publicationId: 'pub_sales',
-        }),
-        salesPublication,
-        {},
-      );
-    });
+    await flushAsyncEffects();
+    expect(onChange).toHaveBeenCalledWith(
+      expect.objectContaining({
+        entryId: 'entry_sales',
+        publicationId: 'pub_sales',
+      }),
+      salesPublication,
+      {},
+    );
     onChange.mockClear();
 
     result.rerenderSelector({
@@ -260,7 +257,7 @@ describe('RepoEntryPublicationSelector state consistency', () => {
     });
   });
 
-  it('clears a controlled binding when its publication is no longer selectable', async () => {
+  it('heals a controlled binding to the active publication when the stored publication is stale', async () => {
     const onChange = vi.fn();
     const onClear = vi.fn();
     mocks.request.mockImplementation((options: { url: string }) => {
@@ -268,17 +265,6 @@ describe('RepoEntryPublicationSelector state consistency', () => {
         return Promise.resolve({
           data: {
             data: entries,
-          },
-        });
-      }
-      if (options.url === '/light-extension-entries/entry_sales/publications') {
-        return Promise.resolve({
-          data: {
-            data: {
-              entryId: 'entry_sales',
-              activePublicationId: 'pub_sales',
-              publications: [salesPublication],
-            },
           },
         });
       }
@@ -299,23 +285,58 @@ describe('RepoEntryPublicationSelector state consistency', () => {
     });
 
     await waitFor(() => {
-      expect(onClear).toHaveBeenCalled();
+      expect(onChange).toHaveBeenCalledWith(
+        expect.objectContaining({
+          entryId: 'entry_sales',
+          publicationId: 'pub_sales',
+          versionPolicy: 'follow-active',
+        }),
+        salesPublication,
+        {},
+      );
     });
-    expect(onChange).not.toHaveBeenCalledWith(
-      expect.objectContaining({
-        publicationId: 'pub_missing',
-      }),
-      expect.anything(),
-      expect.anything(),
-    );
-    expect(onChange).not.toHaveBeenCalledWith(
-      expect.objectContaining({
+    expect(onClear).not.toHaveBeenCalled();
+  });
+
+  it('heals a controlled binding when only the repo and entry selection are reusable', async () => {
+    const onChange = vi.fn();
+    const onClear = vi.fn();
+    mocks.request.mockImplementation((options: { url: string }) => {
+      if (options.url === 'lightExtensionEntries:listSelectable') {
+        return Promise.resolve({
+          data: {
+            data: entries,
+          },
+        });
+      }
+      return Promise.reject(new Error(`Unexpected request: ${options.url}`));
+    });
+
+    renderSelector({
+      value: {
+        type: 'light-extension-entry',
+        repoId: 'repo_sales',
         entryId: 'entry_sales',
+        kind: 'js-block',
         publicationId: 'pub_sales',
-      }),
-      expect.anything(),
-      expect.anything(),
-    );
+        versionPolicy: 'active',
+      } as unknown as React.ComponentProps<typeof RepoEntryPublicationSelector>['value'],
+      onChange,
+      onClear,
+    });
+
+    await waitFor(() => {
+      expect(onChange).toHaveBeenCalledWith(
+        expect.objectContaining({
+          entryId: 'entry_sales',
+          publicationId: 'pub_sales',
+          versionPolicy: 'follow-active',
+        }),
+        salesPublication,
+        {},
+      );
+    });
+    expect(onClear).not.toHaveBeenCalled();
   });
 
   it('does not revive a binding after the controlled value is cleared', async () => {
@@ -325,17 +346,6 @@ describe('RepoEntryPublicationSelector state consistency', () => {
         return Promise.resolve({
           data: {
             data: entries,
-          },
-        });
-      }
-      if (options.url === '/light-extension-entries/entry_sales/publications') {
-        return Promise.resolve({
-          data: {
-            data: {
-              entryId: 'entry_sales',
-              activePublicationId: 'pub_sales',
-              publications: [salesPublication],
-            },
           },
         });
       }
@@ -354,16 +364,15 @@ describe('RepoEntryPublicationSelector state consistency', () => {
       onChange,
     });
 
-    await waitFor(() => {
-      expect(onChange).toHaveBeenCalledWith(
-        expect.objectContaining({
-          entryId: 'entry_sales',
-          publicationId: 'pub_sales',
-        }),
-        salesPublication,
-        {},
-      );
-    });
+    await flushAsyncEffects();
+    expect(onChange).toHaveBeenCalledWith(
+      expect.objectContaining({
+        entryId: 'entry_sales',
+        publicationId: 'pub_sales',
+      }),
+      salesPublication,
+      {},
+    );
     onChange.mockClear();
 
     result.rerenderSelector({
@@ -378,7 +387,7 @@ describe('RepoEntryPublicationSelector state consistency', () => {
     expect(onChange).not.toHaveBeenCalled();
   });
 
-  it('keeps the user-selected entry after clearing the previous controlled binding', async () => {
+  it('keeps the accepted active publication binding without clearing it', async () => {
     const onChange = vi.fn();
     const onClear = vi.fn();
     mocks.request.mockImplementation((options: { url: string }) => {
@@ -386,28 +395,6 @@ describe('RepoEntryPublicationSelector state consistency', () => {
         return Promise.resolve({
           data: {
             data: entries,
-          },
-        });
-      }
-      if (options.url === '/light-extension-entries/entry_sales/publications') {
-        return Promise.resolve({
-          data: {
-            data: {
-              entryId: 'entry_sales',
-              activePublicationId: 'pub_sales',
-              publications: [salesPublication],
-            },
-          },
-        });
-      }
-      if (options.url === '/light-extension-entries/entry_support/publications') {
-        return Promise.resolve({
-          data: {
-            data: {
-              entryId: 'entry_support',
-              activePublicationId: 'pub_support',
-              publications: [supportPublication],
-            },
           },
         });
       }
@@ -427,39 +414,22 @@ describe('RepoEntryPublicationSelector state consistency', () => {
       onClear,
     });
 
-    await waitFor(() => {
-      expect(onChange).toHaveBeenCalledWith(
-        expect.objectContaining({
-          entryId: 'entry_sales',
-          publicationId: 'pub_sales',
-        }),
-        salesPublication,
-        {},
-      );
-    });
+    await flushAsyncEffects();
+    expect(onChange).toHaveBeenCalledWith(
+      expect.objectContaining({
+        entryId: 'entry_sales',
+        publicationId: 'pub_sales',
+      }),
+      salesPublication,
+      {},
+    );
     onChange.mockClear();
     onClear.mockClear();
 
-    fireEvent.mouseDown(screen.getByText('Sales Entry'));
-    fireEvent.click(await screen.findByText('Support Entry'));
-
-    await waitFor(() => {
-      expect(onClear).toHaveBeenCalled();
-    });
-    await waitFor(() => {
-      expect(onChange).toHaveBeenCalledWith(
-        expect.objectContaining({
-          entryId: 'entry_support',
-          publicationId: 'pub_support',
-        }),
-        supportPublication,
-        {},
-      );
-    });
+    expect(onClear).not.toHaveBeenCalled();
   });
 
-  it('clears stale publication state and does not emit mixed bindings when switching entries fails to load', async () => {
-    const supportPublicationsRequest = createDeferred<unknown>();
+  it('does not load or expose publication choices when the selected entry changes', async () => {
     const onChange = vi.fn();
     const onClear = vi.fn();
     mocks.request.mockImplementation((options: { url: string }) => {
@@ -470,46 +440,38 @@ describe('RepoEntryPublicationSelector state consistency', () => {
           },
         });
       }
-      if (options.url === '/light-extension-entries/entry_sales/publications') {
-        return Promise.resolve({
-          data: {
-            data: {
-              entryId: 'entry_sales',
-              activePublicationId: 'pub_sales',
-              publications: [salesPublication],
-            },
-          },
-        });
-      }
-      if (options.url === '/light-extension-entries/entry_support/publications') {
-        return supportPublicationsRequest.promise;
-      }
       return Promise.reject(new Error(`Unexpected request: ${options.url}`));
     });
 
-    renderSelector({
+    const result = renderSelector({
       onChange,
       onClear,
     });
 
-    await waitFor(() => {
-      expect(onChange).toHaveBeenCalledWith(
-        expect.objectContaining({
-          entryId: 'entry_sales',
-          publicationId: 'pub_sales',
-        }),
-        salesPublication,
-        {},
-      );
-    });
+    await flushAsyncEffects();
+    expect(onChange).toHaveBeenCalledWith(
+      expect.objectContaining({
+        entryId: 'entry_sales',
+        publicationId: 'pub_sales',
+      }),
+      salesPublication,
+      {},
+    );
     onChange.mockClear();
 
-    fireEvent.mouseDown(screen.getByText('Sales Entry'));
-    fireEvent.click(await screen.findByText('Support Entry'));
-
-    await waitFor(() => {
-      expect(onClear).toHaveBeenCalled();
+    result.rerenderSelector({
+      value: {
+        type: 'light-extension-entry',
+        repoId: 'repo_sales',
+        entryId: 'entry_support',
+        kind: 'js-block',
+        publicationId: 'pub_support',
+        versionPolicy: 'pinned',
+      },
+      onChange,
+      onClear,
     });
+
     expect(onChange).not.toHaveBeenCalledWith(
       expect.objectContaining({
         entryId: 'entry_support',
@@ -518,15 +480,22 @@ describe('RepoEntryPublicationSelector state consistency', () => {
       expect.anything(),
       expect.anything(),
     );
-
-    await act(async () => {
-      supportPublicationsRequest.reject(new Error('Failed to load support publications'));
-      await supportPublicationsRequest.promise.catch(() => undefined);
-    });
-
-    await waitFor(() => {
-      expect(screen.getByText('Failed to load support publications')).toBeTruthy();
-    });
-    expect(onChange).not.toHaveBeenCalled();
+    await flushAsyncEffects();
+    expect(onChange).toHaveBeenCalledWith(
+      expect.objectContaining({
+        entryId: 'entry_support',
+        publicationId: 'pub_support',
+        versionPolicy: 'follow-active',
+      }),
+      supportPublication,
+      {},
+    );
+    expect(onClear).not.toHaveBeenCalled();
+    expect(mocks.request).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        url: expect.stringContaining('/publications'),
+      }),
+    );
+    expect(screen.queryByLabelText('Publication')).toBeNull();
   });
 });

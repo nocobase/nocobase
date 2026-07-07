@@ -8,7 +8,7 @@
  */
 
 import React from 'react';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { FlowContextProvider, FlowEngine, FlowModel, FlowRuntimeContext, FlowStepContext } from '@nocobase/flow-engine';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -125,11 +125,12 @@ describe('RunJSEditorRegistry', () => {
     expect(screen.getByLabelText('// Use return to output value')).toBeInTheDocument();
   });
 
-  it('generates flowModel.step locators from flow settings context and syncs published values locally', () => {
+  it('generates flowModel.step locators from flow settings context and syncs published values locally', async () => {
     const engine = new FlowEngine();
     const model = new FlowModel({ uid: 'fm_1', flowEngine: engine });
     const flowContext = new FlowRuntimeContext(model, 'jsSettings', 'settings');
     const onChange = vi.fn();
+    const saveStepParams = vi.spyOn(model, 'saveStepParams').mockResolvedValue(undefined);
     const rerender = vi.spyOn(model, 'rerender').mockResolvedValue(undefined);
     let capturedLocator: unknown;
 
@@ -175,7 +176,110 @@ describe('RunJSEditorRegistry', () => {
       code: 'return 2;',
       version: 'v2',
     });
-    expect(rerender).toHaveBeenCalledTimes(1);
+    await waitFor(() => {
+      expect(saveStepParams).toHaveBeenCalledTimes(1);
+      expect(rerender).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  it('uses current settings form values when a RunJS Studio publish syncs the model', async () => {
+    const engine = new FlowEngine();
+    const model = new FlowModel({
+      uid: 'fm_1',
+      flowEngine: engine,
+      stepParams: {
+        jsSettings: {
+          runJs: {
+            code: 'ctx.render("remote");',
+            sourceBinding: { type: 'light-extension-entry' },
+            sourceMode: 'light-extension',
+            version: 'v2',
+          },
+        },
+      },
+    });
+    const flowContext = new FlowRuntimeContext(model, 'jsSettings', 'settings');
+    flowContext.defineMethod('getStepFormValues', () => ({
+      code: 'ctx.render("remote");',
+      sourceBinding: { type: 'light-extension-entry' },
+      sourceMode: 'inline',
+      sourceRef: {
+        type: 'vsc-file',
+        repoId: 'repo_old',
+        publishedCommitId: 'commit_old',
+        entry: 'src/client/index.tsx',
+      },
+      version: 'v2',
+    }));
+    const saveStepParams = vi.spyOn(model, 'saveStepParams').mockResolvedValue(undefined);
+    vi.spyOn(model, 'rerender').mockResolvedValue(undefined);
+
+    RunJSEditorRegistry.registerProvider({
+      key: 'flow-model-step-provider',
+      canHandle: (props) => props.locator?.kind === 'flowModel.step',
+      renderEditor: (props) => (
+        <button
+          type="button"
+          onClick={() => {
+            const nextValue = {
+              code: 'ctx.render(1111);',
+              sourceRef: {
+                type: 'vsc-file',
+                repoId: 'repo_new',
+                publishedCommitId: 'commit_new',
+                entry: 'src/client/index.tsx',
+              },
+              version: 'v2',
+            };
+            props.onChange?.(nextValue);
+          }}
+        >
+          publish
+        </button>
+      ),
+    });
+
+    render(
+      <FlowContextProvider context={flowContext}>
+        <FlowStepContext.Provider
+          value={{
+            params: {
+              code: 'ctx.render("remote");',
+              sourceBinding: { type: 'light-extension-entry' },
+              sourceMode: 'light-extension',
+              sourceRef: {
+                type: 'vsc-file',
+                repoId: 'repo_old',
+                publishedCommitId: 'commit_old',
+                entry: 'src/client/index.tsx',
+              },
+              version: 'v2',
+            },
+            path: 'fm_1_jsSettings_runJs',
+          }}
+        >
+          <RunJSEditorField locatorFactory="flowModel.step" surfaceStyle="render" value="ctx.render(1111);" />
+        </FlowStepContext.Provider>
+      </FlowContextProvider>,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'publish' }));
+
+    expect(model.getStepParams('jsSettings', 'runJs')).toMatchObject({
+      code: 'ctx.render(1111);',
+      sourceBinding: { type: 'light-extension-entry' },
+      sourceMode: 'inline',
+      sourceRef: {
+        type: 'vsc-file',
+        repoId: 'repo_new',
+        publishedCommitId: 'commit_new',
+        entry: 'src/client/index.tsx',
+      },
+      version: 'v2',
+    });
+    await waitFor(() => {
+      expect(saveStepParams).toHaveBeenCalledTimes(1);
+    });
   });
 
   it('keeps inline fallback edits in the form without mutating model params', () => {
@@ -224,6 +328,7 @@ describe('RunJSEditorRegistry', () => {
     });
     const flowContext = new FlowRuntimeContext(model, 'jsSettings', 'settings');
     const onChange = vi.fn();
+    vi.spyOn(model, 'saveStepParams').mockResolvedValue(undefined);
 
     RunJSEditorRegistry.registerProvider({
       key: 'flow-model-step-provider',

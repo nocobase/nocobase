@@ -7,9 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Button, Empty, Flex, Select, Space, Typography } from 'antd';
+import { Empty, Flex, Select, Space, Typography } from 'antd';
 import React from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useFlowContext } from '@nocobase/flow-engine';
 
@@ -21,13 +21,16 @@ import {
   listSelectableLightExtensionEntries,
 } from '../api/lightExtensionEntriesRequests';
 import { ReferenceImpactPanel } from '../components/ReferenceImpactPanel';
-import { settingsPath } from './LightExtensionListPage';
 
 type FlowContextWithApi = {
   api: ApiClientLike;
 };
 
-function EntryReferencesPanel() {
+interface EntryReferencesPanelProps {
+  embedded?: boolean;
+}
+
+function EntryReferencesPanel({ embedded = false }: EntryReferencesPanelProps) {
   const { t } = useTranslation(NAMESPACE);
   const ctx = useFlowContext<FlowContextWithApi>();
   const [searchParams] = useSearchParams();
@@ -90,20 +93,19 @@ function EntryReferencesPanel() {
 
   if (!repoId) {
     return (
-      <Flex vertical gap={16} style={{ padding: 24 }}>
-        <Typography.Title level={3} style={{ margin: 0 }}>
-          {t('References')}
-        </Typography.Title>
+      <Flex vertical gap={16} style={{ padding: embedded ? 0 : 24 }}>
+        {!embedded ? (
+          <Typography.Title level={3} style={{ margin: 0 }}>
+            {t('References')}
+          </Typography.Title>
+        ) : null}
         <Empty description={t('Select a repository from the light extension list')} />
-        <Button>
-          <Link to={settingsPath.list}>{t('Back to list')}</Link>
-        </Button>
       </Flex>
     );
   }
 
   return (
-    <Flex vertical gap={16} style={{ padding: 24 }}>
+    <Flex vertical gap={16} style={{ padding: embedded ? 0 : 24 }}>
       <Flex align="center" justify="space-between" wrap="wrap" gap={12}>
         <Space direction="vertical" size={0}>
           <Typography.Title level={3} style={{ margin: 0 }}>
@@ -124,12 +126,6 @@ function EntryReferencesPanel() {
               value: publication.id,
             }))}
           />
-          <Button>
-            <Link to={settingsPath.publications(repoId)}>{t('Publications')}</Link>
-          </Button>
-          <Button>
-            <Link to={settingsPath.entries(repoId)}>{t('Entries')}</Link>
-          </Button>
         </Space>
       </Flex>
       {targetPublicationId ? (

@@ -49,6 +49,12 @@ export interface CodeEditorProps {
   toolbarLeftExtra?: React.ReactNode;
   runButton?: React.ReactNode;
   showLogs?: boolean;
+  fullscreenControl?: CodeEditorFullscreenControl;
+}
+
+export interface CodeEditorFullscreenControl {
+  isFullscreen: boolean;
+  toggleFullscreen: () => void;
 }
 
 export * from './types';
@@ -78,12 +84,14 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
   toolbarLeftExtra,
   runButton,
   showLogs = true,
+  fullscreenControl,
 }) => {
-  const wrapperRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
   const typescriptProjectRef = useRef<CodeEditorTypeScriptProject | undefined>();
   typescriptProjectRef.current = typescriptProject;
-  const { isFullscreen, toggleFullscreen, placeholderRef, placeholderStyle, container } = useFullscreenOverlay();
+  const internalFullscreen = useFullscreenOverlay();
+  const isFullscreen = fullscreenControl?.isFullscreen ?? internalFullscreen.isFullscreen;
+  const toggleFullscreen = fullscreenControl?.toggleFullscreen ?? internalFullscreen.toggleFullscreen;
   const runtimeCtx = useFlowContext<any>();
   // const settingsCtx = useFlowSettingsContext?.() as any;
   const hostCtx = runtimeCtx; // || settingsCtx;
@@ -111,16 +119,6 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
   );
   const { run, logs, running } = useCodeRunner(hostCtx, version);
   const [snippetOpen, setSnippetOpen] = useState(false);
-  const getSnippetsContainer = useCallback(() => {
-    const el = wrapperRef.current;
-    if (!el) return document.body;
-    // 优先就近挂载到外层的设置抽屉/对话框容器，确保宽度与右侧面板一致、并覆盖整个右侧区域高度
-    const drawer = (el.closest('.ant-drawer-content-wrapper') ||
-      el.closest('.ant-drawer-content') ||
-      el.closest('.ant-modal-content') ||
-      el.parentElement) as HTMLElement | null;
-    return drawer || document.body;
-  }, []);
   // track active actions for compatibility with upstream layout logic
   // legacy: upstream layout may read this ref in the future; removed internal tracking
   const tr = useCallback(
@@ -169,8 +167,6 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
   // JSX 转换支持暂时移除：直接按原样运行代码
 
   // 错误标注相关工具已提取至 errorHelpers.ts
-
-  // Drawer width is bound to container via getContainer; no explicit observer here
 
   // CodeMirror core moved to EditorCore
 
@@ -230,7 +226,6 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
         minHeight: isFullscreen ? 0 : undefined,
         ...wrapperStyle,
       }}
-      ref={wrapperRef}
     >
       <RightExtraPanel
         name={name}
@@ -284,7 +279,6 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
       <SnippetsDrawer
         open={snippetOpen}
         onClose={() => setSnippetOpen(false)}
-        getContainer={getSnippetsContainer}
         entries={snippetEntries}
         tr={tr}
         onInsert={(text) => {
@@ -300,10 +294,17 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
     </div>
   );
 
+  if (fullscreenControl) {
+    return node;
+  }
+
   return (
     <>
-      <div ref={placeholderRef} style={isFullscreen ? placeholderStyle : { display: 'contents' }} />
-      {container ? createPortal(node, container) : null}
+      <div
+        ref={internalFullscreen.placeholderRef}
+        style={isFullscreen ? internalFullscreen.placeholderStyle : { display: 'contents' }}
+      />
+      {internalFullscreen.container ? createPortal(node, internalFullscreen.container) : null}
     </>
   );
 };
