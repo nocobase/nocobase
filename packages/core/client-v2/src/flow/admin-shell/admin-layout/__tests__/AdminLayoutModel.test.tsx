@@ -396,6 +396,36 @@ describe('AdminLayoutModel runtime', () => {
     });
   });
 
+  it('should allow custom lowercase route params after a child view uid', async () => {
+    const engine = new FlowEngine();
+    engine.context.defineProperty('routeRepository', {
+      value: {
+        getRouteBySchemaUid: (pageUid: string) => ({ title: pageUid }),
+      },
+    });
+
+    render(
+      <FlowEngineProvider engine={engine}>
+        <TestAdminLayoutHost />
+      </FlowEngineProvider>,
+    );
+    const model = engine.getModel<TestAdminLayoutModel>('admin-layout-model');
+    expect(model).toBeTruthy();
+
+    expect(
+      model.resolveLayoutRoute({
+        name: getLayoutPageViewRouteName('admin'),
+        pathname: '/admin/page-1/view/workflow-tasks/tasktype/approval-apply/status/pending/popupid/123',
+        layoutBasePathname: '/admin',
+      }),
+    ).toMatchObject({
+      type: 'page',
+      pathname: '/admin/page-1/view/workflow-tasks/tasktype/approval-apply/status/pending/popupid/123',
+      pageUid: 'page-1',
+      viewStack: [{ viewUid: 'page-1' }, { viewUid: 'workflow-tasks' }],
+    });
+  });
+
   it('should reject malformed RunJS openView route params', async () => {
     const wrongViewToken = encodeOpenViewRouteState('other-popup', { mode: 'dialog', size: 'large' });
     if (!wrongViewToken) {
@@ -413,11 +443,11 @@ describe('AdminLayoutModel runtime', () => {
 
     [
       '/admin/page-1/sourceid',
+      '/admin/page-1/tasktype/approval-apply',
       '/admin/page-1/AbCdEfGh/filterbytk/1',
+      '/admin/page-1/view/popup/tasktype',
       '/admin/page-1/view/popup/AbCdEfGh/filterbytk/1',
       '/admin/page-1/view/popup/opts/AbCdEfGh/filterbytk/1',
-      '/admin/page-1/view/popup/openviewmode/dialog',
-      '/admin/page-1/view/popup/openviewsize/large',
       `/admin/page-1/view/popup/opts/${wrongViewToken}/filterbytk/1`,
     ].forEach((pathname) => {
       expect(

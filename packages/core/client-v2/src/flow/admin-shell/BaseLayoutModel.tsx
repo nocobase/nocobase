@@ -113,6 +113,8 @@ const getDefaultBasePathnameFromRoutePath = (routePath?: string) => {
 
 const isKnownViewParamName = (segment: string) => ['tab', 'filterbytk', 'sourceid'].includes(segment);
 
+const isExtensionViewParamName = (segment: string) => /^[a-z][a-z0-9-]*$/.test(segment);
+
 const isLegacyLayoutContentRouteName = (routeName: string, targetRouteName?: string) => {
   return (
     !!targetRouteName &&
@@ -134,6 +136,7 @@ const isStandardLayoutRelativePath = (relativePath: string) => {
 
   let i = 1;
   let currentViewUid = segments[0];
+  let isChildView = false;
   while (i < segments.length) {
     const segment = segments[i];
 
@@ -142,6 +145,7 @@ const isStandardLayoutRelativePath = (relativePath: string) => {
         return false;
       }
       currentViewUid = segments[i + 1];
+      isChildView = true;
       i += 2;
       continue;
     }
@@ -159,9 +163,11 @@ const isStandardLayoutRelativePath = (relativePath: string) => {
       continue;
     }
 
-    if (!segments[i + 1]) {
-      return false;
+    if (isChildView && isExtensionViewParamName(segment) && segments[i + 1]) {
+      i += 2;
+      continue;
     }
+
     return false;
   }
 
