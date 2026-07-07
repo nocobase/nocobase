@@ -74,10 +74,12 @@ import type { FlowSurfaceContextResponse, FlowSurfaceContextVarInfo } from './ty
 import {
   assertFlowSurfaceFilterGroupShape,
   FLOW_SURFACE_DATE_FILTER_OPERATORS,
+  FLOW_SURFACE_EMPTY_FILTER_GROUP,
   isFlowSurfaceDateLikeFieldMeta,
   normalizeFlowSurfaceDateConditionValue,
   assertFlowSurfaceFilterOperator,
   FLOW_SURFACE_FILTER_GROUP_EXAMPLE,
+  normalizeFlowSurfaceCompatibleFilterGroupValue,
 } from './filter-group';
 
 export type FlowSurfaceAuthoringWriteAction = 'applyBlueprint' | 'compose' | 'addBlock' | 'addBlocks' | 'configure';
@@ -5189,6 +5191,7 @@ async function collectConfigureErrors(
   collectGridCardSettingsErrors(changes, hostBlockType, '$.changes', errors, { directSettings: true });
   collectAssignValuesErrors(changes.assignValues, '$.changes.assignValues', errors, changesBlock, context);
   collectTriggerWorkflowsErrors(changes.triggerWorkflows, '$.changes.triggerWorkflows', errors);
+  collectLinkageRulesErrors(changes.linkageRules, '$.changes.linkageRules', errors);
   collectFieldListInternalKeyErrors(changes.fields, '$.changes.fields', errors);
   const connectFieldsTargets = collectTreeConnectFieldsErrors(changes.connectFields, '$.changes.connectFields', errors);
   await collectTreeConnectFieldsLiveErrors(connectFieldsTargets, changes, '$.changes.connectFields', errors, context);
@@ -7749,6 +7752,7 @@ function collectActionErrors(
   collectApplyBlueprintScriptAssetReferenceErrors(action, path, errors, context);
   collectAssignValuesErrors(action.settings?.assignValues, `${path}.settings.assignValues`, errors, block, context);
   collectTriggerWorkflowsErrors(action.settings?.triggerWorkflows, `${path}.settings.triggerWorkflows`, errors);
+  collectLinkageRulesErrors(action.settings?.linkageRules, `${path}.settings.linkageRules`, errors);
   if (hasOwn(action, 'assignValues')) {
     pushAuthoringError(errors, {
       path: `${path}.assignValues`,
@@ -8125,6 +8129,70 @@ function collectTriggerWorkflowsErrors(value: any, path: string, errors: Authori
         path: `${path}[${index}].context`,
         ruleId: 'triggerWorkflows-invalid-shape',
         message: `flowSurfaces authoring ${path}[${index}].context must be a string`,
+      });
+    }
+  });
+}
+
+function collectLinkageRulesErrors(value: any, path: string, errors: AuthoringErrorInput[]) {
+  if (_.isUndefined(value)) {
+    return;
+  }
+  if (!Array.isArray(value)) {
+    pushAuthoringError(errors, {
+      path,
+      ruleId: 'linkageRules-invalid-shape',
+      message: `flowSurfaces authoring ${path} must be an array`,
+    });
+    return;
+  }
+  value.forEach((rule, index) => {
+    const rulePath = `${path}[${index}]`;
+    if (!_.isPlainObject(rule)) {
+      pushAuthoringError(errors, {
+        path: rulePath,
+        ruleId: 'linkageRules-rule-invalid-shape',
+        message: `flowSurfaces authoring ${rulePath} must be an object`,
+      });
+      return;
+    }
+
+    const conditionPath = hasOwn(rule, 'condition')
+      ? `${rulePath}.condition`
+      : hasOwn(rule, 'when')
+        ? `${rulePath}.when`
+        : `${rulePath}.condition`;
+    const conditionValue = hasOwn(rule, 'condition')
+      ? rule.condition
+      : hasOwn(rule, 'when')
+        ? rule.when
+        : FLOW_SURFACE_EMPTY_FILTER_GROUP;
+    try {
+      normalizeFlowSurfaceCompatibleFilterGroupValue(
+        conditionValue,
+        `flowSurfaces authoring ${conditionPath} expects FilterGroup or backend query filter like ${FLOW_SURFACE_FILTER_GROUP_EXAMPLE}`,
+        { strictDateValues: true },
+      );
+    } catch (error) {
+      pushAuthoringError(errors, {
+        path: conditionPath,
+        ruleId: 'linkageRules-condition-invalid-shape',
+        message: error instanceof Error ? error.message : String(error),
+      });
+    }
+
+    if (hasOwn(rule, 'actions') && !Array.isArray(rule.actions)) {
+      pushAuthoringError(errors, {
+        path: `${rulePath}.actions`,
+        ruleId: 'linkageRules-actions-invalid-shape',
+        message: `flowSurfaces authoring ${rulePath}.actions must be an array`,
+      });
+    }
+    if (hasOwn(rule, 'then') && !Array.isArray(rule.then)) {
+      pushAuthoringError(errors, {
+        path: `${rulePath}.then`,
+        ruleId: 'linkageRules-actions-invalid-shape',
+        message: `flowSurfaces authoring ${rulePath}.then must be an array`,
       });
     }
   });

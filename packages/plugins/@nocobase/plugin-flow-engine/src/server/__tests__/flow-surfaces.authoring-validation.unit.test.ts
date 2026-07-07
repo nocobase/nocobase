@@ -1656,6 +1656,69 @@ describe('flowSurfaces authoring validation unit', () => {
       ]),
     );
   });
+
+  it('should reject malformed linkageRules on configure and action authoring payloads', async () => {
+    const configureErrors = await collectFlowSurfaceAuthoringErrors('configure', {
+      changes: {
+        linkageRules: {},
+      },
+    });
+    const composeErrors = await collectFlowSurfaceAuthoringErrors(
+      'compose',
+      {
+        blocks: [
+          {
+            type: 'table',
+            collection: 'employees',
+            fields: ['nickname', 'status', 'email', 'manager'],
+            recordActions: [
+              {
+                type: 'updateRecord',
+                settings: {
+                  linkageRules: [
+                    {
+                      key: 'badThen',
+                      then: {},
+                    },
+                    {
+                      key: 'badCondition',
+                      condition: {
+                        logic: '$and',
+                        items: [{ path: 'nickname', operator: 'eq', value: 'Alice' }],
+                      },
+                      actions: [],
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+        ],
+      },
+      createDefaultFilterValidationContext(),
+    );
+
+    expect(configureErrors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: '$.changes.linkageRules',
+          ruleId: 'linkageRules-invalid-shape',
+        }),
+      ]),
+    );
+    expect(composeErrors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: '$.blocks[0].recordActions[0].settings.linkageRules[0].then',
+          ruleId: 'linkageRules-actions-invalid-shape',
+        }),
+        expect.objectContaining({
+          path: '$.blocks[0].recordActions[0].settings.linkageRules[1].condition',
+          ruleId: 'linkageRules-condition-invalid-shape',
+        }),
+      ]),
+    );
+  });
 });
 
 describe('flowSurfaces chart repair wrapping unit', () => {
