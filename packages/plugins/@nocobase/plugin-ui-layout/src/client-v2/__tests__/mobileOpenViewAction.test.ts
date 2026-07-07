@@ -14,16 +14,39 @@ import { mobileOpenView, resolveMobileOpenViewInputArgs, resolveMobileOpenViewPa
 type OpenViewContext = Parameters<typeof resolveMobileOpenViewParams>[0];
 type OpenViewParams = Parameters<typeof resolveMobileOpenViewParams>[1];
 
-function createContext(inputArgs: Record<string, unknown>, isMobileLayout = false) {
+const mobileLayout = {
+  layoutModelClass: 'MobileLayoutModel',
+  childPageModelClass: 'MobileChildPageModel',
+};
+
+function createContext(inputArgs: Record<string, unknown>, isMobileLayout = false, layout?: typeof mobileLayout) {
   return {
     inputArgs,
     isMobileLayout,
+    ...(layout
+      ? {
+          layout,
+          layoutContext: {
+            isMobileLayout,
+            layout,
+          },
+        }
+      : {}),
   } as OpenViewContext;
+}
+
+function createMobileLayoutContext(inputArgs: Record<string, unknown>, isMobileLayout = true) {
+  return createContext(inputArgs, isMobileLayout, mobileLayout);
 }
 
 function createReadonlyContext(inputArgs: Record<string, unknown>) {
   const ctx = {
     isMobileLayout: true,
+    layout: mobileLayout,
+    layoutContext: {
+      isMobileLayout: true,
+      layout: mobileLayout,
+    },
     model: {
       context: {
         inputArgs: {},
@@ -65,6 +88,11 @@ function createContextWithModelInputArgs(inputArgs: Record<string, unknown>, mod
   return {
     inputArgs,
     isMobileLayout: true,
+    layout: mobileLayout,
+    layoutContext: {
+      isMobileLayout: true,
+      layout: mobileLayout,
+    },
     model: {
       context: modelContext,
     },
@@ -86,14 +114,40 @@ describe('mobileOpenViewAction', () => {
       pageModelClass: 'ChildPageModel',
     } as OpenViewParams;
 
-    expect(resolveMobileOpenViewParams(createContext({ isMobileLayout: true }), params)).toMatchObject({
+    expect(resolveMobileOpenViewParams(createMobileLayoutContext({ isMobileLayout: true }), params)).toMatchObject({
       mode: 'embed',
       pageModelClass: 'MobileChildPageModel',
     });
   });
 
+  it('should keep the default child page model for admin layout responsive route replays', () => {
+    const params = {
+      mode: 'embed',
+      pageModelClass: 'ChildPageModel',
+    } as OpenViewParams;
+    const ctx = {
+      inputArgs: {
+        isMobileLayout: true,
+      },
+      isMobileLayout: true,
+      layout: {
+        layoutModelClass: 'AdminLayoutModel',
+        childPageModelClass: 'ChildPageModel',
+      },
+      layoutContext: {
+        isMobileLayout: true,
+        layout: {
+          layoutModelClass: 'AdminLayoutModel',
+          childPageModelClass: 'ChildPageModel',
+        },
+      },
+    } as OpenViewContext;
+
+    expect(resolveMobileOpenViewParams(ctx, params)).toBe(params);
+  });
+
   it('should replace the default input page model for mobile route replays', () => {
-    const ctx = createContext({
+    const ctx = createMobileLayoutContext({
       isMobileLayout: true,
       pageModelClass: 'ChildPageModel',
     });
@@ -108,7 +162,7 @@ describe('mobileOpenViewAction', () => {
     const params = {
       pageModelClass: 'ChildPageModel',
     } as OpenViewParams;
-    const ctx = createContext({ isMobileLayout: true, pageModelClass: 'CustomChildPageModel' });
+    const ctx = createMobileLayoutContext({ isMobileLayout: true, pageModelClass: 'CustomChildPageModel' });
 
     expect(resolveMobileOpenViewParams(ctx, params)).toBe(params);
     expect(resolveMobileOpenViewInputArgs(ctx, params)).toBe(ctx.inputArgs);
@@ -119,7 +173,7 @@ describe('mobileOpenViewAction', () => {
       pageModelClass: 'CustomChildPageModel',
     } as OpenViewParams;
 
-    expect(resolveMobileOpenViewParams(createContext({ isMobileLayout: true }), params)).toBe(params);
+    expect(resolveMobileOpenViewParams(createMobileLayoutContext({ isMobileLayout: true }), params)).toBe(params);
   });
 
   it('should override readonly input args while delegating to the core handler', async () => {

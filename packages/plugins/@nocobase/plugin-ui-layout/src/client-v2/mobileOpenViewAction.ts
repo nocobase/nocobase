@@ -10,6 +10,7 @@
 import { openView } from '@nocobase/client-v2';
 
 const MOBILE_CHILD_PAGE_MODEL_CLASS = 'MobileChildPageModel';
+const MOBILE_LAYOUT_MODEL_CLASS = 'MobileLayoutModel';
 const DEFAULT_CHILD_PAGE_MODEL_CLASS = 'ChildPageModel';
 
 type OpenViewHandler = NonNullable<typeof openView.handler>;
@@ -20,6 +21,11 @@ type MobileOpenViewInputArgs = {
   isMobileLayout?: boolean;
   pageModelClass?: unknown;
 } & Record<string, unknown>;
+
+type MobileOpenViewLayoutDefinition = {
+  layoutModelClass?: unknown;
+  childPageModelClass?: unknown;
+};
 
 type FlowContextPropertyOptions = {
   value?: unknown;
@@ -48,10 +54,29 @@ type OpenViewContextWithModel = OpenViewContext & {
   };
 };
 
+type OpenViewContextWithLayout = OpenViewContext & {
+  layout?: MobileOpenViewLayoutDefinition;
+  layoutContext?: {
+    layout?: MobileOpenViewLayoutDefinition;
+  };
+};
+
+function isMobileLayoutDefinition(layout: MobileOpenViewLayoutDefinition | undefined) {
+  return (
+    layout?.layoutModelClass === MOBILE_LAYOUT_MODEL_CLASS ||
+    layout?.childPageModelClass === MOBILE_CHILD_PAGE_MODEL_CLASS
+  );
+}
+
 function isMobileOpenViewContext(ctx: OpenViewContext) {
   const inputArgs = ctx.inputArgs as MobileOpenViewInputArgs | undefined;
+  const layoutContext = ctx as OpenViewContextWithLayout;
 
-  return inputArgs?.isMobileLayout === true || ctx.isMobileLayout === true;
+  return (
+    inputArgs?.pageModelClass === MOBILE_CHILD_PAGE_MODEL_CLASS ||
+    isMobileLayoutDefinition(layoutContext.layout) ||
+    isMobileLayoutDefinition(layoutContext.layoutContext?.layout)
+  );
 }
 
 function hasCustomPageModelClass(pageModelClass: unknown) {

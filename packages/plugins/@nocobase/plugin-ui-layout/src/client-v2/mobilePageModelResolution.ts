@@ -54,15 +54,11 @@ function isMobileLayoutDefinition(layout: MobileLayoutRuntimeContext['layout'] |
   );
 }
 
-function hasMobileLayoutFlag(context: unknown, mobileModelClass: string) {
+function shouldResolveToMobilePageModel(context: unknown, mobileModelClass: string) {
   try {
     const ctx = context as MobileLayoutRuntimeContext | undefined;
 
     return (
-      ctx?.isMobileLayout === true ||
-      ctx?.layoutContext?.isMobileLayout === true ||
-      ctx?.inputArgs?.isMobileLayout === true ||
-      ctx?.view?.inputArgs?.isMobileLayout === true ||
       ctx?.inputArgs?.pageModelClass === mobileModelClass ||
       ctx?.view?.inputArgs?.pageModelClass === mobileModelClass ||
       isMobileLayoutDefinition(ctx?.layout, mobileModelClass) ||
@@ -91,8 +87,8 @@ function isMobilePageSubModel(
 
   return (
     options.subKey === 'page' &&
-    (hasMobileLayoutFlag(stackedParent?.context, mobileModelClass) ||
-      hasMobileLayoutFlag(engine.context, mobileModelClass))
+    (shouldResolveToMobilePageModel(stackedParent?.context, mobileModelClass) ||
+      shouldResolveToMobilePageModel(engine.context, mobileModelClass))
   );
 }
 
