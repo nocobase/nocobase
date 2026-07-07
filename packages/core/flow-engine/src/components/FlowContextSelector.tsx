@@ -292,11 +292,11 @@ const FlowContextSelectorComponent: React.FC<FlowContextSelectorProps> = ({
   const defaultChildren = useMemo(() => {
     const hasSelected = active ?? Boolean(currentPath && currentPath.length > 0);
     return (
-      <Button type={hasSelected ? 'primary' : 'default'} style={defaultButtonStyle}>
+      <Button type={hasSelected ? 'primary' : 'default'} style={defaultButtonStyle} disabled={cascaderProps.disabled}>
         x
       </Button>
     );
-  }, [active, currentPath]);
+  }, [active, cascaderProps.disabled, currentPath]);
 
   // 处理选择变化事件
   const handleChange = useCallback(

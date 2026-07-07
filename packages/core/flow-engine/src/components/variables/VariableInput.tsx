@@ -357,6 +357,7 @@ const VariableInputComponent: React.FC<VariableInputProps> = ({
         metaTree={resolvedMetaTree}
         value={innerValue}
         active={isVariableValue(innerValue)}
+        disabled={disabled}
         onChange={handleVariableSelect}
         parseValueToPath={resolvePathFromValue}
         formatPathToValue={resolveValueFromPath}

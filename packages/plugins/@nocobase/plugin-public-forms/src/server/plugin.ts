@@ -347,7 +347,7 @@ export class PluginPublicFormsServer extends Plugin {
     } else if (
       (['list', 'get'].includes(actionName) && ctx.PublicForm['targetCollections'].includes(resourceName)) ||
       (collection?.options.template === 'file' && actionName === 'create') ||
-      (resourceName === 'storages' && ['getBasicInfo', 'createPresignedUrl'].includes(actionName)) ||
+      (resourceName === 'storages' && ['getBasicInfo', 'createPresignedUrl', 'check'].includes(actionName)) ||
       (resourceName === 'vditor' && ['check'].includes(actionName)) ||
       (resourceName === 'map-configuration' && actionName === 'get')
     ) {
