@@ -172,7 +172,10 @@ export const AddFieldAction = (props) => {
   const { t } = useTranslation();
   const { isDialect } = useDialect();
   const options = useFieldInterfaceOptions();
-  const fields = getCollection(record.name)?.options?.fields || record.fields || [];
+  const fields = useMemo(
+    () => getCollection(record.name)?.options?.fields || record.fields || [],
+    [getCollection, record],
+  );
 
   const currentCollections = useMemo(() => {
     return collections.map((v) => {
@@ -181,7 +184,7 @@ export const AddFieldAction = (props) => {
         value: v.name,
       };
     });
-  }, []);
+  }, [collections, compile]);
   const getFieldOptions = useCallback(() => {
     const { availableFieldInterfaces } = getTemplate(record.template) || {};
     const { exclude, include } = (availableFieldInterfaces || {}) as any;
@@ -191,7 +194,7 @@ export const AddFieldAction = (props) => {
         optionArr.push({
           ...v,
           children: v.children.filter((v) => {
-            if (v.hidden) {
+            if (v.hidden || v.deprecated) {
               return false;
             } else if (v.value === 'tableoid') {
               if (include?.length) {
@@ -209,6 +212,7 @@ export const AddFieldAction = (props) => {
           include.forEach((k) => {
             const field = v?.children?.find((h) => [k, k.interface].includes(h.name));
             field &&
+              !field.deprecated &&
               children.push({
                 ...field,
                 targetScope: k?.targetScope,
@@ -216,10 +220,10 @@ export const AddFieldAction = (props) => {
           });
         } else if (exclude?.length) {
           children = v?.children?.filter((v) => {
-            return !exclude.includes(v.name);
+            return !v.deprecated && !exclude.includes(v.name);
           });
         } else {
-          children = v?.children;
+          children = v?.children?.filter((v) => !v.deprecated);
         }
         children?.length &&
           optionArr.push({
@@ -229,7 +233,7 @@ export const AddFieldAction = (props) => {
       }
     });
     return optionArr;
-  }, [getTemplate, record]);
+  }, [database?.dialect, getTemplate, options, record]);
   const items = useMemo<MenuProps['items']>(() => {
     return getFieldOptions()
       .map((option): ItemType & { title: string; children?: ItemType[] } => {
@@ -272,7 +276,7 @@ export const AddFieldAction = (props) => {
         };
       })
       .filter((v) => v?.children?.length);
-  }, [getFieldOptions]);
+  }, [compile, getFieldOptions, record.template]);
   const menu = useMemo<MenuProps>(() => {
     return {
       style: {
@@ -291,7 +295,7 @@ export const AddFieldAction = (props) => {
       },
       items,
     };
-  }, [getInterface, items, record]);
+  }, [compile, getInterface, items, record]);
   const scopeKeyOptions = useMemo(() => {
     return fields
       .filter((v) => {
@@ -303,7 +307,7 @@ export const AddFieldAction = (props) => {
           label: compile(k.uiSchema?.title),
         };
       });
-  }, [fields?.length]);
+  }, [compile, fields]);
   return (
     record.template !== 'sql' && (
       <RecordProvider record={record}>

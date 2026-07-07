@@ -115,6 +115,7 @@ export abstract class CollectionFieldInterface {
   titleUsable?: boolean;
   usePathOptions?(field: any): any;
   hidden?: boolean;
+  deprecated?: boolean;
 
   addComponentOption(componentOption: CollectionFieldInterfaceComponentOption) {
     if (!this.componentOptions) {

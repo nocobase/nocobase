@@ -355,7 +355,7 @@ const FieldInterfaceRenderer = ({ value, record, updateFieldHandler, isPresetFie
       {options.map((group) => (
         <Select.OptGroup key={group.key} label={compile(group.label)}>
           {group.children.map((item) => (
-            <Select.Option key={item.name} value={item.name}>
+            <Select.Option key={item.name} value={item.name} disabled={item.deprecated && item.name !== value}>
               {compile(item.label)}
             </Select.Option>
           ))}

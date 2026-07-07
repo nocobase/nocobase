@@ -8,8 +8,10 @@
  */
 
 import type { Application } from '@nocobase/client-v2';
-import { Plugin } from '@nocobase/client-v2';
-import type React from 'react';
+import { Plugin, RemoteSelect } from '@nocobase/client-v2';
+import { useFlowContext } from '@nocobase/flow-engine';
+import { Form } from 'antd';
+import React from 'react';
 import {
   FILE_SIZE_LIMIT_DEFAULT,
   STORAGE_TYPE_ALI_OSS,
@@ -19,7 +21,45 @@ import {
 } from '../constants';
 import { NAMESPACE } from '../common/constants';
 import { AttachmentFieldInterface } from './interfaces/attachment';
-import { tExpr } from './locale';
+import { tExpr, useT } from './locale';
+
+type StorageRecord = {
+  name?: string;
+  title?: string;
+};
+
+function selectStorageRecords(response: unknown): StorageRecord[] {
+  const body = (response as { data?: unknown })?.data;
+  const payload = (body as { data?: unknown })?.data;
+  if (Array.isArray(payload)) {
+    return payload as StorageRecord[];
+  }
+  const nestedPayload = (payload as { data?: unknown })?.data;
+  return Array.isArray(nestedPayload) ? (nestedPayload as StorageRecord[]) : [];
+}
+
+function FileCollectionStorageConfigureItem(props: { item: { name?: string; required?: boolean } }) {
+  const ctx = useFlowContext();
+  const t = useT();
+
+  return (
+    <Form.Item
+      name={props.item.name || 'storage'}
+      label={t('File storage')}
+      rules={props.item.required ? [{ required: true }] : undefined}
+    >
+      <RemoteSelect<StorageRecord, unknown>
+        request={() => ctx.api.resource('storages').list({ paginate: false })}
+        selectItems={selectStorageRecords}
+        fieldNames={{
+          label: 'title',
+          value: 'name',
+        }}
+        cacheKey="file-collection-storage-options"
+      />
+    </Form.Item>
+  );
+}
 
 type UploadFileResult = {
   errorMessage?: string;
@@ -224,6 +264,16 @@ export class PluginFileManagerClientV2 extends Plugin<Record<string, never>, App
       },
       presetFields: {
         disabled: true,
+      },
+      configure: {
+        items: [
+          {
+            name: 'storage',
+            label: tExpr('File storage'),
+            required: true,
+            Component: FileCollectionStorageConfigureItem,
+          },
+        ],
       },
     });
 

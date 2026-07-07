@@ -103,8 +103,9 @@ function filterFieldInterfacesByTemplate(
   ctx: any,
   mode: 'create' | 'edit',
   databaseDialect?: string,
+  filterCreate = mode === 'create',
 ) {
-  if (mode !== 'create') {
+  if (!filterCreate) {
     return fieldInterfaces;
   }
   const plugin = ctx.app.pm.get(PluginDataSourceManagerClientV2);
@@ -1720,8 +1721,9 @@ export function FieldForm(props: FieldFormProps) {
         ctx,
         props.mode,
         databaseDialect,
+        props.mode === 'create' && !props.field && !props.override,
       ),
-    [databaseDialect, ctx, dataSource?.options?.type, props.collection, props.mode],
+    [databaseDialect, ctx, dataSource?.options?.type, props.collection, props.field, props.mode, props.override],
   );
   const [interfaceName, setInterfaceName] = useState(
     props.field?.interface || props.interfaceName || fieldInterfaces[0]?.name,

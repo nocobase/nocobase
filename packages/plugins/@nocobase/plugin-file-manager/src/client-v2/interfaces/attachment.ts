@@ -16,6 +16,7 @@ export class AttachmentFieldInterface extends CollectionFieldInterface {
   type = 'object';
   group = 'media';
   title = tExpr('Attachment');
+  deprecated = true;
   isAssociation = true;
   default = {
     interface: 'attachment',

@@ -23,6 +23,7 @@ type FieldInterfacePolicy = {
 type FieldInterfaceLike = {
   group?: string;
   name: string;
+  deprecated?: boolean;
 };
 
 function getFieldInterfacePolicy(template?: CollectionTemplateOptions): FieldInterfacePolicy | undefined {
@@ -74,6 +75,9 @@ export function filterCreateFieldInterfacesByCollectionTemplate<T extends FieldI
   const hasIncludes = Array.isArray(include) && include.length > 0;
 
   return fieldInterfaces.filter((fieldInterface) => {
+    if (fieldInterface.deprecated) {
+      return false;
+    }
     if (hasIncludes) {
       return isIncludedFieldInterface(include, fieldInterface.name);
     }

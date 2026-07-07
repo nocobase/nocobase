@@ -59,6 +59,7 @@ type FieldInterfaceOption = {
   group?: string;
   order?: number;
   hidden?: boolean;
+  deprecated?: boolean;
   isAssociation?: boolean;
   availableTypes?: string[];
   default?: Record<string, any>;
@@ -852,6 +853,7 @@ function ViewSyncFieldsDrawer(props: {
                 options: group.options.map((option) => ({
                   value: option.value,
                   label: compileLegacyTemplate(option.label, t),
+                  disabled: props.fieldInterfacesByName[option.value]?.deprecated && option.value !== value,
                 })),
               }))}
               onChange={(nextInterfaceName) => {
@@ -1504,6 +1506,7 @@ export default function FieldsPage(props: FieldsPageProps) {
               options: group.children.map((fieldInterface) => ({
                 value: fieldInterface.name,
                 label: compileLegacyTemplate(getFieldInterfaceLabel(fieldInterface), t),
+                disabled: fieldInterface.deprecated && fieldInterface.name !== value,
               })),
             }))
             .filter((group) => group.options.length);

@@ -178,6 +178,7 @@ export class FileCollectionTemplate extends CollectionTemplate {
       type: 'string',
       name: 'storage',
       title: `{{t("File storage", { ns: "${NAMESPACE}" })}}`,
+      required: true,
       'x-decorator': 'FormItem',
       'x-component': 'RemoteSelect',
       'x-component-props': {

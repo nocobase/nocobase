@@ -17,6 +17,7 @@ export class AttachmentFieldInterface extends CollectionFieldInterface {
   type = 'object';
   group = 'media';
   title = `{{t("Attachment", { ns: "${NAMESPACE}" })}}`;
+  deprecated = true;
   isAssociation = true;
   default = {
     type: 'belongsToMany',

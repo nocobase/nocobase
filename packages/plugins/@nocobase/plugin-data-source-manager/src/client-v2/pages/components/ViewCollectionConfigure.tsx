@@ -32,6 +32,7 @@ type CollectionRecord = {
 
 type FieldInterfaceRecord = {
   availableTypes?: string[];
+  deprecated?: boolean;
   default?: {
     type?: string;
     uiSchema?: Record<string, unknown>;
@@ -191,7 +192,10 @@ function mergeViewFields(options: {
 function getFieldInterfaceOptions(manager: FieldInterfaceManager) {
   const groups = manager?.getFieldInterfaceGroups?.() || {};
   const interfaces = manager?.getFieldInterfaces?.() || [];
-  const grouped = new Map<string, Array<{ label: React.ReactNode; value: string; availableTypes?: string[] }>>();
+  const grouped = new Map<
+    string,
+    Array<{ label: React.ReactNode; value: string; availableTypes?: string[]; deprecated?: boolean }>
+  >();
 
   interfaces
     .filter(
@@ -204,6 +208,7 @@ function getFieldInterfaceOptions(manager: FieldInterfaceManager) {
         value: String(fieldInterface.name),
         label: fieldInterface.title || String(fieldInterface.name),
         availableTypes: fieldInterface.availableTypes,
+        deprecated: fieldInterface.deprecated,
       });
       grouped.set(group, items);
     });
@@ -524,10 +529,15 @@ export function ViewFieldsConfigureItem(props: CollectionTemplateConfigureItemPr
             options={fieldOptions.map((group) => ({
               label: compileLegacyTemplate(group.label, t),
               options: group.options
-                .filter((option) => !record.type || option.availableTypes?.includes(record.type))
+                .filter(
+                  (option) =>
+                    (!record.type || option.availableTypes?.includes(record.type)) &&
+                    (!option.deprecated || option.value === value),
+                )
                 .map((option) => ({
                   value: option.value,
                   label: compileLegacyTemplate(option.label, t),
+                  disabled: option.deprecated && option.value !== value,
                 })),
             }))}
             value={value || undefined}

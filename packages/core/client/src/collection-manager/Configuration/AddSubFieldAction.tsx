@@ -112,17 +112,21 @@ export const AddSubFieldAction = () => {
   const options = useFieldInterfaceOptions();
   const { t } = useTranslation();
   const items = useMemo(() => {
-    return options.map((option) => {
-      const children = option.children.map((child) => {
-        return { label: compile(child.title), key: child.name };
-      });
-      return {
-        label: compile(option.label),
-        key: option.key,
-        children,
-      };
-    });
-  }, [options]);
+    return options
+      .map((option) => {
+        const children = option.children
+          .filter((child) => !child.deprecated)
+          .map((child) => {
+            return { label: compile(child.title), key: child.name };
+          });
+        return {
+          label: compile(option.label),
+          key: option.key,
+          children,
+        };
+      })
+      .filter((option) => option.children.length);
+  }, [compile, options]);
   const menu = useMemo<MenuProps>(() => {
     return {
       style: {
@@ -136,7 +140,7 @@ export const AddSubFieldAction = () => {
       },
       items,
     };
-  }, [items]);
+  }, [getInterface, items]);
   const recordData = useCollectionRecordData();
 
   return (

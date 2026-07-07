@@ -24,6 +24,7 @@ describe('AttachmentFieldInterface', () => {
       app.dataSourceManager.collectionFieldInterfaceManager.getFieldInterface<AttachmentFieldInterface>('attachment');
 
     expect(fieldInterface).toBeInstanceOf(AttachmentFieldInterface);
+    expect(fieldInterface.deprecated).toBe(true);
     expect(fieldInterface.group).toBe('media');
     expect(fieldInterface.default).toMatchObject({
       interface: 'attachment',
