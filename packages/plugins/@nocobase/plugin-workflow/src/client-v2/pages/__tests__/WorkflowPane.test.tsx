@@ -381,7 +381,7 @@ describe('WorkflowPane (request layer)', () => {
 
     expect(workflows.list).toHaveBeenCalledWith(
       expect.objectContaining({
-        appends: ['categories', 'stats', 'legacyApprovalUi'],
+        appends: ['categories', 'stats'],
         except: ['config'],
       }),
     );
@@ -483,7 +483,7 @@ describe('WorkflowPane (request layer)', () => {
     );
     expect(workflows.list).toHaveBeenCalledWith(
       expect.objectContaining({
-        appends: ['categories', 'stats', 'legacyApprovalUi'],
+        appends: ['categories', 'stats'],
         except: ['config'],
       }),
     );

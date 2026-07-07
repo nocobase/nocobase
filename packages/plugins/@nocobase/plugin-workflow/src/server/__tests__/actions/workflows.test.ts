@@ -64,12 +64,20 @@ describe('workflow > actions > workflows', () => {
   });
 
   describe('list', () => {
-    it('does not calculate legacy approval UI status unless explicitly appended', async () => {
+    it('returns persisted validation without calculating approval UI status', async () => {
       const workflow = await WorkflowModel.create({
         enabled: true,
         type: 'approval',
         config: {
           applyForm: 'legacy_schema',
+        },
+        validation: {
+          approval: {
+            legacyUi: {
+              initiator: true,
+              approver: false,
+            },
+          },
         },
       });
       await workflow.createNode({
@@ -82,123 +90,27 @@ describe('workflow > actions > workflows', () => {
 
       const { status, body } = await agent.resource('workflows').list({
         sort: ['id'],
+        appends: ['stats'],
         except: ['config'],
+        filter: {
+          id: workflow.id,
+        },
       });
 
       expect(status).toBe(200);
+      expect(body.rows).toHaveLength(1);
+      expect(body.rows[0]).toMatchObject({
+        validation: {
+          approval: {
+            legacyUi: {
+              initiator: true,
+              approver: false,
+            },
+          },
+        },
+      });
       expect(body.rows[0]).not.toHaveProperty('legacyApprovalUi');
       expect(flowNodesFind).not.toHaveBeenCalled();
-      flowNodesFind.mockRestore();
-    });
-
-    it('appends legacy approval UI status with current-page batch lookups', async () => {
-      const initiatorWorkflow = await WorkflowModel.create({
-        enabled: true,
-        type: 'approval',
-        config: {
-          applyForm: 'legacy_schema',
-        },
-      });
-      const approverWorkflow = await WorkflowModel.create({
-        enabled: true,
-        type: 'approval',
-        config: {},
-      });
-      await approverWorkflow.createNode({
-        type: 'approval',
-        config: {
-          applyDetail: 'legacy_schema',
-        },
-      });
-      const cleanApprovalWorkflow = await WorkflowModel.create({
-        enabled: true,
-        type: 'approval',
-        config: {},
-      });
-      await cleanApprovalWorkflow.createNode({
-        type: 'approval',
-        config: {
-          applyDetail: null,
-        },
-      });
-      const collectionWorkflow = await WorkflowModel.create({
-        enabled: true,
-        type: 'collection',
-        config: {
-          mode: 1,
-          collection: 'posts',
-        },
-      });
-      const workflowsFind = vi.spyOn(WorkflowRepo, 'find');
-      const workflowsFindAndCount = vi.spyOn(WorkflowRepo, 'findAndCount');
-      const flowNodesFind = vi.spyOn(FlowNodeRepo, 'find');
-
-      const { status, body } = await agent.resource('workflows').list({
-        sort: ['id'],
-        appends: ['stats', 'legacyApprovalUi'],
-        except: ['config'],
-      });
-
-      expect(status).toBe(200);
-      const rowsById = new Map(body.rows.map((row) => [String(row.id), row]));
-      expect(rowsById.get(String(initiatorWorkflow.id))).toMatchObject({
-        legacyApprovalUi: {
-          initiator: true,
-          approver: false,
-        },
-      });
-      expect(rowsById.get(String(approverWorkflow.id))).toMatchObject({
-        legacyApprovalUi: {
-          initiator: false,
-          approver: true,
-        },
-      });
-      expect(rowsById.get(String(cleanApprovalWorkflow.id))).toMatchObject({
-        legacyApprovalUi: {
-          initiator: false,
-          approver: false,
-        },
-      });
-      expect(rowsById.get(String(collectionWorkflow.id))).toMatchObject({
-        legacyApprovalUi: {
-          initiator: false,
-          approver: false,
-        },
-      });
-      body.rows.forEach((row) => {
-        expect(row).not.toHaveProperty('config');
-      });
-      expect(workflowsFindAndCount).toHaveBeenCalledWith(expect.objectContaining({ appends: ['stats'] }));
-      expect(workflowsFind).toHaveBeenCalledTimes(1);
-      expect(workflowsFind).toHaveBeenCalledWith(
-        expect.objectContaining({
-          fields: ['id', 'type', 'config'],
-          filter: {
-            id: {
-              $in: expect.arrayContaining([
-                initiatorWorkflow.id,
-                approverWorkflow.id,
-                cleanApprovalWorkflow.id,
-                collectionWorkflow.id,
-              ]),
-            },
-          },
-        }),
-      );
-      expect(flowNodesFind).toHaveBeenCalledTimes(1);
-      expect(flowNodesFind).toHaveBeenCalledWith(
-        expect.objectContaining({
-          fields: ['workflowId', 'config'],
-          filter: {
-            type: 'approval',
-            workflowId: {
-              $in: expect.arrayContaining([initiatorWorkflow.id, approverWorkflow.id, cleanApprovalWorkflow.id]),
-            },
-          },
-        }),
-      );
-      workflowsFindAndCount.mockRestore();
-      workflowsFind.mockRestore();
       flowNodesFind.mockRestore();
     });
   });
