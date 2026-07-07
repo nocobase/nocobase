@@ -18,6 +18,7 @@ import {
   STORAGE_TYPE_TX_COS,
 } from '../constants';
 import { NAMESPACE } from '../common/constants';
+import { AttachmentFieldInterface } from './interfaces/attachment';
 import { tExpr } from './locale';
 
 type UploadFileResult = {
@@ -88,6 +89,8 @@ export class PluginFileManagerClientV2 extends Plugin<Record<string, never>, App
   storageTypes = new Map<string, StorageType>();
 
   async load() {
+    this.app.addFieldInterfaces([AttachmentFieldInterface]);
+
     const title = this.app.i18n.t('File manager', { ns: NAMESPACE });
     const dataSourceManager = (this.app.pm.get('@nocobase/plugin-data-source-manager') ||
       this.app.pm.get('data-source-manager')) as

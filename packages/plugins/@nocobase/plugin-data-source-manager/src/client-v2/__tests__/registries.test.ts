@@ -8,6 +8,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
+import { CollectionTemplateRegistry } from '../plugin';
 import { DataSourcePermissionTabRegistry, type DataSourcePermissionTabProps } from '../registries';
 
 function PermissionTab() {
@@ -24,6 +25,25 @@ const tabProps: DataSourcePermissionTabProps = {
 };
 
 describe('data source manager registries', () => {
+  it('keeps non-creatable collection templates registered while hiding them from create options', () => {
+    const registry = new CollectionTemplateRegistry();
+
+    registry.register({
+      name: 'general',
+      title: 'General collection',
+      order: 10,
+    });
+    registry.register({
+      name: 'calendar',
+      title: 'Calendar collection',
+      order: 20,
+      creatable: false,
+    });
+
+    expect(registry.getAll().map((item) => item.name)).toEqual(['general', 'calendar']);
+    expect(registry.getCreatable().map((item) => item.name)).toEqual(['general']);
+  });
+
   it('returns sorted data source permission tabs and filters empty resolvers', () => {
     const registry = new DataSourcePermissionTabRegistry();
 

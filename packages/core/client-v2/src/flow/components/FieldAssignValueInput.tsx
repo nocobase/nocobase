@@ -344,6 +344,7 @@ interface Props {
   /** 是否允许在变量选择器中使用 RunJS。默认 true，保持历史行为。 */
   allowRunJS?: boolean;
   maxAssociationFieldDepth?: number;
+  disabled?: boolean;
 }
 
 type ResolvedFieldContext = {
@@ -716,6 +717,7 @@ export const FieldAssignValueInput: React.FC<Props> = ({
   enableDateVariableAsConstant = false,
   allowRunJS = true,
   maxAssociationFieldDepth = 2,
+  disabled = false,
 }) => {
   const flowCtx = useFlowContext<FlowModelContext>();
   const normalizeEventValue = React.useCallback((eventOrValue: unknown) => {
@@ -1031,18 +1033,22 @@ export const FieldAssignValueInput: React.FC<Props> = ({
       collectionField: effectiveCollectionField,
     });
 
-    const created = engine?.createModel?.({
-      use: 'VariableFieldFormModel',
-      subModels: {
-        fields: [
-          {
-            use: effectiveFieldModelUse,
-            stepParams: tempFieldStepParams,
-            props: tempFieldProps,
-          },
-        ],
+    const sourceContext = resolved?.itemModel?.context || flowCtx.model?.context;
+    const created = engine?.createModel?.(
+      {
+        use: 'VariableFieldFormModel',
+        subModels: {
+          fields: [
+            {
+              use: effectiveFieldModelUse,
+              stepParams: tempFieldStepParams,
+              props: tempFieldProps,
+            },
+          ],
+        },
       },
-    });
+      sourceContext ? { delegate: sourceContext } : undefined,
+    );
     if (!created) return;
 
     // 注入上下文（集合/数据源/字段/区块/资源）
@@ -1076,7 +1082,7 @@ export const FieldAssignValueInput: React.FC<Props> = ({
       fm.setStepParams('selectSettings', 'fieldNames', { label: overrideLabel });
     }
     fm?.setProps?.({
-      disabled: false,
+      disabled,
       readPretty: false,
       pattern: 'editable',
       updateAssociation: false,
@@ -1139,6 +1145,7 @@ export const FieldAssignValueInput: React.FC<Props> = ({
     preferFormItemFieldModel,
     associationFieldNamesOverride?.label,
     associationFieldNamesOverride?.value,
+    disabled,
   ]);
 
   // 当传入 operator / operatorMetaList 时，按 operator schema 适配临时字段的输入组件与 props。
@@ -1191,6 +1198,9 @@ export const FieldAssignValueInput: React.FC<Props> = ({
       React.useEffect(() => {
         const coercedValue = coerceEmptyValueForRenderer(inputProps?.value);
         const handleChange = (ev: any) => {
+          if (inputProps?.disabled) {
+            return;
+          }
           const nextRaw = normalizeEventValue(ev);
           const normalizedForStore = operator ? normalizeFilterValueByOperator(operator, nextRaw) : nextRaw;
           const nextValue = coerceEmptyValueForRenderer(normalizedForStore);
@@ -1222,6 +1232,7 @@ export const FieldAssignValueInput: React.FC<Props> = ({
             value={inputProps?.value}
             onChange={(e) => inputProps?.onChange?.(normalizeEventValue(e))}
             placeholder={placeholder}
+            disabled={inputProps?.disabled}
             style={withFullWidthStyle(wrapperStyle)}
           />
         );
@@ -1240,6 +1251,7 @@ export const FieldAssignValueInput: React.FC<Props> = ({
     const C: React.FC<any> = (inputProps) => {
       const wrapperStyle = pickStyle(inputProps?.style);
       const raw = inputProps?.value;
+      const isDisabled = Boolean(inputProps?.disabled);
       const parsed = isCtxDateExpression(raw) ? parseCtxDateExpression(raw) : raw;
       const parsedValue = typeof parsed === 'undefined' ? undefined : parsed;
       const { token } = theme.useToken();
@@ -1264,6 +1276,9 @@ export const FieldAssignValueInput: React.FC<Props> = ({
       });
 
       const handleSelect = (val: string) => {
+        if (isDisabled) {
+          return;
+        }
         setOpen(false);
         if (val === 'exact') {
           inputProps?.onChange?.('');
@@ -1278,10 +1293,16 @@ export const FieldAssignValueInput: React.FC<Props> = ({
       };
 
       const handleExactSingleChange = (nextValue: any) => {
+        if (isDisabled) {
+          return;
+        }
         inputProps?.onChange?.(nextValue || '');
       };
 
       const handleExactRangeChange = (nextValue: any) => {
+        if (isDisabled) {
+          return;
+        }
         inputProps?.onChange?.(nextValue || '');
       };
 
@@ -1326,7 +1347,11 @@ export const FieldAssignValueInput: React.FC<Props> = ({
           <Select
             options={options}
             open={open}
-            onDropdownVisibleChange={setOpen}
+            onDropdownVisibleChange={(nextOpen) => {
+              if (!isDisabled) {
+                setOpen(nextOpen);
+              }
+            }}
             allowClear={false}
             style={{
               width: '100%',
@@ -1336,13 +1361,18 @@ export const FieldAssignValueInput: React.FC<Props> = ({
             value={selectedType}
             onChange={handleSelect}
             dropdownRender={dropdownRender}
+            disabled={isDisabled}
           />
           {['past', 'next'].includes(selectedType) && [
             <InputNumber
               key="number"
               style={{ flex: 1 }}
               value={(parsedValue as any)?.number}
+              disabled={isDisabled}
               onChange={(nextNumber) => {
+                if (isDisabled) {
+                  return;
+                }
                 inputProps?.onChange?.({
                   ...(parsedValue as any),
                   type: selectedType,
@@ -1355,7 +1385,11 @@ export const FieldAssignValueInput: React.FC<Props> = ({
               key="unit"
               value={(parsedValue as any)?.unit}
               style={{ minWidth: 130, maxWidth: 140 }}
+              disabled={isDisabled}
               onChange={(nextUnit) => {
+                if (isDisabled) {
+                  return;
+                }
                 inputProps?.onChange?.({
                   ...(parsedValue as any),
                   type: selectedType,
@@ -1378,6 +1412,7 @@ export const FieldAssignValueInput: React.FC<Props> = ({
               isRange={isRange}
               value={isRange ? exactRangeValue : exactSingleValue}
               onChange={isRange ? handleExactRangeChange : handleExactSingleChange}
+              disabled={isDisabled}
               style={{ flex: 1 }}
             />
           )}
@@ -1397,7 +1432,12 @@ export const FieldAssignValueInput: React.FC<Props> = ({
 
   const RunJSComponent = React.useMemo(() => {
     const C: React.FC<any> = (inputProps) => (
-      <RunJSValueEditor t={flowCtx.t} value={inputProps?.value} onChange={inputProps?.onChange} />
+      <RunJSValueEditor
+        t={flowCtx.t}
+        value={inputProps?.value}
+        onChange={inputProps?.onChange}
+        disabled={inputProps?.disabled}
+      />
     );
     return C;
   }, [flowCtx]);
@@ -1443,6 +1483,10 @@ export const FieldAssignValueInput: React.FC<Props> = ({
 
   const handleVariableInputChange = React.useCallback(
     (nextValue: any) => {
+      if (disabled) {
+        return;
+      }
+
       if (!useDateVariableConstant) {
         onChange(nextValue);
         return;
@@ -1450,7 +1494,7 @@ export const FieldAssignValueInput: React.FC<Props> = ({
 
       onChange(normalizeDateVariableOutput(nextValue, dateVariableComponentProps));
     },
-    [dateVariableComponentProps, onChange, useDateVariableConstant],
+    [dateVariableComponentProps, disabled, onChange, useDateVariableConstant],
   );
 
   if (!fieldPath) {
@@ -1465,6 +1509,7 @@ export const FieldAssignValueInput: React.FC<Props> = ({
       metaTree={metaTree}
       style={{ width: '100%' }}
       clearValue={''}
+      disabled={disabled}
       converters={{
         renderInputComponent: (meta) => {
           const firstPath = meta?.paths?.[0];

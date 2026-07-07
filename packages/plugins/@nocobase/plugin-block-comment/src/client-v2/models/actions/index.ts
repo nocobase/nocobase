@@ -10,4 +10,5 @@
 export * from './DeleteRecordCommentActionModel';
 export * from './EditRecordCommentActionModel';
 export * from './RecordCommentActionGroupModel';
+export * from './RecordCommentSubmitActionModel';
 export * from './QuoteReplyRecordCommentActionModel';

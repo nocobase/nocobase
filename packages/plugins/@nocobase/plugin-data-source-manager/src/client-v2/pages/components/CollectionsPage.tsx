@@ -1251,7 +1251,7 @@ function CollectionsPage(props: CollectionsPageProps) {
   const allowCustomCollectionDeletion = Boolean(
     !isMainDataSource && !configureFieldsDisabled && dataSourceType?.allowCollectionDeletion && DeleteCollection,
   );
-  const collectionTemplates = useMemo(() => plugin.getCollectionTemplates(), [plugin]);
+  const collectionTemplates = useMemo(() => plugin.getCreatableCollectionTemplates(), [plugin]);
   const categoryRequest = useRequest(
     async () => {
       if (!isMainDataSource) {

@@ -308,6 +308,7 @@ const getProviderSortIndex = (value: string) => {
     'dashscope',
     'kimi',
     'mistral',
+    'orcarouter',
     'openai-completions',
     'ollama',
   ];
@@ -329,6 +330,7 @@ const getProviderDescription = (provider: string, t: ReturnType<typeof useT>) =>
     ollama: 'Local models',
     mimo: 'Xiaomi MIMO',
     mistral: 'Mistral models',
+    orcarouter: 'OrcaRouter (model routing gateway)',
   };
   return descriptions[provider] ? t(descriptions[provider]) : '';
 };
