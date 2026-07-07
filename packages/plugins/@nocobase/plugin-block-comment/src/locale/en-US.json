@@ -1,6 +1,9 @@
 {
   "Actions": "Actions",
+  "Add workflow": "Add workflow",
+  "Assign field values": "Assign field values",
   "Auto jump to last page": "Auto jump to last page",
+  "Are you sure you want to submit this comment?": "Are you sure you want to submit this comment?",
   "Are you sure you want to delete it?": "Are you sure you want to delete it?",
   "Cancel": "Cancel",
   "Comment": "Comment",
@@ -33,8 +36,14 @@
   "Render error": "Render error",
   "Search": "Search",
   "Select field": "Select field",
+  "Select workflow": "Select workflow",
   "Specify the associated business record value, for example the current record ID.": "Specify the associated business record value, for example the current record ID.",
+  "Submit action settings": "Submit action settings",
+  "Submit comment": "Submit comment",
+  "Support pre-action event (local mode), post-action event (local mode), and approval event here.": "Support pre-action event (local mode), post-action event (local mode), and approval event here.",
   "The comment owner field value type does not match the comment owner field. Please reconfigure the field mapping.": "The comment owner field value type does not match the comment owner field. Please reconfigure the field mapping.",
   "The current record value is empty, so comments cannot be loaded.": "The current record value is empty, so comments cannot be loaded.",
-  "Update Comment": "Update Comment"
+  "Update Comment": "Update Comment",
+  "Workflow": "Workflow",
+  "Bind workflows": "Bind workflows"
 }

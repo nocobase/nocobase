@@ -8,6 +8,7 @@
  */
 
 import { SettingOutlined } from '@ant-design/icons';
+import type { AxiosRequestConfig } from 'axios';
 import {
   AddSubModelButton,
   DndProvider,
@@ -133,6 +134,11 @@ type FlowModelWithForkId = FlowModel & {
 
 type DetailsGridForkModel = ReturnType<DetailsGridModel['createFork']> & {
   gridContainerRef: React.RefObject<HTMLDivElement>;
+};
+
+type SubmitCommentParams = {
+  assignedValues?: Record<string, unknown>;
+  requestConfig?: AxiosRequestConfig;
 };
 
 const getFlowModelRenderKey = (model: FlowModel, fallback: string) => {
@@ -269,11 +275,13 @@ const RecordCommentBodyFields = observer(
   ({
     blockModel,
     itemModel,
+    actionSettingsModel,
     record,
     forkKeyPrefix,
   }: {
     blockModel: RecordCommentsBlockModel;
     itemModel: FlowModel;
+    actionSettingsModel?: FlowModel;
     record: RecordCommentRecord;
     forkKeyPrefix: string;
   }) => {
@@ -334,37 +342,50 @@ const SubmitBox = observer(({ model, forkKeyPrefix }: { model: RecordCommentsBlo
     setContent(value);
   });
 
-  const submit = useCallback(async () => {
-    if (!mapping.contentField || !mapping.ownerField || model.ownerValue === undefined) {
-      return;
-    }
+  const submit = useCallback(
+    async (params?: SubmitCommentParams): Promise<unknown> => {
+      if (!mapping.contentField || !mapping.ownerField || model.ownerValue === undefined) {
+        return;
+      }
 
-    setSubmitting(true);
-    try {
-      await model.resource.create(
-        {
+      setSubmitting(true);
+      try {
+        const values = {
           [mapping.contentField]: content,
           [mapping.ownerField]: model.ownerValue,
           ...getCommenterCreatePayload(model),
           ...getDateCreatePayload(model),
-        } as RecordCommentRecord,
-        {
+          ...(params?.assignedValues || {}),
+        } as RecordCommentRecord;
+
+        const response = await model.resource.create(values, {
+          ...(params?.requestConfig || {}),
           refresh: false,
-        },
-      );
-      setContent('');
-      if (model.shouldAutoJumpToLastPage()) {
-        const count = model.resource.getCount() || 0;
-        const pageSize = model.resource.getPageSize() || 10;
-        model.resource.setPage(Math.max(Math.ceil((count + 1) / pageSize), 1));
+        });
+        setContent('');
+        if (model.shouldAutoJumpToLastPage()) {
+          const count = model.resource.getCount() || 0;
+          const pageSize = model.resource.getPageSize() || 10;
+          model.resource.setPage(Math.max(Math.ceil((count + 1) / pageSize), 1));
+        }
+        await model.resource.refresh();
+        return response;
+      } catch (error) {
+        message.error(getErrorMessage(error, t('Failed to create comment')));
+        throw error;
+      } finally {
+        setSubmitting(false);
       }
-      await model.resource.refresh();
-    } catch (error) {
-      message.error(getErrorMessage(error, t('Failed to create comment')));
-    } finally {
-      setSubmitting(false);
+    },
+    [content, mapping.contentField, mapping.ownerField, message, model, t],
+  );
+  const handleFallbackSubmit = useCallback(async () => {
+    try {
+      await submit();
+    } catch {
+      // The submit helper already shows the localized error message.
     }
-  }, [content, mapping.contentField, mapping.ownerField, message, model, t]);
+  }, [submit]);
 
   return (
     <div style={{ marginTop: 10 }}>
@@ -387,13 +408,13 @@ const SubmitBox = observer(({ model, forkKeyPrefix }: { model: RecordCommentsBlo
         />
       )}
       <div style={submitButtonAreaStyle}>
-        <Button disabled={!canSubmit} loading={submitting} onClick={submit} type="primary">
-          {t('Comment')}
-        </Button>
         <RecordCommentSubmitActions
           model={model}
           content={content}
+          canSubmit={canSubmit}
+          submitting={submitting}
           setContent={setContent}
+          handleFallbackSubmit={handleFallbackSubmit}
           submit={submit}
           forkKeyPrefix={forkKeyPrefix}
         />
@@ -406,19 +427,36 @@ const RecordCommentSubmitActions = observer(
   ({
     model,
     content,
+    canSubmit,
+    submitting,
     setContent,
+    handleFallbackSubmit,
     submit,
     forkKeyPrefix,
   }: {
     model: RecordCommentsBlockModel;
     content: string;
+    canSubmit: boolean;
+    submitting: boolean;
     setContent: (value: string) => void;
-    submit: () => Promise<void>;
+    handleFallbackSubmit: () => Promise<void>;
+    submit: (params?: SubmitCommentParams) => Promise<unknown>;
     forkKeyPrefix: string;
   }) => {
+    const t = useT();
+    const submitActions = model.subModels?.submitActions || [];
+    const hasCommentSubmitAction = submitActions.some(
+      (action) => action.constructor.name === 'RecordCommentSubmitActionModel',
+    );
+
     return (
       <DndProvider>
-        <Space size={0} style={{ gap: 0 }}>
+        <Space size={8} wrap>
+          {!hasCommentSubmitAction ? (
+            <Button disabled={!canSubmit} loading={submitting} onClick={handleFallbackSubmit} type="primary">
+              {t('Comment')}
+            </Button>
+          ) : null}
           {model.mapSubModels('submitActions', (action, index) => {
             const fork = action.createFork({}, `${forkKeyPrefix}_submit_${normalizeForkKeyPart(action.uid)}_${index}`);
             fork.context.defineProperty('resource', {
@@ -432,6 +470,14 @@ const RecordCommentSubmitActions = observer(
             });
             fork.context.defineProperty('commentContent', {
               get: () => content,
+              cache: false,
+            });
+            fork.context.defineProperty('commentCanSubmit', {
+              get: () => canSubmit,
+              cache: false,
+            });
+            fork.context.defineProperty('commentSubmitting', {
+              get: () => submitting,
               cache: false,
             });
             fork.context.defineMethod('setCommentContent', setContent);
@@ -473,11 +519,13 @@ const RecordCommentItemView = observer(
   ({
     blockModel,
     itemModel,
+    actionSettingsModel,
     record,
     forkKeyPrefix,
   }: {
     blockModel: RecordCommentsBlockModel;
     itemModel: FlowModel;
+    actionSettingsModel?: FlowModel;
     record: RecordCommentRecord;
     forkKeyPrefix: string;
   }) => {
@@ -546,6 +594,7 @@ const RecordCommentItemView = observer(
                   blockModel={blockModel}
                   record={record}
                   itemModel={itemModel}
+                  actionSettingsModel={actionSettingsModel}
                   forkKeyPrefix={forkKeyPrefix}
                   setEditing={() => {
                     setEditing(true);
@@ -678,6 +727,7 @@ export const RecordCommentsBlockView = Object.assign(
                       <RecordCommentItemView
                         blockModel={model}
                         itemModel={itemModel}
+                        actionSettingsModel={model.subModels.items[0]}
                         record={record}
                         forkKeyPrefix={`${blockForkKeyPrefix}_item_${recordForkKey}`}
                       />
