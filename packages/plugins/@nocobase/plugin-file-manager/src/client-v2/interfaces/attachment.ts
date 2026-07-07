@@ -17,6 +17,7 @@ export class AttachmentFieldInterface extends CollectionFieldInterface {
   group = 'media';
   title = tExpr('Attachment');
   isAssociation = true;
+  creatable = false;
   default = {
     interface: 'attachment',
     type: 'belongsToMany',
