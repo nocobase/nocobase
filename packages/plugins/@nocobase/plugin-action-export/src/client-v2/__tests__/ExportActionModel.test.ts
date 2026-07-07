@@ -12,6 +12,7 @@ import { act, render } from '@testing-library/react';
 import React from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ExportActionModel } from '../ExportActionModel';
+import { PluginActionExportClient } from '../index';
 
 const fileSaverMocks = vi.hoisted(() => ({
   saveAs: vi.fn(),
@@ -179,6 +180,34 @@ describe('ExportActionModel', () => {
   afterEach(() => {
     vi.clearAllMocks();
     antdMocks.cascaderProps = [];
+  });
+
+  it('registers the export action model loader', async () => {
+    const registerModelLoaders = vi.fn();
+    const plugin = Object.create(PluginActionExportClient.prototype) as PluginActionExportClient & {
+      app: {
+        flowEngine: {
+          registerModelLoaders: typeof registerModelLoaders;
+        };
+      };
+    };
+    plugin.app = {
+      flowEngine: {
+        registerModelLoaders,
+      },
+    };
+
+    await plugin.load();
+
+    expect(registerModelLoaders).toHaveBeenCalledWith({
+      ExportActionModel: {
+        extends: 'ActionModel',
+        loader: expect.any(Function),
+      },
+    });
+
+    const loaders = registerModelLoaders.mock.calls[0][0];
+    await expect(loaders.ExportActionModel.loader()).resolves.toHaveProperty('ExportActionModel', ExportActionModel);
   });
 
   it('exports selected rows with translated column metadata', async () => {

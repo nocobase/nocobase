@@ -12,11 +12,15 @@ import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { DisplayItemModel, EditableItemModel, FilterableItemModel } from '@nocobase/flow-engine';
 import { SortFieldModel } from '../models/SortFieldModel';
+import PluginFieldSortClient from '../plugin';
+import { SortFieldInterface } from '../sort-interface';
 
 vi.mock('@nocobase/client-v2', () => ({
+  CollectionFieldInterface: class CollectionFieldInterface {},
   FieldModel: class FieldModel {
     static define = vi.fn();
   },
+  Plugin: class Plugin {},
 }));
 
 vi.mock('@nocobase/flow-engine', () => ({
@@ -29,6 +33,12 @@ vi.mock('@nocobase/flow-engine', () => ({
   FilterableItemModel: {
     bindModelToInterface: vi.fn(),
   },
+  tExpr: (value: string) => value,
+  useFlowEngine: () => ({
+    context: {
+      t: (value: string) => value,
+    },
+  }),
 }));
 
 vi.mock('../locale', () => ({
@@ -36,6 +46,37 @@ vi.mock('../locale', () => ({
 }));
 
 describe('SortFieldModel', () => {
+  it('registers the sort field interface and lazy model loader', async () => {
+    const addFieldInterfaces = vi.fn();
+    const registerModelLoaders = vi.fn();
+    const plugin = Object.create(PluginFieldSortClient.prototype) as PluginFieldSortClient & {
+      app: {
+        addFieldInterfaces: typeof addFieldInterfaces;
+      };
+      flowEngine: {
+        registerModelLoaders: typeof registerModelLoaders;
+      };
+    };
+    plugin.app = {
+      addFieldInterfaces,
+    };
+    plugin.flowEngine = {
+      registerModelLoaders,
+    };
+
+    await plugin.load();
+
+    expect(addFieldInterfaces).toHaveBeenCalledWith([SortFieldInterface]);
+    expect(registerModelLoaders).toHaveBeenCalledWith({
+      SortFieldModel: {
+        loader: expect.any(Function),
+      },
+    });
+
+    const loaders = registerModelLoaders.mock.calls[0][0];
+    await expect(loaders.SortFieldModel.loader()).resolves.toHaveProperty('SortFieldModel', SortFieldModel);
+  });
+
   it('renders an input number with full width while preserving custom styles', () => {
     const model = Object.create(SortFieldModel.prototype) as SortFieldModel & {
       props: {

@@ -12,6 +12,7 @@ import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import { FlowContext, FlowContextProvider, FlowEngine, FlowEngineProvider } from '@nocobase/flow-engine';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { IframeBlockModel } from '../models/IframeBlockModel';
+import PluginBlockIframeClient from '../plugin';
 
 const iframeMocks = vi.hoisted(() => ({
   props: [] as Array<Record<string, unknown>>,
@@ -105,6 +106,15 @@ describe('IframeBlockModel', () => {
     cleanup();
     iframeMocks.props.length = 0;
     vi.clearAllMocks();
+  });
+
+  it('registers the iframe block model loader', async () => {
+    const flowEngine = new FlowEngine();
+
+    await PluginBlockIframeClient.prototype.load.call({ flowEngine });
+    await flowEngine.preloadModelLoaders();
+
+    expect(flowEngine.getModelClass('IframeBlockModel')).toBe(IframeBlockModel);
   });
 
   it('adds the iframe card body class to the block decorator', () => {

@@ -11,9 +11,52 @@ import { ActionSceneEnum } from '@nocobase/client-v2';
 import { FlowEngine } from '@nocobase/flow-engine';
 import { describe, expect, it, vi } from 'vitest';
 import { CustomRequestActionModel, registerCustomRequestActionGroups } from '../CustomRequestActionModel';
-import { CUSTOM_REQUEST_ACTION_NAME } from '../customRequestFlowAction';
+import { CUSTOM_REQUEST_ACTION_NAME, customRequestFlowAction } from '../customRequestFlowAction';
+import { PluginActionCustomRequestClient } from '../index';
 
 describe('CustomRequestActionModel', () => {
+  it('registers custom request action and model loader', async () => {
+    const registerActions = vi.fn();
+    const registerModelLoaders = vi.fn();
+    const registerActionModels = vi.fn();
+    const plugin = Object.create(PluginActionCustomRequestClient.prototype) as PluginActionCustomRequestClient & {
+      app: {
+        flowEngine: {
+          registerActions: typeof registerActions;
+          registerModelLoaders: typeof registerModelLoaders;
+          getModelClass: (modelName: string) => { registerActionModels: typeof registerActionModels };
+        };
+      };
+    };
+    plugin.app = {
+      flowEngine: {
+        registerActions,
+        registerModelLoaders,
+        getModelClass: () => ({
+          registerActionModels,
+        }),
+      },
+    };
+
+    await plugin.load();
+
+    expect(registerActions).toHaveBeenCalledWith({
+      customRequestFlowAction,
+    });
+    expect(registerModelLoaders).toHaveBeenCalledWith({
+      CustomRequestActionModel: {
+        extends: 'ActionModel',
+        loader: expect.any(Function),
+      },
+    });
+
+    const loaders = registerModelLoaders.mock.calls[0][0];
+    await expect(loaders.CustomRequestActionModel.loader()).resolves.toBe(CustomRequestActionModel);
+    expect(registerActionModels).toHaveBeenCalledWith({
+      CustomRequestActionModel,
+    });
+  });
+
   it('exposes metadata and click flow settings', () => {
     const model = new CustomRequestActionModel({
       uid: 'custom-request-action',

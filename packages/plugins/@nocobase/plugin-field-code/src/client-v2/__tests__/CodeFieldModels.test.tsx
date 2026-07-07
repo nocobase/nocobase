@@ -11,8 +11,10 @@ import { FlowEngine } from '@nocobase/flow-engine';
 import { cleanup, render, screen } from '@testing-library/react';
 import React from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { CodeFieldInterface } from '../index';
 import { CodeFieldModel } from '../models/CodeFieldModel';
 import { DisplayCodeFieldModel } from '../models/DisplayCodeFieldModel';
+import PluginFieldCodeClient from '../plugin';
 
 type CodeEditorProps = {
   disabled?: boolean;
@@ -58,6 +60,44 @@ describe('CodeField models', () => {
   afterEach(() => {
     cleanup();
     mocks.editorProps = [];
+  });
+
+  it('registers the code field interface and model loaders', async () => {
+    const addFieldInterfaces = vi.fn();
+    const registerModelLoaders = vi.fn();
+    const plugin = Object.create(PluginFieldCodeClient.prototype) as PluginFieldCodeClient & {
+      app: {
+        addFieldInterfaces: typeof addFieldInterfaces;
+        flowEngine: {
+          registerModelLoaders: typeof registerModelLoaders;
+        };
+      };
+    };
+    plugin.app = {
+      addFieldInterfaces,
+      flowEngine: {
+        registerModelLoaders,
+      },
+    };
+
+    await plugin.load();
+
+    expect(addFieldInterfaces).toHaveBeenCalledWith([CodeFieldInterface]);
+    expect(registerModelLoaders).toHaveBeenCalledWith({
+      CodeFieldModel: {
+        loader: expect.any(Function),
+      },
+      DisplayCodeFieldModel: {
+        loader: expect.any(Function),
+      },
+    });
+
+    const loaders = registerModelLoaders.mock.calls[0][0];
+    await expect(loaders.CodeFieldModel.loader()).resolves.toHaveProperty('CodeFieldModel', CodeFieldModel);
+    await expect(loaders.DisplayCodeFieldModel.loader()).resolves.toHaveProperty(
+      'DisplayCodeFieldModel',
+      DisplayCodeFieldModel,
+    );
   });
 
   it('renders editable and display code editors with the expected props', () => {

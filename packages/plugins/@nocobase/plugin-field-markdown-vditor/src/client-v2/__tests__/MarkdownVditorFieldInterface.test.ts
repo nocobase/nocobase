@@ -8,13 +8,78 @@
  */
 
 import { describe, expect, it, vi } from 'vitest';
+import { MarkdownVditor } from '../components';
 import { defaultToolbar, MarkdownVditorFieldInterface } from '../interface';
+import PluginFieldMarkdownVditorClient from '../plugin';
 
 vi.mock('../locale', () => ({
   tExpr: (value: string) => value,
 }));
 
 describe('MarkdownVditorFieldInterface', () => {
+  it('registers markdown vditor components, field interface, context helpers and model loaders', async () => {
+    const addComponents = vi.fn();
+    const addFieldInterfaces = vi.fn();
+    const defineProperty = vi.fn();
+    const registerModelLoaders = vi.fn();
+    const requireFn = vi.fn();
+    requireFn.config = vi.fn();
+    const plugin = Object.create(PluginFieldMarkdownVditorClient.prototype) as PluginFieldMarkdownVditorClient & {
+      app: {
+        addComponents: typeof addComponents;
+        addFieldInterfaces: typeof addFieldInterfaces;
+        getPublicPath: () => string;
+        requirejs: {
+          require: typeof requireFn;
+        };
+        flowEngine: {
+          context: {
+            defineProperty: typeof defineProperty;
+          };
+          registerModelLoaders: typeof registerModelLoaders;
+        };
+      };
+    };
+    plugin.dependencyLoaded = false;
+    plugin.app = {
+      addComponents,
+      addFieldInterfaces,
+      getPublicPath: () => '/v2/',
+      requirejs: {
+        require: requireFn,
+      },
+      flowEngine: {
+        context: {
+          defineProperty,
+        },
+        registerModelLoaders,
+      },
+    };
+
+    await plugin.load();
+
+    expect(addComponents).toHaveBeenCalledWith({ MarkdownVditor });
+    expect(addFieldInterfaces).toHaveBeenCalledWith([MarkdownVditorFieldInterface]);
+    expect(defineProperty).toHaveBeenCalledWith('markdownVditor', {
+      get: expect.any(Function),
+    });
+    expect(defineProperty).toHaveBeenCalledWith('markdownVditorDependencies', {
+      get: expect.any(Function),
+    });
+    expect(defineProperty.mock.calls[0][1].get()).toBe(plugin.runtime);
+    expect(defineProperty.mock.calls[1][1].get()).toEqual({
+      cdn: plugin.runtime.getCDN(),
+    });
+    expect(plugin.getCDN()).toBe(plugin.runtime.getCDN());
+    const initSpy = vi.spyOn(plugin.runtime, 'initVditorDependency').mockImplementation(() => {});
+    plugin.initVditorDependency();
+    expect(initSpy).toHaveBeenCalled();
+
+    const loaders = registerModelLoaders.mock.calls[0][0];
+    await expect(loaders.VditorFieldModel.loader()).resolves.toHaveProperty('VditorFieldModel');
+    await expect(loaders.DisplayVditorFieldModel.loader()).resolves.toHaveProperty('DisplayVditorFieldModel');
+  });
+
   it('defines the markdown vditor field schema and configuration', () => {
     const fieldInterface = new MarkdownVditorFieldInterface();
 

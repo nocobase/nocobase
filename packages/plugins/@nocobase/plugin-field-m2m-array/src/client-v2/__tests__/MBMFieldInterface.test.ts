@@ -7,11 +7,27 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { ForeignKeyConfigureField } from '../components/ForeignKeyConfigureField';
-import { MBMFieldInterface } from '../interface';
+import { MBMFieldInterface, PluginM2MArrayClient } from '../index';
 
 describe('MBMFieldInterface', () => {
+  it('registers the many-to-many array field interface', async () => {
+    const addFieldInterfaces = vi.fn();
+    const plugin = Object.create(PluginM2MArrayClient.prototype) as PluginM2MArrayClient & {
+      app: {
+        addFieldInterfaces: typeof addFieldInterfaces;
+      };
+    };
+    plugin.app = {
+      addFieldInterfaces,
+    };
+
+    await plugin.load();
+
+    expect(addFieldInterfaces).toHaveBeenCalledWith([MBMFieldInterface]);
+  });
+
   it('defines the many-to-many array field schema and configuration', () => {
     const fieldInterface = new MBMFieldInterface();
 

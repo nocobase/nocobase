@@ -10,6 +10,7 @@
 import { FlowEngine } from '@nocobase/flow-engine';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { DuplicateActionModel } from '../DuplicateActionModel';
+import { PluginActionDuplicateClient } from '../index';
 
 describe('DuplicateActionModel', () => {
   let engine: FlowEngine;
@@ -32,6 +33,37 @@ describe('DuplicateActionModel', () => {
       use: 'DuplicateActionModel',
       props,
     });
+
+  it('registers the duplicate action model loader', async () => {
+    const registerModelLoaders = vi.fn();
+    const plugin = Object.create(PluginActionDuplicateClient.prototype) as PluginActionDuplicateClient & {
+      app: {
+        flowEngine: {
+          registerModelLoaders: typeof registerModelLoaders;
+        };
+      };
+    };
+    plugin.app = {
+      flowEngine: {
+        registerModelLoaders,
+      },
+    };
+
+    await plugin.load();
+
+    expect(registerModelLoaders).toHaveBeenCalledWith({
+      DuplicateActionModel: {
+        extends: 'ActionModel',
+        loader: expect.any(Function),
+      },
+    });
+
+    const loaders = registerModelLoaders.mock.calls[0][0];
+    await expect(loaders.DuplicateActionModel.loader()).resolves.toHaveProperty(
+      'DuplicateActionModel',
+      DuplicateActionModel,
+    );
+  });
 
   it('dispatches quickCreateClick or openDuplicatePopup on click', () => {
     const model = createModel({ duplicateMode: 'quickDulicate' });

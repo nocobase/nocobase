@@ -12,6 +12,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ImportActionModel } from '../ImportActionModel';
+import { PluginActionImportClient } from '../index';
 
 const fileSaverMocks = vi.hoisted(() => ({
   saveAs: vi.fn(),
@@ -226,6 +227,34 @@ describe('ImportActionModel', () => {
     vi.clearAllMocks();
     antdMocks.uploadFileList = [];
     antdMocks.draggerProps = [];
+  });
+
+  it('registers the import action model loader', async () => {
+    const registerModelLoaders = vi.fn();
+    const plugin = Object.create(PluginActionImportClient.prototype) as PluginActionImportClient & {
+      app: {
+        flowEngine: {
+          registerModelLoaders: typeof registerModelLoaders;
+        };
+      };
+    };
+    plugin.app = {
+      flowEngine: {
+        registerModelLoaders,
+      },
+    };
+
+    await plugin.load();
+
+    expect(registerModelLoaders).toHaveBeenCalledWith({
+      ImportActionModel: {
+        extends: 'ActionModel',
+        loader: expect.any(Function),
+      },
+    });
+
+    const loaders = registerModelLoaders.mock.calls[0][0];
+    await expect(loaders.ImportActionModel.loader()).resolves.toHaveProperty('ImportActionModel', ImportActionModel);
   });
 
   it('builds import setting schema, defaults, and stored columns', () => {

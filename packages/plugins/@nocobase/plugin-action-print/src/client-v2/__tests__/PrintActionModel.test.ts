@@ -10,6 +10,7 @@
 import { FlowEngine } from '@nocobase/flow-engine';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { PrintActionModel, renderPrintableDom } from '../PrintActionModel';
+import { PluginActionPrintClient } from '../index';
 
 function createModel(uid = 'print-action') {
   const engine = new FlowEngine();
@@ -39,6 +40,34 @@ describe('PrintActionModel', () => {
     vi.useRealTimers();
     document.body.innerHTML = '';
     document.head.innerHTML = '';
+  });
+
+  it('registers the print action model loader', async () => {
+    const registerModelLoaders = vi.fn();
+    const plugin = Object.create(PluginActionPrintClient.prototype) as PluginActionPrintClient & {
+      app: {
+        flowEngine: {
+          registerModelLoaders: typeof registerModelLoaders;
+        };
+      };
+    };
+    plugin.app = {
+      flowEngine: {
+        registerModelLoaders,
+      },
+    };
+
+    await plugin.load();
+
+    expect(registerModelLoaders).toHaveBeenCalledWith({
+      PrintActionModel: {
+        extends: 'ActionModel',
+        loader: expect.any(Function),
+      },
+    });
+
+    const loaders = registerModelLoaders.mock.calls[0][0];
+    await expect(loaders.PrintActionModel.loader()).resolves.toHaveProperty('PrintActionModel', PrintActionModel);
   });
 
   it('exposes record action metadata and details block visibility', () => {

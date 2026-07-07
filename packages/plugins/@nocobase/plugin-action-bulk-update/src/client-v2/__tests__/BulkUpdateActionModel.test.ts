@@ -10,6 +10,7 @@
 import { FlowEngine, FlowModel } from '@nocobase/flow-engine';
 import { describe, expect, it, vi } from 'vitest';
 import { BulkUpdateActionModel } from '../BulkUpdateActionModel';
+import { PluginActionBulkUpdateClient } from '../index';
 
 class TestAssignFormModel extends FlowModel {
   private values: Record<string, unknown> = {};
@@ -38,6 +39,34 @@ function getAssignFieldValuesBeforeParamsSave(action: BulkUpdateActionModel): As
 }
 
 describe('BulkUpdateActionModel apply action', () => {
+  it('registers the bulk update action model loader', async () => {
+    const registerModelLoaders = vi.fn();
+    const plugin = Object.create(PluginActionBulkUpdateClient.prototype) as PluginActionBulkUpdateClient & {
+      app: {
+        flowEngine: {
+          registerModelLoaders: typeof registerModelLoaders;
+        };
+      };
+    };
+    plugin.app = {
+      flowEngine: {
+        registerModelLoaders,
+      },
+    };
+
+    await plugin.load();
+
+    expect(registerModelLoaders).toHaveBeenCalledWith({
+      BulkUpdateActionModel: {
+        extends: 'ActionModel',
+        loader: expect.any(Function),
+      },
+    });
+
+    const loaders = registerModelLoaders.mock.calls[0][0];
+    await expect(loaders.BulkUpdateActionModel.loader()).resolves.toHaveProperty('BulkUpdateActionModel');
+  });
+
   it('exposes collection action metadata and assign form sub model options', async () => {
     const engine = new FlowEngine();
     engine.registerModels({ BulkUpdateActionModel });

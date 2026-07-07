@@ -8,8 +8,11 @@
  */
 
 import { describe, expect, it, vi } from 'vitest';
+import { FormulaExpression } from '../components';
 import { FormulaExpressionConfigureField } from '../components/FormulaExpressionConfigureField';
 import { FormulaFieldInterface, formulaDateOperators } from '../interfaces/formula';
+import { FormulaFieldModel } from '../models/FormulaFieldModel';
+import PluginFieldFormulaClient from '../plugin';
 
 vi.mock('@nocobase/evaluators/client', () => ({
   evaluators: {
@@ -25,6 +28,65 @@ vi.mock('../locale', () => ({
 }));
 
 describe('FormulaFieldInterface', () => {
+  it('registers formula components, interfaces, context helpers and model loader', async () => {
+    const addComponents = vi.fn();
+    const registerFieldFilterOperatorGroup = vi.fn();
+    const addFieldInterfaces = vi.fn();
+    const defineProperty = vi.fn();
+    const registerModelLoaders = vi.fn();
+    const plugin = Object.create(PluginFieldFormulaClient.prototype) as PluginFieldFormulaClient & {
+      app: {
+        addComponents: typeof addComponents;
+        addFieldInterfaces: typeof addFieldInterfaces;
+        registerFieldFilterOperatorGroup: typeof registerFieldFilterOperatorGroup;
+        flowEngine: {
+          context: {
+            defineProperty: typeof defineProperty;
+          };
+          registerModelLoaders: typeof registerModelLoaders;
+        };
+      };
+    };
+    plugin.app = {
+      addComponents,
+      addFieldInterfaces,
+      registerFieldFilterOperatorGroup,
+      flowEngine: {
+        context: {
+          defineProperty,
+        },
+        registerModelLoaders,
+      },
+    };
+    plugin.expressionFields = ['input'];
+
+    plugin.registerExpressionFieldInterface(['customA', 'customB']);
+    plugin.registerExpressionFieldInterface('customC');
+    await plugin.load();
+
+    expect(addComponents).toHaveBeenCalledWith({
+      FormulaExpression,
+    });
+    expect(registerFieldFilterOperatorGroup).toHaveBeenCalledWith('formulaDate', formulaDateOperators);
+    expect(addFieldInterfaces).toHaveBeenCalledWith([FormulaFieldInterface]);
+    expect(defineProperty).toHaveBeenCalledWith('fieldFormula', {
+      get: expect.any(Function),
+    });
+
+    const contextValue = defineProperty.mock.calls[0][1].get();
+    expect(contextValue.expressionFields).toEqual(expect.arrayContaining(['customA', 'customB', 'customC']));
+    contextValue.registerExpressionFieldInterface('customD');
+    expect(plugin.expressionFields).toContain('customD');
+
+    expect(registerModelLoaders).toHaveBeenCalledWith({
+      FormulaFieldModel: {
+        loader: expect.any(Function),
+      },
+    });
+    const loaders = registerModelLoaders.mock.calls[0][0];
+    await expect(loaders.FormulaFieldModel.loader()).resolves.toHaveProperty('FormulaFieldModel', FormulaFieldModel);
+  });
+
   it('defines formula field schema and configuration', () => {
     const fieldInterface = new FormulaFieldInterface();
 

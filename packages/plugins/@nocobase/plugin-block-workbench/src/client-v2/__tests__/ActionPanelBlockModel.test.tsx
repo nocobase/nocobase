@@ -15,6 +15,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ActionPanelBlockModel, WorkbenchItemLayout, WorkbenchLayout } from '../models/ActionPanelBlockModel';
 import { ActionPanelGroupActionModel } from '../models/actions/ActionPanelGroupAction';
 import { ActionPanelScanActionModel } from '../models/actions/ActionPanelScanActionModel';
+import PluginBlockWorkbenchClient from '../plugin';
 
 type ActionPanelFlow = {
   steps: Record<
@@ -168,6 +169,17 @@ describe('ActionPanelBlockModel', () => {
   afterEach(() => {
     cleanup();
     vi.clearAllMocks();
+  });
+
+  it('registers action panel model loaders', async () => {
+    const flowEngine = new FlowEngine();
+
+    await PluginBlockWorkbenchClient.prototype.load.call({ flowEngine });
+    await flowEngine.preloadModelLoaders();
+
+    expect(flowEngine.getModelClass('ActionPanelBlockModel')).toBe(ActionPanelBlockModel);
+    expect(flowEngine.getModelClass('ActionPanelGroupActionModel')).toBe(ActionPanelGroupActionModel);
+    expect(flowEngine.getModelClass('ActionPanelScanActionModel')).toBe(ActionPanelScanActionModel);
   });
 
   it('inserts entry actions before the JavaScript action in configure items', async () => {

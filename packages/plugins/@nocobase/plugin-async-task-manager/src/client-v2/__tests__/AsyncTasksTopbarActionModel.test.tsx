@@ -12,8 +12,8 @@ import { Modal } from 'antd';
 import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { TASK_STATUS } from '../../common/constants';
-import type { AsyncTaskRecord, PluginAsyncTaskManagerClientV2 } from '../plugin';
 import { AsyncTasksTopbarActionModel } from '../models/AsyncTasksTopbarActionModel';
+import { PluginAsyncTaskManagerClientV2, type AsyncTaskRecord } from '../plugin';
 
 const mocks = vi.hoisted(() => ({
   app: undefined as unknown,
@@ -28,6 +28,7 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock('@nocobase/client-v2', () => ({
   Icon: ({ type }: { type: string }) => <span data-testid={`icon-${type}`} />,
+  Plugin: class Plugin {},
   TopbarActionModel: class TopbarActionModel {},
   useApp: () => mocks.app,
   useMobileLayout: () => ({ isMobileLayout: mocks.isMobileLayout }),
@@ -121,6 +122,49 @@ describe('AsyncTasksTopbarActionModel', () => {
 
   afterEach(() => {
     vi.restoreAllMocks();
+  });
+
+  it('registers the async task topbar model loader and emits the loaded event', async () => {
+    const registerModelLoaders = vi.fn();
+    const dispatchEvent = vi.fn();
+    const plugin = new PluginAsyncTaskManagerClientV2() as PluginAsyncTaskManagerClientV2 & {
+      app: {
+        eventBus: {
+          dispatchEvent: typeof dispatchEvent;
+        };
+      };
+      flowEngine: {
+        registerModelLoaders: typeof registerModelLoaders;
+      };
+    };
+    plugin.app = {
+      eventBus: {
+        dispatchEvent,
+      },
+    };
+    Object.defineProperty(plugin, 'flowEngine', {
+      value: {
+        registerModelLoaders,
+      },
+    });
+
+    await plugin.load();
+
+    expect(registerModelLoaders).toHaveBeenCalledWith({
+      AsyncTasksTopbarActionModel: {
+        extends: 'TopbarActionModel',
+        loader: expect.any(Function),
+      },
+    });
+    expect(dispatchEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'plugin:async-task-manager:loaded',
+        detail: plugin,
+      }),
+    );
+
+    const loaders = registerModelLoaders.mock.calls[0][0];
+    await expect(loaders.AsyncTasksTopbarActionModel.loader()).resolves.toHaveProperty('AsyncTasksTopbarActionModel');
   });
 
   it('exposes topbar action metadata', () => {
