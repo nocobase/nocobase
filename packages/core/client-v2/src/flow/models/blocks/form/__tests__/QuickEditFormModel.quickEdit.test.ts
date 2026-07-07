@@ -8,7 +8,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { FlowEngine, SingleRecordResource } from '@nocobase/flow-engine';
+import { FlowEngine, FlowModel, SingleRecordResource } from '@nocobase/flow-engine';
 import { QuickEditFormModel } from '../QuickEditFormModel';
 
 describe('QuickEditFormModel - quick edit save triggers API (regression)', () => {
@@ -16,6 +16,35 @@ describe('QuickEditFormModel - quick edit save triggers API (regression)', () =>
 
   beforeEach(() => {
     engine = new FlowEngine();
+  });
+
+  it('uses source field context when opening quick edit', async () => {
+    engine.registerModels({ QuickEditFormModel });
+    engine.context.defineProperty('pageActive', { value: { value: false } });
+    engine.context.defineProperty('viewer', { value: { open: vi.fn(async () => undefined) } });
+
+    const page = engine.createModel<FlowModel>({ use: 'FlowModel', uid: 'page' });
+    page.context.defineProperty('pageActive', { value: { value: true } });
+    const source = engine.createModel<FlowModel>({ use: 'FlowModel', uid: 'source-field', parentId: page.uid });
+
+    await QuickEditFormModel.open({
+      flowEngine: engine,
+      target: document.createElement('div'),
+      dataSourceKey: 'main',
+      collectionName: 'users',
+      fieldPath: 'name',
+      record: {},
+      sourceFieldModelUid: source.uid,
+    });
+
+    let quickEditModel: QuickEditFormModel | undefined;
+    engine.forEachModel((model) => {
+      if (model instanceof QuickEditFormModel) {
+        quickEditModel = model;
+      }
+    });
+
+    expect(quickEditModel?.context.pageActive.value).toBe(true);
   });
 
   it('calls update with filterByTk and merges primary key from ctx.collection/record', async () => {
