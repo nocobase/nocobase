@@ -14,41 +14,12 @@ import type { TaskTypeOptions, WorkflowTaskRegistry } from '../../taskCenter';
 
 const holder = vi.hoisted(() => ({
   navigate: vi.fn(),
-  reload: vi.fn(),
   isMobileLayout: false,
   taskTypes: {
     getKeys: () => [],
     get: (_key: string) => undefined,
   } as WorkflowTaskRegistry,
 }));
-
-vi.mock('@ant-design/icons', async () => {
-  const React = await import('react');
-  return {
-    CheckCircleOutlined: () => React.createElement('span', { 'data-testid': 'workflow-tasks-icon' }),
-  };
-});
-
-vi.mock('ahooks', () => ({
-  useMemoizedFn: (fn: unknown) => fn,
-}));
-
-vi.mock('antd', async () => {
-  const React = await import('react');
-  return {
-    Badge: ({ children }: { children?: React.ReactNode }) => React.createElement(React.Fragment, null, children),
-    Button: ({
-      children,
-      onClick,
-      'data-testid': testId,
-    }: {
-      children?: React.ReactNode;
-      onClick?: () => void;
-      'data-testid'?: string;
-    }) => React.createElement('button', { 'data-testid': testId, onClick, type: 'button' }, children),
-    Tooltip: ({ children }: { children?: React.ReactNode }) => React.createElement(React.Fragment, null, children),
-  };
-});
 
 vi.mock('@nocobase/client-v2', () => ({
   TopbarActionModel: class {
@@ -90,33 +61,11 @@ vi.mock('@nocobase/flow-engine', () => ({
   }),
 }));
 
-vi.mock('../../locale', () => ({
-  tExpr: (key: string) => key,
-}));
-
-vi.mock('../../taskCenter', () => ({
-  getAvailableWorkflowTaskTypeKeys: (taskTypes: WorkflowTaskRegistry | undefined, counts: Record<string, any>) =>
-    taskTypes
-      ? Array.from(taskTypes.getKeys()).filter((key) => {
-          const type = taskTypes.get(key);
-          return Boolean(type?.alwaysShow || counts[key]?.all);
-        })
-      : [],
-  getWorkflowTaskRegistry: (ctx: any) => ctx?.app?.pm?.get('workflow')?.taskTypes,
-  useWorkflowTaskCounts: () => ({
-    counts: {},
-    total: 0,
-    reload: holder.reload,
-  }),
-}));
-
 import { WorkflowTasksTopbarActionModel } from '../WorkflowTasksTopbarActionModel';
 
 describe('WorkflowTasksTopbarActionModel', () => {
   beforeEach(() => {
     holder.navigate.mockClear();
-    holder.reload.mockReset();
-    holder.reload.mockResolvedValue(undefined);
     holder.isMobileLayout = false;
     holder.taskTypes = {
       getKeys: () => [],
