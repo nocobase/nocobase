@@ -15,6 +15,7 @@ import {
   useFlowContext,
 } from '@nocobase/flow-engine';
 import React, { createRef } from 'react';
+import type { EChartsType } from 'echarts';
 import _ from 'lodash';
 import { Button, Space } from 'antd';
 import dayjs from 'dayjs';
@@ -91,8 +92,23 @@ export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
 
   // 统一管理 refresh 监听引用，便于 off 解绑
   private __onResourceRefresh = () => this.renderChart();
+  private __eventsBoundChart?: EChartsType;
+  private __eventsBoundRaw?: string;
   private lastRefreshSnapshot: ChartDirtyRefreshSnapshot | null = null;
   private dirtyRefreshing = false;
+
+  private __onChartRefReady = (chart: EChartsType) => {
+    try {
+      this.props.chart?.onRefReady?.(chart);
+    } catch (error) {
+      console.error('Chart onRefReady error:', error);
+    }
+
+    const raw = this.getConfiguredEventsRaw();
+    if (raw) {
+      void this.applyEvents(raw, chart);
+    }
+  };
 
   private getCurrentRefreshSnapshot(): ChartDirtyRefreshSnapshot | null {
     return getChartDirtyRefreshSnapshot({
@@ -175,6 +191,26 @@ export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
     return this.getStepParams('chartSettings', 'configure');
   }
 
+  private getConfiguredEventsRaw() {
+    return this.getResourceSettingsInitParams()?.chart?.events?.raw;
+  }
+
+  private shouldSkipApplyEvents(raw: string, chart: EChartsType) {
+    return this.__eventsBoundChart === chart && this.__eventsBoundRaw === raw;
+  }
+
+  private markEventsBound(raw: string, chart: EChartsType) {
+    this.__eventsBoundChart = chart;
+    this.__eventsBoundRaw = raw;
+  }
+
+  private clearEventsBound(raw: string, chart: EChartsType) {
+    if (this.__eventsBoundChart === chart && this.__eventsBoundRaw === raw) {
+      this.__eventsBoundChart = undefined;
+      this.__eventsBoundRaw = undefined;
+    }
+  }
+
   async buildQueryRequest(query: any) {
     if (!query || query?.mode === 'sql') {
       return query;
@@ -231,13 +267,13 @@ export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
   }
 
   renderComponent() {
-    // TODO onRefReady 的逻辑理清，内部的 onRefReady props是否已经没必要？
     return (
       <Chart
         {...this.props.chart}
         dataSource={this.resource.getData()}
         loading={this.resource.loading}
         heightMode={this.decoratorProps?.heightMode}
+        onRefReady={this.__onChartRefReady}
         ref={this.context.chartRef}
       />
     );
@@ -474,18 +510,46 @@ export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
   }
 
   // 应用事件配置（仅设置，不负责渲染）
-  async applyEvents(raw?: string) {
+  async applyEvents(raw?: string, chartInstance?: EChartsType) {
     if (!raw) return;
 
+    if (chartInstance) {
+      await this.runChartEvents(raw, chartInstance);
+      return;
+    }
+
+    const chart = (this.context.chartRef as any).current as EChartsType | null;
+    if (chart) {
+      await this.runChartEvents(raw, chart);
+      return;
+    }
+
     this.context.onRefReady(this.context.chartRef, async () => {
-      const { success, value, error, timeout } = await this.context.runjs(raw, {
-        chart: (this.context.chartRef as any).current,
-      });
-      if (!success && error) {
-        console.error('applyEvents runjs error:', error);
-        return;
+      const currentChart = (this.context.chartRef as any).current as EChartsType | null;
+      if (currentChart) {
+        await this.runChartEvents(raw, currentChart);
       }
     });
+  }
+
+  private async runChartEvents(raw: string, chart: EChartsType) {
+    if (this.shouldSkipApplyEvents(raw, chart)) {
+      return;
+    }
+
+    this.markEventsBound(raw, chart);
+
+    const { success, error, timeout } = await this.context.runjs(raw, {
+      chart,
+    });
+    if (success) {
+      return;
+    }
+
+    this.clearEventsBound(raw, chart);
+    if (error || timeout) {
+      console.error('applyEvents runjs error:', error || 'timeout');
+    }
   }
 
   // 显式渲染（必要时可直接调用）
