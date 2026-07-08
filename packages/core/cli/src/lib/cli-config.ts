@@ -296,7 +296,9 @@ export function getEffectiveCliConfigValue(config: AuthConfig, key: SupportedCli
     case 'docker.container-prefix':
       return trimValue(config.name) || DEFAULT_DOCKER_CONTAINER_PREFIX;
     case 'nb-image-registry':
-      return explicit ?? DEFAULT_NB_IMAGE_REGISTRY;
+      return explicit ?? (resolveCliLocale(undefined, { configuredLocale: trimValue(config.settings?.locale) }) === 'zh-CN'
+        ? 'aliyun'
+        : DEFAULT_NB_IMAGE_REGISTRY);
     case 'nb-image-variant':
       return explicit ?? DEFAULT_NB_IMAGE_VARIANT;
     case 'bin.docker':
