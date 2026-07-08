@@ -334,32 +334,34 @@ describe('ChartBlockModel chart events binding', () => {
     expect(runjs).toHaveBeenCalledWith('second', expect.objectContaining({ chart }));
   });
 
-  it('cleans returned handlers from stale asynchronous chart event runs', async () => {
+  it('does not run stale chart events after asynchronous cleanup finishes', async () => {
     const { model } = setupModel({
       mode: 'builder',
       collectionPath: ['main', 'orders'],
     });
-    const staleCleanup = vi.fn();
-    const activeCleanup = vi.fn();
     const chart = {} as any;
-    let resolveFirst: ((value: any) => void) | undefined;
-    const firstResult = new Promise<any>((resolve) => {
-      resolveFirst = resolve;
-    });
+    let resolveCleanup: (() => void) | undefined;
+    const cleanup = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          resolveCleanup = resolve;
+        }),
+    );
+    const runjs = vi
+      .spyOn(model.context, 'runjs')
+      .mockResolvedValueOnce({ success: true, value: cleanup })
+      .mockResolvedValueOnce({ success: true, value: undefined });
 
-    vi.spyOn(model.context, 'runjs')
-      .mockReturnValueOnce(firstResult as any)
-      .mockResolvedValueOnce({ success: true, value: activeCleanup });
+    await model.applyEvents('active', chart);
+    const staleApply = model.applyEvents('stale', chart);
+    await Promise.resolve();
+    expect(cleanup).toHaveBeenCalledTimes(1);
+    const clearApply = model.applyEvents(undefined, chart);
+    resolveCleanup?.();
+    await Promise.all([staleApply, clearApply]);
 
-    const firstApply = model.applyEvents('first', chart);
-    await model.applyEvents('second', chart);
-    resolveFirst?.({ success: true, value: staleCleanup });
-    await firstApply;
-
-    await model.applyEvents(undefined, chart);
-
-    expect(staleCleanup).toHaveBeenCalledTimes(1);
-    expect(activeCleanup).toHaveBeenCalledTimes(1);
+    expect(runjs).toHaveBeenCalledTimes(1);
+    expect(runjs).toHaveBeenCalledWith('active', expect.objectContaining({ chart }));
   });
 
   it('clears the bound marker when chart events throw so the same chart can retry', async () => {

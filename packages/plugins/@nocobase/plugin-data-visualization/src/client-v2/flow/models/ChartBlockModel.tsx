@@ -578,6 +578,10 @@ export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
     }
 
     await this.cleanupChartEvents();
+    if (applyToken !== this.__eventsApplyToken) {
+      return;
+    }
+
     this.markEventsBound(raw, chart);
     const cleanups: ChartEventCleanup[] = [];
 
