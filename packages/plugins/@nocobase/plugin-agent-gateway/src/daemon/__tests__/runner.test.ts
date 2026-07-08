@@ -335,12 +335,20 @@ describe('agent gateway daemon runner', () => {
     await fs.mkdir(runDir, { recursive: true });
     const oldReportPath = path.join(oldRunDir, 'report.html');
     const oldReportJsonPath = path.join(oldRunDir, 'report.json');
+    const oldRunJsonPath = path.join(oldRunDir, 'run.json');
+    const oldTasksExpandedPath = path.join(oldRunDir, 'tasks.expanded.yaml');
     await fs.writeFile(oldReportPath, '<html><body>old batch report</body></html>');
     await fs.writeFile(oldReportJsonPath, '{"durationMs":1}');
+    await fs.writeFile(oldRunJsonPath, '{"run_id":"old-run"}');
+    await fs.writeFile(oldTasksExpandedPath, 'id: old-run\n');
     const oldReportDate = new Date('2020-01-01T00:00:00.000Z');
     await fs.utimes(oldReportPath, oldReportDate, oldReportDate);
     await fs.utimes(oldReportJsonPath, oldReportDate, oldReportDate);
+    await fs.utimes(oldRunJsonPath, oldReportDate, oldReportDate);
+    await fs.utimes(oldTasksExpandedPath, oldReportDate, oldReportDate);
     await fs.mkdir(path.join(runDir, 'browser-screenshots'), { recursive: true });
+    await fs.writeFile(path.join(runDir, 'run.json'), '{"run_id":"run-1","status":"passed"}');
+    await fs.writeFile(path.join(runDir, 'tasks.expanded.yaml'), 'id: run-1\ntasks:\n  - id: ai-product-intel-light\n');
     await fs.writeFile(path.join(runDir, 'report.html'), '<html><body>batch report</body></html>');
     await fs.writeFile(path.join(runDir, 'report.json'), '{"durationMs":1234,"totalTokens":5678}');
     await fs.writeFile(
@@ -378,11 +386,14 @@ describe('agent gateway daemon runner', () => {
             commandKey: 'codex',
             prompt: 'Run the local batch harness',
             cwd: '.',
-            artifactGlobs: [
-              'runs/nb-opencode-ui-batch/*/report.html',
-              'runs/nb-opencode-ui-batch/*/report.json',
-              'runs/nb-opencode-ui-batch/*/browser-verification.json',
-              'runs/nb-opencode-ui-batch/*/browser-screenshots/**/*',
+            artifactRoot: tempDir,
+            artifacts: [
+              { glob: 'runs/nb-opencode-ui-batch/*/run.json', groupLabel: 'Run metadata' },
+              { glob: 'runs/nb-opencode-ui-batch/*/tasks.expanded.yaml', groupLabel: 'Run metadata' },
+              { glob: 'runs/nb-opencode-ui-batch/*/report.html', groupLabel: 'Reports' },
+              { glob: 'runs/nb-opencode-ui-batch/*/report.json', groupLabel: 'Reports' },
+              { glob: 'runs/nb-opencode-ui-batch/*/browser-verification.json', groupLabel: 'Verification' },
+              { glob: 'runs/nb-opencode-ui-batch/*/browser-screenshots/**/*', groupLabel: 'Screenshots' },
             ],
             skillVersions: [
               {
@@ -456,9 +467,11 @@ describe('agent gateway daemon runner', () => {
     expect(result.status).toBe('succeeded');
     expect(executedArgs[0].join('\n')).toContain(path.join(installedSkillPath, 'SKILL.md'));
     const artifactCalls = requester.calls.filter((call) => call.path.endsWith('/artifacts:register'));
-    expect(artifactCalls).toHaveLength(6);
+    expect(artifactCalls).toHaveLength(8);
     expect(artifactCalls.map((call) => call.body?.artifactKey)).not.toEqual(
       expect.arrayContaining([
+        'declared:runs/nb-opencode-ui-batch/old-run/run.json',
+        'declared:runs/nb-opencode-ui-batch/old-run/tasks.expanded.yaml',
         'declared:runs/nb-opencode-ui-batch/old-run/report.html',
         'declared:runs/nb-opencode-ui-batch/old-run/report.json',
       ]),
@@ -481,10 +494,25 @@ describe('agent gateway daemon runner', () => {
           mimeType: 'application/json',
         }),
         expect.objectContaining({
+          artifactKey: 'declared:runs/nb-opencode-ui-batch/run-1/run.json',
+          artifactType: 'json-report',
+          mimeType: 'application/json',
+          contentText: '{"run_id":"run-1","status":"passed"}',
+        }),
+        expect.objectContaining({
+          artifactKey: 'declared:runs/nb-opencode-ui-batch/run-1/tasks.expanded.yaml',
+          artifactType: 'file',
+          mimeType: 'text/plain',
+          contentText: expect.stringContaining('ai-product-intel-light'),
+        }),
+        expect.objectContaining({
           artifactKey: 'declared:runs/nb-opencode-ui-batch/run-1/report.html',
           artifactType: 'html-report',
           mimeType: 'text/html',
           contentText: expect.stringContaining('batch report'),
+          metadata: expect.objectContaining({
+            artifactGroupLabel: 'Reports',
+          }),
         }),
         expect.objectContaining({
           artifactKey: 'declared:runs/nb-opencode-ui-batch/run-1/report.json',
@@ -536,13 +564,13 @@ describe('agent gateway daemon runner', () => {
     expect(completeCall?.body).toMatchObject({
       resultSummary: {
         declaredArtifacts: {
-          declaredArtifactCount: 5,
+          declaredArtifactCount: 7,
         },
       },
     });
   });
 
-  it('collects OpenCode UI batch artifacts from the cwd skill home run directory', async () => {
+  it('collects declared artifacts from an explicit relative artifact root', async () => {
     const workspace = path.join(tempDir, 'workspace');
     const localSkillPath = path.join(workspace, 'myskills', 'skills', 'nb-opencode-ui-batch');
     const runDir = path.join(workspace, 'myskills', 'runs', 'nb-opencode-ui-batch', 'run-2');
@@ -566,6 +594,7 @@ describe('agent gateway daemon runner', () => {
             commandKey: 'codex',
             prompt: 'Run the local batch harness from cwd',
             cwd: 'myskills/skills/nb-opencode-ui-batch',
+            artifactRoot: '../..',
             artifactGlobs: ['runs/nb-opencode-ui-batch/*/report.html', 'runs/nb-opencode-ui-batch/*/report.json'],
           },
         },
@@ -646,6 +675,118 @@ describe('agent gateway daemon runner', () => {
     });
   });
 
+  it('collects declared artifacts from absolute paths and globs and preserves artifact groups', async () => {
+    const workspace = path.join(tempDir, 'workspace');
+    const runDir = path.join(tempDir, 'external-runs', 'run-absolute');
+    const reportPath = path.join(runDir, 'report.html');
+    const reportJsonPath = path.join(runDir, 'report.json');
+    await fs.mkdir(workspace, { recursive: true });
+    await fs.mkdir(runDir, { recursive: true });
+    await fs.writeFile(reportPath, '<html><body>absolute path report</body></html>');
+    await fs.writeFile(reportJsonPath, '{"absolute":true}');
+
+    const requester = new RunnerRequester({
+      claimPayload: {
+        claimed: true,
+        runId: 'run-absolute',
+        claimToken: 'ag_claim_CLAIM_TOKEN_SECRET',
+        claimAttempt: 1,
+        leaseVersion: 1,
+        run: {
+          id: 'run-absolute',
+          requestedAt: new Date(Date.now() - 1000).toISOString(),
+          executionPayloadJson: {
+            commandKey: 'codex',
+            prompt: 'Run a task and collect an absolute report',
+            cwd: '.',
+            artifacts: [
+              {
+                path: reportPath,
+                groupLabel: 'Reports',
+              },
+              {
+                glob: path.join(runDir, '*.json'),
+                groupLabel: 'JSON',
+              },
+            ],
+          },
+        },
+      },
+    });
+    const gateway = new AgentGatewayDaemonNodeClient(requester, {
+      serverUrl: 'https://nocobase.example.test',
+      nodeId: 'node-1',
+      nodeKey: 'node-1',
+      nodeToken: 'ag_node_NODE_TOKEN_SECRET',
+      savedAt: new Date().toISOString(),
+    });
+
+    const result = await runDaemonOnce({
+      gateway,
+      allowlist: {
+        codex: {
+          commandKey: 'codex',
+          executable: process.execPath,
+          defaultTimeoutMs: 5000,
+        },
+      },
+      workspaceRoot: workspace,
+      skillsRoot: path.join(tempDir, 'skills'),
+      artifactDir: path.join(tempDir, 'artifacts'),
+      runHeartbeatIntervalMs: 60_000,
+      executeCommand: async () => ({
+        status: 'succeeded',
+        exitCode: 0,
+        signal: null,
+        stdout: {
+          text: '{"type":"turn.completed"}',
+          sizeBytes: 25,
+        },
+        stderr: {
+          text: null,
+          sizeBytes: 0,
+        },
+      }),
+      detectOptions: {
+        probeCommand: async (candidates) => ({
+          available: candidates.includes('codex'),
+          command: candidates[0],
+          version: 'codex 1.0.0',
+        }),
+      },
+    });
+
+    expect(result.status).toBe('succeeded');
+    const artifactCalls = requester.calls.filter((call) => call.path.endsWith('/artifacts:register'));
+    expect(artifactCalls.map((call) => call.body)).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          artifactType: 'html-report',
+          contentText: expect.stringContaining('absolute path report'),
+          metadata: expect.objectContaining({
+            artifactGroupLabel: 'Reports',
+          }),
+        }),
+        expect.objectContaining({
+          artifactType: 'json-report',
+          contentText: '{"absolute":true}',
+          metadata: expect.objectContaining({
+            artifactGroupLabel: 'JSON',
+          }),
+        }),
+      ]),
+    );
+    const manifestCall = artifactCalls.find((call) => call.body?.artifactKey === 'declared:artifact-manifest.json');
+    const manifest = JSON.parse(String(manifestCall?.body?.contentText)) as JsonRecord;
+    expect(manifest).toMatchObject({
+      artifacts: expect.arrayContaining([
+        expect.objectContaining({
+          artifactGroupLabel: 'Reports',
+        }),
+      ]),
+    });
+  });
+
   it('continues declared artifact collection when one artifact upload fails', async () => {
     const workspace = path.join(tempDir, 'workspace');
     const localSkillPath = path.join(workspace, 'myskills', 'skills', 'nb-opencode-ui-batch');
@@ -672,6 +813,7 @@ describe('agent gateway daemon runner', () => {
             commandKey: 'codex',
             prompt: 'Run the local batch harness from cwd',
             cwd: 'myskills/skills/nb-opencode-ui-batch',
+            artifactRoot: '../..',
             artifactGlobs: ['runs/nb-opencode-ui-batch/*/report.html', 'runs/nb-opencode-ui-batch/*/report.json'],
           },
         },

@@ -36,6 +36,8 @@ export interface DeclaredArtifactCollectionResult {
 interface ArtifactDeclaration {
   path?: string;
   glob?: string;
+  groupKey?: string;
+  groupLabel?: string;
   artifactKey?: string;
   artifactType?: string;
   mimeType?: string;
@@ -88,6 +90,25 @@ function normalizeRelativeArtifactPath(value: string) {
     return '';
   }
   return normalized;
+}
+
+function normalizeArtifactPath(value: string) {
+  return value
+    .trim()
+    .replace(/\\/g, '/')
+    .replace(/^\.\/+/, '');
+}
+
+function normalizeNativeArtifactPath(value: string) {
+  return value.trim().replace(/\\/g, '/');
+}
+
+function normalizeAbsoluteArtifactPath(value: string) {
+  return normalizeArtifactPath(value).replace(/^([A-Za-z]:)?\/+/, '$1');
+}
+
+function isAbsoluteArtifactPath(value: string) {
+  return path.isAbsolute(value) || /^[A-Za-z]:[\\/]/.test(value);
 }
 
 function getFileExtension(filePath: string) {
@@ -231,6 +252,8 @@ function getArtifactDeclaration(value: unknown): ArtifactDeclaration | null {
   return {
     ...(artifactPath ? { path: artifactPath } : {}),
     ...(glob ? { glob } : {}),
+    groupKey: getString(record.groupKey) || undefined,
+    groupLabel: getString(record.groupLabel || record.group) || undefined,
     artifactKey: getString(record.artifactKey || record.key) || undefined,
     artifactType: getString(record.artifactType || record.type) || undefined,
     mimeType: getString(record.mimeType) || undefined,
@@ -289,10 +312,8 @@ async function findDeclaredArtifacts(options: {
   }
 
   const root = getArtifactRoot(options.cwd, options.payload);
-  const realWorkspaceRoot = await fs.realpath(options.workspaceRoot);
   const realRoots = await collectArtifactSearchRoots({
     root,
-    workspaceRoot: realWorkspaceRoot,
     trustedArtifactRoots: options.trustedArtifactRoots,
   });
   if (!realRoots.length) {
@@ -303,7 +324,21 @@ async function findDeclaredArtifacts(options: {
   const cachedFilesByRoot = new Map<string, string[]>();
   const maxScanEntries = getPositiveInteger(options.payload.maxArtifactScanEntries, MAX_DECLARED_ARTIFACT_SCAN_ENTRIES);
   for (const declaration of declarations) {
-    const relativePath = normalizeRelativeArtifactPath(declaration.path || '');
+    const artifactPath = getString(declaration.path);
+    if (artifactPath && isAbsoluteArtifactPath(artifactPath)) {
+      const filePath = path.resolve(artifactPath);
+      const stat = await fs.stat(filePath).catch(() => null);
+      if (stat?.isFile()) {
+        matches.push({
+          ...declaration,
+          filePath,
+          relativePath: normalizeAbsoluteArtifactPath(filePath),
+        });
+      }
+      continue;
+    }
+
+    const relativePath = normalizeRelativeArtifactPath(artifactPath);
     if (relativePath) {
       for (const realRoot of realRoots) {
         const filePath = path.resolve(realRoot, relativePath);
@@ -322,7 +357,39 @@ async function findDeclaredArtifacts(options: {
       continue;
     }
 
-    const glob = normalizeRelativeArtifactPath(declaration.glob || '');
+    const rawGlob = getString(declaration.glob);
+    if (rawGlob && isAbsoluteArtifactPath(rawGlob)) {
+      const normalizedGlob = normalizeAbsoluteArtifactPath(rawGlob);
+      const matcher = globToRegex(normalizedGlob);
+      const scanDirectory = getGlobStaticDirectory(normalizeNativeArtifactPath(rawGlob));
+      const realScanRoot = await fs.realpath(scanDirectory).catch(() => '');
+      if (!realScanRoot) {
+        continue;
+      }
+      const cacheKey = `absolute:${realScanRoot}`;
+      let cachedFiles = cachedFilesByRoot.get(cacheKey);
+      if (!cachedFiles) {
+        cachedFiles = await collectFiles(realScanRoot, { maxEntries: maxScanEntries });
+        cachedFilesByRoot.set(cacheKey, cachedFiles);
+      }
+      for (const filePath of cachedFiles) {
+        const absoluteArtifactPath = normalizeAbsoluteArtifactPath(filePath);
+        if (matcher.test(absoluteArtifactPath)) {
+          const stat = await fs.stat(filePath).catch(() => null);
+          if (options.modifiedSinceMs && (!stat?.isFile() || stat.mtimeMs + 1000 < options.modifiedSinceMs)) {
+            continue;
+          }
+          matches.push({
+            ...declaration,
+            filePath,
+            relativePath: absoluteArtifactPath,
+          });
+        }
+      }
+      continue;
+    }
+
+    const glob = normalizeRelativeArtifactPath(rawGlob);
     if (!glob) {
       continue;
     }
@@ -363,11 +430,7 @@ async function findDeclaredArtifacts(options: {
   return matches;
 }
 
-async function collectArtifactSearchRoots(options: {
-  root: string;
-  workspaceRoot: string;
-  trustedArtifactRoots?: string[];
-}) {
+async function collectArtifactSearchRoots(options: { root: string; trustedArtifactRoots?: string[] }) {
   const roots: string[] = [];
   const appendRoot = async (root: string, validate: (realRoot: string) => boolean) => {
     const realRoot = await fs.realpath(root).catch(() => '');
@@ -377,7 +440,7 @@ async function collectArtifactSearchRoots(options: {
     roots.push(realRoot);
   };
 
-  await appendRoot(options.root, (realRoot) => isWithin(options.workspaceRoot, realRoot));
+  await appendRoot(options.root, () => true);
   for (const trustedRoot of options.trustedArtifactRoots || []) {
     await appendRoot(trustedRoot, () => true);
   }
@@ -543,6 +606,8 @@ async function buildManifest(options: {
       mimeType: upload.mimeType,
       sizeBytes: upload.sizeBytes,
       relativePath: getString(upload.metadata.relativePath),
+      artifactGroupKey: getString(upload.metadata.artifactGroupKey),
+      artifactGroupLabel: getString(upload.metadata.artifactGroupLabel),
       storageMode: getString(upload.metadata.storageMode),
       sha256: getString(upload.metadata.sha256),
       truncated: upload.metadata.truncated === true,
@@ -696,6 +761,8 @@ async function buildDeclaredArtifactUpload(match: MatchedArtifactDeclaration): P
       declaredArtifact: true,
       relativePath: match.relativePath,
       fileName: path.basename(match.filePath),
+      ...(match.groupKey ? { artifactGroupKey: match.groupKey } : {}),
+      ...(match.groupLabel ? { artifactGroupLabel: match.groupLabel } : {}),
       storageMode: getStorageMode(upload.contentText, upload.metadata),
     },
   };

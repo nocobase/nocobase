@@ -8,6 +8,7 @@
  */
 
 import {
+  DeleteOutlined,
   EnterOutlined,
   EyeOutlined,
   PoweroffOutlined,
@@ -41,7 +42,7 @@ import {
   Typography,
   Upload,
 } from 'antd';
-import type { UploadProps } from 'antd';
+import type { PaginationProps, UploadProps } from 'antd';
 import type { ColumnsType, TablePaginationConfig } from 'antd/es/table';
 import type { CSSMotionProps } from 'rc-motion';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -337,7 +338,25 @@ interface BuildTaskFormValues {
   skillVersionIds?: string[];
   runner?: string;
   cwd?: string;
+  artifactRoot?: string;
+  artifactDeclarations?: BuildTaskArtifactDeclarationFormValue[];
 }
+
+interface BuildTaskArtifactDeclarationFormValue {
+  kind?: 'path' | 'glob';
+  value?: string;
+  groupLabel?: string;
+}
+
+type BuildTaskArtifactDeclarationPayload =
+  | {
+      path: string;
+      groupLabel?: string;
+    }
+  | {
+      glob: string;
+      groupLabel?: string;
+    };
 
 interface SkillUploadFormValues {
   skillKey?: string;
@@ -433,6 +452,7 @@ const DEFAULT_RUNS_PAGE_SIZE = 20;
 const DEFAULT_DETAIL_TABLE_PAGE_SIZE = 20;
 const DEFAULT_DETAIL_LIST_PAGE_SIZE = 10;
 const DETAIL_PAGE_SIZE_OPTIONS = ['10', '20', '50', '100'];
+const TASK_RUN_DRAWER_WIDTH = 1040;
 const OPENCODE_UI_BATCH_SCENARIO = 'opencode-ui-batch';
 const OPENCODE_UI_BATCH_SKILL_KEY = 'nb-opencode-ui-batch';
 const DEFAULT_SKILL_UPLOAD_FORM_VALUES: SkillUploadFormValues = {
@@ -457,6 +477,31 @@ function readFileAsBase64(file: File) {
 
 function getSkillVersionIds(value: unknown) {
   return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string' && Boolean(item)) : [];
+}
+
+function getOptionalFormString(value: unknown) {
+  return typeof value === 'string' && value.trim() ? value.trim() : undefined;
+}
+
+function getBuildTaskArtifactDeclarations(
+  values: BuildTaskArtifactDeclarationFormValue[] | undefined,
+): BuildTaskArtifactDeclarationPayload[] {
+  if (!Array.isArray(values)) {
+    return [];
+  }
+  const declarations: BuildTaskArtifactDeclarationPayload[] = [];
+  for (const value of values) {
+    const artifactPath = getOptionalFormString(value.value);
+    if (!artifactPath) {
+      continue;
+    }
+    const groupLabel = getOptionalFormString(value.groupLabel);
+    declarations.push({
+      ...(value.kind === 'path' ? { path: artifactPath } : { glob: artifactPath }),
+      ...(groupLabel ? { groupLabel } : {}),
+    });
+  }
+  return declarations;
 }
 const ARTIFACT_PREVIEW_MAX_ITEMS = 80;
 const ARTIFACT_ITEM_TEXT_MAX_CHARS = 4000;
@@ -662,6 +707,15 @@ function EmptyInline({ description }: { description: string }) {
 }
 
 function getDetailPagination(t: TFunction, pageSize = DEFAULT_DETAIL_TABLE_PAGE_SIZE): TablePaginationConfig {
+  return {
+    pageSize,
+    showSizeChanger: true,
+    pageSizeOptions: DETAIL_PAGE_SIZE_OPTIONS,
+    showTotal: (total) => `${t('Total')}: ${total}`,
+  };
+}
+
+function getDetailListPagination(t: TFunction, pageSize = DEFAULT_DETAIL_LIST_PAGE_SIZE): PaginationProps {
   return {
     pageSize,
     showSizeChanger: true,
@@ -2106,6 +2160,41 @@ function compareArtifactsForDisplay(first: RunArtifactRecord, second: RunArtifac
   return firstLabel.localeCompare(secondLabel);
 }
 
+interface ArtifactDisplayGroup {
+  key: string;
+  label: string;
+  artifacts: RunArtifactRecord[];
+}
+
+function getArtifactDisplayGroup(artifact: RunArtifactRecord, t: TFunction) {
+  const metadata = getObjectRecord(artifact.metadataJson);
+  const groupLabel = getStringValue(metadata.artifactGroupLabel) || getStringValue(metadata.groupLabel);
+  const groupKey = getStringValue(metadata.artifactGroupKey) || getStringValue(metadata.groupKey) || groupLabel;
+  return {
+    key: groupKey ? `group:${groupKey}` : 'group:default',
+    label: groupLabel || groupKey || t('Default artifacts'),
+  };
+}
+
+function groupArtifactsForDisplay(artifacts: RunArtifactRecord[], t: TFunction) {
+  const groups: ArtifactDisplayGroup[] = [];
+  const groupIndex = new Map<string, ArtifactDisplayGroup>();
+  for (const artifact of artifacts) {
+    const groupInfo = getArtifactDisplayGroup(artifact, t);
+    let group = groupIndex.get(groupInfo.key);
+    if (!group) {
+      group = {
+        ...groupInfo,
+        artifacts: [],
+      };
+      groupIndex.set(group.key, group);
+      groups.push(group);
+    }
+    group.artifacts.push(artifact);
+  }
+  return groups;
+}
+
 function getArtifactOverviewCounts(artifacts: RunArtifactRecord[]) {
   return {
     htmlReports: artifacts.filter((artifact) => getArtifactDisplayPriority(artifact) === 0).length,
@@ -2116,6 +2205,42 @@ function getArtifactOverviewCounts(artifacts: RunArtifactRecord[]) {
     ).length,
     total: artifacts.length,
   };
+}
+
+function ArtifactList({ t, artifacts, loading }: { t: TFunction; artifacts: RunArtifactRecord[]; loading?: boolean }) {
+  return (
+    <List
+      dataSource={artifacts}
+      loading={loading}
+      pagination={getDetailListPagination(t)}
+      renderItem={(artifact) => (
+        <List.Item>
+          <Space direction="vertical" size={8} style={{ width: '100%' }}>
+            <Typography.Text strong>
+              {[artifact.artifactKey, artifact.artifactType, artifact.mimeType].filter(Boolean).join(' / ') ||
+                artifact.id}
+            </Typography.Text>
+            <Space wrap size={6}>
+              {artifact.storageMode ? <Tag>{artifact.storageMode}</Tag> : null}
+              {artifact.truncated ? <Tag color="orange">{t('Truncated')}</Tag> : null}
+              {artifact.originalSizeBytes ? (
+                <Tag>
+                  {t('Original size')}: {String(artifact.originalSizeBytes)}
+                </Tag>
+              ) : null}
+              {artifact.previewBytes ? (
+                <Tag>
+                  {t('Preview size')}: {String(artifact.previewBytes)}
+                </Tag>
+              ) : null}
+            </Space>
+            <ArtifactContentPreview artifact={artifact} t={t} />
+            <JsonPreview value={redactExternalUrlPreviewJson(artifact.metadataJson)} />
+          </Space>
+        </List.Item>
+      )}
+    />
+  );
 }
 
 function isFormValidationError(value: unknown) {
@@ -2138,6 +2263,7 @@ function ArtifactsPanel({
   loading?: boolean;
 }) {
   const displayArtifacts = useMemo(() => [...artifacts].sort(compareArtifactsForDisplay), [artifacts]);
+  const artifactGroups = useMemo(() => groupArtifactsForDisplay(displayArtifacts, t), [displayArtifacts, t]);
   const overviewCounts = useMemo(() => getArtifactOverviewCounts(displayArtifacts), [displayArtifacts]);
 
   return (
@@ -2163,37 +2289,18 @@ function ArtifactsPanel({
         </Space>
       ) : null}
       {displayArtifacts.length || loading ? (
-        <List
-          dataSource={displayArtifacts}
-          loading={loading}
-          pagination={getDetailPagination(t, DEFAULT_DETAIL_LIST_PAGE_SIZE)}
-          renderItem={(artifact) => (
-            <List.Item>
-              <Space direction="vertical" size={8} style={{ width: '100%' }}>
-                <Typography.Text strong>
-                  {[artifact.artifactKey, artifact.artifactType, artifact.mimeType].filter(Boolean).join(' / ') ||
-                    artifact.id}
-                </Typography.Text>
-                <Space wrap size={6}>
-                  {artifact.storageMode ? <Tag>{artifact.storageMode}</Tag> : null}
-                  {artifact.truncated ? <Tag color="orange">{t('Truncated')}</Tag> : null}
-                  {artifact.originalSizeBytes ? (
-                    <Tag>
-                      {t('Original size')}: {String(artifact.originalSizeBytes)}
-                    </Tag>
-                  ) : null}
-                  {artifact.previewBytes ? (
-                    <Tag>
-                      {t('Preview size')}: {String(artifact.previewBytes)}
-                    </Tag>
-                  ) : null}
-                </Space>
-                <ArtifactContentPreview artifact={artifact} t={t} />
-                <JsonPreview value={redactExternalUrlPreviewJson(artifact.metadataJson)} />
-              </Space>
-            </List.Item>
-          )}
-        />
+        artifactGroups.length > 1 ? (
+          <Tabs
+            destroyInactiveTabPane
+            items={artifactGroups.map((group) => ({
+              key: group.key,
+              label: `${group.label} (${group.artifacts.length})`,
+              children: <ArtifactList t={t} artifacts={group.artifacts} loading={loading} />,
+            }))}
+          />
+        ) : (
+          <ArtifactList t={t} artifacts={displayArtifacts} loading={loading} />
+        )
       ) : (
         <EmptyInline description={t('No artifacts yet')} />
       )}
@@ -2206,7 +2313,7 @@ function ArtifactsPanel({
         <List
           dataSource={snapshots}
           loading={loading}
-          pagination={getDetailPagination(t, DEFAULT_DETAIL_LIST_PAGE_SIZE)}
+          pagination={getDetailListPagination(t)}
           renderItem={(snapshot) => (
             <List.Item>
               <Space direction="vertical" size={8} style={{ width: '100%' }}>
@@ -2346,6 +2453,8 @@ export default function AgentGatewayRunsPage() {
   const createBuildTaskRequest = useRequest(
     async (values: BuildTaskFormValues) => {
       const runner = parseBuildRunnerValue(values.runner || defaultBuildRunnerValue);
+      const artifacts = getBuildTaskArtifactDeclarations(values.artifactDeclarations);
+      const artifactRoot = getOptionalFormString(values.artifactRoot);
       const response = await ctx.api.request<CreateBuildRunResult>({
         url: 'agent-gateway/task-runs:create',
         method: 'post',
@@ -2355,6 +2464,8 @@ export default function AgentGatewayRunsPage() {
           prompt: values.prompt,
           skillVersionIds: values.skillVersionIds,
           cwd: values.cwd || defaultBuildTaskCwd || '.',
+          ...(artifactRoot ? { artifactRoot } : {}),
+          ...(artifacts.length ? { artifacts } : {}),
           nodeId: runner.nodeId,
           agentProfileId: runner.agentProfileId,
         },
@@ -2439,7 +2550,7 @@ export default function AgentGatewayRunsPage() {
   );
 
   const runDetailsRequest = useRequest(
-    async () => {
+    async (): Promise<RunDetails | null> => {
       if (!selectedRunId || !detailOpen) {
         return null;
       }
@@ -3529,7 +3640,7 @@ export default function AgentGatewayRunsPage() {
         title={selectedRun ? getRunTaskTitle(selectedRun, t) : t('Run details')}
         open={detailOpen}
         onClose={closeRunDetails}
-        width={1040}
+        width={TASK_RUN_DRAWER_WIDTH}
         extra={selectedRun && isCancelableRun(selectedRun) ? renderCancelButton(selectedRun) : null}
         destroyOnClose
       >
@@ -3662,7 +3773,7 @@ export default function AgentGatewayRunsPage() {
         title={t('New task run')}
         open={buildTaskOpen}
         onClose={closeBuildTask}
-        width={640}
+        width={TASK_RUN_DRAWER_WIDTH}
         destroyOnClose
         extra={
           <Space>
@@ -3769,9 +3880,112 @@ export default function AgentGatewayRunsPage() {
                   key: 'advanced',
                   label: t('Advanced'),
                   children: (
-                    <Form.Item label={t('Working directory')} name="cwd">
-                      <Input />
-                    </Form.Item>
+                    <Space direction="vertical" size={16} style={{ width: '100%' }}>
+                      <Form.Item label={t('Working directory')} name="cwd">
+                        <Input />
+                      </Form.Item>
+                      <Form.Item label={t('Artifact root')} name="artifactRoot">
+                        <Input placeholder={t('Defaults to working directory')} />
+                      </Form.Item>
+                      <Form.List name="artifactDeclarations">
+                        {(fields, { add, remove }) => {
+                          const artifactDeclarationColumns: ColumnsType<(typeof fields)[number]> = [
+                            {
+                              title: (
+                                <Space size={4}>
+                                  <Typography.Text type="danger">*</Typography.Text>
+                                  <span>{t('Match type')}</span>
+                                </Space>
+                              ),
+                              width: 150,
+                              onCell: () => ({ style: { verticalAlign: 'bottom' } }),
+                              render: (_, field) => (
+                                <Form.Item
+                                  name={[field.name, 'kind']}
+                                  initialValue="glob"
+                                  rules={[{ required: true, message: t('Match type is required') }]}
+                                  style={{ marginBottom: 0 }}
+                                >
+                                  <Select
+                                    aria-label={t('Match type')}
+                                    options={[
+                                      { value: 'path', label: t('Path') },
+                                      { value: 'glob', label: t('Glob') },
+                                    ]}
+                                  />
+                                </Form.Item>
+                              ),
+                            },
+                            {
+                              title: (
+                                <Space size={4}>
+                                  <Typography.Text type="danger">*</Typography.Text>
+                                  <span>{t('Artifact path or glob')}</span>
+                                </Space>
+                              ),
+                              onCell: () => ({ style: { verticalAlign: 'bottom' } }),
+                              render: (_, field) => (
+                                <Form.Item
+                                  name={[field.name, 'value']}
+                                  rules={[{ required: true, message: t('Artifact path or glob is required') }]}
+                                  style={{ marginBottom: 0 }}
+                                >
+                                  <Input aria-label={t('Artifact path or glob')} placeholder="runs/example/**/*.html" />
+                                </Form.Item>
+                              ),
+                            },
+                            {
+                              title: t('Artifact group'),
+                              width: 220,
+                              onCell: () => ({ style: { verticalAlign: 'bottom' } }),
+                              render: (_, field) => (
+                                <Form.Item name={[field.name, 'groupLabel']} style={{ marginBottom: 0 }}>
+                                  <Input aria-label={t('Artifact group')} placeholder={t('Optional group')} />
+                                </Form.Item>
+                              ),
+                            },
+                            {
+                              title: '',
+                              width: 88,
+                              align: 'left',
+                              onCell: () => ({ style: { verticalAlign: 'bottom' } }),
+                              render: (_, field) => (
+                                <Tooltip title={t('Remove artifact declaration')}>
+                                  <Button
+                                    aria-label={t('Remove artifact declaration')}
+                                    danger
+                                    icon={<DeleteOutlined />}
+                                    onClick={() => remove(field.name)}
+                                    type="text"
+                                  />
+                                </Tooltip>
+                              ),
+                            },
+                          ];
+
+                          return (
+                            <Space direction="vertical" size={12} style={{ width: '100%' }}>
+                              <Space align="center" style={{ justifyContent: 'space-between', width: '100%' }}>
+                                <Typography.Text strong>{t('Artifact collection')}</Typography.Text>
+                                <Button icon={<PlusOutlined />} onClick={() => add({ kind: 'glob' })}>
+                                  {t('Add artifact declaration')}
+                                </Button>
+                              </Space>
+                              {fields.length ? (
+                                <Table
+                                  columns={artifactDeclarationColumns}
+                                  dataSource={fields}
+                                  pagination={false}
+                                  rowKey="key"
+                                  scroll={{ x: 720 }}
+                                  size="small"
+                                />
+                              ) : null}
+                            </Space>
+                          );
+                        }}
+                      </Form.List>
+                    </Space>
                   ),
                 },
               ]}

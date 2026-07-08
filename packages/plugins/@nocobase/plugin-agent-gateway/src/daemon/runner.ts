@@ -86,8 +86,6 @@ const MAX_PROVIDER_SESSION_SCAN_BYTES = 256 * 1024;
 const PROVIDER_SESSION_UPSERT_MAX_ATTEMPTS = 3;
 const PROVIDER_SESSION_UPSERT_RETRY_DELAY_MS = 250;
 const MAX_CONVERSATION_EVENTS_PER_APPEND = 100;
-const OPENCODE_UI_BATCH_TASK_RUN_SCENARIO = 'opencode-ui-batch';
-const OPENCODE_UI_BATCH_ARTIFACT_DIR = 'nb-opencode-ui-batch';
 const LIVE_TIMELINE_SOURCE = 'terminal-live';
 const DAEMON_PROGRESS_SOURCE = 'agent-gateway-daemon';
 const HARNESS_PROGRESS_SOURCE = 'harness';
@@ -581,7 +579,6 @@ async function reportDeclaredArtifacts(options: {
     payload: options.payload,
     cwd: options.cwd,
     workspaceRoot: options.workspaceRoot,
-    trustedArtifactRoots: getDeclaredArtifactSearchRoots(options.payload, options.cwd),
     modifiedSinceMs: getDeclaredArtifactModifiedSinceMs(options.lease, options.payload),
   });
   const manifestUpload = collection.uploads.find((upload) => upload.artifactType === 'artifact-manifest');
@@ -644,59 +641,6 @@ async function reportDeclaredArtifacts(options: {
     ...(uploadFailures.length ? { declaredArtifactFailures: uploadFailures } : {}),
     artifactManifest,
   };
-}
-
-function appendUniquePath(roots: string[], root: string) {
-  if (root && !roots.includes(root)) {
-    roots.push(root);
-  }
-}
-
-function getSkillHomeFromSkillRoot(skillRoot: string) {
-  const skillsRoot = skillRoot ? path.dirname(skillRoot) : '';
-  if (path.basename(skillsRoot) !== 'skills') {
-    return '';
-  }
-  return path.dirname(skillsRoot);
-}
-
-function appendSkillArtifactRoots(roots: string[], skillRoot: string) {
-  appendUniquePath(roots, skillRoot);
-  appendUniquePath(roots, getSkillHomeFromSkillRoot(skillRoot));
-}
-
-function getBatchArtifactHomeFromPath(value: string) {
-  if (!path.isAbsolute(value)) {
-    return '';
-  }
-  const segments = path.normalize(value).split(path.sep);
-  for (let index = 0; index < segments.length - 1; index += 1) {
-    if (segments[index] === 'runs' && segments[index + 1] === OPENCODE_UI_BATCH_ARTIFACT_DIR) {
-      const homeSegments = segments.slice(0, index);
-      return homeSegments.length ? homeSegments.join(path.sep) || path.sep : path.sep;
-    }
-  }
-  return '';
-}
-
-function getDeclaredArtifactSearchRoots(payload: JsonRecord, cwd: string) {
-  if (getString(payload.scenario) !== OPENCODE_UI_BATCH_TASK_RUN_SCENARIO) {
-    return [];
-  }
-  const installedSkills = Array.isArray(payload.installedSkills) ? payload.installedSkills : [];
-  const roots: string[] = [];
-  appendSkillArtifactRoots(roots, cwd);
-  for (const skill of installedSkills) {
-    const installPath = isRecord(skill) ? getString(skill.installPath) : '';
-    appendSkillArtifactRoots(roots, installPath);
-  }
-  const artifactRoot = getStringMap(payload.env).NB_UI_BATCH_ARTIFACT_ROOT;
-  if (artifactRoot) {
-    const resolvedArtifactRoot = path.isAbsolute(artifactRoot) ? artifactRoot : path.resolve(cwd, artifactRoot);
-    appendUniquePath(roots, resolvedArtifactRoot);
-    appendUniquePath(roots, getBatchArtifactHomeFromPath(resolvedArtifactRoot));
-  }
-  return roots;
 }
 
 async function readOutputForProviderSessionDetection(output: ExecDriverResult['stdout']) {

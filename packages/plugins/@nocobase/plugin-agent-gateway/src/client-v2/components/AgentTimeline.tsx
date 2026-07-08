@@ -372,7 +372,7 @@ function MessagePart({ t, part }: { t: TFunction; part: AgentTranscriptMessagePa
   return (
     <Space direction="vertical" size={4} style={{ width: '100%' }}>
       {kindLabel ? <Typography.Text type="secondary">{kindLabel}</Typography.Text> : null}
-      <TextBlock t={t} text={part.text} maxHeight={part.kind === 'raw' ? 220 : 320} />
+      <TextBlock t={t} text={part.text} maxHeight={320} />
     </Space>
   );
 }

@@ -73,16 +73,6 @@ const TASK_RUN_SCENARIOS = new Set([
   UI_BUILD_TASK_RUN_SCENARIO,
   OPENCODE_UI_BATCH_TASK_RUN_SCENARIO,
 ]);
-const OPENCODE_UI_BATCH_ARTIFACT_GLOBS = [
-  'runs/nb-opencode-ui-batch/*/report.html',
-  'runs/nb-opencode-ui-batch/*/report.json',
-  'runs/nb-opencode-ui-batch/*/browser-verification-request.json',
-  'runs/nb-opencode-ui-batch/*/browser-verification-prompt.md',
-  'runs/nb-opencode-ui-batch/*/browser-verification.json',
-  'runs/nb-opencode-ui-batch/*/browser-screenshots/**/*',
-  'runs/nb-opencode-ui-batch/*/logs/**/*',
-  'runs/nb-opencode-ui-batch/*/tasks/**/*',
-];
 const RUNNER_ONLINE_THRESHOLD_MS = 120_000;
 const TASK_RUN_INITIAL_EVENT_SOURCE = 'agent-gateway-task';
 const LEASE_RECOVERY_BATCH_LIMIT = 100;
@@ -1007,7 +997,7 @@ function buildOpenCodeUiBatchPrompt(values: JsonRecord) {
     '- Emit progress lines when possible as: AGW_PROGRESS phase=<phase> status=<started|succeeded|failed> message=<short text>.',
     '- After the suite writes browser-verification-request.json, complete the required external Agent Browser verification pass, write browser-verification.json and browser-screenshots/**, then rerender report.html.',
     '- Rerender with a bounded command: timeout 10m node scripts/run-suite.mjs --render-run <run_dir> --no-open. If it times out, stop retrying, preserve current artifacts, and report renderRunTimeout: true.',
-    '- Preserve generated report.html, report.json, browser-verification-request.json, browser-verification-prompt.md, browser-verification.json, and browser-screenshots/** for Agent Gateway artifact collection.',
+    '- Leave generated files in the current run directory and do not delete reports, browser-verification files, screenshots, logs, or task output files.',
     '- Do not use historical runs/ output as the result of this task.',
     '',
     title ? `Task title: ${title}` : '',
@@ -1045,12 +1035,57 @@ function getStringList(value: unknown) {
   return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string' && Boolean(item)) : [];
 }
 
-function getTaskRunArtifactGlobs(values: JsonRecord, scenario: string) {
-  const declaredGlobs = getStringList(values.artifactGlobs);
-  if (scenario !== OPENCODE_UI_BATCH_TASK_RUN_SCENARIO) {
-    return declaredGlobs;
+function getTaskRunArtifactDeclarations(value: unknown) {
+  const result: JsonRecord[] = [];
+  if (!Array.isArray(value)) {
+    return result;
   }
-  return [...new Set([...declaredGlobs, ...OPENCODE_UI_BATCH_ARTIFACT_GLOBS])];
+  for (const item of value) {
+    if (typeof item === 'string' && item.trim()) {
+      result.push({ path: item.trim() });
+      continue;
+    }
+    const declaration = getRecord(item);
+    const artifactPath = getString(declaration.path || declaration.filePath);
+    const glob = getString(declaration.glob || declaration.pattern);
+    if (!artifactPath && !glob) {
+      continue;
+    }
+    result.push({
+      ...(artifactPath ? { path: artifactPath } : {}),
+      ...(glob ? { glob } : {}),
+      ...(getString(declaration.groupKey) ? { groupKey: getString(declaration.groupKey) } : {}),
+      ...(getString(declaration.groupLabel || declaration.group)
+        ? { groupLabel: getString(declaration.groupLabel || declaration.group) }
+        : {}),
+      ...(getString(declaration.artifactKey || declaration.key)
+        ? { artifactKey: getString(declaration.artifactKey || declaration.key) }
+        : {}),
+      ...(getString(declaration.artifactType || declaration.type)
+        ? { artifactType: getString(declaration.artifactType || declaration.type) }
+        : {}),
+      ...(getString(declaration.mimeType) ? { mimeType: getString(declaration.mimeType) } : {}),
+    });
+  }
+  return result;
+}
+
+function getTaskRunArtifactPayload(values: JsonRecord) {
+  const artifactRoot = getString(values.artifactRoot);
+  const artifactPaths = getStringList(values.artifactPaths);
+  const artifactGlobs = getStringList(values.artifactGlobs);
+  const artifacts = getTaskRunArtifactDeclarations(values.artifacts);
+  const maxArtifactUploads = getPositiveNumber(values.maxArtifactUploads);
+  const maxArtifactScanEntries = getPositiveNumber(values.maxArtifactScanEntries);
+  return {
+    ...(artifactRoot ? { artifactRoot } : {}),
+    ...(artifactPaths.length ? { artifactPaths } : {}),
+    ...(artifactGlobs.length ? { artifactGlobs } : {}),
+    ...(artifacts.length ? { artifacts } : {}),
+    ...(maxArtifactUploads ? { maxArtifactUploads } : {}),
+    ...(maxArtifactScanEntries ? { maxArtifactScanEntries } : {}),
+    ...(values.includeOlderArtifacts === true ? { includeOlderArtifacts: true } : {}),
+  };
 }
 
 function getTaskRunResolvedSkills(values: JsonRecord) {
@@ -1613,7 +1648,7 @@ async function createTaskRun(ctx: Context, options: { defaultScenario?: string }
     const provider = getModelString(selection.profile, 'provider') || undefined;
     const cwd = getString(values.cwd) || '.';
     const now = new Date();
-    const artifactGlobs = getTaskRunArtifactGlobs(values, scenario);
+    const artifactPayload = getTaskRunArtifactPayload(values);
     const resolvedSkills = getTaskRunResolvedSkills(values);
     const timeoutMs = getTaskRunTimeoutMs(values, scenario);
     if (scenario === OPENCODE_UI_BATCH_TASK_RUN_SCENARIO && !resolvedSkills?.length) {
@@ -1643,7 +1678,7 @@ async function createTaskRun(ctx: Context, options: { defaultScenario?: string }
       cwd,
       terminalBackend: 'tmux',
       ...(timeoutMs ? { timeoutMs } : {}),
-      ...(artifactGlobs.length ? { artifactGlobs } : {}),
+      ...artifactPayload,
       ...(resolvedSkills ? { resolvedSkills } : {}),
     };
     const run = (await ctx.db.getRepository('agRuns').create({

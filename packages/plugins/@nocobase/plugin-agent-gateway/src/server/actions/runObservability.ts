@@ -26,6 +26,7 @@ import {
   getBodyValues,
   getDate,
   getModelJson,
+  getModelValue,
   getModelNumber,
   getRecord,
   getString,
@@ -58,6 +59,13 @@ const STANDARD_OBSERVABILITY_COLLECTIONS = [
 ] as const;
 const DIRECT_OBSERVABILITY_READ_ACTIONS = new Set(['get', 'list']);
 const OBSERVABILITY_WRITE_RUN_STATUSES = ['claimed', 'syncing_skills', 'running', 'finalizing', 'stalled'] as const;
+
+interface ArtifactGroupDeclaration {
+  path?: string;
+  glob?: string;
+  groupKey?: string;
+  groupLabel?: string;
+}
 
 function getRequiredString(ctx: Context, value: unknown, name: string) {
   const stringValue = getString(value);
@@ -102,6 +110,117 @@ function getPayloadValue(values: JsonRecord, canonicalKey: string, aliasKey: str
 
 function serializeModel(model: ModelRecord) {
   return getModelJson(model);
+}
+
+function normalizeArtifactPath(value: string) {
+  return value
+    .trim()
+    .replace(/\\/g, '/')
+    .replace(/^\.\/+/, '')
+    .replace(/^([A-Za-z]:)?\/+/, '$1');
+}
+
+function escapeRegex(value: string) {
+  return value.replace(/[|\\{}()[\]^$+?.]/g, '\\$&');
+}
+
+function globToRegex(pattern: string) {
+  let source = '^';
+  for (let index = 0; index < pattern.length; index += 1) {
+    const char = pattern[index];
+    if (char !== '*') {
+      source += escapeRegex(char);
+      continue;
+    }
+    if (pattern[index + 1] === '*') {
+      index += 1;
+      if (pattern[index + 1] === '/') {
+        index += 1;
+        source += '(?:.*\\/)?';
+      } else {
+        source += '.*';
+      }
+      continue;
+    }
+    source += '[^/]*';
+  }
+  return new RegExp(`${source}$`);
+}
+
+function getArtifactGroupDeclarations(run: ModelRecord) {
+  const payload = getRecord(getModelValue(run, 'executionPayloadJson'));
+  const artifacts = Array.isArray(payload.artifacts) ? payload.artifacts : [];
+  const declarations: ArtifactGroupDeclaration[] = [];
+  for (const value of artifacts) {
+    const record = getRecord(value);
+    const artifactPath = getString(record.path || record.filePath);
+    const glob = getString(record.glob || record.pattern);
+    const groupKey = getString(record.groupKey);
+    const groupLabel = getString(record.groupLabel || record.group);
+    if ((!artifactPath && !glob) || (!groupKey && !groupLabel)) {
+      continue;
+    }
+    declarations.push({
+      ...(artifactPath ? { path: normalizeArtifactPath(artifactPath) } : {}),
+      ...(glob ? { glob: normalizeArtifactPath(glob) } : {}),
+      ...(groupKey ? { groupKey } : {}),
+      ...(groupLabel ? { groupLabel } : {}),
+    });
+  }
+  return declarations;
+}
+
+function getDeclaredArtifactRelativePath(artifact: JsonRecord) {
+  const metadata = getRecord(artifact.metadataJson);
+  const relativePath = getString(metadata.relativePath);
+  if (relativePath) {
+    return normalizeArtifactPath(relativePath);
+  }
+  const artifactKey = getString(artifact.artifactKey);
+  if (!artifactKey.startsWith('declared:')) {
+    return '';
+  }
+  return normalizeArtifactPath(artifactKey.slice('declared:'.length));
+}
+
+function findArtifactGroupDeclaration(relativePath: string, declarations: ArtifactGroupDeclaration[]) {
+  if (!relativePath) {
+    return null;
+  }
+  for (const declaration of declarations) {
+    if (declaration.path && normalizeArtifactPath(declaration.path) === relativePath) {
+      return declaration;
+    }
+    if (declaration.glob && globToRegex(declaration.glob).test(relativePath)) {
+      return declaration;
+    }
+  }
+  return null;
+}
+
+function applyDeclaredArtifactGroups(artifacts: JsonRecord[], run: ModelRecord) {
+  const declarations = getArtifactGroupDeclarations(run);
+  if (!declarations.length) {
+    return artifacts;
+  }
+  return artifacts.map((artifact) => {
+    const metadata = getRecord(artifact.metadataJson);
+    if (getString(metadata.artifactGroupKey) || getString(metadata.artifactGroupLabel)) {
+      return artifact;
+    }
+    const declaration = findArtifactGroupDeclaration(getDeclaredArtifactRelativePath(artifact), declarations);
+    if (!declaration) {
+      return artifact;
+    }
+    return {
+      ...artifact,
+      metadataJson: {
+        ...metadata,
+        ...(declaration.groupKey ? { artifactGroupKey: declaration.groupKey } : {}),
+        ...(declaration.groupLabel ? { artifactGroupLabel: declaration.groupLabel } : {}),
+      },
+    };
+  });
 }
 
 async function requireObservabilityRead(ctx: Context, action: string, message: string) {
@@ -451,7 +570,7 @@ async function listRunArtifacts(ctx: Context, runId: string) {
     sort: ['claimAttempt', 'artifactKey', 'createdAt'],
   })) as ModelRecord[];
 
-  ctx.body = artifacts.map(serializeModel);
+  ctx.body = applyDeclaredArtifactGroups(artifacts.map(serializeModel), run);
 }
 
 async function listRunSnapshots(ctx: Context, runId: string) {

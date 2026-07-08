@@ -1003,6 +1003,17 @@ describe('PluginAgentGatewayClientV2', () => {
       target: { value: '运行 nb-opencode-ui-batch harness 并汇总结果' },
     });
     expect(await screen.findByText('NB OpenCode UI Batch / v1')).toBeTruthy();
+    fireEvent.click(screen.getByText('Advanced'));
+    fireEvent.change(screen.getByLabelText('Artifact root'), {
+      target: { value: '../..' },
+    });
+    fireEvent.click(screen.getByText('Add artifact declaration'));
+    fireEvent.change(screen.getByLabelText('Artifact path or glob'), {
+      target: { value: 'runs/nb-opencode-ui-batch/*/report.html' },
+    });
+    fireEvent.change(screen.getByLabelText('Artifact group'), {
+      target: { value: 'Reports' },
+    });
     fireEvent.click(screen.getByText('Create'));
 
     await waitFor(() => {
@@ -1016,6 +1027,13 @@ describe('PluginAgentGatewayClientV2', () => {
             prompt: '运行 nb-opencode-ui-batch harness 并汇总结果',
             skillVersionIds: ['skill-version-id-1'],
             cwd: '.',
+            artifactRoot: '../..',
+            artifacts: [
+              {
+                glob: 'runs/nb-opencode-ui-batch/*/report.html',
+                groupLabel: 'Reports',
+              },
+            ],
             nodeId: 'node-id-1',
             agentProfileId: 'profile-id-1',
           }),
@@ -1878,6 +1896,7 @@ describe('PluginAgentGatewayClientV2', () => {
                 mimeType: 'text/plain',
                 contentText: 'inline artifact text',
                 metadataJson: {
+                  artifactGroupLabel: 'Logs',
                   externalUrl: 'https://daemon.example/artifact',
                 },
               },
@@ -1889,6 +1908,7 @@ describe('PluginAgentGatewayClientV2', () => {
                 contentText:
                   'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII=',
                 metadataJson: {
+                  artifactGroupLabel: 'Screenshots',
                   relativePath: 'runs/nb-opencode-ui-batch/run-1/browser-screenshots/overview.png',
                 },
               },
@@ -2064,11 +2084,13 @@ describe('PluginAgentGatewayClientV2', () => {
     expect(await screen.findByText('heartbeat noise should stay collapsed')).toBeTruthy();
 
     fireEvent.click(await screen.findByRole('tab', { name: 'Artifacts' }));
-    expect(await screen.findByText('inline artifact text')).toBeTruthy();
+    expect(await screen.findByRole('tab', { name: 'Screenshots (1)' })).toBeTruthy();
     expect(getRequestedUrls()).toContain('agent-gateway/runs/run-id-1/artifacts:list');
     expect(getRequestedUrls()).toContain('agent-gateway/runs/run-id-1/snapshots:list');
     expect(await screen.findByText('Image artifact preview')).toBeTruthy();
     expect(screen.getByAltText('browser-screenshot').getAttribute('src')).toContain('data:image/png;base64,');
+    fireEvent.click(await screen.findByRole('tab', { name: 'Logs (1)' }));
+    expect(await screen.findByText('inline artifact text')).toBeTruthy();
     expect(await screen.findByText(/"files":/)).toBeTruthy();
 
     fireEvent.click(await screen.findByRole('tab', { name: 'API Logs' }));

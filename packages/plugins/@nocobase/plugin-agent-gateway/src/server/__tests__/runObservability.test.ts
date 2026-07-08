@@ -140,7 +140,7 @@ describe('agent gateway run observability APIs', () => {
     };
   }
 
-  async function createAndClaimRun(runner: RegisteredRunner) {
+  async function createAndClaimRun(runner: RegisteredRunner, executionPayload?: Record<string, unknown>) {
     const runResponse = await rootAgent.post('/api/agent-gateway/runs:create').send({
       runCode: `run-observe-${Date.now()}-${Math.random()}`,
       sourceType: 'test',
@@ -155,6 +155,7 @@ describe('agent gateway run observability APIs', () => {
         env: {
           SECRET: 'must-not-render',
         },
+        ...executionPayload,
       },
     });
     expect(runResponse.status).toBe(200);
@@ -397,6 +398,74 @@ describe('agent gateway run observability APIs', () => {
     expect(serializedMetadata).toContain('ARTIFACT_METADATA_COMMAND_SECRET');
     expect(serializedMetadata).toContain('ARTIFACT_METADATA_CWD_SECRET');
     expect(serializedMetadata).toContain('ARTIFACT_METADATA_ENV_SECRET');
+  });
+
+  it('adds declared artifact groups when listed artifacts have older metadata', async () => {
+    const runner = await registerRunner();
+    const { run, claim } = await createAndClaimRun(runner, {
+      artifacts: [
+        {
+          glob: 'runs/nb-opencode-ui-batch/*/report.html',
+          groupLabel: 'Reports',
+        },
+        {
+          path: 'runs/nb-opencode-ui-batch/run-1/run.json',
+          groupLabel: 'Run metadata',
+        },
+      ],
+    });
+
+    const reportResponse = await daemonRunPost(
+      runner,
+      run.id,
+      'artifacts:register',
+      leaseValues(claim, {
+        artifactKey: 'declared:runs/nb-opencode-ui-batch/run-1/report.html',
+        artifactType: 'html-report',
+        mimeType: 'text/html',
+        contentText: '<html><body>report</body></html>',
+        metadata: {
+          relativePath: 'runs/nb-opencode-ui-batch/run-1/report.html',
+        },
+      }),
+    );
+    expect(reportResponse.status).toBe(200);
+
+    const runMetadataResponse = await daemonRunPost(
+      runner,
+      run.id,
+      'artifacts:register',
+      leaseValues(claim, {
+        artifactKey: 'declared:runs/nb-opencode-ui-batch/run-1/run.json',
+        artifactType: 'json-report',
+        mimeType: 'application/json',
+        contentText: '{"status":"passed"}',
+        metadata: {
+          relativePath: 'runs/nb-opencode-ui-batch/run-1/run.json',
+        },
+      }),
+    );
+    expect(runMetadataResponse.status).toBe(200);
+
+    const artifactsResponse = await rootAgent.get(`/api/agent-gateway/runs/${run.id}/artifacts:list`);
+    expect(artifactsResponse.status).toBe(200);
+    const artifacts = artifactsResponse.body.data as Array<Record<string, unknown>>;
+    expect(artifacts).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          artifactKey: 'declared:runs/nb-opencode-ui-batch/run-1/report.html',
+          metadataJson: expect.objectContaining({
+            artifactGroupLabel: 'Reports',
+          }),
+        }),
+        expect.objectContaining({
+          artifactKey: 'declared:runs/nb-opencode-ui-batch/run-1/run.json',
+          metadataJson: expect.objectContaining({
+            artifactGroupLabel: 'Run metadata',
+          }),
+        }),
+      ]),
+    );
   });
 
   it('registers snapshots with nested secret redaction', async () => {

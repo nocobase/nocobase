@@ -588,6 +588,17 @@ describe('agent gateway run lifecycle APIs', () => {
       prompt: '运行 nb-opencode-ui-batch harness 并汇总结果',
       skillVersionIds: [otherSkillVersion.get('id'), activeSkillVersion.get('id'), activeSkillVersion.get('id')],
       cwd: 'myskills/skills/nb-opencode-ui-batch',
+      artifactRoot: '../..',
+      artifacts: [
+        {
+          glob: 'runs/nb-opencode-ui-batch/*/report.html',
+          groupLabel: 'Reports',
+        },
+        {
+          glob: 'runs/nb-opencode-ui-batch/*/browser-screenshots/**/*',
+          groupLabel: 'Screenshots',
+        },
+      ],
       nodeId: runner.nodeId,
       agentProfileId: runner.profileId,
     });
@@ -621,11 +632,17 @@ describe('agent gateway run lifecycle APIs', () => {
       commandKey: 'codex',
       provider: 'codex',
       cwd: 'myskills/skills/nb-opencode-ui-batch',
-      artifactGlobs: expect.arrayContaining([
-        'runs/nb-opencode-ui-batch/*/report.html',
-        'runs/nb-opencode-ui-batch/*/report.json',
-        'runs/nb-opencode-ui-batch/*/browser-screenshots/**/*',
-      ]),
+      artifactRoot: '../..',
+      artifacts: [
+        {
+          glob: 'runs/nb-opencode-ui-batch/*/report.html',
+          groupLabel: 'Reports',
+        },
+        {
+          glob: 'runs/nb-opencode-ui-batch/*/browser-screenshots/**/*',
+          groupLabel: 'Screenshots',
+        },
+      ],
       resolvedSkills: [
         {
           skillVersionId: otherSkillVersion.get('id'),
@@ -637,6 +654,9 @@ describe('agent gateway run lifecycle APIs', () => {
     });
     expect(String((storedRun.get('executionPayloadJson') as Record<string, unknown>).prompt)).toContain(
       'timeout 10m node scripts/run-suite.mjs --render-run <run_dir> --no-open',
+    );
+    expect(String((storedRun.get('executionPayloadJson') as Record<string, unknown>).prompt)).toContain(
+      'Leave generated files in the current run directory',
     );
     expect(String((storedRun.get('executionPayloadJson') as Record<string, unknown>).prompt)).toContain(
       'AGW_PROGRESS phase=<phase> status=<started|succeeded|failed>',
