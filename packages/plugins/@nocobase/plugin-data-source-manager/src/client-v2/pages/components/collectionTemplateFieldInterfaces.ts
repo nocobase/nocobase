@@ -21,6 +21,7 @@ type FieldInterfacePolicy = {
 };
 
 type FieldInterfaceLike = {
+  creatable?: boolean;
   group?: string;
   name: string;
 };
@@ -74,6 +75,9 @@ export function filterCreateFieldInterfacesByCollectionTemplate<T extends FieldI
   const hasIncludes = Array.isArray(include) && include.length > 0;
 
   return fieldInterfaces.filter((fieldInterface) => {
+    if (fieldInterface.creatable === false) {
+      return false;
+    }
     if (hasIncludes) {
       return isIncludedFieldInterface(include, fieldInterface.name);
     }

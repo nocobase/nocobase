@@ -25,6 +25,7 @@ describe('AttachmentFieldInterface', () => {
 
     expect(fieldInterface).toBeInstanceOf(AttachmentFieldInterface);
     expect(fieldInterface.group).toBe('media');
+    expect(fieldInterface.creatable).toBe(false);
     expect(fieldInterface.default).toMatchObject({
       interface: 'attachment',
       type: 'belongsToMany',
