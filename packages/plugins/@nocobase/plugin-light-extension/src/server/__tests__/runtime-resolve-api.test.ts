@@ -282,6 +282,57 @@ describe('plugin-light-extension runtime resolve API', () => {
     });
   });
 
+  it('prunes stale settings before resolving a follow-active publication', async () => {
+    const { service } = createRuntimeResolveService(
+      {
+        ...createPublicationRecord(),
+        id: 'lep_sales_active',
+        settingsSchemaHash: 'schema_active',
+        settingsSchemaSnapshot: {
+          type: 'object',
+          properties: {
+            activePlan: {
+              type: 'string',
+            },
+          },
+        },
+        settingsDefaultsSnapshot: {
+          activePlan: 'active-default',
+        },
+      },
+      {
+        activePublicationId: 'lep_sales_active',
+      },
+    );
+
+    const result = await service.resolveRuntime(
+      {
+        sourceMode: 'light-extension',
+        sourceBinding: createSourceBinding({
+          publicationId: 'lep_sales_legacy',
+          versionPolicy: 'follow-active',
+        }),
+        settings: {
+          legacyPlan: 'legacy-value',
+        },
+      },
+      {
+        can: ({ action }: { action: string }) => (action === 'usePublication' ? {} : null),
+      },
+    );
+
+    expect(result).toMatchObject({
+      publicationId: 'lep_sales_active',
+      settings: {
+        activePlan: 'active-default',
+      },
+      cache: {
+        immutable: false,
+      },
+    });
+    expect(JSON.stringify(result.settings)).not.toContain('legacyPlan');
+  });
+
   it('can derive settings defaults from the publication schema snapshot when defaults snapshot is absent', async () => {
     const { service } = createRuntimeResolveService({
       ...createPublicationRecord(),
@@ -371,15 +422,15 @@ describe('plugin-light-extension runtime resolve API', () => {
     const { service } = createRuntimeResolveService(
       {
         ...createPublicationRecord(),
-        id: 'lep_phone_link',
-        entryId: 'lee_phone_link',
-        entryPath: 'src/client/js-fields/phone-link/index.tsx',
-        kind: 'js-field',
-        surfaceStyle: 'value',
+        id: 'lep_notify',
+        entryId: 'lee_notify',
+        entryPath: 'src/client/js-actions/notify/index.ts',
+        kind: 'js-action',
+        surfaceStyle: 'action',
       },
       {
-        entryId: 'lee_phone_link',
-        entryKind: 'js-field',
+        entryId: 'lee_notify',
+        entryKind: 'js-action',
       },
     );
 
@@ -388,9 +439,9 @@ describe('plugin-light-extension runtime resolve API', () => {
         {
           sourceMode: 'light-extension',
           sourceBinding: createSourceBinding({
-            publicationId: 'lep_phone_link',
-            entryId: 'lee_phone_link',
-            kind: 'js-field',
+            publicationId: 'lep_notify',
+            entryId: 'lee_notify',
+            kind: 'js-action',
           }),
           settings: {},
         },
@@ -403,8 +454,8 @@ describe('plugin-light-extension runtime resolve API', () => {
       status: 409,
       details: {
         reasonCode: 'kind_disabled',
-        publicationId: 'lep_phone_link',
-        kind: 'js-field',
+        publicationId: 'lep_notify',
+        kind: 'js-action',
       },
     });
   });
@@ -439,6 +490,7 @@ function createRuntimeResolveService(
   options: {
     repoLifecycleStatus?: string;
     entryHealthStatus?: string;
+    activePublicationId?: string;
     entryId?: string;
     entryKind?: string;
   } = {},
@@ -461,6 +513,7 @@ function createRuntimeResolveService(
         repoId: 'ler_sales',
         kind: options.entryKind || 'js-block',
         healthStatus: options.entryHealthStatus || 'ready',
+        activePublicationId: options.activePublicationId,
       }),
     ),
   };

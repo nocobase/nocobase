@@ -47,26 +47,26 @@ describe('plugin-light-extension follow-active multi-host foundation', () => {
 
   it('keeps placeholder host references visible to impact analysis without treating them as JS Block owners', async () => {
     const ownerLocator = {
-      kind: 'flowModel.fieldSettings',
-      modelUid: 'flow_field_phone',
-      descriptor: 'field settings placeholder',
+      kind: 'flowModel.actionSettings',
+      modelUid: 'flow_action_notify',
+      descriptor: 'action settings placeholder',
     };
     const { bulkUpgradeService, repositories } = createReferenceServiceFixture({
       publications: [
         createPublicationRecord({
-          id: 'lep_field_v2',
-          kind: 'js-field',
-          entryId: 'lee_phone_link',
-          entryPath: 'src/client/js-fields/phone-link/index.tsx',
+          id: 'lep_action_v2',
+          kind: 'js-action',
+          entryId: 'lee_notify',
+          entryPath: 'src/client/js-actions/notify/index.ts',
         }),
       ],
       references: [
         createReferenceRecord({
-          id: 'lef_js_field_placeholder',
-          entryId: 'lee_phone_link',
-          publicationId: 'lep_field_v1',
-          kind: 'js-field',
-          ownerKind: 'flowModel.fieldSettings',
+          id: 'lef_js_action_placeholder',
+          entryId: 'lee_notify',
+          publicationId: 'lep_action_v1',
+          kind: 'js-action',
+          ownerKind: 'flowModel.actionSettings',
           ownerLocator,
           ownerLocatorHash: stableJsonHash(ownerLocator),
         }),
@@ -74,8 +74,8 @@ describe('plugin-light-extension follow-active multi-host foundation', () => {
     });
 
     const result = await bulkUpgradeService.analyzeImpact({
-      toPublicationId: 'lep_field_v2',
-      referenceIds: ['lef_js_field_placeholder'],
+      toPublicationId: 'lep_action_v2',
+      referenceIds: ['lef_js_action_placeholder'],
     });
 
     expect(result.summary).toMatchObject({
@@ -86,8 +86,8 @@ describe('plugin-light-extension follow-active multi-host foundation', () => {
     expect(result.references[0]).toMatchObject({
       upgradeBlockedReason: 'owner_missing',
       reference: expect.objectContaining({
-        kind: 'js-field',
-        ownerKind: 'flowModel.fieldSettings',
+        kind: 'js-action',
+        ownerKind: 'flowModel.actionSettings',
       }),
     });
     expect(repositories.flowModels.findOne).not.toHaveBeenCalled();

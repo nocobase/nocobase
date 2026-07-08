@@ -10,7 +10,7 @@
 import { LightExtensionValidator } from '../services/LightExtensionValidator';
 
 describe('plugin-light-extension kind enablement validator', () => {
-  it('keeps future client kinds supported but not enabled in the MVP and reports warnings instead of crashing', () => {
+  it('keeps staged client kinds supported while enabling JS Field entries', () => {
     const validator = new LightExtensionValidator();
     const result = validator.validateWorkspace({
       files: [
@@ -45,7 +45,7 @@ describe('plugin-light-extension kind enablement validator', () => {
     expect(result.capabilities.supportedKinds).toEqual(
       expect.arrayContaining(['js-block', 'js-field', 'js-action', 'js-item', 'runjs', 'event']),
     );
-    expect(result.capabilities.enabledKinds).toEqual(['js-block']);
+    expect(result.capabilities.enabledKinds).toEqual(['js-block', 'js-field']);
     expect(result.entries.map((entry) => `${entry.kind}:${entry.entryName}`)).toEqual([
       'event:log-page-open',
       'js-action:batch-approve',
@@ -63,11 +63,6 @@ describe('plugin-light-extension kind enablement validator', () => {
         severity: 'warning',
         kind: 'js-action',
         path: 'src/client/js-actions/batch-approve',
-      }),
-      expect.objectContaining({
-        severity: 'warning',
-        kind: 'js-field',
-        path: 'src/client/js-fields/phone-link',
       }),
       expect.objectContaining({
         severity: 'warning',
@@ -129,12 +124,8 @@ describe('plugin-light-extension kind enablement validator', () => {
     expect(result.accepted).toBe(true);
     expect(result.entries).toHaveLength(1);
     expect(result.diagnostics.filter((item) => item.code === 'import_not_allowed')).toEqual([]);
-    expect(result.diagnostics).toContainEqual(
-      expect.objectContaining({
-        code: 'kind_not_enabled',
-        kind: 'js-field',
-        severity: 'warning',
-      }),
+    expect(result.diagnostics.filter((item) => item.code === 'kind_not_enabled' && item.kind === 'js-field')).toEqual(
+      [],
     );
   });
 

@@ -378,6 +378,137 @@ describe('JSBlockLightExtensionSourceField source mode errors', () => {
     });
   });
 
+  it('normalizes follow-active settings to the active publication schema', async () => {
+    const legacyPublication = {
+      ...publication,
+      id: 'pub_sales_legacy',
+      settingsSchemaHash: 'schema_legacy',
+      settingsSchemaSnapshot: {
+        type: 'object',
+        properties: {
+          legacyPlan: {
+            type: 'string',
+          },
+        },
+      },
+      settingsDefaultsSnapshot: {
+        legacyPlan: 'legacy-default',
+      },
+    };
+    const activePublication = {
+      ...publication,
+      id: 'pub_sales_active',
+      settingsSchemaHash: 'schema_active',
+      settingsSchemaSnapshot: {
+        type: 'object',
+        properties: {
+          activePlan: {
+            type: 'string',
+          },
+        },
+      },
+      settingsDefaultsSnapshot: {
+        activePlan: 'active-default',
+      },
+    };
+    mocks.request.mockImplementation((options: { url: string }) => {
+      if (options.url === 'lightExtensionEntries:listSelectable') {
+        return Promise.resolve({
+          data: {
+            data: [
+              {
+                id: 'entry_sales',
+                repoId: 'repo_sales',
+                target: 'client',
+                kind: 'js-block',
+                entryName: 'sales',
+                entryPath: 'src/client/js-blocks/sales/index.tsx',
+                metaPath: null,
+                settingsPath: null,
+                title: 'Sales',
+                description: null,
+                category: null,
+                icon: null,
+                tags: null,
+                sort: null,
+                activePublicationId: 'pub_sales_active',
+                activePublication,
+                healthStatus: 'ready',
+                diagnostics: [],
+              },
+            ],
+          },
+        });
+      }
+
+      if (options.url === '/light-extension-entries/entry_sales/publications') {
+        return Promise.resolve({
+          data: {
+            data: {
+              entryId: 'entry_sales',
+              activePublicationId: 'pub_sales_active',
+              publications: [legacyPublication, activePublication],
+            },
+          },
+        });
+      }
+
+      return Promise.reject(new Error(`Unexpected request: ${options.url}`));
+    });
+    const engine = new FlowEngine();
+    engine.context.defineProperty('api', {
+      value: {
+        request: mocks.request,
+      },
+    });
+    const form = createForm({
+      initialValues: {
+        sourceMode: 'light-extension',
+        sourceBinding: {
+          type: 'light-extension-entry',
+          repoId: 'repo_sales',
+          entryId: 'entry_sales',
+          kind: 'js-block',
+          publicationId: 'pub_sales_legacy',
+          versionPolicy: 'follow-active',
+        },
+        settings: {
+          legacyPlan: 'legacy-custom',
+        },
+      },
+    });
+
+    render(
+      <FlowEngineProvider engine={engine}>
+        <FormProvider form={form}>
+          <SchemaField
+            schema={{
+              type: 'object',
+              properties: {
+                sourceMode: {
+                  type: 'string',
+                  'x-component': 'JSBlockLightExtensionSourceField',
+                },
+              },
+            }}
+          />
+        </FormProvider>
+      </FlowEngineProvider>,
+    );
+
+    await waitFor(() => {
+      expect(form.values.sourceBinding).toMatchObject({
+        publicationId: 'pub_sales_active',
+        versionPolicy: 'follow-active',
+      });
+      expect(form.values.settings).toEqual({
+        activePlan: 'active-default',
+      });
+      expect(screen.getByText('activePlan')).toBeTruthy();
+      expect(screen.queryByText('legacyPlan')).toBeNull();
+    });
+  });
+
   it('persists the selected entry into hidden sibling fields inside the flow settings layout', async () => {
     const engine = new FlowEngine();
     engine.context.defineProperty('api', {

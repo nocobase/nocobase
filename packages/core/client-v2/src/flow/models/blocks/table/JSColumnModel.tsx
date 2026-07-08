@@ -19,16 +19,28 @@ import {
   createRecordMetaFactory,
   createRecordResolveOnServerWithLocal,
   ElementProxy,
-  createSafeDocument,
-  createSafeWindow,
-  createSafeNavigator,
   observer,
+  type StepDefinition,
 } from '@nocobase/flow-engine';
 import { Tooltip } from 'antd';
 import React from 'react';
 import { TableCustomColumnModel } from './TableCustomColumnModel';
-import { RunJSEditorField } from '../../../components/runjs-studio';
 import { resolveRunJsParams } from '../../utils/resolveRunJsParams';
+import {
+  beginJSFieldRuntimeRun,
+  createJSFieldRunJsUISchema,
+  createJSFieldSourceBindingStep,
+  createJSFieldSourceModeStep,
+  getJSFieldRunJsEditorTitle,
+  getJSFieldRuntimeFlowSettingSteps,
+  INLINE_SOURCE_MODE,
+  isCurrentJSFieldRuntimeRun,
+  resetJSFieldRuntimeElement,
+  renderJSFieldRuntimeError,
+  reportJSFieldRuntimeErrorBestEffort,
+  resolveJSFieldRuntimeRunJS,
+  runResolvedJSFieldCode,
+} from '../../fields/jsFieldLightExtensionRuntime';
 
 function getRecordRenderSignature(record: any) {
   if (!record || typeof record !== 'object') {
@@ -54,6 +66,15 @@ function getRecordRenderSignature(record: any) {
 export class JSColumnModel extends TableCustomColumnModel {
   // Stable per‑instance render component to avoid remounts across re-renders
   private _RenderComponent?: React.ComponentType;
+
+  public async getRuntimeFlowSettingSteps(flowKey: string): Promise<Record<string, StepDefinition> | undefined> {
+    if (flowKey !== 'jsSettings') {
+      return undefined;
+    }
+
+    return getJSFieldRuntimeFlowSettingSteps(this);
+  }
+
   renderHiddenInConfig() {
     return (
       <Tooltip
@@ -164,6 +185,10 @@ export class JSColumnModel extends TableCustomColumnModel {
         fork.context.defineProperty('recordIndex', {
           get: () => index,
         });
+        fork.context.defineProperty('value', {
+          get: () => value,
+          cache: false,
+        });
         return <MemoFlowModelRenderer key={`${fork.uid}:${recordSignature}`} model={fork} />;
       },
     };
@@ -224,33 +249,16 @@ JSColumnModel.registerFlow({
   key: 'jsSettings',
   title: tExpr('JavaScript settings'),
   steps: {
+    sourceMode: createJSFieldSourceModeStep(),
+    sourceBinding: createJSFieldSourceBindingStep(),
     runJs: {
       title: tExpr('Write JavaScript'),
       useRawParams: true,
-      uiSchema: {
-        code: {
-          type: 'string',
-          'x-decorator': 'FormItem',
-          'x-component': RunJSEditorField,
-          'x-component-props': {
-            locatorFactory: 'flowModel.step',
-            surfaceStyle: 'render',
-            scene: 'block',
-            height: '100%',
-            minHeight: '320px',
-            theme: 'light',
-            enableLinter: true,
-            containerStyle: {
-              height: '100%',
-              minHeight: 0,
-              minWidth: 0,
-            },
-          },
-        },
-      },
-      uiMode: {
+      uiSchema: createJSFieldRunJsUISchema({ scene: 'block' }),
+      uiMode: async (ctx) => ({
         type: 'embed',
         props: {
+          title: await getJSFieldRunJsEditorTitle(ctx),
           footer: null,
           maxWidth: '960px',
           minWidth: '720px',
@@ -264,15 +272,16 @@ JSColumnModel.registerFlow({
             },
           },
         },
-      },
+      }),
       defaultParams() {
         return {
           version: 'v2',
+          sourceMode: INLINE_SOURCE_MODE,
           code: `ctx.render('<span class="nb-js-column">JS column</span>');`,
         };
       },
       async handler(ctx, params) {
-        const { code, version } = resolveRunJsParams(ctx, params);
+        const inlineRunJs = resolveRunJsParams(ctx, params);
 
         const preview = ctx.inputArgs?.preview;
         const isPreview = !!preview;
@@ -286,32 +295,52 @@ JSColumnModel.registerFlow({
           });
 
           if (mountedForks.length > 0) {
-            const settled = await Promise.allSettled(
+            await Promise.allSettled(
               mountedForks.map((fork: any) => {
-                return fork.applyFlow('jsSettings', { preview: { code, version } });
+                return fork.applyFlow('jsSettings', { preview: inlineRunJs });
               }),
             );
-            const firstRejected = settled.find(
-              (result): result is PromiseRejectedResult => result.status === 'rejected',
-            );
-            if (firstRejected) {
-              throw firstRejected.reason;
-            }
             return;
           }
         }
 
         ctx.onRefReady(ctx.ref, async (element) => {
-          ctx.defineProperty('element', {
-            get: () => new ElementProxy((ctx.ref?.current as HTMLElement | null) || element),
-            cache: false,
-          });
-          const navigator = createSafeNavigator();
-          await ctx.runjs(
-            code,
-            { window: createSafeWindow({ navigator }), document: createSafeDocument(), navigator },
-            { version },
-          );
+          const runId = beginJSFieldRuntimeRun(ctx.model);
+          let resolved: Awaited<ReturnType<typeof resolveJSFieldRuntimeRunJS>> | undefined;
+          try {
+            resetJSFieldRuntimeElement(element);
+            ctx.defineProperty('element', {
+              get: () => new ElementProxy((ctx.ref?.current as HTMLElement | null) || element),
+              cache: false,
+            });
+            ctx.defineProperty('value', {
+              get: () => ctx.model.context.value,
+              cache: false,
+            });
+            ctx.defineProperty('record', {
+              get: () => ctx.model.context.record,
+              cache: false,
+            });
+            ctx.defineProperty('collectionField', {
+              get: () => ctx.model.context.collectionField,
+              cache: false,
+            });
+            resolved = await resolveJSFieldRuntimeRunJS({
+              model: ctx.model,
+              params: params || {},
+              runJs: inlineRunJs,
+            });
+            if (!isCurrentJSFieldRuntimeRun(ctx.model, runId)) {
+              return;
+            }
+            await runResolvedJSFieldCode({ ctx, resolved });
+          } catch (error) {
+            if (!isCurrentJSFieldRuntimeRun(ctx.model, runId)) {
+              return;
+            }
+            renderJSFieldRuntimeError(element, error, 'js-column-runtime-error');
+            await reportJSFieldRuntimeErrorBestEffort({ ctx, error, resolved, params });
+          }
         });
       },
     },

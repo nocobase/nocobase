@@ -13,7 +13,10 @@ export { default as LightExtensionHomePage } from './pages/LightExtensionHomePag
 export { default as LightExtensionListPage } from './pages/LightExtensionListPage';
 export { default as LightExtensionPublicationsPage } from './pages/LightExtensionPublicationsPage';
 export { default as LightExtensionWorkspacePage } from './pages/LightExtensionWorkspacePage';
-export { JSBlockLightExtensionSourceField } from './components/JSBlockLightExtensionSourceField';
+export {
+  JSBlockLightExtensionSourceField,
+  JSFieldLightExtensionSourceField,
+} from './components/JSBlockLightExtensionSourceField';
 export { RepoEntryPublicationSelector } from './components/RepoEntryPublicationSelector';
 export { ReferenceImpactPanel } from './components/ReferenceImpactPanel';
 export { SettingsAutoForm } from './components/SettingsAutoForm';

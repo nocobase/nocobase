@@ -12,13 +12,18 @@ import type { RunJSSourceResolver, RunJSSourceResolverInput, RunJSSourceResolver
 import { LIGHT_EXTENSION_SUPPORTED_KINDS } from '../../constants';
 import type {
   LightExtensionKind,
+  LightExtensionPublicationMetadataRecord,
   LightExtensionRuntimeResolveInput,
   LightExtensionRuntimeResolveResult,
   LightExtensionRuntimeSourceBinding,
   LightExtensionSelectableEntryRecord,
 } from '../../shared/types';
 import type { ApiClientLike } from '../api/lightExtensionEntriesRequests';
-import { listSelectableLightExtensionEntries, unwrapResourceResponse } from '../api/lightExtensionEntriesRequests';
+import {
+  listLightExtensionEntryPublications,
+  listSelectableLightExtensionEntries,
+  unwrapResourceResponse,
+} from '../api/lightExtensionEntriesRequests';
 
 type ResourceResponse<T> = {
   data?: {
@@ -41,6 +46,7 @@ export function createLightExtensionRunJSResolver(api: ApiClientLike): RunJSSour
           lightExtension: {
             publicationId: runtime.publicationId,
             entryId: runtime.entryId,
+            entryPath: runtime.entryPath,
             runtimeCodeHash: runtime.runtimeCodeHash,
             cache: runtime.cache,
           },
@@ -87,7 +93,7 @@ export function createLightExtensionRunJSResolver(api: ApiClientLike): RunJSSour
         return undefined;
       }
 
-      const publication = entry.activePublication;
+      const publication = await getSettingsDescriptorPublication(api, entry, binding, kind);
       if (!publication || publication.kind !== kind) {
         return undefined;
       }
@@ -124,6 +130,32 @@ export async function resolveLightExtensionRuntimeSource(
 
 function getEntryLabel(entry: LightExtensionSelectableEntryRecord): string {
   return entry.title || entry.entryName || entry.id;
+}
+
+async function getSettingsDescriptorPublication(
+  api: ApiClientLike,
+  entry: LightExtensionSelectableEntryRecord,
+  binding: LightExtensionRuntimeSourceBinding,
+  kind: LightExtensionKind,
+): Promise<LightExtensionPublicationMetadataRecord | undefined> {
+  if (binding.versionPolicy === 'follow-active') {
+    return isPublicationForEntry(entry.activePublication, entry, kind) ? entry.activePublication : undefined;
+  }
+
+  const result = await listLightExtensionEntryPublications(api, entry.id);
+  return result.publications.find(
+    (publication) => publication.id === binding.publicationId && isPublicationForEntry(publication, entry, kind),
+  );
+}
+
+function isPublicationForEntry(
+  publication: LightExtensionPublicationMetadataRecord | null | undefined,
+  entry: LightExtensionSelectableEntryRecord,
+  kind: LightExtensionKind,
+): publication is LightExtensionPublicationMetadataRecord {
+  return Boolean(
+    publication && publication.repoId === entry.repoId && publication.entryId === entry.id && publication.kind === kind,
+  );
 }
 
 function toSupportedKind(value: string | undefined): LightExtensionKind | undefined {

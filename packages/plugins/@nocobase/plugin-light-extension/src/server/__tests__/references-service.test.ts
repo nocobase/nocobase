@@ -10,6 +10,11 @@
 import {
   createEntryRecord,
   createJsBlockNode,
+  createJsFieldEntryRecord,
+  createJsFieldNode,
+  createJsFieldPublicationRecord,
+  createJsFieldReferenceRecord,
+  createJsFieldSourceBinding,
   createPublicationRecord,
   createReferenceRecord,
   createReferenceServiceFixture,
@@ -109,6 +114,264 @@ describe('plugin-light-extension reference service', () => {
       }),
     );
     expect(JSON.stringify(recordReferenceEvent.mock.calls)).not.toContain('secret-inline-value');
+  });
+
+  it.each([
+    ['JSFieldModel', 'flow_js_field_display'],
+    ['JSEditableFieldModel', 'flow_js_field_editable'],
+    ['JSColumnModel', 'flow_js_column_phone'],
+  ] as const)('upserts %s JS Field references with distinct field owner locators', async (use, uid) => {
+    const { service, repositories } = createReferenceServiceFixture({
+      flowModelTrees: {
+        [uid]: createJsFieldNode({
+          uid,
+          use,
+          settings: {
+            prefix: 'callto:',
+          },
+        }),
+      },
+      publications: [createJsFieldPublicationRecord()],
+      repos: [createRepoRecord({ id: 'ler_fields' })],
+      entries: [createJsFieldEntryRecord()],
+    });
+
+    const result = await service.syncFlowModelReferencesForNodeTree({
+      rootUid: uid,
+      action: 'flowModels.save',
+    });
+
+    expect(result).toMatchObject({
+      scanned: 1,
+      upserted: 1,
+      removed: 0,
+      statusCounts: {
+        active: 1,
+      },
+    });
+    expect(repositories.lightExtensionReferences.records).toHaveLength(1);
+    expect(repositories.lightExtensionReferences.records[0].toJSON()).toMatchObject({
+      repoId: 'ler_fields',
+      entryId: 'lee_phone_link',
+      publicationId: 'lep_phone_link',
+      kind: 'js-field',
+      ownerKind: 'flowModel.fieldSettings',
+      ownerLocator: {
+        kind: 'flowModel.fieldSettings',
+        modelUid: uid,
+        use,
+      },
+      versionPolicy: 'pinned',
+      settingsHash: stableJsonHash({
+        prefix: 'callto:',
+      }),
+      resolvedStatus: 'active',
+    });
+  });
+
+  it('upserts JS Field references after the settings dialog saves a source binding step wrapper', async () => {
+    const uid = 'flow_js_field_saved_wrapper';
+    const sourceBinding = createJsFieldSourceBinding();
+    const { service, repositories } = createReferenceServiceFixture({
+      flowModelTrees: {
+        [uid]: {
+          uid,
+          use: 'JSFieldModel',
+          stepParams: {
+            jsSettings: {
+              sourceBinding: {
+                sourceMode: 'light-extension',
+                sourceBinding,
+                settings: {
+                  prefix: 'callto:',
+                },
+              },
+              runJs: {
+                sourceMode: 'light-extension',
+                sourceBinding,
+                settings: {
+                  prefix: 'callto:',
+                },
+              },
+            },
+          },
+        },
+      },
+      publications: [createJsFieldPublicationRecord()],
+      repos: [createRepoRecord({ id: 'ler_fields' })],
+      entries: [createJsFieldEntryRecord()],
+    });
+
+    const result = await service.syncFlowModelReferencesForNodeTree({
+      rootUid: uid,
+      action: 'flowModels.save',
+    });
+
+    expect(result).toMatchObject({
+      scanned: 1,
+      upserted: 1,
+      removed: 0,
+      statusCounts: {
+        active: 1,
+      },
+    });
+    expect(repositories.lightExtensionReferences.records).toHaveLength(1);
+    expect(repositories.lightExtensionReferences.records[0].toJSON()).toMatchObject({
+      repoId: 'ler_fields',
+      entryId: 'lee_phone_link',
+      publicationId: 'lep_phone_link',
+      kind: 'js-field',
+      ownerKind: 'flowModel.fieldSettings',
+      ownerLocator: {
+        kind: 'flowModel.fieldSettings',
+        modelUid: uid,
+        use: 'JSFieldModel',
+      },
+      settingsHash: stableJsonHash({
+        prefix: 'callto:',
+      }),
+      resolvedStatus: 'active',
+    });
+  });
+
+  it('uses updated RunJS settings when a runtime settings step changed after source selection', async () => {
+    const uid = 'flow_js_field_updated_settings';
+    const sourceBinding = createJsFieldSourceBinding();
+    const { service, repositories } = createReferenceServiceFixture({
+      flowModelTrees: {
+        [uid]: {
+          uid,
+          use: 'JSFieldModel',
+          stepParams: {
+            jsSettings: {
+              sourceBinding,
+              settings: {
+                prefix: 'tel:',
+              },
+              runJs: {
+                sourceMode: 'light-extension',
+                sourceBinding,
+                settings: {
+                  prefix: 'callto:',
+                },
+              },
+            },
+          },
+        },
+      },
+      publications: [createJsFieldPublicationRecord()],
+      repos: [createRepoRecord({ id: 'ler_fields' })],
+      entries: [createJsFieldEntryRecord()],
+    });
+
+    await service.syncFlowModelReferencesForNodeTree({
+      rootUid: uid,
+      action: 'lightExtensionReferences.rebuildIndex',
+    });
+
+    expect(repositories.lightExtensionReferences.records[0].toJSON()).toMatchObject({
+      settingsHash: stableJsonHash({
+        prefix: 'callto:',
+      }),
+      resolvedStatus: 'active',
+    });
+  });
+
+  it('prunes stale settings when rebuilding follow-active JS Field references against a new active schema', async () => {
+    const uid = 'flow_js_field_follow_active_prune';
+    const sourceBinding = createJsFieldSourceBinding({
+      publicationId: 'lep_phone_link_legacy',
+      versionPolicy: 'follow-active',
+    });
+    const { service, repositories } = createReferenceServiceFixture({
+      flowModelTrees: {
+        [uid]: {
+          uid,
+          use: 'JSFieldModel',
+          stepParams: {
+            jsSettings: {
+              sourceBinding,
+              settings: {
+                legacyPlan: 'legacy-value',
+              },
+              runJs: {
+                sourceMode: 'light-extension',
+                sourceBinding,
+                settings: {
+                  legacyPlan: 'legacy-value',
+                },
+              },
+            },
+          },
+        },
+      },
+      publications: [
+        createJsFieldPublicationRecord({
+          id: 'lep_phone_link_active',
+          settingsSchemaHash: 'schema_active',
+          settingsSchemaSnapshot: {
+            type: 'object',
+            properties: {
+              activePlan: {
+                type: 'string',
+              },
+            },
+          },
+          settingsDefaultsSnapshot: {
+            activePlan: 'active-default',
+          },
+        }),
+      ],
+      repos: [createRepoRecord({ id: 'ler_fields' })],
+      entries: [
+        createJsFieldEntryRecord({
+          activePublicationId: 'lep_phone_link_active',
+        }),
+      ],
+    });
+
+    await service.syncFlowModelReferencesForNodeTree({
+      rootUid: uid,
+      action: 'lightExtensionReferences.rebuildIndex',
+    });
+
+    expect(repositories.lightExtensionReferences.records[0].toJSON()).toMatchObject({
+      publicationId: 'lep_phone_link_active',
+      versionPolicy: 'follow-active',
+      settingsHash: stableJsonHash({
+        activePlan: 'active-default',
+      }),
+      resolvedStatus: 'active',
+    });
+  });
+
+  it('removes JS Field references after switching the host back to inline source', async () => {
+    const uid = 'flow_js_field_inline';
+    const { service, repositories } = createReferenceServiceFixture({
+      flowModelTrees: {
+        [uid]: createJsFieldNode({
+          uid,
+          sourceMode: 'inline',
+        }),
+      },
+      references: [
+        createJsFieldReferenceRecord({
+          modelUid: uid,
+        }),
+      ],
+    });
+
+    const result = await service.syncFlowModelReferencesForNodeTree({
+      rootUid: uid,
+      action: 'flowSurfaces.updateSettings',
+    });
+
+    expect(result).toMatchObject({
+      scanned: 1,
+      upserted: 0,
+      removed: 1,
+    });
+    expect(repositories.lightExtensionReferences.records).toHaveLength(0);
   });
 
   it('updates an existing reference without changing its primary key', async () => {
@@ -228,6 +491,79 @@ describe('plugin-light-extension reference service', () => {
         ownerLocatorHash: expect.stringMatching(/^sha256:/),
       }),
     );
+  });
+
+  it('does not mark the current owner hash owner_missing when a repo rebuild finds a stale hash for the same model', async () => {
+    const uid = 'flow_js_field_reused_uid';
+    const { service, repositories } = createReferenceServiceFixture({
+      flowModels: [
+        {
+          uid,
+          options: createJsFieldNode({
+            uid,
+            use: 'JSFieldModel',
+            settings: {
+              prefix: 'callto:',
+            },
+          }),
+        },
+      ],
+      publications: [createJsFieldPublicationRecord()],
+      repos: [createRepoRecord({ id: 'ler_fields' })],
+      entries: [createJsFieldEntryRecord()],
+      references: [
+        createJsFieldReferenceRecord({
+          id: 'lef_current_js_field_hash',
+          modelUid: uid,
+          use: 'JSFieldModel',
+          resolvedStatus: 'active',
+        }),
+        createJsFieldReferenceRecord({
+          id: 'lef_stale_js_field_hash',
+          modelUid: uid,
+          use: 'JSColumnModel',
+          resolvedStatus: 'active',
+        }),
+      ],
+    });
+
+    const result = await service.rebuildIndex(
+      {
+        repoId: 'ler_fields',
+      },
+      {
+        requestId: 'req_rebuild_same_model_stale_hash',
+      },
+    );
+
+    expect(result).toMatchObject({
+      upserted: 1,
+      ownerMissing: 1,
+      statusCounts: {
+        active: 1,
+        owner_missing: 1,
+      },
+    });
+    expect(
+      Object.fromEntries(
+        repositories.lightExtensionReferences.records.map((record) => [record.get('id'), record.toJSON()]),
+      ),
+    ).toMatchObject({
+      lef_current_js_field_hash: {
+        resolvedStatus: 'active',
+        ownerLocator: {
+          modelUid: uid,
+          use: 'JSFieldModel',
+        },
+      },
+      lef_stale_js_field_hash: {
+        resolvedStatus: 'owner_missing',
+        ownerLocator: {
+          modelUid: uid,
+          use: 'JSColumnModel',
+        },
+      },
+    });
   });
 
   it('does not duplicate owner_missing count or audit when a repository remove hook fires twice', async () => {

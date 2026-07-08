@@ -19,6 +19,7 @@ import type {
 
 export type ReferenceOwnerAdapter = LightExtensionReferenceOwnerAdapterContract & {
   stepPath?: ['stepParams', 'jsSettings'];
+  modelUses?: string[];
 };
 
 const JS_BLOCK_STEP_PATH: ['stepParams', 'jsSettings'] = ['stepParams', 'jsSettings'];
@@ -42,10 +43,12 @@ const REFERENCE_OWNER_ADAPTERS: ReferenceOwnerAdapter[] = [
     kind: 'js-field',
     ownerKind: 'flowModel.fieldSettings',
     title: 'JS Field',
-    status: 'placeholder',
+    status: 'active',
     locatorContract: 'Field model settings locator',
+    modelUse: 'JSFieldModel',
+    modelUses: ['JSFieldModel', 'JSEditableFieldModel', 'JSColumnModel'],
     implementationTask: '03-task-js-field-entry-end-to-end.md',
-    message: 'Waiting for the JS Field host task to provide concrete field owner locators and save hooks.',
+    message: 'Active adapter scans JS field display, editable field, and table column model settings.',
     supportsVersionPolicy: true,
     supportsImpact: true,
     supportsBulkUpgrade: true,
@@ -116,7 +119,7 @@ export function getReferenceOwnerAdapterByKind(kind: string): ReferenceOwnerAdap
 }
 
 export function getReferenceOwnerAdapterByUse(use: string): ReferenceOwnerAdapter | undefined {
-  return REFERENCE_OWNER_ADAPTERS.find((adapter) => adapter.modelUse === use);
+  return REFERENCE_OWNER_ADAPTERS.find((adapter) => adapter.modelUse === use || adapter.modelUses?.includes(use));
 }
 
 export function getReferenceOwnerAdapterByOwnerKind(ownerKind: string): ReferenceOwnerAdapter | undefined {
@@ -147,6 +150,7 @@ export function collectReferenceOwnerNodes<
 export function buildReferenceOwnerLocator(
   adapter: ReferenceOwnerAdapter,
   modelUid: string,
+  modelUse?: string,
 ): LightExtensionReferenceOwnerLocator {
   if (adapter.ownerKind === 'flowModel.step') {
     return {
@@ -160,7 +164,7 @@ export function buildReferenceOwnerLocator(
   return {
     kind: adapter.ownerKind,
     modelUid,
-    use: adapter.modelUse,
+    use: normalizeString(modelUse) || adapter.modelUse,
     descriptor: adapter.locatorContract,
   };
 }

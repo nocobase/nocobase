@@ -23,6 +23,10 @@ import { LiquidEngine } from './common/Liquid';
 import type { PreviewRunJSResult } from './components/code-editor/runjsDiagnostics';
 import { TextAreaWithContextSelector } from './components/TextAreaWithContextSelector';
 import { JSBlockSourceModeField } from './models/blocks/js-block/JSBlockSourceModeField';
+import {
+  JS_FIELD_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
+  JSFieldSourceModeField,
+} from './models/fields/JSFieldSourceModeField';
 
 export class PluginFlowEngine<TApp extends BaseApplication<any> = BaseApplication<any>> extends Plugin<
   PluginOptions<any>,
@@ -44,6 +48,8 @@ export class PluginFlowEngine<TApp extends BaseApplication<any> = BaseApplicatio
       DefaultValue,
       FlowSettingsVariableTextArea: TextAreaWithContextSelector,
       JSBlockLightExtensionSourceField: JSBlockSourceModeField,
+      JSFieldLightExtensionSourceField: JSFieldSourceModeField,
+      [JS_FIELD_LIGHT_EXTENSION_FULL_SOURCE_FIELD]: JSFieldSourceModeField,
     });
 
     // 动态流编辑入口

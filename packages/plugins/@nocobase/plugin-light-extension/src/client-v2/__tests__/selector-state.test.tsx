@@ -7,12 +7,21 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { createForm } from '@formily/core';
+import { createSchemaField, FormProvider } from '@formily/react';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { FlowEngine, FlowEngineProvider } from '@nocobase/flow-engine';
 
-import { RepoEntryPublicationSelector } from '../components/RepoEntryPublicationSelector';
+import {
+  getNextLightExtensionSourceBindingVersionPolicy,
+  JSFieldLightExtensionSourceField,
+} from '../components/JSBlockLightExtensionSourceField';
+import {
+  getNextSelectorBindingVersionPolicy,
+  RepoEntryPublicationSelector,
+} from '../components/RepoEntryPublicationSelector';
 
 const mocks = vi.hoisted(() => ({
   request: vi.fn(),
@@ -24,6 +33,12 @@ vi.mock('react-i18next', () => ({
     t: mocks.t,
   }),
 }));
+
+const SchemaField = createSchemaField({
+  components: {
+    JSFieldLightExtensionSourceField,
+  },
+});
 
 const salesPublication = {
   id: 'pub_sales',
@@ -234,41 +249,58 @@ async function flushAsyncEffects() {
   });
 }
 
+function mockSelectorRequests({
+  selectableEntries = entries,
+  publicationsByEntry = {
+    entry_sales: [salesPublication],
+    entry_support: [supportPublication],
+    entry_phone: [phonePublication],
+    entry_action: [actionPublication],
+  },
+  activePublicationIdByEntry = {},
+}: {
+  selectableEntries?: typeof entries;
+  publicationsByEntry?: Record<string, Array<typeof salesPublication>>;
+  activePublicationIdByEntry?: Record<string, string | null>;
+} = {}) {
+  mocks.request.mockImplementation((options: { url: string }) => {
+    if (options.url === 'lightExtensionEntries:listSelectable') {
+      return Promise.resolve({
+        data: {
+          data: selectableEntries,
+        },
+      });
+    }
+
+    const publicationsUrlPrefix = '/light-extension-entries/';
+    const publicationsUrlSuffix = '/publications';
+    if (options.url.startsWith(publicationsUrlPrefix) && options.url.endsWith(publicationsUrlSuffix)) {
+      const entryId = decodeURIComponent(
+        options.url.slice(publicationsUrlPrefix.length, -publicationsUrlSuffix.length),
+      );
+      const entry = selectableEntries.find((item) => item.id === entryId);
+      const activePublicationId = Object.prototype.hasOwnProperty.call(activePublicationIdByEntry, entryId)
+        ? activePublicationIdByEntry[entryId]
+        : entry?.activePublicationId || null;
+      return Promise.resolve({
+        data: {
+          data: {
+            entryId,
+            activePublicationId,
+            publications: publicationsByEntry[entryId] || [],
+          },
+        },
+      });
+    }
+
+    return Promise.reject(new Error(`Unexpected request: ${options.url}`));
+  });
+}
+
 describe('RepoEntryPublicationSelector state consistency', () => {
   it('syncs selection when the controlled binding changes after mount', async () => {
     const onChange = vi.fn();
-    mocks.request.mockImplementation((options: { url: string }) => {
-      if (options.url === 'lightExtensionEntries:listSelectable') {
-        return Promise.resolve({
-          data: {
-            data: entries,
-          },
-        });
-      }
-      if (options.url === '/light-extension-entries/entry_sales/publications') {
-        return Promise.resolve({
-          data: {
-            data: {
-              entryId: 'entry_sales',
-              activePublicationId: 'pub_sales',
-              publications: [salesPublication],
-            },
-          },
-        });
-      }
-      if (options.url === '/light-extension-entries/entry_support/publications') {
-        return Promise.resolve({
-          data: {
-            data: {
-              entryId: 'entry_support',
-              activePublicationId: 'pub_support',
-              publications: [supportPublication],
-            },
-          },
-        });
-      }
-      return Promise.reject(new Error(`Unexpected request: ${options.url}`));
-    });
+    mockSelectorRequests();
 
     const result = renderSelector({
       value: {
@@ -324,18 +356,31 @@ describe('RepoEntryPublicationSelector state consistency', () => {
     });
   });
 
-  it('heals a controlled binding to the active publication when the stored publication is stale', async () => {
+  it('preserves a controlled pinned publication when a newer publication is active', async () => {
     const onChange = vi.fn();
     const onClear = vi.fn();
-    mocks.request.mockImplementation((options: { url: string }) => {
-      if (options.url === 'lightExtensionEntries:listSelectable') {
-        return Promise.resolve({
-          data: {
-            data: entries,
-          },
-        });
-      }
-      return Promise.reject(new Error(`Unexpected request: ${options.url}`));
+    const salesPublicationV2 = {
+      ...salesPublication,
+      id: 'pub_sales_v2',
+      commitId: 'commit_sales_v2',
+      settingsSchemaHash: 'schema_hash_v2',
+    };
+    mockSelectorRequests({
+      selectableEntries: entries.map((entry) =>
+        entry.id === 'entry_sales'
+          ? {
+              ...entry,
+              activePublicationId: 'pub_sales_v2',
+              activePublication: salesPublicationV2,
+            }
+          : entry,
+      ),
+      publicationsByEntry: {
+        entry_sales: [salesPublication, salesPublicationV2],
+        entry_support: [supportPublication],
+        entry_phone: [phonePublication],
+        entry_action: [actionPublication],
+      },
     });
 
     renderSelector({
@@ -344,7 +389,7 @@ describe('RepoEntryPublicationSelector state consistency', () => {
         repoId: 'repo_sales',
         entryId: 'entry_sales',
         kind: 'js-block',
-        publicationId: 'pub_missing',
+        publicationId: 'pub_sales',
         versionPolicy: 'pinned',
       },
       onChange,
@@ -356,7 +401,7 @@ describe('RepoEntryPublicationSelector state consistency', () => {
         expect.objectContaining({
           entryId: 'entry_sales',
           publicationId: 'pub_sales',
-          versionPolicy: 'follow-active',
+          versionPolicy: 'pinned',
         }),
         salesPublication,
         {},
@@ -365,19 +410,38 @@ describe('RepoEntryPublicationSelector state consistency', () => {
     expect(onClear).not.toHaveBeenCalled();
   });
 
+  it('treats legacy controlled bindings without a version policy as pinned', async () => {
+    const onChange = vi.fn();
+    mockSelectorRequests();
+
+    renderSelector({
+      value: {
+        type: 'light-extension-entry',
+        repoId: 'repo_sales',
+        entryId: 'entry_sales',
+        kind: 'js-block',
+        publicationId: 'pub_sales',
+      },
+      onChange,
+    });
+
+    await waitFor(() => {
+      expect(onChange).toHaveBeenCalledWith(
+        expect.objectContaining({
+          entryId: 'entry_sales',
+          publicationId: 'pub_sales',
+          versionPolicy: 'pinned',
+        }),
+        salesPublication,
+        {},
+      );
+    });
+  });
+
   it('heals a controlled binding when only the repo and entry selection are reusable', async () => {
     const onChange = vi.fn();
     const onClear = vi.fn();
-    mocks.request.mockImplementation((options: { url: string }) => {
-      if (options.url === 'lightExtensionEntries:listSelectable') {
-        return Promise.resolve({
-          data: {
-            data: entries,
-          },
-        });
-      }
-      return Promise.reject(new Error(`Unexpected request: ${options.url}`));
-    });
+    mockSelectorRequests();
 
     renderSelector({
       value: {
@@ -408,16 +472,7 @@ describe('RepoEntryPublicationSelector state consistency', () => {
 
   it('does not revive a binding after the controlled value is cleared', async () => {
     const onChange = vi.fn();
-    mocks.request.mockImplementation((options: { url: string }) => {
-      if (options.url === 'lightExtensionEntries:listSelectable') {
-        return Promise.resolve({
-          data: {
-            data: entries,
-          },
-        });
-      }
-      return Promise.reject(new Error(`Unexpected request: ${options.url}`));
-    });
+    mockSelectorRequests();
 
     const result = renderSelector({
       value: {
@@ -457,16 +512,7 @@ describe('RepoEntryPublicationSelector state consistency', () => {
   it('keeps the accepted active publication binding without clearing it', async () => {
     const onChange = vi.fn();
     const onClear = vi.fn();
-    mocks.request.mockImplementation((options: { url: string }) => {
-      if (options.url === 'lightExtensionEntries:listSelectable') {
-        return Promise.resolve({
-          data: {
-            data: entries,
-          },
-        });
-      }
-      return Promise.reject(new Error(`Unexpected request: ${options.url}`));
-    });
+    mockSelectorRequests();
 
     renderStatefulSelector({
       initialValue: {
@@ -496,19 +542,10 @@ describe('RepoEntryPublicationSelector state consistency', () => {
     expect(onClear).not.toHaveBeenCalled();
   });
 
-  it('does not load or expose publication choices when the selected entry changes', async () => {
+  it('loads and exposes publication choices when the selected entry changes', async () => {
     const onChange = vi.fn();
     const onClear = vi.fn();
-    mocks.request.mockImplementation((options: { url: string }) => {
-      if (options.url === 'lightExtensionEntries:listSelectable') {
-        return Promise.resolve({
-          data: {
-            data: entries,
-          },
-        });
-      }
-      return Promise.reject(new Error(`Unexpected request: ${options.url}`));
-    });
+    mockSelectorRequests();
 
     const result = renderSelector({
       onChange,
@@ -552,33 +589,25 @@ describe('RepoEntryPublicationSelector state consistency', () => {
       expect.objectContaining({
         entryId: 'entry_support',
         publicationId: 'pub_support',
-        versionPolicy: 'follow-active',
+        versionPolicy: 'pinned',
       }),
       supportPublication,
       {},
     );
     expect(onClear).not.toHaveBeenCalled();
-    expect(mocks.request).not.toHaveBeenCalledWith(
+    expect(mocks.request).toHaveBeenCalledWith(
       expect.objectContaining({
-        url: expect.stringContaining('/publications'),
+        url: '/light-extension-entries/entry_support/publications',
+        method: 'get',
       }),
     );
-    expect(screen.queryByLabelText('Publication')).toBeNull();
+    expect(screen.getAllByLabelText('Publication').length).toBeGreaterThan(0);
   });
 
   it('scopes selectable entries to the requested kind and clears mismatched bindings', async () => {
     const onChange = vi.fn();
     const onClear = vi.fn();
-    mocks.request.mockImplementation((options: { url: string }) => {
-      if (options.url === 'lightExtensionEntries:listSelectable') {
-        return Promise.resolve({
-          data: {
-            data: entries,
-          },
-        });
-      }
-      return Promise.reject(new Error(`Unexpected request: ${options.url}`));
-    });
+    mockSelectorRequests();
 
     renderSelector({
       kind: 'js-field',
@@ -603,5 +632,101 @@ describe('RepoEntryPublicationSelector state consistency', () => {
       }),
     );
     expect(onChange).not.toHaveBeenCalledWith(expect.objectContaining({ kind: 'js-action' }), expect.anything(), {});
+  });
+
+  it('pins JS Field source bindings by default when selected through the field source component', async () => {
+    mockSelectorRequests();
+    const engine = new FlowEngine();
+    engine.context.defineProperty('api', {
+      value: {
+        request: mocks.request,
+      },
+    });
+    const form = createForm({
+      initialValues: {
+        sourceMode: 'light-extension',
+        settings: {},
+      },
+    });
+
+    render(
+      <FlowEngineProvider engine={engine}>
+        <FormProvider form={form}>
+          <SchemaField
+            schema={{
+              type: 'object',
+              properties: {
+                sourceBinding: {
+                  type: 'object',
+                  'x-component': 'JSFieldLightExtensionSourceField',
+                },
+              },
+            }}
+          />
+        </FormProvider>
+      </FlowEngineProvider>,
+    );
+
+    await waitFor(() => {
+      expect(form.values.sourceBinding).toMatchObject({
+        kind: 'js-field',
+        entryId: 'entry_phone',
+        publicationId: 'pub_phone',
+        versionPolicy: 'pinned',
+      });
+    });
+    expect(mocks.request).toHaveBeenCalledWith(
+      expect.objectContaining({
+        url: 'lightExtensionEntries:listSelectable',
+        method: 'post',
+        data: { kind: 'js-field' },
+      }),
+    );
+  });
+
+  it('pins the selected publication when manually switching from follow-active', () => {
+    const currentBinding = {
+      type: 'light-extension-entry',
+      repoId: 'repo_sales',
+      entryId: 'entry_phone',
+      kind: 'js-field',
+      publicationId: 'pub_phone_v2',
+      versionPolicy: 'follow-active',
+    } as const;
+    const manuallySelectedBinding = {
+      ...currentBinding,
+      publicationId: 'pub_phone',
+      versionPolicy: 'pinned',
+    } as const;
+
+    expect(
+      getNextSelectorBindingVersionPolicy({
+        controlledValue: currentBinding,
+        selectedEntryId: 'entry_phone',
+        selectedPublicationId: 'pub_phone',
+        manuallySelectedPublicationId: 'pub_phone',
+      }),
+    ).toBe('pinned');
+    expect(
+      getNextLightExtensionSourceBindingVersionPolicy({
+        sourceBinding: currentBinding,
+        binding: manuallySelectedBinding,
+        defaultVersionPolicy: 'pinned',
+      }),
+    ).toBe('pinned');
+    expect(
+      getNextLightExtensionSourceBindingVersionPolicy({
+        sourceBinding: {
+          ...currentBinding,
+          publicationId: 'pub_phone_legacy',
+        },
+        binding: {
+          ...currentBinding,
+          publicationId: 'pub_phone_v2',
+          versionPolicy: 'follow-active',
+        },
+        defaultVersionPolicy: 'pinned',
+      }),
+    ).toBe('follow-active');
   });
 });

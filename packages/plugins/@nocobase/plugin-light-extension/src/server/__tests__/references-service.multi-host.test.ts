@@ -45,7 +45,7 @@ describe('plugin-light-extension multi-host reference foundation', () => {
         expect.objectContaining({
           kind: 'js-field',
           ownerKind: 'flowModel.fieldSettings',
-          status: 'placeholder',
+          status: 'active',
           implementationTask: '03-task-js-field-entry-end-to-end.md',
           supportsVersionPolicy: true,
           supportsImpact: true,
@@ -138,7 +138,7 @@ describe('plugin-light-extension multi-host reference foundation', () => {
 
     const result = await service.rebuildIndex({
       ownerLocator: {
-        kind: 'flowModel.fieldSettings',
+        kind: 'flowModel.actionSettings',
         modelUid: 'flow_js_block',
       },
       dryRun: true,

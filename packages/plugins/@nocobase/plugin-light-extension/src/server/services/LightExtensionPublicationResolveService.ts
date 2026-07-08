@@ -248,7 +248,11 @@ export class LightExtensionPublicationResolveService {
         : await this.loadPublication(sourceBinding.publicationId, ctx);
     assertSourceBindingMatches(sourceBinding, publication);
     await this.assertRuntimeStateAllowsPublication(publication, ctx);
-    const settings = this.settingsResolver.resolvePublicationSettings(publication, input.settings);
+    const inputSettings =
+      versionPolicy === 'follow-active'
+        ? this.settingsResolver.pruneUnknownSettings(publication, input.settings)
+        : input.settings;
+    const settings = this.settingsResolver.resolvePublicationSettings(publication, inputSettings);
 
     if (!publication.artifact.code) {
       throw new LightExtensionError(
@@ -260,6 +264,7 @@ export class LightExtensionPublicationResolveService {
     return {
       publicationId: publication.id,
       entryId: publication.entryId,
+      entryPath: publication.entryPath,
       runtimeCodeHash: publication.runtimeCodeHash,
       code: publication.artifact.code,
       version: publication.runtimeVersion || publication.artifact.version,

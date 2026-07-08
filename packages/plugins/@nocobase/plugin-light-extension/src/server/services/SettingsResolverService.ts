@@ -56,6 +56,18 @@ export class SettingsResolverService {
     const extracted = extractSettingsDefaults(publication.settingsSchemaSnapshot);
     return isPlainRecord(extracted) ? extracted : {};
   }
+
+  pruneUnknownSettings(
+    publication: LightExtensionPublicationRecord,
+    inputSettings: Record<string, unknown> | null | undefined,
+  ): Record<string, unknown> {
+    const settings = isPlainRecord(inputSettings) ? inputSettings : {};
+    if (!settingsSchemaHasProperties(publication.settingsSchemaSnapshot)) {
+      return cloneRecord(settings);
+    }
+    const pruned = pruneSettingsValue(publication.settingsSchemaSnapshot, settings);
+    return isPlainRecord(pruned) ? pruned : {};
+  }
 }
 
 function extractSettingsDefaults(schema: Record<string, unknown> | null): unknown {
@@ -318,6 +330,33 @@ function validateArraySettings(
   value.forEach((item, index) => {
     validateSettingsValue(schema.items as Record<string, unknown>, item, `${path}[${index}]`, issues);
   });
+}
+
+function pruneSettingsValue(schema: unknown, value: unknown): unknown {
+  if (Array.isArray(value)) {
+    const itemsSchema = isPlainRecord(schema) ? schema.items : undefined;
+    return isPlainRecord(itemsSchema)
+      ? value.map((item) => pruneSettingsValue(itemsSchema, item))
+      : cloneJsonValue(value);
+  }
+
+  if (!settingsSchemaHasProperties(schema) || !isPlainRecord(value)) {
+    return cloneJsonValue(value);
+  }
+
+  const properties = (schema as Record<string, unknown>).properties as Record<string, unknown>;
+  return Object.fromEntries(
+    Object.entries(properties)
+      .filter(([key]) => Object.prototype.hasOwnProperty.call(value, key))
+      .map(([key, childSchema]) => [key, pruneSettingsValue(childSchema, value[key])])
+      .filter(([, childValue]) => typeof childValue !== 'undefined'),
+  );
+}
+
+function settingsSchemaHasProperties(schema: unknown): schema is Record<string, unknown> & {
+  properties: Record<string, unknown>;
+} {
+  return isPlainRecord(schema) && isPlainRecord(schema.properties);
 }
 
 function getSettingsValueType(value: unknown): string {

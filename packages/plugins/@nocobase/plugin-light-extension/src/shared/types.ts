@@ -315,6 +315,7 @@ export interface LightExtensionRuntimeSourceBinding {
   entryId: string;
   entryTitle?: string | null;
   entryName?: string | null;
+  entryPath?: string | null;
   kind: string;
   publicationId: string;
   versionPolicy?: LightExtensionSourceBindingVersionPolicy;
@@ -334,6 +335,7 @@ export interface LightExtensionRuntimeCacheMetadata {
 export interface LightExtensionRuntimeResolveResult {
   publicationId: string;
   entryId: string;
+  entryPath: string;
   runtimeCodeHash: string;
   code: string;
   version: string;

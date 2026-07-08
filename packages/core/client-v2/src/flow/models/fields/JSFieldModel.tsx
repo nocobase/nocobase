@@ -7,11 +7,27 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ElementProxy, tExpr, createSafeWindow, createSafeDocument, createSafeNavigator } from '@nocobase/flow-engine';
+import { ElementProxy, tExpr, type StepDefinition } from '@nocobase/flow-engine';
 import React, { useEffect } from 'react';
 import { FieldModel } from '../base/FieldModel';
 import { resolveRunJsParams } from '../utils/resolveRunJsParams';
-import { RunJSEditorField } from '../../components/runjs-studio';
+import {
+  beginJSFieldRuntimeRun,
+  createJSFieldRunJsUISchema,
+  createJSFieldSourceBindingStep,
+  createJSFieldSourceModeStep,
+  getJSFieldContextSignature,
+  getJSFieldRunJsEditorTitle,
+  getJSFieldRuntimeFlowSettingSteps,
+  getJSFieldSourceSignature,
+  INLINE_SOURCE_MODE,
+  isCurrentJSFieldRuntimeRun,
+  resetJSFieldRuntimeElement,
+  renderJSFieldRuntimeError,
+  reportJSFieldRuntimeErrorBestEffort,
+  resolveJSFieldRuntimeRunJS,
+  runResolvedJSFieldCode,
+} from './jsFieldLightExtensionRuntime';
 
 const DEFAULT_CODE = `
 function JsReadonlyField() {
@@ -43,7 +59,15 @@ export class JSFieldModel extends FieldModel {
   private _mountedOnce = false; // prevent first-mount double-run
   private _lastRenderedElement?: HTMLSpanElement | null;
   private _pendingRenderedElement?: HTMLSpanElement | null;
-  private _lastRunJs?: { code: string; value: any; element: HTMLSpanElement | null };
+  private _lastRunJs?: { signature: string; contextSignature: string; value: unknown; element: HTMLSpanElement | null };
+
+  public async getRuntimeFlowSettingSteps(flowKey: string): Promise<Record<string, StepDefinition> | undefined> {
+    if (flowKey !== 'jsSettings') {
+      return undefined;
+    }
+
+    return getJSFieldRuntimeFlowSettingSteps(this);
+  }
 
   getInputArgs() {
     const field = this.context.collectionField;
@@ -80,11 +104,13 @@ export class JSFieldModel extends FieldModel {
    */
   useHooksBeforeRender() {
     const codeParam = this.getStepParams('jsSettings', 'runJs')?.code as string | undefined;
+    const sourceSignature = getJSFieldSourceSignature(this, this.getRunJsCode());
+    const contextSignature = getJSFieldContextSignature(this);
     // eslint-disable-next-line react-hooks/rules-of-hooks
     useEffect(() => {
       this.refreshRenderedElement(this.context.ref?.current as HTMLSpanElement | null);
       // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [codeParam, this.props.value]);
+    }, [codeParam, sourceSignature, contextSignature, this.props.value]);
   }
 
   /**
@@ -112,12 +138,24 @@ export class JSFieldModel extends FieldModel {
       }
       const code = this.getRunJsCode();
       const value = this.props.value;
+      const signature = getJSFieldSourceSignature(this, code);
+      const contextSignature = getJSFieldContextSignature(this);
       const last = this._lastRunJs;
-      if (last && last.element === element && last.code === code && Object.is(last.value, value)) {
+      if (
+        last &&
+        last.element === element &&
+        last.signature === signature &&
+        last.contextSignature === contextSignature &&
+        Object.is(last.value, value)
+      ) {
         return;
       }
-      this._lastRunJs = { code, value, element };
-      void this.applyFlow('jsSettings');
+      this._lastRunJs = { signature, contextSignature, value, element };
+      this.applyFlow('jsSettings').catch((error) => {
+        if (ref.current === element) {
+          renderJSFieldRuntimeError(element, error, 'js-field-runtime-error');
+        }
+      });
     });
   }
 
@@ -164,33 +202,16 @@ JSFieldModel.registerFlow({
   title: tExpr('JavaScript settings'),
   manual: true,
   steps: {
+    sourceMode: createJSFieldSourceModeStep(),
+    sourceBinding: createJSFieldSourceBindingStep(),
     runJs: {
       title: tExpr('Write JavaScript'),
       useRawParams: true,
-      uiSchema: {
-        code: {
-          type: 'string',
-          'x-decorator': 'FormItem',
-          'x-component': RunJSEditorField,
-          'x-component-props': {
-            locatorFactory: 'flowModel.step',
-            surfaceStyle: 'render',
-            scene: 'block',
-            height: '100%',
-            minHeight: '320px',
-            theme: 'light',
-            enableLinter: true,
-            containerStyle: {
-              height: '100%',
-              minHeight: 0,
-              minWidth: 0,
-            },
-          },
-        },
-      },
-      uiMode: {
+      uiSchema: createJSFieldRunJsUISchema({ scene: 'block' }),
+      uiMode: async (ctx) => ({
         type: 'embed',
         props: {
+          title: await getJSFieldRunJsEditorTitle(ctx),
           footer: null,
           maxWidth: '960px',
           minWidth: '720px',
@@ -204,31 +225,54 @@ JSFieldModel.registerFlow({
             },
           },
         },
-      },
+      }),
       defaultParams(ctx) {
         return {
           version: 'v2',
+          sourceMode: INLINE_SOURCE_MODE,
           code: DEFAULT_CODE,
         };
       },
       async handler(ctx, params) {
-        const { code, version } = resolveRunJsParams(ctx, params);
+        const inlineRunJs = resolveRunJsParams(ctx, params);
         // 暴露 element 与 value 到运行上下文
         ctx.onRefReady(ctx.ref, async (element) => {
-          ctx.defineProperty('element', {
-            get: () => new ElementProxy((ctx.ref?.current as HTMLElement | null) || element),
-            cache: false,
-          });
-          ctx.defineProperty('value', {
-            get: () => ctx.model.props?.value,
-            cache: false,
-          });
-          const navigator = createSafeNavigator();
-          await ctx.runjs(
-            code,
-            { window: createSafeWindow({ navigator }), document: createSafeDocument(), navigator },
-            { version },
-          );
+          const runId = beginJSFieldRuntimeRun(ctx.model);
+          let resolved: Awaited<ReturnType<typeof resolveJSFieldRuntimeRunJS>> | undefined;
+          try {
+            resetJSFieldRuntimeElement(element);
+            ctx.defineProperty('element', {
+              get: () => new ElementProxy((ctx.ref?.current as HTMLElement | null) || element),
+              cache: false,
+            });
+            ctx.defineProperty('value', {
+              get: () => ctx.model.props?.value,
+              cache: false,
+            });
+            ctx.defineProperty('record', {
+              get: () => ctx.model.context.record,
+              cache: false,
+            });
+            ctx.defineProperty('collectionField', {
+              get: () => ctx.model.context.collectionField,
+              cache: false,
+            });
+            resolved = await resolveJSFieldRuntimeRunJS({
+              model: ctx.model,
+              params: params || {},
+              runJs: inlineRunJs,
+            });
+            if (!isCurrentJSFieldRuntimeRun(ctx.model, runId)) {
+              return;
+            }
+            await runResolvedJSFieldCode({ ctx, resolved });
+          } catch (error) {
+            if (!isCurrentJSFieldRuntimeRun(ctx.model, runId)) {
+              return;
+            }
+            renderJSFieldRuntimeError(element, error, 'js-field-runtime-error');
+            await reportJSFieldRuntimeErrorBestEffort({ ctx, error, resolved, params });
+          }
         });
       },
     },

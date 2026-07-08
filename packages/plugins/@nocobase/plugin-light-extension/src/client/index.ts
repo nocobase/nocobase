@@ -11,6 +11,8 @@ import type React from 'react';
 import {
   JS_BLOCK_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
   JS_BLOCK_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
+  JS_FIELD_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
+  JS_FIELD_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
   RunJSSourceResolverRegistry,
   registerBlockGridSelectSceneAddBlockProvider,
 } from '@nocobase/client-v2';
@@ -18,7 +20,10 @@ import {
 import LightExtensionHomePage from '../client-shared/LightExtensionHomePage';
 import { LIGHT_EXTENSION_ACL_SNIPPET, LIGHT_EXTENSION_SETTINGS_KEY, NAMESPACE } from '../constants';
 import { createLightExtensionJSBlockAddItems } from '../client-v2/add-block/lightExtensionJsBlockItems';
-import { JSBlockLightExtensionSourceField } from '../client-v2/components/JSBlockLightExtensionSourceField';
+import {
+  JSBlockLightExtensionSourceField,
+  JSFieldLightExtensionSourceField,
+} from '../client-v2/components/JSBlockLightExtensionSourceField';
 import { RepoEntryPublicationSelector } from '../client-v2/components/RepoEntryPublicationSelector';
 import { SettingsAutoForm, SettingsSingleField } from '../client-v2/components/SettingsAutoForm';
 import { VersionPolicyField } from '../client-v2/components/VersionPolicyField';
@@ -90,6 +95,8 @@ export class PluginLightExtensionClient {
     this.app?.flowEngine?.flowSettings?.registerComponents?.({
       [JS_BLOCK_LIGHT_EXTENSION_FULL_SOURCE_FIELD]: JSBlockLightExtensionSourceField,
       [JS_BLOCK_LIGHT_EXTENSION_SETTINGS_STEP_FIELD]: SettingsSingleField,
+      [JS_FIELD_LIGHT_EXTENSION_FULL_SOURCE_FIELD]: JSFieldLightExtensionSourceField,
+      [JS_FIELD_LIGHT_EXTENSION_SETTINGS_STEP_FIELD]: SettingsSingleField,
       RepoEntryPublicationSelector,
       SettingsAutoForm,
       VersionPolicyField,

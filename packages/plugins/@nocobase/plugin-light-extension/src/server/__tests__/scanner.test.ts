@@ -232,7 +232,7 @@ describe('plugin-light-extension entry scanner', () => {
     );
   });
 
-  it('persists disabled client kind entries without marking them ready', async () => {
+  it('persists staged client kind entries and marks JS Field entries ready', async () => {
     const repo = await repoService.createRepo({
       name: 'Disabled Kind Scan Demo',
       initialFiles: [
@@ -270,7 +270,7 @@ describe('plugin-light-extension entry scanner', () => {
       [
         'event:log-page-open:disabled',
         'js-action:batch-approve:disabled',
-        'js-field:phone-link:disabled',
+        'js-field:phone-link:ready',
         'js-item:customer-menu:disabled',
         'runjs:sales-kpi:disabled',
       ],
@@ -285,11 +285,6 @@ describe('plugin-light-extension entry scanner', () => {
         kind: 'js-action',
         entryName: 'batch-approve',
         path: 'src/client/js-actions/batch-approve',
-      }),
-      expect.objectContaining({
-        kind: 'js-field',
-        entryName: 'phone-link',
-        path: 'src/client/js-fields/phone-link',
       }),
       expect.objectContaining({
         kind: 'js-item',
@@ -789,7 +784,7 @@ describe('plugin-light-extension entry scanner', () => {
     expect(response.status).toBe(200);
     expect(response.body).toMatchObject({
       supportedKinds: expect.arrayContaining(['js-block', 'js-field', 'js-action', 'js-item', 'runjs', 'event']),
-      enabledKinds: ['js-block'],
+      enabledKinds: ['js-block', 'js-field'],
       validatorVersion: 'light-extension-validator-v1',
       sdkTemplateVersion: 'light-extension-sdk-template-v1',
       writePolicy: {
@@ -984,7 +979,7 @@ describe('plugin-light-extension capabilities HTTP permissions', () => {
     expect(adminResponse.status).toBe(200);
     expect(adminResponse.body).toMatchObject({
       supportedKinds: expect.arrayContaining(['js-block', 'js-field', 'js-action', 'js-item', 'runjs', 'event']),
-      enabledKinds: ['js-block'],
+      enabledKinds: ['js-block', 'js-field'],
       validatorVersion: 'light-extension-validator-v1',
     });
   });
@@ -1021,7 +1016,7 @@ describe('plugin-light-extension capabilities HTTP permissions', () => {
       expect(response.status).toBe(200);
       expect(defaultPrefixResponse.status).not.toBe(200);
       expect(response.body).toMatchObject({
-        enabledKinds: ['js-block'],
+        enabledKinds: ['js-block', 'js-field'],
         validatorVersion: 'light-extension-validator-v1',
       });
     } finally {

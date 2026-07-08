@@ -15,11 +15,17 @@ import { useTranslation } from 'react-i18next';
 
 import { useFlowContext } from '@nocobase/flow-engine';
 import { NAMESPACE } from '../../constants';
-import type { LightExtensionPublicationMetadataRecord, LightExtensionRuntimeSourceBinding } from '../../shared/types';
+import type {
+  LightExtensionKind,
+  LightExtensionPublicationMetadataRecord,
+  LightExtensionRuntimeSourceBinding,
+  LightExtensionSourceBindingVersionPolicy,
+} from '../../shared/types';
 import type { ApiClientLike } from '../api/lightExtensionEntriesRequests';
 import { resolveLightExtensionRuntimeSource } from '../resolvers/LightExtensionRunJSResolver';
 import { RepoEntryPublicationSelector } from './RepoEntryPublicationSelector';
 import { formatSettingsValidationErrors, SettingsAutoForm, type SettingsValidationResult } from './SettingsAutoForm';
+import { VersionPolicyField } from './VersionPolicyField';
 
 const INLINE_SOURCE_MODE = 'inline';
 const LIGHT_EXTENSION_SOURCE_MODE = 'light-extension';
@@ -45,13 +51,18 @@ export interface JSBlockLightExtensionSourceFieldProps {
   value?: string | LightExtensionRuntimeSourceBinding | null;
   onChange?: (value: string | LightExtensionRuntimeSourceBinding | undefined) => void;
   disabled?: boolean;
+  kind?: LightExtensionKind;
+  defaultVersionPolicy?: LightExtensionSourceBindingVersionPolicy;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 }
 
-function isLightExtensionBinding(value: unknown): value is LightExtensionRuntimeSourceBinding {
+function isLightExtensionBinding(
+  value: unknown,
+  expectedKind: LightExtensionKind,
+): value is LightExtensionRuntimeSourceBinding {
   return (
     isRecord(value) &&
     value.type === 'light-extension-entry' &&
@@ -59,7 +70,7 @@ function isLightExtensionBinding(value: unknown): value is LightExtensionRuntime
     value.repoId.trim().length > 0 &&
     typeof value.entryId === 'string' &&
     value.entryId.trim().length > 0 &&
-    value.kind === 'js-block' &&
+    value.kind === expectedKind &&
     typeof value.publicationId === 'string' &&
     value.publicationId.trim().length > 0 &&
     (typeof value.versionPolicy === 'undefined' ||
@@ -88,6 +99,8 @@ export const JSBlockLightExtensionSourceField: React.FC<JSBlockLightExtensionSou
   value,
   onChange,
   disabled,
+  kind = 'js-block',
+  defaultVersionPolicy = 'follow-active',
 }) => {
   const { t } = useTranslation(NAMESPACE);
   const form = useForm();
@@ -107,9 +120,9 @@ export const JSBlockLightExtensionSourceField: React.FC<JSBlockLightExtensionSou
   const rendersSourceModeControl = typeof value === 'string' || getFieldPath(field) === 'sourceMode';
   const sourceMode =
     (rendersSourceModeControl && typeof value === 'string' ? value : values.sourceMode) || INLINE_SOURCE_MODE;
-  const sourceBindingFromValue = isLightExtensionBinding(value) ? value : undefined;
+  const sourceBindingFromValue = isLightExtensionBinding(value, kind) ? value : undefined;
   const sourceBinding =
-    sourceBindingFromValue || (isLightExtensionBinding(values.sourceBinding) ? values.sourceBinding : undefined);
+    sourceBindingFromValue || (isLightExtensionBinding(values.sourceBinding, kind) ? values.sourceBinding : undefined);
   const hasSourceBinding = Boolean(sourceBinding);
 
   React.useEffect(() => {
@@ -231,12 +244,20 @@ export const JSBlockLightExtensionSourceField: React.FC<JSBlockLightExtensionSou
     publication: LightExtensionPublicationMetadataRecord,
     defaults: Record<string, unknown>,
   ) => {
+    const preservesCurrentSelection =
+      sourceBinding?.repoId === binding.repoId &&
+      sourceBinding.entryId === binding.entryId &&
+      sourceBinding.kind === binding.kind;
     const nextBinding: LightExtensionRuntimeSourceBinding = {
       ...binding,
-      versionPolicy: 'follow-active',
+      versionPolicy: getNextLightExtensionSourceBindingVersionPolicy({
+        sourceBinding,
+        binding,
+        defaultVersionPolicy,
+      }),
     };
     form.setValuesIn('sourceBinding', nextBinding);
-    form.setValuesIn('settings', mergeSettings(defaults, values.settings));
+    form.setValuesIn('settings', mergeSettings(defaults, values.settings, publication));
     if (!rendersSourceModeControl) {
       onChange?.(nextBinding);
     }
@@ -259,6 +280,20 @@ export const JSBlockLightExtensionSourceField: React.FC<JSBlockLightExtensionSou
   const handleSettingsChange = (nextSettings: Record<string, unknown>, validation: SettingsValidationResult) => {
     form.setValuesIn('settings', nextSettings);
     setSettingsValidation(validation);
+  };
+
+  const handleVersionPolicyChange = (versionPolicy: LightExtensionSourceBindingVersionPolicy) => {
+    if (!sourceBinding) {
+      return;
+    }
+    const nextBinding: LightExtensionRuntimeSourceBinding = {
+      ...sourceBinding,
+      versionPolicy,
+    };
+    form.setValuesIn('sourceBinding', nextBinding);
+    if (!rendersSourceModeControl) {
+      onChange?.(nextBinding);
+    }
   };
 
   const copyPublicationToInline = async () => {
@@ -284,11 +319,18 @@ export const JSBlockLightExtensionSourceField: React.FC<JSBlockLightExtensionSou
     <Space direction="vertical" style={{ width: '100%' }} size={16}>
       <RepoEntryPublicationSelector
         disabled={disabled}
-        kind="js-block"
+        kind={kind}
         value={values.sourceBinding}
         onChange={handleSelectorChange}
         onClear={handleSelectorClear}
       />
+      {sourceBinding ? (
+        <VersionPolicyField
+          disabled={disabled}
+          value={sourceBinding.versionPolicy || defaultVersionPolicy}
+          onChange={handleVersionPolicyChange}
+        />
+      ) : null}
       {selectedPublication ? (
         <SettingsAutoForm
           schema={selectedPublication.settingsSchemaSnapshot}
@@ -336,14 +378,55 @@ export const JSBlockLightExtensionSourceField: React.FC<JSBlockLightExtensionSou
   );
 };
 
+export const JSFieldLightExtensionSourceField: React.FC<
+  Omit<JSBlockLightExtensionSourceFieldProps, 'kind' | 'defaultVersionPolicy'>
+> = (props) => <JSBlockLightExtensionSourceField {...props} kind="js-field" defaultVersionPolicy="pinned" />;
+
+export function getNextLightExtensionSourceBindingVersionPolicy(input: {
+  sourceBinding?: LightExtensionRuntimeSourceBinding;
+  binding: LightExtensionRuntimeSourceBinding;
+  defaultVersionPolicy: LightExtensionSourceBindingVersionPolicy;
+}): LightExtensionSourceBindingVersionPolicy {
+  const { sourceBinding, binding, defaultVersionPolicy } = input;
+  const preservesCurrentSelection =
+    sourceBinding?.repoId === binding.repoId &&
+    sourceBinding.entryId === binding.entryId &&
+    sourceBinding.kind === binding.kind;
+  if (!preservesCurrentSelection) {
+    return defaultVersionPolicy;
+  }
+  if (sourceBinding.publicationId !== binding.publicationId && binding.versionPolicy === 'pinned') {
+    return 'pinned';
+  }
+  return sourceBinding.versionPolicy || 'pinned';
+}
+
 function mergeSettings(
   defaults: Record<string, unknown>,
   current: Record<string, unknown> | undefined,
+  publication: LightExtensionPublicationMetadataRecord,
 ): Record<string, unknown> {
+  const allowedSettings = getSettingsSchemaPropertyNames(publication.settingsSchemaSnapshot);
+  if (!allowedSettings) {
+    return {
+      ...defaults,
+      ...(isRecord(current) ? current : {}),
+    };
+  }
+
   return {
     ...defaults,
-    ...(isRecord(current) ? current : {}),
+    ...(isRecord(current)
+      ? Object.fromEntries(Object.entries(current).filter(([key]) => allowedSettings.has(key)))
+      : {}),
   };
+}
+
+function getSettingsSchemaPropertyNames(schema: unknown): Set<string> | null {
+  if (!isRecord(schema) || !isRecord(schema.properties)) {
+    return null;
+  }
+  return new Set(Object.keys(schema.properties));
 }
 
 export default JSBlockLightExtensionSourceField;

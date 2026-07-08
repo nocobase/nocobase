@@ -204,6 +204,18 @@ export function createSourceBinding(
   };
 }
 
+export function createJsFieldSourceBinding(
+  input: Partial<LightExtensionRuntimeSourceBinding> = {},
+): LightExtensionRuntimeSourceBinding {
+  return createSourceBinding({
+    repoId: 'ler_fields',
+    entryId: 'lee_phone_link',
+    kind: 'js-field',
+    publicationId: 'lep_phone_link',
+    ...input,
+  });
+}
+
 export function createJsBlockNode(
   input: {
     uid?: string;
@@ -220,6 +232,30 @@ export function createJsBlockNode(
         sourceMode: input.sourceMode || 'light-extension',
         sourceBinding: input.sourceBinding || createSourceBinding(),
         settings: input.settings || {},
+      },
+    },
+  };
+}
+
+export function createJsFieldNode(
+  input: {
+    uid?: string;
+    use?: 'JSFieldModel' | 'JSEditableFieldModel' | 'JSColumnModel';
+    sourceMode?: string;
+    sourceBinding?: LightExtensionRuntimeSourceBinding;
+    settings?: Record<string, unknown>;
+  } = {},
+): FlowModelNode {
+  return {
+    uid: input.uid || 'flow_js_field',
+    use: input.use || 'JSFieldModel',
+    stepParams: {
+      jsSettings: {
+        runJs: {
+          sourceMode: input.sourceMode || 'light-extension',
+          sourceBinding: input.sourceBinding || createJsFieldSourceBinding(),
+          settings: input.settings || {},
+        },
       },
     },
   };
@@ -273,12 +309,55 @@ export function createPublicationRecord(input: Record<string, unknown> = {}): Re
   };
 }
 
+export function createJsFieldPublicationRecord(input: Record<string, unknown> = {}): Record<string, unknown> {
+  return createPublicationRecord({
+    id: 'lep_phone_link',
+    repoId: 'ler_fields',
+    entryId: 'lee_phone_link',
+    entryPath: 'src/client/js-fields/phone-link/index.tsx',
+    kind: 'js-field',
+    surfaceStyle: 'value',
+    artifact: {
+      code: 'ctx.render("phone");',
+      sourceMap: '{"version":3}',
+      version: 'v2',
+      entryPath: 'src/client/js-fields/phone-link/index.tsx',
+      filesHash: 'files_hash_field_1',
+      diagnostics: [],
+      metadata: {},
+    },
+    settingsSchemaSnapshot: {
+      type: 'object',
+      properties: {
+        prefix: {
+          type: 'string',
+          default: 'tel:',
+        },
+      },
+    },
+    settingsDefaultsSnapshot: {
+      prefix: 'tel:',
+    },
+    ...input,
+  });
+}
+
 export function createRepoRecord(input: Record<string, unknown> = {}): Record<string, unknown> {
   return {
     id: 'ler_sales',
     lifecycleStatus: 'enabled',
     ...input,
   };
+}
+
+export function createJsFieldEntryRecord(input: Record<string, unknown> = {}): Record<string, unknown> {
+  return createEntryRecord({
+    id: 'lee_phone_link',
+    repoId: 'ler_fields',
+    kind: 'js-field',
+    healthStatus: 'ready',
+    ...input,
+  });
 }
 
 export function createEntryRecord(input: Record<string, unknown> = {}): Record<string, unknown> {
@@ -293,7 +372,9 @@ export function createEntryRecord(input: Record<string, unknown> = {}): Record<s
 
 export function createReferenceRecord(input: Record<string, unknown> = {}): Record<string, unknown> {
   const modelUid = typeof input.modelUid === 'string' ? input.modelUid : 'flow_js_block';
-  const ownerLocator = createOwnerLocator(modelUid);
+  const ownerLocator = isPlainRecord(input.ownerLocator)
+    ? (input.ownerLocator as LightExtensionReferenceOwnerLocator)
+    : createOwnerLocator(modelUid);
   return {
     id: `lef_${modelUid}`,
     repoId: 'ler_sales',
@@ -310,7 +391,37 @@ export function createReferenceRecord(input: Record<string, unknown> = {}): Reco
   };
 }
 
-export function createOwnerLocator(modelUid: string): LightExtensionReferenceOwnerLocator {
+export function createJsFieldReferenceRecord(input: Record<string, unknown> = {}): Record<string, unknown> {
+  const modelUid = typeof input.modelUid === 'string' ? input.modelUid : 'flow_js_field';
+  const use = typeof input.use === 'string' ? input.use : 'JSFieldModel';
+  const ownerLocator = isPlainRecord(input.ownerLocator)
+    ? (input.ownerLocator as LightExtensionReferenceOwnerLocator)
+    : createOwnerLocator(modelUid, { kind: 'js-field', use });
+  return createReferenceRecord({
+    id: `lef_${modelUid}`,
+    repoId: 'ler_fields',
+    entryId: 'lee_phone_link',
+    publicationId: 'lep_phone_link',
+    kind: 'js-field',
+    ownerKind: 'flowModel.fieldSettings',
+    ownerLocator,
+    ownerLocatorHash: hashOwnerLocator(ownerLocator),
+    ...input,
+  });
+}
+
+export function createOwnerLocator(
+  modelUid: string,
+  input: { kind?: 'js-block' | 'js-field'; use?: string } = {},
+): LightExtensionReferenceOwnerLocator {
+  if (input.kind === 'js-field') {
+    return {
+      kind: 'flowModel.fieldSettings',
+      modelUid,
+      use: input.use || 'JSFieldModel',
+      descriptor: 'Field model settings locator',
+    };
+  }
   return {
     kind: 'flowModel.step',
     modelUid,
@@ -320,7 +431,21 @@ export function createOwnerLocator(modelUid: string): LightExtensionReferenceOwn
 }
 
 export function hashOwnerLocator(ownerLocator: LightExtensionReferenceOwnerLocator): string {
-  return stableJsonHash(ownerLocator);
+  if (ownerLocator.kind === 'flowModel.step') {
+    return stableJsonHash({
+      kind: ownerLocator.kind,
+      modelUid: ownerLocator.modelUid,
+      use: ownerLocator.use,
+      stepPath: ownerLocator.stepPath,
+    });
+  }
+  return stableJsonHash({
+    kind: ownerLocator.kind,
+    modelUid: ownerLocator.modelUid,
+    ...(ownerLocator.use ? { use: ownerLocator.use } : {}),
+    ...(ownerLocator.stepPath?.length ? { stepPath: ownerLocator.stepPath } : {}),
+    ...(ownerLocator.hostPath?.length ? { hostPath: ownerLocator.hostPath } : {}),
+  });
 }
 
 export function stableJsonHash(value: unknown): string {
