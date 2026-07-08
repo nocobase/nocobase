@@ -118,6 +118,7 @@ vi.mock('@nocobase/client-v2', () => ({
       ))}
     </div>
   ),
+  CollectionFieldInterface: class CollectionFieldInterface {},
   Plugin: class Plugin {},
 }));
 

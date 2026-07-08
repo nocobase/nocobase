@@ -105,6 +105,15 @@ const externalDataSource = {
 
 const plugin = {
   getCollectionPresetFields: vi.fn(() => []),
+  getCreatableCollectionTemplates: vi.fn(() => [
+    {
+      name: 'general',
+      title: '{{t("General collection")}}',
+      collection: {
+        fields: [],
+      },
+    },
+  ]),
   getCollectionTemplate: vi.fn(() => ({
     name: 'general',
     title: '{{t("General collection")}}',
