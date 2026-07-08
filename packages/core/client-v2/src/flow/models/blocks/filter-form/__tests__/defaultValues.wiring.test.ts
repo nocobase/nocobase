@@ -301,6 +301,40 @@ describe('filter-form defaultValues wiring', () => {
     expect(values.username_user).toBe('Manual');
   });
 
+  it('does not reapply a filter form default value after user clears the field', async () => {
+    const { model, values } = createFilterFormDefaultValuesModel([
+      {
+        key: 'username-default',
+        enable: true,
+        targetPath: 'username',
+        mode: 'default',
+        value: 'admin',
+      },
+    ]);
+
+    await FilterFormBlockModel.prototype.applyFormDefaultValues.call(model as any);
+    expect(values.username_user).toBe('admin');
+
+    values.username_user = undefined;
+    (model as any).handleFilterFormValuesChange({ username_user: undefined }, { username_user: undefined });
+
+    await waitFor(() => {
+      expect(model.dispatchEvent).toHaveBeenCalledWith(
+        'formValuesChange',
+        {
+          changedValues: {
+            username_user: undefined,
+          },
+          allValues: {
+            username_user: undefined,
+          },
+        },
+        { debounce: true },
+      );
+    });
+    expect(values.username_user).toBeUndefined();
+  });
+
   it('applies fixed values even when the target filter field already has a value', async () => {
     const { model, values } = createFilterFormDefaultValuesModel(
       [

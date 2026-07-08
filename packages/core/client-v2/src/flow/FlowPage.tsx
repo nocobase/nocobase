@@ -60,7 +60,9 @@ type FlowPageProps = {
 type FlowPageViewContext = FlowEngineContext & {
   view?: {
     inputArgs?: {
+      filterByTk?: unknown;
       isMobileLayout?: unknown;
+      sourceId?: unknown;
     };
   };
 };
@@ -102,6 +104,10 @@ export const FlowPage = React.memo((props: FlowPageProps & Record<string, unknow
         subType: 'object',
         use: pageModelClass,
       };
+      const isRuntimeRecordScopedPage =
+        !flowEngine.context.flowSettingsEnabled &&
+        (typeof ctx?.view?.inputArgs?.filterByTk !== 'undefined' ||
+          typeof ctx?.view?.inputArgs?.sourceId !== 'undefined');
       if (shouldInjectDefaultChildTab) {
         const tabTitle = defaultTabTitle || flowEngine.translate?.('Details');
         options['subModels'] = {
@@ -128,7 +134,9 @@ export const FlowPage = React.memo((props: FlowPageProps & Record<string, unknow
           },
         };
       }
-      const data = await flowEngine.loadOrCreateModel(options, { skipSave: !flowEngine.context.flowSettingsEnabled });
+      const data =
+        (isRuntimeRecordScopedPage && (await flowEngine.loadModel({ ...options, refresh: true }))) ||
+        (await flowEngine.loadOrCreateModel(options, { skipSave: !flowEngine.context.flowSettingsEnabled }));
       if (data?.uid && onModelLoaded) {
         data.context.addDelegate(ctx);
         bindViewLayoutState(data, ctx);

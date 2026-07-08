@@ -56,6 +56,7 @@ type FieldInterfaceOption = {
   name: string;
   title?: React.ReactNode;
   label?: React.ReactNode;
+  creatable?: boolean;
   group?: string;
   order?: number;
   hidden?: boolean;
