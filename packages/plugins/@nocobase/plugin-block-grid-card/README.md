@@ -97,3 +97,82 @@ NocoBase supports three installation methods:
 <video width="100%" controls>
   <source src="https://github.com/user-attachments/assets/8d183b44-9bb5-4792-b08f-bc08fe8dfaaf" type="video/mp4">
 </video>
+
+## 总览
+
+本包覆盖网格卡片区块在页面中的创建、卡片内容配置、区块操作、卡片记录操作与区块设置能力。E2E 用例使用 NocoBase Playwright fixtures 创建临时页面和数据，验证用户在配置模式下可完成真实区块配置，并断言页面中产生对应可见结果。
+
+## 用例大纲
+
+- 网格卡片区块创建
+  - 页面中添加网格卡片区块
+- 网格卡片内容配置
+  - 配置集合字段
+  - 配置关联字段
+  - 配置 Markdown 内容
+- 网格卡片区块操作
+  - 配置筛选、新增和刷新等区块全局操作
+- 网格卡片记录操作
+  - 配置查看、编辑和删除等卡片记录操作
+  - 配置弹窗和更新记录等自定义卡片记录操作
+- 网格卡片布局配置
+  - 区块设置菜单
+  - 配置桌面端单行显示列数
+
+## 用例清单
+
+### 1. create grid card block on a page
+
+- 编号：1
+- 功能：验证页面 Add block 入口可以创建 Grid Card 区块，并在页面中显示网格卡片区块容器。
+- Spec 文件：`packages/plugins/@nocobase/plugin-block-grid-card/src/client/__e2e__/schemaInitializer.test.ts`
+- 执行步骤与断言：创建临时页面；通过页面 Add block 入口选择 `Grid Card`；断言 `users` 集合的 Grid Card 区块可见。
+- 清理：由 `mockPage` fixture 清理临时页面和 schema。
+
+### 2. configure grid card fields and markdown content
+
+- 编号：2
+- 功能：验证 Grid Card 卡片内容可以配置集合字段、关联字段和 Markdown 内容，并可移除已配置字段。
+- Spec 文件：`packages/plugins/@nocobase/plugin-block-grid-card/src/client/__e2e__/schemaInitializer.test.ts`
+- 执行步骤与断言：创建带记录的 Grid Card 临时页面；通过卡片字段配置入口添加 `ID` 字段和 `Many to one / Nickname` 关联字段；断言字段在卡片中可见；再次点击字段开关移除字段；断言字段不可见；添加 Markdown 内容；断言 Markdown 区块可见。
+- 清理：由 `mockPage` 和 `mockRecord` fixtures 清理临时页面、schema 和测试记录。
+
+### 3. configure grid card collection actions
+
+- 编号：3
+- 功能：验证 Grid Card 区块可以配置区块级操作，并且删除后操作入口从页面消失。
+- Spec 文件：`packages/plugins/@nocobase/plugin-block-grid-card/src/client/__e2e__/schemaInitializer.test.ts`
+- 执行步骤与断言：打开空 Grid Card 区块页面；通过区块操作配置入口依次添加 `Filter`、`Add new`、`Refresh`；断言三个按钮可见；再通过各按钮设置菜单删除；断言三个按钮不可见。
+- 清理：由 `mockPage` fixture 清理临时页面和 schema。
+
+### 4. configure grid card record actions
+
+- 编号：4
+- 功能：验证 Grid Card 卡片内可以配置记录级操作，并且删除后记录操作从卡片中消失。
+- Spec 文件：`packages/plugins/@nocobase/plugin-block-grid-card/src/client/__e2e__/schemaInitializer.test.ts`
+- 执行步骤与断言：创建带记录的 Grid Card 临时页面；通过卡片操作配置入口添加 `View`、`Edit`、`Delete`；断言三个记录操作在卡片中可见；再删除三个操作；断言三个记录操作不可见。
+- 清理：由 `mockPage` 和 `mockRecord` fixtures 清理临时页面、schema 和测试记录。
+
+### 5. configure grid card custom record actions
+
+- 编号：5
+- 功能：验证 Grid Card 卡片内可以配置弹窗和更新记录等自定义记录操作。
+- Spec 文件：`packages/plugins/@nocobase/plugin-block-grid-card/src/client/__e2e__/schemaInitializer.test.ts`
+- 执行步骤与断言：创建带记录的 Grid Card 临时页面；通过卡片操作配置入口添加 `Popup` 和 `Update record`；断言两个自定义记录操作在卡片中可见。
+- 清理：由 `mockPage` 和 `mockRecord` fixtures 清理临时页面、schema 和测试记录。
+
+### 6. show grid card block settings options
+
+- 编号：6
+- 功能：验证 Grid Card 区块设置菜单提供列数、数据范围、默认排序、分页数量和删除等可配置项。
+- Spec 文件：`packages/plugins/@nocobase/plugin-block-grid-card/src/client/__e2e__/schemaSettings.test.ts`
+- 执行步骤与断言：打开空 Grid Card 区块页面；悬停区块设置入口；断言设置菜单中显示 `Set the count of columns displayed in a row`、`Set the data scope`、`Set default sorting rules`、`Records per page` 和 `Delete`。
+- 清理：由 `mockPage` fixture 清理临时页面和 schema。
+
+### 7. set grid card desktop column count
+
+- 编号：7
+- 功能：验证 Grid Card 区块可以配置桌面端单行列数，并影响卡片宽度。
+- Spec 文件：`packages/plugins/@nocobase/plugin-block-grid-card/src/client/__e2e__/schemaSettings.test.ts`
+- 执行步骤与断言：创建带 10 条记录的 Grid Card 临时页面；记录默认卡片宽度对应 3 列布局；打开区块设置并将桌面端列数改为 2；刷新页面；断言卡片宽度变大并符合 2 列布局范围。
+- 清理：由 `mockPage` 和 `mockRecords` fixtures 清理临时页面、schema 和测试记录；列数设置随临时页面删除。
