@@ -73,7 +73,10 @@ export const useSubmitActionProps = () => {
       const values = form.values;
       if (values[collection.filterTargetKey]) {
         await resource.update({
-          values,
+          values: {
+            ...values,
+            version: 'v1',
+          },
           filterByTk: values[collection.filterTargetKey],
         });
       } else {
@@ -95,6 +98,7 @@ export const useSubmitActionProps = () => {
           values: {
             ...values,
             key,
+            version: 'v1',
           },
         });
         await api.resource('uiSchemas').insert({ values: schema });

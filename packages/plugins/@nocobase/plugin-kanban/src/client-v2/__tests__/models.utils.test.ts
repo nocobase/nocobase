@@ -44,9 +44,18 @@ describe('kanban model utils', () => {
     );
 
     expect(options).toEqual([
-      { value: 'todo', label: 'Backlog', color: 'blue', isUnknown: undefined },
+      { value: 'todo', label: 'Todo', color: 'blue', isUnknown: undefined },
       { value: 'done', label: 'Done', color: 'green', isUnknown: undefined },
     ]);
+  });
+
+  test('normalizeKanbanGroupOptions prefers the latest source label over saved relation labels', () => {
+    const options = normalizeKanbanGroupOptions(
+      [{ value: 'u1', label: 'User 1 renamed' }],
+      [{ value: 'u1', label: 'User 1 old', color: 'blue' }],
+    );
+
+    expect(options).toEqual([{ value: 'u1', label: 'User 1 renamed', color: 'blue', isUnknown: undefined }]);
   });
 
   test('normalizeKanbanGroupOptions preserves saved order and appends new source options', () => {

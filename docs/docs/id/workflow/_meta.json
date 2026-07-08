@@ -249,6 +249,11 @@
             "type": "custom-link",
             "label": "Operasi SQL",
             "link": "/workflow/nodes/sql"
+          },
+          {
+            "type": "custom-link",
+            "label": "Transaksi Database",
+            "link": "/workflow/nodes/transaction"
           }
         ]
       },

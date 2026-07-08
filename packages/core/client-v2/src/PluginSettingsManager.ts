@@ -97,6 +97,7 @@ interface InternalPageItemRecord extends PluginSettingsPageItemOptions {
 export class PluginSettingsManager<TApp extends BaseApplication<any> = BaseApplication<any>> {
   protected menus: Record<string, InternalMenuItemRecord> = {};
   protected pages: Record<string, InternalPageItemRecord> = {};
+  protected pluginSettingsLinks: Record<string, string> = {};
   protected aclSnippets: string[] = [];
   public app: TApp;
 
@@ -292,6 +293,58 @@ export class PluginSettingsManager<TApp extends BaseApplication<any> = BaseAppli
    */
   has(name: string) {
     return !!(this.menus[name] || this.pages[name]);
+  }
+
+  /**
+   * 绑定插件管理列表中的 plugin name 到实际 settings 入口。
+   *
+   * 插件管理列表使用 applicationPlugins.name 判断是否显示 Settings 入口，
+   * 但部分插件会把设置页挂到共享菜单或历史路径下。
+   *
+   * @param pluginName 插件管理列表中的插件名
+   * @param settingsName menu 或 page 名称
+   * @returns {void}
+   */
+  setPluginSettingsLink(pluginName: string, settingsName: string) {
+    if (!pluginName) {
+      throw new Error('Plugin settings link pluginName is required');
+    }
+
+    if (!settingsName) {
+      throw new Error('Plugin settings link settingsName is required');
+    }
+
+    this.pluginSettingsLinks[pluginName] = settingsName;
+  }
+
+  /**
+   * 获取插件管理列表中的 plugin name 对应的 settings 名称。
+   *
+   * @param pluginName 插件管理列表中的插件名
+   * @returns {string} settings 名称
+   */
+  getPluginSettingsName(pluginName: string) {
+    return this.pluginSettingsLinks[pluginName] || pluginName;
+  }
+
+  /**
+   * 判断插件管理列表中的插件是否有可跳转的 settings 入口。
+   *
+   * @param pluginName 插件管理列表中的插件名
+   * @returns {boolean} 是否已注册 settings 入口
+   */
+  hasPluginSettings(pluginName: string) {
+    return this.has(this.getPluginSettingsName(pluginName));
+  }
+
+  /**
+   * 获取插件管理列表中的插件对应的 settings 路径。
+   *
+   * @param pluginName 插件管理列表中的插件名
+   * @returns {string} settings 绝对路径
+   */
+  getPluginSettingsRoutePath(pluginName: string) {
+    return this.getRoutePath(this.getPluginSettingsName(pluginName));
   }
 
   /**

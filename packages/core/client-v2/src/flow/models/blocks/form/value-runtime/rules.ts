@@ -8,7 +8,7 @@
  */
 
 import { isObservable, reaction, toJS } from '@formily/reactive';
-import { FlowContext, FlowModel, isRunJSValue, normalizeRunJSValue, runjsWithSafeGlobals } from '@nocobase/flow-engine';
+import { FlowContext, FlowModel, isRunJSValue, normalizeRunJSValue } from '@nocobase/flow-engine';
 import { getValuesByPath } from '@nocobase/shared';
 import _ from 'lodash';
 import { dayjs } from '@nocobase/utils/client';
@@ -1718,7 +1718,7 @@ export class RuleEngine {
   ): Promise<any> {
     try {
       const { code, version } = normalizeRunJSValue(rawValue);
-      const ret = await runjsWithSafeGlobals(evalCtx, code, { version });
+      const ret = await evalCtx.runjs(code, undefined, { version });
       if (!ret?.success) {
         if (seq !== state.runSeq) return SKIP_RULE_VALUE;
         this.commitRuleDeps(rule, state, collector);

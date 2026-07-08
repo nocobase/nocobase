@@ -10,6 +10,7 @@
 import {
   buildV2SigninHref,
   getCurrentV2RedirectPath,
+  normalizeV2RedirectPath,
   redirectToV2Signin,
   resolveV2SigninRedirect,
 } from '../authRedirect';
@@ -133,6 +134,22 @@ describe('auth redirect helpers', () => {
   });
 
   describe('v2 sub-app context (router basename contains /apps/<id>/)', () => {
+    it('should normalize signin redirect fallback under the current sub-app basename', () => {
+      const app = {
+        getPublicPath: () => '/v/',
+        router: {
+          getBasename: () => '/v/apps/test-app/',
+        },
+      } as any;
+
+      expect(normalizeV2RedirectPath(app, '')).toBe('/v/apps/test-app/admin/');
+      expect(normalizeV2RedirectPath(app, '/admin/?tab=overview#panel')).toBe(
+        '/v/apps/test-app/admin/?tab=overview#panel',
+      );
+      expect(normalizeV2RedirectPath(app, '/v/apps/test-app/admin/')).toBe('/v/apps/test-app/admin/');
+      expect(normalizeV2RedirectPath(app, '/v/admin/')).toBe('/v/apps/test-app/admin/');
+    });
+
     it('should preserve sub-app segment when building current redirect path under simple public path', () => {
       const app = {
         getPublicPath: () => '/v2/',

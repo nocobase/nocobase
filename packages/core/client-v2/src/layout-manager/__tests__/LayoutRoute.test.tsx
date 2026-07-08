@@ -11,7 +11,7 @@ import { FlowEngine, FlowEngineProvider, observer } from '@nocobase/flow-engine'
 import { render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { createMemoryRouter, Outlet, RouterProvider, useOutlet } from 'react-router-dom';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { BaseLayoutModel } from '../../flow/admin-shell/BaseLayoutModel';
 import { LayoutContentRoute } from '../LayoutContentRoute';
 import { LayoutRoute } from '../LayoutRoute';
@@ -104,6 +104,46 @@ describe('LayoutRoute', () => {
       rootPageModelClass: 'TestRootPageModel',
       childPageModelClass: 'TestChildPageModel',
     });
+  });
+
+  it('does not activate desktop route loading for generic layouts', async () => {
+    const activateLayout = vi.fn(() => vi.fn());
+    const engine = new FlowEngine();
+    engine.registerModels({ TestLayoutModel });
+    engine.context.defineProperty('routeRepository', {
+      value: {
+        activateLayout,
+      },
+    });
+    engine.context.defineProperty('app', {
+      value: {
+        layoutManager: {
+          getLayout: () => layout,
+        },
+      },
+    });
+
+    const router = createMemoryRouter(
+      [
+        {
+          id: layout.routeName,
+          path: layout.routePath,
+          element: <LayoutRoute layoutRouteName="test" />,
+        },
+      ],
+      {
+        initialEntries: ['/test'],
+      },
+    );
+
+    render(
+      <FlowEngineProvider engine={engine}>
+        <RouterProvider router={router} />
+      </FlowEngineProvider>,
+    );
+
+    expect(await screen.findByTestId('layout-route')).toHaveTextContent('test');
+    expect(activateLayout).not.toHaveBeenCalled();
   });
 
   it('syncs nested page route before the layout renders its outlet', async () => {

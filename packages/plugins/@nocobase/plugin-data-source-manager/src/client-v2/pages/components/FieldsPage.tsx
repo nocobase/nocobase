@@ -43,6 +43,8 @@ import {
   filterFieldInterfacesByCollectionTemplate,
 } from './collectionTemplateFieldInterfaces';
 import { FieldForm } from './FieldForm';
+import { collectionNeedsRecordUniqueKey, RecordUniqueKeyPrompt } from './RecordUniqueKey';
+import { UnsupportedFields } from './UnsupportedFields';
 
 interface FieldsPageProps {
   dataSourceKey: string;
@@ -946,14 +948,7 @@ function ViewSyncFieldsDrawer(props: {
               />
             </Form.Item>
           ) : null}
-          {unsupportedFields.length ? (
-            <Alert
-              showIcon
-              type="warning"
-              message={t('Unsupported fields')}
-              description={unsupportedFields.map((field) => field.name).join(', ')}
-            />
-          ) : null}
+          <UnsupportedFields dataSource={unsupportedFields} style={{ marginBottom: 24 }} />
           <Form.Item label={t('Preview')}>
             <Spin spinning={previewLoading}>
               <AntdTable
@@ -1036,6 +1031,18 @@ export default function FieldsPage(props: FieldsPageProps) {
     }, {});
   }, [databaseDialect, ctx, dataSource?.options?.type, props.collection]);
   const presetFieldInterfaces = useMemo(() => getCollectionPresetFieldInterfaces(ctx), [ctx]);
+  const recordUniqueKeyFields = useMemo(() => {
+    const fieldsByName = new Map<string, Record<string, any>>();
+    [...(Array.isArray(props.collection.fields) ? props.collection.fields : []), ...(request.data || [])].forEach(
+      (field) => {
+        if (field?.name) {
+          fieldsByName.set(field.name, field);
+        }
+      },
+    );
+    return Array.from(fieldsByName.values());
+  }, [props.collection.fields, request.data]);
+  const recordUniqueKeyRequired = collectionNeedsRecordUniqueKey(props.collection, recordUniqueKeyFields);
   const collectionTemplate = useMemo(() => getCollectionTemplate(ctx, props.collection), [ctx, props.collection]);
   const currentFieldsByName = useMemo(() => {
     return new Map((request.data || []).map((field: Record<string, any>) => [String(field.name), field]));
@@ -1090,6 +1097,7 @@ export default function FieldsPage(props: FieldsPageProps) {
   const TemplateSyncFieldsDrawer = collectionTemplate?.configure?.syncFields?.Component;
   const runtimeCollection = dataSource?.collectionManager?.getCollection?.(props.collection.name);
   const inheritedFieldGroups = getInheritedFieldGroups(runtimeCollection);
+  const unsupportedFields = Array.isArray(props.collection.unsupportedFields) ? props.collection.unsupportedFields : [];
 
   const openTemplateSyncFieldsDrawer = useCallback(() => {
     if (!TemplateSyncFieldsDrawer) {
@@ -1578,6 +1586,24 @@ export default function FieldsPage(props: FieldsPageProps) {
 
   return (
     <>
+      {recordUniqueKeyRequired ? (
+        <Alert
+          style={{ marginBottom: 16 }}
+          type="warning"
+          message={
+            <RecordUniqueKeyPrompt
+              collection={props.collection}
+              dataSourceKey={props.dataSourceKey}
+              fields={recordUniqueKeyFields}
+              onSaved={(values) => {
+                Object.assign(props.collection, values);
+                props.onCollectionChange?.(props.collection.name, values);
+                request.refresh();
+              }}
+            />
+          }
+        />
+      ) : null}
       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginBottom: 16 }}>
         <Space>
           {fieldDeletionVisible ? (
@@ -1621,6 +1647,7 @@ export default function FieldsPage(props: FieldsPageProps) {
             : undefined
         }
       />
+      <UnsupportedFields dataSource={unsupportedFields} />
       {inheritedFieldGroups.some((group) => group.fields.length) ? (
         <AntdTable<InheritedFieldGroup>
           style={{ marginTop: 16 }}

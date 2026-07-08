@@ -203,6 +203,7 @@
   "Syntax references: ": "文法リファレンス:",
   "System time": "システム時間",
   "System variables": "システム変数",
+  "System process failed, please contact administrator.": "システム処理に失敗しました。管理者にお問い合わせください。",
   "Task type {{type}} is invalid": "Task type {{type}} is invalid",
   "Test run": "テスト実行",
   "Test run will do the actual data manipulating or API calling, please use with caution.": "テスト実行では実際のデータ操作やAPI呼び出しが行われます。十分ご注意の上ご利用ください。",
