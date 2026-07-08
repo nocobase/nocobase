@@ -12,6 +12,7 @@ import {
   LLMProviderOptions,
   EmbeddingProvider,
   EmbeddingProviderOptions,
+  ReasoningOptions,
 } from '../llm-providers/provider';
 import PluginAIServer from '../plugin';
 import _ from 'lodash';
@@ -37,6 +38,7 @@ export type LLMModelOptions = {
   llmService: string;
   model: string;
   webSearch?: boolean;
+  reasoning?: ReasoningOptions;
 };
 
 export type EnabledLLMModel = {
@@ -157,7 +159,7 @@ export class AIManager {
   }
 
   async getLLMService(options: LLMModelOptions) {
-    const { llmService, model, webSearch } = options ?? {};
+    const { llmService, model, webSearch, reasoning } = options ?? {};
 
     // model is required - it's set by the frontend ModelSwitcher
     if (!llmService || !model) {
@@ -172,6 +174,10 @@ export class AIManager {
 
     if (webSearch === true) {
       modelOptions.builtIn = { webSearch: true };
+    }
+
+    if (reasoning) {
+      modelOptions._reasoning = reasoning;
     }
 
     const service = await this.plugin.db.getRepository('llmServices').findOne({
