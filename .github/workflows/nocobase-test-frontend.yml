@@ -33,8 +33,10 @@ on:
 jobs:
   frontend-test:
     strategy:
+      fail-fast: false
       matrix:
         node_version: ['22']
+        shard: [1, 2, 3, 4]
     runs-on: ubuntu-latest
     container: node:${{ matrix.node_version }}
     steps:
@@ -47,6 +49,6 @@ jobs:
           cache: 'yarn'
 
       - run: yarn install
-      - run: yarn test:client --pool=forks
-    # The full frontend suite can exceed 90 minutes after adding client-v2 plugin coverage.
-    timeout-minutes: 120
+      - run: yarn test:client --pool=forks --shard=${{ matrix.shard }}/4
+    # The client suite is large enough that one full Vitest run can exceed the job limit, so keep it split by shard.
+    timeout-minutes: 75
