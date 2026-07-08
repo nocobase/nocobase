@@ -8,7 +8,7 @@
  */
 
 import { FlowEngine, FlowEngineProvider, observer } from '@nocobase/flow-engine';
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { createMemoryRouter, Outlet, RouterProvider, useOutlet } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
@@ -301,8 +301,15 @@ describe('LayoutContentRoute', () => {
     initialEntry: string,
     currentLayout: LayoutDefinition = layout,
     ModelClass: typeof TestLayoutModel = TestLayoutModel,
+    storagePrefix = 'NOCOBASE_',
   ) {
     const engine = new FlowEngine();
+    const originalStorage = {};
+    const apiClient = {
+      storagePrefix,
+      storage: originalStorage,
+      createStorage: vi.fn((storageType: string) => ({ storageType })),
+    };
     engine.registerModels({ TestLayoutModel, [ModelClass.name]: ModelClass });
     engine.context.defineProperty('routeRepository', {
       value: {
@@ -321,6 +328,7 @@ describe('LayoutContentRoute', () => {
         router: {
           getBasename: () => '',
         },
+        apiClient,
       },
     });
     const model = engine.createModel<TestLayoutModel>({
@@ -390,17 +398,17 @@ describe('LayoutContentRoute', () => {
       initialEntries: [initialEntry],
     });
 
-    render(
+    const renderResult = render(
       <FlowEngineProvider engine={engine}>
         <RouterProvider router={router} />
       </FlowEngineProvider>,
     );
 
-    return { model, router };
+    return { apiClient, model, originalStorage, router, unmount: renderResult.unmount };
   }
 
   it('parses page route from standard layout route', async () => {
-    const { model } = setup('/test/page-1/tab/tab-1/view/popup');
+    const { apiClient, model } = setup('/test/page-1/tab/tab-1/view/popup');
 
     await waitFor(() => {
       expect(model.currentLayoutRoute).toMatchObject({
@@ -411,6 +419,70 @@ describe('LayoutContentRoute', () => {
         viewStack: [{ viewUid: 'page-1', tabUid: 'tab-1' }, { viewUid: 'popup' }],
       });
     });
+    expect(apiClient.createStorage).not.toHaveBeenCalled();
+  });
+
+  it('scopes apiClient storage for configured layout page routes and restores it when leaving', async () => {
+    const scopedLayout: LayoutDefinition = {
+      ...layout,
+      storageScope: {
+        storageType: 'sessionStorage',
+        prefix: 'PUBLIC_FORM',
+      },
+    };
+    const { apiClient, originalStorage, router } = setup(
+      '/test/page-1',
+      scopedLayout,
+      TestLayoutModel,
+      'NOCOBASE_APP1_',
+    );
+
+    await waitFor(() => {
+      expect(apiClient.storagePrefix).toBe('NOCOBASE_APP1_PUBLIC_FORM_page-1_');
+    });
+    expect(apiClient.createStorage).toHaveBeenCalledWith('sessionStorage');
+    const firstStorage = apiClient.storage;
+
+    await act(async () => {
+      await router.navigate('/test/page-2');
+    });
+
+    await waitFor(() => {
+      expect(apiClient.storagePrefix).toBe('NOCOBASE_APP1_PUBLIC_FORM_page-2_');
+    });
+    expect(apiClient.createStorage).toHaveBeenCalledTimes(2);
+    expect(apiClient.storage).not.toBe(firstStorage);
+
+    await act(async () => {
+      await router.navigate('/test');
+    });
+
+    await waitFor(() => {
+      expect(apiClient.storagePrefix).toBe('NOCOBASE_APP1_');
+    });
+    expect(apiClient.storage).toBe(originalStorage);
+  });
+
+  it('restores scoped apiClient storage when a configured layout unmounts', async () => {
+    const scopedLayout: LayoutDefinition = {
+      ...layout,
+      storageScope: {
+        storageType: 'sessionStorage',
+        prefix: 'PUBLIC_FORM',
+      },
+    };
+    const { apiClient, originalStorage, unmount } = setup('/test/page-1', scopedLayout);
+
+    await waitFor(() => {
+      expect(apiClient.storagePrefix).toBe('NOCOBASE_PUBLIC_FORM_page-1_');
+    });
+
+    unmount();
+
+    await waitFor(() => {
+      expect(apiClient.storagePrefix).toBe('NOCOBASE_');
+    });
+    expect(apiClient.storage).toBe(originalStorage);
   });
 
   it('parses nested layout route by matched layout pathname', async () => {

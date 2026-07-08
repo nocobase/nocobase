@@ -21,7 +21,7 @@ import {
   type RoutePageMeta,
 } from './BaseLayoutRouteCoordinator';
 import { NocoBaseDesktopRouteType } from '../../flow-compat';
-import type { LayoutDefinition } from '../../layout-manager/types';
+import type { LayoutDefinition, LayoutStorageScopeStorageType } from '../../layout-manager/types';
 import { isLayoutContentRouteName } from '../../layout-manager/utils';
 
 export type BaseLayoutStructure = {
@@ -78,6 +78,17 @@ export interface LayoutRouteLike {
   layoutRouteName?: string;
   layoutBasePathname?: string;
 }
+
+type LayoutStorageScopeApiClient = {
+  storage: unknown;
+  storagePrefix: string;
+  createStorage?: (storageType: LayoutStorageScopeStorageType) => unknown;
+};
+
+type LayoutStorageScopeSnapshot = {
+  storage: LayoutStorageScopeApiClient['storage'];
+  storagePrefix: string;
+};
 
 const normalizeBasePathname = (basePathname?: string) =>
   `/${(basePathname || '/admin').replace(/^\/+/, '').replace(/\/+$/, '')}`;
@@ -168,6 +179,9 @@ const isStandardLayoutRelativePath = (relativePath: string) => {
   return true;
 };
 
+const getLayoutStorageScopePrefix = (storagePrefix: string, scopePrefix: string, pageUid: string) =>
+  `${storagePrefix}${scopePrefix}_${pageUid}_`;
+
 /**
  * 通用 Layout 运行时模型。
  *
@@ -185,6 +199,8 @@ export class BaseLayoutModel<
   private layoutContentElement: HTMLElement | null = null;
   private readonly routePageMetaMap = new Map<string, RoutePageMeta>();
   private contextBindingsActive = false;
+  private layoutStorageScopeSnapshot?: LayoutStorageScopeSnapshot;
+  private layoutStorageScopeKey = '';
 
   constructor(options: any) {
     super(options);
@@ -380,6 +396,7 @@ export class BaseLayoutModel<
       layoutBasePathname: layoutRoute.basePathname,
       layoutRoute,
     });
+    this.syncLayoutStorageScope(layoutRoute);
 
     return layoutRoute;
   }
@@ -398,6 +415,7 @@ export class BaseLayoutModel<
     this.currentRouteState = undefined;
     this.activePageUid = '';
     this.routeCoordinator?.syncRoute({});
+    this.restoreLayoutStorageScope();
   }
 
   protected onMount(): void {
@@ -406,8 +424,70 @@ export class BaseLayoutModel<
   }
 
   protected onUnmount(): void {
+    this.restoreLayoutStorageScope();
     this.teardownRuntime();
     super.onUnmount();
+  }
+
+  private getLayoutStorageScopeApiClient() {
+    return (this.flowEngine.context.app as { apiClient?: LayoutStorageScopeApiClient } | undefined)?.apiClient;
+  }
+
+  private syncLayoutStorageScope(layoutRoute: LayoutRouteMatch | null) {
+    const storageScope = this.layout.storageScope;
+
+    if (!storageScope) {
+      this.restoreLayoutStorageScope();
+      return;
+    }
+
+    const pageUid = this.getPageUidFromLayoutRoute(layoutRoute);
+    if (!pageUid) {
+      this.restoreLayoutStorageScope();
+      return;
+    }
+
+    const apiClient = this.getLayoutStorageScopeApiClient();
+    if (!apiClient?.createStorage) {
+      return;
+    }
+
+    if (!this.layoutStorageScopeSnapshot) {
+      this.layoutStorageScopeSnapshot = {
+        storage: apiClient.storage,
+        storagePrefix: apiClient.storagePrefix,
+      };
+    }
+
+    const scopeKey = `${storageScope.storageType}:${storageScope.prefix}:${pageUid}`;
+    if (this.layoutStorageScopeKey === scopeKey) {
+      return;
+    }
+
+    apiClient.storagePrefix = getLayoutStorageScopePrefix(
+      this.layoutStorageScopeSnapshot.storagePrefix,
+      storageScope.prefix,
+      pageUid,
+    );
+    apiClient.storage = apiClient.createStorage(storageScope.storageType);
+    this.layoutStorageScopeKey = scopeKey;
+  }
+
+  private restoreLayoutStorageScope() {
+    const snapshot = this.layoutStorageScopeSnapshot;
+    if (!snapshot) {
+      return;
+    }
+
+    const apiClient = this.getLayoutStorageScopeApiClient();
+    if (!apiClient) {
+      return;
+    }
+
+    apiClient.storagePrefix = snapshot.storagePrefix;
+    apiClient.storage = snapshot.storage;
+    this.layoutStorageScopeSnapshot = undefined;
+    this.layoutStorageScopeKey = '';
   }
 
   private setupContextBindings() {
