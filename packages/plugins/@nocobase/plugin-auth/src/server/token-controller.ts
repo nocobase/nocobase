@@ -98,7 +98,12 @@ export class TokenController implements TokenControlService {
     await this.setTokenInfo(jti, data);
 
     try {
-      await this.removeSessionExpiredTokens(userId);
+      if (process.env.DB_DIALECT === 'sqlite') {
+        // SQLITE does not support concurrent operations
+        await this.removeSessionExpiredTokens(userId);
+      } else {
+        this.removeSessionExpiredTokens(userId);
+      }
     } catch (err) {
       this.logger.error(err, { module: 'auth', submodule: 'token-controller', method: 'removeSessionExpiredTokens' });
     }
