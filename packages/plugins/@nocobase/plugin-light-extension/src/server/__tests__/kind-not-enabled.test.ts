@@ -10,7 +10,7 @@
 import { LightExtensionValidator } from '../services/LightExtensionValidator';
 
 describe('plugin-light-extension kind enablement validator', () => {
-  it('keeps staged client kinds supported while enabling JS Field entries', () => {
+  it('keeps staged client kinds supported while enabling Phase 3 client entries', () => {
     const validator = new LightExtensionValidator();
     const result = validator.validateWorkspace({
       files: [
@@ -45,7 +45,7 @@ describe('plugin-light-extension kind enablement validator', () => {
     expect(result.capabilities.supportedKinds).toEqual(
       expect.arrayContaining(['js-block', 'js-field', 'js-action', 'js-item', 'runjs', 'event']),
     );
-    expect(result.capabilities.enabledKinds).toEqual(['js-block', 'js-field']);
+    expect(result.capabilities.enabledKinds).toEqual(['js-block', 'js-field', 'js-action', 'js-item']);
     expect(result.entries.map((entry) => `${entry.kind}:${entry.entryName}`)).toEqual([
       'event:log-page-open',
       'js-action:batch-approve',
@@ -58,16 +58,6 @@ describe('plugin-light-extension kind enablement validator', () => {
         severity: 'warning',
         kind: 'event',
         path: 'src/client/events/log-page-open',
-      }),
-      expect.objectContaining({
-        severity: 'warning',
-        kind: 'js-action',
-        path: 'src/client/js-actions/batch-approve',
-      }),
-      expect.objectContaining({
-        severity: 'warning',
-        kind: 'js-item',
-        path: 'src/client/js-items/customer-menu',
       }),
       expect.objectContaining({
         severity: 'warning',

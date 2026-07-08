@@ -131,6 +131,14 @@ const AI_EMPLOYEE_FLOW_SURFACE_OWNER_PLUGIN = '@nocobase/plugin-ai';
 const RUN_JS_ALLOWED_PATHS = ['runJs.code', 'runJs.version'];
 const JS_BLOCK_RUN_JS_ALLOWED_PATHS = [...RUN_JS_ALLOWED_PATHS, 'runJs.sourceRef.*'];
 const JS_BLOCK_SOURCE_ALLOWED_PATHS = ['sourceMode', 'sourceBinding', 'settings.*'];
+const JS_ITEM_SOURCE_ALLOWED_PATHS = [
+  'sourceMode',
+  'sourceBinding',
+  'settings.*',
+  'runJs.sourceMode',
+  'runJs.sourceBinding',
+  'runJs.settings.*',
+];
 const OPEN_VIEW_ALLOWED_PATHS = [
   'openView.mode',
   'openView.size',
@@ -261,6 +269,26 @@ const JS_BLOCK_SETTINGS_GROUP = {
     sourceBinding: OBJECT_SCHEMA,
     settings: OBJECT_SCHEMA,
     'showBlockCard.showBlockCard': BOOLEAN_SCHEMA,
+  },
+};
+const JS_ITEM_SETTINGS_GROUP = {
+  allowedPaths: [...RUN_JS_ALLOWED_PATHS, ...JS_ITEM_SOURCE_ALLOWED_PATHS],
+  mergeStrategy: 'deep' as const,
+  eventBindingSteps: ['runJs'],
+  pathSchemas: {
+    ...RUN_JS_SETTINGS_GROUP.pathSchemas,
+    sourceMode: {
+      type: 'string',
+      enum: ['inline', 'light-extension'],
+    },
+    sourceBinding: OBJECT_SCHEMA,
+    settings: OBJECT_SCHEMA,
+    'runJs.sourceMode': {
+      type: 'string',
+      enum: ['inline', 'light-extension'],
+    },
+    'runJs.sourceBinding': OBJECT_SCHEMA,
+    'runJs.settings': OBJECT_SCHEMA,
   },
 };
 const FIELD_SETTINGS_INIT_GROUP = {
@@ -1848,7 +1876,7 @@ const JS_ITEM_CONTRACT = createContract({
   },
 });
 JS_ITEM_CONTRACT.domains.stepParams = groupedDomain({
-  jsSettings: RUN_JS_SETTINGS_GROUP,
+  jsSettings: JS_ITEM_SETTINGS_GROUP,
 });
 
 const DIVIDER_ITEM_CONTRACT = createContract({
@@ -2569,7 +2597,7 @@ const JS_ITEM_ACTION_CONTRACT = createContract({
 });
 JS_ITEM_ACTION_CONTRACT.domains.stepParams = groupedDomain({
   buttonSettings: ACTION_BUTTON_SETTINGS_GROUP,
-  jsSettings: RUN_JS_SETTINGS_GROUP,
+  jsSettings: JS_ITEM_SETTINGS_GROUP,
 });
 
 const AI_EMPLOYEE_ACTION_CONTRACT = createContract({

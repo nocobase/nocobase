@@ -205,46 +205,55 @@ describe('plugin-light-extension workspace compiler bridge', () => {
     ).toEqual([...LIGHT_EXTENSION_ENABLED_KINDS].sort());
   });
 
-  it('keeps non-MVP kinds reserved but disabled in the compiler surface map', async () => {
+  it('compiles JS Item render entries through the enabled compiler surface', async () => {
     const result = await bridge.compileEntry(
       {
         repoId: 'ler_sales',
-        kind: 'js-field',
-        entryName: 'phone-link',
-        entryPath: 'src/client/js-fields/phone-link/index.tsx',
-        surfaceStyle: 'value',
+        entryId: 'lee_customer_menu',
+        kind: 'js-item',
+        entryName: 'customer-menu',
+        entryPath: 'src/client/js-items/customer-menu/index.tsx',
+        surfaceStyle: 'render',
         files: [
           {
-            path: 'src/client/js-fields/phone-link/index.tsx',
-            content: 'return ctx.value;\n',
+            path: 'src/client/js-items/customer-menu/index.tsx',
+            content: 'ctx.render(<button>{ctx.record.name}</button>);\n',
           },
         ],
       },
       {
-        requestId: 'req_compile_disabled_kind',
+        requestId: 'req_compile_js_item',
       },
     );
 
-    expect(result.accepted).toBe(false);
-    expect(result.artifact.code).toBe('');
+    expect(result.accepted).toBe(true);
+    expect(result.diagnostics).toEqual([]);
     expect(result.surface).toMatchObject({
-      kind: 'js-field',
-      surfaceStyle: 'value',
-      enabled: false,
+      kind: 'js-item',
+      surfaceStyle: 'render',
+      enabled: true,
+      modelUse: 'JSItemActionModel',
+      surface: 'js-model.render',
     });
-    expect(result.diagnostics).toEqual([
-      expect.objectContaining({
-        code: 'light_extension_kind_disabled',
-        kind: 'js-field',
-        entryName: 'phone-link',
+    expect(result.artifact).toMatchObject({
+      version: 'v2',
+      entryPath: 'src/client/js-items/customer-menu/index.tsx',
+      metadata: expect.objectContaining({
+        repoId: 'ler_sales',
+        entryId: 'lee_customer_menu',
+        kind: 'js-item',
+        entryName: 'customer-menu',
+        surfaceStyle: 'render',
+        compilerSurfaceStyle: 'render',
       }),
-    ]);
+    });
 
     expect(recordCompileEvent).toHaveBeenCalledWith(
       expect.objectContaining({
-        result: 'blocked',
-        reasonCode: 'compile_denied',
-        requestId: 'req_compile_disabled_kind',
+        result: 'success',
+        repoId: 'ler_sales',
+        entryId: 'lee_customer_menu',
+        requestId: 'req_compile_js_item',
       }),
     );
   });

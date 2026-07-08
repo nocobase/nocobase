@@ -7,11 +7,20 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ElementProxy, createSafeDocument, createSafeNavigator, createSafeWindow, tExpr } from '@nocobase/flow-engine';
+import { tExpr, type StepDefinition } from '@nocobase/flow-engine';
 import React from 'react';
-import { RunJSEditorField } from '../../components/runjs-studio';
 import { ActionModel, ActionSceneEnum, CollectionActionGroupModel, RecordActionGroupModel } from '../base';
 import { FormActionGroupModel } from '../blocks/form/FormActionGroupModel';
+import {
+  createJSItemRunJsUISchema,
+  createJSItemSourceBindingStep,
+  createJSItemSourceModeStep,
+  getJSItemRunJsEditorTitle,
+  getJSItemRuntimeFlowSettingSteps,
+  INLINE_SOURCE_MODE,
+  resetJSItemRuntimeElement,
+  runJSItemRuntime,
+} from '../fields/jsItemLightExtensionRuntime';
 import { PopupSubTableFormActionGroupModel } from '../fields/AssociationFieldModel/PopupSubTableFieldModel/actions/PopupSubTableFormSubmitActionModel';
 import { resolveRunJsParams } from '../utils/resolveRunJsParams';
 
@@ -35,6 +44,14 @@ export class JSItemActionModel extends ActionModel {
   private _offResourceRefresh?: () => void;
   private _mountedOnce = false;
   static scene = ActionSceneEnum.all;
+
+  public async getRuntimeFlowSettingSteps(flowKey: string): Promise<Record<string, StepDefinition> | undefined> {
+    if (flowKey !== 'jsSettings') {
+      return undefined;
+    }
+
+    return getJSItemRuntimeFlowSettingSteps(this);
+  }
 
   render() {
     return <div ref={this.context.ref} style={{ display: 'inline-flex', minHeight: 22, alignItems: 'center' }} />;
@@ -62,12 +79,15 @@ export class JSItemActionModel extends ActionModel {
     }
 
     if (this._mountedOnce && this.context.ref?.current) {
-      void this.applyFlow('jsSettings');
+      this.applyFlow('jsSettings');
     }
     this._mountedOnce = true;
   }
 
   protected onUnmount(): void {
+    if (this.context.ref?.current) {
+      resetJSItemRuntimeElement(this.context.ref.current);
+    }
     this._offResourceRefresh?.();
     this._offResourceRefresh = undefined;
   }
@@ -96,33 +116,16 @@ JSItemActionModel.registerFlow({
   key: 'jsSettings',
   title: tExpr('JavaScript settings'),
   steps: {
+    sourceMode: createJSItemSourceModeStep(),
+    sourceBinding: createJSItemSourceBindingStep(),
     runJs: {
       title: tExpr('Write JavaScript'),
       useRawParams: true,
-      uiSchema: {
-        code: {
-          type: 'string',
-          'x-decorator': 'FormItem',
-          'x-component': RunJSEditorField,
-          'x-component-props': {
-            locatorFactory: 'flowModel.step',
-            surfaceStyle: 'render',
-            scene: 'block',
-            height: '100%',
-            minHeight: '320px',
-            theme: 'light',
-            enableLinter: true,
-            containerStyle: {
-              height: '100%',
-              minHeight: 0,
-              minWidth: 0,
-            },
-          },
-        },
-      },
-      uiMode: {
+      uiSchema: createJSItemRunJsUISchema({ scene: 'block' }),
+      uiMode: async (ctx) => ({
         type: 'embed',
         props: {
+          title: await getJSItemRunJsEditorTitle(ctx),
           footer: null,
           maxWidth: '960px',
           minWidth: '720px',
@@ -136,25 +139,26 @@ JSItemActionModel.registerFlow({
             },
           },
         },
-      },
+      }),
       defaultParams() {
         return {
           version: 'v2',
+          sourceMode: INLINE_SOURCE_MODE,
           code: defaultJSActionItemCode.trim(),
         };
       },
       async handler(ctx, params) {
         const { code, version } = resolveRunJsParams(ctx, params);
         ctx.onRefReady(ctx.ref, async (element) => {
-          ctx.defineProperty('element', {
-            get: () => new ElementProxy(element),
+          await runJSItemRuntime({
+            ctx,
+            params: params || {},
+            runJs: {
+              code,
+              version,
+            },
+            element,
           });
-          const navigator = createSafeNavigator();
-          await ctx.runjs(
-            code,
-            { window: createSafeWindow({ navigator }), document: createSafeDocument(), navigator },
-            { version },
-          );
         });
       },
     },

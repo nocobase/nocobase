@@ -232,7 +232,7 @@ describe('plugin-light-extension entry scanner', () => {
     );
   });
 
-  it('persists staged client kind entries and marks JS Field entries ready', async () => {
+  it('persists staged client kind entries and marks enabled Phase 3 entries ready', async () => {
     const repo = await repoService.createRepo({
       name: 'Disabled Kind Scan Demo',
       initialFiles: [
@@ -269,9 +269,9 @@ describe('plugin-light-extension entry scanner', () => {
     expect(scan.entries.map((item) => `${item.entry.kind}:${item.entry.entryName}:${item.entry.healthStatus}`)).toEqual(
       [
         'event:log-page-open:disabled',
-        'js-action:batch-approve:disabled',
+        'js-action:batch-approve:ready',
         'js-field:phone-link:ready',
-        'js-item:customer-menu:disabled',
+        'js-item:customer-menu:ready',
         'runjs:sales-kpi:disabled',
       ],
     );
@@ -280,16 +280,6 @@ describe('plugin-light-extension entry scanner', () => {
         kind: 'event',
         entryName: 'log-page-open',
         path: 'src/client/events/log-page-open',
-      }),
-      expect.objectContaining({
-        kind: 'js-action',
-        entryName: 'batch-approve',
-        path: 'src/client/js-actions/batch-approve',
-      }),
-      expect.objectContaining({
-        kind: 'js-item',
-        entryName: 'customer-menu',
-        path: 'src/client/js-items/customer-menu',
       }),
       expect.objectContaining({
         kind: 'runjs',
@@ -784,7 +774,7 @@ describe('plugin-light-extension entry scanner', () => {
     expect(response.status).toBe(200);
     expect(response.body).toMatchObject({
       supportedKinds: expect.arrayContaining(['js-block', 'js-field', 'js-action', 'js-item', 'runjs', 'event']),
-      enabledKinds: ['js-block', 'js-field'],
+      enabledKinds: ['js-block', 'js-field', 'js-action', 'js-item'],
       validatorVersion: 'light-extension-validator-v1',
       sdkTemplateVersion: 'light-extension-sdk-template-v1',
       writePolicy: {
@@ -979,7 +969,7 @@ describe('plugin-light-extension capabilities HTTP permissions', () => {
     expect(adminResponse.status).toBe(200);
     expect(adminResponse.body).toMatchObject({
       supportedKinds: expect.arrayContaining(['js-block', 'js-field', 'js-action', 'js-item', 'runjs', 'event']),
-      enabledKinds: ['js-block', 'js-field'],
+      enabledKinds: ['js-block', 'js-field', 'js-action', 'js-item'],
       validatorVersion: 'light-extension-validator-v1',
     });
   });
@@ -1016,7 +1006,7 @@ describe('plugin-light-extension capabilities HTTP permissions', () => {
       expect(response.status).toBe(200);
       expect(defaultPrefixResponse.status).not.toBe(200);
       expect(response.body).toMatchObject({
-        enabledKinds: ['js-block', 'js-field'],
+        enabledKinds: ['js-block', 'js-field', 'js-action', 'js-item'],
         validatorVersion: 'light-extension-validator-v1',
       });
     } finally {

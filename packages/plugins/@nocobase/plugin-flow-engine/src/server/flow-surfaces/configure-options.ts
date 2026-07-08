@@ -164,6 +164,23 @@ const JS_BLOCK_INSTANCE_SETTINGS = objectOption('JS block instance settings pass
   },
 });
 
+const JS_ITEM_SOURCE_BINDING = objectOption('JS item light-extension repository entry binding', {
+  example: {
+    type: 'light-extension-entry',
+    repoId: 'repo_customer_items',
+    entryId: 'entry_show_level_label',
+    kind: 'js-item',
+    publicationId: 'publication_show_level_label_v1',
+    versionPolicy: 'pinned',
+  },
+});
+
+const JS_ITEM_INSTANCE_SETTINGS = objectOption('JS item instance settings passed to the resolved source', {
+  example: {
+    vipColor: '#d4380d',
+  },
+});
+
 const JS_BLOCK_LEGACY_SOURCE_REF = objectOption('Legacy JS block sourceRef binding', {
   example: {
     type: 'vsc-file',
@@ -627,6 +644,9 @@ const JS_ITEM_OPTIONS: FlowSurfaceConfigureOptions = {
   labelWrap: booleanOption('Whether labels should wrap', { example: false }),
   code: JS_CODE,
   version: JS_VERSION,
+  sourceMode: JS_BLOCK_SOURCE_MODE,
+  sourceBinding: JS_ITEM_SOURCE_BINDING,
+  settings: JS_ITEM_INSTANCE_SETTINGS,
 };
 
 const DIVIDER_ITEM_OPTIONS: FlowSurfaceConfigureOptions = {
@@ -691,6 +711,13 @@ const FILTER_ACTION_OPTIONS: FlowSurfaceConfigureOptions = {
 const ACTION_JS_OPTIONS: FlowSurfaceConfigureOptions = {
   code: JS_CODE,
   version: JS_VERSION,
+};
+
+const ACTION_JS_ITEM_OPTIONS: FlowSurfaceConfigureOptions = {
+  ...ACTION_JS_OPTIONS,
+  sourceMode: JS_BLOCK_SOURCE_MODE,
+  sourceBinding: JS_ITEM_SOURCE_BINDING,
+  settings: JS_ITEM_INSTANCE_SETTINGS,
 };
 
 const APPROVAL_RETURN_ACTION_OPTIONS: FlowSurfaceConfigureOptions = {
@@ -872,10 +899,11 @@ function getActionConfigureOptionsByUse(use?: string): FlowSurfaceConfigureOptio
     case 'JSCollectionActionModel':
     case 'JSRecordActionModel':
     case 'JSFormActionModel':
-    case 'JSItemActionModel':
     case 'FilterFormJSActionModel':
     case 'JSActionModel':
       return merged(ACTION_JS_OPTIONS, ACTION_LINKAGE_OPTIONS);
+    case 'JSItemActionModel':
+      return merged(ACTION_JS_ITEM_OPTIONS, ACTION_LINKAGE_OPTIONS);
     case 'LinkActionModel':
     case 'ExportActionModel':
     case 'ExportAttachmentActionModel':

@@ -218,6 +218,58 @@ describe('plugin-light-extension compile preview', () => {
     );
   });
 
+  it('previews JS Item entries after scan enables the js-item kind', async () => {
+    const repo = createRepo();
+    const { db } = createDbStub([
+      {
+        ...createEntryRecord({ id: 'lee_customer_menu', repoId: repo.id, entryName: 'customer-menu' }),
+        kind: 'js-item',
+        entryPath: 'src/client/js-items/customer-menu/index.tsx',
+      },
+    ]);
+    const fileService = createFileServiceStub(repo, [
+      {
+        path: 'src/client/js-items/customer-menu/index.tsx',
+        content: 'ctx.render(<button>{ctx.record.name}</button>);\n',
+      },
+    ]);
+    const { service, recordCompileEvent } = createPreviewService(db, fileService);
+
+    const result = await service.compilePreview(
+      {
+        repoId: repo.id,
+        entryIds: ['lee_customer_menu'],
+      },
+      {
+        requestId: 'req_compile_preview_js_item',
+      },
+    );
+
+    expect(result.accepted).toBe(true);
+    expect(result.entries).toHaveLength(1);
+    expect(result.entries[0]).toMatchObject({
+      entryId: 'lee_customer_menu',
+      kind: 'js-item',
+      status: 'success',
+      accepted: true,
+      artifact: expect.objectContaining({
+        entryPath: 'src/client/js-items/customer-menu/index.tsx',
+        metadata: expect.objectContaining({
+          kind: 'js-item',
+          entryName: 'customer-menu',
+          compilerSurfaceStyle: 'render',
+        }),
+      }),
+    });
+    expect(recordCompileEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        entryId: 'lee_customer_menu',
+        result: 'success',
+        requestId: 'req_compile_preview_js_item',
+      }),
+    );
+  });
+
   it('supports selected entryIds and reports missing selected entries without stopping valid entries', async () => {
     const repo = createRepo();
     const { db } = createDbStub([

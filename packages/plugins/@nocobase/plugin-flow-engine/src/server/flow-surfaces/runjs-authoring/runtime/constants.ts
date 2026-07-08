@@ -346,6 +346,8 @@ export const RUNJS_CTX_NON_FUNCTION_ROOTS_BY_MODEL_USE: Record<string, Set<strin
   ChartEventsModel: CHART_CTX_ROOTS,
   ChartOptionModel: CHART_CTX_ROOTS,
   JSBlockModel: new Set(['runJsSource', 'settings']),
+  JSItemModel: new Set(['item', 'runJsSource', 'settings']),
+  JSItemActionModel: new Set(['item', 'runJsSource', 'settings']),
 };
 export const REACT_NODE_COMPONENT_PROP_NAMES = new Set(['avatar', 'extra', 'icon', 'prefix', 'suffix']);
 export const CANONICAL_CTX_LIB_MEMBERS = [

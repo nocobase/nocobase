@@ -52,6 +52,7 @@ const formItemPropKeys: (keyof ExtendedFormItemProps)[] = [
   'layout',
   'required',
   'showLabel',
+  'shouldUpdate',
 ];
 
 export const FormItem = ({

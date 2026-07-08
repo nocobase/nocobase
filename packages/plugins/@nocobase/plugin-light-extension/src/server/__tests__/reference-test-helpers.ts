@@ -228,6 +228,18 @@ export function createJsActionSourceBinding(
   });
 }
 
+export function createJsItemSourceBinding(
+  input: Partial<LightExtensionRuntimeSourceBinding> = {},
+): LightExtensionRuntimeSourceBinding {
+  return createSourceBinding({
+    repoId: 'ler_items',
+    entryId: 'lee_level_label',
+    kind: 'js-item',
+    publicationId: 'lep_level_label',
+    ...input,
+  });
+}
+
 export function createJsBlockNode(
   input: {
     uid?: string;
@@ -295,6 +307,30 @@ export function createJsActionNode(
         runJs: {
           sourceMode: input.sourceMode || 'light-extension',
           sourceBinding: input.sourceBinding || createJsActionSourceBinding(),
+          settings: input.settings || {},
+        },
+      },
+    },
+  };
+}
+
+export function createJsItemNode(
+  input: {
+    uid?: string;
+    use?: 'JSItemModel' | 'JSItemActionModel';
+    sourceMode?: string;
+    sourceBinding?: LightExtensionRuntimeSourceBinding;
+    settings?: Record<string, unknown>;
+  } = {},
+): FlowModelNode {
+  return {
+    uid: input.uid || 'flow_js_item',
+    use: input.use || 'JSItemModel',
+    stepParams: {
+      jsSettings: {
+        runJs: {
+          sourceMode: input.sourceMode || 'light-extension',
+          sourceBinding: input.sourceBinding || createJsItemSourceBinding(),
           settings: input.settings || {},
         },
       },
@@ -416,6 +452,39 @@ export function createJsActionPublicationRecord(input: Record<string, unknown> =
   });
 }
 
+export function createJsItemPublicationRecord(input: Record<string, unknown> = {}): Record<string, unknown> {
+  return createPublicationRecord({
+    id: 'lep_level_label',
+    repoId: 'ler_items',
+    entryId: 'lee_level_label',
+    entryPath: 'src/client/js-items/level-label/index.tsx',
+    kind: 'js-item',
+    surfaceStyle: 'render',
+    artifact: {
+      code: 'ctx.render("level");',
+      sourceMap: '{"version":3}',
+      version: 'v2',
+      entryPath: 'src/client/js-items/level-label/index.tsx',
+      filesHash: 'files_hash_item_1',
+      diagnostics: [],
+      metadata: {},
+    },
+    settingsSchemaSnapshot: {
+      type: 'object',
+      properties: {
+        vipColor: {
+          type: 'string',
+          default: '#f5222d',
+        },
+      },
+    },
+    settingsDefaultsSnapshot: {
+      vipColor: '#f5222d',
+    },
+    ...input,
+  });
+}
+
 export function createRepoRecord(input: Record<string, unknown> = {}): Record<string, unknown> {
   return {
     id: 'ler_sales',
@@ -439,6 +508,16 @@ export function createJsActionEntryRecord(input: Record<string, unknown> = {}): 
     id: 'lee_mark_approved',
     repoId: 'ler_actions',
     kind: 'js-action',
+    healthStatus: 'ready',
+    ...input,
+  });
+}
+
+export function createJsItemEntryRecord(input: Record<string, unknown> = {}): Record<string, unknown> {
+  return createEntryRecord({
+    id: 'lee_level_label',
+    repoId: 'ler_items',
+    kind: 'js-item',
     healthStatus: 'ready',
     ...input,
   });
@@ -513,9 +592,28 @@ export function createJsActionReferenceRecord(input: Record<string, unknown> = {
   });
 }
 
+export function createJsItemReferenceRecord(input: Record<string, unknown> = {}): Record<string, unknown> {
+  const modelUid = typeof input.modelUid === 'string' ? input.modelUid : 'flow_js_item';
+  const use = typeof input.use === 'string' ? input.use : 'JSItemModel';
+  const ownerLocator = isPlainRecord(input.ownerLocator)
+    ? (input.ownerLocator as LightExtensionReferenceOwnerLocator)
+    : createOwnerLocator(modelUid, { kind: 'js-item', use });
+  return createReferenceRecord({
+    id: `lef_${modelUid}`,
+    repoId: 'ler_items',
+    entryId: 'lee_level_label',
+    publicationId: 'lep_level_label',
+    kind: 'js-item',
+    ownerKind: 'flowModel.itemSettings',
+    ownerLocator,
+    ownerLocatorHash: hashOwnerLocator(ownerLocator),
+    ...input,
+  });
+}
+
 export function createOwnerLocator(
   modelUid: string,
-  input: { kind?: 'js-block' | 'js-field' | 'js-action'; use?: string } = {},
+  input: { kind?: 'js-block' | 'js-field' | 'js-action' | 'js-item'; use?: string } = {},
 ): LightExtensionReferenceOwnerLocator {
   if (input.kind === 'js-field') {
     return {
@@ -531,6 +629,14 @@ export function createOwnerLocator(
       modelUid,
       use: input.use || 'JSActionModel',
       descriptor: 'Action model click settings locator',
+    };
+  }
+  if (input.kind === 'js-item') {
+    return {
+      kind: 'flowModel.itemSettings',
+      modelUid,
+      use: input.use || 'JSItemModel',
+      descriptor: 'Item model settings locator',
     };
   }
   return {

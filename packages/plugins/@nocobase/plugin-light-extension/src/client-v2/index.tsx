@@ -17,6 +17,7 @@ export {
   JSActionLightExtensionSourceField,
   JSBlockLightExtensionSourceField,
   JSFieldLightExtensionSourceField,
+  JSItemLightExtensionSourceField,
 } from './components/JSBlockLightExtensionSourceField';
 export { RepoEntryPublicationSelector } from './components/RepoEntryPublicationSelector';
 export { ReferenceImpactPanel } from './components/ReferenceImpactPanel';

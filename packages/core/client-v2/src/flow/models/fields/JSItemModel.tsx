@@ -7,18 +7,20 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import {
-  ElementProxy,
-  FormItem,
-  createSafeDocument,
-  createSafeWindow,
-  createSafeNavigator,
-  tExpr,
-} from '@nocobase/flow-engine';
+import { FormItem, tExpr, type StepDefinition } from '@nocobase/flow-engine';
 import React from 'react';
-import { RunJSEditorField } from '../../components/runjs-studio';
 import { CommonItemModel } from '../base/CommonItemModel';
 import { resolveRunJsParams } from '../utils/resolveRunJsParams';
+import {
+  createJSItemRunJsUISchema,
+  createJSItemSourceBindingStep,
+  createJSItemSourceModeStep,
+  getJSItemRunJsEditorTitle,
+  getJSItemRuntimeFlowSettingSteps,
+  INLINE_SOURCE_MODE,
+  resetJSItemRuntimeElement,
+  runJSItemRuntime,
+} from './jsItemLightExtensionRuntime';
 
 /**
  * JSItemModel：表单里的自定义项（非字段绑定），可执行 JS 并渲染到容器中
@@ -28,6 +30,14 @@ import { resolveRunJsParams } from '../utils/resolveRunJsParams';
 export class JSItemModel extends CommonItemModel {
   private _offResourceRefresh?: () => void;
   private _mountedOnce = false; // prevent first-mount double-run
+
+  public async getRuntimeFlowSettingSteps(flowKey: string): Promise<Record<string, StepDefinition> | undefined> {
+    if (flowKey !== 'jsSettings') {
+      return undefined;
+    }
+
+    return getJSItemRuntimeFlowSettingSteps(this);
+  }
 
   getInputArgs() {
     const inputArgs = {};
@@ -80,6 +90,9 @@ export class JSItemModel extends CommonItemModel {
   }
 
   protected onUnmount(): void {
+    if (this.context.ref?.current) {
+      resetJSItemRuntimeElement(this.context.ref.current);
+    }
     this._offResourceRefresh?.();
     this._offResourceRefresh = undefined;
   }
@@ -98,33 +111,16 @@ JSItemModel.registerFlow({
   key: 'jsSettings',
   title: tExpr('JavaScript settings'),
   steps: {
+    sourceMode: createJSItemSourceModeStep(),
+    sourceBinding: createJSItemSourceBindingStep(),
     runJs: {
       title: tExpr('Write JavaScript'),
       useRawParams: true,
-      uiSchema: {
-        code: {
-          type: 'string',
-          'x-decorator': 'FormItem',
-          'x-component': RunJSEditorField,
-          'x-component-props': {
-            locatorFactory: 'flowModel.step',
-            surfaceStyle: 'render',
-            scene: 'block',
-            height: '100%',
-            minHeight: '320px',
-            theme: 'light',
-            enableLinter: true,
-            containerStyle: {
-              height: '100%',
-              minHeight: 0,
-              minWidth: 0,
-            },
-          },
-        },
-      },
-      uiMode: {
+      uiSchema: createJSItemRunJsUISchema({ scene: 'block' }),
+      uiMode: async (ctx) => ({
         type: 'embed',
         props: {
+          title: await getJSItemRunJsEditorTitle(ctx),
           footer: null,
           maxWidth: '960px',
           minWidth: '720px',
@@ -138,10 +134,11 @@ JSItemModel.registerFlow({
             },
           },
         },
-      },
+      }),
       defaultParams(ctx) {
         return {
           version: 'v2',
+          sourceMode: INLINE_SOURCE_MODE,
           code: `
 function JsItem() {
   return (
@@ -159,15 +156,15 @@ ctx.render(<JsItem />);
       async handler(ctx, params) {
         const { code, version } = resolveRunJsParams(ctx, params);
         ctx.onRefReady(ctx.ref, async (element) => {
-          ctx.defineProperty('element', {
-            get: () => new ElementProxy(element),
+          await runJSItemRuntime({
+            ctx,
+            params: params || {},
+            runJs: {
+              code,
+              version,
+            },
+            element,
           });
-          const navigator = createSafeNavigator();
-          await ctx.runjs(
-            code,
-            { window: createSafeWindow({ navigator }), document: createSafeDocument(), navigator },
-            { version },
-          );
         });
       },
     },

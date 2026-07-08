@@ -21,7 +21,7 @@ export const LIGHT_EXTENSION_SUPPORTED_KINDS = [
   'runjs',
   'event',
 ] as const;
-export const LIGHT_EXTENSION_ENABLED_KINDS = ['js-block', 'js-field'] as const;
+export const LIGHT_EXTENSION_ENABLED_KINDS = ['js-block', 'js-field', 'js-action', 'js-item'] as const;
 
 export const LIGHT_EXTENSION_ACL_ACTIONS = [
   'list',

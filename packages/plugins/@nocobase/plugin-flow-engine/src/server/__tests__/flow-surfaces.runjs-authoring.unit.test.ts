@@ -1561,6 +1561,39 @@ describe('flowSurfaces RunJS authoring unit validation', () => {
       }).map((error: any) => error.ruleId),
     ).not.toContain('runjs-ctx-member-not-callable');
 
+    for (const modelUse of ['JSItemModel', 'JSItemActionModel']) {
+      const itemContextErrors = inspectRunJsAuthoringCode({
+        code: [
+          'const level = ctx.item?.index;',
+          'const configuredTitle = ctx.settings?.title || ctx.runJsSource?.context?.lightExtension?.publicationId;',
+          'ctx.render(String(configuredTitle ?? level ?? ""));',
+        ].join('\n'),
+        path: `$.runjs.${modelUse}.ctxValues.code`,
+        modelUse,
+      }).map((error: any) => error.ruleId);
+
+      expect(itemContextErrors).not.toContain('runjs-ctx-root-unknown');
+      expect(itemContextErrors).not.toContain('runjs-ctx-member-not-callable');
+
+      expect(
+        inspectRunJsAuthoringCode({
+          code: 'const settings = ctx.settings();\nctx.render(String(settings?.title ?? ""));',
+          path: `$.runjs.${modelUse}.settingsCall.code`,
+          modelUse,
+        }),
+      ).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            ruleId: 'runjs-ctx-member-not-callable',
+            details: expect.objectContaining({
+              capability: 'ctx.settings',
+              member: 'settings',
+            }),
+          }),
+        ]),
+      );
+    }
+
     expect(
       inspectRunJsAuthoringCode({
         code: [

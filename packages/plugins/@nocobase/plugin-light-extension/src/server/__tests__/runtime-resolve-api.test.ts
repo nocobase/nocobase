@@ -422,15 +422,15 @@ describe('plugin-light-extension runtime resolve API', () => {
     const { service } = createRuntimeResolveService(
       {
         ...createPublicationRecord(),
-        id: 'lep_notify',
-        entryId: 'lee_notify',
-        entryPath: 'src/client/js-actions/notify/index.ts',
-        kind: 'js-action',
-        surfaceStyle: 'action',
+        id: 'lep_run_task',
+        entryId: 'lee_run_task',
+        entryPath: 'src/client/runjs/run-task/index.ts',
+        kind: 'runjs',
+        surfaceStyle: 'run',
       },
       {
-        entryId: 'lee_notify',
-        entryKind: 'js-action',
+        entryId: 'lee_run_task',
+        entryKind: 'runjs',
       },
     );
 
@@ -439,9 +439,9 @@ describe('plugin-light-extension runtime resolve API', () => {
         {
           sourceMode: 'light-extension',
           sourceBinding: createSourceBinding({
-            publicationId: 'lep_notify',
-            entryId: 'lee_notify',
-            kind: 'js-action',
+            publicationId: 'lep_run_task',
+            entryId: 'lee_run_task',
+            kind: 'runjs',
           }),
           settings: {},
         },
@@ -454,8 +454,8 @@ describe('plugin-light-extension runtime resolve API', () => {
       status: 409,
       details: {
         reasonCode: 'kind_disabled',
-        publicationId: 'lep_notify',
-        kind: 'js-action',
+        publicationId: 'lep_run_task',
+        kind: 'runjs',
       },
     });
   });

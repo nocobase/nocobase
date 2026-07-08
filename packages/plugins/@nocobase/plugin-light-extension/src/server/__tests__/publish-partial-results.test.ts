@@ -171,6 +171,67 @@ describe('plugin-light-extension publish partial results', () => {
     );
   });
 
+  it('publishes JS Item entries with render surface artifacts', async () => {
+    const repo = createRepo();
+    const { db, publicationsRepository, reposRepository } = createDbStub([
+      {
+        ...createEntryRecord({ id: 'lee_customer_menu', repoId: repo.id, entryName: 'customer-menu' }),
+        kind: 'js-item',
+        entryPath: 'src/client/js-items/customer-menu/index.tsx',
+      },
+    ]);
+    const service = createPublishService(
+      db,
+      createFileServiceStub(repo, [
+        {
+          path: 'src/client/js-items/customer-menu/index.tsx',
+          content: 'ctx.render(<button>{ctx.record.name}</button>);\n',
+        },
+      ]),
+    );
+
+    const result = await service.publish({
+      repoId: repo.id,
+      entryIds: ['lee_customer_menu'],
+      commitId: 'vsc_commit_1',
+      clientRequestId: 'publish_req_js_item',
+    });
+
+    expect(result).toMatchObject({
+      status: 'success',
+      httpStatus: 200,
+      entryResults: [
+        expect.objectContaining({
+          entryId: 'lee_customer_menu',
+          kind: 'js-item',
+          status: 'created',
+          publication: expect.objectContaining({
+            id: 'lep_created_1',
+            entryPath: 'src/client/js-items/customer-menu/index.tsx',
+            kind: 'js-item',
+            surfaceStyle: 'render',
+            artifact: expect.objectContaining({
+              entryPath: 'src/client/js-items/customer-menu/index.tsx',
+              metadata: expect.objectContaining({
+                kind: 'js-item',
+                compilerSurfaceStyle: 'render',
+              }),
+            }),
+          }),
+        }),
+      ],
+    });
+    expect(publicationsRepository.create).toHaveBeenCalledTimes(1);
+    expect(reposRepository.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        filterByTk: repo.id,
+        values: {
+          lastPublishedAt: expect.any(Date),
+        },
+      }),
+    );
+  });
+
   it('activates the created publication when activate is true', async () => {
     const repo = createRepo();
     const { db, entryModels, logsRepository } = createDbStub([

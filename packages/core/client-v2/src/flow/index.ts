@@ -31,6 +31,10 @@ import {
   JS_FIELD_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
   JSFieldSourceModeField,
 } from './models/fields/JSFieldSourceModeField';
+import {
+  JS_ITEM_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
+  JSItemSourceModeField,
+} from './models/fields/JSItemSourceModeField';
 
 export class PluginFlowEngine<TApp extends BaseApplication<any> = BaseApplication<any>> extends Plugin<
   PluginOptions<any>,
@@ -56,6 +60,8 @@ export class PluginFlowEngine<TApp extends BaseApplication<any> = BaseApplicatio
       [JS_ACTION_LIGHT_EXTENSION_FULL_SOURCE_FIELD]: JSActionSourceModeField,
       JSFieldLightExtensionSourceField: JSFieldSourceModeField,
       [JS_FIELD_LIGHT_EXTENSION_FULL_SOURCE_FIELD]: JSFieldSourceModeField,
+      JSItemLightExtensionSourceField: JSItemSourceModeField,
+      [JS_ITEM_LIGHT_EXTENSION_FULL_SOURCE_FIELD]: JSItemSourceModeField,
     });
 
     // 动态流编辑入口

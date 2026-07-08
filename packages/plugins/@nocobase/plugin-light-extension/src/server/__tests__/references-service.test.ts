@@ -15,6 +15,11 @@ import {
   createJsActionPublicationRecord,
   createJsActionReferenceRecord,
   createJsActionSourceBinding,
+  createJsItemEntryRecord,
+  createJsItemNode,
+  createJsItemPublicationRecord,
+  createJsItemReferenceRecord,
+  createJsItemSourceBinding,
   createJsFieldEntryRecord,
   createJsFieldNode,
   createJsFieldPublicationRecord,
@@ -34,6 +39,10 @@ describe('plugin-light-extension reference service', () => {
     ['JSCollectionActionModel', 'flow_js_action_collection'],
     ['JSFormActionModel', 'flow_js_action_form'],
     ['FilterFormJSActionModel', 'flow_js_action_filter_form'],
+  ] as const;
+  const jsItemHostUses = [
+    ['JSItemModel', 'flow_js_item_display'],
+    ['JSItemActionModel', 'flow_js_item_action'],
   ] as const;
 
   it('upserts JS Block references with publication snapshot settings and removes them after switching inline', async () => {
@@ -423,6 +432,235 @@ describe('plugin-light-extension reference service', () => {
         ownerKind: 'flowModel.actionSettings',
         ownerLocatorHash: expect.stringMatching(/^sha256:/),
       }),
+    );
+  });
+
+  it.each(jsItemHostUses)('upserts %s JS Item references with distinct item owner locators', async (use, uid) => {
+    const { service, repositories } = createReferenceServiceFixture({
+      flowModelTrees: {
+        [uid]: createJsItemNode({
+          uid,
+          use,
+          settings: {
+            vipColor: '#f5222d',
+          },
+        }),
+      },
+      publications: [createJsItemPublicationRecord()],
+      repos: [createRepoRecord({ id: 'ler_items' })],
+      entries: [createJsItemEntryRecord()],
+    });
+
+    const result = await service.syncFlowModelReferencesForNodeTree({
+      rootUid: uid,
+      action: 'flowModels.save',
+    });
+
+    expect(result).toMatchObject({
+      scanned: 1,
+      upserted: 1,
+      removed: 0,
+      statusCounts: {
+        active: 1,
+      },
+    });
+    expect(repositories.lightExtensionReferences.records).toHaveLength(1);
+    expect(repositories.lightExtensionReferences.records[0].toJSON()).toMatchObject({
+      repoId: 'ler_items',
+      entryId: 'lee_level_label',
+      publicationId: 'lep_level_label',
+      kind: 'js-item',
+      ownerKind: 'flowModel.itemSettings',
+      ownerLocator: {
+        kind: 'flowModel.itemSettings',
+        modelUid: uid,
+        use,
+      },
+      versionPolicy: 'pinned',
+      settingsHash: stableJsonHash({
+        vipColor: '#f5222d',
+      }),
+      resolvedStatus: 'active',
+    });
+  });
+
+  it('upserts JS Item references after the settings dialog saves a source binding step wrapper', async () => {
+    const uid = 'flow_js_item_saved_wrapper';
+    const sourceBinding = createJsItemSourceBinding();
+    const { service, repositories } = createReferenceServiceFixture({
+      flowModelTrees: {
+        [uid]: {
+          uid,
+          use: 'JSItemActionModel',
+          stepParams: {
+            jsSettings: {
+              sourceBinding: {
+                sourceMode: 'light-extension',
+                sourceBinding,
+                settings: {
+                  vipColor: '#faad14',
+                },
+              },
+              runJs: {
+                sourceMode: 'light-extension',
+                sourceBinding,
+                settings: {
+                  vipColor: '#faad14',
+                },
+              },
+            },
+          },
+        },
+      },
+      publications: [createJsItemPublicationRecord()],
+      repos: [createRepoRecord({ id: 'ler_items' })],
+      entries: [createJsItemEntryRecord()],
+    });
+
+    const result = await service.syncFlowModelReferencesForNodeTree({
+      rootUid: uid,
+      action: 'flowModels.save',
+    });
+
+    expect(result).toMatchObject({
+      scanned: 1,
+      upserted: 1,
+      removed: 0,
+      statusCounts: {
+        active: 1,
+      },
+    });
+    expect(repositories.lightExtensionReferences.records[0].toJSON()).toMatchObject({
+      repoId: 'ler_items',
+      entryId: 'lee_level_label',
+      kind: 'js-item',
+      ownerKind: 'flowModel.itemSettings',
+      settingsHash: stableJsonHash({
+        vipColor: '#faad14',
+      }),
+      resolvedStatus: 'active',
+    });
+  });
+
+  it('removes JS Item references after switching the item back to inline source', async () => {
+    const uid = 'flow_js_item_inline';
+    const { service, repositories } = createReferenceServiceFixture({
+      flowModelTrees: {
+        [uid]: createJsItemNode({
+          uid,
+          sourceMode: 'inline',
+        }),
+      },
+      references: [
+        createJsItemReferenceRecord({
+          modelUid: uid,
+        }),
+      ],
+    });
+
+    const result = await service.syncFlowModelReferencesForNodeTree({
+      rootUid: uid,
+      action: 'flowSurfaces.updateSettings',
+    });
+
+    expect(result).toMatchObject({
+      scanned: 1,
+      upserted: 0,
+      removed: 1,
+    });
+    expect(repositories.lightExtensionReferences.records).toHaveLength(0);
+  });
+
+  it('rebuilds JS Item references from persisted item flow model records', async () => {
+    const { service, repositories } = createReferenceServiceFixture({
+      flowModels: jsItemHostUses.map(([use, uid]) => ({
+        uid,
+        options: createJsItemNode({
+          uid,
+          use,
+          settings: {
+            vipColor: '#eb2f96',
+          },
+        }),
+      })),
+      publications: [createJsItemPublicationRecord()],
+      repos: [createRepoRecord({ id: 'ler_items' })],
+      entries: [createJsItemEntryRecord()],
+    });
+
+    const result = await service.rebuildIndex({
+      repoId: 'ler_items',
+    });
+
+    const records = repositories.lightExtensionReferences.records.map((record) => record.toJSON());
+    expect(result).toMatchObject({
+      scanned: 2,
+      upserted: 2,
+      removed: 0,
+      ownerMissing: 0,
+      statusCounts: {
+        active: 2,
+      },
+    });
+    expect(records).toHaveLength(2);
+    expect(new Set(records.map((record) => record.ownerLocatorHash)).size).toBe(2);
+    expect(records).toEqual(
+      expect.arrayContaining(
+        jsItemHostUses.map(([use, uid]) =>
+          expect.objectContaining({
+            repoId: 'ler_items',
+            entryId: 'lee_level_label',
+            kind: 'js-item',
+            ownerLocator: expect.objectContaining({
+              modelUid: uid,
+              use,
+            }),
+          }),
+        ),
+      ),
+    );
+  });
+
+  it('generates a stable ownerLocatorHash per copied JS Item owner', async () => {
+    const { service, repositories } = createReferenceServiceFixture({
+      flowModelTrees: {
+        flow_source_js_item: createJsItemNode({
+          uid: 'flow_source_js_item',
+          use: 'JSItemActionModel',
+        }),
+        flow_copied_js_item: createJsItemNode({
+          uid: 'flow_copied_js_item',
+          use: 'JSItemActionModel',
+        }),
+      },
+      publications: [createJsItemPublicationRecord()],
+      repos: [createRepoRecord({ id: 'ler_items' })],
+      entries: [createJsItemEntryRecord()],
+    });
+
+    await service.syncFlowModelReferencesForNodeTree({
+      rootUid: 'flow_source_js_item',
+      action: 'flowModels.save',
+    });
+    await service.syncFlowModelReferencesForNodeTree({
+      rootUid: 'flow_copied_js_item',
+      action: 'flowModels.duplicate',
+    });
+
+    const records = repositories.lightExtensionReferences.records.map((record) => record.toJSON());
+    expect(records).toHaveLength(2);
+    expect(new Set(records.map((record) => record.ownerLocatorHash)).size).toBe(2);
+    expect(records).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          kind: 'js-item',
+          ownerLocator: expect.objectContaining({ modelUid: 'flow_source_js_item' }),
+        }),
+        expect.objectContaining({
+          kind: 'js-item',
+          ownerLocator: expect.objectContaining({ modelUid: 'flow_copied_js_item' }),
+        }),
+      ]),
     );
   });
 

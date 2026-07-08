@@ -63,6 +63,16 @@ describe('plugin-light-extension multi-host reference foundation', () => {
           supportsRebuild: true,
         }),
         expect.objectContaining({
+          kind: 'js-item',
+          ownerKind: 'flowModel.itemSettings',
+          status: 'active',
+          implementationTask: '05-task-js-item-entry-end-to-end.md',
+          supportsVersionPolicy: true,
+          supportsImpact: true,
+          supportsBulkUpgrade: true,
+          supportsRebuild: true,
+        }),
+        expect.objectContaining({
           kind: 'runjs',
           ownerKind: 'flowModel.runjsHost',
           status: 'placeholder',
@@ -148,7 +158,7 @@ describe('plugin-light-extension multi-host reference foundation', () => {
 
     const result = await service.rebuildIndex({
       ownerLocator: {
-        kind: 'flowModel.itemSettings',
+        kind: 'flowModel.runjsHost',
         modelUid: 'flow_js_block',
       },
       dryRun: true,

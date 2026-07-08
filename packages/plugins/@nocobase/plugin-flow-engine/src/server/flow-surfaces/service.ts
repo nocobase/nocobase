@@ -22072,14 +22072,20 @@ export class FlowSurfacesService {
           labelWidth: changes.labelWidth,
           labelWrap: changes.labelWrap,
         }),
-        stepParams: hasDefinedValue(changes, ['code', 'version'])
+        stepParams: hasDefinedValue(changes, ['code', 'version', 'sourceMode', 'sourceBinding', 'settings'])
           ? {
-              jsSettings: {
+              jsSettings: buildDefinedPayload({
                 runJs: buildDefinedPayload({
                   code: changes.code,
                   version: changes.version,
+                  sourceMode: changes.sourceMode,
+                  sourceBinding: changes.sourceBinding,
+                  settings: changes.settings,
                 }),
-              },
+                sourceMode: changes.sourceMode,
+                sourceBinding: changes.sourceBinding,
+                settings: changes.settings,
+              }),
             }
           : undefined,
       },
@@ -24457,16 +24463,30 @@ export class FlowSurfacesService {
           : {}),
       });
     }
-    if (hasDefinedValue(changes, ['code', 'version'])) {
+    if (hasDefinedValue(changes, ['code', 'version', 'sourceMode', 'sourceBinding', 'settings'])) {
       if (!JS_ACTION_USES.has(use) && !JS_ITEM_ACTION_USES.has(use)) {
-        throwBadRequest(`flowSurfaces configure action '${use}' does not support code/version`);
+        throwBadRequest(`flowSurfaces configure action '${use}' does not support JS source settings`);
       }
-      const runJsSettings = {
+      const runJsSettings = buildDefinedPayload({
         runJs: buildDefinedPayload({
           code: changes.code,
           version: changes.version,
+          ...(JS_ITEM_ACTION_USES.has(use)
+            ? {
+                sourceMode: changes.sourceMode,
+                sourceBinding: changes.sourceBinding,
+                settings: changes.settings,
+              }
+            : {}),
         }),
-      };
+        ...(JS_ITEM_ACTION_USES.has(use)
+          ? {
+              sourceMode: changes.sourceMode,
+              sourceBinding: changes.sourceBinding,
+              settings: changes.settings,
+            }
+          : {}),
+      });
       if (JS_ITEM_ACTION_USES.has(use)) {
         stepParams.jsSettings = runJsSettings;
       } else {

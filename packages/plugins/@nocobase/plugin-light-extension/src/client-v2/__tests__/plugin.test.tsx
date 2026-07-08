@@ -13,6 +13,8 @@ import {
   JS_ACTION_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
   JS_BLOCK_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
   JS_BLOCK_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
+  JS_ITEM_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
+  JS_ITEM_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
 } from '@nocobase/client-v2';
 import { RunJSSourceResolverRegistry, registerBlockGridSelectSceneAddBlockProvider } from '@nocobase/client-v2';
 import { afterEach, vi } from 'vitest';
@@ -72,6 +74,8 @@ describe('PluginLightExtensionClientV2', () => {
       [JS_ACTION_LIGHT_EXTENSION_SETTINGS_STEP_FIELD]: expect.any(Function),
       [JS_BLOCK_LIGHT_EXTENSION_FULL_SOURCE_FIELD]: expect.any(Function),
       [JS_BLOCK_LIGHT_EXTENSION_SETTINGS_STEP_FIELD]: expect.any(Function),
+      [JS_ITEM_LIGHT_EXTENSION_FULL_SOURCE_FIELD]: expect.any(Function),
+      [JS_ITEM_LIGHT_EXTENSION_SETTINGS_STEP_FIELD]: expect.any(Function),
       RepoEntryPublicationSelector: expect.any(Function),
       SettingsAutoForm: expect.any(Function),
       VersionPolicyField: expect.any(Function),

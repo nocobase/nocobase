@@ -15,6 +15,8 @@ import {
   JS_BLOCK_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
   JS_FIELD_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
   JS_FIELD_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
+  JS_ITEM_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
+  JS_ITEM_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
   RunJSSourceResolverRegistry,
   registerBlockGridSelectSceneAddBlockProvider,
 } from '@nocobase/client-v2';
@@ -26,6 +28,7 @@ import {
   JSActionLightExtensionSourceField,
   JSBlockLightExtensionSourceField,
   JSFieldLightExtensionSourceField,
+  JSItemLightExtensionSourceField,
 } from '../client-v2/components/JSBlockLightExtensionSourceField';
 import { RepoEntryPublicationSelector } from '../client-v2/components/RepoEntryPublicationSelector';
 import { SettingsAutoForm, SettingsSingleField } from '../client-v2/components/SettingsAutoForm';
@@ -102,6 +105,8 @@ export class PluginLightExtensionClient {
       [JS_BLOCK_LIGHT_EXTENSION_SETTINGS_STEP_FIELD]: SettingsSingleField,
       [JS_FIELD_LIGHT_EXTENSION_FULL_SOURCE_FIELD]: JSFieldLightExtensionSourceField,
       [JS_FIELD_LIGHT_EXTENSION_SETTINGS_STEP_FIELD]: SettingsSingleField,
+      [JS_ITEM_LIGHT_EXTENSION_FULL_SOURCE_FIELD]: JSItemLightExtensionSourceField,
+      [JS_ITEM_LIGHT_EXTENSION_SETTINGS_STEP_FIELD]: SettingsSingleField,
       RepoEntryPublicationSelector,
       SettingsAutoForm,
       VersionPolicyField,

@@ -32,6 +32,7 @@ export * from './JSFieldSourceModeField';
 export * from './DividerItemModel';
 export * from './MarkdownItemModel';
 export * from './JSItemModel';
+export * from './JSItemSourceModeField';
 export * from './ClickableFieldModel';
 export * from './DisplayTitleFieldModel';
 
