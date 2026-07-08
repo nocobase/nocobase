@@ -51,6 +51,14 @@ function getRequestEvents(call: GatewayRequestOptions | undefined) {
   return Array.isArray(events) ? events.filter(isJsonRecord) : [];
 }
 
+async function writeSkillFixture(skillPath: string, skillName = 'agent-gateway-test-skill') {
+  await fs.mkdir(skillPath, { recursive: true });
+  await fs.writeFile(
+    path.join(skillPath, 'SKILL.md'),
+    ['---', `name: ${skillName}`, 'description: Agent Gateway test skill.', '---', '', '# Test Skill', ''].join('\n'),
+  );
+}
+
 async function waitUntil(predicate: () => boolean, timeoutMs = 500) {
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
@@ -98,17 +106,6 @@ class RunnerRequester implements GatewayRequester {
           commandKey: 'node',
           args: ['-e', 'process.stdout.write("runner complete token=RUNNER_TOKEN_SECRET")'],
           cwd: '.',
-          skillVersions: [
-            {
-              skillVersionId: '55555555-5555-4555-8555-555555555555',
-              versionLabel: 'v1',
-              source: {
-                type: 'zip',
-                archivePath: '/skills/opencode.zip',
-                sha256: 'solidified-sha256',
-              },
-            },
-          ],
         },
       },
     };
@@ -226,7 +223,7 @@ describe('agent gateway daemon runner', () => {
     expect(errors).toEqual(['connect ECONNREFUSED 127.0.0.1:23001']);
   });
 
-  it('claims, syncs the selected Skill version, executes through allowlist, and terminalizes the run', async () => {
+  it('claims, executes through allowlist, and terminalizes the run', async () => {
     const workspace = path.join(tempDir, 'workspace');
     await fs.mkdir(workspace, { recursive: true });
     const requester = new RunnerRequester();
@@ -292,7 +289,6 @@ describe('agent gateway daemon runner', () => {
       expect.arrayContaining([
         '/api/agent-gateway/nodes/node-1/heartbeat',
         '/api/agent-gateway/nodes/node-1/runs:claim',
-        '/api/agent-gateway/nodes/node-1/skill-installs:upsert',
         '/api/agent-gateway/runs/run-1/events:append',
         '/api/agent-gateway/runs/run-1/snapshots:register',
         '/api/agent-gateway/nodes/node-1/runs/run-1/complete',
@@ -325,12 +321,13 @@ describe('agent gateway daemon runner', () => {
     ).toBe(true);
   });
 
-  it('injects installed Skill paths into the agent prompt and registers declared artifacts', async () => {
+  it('installs project Skills without modifying the agent prompt and registers declared artifacts', async () => {
     const workspace = path.join(tempDir, 'workspace');
     const installedSkillPath = path.join(tempDir, 'skills', '55555555-5555-4555-8555-555555555555');
     const oldRunDir = path.join(tempDir, 'runs', 'nb-opencode-ui-batch', 'old-run');
     const runDir = path.join(tempDir, 'runs', 'nb-opencode-ui-batch', 'run-1');
     await fs.mkdir(workspace, { recursive: true });
+    await writeSkillFixture(installedSkillPath);
     await fs.mkdir(oldRunDir, { recursive: true });
     await fs.mkdir(runDir, { recursive: true });
     const oldReportPath = path.join(oldRunDir, 'report.html');
@@ -441,6 +438,7 @@ describe('agent gateway daemon runner', () => {
       }),
       executeCommand: async (options) => {
         executedArgs.push(options.args || []);
+        await fs.access(path.join(workspace, '.agents', 'skills', 'agent-gateway-test-skill', 'SKILL.md'));
         return {
           status: 'succeeded',
           exitCode: 0,
@@ -465,7 +463,9 @@ describe('agent gateway daemon runner', () => {
     });
 
     expect(result.status).toBe('succeeded');
-    expect(executedArgs[0].join('\n')).toContain(path.join(installedSkillPath, 'SKILL.md'));
+    expect(executedArgs[0].join('\n')).not.toContain(path.join(installedSkillPath, 'SKILL.md'));
+    expect(executedArgs[0].join('\n')).not.toContain('Custom Agent Gateway skills installed for this run');
+    await expect(fs.access(path.join(workspace, '.agents', 'skills', 'agent-gateway-test-skill'))).rejects.toThrow();
     const artifactCalls = requester.calls.filter((call) => call.path.endsWith('/artifacts:register'));
     expect(artifactCalls).toHaveLength(8);
     expect(artifactCalls.map((call) => call.body?.artifactKey)).not.toEqual(
@@ -897,6 +897,7 @@ describe('agent gateway daemon runner', () => {
     const installedSkillPath = path.join(tempDir, 'skills', '55555555-5555-4555-8555-555555555555');
     const runDir = path.join(tempDir, 'runs', 'nb-opencode-ui-batch', 'run-1');
     await fs.mkdir(workspace, { recursive: true });
+    await writeSkillFixture(installedSkillPath);
     await fs.mkdir(runDir, { recursive: true });
     await fs.writeFile(
       path.join(runDir, 'report.html'),
@@ -987,6 +988,101 @@ describe('agent gateway daemon runner', () => {
     expect(artifactCalls.map((call) => String(call.body?.artifactKey))).not.toEqual(
       expect.arrayContaining(['declared:runs/nb-opencode-ui-batch/run-1/report.html']),
     );
+  });
+
+  it('leaves an existing project Skill with the same name in place', async () => {
+    const workspace = path.join(tempDir, 'workspace');
+    const installedSkillPath = path.join(tempDir, 'skills', '55555555-5555-4555-8555-555555555555');
+    const existingSkillPath = path.join(workspace, '.agents', 'skills', 'agent-gateway-test-skill');
+    await fs.mkdir(workspace, { recursive: true });
+    await writeSkillFixture(installedSkillPath);
+    await fs.mkdir(existingSkillPath, { recursive: true });
+    await fs.writeFile(
+      path.join(existingSkillPath, 'SKILL.md'),
+      ['---', 'name: agent-gateway-test-skill', 'description: User project skill.', '---', '', '# User Skill', ''].join(
+        '\n',
+      ),
+    );
+    const requester = new RunnerRequester({
+      claimPayload: {
+        claimed: true,
+        runId: 'run-1',
+        claimToken: 'ag_claim_CLAIM_TOKEN_SECRET',
+        claimAttempt: 1,
+        leaseVersion: 1,
+        run: {
+          id: 'run-1',
+          executionPayloadJson: {
+            commandKey: 'codex',
+            prompt: 'Use existing project skill',
+            cwd: '.',
+            skillVersions: [
+              {
+                skillVersionId: '55555555-5555-4555-8555-555555555555',
+                versionLabel: 'v1',
+                source: {
+                  type: 'zip',
+                  archivePath: '/skills/opencode.zip',
+                  sha256: 'solidified-sha256',
+                },
+              },
+            ],
+          },
+        },
+      },
+    });
+    const gateway = new AgentGatewayDaemonNodeClient(requester, {
+      serverUrl: 'https://nocobase.example.test',
+      nodeId: 'node-1',
+      nodeKey: 'node-1',
+      nodeToken: 'ag_node_NODE_TOKEN_SECRET',
+      savedAt: new Date().toISOString(),
+    });
+
+    const result = await runDaemonOnce({
+      gateway,
+      allowlist: {
+        codex: {
+          commandKey: 'codex',
+          executable: process.execPath,
+          defaultTimeoutMs: 5000,
+        },
+      },
+      workspaceRoot: workspace,
+      skillsRoot: path.join(tempDir, 'skills'),
+      artifactDir: path.join(tempDir, 'artifacts'),
+      runHeartbeatIntervalMs: 60_000,
+      syncSkillVersion: async (options) => ({
+        skillVersionId: options.skillVersion.skillVersionId,
+        installPath: installedSkillPath,
+        idempotent: false,
+        status: 'installed',
+        sourceDigest: 'solidified-sha256',
+      }),
+      executeCommand: async () => ({
+        status: 'succeeded',
+        exitCode: 0,
+        signal: null,
+        stdout: {
+          text: '{"type":"turn.completed"}',
+          sizeBytes: 25,
+        },
+        stderr: {
+          text: null,
+          sizeBytes: 0,
+        },
+      }),
+      detectOptions: {
+        probeCommand: async (candidates) => ({
+          available: candidates.includes('codex'),
+          command: candidates[0],
+          version: 'codex 1.0.0',
+        }),
+      },
+    });
+
+    expect(result.status).toBe('succeeded');
+    await expect(fs.readFile(path.join(existingSkillPath, 'SKILL.md'), 'utf8')).resolves.toContain('# User Skill');
   });
 
   it('passes directed claim filters to the gateway', async () => {
@@ -2453,8 +2549,37 @@ describe('agent gateway daemon runner', () => {
 
   it('keeps the run lease alive while Skill sync is still running', async () => {
     const workspace = path.join(tempDir, 'workspace');
+    const installedSkillPath = path.join(tempDir, 'skills', '55555555-5555-4555-8555-555555555555');
     await fs.mkdir(workspace, { recursive: true });
-    const requester = new RunnerRequester();
+    await writeSkillFixture(installedSkillPath);
+    const requester = new RunnerRequester({
+      claimPayload: {
+        claimed: true,
+        runId: 'run-1',
+        claimToken: 'ag_claim_CLAIM_TOKEN_SECRET',
+        claimAttempt: 1,
+        leaseVersion: 1,
+        run: {
+          id: 'run-1',
+          executionPayloadJson: {
+            commandKey: 'codex',
+            prompt: 'Run with a synced project skill',
+            cwd: '.',
+            skillVersions: [
+              {
+                skillVersionId: '55555555-5555-4555-8555-555555555555',
+                versionLabel: 'v1',
+                source: {
+                  type: 'zip',
+                  archivePath: '/skills/opencode.zip',
+                  sha256: 'solidified-sha256',
+                },
+              },
+            ],
+          },
+        },
+      },
+    });
     const gateway = new AgentGatewayDaemonNodeClient(requester, {
       serverUrl: 'https://nocobase.example.test',
       nodeId: 'node-1',
@@ -2466,8 +2591,8 @@ describe('agent gateway daemon runner', () => {
     const result = await runDaemonOnce({
       gateway,
       allowlist: {
-        node: {
-          commandKey: 'node',
+        codex: {
+          commandKey: 'codex',
           executable: process.execPath,
           defaultTimeoutMs: 5000,
         },
@@ -2480,7 +2605,7 @@ describe('agent gateway daemon runner', () => {
         await new Promise((resolve) => setTimeout(resolve, 30));
         return {
           skillVersionId: options.skillVersion.skillVersionId,
-          installPath: path.join(tempDir, 'skills', options.skillVersion.skillVersionId),
+          installPath: installedSkillPath,
           idempotent: false,
           status: 'installed',
           sourceDigest: 'solidified-sha256',
@@ -2521,6 +2646,32 @@ describe('agent gateway daemon runner', () => {
     await fs.mkdir(workspace, { recursive: true });
     const requester = new RunnerRequester({
       cancelOnRunHeartbeatCall: 2,
+      claimPayload: {
+        claimed: true,
+        runId: 'run-1',
+        claimToken: 'ag_claim_CLAIM_TOKEN_SECRET',
+        claimAttempt: 1,
+        leaseVersion: 1,
+        run: {
+          id: 'run-1',
+          executionPayloadJson: {
+            commandKey: 'codex',
+            prompt: 'Cancel while syncing a project skill',
+            cwd: '.',
+            skillVersions: [
+              {
+                skillVersionId: '55555555-5555-4555-8555-555555555555',
+                versionLabel: 'v1',
+                source: {
+                  type: 'zip',
+                  archivePath: '/skills/opencode.zip',
+                  sha256: 'solidified-sha256',
+                },
+              },
+            ],
+          },
+        },
+      },
     });
     const gateway = new AgentGatewayDaemonNodeClient(requester, {
       serverUrl: 'https://nocobase.example.test',
@@ -2533,8 +2684,8 @@ describe('agent gateway daemon runner', () => {
     const result = await runDaemonOnce({
       gateway,
       allowlist: {
-        node: {
-          commandKey: 'node',
+        codex: {
+          commandKey: 'codex',
           executable: process.execPath,
           defaultTimeoutMs: 5000,
         },

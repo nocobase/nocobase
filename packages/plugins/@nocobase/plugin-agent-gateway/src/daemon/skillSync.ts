@@ -48,7 +48,7 @@ export interface SkillVersionInstallRecord {
 export interface NodeSkillInstallPayload {
   nodeId: string;
   skillVersionId: string;
-  status: 'installed' | 'failed';
+  status: 'installed' | 'failed' | 'removed';
   installedAt?: string;
   lastSeenAt: string;
   capabilitiesSnapshotJson: JsonRecord;

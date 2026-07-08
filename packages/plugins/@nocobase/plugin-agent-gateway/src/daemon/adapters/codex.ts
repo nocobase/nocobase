@@ -526,6 +526,7 @@ function getStructuredOutputArgs(outputMode?: 'structured' | 'terminal') {
 export const codexAdapter: AgentAdapter = {
   provider: 'codex',
   capabilities: normalizeAgentProviderCapabilities('codex'),
+  projectSkillTargetDirs: ['.agents/skills'],
   buildStartCommand(input: BuildStartCommandInput) {
     return {
       commandKey: 'codex',

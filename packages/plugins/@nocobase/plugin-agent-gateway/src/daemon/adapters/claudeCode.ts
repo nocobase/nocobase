@@ -85,6 +85,7 @@ export function parseClaudeCodeJsonLine(input: ProviderEventInput): JsonRecord |
 export const claudeCodeAdapter: AgentAdapter = {
   provider: 'claude-code',
   capabilities: normalizeAgentProviderCapabilities('claude-code'),
+  projectSkillTargetDirs: ['.claude/skills'],
   buildStartCommand(input: BuildStartCommandInput) {
     const structuredArgs = input.outputMode === 'terminal' ? [] : ['--output-format', 'stream-json'];
     return {

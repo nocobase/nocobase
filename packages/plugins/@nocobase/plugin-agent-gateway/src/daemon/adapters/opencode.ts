@@ -221,6 +221,7 @@ export function parseOpenCodeJsonLine(input: ProviderEventInput): JsonRecord | n
 export const opencodeAdapter: AgentAdapter = {
   provider: 'opencode',
   capabilities: normalizeAgentProviderCapabilities('opencode'),
+  projectSkillTargetDirs: ['.agents/skills'],
   buildStartCommand(input: BuildStartCommandInput) {
     const structuredArgs = input.outputMode === 'terminal' ? [] : ['--format', 'json'];
     return {

@@ -58,6 +58,7 @@ export interface NormalizedAgentEvent {
 export interface AgentAdapter {
   provider: AgentProviderKey;
   capabilities: AgentCapabilities;
+  projectSkillTargetDirs?: string[];
   buildStartCommand(input: BuildStartCommandInput): CommandSpec;
   buildResumeCommand(input: BuildResumeCommandInput): CommandSpec;
   detectSessionId(input: ProviderEventInput): string | null;

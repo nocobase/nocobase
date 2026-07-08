@@ -31,6 +31,14 @@ import {
   syncNodeSkillVersion,
   SyncNodeSkillVersionResult,
 } from './skillSync';
+import {
+  cleanupProjectSkillsForRun,
+  cleanupStaleProjectSkills,
+  createProjectSkillRunState,
+  installProjectSkillsForRun,
+  ProjectSkillCleanupResult,
+  ProjectSkillRunState,
+} from './projectSkills';
 import { JsonRecord, PendingControlRequest, RunLease } from './types';
 import { TerminalRingBuffer } from './terminalRingBuffer';
 import { DaemonTerminalStreamClient, DaemonTerminalStreamClientOptions } from './terminalStreamClient';
@@ -148,6 +156,20 @@ function isRecord(value: unknown): value is JsonRecord {
 
 function getRecord(value: unknown): JsonRecord {
   return isRecord(value) ? value : {};
+}
+
+function isWithin(parent: string, child: string) {
+  const relative = path.relative(parent, child);
+  return relative === '' || (!relative.startsWith('..') && !path.isAbsolute(relative));
+}
+
+async function resolveWorkspaceCwd(workspaceRoot: string, cwd: string) {
+  const requestedCwd = path.resolve(workspaceRoot, cwd || '.');
+  const [realWorkspaceRoot, realCwd] = await Promise.all([fs.realpath(workspaceRoot), fs.realpath(requestedCwd)]);
+  if (!isWithin(realWorkspaceRoot, realCwd)) {
+    throw new Error('cwd must stay inside the configured workspace root');
+  }
+  return realCwd;
 }
 
 function getPayload(lease: RunLease) {
@@ -374,32 +396,40 @@ function getSkillVersions(payload: JsonRecord) {
   return versions;
 }
 
-function buildInstalledSkillPromptContext(syncResults: SyncNodeSkillVersionResult[]) {
-  if (!syncResults.length) {
-    return '';
+function compactProjectSkillState(projectSkillState: ProjectSkillRunState | null) {
+  if (!projectSkillState) {
+    return {};
   }
-  return [
-    '',
-    '',
-    'Custom Agent Gateway skills installed for this run:',
-    ...syncResults.map(
-      (result) =>
-        `- ${result.skillVersionId}: ${path.join(result.installPath, 'SKILL.md')} (${result.status}, ${
-          result.sourceDigest
-        })`,
-    ),
-    'Read and follow the relevant SKILL.md before executing the task when applicable.',
-  ].join('\n');
+  return {
+    projectSkillInstall: {
+      stagingRoot: projectSkillState.stagingRoot,
+      installed: projectSkillState.installed.map((item) => ({
+        skillVersionId: item.skillVersionId,
+        skillName: item.skillName,
+        targetPath: item.targetPath,
+        sourceDigest: item.sourceDigest,
+      })),
+      skipped: projectSkillState.skipped.map((item) => ({
+        skillVersionId: item.skillVersionId,
+        skillName: item.skillName,
+        targetPath: item.targetPath,
+        sourceDigest: item.sourceDigest,
+        reason: item.reason,
+      })),
+    },
+  };
 }
 
-function withInstalledSkillPromptContext(lease: RunLease, syncResults: SyncNodeSkillVersionResult[]) {
-  const skillContext = buildInstalledSkillPromptContext(syncResults);
-  if (!skillContext) {
+function withInstalledSkillMetadata(
+  lease: RunLease,
+  syncResults: SyncNodeSkillVersionResult[],
+  projectSkillState: ProjectSkillRunState | null,
+) {
+  if (!syncResults.length && !projectSkillState) {
     return lease;
   }
   const run = isRecord(lease.run) ? lease.run : {};
   const payload = getPayload(lease);
-  const prompt = getRunPrompt(lease, payload);
   return {
     ...lease,
     run: {
@@ -413,7 +443,7 @@ function withInstalledSkillPromptContext(lease: RunLease, syncResults: SyncNodeS
           status: result.status,
           sourceDigest: result.sourceDigest,
         })),
-        ...(prompt ? { prompt: `${prompt}${skillContext}` } : {}),
+        ...compactProjectSkillState(projectSkillState),
       },
     },
   };
@@ -1248,7 +1278,11 @@ function abortForRunCancel(cancelController: AbortController, lease: RunLease) {
   );
 }
 
-async function syncSkillsForRun(options: RunDaemonOnceOptions, lease: RunLease): Promise<SyncNodeSkillVersionResult[]> {
+async function syncSkillsForRun(
+  options: RunDaemonOnceOptions,
+  lease: RunLease,
+  skillsRoot = options.skillsRoot,
+): Promise<SyncNodeSkillVersionResult[]> {
   const payload = getPayload(lease);
   const skillVersions = dedupeSkillVersions(getSkillVersions(payload));
   const results: SyncNodeSkillVersionResult[] = [];
@@ -1256,7 +1290,7 @@ async function syncSkillsForRun(options: RunDaemonOnceOptions, lease: RunLease):
     results.push(
       await (options.syncSkillVersion || syncNodeSkillVersion)({
         nodeId: options.gateway.nodeId,
-        skillsRoot: options.skillsRoot,
+        skillsRoot,
         skillVersion,
         downloadHeaders: options.gateway.getNodeAuthHeaders(),
         trustedArchiveServerUrl: options.gateway.serverUrl,
@@ -1267,6 +1301,61 @@ async function syncSkillsForRun(options: RunDaemonOnceOptions, lease: RunLease):
     );
   }
   return results;
+}
+
+function compactProjectSkillCleanupResult(result: ProjectSkillCleanupResult): JsonRecord {
+  return {
+    removedCount: result.removed.length,
+    skippedCount: result.skipped.length,
+    existingCount: result.existing.length,
+    warningCount: result.warnings.length,
+    removed: result.removed.slice(0, SUMMARY_ARRAY_SAMPLE_LIMIT).map((item) => ({
+      skillVersionId: item.skillVersionId,
+      skillName: item.skillName,
+      targetPath: item.targetPath,
+    })),
+    skipped: result.skipped.slice(0, SUMMARY_ARRAY_SAMPLE_LIMIT).map((item) => ({
+      skillVersionId: item.skillVersionId,
+      skillName: item.skillName,
+      targetPath: item.targetPath,
+    })),
+    existing: result.existing.slice(0, SUMMARY_ARRAY_SAMPLE_LIMIT).map((item) => ({
+      skillVersionId: item.skillVersionId,
+      skillName: item.skillName,
+      targetPath: item.targetPath,
+    })),
+  };
+}
+
+function compactProjectSkillJanitorResult(result: { removedPaths: string[]; warnings: string[] }): JsonRecord {
+  return {
+    removedCount: result.removedPaths.length,
+    warningCount: result.warnings.length,
+    removedPaths: result.removedPaths.slice(0, SUMMARY_ARRAY_SAMPLE_LIMIT),
+  };
+}
+
+async function markProjectSkillsRemoved(options: {
+  gateway: AgentGatewayDaemonNodeClient;
+  nodeId: string;
+  cleanupResult: ProjectSkillCleanupResult;
+}) {
+  for (const removed of [...options.cleanupResult.removed, ...options.cleanupResult.existing]) {
+    await options.gateway.upsertSkillInstall({
+      nodeId: options.nodeId,
+      skillVersionId: removed.skillVersionId,
+      status: 'removed',
+      lastSeenAt: new Date().toISOString(),
+      capabilitiesSnapshotJson: {
+        projectSkillPath: removed.targetPath,
+        sourceDigest: removed.sourceDigest,
+      },
+      settingsSnapshotJson: {
+        cleanup: true,
+        skillName: removed.skillName,
+      },
+    });
+  }
 }
 
 function heartbeatWhileRunPhase(options: {
@@ -1700,6 +1789,50 @@ export async function executeClaimedRun(
     gateway: options.gateway,
     getLease: activeLease,
   });
+  let cwd = '';
+  let projectSkillState: ProjectSkillRunState | null = null;
+  let projectSkillCleanupDone = false;
+  const cleanupProjectSkills = async (reportProgress = true) => {
+    if (!projectSkillState || projectSkillCleanupDone) {
+      return [];
+    }
+    projectSkillCleanupDone = true;
+    try {
+      if (reportProgress) {
+        await progressReporter.append({
+          phase: 'skill.cleanup',
+          status: 'started',
+          message: 'Temporary project Skill cleanup started',
+        });
+      }
+      const cleanupResult = await cleanupProjectSkillsForRun(projectSkillState);
+      await markProjectSkillsRemoved({
+        gateway: options.gateway,
+        nodeId: options.gateway.nodeId,
+        cleanupResult,
+      });
+      if (reportProgress) {
+        await progressReporter.append({
+          phase: 'skill.cleanup',
+          status: 'succeeded',
+          message: 'Temporary project Skill cleanup completed',
+          payloadJson: compactProjectSkillCleanupResult(cleanupResult),
+        });
+      }
+      return cleanupResult.warnings;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      if (reportProgress) {
+        await progressReporter.append({
+          phase: 'skill.cleanup',
+          status: 'failed',
+          level: 'warning',
+          message,
+        });
+      }
+      return [`Temporary project Skill cleanup failed: ${message}`];
+    }
+  };
 
   const syncCancelController = new AbortController();
   const syncLeaseLostController = new AbortController();
@@ -1722,13 +1855,50 @@ export async function executeClaimedRun(
     intervalMs: options.runHeartbeatIntervalMs || DEFAULT_RUN_HEARTBEAT_INTERVAL_MS,
   });
   try {
+    const syncPayload = getPayload(activeLease());
+    cwd = await resolveWorkspaceCwd(options.workspaceRoot, getString(syncPayload.cwd) || '.');
+    if (getSkillVersions(syncPayload).length) {
+      projectSkillState = createProjectSkillRunState(cwd, claimedLease.runId);
+    }
     await progressReporter.append({
       phase: 'skill.sync',
       status: 'started',
       message: 'Skill sync started',
     });
-    const syncResults = await syncSkillsForRun(options, activeLease());
-    executionLeaseBase = withInstalledSkillPromptContext(executionLeaseBase, syncResults);
+    const syncResults = await syncSkillsForRun(options, activeLease(), projectSkillState?.stagingRoot);
+    if (!syncLeaseLostController.signal.aborted && !syncCancelController.signal.aborted) {
+      if (syncResults.length && !projectSkillState) {
+        projectSkillState = createProjectSkillRunState(cwd, claimedLease.runId);
+      }
+      if (projectSkillState) {
+        const provider = getCanonicalProvider(activeLease(), syncPayload);
+        const adapter = provider ? getAgentAdapter(provider) : null;
+        const projectSkillTargetDirs = adapter?.projectSkillTargetDirs || [];
+        if (projectSkillTargetDirs.length) {
+          const janitorResult = await cleanupStaleProjectSkills({
+            cwd,
+            runId: claimedLease.runId,
+            projectSkillTargetDirs,
+          });
+          if (janitorResult.removedPaths.length || janitorResult.warnings.length) {
+            await progressReporter.append({
+              phase: 'skill.janitor',
+              status: janitorResult.warnings.length ? 'warning' : 'succeeded',
+              level: janitorResult.warnings.length ? 'warning' : 'info',
+              message: 'Stale temporary project Skill cleanup completed',
+              payloadJson: compactProjectSkillJanitorResult(janitorResult),
+            });
+          }
+        }
+        projectSkillState = await installProjectSkillsForRun({
+          state: projectSkillState,
+          provider,
+          projectSkillTargetDirs,
+          syncResults,
+        });
+      }
+    }
+    executionLeaseBase = withInstalledSkillMetadata(executionLeaseBase, syncResults, projectSkillState);
     await progressReporter.append({
       phase: 'skill.sync',
       status: 'succeeded',
@@ -1747,6 +1917,7 @@ export async function executeClaimedRun(
       await stopSyncHeartbeat();
       stopSyncHeartbeat = null;
     }
+    await cleanupProjectSkills();
     if (syncLeaseLostController.signal.aborted) {
       return {
         status: 'lease_lost',
@@ -1782,6 +1953,7 @@ export async function executeClaimedRun(
     }
   }
   if (syncLeaseLostController.signal.aborted) {
+    await cleanupProjectSkills();
     return {
       status: 'lease_lost',
       runId: claimedLease.runId,
@@ -1789,6 +1961,7 @@ export async function executeClaimedRun(
     };
   }
   if (syncCancelController.signal.aborted) {
+    await cleanupProjectSkills();
     await options.gateway.cancelAckRun(activeLease());
     return {
       status: 'canceled',
@@ -1807,7 +1980,6 @@ export async function executeClaimedRun(
   }
 
   const payload = getPayload(activeLease());
-  const cwd = path.resolve(options.workspaceRoot, getString(payload.cwd) || '.');
   const terminalBackend = getRequestedTerminalBackend(payload, options.terminalBackend);
   const tmuxSessionName = getManagedTmuxSessionName(claimedLease.runId);
   const usesManagedTmux = terminalBackend === 'tmux' && !options.executeCommand;
@@ -1999,6 +2171,7 @@ export async function executeClaimedRun(
         message: error instanceof Error ? error.message : String(error),
       });
     }
+    sessionObservationWarnings.push(...(await cleanupProjectSkills()));
     if (stopHeartbeat) {
       await stopHeartbeat();
       stopHeartbeat = null;
@@ -2077,6 +2250,7 @@ export async function executeClaimedRun(
       await closeTmuxTerminalQuietly(options, activeLease(), claimedLease.runId, null);
       await terminalStream?.end(leaseLostController.signal.aborted ? 'disconnected' : 'failed');
     }
+    await cleanupProjectSkills();
     if (!leaseLostController.signal.aborted) {
       try {
         await progressReporter.append({
@@ -2118,6 +2292,7 @@ export async function executeClaimedRun(
     if (stopControlRequests) {
       await stopControlRequests();
     }
+    await cleanupProjectSkills(false);
     terminalStream?.close();
   }
 }
