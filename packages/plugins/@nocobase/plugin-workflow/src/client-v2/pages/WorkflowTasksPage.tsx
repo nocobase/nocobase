@@ -160,6 +160,23 @@ function getEmbeddedViewUid(ctx?: WorkflowTaskFlowContext | null) {
   return typeof viewUid === 'string' ? viewUid : undefined;
 }
 
+function isEmbeddedViewPathname(pathname: string, viewUid?: string) {
+  if (!viewUid) {
+    return false;
+  }
+  const segments = pathname.replace(/^\/+/, '').replace(/\/+$/, '').split('/').filter(Boolean);
+  return segments.some((segment, index) => {
+    if (index === 0 || segments[index - 1] !== 'view') {
+      return false;
+    }
+    try {
+      return decodeURIComponent(segment) === viewUid;
+    } catch {
+      return segment === viewUid;
+    }
+  });
+}
+
 export function WorkflowTasksEmbeddedRouteProvider({ children }: { children: React.ReactNode }) {
   const ctx = useFlowContext() as WorkflowTaskFlowContext | undefined;
   const location = useLocation();
@@ -178,7 +195,7 @@ export function WorkflowTasksEmbeddedRouteProvider({ children }: { children: Rea
     };
   }, [location.hash, location.pathname, location.search, viewUid]);
   const navigateToRoute = useMemoizedFn((target: WorkflowTasksRouteTarget, options?: { replace?: boolean }) => {
-    if (!viewUid) {
+    if (!viewUid || !isEmbeddedViewPathname(location.pathname, viewUid)) {
       return;
     }
     const path = buildWorkflowTasksEmbeddedPath({

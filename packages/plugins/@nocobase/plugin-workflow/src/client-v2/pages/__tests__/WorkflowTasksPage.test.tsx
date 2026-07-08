@@ -452,6 +452,42 @@ describe('WorkflowTasksPage', () => {
     expect(screen.getByText('detail:Embedded task')).toBeInTheDocument();
   });
 
+  it('does not rewrite the parent route while an embedded view is closing', async () => {
+    const { registry } = createTaskTypes();
+    const demoTasks = {
+      listMine: vi.fn().mockResolvedValue({
+        data: { data: [{ id: 9, title: 'Embedded task' }], meta: { count: 1 } },
+      }),
+    };
+    const userWorkflowTasks = {
+      listMine: vi.fn().mockResolvedValue({ data: [{ type: 'demo', stats: { pending: 1, all: 1 } }] }),
+    };
+    holder.params = { taskType: undefined, status: undefined, popupId: undefined };
+    holder.location = {
+      pathname: '/admin/home',
+      search: '',
+      hash: '',
+    };
+    holder.ctx = {
+      ...makeCtx(registry, { demoTasks, userWorkflowTasks }),
+      view: {
+        inputArgs: {
+          viewUid: 'workflow-entry',
+        },
+      },
+    } as WorkflowTaskFlowContext;
+
+    renderWithApp(
+      <WorkflowTasksEmbeddedRouteProvider>
+        <WorkflowTasksContent forceMobile />
+      </WorkflowTasksEmbeddedRouteProvider>,
+    );
+
+    await screen.findByText('Embedded task');
+
+    expect(holder.navigate).not.toHaveBeenCalled();
+  });
+
   it('keeps the clicked record open while loading the same popup record from the route', async () => {
     const popupRecord = createDeferred<{ data: { data: { id: number; title: string } } }>();
     const getPopupRecord = vi.fn().mockReturnValue(popupRecord.promise);
