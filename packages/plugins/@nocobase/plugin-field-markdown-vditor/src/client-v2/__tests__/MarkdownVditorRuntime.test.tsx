@@ -31,7 +31,6 @@ vi.mock('../components', () => ({
 describe('MarkdownVditorRuntime', () => {
   afterEach(() => {
     vi.unstubAllEnvs();
-    delete (window as unknown as { __webpack_public_path__?: string }).__webpack_public_path__;
     vi.restoreAllMocks();
   });
 
@@ -47,14 +46,11 @@ describe('MarkdownVditorRuntime', () => {
 
   it('builds the production CDN from the public path', () => {
     vi.stubEnv('NODE_ENV', 'production');
-    const runtime = new MarkdownVditorRuntime({} as never, () => '/v2/admin/');
+    const getCdnUrl = vi.fn(() => '/admin/');
+    const runtime = new MarkdownVditorRuntime({ getCdnUrl } as never, () => '/v2/admin/');
 
-    expect(runtime.getCDN()).toBe('/admin/static/plugins/@nocobase/plugin-field-markdown-vditor/dist/client-v2/vditor');
-
-    (window as unknown as { __webpack_public_path__: string }).__webpack_public_path__ = '/assets/';
-    expect(runtime.getCDN()).toBe(
-      '/assets/static/plugins/@nocobase/plugin-field-markdown-vditor/dist/client-v2/vditor',
-    );
+    expect(runtime.getCDN()).toBe('/admin/static/plugins/@nocobase/plugin-block-markdown/dist/client/vditor');
+    expect(getCdnUrl).toHaveBeenCalledTimes(1);
   });
 
   it('loads vditor optional dependencies through requirejs', () => {

@@ -36,7 +36,7 @@ jobs:
       fail-fast: false
       matrix:
         node_version: ['22']
-        shard: [1, 2, 3, 4]
+        shard: [1, 2, 3, 4, 5, 6, 7, 8]
     runs-on: ubuntu-latest
     container: node:${{ matrix.node_version }}
     steps:
@@ -49,6 +49,6 @@ jobs:
           cache: 'yarn'
 
       - run: yarn install
-      - run: yarn test:client --pool=forks --shard=${{ matrix.shard }}/4
-    # The client suite is large enough that one full Vitest run can exceed the job limit, so keep it split by shard.
-    timeout-minutes: 75
+      - run: yarn test:client --pool=forks --shard=${{ matrix.shard }}/8
+    # Vitest shards by hashed file path and file count, not historical runtime; use more shards to reduce long-tail UI test imbalance.
+    timeout-minutes: 60

@@ -11,6 +11,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { PluginFileManagerClientV2 } from '../plugin';
 
 vi.mock('@nocobase/client-v2', () => ({
+  CollectionFieldInterface: class CollectionFieldInterface {},
   Plugin: class Plugin {},
 }));
 
@@ -24,8 +25,10 @@ function createPlugin() {
   const addPageTabItem = vi.fn();
   const registerModelLoaders = vi.fn();
   const request = vi.fn();
+  const addFieldInterfaces = vi.fn();
   const plugin = Object.create(PluginFileManagerClientV2.prototype) as PluginFileManagerClientV2 & {
     app: {
+      addFieldInterfaces: typeof addFieldInterfaces;
       apiClient: { request: typeof request };
       i18n: { t: (value: string) => string };
       pm: { get: (name: string) => unknown };
@@ -40,6 +43,7 @@ function createPlugin() {
   };
   plugin.storageTypes = new Map();
   plugin.app = {
+    addFieldInterfaces,
     apiClient: { request },
     i18n: { t: (value) => value },
     pm: {
@@ -56,6 +60,7 @@ function createPlugin() {
 
   return {
     plugin,
+    addFieldInterfaces,
     addMenuItem,
     addPageTabItem,
     registerCollectionTemplate,
@@ -66,10 +71,18 @@ function createPlugin() {
 
 describe('PluginFileManagerClientV2', () => {
   it('registers file collection template, settings page, built-in storage types and model loaders', async () => {
-    const { plugin, addMenuItem, addPageTabItem, registerCollectionTemplate, registerModelLoaders } = createPlugin();
+    const {
+      plugin,
+      addFieldInterfaces,
+      addMenuItem,
+      addPageTabItem,
+      registerCollectionTemplate,
+      registerModelLoaders,
+    } = createPlugin();
 
     await plugin.load();
 
+    expect(addFieldInterfaces).toHaveBeenCalledWith([expect.any(Function)]);
     expect(registerCollectionTemplate).toHaveBeenCalledWith(
       expect.objectContaining({
         name: 'file',
