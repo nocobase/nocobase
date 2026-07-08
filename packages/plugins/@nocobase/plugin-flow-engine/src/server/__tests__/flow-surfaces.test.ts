@@ -1824,7 +1824,18 @@ describe('flowSurfaces resource', () => {
     const readback = await getSurface(rootAgent, {
       uid: calendarBlock.uid,
     });
-    expect(readback.tree.stepParams?.cardSettings?.linkageRules?.value).toEqual([{ key: 'hideCalendar' }]);
+    expect(readback.tree.stepParams?.cardSettings?.linkageRules?.value).toEqual([
+      {
+        key: 'hideCalendar',
+        title: 'Linkage rule 1',
+        enable: true,
+        condition: {
+          logic: '$and',
+          items: [],
+        },
+        actions: [],
+      },
+    ]);
     expect(readback.tree.stepParams?.calendarSettings?.linkageRules).toBeUndefined();
   });
 

@@ -2389,14 +2389,13 @@ export class FlowSurfacesService {
       (associationField ? getFieldTarget(associationField) : undefined) ||
       parsed.collectionName ||
       input.collectionName;
-    const associationName = associationField
-      ? resolveAssociationNameFromField(
-          associationField,
-          parsed.associationPathName?.includes('.') ? undefined : input.collection,
-        )
-      : undefined;
     const fallbackAssociationName = parsed.associationPathName
       ? `${parsed.collectionName}.${parsed.associationPathName}`
+      : undefined;
+    const associationName = associationField
+      ? parsed.associationPathName?.includes('.')
+        ? fallbackAssociationName
+        : resolveAssociationNameFromField(associationField, input.collection)
       : undefined;
 
     return {
