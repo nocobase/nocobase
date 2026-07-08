@@ -432,6 +432,7 @@ export class FilterFormBlockModel extends FilterBlockModel<{
 
   private canApplyFormDefaultValue(name: string, current: any, force?: boolean) {
     if (force) return true;
+    if (this.userEditedFieldNames.has(name)) return false;
     if (isEmptyValue(current)) return true;
     if (!this.lastDefaultValueByFieldName.has(name)) return false;
     return isEqual(current, this.lastDefaultValueByFieldName.get(name));

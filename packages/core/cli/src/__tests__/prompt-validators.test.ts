@@ -459,9 +459,7 @@ test('install prompts expose the expected defaults and validators', () => {
   expect(envPrompt.validate?.('local-dev', {})).toBe(undefined);
 
   expect(langPrompt.type).toBe('select');
-  expect(resolveLocalizedText(langPrompt.message, { locale: 'en-US' })).toBe(
-    'Which language would you like to use for the app?',
-  );
+  expect(resolveLocalizedText(langPrompt.message, { locale: 'en-US' })).toBe('App language');
 
   expect(appPathPrompt.type).toBe('text');
   expect(resolveLocalizedText(appPathPrompt.message, { locale: 'en-US' })).toContain(
@@ -532,13 +530,15 @@ test('install prompts expose the expected defaults and validators', () => {
 
   expect(dbSchemaPrompt.type).toBe('text');
   expect(resolveLocalizedText(dbSchemaPrompt.message, { locale: 'en-US' })).toBe(
-    'What is the database schema? (PostgreSQL only, optional)',
+    'Database schema (PostgreSQL/KingbaseES only, optional)',
   );
   expect(dbSchemaPrompt.initialValue).toBe(undefined);
   expect(dbSchemaPrompt.yesInitialValue).toBe(undefined);
   expect(typeof dbSchemaPrompt.hidden).toBe('function');
   expect(dbSchemaPrompt.hidden?.({ dbDialect: 'postgres' })).toBe(false);
+  expect(dbSchemaPrompt.hidden?.({ dbDialect: 'kingbase' })).toBe(false);
   expect(dbSchemaPrompt.hidden?.({ dbDialect: 'mysql' })).toBe(true);
+  expect(dbSchemaPrompt.hidden?.({ dbDialect: 'mariadb' })).toBe(true);
 
   expect(dbTablePrefixPrompt.type).toBe('text');
   expect(dbTablePrefixPrompt.initialValue).toBe(undefined);
@@ -560,7 +560,7 @@ test('install prompts expose the expected defaults and validators', () => {
 
   expect(rootPasswordPrompt.type).toBe('password');
   expect(resolveLocalizedText(rootPasswordPrompt.message, { locale: 'en-US' })).toBe(
-    'Choose the initial admin password',
+    'Initial admin password',
   );
   expect(rootPasswordPrompt.initialValue).toBe(undefined);
   expect(rootPasswordPrompt.yesInitialValue).toBe('admin123');

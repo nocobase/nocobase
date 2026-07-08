@@ -22,7 +22,6 @@ import {
   createRecordResolveOnServerWithLocal,
 } from '@nocobase/flow-engine';
 import { Button, Form, Skeleton, Space } from 'antd';
-import _ from 'lodash';
 import React from 'react';
 import { FieldModel } from '../../base/FieldModel';
 import { FormComponent } from './FormBlockModel';
@@ -45,8 +44,6 @@ export class QuickEditFormModel extends FlowModel {
 
   declare resource: SingleRecordResource;
   declare collection: Collection;
-
-  now: number = Date.now();
 
   viewContainer: any;
   __onSubmitSuccess;
@@ -89,21 +86,22 @@ export class QuickEditFormModel extends FlowModel {
       onOk,
       sourceFieldModelUid,
     } = options;
-    const model = flowEngine.createModel({
-      use: 'QuickEditFormModel',
-      stepParams: {
-        quickEditFormSettings: {
-          init: {
-            dataSourceKey,
-            collectionName,
-            fieldPath,
+    const sourceFieldModel = sourceFieldModelUid ? flowEngine.getModel<FlowModel>(sourceFieldModelUid) : undefined;
+    const model = flowEngine.createModel(
+      {
+        use: 'QuickEditFormModel',
+        stepParams: {
+          quickEditFormSettings: {
+            init: {
+              dataSourceKey,
+              collectionName,
+              fieldPath,
+            },
           },
         },
       },
-    }) as QuickEditFormModel;
-
-    console.log('QuickEditFormModel.open2', Date.now() - model.now);
-    model.now = Date.now();
+      sourceFieldModel ? { delegate: sourceFieldModel.context } : undefined,
+    ) as QuickEditFormModel;
 
     await flowEngine.context.viewer.open({
       type: 'popover',
@@ -122,7 +120,6 @@ export class QuickEditFormModel extends FlowModel {
         model.__onSubmitSuccess = onSuccess;
         model._fieldProps = fieldProps;
         model._onOk = onOk;
-        console.log('QuickEditFormModel.open3', Date.now() - model.now);
         return (
           <FlowModelRenderer
             fallback={<Skeleton.Input size="small" />}
@@ -171,8 +168,6 @@ export class QuickEditFormModel extends FlowModel {
   }
 
   render() {
-    console.log('QuickEditFormModel.open4', Date.now() - this.now);
-
     return (
       <FormComponent model={this}>
         <div

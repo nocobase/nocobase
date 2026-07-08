@@ -93,20 +93,20 @@
     "envAdd": {
       "prompts": {
         "name": {
-          "message": "What would you like to call this environment?",
+          "message": "App environment identifier",
           "placeholder": "default"
         },
         "scope": {
-          "message": "Where should this connection be saved?",
+          "message": "Connection save location",
           "globalLabel": "Global",
           "globalHint": "user-level config"
         },
         "apiBaseUrl": {
-          "message": "What is the API base URL?",
+          "message": "API base URL",
           "placeholder": "https://demo.example.com/api or https://demo.example.com/api/__app/<subapp>"
         },
         "authType": {
-          "message": "Which authentication method would you like to use?",
+          "message": "Authentication method",
           "basicLabel": "Basic authentication (username + password)",
           "basicHint": "uses your credentials to fetch a token after save",
           "oauthLabel": "OAuth (browser authentication)",
@@ -114,14 +114,14 @@
           "tokenLabel": "API token / API key"
         },
         "username": {
-          "message": "Enter the username for basic login",
+          "message": "Basic login username",
           "placeholder": "admin"
         },
         "password": {
-          "message": "Enter the password for basic login"
+          "message": "Basic login password"
         },
         "accessToken": {
-          "message": "Enter an API token or API key",
+          "message": "API token or API key",
           "placeholder": "Enter your API token / API key"
         }
       }
@@ -179,7 +179,7 @@
           },
           "prompts": {
             "provideMethod": {
-              "message": "How do you want to provide the license key?",
+              "message": "License key input method",
               "keyOption": "Paste the license key",
               "fileOption": "Read the key from a file"
             },
@@ -252,7 +252,7 @@
       },
       "prompts": {
         "source": {
-          "message": "How would you like to get NocoBase?",
+          "message": "NocoBase install source",
           "dockerLabel": "Docker install (Recommended)",
           "dockerHint": "Best for no-code and low-maintenance setups. You can upgrade later by pulling a newer image and restarting the app.",
           "npmLabel": "create-nocobase-app install",
@@ -261,7 +261,7 @@
           "gitHint": "Best when you want to try the latest unreleased changes, contribute code, or debug and modify NocoBase source directly. This option is more developer-oriented."
         },
         "version": {
-          "message": "Which version would you like to use?",
+          "message": "NocoBase version",
           "latestLabel": "latest",
           "latestHint": "Stable release. Best for production use and the most predictable experience.",
           "betaLabel": "beta",
@@ -272,15 +272,15 @@
           "otherHint": "Enter another package version, Docker tag, or Git ref manually, such as a branch name."
         },
         "otherVersion": {
-          "message": "Enter the version, Docker tag, or Git ref you want to use.",
+          "message": "Custom version, Docker tag, or Git ref",
           "placeholder": "For example: fix/cli-v2"
         },
         "dockerRegistry": {
-          "message": "Which Docker registry would you like to use? The image tag is set separately in Version.",
+          "message": "Docker registry (image tag is set in Version)",
           "placeholder": "nocobase/nocobase"
         },
         "dockerPlatform": {
-          "message": "Which Docker image platform should be used?",
+          "message": "Architecture",
           "autoLabel": "Auto",
           "autoHint": "Use Docker default for this machine"
         },
@@ -323,79 +323,79 @@
       },
       "prompts": {
         "env": {
-          "message": "What would you like to call this app?",
+          "message": "App environment identifier",
           "placeholder": "local"
         },
         "lang": {
-          "message": "Which language would you like to use for the app?"
+          "message": "App language"
         },
         "appPath": {
-          "message": "Where should this app be stored? (relative to {{root}})",
+          "message": "App directory (relative to {{root}})",
           "placeholder": "./<env>/"
         },
         "appPort": {
-          "message": "Which port should this app use?",
+          "message": "App port",
           "placeholder": "13000"
         },
         "appPublicPath": {
-          "message": "What is the app subpath? (for example, /nocobase/)",
+          "message": "App subpath (for example, /nocobase/)",
           "placeholder": "/ or /nocobase/"
         },
         "storagePath": {
-          "message": "Where should uploads and local files be stored?",
+          "message": "Uploads and local files directory",
           "placeholder": "./<env>/storage/"
         },
         "dbDialect": {
-          "message": "Which database would you like to use?"
+          "message": "Database type"
         },
         "builtinDb": {
-          "message": "Would you like to use the built-in database?"
+          "message": "Use built-in database"
         },
         "builtinDbImage": {
-          "message": "Which Docker image should be used for the built-in database?",
+          "message": "Built-in database Docker image",
           "placeholder": "postgres:16"
         },
         "dbHost": {
-          "message": "What is the database host?",
+          "message": "Database host",
           "placeholder": "127.0.0.1"
         },
         "dbPort": {
-          "message": "What is the database port?",
+          "message": "Database port",
           "placeholder": "5432"
         },
         "dbDatabase": {
-          "message": "What is the database name?"
+          "message": "Database name"
         },
         "dbUser": {
-          "message": "What is the database username?"
+          "message": "Database username"
         },
         "dbPassword": {
-          "message": "What is the database password?"
+          "message": "Database password"
         },
         "dbSchema": {
-          "message": "What is the database schema? (PostgreSQL only, optional)",
+          "message": "Database schema (PostgreSQL/KingbaseES only, optional)",
           "placeholder": "Leave empty to use the default schema"
         },
         "dbTablePrefix": {
-          "message": "What table prefix should be used? (optional)",
+          "message": "Database table prefix (optional)",
           "placeholder": "For example: nb_"
         },
         "dbUnderscored": {
-          "message": "Use underscored names for database tables and columns?"
+          "message": "Use underscored names for database tables and columns"
         },
         "rootUsername": {
-          "message": "Choose the initial admin username",
+          "message": "Initial admin username",
           "placeholder": "nocobase"
         },
         "rootEmail": {
-          "message": "What is the initial admin email?",
+          "message": "Initial admin email",
           "placeholder": "admin@nocobase.com"
         },
         "rootPassword": {
-          "message": "Choose the initial admin password"
+          "message": "Initial admin password"
         },
         "rootNickname": {
-          "message": "What display name should the initial admin use?",
+          "message": "Initial admin display name",
           "placeholder": "Super Admin"
         }
       }
@@ -419,11 +419,11 @@
       },
       "prompts": {
         "appName": {
-          "message": "What should this environment use for `--env`?",
+          "message": "Unique app environment identifier (used by the CLI to locate and manage this environment)",
           "placeholder": "local"
         },
         "setupMode": {
-          "message": "How would you like to set up this environment?",
+          "message": "App environment setup method",
           "installNewLabel": "Install a new app",
           "installNewHint": "Install a brand-new app from scratch. Best for first-time setup, evaluation, or a fresh local environment.",
           "manageLocalLabel": "Manage an app already on this machine",
@@ -432,7 +432,7 @@
           "connectRemoteHint": "Save only the remote app connection. Nothing will be installed or taken over on this machine."
         },
         "installSkills": {
-          "message": "Install NocoBase AI coding skills (nocobase/skills)?"
+          "message": "Install NocoBase AI coding skills (nocobase/skills)"
         },
         "apiBaseUrl": {
           "message": "API base URL",
