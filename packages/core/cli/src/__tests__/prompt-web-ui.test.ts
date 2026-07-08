@@ -829,6 +829,44 @@ test('reflow uses CLI locale-aware docker registry defaults even when app langua
   expect(state.values.dockerRegistry).toBe('registry.cn-shanghai.aliyuncs.com/nocobase/nocobase');
 });
 
+test('reflow recomputes the built-in database image from the configured registry seed', async () => {
+  const { reflowWebFormState } = await import('../lib/prompt-web-ui.js');
+  const { default: Init } = await import('../commands/init.js');
+
+  const state = reflowWebFormState(
+    Init.prompts,
+    {
+      hasNocobase: 'no',
+      dbDialect: 'mariadb',
+      builtinDb: true,
+    },
+    {
+      builtinDbImageRegistry: 'registry.cn-shanghai.aliyuncs.com/nocobase/nocobase',
+    },
+  );
+
+  expect(state.values.builtinDbImage).toBe('registry.cn-shanghai.aliyuncs.com/nocobase/mariadb:11');
+});
+
+test('reflow recomputes the built-in database image from the zh-CN registry fallback seed', async () => {
+  const { reflowWebFormState } = await import('../lib/prompt-web-ui.js');
+  const { default: Init } = await import('../commands/init.js');
+
+  const state = reflowWebFormState(
+    Init.prompts,
+    {
+      hasNocobase: 'no',
+      dbDialect: 'postgres',
+      builtinDb: true,
+    },
+    {
+      builtinDbImageRegistry: 'registry.cn-shanghai.aliyuncs.com/nocobase/nocobase',
+    },
+  );
+
+  expect(state.values.builtinDbImage).toBe('registry.cn-shanghai.aliyuncs.com/nocobase/postgres:16');
+});
+
 test('validate_field returns a field error for an occupied app port in web UI mode', async () => {
   const { runPromptCatalogWebUI } = await import('../lib/prompt-web-ui.js');
   const { default: Install } = await import('../commands/install.js');
