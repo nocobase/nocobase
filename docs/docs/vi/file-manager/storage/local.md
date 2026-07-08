@@ -16,6 +16,8 @@ Local Storage không hỗ trợ truy cập riêng tư. Sau khi file được upl
 
 Nếu cần lưu hợp đồng, giấy tờ định danh, tài liệu nội bộ hoặc các file không nên công khai, hãy dùng [S3 Pro](./s3-pro). Nếu đã có file lịch sử, hãy xem [Di chuyển sang S3 Pro](./migrate-to-s3-pro.md).
 
+Nếu bạn không dùng Docker hoặc cấu hình nginx chính thức, mà truy cập file upload cục bộ thông qua proxy tùy chỉnh, hãy đảm bảo path `/storage/uploads/` thiết lập `X-Content-Type-Options: nosniff` và trả về các file active content như `html`, `svg`, `xhtml` và `pdf` dưới dạng attachment. Xem chi tiết tại [hướng dẫn bảo mật: lưu trữ file](../../security/guide.md).
+
 :::
 
 ## Tham số cấu hình
