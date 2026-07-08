@@ -67,6 +67,18 @@ describe('Markdown v2 field entry', () => {
     expect(fieldInterface.name).toBe('markdown');
     expect(fieldInterface.default.interface).toBe('markdown');
     expect(fieldInterface.title).toBe('Markdown');
+    expect(fieldInterface.configure?.items?.[0]).toMatchObject({
+      name: 'uiSchema.x-component-props.fileCollection',
+      required: true,
+      description: expect.not.stringContaining('default: attachments'),
+    });
+    expect(fieldInterface.configure?.items?.[0]).not.toHaveProperty('defaultValue');
+    expect(fieldInterface.configure?.items?.[1]?.options).not.toEqual(
+      expect.arrayContaining([expect.objectContaining({ value: 'both' })]),
+    );
+    expect(fieldInterface.configure?.items?.[1]?.options).not.toEqual(
+      expect.arrayContaining([expect.objectContaining({ value: 'preview' })]),
+    );
 
     const legacyMarkdownFieldInterface = new MarkdownFieldInterface(
       {} as ConstructorParameters<typeof MarkdownFieldInterface>[0],

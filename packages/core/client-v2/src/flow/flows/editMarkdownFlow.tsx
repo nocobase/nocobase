@@ -87,7 +87,6 @@ export const editMarkdownFlow = defineFlow<FlowModel>({
               return ctx.markdown.edit({
                 ...props,
                 value: props.value || ctx.model.props.value,
-                mode: 'sv',
                 height: '82vh',
                 style: {
                   padding: 10,

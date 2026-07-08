@@ -19,6 +19,7 @@ import useStyle from './style';
 const locales = ['en_US', 'fr_FR', 'pt_BR', 'ja_JP', 'ko_KR', 'ru_RU', 'sv_SE', 'zh_CN', 'zh_TW'] as const;
 type VditorLang = (typeof locales)[number];
 type VditorMode = 'wysiwyg' | 'ir' | 'sv';
+const disabledPreviewToolbarItems = new Set(['both', 'preview']);
 
 interface FileUploadResult {
   data?: {
@@ -64,6 +65,10 @@ function isVditorLang(lang: string): lang is VditorLang {
   return (locales as readonly string[]).includes(lang);
 }
 
+function filterPreviewToolbarItems(toolbar: string[]) {
+  return toolbar.filter((item) => !disabledPreviewToolbarItems.has(item));
+}
+
 export const Edit = (props: MarkdownEditProps) => {
   const { disabled, onChange, value, fileCollection, toolbar, editMode = 'ir', mode, vditorRef } = props;
   const flowCtx = useFlowContext();
@@ -93,7 +98,7 @@ export const Edit = (props: MarkdownEditProps) => {
   useEffect(() => {
     if (!containerRef.current) return;
 
-    const toolbarConfig = toolbar ?? defaultToolbar;
+    const toolbarConfig = filterPreviewToolbarItems(toolbar ?? defaultToolbar);
     const safeValue = stripMarkdownIframeTags(value ?? '');
 
     const vditor = new Vditor(containerRef.current, {
