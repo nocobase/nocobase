@@ -48,5 +48,5 @@ jobs:
 
       - run: yarn install
       - run: yarn test:client --pool=forks
-    # The full frontend suite can approach one hour after adding client-v2 plugin coverage.
-    timeout-minutes: 90
+    # The full frontend suite can exceed 90 minutes after adding client-v2 plugin coverage.
+    timeout-minutes: 120
