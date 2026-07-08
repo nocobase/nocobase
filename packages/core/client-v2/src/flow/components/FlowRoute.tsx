@@ -274,11 +274,12 @@ const FlowRoute = (props: FlowRouteProps = {}) => {
   useEffect(() => {
     let active = true;
     const requestId = ++requestIdRef.current;
+    const requiresAccessibleRoute = shouldRequireAccessibleRoute(routeLayout);
 
     const run = async () => {
       setGuardState({ pageUid, pending: true, allowBridge: false, notFound: false });
 
-      if (!skipRouteRepositoryCheck && !routeRepository?.isAccessibleLoaded?.()) {
+      if (requiresAccessibleRoute && !skipRouteRepositoryCheck && !routeRepository?.isAccessibleLoaded?.()) {
         try {
           await routeRepository?.ensureAccessibleLoaded?.();
         } catch (_error) {
@@ -293,8 +294,11 @@ const FlowRoute = (props: FlowRouteProps = {}) => {
         return;
       }
 
-      const route = skipRouteRepositoryCheck ? undefined : getAccessibleRouteByPageUid(routeRepository, pageUid);
-      if (!route && !skipRouteRepositoryCheck && shouldRequireAccessibleRoute(routeLayout)) {
+      const route =
+        skipRouteRepositoryCheck || !requiresAccessibleRoute
+          ? undefined
+          : getAccessibleRouteByPageUid(routeRepository, pageUid);
+      if (!route && !skipRouteRepositoryCheck && requiresAccessibleRoute) {
         setGuardState({ pageUid, pending: false, allowBridge: false, notFound: true });
         return;
       }

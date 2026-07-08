@@ -582,7 +582,11 @@ RecordCommentsBlockModel.define({
           },
         },
       ],
-      submitActions: [],
+      submitActions: [
+        {
+          use: 'RecordCommentSubmitActionModel',
+        },
+      ],
     },
   },
   sort: 552,

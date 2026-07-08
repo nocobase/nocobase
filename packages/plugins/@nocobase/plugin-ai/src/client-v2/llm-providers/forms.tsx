@@ -8,7 +8,7 @@
  */
 
 import React, { useState } from 'react';
-import { AutoComplete, Collapse, Form, InputNumber, Select, Spin } from 'antd';
+import { AutoComplete, Collapse, Form, Input, InputNumber, Select, Spin } from 'antd';
 import { EnvVariableInput, useApp } from '@nocobase/client-v2';
 import { useT } from '../locale';
 
@@ -60,6 +60,32 @@ export const ProviderSettingsForm: React.FC = () => {
     <Form.Item name={['options', 'apiKey']} label={t('API Key')} rules={[{ required: true }]}>
       <EnvVariableInput password />
     </Form.Item>
+  );
+};
+
+export const OrcaRouterProviderSettingsForm: React.FC = () => {
+  const t = useT();
+
+  return (
+    <>
+      <Form.Item name={['options', 'apiKey']} label={t('API Key')} rules={[{ required: true }]}>
+        <EnvVariableInput password />
+      </Form.Item>
+      <Form.Item
+        name={['options', 'httpReferer']}
+        label={t('HTTP Referer')}
+        tooltip={t('Optional. Sent as the "HTTP-Referer" header for app attribution.')}
+      >
+        <Input />
+      </Form.Item>
+      <Form.Item
+        name={['options', 'xTitle']}
+        label={t('App Title')}
+        tooltip={t('Optional. Sent as the "X-Title" header for app attribution.')}
+      >
+        <Input />
+      </Form.Item>
+    </>
   );
 };
 
@@ -316,6 +342,68 @@ export const xAICompletionFields: OptionField[] = [
     description: 'Top P description',
     defaultValue: 1,
     step: 0.5,
+    min: 0,
+    max: 1,
+  },
+  {
+    name: 'responseFormat',
+    title: 'Response format',
+    description: 'Response format description',
+    defaultValue: 'text',
+    options: responseFormatWithSchemaOptions,
+  },
+  {
+    name: 'timeout',
+    title: 'Timeout (ms)',
+    defaultValue: 60000,
+  },
+  {
+    name: 'maxRetries',
+    title: 'Max retries',
+    defaultValue: 1,
+  },
+];
+
+export const orcaRouterCompletionFields: OptionField[] = [
+  {
+    name: 'frequencyPenalty',
+    title: 'Frequency penalty',
+    description: 'Frequency penalty description',
+    defaultValue: 0,
+    step: 0.1,
+    min: -2,
+    max: 2,
+  },
+  {
+    name: 'maxCompletionTokens',
+    title: 'Max completion tokens',
+    description: 'Max completion tokens description',
+    defaultValue: -1,
+  },
+  {
+    name: 'presencePenalty',
+    title: 'Presence penalty',
+    description: 'Presence penalty description',
+    defaultValue: 0,
+    step: 0.1,
+    min: -2,
+    max: 2,
+  },
+  {
+    name: 'temperature',
+    title: 'Temperature',
+    description: 'Temperature description',
+    defaultValue: 1,
+    step: 0.1,
+    min: 0,
+    max: 2,
+  },
+  {
+    name: 'topP',
+    title: 'Top P',
+    description: 'Top P description',
+    defaultValue: 1,
+    step: 0.1,
     min: 0,
     max: 1,
   },

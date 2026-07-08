@@ -120,4 +120,25 @@ describe('collection template field interface filters', () => {
       }).map((item) => item.name),
     ).toEqual(['input', 'createdAt', 'tableoid']);
   });
+
+  it('excludes field interfaces marked as not creatable', () => {
+    expect(
+      filterCreateFieldInterfacesByCollectionTemplate(
+        [{ name: 'input' }, { name: 'attachment', creatable: false }],
+        undefined,
+      ).map((item) => item.name),
+    ).toEqual(['input']);
+  });
+
+  it('does not allow template includes to restore not creatable field interfaces', () => {
+    expect(
+      filterCreateFieldInterfacesByCollectionTemplate([{ name: 'input' }, { name: 'attachment', creatable: false }], {
+        fieldInterfaces: {
+          create: {
+            include: ['attachment'],
+          },
+        },
+      }).map((item) => item.name),
+    ).toEqual([]);
+  });
 });

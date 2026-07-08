@@ -9,6 +9,8 @@ Local Storage does not support private access. After a file is uploaded, NocoBas
 
 If you need to store contracts, identity documents, internal materials, or other files that should not be public, use [S3 Pro](./s3-pro). If historical files already exist, see [Migrate to S3 Pro](./migrate-to-s3-pro.md).
 
+If you are not using Docker or the official nginx configuration and access local uploaded files through a custom proxy, make sure the `/storage/uploads/` path sets `X-Content-Type-Options: nosniff` and returns active content files such as `html`, `svg`, `xhtml`, and `pdf` as attachments. For details, see [Security guide: File storage](../../security/guide.md#file-storage).
+
 :::
 
 ## Configuration Parameters

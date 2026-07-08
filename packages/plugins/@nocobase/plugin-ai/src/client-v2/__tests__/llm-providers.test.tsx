@@ -15,9 +15,14 @@ import {
   deepseekProviderOptions,
   getBuiltinLLMProviderModelOptionFields,
   ollamaProviderOptions,
+  orcarouterProviderOptions,
   openaiResponsesProviderOptions,
 } from '../llm-providers';
-import { EmptyProviderSettingsForm, ProviderSettingsForm } from '../llm-providers/forms';
+import {
+  EmptyProviderSettingsForm,
+  OrcaRouterProviderSettingsForm,
+  ProviderSettingsForm,
+} from '../llm-providers/forms';
 
 const V1_REGISTERED_PROVIDERS = [
   'google-genai',
@@ -31,6 +36,7 @@ const V1_REGISTERED_PROVIDERS = [
   'xai',
   'mimo',
   'mistral',
+  'orcarouter',
 ];
 
 describe('plugin-ai client-v2 LLM providers', () => {
@@ -48,11 +54,13 @@ describe('plugin-ai client-v2 LLM providers', () => {
 
     expect(plugin.aiManager.llmProviders.get('openai')).toBe(openaiResponsesProviderOptions);
     expect(plugin.aiManager.llmProviders.get('ollama')).toBe(ollamaProviderOptions);
+    expect(plugin.aiManager.llmProviders.get('orcarouter')).toBe(orcarouterProviderOptions);
   });
 
   it('uses v2 provider settings components without v1 schema forms', () => {
     expect(openaiResponsesProviderOptions.components.ProviderSettingsForm).toBe(ProviderSettingsForm);
     expect(ollamaProviderOptions.components.ProviderSettingsForm).toBe(EmptyProviderSettingsForm);
+    expect(orcarouterProviderOptions.components.ProviderSettingsForm).toBe(OrcaRouterProviderSettingsForm);
     expect(openaiResponsesProviderOptions.components.ModelSettingsForm).toBeDefined();
   });
 
@@ -84,6 +92,16 @@ describe('plugin-ai client-v2 LLM providers', () => {
       'maxTokens',
       'frequencyPenalty',
       'presencePenalty',
+      'responseFormat',
+      'timeout',
+      'maxRetries',
+    ]);
+    expect(getBuiltinLLMProviderModelOptionFields('orcarouter').map((field) => field.name)).toEqual([
+      'frequencyPenalty',
+      'maxCompletionTokens',
+      'presencePenalty',
+      'temperature',
+      'topP',
       'responseFormat',
       'timeout',
       'maxRetries',

@@ -9,7 +9,7 @@
 
 import React, { useEffect } from 'react';
 import { Form } from 'antd';
-import { useNodeContext } from '../../canvas/contexts';
+import { useCurrentWorkflowContext, useNodeContext } from '../../canvas/contexts';
 import { AssignedFieldsEditor, isAssociationField, type AssignedFieldFilter } from '../../components/collection';
 import { RadioWithTooltip, type RadioWithTooltipOption } from '../../components/RadioWithTooltip';
 import { useT } from '../../locale';
@@ -42,10 +42,12 @@ function useUpdateModeOptions(): RadioWithTooltipOption[] {
 function UpdateFields() {
   const t = useT();
   const form = Form.useFormInstance();
+  const workflow = useCurrentWorkflowContext();
   const collection = Form.useWatch(['config', 'collection']);
   const individualHooks = Form.useWatch(['config', 'params', 'individualHooks'], form);
   const updateModeOptions = useUpdateModeOptions();
   const isBatchUpdateMode = individualHooks !== true;
+  const disabled = Boolean(workflow?.versionStats?.executed);
 
   useEffect(() => {
     if (!collection) {
@@ -75,6 +77,7 @@ function UpdateFields() {
           collection={collection}
           fieldFilter={isBatchUpdateMode ? batchUpdateFieldFilter : undefined}
           pruneFilteredValues={isBatchUpdateMode}
+          disabled={disabled}
         />
       </Form.Item>
     </>
