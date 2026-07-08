@@ -9,6 +9,8 @@ El almacenamiento local no admite acceso privado. Después de subir un archivo, 
 
 Si necesita guardar contratos, documentos de identidad, materiales internos u otros archivos que no deben ser públicos, utilice [S3 Pro](./s3-pro). Si ya existen archivos históricos, consulte [Migrar a S3 Pro](./migrate-to-s3-pro.md).
 
+Si no utiliza Docker ni la configuración oficial de nginx y accede a los archivos locales subidos mediante un proxy personalizado, asegúrese de que la ruta `/storage/uploads/` configure `X-Content-Type-Options: nosniff` y devuelva archivos de contenido activo como `html`, `svg`, `xhtml` y `pdf` como adjuntos. Para más detalles, consulte la [guía de seguridad: almacenamiento de archivos](../../security/guide.md).
+
 :::
 
 ## Parámetros de Configuración
