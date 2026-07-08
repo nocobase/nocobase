@@ -10,16 +10,20 @@
 import { AIMessage, HumanMessage, ToolMessage } from 'langchain';
 import { AIMessageContent, AIMessageInput } from '../types';
 import { AIEmployee } from './ai-employee';
+import { LLMProvider } from '../llm-providers/provider';
+import { sanitizeAdditionalKwargsForToolCalls } from './tool-call-sanitizer';
 
 export const convertAIMessage = ({
   aiEmployee,
   providerName: provider,
+  provider: providerInstance,
   llmService,
   model,
   aiMessage,
 }: {
   aiEmployee: AIEmployee;
   providerName: string;
+  provider: LLMProvider;
   llmService?: string;
   model: string;
   aiMessage: AIMessage;
@@ -84,9 +88,21 @@ export const convertAIMessage = ({
   if (aiMessage.response_metadata) {
     values.metadata.response_metadata = aiMessage.response_metadata;
   }
-  if (aiMessage.additional_kwargs) {
-    values.metadata.additional_kwargs = aiMessage.additional_kwargs;
+  const additionalKwargs = sanitizeAdditionalKwargsForToolCalls(aiMessage.additional_kwargs, toolCalls, {
+    onDiscard: (info) => {
+      aiEmployee.logger?.warn('Discard malformed raw tool calls from AI message', {
+        phase: 'convertAIMessage',
+        messageId: aiMessage.id,
+        invalidToolCallCount: aiMessage.invalid_tool_calls?.length ?? 0,
+        ...info,
+      });
+    },
+  }).additionalKwargs;
+  if (additionalKwargs) {
+    values.metadata.additional_kwargs = additionalKwargs;
   }
+
+  providerInstance.reshapeAIMessage({ aiMessage, values });
 
   return values;
 };

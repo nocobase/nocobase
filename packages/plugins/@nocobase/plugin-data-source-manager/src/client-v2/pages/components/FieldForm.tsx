@@ -66,6 +66,7 @@ interface FieldFormProps {
   collection: Record<string, any>;
   interfaceName?: string;
   field?: Record<string, any>;
+  override?: boolean;
   onSubmitted: () => void;
 }
 
@@ -100,23 +101,23 @@ function filterFieldInterfacesByTemplate(
   fieldInterfaces: FieldInterfaceOption[],
   collection: Record<string, any>,
   ctx: any,
-  mode: 'create' | 'edit',
   databaseDialect?: string,
 ) {
-  if (mode !== 'create') {
-    return fieldInterfaces;
-  }
   const plugin = ctx.app.pm.get(PluginDataSourceManagerClientV2);
   const template = plugin?.getCollectionTemplate?.(collection.template || 'general');
-  const templateFieldInterfaces = filterFieldInterfacesByCollectionTemplate<FieldInterfaceOption>(
-    fieldInterfaces,
-    template,
-    collection,
-    {
-      databaseDialect,
-    },
-  );
-  return filterCreateFieldInterfacesByCollectionTemplate(templateFieldInterfaces, template);
+  return filterFieldInterfacesByCollectionTemplate<FieldInterfaceOption>(fieldInterfaces, template, collection, {
+    databaseDialect,
+  });
+}
+
+function filterCreateFieldInterfacesByTemplate(
+  fieldInterfaces: FieldInterfaceOption[],
+  collection: Record<string, any>,
+  ctx: any,
+) {
+  const plugin = ctx.app.pm.get(PluginDataSourceManagerClientV2);
+  const template = plugin?.getCollectionTemplate?.(collection.template || 'general');
+  return filterCreateFieldInterfacesByCollectionTemplate(fieldInterfaces, template);
 }
 
 function normalizeListResponse(response: any) {
@@ -133,7 +134,7 @@ function toNamePath(name: string) {
 
 const fieldNamePattern = /^[a-zA-Z][a-zA-Z0-9_-]*$/;
 const fieldNameDescription =
-  'Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.';
+  'Randomly generated and can be modified. Support letters, numbers and underscores, must start with a letter.';
 const collectionOptionComponents = new Set(['Select', 'CollectionSelect', 'RemoteSelect']);
 const relationCollectionPropertyNames = new Set(['target']);
 const fileCollectionEnum = '{{fileCollections}}';
@@ -1711,19 +1712,22 @@ export function FieldForm(props: FieldFormProps) {
   const lastInitialValuesKeyRef = useRef<string>();
   const dataSource = ctx.dataSourceManager.getDataSource(props.dataSourceKey);
   const databaseDialect = getAppInfoDatabaseDialect(appInfo);
-  const fieldInterfaces = useMemo(
+  const fieldInterfaces = useMemo(() => {
+    const allFieldInterfaces = getFieldInterfaces(ctx, dataSource?.options?.type);
+    if (props.mode !== 'create') {
+      return allFieldInterfaces;
+    }
+    return filterFieldInterfacesByTemplate(allFieldInterfaces, props.collection, ctx, databaseDialect);
+  }, [databaseDialect, ctx, dataSource?.options?.type, props.collection, props.mode]);
+  const creatableFieldInterfaces = useMemo(
     () =>
-      filterFieldInterfacesByTemplate(
-        getFieldInterfaces(ctx, dataSource?.options?.type),
-        props.collection,
-        ctx,
-        props.mode,
-        databaseDialect,
-      ),
-    [databaseDialect, ctx, dataSource?.options?.type, props.collection, props.mode],
+      props.mode === 'create'
+        ? filterCreateFieldInterfacesByTemplate(fieldInterfaces, props.collection, ctx)
+        : fieldInterfaces,
+    [ctx, fieldInterfaces, props.collection, props.mode],
   );
   const [interfaceName, setInterfaceName] = useState(
-    props.field?.interface || props.interfaceName || fieldInterfaces[0]?.name,
+    props.field?.interface || props.interfaceName || creatableFieldInterfaces[0]?.name,
   );
   const fieldInterface = useMemo(
     () => fieldInterfaces.find((item) => item.name === interfaceName),
@@ -1811,9 +1815,11 @@ export function FieldForm(props: FieldFormProps) {
       createMainOnly: props.mode === 'create' && props.dataSourceKey === 'main',
       disabledJSONB: props.mode === 'edit',
       isDialect: (dialect: string) => databaseDialect === dialect,
+      isOverride: !!props.override,
+      override: !!props.override,
       primaryKeyOnly: false,
     }),
-    [databaseDialect, props.dataSourceKey, props.mode],
+    [databaseDialect, props.dataSourceKey, props.mode, props.override],
   );
   const previousWatchedValuesRef = useRef<Record<string, any>>();
   const pendingInitialValuesRef = useRef<Record<string, any>>();
@@ -1907,10 +1913,10 @@ export function FieldForm(props: FieldFormProps) {
       setInterfaceName(props.interfaceName);
       return;
     }
-    if (!interfaceName && fieldInterfaces[0]?.name) {
-      setInterfaceName(fieldInterfaces[0].name);
+    if (!interfaceName && creatableFieldInterfaces[0]?.name) {
+      setInterfaceName(creatableFieldInterfaces[0].name);
     }
-  }, [fieldInterfaces, interfaceName, props.interfaceName]);
+  }, [creatableFieldInterfaces, interfaceName, props.interfaceName]);
 
   const handleInterfaceChange = useCallback(
     (nextInterface: string) => {
@@ -2047,7 +2053,9 @@ export function FieldForm(props: FieldFormProps) {
   ]);
 
   const collectionTitle = compileLegacyTemplateText(get(props.collection, 'title') || props.collection.name, t);
-  const title = `${collectionTitle} - ${props.mode === 'create' ? t('Add field') : t('Edit field')}`;
+  const title = `${collectionTitle} - ${
+    props.override ? t('Override field') : props.mode === 'create' ? t('Add field') : t('Edit field')
+  }`;
   const existingFieldNames = new Set((props.collection.fields || []).map((field: Record<string, any>) => field.name));
 
   return (
@@ -2067,7 +2075,7 @@ export function FieldForm(props: FieldFormProps) {
         {!props.interfaceName && props.mode === 'create' ? (
           <Form.Item name="interface" label={t('Field interface')} rules={[{ required: true }]}>
             <Select
-              options={fieldInterfaces.map((item) => ({
+              options={creatableFieldInterfaces.map((item) => ({
                 value: item.name,
                 label: compileLegacyTemplate(item.title || item.name, t),
               }))}
@@ -2102,7 +2110,10 @@ export function FieldForm(props: FieldFormProps) {
           ]}
           extra={t(fieldNameDescription)}
         >
-          <Input autoComplete="off" disabled={props.mode === 'edit' || interfaceName === 'tableoid'} />
+          <Input
+            autoComplete="off"
+            disabled={props.mode === 'edit' || props.override || interfaceName === 'tableoid'}
+          />
         </Form.Item>
         <FieldConfigureItemsRenderer
           items={mainConfigureItems}

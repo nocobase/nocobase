@@ -2,6 +2,15 @@
 
 Die Speicher-Engine basiert auf Aliyun OSS. Bevor Sie sie verwenden, müssen Sie die entsprechenden Konten und Berechtigungen vorbereiten.
 
+
+:::warning Hinweis
+
+Diese Engine unterstützt keinen privaten Zugriff. Nach dem Hochladen erzeugt NocoBase eine direkt zugängliche URL, und jeder, der diese URL besitzt, kann auf die Datei zugreifen.
+
+Auch wenn der OSS-Bucket selbst privat ist, erzeugt die integrierte Aliyun OSS-Engine keine temporären signierten URLs für den Dateizugriff. Wenn Sie privaten Zugriff benötigen, verwenden Sie [S3 Pro](./s3-pro). Wenn bereits historische Dateien vorhanden sind, lesen Sie [Migration zu S3 Pro](./migrate-to-s3-pro.md).
+
+:::
+
 ## Konfigurationsparameter
 
 ![Konfigurationsbeispiel für die Aliyun OSS Speicher-Engine](https://static-docs.nocobase.com/20240712220011.png)

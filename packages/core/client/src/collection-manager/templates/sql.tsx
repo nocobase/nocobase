@@ -38,7 +38,7 @@ export class SqlCollectionTemplate extends CollectionTemplate {
       'x-component': 'Input',
       'x-validator': 'uid',
       description:
-        "{{t('Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.')}}",
+        "{{t('Randomly generated and can be modified. Support letters, numbers and underscores, must start with a letter.')}}",
     },
     config: {
       type: 'void',

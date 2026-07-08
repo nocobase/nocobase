@@ -30,9 +30,27 @@ import {
   resolveEnvRoot,
   resolveEnvRelativePath,
 } from '../lib/cli-home.js';
-import { defaultDockerContainerPrefix, defaultDockerNetworkName } from '../lib/app-runtime.js';
-import { resolveDefaultApiHost, resolveDockerContainerPrefix, resolveDockerNetworkName } from '../lib/cli-config.js';
-import { DEFAULT_DOCKER_VERSION, resolveDockerImageRef } from '../lib/docker-image.ts';
+import {
+  defaultDockerContainerPrefix,
+  defaultDockerNetworkName,
+  managedAppLifecycleEnvVars,
+} from '../lib/app-runtime.js';
+import {
+  getCliConfigValue,
+  resolveDefaultApiHost,
+  resolveDockerContainerPrefix,
+  resolveDockerNetworkName,
+} from '../lib/cli-config.js';
+import {
+  DEFAULT_DOCKER_VERSION,
+  DEFAULT_NB_IMAGE_VARIANT,
+  inferNbImageRegistryFromRepository,
+  normalizeNbImageVariant,
+  resolveBuiltinDbImage,
+  resolveDockerImageContainerPort,
+  resolveDockerImageRef,
+  resolveOfficialDockerRegistry,
+} from '../lib/docker-image.ts';
 import {
   findAvailableTcpPort,
   validateAppPublicPath,
@@ -77,18 +95,6 @@ const DEFAULT_INSTALL_DB_PORTS = {
   mysql: '3306',
   mariadb: '3306',
   kingbase: '54321',
-} as const;
-const DEFAULT_INSTALL_BUILTIN_DB_IMAGES = {
-  postgres: 'postgres:16',
-  mysql: 'mysql:8',
-  mariadb: 'mariadb:11',
-  kingbase: 'registry.cn-shanghai.aliyuncs.com/nocobase/kingbase:v009r001c001b0030_single_x86',
-} as const;
-const DEFAULT_INSTALL_BUILTIN_DB_IMAGES_ZH_CN = {
-  postgres: 'registry.cn-shanghai.aliyuncs.com/nocobase/postgres:16',
-  mysql: 'registry.cn-shanghai.aliyuncs.com/nocobase/mysql:8',
-  mariadb: 'registry.cn-shanghai.aliyuncs.com/nocobase/mariadb:11',
-  kingbase: 'registry.cn-shanghai.aliyuncs.com/nocobase/kingbase:v009r001c001b0030_single_x86',
 } as const;
 const DEFAULT_INSTALL_DB_DATABASE = 'nocobase';
 const DEFAULT_INSTALL_DB_USER = 'nocobase';
@@ -227,11 +233,9 @@ function downloadVersionPromptValue(version: string): 'latest' | 'beta' | 'alpha
   return version === 'latest' || version === 'beta' || version === 'alpha' ? version : 'other';
 }
 
-function supportsBuiltinDbDialect(
-  value: PromptValue | undefined,
-): value is keyof typeof DEFAULT_INSTALL_BUILTIN_DB_IMAGES {
+function supportsBuiltinDbDialect(value: PromptValue | undefined): value is (typeof INSTALL_DB_DIALECTS)[number] {
   const dialect = String(value ?? '').trim();
-  return Object.prototype.hasOwnProperty.call(DEFAULT_INSTALL_BUILTIN_DB_IMAGES, dialect);
+  return (INSTALL_DB_DIALECTS as readonly string[]).includes(dialect);
 }
 
 export function defaultDbPortForDialect(value: PromptValue | undefined): string {
@@ -239,17 +243,18 @@ export function defaultDbPortForDialect(value: PromptValue | undefined): string 
   return DEFAULT_INSTALL_DB_PORTS[isInstallDbDialect(dialect) ? dialect : 'postgres'];
 }
 
-function defaultBuiltinDbImageForDialect(value: PromptValue | undefined): string {
+function defaultBuiltinDbImageForDialect(value: PromptValue | undefined, options?: { registry?: string }): string {
   const dialect = String(value ?? 'postgres').trim();
-  const defaults =
-    resolveCliLocale(process.env.NB_LOCALE) === 'zh-CN'
-      ? DEFAULT_INSTALL_BUILTIN_DB_IMAGES_ZH_CN
-      : DEFAULT_INSTALL_BUILTIN_DB_IMAGES;
-  return supportsBuiltinDbDialect(dialect) ? defaults[dialect] : defaults.postgres;
+  return resolveBuiltinDbImage(dialect, { registry: options?.registry });
 }
 
 function defaultDbDatabaseForDialect(value: PromptValue | undefined): string {
   return String(value ?? '').trim() === 'kingbase' ? 'kingbase' : DEFAULT_INSTALL_DB_DATABASE;
+}
+
+function supportsDbSchemaPrompt(value: PromptValue | undefined): boolean {
+  const dialect = String(value ?? '').trim();
+  return dialect === 'postgres' || dialect === 'kingbase';
 }
 
 function defaultDbHostForBuiltinDb(values: PromptCatalogValues): string {
@@ -819,7 +824,7 @@ export default class Install extends Command {
       type: 'text',
       message: installText('prompts.dbSchema.message'),
       placeholder: installText('prompts.dbSchema.placeholder'),
-      hidden: (values) => String(values.dbDialect ?? '').trim() !== 'postgres',
+      hidden: (values) => !supportsDbSchemaPrompt(values.dbDialect),
     },
     dbTablePrefix: {
       type: 'text',
@@ -1663,21 +1668,30 @@ export default class Install extends Command {
     dbPreset: PromptInitialValues;
     warnOnPortFallback?: boolean;
   }): Promise<PromptInitialValues> {
-    if (params.flags['db-port'] !== undefined) {
-      return {};
-    }
-
+    const configuredRegistry = await getCliConfigValue('nb-image-registry');
     const values = {
       ...params.downloadResults,
       ...params.dbPreset,
     } as Record<string, PromptValue>;
-    if (!Install.shouldPublishBuiltinDbPortForValues(values)) {
-      return {};
+    const dockerRegistry =
+      String(values.dockerRegistry ?? '').trim() || resolveOfficialDockerRegistry(configuredRegistry);
+    const dialect = String(values.dbDialect ?? 'postgres').trim() || 'postgres';
+    const initialValues: PromptInitialValues =
+      values.builtinDb !== false && params.dbPreset.builtinDbImage === undefined
+        ? { builtinDbImage: defaultBuiltinDbImageForDialect(dialect, { registry: dockerRegistry }) }
+        : {};
+
+    if (params.flags['db-port'] !== undefined) {
+      return initialValues;
     }
 
-    const dialect = String(values.dbDialect ?? 'postgres').trim() || 'postgres';
+    if (!Install.shouldPublishBuiltinDbPortForValues(values)) {
+      return initialValues;
+    }
+
     const defaultPort = defaultDbPortForDialect(dialect);
     return {
+      ...initialValues,
       dbPort: await Install.resolveAvailableDefaultPort(defaultPort, {
         label: `Default ${dialect} port`,
         warn: params.warnOnPortFallback ?? true,
@@ -1689,15 +1703,16 @@ export default class Install extends Command {
    * When install runs {@link Download.prompts} after app prompts, align the download
    * output directory with app settings, while Docker registry defaults follow the CLI locale.
    */
-  private static buildDownloadPromptOptionsForInstall(
+  private static async buildDownloadPromptOptionsForInstall(
     appResults: Record<string, PromptValue>,
     envName: string,
-  ): RunPromptCatalogOptions {
+  ): Promise<RunPromptCatalogOptions> {
     const appRoot = resolveConfiguredSourcePathValue(appResults, envName);
     const lang = String(appResults.lang ?? DEFAULT_INSTALL_LANG).trim() || DEFAULT_INSTALL_LANG;
+    const dockerRegistry = resolveOfficialDockerRegistry(await getCliConfigValue('nb-image-registry'));
     const initialValues: PromptInitialValues = {
       lang,
-      dockerRegistry: defaultDockerRegistryForLang(process.env.NB_LOCALE),
+      dockerRegistry,
       outputDir: appRoot,
     };
 
@@ -1934,8 +1949,6 @@ export default class Install extends Command {
         '-d',
         '--name',
         containerName,
-        '--restart',
-        'always',
         '--network',
         networkName,
         '-e',
@@ -1982,8 +1995,6 @@ export default class Install extends Command {
         '-d',
         '--name',
         containerName,
-        '--restart',
-        'always',
         '--network',
         networkName,
         '-e',
@@ -2032,8 +2043,6 @@ export default class Install extends Command {
         '-d',
         '--name',
         containerName,
-        '--restart',
-        'always',
         '--network',
         networkName,
         '-e',
@@ -2082,8 +2091,6 @@ export default class Install extends Command {
         '-d',
         '--name',
         containerName,
-        '--restart',
-        'always',
         '--network',
         networkName,
         '--platform',
@@ -2297,14 +2304,18 @@ export default class Install extends Command {
     rootResults: Record<string, PromptValue>;
     networkName: string;
   }): Promise<DockerAppPlan> {
+    const configuredRegistry = await getCliConfigValue('nb-image-registry');
+    const configuredVariant =
+      normalizeNbImageVariant(await getCliConfigValue('nb-image-variant')) ?? DEFAULT_NB_IMAGE_VARIANT;
     const dockerRegistry =
       String(downloadResultsValue(params.downloadResults, 'dockerRegistry') ?? '').trim() ||
-      defaultDockerRegistryForLang(process.env.NB_LOCALE);
+      resolveOfficialDockerRegistry(configuredRegistry);
     const version =
       String(downloadResultsValue(params.downloadResults, 'version') ?? '').trim() || DEFAULT_DOCKER_VERSION;
     const imageRef = resolveDockerImageRef(dockerRegistry, version, {
-      defaultRegistry: defaultDockerRegistryForLang(process.env.NB_LOCALE),
+      defaultRegistry: resolveOfficialDockerRegistry(configuredRegistry),
       defaultVersion: DEFAULT_DOCKER_VERSION,
+      variant: inferNbImageRegistryFromRepository(dockerRegistry) ? configuredVariant : undefined,
     });
     const appPort = String(params.appResults.appPort ?? DEFAULT_INSTALL_APP_PORT).trim() || DEFAULT_INSTALL_APP_PORT;
     const configuredStoragePath = resolveConfiguredStoragePathValue(params.appResults, params.envName);
@@ -2341,17 +2352,16 @@ export default class Install extends Command {
       appResults: params.appResults,
       rootResults: params.rootResults,
     });
+    const containerPort = resolveDockerImageContainerPort(imageRef);
     const args = [
       'run',
       '-d',
       '--name',
       containerName,
-      '--restart',
-      'always',
       '--network',
       params.networkName,
       '-p',
-      `${appPort}:80`,
+      `${appPort}:${containerPort}`,
     ];
 
     if (envFile) {
@@ -2580,7 +2590,9 @@ export default class Install extends Command {
 
   private static resolveAbsoluteStoragePath(envName: string, appResults: Record<string, PromptValue>): string {
     const configuredStoragePath = resolveConfiguredStoragePathValue(appResults, envName);
-    return resolveConfiguredEnvPath(configuredStoragePath) ?? resolveEnvRelativePath(defaultInstallStoragePath(envName));
+    return (
+      resolveConfiguredEnvPath(configuredStoragePath) ?? resolveEnvRelativePath(defaultInstallStoragePath(envName))
+    );
   }
 
   private async prepareHookScriptForInstall(params: {
@@ -2640,14 +2652,18 @@ export default class Install extends Command {
     downloadResults: Record<string, PromptValue>;
   }): Promise<void> {
     if (params.source === 'docker') {
+      const configuredRegistry = await getCliConfigValue('nb-image-registry');
+      const configuredVariant =
+        normalizeNbImageVariant(await getCliConfigValue('nb-image-variant')) ?? DEFAULT_NB_IMAGE_VARIANT;
       const dockerRegistry =
         String(downloadResultsValue(params.downloadResults, 'dockerRegistry') ?? '').trim() ||
-        defaultDockerRegistryForLang(process.env.NB_LOCALE);
+        resolveOfficialDockerRegistry(configuredRegistry);
       const version =
         String(downloadResultsValue(params.downloadResults, 'version') ?? '').trim() || DEFAULT_DOCKER_VERSION;
       const imageRef = resolveDockerImageRef(dockerRegistry, version, {
-        defaultRegistry: defaultDockerRegistryForLang(process.env.NB_LOCALE),
+        defaultRegistry: resolveOfficialDockerRegistry(configuredRegistry),
         defaultVersion: DEFAULT_DOCKER_VERSION,
+        variant: inferNbImageRegistryFromRepository(dockerRegistry) ? configuredVariant : undefined,
       });
       const imageExists = await commandSucceeds('docker', ['image', 'inspect', imageRef]);
       if (!imageExists) {
@@ -2718,7 +2734,9 @@ export default class Install extends Command {
     const dbDialect = String(params.dbResults.dbDialect ?? 'postgres').trim() || 'postgres';
     const appKey = Install.resolveManagedAppKey(params.appResults.appKey);
     const timeZone = Install.resolveManagedTimeZone(params.appResults.timeZone);
+    const lifecycleEnvVars = managedAppLifecycleEnvVars();
     const env: Record<string, string> = {
+      ...lifecycleEnvVars,
       STORAGE_PATH: storagePath,
       APP_PORT: String(params.appResults.appPort ?? DEFAULT_INSTALL_APP_PORT).trim() || DEFAULT_INSTALL_APP_PORT,
       APP_KEY: appKey,
@@ -2994,6 +3012,14 @@ export default class Install extends Command {
     await this.config.runCommand('env:update', [params.envName]);
   }
 
+  private buildAppStartArgv(params: { envName: string; verbose?: boolean }): string[] {
+    const argv = ['--env', params.envName, '--yes', '--no-sync-licensed-plugins', '--hook-command', 'init'];
+    if (params.verbose) {
+      argv.push('--verbose');
+    }
+    return argv;
+  }
+
   private async runInstallHookIfNeeded(params: {
     hookName: HookName;
     envName: string;
@@ -3166,7 +3192,7 @@ export default class Install extends Command {
       appResults.hookScript = resumePreset.appPreset.hookScript;
     }
 
-    const downloadOpts = Install.buildDownloadPromptOptionsForInstall(appResults, envName);
+    const downloadOpts = await Install.buildDownloadPromptOptionsForInstall(appResults, envName);
     downloadOpts.values = {
       ...(resumePreset?.downloadPreset ?? {}),
       ...downloadOpts.values,
@@ -3283,7 +3309,6 @@ export default class Install extends Command {
     const parsed = {
       ...(flags as unknown as InstallParsedFlags & DownloadParsedFlags),
     } as InstallParsedFlags & DownloadParsedFlags;
-    const defaultApiHost = await resolveDefaultApiHost();
     if (parsed['skip-auth'] && (parsed['access-token'] !== undefined || parsed.token !== undefined)) {
       this.error('--skip-auth cannot be used with --access-token or --token.');
     }
@@ -3371,8 +3396,7 @@ export default class Install extends Command {
       dbResults.dbPassword = builtinDbPlan.dbPassword;
     }
 
-    let dockerAppPlan: DockerAppPlan | undefined;
-    let localAppPlan: LocalAppPlan | undefined;
+    let shouldStartApp = false;
     if (source === 'docker' || source === 'npm' || source === 'git') {
       this.logStage('Preparing application');
       if (source === 'docker') {
@@ -3384,115 +3408,27 @@ export default class Install extends Command {
           printInfo('Application image ready.');
         }
         if (!parsed['prepare-only']) {
-          await this.runInstallHookIfNeeded({
-            hookName: 'beforeAppInstall',
-            envName,
-            source,
-            appResults,
-            downloadResults,
-            dbResults,
-            rootResults,
-            envAddResults,
-            defaultApiHost,
-          });
-          dockerAppPlan = await this.installDockerApp({
-            envName,
-            dockerNetworkName,
-            dockerContainerPrefix,
-            appResults,
-            downloadResults,
-            dbResults,
-            rootResults,
-            builtinDbPlan,
-            force: parsed.force,
-            commandStdio,
-          });
-          appResults.appKey = dockerAppPlan.appKey;
-          appResults.timeZone = dockerAppPlan.timeZone;
+          shouldStartApp = true;
         }
       } else if (source === 'npm' || source === 'git') {
-        const localSource: 'npm' | 'git' = source === 'npm' ? 'npm' : 'git';
-        const projectRoot =
-          parsed['skip-download'] || parsed['prepare-only']
-            ? Install.resolveLocalProjectRoot({
-                envName,
-                appResults,
-                downloadResults,
-              })
-            : await this.downloadLocalApp({
-                envName,
-                appResults,
-                downloadResults,
-                verbose: parsed.verbose,
-              });
         if (!parsed['skip-download'] && !parsed['prepare-only']) {
+          await this.downloadLocalApp({
+            envName,
+            appResults,
+            downloadResults,
+            verbose: parsed.verbose,
+          });
           printInfo('Application files ready.');
         }
         if (!parsed['prepare-only']) {
-          await this.runInstallHookIfNeeded({
-            hookName: 'beforeAppInstall',
-            envName,
-            source,
-            appResults,
-            downloadResults,
-            dbResults,
-            rootResults,
-            envAddResults,
-            projectRoot,
-            defaultApiHost,
-          });
-          localAppPlan = await this.startLocalApp({
-            envName,
-            source: localSource,
-            projectRoot,
-            appResults,
-            dbResults,
-            rootResults,
-            commandStdio,
-          });
-          appResults.appKey = localAppPlan.appKey;
-          appResults.timeZone = localAppPlan.timeZone;
+          shouldStartApp = true;
         }
       }
     } else {
       this.logDetail('Skipped app download and install.');
     }
 
-    if (dockerAppPlan || localAppPlan) {
-      this.logStage('Starting NocoBase');
-      await this.waitForAppHealthCheck(
-        Install.resolveApiBaseUrl({
-          appResults,
-          envAddResults,
-          defaultApiHost,
-        }),
-        {
-          containerName: dockerAppPlan?.containerName,
-          verbose: parsed.verbose,
-        },
-      );
-      const displayApiBaseUrl = Install.resolveApiBaseUrl({
-        appResults,
-        envAddResults,
-        defaultApiHost,
-      });
-      printInfo(`NocoBase is ready at ${formatInstallDisplayUrl(displayApiBaseUrl)}`);
-      appResults.setupState = 'installed';
-      await this.runInstallHookIfNeeded({
-        hookName: 'afterAppStart',
-        envName,
-        source,
-        appResults,
-        downloadResults,
-        dbResults,
-        rootResults,
-        envAddResults,
-        projectRoot: localAppPlan?.projectRoot,
-        defaultApiHost,
-      });
-    }
-
-    if (dockerAppPlan || localAppPlan || builtinDbPlan) {
+    if (shouldStartApp || builtinDbPlan) {
       await this.saveInstalledEnv({
         envName,
         appResults,
@@ -3503,10 +3439,15 @@ export default class Install extends Command {
       });
     }
 
+    if (shouldStartApp) {
+      this.logStage('Starting NocoBase');
+      await this.config.runCommand('app:start', this.buildAppStartArgv({ envName, verbose: parsed.verbose }));
+    }
+
     await this.syncInstalledEnvConnection({
       envName,
       envAddResults,
-      appReady: Boolean(dockerAppPlan || localAppPlan),
+      appReady: shouldStartApp,
       skipAuth: Boolean(parsed['skip-auth']),
     });
     if (!parsed['prepare-only']) {
@@ -3517,7 +3458,7 @@ export default class Install extends Command {
       printInfo(
         `Preparation complete for "${envName}". Activate the license, then run \`nb app start --env ${envName}\`.`,
       );
-    } else if (!dockerAppPlan && !localAppPlan) {
+    } else if (!shouldStartApp) {
       printInfo(`Install config for "${envName}" has been saved.`);
     }
   }

@@ -373,14 +373,18 @@ TableColumnModel.registerFlow({
               currentProps: ctx.model.props,
             })
           : undefined;
+        const collectionFieldComponentProps = collectionField.getComponentProps();
         const componentProps =
           collectionField.isAssociationField() && titleField
             ? {
-                ...collectionField.getComponentProps(),
+                ...collectionFieldComponentProps,
                 ...targetCollectionField?.getComponentProps?.(),
                 ...savedDateTimeDisplayProps,
               }
-            : collectionField.getComponentProps();
+            : {
+                ...collectionFieldComponentProps,
+                ...savedDateTimeDisplayProps,
+              };
         ctx.model.setProps('title', collectionField.title);
         ctx.model.setProps('dataIndex', collectionField.name);
         // for quick edit

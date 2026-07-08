@@ -29,6 +29,7 @@ Plugin（エントリ）→ Router（ページ）→ Component（コンポーネ
 1. **[Plugin](./plugin)**：プラグインのエントリクラスです。`load()` などのライフサイクルでルーティングやモデルなどのリソースを登録します。
 2. **[Router](./router)**：`router.add()` でページルーティングを登録し、`pluginSettingsManager` でプラグイン設定ページを登録します。
 3. **[Component](./component/index.md)**：ルーティングにマウントするのは React コンポーネントです。React + Antd で書くだけでよく、通常のフロントエンド開発と変わりません。
+| 再利用できるフォーム・フィルター・テーブルコンポーネントを探す | [共通コンポーネント](/shared-components/) |
 4. **[Context](./ctx/index.md)**：プラグイン内では `this.context` でコンテキストを取得し、コンポーネント内では `useFlowContext()` でコンテキストを取得すれば、NocoBase が提供する機能――リクエスト送信（`ctx.api`）、国際化（`ctx.t`）、ログ出力（`ctx.logger`）など――が使えます。
 5. **[FlowEngine](./flow-engine/index.md)**：コンポーネントを「ブロック / フィールド / アクションを追加」メニューに表示し、ユーザーによるビジュアル設定をサポートする場合は、FlowModel でラップする必要があります。
 

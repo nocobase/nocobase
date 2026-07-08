@@ -14,7 +14,7 @@ import {
   useFlowModelById,
   useFlowViewContext,
 } from '@nocobase/flow-engine';
-import type { FlowModel, FlowModelRendererProps, ModelConstructor } from '@nocobase/flow-engine';
+import type { FlowEngineContext, FlowModel, FlowModelRendererProps, ModelConstructor } from '@nocobase/flow-engine';
 import { useRequest } from 'ahooks';
 import React from 'react';
 import FlowRoute from './components/FlowRoute';
@@ -57,10 +57,38 @@ type FlowPageProps = {
   showFlowSettings?: FlowModelRendererProps['showFlowSettings'];
 };
 
+type FlowPageViewContext = FlowEngineContext & {
+  view?: {
+    inputArgs?: {
+      filterByTk?: unknown;
+      isMobileLayout?: unknown;
+      sourceId?: unknown;
+    };
+  };
+};
+
+const bindViewLayoutState = (model: FlowModel, ctx?: FlowPageViewContext | null) => {
+  const hasViewMobileLayout = typeof ctx?.view?.inputArgs?.isMobileLayout === 'boolean';
+  const hasContextMobileLayout = typeof ctx?.isMobileLayout === 'boolean';
+  if (!hasViewMobileLayout && !hasContextMobileLayout) {
+    return;
+  }
+
+  model.context.defineProperty('isMobileLayout', {
+    get: () => {
+      if (typeof ctx?.isMobileLayout === 'boolean') {
+        return ctx.isMobileLayout;
+      }
+      return !!ctx?.view?.inputArgs?.isMobileLayout;
+    },
+    cache: false,
+  });
+};
+
 export const FlowPage = React.memo((props: FlowPageProps & Record<string, unknown>) => {
   const { pageModelClass = 'ChildPageModel', parentId, onModelLoaded, defaultTabTitle, ...rest } = props;
   const flowEngine = useFlowEngine();
-  const ctx = useFlowViewContext();
+  const ctx = useFlowViewContext<FlowPageViewContext>();
   const { loading, data, error } = useRequest(
     async () => {
       const ModelClass = await flowEngine.getModelClassAsync(pageModelClass);
@@ -76,6 +104,10 @@ export const FlowPage = React.memo((props: FlowPageProps & Record<string, unknow
         subType: 'object',
         use: pageModelClass,
       };
+      const isRuntimeRecordScopedPage =
+        !flowEngine.context.flowSettingsEnabled &&
+        (typeof ctx?.view?.inputArgs?.filterByTk !== 'undefined' ||
+          typeof ctx?.view?.inputArgs?.sourceId !== 'undefined');
       if (shouldInjectDefaultChildTab) {
         const tabTitle = defaultTabTitle || flowEngine.translate?.('Details');
         options['subModels'] = {
@@ -102,9 +134,12 @@ export const FlowPage = React.memo((props: FlowPageProps & Record<string, unknow
           },
         };
       }
-      const data = await flowEngine.loadOrCreateModel(options, { skipSave: !flowEngine.context.flowSettingsEnabled });
+      const data =
+        (isRuntimeRecordScopedPage && (await flowEngine.loadModel({ ...options, refresh: true }))) ||
+        (await flowEngine.loadOrCreateModel(options, { skipSave: !flowEngine.context.flowSettingsEnabled }));
       if (data?.uid && onModelLoaded) {
         data.context.addDelegate(ctx);
+        bindViewLayoutState(data, ctx);
         data.removeParentDelegate();
         onModelLoaded(data.uid, data);
       }

@@ -284,11 +284,34 @@ function SetIsMobileLayout(props: { isMobile: boolean; children: any; model?: Ad
   const flowEngine = useFlowEngine();
   const adminLayoutModel = props.model || flowEngine.getModel<AdminLayoutModel>(ADMIN_LAYOUT_MODEL_UID);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     adminLayoutModel?.setIsMobileLayout(props.isMobile);
   }, [adminLayoutModel, props.isMobile]);
 
   return props.children;
+}
+
+function AdminLayoutContentWithMobileState(props: {
+  isMobile: boolean;
+  model?: AdminLayoutModel;
+  onContentElementChange?: (element: HTMLDivElement | null) => void;
+}) {
+  const modelRef = useRef(props.model);
+  const isMobileRef = useRef(props.isMobile);
+  const onContentElementChangeRef = useRef(props.onContentElementChange);
+
+  modelRef.current = props.model;
+  isMobileRef.current = props.isMobile;
+  onContentElementChangeRef.current = props.onContentElementChange;
+
+  const handleContentElementChange = useCallback((element: HTMLDivElement | null) => {
+    if (element) {
+      modelRef.current?.setIsMobileLayout(isMobileRef.current);
+    }
+    onContentElementChangeRef.current?.(element);
+  }, []);
+
+  return <AdminLayoutContent onContentElementChange={handleContentElementChange} />;
 }
 
 const DesignerButtonMenuItem: FC<{ item: AdminLayoutMenuNode; fallbackParentRoute?: NocoBaseDesktopRoute }> = (
@@ -697,7 +720,11 @@ export const AdminLayoutComponent = observer((props: any) => {
                     <SetIsMobileLayout isMobile={isMobile} model={adminLayoutModel}>
                       <ConfigProvider theme={isMobile ? mobileTheme : theme}>
                         <GlobalStyle />
-                        <AdminLayoutContent onContentElementChange={handleLayoutContentElementChange} />
+                        <AdminLayoutContentWithMobileState
+                          isMobile={isMobile}
+                          model={adminLayoutModel}
+                          onContentElementChange={handleLayoutContentElementChange}
+                        />
                       </ConfigProvider>
                     </SetIsMobileLayout>
                   );

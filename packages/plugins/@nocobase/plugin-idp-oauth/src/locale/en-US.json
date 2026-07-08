@@ -1,1 +1,21 @@
-{}
+{
+  "Application": "Application",
+  "Authorization is complete. You can return to the terminal.": "Authorization is complete. You can return to the terminal.",
+  "Back to home": "Back to home",
+  "Cancel": "Cancel",
+  "Confirm device": "Confirm device",
+  "Continue": "Continue",
+  "Device sign-in": "Device sign-in",
+  "Device sign-in cancelled": "Device sign-in cancelled",
+  "Device sign-in complete": "Device sign-in complete",
+  "Device sign-in failed": "Device sign-in failed",
+  "Enter the code shown in your terminal to continue signing in.": "Enter the code shown in your terminal to continue signing in.",
+  "Enter the device code.": "Enter the device code.",
+  "Failed to load device sign-in.": "Failed to load device sign-in.",
+  "Failed to submit device sign-in.": "Failed to submit device sign-in.",
+  "The device code has already been used.": "The device code has already been used.",
+  "The device code has expired.": "The device code has expired.",
+  "The device code was not found.": "The device code was not found.",
+  "The device sign-in request was cancelled.": "The device sign-in request was cancelled.",
+  "{{clientName}} is requesting access. Confirm that this code matches the one shown in your terminal.": "{{clientName}} is requesting access. Confirm that this code matches the one shown in your terminal."
+}

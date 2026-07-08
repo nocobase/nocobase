@@ -16,6 +16,7 @@ import Download, { defaultDockerRegistryForLang } from '../commands/source/downl
 import Init from '../commands/init.js';
 import EnvAdd from '../commands/env/add.js';
 import Install from '../commands/install.js';
+import { setCliConfigValue } from '../lib/cli-config.js';
 import { saveAuthConfig } from '../lib/auth-store.js';
 import { resolveLocalizedText } from '../lib/cli-locale.js';
 import { runPromptCatalog } from '../lib/prompt-catalog.js';
@@ -59,6 +60,23 @@ async function withTempProjectCwd(run: () => Promise<void>) {
   } finally {
     cwdSpy.mockRestore();
     await rm(tempRoot, { recursive: true, force: true });
+  }
+}
+
+async function withTempCliHome(run: () => Promise<void>) {
+  const previous = process.env.NB_CLI_ROOT;
+  const tempHome = await mkdtemp(path.join(os.tmpdir(), 'nocobase-cli-config-'));
+
+  try {
+    process.env.NB_CLI_ROOT = tempHome;
+    await run();
+  } finally {
+    if (previous === undefined) {
+      delete process.env.NB_CLI_ROOT;
+    } else {
+      process.env.NB_CLI_ROOT = previous;
+    }
+    await rm(tempHome, { recursive: true, force: true });
   }
 }
 
@@ -182,9 +200,11 @@ test('validateApiBaseUrl reports connectivity failures', async () => {
   );
 });
 
-test('validateEnvKey allows only letters and numbers', () => {
+test('validateEnvKey allows letters, numbers, hyphens, and underscores', () => {
   expect(validateEnvKey('local01')).toBe(undefined);
-  expect(validateEnvKey('local-dev') ?? '').toMatch(/letters and numbers only/i);
+  expect(validateEnvKey('local-dev')).toBe(undefined);
+  expect(validateEnvKey('local_dev')).toBe(undefined);
+  expect(validateEnvKey('local.dev') ?? '').toMatch(/letters, numbers, hyphens, and underscores only/i);
 });
 
 test('validateAppPublicPath accepts root and slash-separated slug paths', () => {
@@ -319,7 +339,7 @@ test('init and env add prompts validate apiBaseUrl', async () => {
   expect(appNamePrompt.initialValue).toBe(undefined);
   expect(appNamePrompt.yesInitialValue).toBe(undefined);
   expect(typeof appNamePrompt.validate).toBe('function');
-  expect((await appNamePrompt.validate?.('local-dev', {})) ?? '').toMatch(/letters and numbers only/i);
+  expect(await appNamePrompt.validate?.('local-dev', {})).toBe(undefined);
   expect(initPrompt.type).toBe('text');
   expect(envAddPrompt.type).toBe('text');
   expect(typeof initPrompt.validate).toBe('function');
@@ -436,12 +456,10 @@ test('install prompts expose the expected defaults and validators', () => {
   expect(envPrompt.initialValue).toBe(undefined);
   expect(envPrompt.yesInitialValue).toBe(undefined);
   expect(typeof envPrompt.validate).toBe('function');
-  expect(envPrompt.validate?.('local-dev', {}) ?? '').toMatch(/letters and numbers only/i);
+  expect(envPrompt.validate?.('local-dev', {})).toBe(undefined);
 
   expect(langPrompt.type).toBe('select');
-  expect(resolveLocalizedText(langPrompt.message, { locale: 'en-US' })).toBe(
-    'Which language would you like to use for the app?',
-  );
+  expect(resolveLocalizedText(langPrompt.message, { locale: 'en-US' })).toBe('App language');
 
   expect(appPathPrompt.type).toBe('text');
   expect(resolveLocalizedText(appPathPrompt.message, { locale: 'en-US' })).toContain(
@@ -512,13 +530,15 @@ test('install prompts expose the expected defaults and validators', () => {
 
   expect(dbSchemaPrompt.type).toBe('text');
   expect(resolveLocalizedText(dbSchemaPrompt.message, { locale: 'en-US' })).toBe(
-    'What is the database schema? (PostgreSQL only, optional)',
+    'Database schema (PostgreSQL/KingbaseES only, optional)',
   );
   expect(dbSchemaPrompt.initialValue).toBe(undefined);
   expect(dbSchemaPrompt.yesInitialValue).toBe(undefined);
   expect(typeof dbSchemaPrompt.hidden).toBe('function');
   expect(dbSchemaPrompt.hidden?.({ dbDialect: 'postgres' })).toBe(false);
+  expect(dbSchemaPrompt.hidden?.({ dbDialect: 'kingbase' })).toBe(false);
   expect(dbSchemaPrompt.hidden?.({ dbDialect: 'mysql' })).toBe(true);
+  expect(dbSchemaPrompt.hidden?.({ dbDialect: 'mariadb' })).toBe(true);
 
   expect(dbTablePrefixPrompt.type).toBe('text');
   expect(dbTablePrefixPrompt.initialValue).toBe(undefined);
@@ -540,7 +560,7 @@ test('install prompts expose the expected defaults and validators', () => {
 
   expect(rootPasswordPrompt.type).toBe('password');
   expect(resolveLocalizedText(rootPasswordPrompt.message, { locale: 'en-US' })).toBe(
-    'Choose the initial admin password',
+    'Initial admin password',
   );
   expect(rootPasswordPrompt.initialValue).toBe(undefined);
   expect(rootPasswordPrompt.yesInitialValue).toBe('admin123');
@@ -767,31 +787,25 @@ test('version prompt uses presets and reveals otherVersion when needed', () => {
   expect(otherVersionPrompt.hidden?.({ version: 'other' })).toBe(false);
 });
 
-test('builtin database image defaults follow NB_LOCALE', async () => {
+test('builtin database image prompt defaults use dockerhub-compatible images by default', async () => {
   process.env.NB_LOCALE = 'zh-CN';
   const { default: InstallWithZhLocale } = await import('../commands/install.js');
   const builtinDbImagePrompt = InstallWithZhLocale.dbPrompts.builtinDbImage;
 
-  expect(builtinDbImagePrompt.initialValue?.({ dbDialect: 'postgres' })).toBe(
-    'registry.cn-shanghai.aliyuncs.com/nocobase/postgres:16',
-  );
-  expect(builtinDbImagePrompt.initialValue?.({ dbDialect: 'mysql' })).toBe(
-    'registry.cn-shanghai.aliyuncs.com/nocobase/mysql:8',
-  );
-  expect(builtinDbImagePrompt.initialValue?.({ dbDialect: 'mariadb' })).toBe(
-    'registry.cn-shanghai.aliyuncs.com/nocobase/mariadb:11',
-  );
+  expect(builtinDbImagePrompt.initialValue?.({ dbDialect: 'postgres' })).toBe('postgres:16');
+  expect(builtinDbImagePrompt.initialValue?.({ dbDialect: 'mysql' })).toBe('mysql:8');
+  expect(builtinDbImagePrompt.initialValue?.({ dbDialect: 'mariadb' })).toBe('mariadb:11');
 });
 
-test('install download prompt options follow CLI locale for docker registry defaults', () => {
+test('install download prompt options follow nb image registry config for docker registry defaults', async () => {
   const installStatics = Install as unknown as {
     buildDownloadPromptOptionsForInstall: (
       appResults: Record<string, unknown>,
       envName: string,
-    ) => {
+    ) => Promise<{
       initialValues: Record<string, unknown>;
       values: Record<string, unknown>;
-    };
+    }>;
     buildDownloadPresetValuesForInstall: (
       flags: Record<string, unknown>,
       appResults: Record<string, unknown>,
@@ -801,30 +815,32 @@ test('install download prompt options follow CLI locale for docker registry defa
     buildPresetValuesFromFlags: (flags: Record<string, unknown>) => Record<string, unknown>;
   };
 
-  process.env.NB_LOCALE = 'zh-CN';
-  const zhOptions = installStatics.buildDownloadPromptOptionsForInstall(
-    {
-      lang: 'en-US',
-      appRootPath: './apps/zh-demo',
-    },
-    'zh-demo',
-  );
-  expect(zhOptions.initialValues.lang).toBe('en-US');
-  expect(zhOptions.initialValues.dockerRegistry).toBe('registry.cn-shanghai.aliyuncs.com/nocobase/nocobase');
-  expect(zhOptions.initialValues.outputDir).toBe('./apps/zh-demo');
-  expect(zhOptions.values.lang).toBe('en-US');
+  await withTempCliHome(async () => {
+    await setCliConfigValue('nb-image-registry', 'aliyun', { scope: 'global' });
+    const aliyunOptions = await installStatics.buildDownloadPromptOptionsForInstall(
+      {
+        lang: 'en-US',
+        appRootPath: './apps/aliyun-demo',
+      },
+      'aliyun-demo',
+    );
+    expect(aliyunOptions.initialValues.lang).toBe('en-US');
+    expect(aliyunOptions.initialValues.dockerRegistry).toBe('registry.cn-shanghai.aliyuncs.com/nocobase/nocobase');
+    expect(aliyunOptions.initialValues.outputDir).toBe('./apps/aliyun-demo');
+    expect(aliyunOptions.values.lang).toBe('en-US');
 
-  process.env.NB_LOCALE = 'en-US';
-  const enOptions = installStatics.buildDownloadPromptOptionsForInstall(
-    {
-      lang: 'zh-CN',
-      appRootPath: './apps/en-demo',
-    },
-    'en-demo',
-  );
-  expect(enOptions.initialValues.lang).toBe('zh-CN');
-  expect(enOptions.initialValues.dockerRegistry).toBe('nocobase/nocobase');
-  expect(enOptions.values.lang).toBe('zh-CN');
+    await setCliConfigValue('nb-image-registry', 'dockerhub', { scope: 'global' });
+    const dockerhubOptions = await installStatics.buildDownloadPromptOptionsForInstall(
+      {
+        lang: 'zh-CN',
+        appRootPath: './apps/dockerhub-demo',
+      },
+      'dockerhub-demo',
+    );
+    expect(dockerhubOptions.initialValues.lang).toBe('zh-CN');
+    expect(dockerhubOptions.initialValues.dockerRegistry).toBe('nocobase/nocobase');
+    expect(dockerhubOptions.values.lang).toBe('zh-CN');
+  });
 
   const originalArgv = process.argv;
   process.argv = ['node', 'nb', 'install', '--yes'];

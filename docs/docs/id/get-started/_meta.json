@@ -20,8 +20,18 @@
     "items": [
       {
         "type": "custom-link",
-        "label": "Instalasi Docker",
+        "label": "Instalasi Docker (Nginx bawaan)",
         "link": "/get-started/installation/docker"
+      },
+      {
+        "type": "custom-link",
+        "label": "Instalasi Docker (Nginx eksternal)",
+        "link": "/get-started/installation/docker-nginx"
+      },
+      {
+        "type": "custom-link",
+        "label": "Instalasi Docker (Caddy eksternal)",
+        "link": "/get-started/installation/docker-caddy"
       },
       {
         "type": "custom-link",
