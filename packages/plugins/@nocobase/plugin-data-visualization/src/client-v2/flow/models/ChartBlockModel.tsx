@@ -97,6 +97,7 @@ export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
   private __eventsBoundChart?: EChartsType;
   private __eventsBoundRaw?: string;
   private chartEventsCleanup?: ChartEventCleanup;
+  private __eventsApplyToken = 0;
   private lastRefreshSnapshot: ChartDirtyRefreshSnapshot | null = null;
   private dirtyRefreshing = false;
 
@@ -541,31 +542,37 @@ export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
 
   // 应用事件配置（仅设置，不负责渲染）
   async applyEvents(raw?: string, chartInstance?: EChartsType) {
+    const applyToken = ++this.__eventsApplyToken;
+
     if (!raw) {
       await this.cleanupChartEvents();
       return;
     }
 
     if (chartInstance) {
-      await this.runChartEvents(raw, chartInstance);
+      await this.runChartEvents(raw, chartInstance, applyToken);
       return;
     }
 
     const chart = (this.context.chartRef as any).current as EChartsType | null;
     if (chart) {
-      await this.runChartEvents(raw, chart);
+      await this.runChartEvents(raw, chart, applyToken);
       return;
     }
 
     this.context.onRefReady(this.context.chartRef, async () => {
+      if (applyToken !== this.__eventsApplyToken) {
+        return;
+      }
+
       const currentChart = (this.context.chartRef as any).current as EChartsType | null;
-      if (currentChart) {
-        await this.runChartEvents(raw, currentChart);
+      if (currentChart && applyToken === this.__eventsApplyToken) {
+        await this.runChartEvents(raw, currentChart, applyToken);
       }
     });
   }
 
-  private async runChartEvents(raw: string, chart: EChartsType) {
+  private async runChartEvents(raw: string, chart: EChartsType, applyToken: number) {
     if (this.shouldSkipApplyEvents(raw, chart)) {
       return;
     }
@@ -581,6 +588,11 @@ export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
       if (success) {
         if (typeof value === 'function') {
           cleanups.push(value);
+        }
+        if (applyToken !== this.__eventsApplyToken) {
+          this.clearEventsBound(raw, chart);
+          await this.runChartEventCleanups(cleanups);
+          return;
         }
         this.chartEventsCleanup = cleanups.length ? () => this.runChartEventCleanups(cleanups) : undefined;
         return;
