@@ -15,6 +15,7 @@ import { registerApiCallLogMiddleware } from './actions/apiCallLogging';
 import { registerAgentSessionRoutes } from './actions/agentSessions';
 import { registerConversationEventRoutes } from './actions/conversationEvents';
 import { registerDispatchBindingRoutes, registerDispatchBindingValidationHooks } from './actions/dispatchBindings';
+import { registerExternalRunImportRoutes } from './actions/externalRunImports';
 import { registerNodeLifecycleRoutes } from './actions/nodeLifecycle';
 import { registerPromptTemplateRoutes } from './actions/promptTemplates';
 import { recoverExpiredRunLeases, registerRunLifecycleHooks, registerRunLifecycleRoutes } from './actions/runLifecycle';
@@ -77,6 +78,7 @@ export class PluginAgentGatewayServer extends Plugin {
     registerRunTerminalRoutes(this);
     registerTerminalStreamTicketRoutes(this);
     registerRunObservabilityRoutes(this);
+    registerExternalRunImportRoutes(this);
     registerPromptTemplateRoutes(this);
     registerDispatchBindingRoutes(this);
     this.terminalStreamBroker = registerTerminalStreamBroker(this);

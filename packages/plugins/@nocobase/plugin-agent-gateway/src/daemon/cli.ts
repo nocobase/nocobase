@@ -24,12 +24,12 @@ import { JsonRecord } from './types';
 
 interface ParsedArgs {
   command: string;
-  flags: Record<string, string | boolean>;
+  flags: Record<string, string | boolean | string[]>;
 }
 
 function parseArgs(argv: string[]): ParsedArgs {
   const [, , command = 'help', ...args] = argv;
-  const flags: Record<string, string | boolean> = {};
+  const flags: Record<string, string | boolean | string[]> = {};
   for (let index = 0; index < args.length; index += 1) {
     const arg = args[index];
     if (!arg.startsWith('--')) {
@@ -37,11 +37,17 @@ function parseArgs(argv: string[]): ParsedArgs {
     }
     const key = arg.slice(2);
     const next = args[index + 1];
-    if (!next || next.startsWith('--')) {
-      flags[key] = true;
-    } else {
-      flags[key] = next;
+    const value = !next || next.startsWith('--') ? true : next;
+    if (value !== true) {
       index += 1;
+    }
+    const existing = flags[key];
+    if (existing === undefined) {
+      flags[key] = value;
+    } else if (Array.isArray(existing)) {
+      existing.push(String(value));
+    } else {
+      flags[key] = [String(existing), String(value)];
     }
   }
   return {
@@ -50,18 +56,33 @@ function parseArgs(argv: string[]): ParsedArgs {
   };
 }
 
-function getFlagString(flags: Record<string, string | boolean>, key: string) {
+function getFlagString(flags: Record<string, string | boolean | string[]>, key: string) {
   const value = flags[key];
+  if (Array.isArray(value)) {
+    return getString(value[value.length - 1]);
+  }
   return typeof value === 'string' ? value.trim() : '';
 }
 
-function getFlagNumber(flags: Record<string, string | boolean>, key: string, fallback: number) {
+function getFlagStrings(flags: Record<string, string | boolean | string[]>, key: string) {
+  const value = flags[key];
+  if (Array.isArray(value)) {
+    return value.map(getString).filter(Boolean);
+  }
+  return typeof value === 'string' && value.trim() ? [value.trim()] : [];
+}
+
+function getString(value: unknown) {
+  return typeof value === 'string' ? value.trim() : '';
+}
+
+function getFlagNumber(flags: Record<string, string | boolean | string[]>, key: string, fallback: number) {
   const rawValue = getFlagString(flags, key);
   const numberValue = Number(rawValue);
   return Number.isFinite(numberValue) && numberValue > 0 ? numberValue : fallback;
 }
 
-async function getRegisterNodeKey(flags: Record<string, string | boolean>) {
+async function getRegisterNodeKey(flags: Record<string, string | boolean | string[]>) {
   const explicitNodeKey = getFlagString(flags, 'node-key');
   if (explicitNodeKey) {
     return explicitNodeKey;
@@ -162,7 +183,69 @@ function isSkillVersionSource(value: unknown): value is SkillVersionSource {
   return false;
 }
 
-async function getSkillSource(flags: Record<string, string | boolean>) {
+function getDefaultExternalLogFormat(provider: string) {
+  if (provider === 'codex') {
+    return 'codex-jsonl';
+  }
+  if (provider === 'opencode') {
+    return 'opencode-jsonl';
+  }
+  if (provider === 'claude-code' || provider === 'claude') {
+    return 'claude-code-jsonl';
+  }
+  return 'text';
+}
+
+function getFileMimeType(filePath: string) {
+  const extension = path.extname(filePath).toLowerCase();
+  const mimeTypes: Record<string, string> = {
+    '.html': 'text/html',
+    '.htm': 'text/html',
+    '.json': 'application/json',
+    '.jsonl': 'application/x-ndjson',
+    '.ndjson': 'application/x-ndjson',
+    '.log': 'text/plain',
+    '.md': 'text/markdown',
+    '.png': 'image/png',
+    '.jpg': 'image/jpeg',
+    '.jpeg': 'image/jpeg',
+    '.gif': 'image/gif',
+    '.webp': 'image/webp',
+    '.svg': 'image/svg+xml',
+    '.txt': 'text/plain',
+    '.csv': 'text/csv',
+  };
+  return mimeTypes[extension] || 'text/plain';
+}
+
+function getFileArtifactType(filePath: string) {
+  const mimeType = getFileMimeType(filePath);
+  if (mimeType === 'text/html') {
+    return 'html-report';
+  }
+  if (mimeType.includes('json')) {
+    return 'json-report';
+  }
+  if (mimeType === 'text/markdown') {
+    return 'markdown-report';
+  }
+  if (mimeType.startsWith('image/')) {
+    return 'image';
+  }
+  if (mimeType === 'text/plain' && path.extname(filePath).toLowerCase() === '.log') {
+    return 'log';
+  }
+  return 'file';
+}
+
+function getArtifactKeyFromFile(filePath: string) {
+  return `external:${path.basename(filePath)}`
+    .replace(/[^A-Za-z0-9_.:/-]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 240);
+}
+
+async function getSkillSource(flags: Record<string, string | boolean | string[]>) {
   const sourceJson = getFlagString(flags, 'skill-source-json');
   const sourceFile = getFlagString(flags, 'skill-source-file');
   const source = sourceJson
@@ -176,7 +259,7 @@ async function getSkillSource(flags: Record<string, string | boolean>) {
   return source;
 }
 
-async function handleRegister(flags: Record<string, string | boolean>) {
+async function handleRegister(flags: Record<string, string | boolean | string[]>) {
   const serverUrl = getFlagString(flags, 'server-url');
   if (!serverUrl) {
     throw new Error('--server-url is required');
@@ -198,7 +281,7 @@ async function handleRegister(flags: Record<string, string | boolean>) {
   printJson(result);
 }
 
-async function handleHeartbeat(flags: Record<string, string | boolean>) {
+async function handleHeartbeat(flags: Record<string, string | boolean | string[]>) {
   const config = await readDaemonConfig(getFlagString(flags, 'config') || undefined);
   const requester = new AgentGatewayApiClient(config.serverUrl);
   const profiles = await detectAgentProfiles();
@@ -210,7 +293,7 @@ async function handleHeartbeat(flags: Record<string, string | boolean>) {
   printJson(result);
 }
 
-async function handleRun(flags: Record<string, string | boolean>) {
+async function handleRun(flags: Record<string, string | boolean | string[]>) {
   const baseConfig = await readDaemonConfig(getFlagString(flags, 'config') || undefined);
   const config = {
     ...baseConfig,
@@ -268,7 +351,7 @@ async function handleRun(flags: Record<string, string | boolean>) {
   });
 }
 
-async function handleSmokeOpenCode(flags: Record<string, string | boolean>) {
+async function handleSmokeOpenCode(flags: Record<string, string | boolean | string[]>) {
   const skillVersionId = getFlagString(flags, 'skill-version-id');
   if (!skillVersionId) {
     throw new Error('--skill-version-id is required');
@@ -318,6 +401,103 @@ async function handleSmokeOpenCode(flags: Record<string, string | boolean>) {
   printJson(result);
 }
 
+async function getExternalImportServerUrl(flags: Record<string, string | boolean | string[]>) {
+  const explicitServerUrl = getFlagString(flags, 'server-url');
+  if (explicitServerUrl) {
+    return explicitServerUrl;
+  }
+  const config = await readDaemonConfig(getFlagString(flags, 'config') || undefined);
+  return config.serverUrl;
+}
+
+async function readExternalLogContent(flags: Record<string, string | boolean | string[]>) {
+  if (flags['log-stdin'] === true) {
+    return await readStdin();
+  }
+  const logFile = getFlagString(flags, 'log-file');
+  if (!logFile) {
+    return '';
+  }
+  return await fs.readFile(logFile, 'utf8');
+}
+
+async function readExternalArtifacts(flags: Record<string, string | boolean | string[]>) {
+  const artifacts = [];
+  for (const filePath of getFlagStrings(flags, 'artifact-file')) {
+    const absolutePath = path.resolve(filePath);
+    const mimeType = getFileMimeType(absolutePath);
+    const content =
+      mimeType.startsWith('image/') && mimeType !== 'image/svg+xml'
+        ? await fs.readFile(absolutePath)
+        : await fs.readFile(absolutePath, 'utf8');
+    const contentText = Buffer.isBuffer(content) ? `data:${mimeType};base64,${content.toString('base64')}` : content;
+    artifacts.push({
+      artifactKey: getArtifactKeyFromFile(absolutePath),
+      artifactType: getFileArtifactType(absolutePath),
+      mimeType,
+      ...(Buffer.isBuffer(content) ? { sizeBytes: content.byteLength } : {}),
+      contentText,
+      metadata: {
+        fileName: path.basename(absolutePath),
+        sourcePath: absolutePath,
+        ...(Buffer.isBuffer(content) ? { originalSizeBytes: content.byteLength } : {}),
+      },
+    });
+  }
+  return artifacts;
+}
+
+async function handleImportExternalRun(flags: Record<string, string | boolean | string[]>) {
+  const apiToken = getFlagString(flags, 'api-token');
+  if (!apiToken) {
+    throw new Error('--api-token is required');
+  }
+  const provider = getFlagString(flags, 'provider') || 'generic-cli';
+  const logContent = await readExternalLogContent(flags);
+  const artifacts = await readExternalArtifacts(flags);
+  if (!logContent && !artifacts.length) {
+    throw new Error('--log-file, --log-stdin, or --artifact-file is required');
+  }
+
+  const resultSummary = getFlagString(flags, 'result-summary-json')
+    ? parseJsonRecord(getFlagString(flags, 'result-summary-json'), '--result-summary-json')
+    : {};
+  const metadata = getFlagString(flags, 'metadata-json')
+    ? parseJsonRecord(getFlagString(flags, 'metadata-json'), '--metadata-json')
+    : {};
+  const requester = new AgentGatewayApiClient(await getExternalImportServerUrl(flags));
+  const response = await requester.request({
+    method: 'POST',
+    path: '/api/agent-gateway/external-runs:import',
+    authToken: apiToken,
+    body: {
+      provider: provider === 'claude' ? 'claude-code' : provider,
+      title: getFlagString(flags, 'title') || undefined,
+      instruction: getFlagString(flags, 'instruction') || getFlagString(flags, 'prompt') || undefined,
+      status: getFlagString(flags, 'status') || undefined,
+      externalRunKey: getFlagString(flags, 'external-run-key') || undefined,
+      sourceCollection: getFlagString(flags, 'source-collection') || undefined,
+      sourceRecordId: getFlagString(flags, 'source-record-id') || undefined,
+      outputAgentRunField: getFlagString(flags, 'output-agent-run-field') || undefined,
+      providerSessionId: getFlagString(flags, 'provider-session-id') || undefined,
+      resultSummary,
+      metadata,
+      errorSummary: getFlagString(flags, 'error-summary') || undefined,
+      logs: logContent
+        ? [
+            {
+              format: getFlagString(flags, 'format') || getDefaultExternalLogFormat(provider),
+              artifactKey: getFlagString(flags, 'log-artifact-key') || undefined,
+              contentText: logContent,
+            },
+          ]
+        : [],
+      artifacts,
+    },
+  });
+  printJson(response);
+}
+
 async function handleDetectProfiles() {
   printJson(await detectAgentProfiles());
 }
@@ -335,6 +515,7 @@ function printHelp() {
       '      [--once] [--profile-key <key>] [--run-id <id>] [--workspace-root <path>]',
       '      [--terminal-backend tmux|exec]',
       '  smoke-opencode --skill-version-id <id> --skill-source-json <json> [--workspace-root <path>]',
+      '  import-external-run --server-url <url> --api-token <token> --provider <provider> --log-file <path>',
       '  detect-profiles',
       '',
     ].join('\n'),
@@ -357,6 +538,10 @@ export async function runCli(argv: string[]) {
   }
   if (command === 'smoke-opencode') {
     await handleSmokeOpenCode(flags);
+    return;
+  }
+  if (command === 'import-external-run') {
+    await handleImportExternalRun(flags);
     return;
   }
   if (command === 'detect-profiles') {

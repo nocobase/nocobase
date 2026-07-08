@@ -17,6 +17,7 @@ import {
   isAgentCapabilitySupported,
   normalizeAgentProviderCapabilities,
 } from '../../shared/providerCapabilities';
+import { EXTERNAL_IMPORT_CAPABILITIES, EXTERNAL_IMPORT_SOURCE_TYPE } from '../../shared/externalRunImport';
 import { JsonRecord, ModelRecord, getModelValue, getRecord, getString } from './utils';
 
 export interface RunProviderCapabilitySummary {
@@ -34,11 +35,20 @@ function getModelTargetString(model: ModelRecord, key: string) {
 function getExecutionPayloadProvider(run: ModelRecord) {
   const payload = getRecord(getModelValue(run, 'executionPayloadJson'));
   const commandKey = getString(payload.commandKey);
+  const explicitCapabilities = getRecord(payload.capabilities || payload.agentProviderCapabilities);
+  const sourceType = getString(getModelValue(run, 'sourceType'));
   return {
     provider:
       getExplicitAgentProviderKey(payload.provider) ||
       getExplicitAgentProviderKey(payload.agentProvider) ||
       getExplicitAgentProviderKey(commandKey),
+    capabilities:
+      hasAgentCapabilitySignal(explicitCapabilities) || sourceType === EXTERNAL_IMPORT_SOURCE_TYPE
+        ? {
+            ...(sourceType === EXTERNAL_IMPORT_SOURCE_TYPE ? EXTERNAL_IMPORT_CAPABILITIES : {}),
+            ...explicitCapabilities,
+          }
+        : {},
     hasExplicitLegacyCommand: Boolean(commandKey && !getExplicitAgentProviderKey(commandKey)),
   };
 }
@@ -73,6 +83,7 @@ export async function getRunProviderCapabilitySummary(
   const profileProvider = profile ? getExplicitAgentProviderKey(getString(getModelValue(profile, 'provider'))) : null;
   const profileCapabilities = profile ? getRecord(getModelValue(profile, 'capabilitiesJson')) : {};
   const payloadProvider = getExecutionPayloadProvider(run);
+  const sourceType = getString(getModelValue(run, 'sourceType'));
   const resolvedSession = session === undefined ? await getSession(ctx, run) : session;
   const sessionProvider = resolvedSession
     ? getExplicitAgentProviderKey(getString(getModelValue(resolvedSession, 'provider')))
@@ -108,6 +119,14 @@ export async function getRunProviderCapabilitySummary(
   }
 
   if (runProvider) {
+    if (sourceType === EXTERNAL_IMPORT_SOURCE_TYPE && hasAgentCapabilitySignal(payloadProvider.capabilities)) {
+      return {
+        provider: runProvider,
+        providerSource: 'payload',
+        capabilities: normalizeAgentProviderCapabilities(runProvider, payloadProvider.capabilities),
+        enforceCapabilities: true,
+      };
+    }
     if (hasAgentCapabilitySignal(profileCapabilities)) {
       return {
         provider: runProvider,
@@ -169,6 +188,14 @@ export async function getRunProviderCapabilitySummary(
   }
 
   if (payloadProvider.provider) {
+    if (hasAgentCapabilitySignal(payloadProvider.capabilities)) {
+      return {
+        provider: payloadProvider.provider,
+        providerSource: 'payload',
+        capabilities: normalizeAgentProviderCapabilities(payloadProvider.provider, payloadProvider.capabilities),
+        enforceCapabilities: true,
+      };
+    }
     return {
       provider: payloadProvider.provider,
       providerSource: 'payload',

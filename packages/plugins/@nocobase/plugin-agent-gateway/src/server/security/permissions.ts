@@ -23,6 +23,7 @@ export const AGENT_GATEWAY_PERMISSIONS = {
   terminateRun: 'agentGateway.terminateRun',
   readArtifacts: 'agentGateway.readArtifacts',
   readRawLogs: 'agentGateway.readRawLogs',
+  importExternalRuns: 'agentGateway.importExternalRuns',
   writeTerminalRaw: 'agentGateway.writeTerminalRaw',
   cancelRun: 'agentGateway.cancelRun',
 } as const;
@@ -45,6 +46,7 @@ export const AGENT_GATEWAY_ACTIONS = {
   terminateRun: 'terminateRun',
   readArtifacts: 'readArtifacts',
   readRawLogs: 'readRawLogs',
+  importExternalRuns: 'importExternalRuns',
   writeTerminalRaw: 'writeTerminalRaw',
   cancelRun: 'cancelRun',
 } as const;
@@ -77,6 +79,7 @@ export const AGENT_GATEWAY_PERMISSION_DEFINITIONS = [
       `${AGENT_GATEWAY_RESOURCE}:${AGENT_GATEWAY_ACTIONS.readTerminal}`,
       `${AGENT_GATEWAY_RESOURCE}:${AGENT_GATEWAY_ACTIONS.readArtifacts}`,
       `${AGENT_GATEWAY_RESOURCE}:${AGENT_GATEWAY_ACTIONS.readRawLogs}`,
+      `${AGENT_GATEWAY_RESOURCE}:${AGENT_GATEWAY_ACTIONS.importExternalRuns}`,
       `${AGENT_GATEWAY_RESOURCE}:${AGENT_GATEWAY_ACTIONS.resumeAgentSession}`,
       `${AGENT_GATEWAY_RESOURCE}:${AGENT_GATEWAY_ACTIONS.messageAgentSession}`,
       ...RUN_CONTROL_ACTIONS,
@@ -150,6 +153,10 @@ export const AGENT_GATEWAY_PERMISSION_DEFINITIONS = [
   {
     name: AGENT_GATEWAY_PERMISSIONS.readRawLogs,
     actions: [`${AGENT_GATEWAY_RESOURCE}:${AGENT_GATEWAY_ACTIONS.readRawLogs}`, 'agRuns:get'],
+  },
+  {
+    name: AGENT_GATEWAY_PERMISSIONS.importExternalRuns,
+    actions: [`${AGENT_GATEWAY_RESOURCE}:${AGENT_GATEWAY_ACTIONS.importExternalRuns}`],
   },
   {
     name: AGENT_GATEWAY_PERMISSIONS.writeTerminalRaw,

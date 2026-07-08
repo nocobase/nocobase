@@ -36,9 +36,9 @@ export class AgentGatewayApiClient implements GatewayRequester {
                   'Content-Length': String(Buffer.byteLength(payload)),
                 }
               : {}),
-            ...(options.nodeToken
+            ...(options.authToken || options.nodeToken
               ? {
-                  Authorization: `Bearer ${options.nodeToken}`,
+                  Authorization: `Bearer ${options.authToken || options.nodeToken}`,
                 }
               : {}),
           },

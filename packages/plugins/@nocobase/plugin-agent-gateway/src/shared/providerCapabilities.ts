@@ -201,10 +201,7 @@ export function normalizeAgentProviderCapabilities(
 ): JsonRecord & AgentProviderCapabilities {
   const provider = getAgentProviderKey(providerInput);
   const raw = getCapabilityRecord(capabilitiesInput);
-  const normalized =
-    provider === 'generic-cli'
-      ? DEFAULT_AGENT_PROVIDER_CAPABILITIES['generic-cli']
-      : normalizeNonGenericCapabilities(provider, raw);
+  const normalized = normalizeNonGenericCapabilities(provider, raw);
   return {
     ...raw,
     ...normalized,
@@ -216,6 +213,10 @@ export function isAgentCapabilitySupported(
   capabilitiesInput: unknown,
   capability: AgentCapabilityKey,
 ) {
+  const explicitCapability = getCapabilityRecord(capabilitiesInput)[capability];
+  if (typeof explicitCapability === 'boolean') {
+    return explicitCapability;
+  }
   return normalizeAgentProviderCapabilities(providerInput, capabilitiesInput)[capability] === true;
 }
 

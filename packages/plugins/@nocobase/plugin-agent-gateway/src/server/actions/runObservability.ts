@@ -11,6 +11,7 @@ import { randomUUID } from 'crypto';
 
 import { Context, Next } from '@nocobase/actions';
 import { Plugin } from '@nocobase/server';
+import { Transaction } from 'sequelize';
 
 import {
   AGENT_GATEWAY_ACTIONS,
@@ -65,6 +66,13 @@ interface ArtifactGroupDeclaration {
   glob?: string;
   groupKey?: string;
   groupLabel?: string;
+}
+
+export interface CreateRunArtifactOptions {
+  runId: string;
+  claimAttempt: number;
+  values: JsonRecord;
+  transaction?: Transaction;
 }
 
 function getRequiredString(ctx: Context, value: unknown, name: string) {
@@ -392,6 +400,79 @@ function getArtifactContentText(ctx: Context, value: unknown, mimeType: string) 
   };
 }
 
+export async function createRunArtifact(ctx: Context, options: CreateRunArtifactOptions) {
+  const artifactKey = getString(options.values.artifactKey) || null;
+  const artifactRepo = ctx.db.getRepository('agRunArtifacts');
+  if (artifactKey) {
+    const existingArtifact = (await artifactRepo.findOne({
+      filter: {
+        runId: options.runId,
+        claimAttempt: options.claimAttempt,
+        artifactKey,
+      },
+      transaction: options.transaction,
+      lock: options.transaction?.LOCK.UPDATE,
+    })) as ModelRecord | null;
+    if (existingArtifact) {
+      return {
+        ...serializeModel(existingArtifact),
+        idempotent: true,
+      };
+    }
+  }
+
+  const mimeType = getString(options.values.mimeType) || 'text/plain';
+  const rawMetadata = getRecord(getPayloadValue(options.values, 'metadataJson', 'metadata'));
+  const metadataWithJsonStatus = {
+    ...rawMetadata,
+  };
+  const { contentText, computedSizeBytes, previewBytes, jsonValid } = getArtifactContentText(
+    ctx,
+    options.values.contentText,
+    mimeType,
+  );
+  if (jsonValid !== null) {
+    metadataWithJsonStatus.jsonValid = jsonValid;
+  }
+  const providedSizeBytes = getOptionalNonNegativeInteger(ctx, options.values.sizeBytes, 'sizeBytes');
+  const metadataOriginalSizeBytes = getOptionalNonNegativeInteger(
+    ctx,
+    rawMetadata.originalSizeBytes,
+    'metadata.originalSizeBytes',
+  );
+  const metadataUploadedBytes = getOptionalNonNegativeInteger(ctx, rawMetadata.uploadedBytes, 'metadata.uploadedBytes');
+  const artifact = (await artifactRepo.create({
+    values: {
+      id: randomUUID(),
+      runId: options.runId,
+      claimAttempt: options.claimAttempt,
+      artifactKey,
+      artifactType: getRequiredString(ctx, options.values.artifactType || options.values.type, 'artifactType'),
+      mimeType,
+      sizeBytes: providedSizeBytes ?? computedSizeBytes,
+      originalSizeBytes: metadataOriginalSizeBytes ?? providedSizeBytes ?? computedSizeBytes,
+      previewBytes: metadataUploadedBytes ?? previewBytes,
+      truncated: rawMetadata.truncated === true,
+      storageMode: getString(rawMetadata.storageMode) || (rawMetadata.truncated === true ? 'preview' : 'inline'),
+      contentSha256: getString(rawMetadata.sha256) || null,
+      contentText,
+      metadataJson: getBoundedRedactedJson(
+        ctx,
+        metadataWithJsonStatus,
+        'Artifact metadata',
+        MAX_METADATA_JSON_CHARS,
+        preserveJson,
+      ),
+    },
+    transaction: options.transaction,
+  })) as ModelRecord;
+
+  return {
+    ...serializeModel(artifact),
+    idempotent: false,
+  };
+}
+
 async function registerArtifact(ctx: Context, runId: string) {
   const nodeId = await getCurrentNodeId(ctx);
   const values = getBodyValues(ctx);
@@ -405,80 +486,13 @@ async function registerArtifact(ctx: Context, runId: string) {
       return null;
     }
 
-    const artifactKey = getString(values.artifactKey) || null;
-    const artifactRepo = ctx.db.getRepository('agRunArtifacts');
-    if (artifactKey) {
-      const existingArtifact = (await artifactRepo.findOne({
-        filter: {
-          runId,
-          claimAttempt: lease.claimAttempt,
-          artifactKey,
-        },
-        transaction,
-        lock: transaction.LOCK.UPDATE,
-      })) as ModelRecord | null;
-      if (existingArtifact) {
-        return {
-          ...serializeModel(existingArtifact),
-          idempotent: true,
-        };
-      }
-    }
-
-    const mimeType = getString(values.mimeType) || 'text/plain';
-    const rawMetadata = getRecord(getPayloadValue(values, 'metadataJson', 'metadata'));
-    const metadataWithJsonStatus = {
-      ...rawMetadata,
-    };
-    const { contentText, computedSizeBytes, previewBytes, jsonValid } = getArtifactContentText(
-      ctx,
-      values.contentText,
-      mimeType,
-    );
-    if (jsonValid !== null) {
-      metadataWithJsonStatus.jsonValid = jsonValid;
-    }
-    const providedSizeBytes = getOptionalNonNegativeInteger(ctx, values.sizeBytes, 'sizeBytes');
-    const metadataOriginalSizeBytes = getOptionalNonNegativeInteger(
-      ctx,
-      rawMetadata.originalSizeBytes,
-      'metadata.originalSizeBytes',
-    );
-    const metadataUploadedBytes = getOptionalNonNegativeInteger(
-      ctx,
-      rawMetadata.uploadedBytes,
-      'metadata.uploadedBytes',
-    );
-    const artifact = (await artifactRepo.create({
-      values: {
-        id: randomUUID(),
-        runId,
-        claimAttempt: lease.claimAttempt,
-        artifactKey,
-        artifactType: getRequiredString(ctx, values.artifactType || values.type, 'artifactType'),
-        mimeType,
-        sizeBytes: providedSizeBytes ?? computedSizeBytes,
-        originalSizeBytes: metadataOriginalSizeBytes ?? providedSizeBytes ?? computedSizeBytes,
-        previewBytes: metadataUploadedBytes ?? previewBytes,
-        truncated: rawMetadata.truncated === true,
-        storageMode: getString(rawMetadata.storageMode) || (rawMetadata.truncated === true ? 'preview' : 'inline'),
-        contentSha256: getString(rawMetadata.sha256) || null,
-        contentText,
-        metadataJson: getBoundedRedactedJson(
-          ctx,
-          metadataWithJsonStatus,
-          'Artifact metadata',
-          MAX_METADATA_JSON_CHARS,
-          preserveJson,
-        ),
-      },
+    const result = await createRunArtifact(ctx, {
+      runId,
+      claimAttempt: lease.claimAttempt,
+      values,
       transaction,
-    })) as ModelRecord;
-
-    return {
-      ...serializeModel(artifact),
-      idempotent: false,
-    };
+    });
+    return result;
   });
 
   if (result) {

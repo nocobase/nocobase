@@ -464,7 +464,7 @@ async function findExistingConversationEvent(
   })) as ModelRecord | null;
 }
 
-async function createConversationEvent(
+export async function createConversationEvent(
   ctx: Context,
   run: ModelRecord,
   runId: string,

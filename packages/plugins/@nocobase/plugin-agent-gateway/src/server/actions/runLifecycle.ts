@@ -1286,7 +1286,7 @@ async function getRunRunnerStatus(ctx: Context, run: ModelRecord) {
   };
 }
 
-async function serializeRunForManagement(ctx: Context, run: ModelRecord) {
+export async function serializeRunForManagement(ctx: Context, run: ModelRecord) {
   const json = serializeRunForUser(run);
   const agentSessionId = getOptionalTargetKey(run, 'agentSessionId');
   const session = agentSessionId

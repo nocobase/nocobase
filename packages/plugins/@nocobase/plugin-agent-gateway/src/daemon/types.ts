@@ -42,6 +42,7 @@ export interface GatewayRequestOptions {
   path: string;
   body?: unknown;
   nodeToken?: string;
+  authToken?: string;
   timeoutMs?: number;
 }
 

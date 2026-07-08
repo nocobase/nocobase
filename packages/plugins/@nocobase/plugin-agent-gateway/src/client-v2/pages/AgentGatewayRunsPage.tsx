@@ -11,6 +11,7 @@ import {
   DeleteOutlined,
   EnterOutlined,
   EyeOutlined,
+  ImportOutlined,
   PoweroffOutlined,
   PlusOutlined,
   ReloadOutlined,
@@ -380,6 +381,26 @@ interface CreateBuildRunResult {
   runnerStatus?: RunnerStatusRecord;
 }
 
+interface ExternalRunImportFormValues {
+  provider?: string;
+  format?: string;
+  title?: string;
+  instruction?: string;
+  status?: string;
+  externalRunKey?: string;
+  providerSessionId?: string;
+  sourceCollection?: string;
+  sourceRecordId?: string;
+  outputAgentRunField?: string;
+}
+
+interface ExternalRunImportResult {
+  runId?: string;
+  runCode?: string;
+  run?: RunRecord;
+  deduped?: boolean;
+}
+
 interface DateLike {
   toISOString(): string;
 }
@@ -460,6 +481,11 @@ const DEFAULT_SKILL_UPLOAD_FORM_VALUES: SkillUploadFormValues = {
   displayName: 'NB OpenCode UI Batch',
   versionLabel: 'local',
 };
+const DEFAULT_EXTERNAL_RUN_IMPORT_FORM_VALUES: ExternalRunImportFormValues = {
+  provider: 'codex',
+  format: 'codex-jsonl',
+  status: 'succeeded',
+};
 
 function readFileAsBase64(file: File) {
   return new Promise<string>((resolve, reject) => {
@@ -472,6 +498,19 @@ function readFileAsBase64(file: File) {
       reject(reader.error || new Error('Failed to read file'));
     };
     reader.readAsDataURL(file);
+  });
+}
+
+function readFileAsText(file: File) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      resolve(typeof reader.result === 'string' ? reader.result : '');
+    };
+    reader.onerror = () => {
+      reject(reader.error || new Error('Failed to read file'));
+    };
+    reader.readAsText(file);
   });
 }
 
@@ -2338,6 +2377,7 @@ export default function AgentGatewayRunsPage() {
   const initialRunId = useInitialRunDetailQuery();
   const [filterForm] = Form.useForm<RunFilterFormValues>();
   const [buildTaskForm] = Form.useForm<BuildTaskFormValues>();
+  const [externalRunImportForm] = Form.useForm<ExternalRunImportFormValues>();
   const [skillUploadForm] = Form.useForm<SkillUploadFormValues>();
   const buildTaskScenario = Form.useWatch('scenario', buildTaskForm);
   const [runFilters, setRunFilters] = useState<Record<string, unknown>>({});
@@ -2346,6 +2386,8 @@ export default function AgentGatewayRunsPage() {
     pageSize: DEFAULT_RUNS_PAGE_SIZE,
   });
   const [buildTaskOpen, setBuildTaskOpen] = useState(false);
+  const [externalRunImportOpen, setExternalRunImportOpen] = useState(false);
+  const [externalRunLogContent, setExternalRunLogContent] = useState('');
   const [skillUploadOpen, setSkillUploadOpen] = useState(false);
   const [skillZipContentBase64, setSkillZipContentBase64] = useState('');
   const [skillUploadResult, setSkillUploadResult] = useState<SkillUploadResult | null>(null);
@@ -2496,6 +2538,63 @@ export default function AgentGatewayRunsPage() {
       },
       onError(error) {
         ctx.message?.error(getApiErrorMessage(error, t('Failed to create task run')));
+      },
+    },
+  );
+
+  const importExternalRunRequest = useRequest(
+    async (values: ExternalRunImportFormValues & { logContent: string }) => {
+      const response = await ctx.api.request<ExternalRunImportResult>({
+        url: 'agent-gateway/external-runs:import',
+        method: 'post',
+        data: {
+          provider: values.provider || 'codex',
+          format: values.format || 'codex-jsonl',
+          title: values.title,
+          instruction: values.instruction,
+          status: values.status || 'succeeded',
+          externalRunKey: values.externalRunKey,
+          providerSessionId: values.providerSessionId,
+          sourceCollection: values.sourceCollection,
+          sourceRecordId: values.sourceRecordId,
+          outputAgentRunField: values.outputAgentRunField,
+          logs: values.logContent
+            ? [
+                {
+                  format: values.format || 'codex-jsonl',
+                  contentText: values.logContent,
+                },
+              ]
+            : [],
+        },
+      });
+      return getRequiredResponseData(response, t('Failed to import external run'));
+    },
+    {
+      manual: true,
+      onSuccess(result) {
+        const nextRunId = result.runId || result.run?.id;
+        externalRunImportForm.resetFields();
+        setExternalRunLogContent('');
+        setExternalRunImportOpen(false);
+        if (nextRunId) {
+          setTerminalSnapshotState(null);
+          setConversationEventsState(null);
+          setConversationEventsWarning(undefined);
+          setRunEventsDetailsState(null);
+          setRunArtifactsDetailsState(null);
+          setRunApiLogsDetailsState(null);
+          setRunDetailsError(undefined);
+          setActiveDetailTab('summary');
+          setSelectedRunId(nextRunId);
+          setDetailOpen(true);
+          replaceRunIdInLocationSearch(nextRunId);
+        }
+        refreshRuns();
+        ctx.message?.success(result.deduped ? t('External run already imported') : t('External run imported'));
+      },
+      onError(error) {
+        ctx.message?.error(getApiErrorMessage(error, t('Failed to import external run')));
       },
     },
   );
@@ -3205,6 +3304,18 @@ export default function AgentGatewayRunsPage() {
     setBuildTaskOpen(false);
   }, []);
 
+  const openExternalRunImport = useCallback(() => {
+    externalRunImportForm.setFieldsValue(DEFAULT_EXTERNAL_RUN_IMPORT_FORM_VALUES);
+    setExternalRunLogContent('');
+    setExternalRunImportOpen(true);
+  }, [externalRunImportForm]);
+
+  const closeExternalRunImport = useCallback(() => {
+    setExternalRunImportOpen(false);
+    setExternalRunLogContent('');
+    externalRunImportForm.resetFields();
+  }, [externalRunImportForm]);
+
   const openSkillUploadModal = useCallback(() => {
     setSkillZipContentBase64('');
     setSkillUploadResult(null);
@@ -3264,6 +3375,24 @@ export default function AgentGatewayRunsPage() {
     return true;
   }, []);
 
+  const handleExternalLogBeforeUpload = useCallback<NonNullable<UploadProps['beforeUpload']>>(
+    async (file) => {
+      try {
+        setExternalRunLogContent(await readFileAsText(file));
+      } catch {
+        setExternalRunLogContent('');
+        ctx.message?.error(t('Failed to read log file'));
+      }
+      return false;
+    },
+    [ctx.message, t],
+  );
+
+  const handleExternalLogRemove = useCallback<NonNullable<UploadProps['onRemove']>>(() => {
+    setExternalRunLogContent('');
+    return true;
+  }, []);
+
   const submitBuildTask = useCallback(async () => {
     try {
       const values = await buildTaskForm.validateFields();
@@ -3274,6 +3403,20 @@ export default function AgentGatewayRunsPage() {
       }
     }
   }, [buildTaskForm, createBuildTaskRequest, ctx.message, t]);
+
+  const submitExternalRunImport = useCallback(async () => {
+    try {
+      const values = await externalRunImportForm.validateFields();
+      importExternalRunRequest.run({
+        ...values,
+        logContent: externalRunLogContent,
+      });
+    } catch (error) {
+      if (!isFormValidationError(error)) {
+        ctx.message?.error(t('Failed to import external run'));
+      }
+    }
+  }, [ctx.message, externalRunImportForm, externalRunLogContent, importExternalRunRequest, t]);
 
   const renderCancelButton = useCallback(
     (run: RunRecord) => {
@@ -3589,6 +3732,9 @@ export default function AgentGatewayRunsPage() {
           <Space wrap>
             <Button type="primary" icon={<PlusOutlined />} onClick={openBuildTask}>
               {t('New task run')}
+            </Button>
+            <Button icon={<ImportOutlined />} onClick={openExternalRunImport}>
+              {t('Import external run')}
             </Button>
             <Button icon={<ReloadOutlined />} onClick={runsRequest.refresh}>
               {t('Refresh')}
@@ -3992,6 +4138,128 @@ export default function AgentGatewayRunsPage() {
             />
           </Form>
         </Space>
+      </Drawer>
+
+      <Drawer
+        title={t('Import external run')}
+        open={externalRunImportOpen}
+        onClose={closeExternalRunImport}
+        width={TASK_RUN_DRAWER_WIDTH}
+        destroyOnClose
+        extra={
+          <Space>
+            <Button onClick={closeExternalRunImport}>{t('Close')}</Button>
+            <Button type="primary" loading={importExternalRunRequest.loading} onClick={submitExternalRunImport}>
+              {t('Import')}
+            </Button>
+          </Space>
+        }
+      >
+        <Form<ExternalRunImportFormValues>
+          form={externalRunImportForm}
+          layout="vertical"
+          initialValues={DEFAULT_EXTERNAL_RUN_IMPORT_FORM_VALUES}
+        >
+          <Form.Item
+            label={t('Provider')}
+            name="provider"
+            rules={[{ required: true, message: t('Provider is required') }]}
+          >
+            <Select
+              onChange={(provider) => {
+                const defaultFormats: Record<string, string> = {
+                  codex: 'codex-jsonl',
+                  opencode: 'opencode-jsonl',
+                  'claude-code': 'claude-code-jsonl',
+                  'generic-cli': 'text',
+                };
+                externalRunImportForm.setFieldValue('format', defaultFormats[String(provider)] || 'text');
+              }}
+              options={[
+                { value: 'codex', label: 'Codex' },
+                { value: 'opencode', label: 'OpenCode' },
+                { value: 'claude-code', label: 'Claude Code' },
+                { value: 'generic-cli', label: t('Generic CLI') },
+              ]}
+            />
+          </Form.Item>
+          <Form.Item
+            label={t('Log format')}
+            name="format"
+            rules={[{ required: true, message: t('Log format is required') }]}
+          >
+            <Select
+              options={[
+                { value: 'codex-jsonl', label: 'Codex JSONL' },
+                { value: 'opencode-jsonl', label: 'OpenCode JSONL' },
+                { value: 'claude-code-jsonl', label: 'Claude Code JSONL' },
+                { value: 'text', label: t('Plain text') },
+              ]}
+            />
+          </Form.Item>
+          <Form.Item label={t('Title')} name="title">
+            <Input />
+          </Form.Item>
+          <Form.Item label={t('Instruction')} name="instruction">
+            <Input.TextArea autoSize={{ minRows: 3, maxRows: 8 }} />
+          </Form.Item>
+          <Form.Item label={t('Status')} name="status" rules={[{ required: true, message: t('Status is required') }]}>
+            <Select
+              options={['running', 'succeeded', 'failed', 'canceled', 'timeout', 'abandoned'].map((status) => ({
+                value: status,
+                label: status,
+              }))}
+            />
+          </Form.Item>
+          <Form.Item label={t('Log file')}>
+            <Upload
+              accept=".jsonl,.ndjson,.json,.log,.txt,text/plain,application/json,application/x-ndjson"
+              beforeUpload={handleExternalLogBeforeUpload}
+              maxCount={1}
+              onRemove={handleExternalLogRemove}
+            >
+              <Button icon={<UploadOutlined />}>{t('Upload')}</Button>
+            </Upload>
+          </Form.Item>
+          <Form.Item label={t('Raw log')}>
+            <Input.TextArea
+              aria-label={t('Raw log')}
+              autoSize={{ minRows: 8, maxRows: 16 }}
+              value={externalRunLogContent}
+              onChange={(event) => setExternalRunLogContent(event.target.value)}
+            />
+          </Form.Item>
+          <FastCollapse
+            ghost
+            size="small"
+            openMotion={NO_COLLAPSE_MOTION}
+            items={[
+              {
+                key: 'advanced',
+                label: t('Advanced'),
+                children: (
+                  <Space direction="vertical" size={16} style={{ width: '100%' }}>
+                    <Form.Item label={t('External run key')} name="externalRunKey">
+                      <Input />
+                    </Form.Item>
+                    <Form.Item label={t('Provider session ID')} name="providerSessionId">
+                      <Input />
+                    </Form.Item>
+                    <Form.Item label={t('Source collection')} name="sourceCollection">
+                      <Input />
+                    </Form.Item>
+                    <Form.Item label={t('Source record ID')} name="sourceRecordId">
+                      <Input />
+                    </Form.Item>
+                    <Form.Item label={t('Output Agent run field')} name="outputAgentRunField">
+                      <Input />
+                    </Form.Item>
+                  </Space>
+                ),
+              },
+            ]}
+          />
+        </Form>
       </Drawer>
 
       <Modal

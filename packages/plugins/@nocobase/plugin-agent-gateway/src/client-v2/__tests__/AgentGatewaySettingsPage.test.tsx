@@ -1045,6 +1045,96 @@ describe('PluginAgentGatewayClientV2', () => {
     expect(await screen.findByText(/Runner heartbeat is stale; start or reconnect the daemon/)).toBeTruthy();
   });
 
+  it('imports an external run from pasted agent logs and opens the run details', async () => {
+    const request = vi.fn(async (config: RequestConfig) => {
+      if (config.url === 'agent-gateway/runs:list') {
+        return {
+          data: {
+            data: [],
+          },
+        };
+      }
+
+      if (config.url === 'agent-gateway/external-runs:import') {
+        return {
+          data: {
+            data: {
+              runId: 'run-id-imported',
+              runCode: 'external-codex-import',
+              run: {
+                id: 'run-id-imported',
+                runCode: 'external-codex-import',
+                status: 'succeeded',
+                taskTitle: 'Imported Codex log',
+                agentProvider: 'codex',
+                agentGatewayActionPermissionsJson: {},
+              },
+            },
+          },
+        };
+      }
+
+      if (config.url === 'agent-gateway/runs:get/run-id-imported') {
+        return {
+          data: {
+            data: {
+              id: 'run-id-imported',
+              runCode: 'external-codex-import',
+              status: 'succeeded',
+              taskTitle: 'Imported Codex log',
+              agentProvider: 'codex',
+              agentGatewayActionPermissionsJson: {},
+            },
+          },
+        };
+      }
+
+      return { data: { data: [] } };
+    });
+
+    renderAgentGatewayPage(AgentGatewayRunsPage, request);
+
+    fireEvent.click(await screen.findByText('Import external run'));
+    fireEvent.change(screen.getByLabelText('Title'), {
+      target: { value: 'Imported Codex log' },
+    });
+    fireEvent.change(screen.getByLabelText('Instruction'), {
+      target: { value: 'Import a build task that was started outside Agent Gateway' },
+    });
+    fireEvent.change(screen.getByLabelText('Raw log'), {
+      target: {
+        value: [
+          JSON.stringify({ type: 'thread.started', thread_id: 'codex-thread-imported' }),
+          JSON.stringify({ type: 'item.completed', item: { type: 'agent_message', text: 'done' } }),
+        ].join('\n'),
+      },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Import' }));
+
+    await waitFor(() => {
+      expect(request).toHaveBeenCalledWith(
+        expect.objectContaining({
+          url: 'agent-gateway/external-runs:import',
+          method: 'post',
+          data: expect.objectContaining({
+            provider: 'codex',
+            format: 'codex-jsonl',
+            title: 'Imported Codex log',
+            instruction: 'Import a build task that was started outside Agent Gateway',
+            status: 'succeeded',
+            logs: [
+              expect.objectContaining({
+                format: 'codex-jsonl',
+                contentText: expect.stringContaining('codex-thread-imported'),
+              }),
+            ],
+          }),
+        }),
+      );
+    });
+    expect(await screen.findAllByText('Imported Codex log')).not.toHaveLength(0);
+  });
+
   it('paginates the runs table through the run list API', async () => {
     const request = vi.fn(async (config: RequestConfig) => {
       if (config.url === 'agent-gateway/runs:list') {
