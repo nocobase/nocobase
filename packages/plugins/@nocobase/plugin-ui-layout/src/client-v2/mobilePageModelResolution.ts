@@ -108,6 +108,11 @@ function patchPageModelResolution(ModelClass: PageModelClass, MobileModelClass: 
   const originalResolveUse = ModelClass.resolveUse;
   ModelClass.resolveUse = function resolveMobilePageModel(options, engine, parent) {
     const mobileModelClass = MobileModelClass.name;
+    const isBasePageModelRequest = options.use === ModelClass || options.use === ModelClass.name;
+    if (!isBasePageModelRequest) {
+      return originalResolveUse?.call(this, options, engine, parent);
+    }
+
     const resolved = originalResolveUse?.call(this, options, engine, parent);
     if (hasResolvedTarget(resolved)) {
       return resolved;

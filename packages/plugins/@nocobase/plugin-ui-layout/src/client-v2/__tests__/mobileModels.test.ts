@@ -593,6 +593,84 @@ describe('plugin-ui-layout mobile models', () => {
     expect(childPage.constructor).toBe(MobileChildPageModel);
   });
 
+  it('should keep custom child page model classes inside mobile layouts', () => {
+    registerMobilePageModelResolution();
+
+    class CustomChildPageModel extends ChildPageModel {}
+
+    const engine = new FlowEngine();
+    engine.registerModels({
+      ChildPageModel,
+      MobileChildPageModel,
+      CustomChildPageModel,
+    });
+    const actionModel = engine.createModel({
+      uid: 'mobile-layout-custom-action-parent',
+      use: 'FlowModel',
+    });
+    actionModel.context.defineProperty('layout', {
+      value: {
+        layoutModelClass: 'MobileLayoutModel',
+        childPageModelClass: 'MobileChildPageModel',
+      },
+    });
+
+    const childPage = engine.createModel({
+      uid: 'mobile-layout-custom-child-page',
+      parentId: actionModel.uid,
+      subKey: 'page',
+      subType: 'object',
+      use: 'CustomChildPageModel',
+    });
+
+    expect(childPage).toBeInstanceOf(CustomChildPageModel);
+    expect(childPage).not.toBeInstanceOf(MobileChildPageModel);
+  });
+
+  it('should preserve the original page model resolveUse static this binding', () => {
+    const patchSymbol = Symbol.for('nocobase.plugin-ui-layout.mobilePageResolutionPatched');
+    const ChildPageModelClass = ChildPageModel as typeof ChildPageModel & {
+      [key: symbol]: boolean | undefined;
+    };
+    const originalPatched = ChildPageModelClass[patchSymbol];
+    const originalResolveUse = ChildPageModelClass.resolveUse;
+    let resolvedThis: unknown;
+
+    try {
+      ChildPageModelClass[patchSymbol] = false;
+      ChildPageModelClass.resolveUse = function resolveUseWithStaticThis() {
+        resolvedThis = this;
+      };
+      registerMobilePageModelResolution();
+
+      const engine = new FlowEngine();
+      ChildPageModelClass.resolveUse?.call(
+        ChildPageModel,
+        {
+          uid: 'mobile-layout-resolve-use-this-binding',
+          use: 'CustomChildPageModel',
+        },
+        engine,
+      );
+
+      ChildPageModelClass.resolveUse?.call(
+        ChildPageModel,
+        {
+          uid: 'mobile-layout-resolve-base-this-binding',
+          subKey: 'page',
+          subType: 'object',
+          use: 'ChildPageModel',
+        },
+        engine,
+      );
+
+      expect(resolvedThis).toBe(ChildPageModel);
+    } finally {
+      ChildPageModelClass.resolveUse = originalResolveUse;
+      ChildPageModelClass[patchSymbol] = originalPatched;
+    }
+  });
+
   it('should resolve persisted child pages from a mobile parent in the view engine stack', () => {
     registerMobilePageModelResolution();
 

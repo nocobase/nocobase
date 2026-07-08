@@ -120,6 +120,32 @@ describe('mobileOpenViewAction', () => {
     });
   });
 
+  it('should replace the default child page model for mobile layout route replays without layout context', () => {
+    const mobilePageSlot = document.createElement('div');
+    mobilePageSlot.className = 'nb-ui-layout-mobile-page-slot';
+    const target = document.createElement('div');
+    mobilePageSlot.appendChild(target);
+    const params = {
+      mode: 'embed',
+      pageModelClass: 'ChildPageModel',
+    } as OpenViewParams;
+    const ctx = createContext({
+      activationControlledByLayout: true,
+      isMobileLayout: true,
+      target,
+    });
+
+    expect(resolveMobileOpenViewParams(ctx, params)).toMatchObject({
+      mode: 'embed',
+      pageModelClass: 'MobileChildPageModel',
+    });
+    expect(resolveMobileOpenViewInputArgs(ctx, params)).toMatchObject({
+      activationControlledByLayout: true,
+      isMobileLayout: true,
+      pageModelClass: 'MobileChildPageModel',
+    });
+  });
+
   it('should keep the default child page model for admin layout responsive route replays', () => {
     const params = {
       mode: 'embed',

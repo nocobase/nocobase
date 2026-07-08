@@ -160,6 +160,11 @@ function getEmbeddedViewUid(ctx?: WorkflowTaskFlowContext | null) {
   return typeof viewUid === 'string' ? viewUid : undefined;
 }
 
+function getEmbeddedViewNavigation(ctx?: WorkflowTaskFlowContext | null) {
+  const navigation = (ctx as { view?: { navigation?: { back?: unknown } } } | undefined)?.view?.navigation;
+  return navigation && typeof navigation.back === 'function' ? (navigation as { back: () => void }) : undefined;
+}
+
 function isEmbeddedViewPathname(pathname: string, viewUid?: string) {
   if (!viewUid) {
     return false;
@@ -281,6 +286,71 @@ function TaskTypeMenu(props: {
   const { token } = theme.useToken();
   const route = useWorkflowTasksRoute();
   const routeAdapter = useWorkflowTasksRouteAdapter();
+  const mobileTaskTypeTabRefs = useRef(new Map<string, HTMLButtonElement>());
+  const mobileTaskTypeTabsClassName = useMemo(
+    () => css`
+      display: flex;
+      align-items: center;
+      min-height: ${MOBILE_TASK_TYPE_MENU_HEIGHT}px;
+      overflow-x: auto;
+      overflow-y: hidden;
+      scrollbar-width: none;
+      -webkit-overflow-scrolling: touch;
+      background: ${token.colorBgContainer};
+      border-bottom: ${token.lineWidth}px ${token.lineType} ${token.colorBorderSecondary};
+
+      &::-webkit-scrollbar {
+        display: none;
+      }
+
+      .workflow-task-mobile-type-tab {
+        position: relative;
+        flex: 0 0 auto;
+        height: ${MOBILE_TASK_TYPE_MENU_HEIGHT}px;
+        border: 0;
+        padding: 0 ${token.paddingSM}px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: ${token.marginXS}px;
+        background: transparent;
+        color: ${token.colorText};
+        cursor: pointer;
+        font: inherit;
+        white-space: nowrap;
+      }
+
+      .workflow-task-mobile-type-tab-active {
+        color: ${token.colorPrimary};
+      }
+
+      .workflow-task-mobile-type-tab-active::after {
+        position: absolute;
+        right: ${token.paddingXS}px;
+        bottom: 0;
+        left: ${token.paddingXS}px;
+        height: 2px;
+        background: ${token.colorPrimary};
+        content: '';
+      }
+
+      .workflow-task-mobile-type-tab:hover,
+      .workflow-task-mobile-type-tab:focus-visible {
+        color: ${token.colorPrimary};
+      }
+    `,
+    [
+      token.colorBgContainer,
+      token.colorBorderSecondary,
+      token.colorPrimary,
+      token.colorText,
+      token.lineType,
+      token.lineWidth,
+      token.marginXS,
+      token.paddingSM,
+      token.paddingXS,
+    ],
+  );
   const taskTypeKeys = useMemo(() => getAvailableWorkflowTaskTypeKeys(taskTypes, counts), [counts, taskTypes]);
   const items = useMemo<MenuProps['items']>(
     () =>
@@ -303,27 +373,57 @@ function TaskTypeMenu(props: {
     routeAdapter.navigate({ taskType: key, status: TASK_STATUS.PENDING });
   });
 
+  const handleMobileTaskTypeClick = useMemoizedFn((key: string) => {
+    routeAdapter.navigate({ taskType: key, status: TASK_STATUS.PENDING });
+  });
+
+  useEffect(() => {
+    if (!mobile || !selectedKey) {
+      return;
+    }
+    const selectedTab = mobileTaskTypeTabRefs.current.get(selectedKey);
+    if (typeof selectedTab?.scrollIntoView === 'function') {
+      selectedTab.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    }
+  }, [mobile, selectedKey, taskTypeKeys]);
+
   if (!items?.length) {
     return null;
   }
 
   if (mobile) {
     return (
-      <Menu
+      <div
+        className={mobileTaskTypeTabsClassName}
         data-testid="workflow-task-type-menu"
-        mode="horizontal"
-        selectedKeys={selectedKey ? [selectedKey] : []}
-        items={items}
-        onClick={handleMenuClick}
-        style={{
-          background: token.colorBgContainer,
-          borderBottomColor: token.colorBorderSecondary,
-          height: MOBILE_TASK_TYPE_MENU_HEIGHT,
-          lineHeight: `${MOBILE_TASK_TYPE_MENU_HEIGHT}px`,
-          minHeight: MOBILE_TASK_TYPE_MENU_HEIGHT,
-          minWidth: 0,
-        }}
-      />
+        role="tablist"
+        style={{ height: MOBILE_TASK_TYPE_MENU_HEIGHT, minHeight: MOBILE_TASK_TYPE_MENU_HEIGHT }}
+      >
+        {taskTypeKeys.map((key) => {
+          const type = taskTypes?.get(key);
+          const active = selectedKey === key;
+          return (
+            <button
+              aria-selected={active}
+              className={`workflow-task-mobile-type-tab${active ? ' workflow-task-mobile-type-tab-active' : ''}`}
+              key={key}
+              onClick={() => handleMobileTaskTypeClick(key)}
+              ref={(element) => {
+                if (element) {
+                  mobileTaskTypeTabRefs.current.set(key, element);
+                  return;
+                }
+                mobileTaskTypeTabRefs.current.delete(key);
+              }}
+              role="tab"
+              type="button"
+            >
+              <span>{type?.title ? t(type.title) : key}</span>
+              <Badge count={counts[key]?.pending || 0} size="small" />
+            </button>
+          );
+        })}
+      </div>
     );
   }
 
@@ -662,9 +762,37 @@ export function WorkflowTasksContent({ forceMobile = false }: { forceMobile?: bo
   const routeAdapter = useWorkflowTasksRouteAdapter();
   const { isMobileLayout } = useMobileLayout();
   const mobile = forceMobile || route.isMobileRoute || isMobileLayout;
+  const embeddedViewNavigation = getEmbeddedViewNavigation(ctx);
+  const showMobileBackButton = mobile && route.isMobileRoute && Boolean(embeddedViewNavigation);
   const { message } = App.useApp();
   const t = useT();
   const { token } = theme.useToken();
+  const mobileBackButtonClassName = useMemo(
+    () => css`
+      &.ant-btn {
+        width: 40px;
+        min-width: 40px;
+        height: 40px;
+        padding: 0;
+        color: ${token.colorTextSecondary};
+        border-radius: ${token.borderRadiusLG}px;
+        font-size: 20px;
+        line-height: 1;
+      }
+
+      &.ant-btn .anticon {
+        font-size: 20px;
+      }
+
+      &.ant-btn:hover,
+      &.ant-btn:focus-visible,
+      &.ant-btn:active {
+        color: ${token.colorText};
+        background: ${token.colorFillTertiary};
+      }
+    `,
+    [token.borderRadiusLG, token.colorFillTertiary, token.colorText, token.colorTextSecondary],
+  );
   const [records, setRecords] = useState<WorkflowTaskRecord[]>([]);
   const [currentRecord, setCurrentRecord] = useState<WorkflowTaskRecord | null>(() =>
     getPendingWorkflowTaskPopupRecord(currentTaskTypeKey, route.popupId),
@@ -893,6 +1021,10 @@ export function WorkflowTasksContent({ forceMobile = false }: { forceMobile?: bo
     }
   });
 
+  const handleBack = useMemoizedFn(() => {
+    embeddedViewNavigation?.back();
+  });
+
   const handlePageChange = useMemoizedFn((nextPage: number) => {
     setPaginationState({ signature: listSignature, page: nextPage });
   });
@@ -950,13 +1082,32 @@ export function WorkflowTasksContent({ forceMobile = false }: { forceMobile?: bo
           }}
         >
           <Flex vertical gap={0}>
-            <TaskTypeMenu
-              taskTypes={taskTypes}
-              counts={counts}
-              selectedKey={currentTaskTypeKey}
-              status={route.status}
-              mobile
-            />
+            <div style={{ position: 'relative' }}>
+              {showMobileBackButton ? (
+                <Button
+                  aria-label={t('Back')}
+                  className={mobileBackButtonClassName}
+                  icon={<LeftOutlined />}
+                  onClick={handleBack}
+                  style={{
+                    left: 0,
+                    position: 'absolute',
+                    top: (MOBILE_TASK_TYPE_MENU_HEIGHT - 40) / 2,
+                    zIndex: 1,
+                  }}
+                  type="text"
+                />
+              ) : null}
+              <div style={showMobileBackButton ? { paddingInlineStart: 40 } : undefined}>
+                <TaskTypeMenu
+                  taskTypes={taskTypes}
+                  counts={counts}
+                  selectedKey={currentTaskTypeKey}
+                  status={route.status}
+                  mobile
+                />
+              </div>
+            </div>
             <div style={{ padding: token.paddingSM }}>{header}</div>
           </Flex>
         </Layout.Header>

@@ -11,6 +11,7 @@ import { openView } from '@nocobase/client-v2';
 
 const MOBILE_CHILD_PAGE_MODEL_CLASS = 'MobileChildPageModel';
 const MOBILE_LAYOUT_MODEL_CLASS = 'MobileLayoutModel';
+const MOBILE_PAGE_SLOT_SELECTOR = '.nb-ui-layout-mobile-page-slot, .nb-ui-layout-mobile-viewport';
 const DEFAULT_CHILD_PAGE_MODEL_CLASS = 'ChildPageModel';
 
 type OpenViewHandler = NonNullable<typeof openView.handler>;
@@ -18,8 +19,10 @@ type OpenViewContext = Parameters<OpenViewHandler>[0];
 type OpenViewParams = Parameters<OpenViewHandler>[1];
 
 type MobileOpenViewInputArgs = {
+  activationControlledByLayout?: unknown;
   isMobileLayout?: boolean;
   pageModelClass?: unknown;
+  target?: unknown;
 } & Record<string, unknown>;
 
 type MobileOpenViewLayoutDefinition = {
@@ -68,12 +71,27 @@ function isMobileLayoutDefinition(layout: MobileOpenViewLayoutDefinition | undef
   );
 }
 
+function isElementInsideMobilePageSlot(target: unknown) {
+  return (
+    typeof HTMLElement !== 'undefined' && target instanceof HTMLElement && !!target.closest(MOBILE_PAGE_SLOT_SELECTOR)
+  );
+}
+
+function isMobileLayoutRouteReplay(inputArgs: MobileOpenViewInputArgs | undefined) {
+  return (
+    inputArgs?.isMobileLayout === true &&
+    inputArgs.activationControlledByLayout === true &&
+    isElementInsideMobilePageSlot(inputArgs.target)
+  );
+}
+
 function isMobileOpenViewContext(ctx: OpenViewContext) {
   const inputArgs = ctx.inputArgs as MobileOpenViewInputArgs | undefined;
   const layoutContext = ctx as OpenViewContextWithLayout;
 
   return (
     inputArgs?.pageModelClass === MOBILE_CHILD_PAGE_MODEL_CLASS ||
+    isMobileLayoutRouteReplay(inputArgs) ||
     isMobileLayoutDefinition(layoutContext.layout) ||
     isMobileLayoutDefinition(layoutContext.layoutContext?.layout)
   );
