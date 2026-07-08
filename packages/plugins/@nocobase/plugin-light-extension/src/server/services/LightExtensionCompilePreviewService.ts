@@ -28,6 +28,7 @@ import type { LightExtensionServiceContext } from './LightExtensionRepoService';
 import {
   LightExtensionEntryValidationResult,
   LightExtensionValidator,
+  getWorkspaceLevelDiagnostics,
   hasErrorDiagnostic,
   sortDiagnostics,
   toValidatorFiles,
@@ -93,11 +94,28 @@ export class LightExtensionCompilePreviewService {
     const validation = this.validator.validateWorkspace({
       files: toValidatorFiles(pull.files || []),
     });
+    const workspaceDiagnostics = getWorkspaceLevelDiagnostics(validation.diagnostics);
     const persistedEntries = await this.listPersistedEntries(input.repoId, previewContext);
     const targets = buildPreviewTargets(input, validation.entries, persistedEntries);
 
-    if (hasErrorDiagnostic(validation.diagnostics)) {
-      await this.recordPreviewValidationBlocked(input, previewContext, validation.diagnostics, targets.length);
+    if (hasErrorDiagnostic(workspaceDiagnostics)) {
+      const sortedWorkspaceDiagnostics = sortDiagnostics(workspaceDiagnostics);
+      await this.recordPreviewValidationBlocked(input, previewContext, sortedWorkspaceDiagnostics, targets.length);
+      const entries = targets.map((target) => buildWorkspaceBlockedEntryResult(target, sortedWorkspaceDiagnostics));
+      for (const entry of entries) {
+        await this.recordEntryValidationBlocked(entry, previewContext, 'validation_failed');
+      }
+
+      return {
+        repo: pull.repo,
+        commitId: pull.commit?.id || null,
+        accepted: false,
+        diagnostics: sortUniqueDiagnostics([
+          ...sortedWorkspaceDiagnostics,
+          ...entries.flatMap((entry) => entry.diagnostics),
+        ]),
+        entries,
+      };
     }
 
     const entries: LightExtensionCompilePreviewEntryResult[] = [];
@@ -137,7 +155,7 @@ export class LightExtensionCompilePreviewService {
     }
 
     const diagnostics = sortUniqueDiagnostics([
-      ...validation.diagnostics,
+      ...workspaceDiagnostics,
       ...entries.flatMap((entry) => entry.diagnostics),
     ]);
 
@@ -399,11 +417,32 @@ function buildSkippedEntryResult(target: LightExtensionCompilePreviewTarget): Li
   };
 }
 
+function buildWorkspaceBlockedEntryResult(
+  target: LightExtensionCompilePreviewTarget,
+  workspaceDiagnostics: LightExtensionDiagnostic[],
+): LightExtensionCompilePreviewEntryResult {
+  return {
+    entryId: target.entryId,
+    repoId: target.repoId,
+    target: target.target,
+    kind: target.kind,
+    entryName: target.entryName,
+    entryPath: target.entryPath,
+    activePublicationId: target.activePublicationId,
+    status: target.validationEntry ? 'failed' : 'skipped',
+    accepted: false,
+    diagnostics: sortDiagnostics([...target.diagnostics, ...workspaceDiagnostics]),
+    failureCode: 'LIGHT_EXTENSION_VALIDATION_FAILED',
+  };
+}
+
 function getEntryCompileFiles(files: LightExtensionPulledFile[], entry: LightExtensionEntryValidationResult) {
   const rootPath = getEntryRootPath(entry);
 
   return files
-    .filter((file) => file.path === rootPath || file.path.startsWith(`${rootPath}/`))
+    .filter(
+      (file) => file.path === rootPath || file.path.startsWith(`${rootPath}/`) || file.path.startsWith('src/shared/'),
+    )
     .map((file) => ({
       path: file.path,
       content: file.content,

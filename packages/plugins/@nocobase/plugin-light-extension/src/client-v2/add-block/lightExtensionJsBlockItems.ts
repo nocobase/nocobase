@@ -68,7 +68,7 @@ function toLightExtensionJSBlockItem(entry: LightExtensionSelectableEntryRecord)
 
 export async function createLightExtensionJSBlockAddItems(ctx: FlowModelContext): Promise<SubModelItem[]> {
   try {
-    const entries = await listSelectableLightExtensionEntries(ctx.api);
+    const entries = await listSelectableLightExtensionEntries(ctx.api, { kind: 'js-block' });
     const children = entries
       .map((entry) => toLightExtensionJSBlockItem(entry))
       .filter((item): item is SubModelItem => Boolean(item));

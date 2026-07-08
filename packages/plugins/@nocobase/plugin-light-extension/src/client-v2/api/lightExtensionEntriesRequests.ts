@@ -10,6 +10,7 @@
 import type {
   LightExtensionEntryPublicationsSelectorResult,
   LightExtensionSelectableEntryRecord,
+  LightExtensionSelectableEntriesInput,
 } from '../../shared/types';
 
 export type ApiRequestOptions = {
@@ -30,7 +31,7 @@ type ResourceResponse<T> = {
 
 export async function listSelectableLightExtensionEntries(
   api: ApiClientLike,
-  input?: { repoId?: string },
+  input?: LightExtensionSelectableEntriesInput,
 ): Promise<LightExtensionSelectableEntryRecord[]> {
   const response = await api.request<ResourceResponse<LightExtensionSelectableEntryRecord[]>>({
     url: 'lightExtensionEntries:listSelectable',

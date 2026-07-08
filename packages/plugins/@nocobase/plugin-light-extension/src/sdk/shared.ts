@@ -7,5 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export type { LightExtensionSettingsContext } from './shared';
-export { assertSettings, defineSettings } from './shared';
+export interface LightExtensionSettingsContext<TSettings = unknown> {
+  settings: TSettings;
+}
+
+export function defineSettings<TSettings>(settings: TSettings): TSettings {
+  return settings;
+}
+
+export function assertSettings<TSettings>(settings: TSettings): TSettings {
+  return settings;
+}

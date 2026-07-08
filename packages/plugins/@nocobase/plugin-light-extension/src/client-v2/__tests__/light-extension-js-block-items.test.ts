@@ -116,7 +116,7 @@ describe('createLightExtensionJSBlockAddItems', () => {
     expect(request).toHaveBeenCalledWith({
       url: 'lightExtensionEntries:listSelectable',
       method: 'post',
-      data: undefined,
+      data: { kind: 'js-block' },
     });
     expect(items).toHaveLength(1);
     expect(group).toMatchObject({

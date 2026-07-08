@@ -99,6 +99,102 @@ describe('plugin-light-extension workspace compiler bridge', () => {
     });
   });
 
+  it('compiles shared helper imports and zero-runtime SDK helpers for light extension entries', async () => {
+    const result = await bridge.compileEntry(
+      {
+        repoId: 'ler_sales',
+        entryId: 'lee_sales_kpi',
+        kind: 'js-block',
+        entryName: 'sales-kpi',
+        entryPath: 'src/client/js-blocks/sales-kpi/index.tsx',
+        surfaceStyle: 'render',
+        files: [
+          {
+            path: 'src/shared/format.ts',
+            content: 'export function formatValue(value: unknown) { return String(value ?? ""); }\n',
+          },
+          {
+            path: 'src/client/js-blocks/sales-kpi/index.tsx',
+            content:
+              'import { type LightExtensionSettingsContext, defineSettings } from "@nocobase/light-extension-sdk/client";\nimport { formatValue } from "../../../shared/format";\nexport const settings = defineSettings({ type: "object", properties: {} });\nexport default function render(ctxSettings: LightExtensionSettingsContext) { return formatValue(ctxSettings.settings); }\nctx.render(<div>{formatValue("Revenue")}</div>);\n',
+          },
+        ],
+      },
+      {
+        requestId: 'req_compile_shared_sdk',
+      },
+    );
+
+    expect(result.accepted).toBe(true);
+    expect(result.diagnostics).toEqual([]);
+    expect(result.artifact.code).toContain('Revenue');
+    expect(result.artifact.code).not.toContain('@nocobase/light-extension-sdk/client');
+  });
+
+  it('hoists zero-runtime SDK helpers when the static import appears after first use', async () => {
+    const result = await bridge.compileEntry(
+      {
+        repoId: 'ler_sales',
+        entryId: 'lee_sales_kpi',
+        kind: 'js-block',
+        entryName: 'sales-kpi',
+        entryPath: 'src/client/js-blocks/sales-kpi/index.tsx',
+        surfaceStyle: 'render',
+        files: [
+          {
+            path: 'src/client/js-blocks/sales-kpi/index.tsx',
+            content:
+              'export const settings = defineSettings({ type: "object", properties: {} });\nimport { defineSettings } from "@nocobase/light-extension-sdk/client";\nctx.render(<div>Revenue</div>);\n',
+          },
+        ],
+      },
+      {
+        requestId: 'req_compile_late_sdk_import',
+      },
+    );
+
+    expect(result.accepted).toBe(true);
+    expect(result.diagnostics).toEqual([]);
+    const helperIndex = result.artifact.code.indexOf('function defineSettings');
+    const callIndex = result.artifact.code.indexOf('defineSettings({');
+    expect(helperIndex).toBeGreaterThanOrEqual(0);
+    expect(callIndex).toBeGreaterThanOrEqual(0);
+    expect(helperIndex).toBeGreaterThan(callIndex);
+    expect(result.artifact.code).not.toContain('var defineSettings');
+    expect(result.artifact.code).not.toContain('@nocobase/light-extension-sdk/client');
+  });
+
+  it('keeps diagnostics on original source lines when rewriting zero-runtime SDK helpers', async () => {
+    const result = await bridge.compileEntry(
+      {
+        repoId: 'ler_sales',
+        entryId: 'lee_sales_kpi',
+        kind: 'js-block',
+        entryName: 'sales-kpi',
+        entryPath: 'src/client/js-blocks/sales-kpi/index.tsx',
+        surfaceStyle: 'render',
+        files: [
+          {
+            path: 'src/client/js-blocks/sales-kpi/index.tsx',
+            content:
+              'import { defineSettings } from "@nocobase/light-extension-sdk/client";\nimport { missing } from "./missing";\nexport const settings = defineSettings({ type: "object", properties: {} });\nctx.render(<div>{missing}</div>);\n',
+          },
+        ],
+      },
+      {
+        requestId: 'req_compile_sdk_import_diagnostic_lines',
+      },
+    );
+
+    expect(result.accepted).toBe(false);
+    expect(result.failureCode).toBe('RUNJS_IMPORT_NOT_FOUND');
+    expect(result.diagnostics[0]).toMatchObject({
+      code: 'RUNJS_IMPORT_NOT_FOUND',
+      path: 'src/client/js-blocks/sales-kpi/index.tsx',
+      line: 2,
+    });
+  });
+
   it('keeps compiler surface enablement aligned with the light-extension kind contract', () => {
     expect(Object.keys(LIGHT_EXTENSION_AUTHORING_SURFACES).sort()).toEqual([...LIGHT_EXTENSION_SUPPORTED_KINDS].sort());
     expect(

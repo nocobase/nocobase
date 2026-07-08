@@ -15,6 +15,7 @@ import { NAMESPACE } from '../../constants';
 import type {
   LightExtensionEntryPublicationsSelectorResult,
   LightExtensionSelectableEntryRecord,
+  LightExtensionSelectableEntriesInput,
 } from '../../shared/types';
 
 export const lightExtensionEntrySelectorOperations = ['listSelectableEntries', 'listEntryPublications'] as const;
@@ -53,7 +54,7 @@ export class LightExtensionEntriesHookError extends Error {
 export interface UseLightExtensionEntriesResult {
   loading: LightExtensionEntrySelectorOperationState<boolean>;
   errors: LightExtensionEntrySelectorOperationState<LightExtensionEntriesHookError>;
-  listSelectableEntries(input?: { repoId?: string }): Promise<LightExtensionSelectableEntryRecord[]>;
+  listSelectableEntries(input?: LightExtensionSelectableEntriesInput): Promise<LightExtensionSelectableEntryRecord[]>;
   listEntryPublications(entryId: string): Promise<LightExtensionEntryPublicationsSelectorResult>;
   isLoading(operation: LightExtensionEntrySelectorOperation): boolean;
   getError(operation: LightExtensionEntrySelectorOperation): LightExtensionEntriesHookError | null;
@@ -81,7 +82,7 @@ type ResourceResponse<T> = {
 };
 
 type OperationInputMap = {
-  listSelectableEntries: { repoId?: string } | undefined;
+  listSelectableEntries: LightExtensionSelectableEntriesInput | undefined;
   listEntryPublications: { entryId: string };
 };
 

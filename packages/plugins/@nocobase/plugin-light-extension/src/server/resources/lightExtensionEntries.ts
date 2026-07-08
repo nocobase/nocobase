@@ -80,6 +80,7 @@ const resourceActionRunners: Record<LightExtensionEntryActionName, ResourceActio
     return services.publicationResolveService.listSelectableEntries(
       {
         repoId: optionalString(input, 'repoId'),
+        kind: optionalString(input, 'kind'),
       },
       currentUser,
     );

@@ -17,6 +17,7 @@ import {
 } from '@nocobase/plugin-vsc-file';
 import { randomUUID } from 'crypto';
 import { posix as pathPosix } from 'path';
+import ts from 'typescript';
 
 import type { LightExtensionKind } from '../../constants';
 import { LightExtensionError, isLightExtensionError } from '../../shared/errors';
@@ -31,6 +32,12 @@ import {
 import { LightExtensionPermissionService } from './LightExtensionPermissionService';
 import type { LightExtensionServiceContext } from './LightExtensionRepoService';
 import { hasErrorDiagnostic, sortDiagnostics } from './LightExtensionValidator';
+
+const allowedCompileSdkImports = new Set([
+  '@nocobase/light-extension-sdk/client',
+  '@nocobase/light-extension-sdk/shared',
+]);
+const allowedCompileSdkRuntimeHelpers = new Set(['defineSettings', 'assertSettings']);
 
 export interface LightExtensionWorkspaceCompileFileInput {
   path: string;
@@ -97,7 +104,7 @@ export class LightExtensionWorkspaceCompilerBridge {
     }
 
     const compiled = compileRunJSSourceWorkspace({
-      files: input.files,
+      files: prepareLightExtensionCompileFiles(input.files),
       entry: input.entryPath,
       runtimeVersion: input.runtimeVersion || 'v2',
       surfaceStyle: compilerSurfaceStyle,
@@ -183,6 +190,7 @@ export class LightExtensionWorkspaceCompilerBridge {
     const diagnostics = sortDiagnostics(compiled.artifact.diagnostics.map((item) => toLightExtensionDiagnostic(item)));
     const artifact: RunJSRuntimeArtifact = {
       ...compiled.artifact,
+      filesHash: buildRunJSFilesHash(input.files),
       metadata: {
         ...compiled.artifact.metadata,
         target: 'client',
@@ -358,4 +366,128 @@ function inferEntryName(path: string): string {
 
 function normalizeSourcePath(path: string): string {
   return pathPosix.normalize(path.trim()).replace(/^\.\/+/, '');
+}
+
+function prepareLightExtensionCompileFiles(
+  files: LightExtensionWorkspaceCompileFileInput[],
+): LightExtensionWorkspaceCompileFileInput[] {
+  return files.map((file) => {
+    if (!file.content || !isCompileCodeFile(file.path)) {
+      return file;
+    }
+
+    return {
+      ...file,
+      content: rewriteAllowedSdkRuntimeImports(file.path, file.content),
+    };
+  });
+}
+
+function rewriteAllowedSdkRuntimeImports(path: string, content: string): string {
+  const sourceFile = ts.createSourceFile(
+    path,
+    content,
+    ts.ScriptTarget.Latest,
+    true,
+    path.endsWith('.tsx') ? ts.ScriptKind.TSX : path.endsWith('.jsx') ? ts.ScriptKind.JSX : ts.ScriptKind.TS,
+  );
+  let cursor = 0;
+  let changed = false;
+  let output = '';
+
+  for (const statement of sourceFile.statements) {
+    if (!ts.isImportDeclaration(statement)) {
+      continue;
+    }
+    const specifier = getStringLiteralImportSpecifier(statement.moduleSpecifier);
+    if (!specifier || !allowedCompileSdkImports.has(specifier)) {
+      continue;
+    }
+    const replacement = buildSdkImportReplacement(statement, sourceFile, specifier);
+    if (!replacement) {
+      continue;
+    }
+
+    output += content.slice(cursor, statement.getStart(sourceFile));
+    output += replacement;
+    cursor = statement.end;
+    changed = true;
+  }
+
+  if (!changed) {
+    return content;
+  }
+
+  return `${output}${content.slice(cursor)}`;
+}
+
+function buildSdkImportReplacement(
+  statement: ts.ImportDeclaration,
+  sourceFile: ts.SourceFile,
+  specifier: string,
+): string | null {
+  const importClause = statement.importClause;
+  if (!importClause || importClause.name || !importClause.namedBindings) {
+    return null;
+  }
+  if (ts.isNamespaceImport(importClause.namedBindings)) {
+    return null;
+  }
+
+  const typeImports: string[] = [];
+  const helperDeclarations: string[] = [];
+  for (const element of importClause.namedBindings.elements) {
+    const importedName = element.propertyName?.text || element.name.text;
+    if (importClause.isTypeOnly || element.isTypeOnly) {
+      typeImports.push(formatTypeOnlyImportElement(element));
+      continue;
+    }
+    if (!allowedCompileSdkRuntimeHelpers.has(importedName)) {
+      return null;
+    }
+    helperDeclarations.push(`function ${element.name.text}(value) { return value; }`);
+  }
+
+  if (!helperDeclarations.length) {
+    return null;
+  }
+
+  const replacement: string[] = [];
+  if (typeImports.length) {
+    replacement.push(`import type { ${typeImports.join(', ')} } from "${specifier}";`);
+  }
+  replacement.push(...helperDeclarations);
+
+  return preserveStatementLineCount(
+    replacement.join(' '),
+    sourceFile.text.slice(statement.getStart(sourceFile), statement.end),
+  );
+}
+
+function preserveStatementLineCount(replacement: string, original: string): string {
+  const originalLineBreaks = (original.match(/\n/g) || []).length;
+  return `${replacement}${'\n'.repeat(originalLineBreaks)}`;
+}
+
+function formatTypeOnlyImportElement(element: ts.ImportSpecifier): string {
+  if (element.propertyName) {
+    return `${element.propertyName.text} as ${element.name.text}`;
+  }
+
+  return element.name.text;
+}
+
+function getStringLiteralImportSpecifier(node: ts.Expression): string | null {
+  if (ts.isStringLiteral(node)) {
+    return node.text;
+  }
+  if (node.kind === ts.SyntaxKind.NoSubstitutionTemplateLiteral) {
+    return node.getText().slice(1, -1);
+  }
+
+  return null;
+}
+
+function isCompileCodeFile(path: string): boolean {
+  return ['.ts', '.tsx', '.js', '.jsx'].includes(pathPosix.extname(normalizeSourcePath(path)));
 }

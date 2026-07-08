@@ -56,6 +56,26 @@ const supportPublication = {
   entryPath: 'src/client/js-blocks/support/index.tsx',
 };
 
+const phonePublication = {
+  ...salesPublication,
+  id: 'pub_phone',
+  entryId: 'entry_phone',
+  commitId: 'commit_phone',
+  entryPath: 'src/client/js-fields/phone-link/index.tsx',
+  kind: 'js-field',
+  surfaceStyle: 'value',
+};
+
+const actionPublication = {
+  ...salesPublication,
+  id: 'pub_action',
+  entryId: 'entry_action',
+  commitId: 'commit_action',
+  entryPath: 'src/client/js-actions/show-message/index.ts',
+  kind: 'js-action',
+  surfaceStyle: 'action',
+};
+
 const entries = [
   {
     id: 'entry_sales',
@@ -94,6 +114,46 @@ const entries = [
     sort: null,
     activePublicationId: 'pub_support',
     activePublication: supportPublication,
+    healthStatus: 'ready',
+    diagnostics: [],
+  },
+  {
+    id: 'entry_phone',
+    repoId: 'repo_sales',
+    target: 'client',
+    kind: 'js-field',
+    entryName: 'phone-link',
+    entryPath: 'src/client/js-fields/phone-link/index.tsx',
+    metaPath: null,
+    settingsPath: null,
+    title: 'Phone Field',
+    description: null,
+    category: null,
+    icon: null,
+    tags: null,
+    sort: null,
+    activePublicationId: 'pub_phone',
+    activePublication: phonePublication,
+    healthStatus: 'ready',
+    diagnostics: [],
+  },
+  {
+    id: 'entry_action',
+    repoId: 'repo_sales',
+    target: 'client',
+    kind: 'js-action',
+    entryName: 'show-message',
+    entryPath: 'src/client/js-actions/show-message/index.ts',
+    metaPath: null,
+    settingsPath: null,
+    title: 'Show Message',
+    description: null,
+    category: null,
+    icon: null,
+    tags: null,
+    sort: null,
+    activePublicationId: 'pub_action',
+    activePublication: actionPublication,
     healthStatus: 'ready',
     diagnostics: [],
   },
@@ -223,6 +283,13 @@ describe('RepoEntryPublicationSelector state consistency', () => {
     });
 
     await flushAsyncEffects();
+    expect(mocks.request).toHaveBeenCalledWith(
+      expect.objectContaining({
+        url: 'lightExtensionEntries:listSelectable',
+        method: 'post',
+        data: { kind: 'js-block' },
+      }),
+    );
     expect(onChange).toHaveBeenCalledWith(
       expect.objectContaining({
         entryId: 'entry_sales',
@@ -497,5 +564,44 @@ describe('RepoEntryPublicationSelector state consistency', () => {
       }),
     );
     expect(screen.queryByLabelText('Publication')).toBeNull();
+  });
+
+  it('scopes selectable entries to the requested kind and clears mismatched bindings', async () => {
+    const onChange = vi.fn();
+    const onClear = vi.fn();
+    mocks.request.mockImplementation((options: { url: string }) => {
+      if (options.url === 'lightExtensionEntries:listSelectable') {
+        return Promise.resolve({
+          data: {
+            data: entries,
+          },
+        });
+      }
+      return Promise.reject(new Error(`Unexpected request: ${options.url}`));
+    });
+
+    renderSelector({
+      kind: 'js-field',
+      value: {
+        type: 'light-extension-entry',
+        repoId: 'repo_sales',
+        entryId: 'entry_action',
+        kind: 'js-action',
+        publicationId: 'pub_action',
+        versionPolicy: 'pinned',
+      },
+      onChange,
+      onClear,
+    });
+
+    await waitFor(() => expect(onClear).toHaveBeenCalled());
+    expect(mocks.request).toHaveBeenCalledWith(
+      expect.objectContaining({
+        url: 'lightExtensionEntries:listSelectable',
+        method: 'post',
+        data: { kind: 'js-field' },
+      }),
+    );
+    expect(onChange).not.toHaveBeenCalledWith(expect.objectContaining({ kind: 'js-action' }), expect.anything(), {});
   });
 });

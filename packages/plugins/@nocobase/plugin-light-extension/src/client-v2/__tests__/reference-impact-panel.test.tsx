@@ -219,6 +219,7 @@ describe('ReferenceImpactPanel', () => {
           url: 'lightExtensionEntries:listSelectable',
           data: {
             repoId: 'ler_sales',
+            kind: 'js-block',
           },
         }),
       ),

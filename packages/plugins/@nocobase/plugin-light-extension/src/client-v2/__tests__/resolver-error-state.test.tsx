@@ -50,8 +50,29 @@ describe('LightExtensionRunJSResolver error state', () => {
       method: 'post',
       data: {
         repoId: 'repo_sales',
+        kind: 'js-block',
       },
     });
+  });
+
+  it('does not revive title metadata for bindings with invalid kind values', async () => {
+    const api = {
+      request: vi.fn(),
+    };
+    const resolver = createLightExtensionRunJSResolver(api);
+
+    await expect(
+      resolver.getBindingTitle?.({
+        sourceMode: 'light-extension',
+        sourceBinding: {
+          ...SOURCE_BINDING,
+          kind: 'js-block ',
+          entryTitle: 'Stale title',
+          entryName: 'stale-entry',
+        },
+      }),
+    ).resolves.toBeUndefined();
+    expect(api.request).not.toHaveBeenCalled();
   });
 
   it('uses the documented runtime resolve route and lets request errors surface to the block runtime', async () => {
@@ -158,5 +179,23 @@ describe('LightExtensionRunJSResolver error state', () => {
       },
       schemaHash: 'schema_active',
     });
+  });
+
+  it('does not revive settings metadata for bindings with invalid kind values', async () => {
+    const api = {
+      request: vi.fn(),
+    };
+    const resolver = createLightExtensionRunJSResolver(api);
+
+    await expect(
+      resolver.getSettingsDescriptor?.({
+        sourceMode: 'light-extension',
+        sourceBinding: {
+          ...SOURCE_BINDING,
+          kind: 'js-block ',
+        },
+      }),
+    ).resolves.toBeUndefined();
+    expect(api.request).not.toHaveBeenCalled();
   });
 });

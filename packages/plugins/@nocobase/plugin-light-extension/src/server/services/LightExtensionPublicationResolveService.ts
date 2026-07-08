@@ -10,6 +10,11 @@
 import type { Database, Model } from '@nocobase/database';
 import { createHash, randomUUID } from 'crypto';
 
+import {
+  LIGHT_EXTENSION_ENABLED_KINDS,
+  LIGHT_EXTENSION_SUPPORTED_KINDS,
+  type LightExtensionKind,
+} from '../../constants';
 import { LightExtensionError, isLightExtensionError } from '../../shared/errors';
 import type {
   LightExtensionEntryPublicationsSelectorResult,
@@ -72,7 +77,7 @@ export class LightExtensionPublicationResolveService {
   }
 
   async listSelectableEntries(
-    input: { repoId?: string } = {},
+    input: { repoId?: string; kind?: string } = {},
     ctx: LightExtensionServiceContext = {},
   ): Promise<LightExtensionSelectableEntryRecord[]> {
     const requestId = ctx.requestId || randomUUID();
@@ -92,6 +97,13 @@ export class LightExtensionPublicationResolveService {
     if (input.repoId) {
       filter.repoId = input.repoId;
     }
+    if (input.kind) {
+      const kind = assertSupportedKind(input.kind);
+      if (!isEnabledKind(kind)) {
+        return [];
+      }
+      filter.kind = kind;
+    }
 
     const records = await this.db.getRepository('lightExtensionEntries').find({
       filter,
@@ -104,6 +116,7 @@ export class LightExtensionPublicationResolveService {
       const entry = entryFromModel(record);
       if (
         entry.healthStatus !== 'ready' ||
+        !isEnabledKind(entry.kind) ||
         !entry.activePublicationId ||
         !(await this.entryRepoIsEnabled(entry.repoId, ctx))
       ) {
@@ -153,6 +166,14 @@ export class LightExtensionPublicationResolveService {
     }
 
     const entry = entryFromModel(entryRecord);
+    if (!isEnabledKind(entry.kind)) {
+      return {
+        entryId,
+        activePublicationId: null,
+        publications: [],
+      };
+    }
+
     const activePublicationId =
       entry.healthStatus === 'ready' && entry.activePublicationId && (await this.entryRepoIsEnabled(entry.repoId, ctx))
         ? entry.activePublicationId
@@ -314,6 +335,14 @@ export class LightExtensionPublicationResolveService {
         },
       );
     }
+    if (!isEnabledKind(entryKind)) {
+      throw runtimeLifecycleError(`Light extension kind "${entryKind}" is not enabled`, {
+        reasonCode: 'kind_disabled',
+        repoId: sourceBinding.repoId,
+        entryId: sourceBinding.entryId,
+        kind: entryKind,
+      });
+    }
 
     const entryHealthStatus = String(entry.get('healthStatus') || '');
     if (entryHealthStatus !== 'ready') {
@@ -441,6 +470,15 @@ export class LightExtensionPublicationResolveService {
         entryKind,
       });
     }
+    if (!isEnabledKind(entryKind)) {
+      throw runtimeLifecycleError(`Light extension kind "${entryKind}" is not enabled`, {
+        reasonCode: 'kind_disabled',
+        repoId: publication.repoId,
+        entryId: publication.entryId,
+        publicationId: publication.id,
+        kind: entryKind,
+      });
+    }
 
     const entryHealthStatus = String(entry.get('healthStatus') || '');
     if (entryHealthStatus === 'missing' || entryHealthStatus === 'disabled' || entryHealthStatus === 'archived') {
@@ -535,6 +573,14 @@ function assertRuntimeResolveInput(input: LightExtensionRuntimeResolveInput): vo
   }
 }
 
+function assertSupportedKind(kind: string): LightExtensionKind {
+  if ((LIGHT_EXTENSION_SUPPORTED_KINDS as readonly string[]).includes(kind)) {
+    return kind as LightExtensionKind;
+  }
+
+  throw invalidInput(`kind must be one of: ${LIGHT_EXTENSION_SUPPORTED_KINDS.join(', ')}`);
+}
+
 function assertSourceBindingMatches(
   sourceBinding: LightExtensionRuntimeSourceBinding,
   publication: LightExtensionPublicationRecord,
@@ -576,6 +622,10 @@ function publicationMatchesEntry(
   entry: { id: string; repoId: string; kind: string },
 ): boolean {
   return publication.entryId === entry.id && publication.repoId === entry.repoId && publication.kind === entry.kind;
+}
+
+function isEnabledKind(kind: string): boolean {
+  return (LIGHT_EXTENSION_ENABLED_KINDS as readonly string[]).includes(kind);
 }
 
 function buildRuntimeCacheMetadata(

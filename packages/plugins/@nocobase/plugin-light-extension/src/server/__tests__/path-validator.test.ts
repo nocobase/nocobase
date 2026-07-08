@@ -36,6 +36,37 @@ describe('plugin-light-extension path validator', () => {
     });
   });
 
+  it('accepts repo root files and shared helper files', () => {
+    const result = new LightExtensionValidator().validateWorkspace({
+      files: [
+        {
+          path: 'README.md',
+          content: '# demo\n',
+        },
+        {
+          path: 'light-extension.json',
+          content: '{"schemaVersion":1}',
+        },
+        {
+          path: 'tsconfig.json',
+          content: '{"compilerOptions":{"strict":true}}',
+        },
+        {
+          path: 'src/shared/format.ts',
+          content: 'export function formatValue(value: unknown) { return String(value ?? ""); }\n',
+        },
+        {
+          path: 'src/client/js-blocks/sales-kpi/index.tsx',
+          content: 'import { formatValue } from "../../../shared/format";\nctx.render(formatValue("ok"));\n',
+        },
+      ],
+    });
+
+    expect(result.accepted).toBe(true);
+    expect(result.diagnostics.filter((item) => item.code === 'path_not_allowed')).toEqual([]);
+    expect(result.diagnostics.filter((item) => item.code === 'path_extension_not_allowed')).toEqual([]);
+  });
+
   it('selects the entry index path by fixed priority instead of file order', () => {
     const validator = new LightExtensionValidator();
     const first = validator.validateWorkspace({
@@ -128,6 +159,43 @@ describe('plugin-light-extension path validator', () => {
         code: 'path_segment_invalid',
         path: 'src/client/js-blocks/foo//index.tsx',
       }),
+    );
+  });
+
+  it('rejects unsupported shared file extensions and shared imports outside src/shared', () => {
+    const result = new LightExtensionValidator().validateWorkspace({
+      files: [
+        {
+          path: 'src/shared/style.css',
+          content: '.root {}',
+        },
+        {
+          path: 'src/shared',
+          content: 'not a file path\n',
+        },
+        {
+          path: 'src/shared/leak.ts',
+          content: 'import "../server/private";\nexport const leak = true;\n',
+        },
+      ],
+    });
+
+    expect(result.accepted).toBe(false);
+    expect(result.diagnostics).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: 'path_extension_not_allowed',
+          path: 'src/shared/style.css',
+        }),
+        expect.objectContaining({
+          code: 'path_not_allowed',
+          path: 'src/shared',
+        }),
+        expect.objectContaining({
+          code: 'import_not_allowed',
+          path: 'src/shared/leak.ts',
+        }),
+      ]),
     );
   });
 });

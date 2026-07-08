@@ -54,8 +54,29 @@ vi.mock('@nocobase/client-v2', () => ({
 vi.mock('@nocobase/plugin-vsc-file/client-v2', () => {
   return {
     useVscFileT: () => mocks.t,
-    FilesPanel: ({ files, onOpen }: { files: Array<{ path: string }>; onOpen: (path: string) => void }) => (
+    FilesPanel: ({
+      files,
+      folders,
+      onCreate,
+      onCreateFolder,
+      onOpen,
+    }: {
+      files: Array<{ path: string }>;
+      folders: string[];
+      onCreate: (parentPath?: string) => string | undefined;
+      onCreateFolder: (parentPath?: string) => string | undefined;
+      onOpen: (path: string) => void;
+    }) => (
       <div data-testid="runjs-files-panel">
+        <button onClick={() => onCreate('src/client')} type="button">
+          New default file
+        </button>
+        <button onClick={() => onCreateFolder('src/client')} type="button">
+          New default folder
+        </button>
+        {folders.map((folder) => (
+          <span key={folder}>{folder}</span>
+        ))}
         {files.map((file) => (
           <button key={file.path} onClick={() => onOpen(file.path)} type="button">
             {file.path.split('/').pop()}
@@ -82,12 +103,18 @@ vi.mock('@nocobase/plugin-vsc-file/client-v2', () => {
       activeFile,
       onChange,
       showRunButton,
+      workspaceFiles,
     }: {
       activeFile?: { content: string; path: string };
       onChange: (value: string) => void;
       showRunButton?: boolean;
+      workspaceFiles: Array<{ path: string }>;
     }) => (
-      <div data-show-run-button={String(showRunButton)} data-testid="runjs-code-tab">
+      <div
+        data-show-run-button={String(showRunButton)}
+        data-testid="runjs-code-tab"
+        data-workspace-files={workspaceFiles.map((file) => file.path).join(',')}
+      >
         {activeFile ? <span>{activeFile.path}</span> : null}
         <textarea
           aria-label="Edit file content"
@@ -303,7 +330,7 @@ describe('LightExtensionWorkspacePage', () => {
       </MemoryRouter>,
     );
 
-    await screen.findByText('src/client/js-blocks/sales-kpi/index.tsx');
+    await screen.findByTestId('runjs-code-tab');
     expect(screen.getByTestId('runjs-code-tab')).toHaveAttribute('data-show-run-button', 'false');
     fireEvent.change(screen.getByLabelText('Edit file content'), {
       target: { value: 'export default function SalesKpi() { return "ok"; }\n' },
@@ -363,7 +390,7 @@ describe('LightExtensionWorkspacePage', () => {
     expect(mocks.api.pull).toHaveBeenCalledTimes(1);
   });
 
-  it('seeds an empty repository with the default JS Block template and saves it as one batch', async () => {
+  it('seeds an empty repository with the multi-kind light extension template and saves it as one batch', async () => {
     mocks.api.pull.mockResolvedValueOnce({
       repo: { id: 'ler_sales' },
       commit: { id: 'commit-1' },
@@ -378,7 +405,10 @@ describe('LightExtensionWorkspacePage', () => {
       </MemoryRouter>,
     );
 
-    await screen.findByText('src/client/js-blocks/sales-kpi/index.tsx');
+    await waitFor(() => expect(screen.getAllByText('README.md').length).toBeGreaterThan(0));
+    expect(screen.getByTestId('runjs-code-tab').getAttribute('data-workspace-files')).toContain(
+      'src/shared/light-extension-sdk.d.ts',
+    );
     fireEvent.click(screen.getByRole('button', { name: /Save/ }));
     const dialog = await screen.findByRole('dialog', { name: 'Commit message' });
     fireEvent.change(within(dialog).getByLabelText('Commit message'), {
@@ -387,11 +417,184 @@ describe('LightExtensionWorkspacePage', () => {
     fireEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
 
     await waitFor(() => expect(mocks.api.push).toHaveBeenCalledTimes(1));
-    expect(mocks.api.push.mock.calls[0][0].files.map((file) => file.path)).toEqual([
-      'src/client/js-blocks/sales-kpi/index.tsx',
-      'src/client/js-blocks/sales-kpi/meta.json',
-      'src/client/js-blocks/sales-kpi/settings.json',
+    const pushedPaths = mocks.api.push.mock.calls[0][0].files.map((file) => file.path);
+    expect(pushedPaths).toEqual(
+      expect.arrayContaining([
+        'README.md',
+        'light-extension.json',
+        'tsconfig.json',
+        'src/shared/format.ts',
+        'src/shared/light-extension-sdk.d.ts',
+        'src/client/js-blocks/sales-kpi/index.tsx',
+        'src/client/js-fields/phone-link/index.tsx',
+        'src/client/js-actions/show-message/index.ts',
+        'src/client/js-items/row-menu-label/index.tsx',
+        'src/client/runjs/normalize-form-values/index.ts',
+        'src/client/events/log-page-open/index.ts',
+      ]),
+    );
+  });
+
+  it('creates missing repo root files from the reused default new-file entry', async () => {
+    render(
+      <MemoryRouter initialEntries={['/admin/settings/light-extension?panel=source&repoId=ler_sales']}>
+        <LightExtensionWorkspacePage />
+      </MemoryRouter>,
+    );
+
+    await screen.findByTestId('runjs-code-tab');
+    const defaultFileButton = screen.getByRole('button', { name: 'New default file' });
+    fireEvent.click(defaultFileButton);
+    await waitFor(() => expect(screen.getAllByText('README.md').length).toBeGreaterThan(0));
+    fireEvent.click(defaultFileButton);
+    await waitFor(() => expect(screen.getAllByText('light-extension.json').length).toBeGreaterThan(0));
+    fireEvent.click(defaultFileButton);
+    await waitFor(() => expect(screen.getAllByText('tsconfig.json').length).toBeGreaterThan(0));
+    await waitFor(() =>
+      expect(screen.getByTestId('runjs-code-tab').getAttribute('data-workspace-files')).toContain(
+        'src/shared/light-extension-sdk.d.ts',
+      ),
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /Save/ }));
+    const dialog = await screen.findByRole('dialog', { name: 'Commit message' });
+    fireEvent.change(within(dialog).getByLabelText('Commit message'), {
+      target: { value: 'Add root files' },
+    });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
+
+    await waitFor(() => expect(mocks.api.push).toHaveBeenCalledTimes(1));
+    expect(mocks.api.push.mock.calls[0][0].files).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: 'README.md',
+          content: '# Light extension source\n',
+          operation: 'upsert',
+        }),
+        expect.objectContaining({
+          path: 'light-extension.json',
+          content: '{\n  "schemaVersion": 1\n}\n',
+          operation: 'upsert',
+        }),
+        expect.objectContaining({
+          path: 'tsconfig.json',
+          content: expect.stringContaining('@nocobase/light-extension-sdk/shared'),
+          operation: 'upsert',
+        }),
+        expect.objectContaining({
+          path: 'src/shared/light-extension-sdk.d.ts',
+          content: expect.stringContaining('@nocobase/light-extension-sdk/client'),
+          operation: 'upsert',
+        }),
+      ]),
+    );
+  });
+
+  it('creates future client kind files from the reused default file entry after repo scaffolding exists', async () => {
+    mocks.api.pull.mockResolvedValueOnce({
+      repo: { id: 'ler_sales' },
+      commit: { id: 'commit-1' },
+      tree: { hash: 'tree-1', entryCount: 5, byteSize: 180 },
+      unchanged: false,
+      files: [
+        {
+          path: 'README.md',
+          content: '# Light extension source\n',
+          language: 'markdown',
+        },
+        {
+          path: 'light-extension.json',
+          content: '{\n  "schemaVersion": 1\n}\n',
+          language: 'json',
+        },
+        {
+          path: 'tsconfig.json',
+          content: '{}\n',
+          language: 'json',
+        },
+        {
+          path: 'src/shared/light-extension-sdk.d.ts',
+          content: '',
+          language: 'typescript',
+        },
+        {
+          path: 'src/client/js-blocks/sales-kpi/index.tsx',
+          content: 'export default function SalesKpi() { return null; }\n',
+          language: 'typescript',
+        },
+      ],
+    });
+
+    render(
+      <MemoryRouter initialEntries={['/admin/settings/light-extension?panel=source&repoId=ler_sales']}>
+        <LightExtensionWorkspacePage />
+      </MemoryRouter>,
+    );
+
+    await screen.findByTestId('runjs-code-tab');
+    fireEvent.click(screen.getByRole('button', { name: 'New default file' }));
+    expect(await screen.findByText('src/client/js-fields/phone-link/index.tsx')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /Save/ }));
+    const dialog = await screen.findByRole('dialog', { name: 'Commit message' });
+    fireEvent.change(within(dialog).getByLabelText('Commit message'), {
+      target: { value: 'Add JS field entry' },
+    });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
+
+    await waitFor(() => expect(mocks.api.push).toHaveBeenCalledTimes(1));
+    expect(mocks.api.push.mock.calls[0][0].files).toEqual([
+      expect.objectContaining({
+        path: 'src/client/js-fields/phone-link/index.tsx',
+        content: expect.stringContaining('defineSettings'),
+        operation: 'upsert',
+      }),
     ]);
+  });
+
+  it('creates future client kind folders directly under src/client from the reused default folder entry', async () => {
+    mocks.api.pull.mockResolvedValueOnce({
+      repo: { id: 'ler_sales' },
+      commit: { id: 'commit-1' },
+      tree: { hash: 'tree-1', entryCount: 5, byteSize: 180 },
+      unchanged: false,
+      files: [
+        {
+          path: 'README.md',
+          content: '# Light extension source\n',
+          language: 'markdown',
+        },
+        {
+          path: 'light-extension.json',
+          content: '{\n  "schemaVersion": 1\n}\n',
+          language: 'json',
+        },
+        {
+          path: 'tsconfig.json',
+          content: '{}\n',
+          language: 'json',
+        },
+        {
+          path: 'src/shared/light-extension-sdk.d.ts',
+          content: '',
+          language: 'typescript',
+        },
+        {
+          path: 'src/client/js-blocks/sales-kpi/index.tsx',
+          content: 'export default function SalesKpi() { return null; }\n',
+          language: 'typescript',
+        },
+      ],
+    });
+
+    render(
+      <MemoryRouter initialEntries={['/admin/settings/light-extension?panel=source&repoId=ler_sales']}>
+        <LightExtensionWorkspacePage />
+      </MemoryRouter>,
+    );
+
+    await screen.findByTestId('runjs-code-tab');
+    fireEvent.click(screen.getByRole('button', { name: 'New default folder' }));
+    expect(await screen.findByText('src/client/js-fields')).toBeInTheDocument();
   });
 
   it('shows persisted save diagnostics after validation failure', async () => {

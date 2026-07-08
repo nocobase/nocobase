@@ -92,5 +92,109 @@ describe('plugin-light-extension kind enablement validator', () => {
         'src/client/js-fields/<entryName>/**/*.{ts,tsx,js,jsx,json,md}',
       ]),
     );
+    expect(result.capabilities.allowedPaths.repo).toEqual(
+      expect.arrayContaining(['README.md', 'light-extension.json', 'tsconfig.json', 'src/shared/**']),
+    );
+  });
+
+  it('allows future client kinds to import shared helpers and SDK type/helper imports', () => {
+    const validator = new LightExtensionValidator();
+    const result = validator.validateWorkspace({
+      files: [
+        {
+          path: 'README.md',
+          content: '# multi kind\n',
+        },
+        {
+          path: 'light-extension.json',
+          content: '{"schemaVersion":1}',
+        },
+        {
+          path: 'tsconfig.json',
+          content: '{"compilerOptions":{"strict":true}}',
+        },
+        {
+          path: 'src/shared/format.ts',
+          content:
+            'import type { LightExtensionSettingsContext } from "@nocobase/light-extension-sdk/shared";\nexport function formatValue(ctx: LightExtensionSettingsContext) { return String(ctx.settings ?? ""); }\n',
+        },
+        {
+          path: 'src/client/js-fields/phone-link/index.tsx',
+          content:
+            'import { type LightExtensionSettingsContext, defineSettings } from "@nocobase/light-extension-sdk/client";\nimport { formatValue } from "../../../shared/format";\nexport const settings = defineSettings({ type: "object", properties: {} });\nexport default function PhoneLink(ctx: LightExtensionSettingsContext) { return formatValue(ctx); }\n',
+        },
+      ],
+    });
+
+    expect(result.accepted).toBe(true);
+    expect(result.entries).toHaveLength(1);
+    expect(result.diagnostics.filter((item) => item.code === 'import_not_allowed')).toEqual([]);
+    expect(result.diagnostics).toContainEqual(
+      expect.objectContaining({
+        code: 'kind_not_enabled',
+        kind: 'js-field',
+        severity: 'warning',
+      }),
+    );
+  });
+
+  it('rejects forbidden server, cross-entry, shared-boundary, and npm imports for future client kinds', () => {
+    const validator = new LightExtensionValidator();
+    const result = validator.validateWorkspace({
+      files: [
+        {
+          path: 'src/shared/bad.ts',
+          content: 'import "../client/js-actions/show-message/index";\nexport const bad = true;\n',
+        },
+        {
+          path: 'src/client/js-actions/show-message/index.ts',
+          content: 'export default function showMessage() { return true; }\n',
+        },
+        {
+          path: 'src/client/js-fields/phone-link/index.tsx',
+          content:
+            'import React from "react";\nimport "../../../server/private";\nimport "../../js-actions/show-message/index";\nexport default function PhoneLink() { return React.createElement("span"); }\n',
+        },
+      ],
+    });
+
+    expect(result.accepted).toBe(false);
+    expect(result.diagnostics).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: 'import_not_allowed',
+          path: 'src/shared/bad.ts',
+        }),
+        expect.objectContaining({
+          code: 'import_not_allowed',
+          path: 'src/client/js-fields/phone-link/index.tsx',
+          kind: 'js-field',
+        }),
+      ]),
+    );
+    expect(result.diagnostics.filter((item) => item.code === 'import_not_allowed')).toHaveLength(4);
+  });
+
+  it('rejects empty runtime imports from SDK subpaths before compile preview', () => {
+    const validator = new LightExtensionValidator();
+    const result = validator.validateWorkspace({
+      files: [
+        {
+          path: 'src/client/js-fields/phone-link/index.tsx',
+          content:
+            'import {} from "@nocobase/light-extension-sdk/client";\nexport default function PhoneLink() { return null; }\n',
+        },
+      ],
+    });
+
+    expect(result.accepted).toBe(false);
+    expect(result.diagnostics).toContainEqual(
+      expect.objectContaining({
+        code: 'import_not_allowed',
+        kind: 'js-field',
+        message: 'Runtime import from "@nocobase/light-extension-sdk/client" must use allowed helpers',
+        path: 'src/client/js-fields/phone-link/index.tsx',
+      }),
+    );
   });
 });

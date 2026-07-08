@@ -65,6 +65,33 @@ describe('plugin-light-extension entry publication selector', () => {
     expect(JSON.stringify(entries)).not.toContain('sourceMap');
   });
 
+  it('applies the requested enabled kind filter before returning selectable entries', async () => {
+    const { service, entriesRepository } = createSelectorService();
+    const can = vi.fn(({ action }: { action: string }) => (action === 'usePublication' ? {} : null));
+
+    await service.listSelectableEntries({ repoId: 'ler_enabled', kind: 'js-block' }, { can });
+
+    expect(entriesRepository.find).toHaveBeenCalledWith(
+      expect.objectContaining({
+        filter: expect.objectContaining({
+          repoId: 'ler_enabled',
+          kind: 'js-block',
+          healthStatus: 'ready',
+        }),
+      }),
+    );
+  });
+
+  it('does not expose historical ready entries whose kind is not enabled', async () => {
+    const { service, entriesRepository } = createSelectorService();
+    const can = vi.fn(({ action }: { action: string }) => (action === 'usePublication' ? {} : null));
+
+    const entries = await service.listSelectableEntries({ repoId: 'ler_enabled', kind: 'js-field' }, { can });
+
+    expect(entries).toEqual([]);
+    expect(entriesRepository.find).not.toHaveBeenCalled();
+  });
+
   it('returns selectable publication metadata for an entry through usePublication only', async () => {
     const { service } = createSelectorService();
     const result = await service.listSelectablePublicationsByEntry('lee_ready', {
@@ -90,6 +117,20 @@ describe('plugin-light-extension entry publication selector', () => {
     });
     expect(JSON.stringify(result)).not.toContain('runtime secret');
     expect(JSON.stringify(result)).not.toContain('sourceMap');
+  });
+
+  it('returns no selectable publications for historical ready entries whose kind is not enabled', async () => {
+    const { service } = createSelectorService();
+
+    await expect(
+      service.listSelectablePublicationsByEntry('lee_future_ready', {
+        can: ({ action }: { action: string }) => (action === 'usePublication' ? {} : null),
+      }),
+    ).resolves.toEqual({
+      entryId: 'lee_future_ready',
+      activePublicationId: null,
+      publications: [],
+    });
   });
 
   it('does not allow readPublication-only callers to use selector APIs', async () => {
@@ -172,6 +213,56 @@ describe('plugin-light-extension entry publication selector', () => {
     });
   });
 
+  it('normalizes selectable entry selector kind input and preserves request context', async () => {
+    const publicationResolveService = {
+      listSelectableEntries: vi.fn().mockResolvedValue([]),
+    } as unknown as LightExtensionPublicationResolveService;
+    const resource = createLightExtensionEntriesResource(
+      {} as LightExtensionEntryScanner,
+      undefined,
+      publicationResolveService,
+    );
+    const can = vi.fn().mockReturnValue({});
+    const ctx = {
+      action: {
+        params: {
+          values: {
+            repoId: 'ler_enabled',
+            kind: 'js-field',
+          },
+        },
+      },
+      auth: {
+        user: {
+          id: '7',
+        },
+      },
+      can,
+      request: {
+        headers: {
+          'x-request-id': 'req_selector_entries',
+          'x-request-source': 'unit-resource',
+        },
+      },
+    } as unknown as Context;
+
+    await resource.actions?.listSelectable?.(ctx, async () => {});
+
+    expect(publicationResolveService.listSelectableEntries).toHaveBeenCalledWith(
+      {
+        repoId: 'ler_enabled',
+        kind: 'js-field',
+      },
+      expect.objectContaining({
+        actorUserId: '7',
+        requestId: 'req_selector_entries',
+        requestSource: 'unit-resource',
+        can,
+      }),
+    );
+    expect((ctx as { body?: unknown }).body).toEqual([]);
+  });
+
   it('registers the documented GET entry publications selector route alias', async () => {
     const registeredRoutes: Array<{ middleware: RouteMiddleware; options?: { tag?: string } }> = [];
     const app = {
@@ -226,46 +317,43 @@ describe('plugin-light-extension entry publication selector', () => {
 });
 
 function createSelectorService() {
+  const entryModels = [
+    createEntryRecord({
+      id: 'lee_ready',
+      repoId: 'ler_enabled',
+      activePublicationId: 'lep_ready_active',
+      healthStatus: 'ready',
+    }),
+    createEntryRecord({
+      id: 'lee_no_active',
+      repoId: 'ler_enabled',
+      activePublicationId: null,
+      healthStatus: 'ready',
+    }),
+    createEntryRecord({
+      id: 'lee_failed',
+      repoId: 'ler_enabled',
+      activePublicationId: 'lep_failed_active',
+      healthStatus: 'failed',
+    }),
+    createEntryRecord({
+      id: 'lee_disabled_repo',
+      repoId: 'ler_disabled',
+      activePublicationId: 'lep_disabled_repo_active',
+      healthStatus: 'ready',
+    }),
+    createEntryRecord({
+      id: 'lee_future_ready',
+      repoId: 'ler_enabled',
+      activePublicationId: 'lep_future_ready_active',
+      healthStatus: 'ready',
+      kind: 'js-field',
+    }),
+  ].map(createModel);
   const entriesRepository = {
-    find: vi.fn().mockResolvedValue(
-      [
-        createEntryRecord({
-          id: 'lee_ready',
-          repoId: 'ler_enabled',
-          activePublicationId: 'lep_ready_active',
-          healthStatus: 'ready',
-        }),
-        createEntryRecord({
-          id: 'lee_no_active',
-          repoId: 'ler_enabled',
-          activePublicationId: null,
-          healthStatus: 'ready',
-        }),
-        createEntryRecord({
-          id: 'lee_failed',
-          repoId: 'ler_enabled',
-          activePublicationId: 'lep_failed_active',
-          healthStatus: 'failed',
-        }),
-        createEntryRecord({
-          id: 'lee_disabled_repo',
-          repoId: 'ler_disabled',
-          activePublicationId: 'lep_disabled_repo_active',
-          healthStatus: 'ready',
-        }),
-      ].map(createModel),
-    ),
+    find: vi.fn().mockResolvedValue(entryModels),
     findOne: vi.fn(({ filterByTk }: { filterByTk?: string }) =>
-      Promise.resolve(
-        createModel(
-          createEntryRecord({
-            id: filterByTk || 'lee_ready',
-            repoId: 'ler_enabled',
-            activePublicationId: 'lep_ready_active',
-            healthStatus: 'ready',
-          }),
-        ),
-      ),
+      Promise.resolve(entryModels.find((entry) => entry.get('id') === (filterByTk || 'lee_ready')) || null),
     ),
   };
   const repoModels = [
@@ -288,6 +376,7 @@ function createSelectorService() {
     createModel(createPublicationRecord('lep_ready_old', 'lee_ready')),
     createModel(createPublicationRecord('lep_failed_active', 'lee_failed')),
     createModel(createPublicationRecord('lep_disabled_repo_active', 'lee_disabled_repo', 'ler_disabled')),
+    createModel(createPublicationRecord('lep_future_ready_active', 'lee_future_ready', 'ler_enabled', 'js-field')),
   ];
   const publicationsRepository = {
     find: vi.fn(({ filter }: { filter?: { entryId?: string } }) =>
@@ -333,14 +422,17 @@ function createEntryRecord(input: {
   repoId: string;
   activePublicationId: string | null;
   healthStatus: string;
+  kind?: string;
 }): Record<string, unknown> {
+  const kind = input.kind || 'js-block';
   return {
     id: input.id,
     repoId: input.repoId,
     target: 'client',
-    kind: 'js-block',
+    kind,
     entryName: input.id,
-    entryPath: `src/client/js-blocks/${input.id}/index.tsx`,
+    entryPath:
+      kind === 'js-field' ? `src/client/js-fields/${input.id}/index.tsx` : `src/client/js-blocks/${input.id}/index.tsx`,
     metaPath: null,
     settingsPath: `src/client/js-blocks/${input.id}/settings.json`,
     title: input.id,
@@ -363,16 +455,22 @@ function createEntryRecord(input: {
   };
 }
 
-function createPublicationRecord(id: string, entryId: string, repoId = 'ler_enabled'): Record<string, unknown> {
+function createPublicationRecord(
+  id: string,
+  entryId: string,
+  repoId = 'ler_enabled',
+  kind = 'js-block',
+): Record<string, unknown> {
   return {
     id,
     repoId,
     entryId,
     commitId: `commit_${id}`,
-    entryPath: `src/client/js-blocks/${entryId}/index.tsx`,
+    entryPath:
+      kind === 'js-field' ? `src/client/js-fields/${entryId}/index.tsx` : `src/client/js-blocks/${entryId}/index.tsx`,
     target: 'client',
-    kind: 'js-block',
-    surfaceStyle: 'render',
+    kind,
+    surfaceStyle: kind === 'js-field' ? 'value' : 'render',
     runtimeVersion: 'v2',
     artifact: {
       code: "const secret = 'runtime secret';\nctx.render(secret);\n",

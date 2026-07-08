@@ -301,6 +301,11 @@ export interface LightExtensionEntryPublicationsSelectorResult {
   publications: LightExtensionPublicationMetadataRecord[];
 }
 
+export interface LightExtensionSelectableEntriesInput {
+  repoId?: string;
+  kind?: LightExtensionKind;
+}
+
 export type LightExtensionSourceBindingVersionPolicy = 'pinned' | 'follow-active';
 
 export interface LightExtensionRuntimeSourceBinding {

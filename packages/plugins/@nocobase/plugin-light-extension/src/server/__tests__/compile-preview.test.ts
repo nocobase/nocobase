@@ -113,7 +113,7 @@ describe('plugin-light-extension compile preview', () => {
     expect(JSON.stringify(recordCompileEvent.mock.calls)).not.toContain('sourceMap');
   });
 
-  it('records workspace validator failures while still compiling unaffected entries', async () => {
+  it('blocks compile preview entries when workspace validator failures are present', async () => {
     const repo = createRepo();
     const { db } = createDbStub([createEntryRecord({ id: 'lee_sales_kpi', repoId: repo.id, entryName: 'sales-kpi' })]);
     const fileService = createFileServiceStub(repo, [
@@ -135,10 +135,21 @@ describe('plugin-light-extension compile preview', () => {
     );
 
     expect(result.accepted).toBe(false);
-    expect(result.entries.find((entry) => entry.entryName === 'sales-kpi')).toMatchObject({
-      status: 'success',
-      accepted: true,
+    const salesKpi = result.entries.find((entry) => entry.entryName === 'sales-kpi');
+    expect(salesKpi).toMatchObject({
+      status: 'failed',
+      accepted: false,
+      failureCode: 'LIGHT_EXTENSION_VALIDATION_FAILED',
     });
+    expect(salesKpi?.artifact).toBeUndefined();
+    expect(salesKpi?.diagnostics).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: 'path_not_allowed',
+          path: 'src/client/not-allowed.js',
+        }),
+      ]),
+    );
     expect(result.diagnostics).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -154,7 +165,57 @@ describe('plugin-light-extension compile preview', () => {
         requestId: 'req_compile_preview_validator',
       }),
     );
+    expect(recordCompileEvent).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        entryId: 'lee_sales_kpi',
+        result: 'success',
+      }),
+    );
     expect(JSON.stringify(recordCompileEvent.mock.calls)).not.toContain('secret-source');
+  });
+
+  it('ignores unselected entry validation errors when previewing a selected valid entry', async () => {
+    const repo = createRepo();
+    const { db } = createDbStub([createEntryRecord({ id: 'lee_sales_kpi', repoId: repo.id, entryName: 'sales-kpi' })]);
+    const fileService = createFileServiceStub(repo, [
+      ...validSalesKpiFiles(),
+      {
+        path: 'src/client/js-fields/phone-link/index.tsx',
+        content: 'export default function PhoneLink() {\n  const value = ;\n  return value;\n}\n',
+      },
+    ]);
+    const { service, recordCompileEvent } = createPreviewService(db, fileService);
+
+    const result = await service.compilePreview(
+      {
+        repoId: repo.id,
+        entryIds: ['lee_sales_kpi'],
+      },
+      {
+        requestId: 'req_compile_preview_selected_only',
+      },
+    );
+
+    expect(result.accepted).toBe(true);
+    expect(result.entries).toHaveLength(1);
+    expect(result.entries[0]).toMatchObject({
+      entryId: 'lee_sales_kpi',
+      status: 'success',
+      accepted: true,
+    });
+    expect(result.diagnostics).toEqual([]);
+    expect(recordCompileEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        entryId: 'lee_sales_kpi',
+        result: 'success',
+      }),
+    );
+    expect(recordCompileEvent).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        reasonCode: 'validation_failed',
+        requestId: 'req_compile_preview_selected_only',
+      }),
+    );
   });
 
   it('supports selected entryIds and reports missing selected entries without stopping valid entries', async () => {

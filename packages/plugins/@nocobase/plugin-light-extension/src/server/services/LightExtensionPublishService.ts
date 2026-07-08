@@ -26,6 +26,7 @@ import type { LightExtensionServiceContext } from './LightExtensionRepoService';
 import {
   LightExtensionEntryValidationResult,
   LightExtensionValidator,
+  getWorkspaceLevelDiagnostics,
   hasErrorDiagnostic,
   sortDiagnostics,
   toValidatorFiles,
@@ -91,6 +92,7 @@ export class LightExtensionPublishService {
     const validation = this.validator.validateWorkspace({
       files: toValidatorFiles(pull.files || []),
     });
+    const workspaceDiagnostics = getWorkspaceLevelDiagnostics(validation.diagnostics);
     const persistedEntries = await this.listPersistedEntries(input.repoId, ctx);
     const targets = buildPublishTargets(input, validation.entries, persistedEntries, repoConflict);
     const entryResults: LightExtensionPublishEntryResult[] = [];
@@ -100,7 +102,36 @@ export class LightExtensionPublishService {
       for (const target of targets) {
         entryResults.push(buildConflictResult(target, [diagnostic], 'commit_mismatch'));
       }
-      return buildPublishResult(pull.repo, input, entryResults, validation.diagnostics);
+      return buildPublishResult(pull.repo, input, entryResults, workspaceDiagnostics);
+    }
+
+    if (hasErrorDiagnostic(workspaceDiagnostics)) {
+      const sortedWorkspaceDiagnostics = sortDiagnostics(workspaceDiagnostics);
+      for (const target of targets) {
+        if (!target.entry) {
+          entryResults.push(
+            buildSkippedResult({
+              ...target,
+              diagnostics: sortDiagnostics([...target.diagnostics, ...sortedWorkspaceDiagnostics]),
+              reasonCode: target.reasonCode || 'validation_failed',
+            }),
+          );
+          continue;
+        }
+
+        entryResults.push(
+          buildConflictOrFailedResult(
+            {
+              ...target,
+              diagnostics: sortDiagnostics([...target.diagnostics, ...sortedWorkspaceDiagnostics]),
+              reasonCode: target.reasonCode || 'validation_failed',
+            },
+            sortDiagnostics([...target.diagnostics, ...sortedWorkspaceDiagnostics]),
+          ),
+        );
+      }
+
+      return buildPublishResult(pull.repo, input, entryResults, sortedWorkspaceDiagnostics);
     }
 
     for (const target of targets) {
@@ -197,7 +228,7 @@ export class LightExtensionPublishService {
       }
     }
 
-    const result = buildPublishResult(pull.repo, input, entryResults, validation.diagnostics);
+    const result = buildPublishResult(pull.repo, input, entryResults, workspaceDiagnostics);
 
     if (entryResults.some((entry) => entry.status === 'created' || entry.status === 'reused')) {
       await this.db.getRepository('lightExtensionRepos').update({
@@ -567,7 +598,9 @@ function getEntryCompileFiles(
   const rootPath = getEntryRootPath(entry);
 
   return files
-    .filter((file) => file.path === rootPath || file.path.startsWith(`${rootPath}/`))
+    .filter(
+      (file) => file.path === rootPath || file.path.startsWith(`${rootPath}/`) || file.path.startsWith('src/shared/'),
+    )
     .map((file) => ({
       path: file.path,
       content: file.content,

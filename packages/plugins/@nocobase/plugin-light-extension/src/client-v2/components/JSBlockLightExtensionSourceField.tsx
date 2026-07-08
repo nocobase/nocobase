@@ -284,6 +284,7 @@ export const JSBlockLightExtensionSourceField: React.FC<JSBlockLightExtensionSou
     <Space direction="vertical" style={{ width: '100%' }} size={16}>
       <RepoEntryPublicationSelector
         disabled={disabled}
+        kind="js-block"
         value={values.sourceBinding}
         onChange={handleSelectorChange}
         onClear={handleSelectorClear}

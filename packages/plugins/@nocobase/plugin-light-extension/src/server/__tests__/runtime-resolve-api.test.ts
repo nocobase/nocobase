@@ -86,6 +86,36 @@ describe('plugin-light-extension runtime resolve API', () => {
     });
   });
 
+  it('rejects runtime bindings whose kind does not match the publication snapshot', async () => {
+    const { service } = createRuntimeResolveService(createPublicationRecord());
+
+    await expect(
+      service.resolveRuntime(
+        {
+          sourceMode: 'light-extension',
+          sourceBinding: createSourceBinding({ kind: 'js-field' }),
+          settings: {},
+        },
+        {
+          can: ({ action }: { action: string }) => (action === 'usePublication' ? {} : null),
+        },
+      ),
+    ).rejects.toMatchObject({
+      code: 'LIGHT_EXTENSION_BINDING_OUTDATED',
+      status: 409,
+      details: {
+        publicationId: 'lep_sales_kpi',
+        mismatches: [
+          {
+            field: 'kind',
+            expected: 'js-field',
+            actual: 'js-block',
+          },
+        ],
+      },
+    });
+  });
+
   it('normalizes the runtime resolve resource input and passes request context to the service', async () => {
     const resolve = vi.fn().mockResolvedValue({
       publicationId: 'lep_sales_kpi',
@@ -337,6 +367,48 @@ describe('plugin-light-extension runtime resolve API', () => {
     }
   });
 
+  it('blocks runtime code for historical ready publications whose kind is not enabled', async () => {
+    const { service } = createRuntimeResolveService(
+      {
+        ...createPublicationRecord(),
+        id: 'lep_phone_link',
+        entryId: 'lee_phone_link',
+        entryPath: 'src/client/js-fields/phone-link/index.tsx',
+        kind: 'js-field',
+        surfaceStyle: 'value',
+      },
+      {
+        entryId: 'lee_phone_link',
+        entryKind: 'js-field',
+      },
+    );
+
+    await expect(
+      service.resolveRuntime(
+        {
+          sourceMode: 'light-extension',
+          sourceBinding: createSourceBinding({
+            publicationId: 'lep_phone_link',
+            entryId: 'lee_phone_link',
+            kind: 'js-field',
+          }),
+          settings: {},
+        },
+        {
+          can: ({ action }: { action: string }) => (action === 'usePublication' ? {} : null),
+        },
+      ),
+    ).rejects.toMatchObject({
+      code: 'LIGHT_EXTENSION_LIFECYCLE_CONFLICT',
+      status: 409,
+      details: {
+        reasonCode: 'kind_disabled',
+        publicationId: 'lep_phone_link',
+        kind: 'js-field',
+      },
+    });
+  });
+
   it('uses 422 for runtime resolve input contract failures', async () => {
     const { service, publicationsRepository } = createRuntimeResolveService(createPublicationRecord());
 
@@ -367,6 +439,8 @@ function createRuntimeResolveService(
   options: {
     repoLifecycleStatus?: string;
     entryHealthStatus?: string;
+    entryId?: string;
+    entryKind?: string;
   } = {},
 ) {
   const publicationsRepository = {
@@ -383,9 +457,9 @@ function createRuntimeResolveService(
   const entriesRepository = {
     findOne: vi.fn().mockResolvedValue(
       createModel({
-        id: 'lee_sales_kpi',
+        id: options.entryId || 'lee_sales_kpi',
         repoId: 'ler_sales',
-        kind: 'js-block',
+        kind: options.entryKind || 'js-block',
         healthStatus: options.entryHealthStatus || 'ready',
       }),
     ),

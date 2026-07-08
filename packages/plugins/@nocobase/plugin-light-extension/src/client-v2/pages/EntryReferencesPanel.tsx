@@ -149,7 +149,7 @@ async function listRepoSelectablePublications(
   api: ApiClientLike,
   repoId: string,
 ): Promise<LightExtensionPublicationMetadataRecord[]> {
-  const entries = await listSelectableLightExtensionEntries(api, { repoId });
+  const entries = await listSelectableLightExtensionEntries(api, { repoId, kind: 'js-block' });
   const publicationGroups = await Promise.all(
     entries
       .filter((entry) => entry.kind === 'js-block')

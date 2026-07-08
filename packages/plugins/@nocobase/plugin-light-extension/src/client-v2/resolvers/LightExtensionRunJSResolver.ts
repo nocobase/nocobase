@@ -9,7 +9,9 @@
 
 import type { RunJSSourceResolver, RunJSSourceResolverInput, RunJSSourceResolverResult } from '@nocobase/client-v2';
 
+import { LIGHT_EXTENSION_SUPPORTED_KINDS } from '../../constants';
 import type {
+  LightExtensionKind,
   LightExtensionRuntimeResolveInput,
   LightExtensionRuntimeResolveResult,
   LightExtensionRuntimeSourceBinding,
@@ -50,21 +52,43 @@ export function createLightExtensionRunJSResolver(api: ApiClientLike): RunJSSour
       if (!binding?.repoId || !binding.entryId) {
         return undefined;
       }
+      const kind = toSupportedKind(binding.kind);
+      if (!kind) {
+        return undefined;
+      }
 
-      const entries = await listSelectableLightExtensionEntries(api, { repoId: binding.repoId });
+      const entries = await listSelectableLightExtensionEntries(api, {
+        repoId: binding.repoId,
+        kind,
+      });
       const entry = entries.find((item) => item.id === binding.entryId);
-      return entry ? getEntryLabel(entry) : binding.entryTitle || binding.entryName || binding.entryId;
+      if (!entry || entry.kind !== kind) {
+        return undefined;
+      }
+
+      return getEntryLabel(entry);
     },
     async getSettingsDescriptor(input) {
       const binding = input.sourceBinding as unknown as LightExtensionRuntimeSourceBinding | null | undefined;
       if (!binding?.repoId || !binding.entryId) {
         return undefined;
       }
+      const kind = toSupportedKind(binding.kind);
+      if (!kind) {
+        return undefined;
+      }
 
-      const entries = await listSelectableLightExtensionEntries(api, { repoId: binding.repoId });
+      const entries = await listSelectableLightExtensionEntries(api, {
+        repoId: binding.repoId,
+        kind,
+      });
       const entry = entries.find((item) => item.id === binding.entryId);
-      const publication = entry?.activePublication;
-      if (!publication) {
+      if (!entry || entry.kind !== kind) {
+        return undefined;
+      }
+
+      const publication = entry.activePublication;
+      if (!publication || publication.kind !== kind) {
         return undefined;
       }
 
@@ -100,6 +124,14 @@ export async function resolveLightExtensionRuntimeSource(
 
 function getEntryLabel(entry: LightExtensionSelectableEntryRecord): string {
   return entry.title || entry.entryName || entry.id;
+}
+
+function toSupportedKind(value: string | undefined): LightExtensionKind | undefined {
+  if (value && (LIGHT_EXTENSION_SUPPORTED_KINDS as readonly string[]).includes(value)) {
+    return value as LightExtensionKind;
+  }
+
+  return undefined;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

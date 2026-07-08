@@ -185,6 +185,14 @@ const entryFileRules: Record<LightExtensionKind, EntryFileRule> = {
   },
 };
 
+const allowedRepoRootFiles = new Set(['README.md', 'light-extension.json', 'tsconfig.json']);
+const sharedSourceRoot = 'src/shared';
+const sharedAllowedExtensions = new Set(['.ts', '.tsx', '.js', '.jsx', '.json', '.md']);
+const allowedClientSdkImports = new Set([
+  '@nocobase/light-extension-sdk/client',
+  '@nocobase/light-extension-sdk/shared',
+]);
+const allowedSdkRuntimeHelpers = new Set(['defineSettings', 'assertSettings']);
 const globalObjectNames = new Set(['globalThis', 'window', 'global', 'self']);
 const globalAliasMemberNames = new Set(['globalThis', 'window', 'global', 'self']);
 const defaultReflectObjectAliases = new Set(['Reflect']);
@@ -249,6 +257,7 @@ export class LightExtensionValidator {
     const normalizedFiles = this.normalizeFiles(input.files, diagnostics);
     const entryBuckets = this.collectEntryBuckets(normalizedFiles, diagnostics);
     const entries = entryBuckets.map((bucket) => this.validateEntry(bucket));
+    diagnostics.push(...this.validateSharedFiles(normalizedFiles));
     attachDiagnosticsToEntries(diagnostics, entries);
     const allDiagnostics = sortDiagnostics(
       uniqueDiagnostics([...diagnostics, ...entries.flatMap((entry) => entry.diagnostics)]),
@@ -312,6 +321,9 @@ export class LightExtensionValidator {
     for (const file of normalizedFiles) {
       const pathKind = classifySourcePath(file.path);
       if (pathKind.status !== 'enabled' && pathKind.status !== 'kindDisabled') {
+        if (pathKind.status === 'shared') {
+          diagnostics.push(...this.validateSharedFile(file));
+        }
         continue;
       }
 
@@ -423,6 +435,12 @@ export class LightExtensionValidator {
       if (pathKind.status === 'unsupported') {
         diagnostics.push(
           diagnostic('path_not_allowed', 'error', 'Source file path is outside the allowed light-extension roots', {
+            path,
+          }),
+        );
+      } else if (pathKind.status === 'shared' && !isAllowedSharedFilePath(path)) {
+        diagnostics.push(
+          diagnostic('path_extension_not_allowed', 'error', 'Source file path is not allowed for shared helpers', {
             path,
           }),
         );
@@ -587,6 +605,20 @@ export class LightExtensionValidator {
       settingsSchema,
       diagnostics,
     };
+  }
+
+  private validateSharedFiles(files: NormalizedSourceFile[]): LightExtensionDiagnostic[] {
+    return files
+      .filter((file) => classifySourcePath(file.path).status === 'shared')
+      .flatMap((file) => this.validateSharedFile(file));
+  }
+
+  private validateSharedFile(file: NormalizedSourceFile): LightExtensionDiagnostic[] {
+    if (!isCodeFile(file.path)) {
+      return [];
+    }
+
+    return this.validateCodeFile(file, {}, 'shared');
   }
 
   private validateMetaFile(
@@ -980,6 +1012,7 @@ export class LightExtensionValidator {
   private validateCodeFile(
     file: NormalizedSourceFile,
     target: Omit<DiagnosticTarget, 'path'>,
+    boundary: 'entry' | 'shared' = 'entry',
   ): LightExtensionDiagnostic[] {
     const sourceFile = ts.createSourceFile(
       file.path,
@@ -995,6 +1028,7 @@ export class LightExtensionValidator {
         'source_parse_error',
         'error',
         ts.flattenDiagnosticMessageText(item.messageText, '\n'),
+        target,
       ),
     );
     const globalObjectAliases = new Set(globalObjectNames);
@@ -1013,24 +1047,22 @@ export class LightExtensionValidator {
       if (ts.isImportDeclaration(node)) {
         const specifier = getImportSpecifier(node.moduleSpecifier);
         if (specifier && !specifier.startsWith('.')) {
+          diagnostics.push(...validateExternalSdkImport(node, sourceFile, specifier, target));
+        } else if (
+          specifier &&
+          (boundary === 'shared'
+            ? isRelativeImportOutsideSharedRoot(file.path, specifier)
+            : isRelativeImportOutsideCurrentEntry(file.path, specifier, target))
+        ) {
           diagnostics.push(
             diagnosticAt(
               sourceFile,
               node.moduleSpecifier.getStart(sourceFile),
               'import_not_allowed',
               'error',
-              `Import "${specifier}" is not allowed in light-extension source`,
-              target,
-            ),
-          );
-        } else if (specifier && isRelativeImportOutsideCurrentEntry(file.path, specifier, target)) {
-          diagnostics.push(
-            diagnosticAt(
-              sourceFile,
-              node.moduleSpecifier.getStart(sourceFile),
-              'import_not_allowed',
-              'error',
-              `Relative import "${specifier}" must stay within the current light-extension entry`,
+              boundary === 'shared'
+                ? `Relative import "${specifier}" must stay within src/shared`
+                : `Relative import "${specifier}" must stay within the current light-extension entry or src/shared`,
               target,
             ),
           );
@@ -1050,14 +1082,21 @@ export class LightExtensionValidator {
               target,
             ),
           );
-        } else if (specifier && isRelativeImportOutsideCurrentEntry(file.path, specifier, target)) {
+        } else if (
+          specifier &&
+          (boundary === 'shared'
+            ? isRelativeImportOutsideSharedRoot(file.path, specifier)
+            : isRelativeImportOutsideCurrentEntry(file.path, specifier, target))
+        ) {
           diagnostics.push(
             diagnosticAt(
               sourceFile,
               node.moduleSpecifier.getStart(sourceFile),
               'import_not_allowed',
               'error',
-              `Relative re-export "${specifier}" must stay within the current light-extension entry`,
+              boundary === 'shared'
+                ? `Relative re-export "${specifier}" must stay within src/shared`
+                : `Relative re-export "${specifier}" must stay within the current light-extension entry or src/shared`,
               target,
             ),
           );
@@ -3212,6 +3251,9 @@ export function buildCapabilities(limits: LightExtensionValidationLimits): Light
     allowedPaths: {
       repo: [
         'README.md',
+        'light-extension.json',
+        'tsconfig.json',
+        'src/shared/**',
         'src/client/js-blocks/**',
         'src/client/js-fields/**',
         'src/client/js-actions/**',
@@ -3245,6 +3287,10 @@ export function entryHasErrors(entry: LightExtensionEntryValidationResult): bool
 
 export function hasErrorDiagnostic(diagnostics: LightExtensionDiagnostic[]): boolean {
   return diagnostics.some((item) => item.severity === 'error');
+}
+
+export function getWorkspaceLevelDiagnostics(diagnostics: LightExtensionDiagnostic[]): LightExtensionDiagnostic[] {
+  return diagnostics.filter((item) => !item.kind || !item.entryName);
 }
 
 function attachDiagnosticsToEntries(
@@ -3443,12 +3489,18 @@ type SourcePathKind =
       kind: LightExtensionKind;
     }
   | {
+      status: 'shared';
+    }
+  | {
       status: 'unsupported' | 'ignored';
     };
 
 function classifySourcePath(path: string): SourcePathKind {
-  if (path === 'README.md') {
+  if (allowedRepoRootFiles.has(path)) {
     return { status: 'ignored' };
+  }
+  if (path.startsWith(`${sharedSourceRoot}/`)) {
+    return { status: 'shared' };
   }
 
   for (const kind of LIGHT_EXTENSION_SUPPORTED_KINDS) {
@@ -3498,6 +3550,119 @@ function isAllowedEntryFilePath(path: string): boolean {
   return rule.allowedExtensions.includes(pathPosix.extname(path));
 }
 
+function isAllowedSharedFilePath(path: string): boolean {
+  return path.startsWith(`${sharedSourceRoot}/`) && sharedAllowedExtensions.has(pathPosix.extname(path));
+}
+
+function validateExternalSdkImport(
+  node: ts.ImportDeclaration,
+  sourceFile: ts.SourceFile,
+  specifier: string,
+  target: Omit<DiagnosticTarget, 'path'>,
+): LightExtensionDiagnostic[] {
+  if (!allowedClientSdkImports.has(specifier)) {
+    return [
+      diagnosticAt(
+        sourceFile,
+        node.moduleSpecifier.getStart(sourceFile),
+        'import_not_allowed',
+        'error',
+        `Import "${specifier}" is not allowed in light-extension source`,
+        target,
+      ),
+    ];
+  }
+
+  const importClause = node.importClause;
+  if (!importClause) {
+    return [
+      diagnosticAt(
+        sourceFile,
+        node.moduleSpecifier.getStart(sourceFile),
+        'import_not_allowed',
+        'error',
+        `Side-effect import from "${specifier}" is not allowed in light-extension source`,
+        target,
+      ),
+    ];
+  }
+  if (importClause.name) {
+    return [
+      diagnosticAt(
+        sourceFile,
+        importClause.name.getStart(sourceFile),
+        'import_not_allowed',
+        'error',
+        `Default import from "${specifier}" is not allowed in light-extension source`,
+        target,
+      ),
+    ];
+  }
+  if (!importClause.namedBindings) {
+    return importClause.isTypeOnly
+      ? []
+      : [
+          diagnosticAt(
+            sourceFile,
+            importClause.getStart(sourceFile),
+            'import_not_allowed',
+            'error',
+            `Runtime import from "${specifier}" must use allowed helpers`,
+            target,
+          ),
+        ];
+  }
+  if (ts.isNamespaceImport(importClause.namedBindings)) {
+    return importClause.isTypeOnly
+      ? []
+      : [
+          diagnosticAt(
+            sourceFile,
+            importClause.namedBindings.getStart(sourceFile),
+            'import_not_allowed',
+            'error',
+            `Namespace import from "${specifier}" is only allowed as import type`,
+            target,
+          ),
+        ];
+  }
+  if (!importClause.isTypeOnly && importClause.namedBindings.elements.length === 0) {
+    return [
+      diagnosticAt(
+        sourceFile,
+        importClause.namedBindings.getStart(sourceFile),
+        'import_not_allowed',
+        'error',
+        `Runtime import from "${specifier}" must use allowed helpers`,
+        target,
+      ),
+    ];
+  }
+
+  const diagnostics: LightExtensionDiagnostic[] = [];
+  for (const element of importClause.namedBindings.elements) {
+    if (importClause.isTypeOnly || element.isTypeOnly) {
+      continue;
+    }
+    const imported = element.propertyName?.text || element.name.text;
+    if (allowedSdkRuntimeHelpers.has(imported)) {
+      continue;
+    }
+    diagnostics.push(
+      diagnosticAt(
+        sourceFile,
+        element.getStart(sourceFile),
+        'import_not_allowed',
+        'error',
+        `Runtime import "${imported}" from "${specifier}" is not allowed in light-extension source`,
+        target,
+      ),
+    );
+  }
+
+  return diagnostics;
+}
+
 function isRelativeImportOutsideCurrentEntry(
   filePath: string,
   specifier: string,
@@ -3508,8 +3673,16 @@ function isRelativeImportOutsideCurrentEntry(
   }
 
   const resolvedPath = normalizeSourcePath(pathPosix.join(pathPosix.dirname(filePath), specifier));
+  if (resolvedPath === sharedSourceRoot || resolvedPath.startsWith(`${sharedSourceRoot}/`)) {
+    return false;
+  }
   const rootPath = getEntryRootPath(target.kind, target.entryName);
   return resolvedPath !== rootPath && !resolvedPath.startsWith(`${rootPath}/`);
+}
+
+function isRelativeImportOutsideSharedRoot(filePath: string, specifier: string): boolean {
+  const resolvedPath = normalizeSourcePath(pathPosix.join(pathPosix.dirname(filePath), specifier));
+  return resolvedPath !== sharedSourceRoot && !resolvedPath.startsWith(`${sharedSourceRoot}/`);
 }
 
 function buildEntryAllowedPaths(): Record<string, string[]> {

@@ -14,6 +14,7 @@ import { useTranslation } from 'react-i18next';
 import { useFlowContext } from '@nocobase/flow-engine';
 import { NAMESPACE } from '../../constants';
 import type {
+  LightExtensionKind,
   LightExtensionPublicationMetadataRecord,
   LightExtensionRuntimeSourceBinding,
   LightExtensionSelectableEntryRecord,
@@ -23,6 +24,7 @@ import { listSelectableLightExtensionEntries } from '../api/lightExtensionEntrie
 
 export interface RepoEntryPublicationSelectorProps {
   value?: LightExtensionRuntimeSourceBinding | null;
+  kind?: LightExtensionKind;
   onChange?: (
     binding: LightExtensionRuntimeSourceBinding,
     publication: LightExtensionPublicationMetadataRecord,
@@ -36,7 +38,7 @@ type FlowContextWithApi = {
   api: ApiClientLike;
 };
 
-type LightExtensionJSBlockSelection = Pick<LightExtensionRuntimeSourceBinding, 'type' | 'repoId' | 'entryId' | 'kind'> &
+type LightExtensionEntrySelection = Pick<LightExtensionRuntimeSourceBinding, 'type' | 'repoId' | 'entryId' | 'kind'> &
   Partial<Pick<LightExtensionRuntimeSourceBinding, 'publicationId' | 'versionPolicy'>>;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -47,7 +49,10 @@ function isEmptyRecord(value: unknown): value is Record<string, never> {
   return isRecord(value) && Object.keys(value).length === 0;
 }
 
-function isLightExtensionJSBlockSelection(value: unknown): value is LightExtensionJSBlockSelection {
+function isLightExtensionEntrySelection(
+  value: unknown,
+  expectedKind: LightExtensionKind,
+): value is LightExtensionEntrySelection {
   return (
     isRecord(value) &&
     value.type === 'light-extension-entry' &&
@@ -55,13 +60,16 @@ function isLightExtensionJSBlockSelection(value: unknown): value is LightExtensi
     value.repoId.trim().length > 0 &&
     typeof value.entryId === 'string' &&
     value.entryId.trim().length > 0 &&
-    value.kind === 'js-block'
+    value.kind === expectedKind
   );
 }
 
-function isLightExtensionJSBlockBinding(value: unknown): value is LightExtensionRuntimeSourceBinding {
+function isLightExtensionEntryBinding(
+  value: unknown,
+  expectedKind: LightExtensionKind,
+): value is LightExtensionRuntimeSourceBinding {
   return (
-    isLightExtensionJSBlockSelection(value) &&
+    isLightExtensionEntrySelection(value, expectedKind) &&
     typeof value.publicationId === 'string' &&
     value.publicationId.trim().length > 0 &&
     (typeof value.versionPolicy === 'undefined' ||
@@ -105,7 +113,7 @@ function toBinding(
     entryId: entry.id,
     entryTitle: getEntryLabel(entry),
     entryName: entry.entryName,
-    kind: 'js-block',
+    kind: entry.kind,
     publicationId: publication.id,
     versionPolicy: 'follow-active',
   };
@@ -113,6 +121,7 @@ function toBinding(
 
 export const RepoEntryPublicationSelector: React.FC<RepoEntryPublicationSelectorProps> = ({
   value,
+  kind = 'js-block',
   onChange,
   onClear,
   disabled,
@@ -135,21 +144,21 @@ export const RepoEntryPublicationSelector: React.FC<RepoEntryPublicationSelector
   const valueRepoId = controlledValue?.repoId;
   const valueEntryId = controlledValue?.entryId;
 
-  const jsBlockEntries = React.useMemo(
-    () => entries.filter((entry) => entry.kind === 'js-block' && hasActivePublication(entry)),
-    [entries],
+  const selectableEntries = React.useMemo(
+    () => entries.filter((entry) => entry.kind === kind && hasActivePublication(entry)),
+    [entries, kind],
   );
   const repoIds = React.useMemo(
-    () => Array.from(new Set(jsBlockEntries.map((entry) => entry.repoId))),
-    [jsBlockEntries],
+    () => Array.from(new Set(selectableEntries.map((entry) => entry.repoId))),
+    [selectableEntries],
   );
   const entriesInRepo = React.useMemo(
-    () => jsBlockEntries.filter((entry) => !repoId || entry.repoId === repoId),
-    [jsBlockEntries, repoId],
+    () => selectableEntries.filter((entry) => !repoId || entry.repoId === repoId),
+    [selectableEntries, repoId],
   );
   const selectedEntry = React.useMemo(
-    () => jsBlockEntries.find((entry) => entry.id === entryId) || null,
-    [entryId, jsBlockEntries],
+    () => selectableEntries.find((entry) => entry.id === entryId) || null,
+    [entryId, selectableEntries],
   );
   const selectedPublication = selectedEntry?.activePublication || null;
 
@@ -161,15 +170,18 @@ export const RepoEntryPublicationSelector: React.FC<RepoEntryPublicationSelector
     onClearRef.current = onClear;
   }, [onClear]);
 
-  const notifyClear = React.useCallback((binding?: unknown) => {
-    const bindingKey = isLightExtensionJSBlockBinding(binding) ? getBindingKey(binding) : null;
-    if (bindingKey && lastClearedBindingRef.current === bindingKey) {
-      return;
-    }
-    lastClearedBindingRef.current = bindingKey;
-    lastEmittedBindingRef.current = null;
-    onClearRef.current?.();
-  }, []);
+  const notifyClear = React.useCallback(
+    (binding?: unknown) => {
+      const bindingKey = isLightExtensionEntryBinding(binding, kind) ? getBindingKey(binding) : null;
+      if (bindingKey && lastClearedBindingRef.current === bindingKey) {
+        return;
+      }
+      lastClearedBindingRef.current = bindingKey;
+      lastEmittedBindingRef.current = null;
+      onClearRef.current?.();
+    },
+    [kind],
+  );
 
   const clearInvalidControlledBinding = React.useCallback(
     (binding?: unknown) => {
@@ -187,7 +199,7 @@ export const RepoEntryPublicationSelector: React.FC<RepoEntryPublicationSelector
   }, [notifyClear]);
 
   React.useEffect(() => {
-    if (controlledValue && !isLightExtensionJSBlockSelection(controlledValue)) {
+    if (controlledValue && !isLightExtensionEntrySelection(controlledValue, kind)) {
       hadControlledValueRef.current = false;
       clearInvalidControlledBinding(controlledValue);
       return;
@@ -210,7 +222,7 @@ export const RepoEntryPublicationSelector: React.FC<RepoEntryPublicationSelector
     lastClearedBindingRef.current = null;
     setRepoId(valueRepoId);
     setEntryId(valueEntryId);
-  }, [clearInvalidControlledBinding, controlledValue, valueEntryId, valueRepoId]);
+  }, [clearInvalidControlledBinding, controlledValue, kind, valueEntryId, valueRepoId]);
 
   React.useEffect(() => {
     let mounted = true;
@@ -218,14 +230,14 @@ export const RepoEntryPublicationSelector: React.FC<RepoEntryPublicationSelector
     setError(null);
     const loadEntries = async () => {
       try {
-        const nextEntries = await listSelectableLightExtensionEntries(ctx.api);
+        const nextEntries = await listSelectableLightExtensionEntries(ctx.api, { kind });
         if (!mounted) {
           return;
         }
-        const filtered = nextEntries.filter((entry) => entry.kind === 'js-block' && hasActivePublication(entry));
+        const filtered = nextEntries.filter((entry) => entry.kind === kind && hasActivePublication(entry));
         setEntries(filtered);
         const currentValue = latestValueRef.current;
-        if (currentValue && !isLightExtensionJSBlockSelection(currentValue)) {
+        if (currentValue && !isLightExtensionEntrySelection(currentValue, kind)) {
           clearInvalidControlledBinding(currentValue);
           return;
         }
@@ -262,17 +274,17 @@ export const RepoEntryPublicationSelector: React.FC<RepoEntryPublicationSelector
     return () => {
       mounted = false;
     };
-  }, [clearInvalidControlledBinding, ctx.api, t]);
+  }, [clearInvalidControlledBinding, ctx.api, kind, t]);
 
   React.useEffect(() => {
-    if (controlledValue && !isLightExtensionJSBlockSelection(controlledValue)) {
+    if (controlledValue && !isLightExtensionEntrySelection(controlledValue, kind)) {
       clearInvalidControlledBinding(controlledValue);
       return;
     }
-    if (!controlledValue?.entryId || jsBlockEntries.length === 0) {
+    if (!controlledValue?.entryId || selectableEntries.length === 0) {
       return;
     }
-    const entryFromValue = jsBlockEntries.find(
+    const entryFromValue = selectableEntries.find(
       (entry) =>
         entry.id === controlledValue.entryId && (!controlledValue.repoId || entry.repoId === controlledValue.repoId),
     );
@@ -286,7 +298,7 @@ export const RepoEntryPublicationSelector: React.FC<RepoEntryPublicationSelector
     if (entryId !== entryFromValue.id) {
       setEntryId(entryFromValue.id);
     }
-  }, [clearInvalidControlledBinding, controlledValue, entryId, jsBlockEntries, repoId]);
+  }, [clearInvalidControlledBinding, controlledValue, entryId, kind, repoId, selectableEntries]);
 
   React.useEffect(() => {
     if (!selectedEntry || !selectedPublication) {
@@ -314,7 +326,7 @@ export const RepoEntryPublicationSelector: React.FC<RepoEntryPublicationSelector
   const handleRepoChange = (nextRepoId: string) => {
     autoSelectionBlockedRef.current = false;
     setRepoId(nextRepoId);
-    const nextEntry = jsBlockEntries.find((entry) => entry.repoId === nextRepoId);
+    const nextEntry = selectableEntries.find((entry) => entry.repoId === nextRepoId);
     setEntryId(nextEntry?.id);
     if (!nextEntry) {
       clearEntrySelection();
@@ -323,7 +335,7 @@ export const RepoEntryPublicationSelector: React.FC<RepoEntryPublicationSelector
 
   const handleEntryChange = (nextEntryId: string) => {
     autoSelectionBlockedRef.current = false;
-    const nextEntry = jsBlockEntries.find((entry) => entry.id === nextEntryId);
+    const nextEntry = selectableEntries.find((entry) => entry.id === nextEntryId);
     setRepoId(nextEntry?.repoId);
     setEntryId(nextEntryId);
     if (!nextEntry) {
@@ -356,7 +368,9 @@ export const RepoEntryPublicationSelector: React.FC<RepoEntryPublicationSelector
 };
 
 function getBindingKey(binding: LightExtensionRuntimeSourceBinding): string {
-  return [binding.repoId, binding.entryId, binding.publicationId, binding.versionPolicy || 'pinned'].join(':');
+  return [binding.repoId, binding.entryId, binding.kind, binding.publicationId, binding.versionPolicy || 'pinned'].join(
+    ':',
+  );
 }
 
 function getErrorMessage(error: unknown): string | undefined {

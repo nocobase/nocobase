@@ -344,6 +344,10 @@ exports.genTsConfigPaths = function genTsConfigPaths() {
     if (packageJsonName === '@nocobase/plugin-workflow-test') {
       paths[`${packageJsonName}/e2e`] = [`${relativePath}/src/e2e`];
     }
+    if (packageJsonName === '@nocobase/plugin-light-extension') {
+      paths['@nocobase/light-extension-sdk/client'] = [`${relativePath}/src/sdk/client`];
+      paths['@nocobase/light-extension-sdk/shared'] = [`${relativePath}/src/sdk/shared`];
+    }
   });
 
   const tsConfigJsonPath = join(cwd, './tsconfig.paths.json');

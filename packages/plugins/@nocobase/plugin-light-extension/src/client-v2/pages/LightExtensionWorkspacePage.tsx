@@ -66,6 +66,44 @@ export interface LightExtensionWorkspaceFooterActions {
 }
 
 const LIGHT_EXTENSION_SOURCE_ROOT = 'src/client/js-blocks';
+const LIGHT_EXTENSION_SHARED_ROOT = 'src/shared';
+const LIGHT_EXTENSION_SDK_SHIM_PATH = `${LIGHT_EXTENSION_SHARED_ROOT}/light-extension-sdk.d.ts`;
+const LIGHT_EXTENSION_SDK_SHIM_CONTENT = `declare module "@nocobase/light-extension-sdk/client" {
+  export interface LightExtensionSettingsContext<TSettings = unknown> {
+    settings: TSettings;
+  }
+
+  export function defineSettings<TSettings>(settings: TSettings): TSettings;
+  export function assertSettings<TSettings>(settings: TSettings): TSettings;
+}
+
+declare module "@nocobase/light-extension-sdk/shared" {
+  export interface LightExtensionSettingsContext<TSettings = unknown> {
+    settings: TSettings;
+  }
+
+  export function defineSettings<TSettings>(settings: TSettings): TSettings;
+  export function assertSettings<TSettings>(settings: TSettings): TSettings;
+}
+`;
+const LIGHT_EXTENSION_TSCONFIG_CONTENT =
+  '{\n  "compilerOptions": {\n    "baseUrl": ".",\n    "jsx": "react-jsx",\n    "strict": true,\n    "target": "ES2020",\n    "paths": {\n      "@nocobase/light-extension-sdk/client": ["src/shared/light-extension-sdk.d.ts"],\n      "@nocobase/light-extension-sdk/shared": ["src/shared/light-extension-sdk.d.ts"]\n    }\n  }\n}\n';
+const LIGHT_EXTENSION_REPO_ROOT_FILE_PATHS = ['README.md', 'light-extension.json', 'tsconfig.json'] as const;
+const LIGHT_EXTENSION_REPO_ROOT_FILES = new Set<string>(LIGHT_EXTENSION_REPO_ROOT_FILE_PATHS);
+const LIGHT_EXTENSION_CLIENT_KIND_TEMPLATE_FILES = [
+  'src/client/js-fields/phone-link/index.tsx',
+  'src/client/js-actions/show-message/index.ts',
+  'src/client/js-items/row-menu-label/index.tsx',
+  'src/client/runjs/normalize-form-values/index.ts',
+  'src/client/events/log-page-open/index.ts',
+] as const;
+const LIGHT_EXTENSION_CLIENT_KIND_ROOTS = [
+  'src/client/js-fields',
+  'src/client/js-actions',
+  'src/client/js-items',
+  'src/client/runjs',
+  'src/client/events',
+] as const;
 const DEFAULT_NEW_FILE_NAME = 'helper';
 const DEFAULT_NEW_FILE_EXTENSION = '.ts';
 const noop = () => undefined;
@@ -133,7 +171,7 @@ function LightExtensionWorkspacePage({
 
         const pullResult = await pull({ repoId, includeContent: 'all' });
         const pulledFiles = normalizeWorkspaceFiles(pullResult.files || []);
-        const nextFiles = pulledFiles.length > 0 ? pulledFiles : buildJsBlockTemplate([]);
+        const nextFiles = pulledFiles.length > 0 ? pulledFiles : buildLightExtensionTemplate([]);
         const nextActivePath = resolveActivePath(nextFiles, undefined);
         const commits = await listCommits({ repoId, limit: 20 }).catch(() => []);
         setBaseCommitId(pullResult.commit?.id || null);
@@ -159,9 +197,14 @@ function LightExtensionWorkspacePage({
   }, [loadWorkspace]);
 
   const activeFile = files.find((file) => file.path === activePath);
-  const dirtyChanges = useMemo(() => buildFileChanges(baseFiles, files), [baseFiles, files]);
-  const diffRows = useMemo(() => buildLineDiffRows(baseFiles, files, activePath), [activePath, baseFiles, files]);
-  const changeSummary = useMemo(() => summarizeWorkspaceChanges(baseFiles, files), [baseFiles, files]);
+  const authoringFiles = useMemo(() => addLightExtensionSdkShim(files), [files]);
+  const filesForSave = useMemo(() => ensurePersistedLightExtensionSdkShim(files), [files]);
+  const dirtyChanges = useMemo(() => buildFileChanges(baseFiles, filesForSave), [baseFiles, filesForSave]);
+  const diffRows = useMemo(
+    () => buildLineDiffRows(baseFiles, filesForSave, activePath),
+    [activePath, baseFiles, filesForSave],
+  );
+  const changeSummary = useMemo(() => summarizeWorkspaceChanges(baseFiles, filesForSave), [baseFiles, filesForSave]);
   const hasUnsavedLocalChanges = dirtyChanges.length > 0;
   const canWrite = Boolean(repo && repo.lifecycleStatus !== 'archived');
 
@@ -198,9 +241,10 @@ function LightExtensionWorkspacePage({
     const nextFiles = mergeFiles(files, [
       {
         path: nextPath,
-        content: '',
+        content: getDefaultWorkspaceFileContent(nextPath),
         language: languageFromPath(nextPath),
       },
+      ...getCompanionWorkspaceFiles(nextPath, files),
     ]);
     setFiles(nextFiles);
     setFolders((current) => mergeFolders(current, collectWorkspaceFolders(nextFiles)));
@@ -665,7 +709,7 @@ function LightExtensionWorkspacePage({
                     showRunButton={false}
                     t={studioT}
                     version="v2"
-                    workspaceFiles={files}
+                    workspaceFiles={authoringFiles}
                   />
                 ) : null}
               </main>
@@ -760,7 +804,35 @@ function uniqueStrings(values: string[]): string[] {
 }
 
 function buildNewFilePath(files: WorkspaceFile[], parentPath: string): string {
+  const normalizedParent = normalizeWorkspacePath(parentPath);
+  const existing = new Set(files.map((file) => file.path));
+  if (normalizedParent === 'src/client') {
+    const missingRootFile = LIGHT_EXTENSION_REPO_ROOT_FILE_PATHS.find((path) => !existing.has(path));
+    if (missingRootFile) {
+      return missingRootFile;
+    }
+    if (!existing.has(LIGHT_EXTENSION_SDK_SHIM_PATH)) {
+      return LIGHT_EXTENSION_SDK_SHIM_PATH;
+    }
+    const missingClientKindTemplate = LIGHT_EXTENSION_CLIENT_KIND_TEMPLATE_FILES.find((path) => !existing.has(path));
+    if (missingClientKindTemplate) {
+      return missingClientKindTemplate;
+    }
+
+    const sharedHelperPath = buildUniqueWorkspaceFilePath(files, LIGHT_EXTENSION_SHARED_ROOT);
+    if (sharedHelperPath) {
+      return sharedHelperPath;
+    }
+  }
+
   const folder = resolveCreateFolder(parentPath);
+  return (
+    buildUniqueWorkspaceFilePath(files, folder) ||
+    `${folder}/${DEFAULT_NEW_FILE_NAME}${Date.now()}${DEFAULT_NEW_FILE_EXTENSION}`
+  );
+}
+
+function buildUniqueWorkspaceFilePath(files: WorkspaceFile[], folder: string): string | null {
   const existing = new Set(files.map((file) => file.path));
   let index = 0;
 
@@ -773,10 +845,65 @@ function buildNewFilePath(files: WorkspaceFile[], parentPath: string): string {
     index += 1;
   }
 
-  return `${folder}/${DEFAULT_NEW_FILE_NAME}${Date.now()}${DEFAULT_NEW_FILE_EXTENSION}`;
+  return null;
+}
+
+function getDefaultWorkspaceFileContent(path: string): string {
+  if (path === 'README.md') {
+    return '# Light extension source\n';
+  }
+  if (path === 'light-extension.json') {
+    return '{\n  "schemaVersion": 1\n}\n';
+  }
+  if (path === 'tsconfig.json') {
+    return LIGHT_EXTENSION_TSCONFIG_CONTENT;
+  }
+  if (path === LIGHT_EXTENSION_SDK_SHIM_PATH) {
+    return LIGHT_EXTENSION_SDK_SHIM_CONTENT;
+  }
+  if (path === 'src/client/js-fields/phone-link/index.tsx') {
+    return 'import { type LightExtensionSettingsContext, defineSettings } from "@nocobase/light-extension-sdk/client";\nimport { formatValue } from "../../../shared/format";\n\nexport const settings = defineSettings({\n  type: "object",\n  properties: {}\n});\n\nexport default function PhoneLink(ctx: LightExtensionSettingsContext) {\n  return formatValue(ctx.settings);\n}\n';
+  }
+  if (path === 'src/client/js-actions/show-message/index.ts') {
+    return 'export default async function showMessage() {\n  return true;\n}\n';
+  }
+  if (path === 'src/client/js-items/row-menu-label/index.tsx') {
+    return 'export default function RowMenuLabel() {\n  return "Row menu";\n}\n';
+  }
+  if (path === 'src/client/runjs/normalize-form-values/index.ts') {
+    return 'export default async function normalizeFormValues(values: Record<string, unknown>) {\n  return values;\n}\n';
+  }
+  if (path === 'src/client/events/log-page-open/index.ts') {
+    return 'export default function logPageOpen() {\n  return true;\n}\n';
+  }
+
+  return '';
+}
+
+function getCompanionWorkspaceFiles(path: string, files: WorkspaceFile[]): WorkspaceFile[] {
+  if (path !== 'tsconfig.json' || files.some((file) => file.path === LIGHT_EXTENSION_SDK_SHIM_PATH)) {
+    return [];
+  }
+
+  return [
+    {
+      path: LIGHT_EXTENSION_SDK_SHIM_PATH,
+      content: LIGHT_EXTENSION_SDK_SHIM_CONTENT,
+      language: 'typescript',
+    },
+  ];
 }
 
 function buildNewFolderPath(files: WorkspaceFile[], folders: string[], parentPath: string): string {
+  const normalizedParent = normalizeWorkspacePath(parentPath);
+  if (normalizedParent === 'src/client') {
+    const existingClientFolders = new Set([...folders, ...collectWorkspaceFolders(files)]);
+    const missingClientKindRoot = LIGHT_EXTENSION_CLIENT_KIND_ROOTS.find((path) => !existingClientFolders.has(path));
+    if (missingClientKindRoot) {
+      return missingClientKindRoot;
+    }
+  }
+
   const folder = resolveCreateFolder(parentPath);
   const existing = new Set([...folders, ...collectWorkspaceFolders(files)]);
   let index = 0;
@@ -795,7 +922,7 @@ function buildNewFolderPath(files: WorkspaceFile[], folders: string[], parentPat
 
 function resolveCreateFolder(parentPath: string): string {
   const normalized = normalizeWorkspacePath(parentPath);
-  if (!normalized || normalized === 'src/client') {
+  if (!normalized) {
     return LIGHT_EXTENSION_SOURCE_ROOT;
   }
 
@@ -811,11 +938,20 @@ function normalizeWorkspacePath(path: string): string {
 }
 
 function isValidWorkspaceFilePath(path: string): boolean {
-  return isValidWorkspaceFolderPath(getDirectory(path)) && Boolean(getBaseName(path)) && !path.includes('/../');
+  if (!path || path.includes('/../') || path.includes('..')) {
+    return false;
+  }
+  if (LIGHT_EXTENSION_REPO_ROOT_FILES.has(path)) {
+    return true;
+  }
+  return isValidWorkspaceFolderPath(getDirectory(path)) && Boolean(getBaseName(path));
 }
 
 function isValidWorkspaceFolderPath(path: string): boolean {
-  return Boolean(path) && (path === 'src' || path.startsWith('src/')) && !path.includes('..');
+  if (!path || path.includes('..')) {
+    return false;
+  }
+  return path === 'src' || path.startsWith('src/');
 }
 
 function getDirectory(path: string): string {
@@ -826,6 +962,12 @@ function getDirectory(path: string): string {
 function getBaseName(path: string): string {
   const index = path.lastIndexOf('/');
   return index >= 0 ? path.slice(index + 1) : path;
+}
+
+function getExtension(path: string): string {
+  const baseName = getBaseName(path);
+  const index = baseName.lastIndexOf('.');
+  return index >= 0 ? baseName.slice(index) : '';
 }
 
 function replacePathPrefix(path: string, oldPrefix: string, nextPrefix: string): string {
@@ -989,15 +1131,46 @@ function buildFileChanges(baseFiles: WorkspaceFile[], files: WorkspaceFile[]): L
   return changes.sort((left, right) => left.path.localeCompare(right.path));
 }
 
-export function buildJsBlockTemplate(files: Array<{ path: string }>): LightExtensionTemplateFile[] {
+export function buildLightExtensionTemplate(files: Array<{ path: string }>): LightExtensionTemplateFile[] {
   const existing = new Set(files.map((file) => file.path));
   const entryName = nextEntryName(existing);
   const root = `src/client/js-blocks/${entryName}`;
+  const jsFieldRoot = 'src/client/js-fields/phone-link';
+  const jsActionRoot = 'src/client/js-actions/show-message';
+  const jsItemRoot = 'src/client/js-items/row-menu-label';
+  const runjsRoot = 'src/client/runjs/normalize-form-values';
+  const eventRoot = 'src/client/events/log-page-open';
 
   return [
     {
+      path: 'README.md',
+      content: '# Light extension source\n',
+      language: 'markdown',
+    },
+    {
+      path: 'light-extension.json',
+      content: '{\n  "schemaVersion": 1\n}\n',
+      language: 'json',
+    },
+    {
+      path: 'tsconfig.json',
+      content: LIGHT_EXTENSION_TSCONFIG_CONTENT,
+      language: 'json',
+    },
+    {
+      path: `${LIGHT_EXTENSION_SHARED_ROOT}/format.ts`,
+      content: 'export function formatValue(value: unknown): string {\n  return String(value ?? "");\n}\n',
+      language: 'typescript',
+    },
+    {
+      path: LIGHT_EXTENSION_SDK_SHIM_PATH,
+      content: LIGHT_EXTENSION_SDK_SHIM_CONTENT,
+      language: 'typescript',
+    },
+    {
       path: `${root}/index.tsx`,
-      content: 'ctx.render(<div>Sales KPI</div>);\n',
+      content:
+        'import { formatValue } from "../../../shared/format";\n\nctx.render(<div>{formatValue("Sales KPI")}</div>);\n',
       language: 'typescript',
     },
     {
@@ -1012,7 +1185,77 @@ export function buildJsBlockTemplate(files: Array<{ path: string }>): LightExten
         '{\n  "type": "object",\n  "properties": {\n    "region": {\n      "type": "string",\n      "title": "Region",\n      "x-component": "Input"\n    }\n  }\n}\n',
       language: 'json',
     },
+    {
+      path: `${jsFieldRoot}/index.tsx`,
+      content:
+        'import { type LightExtensionSettingsContext, defineSettings } from "@nocobase/light-extension-sdk/client";\nimport { formatValue } from "../../../shared/format";\n\nexport const settings = defineSettings({\n  type: "object",\n  properties: {}\n});\n\nexport default function PhoneLink(ctx: LightExtensionSettingsContext) {\n  return formatValue(ctx.settings);\n}\n',
+      language: 'typescript',
+    },
+    {
+      path: `${jsActionRoot}/index.ts`,
+      content: 'export default async function showMessage() {\n  return true;\n}\n',
+      language: 'typescript',
+    },
+    {
+      path: `${jsItemRoot}/index.tsx`,
+      content: 'export default function RowMenuLabel() {\n  return "Row menu";\n}\n',
+      language: 'typescript',
+    },
+    {
+      path: `${runjsRoot}/index.ts`,
+      content:
+        'export default async function normalizeFormValues(values: Record<string, unknown>) {\n  return values;\n}\n',
+      language: 'typescript',
+    },
+    {
+      path: `${eventRoot}/index.ts`,
+      content: 'export default function logPageOpen() {\n  return true;\n}\n',
+      language: 'typescript',
+    },
   ];
+}
+
+export function buildJsBlockTemplate(files: Array<{ path: string }>): LightExtensionTemplateFile[] {
+  return buildLightExtensionTemplate(files).filter((file) => file.path.startsWith('src/client/js-blocks/'));
+}
+
+function addLightExtensionSdkShim(files: WorkspaceFile[]): WorkspaceFile[] {
+  return shouldAddLightExtensionSdkShim(files) ? addWorkspaceSdkShim(files) : files;
+}
+
+function ensurePersistedLightExtensionSdkShim(files: WorkspaceFile[]): WorkspaceFile[] {
+  return shouldPersistLightExtensionSdkShim(files) ? addWorkspaceSdkShim(files) : files;
+}
+
+function shouldAddLightExtensionSdkShim(files: WorkspaceFile[]): boolean {
+  return !files.some((file) => file.path === LIGHT_EXTENSION_SDK_SHIM_PATH);
+}
+
+function shouldPersistLightExtensionSdkShim(files: WorkspaceFile[]): boolean {
+  if (files.some((file) => file.path === LIGHT_EXTENSION_SDK_SHIM_PATH)) {
+    return false;
+  }
+
+  return files.some(
+    (file) =>
+      (file.path === 'tsconfig.json' && file.content.includes('@nocobase/light-extension-sdk/')) ||
+      (isCodeFilePath(file.path) && file.content.includes('@nocobase/light-extension-sdk/')),
+  );
+}
+
+function addWorkspaceSdkShim(files: WorkspaceFile[]): WorkspaceFile[] {
+  return [
+    ...files,
+    {
+      path: LIGHT_EXTENSION_SDK_SHIM_PATH,
+      content: LIGHT_EXTENSION_SDK_SHIM_CONTENT,
+      language: 'typescript',
+    },
+  ];
+}
+
+function isCodeFilePath(path: string): boolean {
+  return ['.ts', '.tsx', '.js', '.jsx'].includes(getExtension(path));
 }
 
 function nextEntryName(existing: Set<string>): string {

@@ -82,6 +82,95 @@ describe('plugin-light-extension publish partial results', () => {
     );
   });
 
+  it('blocks publish when workspace-level shared diagnostics contain errors', async () => {
+    const repo = createRepo();
+    const { db, publicationsRepository, reposRepository } = createDbStub([
+      createEntryRecord({ id: 'lee_sales_kpi', repoId: repo.id, entryName: 'sales-kpi' }),
+    ]);
+    const service = createPublishService(
+      db,
+      createFileServiceStub(repo, [
+        ...validSalesKpiFiles(),
+        {
+          path: 'src/shared/style.css',
+          content: '.root {}',
+        },
+      ]),
+    );
+
+    const result = await service.publish({
+      repoId: repo.id,
+      entryIds: ['lee_sales_kpi'],
+      commitId: 'vsc_commit_1',
+      clientRequestId: 'publish_req_invalid_shared',
+    });
+
+    expect(result).toMatchObject({
+      status: 'failed',
+      httpStatus: 422,
+      entryResults: [
+        expect.objectContaining({
+          entryId: 'lee_sales_kpi',
+          status: 'failed',
+          reasonCode: 'validation_failed',
+          diagnostics: expect.arrayContaining([
+            expect.objectContaining({
+              code: 'path_extension_not_allowed',
+              path: 'src/shared/style.css',
+            }),
+          ]),
+        }),
+      ],
+    });
+    expect(publicationsRepository.create).not.toHaveBeenCalled();
+    expect(reposRepository.update).not.toHaveBeenCalled();
+  });
+
+  it('ignores unselected entry validation errors when publishing a selected valid entry', async () => {
+    const repo = createRepo();
+    const { db, publicationsRepository, reposRepository } = createDbStub([
+      createEntryRecord({ id: 'lee_sales_kpi', repoId: repo.id, entryName: 'sales-kpi' }),
+    ]);
+    const service = createPublishService(
+      db,
+      createFileServiceStub(repo, [
+        ...validSalesKpiFiles(),
+        {
+          path: 'src/client/js-fields/phone-link/index.tsx',
+          content: 'export default function PhoneLink() {\n  const value = ;\n  return value;\n}\n',
+        },
+      ]),
+    );
+
+    const result = await service.publish({
+      repoId: repo.id,
+      entryIds: ['lee_sales_kpi'],
+      commitId: 'vsc_commit_1',
+      clientRequestId: 'publish_req_selected_only',
+    });
+
+    expect(result).toMatchObject({
+      status: 'success',
+      httpStatus: 200,
+      diagnostics: [],
+      entryResults: [
+        expect.objectContaining({
+          entryId: 'lee_sales_kpi',
+          status: 'created',
+        }),
+      ],
+    });
+    expect(publicationsRepository.create).toHaveBeenCalledTimes(1);
+    expect(reposRepository.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        filterByTk: repo.id,
+        values: {
+          lastPublishedAt: expect.any(Date),
+        },
+      }),
+    );
+  });
+
   it('activates the created publication when activate is true', async () => {
     const repo = createRepo();
     const { db, entryModels, logsRepository } = createDbStub([
