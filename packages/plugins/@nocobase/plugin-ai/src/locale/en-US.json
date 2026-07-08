@@ -1,5 +1,9 @@
 {
   "API Key": "API Key",
+  "HTTP Referer": "HTTP Referer",
+  "App Title": "App Title",
+  "Optional. Sent as the \"HTTP-Referer\" header for app attribution.": "Optional. Sent as the \"HTTP-Referer\" header for app attribution.",
+  "Optional. Sent as the \"X-Title\" header for app attribution.": "Optional. Sent as the \"X-Title\" header for app attribution.",
   "AI employee": "AI employee",
   "AI employee event": "AI employee event",
   "AI employees": "AI employees",

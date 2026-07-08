@@ -252,6 +252,11 @@ function defaultDbDatabaseForDialect(value: PromptValue | undefined): string {
   return String(value ?? '').trim() === 'kingbase' ? 'kingbase' : DEFAULT_INSTALL_DB_DATABASE;
 }
 
+function supportsDbSchemaPrompt(value: PromptValue | undefined): boolean {
+  const dialect = String(value ?? '').trim();
+  return dialect === 'postgres' || dialect === 'kingbase';
+}
+
 function defaultDbHostForBuiltinDb(values: PromptCatalogValues): string {
   return values.builtinDb ? DEFAULT_INSTALL_BUILTIN_DB_HOST : DEFAULT_INSTALL_DB_HOST;
 }
@@ -819,7 +824,7 @@ export default class Install extends Command {
       type: 'text',
       message: installText('prompts.dbSchema.message'),
       placeholder: installText('prompts.dbSchema.placeholder'),
-      hidden: (values) => String(values.dbDialect ?? '').trim() !== 'postgres',
+      hidden: (values) => !supportsDbSchemaPrompt(values.dbDialect),
     },
     dbTablePrefix: {
       type: 'text',
@@ -3007,6 +3012,14 @@ export default class Install extends Command {
     await this.config.runCommand('env:update', [params.envName]);
   }
 
+  private buildAppStartArgv(params: { envName: string; verbose?: boolean }): string[] {
+    const argv = ['--env', params.envName, '--yes', '--no-sync-licensed-plugins', '--hook-command', 'init'];
+    if (params.verbose) {
+      argv.push('--verbose');
+    }
+    return argv;
+  }
+
   private async runInstallHookIfNeeded(params: {
     hookName: HookName;
     envName: string;
@@ -3296,7 +3309,6 @@ export default class Install extends Command {
     const parsed = {
       ...(flags as unknown as InstallParsedFlags & DownloadParsedFlags),
     } as InstallParsedFlags & DownloadParsedFlags;
-    const defaultApiHost = await resolveDefaultApiHost();
     if (parsed['skip-auth'] && (parsed['access-token'] !== undefined || parsed.token !== undefined)) {
       this.error('--skip-auth cannot be used with --access-token or --token.');
     }
@@ -3384,8 +3396,7 @@ export default class Install extends Command {
       dbResults.dbPassword = builtinDbPlan.dbPassword;
     }
 
-    let dockerAppPlan: DockerAppPlan | undefined;
-    let localAppPlan: LocalAppPlan | undefined;
+    let shouldStartApp = false;
     if (source === 'docker' || source === 'npm' || source === 'git') {
       this.logStage('Preparing application');
       if (source === 'docker') {
@@ -3397,115 +3408,27 @@ export default class Install extends Command {
           printInfo('Application image ready.');
         }
         if (!parsed['prepare-only']) {
-          await this.runInstallHookIfNeeded({
-            hookName: 'beforeAppInstall',
-            envName,
-            source,
-            appResults,
-            downloadResults,
-            dbResults,
-            rootResults,
-            envAddResults,
-            defaultApiHost,
-          });
-          dockerAppPlan = await this.installDockerApp({
-            envName,
-            dockerNetworkName,
-            dockerContainerPrefix,
-            appResults,
-            downloadResults,
-            dbResults,
-            rootResults,
-            builtinDbPlan,
-            force: parsed.force,
-            commandStdio,
-          });
-          appResults.appKey = dockerAppPlan.appKey;
-          appResults.timeZone = dockerAppPlan.timeZone;
+          shouldStartApp = true;
         }
       } else if (source === 'npm' || source === 'git') {
-        const localSource: 'npm' | 'git' = source === 'npm' ? 'npm' : 'git';
-        const projectRoot =
-          parsed['skip-download'] || parsed['prepare-only']
-            ? Install.resolveLocalProjectRoot({
-                envName,
-                appResults,
-                downloadResults,
-              })
-            : await this.downloadLocalApp({
-                envName,
-                appResults,
-                downloadResults,
-                verbose: parsed.verbose,
-              });
         if (!parsed['skip-download'] && !parsed['prepare-only']) {
+          await this.downloadLocalApp({
+            envName,
+            appResults,
+            downloadResults,
+            verbose: parsed.verbose,
+          });
           printInfo('Application files ready.');
         }
         if (!parsed['prepare-only']) {
-          await this.runInstallHookIfNeeded({
-            hookName: 'beforeAppInstall',
-            envName,
-            source,
-            appResults,
-            downloadResults,
-            dbResults,
-            rootResults,
-            envAddResults,
-            projectRoot,
-            defaultApiHost,
-          });
-          localAppPlan = await this.startLocalApp({
-            envName,
-            source: localSource,
-            projectRoot,
-            appResults,
-            dbResults,
-            rootResults,
-            commandStdio,
-          });
-          appResults.appKey = localAppPlan.appKey;
-          appResults.timeZone = localAppPlan.timeZone;
+          shouldStartApp = true;
         }
       }
     } else {
       this.logDetail('Skipped app download and install.');
     }
 
-    if (dockerAppPlan || localAppPlan) {
-      this.logStage('Starting NocoBase');
-      await this.waitForAppHealthCheck(
-        Install.resolveApiBaseUrl({
-          appResults,
-          envAddResults,
-          defaultApiHost,
-        }),
-        {
-          containerName: dockerAppPlan?.containerName,
-          verbose: parsed.verbose,
-        },
-      );
-      const displayApiBaseUrl = Install.resolveApiBaseUrl({
-        appResults,
-        envAddResults,
-        defaultApiHost,
-      });
-      printInfo(`NocoBase is ready at ${formatInstallDisplayUrl(displayApiBaseUrl)}`);
-      appResults.setupState = 'installed';
-      await this.runInstallHookIfNeeded({
-        hookName: 'afterAppStart',
-        envName,
-        source,
-        appResults,
-        downloadResults,
-        dbResults,
-        rootResults,
-        envAddResults,
-        projectRoot: localAppPlan?.projectRoot,
-        defaultApiHost,
-      });
-    }
-
-    if (dockerAppPlan || localAppPlan || builtinDbPlan) {
+    if (shouldStartApp || builtinDbPlan) {
       await this.saveInstalledEnv({
         envName,
         appResults,
@@ -3516,10 +3439,15 @@ export default class Install extends Command {
       });
     }
 
+    if (shouldStartApp) {
+      this.logStage('Starting NocoBase');
+      await this.config.runCommand('app:start', this.buildAppStartArgv({ envName, verbose: parsed.verbose }));
+    }
+
     await this.syncInstalledEnvConnection({
       envName,
       envAddResults,
-      appReady: Boolean(dockerAppPlan || localAppPlan),
+      appReady: shouldStartApp,
       skipAuth: Boolean(parsed['skip-auth']),
     });
     if (!parsed['prepare-only']) {
@@ -3530,7 +3458,7 @@ export default class Install extends Command {
       printInfo(
         `Preparation complete for "${envName}". Activate the license, then run \`nb app start --env ${envName}\`.`,
       );
-    } else if (!dockerAppPlan && !localAppPlan) {
+    } else if (!shouldStartApp) {
       printInfo(`Install config for "${envName}" has been saved.`);
     }
   }
