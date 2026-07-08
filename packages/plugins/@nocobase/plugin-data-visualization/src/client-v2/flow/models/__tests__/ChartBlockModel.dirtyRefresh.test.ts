@@ -244,8 +244,44 @@ describe('ChartBlockModel chart events binding', () => {
     await model.applyEvents(raw, chartB);
 
     expect(runjs).toHaveBeenCalledTimes(2);
-    expect(runjs).toHaveBeenNthCalledWith(1, raw, { chart: chartA });
-    expect(runjs).toHaveBeenNthCalledWith(2, raw, { chart: chartB });
+    expect(runjs).toHaveBeenNthCalledWith(1, raw, expect.objectContaining({ chart: chartA }));
+    expect(runjs).toHaveBeenNthCalledWith(2, raw, expect.objectContaining({ chart: chartB }));
+  });
+
+  it('runs the previous cleanup function before applying different raw events', async () => {
+    const { model } = setupModel({
+      mode: 'builder',
+      collectionPath: ['main', 'orders'],
+    });
+    const firstCleanup = vi.fn();
+    const secondCleanup = vi.fn();
+    const chart = {} as any;
+
+    vi.spyOn(model.context, 'runjs').mockImplementation(async (raw: string) => {
+      return { success: true, value: raw === 'first' ? firstCleanup : secondCleanup };
+    });
+
+    await model.applyEvents('first', chart);
+    await model.applyEvents('second', chart);
+
+    expect(firstCleanup).toHaveBeenCalledTimes(1);
+    expect(secondCleanup).not.toHaveBeenCalled();
+  });
+
+  it('runs returned cleanup functions when events are cleared', async () => {
+    const { model } = setupModel({
+      mode: 'builder',
+      collectionPath: ['main', 'orders'],
+    });
+    const cleanup = vi.fn();
+    const chart = {} as any;
+
+    vi.spyOn(model.context, 'runjs').mockResolvedValue({ success: true, value: cleanup });
+
+    await model.applyEvents('return cleanup;', chart);
+    await model.applyEvents(undefined, chart);
+
+    expect(cleanup).toHaveBeenCalledTimes(1);
   });
 
   it('clears the bound marker when chart events throw so the same chart can retry', async () => {

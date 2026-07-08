@@ -37,6 +37,8 @@ import {
 
 const NO_PREVIEW_SNAPSHOT = Symbol('NO_PREVIEW_SNAPSHOT');
 
+type ChartEventCleanup = () => void | Promise<void>;
+
 type ChartBlockModelStructure = {
   subModels: {
     page: ChildPageModel;
@@ -94,6 +96,7 @@ export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
   private __onResourceRefresh = () => this.renderChart();
   private __eventsBoundChart?: EChartsType;
   private __eventsBoundRaw?: string;
+  private chartEventsCleanup?: ChartEventCleanup;
   private lastRefreshSnapshot: ChartDirtyRefreshSnapshot | null = null;
   private dirtyRefreshing = false;
 
@@ -210,6 +213,31 @@ export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
     if (this.__eventsBoundChart === chart && this.__eventsBoundRaw === raw) {
       this.__eventsBoundChart = undefined;
       this.__eventsBoundRaw = undefined;
+    }
+  }
+
+  private resetEventsBound() {
+    this.__eventsBoundChart = undefined;
+    this.__eventsBoundRaw = undefined;
+  }
+
+  private async runChartEventCleanups(cleanups: ChartEventCleanup[]) {
+    for (const cleanup of cleanups.slice().reverse()) {
+      try {
+        await cleanup();
+      } catch (error) {
+        console.error('Chart events cleanup error:', error);
+      }
+    }
+  }
+
+  private async cleanupChartEvents() {
+    const cleanup = this.chartEventsCleanup;
+    this.chartEventsCleanup = undefined;
+    this.resetEventsBound();
+
+    if (cleanup) {
+      await this.runChartEventCleanups([cleanup]);
     }
   }
 
@@ -513,7 +541,10 @@ export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
 
   // 应用事件配置（仅设置，不负责渲染）
   async applyEvents(raw?: string, chartInstance?: EChartsType) {
-    if (!raw) return;
+    if (!raw) {
+      await this.cleanupChartEvents();
+      return;
+    }
 
     if (chartInstance) {
       await this.runChartEvents(raw, chartInstance);
@@ -539,22 +570,30 @@ export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
       return;
     }
 
+    await this.cleanupChartEvents();
     this.markEventsBound(raw, chart);
+    const cleanups: ChartEventCleanup[] = [];
 
     try {
-      const { success, error, timeout } = await this.context.runjs(raw, {
+      const { success, value, error, timeout } = await this.context.runjs(raw, {
         chart,
       });
       if (success) {
+        if (typeof value === 'function') {
+          cleanups.push(value);
+        }
+        this.chartEventsCleanup = cleanups.length ? () => this.runChartEventCleanups(cleanups) : undefined;
         return;
       }
 
       this.clearEventsBound(raw, chart);
+      await this.runChartEventCleanups(cleanups);
       if (error || timeout) {
         console.error('applyEvents runjs error:', error || 'timeout');
       }
     } catch (error) {
       this.clearEventsBound(raw, chart);
+      await this.runChartEventCleanups(cleanups);
       throw error;
     }
   }
@@ -739,9 +778,7 @@ ChartBlockModel.registerFlow({
           });
 
           // 事件部分
-          if (chart.events?.raw) {
-            await ctx.model.applyEvents(chart.events?.raw);
-          }
+          await ctx.model.applyEvents(chart.events?.raw);
         } catch (error) {
           console.error('ChartBlockModel chartSettings configure flow handler() error:', error);
         }
