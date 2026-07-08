@@ -1350,6 +1350,10 @@ describe('PluginAgentGatewayClientV2', () => {
   });
 
   it('shows a live waiting state when a running run has no task messages yet', async () => {
+    let resolveConversationEvents: (value: unknown) => void = () => {};
+    const conversationEventsResponse = new Promise((resolve) => {
+      resolveConversationEvents = resolve;
+    });
     const request = vi.fn(async (config: RequestConfig) => {
       if (config.url === 'agent-gateway/runs:list') {
         return {
@@ -1394,11 +1398,7 @@ describe('PluginAgentGatewayClientV2', () => {
       }
 
       if (config.url === 'agent-gateway/runs/run-id-empty/conversation-events:list') {
-        return {
-          data: {
-            data: [],
-          },
-        };
+        return conversationEventsResponse;
       }
 
       return { data: { data: [] } };
@@ -1408,6 +1408,21 @@ describe('PluginAgentGatewayClientV2', () => {
 
     const detailButtons = await screen.findAllByLabelText('View run details');
     fireEvent.click(detailButtons[0]);
+
+    expect(await screen.findByLabelText('Task conversation')).toBeTruthy();
+    await waitFor(() => {
+      expect(document.querySelector('.ant-drawer-body .ant-spin')).toBeTruthy();
+    });
+    expect(screen.queryByText('Waiting for live task updates from the agent')).toBeNull();
+
+    await act(async () => {
+      resolveConversationEvents({
+        data: {
+          data: [],
+        },
+      });
+      await conversationEventsResponse;
+    });
 
     expect(await screen.findByText('Waiting for live task updates from the agent')).toBeTruthy();
     expect(screen.queryByText('No task messages yet')).toBeNull();
@@ -2015,6 +2030,12 @@ describe('PluginAgentGatewayClientV2', () => {
     expect(await within(timelineRegion as HTMLElement).findAllByText('Details')).not.toHaveLength(0);
     expect(screen.queryByText('Command completed')).toBeNull();
 
+    const getRequestedUrls = () => request.mock.calls.map(([config]) => config.url);
+    expect(getRequestedUrls()).not.toContain('agent-gateway/runs/run-id-1/events:list');
+    expect(getRequestedUrls()).not.toContain('agent-gateway/runs/run-id-1/artifacts:list');
+    expect(getRequestedUrls()).not.toContain('agent-gateway/runs/run-id-1/snapshots:list');
+    expect(getRequestedUrls()).not.toContain('agent-gateway/runs/run-id-1/api-call-logs:list');
+
     fireEvent.click(await screen.findByRole('tab', { name: 'Agent Sessions' }));
     expect(await screen.findByText('Live CLI Output')).toBeTruthy();
     expect(await screen.findByText(/agent is building/)).toBeTruthy();
@@ -2034,6 +2055,7 @@ describe('PluginAgentGatewayClientV2', () => {
 
     fireEvent.click(await screen.findByRole('tab', { name: 'Logs' }));
     expect(await screen.findByText('build started')).toBeTruthy();
+    expect(getRequestedUrls()).toContain('agent-gateway/runs/run-id-1/events:list');
     expect(await screen.findByText('Harness stages')).toBeTruthy();
     expect(await screen.findByText('render_run / started')).toBeTruthy();
     expect(await screen.findAllByText('rerendering report')).not.toHaveLength(0);
@@ -2043,12 +2065,15 @@ describe('PluginAgentGatewayClientV2', () => {
 
     fireEvent.click(await screen.findByRole('tab', { name: 'Artifacts' }));
     expect(await screen.findByText('inline artifact text')).toBeTruthy();
+    expect(getRequestedUrls()).toContain('agent-gateway/runs/run-id-1/artifacts:list');
+    expect(getRequestedUrls()).toContain('agent-gateway/runs/run-id-1/snapshots:list');
     expect(await screen.findByText('Image artifact preview')).toBeTruthy();
     expect(screen.getByAltText('browser-screenshot').getAttribute('src')).toContain('data:image/png;base64,');
     expect(await screen.findByText(/"files":/)).toBeTruthy();
 
     fireEvent.click(await screen.findByRole('tab', { name: 'API Logs' }));
     expect(await screen.findByText('/api/agent-gateway/runs/run-id-1/events:append')).toBeTruthy();
+    expect(getRequestedUrls()).toContain('agent-gateway/runs/run-id-1/api-call-logs:list');
     expect(await screen.findByText('Heartbeat summary')).toBeTruthy();
     expect(await screen.findByText('Heartbeat calls: 2')).toBeTruthy();
     expect(screen.queryByText('/api/agent-gateway/nodes/node-id-1/runs/run-id-1/heartbeat')).toBeNull();
@@ -4479,6 +4504,308 @@ describe('PluginAgentGatewayClientV2', () => {
     expect(within(timelineRegion as HTMLElement).queryByText('No command details available')).toBeNull();
   });
 
+  it('renders reasoning, progress, and raw transcript events with explicit labels', async () => {
+    render(
+      <AntdApp>
+        <AgentTimeline
+          t={(key) => key}
+          events={[
+            {
+              id: 'reasoning-event',
+              source: 'codex',
+              sequence: 1,
+              eventType: 'agent.reasoning',
+              contentText: 'I should inspect the current run first.',
+              createdAt: '2026-06-30T10:00:00.000Z',
+            },
+            {
+              id: 'progress-event',
+              source: 'opencode',
+              sequence: 2,
+              eventType: 'agent.progress',
+              contentText: 'Browser verification is running',
+              createdAt: '2026-06-30T10:00:01.000Z',
+            },
+            {
+              id: 'raw-event',
+              source: 'codex',
+              sequence: 3,
+              eventType: 'agent.raw',
+              contentText: 'unexpected.event',
+              contentJson: {
+                rawProviderEvent: {
+                  type: 'unexpected.event',
+                  payload: {
+                    phase: 'unmapped',
+                  },
+                },
+              },
+              createdAt: '2026-06-30T10:00:02.000Z',
+            },
+          ]}
+          legacyEvents={[]}
+          useLegacyFallback={false}
+        />
+      </AntdApp>,
+    );
+
+    const timelineRegion = await screen.findByLabelText('Task conversation');
+    expect(await within(timelineRegion as HTMLElement).findByText('Reasoning')).toBeTruthy();
+    expect(await within(timelineRegion as HTMLElement).findByText('Progress')).toBeTruthy();
+    expect(await within(timelineRegion as HTMLElement).findByText('Raw event')).toBeTruthy();
+    expect(
+      await within(timelineRegion as HTMLElement).findByText('I should inspect the current run first.'),
+    ).toBeTruthy();
+    expect(await within(timelineRegion as HTMLElement).findByText('Browser verification is running')).toBeTruthy();
+    expect(within(timelineRegion as HTMLElement).queryByText(/"unexpected\.event"/)).toBeNull();
+    fireEvent.click(await within(timelineRegion as HTMLElement).findByText('Raw event'));
+    expect(await within(timelineRegion as HTMLElement).findByText(/"unexpected\.event"/)).toBeTruthy();
+  });
+
+  it('folds raw item.completed provider events by default', async () => {
+    render(
+      <AntdApp>
+        <AgentTimeline
+          t={(key) => key}
+          events={[
+            {
+              id: 'raw-error-event',
+              source: 'codex',
+              sequence: 1,
+              eventType: 'agent.raw',
+              contentJson: {
+                rawProviderEvent: {
+                  item: {
+                    id: 'item_0',
+                    type: 'error',
+                    message: '[features].codex_hooks is deprecated. Use [features].hooks instead.',
+                  },
+                  type: 'item.completed',
+                },
+              },
+              createdAt: '2026-06-30T10:00:02.000Z',
+            },
+          ]}
+          legacyEvents={[]}
+          useLegacyFallback={false}
+        />
+      </AntdApp>,
+    );
+
+    const timelineRegion = await screen.findByLabelText('Task conversation');
+    expect(await within(timelineRegion as HTMLElement).findByText('Raw event')).toBeTruthy();
+    expect(within(timelineRegion as HTMLElement).queryByText(/\[features\]\.codex_hooks is deprecated/)).toBeNull();
+
+    fireEvent.click(await within(timelineRegion as HTMLElement).findByText('Raw event'));
+    expect(
+      await within(timelineRegion as HTMLElement).findByText(/\[features\]\.codex_hooks is deprecated/),
+    ).toBeTruthy();
+  });
+
+  it('hides empty provider agent_message completions from the task conversation', async () => {
+    render(
+      <AntdApp>
+        <AgentTimeline
+          t={(key) => key}
+          events={[
+            {
+              id: 'empty-agent-message-tool',
+              source: 'codex',
+              sequence: 1,
+              eventType: 'agent.tool.completed',
+              contentText: 'agent_message',
+              contentJson: {
+                rawProviderEvent: {
+                  type: 'item.completed',
+                  item: {
+                    id: 'item_18',
+                    text: '',
+                    type: 'agent_message',
+                  },
+                },
+              },
+              createdAt: '2026-06-30T10:00:02.000Z',
+            },
+            {
+              id: 'visible-agent-message',
+              source: 'codex',
+              sequence: 2,
+              eventType: 'agent.message',
+              contentText: 'Important result.',
+              createdAt: '2026-06-30T10:00:03.000Z',
+            },
+          ]}
+          legacyEvents={[]}
+          useLegacyFallback={false}
+        />
+      </AntdApp>,
+    );
+
+    const timelineRegion = await screen.findByLabelText('Task conversation');
+    expect(await within(timelineRegion as HTMLElement).findByText('Important result.')).toBeTruthy();
+    expect(timelineRegion.textContent).not.toContain('item_18');
+    expect(timelineRegion.textContent).not.toContain('agent_message');
+    expect(within(timelineRegion as HTMLElement).queryByText('Tool calls')).toBeNull();
+  });
+
+  it('hides low-signal child-agent provider lifecycle labels from the task conversation', async () => {
+    render(
+      <AntdApp>
+        <AgentTimeline
+          t={(key) => key}
+          events={[
+            {
+              id: 'lifecycle-event',
+              source: 'codex',
+              sequence: 1,
+              eventType: 'agent.message',
+              contentText: 'Item Complete',
+              contentJson: {
+                rawProviderEvent: {
+                  item: {
+                    id: 'spawn-aquinas',
+                    type: 'collab_tool_call',
+                    tool: 'spawn_agent',
+                    status: 'completed',
+                  },
+                  type: 'item.completed',
+                },
+              },
+              createdAt: '2026-06-30T10:00:02.000Z',
+            },
+            {
+              id: 'child-event',
+              source: 'codex',
+              sequence: 2,
+              eventType: 'agent.message',
+              contentText: 'Hi',
+              contentJson: {
+                participant: {
+                  id: 'sub-agent:aquinas',
+                  type: 'sub-agent',
+                  name: 'Aquinas',
+                  parentId: 'agent:root',
+                },
+              },
+              createdAt: '2026-06-30T10:00:03.000Z',
+            },
+          ]}
+          legacyEvents={[]}
+          useLegacyFallback={false}
+        />
+      </AntdApp>,
+    );
+
+    const timelineRegion = await screen.findByLabelText('Task conversation');
+    expect(await within(timelineRegion as HTMLElement).findByText('Sub-agent: Aquinas')).toBeTruthy();
+    expect(await within(timelineRegion as HTMLElement).findByText('Hi')).toBeTruthy();
+    expect(within(timelineRegion as HTMLElement).queryByText('Item Complete')).toBeNull();
+  });
+
+  it('does not render Agent Gateway harness progress markers in the task conversation', async () => {
+    render(
+      <AntdApp>
+        <AgentTimeline
+          t={(key) => key}
+          events={[
+            {
+              id: 'task-event',
+              source: 'agent-gateway-task',
+              sequence: 1,
+              eventType: 'agent.user.message',
+              contentText: [
+                'Build all task pages.',
+                '- Emit progress lines when possible as: AGW_PROGRESS phase=<phase> status=<started|succeeded|failed> message=<short text>.',
+                'Use the uploaded skill.',
+              ].join('\n'),
+              createdAt: '2026-06-30T10:00:00.000Z',
+            },
+            {
+              id: 'agent-event',
+              source: 'codex',
+              sequence: 2,
+              eventType: 'agent.message',
+              contentText: [
+                'Starting the build.',
+                'AGW_PROGRESS phase=build status=started message=creating pages',
+                'Continuing with browser verification.',
+              ].join('\n'),
+              createdAt: '2026-06-30T10:00:01.000Z',
+            },
+            {
+              id: 'reasoning-event',
+              source: 'codex',
+              sequence: 3,
+              eventType: 'agent.reasoning',
+              contentText: 'I should include `AGW_PROGRESS` while running the suite.',
+              createdAt: '2026-06-30T10:00:01.500Z',
+            },
+            {
+              id: 'command-event',
+              source: 'codex',
+              sequence: 4,
+              eventType: 'agent.command.completed',
+              correlationId: 'cmd-progress',
+              contentText: 'Command completed',
+              contentJson: {
+                command: 'node scripts/run-suite.mjs --tasks tasks.yaml',
+                status: 'completed',
+                exitCode: 0,
+                aggregated_output: [
+                  'AGW_PROGRESS phase=batch status=started message=running suite',
+                  'Suite completed: 12/12 tasks passed.',
+                  'AGW_PROGRESS phase=batch status=succeeded message=done',
+                ].join('\n'),
+              },
+              createdAt: '2026-06-30T10:00:02.000Z',
+            },
+            {
+              id: 'empty-raw-agent-message',
+              source: 'codex',
+              sequence: 5,
+              eventType: 'agent.raw',
+              contentJson: {
+                rawProviderEvent: {
+                  type: 'item.completed',
+                  item: {
+                    id: 'item_9',
+                    text: '',
+                    type: 'agent_message',
+                  },
+                },
+              },
+              createdAt: '2026-06-30T10:00:03.000Z',
+            },
+          ]}
+          legacyEvents={[]}
+          useLegacyFallback={false}
+        />
+      </AntdApp>,
+    );
+
+    const timelineRegion = await screen.findByLabelText('Task conversation');
+    expect(
+      await within(timelineRegion as HTMLElement).findByText(/Build all task pages\.\s+Use the uploaded skill\./),
+    ).toBeTruthy();
+    expect(
+      await within(timelineRegion as HTMLElement).findByText(
+        /Starting the build\.\s+Continuing with browser verification\./,
+      ),
+    ).toBeTruthy();
+    expect(await within(timelineRegion as HTMLElement).findByText(/progress marker/)).toBeTruthy();
+    expect(timelineRegion.textContent).not.toContain('AGW_PROGRESS');
+    expect(timelineRegion.textContent).not.toContain('item_9');
+
+    fireEvent.click(await within(timelineRegion as HTMLElement).findByText('Tool calls'));
+    const toolTitle = await within(timelineRegion as HTMLElement).findByText(
+      'Exec · node scripts/run-suite.mjs --tasks tasks.yaml',
+    );
+    fireEvent.click(toolTitle);
+    expect(await within(timelineRegion as HTMLElement).findByText('Suite completed: 12/12 tasks passed.')).toBeTruthy();
+    expect(timelineRegion.textContent).not.toContain('AGW_PROGRESS');
+    expect(timelineRegion.textContent).not.toContain('item_9');
+  });
+
   it('shows root agent and child agent messages as separate timeline participants', async () => {
     render(
       <AntdApp>
@@ -4996,9 +5323,9 @@ describe('PluginAgentGatewayClientV2', () => {
 
     expect(await screen.findByText('run-completed-stable')).toBeTruthy();
     fireEvent.click((await screen.findAllByLabelText('View run details'))[0]);
+    expect(await screen.findByText('completed session event')).toBeTruthy();
     fireEvent.click(await screen.findByRole('tab', { name: 'Agent Sessions' }));
     expect(await screen.findByText('Pane is dead. Stable saved terminal output.')).toBeTruthy();
-    expect(await screen.findByText('completed session event')).toBeTruthy();
 
     await waitFor(() => {
       expect(xtermMock.MockTerminal.instances).toHaveLength(1);

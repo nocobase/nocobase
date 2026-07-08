@@ -40,11 +40,12 @@ import {
   AgentCapabilityKey,
   getUnsupportedCapabilityMessage,
 } from '../../shared/providerCapabilities';
+import { COMMAND_CONTENT_JSON_LIMIT_CHARS } from '../../shared/conversationLimits';
 import { getRunProviderCapabilitySummary, isRunCapabilitySupported } from './capabilityUtils';
 
 const MAX_EVENT_MESSAGE_LENGTH = 4000;
 const MAX_EVENT_PAYLOAD_CHARS = 16000;
-const MAX_ARTIFACT_TEXT_BYTES = 1024 * 1024;
+const MAX_ARTIFACT_TEXT_BYTES = COMMAND_CONTENT_JSON_LIMIT_CHARS;
 const MAX_METADATA_JSON_CHARS = 16 * 1024;
 const MAX_SNAPSHOT_JSON_CHARS = 64 * 1024;
 const SUPPORTED_SNAPSHOT_TYPES = new Set(['node', 'agent', 'skill', 'nocobase', 'workspace', 'custom']);

@@ -81,6 +81,31 @@ function getResponseItemContentText(content: unknown) {
     .join('\n');
 }
 
+function getNestedText(value: unknown): string {
+  if (typeof value === 'string') {
+    return value.trim();
+  }
+  if (Array.isArray(value)) {
+    return value.map(getNestedText).filter(Boolean).join('\n');
+  }
+  const record = getRecord(value);
+  if (!Object.keys(record).length) {
+    return '';
+  }
+  return (
+    getString(record.text) ||
+    getString(record.message) ||
+    getString(record.summary) ||
+    getString(record.content) ||
+    getNestedText(record.content) ||
+    getNestedText(record.summary)
+  );
+}
+
+function getEventItemId(event: JsonRecord, item: JsonRecord) {
+  return getString(item.id) || getString(item.call_id || item.callId) || getString(event.id);
+}
+
 function getToolArguments(item: JsonRecord) {
   const directArguments = getRecord(item.arguments);
   if (Object.keys(directArguments).length) {
@@ -332,6 +357,76 @@ function normalizeAgentMessage(event: JsonRecord): NormalizedAgentEvent[] {
   ];
 }
 
+function normalizeReasoningEvent(event: JsonRecord): NormalizedAgentEvent[] {
+  const item = getCodexItemRecord(event);
+  const itemType = getString(item.type).toLowerCase();
+  const eventType = getString(event.type).toLowerCase();
+  if (
+    !(
+      itemType.includes('reasoning') ||
+      itemType.includes('thought') ||
+      eventType.includes('reasoning') ||
+      eventType.includes('thought')
+    )
+  ) {
+    return [];
+  }
+  const itemId = getEventItemId(event, item);
+  const message =
+    getNestedText(item.summary) ||
+    getNestedText(item.text) ||
+    getNestedText(item.message) ||
+    getNestedText(item.content) ||
+    getNestedText(event.summary) ||
+    getNestedText(event.message) ||
+    getNestedText(event.text);
+  return [
+    {
+      eventType: 'agent.reasoning',
+      level: 'info',
+      providerEventId: itemId ? `${getString(event.type) || 'reasoning'}:${itemId}` : null,
+      correlationId: itemId || null,
+      message: message || itemType || eventType || 'reasoning',
+      payloadJson: {
+        itemId: itemId || null,
+        textKind: 'reasoning',
+        rawProviderEvent: event,
+      },
+    },
+  ];
+}
+
+function normalizeRawProviderEvent(event: JsonRecord): NormalizedAgentEvent[] {
+  const item = getCodexItemRecord(event);
+  const itemType = getString(item.type);
+  const eventType = getString(event.type) || 'event';
+  const itemId = getEventItemId(event, item);
+  const message =
+    getNestedText(item.message) ||
+    getNestedText(item.text) ||
+    getNestedText(item.summary) ||
+    getNestedText(event.message) ||
+    getNestedText(event.text) ||
+    itemType ||
+    eventType;
+  return [
+    {
+      eventType: 'agent.raw',
+      level: itemType === 'error' || event.level === 'error' ? 'error' : event.level === 'warn' ? 'warn' : 'debug',
+      providerEventId: itemId ? `${eventType}:${itemId}` : null,
+      correlationId: itemId || null,
+      message,
+      payloadJson: {
+        itemId: itemId || null,
+        providerEventType: eventType,
+        itemType: itemType || null,
+        textKind: 'raw',
+        rawProviderEvent: event,
+      },
+    },
+  ];
+}
+
 function normalizeToolEvent(event: JsonRecord): NormalizedAgentEvent[] {
   const item = getCodexItemRecord(event);
   const itemType = getString(item.type).toLowerCase();
@@ -511,6 +606,12 @@ export const codexAdapter: AgentAdapter = {
         },
       ];
     }
-    return [...normalizeCommandExecution(event), ...normalizeAgentMessage(event), ...normalizeToolEvent(event)];
+    const normalizedEvents = [
+      ...normalizeCommandExecution(event),
+      ...normalizeAgentMessage(event),
+      ...normalizeReasoningEvent(event),
+      ...normalizeToolEvent(event),
+    ];
+    return normalizedEvents.length ? normalizedEvents : normalizeRawProviderEvent(event);
   },
 };

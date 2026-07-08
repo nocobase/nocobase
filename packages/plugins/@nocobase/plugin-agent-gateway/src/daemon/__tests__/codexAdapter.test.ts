@@ -201,6 +201,82 @@ describe('Codex agent adapter', () => {
     ]);
   });
 
+  it('normalizes reasoning and unknown Codex JSONL as transcript events with raw payloads', () => {
+    expect(
+      codexAdapter.normalizeEvent({
+        rawLine: JSON.stringify({
+          type: 'item.completed',
+          item: {
+            id: 'reasoning-1',
+            type: 'reasoning',
+            summary: [
+              {
+                text: 'I need to inspect the current page first.',
+              },
+            ],
+          },
+        }),
+      }),
+    ).toEqual([
+      {
+        eventType: 'agent.reasoning',
+        level: 'info',
+        providerEventId: 'item.completed:reasoning-1',
+        correlationId: 'reasoning-1',
+        message: 'I need to inspect the current page first.',
+        payloadJson: {
+          itemId: 'reasoning-1',
+          textKind: 'reasoning',
+          rawProviderEvent: {
+            type: 'item.completed',
+            item: {
+              id: 'reasoning-1',
+              type: 'reasoning',
+              summary: [
+                {
+                  text: 'I need to inspect the current page first.',
+                },
+              ],
+            },
+          },
+        },
+      },
+    ]);
+
+    expect(
+      codexAdapter.normalizeEvent({
+        rawLine: JSON.stringify({
+          type: 'unexpected.event',
+          id: 'raw-1',
+          payload: {
+            phase: 'not-yet-mapped',
+          },
+        }),
+      }),
+    ).toEqual([
+      {
+        eventType: 'agent.raw',
+        level: 'debug',
+        providerEventId: 'unexpected.event:raw-1',
+        correlationId: 'raw-1',
+        message: 'unexpected.event',
+        payloadJson: {
+          itemId: 'raw-1',
+          providerEventType: 'unexpected.event',
+          itemType: null,
+          textKind: 'raw',
+          rawProviderEvent: {
+            type: 'unexpected.event',
+            id: 'raw-1',
+            payload: {
+              phase: 'not-yet-mapped',
+            },
+          },
+        },
+      },
+    ]);
+  });
+
   it('keeps large command output in structured conversation events', () => {
     const largeOutput = 'x'.repeat(40 * 1024);
 

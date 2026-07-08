@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Alert, Button, Collapse, Empty, Space, Tag, Timeline, Typography } from 'antd';
+import { Alert, Button, Collapse, Empty, Space, Spin, Tag, Timeline, Typography } from 'antd';
 import React, { useMemo } from 'react';
 
 import {
@@ -178,6 +178,19 @@ function TextBlock({ t, text, maxHeight = 320 }: { t: TFunction; text: string; m
   );
 }
 
+function getTextPartKindLabel(t: TFunction, kind?: string) {
+  if (kind === 'reasoning') {
+    return t('Reasoning');
+  }
+  if (kind === 'progress') {
+    return t('Progress');
+  }
+  if (kind === 'raw') {
+    return t('Raw event');
+  }
+  return '';
+}
+
 function getToolCallFallbackDetails(toolCall: AgentTranscriptToolCall) {
   const details: JsonRecord = {
     title: toolCall.title,
@@ -341,7 +354,27 @@ function MessagePart({ t, part }: { t: TFunction; part: AgentTranscriptMessagePa
   if (part.type === 'tool-calls') {
     return <ToolCallsCollapse t={t} toolCalls={part.toolCalls} />;
   }
-  return <TextBlock t={t} text={part.text} />;
+  const kindLabel = getTextPartKindLabel(t, part.kind || 'text');
+  if (part.kind === 'raw') {
+    return (
+      <Collapse
+        size="small"
+        items={[
+          {
+            key: part.id,
+            label: kindLabel || t('Raw event'),
+            children: <TextBlock t={t} text={part.text} maxHeight={220} />,
+          },
+        ]}
+      />
+    );
+  }
+  return (
+    <Space direction="vertical" size={4} style={{ width: '100%' }}>
+      {kindLabel ? <Typography.Text type="secondary">{kindLabel}</Typography.Text> : null}
+      <TextBlock t={t} text={part.text} maxHeight={part.kind === 'raw' ? 220 : 320} />
+    </Space>
+  );
 }
 
 function MessageContent({ t, message }: { t: TFunction; message: AgentTranscriptMessage }) {
@@ -389,6 +422,7 @@ export function AgentTimeline({
   closeDanglingToolCalls,
   warning,
   emptyDescription,
+  loading,
 }: {
   t: TFunction;
   events: AgentTimelineEventRecord[];
@@ -397,6 +431,7 @@ export function AgentTimeline({
   closeDanglingToolCalls?: boolean;
   warning?: string;
   emptyDescription?: React.ReactNode;
+  loading?: boolean;
 }) {
   const usingLegacyFallback = useLegacyFallback && !events.length && legacyEvents.length > 0;
   const transcriptEvents = usingLegacyFallback ? getLegacyTimelineEvents(legacyEvents) : events;
@@ -443,6 +478,10 @@ export function AgentTimeline({
             ) : null}
             <Timeline mode="left" items={timelineItems} />
           </>
+        ) : loading ? (
+          <Space style={{ minHeight: 120, justifyContent: 'center', width: '100%' }}>
+            <Spin />
+          </Space>
         ) : (
           <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={emptyDescription || t('No task messages yet')} />
         )}

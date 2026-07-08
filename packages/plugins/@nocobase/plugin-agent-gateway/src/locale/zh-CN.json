@@ -87,6 +87,8 @@
   "Input": "输入",
   "Cached": "缓存",
   "Reasoning": "推理",
+  "Progress": "进度",
+  "Raw event": "原始事件",
   "Node ID": "节点 ID",
   "Profile ID": "Profile ID",
   "Source": "来源",

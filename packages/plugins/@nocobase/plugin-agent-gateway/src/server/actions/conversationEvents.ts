@@ -134,6 +134,15 @@ function isDetailedToolEvent(eventType: string) {
   return eventType.startsWith('agent.command.') || eventType.startsWith('agent.tool.');
 }
 
+function isVerboseTranscriptEvent(eventType: string) {
+  return (
+    eventType === 'agent.message' ||
+    eventType === 'agent.reasoning' ||
+    eventType === 'agent.progress' ||
+    eventType === 'agent.raw'
+  );
+}
+
 function getRequiredString(ctx: Context, value: unknown, name: string) {
   const stringValue = getString(value);
   if (!stringValue) {
@@ -171,9 +180,9 @@ function getOptionalConfidence(ctx: Context, value: unknown) {
   return numberValue;
 }
 
-function getContentText(ctx: Context, value: unknown) {
+function getContentText(ctx: Context, value: unknown, maxLength = MAX_CONTENT_TEXT_LENGTH) {
   const contentText = typeof value === 'string' ? value : '';
-  if (contentText.length > MAX_CONTENT_TEXT_LENGTH) {
+  if (contentText.length > maxLength) {
     ctx.throw(413, 'Conversation event contentText is too large');
   }
   return contentText || null;
@@ -227,7 +236,7 @@ function getDetailedToolContentJson(ctx: Context, eventType: string, value: unkn
 }
 
 function getIncomingContentJson(ctx: Context, eventType: string, value: unknown) {
-  if (isDetailedToolEvent(eventType)) {
+  if (isDetailedToolEvent(eventType) || isVerboseTranscriptEvent(eventType)) {
     return getDetailedToolContentJson(ctx, eventType, value);
   }
   return getContentJson(ctx, value);
@@ -248,7 +257,7 @@ function getOptionalInteger(value: unknown) {
 }
 
 function getStoredContentJson(eventType: string, contentJson: JsonRecord): JsonRecord {
-  if (!isDetailedToolEvent(eventType)) {
+  if (!isDetailedToolEvent(eventType) && !isVerboseTranscriptEvent(eventType)) {
     return contentJson;
   }
 
@@ -286,7 +295,11 @@ function getStoredContentText(ctx: Context, rawEvent: JsonRecord, eventType: str
   if (commandContentText) {
     return commandContentText;
   }
-  return getContentText(ctx, rawEvent.contentText || rawEvent.message);
+  return getContentText(
+    ctx,
+    rawEvent.contentText || rawEvent.message,
+    isVerboseTranscriptEvent(eventType) ? COMMAND_DETAIL_STRING_LIMIT_CHARS : MAX_CONTENT_TEXT_LENGTH,
+  );
 }
 
 function getEventEntries(ctx: Context) {

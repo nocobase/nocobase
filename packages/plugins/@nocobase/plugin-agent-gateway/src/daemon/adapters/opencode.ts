@@ -48,6 +48,49 @@ function getCommandFromRecord(record: JsonRecord) {
   return getString(record.command || record.cmd || record.commandLine || record.command_line);
 }
 
+function getEventText(event: JsonRecord) {
+  return (
+    getString(event.message) ||
+    getString(event.text) ||
+    getString(event.summary) ||
+    getString(getRecord(event.part).text) ||
+    getString(getRecord(event.delta).text)
+  );
+}
+
+function getFallbackEventType(type: string, text: string) {
+  const normalizedType = type.toLowerCase();
+  if (
+    normalizedType.includes('reasoning') ||
+    normalizedType.includes('thinking') ||
+    normalizedType.includes('summary')
+  ) {
+    return 'agent.reasoning';
+  }
+  if (
+    normalizedType.includes('progress') ||
+    normalizedType.includes('status') ||
+    normalizedType.includes('log') ||
+    normalizedType.includes('event')
+  ) {
+    return text ? 'agent.progress' : 'agent.raw';
+  }
+  return text ? 'agent.message' : 'agent.raw';
+}
+
+function getFallbackTextKind(eventType: string) {
+  if (eventType === 'agent.reasoning') {
+    return 'reasoning';
+  }
+  if (eventType === 'agent.progress') {
+    return 'progress';
+  }
+  if (eventType === 'agent.raw') {
+    return 'raw';
+  }
+  return 'message';
+}
+
 function getDurationMs(start: unknown, end: unknown) {
   const startMs = getNumber(start);
   const endMs = getNumber(end);
@@ -209,14 +252,20 @@ export const opencodeAdapter: AgentAdapter = {
     }
     const type = getString(event.type) || 'event';
     const id = getString(event.id) || getString(event.eventId) || null;
+    const message = getEventText(event);
+    const eventType = type.startsWith('agent.') ? type : getFallbackEventType(type, message);
     return [
       {
-        eventType: type.startsWith('agent.') ? type : `opencode.${type}`,
+        eventType,
         level: event.level === 'error' ? 'error' : event.level === 'warn' ? 'warn' : 'info',
         providerEventId: id,
         correlationId: getString(event.correlationId) || id,
-        message: getString(event.message) || getString(event.text) || null,
-        payloadJson: event,
+        message: message || type,
+        payloadJson: {
+          ...event,
+          textKind: getFallbackTextKind(eventType),
+          rawProviderEvent: event,
+        },
       },
     ];
   },

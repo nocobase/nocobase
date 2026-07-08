@@ -12,10 +12,12 @@ import { createHash } from 'crypto';
 import { promises as fs } from 'fs';
 
 import { JsonRecord } from './types';
+import { COMMAND_OUTPUT_PAYLOAD_LIMIT_CHARS } from '../shared/conversationLimits';
 
-const MAX_INLINE_ARTIFACT_UPLOAD_BYTES = 512 * 1024;
-const MAX_DECLARED_ARTIFACT_SCAN_ENTRIES = 5000;
-const DEFAULT_MAX_DECLARED_ARTIFACT_UPLOADS = 50;
+const MAX_INLINE_ARTIFACT_UPLOAD_BYTES = COMMAND_OUTPUT_PAYLOAD_LIMIT_CHARS;
+const MAX_INLINE_ARTIFACT_UPLOAD_WIRE_BYTES = COMMAND_OUTPUT_PAYLOAD_LIMIT_CHARS - 128 * 1024;
+const MAX_DECLARED_ARTIFACT_SCAN_ENTRIES = 50_000;
+const DEFAULT_MAX_DECLARED_ARTIFACT_UPLOADS = 1000;
 
 export interface DeclaredArtifactUpload extends JsonRecord {
   artifactKey: string;
@@ -42,6 +44,11 @@ interface ArtifactDeclaration {
 interface MatchedArtifactDeclaration extends ArtifactDeclaration {
   filePath: string;
   relativePath: string;
+}
+
+interface IgnoredArtifact {
+  relativePath: string;
+  reason: string;
 }
 
 function isRecord(value: unknown): value is JsonRecord {
@@ -471,6 +478,16 @@ function getArtifactPriority(match: MatchedArtifactDeclaration, referencedScreen
   return 10;
 }
 
+function getIgnoredArtifactReason(relativePath: string) {
+  if (/(?:^|\/)\.tmp\/(?:node-compile-cache|v8-compile-cache-)[^/]*\//.test(relativePath)) {
+    return 'runtime-cache';
+  }
+  if (/(?:^|\/)\.nb-wrapper-bin\/nb$/.test(relativePath)) {
+    return 'runner-wrapper-bin';
+  }
+  return '';
+}
+
 function dedupeMatches(matches: MatchedArtifactDeclaration[]) {
   const seen = new Set<string>();
   const result: MatchedArtifactDeclaration[] = [];
@@ -487,6 +504,7 @@ function dedupeMatches(matches: MatchedArtifactDeclaration[]) {
 
 async function buildManifest(options: {
   matches: MatchedArtifactDeclaration[];
+  ignoredArtifacts?: IgnoredArtifact[];
   selectedMatches: MatchedArtifactDeclaration[];
   uploads: DeclaredArtifactUpload[];
   maxArtifacts: number;
@@ -508,7 +526,9 @@ async function buildManifest(options: {
     generatedAt: new Date().toISOString(),
     maxArtifactUploads: options.maxArtifacts,
     counts: {
-      matched: options.matches.length,
+      matched: options.matches.length + (options.ignoredArtifacts?.length || 0),
+      collectible: options.matches.length,
+      ignored: options.ignoredArtifacts?.length || 0,
       selected: options.selectedMatches.length,
       uploaded: options.uploads.length,
       skipped: skipped.length,
@@ -528,6 +548,7 @@ async function buildManifest(options: {
       truncated: upload.metadata.truncated === true,
     })),
     skipped,
+    ignored: options.ignoredArtifacts || [],
   };
 }
 
@@ -553,6 +574,35 @@ function buildManifestUpload(manifest: JsonRecord): DeclaredArtifactUpload {
   };
 }
 
+function getJsonStringWireBytes(value: string) {
+  return Buffer.byteLength(JSON.stringify(value));
+}
+
+function fitsInlineTextUploadBudget(value: string) {
+  return (
+    Buffer.byteLength(value) <= MAX_INLINE_ARTIFACT_UPLOAD_BYTES &&
+    getJsonStringWireBytes(value) <= MAX_INLINE_ARTIFACT_UPLOAD_WIRE_BYTES
+  );
+}
+
+function fitInlineTextUploadBudget(value: string) {
+  if (fitsInlineTextUploadBudget(value)) {
+    return value;
+  }
+
+  let low = 0;
+  let high = value.length;
+  while (low < high) {
+    const mid = Math.ceil((low + high) / 2);
+    if (fitsInlineTextUploadBudget(value.slice(0, mid))) {
+      low = mid;
+    } else {
+      high = mid - 1;
+    }
+  }
+  return value.slice(0, low);
+}
+
 export async function buildTextArtifactUpload(artifactPath: string, sizeBytes: number) {
   const bytesToRead = Math.min(Math.max(sizeBytes, 0), MAX_INLINE_ARTIFACT_UPLOAD_BYTES);
   let contentText = '';
@@ -566,11 +616,13 @@ export async function buildTextArtifactUpload(artifactPath: string, sizeBytes: n
       await file.close();
     }
   }
+  contentText = fitInlineTextUploadBudget(contentText);
+  const uploadedBytes = Buffer.byteLength(contentText);
 
   const metadata: JsonRecord = {
     originalSizeBytes: sizeBytes,
-    uploadedBytes: Buffer.byteLength(contentText),
-    truncated: sizeBytes > MAX_INLINE_ARTIFACT_UPLOAD_BYTES,
+    uploadedBytes,
+    truncated: uploadedBytes < sizeBytes,
     sha256: await hashFile(artifactPath),
   };
 
@@ -597,6 +649,19 @@ async function buildImageArtifactUpload(artifactPath: string, sizeBytes: number,
   }
   const content = await fs.readFile(artifactPath);
   const contentText = `data:${mimeType};base64,${content.toString('base64')}`;
+  if (Buffer.byteLength(contentText) > MAX_INLINE_ARTIFACT_UPLOAD_BYTES) {
+    return {
+      contentText: '',
+      metadata: {
+        originalSizeBytes: sizeBytes,
+        uploadedBytes: 0,
+        truncated: true,
+        inlineEncoding: 'none',
+        inlineSkippedReason: 'image-data-url-too-large',
+        sha256,
+      },
+    };
+  }
   return {
     contentText,
     metadata: {
@@ -655,7 +720,7 @@ export async function collectDeclaredArtifactCollection(options: {
   modifiedSinceMs?: number;
 }): Promise<DeclaredArtifactCollectionResult> {
   const maxArtifacts = getPositiveInteger(options.payload.maxArtifactUploads, DEFAULT_MAX_DECLARED_ARTIFACT_UPLOADS);
-  const matches = dedupeMatches(
+  const rawMatches = dedupeMatches(
     await findDeclaredArtifacts({
       payload: options.payload,
       cwd: options.cwd,
@@ -664,6 +729,18 @@ export async function collectDeclaredArtifactCollection(options: {
       modifiedSinceMs: options.modifiedSinceMs,
     }),
   );
+  const ignoredArtifacts: IgnoredArtifact[] = [];
+  const matches = rawMatches.filter((match) => {
+    const reason = getIgnoredArtifactReason(match.relativePath);
+    if (reason) {
+      ignoredArtifacts.push({
+        relativePath: match.relativePath,
+        reason,
+      });
+      return false;
+    }
+    return true;
+  });
   const referencedScreenshots = await getReferencedScreenshotPaths(matches);
   const referencedScreenshotSet = new Set(referencedScreenshots);
   const selectedMatches = [...matches]
@@ -684,6 +761,7 @@ export async function collectDeclaredArtifactCollection(options: {
   }
   const manifest = await buildManifest({
     matches,
+    ignoredArtifacts,
     selectedMatches,
     uploads,
     maxArtifacts,

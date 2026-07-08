@@ -73,6 +73,7 @@ export interface AgentTranscriptTextPart {
   id: string;
   type: 'text';
   text: string;
+  kind?: 'text' | 'reasoning' | 'progress' | 'raw';
 }
 
 export interface AgentTranscriptToolCallsPart {
@@ -185,6 +186,24 @@ const CODEX_PREAMBLE_LINE_PATTERN =
 const ROOT_AGENT_PARTICIPANT_ID = 'agent:root';
 const USER_PARTICIPANT_ID = 'user:requester';
 const TERMINAL_PARTICIPANT_ID = 'system:terminal';
+const AGENT_TEXT_EVENT_TYPES = new Set(['agent.message', 'agent.reasoning', 'agent.progress', 'agent.raw']);
+const HARNESS_PROGRESS_MARKER_LINE_PATTERN = /^AGW_PROGRESS(?:\s|$)/;
+const HARNESS_PROGRESS_MARKER_REFERENCE_PATTERN = /`?AGW_PROGRESS`?/g;
+const HARNESS_PROGRESS_TASK_INSTRUCTION_LINE_PATTERN =
+  /^-\s*Emit progress lines when possible as:\s*AGW_PROGRESS(?:\s|$)/i;
+const LOW_SIGNAL_PROVIDER_LIFECYCLE_LABELS = new Set([
+  'item complete',
+  'item completed',
+  'item start',
+  'item started',
+  'item update',
+  'item updated',
+  'response item',
+  'step start',
+  'step started',
+  'step finish',
+  'step finished',
+]);
 const RESERVED_SPEAKER_NAMES = new Set([
   'agent',
   'assistant',
@@ -271,6 +290,183 @@ function getInteger(value: unknown) {
 
 function getEventText(event: AgentTranscriptEvent) {
   return event.contentText || event.message || '';
+}
+
+function isHarnessProgressDisplayNoiseLine(line: string) {
+  const trimmed = line.trim();
+  return (
+    HARNESS_PROGRESS_MARKER_LINE_PATTERN.test(trimmed) || HARNESS_PROGRESS_TASK_INSTRUCTION_LINE_PATTERN.test(trimmed)
+  );
+}
+
+function sanitizeTranscriptDisplayText(text: string) {
+  if (!text) {
+    return '';
+  }
+  const lines = text.split(/\r?\n/);
+  if (!lines.some(isHarnessProgressDisplayNoiseLine)) {
+    return text.replace(HARNESS_PROGRESS_MARKER_REFERENCE_PATTERN, 'progress marker');
+  }
+  return lines
+    .filter((line) => !isHarnessProgressDisplayNoiseLine(line))
+    .join('\n')
+    .replace(HARNESS_PROGRESS_MARKER_REFERENCE_PATTERN, 'progress marker');
+}
+
+function sanitizeTranscriptDisplayValue(value: unknown): unknown {
+  if (typeof value === 'string') {
+    return sanitizeTranscriptDisplayText(value);
+  }
+  if (Array.isArray(value)) {
+    return value.map(sanitizeTranscriptDisplayValue);
+  }
+  if (!isRecord(value)) {
+    return value;
+  }
+  const record: AgentTranscriptJsonRecord = {};
+  for (const [key, entryValue] of Object.entries(value)) {
+    record[key] = sanitizeTranscriptDisplayValue(entryValue);
+  }
+  return record;
+}
+
+function stringifyJson(value: unknown) {
+  if (value === undefined || value === null) {
+    return '';
+  }
+  const displayValue = sanitizeTranscriptDisplayValue(value);
+  if (displayValue === '') {
+    return '';
+  }
+  try {
+    return JSON.stringify(displayValue, null, 2);
+  } catch {
+    return sanitizeTranscriptDisplayText(String(value));
+  }
+}
+
+function isEmptyRawAgentMessage(value: unknown) {
+  const rawEvent = getRecord(value);
+  return isRawProviderAgentMessage(rawEvent) && !getRawProviderAgentMessageText(rawEvent);
+}
+
+function getRawProviderEvent(contentJson: AgentTranscriptJsonRecord) {
+  return getRecord(contentJson.rawProviderEvent);
+}
+
+function getRawProviderEventItem(rawProviderEvent: AgentTranscriptJsonRecord) {
+  return getRecord(rawProviderEvent.item || rawProviderEvent.payload);
+}
+
+function getRawProviderItemType(rawProviderEvent: AgentTranscriptJsonRecord) {
+  return getString(getRawProviderEventItem(rawProviderEvent).type || rawProviderEvent.itemType).toLowerCase();
+}
+
+function isRawProviderAgentMessage(rawProviderEvent: AgentTranscriptJsonRecord) {
+  return (
+    getString(rawProviderEvent.type) === 'item.completed' &&
+    getRawProviderItemType(rawProviderEvent) === 'agent_message'
+  );
+}
+
+function isRawProviderAgentMessageEvent(event: AgentTranscriptEvent) {
+  return isRawProviderAgentMessage(getRawProviderEvent(getEventJson(event)));
+}
+
+function normalizeProviderLifecycleLabel(text: string) {
+  return text
+    .trim()
+    .toLowerCase()
+    .replace(/[._-]+/g, ' ')
+    .replace(/\s+/g, ' ');
+}
+
+function isProviderLifecycleLabel(text: string) {
+  return LOW_SIGNAL_PROVIDER_LIFECYCLE_LABELS.has(normalizeProviderLifecycleLabel(text));
+}
+
+function getRawProviderDirectText(rawProviderEvent: AgentTranscriptJsonRecord) {
+  const item = getRawProviderEventItem(rawProviderEvent);
+  return (
+    getString(item.message) ||
+    getString(item.text) ||
+    getString(item.content) ||
+    getString(item.summary) ||
+    getString(rawProviderEvent.message) ||
+    getString(rawProviderEvent.text) ||
+    getString(rawProviderEvent.content) ||
+    getString(rawProviderEvent.summary)
+  );
+}
+
+function getRawProviderAgentMessageText(rawProviderEvent: AgentTranscriptJsonRecord) {
+  return sanitizeTranscriptDisplayText(getRawProviderDirectText(rawProviderEvent));
+}
+
+function isRawProviderErrorEvent(event: AgentTranscriptEvent, rawProviderEvent: AgentTranscriptJsonRecord) {
+  const itemType = getRawProviderItemType(rawProviderEvent);
+  return itemType === 'error' || event.level === 'error';
+}
+
+function isLowSignalProviderLifecycleEvent(event: AgentTranscriptEvent, text: string) {
+  const contentJson = getEventJson(event);
+  const rawProviderEvent = getRawProviderEvent(contentJson);
+  const providerEventType = getString(rawProviderEvent.type || contentJson.providerEventType).toLowerCase();
+  const itemType = getRawProviderItemType(rawProviderEvent) || getString(contentJson.itemType).toLowerCase();
+  if (!providerEventType && !itemType) {
+    return false;
+  }
+  if (isRawProviderErrorEvent(event, rawProviderEvent)) {
+    return false;
+  }
+  const rawProviderText = getRawProviderDirectText(rawProviderEvent);
+  if (rawProviderText && !isProviderLifecycleLabel(rawProviderText)) {
+    return false;
+  }
+  if (isProviderLifecycleLabel(text)) {
+    return true;
+  }
+  return providerEventType.startsWith('item.') && !rawProviderText;
+}
+
+function getAgentTextEventText(event: AgentTranscriptEvent) {
+  const text = sanitizeTranscriptDisplayText(getEventText(event));
+  const contentJson = getEventJson(event);
+  const rawProviderEvent = getRawProviderEvent(contentJson);
+  const rawProviderContent = Object.keys(rawProviderEvent).length
+    ? rawProviderEvent
+    : contentJson.rawLine || contentJson;
+  const rawProviderText = sanitizeTranscriptDisplayText(getRawProviderDirectText(rawProviderEvent));
+  if (isRawProviderAgentMessage(rawProviderEvent)) {
+    return rawProviderText;
+  }
+  if (text && isProviderLifecycleLabel(text) && rawProviderText && !isProviderLifecycleLabel(rawProviderText)) {
+    return rawProviderText;
+  }
+  if (isLowSignalProviderLifecycleEvent(event, text)) {
+    return '';
+  }
+  if (event.eventType === 'agent.raw') {
+    const rawContent = rawProviderContent;
+    return isEmptyRawAgentMessage(rawContent) ? '' : stringifyJson(rawContent) || text;
+  }
+  if (text) {
+    return text;
+  }
+  return stringifyJson(rawProviderContent);
+}
+
+function getAgentTextPartKind(eventType: string | undefined): AgentTranscriptTextPart['kind'] {
+  if (eventType === 'agent.reasoning') {
+    return 'reasoning';
+  }
+  if (eventType === 'agent.progress') {
+    return 'progress';
+  }
+  if (eventType === 'agent.raw') {
+    return 'raw';
+  }
+  return 'text';
 }
 
 function getEventJson(event: AgentTranscriptEvent) {
@@ -711,9 +907,11 @@ function buildTerminalToolCall(
   startedAt: string | undefined,
   finishedAt: string | undefined,
 ): AgentTranscriptToolCall {
-  const output = trimTextBlock(block.lines.join('\n'));
+  const displayLinesText = sanitizeTranscriptDisplayText(block.lines.join('\n'));
+  const displayLines = displayLinesText.split(/\r?\n/);
+  const output = trimTextBlock(displayLinesText);
   const command =
-    block.command || block.lines.map(extractCommandFromLine).find((value): value is string => Boolean(value));
+    block.command || displayLines.map(extractCommandFromLine).find((value): value is string => Boolean(value));
   return {
     id: `terminal-tool-${eventIds[0] || 'event'}-${index}`,
     kind: block.kind,
@@ -878,7 +1076,8 @@ function parseTerminalText(options: {
   startedAt?: string;
   finishedAt?: string;
 }) {
-  if (isCodexJsonTerminalOutput(options.text)) {
+  const displayText = sanitizeTranscriptDisplayText(stripTerminalControlSequences(options.text));
+  if (!displayText.trim() || isCodexJsonTerminalOutput(displayText)) {
     return {
       text: '',
       parts: [],
@@ -958,7 +1157,7 @@ function parseTerminalText(options: {
     });
   };
 
-  const lines = stripCodexTerminalPreamble(stripTerminalControlSequences(options.text)).split(/\r?\n/);
+  const lines = stripCodexTerminalPreamble(displayText).split(/\r?\n/);
   for (const line of lines) {
     if (!currentTool) {
       const inlineToolCall = detectInlineTerminalToolCall(line);
@@ -1073,8 +1272,13 @@ function createMutableMessage(
   };
 }
 
-function appendTextPart(message: MutableTranscriptMessage, text: string, id: string) {
-  const normalizedText = trimTextBlock(text);
+function appendTextPart(
+  message: MutableTranscriptMessage,
+  text: string,
+  id: string,
+  kind: AgentTranscriptTextPart['kind'] = 'text',
+) {
+  const normalizedText = trimTextBlock(sanitizeTranscriptDisplayText(text));
   if (!normalizedText) {
     return;
   }
@@ -1083,6 +1287,7 @@ function appendTextPart(message: MutableTranscriptMessage, text: string, id: str
     id,
     type: 'text',
     text: normalizedText,
+    kind,
   });
 }
 
@@ -1194,8 +1399,9 @@ function finalizeMutableMessage(message: MutableTranscriptMessage): AgentTranscr
 }
 
 function getExplicitToolStatus(eventType: string | undefined, contentJson: AgentTranscriptJsonRecord) {
-  const exitCode = getInteger(contentJson.exitCode ?? contentJson.exit_code);
-  const rawStatus = getString(contentJson.status).toLowerCase();
+  const rawProviderItem = getRawProviderEventItem(getRawProviderEvent(contentJson));
+  const exitCode = getInteger(contentJson.exitCode ?? contentJson.exit_code ?? rawProviderItem.exit_code);
+  const rawStatus = getString(contentJson.status || rawProviderItem.status).toLowerCase();
   if (eventType?.includes('failed') || rawStatus === 'failed' || (typeof exitCode === 'number' && exitCode !== 0)) {
     return 'failed' as const;
   }
@@ -1213,14 +1419,21 @@ function getExplicitToolKind(event: AgentTranscriptEvent): AgentTranscriptToolKi
     return 'exec';
   }
   const contentJson = getEventJson(event);
-  const toolName = getNormalizedToolName(contentJson.toolName || contentJson.name);
+  const rawProviderItemType = getRawProviderItemType(getRawProviderEvent(contentJson));
+  const toolName = getNormalizedToolName(getExplicitToolName(contentJson));
   if (toolName === 'apply_patch') {
     return 'apply_patch';
   }
   if (toolName === 'terminal' || toolName === 'write_stdin' || toolName === 'terminal_stream') {
     return 'terminal';
   }
-  if (toolName === 'exec' || toolName === 'exec_command' || toolName === 'bash' || toolName === 'shell') {
+  if (
+    toolName === 'exec' ||
+    toolName === 'exec_command' ||
+    toolName === 'bash' ||
+    toolName === 'shell' ||
+    rawProviderItemType === 'command_execution'
+  ) {
     return 'exec';
   }
   if (toolName === 'wait' || toolName === 'wait_agent') {
@@ -1231,15 +1444,20 @@ function getExplicitToolKind(event: AgentTranscriptEvent): AgentTranscriptToolKi
 
 function stringifyToolValue(value: unknown) {
   if (typeof value === 'string') {
-    return value.trim() ? value : '';
+    const displayValue = sanitizeTranscriptDisplayText(value);
+    return displayValue.trim() ? displayValue : '';
   }
   if (value === undefined || value === null) {
     return '';
   }
+  const displayValue = sanitizeTranscriptDisplayValue(value);
+  if (displayValue === '') {
+    return '';
+  }
   try {
-    return JSON.stringify(value, null, 2);
+    return JSON.stringify(displayValue, null, 2);
   } catch {
-    return String(value);
+    return sanitizeTranscriptDisplayText(String(value));
   }
 }
 
@@ -1282,6 +1500,18 @@ function getNormalizedToolName(value: unknown) {
   return toolName.split(/[./]/).filter(Boolean).pop() || toolName;
 }
 
+function getExplicitToolName(contentJson: AgentTranscriptJsonRecord) {
+  const directName = getString(contentJson.toolName || contentJson.name);
+  if (directName) {
+    return directName;
+  }
+  const rawProviderItem = getRawProviderEventItem(getRawProviderEvent(contentJson));
+  return (
+    getString(rawProviderItem.toolName || rawProviderItem.tool_name || rawProviderItem.name || rawProviderItem.tool) ||
+    getString(rawProviderItem.type)
+  );
+}
+
 function getCommandFromRecord(record: AgentTranscriptJsonRecord) {
   const command = getString(record.command || record.commandLine || record.command_line || record.cmd);
   if (command) {
@@ -1311,6 +1541,7 @@ function getExplicitToolCommand(contentJson: AgentTranscriptJsonRecord) {
   if (command) {
     return command;
   }
+  const rawProviderItem = getRawProviderEventItem(getRawProviderEvent(contentJson));
   const nestedRecords = [
     getRecord(contentJson.input),
     getRecord(contentJson.parameters),
@@ -1318,6 +1549,10 @@ function getExplicitToolCommand(contentJson: AgentTranscriptJsonRecord) {
     getRecord(contentJson.state),
     getRecord(getNestedRecord(contentJson, 'state').input),
     getToolArgumentsRecord(contentJson),
+    rawProviderItem,
+    getRecord(rawProviderItem.input),
+    getRecord(rawProviderItem.parameters),
+    getRecord(rawProviderItem.arguments),
   ];
   for (const record of nestedRecords) {
     const nestedCommand = getCommandFromRecord(record);
@@ -1339,6 +1574,10 @@ function getExplicitToolInput(contentJson: AgentTranscriptJsonRecord) {
     ['parameters'],
     ['payload'],
     ['prompt'],
+    ['rawProviderEvent', 'item', 'input'],
+    ['rawProviderEvent', 'item', 'arguments'],
+    ['rawProviderEvent', 'item', 'parameters'],
+    ['rawProviderEvent', 'item', 'prompt'],
     ['collab', 'prompt'],
     ['collab', 'receiverThreadIds'],
     ['collab', 'receiver_thread_ids'],
@@ -1361,6 +1600,13 @@ function getExplicitToolOutput(contentJson: AgentTranscriptJsonRecord) {
     ['result', 'output'],
     ['result', 'stdout'],
     ['result', 'stderr'],
+    ['rawProviderEvent', 'item', 'output'],
+    ['rawProviderEvent', 'item', 'aggregated_output'],
+    ['rawProviderEvent', 'item', 'aggregatedOutput'],
+    ['rawProviderEvent', 'item', 'stdout'],
+    ['rawProviderEvent', 'item', 'stderr'],
+    ['rawProviderEvent', 'item', 'result'],
+    ['rawProviderEvent', 'item', 'error'],
     ['state', 'output'],
     ['state', 'result'],
     ['metadata', 'output'],
@@ -1417,8 +1663,10 @@ function getToolEventMetadataDetails(
   const source = getString(event.source);
   const providerEventId = getString(event.providerEventId);
   const correlationId = getString(event.correlationId);
-  const contentText = getEventText(event);
-  const detailContentJson = getRecord(omitDisplayedToolOutput(contentJson, displayedOutput));
+  const contentText = sanitizeTranscriptDisplayText(getEventText(event));
+  const detailContentJson = getRecord(
+    sanitizeTranscriptDisplayValue(omitDisplayedToolOutput(contentJson, displayedOutput)),
+  );
   if (eventType) {
     details.eventType = eventType;
   }
@@ -1431,7 +1679,7 @@ function getToolEventMetadataDetails(
   if (correlationId) {
     details.correlationId = correlationId;
   }
-  if (contentText) {
+  if (contentText && !isProviderLifecycleLabel(contentText)) {
     details.contentText = contentText;
   }
   if (Object.keys(detailContentJson).length) {
@@ -1470,18 +1718,23 @@ function getExplicitToolCorrelationKey(event: AgentTranscriptEvent) {
 
 function buildExplicitToolCall(event: AgentTranscriptEvent): AgentTranscriptToolCall {
   const contentJson = getEventJson(event);
-  const command = getExplicitToolCommand(contentJson);
+  const command = sanitizeTranscriptDisplayText(getExplicitToolCommand(contentJson));
   const input = getExplicitToolInput(contentJson);
-  const toolName = getString(contentJson.toolName || contentJson.name);
+  const toolName = getExplicitToolName(contentJson);
   const output = getExplicitToolOutput(contentJson);
   const details = getExplicitToolDetails(event, contentJson, command, input, output);
-  const exitCode = getInteger(contentJson.exitCode ?? contentJson.exit_code);
+  const rawProviderItem = getRawProviderEventItem(getRawProviderEvent(contentJson));
+  const exitCode = getInteger(contentJson.exitCode ?? contentJson.exit_code ?? rawProviderItem.exit_code);
   const durationMs = getInteger(contentJson.durationMs ?? contentJson.duration_ms);
   const status = getExplicitToolStatus(event.eventType, contentJson);
   const title =
     command ||
     toolName ||
-    (event.eventType?.startsWith('agent.command.') ? 'Command' : getEventText(event)) ||
+    (event.eventType?.startsWith('agent.command.')
+      ? 'Command'
+      : isProviderLifecycleLabel(getEventText(event))
+        ? ''
+        : sanitizeTranscriptDisplayText(getEventText(event))) ||
     'Tool call';
   return {
     id: `event-tool-${getExplicitToolCorrelationKey(event)}`,
@@ -1819,6 +2072,14 @@ export function buildAgentTranscript(
 
     if (event.eventType?.startsWith('agent.command.') || event.eventType?.startsWith('agent.tool.')) {
       flushTerminalEvents();
+      if (isRawProviderAgentMessageEvent(event)) {
+        const text = getAgentTextEventText(event);
+        if (text) {
+          const agentMessage = ensureMessage(event, getRootAgentParticipantSeed(event));
+          appendTextPart(agentMessage, text, `text-${event.id}`, 'text');
+        }
+        continue;
+      }
       const toolCall = buildExplicitToolCall(event);
       const existingToolCallMessage = toolCallMessages.get(toolCall.id);
       if (existingToolCallMessage) {
@@ -1847,13 +2108,18 @@ export function buildAgentTranscript(
       continue;
     }
 
-    if (event.eventType !== 'agent.message') {
+    if (!AGENT_TEXT_EVENT_TYPES.has(event.eventType || '')) {
       continue;
     }
 
     flushTerminalEvents();
     const agentMessage = ensureMessage(event, getRootAgentParticipantSeed(event));
-    appendTextPart(agentMessage, getEventText(event), `text-${event.id}`);
+    appendTextPart(
+      agentMessage,
+      getAgentTextEventText(event),
+      `text-${event.id}`,
+      getAgentTextPartKind(event.eventType),
+    );
   }
 
   flushTerminalEvents();

@@ -130,6 +130,306 @@ describe('agent transcript parser', () => {
     });
   });
 
+  it('keeps reasoning, progress, and raw provider text in the agent transcript', () => {
+    const transcript = buildAgentTranscript([
+      {
+        id: 'reasoning-1',
+        eventType: 'agent.reasoning',
+        source: 'codex',
+        sequence: 1,
+        contentText: 'I should inspect the existing implementation first.',
+      },
+      {
+        id: 'progress-1',
+        eventType: 'agent.progress',
+        source: 'opencode',
+        sequence: 2,
+        contentText: 'Running browser verification',
+      },
+      {
+        id: 'raw-1',
+        eventType: 'agent.raw',
+        source: 'codex',
+        sequence: 3,
+        contentText: 'unexpected.event',
+        contentJson: {
+          rawProviderEvent: {
+            type: 'unexpected.event',
+            payload: {
+              phase: 'unmapped',
+            },
+          },
+        },
+      },
+    ]);
+
+    expect(transcript.messages).toHaveLength(1);
+    expect(transcript.messages[0].parts).toMatchObject([
+      {
+        type: 'text',
+        kind: 'reasoning',
+        text: 'I should inspect the existing implementation first.',
+      },
+      {
+        type: 'text',
+        kind: 'progress',
+        text: 'Running browser verification',
+      },
+      {
+        type: 'text',
+        kind: 'raw',
+        text: expect.stringContaining('"unexpected.event"'),
+      },
+    ]);
+    expect(transcript.messages[0].text).toContain('I should inspect the existing implementation first.');
+    expect(transcript.messages[0].text).toContain('Running browser verification');
+    expect(transcript.messages[0].text).toContain('"phase": "unmapped"');
+  });
+
+  it('hides Agent Gateway harness progress markers from displayed transcript text and tool details', () => {
+    const transcript = buildAgentTranscript([
+      {
+        id: 'user-1',
+        eventType: 'agent.user.message',
+        source: 'agent-gateway-task',
+        sequence: 1,
+        contentText: [
+          'Build the NocoBase UI.',
+          '- Emit progress lines when possible as: AGW_PROGRESS phase=<phase> status=<started|succeeded|failed> message=<short text>.',
+          'Use the uploaded skill.',
+        ].join('\n'),
+      },
+      {
+        id: 'message-1',
+        eventType: 'agent.message',
+        source: 'codex',
+        sequence: 2,
+        contentText: [
+          'Starting the build.',
+          'AGW_PROGRESS phase=build status=started message=creating pages',
+          'Continuing with browser checks.',
+        ].join('\n'),
+      },
+      {
+        id: 'progress-noise',
+        eventType: 'agent.progress',
+        source: 'codex',
+        sequence: 3,
+        contentText: 'AGW_PROGRESS phase=browser status=started message=checking',
+      },
+      {
+        id: 'command-complete',
+        eventType: 'agent.command.completed',
+        source: 'codex',
+        sequence: 4,
+        correlationId: 'cmd-1',
+        contentText: 'Command completed',
+        contentJson: {
+          command: 'node scripts/run-suite.mjs --tasks tasks.yaml',
+          status: 'completed',
+          exitCode: 0,
+          aggregated_output: [
+            'AGW_PROGRESS phase=batch status=started message=running suite',
+            'Suite completed: 12/12 tasks passed.',
+            'AGW_PROGRESS phase=batch status=succeeded message=done',
+          ].join('\n'),
+        },
+      },
+      {
+        id: 'raw-1',
+        eventType: 'agent.raw',
+        source: 'codex',
+        sequence: 5,
+        contentJson: {
+          rawProviderEvent: {
+            type: 'item.completed',
+            aggregated_output: 'AGW_PROGRESS phase=raw status=started message=noise\nraw event kept',
+          },
+        },
+      },
+    ]);
+
+    expect(JSON.stringify(transcript)).not.toContain('AGW_PROGRESS');
+    expect(transcript.messages[0].text).toBe('Build the NocoBase UI.\nUse the uploaded skill.');
+    expect(transcript.messages[1].text).toContain('Starting the build.');
+    expect(transcript.messages[1].text).toContain('Continuing with browser checks.');
+    expect(transcript.messages[1].text).not.toContain('raw event kept');
+    expect(transcript.toolCalls[0]).toMatchObject({
+      command: 'node scripts/run-suite.mjs --tasks tasks.yaml',
+      output: 'Suite completed: 12/12 tasks passed.',
+    });
+    expect(transcript.toolCalls[0].details).not.toContain('AGW_PROGRESS');
+  });
+
+  it('hides raw empty provider agent message completions and inline harness marker references', () => {
+    const transcript = buildAgentTranscript([
+      {
+        id: 'reasoning-1',
+        eventType: 'agent.reasoning',
+        source: 'codex',
+        sequence: 1,
+        contentText: 'I should include `AGW_PROGRESS` while running the suite.',
+      },
+      {
+        id: 'empty-raw-agent-message',
+        eventType: 'agent.raw',
+        source: 'codex',
+        sequence: 2,
+        contentJson: {
+          rawProviderEvent: {
+            type: 'item.completed',
+            item: {
+              id: 'item_9',
+              text: '',
+              type: 'agent_message',
+            },
+          },
+        },
+      },
+      {
+        id: 'message-1',
+        eventType: 'agent.message',
+        source: 'codex',
+        sequence: 3,
+        contentText: 'Visible agent text.',
+      },
+    ]);
+
+    expect(JSON.stringify(transcript)).not.toContain('AGW_PROGRESS');
+    expect(JSON.stringify(transcript)).not.toContain('item_9');
+    expect(transcript.messages).toHaveLength(1);
+    expect(transcript.messages[0].text).toContain('progress marker');
+    expect(transcript.messages[0].text).toContain('Visible agent text.');
+  });
+
+  it('keeps misclassified provider agent messages out of tool calls', () => {
+    const transcript = buildAgentTranscript([
+      {
+        id: 'message-1',
+        eventType: 'agent.message',
+        source: 'codex',
+        sequence: 1,
+        contentText: 'Visible agent text.',
+      },
+      {
+        id: 'empty-agent-message-tool',
+        eventType: 'agent.tool.completed',
+        source: 'codex',
+        sequence: 2,
+        contentText: 'agent_message',
+        contentJson: {
+          rawProviderEvent: {
+            type: 'item.completed',
+            item: {
+              id: 'item_18',
+              text: '',
+              type: 'agent_message',
+            },
+          },
+        },
+      },
+      {
+        id: 'text-agent-message-tool',
+        eventType: 'agent.tool.completed',
+        source: 'codex',
+        sequence: 3,
+        contentText: 'agent_message',
+        contentJson: {
+          rawProviderEvent: {
+            type: 'item.completed',
+            item: {
+              id: 'item_19',
+              text: 'Useful final answer.',
+              type: 'agent_message',
+            },
+          },
+        },
+      },
+    ]);
+
+    expect(transcript.toolCalls).toHaveLength(0);
+    expect(JSON.stringify(transcript)).not.toContain('item_18');
+    expect(JSON.stringify(transcript)).not.toContain('item_19');
+    expect(JSON.stringify(transcript)).not.toContain('"type":"agent_message"');
+    expect(transcript.messages).toHaveLength(1);
+    expect(transcript.messages[0].text).toContain('Visible agent text.');
+    expect(transcript.messages[0].text).toContain('Useful final answer.');
+  });
+
+  it('hides low-signal provider lifecycle labels while keeping child agent replies', () => {
+    const transcript = buildAgentTranscript([
+      {
+        id: 'lifecycle-message',
+        eventType: 'agent.message',
+        source: 'codex',
+        sequence: 1,
+        contentText: 'Item Complete',
+        contentJson: {
+          rawProviderEvent: {
+            type: 'item.completed',
+            item: {
+              id: 'spawn-aquinas',
+              type: 'collab_tool_call',
+              tool: 'spawn_agent',
+              status: 'completed',
+            },
+          },
+        },
+      },
+      {
+        id: 'lifecycle-tool',
+        eventType: 'agent.tool.completed',
+        source: 'codex',
+        sequence: 2,
+        contentText: 'Item Complete',
+        contentJson: {
+          rawProviderEvent: {
+            type: 'item.completed',
+            item: {
+              id: 'wait-aquinas',
+              type: 'collab_tool_call',
+              tool: 'wait',
+              status: 'completed',
+              agents_states: {
+                'thread-aquinas': {
+                  status: 'completed',
+                  message: 'Hi',
+                },
+              },
+            },
+          },
+        },
+      },
+      {
+        id: 'child-message',
+        eventType: 'agent.message',
+        source: 'codex',
+        sequence: 3,
+        contentText: 'Hi',
+        contentJson: {
+          participant: {
+            id: 'sub-agent:aquinas',
+            type: 'sub-agent',
+            name: 'Aquinas',
+            parentId: 'agent:root',
+          },
+        },
+      },
+    ]);
+
+    expect(JSON.stringify(transcript.messages)).not.toContain('Item Complete');
+    expect(transcript.toolCalls[0]).toMatchObject({
+      title: 'wait',
+      status: 'succeeded',
+    });
+    expect(
+      transcript.messages.map((message) => [message.participant.type, message.participant.name, message.text]),
+    ).toEqual([
+      ['root-agent', 'Agent', ''],
+      ['sub-agent', 'Aquinas', 'Hi'],
+    ]);
+  });
+
   it('merges explicit command start and completion events by correlation id', () => {
     const transcript = buildAgentTranscript([
       {

@@ -16,6 +16,7 @@ import { AgentGatewayDaemonNodeClient } from '../gateway';
 import { runDaemonLoop, runDaemonOnce } from '../runner';
 import { terminateTmuxSession } from '../tmuxTerminal';
 import { GatewayRequestOptions, GatewayRequester, JsonRecord } from '../types';
+import { COMMAND_OUTPUT_PAYLOAD_LIMIT_CHARS } from '../../shared/conversationLimits';
 
 function execTmux(args: string[]) {
   return new Promise<void>((resolve, reject) => {
@@ -77,6 +78,7 @@ class RunnerRequester implements GatewayRequester {
       failNodeHeartbeatOnce?: boolean;
       failCompleteOnce?: boolean;
       failAgentSessionUpsertOnce?: boolean;
+      failArtifactKeys?: string[];
     } = {},
   ) {
     this.failCompleteOnce = Boolean(options.failCompleteOnce);
@@ -142,6 +144,12 @@ class RunnerRequester implements GatewayRequester {
     if (this.failAgentSessionUpsertOnce && options.path.endsWith('/agent-session:upsert')) {
       this.failAgentSessionUpsertOnce = false;
       throw new Error('transient session upsert failure');
+    }
+    if (
+      options.path.endsWith('/artifacts:register') &&
+      this.options.failArtifactKeys?.includes(String((options.body as JsonRecord | undefined)?.artifactKey || ''))
+    ) {
+      throw new Error('HTTP 413');
     }
     if (this.options.enforceTerminalLeaseVersion && /\/(complete|fail|timeout|cancel-ack)$/.test(options.path)) {
       const body = (options.body || {}) as JsonRecord;
@@ -448,7 +456,7 @@ describe('agent gateway daemon runner', () => {
     expect(result.status).toBe('succeeded');
     expect(executedArgs[0].join('\n')).toContain(path.join(installedSkillPath, 'SKILL.md'));
     const artifactCalls = requester.calls.filter((call) => call.path.endsWith('/artifacts:register'));
-    expect(artifactCalls).toHaveLength(5);
+    expect(artifactCalls).toHaveLength(6);
     expect(artifactCalls.map((call) => call.body?.artifactKey)).not.toEqual(
       expect.arrayContaining([
         'declared:runs/nb-opencode-ui-batch/old-run/report.html',
@@ -457,6 +465,16 @@ describe('agent gateway daemon runner', () => {
     );
     expect(artifactCalls.map((call) => call.body)).toEqual(
       expect.arrayContaining([
+        expect.objectContaining({
+          artifactKey: 'stdout-main',
+          artifactType: 'stdout',
+          mimeType: 'text/plain',
+          contentText: expect.stringContaining('AGW_PROGRESS phase=render_run status=started'),
+          metadata: expect.objectContaining({
+            storageMode: 'inline',
+            truncated: false,
+          }),
+        }),
         expect.objectContaining({
           artifactKey: 'declared:artifact-manifest.json',
           artifactType: 'artifact-manifest',
@@ -519,6 +537,214 @@ describe('agent gateway daemon runner', () => {
       resultSummary: {
         declaredArtifacts: {
           declaredArtifactCount: 5,
+        },
+      },
+    });
+  });
+
+  it('collects OpenCode UI batch artifacts from the cwd skill home run directory', async () => {
+    const workspace = path.join(tempDir, 'workspace');
+    const localSkillPath = path.join(workspace, 'myskills', 'skills', 'nb-opencode-ui-batch');
+    const runDir = path.join(workspace, 'myskills', 'runs', 'nb-opencode-ui-batch', 'run-2');
+    await fs.mkdir(localSkillPath, { recursive: true });
+    await fs.mkdir(runDir, { recursive: true });
+    await fs.writeFile(path.join(runDir, 'report.html'), '<html><body>cwd skill home report</body></html>');
+    await fs.writeFile(path.join(runDir, 'report.json'), '{"durationMs":2345}');
+
+    const requester = new RunnerRequester({
+      claimPayload: {
+        claimed: true,
+        runId: 'run-2',
+        claimToken: 'ag_claim_CLAIM_TOKEN_SECRET',
+        claimAttempt: 1,
+        leaseVersion: 1,
+        run: {
+          id: 'run-2',
+          requestedAt: new Date(Date.now() - 1000).toISOString(),
+          executionPayloadJson: {
+            scenario: 'opencode-ui-batch',
+            commandKey: 'codex',
+            prompt: 'Run the local batch harness from cwd',
+            cwd: 'myskills/skills/nb-opencode-ui-batch',
+            artifactGlobs: ['runs/nb-opencode-ui-batch/*/report.html', 'runs/nb-opencode-ui-batch/*/report.json'],
+          },
+        },
+      },
+    });
+    const gateway = new AgentGatewayDaemonNodeClient(requester, {
+      serverUrl: 'https://nocobase.example.test',
+      nodeId: 'node-1',
+      nodeKey: 'node-1',
+      nodeToken: 'ag_node_NODE_TOKEN_SECRET',
+      savedAt: new Date().toISOString(),
+    });
+
+    const result = await runDaemonOnce({
+      gateway,
+      allowlist: {
+        codex: {
+          commandKey: 'codex',
+          executable: process.execPath,
+          defaultTimeoutMs: 5000,
+        },
+      },
+      workspaceRoot: workspace,
+      skillsRoot: path.join(tempDir, 'skills'),
+      artifactDir: path.join(tempDir, 'artifacts'),
+      runHeartbeatIntervalMs: 60_000,
+      executeCommand: async () => ({
+        status: 'succeeded',
+        exitCode: 0,
+        signal: null,
+        stdout: {
+          text: '{"type":"turn.completed"}',
+          sizeBytes: 25,
+        },
+        stderr: {
+          text: null,
+          sizeBytes: 0,
+        },
+      }),
+      detectOptions: {
+        probeCommand: async (candidates) => ({
+          available: candidates.includes('codex'),
+          command: candidates[0],
+          version: 'codex 1.0.0',
+        }),
+      },
+    });
+
+    expect(result.status).toBe('succeeded');
+    const artifactCalls = requester.calls.filter((call) => call.path.endsWith('/artifacts:register'));
+    expect(artifactCalls.map((call) => call.body)).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          artifactKey: 'declared:runs/nb-opencode-ui-batch/run-2/report.html',
+          artifactType: 'html-report',
+          contentText: expect.stringContaining('cwd skill home report'),
+        }),
+        expect.objectContaining({
+          artifactKey: 'declared:runs/nb-opencode-ui-batch/run-2/report.json',
+          artifactType: 'json-report',
+          contentText: '{"durationMs":2345}',
+        }),
+      ]),
+    );
+    const completeCall = requester.calls.find((call) => call.path.endsWith('/complete'));
+    expect(completeCall?.body).toMatchObject({
+      resultSummary: {
+        declaredArtifacts: {
+          artifactManifest: {
+            counts: {
+              matched: 2,
+              selected: 2,
+              uploaded: 2,
+            },
+          },
+        },
+      },
+    });
+  });
+
+  it('continues declared artifact collection when one artifact upload fails', async () => {
+    const workspace = path.join(tempDir, 'workspace');
+    const localSkillPath = path.join(workspace, 'myskills', 'skills', 'nb-opencode-ui-batch');
+    const runDir = path.join(workspace, 'myskills', 'runs', 'nb-opencode-ui-batch', 'run-2');
+    await fs.mkdir(localSkillPath, { recursive: true });
+    await fs.mkdir(runDir, { recursive: true });
+    await fs.writeFile(path.join(runDir, 'report.html'), '<html><body>partial report</body></html>');
+    await fs.writeFile(path.join(runDir, 'report.json'), '{"large":true}');
+
+    const failedArtifactKey = 'declared:runs/nb-opencode-ui-batch/run-2/report.json';
+    const requester = new RunnerRequester({
+      failArtifactKeys: [failedArtifactKey],
+      claimPayload: {
+        claimed: true,
+        runId: 'run-2',
+        claimToken: 'ag_claim_CLAIM_TOKEN_SECRET',
+        claimAttempt: 1,
+        leaseVersion: 1,
+        run: {
+          id: 'run-2',
+          requestedAt: new Date(Date.now() - 1000).toISOString(),
+          executionPayloadJson: {
+            scenario: 'opencode-ui-batch',
+            commandKey: 'codex',
+            prompt: 'Run the local batch harness from cwd',
+            cwd: 'myskills/skills/nb-opencode-ui-batch',
+            artifactGlobs: ['runs/nb-opencode-ui-batch/*/report.html', 'runs/nb-opencode-ui-batch/*/report.json'],
+          },
+        },
+      },
+    });
+    const gateway = new AgentGatewayDaemonNodeClient(requester, {
+      serverUrl: 'https://nocobase.example.test',
+      nodeId: 'node-1',
+      nodeKey: 'node-1',
+      nodeToken: 'ag_node_NODE_TOKEN_SECRET',
+      savedAt: new Date().toISOString(),
+    });
+
+    const result = await runDaemonOnce({
+      gateway,
+      allowlist: {
+        codex: {
+          commandKey: 'codex',
+          executable: process.execPath,
+          defaultTimeoutMs: 5000,
+        },
+      },
+      workspaceRoot: workspace,
+      skillsRoot: path.join(tempDir, 'skills'),
+      artifactDir: path.join(tempDir, 'artifacts'),
+      runHeartbeatIntervalMs: 60_000,
+      executeCommand: async () => ({
+        status: 'succeeded',
+        exitCode: 0,
+        signal: null,
+        stdout: {
+          text: '{"type":"turn.completed"}',
+          sizeBytes: 25,
+        },
+        stderr: {
+          text: null,
+          sizeBytes: 0,
+        },
+      }),
+      detectOptions: {
+        probeCommand: async (candidates) => ({
+          available: candidates.includes('codex'),
+          command: candidates[0],
+          version: 'codex 1.0.0',
+        }),
+      },
+    });
+
+    expect(result.status).toBe('succeeded');
+    const artifactCalls = requester.calls.filter((call) => call.path.endsWith('/artifacts:register'));
+    expect(artifactCalls.map((call) => call.body?.artifactKey)).toEqual(
+      expect.arrayContaining([
+        'declared:runs/nb-opencode-ui-batch/run-2/report.html',
+        'declared:artifact-manifest.json',
+      ]),
+    );
+    const completeCall = requester.calls.find((call) => call.path.endsWith('/complete'));
+    expect(completeCall?.body).toMatchObject({
+      resultSummary: {
+        declaredArtifacts: {
+          declaredArtifactFailedCount: 1,
+          declaredArtifactFailures: [
+            {
+              artifactKey: failedArtifactKey,
+              message: 'HTTP 413',
+            },
+          ],
+          artifactManifest: {
+            counts: {
+              uploaded: 1,
+              failed: 1,
+            },
+          },
         },
       },
     });
@@ -1322,6 +1548,7 @@ describe('agent gateway daemon runner', () => {
       '{"type":"thread.started","thread_id":"019f1f37-25a1-71d0-9cd2-e0b37a2374fb"}',
       'x'.repeat(300 * 1024),
       '{"type":"item.completed","item":{"id":"item-tail","type":"agent_message","text":"tail timeline message"}}',
+      '{"type":"item.completed","item":{"id":"item-command","type":"command_execution","command":"echo command raw","aggregated_output":"command output\\n","exit_code":0,"status":"completed"}}',
     ].join('\n');
     await fs.writeFile(stdoutArtifactPath, artifactText);
     const requester = new RunnerRequester({
@@ -1393,9 +1620,133 @@ describe('agent gateway daemon runner', () => {
           eventType: 'agent.message',
           contentText: 'tail timeline message',
           providerEventId: 'item.completed:item-tail',
+          contentJson: expect.objectContaining({
+            rawLine:
+              '{"type":"item.completed","item":{"id":"item-tail","type":"agent_message","text":"tail timeline message"}}',
+            rawProviderEvent: {
+              type: 'item.completed',
+              item: {
+                id: 'item-tail',
+                type: 'agent_message',
+                text: 'tail timeline message',
+              },
+            },
+          }),
+        }),
+        expect.objectContaining({
+          eventType: 'agent.command.completed',
+          contentText: 'Command completed',
+          providerEventId: 'item.completed:item-command',
+          contentJson: expect.objectContaining({
+            command: 'echo command raw',
+            output: 'command output\n',
+            rawLine:
+              '{"type":"item.completed","item":{"id":"item-command","type":"command_execution","command":"echo command raw","aggregated_output":"command output\\n","exit_code":0,"status":"completed"}}',
+            rawProviderEvent: {
+              type: 'item.completed',
+              item: {
+                id: 'item-command',
+                type: 'command_execution',
+                command: 'echo command raw',
+                aggregated_output: 'command output\n',
+                exit_code: 0,
+                status: 'completed',
+              },
+            },
+          }),
         }),
       ]),
     });
+  });
+
+  it('preserves large command output without duplicating oversized raw provider payloads', async () => {
+    const workspace = path.join(tempDir, 'workspace');
+    await fs.mkdir(workspace, { recursive: true });
+    const largeOutput = 'A'.repeat(COMMAND_OUTPUT_PAYLOAD_LIMIT_CHARS);
+    const rawLine = JSON.stringify({
+      type: 'item.completed',
+      item: {
+        id: 'item-large-command',
+        type: 'command_execution',
+        command: 'node scripts/noisy-command.mjs',
+        aggregated_output: largeOutput,
+        exit_code: 0,
+        status: 'completed',
+      },
+    });
+    const requester = new RunnerRequester({
+      claimPayload: {
+        claimed: true,
+        runId: 'run-1',
+        claimToken: 'ag_claim_CLAIM_TOKEN_SECRET',
+        claimAttempt: 1,
+        leaseVersion: 1,
+        run: {
+          id: 'run-1',
+          executionPayloadJson: {
+            commandKey: 'codex',
+            args: ['exec', '--json', 'echo session'],
+            cwd: '.',
+          },
+        },
+      },
+    });
+    const gateway = new AgentGatewayDaemonNodeClient(requester, {
+      serverUrl: 'https://nocobase.example.test',
+      nodeId: 'node-1',
+      nodeKey: 'node-1',
+      nodeToken: 'ag_node_NODE_TOKEN_SECRET',
+      savedAt: new Date().toISOString(),
+    });
+
+    const result = await runDaemonOnce({
+      gateway,
+      allowlist: {
+        codex: {
+          commandKey: 'codex',
+          executable: process.execPath,
+          defaultTimeoutMs: 5000,
+        },
+      },
+      workspaceRoot: workspace,
+      skillsRoot: path.join(tempDir, 'skills'),
+      artifactDir: path.join(tempDir, 'artifacts'),
+      runHeartbeatIntervalMs: 60_000,
+      executeCommand: async () => ({
+        status: 'succeeded',
+        exitCode: 0,
+        signal: null,
+        stdout: {
+          text: rawLine,
+          sizeBytes: Buffer.byteLength(rawLine),
+        },
+        stderr: {
+          text: null,
+          sizeBytes: 0,
+        },
+      }),
+      detectOptions: {
+        probeCommand: async (candidates) => ({
+          available: candidates.includes('codex'),
+          command: candidates[0],
+          version: 'codex 1.0.0',
+        }),
+      },
+    });
+
+    expect(result.status).toBe('succeeded');
+    const conversationCall = requester.calls.find((call) => call.path.endsWith('/conversation-events:append'));
+    const commandEvent = getRequestEvents(conversationCall).find(
+      (event) => event.providerEventId === 'item.completed:item-large-command',
+    );
+    const contentJson = commandEvent?.contentJson as JsonRecord | undefined;
+    expect(contentJson?.command).toBe('node scripts/noisy-command.mjs');
+    expect(String(contentJson?.output || '')).toHaveLength(COMMAND_OUTPUT_PAYLOAD_LIMIT_CHARS);
+    expect(contentJson?.rawLineTruncated).toBe(true);
+    expect(contentJson?.rawLineOriginalLength).toBe(rawLine.length);
+    expect(contentJson?.rawProviderEventOmitted).toBe(true);
+    expect(JSON.stringify(contentJson)).not.toContain('rawProviderEvent":{"type"');
+    expect(JSON.stringify(contentJson)).not.toContain(`rawLine":"${rawLine.slice(0, 120)}`);
   });
 
   it('chunks Codex timeline appends to stay within the server batch limit', async () => {
@@ -1681,11 +2032,12 @@ describe('agent gateway daemon runner', () => {
     }
   });
 
-  it('truncates multi-megabyte log artifacts and still completes the run', async () => {
+  it('truncates log artifacts only after the large command output limit and still completes the run', async () => {
     const workspace = path.join(tempDir, 'workspace');
     await fs.mkdir(workspace, { recursive: true });
     const largeLogPath = path.join(tempDir, 'large-stdout.log');
-    await fs.writeFile(largeLogPath, Buffer.alloc(1100 * 1024, 65));
+    const largeLogSize = COMMAND_OUTPUT_PAYLOAD_LIMIT_CHARS + 1024;
+    await fs.writeFile(largeLogPath, Buffer.alloc(largeLogSize, 65));
     const requester = new RunnerRequester({
       claimPayload: {
         claimed: true,
@@ -1730,7 +2082,7 @@ describe('agent gateway daemon runner', () => {
         signal: null,
         stdout: {
           text: null,
-          sizeBytes: 1100 * 1024,
+          sizeBytes: largeLogSize,
           artifactPath: largeLogPath,
         },
         stderr: {
@@ -1753,11 +2105,13 @@ describe('agent gateway daemon runner', () => {
     );
     expect(artifactCall).toBeTruthy();
     const artifactBody = (artifactCall?.body || {}) as JsonRecord;
-    expect(String(artifactBody.contentText).length).toBeLessThan(1024 * 1024);
+    expect(String(artifactBody.contentText).length).toBeLessThan(COMMAND_OUTPUT_PAYLOAD_LIMIT_CHARS);
+    expect(String(artifactBody.contentText).length).toBeGreaterThan(9 * 1024 * 1024);
     expect(artifactBody.metadata).toMatchObject({
-      originalSizeBytes: 1100 * 1024,
+      originalSizeBytes: largeLogSize,
       truncated: true,
     });
+    expect(artifactBody.metadata?.uploadedBytes).toBe(Buffer.byteLength(String(artifactBody.contentText)));
     expect(requester.calls.some((call) => call.path.endsWith('/complete'))).toBe(true);
   });
 

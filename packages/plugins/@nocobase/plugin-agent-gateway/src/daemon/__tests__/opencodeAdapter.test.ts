@@ -66,7 +66,7 @@ describe('OpenCode agent adapter', () => {
       }),
     ).toEqual([
       {
-        eventType: 'opencode.message',
+        eventType: 'agent.message',
         level: 'info',
         providerEventId: 'evt-1',
         correlationId: 'evt-1',
@@ -75,6 +75,68 @@ describe('OpenCode agent adapter', () => {
           type: 'message',
           id: 'evt-1',
           message: 'Done',
+          textKind: 'message',
+          rawProviderEvent: {
+            type: 'message',
+            id: 'evt-1',
+            message: 'Done',
+          },
+        },
+      },
+    ]);
+  });
+
+  it('keeps fallback progress and raw provider events instead of dropping them', () => {
+    expect(
+      opencodeAdapter.normalizeEvent({
+        rawLine: '{"type":"status_update","id":"evt-progress","message":"Running verifier"}',
+      }),
+    ).toEqual([
+      {
+        eventType: 'agent.progress',
+        level: 'info',
+        providerEventId: 'evt-progress',
+        correlationId: 'evt-progress',
+        message: 'Running verifier',
+        payloadJson: {
+          type: 'status_update',
+          id: 'evt-progress',
+          message: 'Running verifier',
+          textKind: 'progress',
+          rawProviderEvent: {
+            type: 'status_update',
+            id: 'evt-progress',
+            message: 'Running verifier',
+          },
+        },
+      },
+    ]);
+
+    expect(
+      opencodeAdapter.normalizeEvent({
+        rawLine: '{"type":"event","id":"evt-raw","metadata":{"phase":"unknown"}}',
+      }),
+    ).toEqual([
+      {
+        eventType: 'agent.raw',
+        level: 'info',
+        providerEventId: 'evt-raw',
+        correlationId: 'evt-raw',
+        message: 'event',
+        payloadJson: {
+          type: 'event',
+          id: 'evt-raw',
+          metadata: {
+            phase: 'unknown',
+          },
+          textKind: 'raw',
+          rawProviderEvent: {
+            type: 'event',
+            id: 'evt-raw',
+            metadata: {
+              phase: 'unknown',
+            },
+          },
         },
       },
     ]);

@@ -548,6 +548,74 @@ describe('agent gateway conversation event APIs', () => {
     });
   });
 
+  it('accepts verbose transcript events beyond the normal small text and JSON limits', async () => {
+    const runner = await createRunner();
+    const run = await createRun(runner, 'conversation-run-large-verbose-transcript');
+    const claim = await claimRun(runner, run.id);
+    const largeReasoningText = 'VISIBLE_REASONING_TRACE_LINE\n'.repeat(1024);
+    const largeRawPayload = {
+      type: 'unmapped.provider.event',
+      payload: {
+        output: 'RAW_PROVIDER_EVENT_LINE\n'.repeat(2048),
+      },
+    };
+
+    const appendResponse = await appendConversationEvents(
+      runner,
+      run.id,
+      leaseValues(claim, {
+        events: [
+          {
+            source: 'codex',
+            sequence: 1,
+            eventType: 'agent.reasoning',
+            providerEventId: 'reasoning:large',
+            contentText: largeReasoningText,
+            contentJson: {
+              textKind: 'reasoning',
+              rawProviderEvent: largeRawPayload,
+            },
+          },
+          {
+            source: 'codex',
+            sequence: 2,
+            eventType: 'agent.raw',
+            providerEventId: 'raw:large',
+            contentText: 'unmapped.provider.event',
+            contentJson: {
+              rawProviderEvent: largeRawPayload,
+            },
+          },
+        ],
+      }),
+    );
+
+    expect(appendResponse.status).toBe(200);
+    const appended = getData(appendResponse).events as Array<Record<string, unknown>>;
+    expect(appended).toHaveLength(2);
+    expect(appended[0]).toMatchObject({
+      eventType: 'agent.reasoning',
+      contentText: largeReasoningText,
+      contentJson: {
+        textKind: 'reasoning',
+        rawProviderEvent: largeRawPayload,
+      },
+    });
+    expect(appended[1]).toMatchObject({
+      eventType: 'agent.raw',
+      contentJson: {
+        rawProviderEvent: largeRawPayload,
+      },
+    });
+
+    const runListResponse = await rootAgent.get(`/api/agent-gateway/runs/${run.id}/conversation-events:list`);
+    expect(runListResponse.status).toBe(200);
+    expect(runListResponse.body.data[0].contentText).toBe(largeReasoningText);
+    expect(runListResponse.body.data[1].contentJson).toMatchObject({
+      rawProviderEvent: largeRawPayload,
+    });
+  });
+
   it('preserves full tool call input and output for transcript rendering', async () => {
     const runner = await createRunner();
     const run = await createRun(runner, 'conversation-run-tool-details');

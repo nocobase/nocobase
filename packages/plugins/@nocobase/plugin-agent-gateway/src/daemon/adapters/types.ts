@@ -51,6 +51,8 @@ export interface NormalizedAgentEvent {
   confidence?: number | null;
   message?: string | null;
   payloadJson?: JsonRecord;
+  rawLine?: string | null;
+  rawEvent?: JsonRecord | null;
 }
 
 export interface AgentAdapter {

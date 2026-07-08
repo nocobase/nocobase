@@ -87,6 +87,8 @@
   "Input": "Input",
   "Cached": "Cached",
   "Reasoning": "Reasoning",
+  "Progress": "Progress",
+  "Raw event": "Raw event",
   "Node ID": "Node ID",
   "Profile ID": "Profile ID",
   "Source": "Source",

@@ -66,7 +66,7 @@ describe('Claude-style agent adapter', () => {
       }),
     ).toEqual([
       {
-        eventType: 'claude-code.assistant',
+        eventType: 'agent.message',
         level: 'info',
         providerEventId: 'evt-1',
         correlationId: 'evt-1',
@@ -75,6 +75,68 @@ describe('Claude-style agent adapter', () => {
           type: 'assistant',
           uuid: 'evt-1',
           message: 'Done',
+          textKind: 'message',
+          rawProviderEvent: {
+            type: 'assistant',
+            uuid: 'evt-1',
+            message: 'Done',
+          },
+        },
+      },
+    ]);
+  });
+
+  it('keeps fallback reasoning and raw provider events instead of dropping them', () => {
+    expect(
+      claudeCodeAdapter.normalizeEvent({
+        rawLine: '{"type":"thinking_delta","uuid":"evt-reasoning","text":"Need to inspect the page first"}',
+      }),
+    ).toEqual([
+      {
+        eventType: 'agent.reasoning',
+        level: 'info',
+        providerEventId: 'evt-reasoning',
+        correlationId: 'evt-reasoning',
+        message: 'Need to inspect the page first',
+        payloadJson: {
+          type: 'thinking_delta',
+          uuid: 'evt-reasoning',
+          text: 'Need to inspect the page first',
+          textKind: 'reasoning',
+          rawProviderEvent: {
+            type: 'thinking_delta',
+            uuid: 'evt-reasoning',
+            text: 'Need to inspect the page first',
+          },
+        },
+      },
+    ]);
+
+    expect(
+      claudeCodeAdapter.normalizeEvent({
+        rawLine: '{"type":"event","uuid":"evt-raw","payload":{"phase":"unknown"}}',
+      }),
+    ).toEqual([
+      {
+        eventType: 'agent.raw',
+        level: 'info',
+        providerEventId: 'evt-raw',
+        correlationId: 'evt-raw',
+        message: 'event',
+        payloadJson: {
+          type: 'event',
+          uuid: 'evt-raw',
+          payload: {
+            phase: 'unknown',
+          },
+          textKind: 'raw',
+          rawProviderEvent: {
+            type: 'event',
+            uuid: 'evt-raw',
+            payload: {
+              phase: 'unknown',
+            },
+          },
         },
       },
     ]);

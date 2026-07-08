@@ -8,6 +8,7 @@
  */
 
 import path from 'path';
+import { createHash } from 'crypto';
 import { createReadStream } from 'fs';
 import { promises as fs } from 'fs';
 import { createInterface } from 'readline';
@@ -33,6 +34,7 @@ import {
 import { JsonRecord, PendingControlRequest, RunLease } from './types';
 import { TerminalRingBuffer } from './terminalRingBuffer';
 import { DaemonTerminalStreamClient, DaemonTerminalStreamClientOptions } from './terminalStreamClient';
+import { COMMAND_CONTENT_JSON_LIMIT_CHARS } from '../shared/conversationLimits';
 import { AGENT_GATEWAY_TERMINATE_CONTROL_CANCEL_REASON } from '../shared/runControl';
 import {
   AgentProviderKey,
@@ -85,12 +87,18 @@ const PROVIDER_SESSION_UPSERT_MAX_ATTEMPTS = 3;
 const PROVIDER_SESSION_UPSERT_RETRY_DELAY_MS = 250;
 const MAX_CONVERSATION_EVENTS_PER_APPEND = 100;
 const OPENCODE_UI_BATCH_TASK_RUN_SCENARIO = 'opencode-ui-batch';
+const OPENCODE_UI_BATCH_ARTIFACT_DIR = 'nb-opencode-ui-batch';
 const LIVE_TIMELINE_SOURCE = 'terminal-live';
 const DAEMON_PROGRESS_SOURCE = 'agent-gateway-daemon';
 const HARNESS_PROGRESS_SOURCE = 'harness';
 const PROGRESS_MARKER_PREFIX = 'AGW_PROGRESS';
 const LIVE_TIMELINE_FLUSH_INTERVAL_MS = 2000;
 const LIVE_TIMELINE_MAX_CHARS_PER_EVENT = 4000;
+const CONVERSATION_CONTENT_JSON_BUDGET_CHARS = COMMAND_CONTENT_JSON_LIMIT_CHARS - 4096;
+const RAW_PROVIDER_PREVIEW_CHARS = 4000;
+const PROGRESS_EVENT_PAYLOAD_BUDGET_CHARS = 14 * 1024;
+const PROGRESS_EVENT_PAYLOAD_PREVIEW_CHARS = 2000;
+const SUMMARY_ARRAY_SAMPLE_LIMIT = 20;
 const DEFAULT_LOOP_RETRY_INITIAL_DELAY_MS = 1000;
 const DEFAULT_LOOP_RETRY_MAX_DELAY_MS = 30_000;
 
@@ -138,6 +146,10 @@ interface ExecutionCommandSpec {
 
 function isRecord(value: unknown): value is JsonRecord {
   return Object.prototype.toString.call(value) === '[object Object]';
+}
+
+function getRecord(value: unknown): JsonRecord {
+  return isRecord(value) ? value : {};
 }
 
 function getPayload(lease: RunLease) {
@@ -409,6 +421,130 @@ function withInstalledSkillPromptContext(lease: RunLease, syncResults: SyncNodeS
   };
 }
 
+function hashText(value: string) {
+  return createHash('sha256').update(value).digest('hex');
+}
+
+function getJsonText(value: unknown) {
+  try {
+    return JSON.stringify(value) || '';
+  } catch {
+    return String(value);
+  }
+}
+
+function getArraySample(value: unknown, limit = SUMMARY_ARRAY_SAMPLE_LIMIT) {
+  return Array.isArray(value) ? value.slice(0, limit) : [];
+}
+
+function getArrayCount(value: unknown) {
+  return Array.isArray(value) ? value.length : 0;
+}
+
+function compactArtifactManifestForSummary(value: unknown): JsonRecord {
+  const manifest = getRecord(value);
+  if (!Object.keys(manifest).length) {
+    return {};
+  }
+  const artifacts = getArraySample(manifest.artifacts);
+  const skipped = getArraySample(manifest.skipped);
+  const ignored = getArraySample(manifest.ignored);
+  const referencedScreenshots = getArraySample(manifest.referencedScreenshots);
+  const missingReferencedScreenshots = getArraySample(manifest.missingReferencedScreenshots);
+  return {
+    schema: getString(manifest.schema) || undefined,
+    generatedAt: getString(manifest.generatedAt) || undefined,
+    maxArtifactUploads: manifest.maxArtifactUploads,
+    counts: getRecord(manifest.counts),
+    artifactSample: artifacts,
+    artifactSampleCount: artifacts.length,
+    artifactCount: getArrayCount(manifest.artifacts),
+    skippedSample: skipped,
+    skippedSampleCount: skipped.length,
+    skippedCount: getArrayCount(manifest.skipped),
+    ignoredSample: ignored,
+    ignoredSampleCount: ignored.length,
+    ignoredCount: getArrayCount(manifest.ignored),
+    referencedScreenshotSample: referencedScreenshots,
+    referencedScreenshotSampleCount: referencedScreenshots.length,
+    referencedScreenshotCount: getArrayCount(manifest.referencedScreenshots),
+    missingReferencedScreenshotSample: missingReferencedScreenshots,
+    missingReferencedScreenshotSampleCount: missingReferencedScreenshots.length,
+    missingReferencedScreenshotCount: getArrayCount(manifest.missingReferencedScreenshots),
+  };
+}
+
+function compactDeclaredArtifactSummary(value: unknown): JsonRecord {
+  const summary = getRecord(value);
+  if (!Object.keys(summary).length) {
+    return {};
+  }
+  const declaredArtifactKeys = getArraySample(summary.declaredArtifactKeys, 50);
+  const declaredArtifactFailures = getArraySample(summary.declaredArtifactFailures, SUMMARY_ARRAY_SAMPLE_LIMIT);
+  return {
+    declaredArtifactCount: summary.declaredArtifactCount,
+    declaredArtifactKeySample: declaredArtifactKeys,
+    declaredArtifactKeySampleCount: declaredArtifactKeys.length,
+    declaredArtifactKeyCount: getArrayCount(summary.declaredArtifactKeys),
+    declaredArtifactFailedCount: summary.declaredArtifactFailedCount,
+    declaredArtifactFailures,
+    declaredArtifactFailureSample: declaredArtifactFailures,
+    declaredArtifactFailureSampleCount: declaredArtifactFailures.length,
+    declaredArtifactFailureCount: getArrayCount(summary.declaredArtifactFailures),
+    artifactManifestArtifactKey: 'declared:artifact-manifest.json',
+    artifactManifest: compactArtifactManifestForSummary(summary.artifactManifest),
+  };
+}
+
+function compactProgressPayloadJson(payloadJson: JsonRecord) {
+  if (getJsonStringLength(payloadJson) <= PROGRESS_EVENT_PAYLOAD_BUDGET_CHARS) {
+    return payloadJson;
+  }
+  const payloadText = getJsonText(payloadJson);
+  return {
+    progressPayloadCompacted: true,
+    progressPayloadOriginalChars: payloadText.length,
+    progressPayloadSha256: hashText(payloadText),
+    progressPayloadPreview: payloadText.slice(0, PROGRESS_EVENT_PAYLOAD_PREVIEW_CHARS),
+  };
+}
+
+async function registerOutputArtifact(options: {
+  gateway: AgentGatewayDaemonNodeClient;
+  lease: RunLease;
+  streamName: 'stdout' | 'stderr';
+  output: ExecDriverResult['stdout'];
+}) {
+  if (options.output.text) {
+    await options.gateway.registerArtifact(options.lease, {
+      artifactKey: `${options.streamName}-main`,
+      artifactType: options.streamName,
+      mimeType: 'text/plain',
+      sizeBytes: Buffer.byteLength(options.output.text),
+      contentText: options.output.text,
+      metadata: {
+        originalSizeBytes: Buffer.byteLength(options.output.text),
+        uploadedBytes: Buffer.byteLength(options.output.text),
+        truncated: false,
+        sha256: hashText(options.output.text),
+        storageMode: 'inline',
+      },
+    });
+    return;
+  }
+  if (options.output.artifactPath) {
+    const artifactUpload = await buildTextArtifactUpload(options.output.artifactPath, options.output.sizeBytes);
+    await options.gateway.registerArtifact(options.lease, {
+      artifactKey: `${options.streamName}-main`,
+      artifactType: options.streamName,
+      mimeType: 'text/plain',
+      sizeBytes: options.output.sizeBytes,
+      contentText: artifactUpload.contentText,
+      metadata: artifactUpload.metadata,
+    });
+  }
+}
+
 async function reportExecOutputs(gateway: AgentGatewayDaemonNodeClient, lease: RunLease, result: ExecDriverResult) {
   let sequence = 1;
   for (const [streamName, output] of [
@@ -421,21 +557,16 @@ async function reportExecOutputs(gateway: AgentGatewayDaemonNodeClient, lease: R
         sequence,
         eventType: 'agent.output.chunk',
         level: streamName === 'stderr' && result.status !== 'succeeded' ? 'error' : 'info',
-        message: output.text,
+        message: output.text.slice(0, 4000),
       });
       sequence += 1;
     }
-    if (output.artifactPath) {
-      const artifactUpload = await buildTextArtifactUpload(output.artifactPath, output.sizeBytes);
-      await gateway.registerArtifact(lease, {
-        artifactKey: `${streamName}-main`,
-        artifactType: streamName,
-        mimeType: 'text/plain',
-        sizeBytes: output.sizeBytes,
-        contentText: artifactUpload.contentText,
-        metadata: artifactUpload.metadata,
-      });
-    }
+    await registerOutputArtifact({
+      gateway,
+      lease,
+      streamName,
+      output,
+    });
   }
 }
 
@@ -450,37 +581,120 @@ async function reportDeclaredArtifacts(options: {
     payload: options.payload,
     cwd: options.cwd,
     workspaceRoot: options.workspaceRoot,
-    trustedArtifactRoots: getInstalledSkillArtifactRoots(options.payload),
+    trustedArtifactRoots: getDeclaredArtifactSearchRoots(options.payload, options.cwd),
     modifiedSinceMs: getDeclaredArtifactModifiedSinceMs(options.lease, options.payload),
   });
-  for (const upload of collection.uploads) {
-    await options.gateway.registerArtifact(options.lease, upload);
+  const manifestUpload = collection.uploads.find((upload) => upload.artifactType === 'artifact-manifest');
+  const artifactUploads = collection.uploads.filter((upload) => upload !== manifestUpload);
+  const uploadedArtifactKeys: string[] = [];
+  const uploadFailures: JsonRecord[] = [];
+  for (const upload of artifactUploads) {
+    try {
+      await options.gateway.registerArtifact(options.lease, upload);
+      uploadedArtifactKeys.push(upload.artifactKey);
+    } catch (error) {
+      uploadFailures.push({
+        artifactKey: upload.artifactKey,
+        artifactType: upload.artifactType,
+        message: error instanceof Error ? error.message : String(error),
+      });
+    }
   }
+  const artifactManifest = {
+    ...collection.manifest,
+    counts: {
+      ...getRecord(collection.manifest.counts),
+      uploaded: uploadedArtifactKeys.length,
+      failed: uploadFailures.length,
+    },
+    ...(uploadFailures.length ? { uploadFailures } : {}),
+  };
+  if (manifestUpload) {
+    const contentText = JSON.stringify(artifactManifest, null, 2);
+    const contentBytes = Buffer.byteLength(contentText);
+    const upload = {
+      ...manifestUpload,
+      sizeBytes: contentBytes,
+      contentText,
+      metadata: {
+        ...manifestUpload.metadata,
+        originalSizeBytes: contentBytes,
+        uploadedBytes: contentBytes,
+        truncated: false,
+        storageMode: 'inline',
+        sha256: hashText(contentText),
+      },
+    };
+    try {
+      await options.gateway.registerArtifact(options.lease, upload);
+      uploadedArtifactKeys.push(upload.artifactKey);
+    } catch (error) {
+      uploadFailures.push({
+        artifactKey: upload.artifactKey,
+        artifactType: upload.artifactType,
+        message: error instanceof Error ? error.message : String(error),
+      });
+    }
+  }
+
   return {
-    declaredArtifactCount: collection.uploads.length,
-    declaredArtifactKeys: collection.uploads.map((upload) => upload.artifactKey),
-    artifactManifest: collection.manifest,
+    declaredArtifactCount: uploadedArtifactKeys.length,
+    declaredArtifactKeys: uploadedArtifactKeys,
+    declaredArtifactFailedCount: uploadFailures.length,
+    ...(uploadFailures.length ? { declaredArtifactFailures: uploadFailures } : {}),
+    artifactManifest,
   };
 }
 
-function getInstalledSkillArtifactRoots(payload: JsonRecord) {
+function appendUniquePath(roots: string[], root: string) {
+  if (root && !roots.includes(root)) {
+    roots.push(root);
+  }
+}
+
+function getSkillHomeFromSkillRoot(skillRoot: string) {
+  const skillsRoot = skillRoot ? path.dirname(skillRoot) : '';
+  if (path.basename(skillsRoot) !== 'skills') {
+    return '';
+  }
+  return path.dirname(skillsRoot);
+}
+
+function appendSkillArtifactRoots(roots: string[], skillRoot: string) {
+  appendUniquePath(roots, skillRoot);
+  appendUniquePath(roots, getSkillHomeFromSkillRoot(skillRoot));
+}
+
+function getBatchArtifactHomeFromPath(value: string) {
+  if (!path.isAbsolute(value)) {
+    return '';
+  }
+  const segments = path.normalize(value).split(path.sep);
+  for (let index = 0; index < segments.length - 1; index += 1) {
+    if (segments[index] === 'runs' && segments[index + 1] === OPENCODE_UI_BATCH_ARTIFACT_DIR) {
+      const homeSegments = segments.slice(0, index);
+      return homeSegments.length ? homeSegments.join(path.sep) || path.sep : path.sep;
+    }
+  }
+  return '';
+}
+
+function getDeclaredArtifactSearchRoots(payload: JsonRecord, cwd: string) {
   if (getString(payload.scenario) !== OPENCODE_UI_BATCH_TASK_RUN_SCENARIO) {
     return [];
   }
   const installedSkills = Array.isArray(payload.installedSkills) ? payload.installedSkills : [];
   const roots: string[] = [];
-  const appendRoot = (root: string) => {
-    if (root && !roots.includes(root)) {
-      roots.push(root);
-    }
-  };
+  appendSkillArtifactRoots(roots, cwd);
   for (const skill of installedSkills) {
     const installPath = isRecord(skill) ? getString(skill.installPath) : '';
-    appendRoot(installPath);
-    const skillsRoot = installPath ? path.dirname(installPath) : '';
-    if (path.basename(skillsRoot) === 'skills') {
-      appendRoot(path.dirname(skillsRoot));
-    }
+    appendSkillArtifactRoots(roots, installPath);
+  }
+  const artifactRoot = getStringMap(payload.env).NB_UI_BATCH_ARTIFACT_ROOT;
+  if (artifactRoot) {
+    const resolvedArtifactRoot = path.isAbsolute(artifactRoot) ? artifactRoot : path.resolve(cwd, artifactRoot);
+    appendUniquePath(roots, resolvedArtifactRoot);
+    appendUniquePath(roots, getBatchArtifactHomeFromPath(resolvedArtifactRoot));
   }
   return roots;
 }
@@ -566,7 +780,7 @@ async function collectProviderConversationEvents(provider: string | undefined, r
   for (const outputRecord of [result.stdout, result.stderr]) {
     for await (const rawLine of readOutputLinesForProviderEvents(outputRecord)) {
       for (const event of adapter.normalizeEvent({ rawLine, source: provider })) {
-        events.push(buildConversationEventRecord(adapter.provider, sequence, event));
+        events.push(buildConversationEventRecord(adapter.provider, sequence, event, rawLine));
         sequence += 1;
       }
     }
@@ -575,7 +789,116 @@ async function collectProviderConversationEvents(provider: string | undefined, r
   return events;
 }
 
-function buildConversationEventRecord(source: string, sequence: number, event: NormalizedAgentEvent): JsonRecord {
+function tryParseJsonRecord(value: string) {
+  if (!value.trim().startsWith('{')) {
+    return {};
+  }
+  try {
+    const parsed = JSON.parse(value) as unknown;
+    return isRecord(parsed) ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function getJsonStringLength(value: unknown) {
+  try {
+    return JSON.stringify(value)?.length || 0;
+  } catch {
+    return Number.MAX_SAFE_INTEGER;
+  }
+}
+
+function contentJsonFitsBudget(contentJson: JsonRecord) {
+  return getJsonStringLength(contentJson) <= CONVERSATION_CONTENT_JSON_BUDGET_CHARS;
+}
+
+function setContentJsonFieldIfFits(contentJson: JsonRecord, key: string, value: unknown) {
+  contentJson[key] = value;
+  if (contentJsonFitsBudget(contentJson)) {
+    return true;
+  }
+  delete contentJson[key];
+  return false;
+}
+
+function setOptionalContentJsonFieldIfFits(contentJson: JsonRecord, key: string, value: unknown) {
+  if (value === undefined || value === null || value === '') {
+    return false;
+  }
+  return setContentJsonFieldIfFits(contentJson, key, value);
+}
+
+function attachRawLineDetails(contentJson: JsonRecord, rawLine: string) {
+  if (setContentJsonFieldIfFits(contentJson, 'rawLine', rawLine)) {
+    return;
+  }
+
+  contentJson.rawLineTruncated = true;
+  contentJson.rawLineOriginalLength = rawLine.length;
+  contentJson.rawLineSha256 = hashText(rawLine);
+  if (!contentJsonFitsBudget(contentJson)) {
+    delete contentJson.rawLineTruncated;
+    delete contentJson.rawLineOriginalLength;
+    delete contentJson.rawLineSha256;
+    return;
+  }
+
+  const preview = rawLine.slice(0, RAW_PROVIDER_PREVIEW_CHARS);
+  setOptionalContentJsonFieldIfFits(contentJson, 'rawLinePreview', preview);
+}
+
+function attachRawProviderEventDetails(contentJson: JsonRecord, rawProviderEvent: JsonRecord) {
+  if (!Object.keys(rawProviderEvent).length) {
+    return;
+  }
+  if (setContentJsonFieldIfFits(contentJson, 'rawProviderEvent', rawProviderEvent)) {
+    return;
+  }
+
+  contentJson.rawProviderEventOmitted = true;
+  contentJson.rawProviderEventOriginalChars = getJsonStringLength(rawProviderEvent);
+  setOptionalContentJsonFieldIfFits(contentJson, 'rawProviderEventType', getString(rawProviderEvent.type));
+  setOptionalContentJsonFieldIfFits(
+    contentJson,
+    'rawProviderEventItemType',
+    getString(getRecord(rawProviderEvent.item).type || getRecord(rawProviderEvent.payload).type),
+  );
+  if (!contentJsonFitsBudget(contentJson)) {
+    delete contentJson.rawProviderEventOmitted;
+    delete contentJson.rawProviderEventOriginalChars;
+    delete contentJson.rawProviderEventType;
+    delete contentJson.rawProviderEventItemType;
+  }
+}
+
+function buildConversationEventRecord(
+  source: string,
+  sequence: number,
+  event: NormalizedAgentEvent,
+  rawLine?: string,
+): JsonRecord {
+  const eventRawLine = event.rawLine || rawLine;
+  const payloadJson = event.payloadJson || {};
+  const rawPayloadProviderEvent = getRecord(payloadJson.rawProviderEvent);
+  const rawPayloadLine = getString(payloadJson.rawLine);
+  const contentJson = {
+    ...payloadJson,
+  };
+  delete contentJson.rawLine;
+  delete contentJson.rawProviderEvent;
+
+  const rawProviderEvent =
+    event.rawEvent && Object.keys(event.rawEvent).length
+      ? event.rawEvent
+      : Object.keys(rawPayloadProviderEvent).length
+        ? rawPayloadProviderEvent
+        : tryParseJsonRecord(eventRawLine || rawPayloadLine);
+  if (eventRawLine || rawPayloadLine) {
+    attachRawLineDetails(contentJson, eventRawLine || rawPayloadLine);
+  }
+  attachRawProviderEventDetails(contentJson, rawProviderEvent);
+
   return {
     source,
     sequence,
@@ -584,7 +907,7 @@ function buildConversationEventRecord(source: string, sequence: number, event: N
     correlationId: event.correlationId || undefined,
     confidence: event.confidence ?? undefined,
     contentText: event.message || undefined,
-    contentJson: event.payloadJson || {},
+    contentJson,
   };
 }
 
@@ -694,7 +1017,9 @@ function createLiveTimelineReporter(options: {
     }
     for (const event of normalizedEvents) {
       structuredSequence += 1;
-      pendingStructuredEvents.push(buildConversationEventRecord(structuredAdapter.provider, structuredSequence, event));
+      pendingStructuredEvents.push(
+        buildConversationEventRecord(structuredAdapter.provider, structuredSequence, event, line),
+      );
     }
   };
 
@@ -926,12 +1251,12 @@ function createRunProgressReporter(options: {
         eventType: `${phase}.${status}`,
         level: event.level || getProgressLevel(status),
         message: event.message || `${phase} ${status}`,
-        payloadJson: {
+        payloadJson: compactProgressPayloadJson({
           progress: true,
           phase,
           status,
           ...(event.payloadJson || {}),
-        },
+        }),
         emittedAt: new Date().toISOString(),
       });
     } catch (error) {
@@ -1258,6 +1583,7 @@ async function terminalizeRun(options: {
   declaredArtifactSummary?: JsonRecord;
 }) {
   const observationWarnings: string[] = [...(options.observationWarnings || [])];
+  const declaredArtifactSummary = compactDeclaredArtifactSummary(options.declaredArtifactSummary);
   try {
     await reportExecOutputs(options.gateway, options.getLease(), options.result);
   } catch (error) {
@@ -1270,7 +1596,7 @@ async function terminalizeRun(options: {
         status: options.result.status,
         exitCode: options.result.exitCode,
         signal: options.result.signal,
-        ...(options.declaredArtifactSummary ? { declaredArtifacts: options.declaredArtifactSummary } : {}),
+        ...(Object.keys(declaredArtifactSummary).length ? { declaredArtifacts: declaredArtifactSummary } : {}),
         ...(observationWarnings.length ? { observationWarnings } : {}),
       },
     });
@@ -1291,7 +1617,7 @@ async function terminalizeRun(options: {
       await options.gateway.completeRun(options.getLease(), {
         status: 'succeeded',
         exitCode: options.result.exitCode,
-        ...(options.declaredArtifactSummary ? { declaredArtifacts: options.declaredArtifactSummary } : {}),
+        ...(Object.keys(declaredArtifactSummary).length ? { declaredArtifacts: declaredArtifactSummary } : {}),
         ...(observationWarnings.length ? { observationWarnings } : {}),
       });
       return 'succeeded';
@@ -1334,7 +1660,7 @@ async function terminalizeRun(options: {
     await options.gateway.failRun(options.getLease(), `Process exited with ${options.result.status}`, {
       exitCode: options.result.exitCode,
       signal: options.result.signal,
-      ...(options.declaredArtifactSummary ? { declaredArtifacts: options.declaredArtifactSummary } : {}),
+      ...(Object.keys(declaredArtifactSummary).length ? { declaredArtifacts: declaredArtifactSummary } : {}),
     });
     return 'failed';
   } catch (error) {
@@ -1717,7 +2043,7 @@ export async function executeClaimedRun(
         phase: 'artifacts.collect',
         status: 'succeeded',
         message: 'Artifact collection completed',
-        payloadJson: declaredArtifactSummary,
+        payloadJson: compactDeclaredArtifactSummary(declaredArtifactSummary),
       });
     } catch (error) {
       sessionObservationWarnings.push(

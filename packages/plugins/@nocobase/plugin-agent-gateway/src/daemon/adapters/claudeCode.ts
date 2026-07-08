@@ -19,6 +19,53 @@ function getString(value: unknown) {
   return typeof value === 'string' ? value.trim() : '';
 }
 
+function getRecord(value: unknown): JsonRecord {
+  return isRecord(value) ? value : {};
+}
+
+function getEventText(event: JsonRecord) {
+  return (
+    getString(event.message) ||
+    getString(event.text) ||
+    getString(event.summary) ||
+    getString(getRecord(event.delta).text) ||
+    getString(getRecord(event.content).text)
+  );
+}
+
+function getFallbackEventType(type: string, text: string) {
+  const normalizedType = type.toLowerCase();
+  if (
+    normalizedType.includes('reasoning') ||
+    normalizedType.includes('thinking') ||
+    normalizedType.includes('summary')
+  ) {
+    return 'agent.reasoning';
+  }
+  if (
+    normalizedType.includes('progress') ||
+    normalizedType.includes('status') ||
+    normalizedType.includes('log') ||
+    normalizedType.includes('event')
+  ) {
+    return text ? 'agent.progress' : 'agent.raw';
+  }
+  return text ? 'agent.message' : 'agent.raw';
+}
+
+function getFallbackTextKind(eventType: string) {
+  if (eventType === 'agent.reasoning') {
+    return 'reasoning';
+  }
+  if (eventType === 'agent.progress') {
+    return 'progress';
+  }
+  if (eventType === 'agent.raw') {
+    return 'raw';
+  }
+  return 'message';
+}
+
 export function parseClaudeCodeJsonLine(input: ProviderEventInput): JsonRecord | null {
   if (isRecord(input.event)) {
     return input.event;
@@ -61,14 +108,20 @@ export const claudeCodeAdapter: AgentAdapter = {
     }
     const type = getString(event.type) || 'event';
     const id = getString(event.id) || getString(event.uuid) || null;
+    const message = getEventText(event);
+    const eventType = type.startsWith('agent.') ? type : getFallbackEventType(type, message);
     return [
       {
-        eventType: type.startsWith('agent.') ? type : `claude-code.${type}`,
+        eventType,
         level: event.level === 'error' ? 'error' : event.level === 'warn' ? 'warn' : 'info',
         providerEventId: id,
         correlationId: getString(event.correlationId) || id,
-        message: getString(event.message) || getString(event.text) || null,
-        payloadJson: event,
+        message: message || type,
+        payloadJson: {
+          ...event,
+          textKind: getFallbackTextKind(eventType),
+          rawProviderEvent: event,
+        },
       },
     ];
   },
