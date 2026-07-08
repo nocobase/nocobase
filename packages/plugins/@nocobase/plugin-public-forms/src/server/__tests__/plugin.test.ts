@@ -27,6 +27,10 @@ function createAclPlugin() {
   );
 }
 
+function createRuntimePlugin(app: Partial<PublicFormsServerApp>) {
+  return new PluginPublicFormsServer(app as PublicFormsServerApp, { name: 'public-forms' });
+}
+
 function setupGetMetaPlugin(options: { password?: string; enabled?: boolean } = {}) {
   const plugin = createPlugin();
   const visibleFlowModel = {
@@ -431,5 +435,333 @@ describe('PluginPublicFormsServer', () => {
 
     expect(ctx.permission).toEqual({ skip: true });
     expect(next).toHaveBeenCalled();
+  });
+
+  it('sets a public form cookie when returning meta', async () => {
+    const next = vi.fn(async () => undefined);
+    const cookies = {
+      get: vi.fn(() => null),
+      set: vi.fn(),
+    };
+    const sign = vi.fn(() => 'public-form-cookie');
+    const plugin = createRuntimePlugin({
+      name: 'main',
+      authManager: {
+        jwt: {
+          sign,
+          decode: vi.fn(async () => ({
+            formKey: 'pf1',
+            collectionName: 'orders',
+            targetCollections: ['customers'],
+          })),
+        },
+      },
+    });
+    plugin.getMetaByTk = vi.fn(async () => ({
+      token: 'public-form-token',
+      title: 'Public form',
+    }));
+
+    const ctx = {
+      action: {
+        params: {
+          filterByTk: 'pf1',
+        },
+      },
+      body: undefined,
+      cookies,
+      get: vi.fn(() => ''),
+      headers: {},
+      protocol: 'http',
+    };
+
+    await plugin.getPublicFormsMeta(ctx, next);
+
+    expect(ctx.body).toMatchObject({ token: 'public-form-token' });
+    expect(cookies.set).toHaveBeenCalledWith(
+      plugin.getPublicFormCookieName('pf1'),
+      'public-form-cookie',
+      expect.objectContaining({
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+      }),
+    );
+    expect(sign).toHaveBeenCalledWith(
+      {
+        v: 1,
+        appName: 'main',
+        formKey: 'pf1',
+        collectionName: 'orders',
+        targetCollections: ['customers'],
+        files: {},
+      },
+      { expiresIn: 3600 },
+    );
+    expect(next).toHaveBeenCalled();
+  });
+
+  it('does not overwrite an existing public form cookie on normal meta refresh', async () => {
+    const next = vi.fn(async () => undefined);
+    const cookies = {
+      get: vi.fn(() => 'existing-cookie'),
+      set: vi.fn(),
+    };
+    const sign = vi.fn(() => 'public-form-cookie');
+    const plugin = createRuntimePlugin({
+      name: 'main',
+      authManager: {
+        jwt: {
+          sign,
+          decode: vi.fn(async (token: string) => {
+            if (token === 'existing-cookie') {
+              return {
+                v: 1,
+                appName: 'main',
+                formKey: 'pf1',
+                collectionName: 'orders',
+                targetCollections: [],
+                files: {
+                  'main/files': [123],
+                },
+              };
+            }
+            return {
+              formKey: 'pf1',
+              collectionName: 'orders',
+              targetCollections: [],
+            };
+          }),
+        },
+      },
+    });
+    plugin.getMetaByTk = vi.fn(async () => ({
+      token: 'public-form-token',
+      title: 'Public form',
+    }));
+
+    const ctx = {
+      action: {
+        params: {
+          filterByTk: 'pf1',
+        },
+      },
+      body: undefined,
+      cookies,
+      get: vi.fn(() => ''),
+      headers: {},
+      protocol: 'http',
+    };
+
+    await plugin.getPublicFormsMeta(ctx, next);
+
+    expect(ctx.body).toMatchObject({ token: 'public-form-token' });
+    expect(cookies.set).not.toHaveBeenCalled();
+    expect(sign).not.toHaveBeenCalled();
+    expect(next).toHaveBeenCalled();
+  });
+
+  it('appends uploaded file ids to the public form cookie without extending expiry', async () => {
+    const expiresAt = Math.floor(Date.now() / 1000) + 60;
+    const sign = vi.fn(() => 'updated-cookie');
+    const cookies = {
+      get: vi.fn(() => 'existing-cookie'),
+      set: vi.fn(),
+    };
+    const plugin = createRuntimePlugin({
+      name: 'main',
+      authManager: {
+        jwt: {
+          sign,
+          decode: vi.fn(async () => ({
+            v: 1,
+            formKey: 'pf1',
+            collectionName: 'orders',
+            targetCollections: [],
+            files: {},
+            exp: expiresAt,
+          })),
+        },
+      },
+    });
+
+    const ctx = {
+      PublicForm: {
+        formKey: 'pf1',
+        collectionName: 'orders',
+        targetCollections: [],
+        exp: expiresAt,
+      },
+      action: {
+        actionName: 'create',
+        resourceName: 'attachments',
+        params: {},
+      },
+      dataSource: {
+        key: 'main',
+        collectionManager: {
+          getCollection: vi.fn(() => ({
+            name: 'attachments',
+            options: {
+              template: 'file',
+            },
+          })),
+        },
+      },
+      body: {
+        data: {
+          id: 123,
+        },
+      },
+      cookies,
+      headers: {},
+      protocol: 'http',
+    };
+    const next = vi.fn(async () => undefined);
+
+    await plugin.appendUploadedFileToPublicFormCookie(ctx, next);
+
+    expect(sign).toHaveBeenCalledWith(
+      {
+        v: 1,
+        appName: 'main',
+        formKey: 'pf1',
+        collectionName: 'orders',
+        targetCollections: [],
+        files: {
+          'main/attachments': [123],
+        },
+      },
+      expect.objectContaining({
+        expiresIn: expect.any(Number),
+      }),
+    );
+    expect(sign.mock.calls[0][1].expiresIn).toBeLessThanOrEqual(60);
+    expect(cookies.set).toHaveBeenCalledWith(
+      plugin.getPublicFormCookieName('pf1'),
+      'updated-cookie',
+      expect.objectContaining({
+        maxAge: expect.any(Number),
+      }),
+    );
+  });
+
+  it('authorizes only files listed in a public form cookie', async () => {
+    const plugin = createRuntimePlugin({
+      name: 'main',
+      authManager: {
+        jwt: {
+          decode: vi.fn(async () => ({
+            v: 1,
+            formKey: 'pf1',
+            collectionName: 'orders',
+            targetCollections: [],
+            files: {
+              'main/attachments': [123],
+            },
+          })),
+        },
+      },
+    });
+    const ctx = {
+      get: vi.fn(() => `nb_pf_legacy=public-form-cookie`),
+    };
+
+    await expect(
+      plugin.authorizePublicFormFileAccess(ctx, {
+        appName: 'main',
+        dataSourceKey: 'main',
+        collectionName: 'attachments',
+        id: '123',
+        preview: true,
+      }),
+    ).resolves.toBe(true);
+    await expect(
+      plugin.authorizePublicFormFileAccess(ctx, {
+        appName: 'main',
+        dataSourceKey: 'main',
+        collectionName: 'attachments',
+        id: '456',
+        preview: false,
+      }),
+    ).resolves.toBe(false);
+  });
+
+  it('checks every public form cookie value when duplicate cookie names are sent', async () => {
+    const plugin = createRuntimePlugin({
+      name: 'main',
+      authManager: {
+        jwt: {
+          decode: vi.fn(async (token: string) => {
+            if (token === 'stale-cookie') {
+              return {
+                v: 1,
+                appName: 'main',
+                formKey: 'pf1',
+                collectionName: 'orders',
+                targetCollections: [],
+                files: {},
+              };
+            }
+            return {
+              v: 1,
+              appName: 'main',
+              formKey: 'pf1',
+              collectionName: 'orders',
+              targetCollections: [],
+              files: {
+                'main/files': [123],
+              },
+            };
+          }),
+        },
+      },
+    });
+    const ctx = {
+      get: vi.fn(() => `nb_pf_same=stale-cookie; nb_pf_same=fresh-cookie`),
+    };
+
+    await expect(
+      plugin.authorizePublicFormFileAccess(ctx, {
+        appName: 'main',
+        dataSourceKey: 'main',
+        collectionName: 'files',
+        id: '123',
+        preview: false,
+      }),
+    ).resolves.toBe(true);
+  });
+
+  it('rejects public form file cookies from another app when the payload carries appName', async () => {
+    const plugin = createRuntimePlugin({
+      name: 'main',
+      authManager: {
+        jwt: {
+          decode: vi.fn(async () => ({
+            v: 1,
+            appName: 'subapp',
+            formKey: 'pf1',
+            collectionName: 'orders',
+            targetCollections: [],
+            files: {
+              'main/attachments': [123],
+            },
+          })),
+        },
+      },
+    });
+    const ctx = {
+      get: vi.fn(() => `nb_pf_legacy=public-form-cookie`),
+    };
+
+    await expect(
+      plugin.authorizePublicFormFileAccess(ctx, {
+        appName: 'main',
+        dataSourceKey: 'main',
+        collectionName: 'attachments',
+        id: '123',
+        preview: true,
+      }),
+    ).resolves.toBe(false);
   });
 });

@@ -291,6 +291,73 @@ describe('acl', () => {
     });
   });
 
+  it('should check another action without mutating current action context', async () => {
+    acl.define({
+      role: 'anonymous',
+      actions: {
+        'files:get': {
+          filter: {
+            status: 'public',
+          },
+        },
+      },
+    });
+
+    const createAction = () => ({
+      actionName: 'getFile',
+      resourceName: 'files',
+      params: {},
+      clone: () => createAction(),
+      setContext: () => {},
+      mergeParams(params) {
+        this.params = {
+          ...this.params,
+          ...params,
+          filter:
+            this.params.filter && params.filter
+              ? {
+                  $and: [this.params.filter, params.filter],
+                }
+              : params.filter || this.params.filter,
+        };
+      },
+    });
+    const action = createAction();
+    const permission = { resourceName: 'files', actionName: 'getFile' };
+    const ctx = {
+      state: {},
+      action,
+      permission,
+      throw: vi.fn((status, message) => {
+        throw Object.assign(new Error(message), { status });
+      }),
+    } as unknown as Context;
+
+    const result = await acl.checkAction({
+      context: ctx,
+      resource: 'files',
+      action: 'get',
+      params: {
+        filter: {
+          id: 1,
+        },
+      },
+    });
+
+    expect(result.mergedParams.filter).toEqual({
+      $and: [
+        {
+          id: 1,
+        },
+        {
+          status: 'public',
+        },
+      ],
+    });
+    expect(ctx.action).toBe(action);
+    expect(ctx.permission).toBe(permission);
+  });
+
   it('should revoke action', () => {
     acl.setAvailableAction('create', {
       displayName: 'create',

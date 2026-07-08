@@ -11,8 +11,75 @@ import { AxiosResponse } from 'axios';
 import MockAdapter from 'axios-mock-adapter';
 import { APIClient } from '../APIClient';
 import { Auth } from '../Auth';
+import { getAuthCookieName } from '../auth-cookie';
 
 describe('api-client', () => {
+  let storage: Map<string, string>;
+  let cookies: Map<string, string>;
+
+  beforeEach(() => {
+    storage = new Map();
+    cookies = new Map();
+
+    const localStorageMock = {
+      getItem: (key: string) => storage.get(key) ?? null,
+      setItem: (key: string, value: string) => storage.set(key, String(value)),
+      removeItem: (key: string) => storage.delete(key),
+      clear: () => storage.clear(),
+    };
+
+    Object.defineProperty(globalThis, 'localStorage', {
+      configurable: true,
+      value: localStorageMock,
+    });
+
+    Object.defineProperty(globalThis, 'window', {
+      configurable: true,
+      value: {
+        localStorage: localStorageMock,
+        location: {
+          protocol: 'https:',
+        },
+      },
+    });
+
+    Object.defineProperty(globalThis, 'document', {
+      configurable: true,
+      value: {
+        get cookie() {
+          return Array.from(cookies.entries())
+            .map(([key, value]) => `${key}=${value}`)
+            .join('; ');
+        },
+        set cookie(value: string) {
+          const [cookiePair, ...attributes] = value.split(';').map((item) => item.trim());
+          const [name, cookieValue] = cookiePair.split('=');
+          if (attributes.some((item) => item.toLowerCase() === 'max-age=0')) {
+            cookies.delete(name);
+          } else {
+            cookies.set(name, cookieValue);
+          }
+        },
+      },
+    });
+
+    Object.defineProperty(globalThis, 'location', {
+      configurable: true,
+      value: {
+        protocol: 'https:',
+      },
+    });
+  });
+
+  afterEach(() => {
+    if (typeof document !== 'undefined') {
+      document.cookie = `${getAuthCookieName('role', 'main')}=; Max-Age=0; Path=/`;
+      document.cookie = `${getAuthCookieName('role', 'myApp')}=; Max-Age=0; Path=/`;
+    }
+    storage.clear();
+    cookies.clear();
+  });
+
   test('instance', async () => {
     const api = new APIClient({
       baseURL: 'https://localhost:8000/api',
@@ -26,6 +93,7 @@ describe('api-client', () => {
     expect(response.data).toMatchObject({
       data: { id: 1, name: 'John Smith' },
     });
+    expect(api.axios.defaults.withCredentials).toBe(true);
   });
 
   test('signIn', async () => {
@@ -68,14 +136,29 @@ describe('api-client', () => {
     const api1 = new APIClient({
       baseURL: 'https://localhost:8000/api',
       storagePrefix: 'N2_',
+      shareToken: true,
     });
     api1.auth.setToken('123');
     const api = new APIClient({
       baseURL: 'https://localhost:8000/api',
       appName: 'myApp',
       storagePrefix: 'N2_',
+      shareToken: true,
     });
     expect(api.auth.getToken()).toBe('123');
+  });
+
+  test('set role cookie with app namespace', async () => {
+    const api = new APIClient({
+      baseURL: 'https://localhost:8000/api',
+      appName: 'myApp',
+    });
+
+    api.auth.setRole('admin');
+    expect(document.cookie).toContain(`${getAuthCookieName('role', 'myApp')}=admin`);
+
+    api.auth.setRole(null);
+    expect(document.cookie).not.toContain(`${getAuthCookieName('role', 'myApp')}=admin`);
   });
 
   test('resource action', async () => {

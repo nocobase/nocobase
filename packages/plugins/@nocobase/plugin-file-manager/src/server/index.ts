@@ -11,6 +11,7 @@ import { StorageEngine } from 'multer';
 
 export * from '../constants';
 export { AttachmentModel, default, PluginFileManagerServer, StorageModel } from './server';
+export type { FileAccessAuthorizeParams, FileAccessAuthorizer } from './server';
 export { cloudFilenameGetter } from './utils';
 export { StorageType, GetFileStreamOptions } from './storages';
 

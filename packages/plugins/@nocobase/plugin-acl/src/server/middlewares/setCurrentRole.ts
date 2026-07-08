@@ -9,13 +9,26 @@
 
 import { Context } from '@nocobase/actions';
 import { Cache } from '@nocobase/cache';
-import { Model, Repository } from '@nocobase/database';
+import { Repository } from '@nocobase/database';
+import { getAuthCookieName, getAuthCookieOptions } from '@nocobase/utils';
 import { UNION_ROLE_KEY } from '../constants';
 import { SystemRoleMode } from '../enum';
 import _ from 'lodash';
 
+type RoleRecord = {
+  name: string;
+};
+
+type SystemSettingsRecord = {
+  roleMode?: SystemRoleMode;
+};
+
 export async function setCurrentRole(ctx: Context, next) {
-  let currentRole = ctx.get('X-Role');
+  const headerRole = ctx.get('X-Role');
+  const roleCookieName = getAuthCookieName('role', ctx.app?.name);
+  const cookieRole = headerRole ? null : ctx.cookies?.get(roleCookieName);
+  let currentRole = headerRole || cookieRole;
+  const currentRoleFromCookie = !!cookieRole && !headerRole;
 
   if (currentRole === 'anonymous') {
     ctx.state.currentRole = currentRole;
@@ -26,14 +39,18 @@ export async function setCurrentRole(ctx: Context, next) {
     return next();
   }
 
-  const attachRoles = ctx.state.attachRoles || [];
+  const attachRoles = (ctx.state.attachRoles || []) as RoleRecord[];
   const cache = ctx.cache as Cache;
-  const repository = ctx.db.getRepository('users.roles', ctx.state.currentUser.id) as unknown as Repository;
+  const mainDb = ctx.app?.db || ctx.db;
+  const repository = mainDb?.getRepository?.('users.roles', ctx.state.currentUser.id) as Repository | undefined;
+  if (!repository) {
+    return next();
+  }
   const roles = (await cache.wrap(`roles:${ctx.state.currentUser.id}`, () =>
     repository.find({
       raw: true,
     }),
-  )) as Model[];
+  )) as RoleRecord[];
   if (!roles.length && !attachRoles.length) {
     ctx.state.currentRole = undefined;
     return ctx.throw(401, {
@@ -43,14 +60,14 @@ export async function setCurrentRole(ctx: Context, next) {
   }
   // Merge the roles of the user and the roles from the departments of the user
   // And remove the duplicate roles
-  const rolesMap = new Map();
-  attachRoles.forEach((role: any) => rolesMap.set(role.name, role));
-  roles.forEach((role: any) => rolesMap.set(role.name, role));
+  const rolesMap = new Map<string, RoleRecord>();
+  attachRoles.forEach((role) => rolesMap.set(role.name, role));
+  roles.forEach((role) => rolesMap.set(role.name, role));
   const userRoles = Array.from(rolesMap.values());
   ctx.state.currentUser.roles = userRoles;
   const systemSettings = (await cache.wrap(`app:systemSettings`, () =>
-    ctx.db.getRepository('systemSettings').findOne({ raw: true }),
-  )) as Model;
+    mainDb.getRepository('systemSettings').findOne({ raw: true }),
+  )) as SystemSettingsRecord;
   const roleMode = systemSettings?.roleMode || SystemRoleMode.default;
   if ([currentRole, ctx.state.currentRole].includes(UNION_ROLE_KEY) && roleMode === SystemRoleMode.default) {
     currentRole = userRoles[0].name;
@@ -74,17 +91,22 @@ export async function setCurrentRole(ctx: Context, next) {
   if (currentRole) {
     role = userRoles.find((role) => role.name === currentRole)?.name;
     if (!role) {
-      return ctx.throw(401, {
-        code: 'ROLE_NOT_FOUND_FOR_USER',
-        message: ctx.t('The role does not belong to the user', { ns: 'acl' }),
-      });
+      if (currentRoleFromCookie) {
+        ctx.cookies?.set(roleCookieName, null, getAuthCookieOptions(ctx, false));
+        currentRole = undefined;
+      } else {
+        return ctx.throw(401, {
+          code: 'ROLE_NOT_FOUND_FOR_USER',
+          message: ctx.t('The role does not belong to the user', { ns: 'acl' }),
+        });
+      }
     }
   }
   // 2. If the X-Role is not set, or the X-Role does not belong to the user, use the default role
   if (!role) {
     const defaultRoleModel = await cache.wrapWithCondition(
       `roles:${ctx.state.currentUser.id}:defaultRole`,
-      () => ctx.db.getRepository('rolesUsers').findOne({ where: { userId: ctx.state.currentUser.id, default: true } }),
+      () => mainDb.getRepository('rolesUsers').findOne({ where: { userId: ctx.state.currentUser.id, default: true } }),
       {
         isCacheable: (x) => !_.isEmpty(x),
       },
@@ -93,6 +115,9 @@ export async function setCurrentRole(ctx: Context, next) {
   }
   ctx.state.currentRole = role;
   ctx.state.currentRoles = role === UNION_ROLE_KEY ? userRoles.map((role) => role.name) : [role];
+  if (currentRoleFromCookie && role) {
+    ctx.cookies?.set(roleCookieName, role, getAuthCookieOptions(ctx, false));
+  }
   if (!ctx.state.currentRoles.length) {
     return ctx.throw(401, {
       code: 'ROLE_NOT_FOUND_ERR',

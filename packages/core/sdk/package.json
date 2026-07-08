@@ -5,6 +5,7 @@
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
   "dependencies": {
+    "@nocobase/utils": "2.1.18",
     "axios": "^1.7.0",
     "qs": "^6.10.1"
   },

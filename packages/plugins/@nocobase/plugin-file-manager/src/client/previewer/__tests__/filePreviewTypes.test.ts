@@ -10,14 +10,22 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   getDownloadFileName,
+  getFileFetchCredentials,
   getFileName,
   getPdfPreviewApiSrc,
   getPdfPreviewResourceOptions,
   getPdfPreviewWorkerSrc,
   getPreviewThumbnailUrl,
+  getPreviewFileUrl,
   isActiveContentFile,
   isSameOriginUrl,
+  rememberLocalPreviewUrl,
+  revokeLocalPreviewUrl,
+  shouldUsePdfJsPreview,
 } from '../filePreviewTypes';
+
+const originalCreateObjectURL = URL.createObjectURL;
+const originalRevokeObjectURL = URL.revokeObjectURL;
 
 describe('getDownloadFileName', () => {
   afterEach(() => {
@@ -25,6 +33,16 @@ describe('getDownloadFileName', () => {
     delete window.__nocobase_public_path__;
     delete window.__nocobase_modern_client_prefix__;
     vi.restoreAllMocks();
+    if (originalCreateObjectURL) {
+      Object.defineProperty(URL, 'createObjectURL', { value: originalCreateObjectURL, configurable: true });
+    } else {
+      delete (URL as any).createObjectURL;
+    }
+    if (originalRevokeObjectURL) {
+      Object.defineProperty(URL, 'revokeObjectURL', { value: originalRevokeObjectURL, configurable: true });
+    } else {
+      delete (URL as any).revokeObjectURL;
+    }
   });
 
   it('应为仅包含 URL 的文件推导出下载名，兼容 AttachmentURL 字段', () => {
@@ -77,10 +95,152 @@ describe('getDownloadFileName', () => {
     );
   });
 
+  it('永久文件地址应根据记录文件名推断图片缩略图', () => {
+    expect(
+      getPreviewThumbnailUrl({
+        filename: 'avatar.png',
+        url: '/files/main/main/attachments/1',
+        preview: '/files/main/main/attachments/1/preview',
+      }),
+    ).toBe('/files/main/main/attachments/1/preview');
+  });
+
+  it('上传项应根据 response 中的文件元数据生成图片缩略图', () => {
+    expect(
+      getPreviewThumbnailUrl({
+        status: 'done',
+        response: {
+          extname: '.jpg',
+          filename: 'icon-alexa-108-52map4.jpg',
+          id: 22,
+          local: true,
+          mimetype: 'image/jpeg',
+          preview: '/files/main/main/t_n6fvrknhqjr/22/preview',
+          url: '/files/main/main/t_n6fvrknhqjr/22',
+        },
+      }),
+    ).toBe('/files/main/main/t_n6fvrknhqjr/22/preview');
+  });
+
+  it('上传项应兼容 response.data 包裹的文件元数据', () => {
+    expect(
+      getPreviewThumbnailUrl({
+        status: 'done',
+        response: {
+          data: {
+            extname: '.jpg',
+            filename: 'avatar.jpg',
+            id: 23,
+            local: true,
+            mimetype: 'image/jpeg',
+            preview: '/files/main/main/t_n6fvrknhqjr/23/preview',
+            url: '/files/main/main/t_n6fvrknhqjr/23',
+          },
+        },
+      }),
+    ).toBe('/files/main/main/t_n6fvrknhqjr/23/preview');
+  });
+
+  it('永久文件地址应根据记录元数据推断非图片占位图', () => {
+    expect(
+      getPreviewThumbnailUrl({
+        filename: 'report.pdf',
+        url: '/files/main/main/attachments/2',
+        preview: '/files/main/main/attachments/2/preview',
+      }),
+    ).toBe('/file-placeholder/pdf-200-200.png');
+
+    expect(
+      getPreviewThumbnailUrl({
+        extname: '.xlsx',
+        url: '/files/main/main/attachments/3/preview',
+      }),
+    ).toBe('/file-placeholder/xlsx-200-200.png');
+  });
+
+  it('有 originFileObj 时应优先使用本地预览地址', () => {
+    const originFileObj = new File(['avatar'], 'avatar.png', { type: 'image/png' });
+    const revokeObjectURL = vi.fn();
+    Object.defineProperty(URL, 'createObjectURL', {
+      value: vi.fn(() => 'blob:nocobase-local-preview'),
+      configurable: true,
+    });
+    Object.defineProperty(URL, 'revokeObjectURL', { value: revokeObjectURL, configurable: true });
+    const file = {
+      originFileObj,
+      type: 'image/png',
+      url: '/files/main/main/attachments/1',
+      preview: '/files/main/main/attachments/1/preview',
+    };
+
+    expect(getPreviewFileUrl(file)).toBe('blob:nocobase-local-preview');
+    expect(getPreviewThumbnailUrl(file)).toBe('blob:nocobase-local-preview');
+
+    revokeLocalPreviewUrl(file);
+    expect(revokeObjectURL).toHaveBeenCalledWith('blob:nocobase-local-preview');
+  });
+
+  it('上传完成后的服务端记录应复用已登记的本地预览地址', () => {
+    const originFileObj = new File(['avatar'], 'avatar.png', { type: 'image/png' });
+    const revokeObjectURL = vi.fn();
+    Object.defineProperty(URL, 'createObjectURL', {
+      value: vi.fn(() => 'blob:nocobase-uploaded-preview'),
+      configurable: true,
+    });
+    Object.defineProperty(URL, 'revokeObjectURL', { value: revokeObjectURL, configurable: true });
+    const record = {
+      id: 2,
+      mimetype: 'image/png',
+      url: '/files/main/main/attachments/2',
+      preview: '/files/main/main/attachments/2/preview',
+    };
+
+    rememberLocalPreviewUrl(record, {
+      originFileObj,
+      type: 'image/png',
+    });
+
+    expect(
+      getPreviewThumbnailUrl({
+        ...record,
+        url: `${window.location.origin}${record.url}`,
+        preview: `${window.location.origin}${record.preview}`,
+      }),
+    ).toBe('blob:nocobase-uploaded-preview');
+
+    revokeLocalPreviewUrl(record);
+    expect(revokeObjectURL).toHaveBeenCalledWith('blob:nocobase-uploaded-preview');
+  });
+
   it('应识别同源和跨源文件地址', () => {
     expect(isSameOriginUrl('/storage/uploads/report.pdf')).toBe(true);
     expect(isSameOriginUrl(`${window.location.origin}/storage/uploads/report.pdf`)).toBe(true);
     expect(isSameOriginUrl('https://files.example.com/storage/uploads/report.pdf')).toBe(false);
+  });
+
+  it('永久文件 PDF 地址应根据存储类型选择 PDF.js 或 iframe', () => {
+    expect(shouldUsePdfJsPreview('/storage/uploads/report.pdf')).toBe(true);
+    expect(shouldUsePdfJsPreview(`${window.location.origin}/storage/uploads/report.pdf`)).toBe(true);
+    expect(shouldUsePdfJsPreview('/files/main/main/attachments/1')).toBe(true);
+    expect(shouldUsePdfJsPreview({ url: '/files/main/main/attachments/1', local: true })).toBe(true);
+    expect(shouldUsePdfJsPreview({ url: '/files/main/main/attachments/1', local: false })).toBe(false);
+    expect(shouldUsePdfJsPreview('https://files.example.com/storage/uploads/report.pdf')).toBe(false);
+  });
+
+  it('同 host 跨端口的永久文件地址 fetch 应带 cookie', () => {
+    expect(getFileFetchCredentials('/files/main/main/attachments/1')).toBe('include');
+    expect(
+      getFileFetchCredentials(`${window.location.protocol}//${window.location.hostname}:14000/files/main/main/1`),
+    ).toBe('include');
+    expect(
+      getFileFetchCredentials(
+        `${window.location.protocol}//${window.location.hostname}:14000/nocobase/files/main/main/1`,
+      ),
+    ).toBe('include');
+    expect(getFileFetchCredentials(`${window.location.protocol}//${window.location.hostname}:14000/storage/1`)).toBe(
+      'same-origin',
+    );
+    expect(getFileFetchCredentials('https://files.example.com/files/main/main/1')).toBe('same-origin');
   });
 
   it('应为 PDF.js 预览资源生成插件静态目录地址', () => {

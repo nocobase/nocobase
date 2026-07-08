@@ -13,6 +13,7 @@ import S3Storage from '../../storages/s3';
 import { FILE_FIELD_NAME } from '../../../constants';
 import { getApp, requestFile } from '..';
 import Database from '@nocobase/database';
+import PluginFileManagerServer from '../../server';
 
 const itif = process.env.AWS_SECRET_ACCESS_KEY ? it : it.skip;
 
@@ -23,11 +24,13 @@ describe('storage:s3', () => {
   let AttachmentRepo;
   let StorageRepo;
   let storage;
+  let plugin: PluginFileManagerServer;
 
   beforeEach(async () => {
     app = await getApp();
     agent = app.agent();
     db = app.db;
+    plugin = app.pm.get(PluginFileManagerServer) as PluginFileManagerServer;
 
     AttachmentRepo = db.getCollection('attachments').repository;
     StorageRepo = db.getCollection('storages').repository;
@@ -70,12 +73,15 @@ describe('storage:s3', () => {
       // 文件上传和解析是否正常
       expect(body.data).toMatchObject(matcher);
       // 文件的 url 是否正常生成
-      expect(body.data.url).toBe(`${attachment.storage.baseUrl}/${body.data.path}/${body.data.filename}`);
+      expect(body.data.url).toBe(`/files/main/main/attachments/${body.data.id}`);
+      expect(await plugin.getStorageFileURL(body.data)).toBe(
+        `${attachment.storage.baseUrl}/${body.data.path}/${body.data.filename}`,
+      );
       // 文件的数据是否正常保存
       expect(attachment).toMatchObject(matcher);
 
       // 通过 url 是否能正确访问
-      const content = await requestFile(attachment.url, agent);
+      const content = await requestFile(await plugin.getStorageFileURL(attachment), agent);
       expect(content.text).toBe('Hello world!\n');
     });
   });
@@ -85,8 +91,9 @@ describe('storage:s3', () => {
       const { body } = await agent.resource('attachments').create({
         [FILE_FIELD_NAME]: path.resolve(__dirname, '../files/text.txt'),
       });
+      const storageUrl = await plugin.getStorageFileURL(body.data);
       // 通过 url 是否能正确访问
-      const content1 = await requestFile(body.data.url, agent);
+      const content1 = await requestFile(storageUrl, agent);
       expect(content1.text).toBe('Hello world!\n');
 
       const res = await agent.resource('attachments').destroy({
@@ -97,8 +104,8 @@ describe('storage:s3', () => {
       const count = await AttachmentRepo.count();
       expect(count).toBe(0);
 
-      const content2 = await requestFile(body.data.url, agent);
-      console.log(content2.status, body.data.url);
+      const content2 = await requestFile(storageUrl, agent);
+      console.log(content2.status, storageUrl);
       expect(content2.status).toBe(403);
     });
 
@@ -116,8 +123,9 @@ describe('storage:s3', () => {
       const { body } = await agent.resource('attachments').create({
         [FILE_FIELD_NAME]: path.resolve(__dirname, '../files/text.txt'),
       });
+      const storageUrl = await plugin.getStorageFileURL(body.data);
       // 通过 url 是否能正确访问
-      const content1 = await requestFile(body.data.url, agent);
+      const content1 = await requestFile(storageUrl, agent);
       expect(content1.text).toBe('Hello world!\n');
 
       const res = await agent.resource('attachments').destroy({
@@ -128,7 +136,7 @@ describe('storage:s3', () => {
       const count = await AttachmentRepo.count();
       expect(count).toBe(0);
 
-      const content2 = await requestFile(body.data.url, agent);
+      const content2 = await requestFile(storageUrl, agent);
       expect(content2.status).toBe(200);
     });
   });

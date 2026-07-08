@@ -18,11 +18,35 @@ import {
   FilePreviewRenderer,
   getDownloadFileName,
   getFallbackIcon,
+  getFileFetchCredentials,
   getFileName,
   getPreviewThumbnailUrl,
   getPreviewFileUrl,
   normalizePreviewFile,
 } from '../previewer/filePreviewTypes';
+
+const isPlainRecord = (value: unknown): value is Record<string, unknown> =>
+  !!value && typeof value === 'object' && !Array.isArray(value);
+
+const isString = (value: unknown): value is string => typeof value === 'string' && value.length > 0;
+
+const mergeCurrentFileRecordMeta = (file: unknown, record: unknown) => {
+  if (!isString(file) || !isPlainRecord(record)) {
+    return file;
+  }
+
+  const url = record.url;
+  const preview = record.preview;
+  if (url !== file && preview !== file) {
+    return file;
+  }
+
+  return {
+    ...record,
+    url: isString(url) ? url : file,
+    preview: isString(preview) ? preview : file,
+  };
+};
 
 const FilePreview = ({
   file,
@@ -98,7 +122,7 @@ const FilePreview = ({
 };
 
 const Preview = (props) => {
-  const { value = [], size = 28, showFileName } = props;
+  const { value = [], size = 28, showFileName, record } = props;
   const { t } = useTranslation();
   const [current, setCurrent] = React.useState(0);
   const [previewOpen, setPreviewOpen] = React.useState(false);
@@ -106,9 +130,10 @@ const Preview = (props) => {
     () =>
       castArray(value)
         .filter(Boolean)
+        .map((file) => mergeCurrentFileRecordMeta(file, record))
         .map(normalizePreviewFile)
         .filter((file) => getPreviewFileUrl(file)),
-    [value],
+    [record, value],
   );
   React.useEffect(() => {
     if (current >= list.length && list.length) {
@@ -138,7 +163,9 @@ const Preview = (props) => {
       let link: HTMLAnchorElement | undefined;
 
       try {
-        const response = await fetch(url);
+        const response = await fetch(url, {
+          credentials: getFileFetchCredentials(url),
+        });
 
         if (!response.ok) {
           throw new Error(`Download failed with status ${response.status}`);
@@ -161,8 +188,9 @@ const Preview = (props) => {
         }
 
         if (blobUrl) {
+          const urlToRevoke = blobUrl;
           setTimeout(() => {
-            URL.revokeObjectURL(blobUrl!);
+            URL.revokeObjectURL(urlToRevoke);
           }, DOWNLOAD_REVOKE_DELAY);
         }
       }
@@ -214,11 +242,12 @@ export class DisplayPreviewFieldModel extends FieldModel {
   disableTitleField = true;
   render(): any {
     const { value, titleField, template, target } = this.props;
+    const record = this.context.record;
     if (titleField && template !== 'file' && target !== 'attachments') {
       return castArray(value).flatMap((v, idx) => {
         const result = v?.[titleField];
         const content = result ? (
-          <Preview key={idx} {...this.props} value={castArray(result).filter(Boolean)} />
+          <Preview key={idx} {...this.props} record={v} value={castArray(result).filter(Boolean)} />
         ) : (
           <span key={idx}>N/A</span>
         );
@@ -226,7 +255,7 @@ export class DisplayPreviewFieldModel extends FieldModel {
         return idx === 0 ? [content] : [<span key={`sep-${idx}`}>, </span>, content];
       });
     } else {
-      return <Preview {...this.props} value={castArray(value).filter(Boolean)} />;
+      return <Preview {...this.props} record={record} value={castArray(value).filter(Boolean)} />;
     }
   }
 }

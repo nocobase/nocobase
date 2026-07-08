@@ -67,6 +67,18 @@ export class FilePreviewTypes {
 
 export const filePreviewTypes = new FilePreviewTypes();
 
+const isPlainObject = (value: unknown): value is Record<string, unknown> =>
+  !!value && typeof value === 'object' && !Array.isArray(value);
+
+const getResponseFileRecord = (response: unknown) => {
+  if (!isPlainObject(response)) {
+    return null;
+  }
+
+  const candidate = isPlainObject(response.data) ? response.data : response;
+  return ['id', 'url', 'preview', 'filename', 'extname', 'mimetype'].some((key) => key in candidate) ? candidate : null;
+};
+
 export function normalizePreviewFile(file: any) {
   if (!file) {
     return file;
@@ -74,7 +86,144 @@ export function normalizePreviewFile(file: any) {
   if (typeof file === 'string') {
     return { url: file };
   }
+  const responseRecord = getResponseFileRecord(file.response);
+  if (responseRecord) {
+    const normalized = {
+      ...file,
+      ...responseRecord,
+      response: file.response,
+      originFileObj: file.originFileObj,
+    };
+    if (!normalized.name && typeof responseRecord.filename === 'string') {
+      normalized.name = responseRecord.filename;
+    }
+    if (!normalized.type && typeof responseRecord.mimetype === 'string') {
+      normalized.type = responseRecord.mimetype;
+    }
+    return normalized;
+  }
   return file;
+}
+
+const localPreviewUrlByFile = new WeakMap<object, string>();
+const localPreviewUrlByRecordKey = new Map<string, string>();
+
+const getOriginFileObject = (file: any) => {
+  if (file?.originFileObj) {
+    return file.originFileObj;
+  }
+  if (typeof Blob !== 'undefined' && file instanceof Blob) {
+    return file;
+  }
+  return null;
+};
+
+const getUrlRecordKeys = (type: string, value?: string) => {
+  if (!value) {
+    return [];
+  }
+  const keys = [`${type}:${value}`];
+  if (typeof location !== 'undefined') {
+    try {
+      const url = new URL(value, location.origin);
+      keys.push(`${type}:${url.toString()}`);
+      if (url.origin === location.origin) {
+        keys.push(`${type}:${url.pathname}${url.search}${url.hash}`);
+      }
+    } catch (error) {
+      // Keep the original key for non-standard URL values.
+    }
+  }
+  return [...new Set(keys)];
+};
+
+const getLocalPreviewRecordKeys = (file: any) => {
+  if (!file || typeof file !== 'object') {
+    return [];
+  }
+
+  return [
+    ...getUrlRecordKeys('url', file.url),
+    ...getUrlRecordKeys('preview', file.preview),
+    file.id != null ? `id:${String(file.id)}` : '',
+  ].filter(Boolean);
+};
+
+export function getLocalPreviewUrl(file: any) {
+  if (!file || !matchMimetype(file, 'image/*') || typeof URL === 'undefined') {
+    return '';
+  }
+
+  const originFileObj = getOriginFileObject(file);
+  if (originFileObj) {
+    const cachedUrl = localPreviewUrlByFile.get(originFileObj);
+    if (cachedUrl) {
+      return cachedUrl;
+    }
+    if (typeof URL.createObjectURL === 'function') {
+      const url = URL.createObjectURL(originFileObj as Blob);
+      localPreviewUrlByFile.set(originFileObj, url);
+      return url;
+    }
+  }
+
+  for (const key of getLocalPreviewRecordKeys(file)) {
+    const url = localPreviewUrlByRecordKey.get(key);
+    if (url) {
+      return url;
+    }
+  }
+
+  return '';
+}
+
+export function rememberLocalPreviewUrl(file: any, sourceFile: any) {
+  const url = getLocalPreviewUrl(sourceFile);
+  if (!url) {
+    return;
+  }
+
+  getLocalPreviewRecordKeys(file).forEach((key) => {
+    localPreviewUrlByRecordKey.set(key, url);
+  });
+}
+
+export function revokeLocalPreviewUrl(file: any) {
+  const urls = new Set<string>();
+  const originFileObj = getOriginFileObject(file);
+  if (originFileObj) {
+    const url = localPreviewUrlByFile.get(originFileObj);
+    if (url) {
+      urls.add(url);
+      localPreviewUrlByFile.delete(originFileObj);
+    }
+  }
+
+  getLocalPreviewRecordKeys(file).forEach((key) => {
+    const url = localPreviewUrlByRecordKey.get(key);
+    if (url) {
+      urls.add(url);
+      localPreviewUrlByRecordKey.delete(key);
+    }
+  });
+
+  if (!urls.size) {
+    return;
+  }
+
+  for (const [key, value] of localPreviewUrlByRecordKey.entries()) {
+    if (urls.has(value)) {
+      localPreviewUrlByRecordKey.delete(key);
+    }
+  }
+
+  if (typeof URL !== 'undefined' && typeof URL.revokeObjectURL === 'function') {
+    urls.forEach((url) => URL.revokeObjectURL(url));
+  }
+}
+
+export function revokeLocalPreviewUrls(files: any[] = []) {
+  files.forEach((file) => revokeLocalPreviewUrl(file));
 }
 
 export function getPreviewFileUrl(file: any) {
@@ -83,6 +232,10 @@ export function getPreviewFileUrl(file: any) {
   }
   if (typeof file === 'string') {
     return file;
+  }
+  const localPreviewUrl = getLocalPreviewUrl(file);
+  if (localPreviewUrl) {
+    return localPreviewUrl;
   }
   return file.preview || file.url || '';
 }
@@ -177,15 +330,12 @@ export function matchMimetype(file: any, type: string) {
     return false;
   }
   if (file.originFileObj) {
-    return match(file.type, type);
+    return match(file.type || file.originFileObj.type || '', type);
   }
   if (file.mimetype) {
     return match(file.mimetype, type);
   }
-  if (file.url) {
-    return match(EXT_MIMETYPE_MAP[getExtFromName(file.url)] || '', type);
-  }
-  return false;
+  return match(EXT_MIMETYPE_MAP[getFileExt(file, getFileUrl(file))] || '', type);
 }
 
 const getNameFromUrl = (url?: string) => {
@@ -245,6 +395,90 @@ export const isSameOriginUrl = (url?: string) => {
   }
 };
 
+const isPermanentFileUrl = (url: URL) => {
+  const publicPath = new URL(PUBLIC_PATH, window.location.href).pathname.replace(/\/+$/g, '');
+  const filesPath = `${publicPath}/files`;
+  return (
+    url.pathname === '/files' ||
+    url.pathname.startsWith('/files/') ||
+    url.pathname === filesPath ||
+    url.pathname.startsWith(`${filesPath}/`) ||
+    url.pathname.includes('/files/')
+  );
+};
+
+const getPermanentFilePreviewUrl = (value?: string) => {
+  if (!value || typeof window === 'undefined') {
+    return '';
+  }
+  try {
+    const url = new URL(value, window.location.href);
+    if (!isPermanentFileUrl(url)) {
+      return '';
+    }
+    const segments = url.pathname.split('/').filter(Boolean);
+    const filesIndex = segments.indexOf('files');
+    const filePathSegments = segments.length - filesIndex;
+    if (filesIndex === -1 || (filePathSegments !== 5 && filePathSegments !== 6)) {
+      return '';
+    }
+    if (filePathSegments === 6) {
+      return segments[filesIndex + 5] === 'preview' ? value : '';
+    }
+    url.pathname = `${url.pathname.replace(/\/+$/g, '')}/preview`;
+    return url.toString();
+  } catch (error) {
+    return '';
+  }
+};
+
+export const getFileFetchCredentials = (url: string | URL): RequestCredentials => {
+  if (typeof window === 'undefined') {
+    return 'same-origin';
+  }
+
+  try {
+    const target = url instanceof URL ? url : new URL(url, window.location.href);
+    if (target.origin === window.location.origin) {
+      return 'include';
+    }
+    if (target.hostname === window.location.hostname && isPermanentFileUrl(target)) {
+      return 'include';
+    }
+  } catch (error) {
+    return 'same-origin';
+  }
+
+  return 'same-origin';
+};
+
+const getLocalStorageFlag = (file: any) => {
+  if (!file || typeof file === 'string') {
+    return undefined;
+  }
+  const normalized = normalizePreviewFile(file);
+  const local = normalized.local ?? normalized.response?.local ?? normalized.response?.data?.local;
+  return typeof local === 'boolean' ? local : undefined;
+};
+
+export const shouldUsePdfJsPreview = (file: any, src = getFileUrl(file)) => {
+  if (!src || !isSameOriginUrl(src)) {
+    return false;
+  }
+  if (typeof window === 'undefined') {
+    return true;
+  }
+  try {
+    const url = new URL(src, window.location.href);
+    if (!isPermanentFileUrl(url)) {
+      return true;
+    }
+    return getLocalStorageFlag(file) !== false;
+  } catch (error) {
+    return true;
+  }
+};
+
 export const getFileName = (file: any, url?: string) => {
   const nameFromUrl = getNameFromUrl(url || getFileUrl(file));
   if (!file || typeof file === 'string') {
@@ -282,7 +516,7 @@ export const getPreviewThumbnailUrl = (file: any) => {
     return thumbnail;
   }
   if (matchMimetype(previewFile, 'image/*')) {
-    return '';
+    return getPermanentFilePreviewUrl(src);
   }
   return getFallbackIcon(previewFile, src);
 };
@@ -353,7 +587,7 @@ const ImagePreviewer = (props: FilePreviewerProps) => {
   if (typeof open !== 'boolean') {
     return null;
   }
-  const src = getFileUrl(file);
+  const src = getPreviewFileUrl(file);
   if (!src) {
     return null;
   }
@@ -642,7 +876,7 @@ const PdfPreviewer = ({ file }: FilePreviewerProps) => {
       let response: Response;
       try {
         response = await fetch(url, {
-          credentials: url.origin === location.origin ? 'include' : 'omit',
+          credentials: getFileFetchCredentials(url),
           signal: session.abortController.signal,
         });
       } catch (error) {
@@ -930,7 +1164,7 @@ const PdfPreviewer = ({ file }: FilePreviewerProps) => {
 
 const PdfHybridPreviewer = (props: FilePreviewerProps) => {
   const src = getFileUrl(props.file);
-  return isSameOriginUrl(src) ? <PdfPreviewer {...props} /> : <IframePreviewer {...props} />;
+  return shouldUsePdfJsPreview(props.file, src) ? <PdfPreviewer {...props} /> : <IframePreviewer {...props} />;
 };
 
 const AudioPreviewer = ({ file }: FilePreviewerProps) => {

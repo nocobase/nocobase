@@ -10,7 +10,7 @@
 import cors from '@koa/cors';
 import { requestLogger } from '@nocobase/logger';
 import { Resourcer } from '@nocobase/resourcer';
-import { getDateVars, uid } from '@nocobase/utils';
+import { getAuthCookieName, getDateVars, uid } from '@nocobase/utils';
 import { Command } from 'commander';
 import { randomUUID } from 'crypto';
 import fs from 'fs';
@@ -39,31 +39,62 @@ export function createResourcer(options: ApplicationOptions) {
   return new Resourcer({ ...options.resourcer });
 }
 
-function resolveCorsOrigin(ctx: any) {
-  const origin = ctx.get('origin');
-  const disallowNoOrigin = process.env.CORS_DISALLOW_NO_ORIGIN === 'true';
+function getFirstHeaderValue(value: string | string[] | undefined) {
+  const header = Array.isArray(value) ? value[0] : value;
+  return header?.split(',')[0]?.trim();
+}
+
+function getCorsWhitelist() {
   const whitelistString = process.env.CORS_ORIGIN_WHITELIST;
-
-  if (!origin && disallowNoOrigin) {
-    return false;
-  }
-
   if (!whitelistString) {
-    return origin;
+    return null;
   }
-
-  const whitelist = new Set(
+  return new Set(
     whitelistString
       .split(',')
       .map((item) => item.trim())
       .filter(Boolean),
   );
+}
 
-  if (whitelist.has(origin)) {
+function getRequestOrigin(ctx: any) {
+  const protocol = (getFirstHeaderValue(ctx.headers?.['x-forwarded-proto']) || ctx.protocol)?.toLowerCase();
+  const host = getFirstHeaderValue(ctx.headers?.['x-forwarded-host']) || ctx.get('host');
+  return host ? `${protocol}://${host}` : undefined;
+}
+
+function isSameOrigin(ctx: any, origin: string) {
+  return origin === getRequestOrigin(ctx);
+}
+
+function isWhitelistedCorsOrigin(ctx: any) {
+  const origin = ctx.get('origin');
+  const whitelist = getCorsWhitelist();
+
+  if (!origin) {
+    return false;
+  }
+
+  if (!whitelist) {
+    return isSameOrigin(ctx, origin);
+  }
+
+  return whitelist.has(origin);
+}
+
+function resolveCorsOrigin(ctx: any) {
+  const origin = ctx.get('origin');
+  const disallowNoOrigin = process.env.CORS_DISALLOW_NO_ORIGIN === 'true';
+
+  if (!origin && disallowNoOrigin) {
+    return false;
+  }
+
+  if (isWhitelistedCorsOrigin(ctx)) {
     return origin;
   }
 
-  return false;
+  return getCorsWhitelist() ? false : origin;
 }
 
 export function registerMiddlewares(app: Application, options: ApplicationOptions) {
@@ -81,6 +112,7 @@ export function registerMiddlewares(app: Application, options: ApplicationOption
 
   app.use(
     cors({
+      credentials: isWhitelistedCorsOrigin,
       exposeHeaders: ['content-disposition'],
       origin: resolveCorsOrigin,
       ...options.cors,
@@ -109,8 +141,18 @@ export function registerMiddlewares(app: Application, options: ApplicationOption
 
   app.use(async function getBearerToken(ctx, next) {
     ctx.getBearerToken = () => {
-      const token = ctx.get('Authorization').replace(/^Bearer\s+/gi, '');
-      return token || ctx.query.token;
+      const authorization = ctx.get('Authorization');
+      if (authorization) {
+        ctx.state.pendingAuthTokenSource = 'authorization';
+        return authorization.replace(/^Bearer\s+/gi, '');
+      }
+      if (ctx.query.token) {
+        ctx.state.pendingAuthTokenSource = 'query';
+        return ctx.query.token;
+      }
+      const cookieToken = ctx.cookies.get(getAuthCookieName('authToken', ctx.app.name));
+      ctx.state.pendingAuthTokenSource = cookieToken ? 'cookie' : undefined;
+      return cookieToken;
     };
     await next();
   });

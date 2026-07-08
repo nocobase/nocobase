@@ -11,6 +11,7 @@ import { storagePathJoin } from '@nocobase/utils';
 import path from 'path';
 import fs from 'fs/promises';
 import os from 'os';
+import { QueryTypes } from 'sequelize';
 import { getApp } from '.';
 import PluginFileManagerServer from '../server';
 
@@ -307,10 +308,13 @@ describe('file manager > utils', () => {
       expect(MockRepairStorage.copied).toEqual([{ source: oldKey, target: newKey }]);
       expect(MockRepairStorage.deleted).toEqual([oldKey]);
 
-      const updated = await AttachmentRepo.findOne({ filterByTk: attachment.get('id') });
-      expect(updated.get('path')).toBe('mock-');
-      expect(updated.get('filename')).toBe('apply-.xlsx');
-      expect(updated.get('url')).toBe('/mock/mock-/apply-.xlsx');
+      const [updated] = await db.sequelize.query('select path, filename, url from attachments where id = ?', {
+        replacements: [attachment.get('id')],
+        type: QueryTypes.SELECT,
+      });
+      expect(updated.path).toBe('mock-');
+      expect(updated.filename).toBe('apply-.xlsx');
+      expect(updated.url).toBe('/mock/mock-/apply-.xlsx');
     });
 
     it('skips records when the repaired target already exists', async () => {

@@ -108,16 +108,142 @@ export function matchMimetype(file: FileModel | UploadFile<any>, type: string) {
     return false;
   }
   if ((<UploadFile>file).originFileObj) {
-    return match((<UploadFile>file).type, type);
+    return match((<UploadFile>file).type || (<UploadFile>file).originFileObj?.type || '', type);
   }
-  if ((<FileModel>file).mimetype) {
-    return match((<FileModel>file).mimetype, type);
+  const mimetype = (<FileModel>file).mimetype || (<UploadFile>file).type;
+  if (mimetype) {
+    return match(mimetype, type);
   }
-  if (file.url) {
-    const [fileUrl] = file.url.split('?');
+  const fileUrlValue =
+    (<FileModel & { preview?: string; thumbUrl?: string }>file).thumbUrl ||
+    (<FileModel & { preview?: string; thumbUrl?: string }>file).preview ||
+    file.url;
+  if (fileUrlValue) {
+    const [fileUrl] = fileUrlValue.split('?');
     return match(mime.getType(fileUrl) || '', type);
   }
   return false;
+}
+
+const localPreviewUrlByFile = new WeakMap<object, string>();
+const localPreviewUrlByRecordKey = new Map<string, string>();
+
+const getOriginFileObject = (file: any) => {
+  if (file?.originFileObj) {
+    return file.originFileObj;
+  }
+  if (typeof Blob !== 'undefined' && file instanceof Blob) {
+    return file;
+  }
+  return null;
+};
+
+const getUrlRecordKeys = (type: string, value?: string) => {
+  if (!value) {
+    return [];
+  }
+  const keys = [`${type}:${value}`];
+  if (typeof location !== 'undefined') {
+    try {
+      const url = new URL(value, location.origin);
+      keys.push(`${type}:${url.toString()}`);
+      if (url.origin === location.origin) {
+        keys.push(`${type}:${url.pathname}${url.search}${url.hash}`);
+      }
+    } catch (error) {
+      // Keep the original key for non-standard URL values.
+    }
+  }
+  return [...new Set(keys)];
+};
+
+const getLocalPreviewRecordKeys = (file: any) => {
+  if (!file || typeof file !== 'object') {
+    return [];
+  }
+
+  return [
+    ...getUrlRecordKeys('url', file.url),
+    ...getUrlRecordKeys('preview', file.preview),
+    file.id != null ? `id:${String(file.id)}` : '',
+  ].filter(Boolean);
+};
+
+export function getLocalPreviewUrl(file: any) {
+  if (!file || !matchMimetype(file, 'image/*') || typeof URL === 'undefined') {
+    return '';
+  }
+
+  const originFileObj = getOriginFileObject(file);
+  if (originFileObj) {
+    const cachedUrl = localPreviewUrlByFile.get(originFileObj);
+    if (cachedUrl) {
+      return cachedUrl;
+    }
+    if (typeof URL.createObjectURL === 'function') {
+      const url = URL.createObjectURL(originFileObj as Blob);
+      localPreviewUrlByFile.set(originFileObj, url);
+      return url;
+    }
+  }
+
+  for (const key of getLocalPreviewRecordKeys(file)) {
+    const url = localPreviewUrlByRecordKey.get(key);
+    if (url) {
+      return url;
+    }
+  }
+
+  return '';
+}
+
+export function rememberLocalPreviewUrl(file: any, sourceFile: any) {
+  const url = getLocalPreviewUrl(sourceFile);
+  if (!url) {
+    return;
+  }
+
+  getLocalPreviewRecordKeys(file).forEach((key) => {
+    localPreviewUrlByRecordKey.set(key, url);
+  });
+}
+
+export function revokeLocalPreviewUrl(file: any) {
+  const urls = new Set<string>();
+  const originFileObj = getOriginFileObject(file);
+  if (originFileObj) {
+    const url = localPreviewUrlByFile.get(originFileObj);
+    if (url) {
+      urls.add(url);
+      localPreviewUrlByFile.delete(originFileObj);
+    }
+  }
+
+  getLocalPreviewRecordKeys(file).forEach((key) => {
+    const url = localPreviewUrlByRecordKey.get(key);
+    if (url) {
+      urls.add(url);
+      localPreviewUrlByRecordKey.delete(key);
+    }
+  });
+
+  if (!urls.size) {
+    return;
+  }
+
+  for (const [key, value] of localPreviewUrlByRecordKey.entries()) {
+    if (urls.has(value)) {
+      localPreviewUrlByRecordKey.delete(key);
+    }
+  }
+
+  if (typeof URL !== 'undefined' && typeof URL.revokeObjectURL === 'function') {
+    urls.forEach((url) => URL.revokeObjectURL(url));
+  }
+}
+
+export function revokeLocalPreviewUrls(files: any[] = []) {
+  files.forEach((file) => revokeLocalPreviewUrl(file));
 }
 
 const toArr = (value) => {
@@ -202,7 +328,7 @@ export function useUploadProps<T extends IUploadProps = UploadProps>(props: T) {
     // in customRequest method can't modify form's status(e.g: form.disabled=true )
     // that will be trigger Upload component（actual Underlying is AjaxUploader component ）'s  componentWillUnmount method
     // which will cause multiple files upload fail
-    customRequest({ action, data, file, filename, headers, onError, onProgress, onSuccess, withCredentials }) {
+    customRequest({ action, data, file, filename, headers, onError, onProgress, onSuccess }) {
       const formData = new FormData();
       if (data) {
         Object.keys(data).forEach((key) => {
@@ -213,7 +339,6 @@ export function useUploadProps<T extends IUploadProps = UploadProps>(props: T) {
       // eslint-disable-next-line promise/catch-or-return
       api.axios
         .post(action, formData, {
-          withCredentials,
           headers,
           onUploadProgress: ({ total, loaded }) => {
             onProgress({ percent: Math.round((loaded / total) * 100).toFixed(2) }, file);
@@ -335,6 +460,6 @@ export function useBeforeUpload(rules) {
       }
       return error ? false : Promise.resolve(proxiedFile);
     },
-    [rules],
+    [rules, t],
   );
 }

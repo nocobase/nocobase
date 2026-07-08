@@ -11,24 +11,35 @@ import fs from 'fs';
 import { basename } from 'path';
 import match from 'mime-match';
 
+import type { Context } from '@nocobase/actions';
 import { Collection, Model, Transactionable } from '@nocobase/database';
 import { Application, Plugin } from '@nocobase/server';
 import { Registry } from '@nocobase/utils';
 import { Readable } from 'stream';
 import { STORAGE_TYPE_ALI_OSS, STORAGE_TYPE_LOCAL, STORAGE_TYPE_S3, STORAGE_TYPE_TX_COS } from '../constants';
 import initActions from './actions';
+import { createFileAccessMiddleware } from './file-access';
 import { AttachmentInterface } from './interfaces/attachment-interface';
 import { AttachmentModel, GetFileStreamOptions, StorageClassType, StorageModel } from './storages';
 import StorageTypeAliOss from './storages/ali-oss';
 import StorageTypeLocal, { validateLocalStorageConfig } from './storages/local';
 import StorageTypeS3 from './storages/s3';
 import StorageTypeTxCos from './storages/tx-cos';
-import { encodeURL, resolveStoragePath } from './utils';
+import {
+  encodeURL,
+  getFilePlainObject,
+  getFilePublicBasePath,
+  getRecordCollectionName,
+  isPermanentFileAccessURL,
+  resolveStoragePath,
+} from './utils';
 import { registerRepairFilenamesCommand } from './commands/repair-filenames';
 
 export type * from './storages';
 
 const DEFAULT_STORAGE_TYPE = STORAGE_TYPE_LOCAL;
+const DEFAULT_APP_NAME = 'main';
+const DEFAULT_DATA_SOURCE_KEY = 'main';
 
 class FileDeleteError extends Error {
   data: Model;
@@ -55,9 +66,26 @@ export type UploadFileOptions = {
   documentRoot?: string;
 };
 
+export type FileAccessAuthorizeParams = {
+  appName: string;
+  dataSourceKey: string;
+  collectionName: string;
+  id: string;
+  preview: boolean;
+};
+
+export type FileAccessAuthorizer = {
+  name: string;
+  authorize: (
+    ctx: Context,
+    params: FileAccessAuthorizeParams,
+  ) => Promise<boolean | null | undefined> | boolean | null | undefined;
+};
+
 export class PluginFileManagerServer extends Plugin {
   storageTypes = new Registry<StorageClassType>();
   storagesCache = new Map<number | string, StorageModel>();
+  protected fileAccessAuthorizers = new Registry<FileAccessAuthorizer>();
 
   static async staticImport() {
     Application.addCommand(registerRepairFilenamesCommand);
@@ -93,6 +121,19 @@ export class PluginFileManagerServer extends Plugin {
 
   registerStorageType(type: string, Type: StorageClassType) {
     this.storageTypes.register(type, Type);
+  }
+
+  registerFileAccessAuthorizer(authorizer: FileAccessAuthorizer) {
+    this.fileAccessAuthorizers.register(authorizer.name, authorizer);
+  }
+
+  async authorizeFileAccess(ctx: Context, params: FileAccessAuthorizeParams) {
+    for (const authorizer of this.fileAccessAuthorizers.getValues()) {
+      if (await authorizer.authorize(ctx, params)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   async createFileRecord(options: FileRecordOptions) {
@@ -216,6 +257,14 @@ export class PluginFileManagerServer extends Plugin {
       if (collection.options.template !== 'file') {
         return;
       }
+      const idField = collection.getField('id');
+      if (idField) {
+        idField.options.deletable = false;
+        idField.options.updatable = false;
+      }
+      collection.model.afterCreate(async (model) => {
+        await this.setFileResponseURLs(model, collection.name);
+      });
       collection.model.beforeUpdate((model) => {
         if (!model.changed('url') || !model.changed('preview')) {
           return;
@@ -268,6 +317,7 @@ export class PluginFileManagerServer extends Plugin {
           type: 'bigInt',
           createOnly: true,
           visible: true,
+          hidden: true,
           index: true,
         });
       }
@@ -320,6 +370,8 @@ export class PluginFileManagerServer extends Plugin {
 
     this.app.db.interfaceManager.registerInterfaceType('attachment', AttachmentInterface);
 
+    this.app.use(createFileAccessMiddleware(this), { tag: 'fileAccess', before: 'dataSource', after: 'dataWrapping' });
+
     this.db.on('afterFind', async (instances) => {
       if (!instances) {
         return;
@@ -330,31 +382,78 @@ export class PluginFileManagerServer extends Plugin {
         const collection = this.db.getCollection(name);
         if (collection?.name === 'attachments' || collection?.options?.template === 'file') {
           for (const record of records) {
-            const url = await this.getFileURL(record);
-            const previewUrl = await this.getFileURL(record, true);
-            record.set('url', url);
-            record.set('preview', previewUrl);
-            record.dataValues.preview = previewUrl; // 强制添加preview，在附件字段时，通过set设置无效
+            await this.setFileResponseURLs(record, collection.name);
           }
         }
       }
     });
   }
 
-  async getFileURL(file: AttachmentModel, preview = false) {
+  async setFileResponseURLs(record: AttachmentModel, collectionName: string) {
+    const url = await this.getFileURL(record, false, { collectionName });
+    const previewUrl = await this.getFileURL(record, true, { collectionName });
+    const storage = this.storagesCache.get(record.get('storageId'));
+    record.set('url', url);
+    record.set('preview', previewUrl);
+    record.dataValues.preview = previewUrl; // 强制添加preview，在附件字段时，通过set设置无效
+    if (storage?.type) {
+      const local = storage.type === STORAGE_TYPE_LOCAL;
+      record.set('local', local);
+      record.dataValues.local = local;
+    }
+  }
+
+  getPermanentFileURL(
+    file: AttachmentModel,
+    preview = false,
+    options: { dataSourceKey?: string; collectionName?: string } = {},
+  ) {
     if (!file.storageId) {
       return encodeURL(file.url);
     }
-    const storage = this.storagesCache.get(file.storageId);
-    if (!storage) {
+    const publicPath = getFilePublicBasePath();
+    const appName = this.app.name || DEFAULT_APP_NAME;
+    const dataSourceKey = options.dataSourceKey || DEFAULT_DATA_SOURCE_KEY;
+    const collectionName = options.collectionName || getRecordCollectionName(file);
+    const id = file.id;
+    const url = `${publicPath}/files/${encodeURIComponent(String(appName))}/${encodeURIComponent(
+      String(dataSourceKey),
+    )}/${encodeURIComponent(String(collectionName))}/${encodeURIComponent(String(id))}`;
+    return preview ? `${url}/preview` : url;
+  }
+
+  async getFileURL(
+    file: AttachmentModel,
+    preview = false,
+    options: { dataSourceKey?: string; collectionName?: string } = {},
+  ) {
+    return this.getPermanentFileURL(file, preview, options);
+  }
+
+  async getStorageFileURL(file: AttachmentModel, preview = false) {
+    if (!file.storageId) {
       return encodeURL(file.url);
     }
+    const storageFile = getFilePlainObject(file);
+    if (isPermanentFileAccessURL(storageFile.url, storageFile, this.app.name || DEFAULT_APP_NAME)) {
+      storageFile.url = undefined;
+    }
+    const storage = this.storagesCache.get(file.storageId);
+    if (!storage) {
+      throw new Error('[file-manager] no linked or default storage provided');
+    }
     const storageType = this.storageTypes.get(storage.type);
+    if (!storageType) {
+      throw new Error(`[file-manager] storage type "${storage.type}" is not defined`);
+    }
     return new storageType(storage).getFileURL(
-      file,
-      Boolean(file.mimetype && match(file.mimetype, 'image/*') && preview && storage.options.thumbnailRule),
+      storageFile,
+      Boolean(
+        storageFile.mimetype && match(storageFile.mimetype, 'image/*') && preview && storage.options.thumbnailRule,
+      ),
     );
   }
+
   async isPublicAccessStorage(storageName) {
     const storageRepository = this.db.getRepository('storages');
     const storages = await storageRepository.findOne({

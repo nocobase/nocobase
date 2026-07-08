@@ -9,10 +9,17 @@
 
 import actions from '@nocobase/actions';
 import { createMiddleware } from './attachments';
+import { registerGetFileAccess } from './get-file';
 import { validateStorageMiddleware } from './storage-validation';
 import * as storageActions from './storages';
 
-export default function ({ app }) {
+export default function (plugin) {
+  const { app } = plugin;
+
+  app.dataSourceManager.afterAddDataSource((dataSource) => {
+    registerGetFileAccess(dataSource, plugin);
+  });
+
   app.resourcer.define({
     name: 'storages',
     actions: storageActions,

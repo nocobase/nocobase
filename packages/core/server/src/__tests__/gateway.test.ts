@@ -63,6 +63,74 @@ describe('gateway', () => {
       expect((req as any).originalUrl).toBe('/api/__app/demo/idpOAuth:authorize?foo=bar');
     });
 
+    it('should resolve app name from canonical and bare file URLs when APP_PUBLIC_PATH is set', async () => {
+      const originalAppPublicPath = process.env.APP_PUBLIC_PATH;
+      process.env.APP_PUBLIC_PATH = '/nocobase';
+
+      try {
+        expect(
+          await gateway.getRequestHandleAppName({
+            url: '/nocobase/files/demo/main/attachments/1',
+            headers: {},
+          }),
+        ).toBe('demo');
+        expect(
+          await gateway.getRequestHandleAppName({
+            url: '/files/demo/main/attachments/1',
+            headers: {},
+          }),
+        ).toBe('demo');
+      } finally {
+        if (originalAppPublicPath === undefined) {
+          delete process.env.APP_PUBLIC_PATH;
+        } else {
+          process.env.APP_PUBLIC_PATH = originalAppPublicPath;
+        }
+      }
+    });
+
+    it('should route bare file URLs to the application layer when APP_PUBLIC_PATH is set', async () => {
+      const originalAppPublicPath = process.env.APP_PUBLIC_PATH;
+      process.env.APP_PUBLIC_PATH = '/nocobase';
+
+      try {
+        const res = await supertest.agent(gateway.getCallback()).get('/files/main/main/attachments/1');
+
+        expect(res.status).toBe(404);
+        expect(res.body).toMatchObject({
+          error: {
+            code: 'APP_NOT_FOUND',
+          },
+        });
+      } finally {
+        if (originalAppPublicPath === undefined) {
+          delete process.env.APP_PUBLIC_PATH;
+        } else {
+          process.env.APP_PUBLIC_PATH = originalAppPublicPath;
+        }
+      }
+    });
+
+    it('should ignore malformed file app names when resolving the request app', async () => {
+      const originalAppPublicPath = process.env.APP_PUBLIC_PATH;
+      process.env.APP_PUBLIC_PATH = '/nocobase';
+
+      try {
+        await expect(
+          gateway.getRequestHandleAppName({
+            url: '/nocobase/files/%E0%A4%A/main/attachments/1',
+            headers: {},
+          }),
+        ).resolves.toBe('main');
+      } finally {
+        if (originalAppPublicPath === undefined) {
+          delete process.env.APP_PUBLIC_PATH;
+        } else {
+          process.env.APP_PUBLIC_PATH = originalAppPublicPath;
+        }
+      }
+    });
+
     it('should proxy sub app requests with original url', async () => {
       const req = {
         url: '/api/__app/demo/.well-known/oauth-authorization-server',

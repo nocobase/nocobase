@@ -48,7 +48,7 @@ function useUploadProps(props) {
     // in customRequest method can't modify form's status(e.g: form.disabled=true )
     // that will be trigger Upload component（actual Underlying is AjaxUploader component ）'s  componentWillUnmount method
     // which will cause multiple files upload fail
-    customRequest({ action, data, file, filename, headers, onError, onProgress, onSuccess, withCredentials }) {
+    customRequest({ action, data, file, filename, headers, onError, onProgress, onSuccess }) {
       const formData = new FormData();
       if (data) {
         Object.keys(data).forEach((key) => {
@@ -59,7 +59,6 @@ function useUploadProps(props) {
       // eslint-disable-next-line promise/catch-or-return
       ctx.api.axios
         .post(action, formData, {
-          withCredentials,
           headers,
           onUploadProgress: ({ total, loaded }) => {
             onProgress({ percent: Math.round((loaded / total) * 100).toFixed(2) }, file);

@@ -72,6 +72,13 @@ interface CanArgs {
   roles?: string[];
 }
 
+export interface CheckActionOptions {
+  context: any;
+  resource: string;
+  action: string;
+  params?: any;
+}
+
 export class ACL extends EventEmitter {
   /**
    * @internal
@@ -440,6 +447,56 @@ export class ACL extends EventEmitter {
     };
 
     await compose(this.middlewares.nodes)(ctx, async () => {});
+  }
+
+  async checkAction(options: CheckActionOptions) {
+    const { context: ctx, resource, action, params } = options;
+    const originalAction = ctx.action;
+    const originalCan = ctx.can;
+    const originalPermission = ctx.permission;
+    const actionContext = originalAction.clone();
+    actionContext.setContext(ctx);
+    actionContext.actionName = action;
+    actionContext.resourceName = resource;
+    actionContext.params = {};
+    actionContext.mergeParams(params);
+
+    let resourceName = resource;
+    if (resource.includes('.')) {
+      resourceName = resource.split('.').pop();
+    }
+
+    if (ctx.getCurrentRepository) {
+      const currentRepository = ctx.getCurrentRepository();
+      if (currentRepository && currentRepository.targetCollection) {
+        resourceName = currentRepository.targetCollection.name;
+      }
+    }
+
+    const roleNames = ctx.state.currentRoles?.length ? ctx.state.currentRoles : [ctx.state.currentRole || 'anonymous'];
+
+    try {
+      ctx.action = actionContext;
+      ctx.can = (canOptions: Omit<CanArgs, 'role'>) => {
+        const can = this.can({ roles: roleNames, ...canOptions });
+        return can ? lodash.cloneDeep(can) : null;
+      };
+      ctx.permission = {
+        can: ctx.can({ resource: resourceName, action, rawResourceName: resource }),
+        resourceName,
+        actionName: action,
+      };
+
+      await compose(this.middlewares.nodes)(ctx, async () => {});
+      if (!ctx.permission.mergedParams) {
+        ctx.permission.mergedParams = lodash.cloneDeep(actionContext.params);
+      }
+      return lodash.cloneDeep(ctx.permission);
+    } finally {
+      ctx.action = originalAction;
+      ctx.can = originalCan;
+      ctx.permission = originalPermission;
+    }
   }
 
   addGeneralFixedParams(merger: GeneralMerger) {

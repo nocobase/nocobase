@@ -13,10 +13,16 @@ import { Upload } from 'antd';
 import { castArray } from 'lodash';
 import { useTranslation } from 'react-i18next';
 import { largeField, tExpr, EditableItemModel, observable } from '@nocobase/flow-engine';
-import React, { useLayoutEffect, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { FieldContext } from '@formily/react';
 import { FieldModel, RecordPickerContent } from '@nocobase/client-v2';
-import { FilePreviewRenderer, getDownloadFileName } from '../previewer/filePreviewTypes';
+import {
+  FilePreviewRenderer,
+  getDownloadFileName,
+  getFileFetchCredentials,
+  rememberLocalPreviewUrl,
+  revokeLocalPreviewUrls,
+} from '../previewer/filePreviewTypes';
 import {
   getUploadFieldPreviewIndex,
   normalizeUploadFieldFileList,
@@ -43,10 +49,22 @@ export const CardUpload = (props) => {
     showFileName,
   } = props;
   const [fileList, setFileList] = useState(() => normalizeUploadFieldFileList(castArray(value || [])));
+  const fileListRef = useRef(fileList);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewImage, setPreviewImage] = useState(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0); // 用来跟踪当前预览的图片索引
   const { t } = useTranslation();
+
+  useEffect(() => {
+    fileListRef.current = fileList;
+  }, [fileList]);
+
+  useEffect(() => {
+    return () => {
+      revokeLocalPreviewUrls(fileListRef.current.flatMap((file: any) => [file, file.response].filter(Boolean)));
+    };
+  }, []);
+
   useLayoutEffect(() => {
     // 在浏览器绘制前完成外部值同步，避免先闪出旧槽位再切换成新布局。
     setFileList((previousFileList) => normalizeUploadFieldFileList(castArray(value || []), previousFileList));
@@ -88,7 +106,9 @@ export const CardUpload = (props) => {
     }
     const filename = getDownloadFileName(target, url);
     // eslint-disable-next-line promise/catch-or-return
-    fetch(url)
+    fetch(url, {
+      credentials: getFileFetchCredentials(url),
+    })
       .then((response) => response.blob())
       .then((blob) => {
         const blobUrl = URL.createObjectURL(new Blob([blob]));
@@ -149,6 +169,16 @@ export const CardUpload = (props) => {
           listType="picture-card"
           fileList={fileList}
           onChange={({ fileList: newFileList }) => {
+            newFileList.forEach((file: any) => {
+              if ((file.status === 'done' || file.id) && file.originFileObj) {
+                rememberLocalPreviewUrl(file.response || file, file);
+              }
+            });
+            revokeLocalPreviewUrls(
+              fileList
+                .filter((file: any) => !newFileList.some((nextFile: any) => nextFile.uid === file.uid))
+                .flatMap((file: any) => [file, file.response].filter(Boolean)),
+            );
             // 保留上传组件生成的 uid，避免上传完成后回灌值把同一项渲染成两张不同的卡片。
             setFileList((previousFileList) => normalizeUploadFieldFileList(newFileList, previousFileList));
             const doneFiles = newFileList.filter((f: any) => f.status === 'done' || f.id);

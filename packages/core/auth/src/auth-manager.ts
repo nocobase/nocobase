@@ -8,7 +8,7 @@
  */
 
 import { Context, Next } from '@nocobase/actions';
-import { Registry, storagePathJoin } from '@nocobase/utils';
+import { getAuthCookieName, getAuthCookieOptions, Registry, storagePathJoin } from '@nocobase/utils';
 import { Auth, AuthExtend } from './auth';
 import { JwtOptions, JwtService } from './base/jwt-service';
 import { ITokenBlacklistService } from './base/token-blacklist-service';
@@ -37,6 +37,8 @@ export type AuthManagerOptions = {
   default?: string;
   jwt?: JwtOptions;
 };
+
+const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
 
 type AuthConfig = {
   auth: AuthExtend<Auth>; // The authentication class.
@@ -162,18 +164,34 @@ export class AuthManager {
     const self = this;
 
     return async function AuthManagerMiddleware(ctx: Context & { auth: Auth }, next: Next) {
-      const name = ctx.get(self.options.authKey) || self.options.default;
+      const headerAuthenticator = ctx.get(self.options.authKey);
+      const cookieName = getAuthCookieName('authenticator', ctx.app.name);
+      const cookieAuthenticator = headerAuthenticator ? null : ctx.cookies.get(cookieName);
+      const name = headerAuthenticator || cookieAuthenticator || self.options.default;
       let authenticator: Auth;
       try {
         authenticator = await ctx.app.authManager.get(name, ctx);
         ctx.auth = authenticator;
       } catch (err) {
-        ctx.auth = {} as Auth;
-        ctx.logger.warn(err.message, { method: 'check', authenticator: name });
-        return next();
+        if (cookieAuthenticator && !headerAuthenticator && self.options.default && name !== self.options.default) {
+          ctx.cookies.set(cookieName, null, getAuthCookieOptions(ctx));
+          try {
+            authenticator = await ctx.app.authManager.get(self.options.default, ctx);
+            ctx.auth = authenticator;
+          } catch (defaultErr) {
+            ctx.auth = {} as Auth;
+            ctx.logger.warn(defaultErr.message, { method: 'check', authenticator: self.options.default });
+            return next();
+          }
+        } else {
+          ctx.auth = {} as Auth;
+          ctx.logger.warn(err.message, { method: 'check', authenticator: name });
+          return next();
+        }
       }
 
       if (!authenticator) {
+        ctx.auth = {} as Auth;
         return next();
       }
 
@@ -211,4 +229,22 @@ export class AuthManager {
     fs.writeFileSync(jwtSecretPath, key, { mode: 0o600 });
     return key;
   }
+}
+
+export async function csrfMiddleware(ctx: Context, next: Next) {
+  if (SAFE_METHODS.has(ctx.method)) {
+    return next();
+  }
+
+  if (ctx.state?.authTokenSource !== 'cookie' || !ctx.state?.currentUser) {
+    return next();
+  }
+
+  const cookieToken = ctx.cookies.get(getAuthCookieName('csrfToken', ctx.app.name));
+  const headerToken = ctx.get('X-CSRF-Token');
+  if (!cookieToken || cookieToken.length < 16 || headerToken !== cookieToken) {
+    return ctx.throw(403, ctx.t('Invalid CSRF token', { ns: 'auth' }));
+  }
+
+  await next();
 }

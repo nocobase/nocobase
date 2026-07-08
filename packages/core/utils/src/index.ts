@@ -11,6 +11,7 @@ import lodash from 'lodash';
 
 export { Schema } from '@formily/json-schema';
 export * from './assign';
+export * from './auth-cookie';
 export * from './collections-graph';
 export * from './common';
 export * from './crypto';

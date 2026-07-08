@@ -9,7 +9,10 @@
 
 import { AxiosRequestConfig, AxiosResponse } from 'axios';
 import { APIClient } from './APIClient';
+import { getAuthCookieValue, setRoleCookie } from './auth-cookie';
 import { hasHeaderValue } from './headers';
+
+const SAFE_METHODS = new Set(['get', 'head', 'options']);
 
 export class Auth {
   protected api: APIClient;
@@ -28,6 +31,10 @@ export class Auth {
   constructor(api: APIClient) {
     this.api = api;
     this.api.axios.interceptors.request.use(this.middleware.bind(this));
+  }
+
+  protected getCookieAppName() {
+    return (typeof this.api.options !== 'function' && this.api.options?.appName) || this.api.appName || 'main';
   }
 
   get locale() {
@@ -107,6 +114,7 @@ export class Auth {
    */
   setRole(role: string) {
     this.setOption('role', role);
+    setRoleCookie(this.getCookieAppName(), role);
   }
 
   /**
@@ -159,6 +167,11 @@ export class Auth {
     }
     if (this.token && !hasHeaderValue(config.headers, 'Authorization') && config.headers) {
       config.headers['Authorization'] = `Bearer ${this.token}`;
+    }
+    const method = (config.method || 'get').toLowerCase();
+    const csrfToken = getAuthCookieValue('csrfToken', this.getCookieAppName());
+    if (!SAFE_METHODS.has(method) && csrfToken && !hasHeaderValue(config.headers, 'X-CSRF-Token') && config.headers) {
+      config.headers['X-CSRF-Token'] = csrfToken;
     }
     return config;
   }

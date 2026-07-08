@@ -7,10 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import type { Model } from '@nocobase/database';
 import { storagePathJoin, uid } from '@nocobase/utils';
 import crypto from 'crypto';
 import path from 'path';
 import urlJoin from 'url-join';
+import type { AttachmentModel } from './storages';
 
 const INVALID_FILENAME_CHARS = new Set(['<', '>', '?', '*', '|', ':', '"', '\\', '/']);
 
@@ -101,6 +103,51 @@ export const diskFilenameGetter = (storage) => (req, file, cb) => {
 
 export function getFileKey(record) {
   return urlJoin(record.path || '', record.filename).replace(/^\//, '');
+}
+
+export function trimPublicPath(path?: string) {
+  const normalized = path?.replace(/\/+$/g, '') || '';
+  return normalized === '/' ? '' : normalized;
+}
+
+export function getFilePublicBasePath() {
+  return trimPublicPath(process.env.APP_PUBLIC_PATH);
+}
+
+export function getRecordCollectionName(file: AttachmentModel) {
+  const modelName = (file as unknown as Model)?.constructor?.name;
+  return modelName && modelName !== 'Object' ? modelName : 'attachments';
+}
+
+export function getFilePlainObject(file: AttachmentModel) {
+  if (typeof (file as unknown as Model)?.get === 'function') {
+    return { ...((file as unknown as Model).get() as AttachmentModel) };
+  }
+  return { ...file };
+}
+
+export function isPermanentFileAccessURL(value: unknown, file: AttachmentModel, appName: string) {
+  if (typeof value !== 'string' || !file.id) {
+    return false;
+  }
+  try {
+    const url = new URL(value, 'http://localhost');
+    const segments = url.pathname.split('/').filter(Boolean);
+    const filesIndex = segments.indexOf('files');
+    const filePathSegments = segments.length - filesIndex;
+    if (filesIndex === -1 || (filePathSegments !== 5 && filePathSegments !== 6)) {
+      return false;
+    }
+    if (filePathSegments === 6 && segments[filesIndex + 5] !== 'preview') {
+      return false;
+    }
+    return (
+      decodeURIComponent(segments[filesIndex + 1]) === appName &&
+      decodeURIComponent(segments[filesIndex + 4]) === String(file.id)
+    );
+  } catch (error) {
+    return false;
+  }
 }
 
 function pathError(message: string) {

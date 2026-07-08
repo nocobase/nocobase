@@ -111,14 +111,6 @@ export const Edit = withDynamicSchemaProps((props) => {
             fileCollectionName: fileCollection,
           });
 
-          if (!checkData?.data?.isSupportToUploadFiles) {
-            vditor.tip(
-              t('vditor.uploadError.message', { ns: NAMESPACE, storageTitle: checkData.data.storage?.title }),
-              0,
-            );
-            return;
-          }
-
           vditor.tip(t('uploading'), 0);
           const { data, errorMessage } = await fileManagerPlugin.uploadFile({
             file,
@@ -276,7 +268,8 @@ export const Edit = withDynamicSchemaProps((props) => {
   }, [zIndex]);
 
   useLayoutEffect(() => {
-    if (!containerRef.current) return;
+    const container = containerRef.current;
+    if (!container) return;
 
     const observer = new ResizeObserver((entries) => {
       for (const entry of entries) {
@@ -291,10 +284,10 @@ export const Edit = withDynamicSchemaProps((props) => {
       }
     });
 
-    observer.observe(containerRef.current);
+    observer.observe(container);
 
     return () => {
-      observer.unobserve(containerRef.current);
+      observer.unobserve(container);
     };
   }, []);
 

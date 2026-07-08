@@ -10,8 +10,98 @@
 import { useFieldSchema, useField } from '@formily/react';
 import { useCollectionField, useDesignable, useRequest } from '@nocobase/client';
 import { cloneDeep, uniqBy } from 'lodash';
-import { useCallback } from 'react';
+import { useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
+
+const FILE_ACCESS_SEGMENT = 'files';
+
+const isPlainObject = (value: unknown): value is Record<string, unknown> =>
+  !!value && typeof value === 'object' && !Array.isArray(value);
+
+export const getPermanentFilePreviewUrl = (value?: string) => {
+  if (!value) {
+    return '';
+  }
+
+  try {
+    const url = new URL(value, typeof window === 'undefined' ? 'http://localhost' : window.location.href);
+    const segments = url.pathname.split('/').filter(Boolean);
+    const filesIndex = segments.indexOf(FILE_ACCESS_SEGMENT);
+    if (filesIndex === -1) {
+      return '';
+    }
+    const filePathSegments = segments.length - filesIndex;
+    if (filePathSegments === 6) {
+      return segments[filesIndex + 5] === 'preview' ? value : '';
+    }
+    if (filePathSegments !== 5) {
+      return '';
+    }
+    return `${value.replace(/\/+$/g, '')}/preview`;
+  } catch (error) {
+    return '';
+  }
+};
+
+const getResponseFileRecord = (response: unknown) => {
+  if (!isPlainObject(response)) {
+    return null;
+  }
+
+  const candidate = isPlainObject(response.data) ? response.data : response;
+  return ['id', 'url', 'preview', 'filename', 'extname', 'mimetype'].some((key) => key in candidate) ? candidate : null;
+};
+
+const normalizeAttachmentUrlFileRecord = (record: Record<string, unknown>, url: string) => {
+  const preview = typeof record.preview === 'string' ? record.preview : getPermanentFilePreviewUrl(url);
+  const mimetype = typeof record.mimetype === 'string' ? record.mimetype : undefined;
+  return {
+    ...record,
+    ...(mimetype ? { type: mimetype } : {}),
+    uid: record.id ?? url,
+    id: record.id ?? url,
+    url,
+    ...(preview ? { preview, thumbUrl: preview } : {}),
+  };
+};
+
+export const normalizeAttachmentUrlValue = (
+  value: unknown,
+  fileMetaByUrl: Map<string, Record<string, unknown>> = new Map(),
+) => {
+  if (typeof value === 'string') {
+    const cachedFile = fileMetaByUrl.get(value);
+    if (cachedFile) {
+      return normalizeAttachmentUrlFileRecord(cachedFile, value);
+    }
+    const preview = getPermanentFilePreviewUrl(value);
+    return preview
+      ? {
+          uid: value,
+          id: value,
+          url: value,
+          type: 'image/*',
+          preview,
+          thumbUrl: preview,
+        }
+      : value;
+  }
+  return value;
+};
+
+export const toAttachmentUrlValueItem = (data: unknown) => {
+  const record = getResponseFileRecord(data);
+  if (!record) {
+    return undefined;
+  }
+
+  const url = record.thumbnailRule ? `${record.url}${record.thumbnailRule}` : record.url;
+  if (typeof url !== 'string') {
+    return undefined;
+  }
+
+  return url;
+};
 
 function useStorageRules(storage) {
   const name = storage ?? '';
@@ -28,15 +118,22 @@ function useStorageRules(storage) {
 export function useAttachmentUrlFieldProps(props) {
   const field = useCollectionField();
   const rules = useStorageRules(field?.storage);
+  const fileMetaByUrlRef = useRef(new Map<string, Record<string, unknown>>());
   return {
     ...props,
+    value: normalizeAttachmentUrlValue(props.value, fileMetaByUrlRef.current),
     rules,
     action: `${field.target}:create${field.storage ? `?attachmentField=${field.collectionName}.${field.name}` : ''}`,
     toValueItem: (data) => {
-      return data?.thumbnailRule ? `${data?.url}${data?.thumbnailRule}` : data?.url;
+      const url = toAttachmentUrlValueItem(data);
+      const record = getResponseFileRecord(data);
+      if (url && record) {
+        fileMetaByUrlRef.current.set(url, record);
+      }
+      return url;
     },
     getThumbnailURL: (file) => {
-      return file?.url;
+      return file?.thumbUrl || file?.preview || getPermanentFilePreviewUrl(file?.url) || file?.url;
     },
   };
 }
