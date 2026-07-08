@@ -45,11 +45,12 @@ describe('plugin-light-extension follow-active multi-host foundation', () => {
     });
   });
 
-  it('keeps placeholder host references visible to impact analysis without treating them as JS Block owners', async () => {
+  it('keeps JS Action references visible to impact analysis without treating them as JS Block owners', async () => {
     const ownerLocator = {
       kind: 'flowModel.actionSettings',
       modelUid: 'flow_action_notify',
-      descriptor: 'action settings placeholder',
+      use: 'JSActionModel',
+      descriptor: 'Action model click settings locator',
     };
     const { bulkUpgradeService, repositories } = createReferenceServiceFixture({
       publications: [
@@ -62,7 +63,7 @@ describe('plugin-light-extension follow-active multi-host foundation', () => {
       ],
       references: [
         createReferenceRecord({
-          id: 'lef_js_action_placeholder',
+          id: 'lef_js_action_owner_missing',
           entryId: 'lee_notify',
           publicationId: 'lep_action_v1',
           kind: 'js-action',
@@ -75,7 +76,7 @@ describe('plugin-light-extension follow-active multi-host foundation', () => {
 
     const result = await bulkUpgradeService.analyzeImpact({
       toPublicationId: 'lep_action_v2',
-      referenceIds: ['lef_js_action_placeholder'],
+      referenceIds: ['lef_js_action_owner_missing'],
     });
 
     expect(result.summary).toMatchObject({

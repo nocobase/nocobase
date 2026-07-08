@@ -24,6 +24,10 @@ import type { PreviewRunJSResult } from './components/code-editor/runjsDiagnosti
 import { TextAreaWithContextSelector } from './components/TextAreaWithContextSelector';
 import { JSBlockSourceModeField } from './models/blocks/js-block/JSBlockSourceModeField';
 import {
+  JS_ACTION_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
+  JSActionSourceModeField,
+} from './models/actions/JSActionSourceModeField';
+import {
   JS_FIELD_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
   JSFieldSourceModeField,
 } from './models/fields/JSFieldSourceModeField';
@@ -48,6 +52,8 @@ export class PluginFlowEngine<TApp extends BaseApplication<any> = BaseApplicatio
       DefaultValue,
       FlowSettingsVariableTextArea: TextAreaWithContextSelector,
       JSBlockLightExtensionSourceField: JSBlockSourceModeField,
+      JSActionLightExtensionSourceField: JSActionSourceModeField,
+      [JS_ACTION_LIGHT_EXTENSION_FULL_SOURCE_FIELD]: JSActionSourceModeField,
       JSFieldLightExtensionSourceField: JSFieldSourceModeField,
       [JS_FIELD_LIGHT_EXTENSION_FULL_SOURCE_FIELD]: JSFieldSourceModeField,
     });

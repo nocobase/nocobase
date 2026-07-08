@@ -7,12 +7,28 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { createSafeDocument, createSafeWindow, createSafeNavigator, tExpr } from '@nocobase/flow-engine';
-import { RunJSEditorField } from '../../../components/runjs-studio';
+import { tExpr, type StepDefinition } from '@nocobase/flow-engine';
 import { FilterFormActionModel } from './FilterFormActionModel';
 import { resolveRunJsParams } from '../../utils/resolveRunJsParams';
+import {
+  createJSActionEmbeddedEditorUIMode,
+  createJSActionRunJsUISchema,
+  createJSActionSourceBindingStep,
+  createJSActionSourceModeStep,
+  getJSActionRuntimeFlowSettingSteps,
+  INLINE_SOURCE_MODE,
+  runJSActionRuntime,
+} from '../../actions/jsActionLightExtensionRuntime';
 
-export class FilterFormJSActionModel extends FilterFormActionModel {}
+export class FilterFormJSActionModel extends FilterFormActionModel {
+  public async getRuntimeFlowSettingSteps(flowKey: string): Promise<Record<string, StepDefinition> | undefined> {
+    if (flowKey !== 'clickSettings') {
+      return undefined;
+    }
+
+    return getJSActionRuntimeFlowSettingSteps(this);
+  }
+}
 
 FilterFormJSActionModel.define({
   label: tExpr('JS action'),
@@ -24,60 +40,26 @@ FilterFormJSActionModel.registerFlow({
   on: 'click',
   title: tExpr('Click settings'),
   steps: {
+    sourceMode: createJSActionSourceModeStep(),
+    sourceBinding: createJSActionSourceBindingStep(),
     runJs: {
       title: tExpr('Write JavaScript'),
       useRawParams: true,
-      uiSchema: {
-        code: {
-          type: 'string',
-          'x-component': RunJSEditorField,
-          'x-component-props': {
-            locatorFactory: 'flowModel.step',
-            surfaceStyle: 'action',
-            scene: 'eventFlow',
-            height: '100%',
-            minHeight: '400px',
-            theme: 'light',
-            enableLinter: true,
-            containerStyle: {
-              height: '100%',
-              minHeight: 0,
-              minWidth: 0,
-            },
-          },
-        },
-      },
-      uiMode: {
-        type: 'embed',
-        props: {
-          footer: null,
-          maxWidth: '960px',
-          minWidth: '720px',
-          width: '45%',
-          styles: {
-            body: {
-              display: 'flex',
-              flexDirection: 'column',
-              minHeight: 0,
-              transform: 'translateX(0)',
-            },
-          },
-        },
-      },
+      uiSchema: createJSActionRunJsUISchema({ minHeight: '400px' }),
+      uiMode: createJSActionEmbeddedEditorUIMode,
       defaultParams(ctx) {
         return {
           version: 'v2',
+          sourceMode: INLINE_SOURCE_MODE,
           code: '',
         };
       },
       async handler(ctx, params) {
-        const { code, version } = resolveRunJsParams(ctx, params);
-        const navigator = createSafeNavigator();
-        await ctx.runjs(
-          code,
-          { window: createSafeWindow({ navigator }), document: createSafeDocument(), navigator },
-          { version },
-        );
+        await runJSActionRuntime({
+          ctx,
+          params: params || {},
+          runJs: resolveRunJsParams(ctx, params),
+        });
       },
     },
   },

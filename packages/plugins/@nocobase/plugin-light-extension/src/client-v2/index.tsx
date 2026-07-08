@@ -14,6 +14,7 @@ export { default as LightExtensionListPage } from './pages/LightExtensionListPag
 export { default as LightExtensionPublicationsPage } from './pages/LightExtensionPublicationsPage';
 export { default as LightExtensionWorkspacePage } from './pages/LightExtensionWorkspacePage';
 export {
+  JSActionLightExtensionSourceField,
   JSBlockLightExtensionSourceField,
   JSFieldLightExtensionSourceField,
 } from './components/JSBlockLightExtensionSourceField';

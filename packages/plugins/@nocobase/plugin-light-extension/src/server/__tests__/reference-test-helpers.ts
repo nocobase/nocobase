@@ -216,6 +216,18 @@ export function createJsFieldSourceBinding(
   });
 }
 
+export function createJsActionSourceBinding(
+  input: Partial<LightExtensionRuntimeSourceBinding> = {},
+): LightExtensionRuntimeSourceBinding {
+  return createSourceBinding({
+    repoId: 'ler_actions',
+    entryId: 'lee_mark_approved',
+    kind: 'js-action',
+    publicationId: 'lep_mark_approved',
+    ...input,
+  });
+}
+
 export function createJsBlockNode(
   input: {
     uid?: string;
@@ -254,6 +266,35 @@ export function createJsFieldNode(
         runJs: {
           sourceMode: input.sourceMode || 'light-extension',
           sourceBinding: input.sourceBinding || createJsFieldSourceBinding(),
+          settings: input.settings || {},
+        },
+      },
+    },
+  };
+}
+
+export function createJsActionNode(
+  input: {
+    uid?: string;
+    use?:
+      | 'JSActionModel'
+      | 'JSRecordActionModel'
+      | 'JSCollectionActionModel'
+      | 'JSFormActionModel'
+      | 'FilterFormJSActionModel';
+    sourceMode?: string;
+    sourceBinding?: LightExtensionRuntimeSourceBinding;
+    settings?: Record<string, unknown>;
+  } = {},
+): FlowModelNode {
+  return {
+    uid: input.uid || 'flow_js_action',
+    use: input.use || 'JSActionModel',
+    stepParams: {
+      clickSettings: {
+        runJs: {
+          sourceMode: input.sourceMode || 'light-extension',
+          sourceBinding: input.sourceBinding || createJsActionSourceBinding(),
           settings: input.settings || {},
         },
       },
@@ -342,6 +383,39 @@ export function createJsFieldPublicationRecord(input: Record<string, unknown> = 
   });
 }
 
+export function createJsActionPublicationRecord(input: Record<string, unknown> = {}): Record<string, unknown> {
+  return createPublicationRecord({
+    id: 'lep_mark_approved',
+    repoId: 'ler_actions',
+    entryId: 'lee_mark_approved',
+    entryPath: 'src/client/js-actions/mark-approved/index.ts',
+    kind: 'js-action',
+    surfaceStyle: 'action',
+    artifact: {
+      code: 'ctx.message.success("approved");',
+      sourceMap: '{"version":3}',
+      version: 'v2',
+      entryPath: 'src/client/js-actions/mark-approved/index.ts',
+      filesHash: 'files_hash_action_1',
+      diagnostics: [],
+      metadata: {},
+    },
+    settingsSchemaSnapshot: {
+      type: 'object',
+      properties: {
+        successMessage: {
+          type: 'string',
+          default: 'Approved',
+        },
+      },
+    },
+    settingsDefaultsSnapshot: {
+      successMessage: 'Approved',
+    },
+    ...input,
+  });
+}
+
 export function createRepoRecord(input: Record<string, unknown> = {}): Record<string, unknown> {
   return {
     id: 'ler_sales',
@@ -355,6 +429,16 @@ export function createJsFieldEntryRecord(input: Record<string, unknown> = {}): R
     id: 'lee_phone_link',
     repoId: 'ler_fields',
     kind: 'js-field',
+    healthStatus: 'ready',
+    ...input,
+  });
+}
+
+export function createJsActionEntryRecord(input: Record<string, unknown> = {}): Record<string, unknown> {
+  return createEntryRecord({
+    id: 'lee_mark_approved',
+    repoId: 'ler_actions',
+    kind: 'js-action',
     healthStatus: 'ready',
     ...input,
   });
@@ -410,9 +494,28 @@ export function createJsFieldReferenceRecord(input: Record<string, unknown> = {}
   });
 }
 
+export function createJsActionReferenceRecord(input: Record<string, unknown> = {}): Record<string, unknown> {
+  const modelUid = typeof input.modelUid === 'string' ? input.modelUid : 'flow_js_action';
+  const use = typeof input.use === 'string' ? input.use : 'JSActionModel';
+  const ownerLocator = isPlainRecord(input.ownerLocator)
+    ? (input.ownerLocator as LightExtensionReferenceOwnerLocator)
+    : createOwnerLocator(modelUid, { kind: 'js-action', use });
+  return createReferenceRecord({
+    id: `lef_${modelUid}`,
+    repoId: 'ler_actions',
+    entryId: 'lee_mark_approved',
+    publicationId: 'lep_mark_approved',
+    kind: 'js-action',
+    ownerKind: 'flowModel.actionSettings',
+    ownerLocator,
+    ownerLocatorHash: hashOwnerLocator(ownerLocator),
+    ...input,
+  });
+}
+
 export function createOwnerLocator(
   modelUid: string,
-  input: { kind?: 'js-block' | 'js-field'; use?: string } = {},
+  input: { kind?: 'js-block' | 'js-field' | 'js-action'; use?: string } = {},
 ): LightExtensionReferenceOwnerLocator {
   if (input.kind === 'js-field') {
     return {
@@ -420,6 +523,14 @@ export function createOwnerLocator(
       modelUid,
       use: input.use || 'JSFieldModel',
       descriptor: 'Field model settings locator',
+    };
+  }
+  if (input.kind === 'js-action') {
+    return {
+      kind: 'flowModel.actionSettings',
+      modelUid,
+      use: input.use || 'JSActionModel',
+      descriptor: 'Action model click settings locator',
     };
   }
   return {

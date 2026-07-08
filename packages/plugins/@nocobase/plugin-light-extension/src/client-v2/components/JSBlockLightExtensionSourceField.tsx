@@ -382,6 +382,10 @@ export const JSFieldLightExtensionSourceField: React.FC<
   Omit<JSBlockLightExtensionSourceFieldProps, 'kind' | 'defaultVersionPolicy'>
 > = (props) => <JSBlockLightExtensionSourceField {...props} kind="js-field" defaultVersionPolicy="pinned" />;
 
+export const JSActionLightExtensionSourceField: React.FC<
+  Omit<JSBlockLightExtensionSourceFieldProps, 'kind' | 'defaultVersionPolicy'>
+> = (props) => <JSBlockLightExtensionSourceField {...props} kind="js-action" defaultVersionPolicy="pinned" />;
+
 export function getNextLightExtensionSourceBindingVersionPolicy(input: {
   sourceBinding?: LightExtensionRuntimeSourceBinding;
   binding: LightExtensionRuntimeSourceBinding;

@@ -19,6 +19,7 @@ import type {
 
 export type ReferenceOwnerAdapter = LightExtensionReferenceOwnerAdapterContract & {
   stepPath?: ['stepParams', 'jsSettings'];
+  settingsKey?: 'jsSettings' | 'clickSettings';
   modelUses?: string[];
 };
 
@@ -58,10 +59,20 @@ const REFERENCE_OWNER_ADAPTERS: ReferenceOwnerAdapter[] = [
     kind: 'js-action',
     ownerKind: 'flowModel.actionSettings',
     title: 'JS Action',
-    status: 'placeholder',
+    status: 'active',
     locatorContract: 'Action model click settings locator',
+    modelUse: 'JSActionModel',
+    modelUses: [
+      'JSActionModel',
+      'JSRecordActionModel',
+      'JSCollectionActionModel',
+      'JSFormActionModel',
+      'FilterFormJSActionModel',
+    ],
+    settingsKey: 'clickSettings',
     implementationTask: '04-task-js-action-entry-end-to-end.md',
-    message: 'Waiting for the JS Action host task to provide concrete action owner locators and save hooks.',
+    message:
+      'Active adapter scans JS action button click settings across normal, record, collection, form, and filter form actions.',
     supportsVersionPolicy: true,
     supportsImpact: true,
     supportsBulkUpgrade: true,

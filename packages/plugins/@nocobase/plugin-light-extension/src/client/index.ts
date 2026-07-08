@@ -9,6 +9,8 @@
 
 import type React from 'react';
 import {
+  JS_ACTION_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
+  JS_ACTION_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
   JS_BLOCK_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
   JS_BLOCK_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
   JS_FIELD_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
@@ -21,6 +23,7 @@ import LightExtensionHomePage from '../client-shared/LightExtensionHomePage';
 import { LIGHT_EXTENSION_ACL_SNIPPET, LIGHT_EXTENSION_SETTINGS_KEY, NAMESPACE } from '../constants';
 import { createLightExtensionJSBlockAddItems } from '../client-v2/add-block/lightExtensionJsBlockItems';
 import {
+  JSActionLightExtensionSourceField,
   JSBlockLightExtensionSourceField,
   JSFieldLightExtensionSourceField,
 } from '../client-v2/components/JSBlockLightExtensionSourceField';
@@ -93,6 +96,8 @@ export class PluginLightExtensionClient {
 
   async load() {
     this.app?.flowEngine?.flowSettings?.registerComponents?.({
+      [JS_ACTION_LIGHT_EXTENSION_FULL_SOURCE_FIELD]: JSActionLightExtensionSourceField,
+      [JS_ACTION_LIGHT_EXTENSION_SETTINGS_STEP_FIELD]: SettingsSingleField,
       [JS_BLOCK_LIGHT_EXTENSION_FULL_SOURCE_FIELD]: JSBlockLightExtensionSourceField,
       [JS_BLOCK_LIGHT_EXTENSION_SETTINGS_STEP_FIELD]: SettingsSingleField,
       [JS_FIELD_LIGHT_EXTENSION_FULL_SOURCE_FIELD]: JSFieldLightExtensionSourceField,

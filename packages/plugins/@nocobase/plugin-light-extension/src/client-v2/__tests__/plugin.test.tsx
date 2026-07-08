@@ -9,6 +9,8 @@
 
 import {
   createMockClient,
+  JS_ACTION_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
+  JS_ACTION_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
   JS_BLOCK_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
   JS_BLOCK_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
 } from '@nocobase/client-v2';
@@ -66,6 +68,8 @@ describe('PluginLightExtensionClientV2', () => {
     expect(app.pluginSettingsManager.get(`${LIGHT_EXTENSION_SETTINGS_KEY}.publications`, false)).toBeNull();
     expect(app.pluginSettingsManager.get(`${LIGHT_EXTENSION_SETTINGS_KEY}.references`, false)).toBeNull();
     expect(app.flowEngine.flowSettings.components).toMatchObject({
+      [JS_ACTION_LIGHT_EXTENSION_FULL_SOURCE_FIELD]: expect.any(Function),
+      [JS_ACTION_LIGHT_EXTENSION_SETTINGS_STEP_FIELD]: expect.any(Function),
       [JS_BLOCK_LIGHT_EXTENSION_FULL_SOURCE_FIELD]: expect.any(Function),
       [JS_BLOCK_LIGHT_EXTENSION_SETTINGS_STEP_FIELD]: expect.any(Function),
       RepoEntryPublicationSelector: expect.any(Function),

@@ -532,7 +532,7 @@ export class ReferenceService {
     };
     const ownerLocator = buildFlowModelOwnerLocator(adapter, modelUid, node.use);
     const ownerLocatorHash = hashOwnerLocator(ownerLocator);
-    const source = readRunJsSource(node);
+    const source = readRunJsSource(node, adapter);
     const scopeRepoId = normalizeString(limitRepoId);
     if (source.sourceMode !== 'light-extension') {
       const removed = await this.removeReferencesForOwner(ownerLocatorHash, action, requestId, ctx, {
@@ -914,7 +914,8 @@ export class ReferenceService {
     if (reference.versionPolicy === 'follow-active') {
       const ownerModelUid = getReferenceOwnerModelUid(reference.ownerLocator);
       const ownerNode = ownerModelUid ? await this.loadFlowModelTree(ownerModelUid, ctx).catch(() => null) : null;
-      const source = readRunJsSource(ownerNode || {});
+      const adapter = getReferenceOwnerAdapterByOwnerKind(reference.ownerLocator.kind);
+      const source = readRunJsSource(ownerNode || {}, adapter);
       if (source.sourceBinding?.versionPolicy === 'follow-active') {
         const resolution = await this.resolveReferenceFromBinding(
           source.sourceBinding,
@@ -1695,26 +1696,27 @@ function normalizeRouteId(route: unknown): string {
   return normalizeString(route.id);
 }
 
-function readRunJsSource(node: FlowModelNode): NormalizedJsBlockSource {
-  const jsSettings = isPlainRecord(node.stepParams?.jsSettings) ? node.stepParams.jsSettings : {};
-  const runJs = isPlainRecord(jsSettings.runJs) ? jsSettings.runJs : {};
-  const sourceModeStep = isPlainRecord(jsSettings.sourceMode) ? jsSettings.sourceMode : {};
-  const sourceBindingStep = isPlainRecord(jsSettings.sourceBinding) ? jsSettings.sourceBinding : {};
+function readRunJsSource(node: FlowModelNode, adapter?: ReferenceOwnerAdapter): NormalizedJsBlockSource {
+  const settingsKey = adapter?.settingsKey || 'jsSettings';
+  const settings = isPlainRecord(node.stepParams?.[settingsKey]) ? node.stepParams[settingsKey] : {};
+  const runJs = isPlainRecord(settings.runJs) ? settings.runJs : {};
+  const sourceModeStep = isPlainRecord(settings.sourceMode) ? settings.sourceMode : {};
+  const sourceBindingStep = isPlainRecord(settings.sourceBinding) ? settings.sourceBinding : {};
   const sourceMode =
-    normalizeString(jsSettings.sourceMode) ||
+    normalizeString(settings.sourceMode) ||
     normalizeString(sourceModeStep.sourceMode) ||
     normalizeString(sourceBindingStep.sourceMode) ||
     normalizeString(runJs.sourceMode) ||
     'inline';
   const sourceBinding =
-    normalizeSourceBinding(jsSettings.sourceBinding) ||
+    normalizeSourceBinding(settings.sourceBinding) ||
     normalizeSourceBinding(sourceBindingStep.sourceBinding) ||
     normalizeSourceBinding(runJs.sourceBinding);
-  const settings = normalizeFirstSettings(runJs.settings, jsSettings.settings, sourceBindingStep.settings);
+  const sourceSettings = normalizeFirstSettings(runJs.settings, settings.settings, sourceBindingStep.settings);
   return {
     sourceMode,
     sourceBinding,
-    settings,
+    settings: sourceSettings,
   };
 }
 

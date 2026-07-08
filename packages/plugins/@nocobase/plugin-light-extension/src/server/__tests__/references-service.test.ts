@@ -10,6 +10,11 @@
 import {
   createEntryRecord,
   createJsBlockNode,
+  createJsActionEntryRecord,
+  createJsActionNode,
+  createJsActionPublicationRecord,
+  createJsActionReferenceRecord,
+  createJsActionSourceBinding,
   createJsFieldEntryRecord,
   createJsFieldNode,
   createJsFieldPublicationRecord,
@@ -23,6 +28,14 @@ import {
 } from './reference-test-helpers';
 
 describe('plugin-light-extension reference service', () => {
+  const jsActionHostUses = [
+    ['JSActionModel', 'flow_js_action_top'],
+    ['JSRecordActionModel', 'flow_js_action_record'],
+    ['JSCollectionActionModel', 'flow_js_action_collection'],
+    ['JSFormActionModel', 'flow_js_action_form'],
+    ['FilterFormJSActionModel', 'flow_js_action_filter_form'],
+  ] as const;
+
   it('upserts JS Block references with publication snapshot settings and removes them after switching inline', async () => {
     const flowModelTrees = {
       flow_js_block: createJsBlockNode({
@@ -167,6 +180,337 @@ describe('plugin-light-extension reference service', () => {
       }),
       resolvedStatus: 'active',
     });
+  });
+
+  it.each(jsActionHostUses)('upserts %s JS Action references with distinct action owner locators', async (use, uid) => {
+    const { service, repositories } = createReferenceServiceFixture({
+      flowModelTrees: {
+        [uid]: createJsActionNode({
+          uid,
+          use,
+          settings: {
+            successMessage: 'Marked approved',
+          },
+        }),
+      },
+      publications: [createJsActionPublicationRecord()],
+      repos: [createRepoRecord({ id: 'ler_actions' })],
+      entries: [createJsActionEntryRecord()],
+    });
+
+    const result = await service.syncFlowModelReferencesForNodeTree({
+      rootUid: uid,
+      action: 'flowModels.save',
+    });
+
+    expect(result).toMatchObject({
+      scanned: 1,
+      upserted: 1,
+      removed: 0,
+      statusCounts: {
+        active: 1,
+      },
+    });
+    expect(repositories.lightExtensionReferences.records).toHaveLength(1);
+    expect(repositories.lightExtensionReferences.records[0].toJSON()).toMatchObject({
+      repoId: 'ler_actions',
+      entryId: 'lee_mark_approved',
+      publicationId: 'lep_mark_approved',
+      kind: 'js-action',
+      ownerKind: 'flowModel.actionSettings',
+      ownerLocator: {
+        kind: 'flowModel.actionSettings',
+        modelUid: uid,
+        use,
+      },
+      versionPolicy: 'pinned',
+      settingsHash: stableJsonHash({
+        successMessage: 'Marked approved',
+      }),
+      resolvedStatus: 'active',
+    });
+  });
+
+  it.each(['flowSurfaces.applyBlueprint', 'flowSurfaces.compose'] as const)(
+    'upserts reused JS Action entry references for all action hosts after %s',
+    async (action) => {
+      const { service, repositories } = createReferenceServiceFixture({
+        flowModelTrees: {
+          flow_action_page: {
+            uid: 'flow_action_page',
+            use: 'PageModel',
+            subModels: {
+              actions: jsActionHostUses.map(([use, uid]) =>
+                createJsActionNode({
+                  uid,
+                  use,
+                  settings: {
+                    successMessage: `Marked approved by ${use}`,
+                  },
+                }),
+              ),
+            },
+          },
+        },
+        publications: [createJsActionPublicationRecord()],
+        repos: [createRepoRecord({ id: 'ler_actions' })],
+        entries: [createJsActionEntryRecord()],
+      });
+
+      const result = await service.syncFlowModelReferencesForNodeTree({
+        rootUid: 'flow_action_page',
+        action,
+      });
+
+      const records = repositories.lightExtensionReferences.records.map((record) => record.toJSON());
+      expect(result).toMatchObject({
+        scanned: 5,
+        upserted: 5,
+        removed: 0,
+        statusCounts: {
+          active: 5,
+        },
+      });
+      expect(records).toHaveLength(5);
+      expect(new Set(records.map((record) => record.ownerLocatorHash)).size).toBe(5);
+      expect(new Set(records.map((record) => record.entryId))).toEqual(new Set(['lee_mark_approved']));
+      expect(records).toEqual(
+        expect.arrayContaining(
+          jsActionHostUses.map(([use, uid]) =>
+            expect.objectContaining({
+              kind: 'js-action',
+              ownerKind: 'flowModel.actionSettings',
+              ownerLocator: expect.objectContaining({
+                modelUid: uid,
+                use,
+              }),
+              publicationId: 'lep_mark_approved',
+              versionPolicy: 'pinned',
+            }),
+          ),
+        ),
+      );
+    },
+  );
+
+  it('rebuilds JS Action references from persisted action flow model records', async () => {
+    const { service, repositories } = createReferenceServiceFixture({
+      flowModels: jsActionHostUses.map(([use, uid]) => ({
+        uid,
+        options: createJsActionNode({
+          uid,
+          use,
+          settings: {
+            successMessage: `Marked approved by ${use}`,
+          },
+        }),
+      })),
+      publications: [createJsActionPublicationRecord()],
+      repos: [createRepoRecord({ id: 'ler_actions' })],
+      entries: [createJsActionEntryRecord()],
+    });
+
+    const result = await service.rebuildIndex({
+      repoId: 'ler_actions',
+    });
+
+    const records = repositories.lightExtensionReferences.records.map((record) => record.toJSON());
+    expect(result).toMatchObject({
+      scanned: 5,
+      upserted: 5,
+      removed: 0,
+      ownerMissing: 0,
+      statusCounts: {
+        active: 5,
+      },
+    });
+    expect(records).toHaveLength(5);
+    expect(new Set(records.map((record) => record.ownerLocatorHash)).size).toBe(5);
+    expect(records).toEqual(
+      expect.arrayContaining(
+        jsActionHostUses.map(([use, uid]) =>
+          expect.objectContaining({
+            repoId: 'ler_actions',
+            entryId: 'lee_mark_approved',
+            kind: 'js-action',
+            ownerLocator: expect.objectContaining({
+              modelUid: uid,
+              use,
+            }),
+          }),
+        ),
+      ),
+    );
+  });
+
+  it('generates a stable ownerLocatorHash per copied JS Action owner', async () => {
+    const { service, repositories } = createReferenceServiceFixture({
+      flowModelTrees: {
+        flow_source_js_action: createJsActionNode({
+          uid: 'flow_source_js_action',
+          use: 'JSRecordActionModel',
+        }),
+        flow_copied_js_action: createJsActionNode({
+          uid: 'flow_copied_js_action',
+          use: 'JSRecordActionModel',
+        }),
+      },
+      publications: [createJsActionPublicationRecord()],
+      repos: [createRepoRecord({ id: 'ler_actions' })],
+      entries: [createJsActionEntryRecord()],
+    });
+
+    await service.syncFlowModelReferencesForNodeTree({
+      rootUid: 'flow_source_js_action',
+      action: 'flowModels.save',
+    });
+    await service.syncFlowModelReferencesForNodeTree({
+      rootUid: 'flow_copied_js_action',
+      action: 'flowModels.duplicate',
+    });
+
+    const records = repositories.lightExtensionReferences.records.map((record) => record.toJSON());
+    expect(records).toHaveLength(2);
+    expect(new Set(records.map((record) => record.ownerLocatorHash)).size).toBe(2);
+    expect(records).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          kind: 'js-action',
+          ownerLocator: expect.objectContaining({ modelUid: 'flow_source_js_action' }),
+        }),
+        expect.objectContaining({
+          kind: 'js-action',
+          ownerLocator: expect.objectContaining({ modelUid: 'flow_copied_js_action' }),
+        }),
+      ]),
+    );
+  });
+
+  it('marks JS Action references owner_missing when an action button is deleted', async () => {
+    const { service, repositories, recordReferenceEvent } = createReferenceServiceFixture({
+      references: [
+        createJsActionReferenceRecord({
+          id: 'lef_deleted_js_action',
+          modelUid: 'flow_deleted_js_action',
+          use: 'JSActionModel',
+        }),
+      ],
+    });
+
+    const result = await service.markFlowModelReferencesOwnerMissingForNodeTree(
+      {
+        rootUid: 'flow_deleted_js_action',
+        action: 'flowSurfaces.removeNode',
+      },
+      {
+        requestId: 'req_deleted_js_action_reference',
+      },
+    );
+
+    expect(result).toMatchObject({
+      ownerMissing: 1,
+      statusCounts: {
+        owner_missing: 1,
+      },
+    });
+    expect(repositories.lightExtensionReferences.records[0].toJSON()).toMatchObject({
+      id: 'lef_deleted_js_action',
+      resolvedStatus: 'owner_missing',
+    });
+    expect(recordReferenceEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'referenceOwnerMissing',
+        ownerKind: 'flowModel.actionSettings',
+        ownerLocatorHash: expect.stringMatching(/^sha256:/),
+      }),
+    );
+  });
+
+  it('upserts JS Action references after the settings dialog saves a source binding step wrapper', async () => {
+    const uid = 'flow_js_action_saved_wrapper';
+    const sourceBinding = createJsActionSourceBinding();
+    const { service, repositories } = createReferenceServiceFixture({
+      flowModelTrees: {
+        [uid]: {
+          uid,
+          use: 'JSActionModel',
+          stepParams: {
+            clickSettings: {
+              sourceBinding: {
+                sourceMode: 'light-extension',
+                sourceBinding,
+                settings: {
+                  successMessage: 'Marked approved',
+                },
+              },
+              runJs: {
+                sourceMode: 'light-extension',
+                sourceBinding,
+                settings: {
+                  successMessage: 'Marked approved',
+                },
+              },
+            },
+          },
+        },
+      },
+      publications: [createJsActionPublicationRecord()],
+      repos: [createRepoRecord({ id: 'ler_actions' })],
+      entries: [createJsActionEntryRecord()],
+    });
+
+    const result = await service.syncFlowModelReferencesForNodeTree({
+      rootUid: uid,
+      action: 'flowModels.save',
+    });
+
+    expect(result).toMatchObject({
+      scanned: 1,
+      upserted: 1,
+      removed: 0,
+      statusCounts: {
+        active: 1,
+      },
+    });
+    expect(repositories.lightExtensionReferences.records[0].toJSON()).toMatchObject({
+      repoId: 'ler_actions',
+      entryId: 'lee_mark_approved',
+      kind: 'js-action',
+      ownerKind: 'flowModel.actionSettings',
+      settingsHash: stableJsonHash({
+        successMessage: 'Marked approved',
+      }),
+      resolvedStatus: 'active',
+    });
+  });
+
+  it('removes JS Action references after switching the button back to inline source', async () => {
+    const uid = 'flow_js_action_inline';
+    const { service, repositories } = createReferenceServiceFixture({
+      flowModelTrees: {
+        [uid]: createJsActionNode({
+          uid,
+          sourceMode: 'inline',
+        }),
+      },
+      references: [
+        createJsActionReferenceRecord({
+          modelUid: uid,
+        }),
+      ],
+    });
+
+    const result = await service.syncFlowModelReferencesForNodeTree({
+      rootUid: uid,
+      action: 'flowSurfaces.updateSettings',
+    });
+
+    expect(result).toMatchObject({
+      scanned: 1,
+      upserted: 0,
+      removed: 1,
+    });
+    expect(repositories.lightExtensionReferences.records).toHaveLength(0);
   });
 
   it('upserts JS Field references after the settings dialog saves a source binding step wrapper', async () => {

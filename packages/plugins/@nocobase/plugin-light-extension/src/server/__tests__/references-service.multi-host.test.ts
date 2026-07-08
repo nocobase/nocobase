@@ -53,6 +53,16 @@ describe('plugin-light-extension multi-host reference foundation', () => {
           supportsRebuild: true,
         }),
         expect.objectContaining({
+          kind: 'js-action',
+          ownerKind: 'flowModel.actionSettings',
+          status: 'active',
+          implementationTask: '04-task-js-action-entry-end-to-end.md',
+          supportsVersionPolicy: true,
+          supportsImpact: true,
+          supportsBulkUpgrade: true,
+          supportsRebuild: true,
+        }),
+        expect.objectContaining({
           kind: 'runjs',
           ownerKind: 'flowModel.runjsHost',
           status: 'placeholder',
@@ -116,7 +126,7 @@ describe('plugin-light-extension multi-host reference foundation', () => {
     );
   });
 
-  it('does not rebuild JS Block references for placeholder owner locators', async () => {
+  it('does not rebuild JS Block references for future placeholder owner locators', async () => {
     const { service, repositories } = createReferenceServiceFixture({
       flowModelTrees: {
         flow_js_block: createJsBlockNode({
@@ -138,7 +148,7 @@ describe('plugin-light-extension multi-host reference foundation', () => {
 
     const result = await service.rebuildIndex({
       ownerLocator: {
-        kind: 'flowModel.actionSettings',
+        kind: 'flowModel.itemSettings',
         modelUid: 'flow_js_block',
       },
       dryRun: true,
