@@ -106,7 +106,9 @@ export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
 
     const raw = this.getConfiguredEventsRaw();
     if (raw) {
-      void this.applyEvents(raw, chart);
+      this.applyEvents(raw, chart).catch((error) => {
+        console.error('Chart applyEvents error:', error);
+      });
     }
   };
 
@@ -539,16 +541,21 @@ export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
 
     this.markEventsBound(raw, chart);
 
-    const { success, error, timeout } = await this.context.runjs(raw, {
-      chart,
-    });
-    if (success) {
-      return;
-    }
+    try {
+      const { success, error, timeout } = await this.context.runjs(raw, {
+        chart,
+      });
+      if (success) {
+        return;
+      }
 
-    this.clearEventsBound(raw, chart);
-    if (error || timeout) {
-      console.error('applyEvents runjs error:', error || 'timeout');
+      this.clearEventsBound(raw, chart);
+      if (error || timeout) {
+        console.error('applyEvents runjs error:', error || 'timeout');
+      }
+    } catch (error) {
+      this.clearEventsBound(raw, chart);
+      throw error;
     }
   }
 
