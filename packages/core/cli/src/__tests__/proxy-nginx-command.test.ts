@@ -11,6 +11,8 @@ import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
   resolveManagedAppRuntime: vi.fn(),
+  resolveEnvProxyEntry: vi.fn(),
+  setEnvProxyEntry: vi.fn(),
   setNginxProxyDriver: vi.fn(),
   getNginxProxyDriver: vi.fn(),
   resolveNginxProxyRuntimeContext: vi.fn(),
@@ -35,6 +37,11 @@ const mocks = vi.hoisted(() => ({
 vi.mock('../lib/app-runtime.js', () => ({
   resolveManagedAppRuntime: mocks.resolveManagedAppRuntime,
   formatMissingManagedAppEnvMessage: vi.fn((envName?: string) => `missing:${envName ?? ''}`),
+}));
+
+vi.mock('../lib/auth-store.js', () => ({
+  resolveEnvProxyEntry: mocks.resolveEnvProxyEntry,
+  setEnvProxyEntry: mocks.setEnvProxyEntry,
 }));
 
 vi.mock('../lib/proxy-nginx.js', () => ({
@@ -75,6 +82,10 @@ vi.mock('../lib/env-proxy.js', () => ({
   mapProxyPathFromCliRoot: mocks.mapProxyPathFromCliRoot,
 }));
 
+vi.mock('../lib/cli-home.js', () => ({
+  resolveDefaultConfigScope: vi.fn(() => 'local'),
+}));
+
 vi.mock('../lib/cli-config.js', async () => {
   const actual = await vi.importActual<typeof import('../lib/cli-config.js')>('../lib/cli-config.js');
   return {
@@ -85,6 +96,8 @@ vi.mock('../lib/cli-config.js', async () => {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mocks.resolveEnvProxyEntry.mockReturnValue(undefined);
+  mocks.setEnvProxyEntry.mockResolvedValue(undefined);
   mocks.setNginxProxyDriver.mockResolvedValue('docker');
   mocks.getNginxProxyDriver.mockResolvedValue('local');
   mocks.resolveNginxProxyRuntimeContext.mockResolvedValue({
@@ -200,6 +213,15 @@ test('proxy nginx generate writes proxy files with the current runtime context',
       force: false,
     },
   );
+  expect(mocks.setEnvProxyEntry).toHaveBeenCalledWith(
+    'test2',
+    'nginx',
+    {
+      host: 'c.local.nocobase.com',
+      port: undefined,
+    },
+    { scope: 'local' },
+  );
   expect(mocks.succeedTask).toHaveBeenCalledWith(
     'Saved nginx proxy files for env "test2" under /Users/chen/test4/.nocobase/proxy/nginx/test2, and created editable app entry config at /Users/chen/test4/.nocobase/proxy/nginx/test2/app.conf.',
   );
@@ -249,6 +271,61 @@ test('proxy nginx generate defaults to the current env when --env is omitted', a
   );
 });
 
+test('proxy nginx generate falls back to saved env proxy settings when flags are omitted', async () => {
+  const { default: ProxyNginxGenerate } = await import('../commands/proxy/nginx/generate.js');
+  mocks.resolveManagedAppRuntime.mockResolvedValue({
+    kind: 'local',
+    envName: 'current-env',
+    env: { config: {} },
+  });
+  mocks.resolveEnvProxyEntry.mockReturnValue({
+    host: 'saved.local.nocobase.com',
+    port: 8080,
+  });
+  mocks.writeNginxProxyBundle.mockResolvedValue({
+    status: 'updated',
+    bundle: {
+      entryDir: '/Users/chen/test4/.nocobase/proxy/nginx/current-env',
+      appConfigPath: '/Users/chen/test4/.nocobase/proxy/nginx/current-env/app.conf',
+    },
+  });
+
+  const command = Object.assign(Object.create(ProxyNginxGenerate.prototype), {
+    parse: vi.fn(async () => ({
+      flags: {
+        force: false,
+      },
+    })),
+  });
+
+  await ProxyNginxGenerate.prototype.run.call(command);
+
+  expect(mocks.writeNginxProxyBundle).toHaveBeenCalledWith(
+    expect.objectContaining({ envName: 'current-env' }),
+    {
+      host: 'saved.local.nocobase.com',
+      port: '8080',
+    },
+    {
+      driver: 'local',
+      runtimeCliRoot: '/Users/chen/test4',
+      upstreamHost: '127.0.0.1',
+    },
+    {
+      force: false,
+    },
+  );
+  expect(mocks.setEnvProxyEntry).toHaveBeenCalledWith(
+    'current-env',
+    'nginx',
+    {
+      host: 'saved.local.nocobase.com',
+      port: 8080,
+    },
+    { scope: 'local' },
+  );
+});
+
 test('proxy nginx generate supports manual mode', async () => {
   const { default: ProxyNginxGenerate } = await import('../commands/proxy/nginx/generate.js');
   const command = Object.assign(Object.create(ProxyNginxGenerate.prototype), {
@@ -256,12 +333,12 @@ test('proxy nginx generate supports manual mode', async () => {
       flags: {
         manual: true,
         name: 'default',
-        'app-port': '13000',
         'storage-path': '/path/to/storage',
         'dist-root-path': '/path/to/dist-client',
         'runtime-version': '2.1.0',
         'app-public-path': '/console/',
         'upstream-host': 'host.docker.internal',
+        'upstream-port': '14000',
         'cdn-base-url': 'https://cdn.example.com/ui/',
         port: '8080',
         force: true,
@@ -275,12 +352,12 @@ test('proxy nginx generate supports manual mode', async () => {
   expect(mocks.writeManualNginxProxyBundle).toHaveBeenCalledWith(
     {
       name: 'default',
-      appPort: '13000',
       storagePath: '/path/to/storage',
       distRootPath: '/path/to/dist-client',
       runtimeVersion: '2.1.0',
       appPublicPath: '/console/',
       upstreamHost: 'host.docker.internal',
+      upstreamPort: '14000',
       cdnBaseUrl: 'https://cdn.example.com/ui/',
     },
     {
@@ -301,17 +378,17 @@ test('proxy nginx generate supports manual mode', async () => {
   );
 });
 
-test('proxy nginx generate rejects invalid manual app port values', async () => {
+test('proxy nginx generate rejects invalid manual upstream port values', async () => {
   const { default: ProxyNginxGenerate } = await import('../commands/proxy/nginx/generate.js');
   const command = Object.assign(Object.create(ProxyNginxGenerate.prototype), {
     parse: vi.fn(async () => ({
       flags: {
         manual: true,
         name: 'default',
-        'app-port': '70000',
         'storage-path': '/path/to/storage',
         'dist-root-path': '/path/to/dist-client',
         'runtime-version': '2.1.0',
+        'upstream-port': '70000',
       },
     })),
     error: vi.fn((message: string) => {
@@ -320,7 +397,7 @@ test('proxy nginx generate rejects invalid manual app port values', async () => 
   });
 
   await expect(ProxyNginxGenerate.prototype.run.call(command)).rejects.toThrow(
-    'Invalid manual app port "70000". Use an integer between 1 and 65535.',
+    'Invalid manual upstream port "70000". Use an integer between 1 and 65535.',
   );
   expect(mocks.writeManualNginxProxyBundle).not.toHaveBeenCalled();
 });

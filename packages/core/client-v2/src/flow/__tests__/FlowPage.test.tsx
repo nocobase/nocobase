@@ -9,7 +9,7 @@
 
 import { render, waitFor } from '@testing-library/react';
 import React from 'react';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { FlowPage } from '../FlowPage';
 
 type TestContextProperty = {
@@ -71,10 +71,15 @@ const createPageModel = (): TestPageModel => {
 };
 
 const mocks = vi.hoisted(() => ({
+  flowSettingsEnabled: false,
+  loadModel: vi.fn(),
+  loadOrCreateModel: vi.fn(),
   rendererMobileStates: [] as boolean[],
   rendererProps: undefined as RendererProps | undefined,
   model: undefined as TestPageModel | undefined,
+  viewFilterByTk: undefined as unknown,
   viewInputMobileLayout: true as boolean | undefined,
+  viewSourceId: undefined as unknown,
   contextMobileLayout: undefined as boolean | undefined,
 }));
 
@@ -94,15 +99,20 @@ vi.mock('@nocobase/flow-engine', async () => {
     }),
     useFlowEngine: vi.fn(() => ({
       getModelClassAsync: vi.fn(async () => TestPageModelClass),
-      loadOrCreateModel: vi.fn(async () => mocks.model),
-      context: {},
+      loadModel: mocks.loadModel,
+      loadOrCreateModel: mocks.loadOrCreateModel,
+      context: {
+        flowSettingsEnabled: mocks.flowSettingsEnabled,
+      },
       translate: vi.fn((value: string) => value),
     })),
     useFlowModelById: vi.fn(() => mocks.model),
     useFlowViewContext: vi.fn(() => ({
       view: {
         inputArgs: {
+          ...(typeof mocks.viewFilterByTk !== 'undefined' ? { filterByTk: mocks.viewFilterByTk } : {}),
           ...(typeof mocks.viewInputMobileLayout === 'boolean' ? { isMobileLayout: mocks.viewInputMobileLayout } : {}),
+          ...(typeof mocks.viewSourceId !== 'undefined' ? { sourceId: mocks.viewSourceId } : {}),
         },
       },
       ...(typeof mocks.contextMobileLayout === 'boolean' ? { isMobileLayout: mocks.contextMobileLayout } : {}),
@@ -154,11 +164,21 @@ vi.mock('ahooks', async () => {
 });
 
 describe('FlowPage', () => {
+  beforeEach(() => {
+    mocks.loadModel.mockImplementation(async () => null);
+    mocks.loadOrCreateModel.mockImplementation(async () => mocks.model);
+  });
+
   afterEach(() => {
+    mocks.flowSettingsEnabled = false;
+    mocks.loadModel.mockReset();
+    mocks.loadOrCreateModel.mockReset();
     mocks.rendererMobileStates = [];
     mocks.rendererProps = undefined;
     mocks.model = undefined;
+    mocks.viewFilterByTk = undefined;
     mocks.viewInputMobileLayout = true;
+    mocks.viewSourceId = undefined;
     mocks.contextMobileLayout = undefined;
   });
 
@@ -203,4 +223,31 @@ describe('FlowPage', () => {
       expect(mocks.rendererMobileStates[0]).toBe(expected);
     },
   );
+
+  it('reloads runtime page models for record scoped views', async () => {
+    mocks.model = createPageModel();
+    mocks.viewFilterByTk = 1;
+    mocks.loadModel.mockImplementation(async () => mocks.model);
+
+    render(<FlowPage onModelLoaded={vi.fn()} />);
+
+    await waitFor(() => {
+      expect(mocks.loadModel).toHaveBeenCalled();
+    });
+    expect(mocks.loadModel.mock.calls[0]?.[0]).toMatchObject({ refresh: true });
+    expect(mocks.loadOrCreateModel).not.toHaveBeenCalled();
+  });
+
+  it('keeps configured page model cache behavior in flow settings mode', async () => {
+    mocks.flowSettingsEnabled = true;
+    mocks.model = createPageModel();
+    mocks.viewFilterByTk = 1;
+
+    render(<FlowPage onModelLoaded={vi.fn()} />);
+
+    await waitFor(() => {
+      expect(mocks.loadOrCreateModel).toHaveBeenCalled();
+    });
+    expect(mocks.loadModel).not.toHaveBeenCalled();
+  });
 });

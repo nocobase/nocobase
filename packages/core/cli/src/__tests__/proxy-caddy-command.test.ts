@@ -11,6 +11,8 @@ import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
   resolveManagedAppRuntime: vi.fn(),
+  resolveEnvProxyEntry: vi.fn(),
+  setEnvProxyEntry: vi.fn(),
   setCaddyProxyDriver: vi.fn(),
   getCaddyProxyDriver: vi.fn(),
   resolveCaddyProxyRuntimeContext: vi.fn(),
@@ -35,6 +37,11 @@ const mocks = vi.hoisted(() => ({
 vi.mock('../lib/app-runtime.js', () => ({
   resolveManagedAppRuntime: mocks.resolveManagedAppRuntime,
   formatMissingManagedAppEnvMessage: vi.fn((envName?: string) => `missing:${envName ?? ''}`),
+}));
+
+vi.mock('../lib/auth-store.js', () => ({
+  resolveEnvProxyEntry: mocks.resolveEnvProxyEntry,
+  setEnvProxyEntry: mocks.setEnvProxyEntry,
 }));
 
 vi.mock('../lib/proxy-caddy.js', () => ({
@@ -77,6 +84,10 @@ vi.mock('../lib/env-proxy.js', () => ({
   mapProxyPathFromCliRoot: mocks.mapProxyPathFromCliRoot,
 }));
 
+vi.mock('../lib/cli-home.js', () => ({
+  resolveDefaultConfigScope: vi.fn(() => 'local'),
+}));
+
 vi.mock('../lib/cli-config.js', async () => {
   const actual = await vi.importActual<typeof import('../lib/cli-config.js')>('../lib/cli-config.js');
   return {
@@ -87,6 +98,8 @@ vi.mock('../lib/cli-config.js', async () => {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mocks.resolveEnvProxyEntry.mockReturnValue(undefined);
+  mocks.setEnvProxyEntry.mockResolvedValue(undefined);
   mocks.setCaddyProxyDriver.mockResolvedValue('docker');
   mocks.getCaddyProxyDriver.mockResolvedValue('local');
   mocks.resolveCaddyProxyRuntimeContext.mockResolvedValue({
@@ -199,6 +212,15 @@ test('proxy caddy generate writes proxy files with the current runtime context',
       cdnBaseUrl: 'https://cdn.example.com/ui/',
     },
   );
+  expect(mocks.setEnvProxyEntry).toHaveBeenCalledWith(
+    'test2',
+    'caddy',
+    {
+      host: 'c.local.nocobase.com',
+      port: undefined,
+    },
+    { scope: 'local' },
+  );
   expect(mocks.succeedTask).toHaveBeenCalledWith(
     'Saved caddy proxy files for env "test2" under /Users/chen/test4/.nocobase/proxy/caddy/test2, and created app.caddy at /Users/chen/test4/.nocobase/proxy/caddy/test2/app.caddy.',
   );
@@ -247,6 +269,59 @@ test('proxy caddy generate defaults to the current env when --env is omitted', a
   );
 });
 
+test('proxy caddy generate falls back to saved env proxy settings when flags are omitted', async () => {
+  const { default: ProxyCaddyGenerate } = await import('../commands/proxy/caddy/generate.js');
+  mocks.resolveManagedAppRuntime.mockResolvedValue({
+    kind: 'local',
+    envName: 'current-env',
+    env: { config: {} },
+  });
+  mocks.resolveEnvProxyEntry.mockReturnValue({
+    host: 'saved.local.nocobase.com',
+    port: 8080,
+  });
+  mocks.writeCaddyProxyBundle.mockResolvedValue({
+    status: 'updated',
+    bundle: {
+      entryDir: '/Users/chen/test4/.nocobase/proxy/caddy/current-env',
+      appConfigPath: '/Users/chen/test4/.nocobase/proxy/caddy/current-env/app.caddy',
+    },
+  });
+
+  const command = Object.assign(Object.create(ProxyCaddyGenerate.prototype), {
+    parse: vi.fn(async () => ({
+      flags: {},
+    })),
+  });
+
+  await ProxyCaddyGenerate.prototype.run.call(command);
+
+  expect(mocks.writeCaddyProxyBundle).toHaveBeenCalledWith(
+    expect.objectContaining({ envName: 'current-env' }),
+    {
+      host: 'saved.local.nocobase.com',
+      port: '8080',
+    },
+    {
+      driver: 'local',
+      runtimeCliRoot: '/Users/chen/test4',
+      upstreamHost: '127.0.0.1',
+    },
+    {
+      cdnBaseUrl: undefined,
+    },
+  );
+  expect(mocks.setEnvProxyEntry).toHaveBeenCalledWith(
+    'current-env',
+    'caddy',
+    {
+      host: 'saved.local.nocobase.com',
+      port: 8080,
+    },
+    { scope: 'local' },
+  );
+});
+
 test('proxy caddy generate supports manual mode', async () => {
   const { default: ProxyCaddyGenerate } = await import('../commands/proxy/caddy/generate.js');
   const command = Object.assign(Object.create(ProxyCaddyGenerate.prototype), {
@@ -254,12 +329,12 @@ test('proxy caddy generate supports manual mode', async () => {
       flags: {
         manual: true,
         name: 'default',
-        'app-port': '13000',
         'storage-path': '/path/to/storage',
         'dist-root-path': '/path/to/dist-client',
         'runtime-version': '2.1.0',
         'app-public-path': '/console/',
         'upstream-host': 'host.docker.internal',
+        'upstream-port': '14000',
         'cdn-base-url': 'https://cdn.example.com/ui/',
         port: '8080',
       },
@@ -272,12 +347,12 @@ test('proxy caddy generate supports manual mode', async () => {
   expect(mocks.writeManualCaddyProxyBundle).toHaveBeenCalledWith(
     {
       name: 'default',
-      appPort: '13000',
       storagePath: '/path/to/storage',
       distRootPath: '/path/to/dist-client',
       runtimeVersion: '2.1.0',
       appPublicPath: '/console/',
       upstreamHost: 'host.docker.internal',
+      upstreamPort: '14000',
       cdnBaseUrl: 'https://cdn.example.com/ui/',
     },
     {
@@ -298,17 +373,17 @@ test('proxy caddy generate supports manual mode', async () => {
   );
 });
 
-test('proxy caddy generate rejects invalid manual app port values', async () => {
+test('proxy caddy generate rejects invalid manual upstream port values', async () => {
   const { default: ProxyCaddyGenerate } = await import('../commands/proxy/caddy/generate.js');
   const command = Object.assign(Object.create(ProxyCaddyGenerate.prototype), {
     parse: vi.fn(async () => ({
       flags: {
         manual: true,
         name: 'default',
-        'app-port': '70000',
         'storage-path': '/path/to/storage',
         'dist-root-path': '/path/to/dist-client',
         'runtime-version': '2.1.0',
+        'upstream-port': '70000',
       },
     })),
     error: vi.fn((message: string) => {
@@ -317,7 +392,7 @@ test('proxy caddy generate rejects invalid manual app port values', async () => 
   });
 
   await expect(ProxyCaddyGenerate.prototype.run.call(command)).rejects.toThrow(
-    'Invalid manual app port "70000". Use an integer between 1 and 65535.',
+    'Invalid manual upstream port "70000". Use an integer between 1 and 65535.',
   );
   expect(mocks.writeManualCaddyProxyBundle).not.toHaveBeenCalled();
 });

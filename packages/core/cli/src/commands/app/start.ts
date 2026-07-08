@@ -74,6 +74,9 @@ function buildLicenseSyncArgv(
 
 function resolveHookCommand(value: unknown): HookCommand {
   const text = String(value ?? '').trim();
+  if (text === 'init') {
+    return text;
+  }
   if (text === 'app:restart' || text === 'app:upgrade') {
     return text;
   }
@@ -303,7 +306,7 @@ export default class AppStart extends Command {
     }),
     'hook-command': Flags.string({
       hidden: true,
-      options: ['app:start', 'app:restart', 'app:upgrade'],
+      options: ['init', 'app:start', 'app:restart', 'app:upgrade'],
     }),
   };
 
