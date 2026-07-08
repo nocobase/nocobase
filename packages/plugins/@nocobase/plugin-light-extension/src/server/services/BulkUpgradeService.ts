@@ -8,7 +8,7 @@
  */
 
 import type { Database, Model } from '@nocobase/database';
-import { createHash, randomUUID } from 'crypto';
+import { randomUUID } from 'crypto';
 
 import { LightExtensionError, isLightExtensionError } from '../../shared/errors';
 import type {
@@ -16,7 +16,7 @@ import type {
   LightExtensionBulkUpgradeItemResult,
   LightExtensionBulkUpgradeItemStatus,
   LightExtensionBulkUpgradeResult,
-  LightExtensionFlowModelOwnerLocator,
+  LightExtensionReferenceOwnerLocator,
   LightExtensionReferenceImpactInput,
   LightExtensionReferenceImpactItem,
   LightExtensionReferenceImpactResult,
@@ -33,6 +33,15 @@ import {
   publicationFromModel,
   toPublicationMetadata,
 } from './LightExtensionPublicationService';
+import {
+  JS_BLOCK_REFERENCE_OWNER_ADAPTER,
+  buildReferenceOwnerLocator,
+  getReferenceOwnerModelUid,
+  isFlowModelStepOwnerLocator,
+  listReferenceOwnerAdapters,
+  normalizeReferenceOwnerLocator,
+  stableJsonHash,
+} from './ReferenceOwnerRegistry';
 import { SettingsResolverService } from './SettingsResolverService';
 
 type FlowModelNode = {
@@ -71,7 +80,7 @@ type BulkUpgradeServiceContext = LightExtensionServiceContext & {
 
 type ReferenceVisibilityService = {
   canReadReferenceOwner: (
-    ownerLocator: LightExtensionFlowModelOwnerLocator,
+    ownerLocator: LightExtensionReferenceOwnerLocator,
     ctx: BulkUpgradeServiceContext,
   ) => Promise<boolean>;
 };
@@ -99,8 +108,7 @@ type CollectionWithModelUpdate = {
   model?: ModelWithConditionalUpdate;
 };
 
-const JS_BLOCK_USE = 'JSBlockModel';
-const OWNER_KIND = 'flowModel.step';
+const OWNER_KIND = JS_BLOCK_REFERENCE_OWNER_ADAPTER.ownerKind;
 const EMPTY_SUMMARY: Record<LightExtensionBulkUpgradeItemStatus, number> = {
   upgraded: 0,
   conflict: 0,
@@ -377,7 +385,10 @@ export class BulkUpgradeService {
     ctx: BulkUpgradeServiceContext,
   ): Promise<UpgradeEvaluation> {
     const blockedReason = getReferenceUpgradeBlockedReason(reference, toPublication);
-    const ownerModel = blockedReason ? null : await this.findOwnerModel(reference.ownerLocator.modelUid, ctx);
+    const ownerModel =
+      blockedReason || !isFlowModelStepOwnerLocator(reference.ownerLocator)
+        ? null
+        : await this.findOwnerModel(getReferenceOwnerModelUid(reference.ownerLocator), ctx);
     const options = ownerModel ? parseOptions(ownerModel.get('options')) : {};
     const jsSettings = ownerModel ? readJsSettings(options) : null;
     const validation =
@@ -945,8 +956,8 @@ function referenceFromModel(record: Model): LightExtensionReferenceRecord {
     repoId: normalizeString(record.get('repoId')),
     entryId: normalizeString(record.get('entryId')),
     publicationId: normalizeString(record.get('publicationId')) || null,
-    kind: 'js-block',
-    ownerKind: OWNER_KIND,
+    kind: normalizeReferenceKind(record.get('kind')),
+    ownerKind: normalizeOwnerKind(record.get('ownerKind')),
     ownerLocator,
     ownerLocatorHash: normalizeString(record.get('ownerLocatorHash')),
     versionPolicy: normalizeVersionPolicy(record.get('versionPolicy')),
@@ -957,24 +968,12 @@ function referenceFromModel(record: Model): LightExtensionReferenceRecord {
   };
 }
 
-function normalizeOwnerLocator(value: unknown): LightExtensionFlowModelOwnerLocator | null {
-  if (!isPlainRecord(value)) {
-    return null;
-  }
-  const modelUid = normalizeString(value.modelUid);
-  if (value.kind !== OWNER_KIND || !modelUid) {
-    return null;
-  }
-  return buildFlowModelOwnerLocator(modelUid);
+function normalizeOwnerLocator(value: unknown): LightExtensionReferenceOwnerLocator | null {
+  return normalizeReferenceOwnerLocator(value);
 }
 
-function buildFlowModelOwnerLocator(modelUid: string): LightExtensionFlowModelOwnerLocator {
-  return {
-    kind: OWNER_KIND,
-    modelUid,
-    use: JS_BLOCK_USE,
-    stepPath: ['stepParams', 'jsSettings'],
-  };
+function buildFlowModelOwnerLocator(modelUid: string): LightExtensionReferenceOwnerLocator {
+  return buildReferenceOwnerLocator(JS_BLOCK_REFERENCE_OWNER_ADAPTER, modelUid);
 }
 
 function normalizeStatus(value: unknown): LightExtensionReferenceRecord['resolvedStatus'] {
@@ -994,6 +993,18 @@ function normalizeStatus(value: unknown): LightExtensionReferenceRecord['resolve
   return statuses.includes(normalized as LightExtensionReferenceRecord['resolvedStatus'])
     ? (normalized as LightExtensionReferenceRecord['resolvedStatus'])
     : 'publication_missing';
+}
+
+function normalizeReferenceKind(value: unknown): LightExtensionReferenceRecord['kind'] {
+  const normalized = normalizeString(value);
+  const adapter = normalized ? listReferenceOwnerAdapters().find((item) => item.kind === normalized) : null;
+  return adapter?.kind || JS_BLOCK_REFERENCE_OWNER_ADAPTER.kind;
+}
+
+function normalizeOwnerKind(value: unknown): LightExtensionReferenceRecord['ownerKind'] {
+  const normalized = normalizeString(value);
+  const adapter = normalized ? listReferenceOwnerAdapters().find((item) => item.ownerKind === normalized) : null;
+  return adapter?.ownerKind || OWNER_KIND;
 }
 
 function normalizeVersionPolicy(value: unknown): LightExtensionSourceBindingVersionPolicy {
@@ -1021,25 +1032,6 @@ function parseOptions(value: unknown): Record<string, unknown> {
   } catch {
     return {};
   }
-}
-
-function stableJsonHash(value: unknown): string {
-  return `sha256:${createHash('sha256').update(stableSerialize(value)).digest('hex')}`;
-}
-
-function stableSerialize(value: unknown): string {
-  if (Array.isArray(value)) {
-    return `[${value.map((item) => stableSerialize(item)).join(',')}]`;
-  }
-  if (isPlainRecord(value)) {
-    return `{${Object.keys(value)
-      .sort()
-      .map((key) => `${JSON.stringify(key)}:${stableSerialize(value[key])}`)
-      .join(',')}}`;
-  }
-
-  const serialized = JSON.stringify(value);
-  return typeof serialized === 'undefined' ? 'undefined' : serialized;
 }
 
 function cloneRecord(value: Record<string, unknown>): Record<string, unknown> {

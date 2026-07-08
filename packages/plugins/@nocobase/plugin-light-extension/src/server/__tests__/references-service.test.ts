@@ -181,7 +181,7 @@ describe('plugin-light-extension reference service', () => {
     expect(recordReferenceEvent).toHaveBeenCalledWith(
       expect.objectContaining({
         action: 'referenceRemove',
-        reasonCode: 'owner_not_js_block',
+        reasonCode: 'owner_not_reference_adapter',
       }),
     );
   });

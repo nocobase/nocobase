@@ -17,6 +17,7 @@ import {
   ReloadOutlined,
   SaveOutlined,
   ScanOutlined,
+  ToolOutlined,
   UploadOutlined,
 } from '@ant-design/icons';
 import {
@@ -71,6 +72,7 @@ import type {
 import { toLifecycleInput, useLightExtensionRepo } from '../hooks/useLightExtensionRepo';
 import { useLightExtensionPublications } from '../hooks/useLightExtensionPublications';
 import { useT } from '../locale';
+import { ReferenceContractDiagnosticsPanel } from '../components/ReferenceContractDiagnosticsPanel';
 import LightExtensionWorkspacePage, { type LightExtensionWorkspaceFooterActions } from './LightExtensionWorkspacePage';
 
 interface CreateRepoFormValues {
@@ -94,7 +96,7 @@ type RepoOverview = {
 };
 
 type ToggleLifecycleStatus = 'enabled' | 'disabled';
-type DetailPanel = 'source' | 'overview';
+type DetailPanel = 'source' | 'overview' | 'reference-diagnostics';
 
 const overviewKinds = ['js-block', 'js-action', 'js-field', 'js-item', 'runjs', 'event'] as const;
 const LIGHT_EXTENSION_REPO_FILTER_COLLECTION = 'lightExtensionRepoFilters';
@@ -698,6 +700,12 @@ function LightExtensionListPageInner() {
               onClick={() => selectRepo(repo.id, { panel: 'overview' })}
               size="small"
             />
+            <Button
+              aria-label={t('Reference contract diagnostics')}
+              icon={<ToolOutlined />}
+              onClick={() => selectRepo(repo.id, { panel: 'reference-diagnostics' })}
+              size="small"
+            />
             <Popconfirm
               cancelText={t('Cancel')}
               okButtonProps={{ danger: true }}
@@ -754,6 +762,20 @@ function LightExtensionListPageInner() {
           onFooterActionsChange={setSourceFooterActions}
           onRequestClose={closeDetailDrawer}
         />
+      );
+    }
+
+    if (activePanel === 'reference-diagnostics') {
+      return (
+        <Flex vertical gap={16}>
+          <Space direction="vertical" size={2}>
+            <Typography.Title level={4} style={{ margin: 0 }}>
+              {t('Reference contract diagnostics')}
+            </Typography.Title>
+            <Typography.Text type="secondary">{selectedRepoId}</Typography.Text>
+          </Space>
+          <ReferenceContractDiagnosticsPanel repoId={selectedRepoId} />
+        </Flex>
       );
     }
 
@@ -1070,13 +1092,14 @@ function useLightExtensionRepoFilterCollection(): Collection | undefined {
 }
 
 function parseDetailPanel(value: string | null): DetailPanel | null {
-  return value === 'source' || value === 'overview' ? value : null;
+  return value === 'source' || value === 'overview' || value === 'reference-diagnostics' ? value : null;
 }
 
 function detailPanelTitle(t: (key: string) => string, panel: DetailPanel): string {
   const titles: Record<DetailPanel, string> = {
     source: t('Source'),
     overview: t('Details'),
+    'reference-diagnostics': t('Reference contract diagnostics'),
   };
   return titles[panel];
 }

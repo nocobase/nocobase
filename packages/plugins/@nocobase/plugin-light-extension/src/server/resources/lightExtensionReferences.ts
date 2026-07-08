@@ -13,6 +13,7 @@ import type { HandlerType, ResourceOptions } from '@nocobase/resourcer';
 import { LightExtensionError, isLightExtensionError } from '../../shared/errors';
 import type {
   LightExtensionBulkUpgradeInput,
+  LightExtensionReferenceContractDiagnosticsInput,
   LightExtensionReferenceImpactInput,
   LightExtensionReferenceListInput,
   LightExtensionReferenceRebuildInput,
@@ -20,9 +21,16 @@ import type {
 import { BulkUpgradeService } from '../services/BulkUpgradeService';
 import type { LightExtensionCanFunction } from '../services/LightExtensionPermissionService';
 import { ReferenceService } from '../services/ReferenceService';
+import { normalizeReferenceOwnerLocator } from '../services/ReferenceOwnerRegistry';
 import type { LightExtensionServiceContext } from '../services/LightExtensionRepoService';
 
-export const lightExtensionReferenceActionNames = ['readReferences', 'rebuildIndex', 'impact', 'bulkUpgrade'] as const;
+export const lightExtensionReferenceActionNames = [
+  'readReferences',
+  'rebuildIndex',
+  'diagnostics',
+  'impact',
+  'bulkUpgrade',
+] as const;
 
 type LightExtensionReferenceActionName = (typeof lightExtensionReferenceActionNames)[number];
 type ResourceActionInput = Record<string, unknown>;
@@ -63,6 +71,8 @@ const resourceActionRunners: Record<LightExtensionReferenceActionName, ResourceA
     services.referenceService.readReferences(normalizeListInput(input), currentUser),
   rebuildIndex: (services, input, currentUser) =>
     services.referenceService.rebuildIndex(normalizeRebuildInput(input), currentUser),
+  diagnostics: (services, input, currentUser) =>
+    services.referenceService.getContractDiagnostics(normalizeDiagnosticsInput(input), currentUser),
   impact: (services, input, currentUser) => {
     if (!services.bulkUpgradeService) {
       throw invalidInput('Light extension bulk upgrade service is not available');
@@ -165,7 +175,12 @@ function normalizeRebuildInput(input: ResourceActionInput): LightExtensionRefere
     rootUid: optionalString(input, 'rootUid') || optionalString(input, 'uid'),
     repoId: optionalString(input, 'repoId'),
     ownerLocator: normalizeOwnerLocator(input.ownerLocator),
+    dryRun: optionalBoolean(input, 'dryRun'),
   };
+}
+
+function normalizeDiagnosticsInput(input: ResourceActionInput): LightExtensionReferenceContractDiagnosticsInput {
+  return normalizeRebuildInput(input);
 }
 
 function normalizeImpactInput(input: ResourceActionInput): LightExtensionReferenceImpactInput {
@@ -186,16 +201,15 @@ function normalizeBulkUpgradeInput(input: ResourceActionInput): LightExtensionBu
 }
 
 function normalizeOwnerLocator(value: unknown): LightExtensionReferenceListInput['ownerLocator'] {
+  const normalized = normalizeReferenceOwnerLocator(value);
+  if (normalized) {
+    return normalized;
+  }
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     return undefined;
   }
-  const input = value as Record<string, unknown>;
-  return {
-    kind: input.kind === 'flowModel.step' ? 'flowModel.step' : undefined,
-    modelUid: optionalString(input, 'modelUid'),
-    use: input.use === 'JSBlockModel' ? 'JSBlockModel' : undefined,
-    stepPath: Array.isArray(input.stepPath) ? (input.stepPath as ['stepParams', 'jsSettings']) : undefined,
-  };
+  const modelUid = optionalString(value as ResourceActionInput, 'modelUid');
+  return modelUid ? { modelUid } : undefined;
 }
 
 function getCurrentUserId(ctx: LightExtensionResourceContext): string | null {
@@ -227,6 +241,17 @@ function optionalString(input: ResourceActionInput, key: string): string | undef
     throw invalidInput(`${key} must be a string`);
   }
   return value.trim() || undefined;
+}
+
+function optionalBoolean(input: ResourceActionInput, key: string): boolean | undefined {
+  const value = input[key];
+  if (typeof value === 'undefined' || value === null) {
+    return undefined;
+  }
+  if (typeof value !== 'boolean') {
+    throw invalidInput(`${key} must be a boolean`);
+  }
+  return value;
 }
 
 function requireString(input: ResourceActionInput, key: string): string {

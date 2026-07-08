@@ -342,6 +342,14 @@ export interface LightExtensionRuntimeResolveResult {
   cache: LightExtensionRuntimeCacheMetadata;
 }
 
+export type LightExtensionReferenceOwnerKind =
+  | 'flowModel.step'
+  | 'flowModel.fieldSettings'
+  | 'flowModel.actionSettings'
+  | 'flowModel.itemSettings'
+  | 'flowModel.runjsHost'
+  | 'flowModel.eventSettings';
+
 export interface LightExtensionFlowModelOwnerLocator {
   kind: 'flowModel.step';
   modelUid: string;
@@ -349,14 +357,44 @@ export interface LightExtensionFlowModelOwnerLocator {
   stepPath: ['stepParams', 'jsSettings'];
 }
 
+export interface LightExtensionPlaceholderOwnerLocator {
+  kind: Exclude<LightExtensionReferenceOwnerKind, 'flowModel.step'>;
+  modelUid?: string;
+  use?: string;
+  stepPath?: string[];
+  hostPath?: string[];
+  descriptor?: string;
+}
+
+export type LightExtensionReferenceOwnerLocator =
+  | LightExtensionFlowModelOwnerLocator
+  | LightExtensionPlaceholderOwnerLocator;
+
+export type LightExtensionReferenceOwnerAdapterStatus = 'active' | 'placeholder';
+
+export interface LightExtensionReferenceOwnerAdapterContract {
+  kind: LightExtensionKind;
+  ownerKind: LightExtensionReferenceOwnerKind;
+  title: string;
+  status: LightExtensionReferenceOwnerAdapterStatus;
+  locatorContract: string;
+  modelUse?: string;
+  implementationTask?: string;
+  message: string;
+  supportsVersionPolicy: boolean;
+  supportsImpact: boolean;
+  supportsBulkUpgrade: boolean;
+  supportsRebuild: boolean;
+}
+
 export interface LightExtensionReferenceRecord {
   id: string;
   repoId: string;
   entryId: string;
   publicationId: string | null;
-  kind: LightExtensionEnabledKind;
-  ownerKind: 'flowModel.step';
-  ownerLocator: LightExtensionFlowModelOwnerLocator;
+  kind: LightExtensionKind;
+  ownerKind: LightExtensionReferenceOwnerKind;
+  ownerLocator: LightExtensionReferenceOwnerLocator;
   ownerLocatorHash: string;
   versionPolicy: LightExtensionSourceBindingVersionPolicy;
   settingsHash: string;
@@ -369,21 +407,45 @@ export interface LightExtensionReferenceListInput {
   repoId?: string;
   entryId?: string;
   publicationId?: string;
-  ownerLocator?: Partial<LightExtensionFlowModelOwnerLocator>;
+  ownerLocator?: Partial<LightExtensionReferenceOwnerLocator>;
 }
 
 export interface LightExtensionReferenceRebuildInput {
   rootUid?: string;
-  ownerLocator?: Partial<LightExtensionFlowModelOwnerLocator>;
+  ownerLocator?: Partial<LightExtensionReferenceOwnerLocator>;
   repoId?: string;
+  dryRun?: boolean;
+}
+
+export type LightExtensionReferenceRebuildItemAction = 'upsert' | 'remove' | 'owner_missing';
+
+export interface LightExtensionReferenceRebuildItem {
+  action: LightExtensionReferenceRebuildItemAction;
+  kind?: LightExtensionKind;
+  ownerKind: LightExtensionReferenceOwnerKind;
+  ownerLocatorHash: string;
+  repoId?: string;
+  entryId?: string;
+  publicationId?: string | null;
+  resolvedStatus?: LightExtensionReferenceResolvedStatus;
+  reasonCode?: string;
 }
 
 export interface LightExtensionReferenceRebuildResult {
+  dryRun?: boolean;
   scanned: number;
   upserted: number;
   removed: number;
   ownerMissing: number;
   statusCounts: Partial<Record<LightExtensionReferenceResolvedStatus, number>>;
+  items?: LightExtensionReferenceRebuildItem[];
+}
+
+export type LightExtensionReferenceContractDiagnosticsInput = LightExtensionReferenceRebuildInput;
+
+export interface LightExtensionReferenceContractDiagnosticsResult {
+  ownerAdapters: LightExtensionReferenceOwnerAdapterContract[];
+  rebuild?: LightExtensionReferenceRebuildResult;
 }
 
 export interface LightExtensionSettingsValidationIssue {

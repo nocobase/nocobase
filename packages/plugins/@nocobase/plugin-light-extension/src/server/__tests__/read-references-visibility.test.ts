@@ -9,6 +9,7 @@
 
 import { vi } from 'vitest';
 
+import { hashReferenceOwnerLocator, normalizeReferenceOwnerLocator } from '../services/ReferenceOwnerRegistry';
 import { createReferenceRecord, createReferenceServiceFixture } from './reference-test-helpers';
 
 describe('plugin-light-extension readReferences visibility', () => {
@@ -110,6 +111,45 @@ describe('plugin-light-extension readReferences visibility', () => {
       ownerLocator: {
         modelUid: 'flow_visible',
       },
+    });
+  });
+
+  it('filters visible references by a non-step owner locator hash', async () => {
+    const ownerLocator = {
+      kind: 'flowModel.fieldSettings',
+      modelUid: 'flow_field_visible',
+      descriptor: 'field settings placeholder',
+    };
+    const normalizedOwnerLocator = normalizeReferenceOwnerLocator(ownerLocator);
+    if (!normalizedOwnerLocator) {
+      throw new Error('Expected field settings owner locator to normalize');
+    }
+    const { service } = createReferenceServiceFixture({
+      references: [
+        createReferenceRecord({
+          id: 'lef_field_visible',
+          kind: 'js-field',
+          ownerKind: 'flowModel.fieldSettings',
+          ownerLocator,
+          ownerLocatorHash: hashReferenceOwnerLocator(normalizedOwnerLocator),
+        }),
+        createReferenceRecord({
+          id: 'lef_step_same_model_uid',
+          modelUid: 'flow_field_visible',
+        }),
+      ],
+    });
+
+    const references = await service.readReferences({
+      ownerLocator,
+    });
+
+    expect(references).toHaveLength(1);
+    expect(references[0]).toMatchObject({
+      id: 'lef_field_visible',
+      kind: 'js-field',
+      ownerKind: 'flowModel.fieldSettings',
+      ownerLocator,
     });
   });
 

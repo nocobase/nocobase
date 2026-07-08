@@ -11,7 +11,7 @@ import type { Database, Model } from '@nocobase/database';
 import { createHash } from 'crypto';
 import { vi } from 'vitest';
 
-import type { LightExtensionFlowModelOwnerLocator, LightExtensionRuntimeSourceBinding } from '../../shared/types';
+import type { LightExtensionReferenceOwnerLocator, LightExtensionRuntimeSourceBinding } from '../../shared/types';
 import { LightExtensionAuditService } from '../services/LightExtensionAuditService';
 import { BulkUpgradeService } from '../services/BulkUpgradeService';
 import { LightExtensionPermissionService } from '../services/LightExtensionPermissionService';
@@ -310,7 +310,7 @@ export function createReferenceRecord(input: Record<string, unknown> = {}): Reco
   };
 }
 
-export function createOwnerLocator(modelUid: string): LightExtensionFlowModelOwnerLocator {
+export function createOwnerLocator(modelUid: string): LightExtensionReferenceOwnerLocator {
   return {
     kind: 'flowModel.step',
     modelUid,
@@ -319,7 +319,7 @@ export function createOwnerLocator(modelUid: string): LightExtensionFlowModelOwn
   };
 }
 
-export function hashOwnerLocator(ownerLocator: LightExtensionFlowModelOwnerLocator): string {
+export function hashOwnerLocator(ownerLocator: LightExtensionReferenceOwnerLocator): string {
   return stableJsonHash(ownerLocator);
 }
 

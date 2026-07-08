@@ -10,10 +10,14 @@
 import { NoPermissionError, checkFilterParams, createUserProvider, parseJsonTemplate } from '@nocobase/acl';
 import type { Database, Model } from '@nocobase/database';
 import { uid } from '@nocobase/utils';
-import { createHash, randomUUID } from 'crypto';
+import { randomUUID } from 'crypto';
 
 import type {
-  LightExtensionFlowModelOwnerLocator,
+  LightExtensionKind,
+  LightExtensionReferenceContractDiagnosticsInput,
+  LightExtensionReferenceContractDiagnosticsResult,
+  LightExtensionReferenceOwnerLocator,
+  LightExtensionReferenceRebuildItem,
   LightExtensionReferenceRebuildInput,
   LightExtensionReferenceRebuildResult,
   LightExtensionReferenceRecord,
@@ -27,6 +31,18 @@ import { LightExtensionPermissionService } from './LightExtensionPermissionServi
 import type { LightExtensionCanFunction } from './LightExtensionPermissionService';
 import type { LightExtensionServiceContext } from './LightExtensionRepoService';
 import { type LightExtensionPublicationRecord, publicationFromModel } from './LightExtensionPublicationService';
+import {
+  JS_BLOCK_REFERENCE_OWNER_ADAPTER,
+  buildReferenceOwnerLocator,
+  collectReferenceOwnerNodes,
+  getReferenceOwnerAdapterByUse,
+  getReferenceOwnerModelUid,
+  hashReferenceOwnerLocator,
+  isFlowModelStepOwnerLocator,
+  listReferenceOwnerAdapters,
+  normalizeReferenceOwnerLocator,
+  stableJsonHash,
+} from './ReferenceOwnerRegistry';
 import { SettingsResolverService } from './SettingsResolverService';
 
 type FlowModelRepositoryLike = {
@@ -65,6 +81,8 @@ type ReferenceServiceContext = LightExtensionServiceContext & {
   state?: Record<string, unknown>;
   timezone?: string;
   scopeRepoId?: string;
+  dryRun?: boolean;
+  dryRunItems?: LightExtensionReferenceRebuildItem[];
 };
 
 type ReferencePermissionResult = false | { role?: string; params?: Record<string, unknown> };
@@ -75,6 +93,7 @@ type ReferenceUpsertSummary = {
   removed: number;
   ownerMissing: number;
   statusCounts: Partial<Record<LightExtensionReferenceResolvedStatus, number>>;
+  items: LightExtensionReferenceRebuildItem[];
 };
 
 type NormalizedJsBlockSource = {
@@ -83,8 +102,7 @@ type NormalizedJsBlockSource = {
   settings: Record<string, unknown>;
 };
 
-const JS_BLOCK_USE = 'JSBlockModel';
-const OWNER_KIND = 'flowModel.step';
+const OWNER_KIND = JS_BLOCK_REFERENCE_OWNER_ADAPTER.ownerKind;
 const DEFAULT_VERSION_POLICY: LightExtensionSourceBindingVersionPolicy = 'pinned';
 const EMPTY_SETTINGS_HASH = stableJsonHash({});
 
@@ -120,18 +138,28 @@ export class ReferenceService {
     }
 
     const summary = emptySummary();
+    if (ctx.dryRun && !ctx.dryRunItems) {
+      ctx.dryRunItems = [];
+    }
     const modelUids = collectModelUids(node);
     const templateOwnerUids = await this.collectTemplateTargetOwnerUids(ctx, new Set(modelUids));
-    const jsBlockOwnerUids = new Set<string>();
-    for (const jsBlock of collectJsBlockNodes(node)) {
-      const modelUid = normalizeString(jsBlock.uid);
+    const referenceOwnerUids = new Set<string>();
+    for (const owner of collectReferenceOwnerNodes(node)) {
+      const modelUid = normalizeString(owner.node.uid);
       if (modelUid) {
-        jsBlockOwnerUids.add(modelUid);
+        referenceOwnerUids.add(modelUid);
       }
       if (templateOwnerUids.has(modelUid)) {
         continue;
       }
-      await this.syncJsBlockReference(jsBlock, input.action || 'flowModels.save', requestId, ctx, summary, scopeRepoId);
+      await this.syncJsBlockReference(
+        owner.node,
+        input.action || 'flowModels.save',
+        requestId,
+        ctx,
+        summary,
+        scopeRepoId,
+      );
     }
     await this.removeReferencesForTemplateOwners(
       Array.from(templateOwnerUids),
@@ -141,8 +169,8 @@ export class ReferenceService {
       summary,
       scopeRepoId,
     );
-    await this.removeReferencesForNonJsBlockOwners(
-      modelUids.filter((modelUid) => !jsBlockOwnerUids.has(modelUid) && !templateOwnerUids.has(modelUid)),
+    await this.removeReferencesForNonAdapterOwners(
+      modelUids.filter((modelUid) => !referenceOwnerUids.has(modelUid) && !templateOwnerUids.has(modelUid)),
       input.action || 'flowModels.save',
       requestId,
       ctx,
@@ -160,6 +188,7 @@ export class ReferenceService {
     );
     summary.ownerMissing += missingOwners.ownerMissing;
     mergeStatusCounts(summary, missingOwners.statusCounts);
+    summary.items.push(...(ctx.dryRunItems || []));
 
     await this.recordReferenceAuditBestEffort({
       action: 'referenceRebuild',
@@ -178,11 +207,12 @@ export class ReferenceService {
         removed: summary.removed,
         ownerMissing: summary.ownerMissing,
         statusCounts: summary.statusCounts,
+        dryRun: Boolean(ctx.dryRun),
       },
       transaction: ctx.transaction,
     });
 
-    return summaryToResult(summary);
+    return summaryToResult(summary, Boolean(ctx.dryRun));
   }
 
   async markFlowModelReferencesOwnerMissingForNodeTree(
@@ -220,8 +250,15 @@ export class ReferenceService {
       ownerLocatorHash: buildInputOwnerLocatorHash(input),
     });
 
+    const dryRun = Boolean(input.dryRun);
+    const rebuildContext: ReferenceServiceContext = {
+      ...ctx,
+      dryRun,
+      dryRunItems: [],
+    };
     const scopeRepoId = normalizeString(input.repoId);
-    const rootUid = normalizeString(input.rootUid) || normalizeString(input.ownerLocator?.modelUid);
+    const ownerLocator = normalizeOwnerLocator(input.ownerLocator);
+    const rootUid = normalizeString(input.rootUid) || getRebuildRootUid(ownerLocator);
     if (rootUid) {
       return this.syncFlowModelReferencesForNodeTree(
         {
@@ -229,16 +266,19 @@ export class ReferenceService {
           action: 'referenceRebuild',
         },
         {
-          ...ctx,
+          ...rebuildContext,
           scopeRepoId,
           requestId,
         },
       );
     }
+    if (ownerLocator) {
+      return emptyRebuildResult(dryRun);
+    }
 
     const summary = emptySummary();
-    const records = await this.findAllFlowModelRecords(ctx);
-    const templateOwnerUids = await this.collectTemplateTargetOwnerUids(ctx);
+    const records = await this.findAllFlowModelRecords(rebuildContext);
+    const templateOwnerUids = await this.collectTemplateTargetOwnerUids(rebuildContext);
     const seenOwnerHashes = new Set<string>();
 
     for (const record of records) {
@@ -247,7 +287,7 @@ export class ReferenceService {
       if (!modelUid) {
         continue;
       }
-      if (node.use !== JS_BLOCK_USE) {
+      if (getReferenceOwnerAdapterByUse(node.use || '')?.status !== 'active') {
         continue;
       }
       if (templateOwnerUids.has(modelUid)) {
@@ -255,18 +295,18 @@ export class ReferenceService {
       }
       const ownerLocator = buildFlowModelOwnerLocator(modelUid);
       seenOwnerHashes.add(hashOwnerLocator(ownerLocator));
-      await this.syncJsBlockReference(node, 'referenceRebuild', requestId, ctx, summary, scopeRepoId);
+      await this.syncJsBlockReference(node, 'referenceRebuild', requestId, rebuildContext, summary, scopeRepoId);
     }
     await this.removeReferencesForTemplateOwners(
       Array.from(templateOwnerUids),
       'referenceRebuild',
       requestId,
-      ctx,
+      rebuildContext,
       summary,
       scopeRepoId,
     );
 
-    const references = await this.findReferenceModels(scopeRepoId ? { repoId: scopeRepoId } : {}, ctx);
+    const references = await this.findReferenceModels(scopeRepoId ? { repoId: scopeRepoId } : {}, rebuildContext);
     const missingOwnerUids: string[] = [];
     for (const reference of references) {
       const ownerLocator = normalizeOwnerLocator(reference.get('ownerLocator'));
@@ -283,22 +323,24 @@ export class ReferenceService {
           requestId,
         },
         {
-          ...ctx,
+          ...rebuildContext,
           scopeRepoId,
         },
       );
       summary.ownerMissing += ownerMissing.ownerMissing;
       mergeStatusCounts(summary, ownerMissing.statusCounts);
     }
+    summary.items.push(...(rebuildContext.dryRunItems || []));
 
     await this.recordReferenceAuditBestEffort({
       action: 'referenceRebuild',
       result: 'success',
       requestId,
-      actorUserId: ctx.actorUserId,
+      actorUserId: rebuildContext.actorUserId,
       referenceCount: summary.scanned,
       message: 'Light extension references rebuilt',
       details: {
+        dryRun,
         repoId: scopeRepoId,
         scanned: summary.scanned,
         upserted: summary.upserted,
@@ -307,10 +349,30 @@ export class ReferenceService {
         ownerHashCount: seenOwnerHashes.size,
         statusCounts: summary.statusCounts,
       },
-      transaction: ctx.transaction,
+      transaction: rebuildContext.transaction,
     });
 
-    return summaryToResult(summary);
+    return summaryToResult(summary, dryRun);
+  }
+
+  async getContractDiagnostics(
+    input: LightExtensionReferenceContractDiagnosticsInput = {},
+    ctx: ReferenceServiceContext = {},
+  ): Promise<LightExtensionReferenceContractDiagnosticsResult> {
+    const requestId = ctx.requestId || randomUUID();
+    await this.assertReferenceActionAllowed({
+      permissionAction: 'readReferences',
+      auditAction: 'readReferences',
+      requestId,
+      ctx,
+      repoId: normalizeString(input.repoId),
+      ownerLocatorHash: buildInputOwnerLocatorHash(input),
+    });
+
+    return {
+      ownerAdapters: listReferenceOwnerAdapters(),
+      ...(input.dryRun ? { rebuild: await this.rebuildIndex({ ...input, dryRun: true }, { ...ctx, requestId }) } : {}),
+    };
   }
 
   async readReferences(
@@ -318,7 +380,7 @@ export class ReferenceService {
       repoId?: string;
       entryId?: string;
       publicationId?: string;
-      ownerLocator?: Partial<LightExtensionFlowModelOwnerLocator>;
+      ownerLocator?: Partial<LightExtensionReferenceOwnerLocator>;
     } = {},
     ctx: ReferenceServiceContext = {},
   ): Promise<LightExtensionReferenceRecord[]> {
@@ -341,9 +403,9 @@ export class ReferenceService {
         filter[key] = value;
       }
     }
-    const ownerModelUid = normalizeString(input.ownerLocator?.modelUid);
-    if (ownerModelUid) {
-      filter.ownerLocatorHash = hashOwnerLocator(buildFlowModelOwnerLocator(ownerModelUid));
+    const ownerLocatorHash = buildInputOwnerLocatorHash(input);
+    if (ownerLocatorHash) {
+      filter.ownerLocatorHash = ownerLocatorHash;
     }
 
     const records = await this.findReferenceModels(filter, ctx);
@@ -514,7 +576,7 @@ export class ReferenceService {
       entryId: resolution.entryId,
       publicationId: resolution.publicationId,
       versionPolicy: resolution.versionPolicy,
-      kind: 'js-block',
+      kind: JS_BLOCK_REFERENCE_OWNER_ADAPTER.kind,
       ownerLocator,
       ownerLocatorHash,
       settingsHash: resolution.settingsHash,
@@ -558,7 +620,7 @@ export class ReferenceService {
       versionPolicy,
       settingsHash: stableJsonHash(settings),
     };
-    if (sourceBinding.kind !== 'js-block') {
+    if (sourceBinding.kind !== JS_BLOCK_REFERENCE_OWNER_ADAPTER.kind) {
       return {
         ...fallback,
         resolvedStatus: 'binding_outdated',
@@ -821,9 +883,11 @@ export class ReferenceService {
     resolvedStatus: LightExtensionReferenceResolvedStatus;
   }> {
     if (reference.versionPolicy === 'follow-active') {
-      const ownerNode = reference.ownerLocator.modelUid
-        ? await this.loadFlowModelTree(reference.ownerLocator.modelUid, ctx).catch(() => null)
-        : null;
+      const ownerModelUid = getReferenceOwnerModelUid(reference.ownerLocator);
+      const ownerNode =
+        ownerModelUid && isFlowModelStepOwnerLocator(reference.ownerLocator)
+          ? await this.loadFlowModelTree(ownerModelUid, ctx).catch(() => null)
+          : null;
       const source = readJsBlockSource(ownerNode || {});
       if (source.sourceBinding?.versionPolicy === 'follow-active') {
         const resolution = await this.resolveReferenceFromBinding(source.sourceBinding, source.settings, ctx);
@@ -875,8 +939,8 @@ export class ReferenceService {
     entryId: string;
     publicationId: string | null;
     versionPolicy: LightExtensionSourceBindingVersionPolicy;
-    kind: 'js-block';
-    ownerLocator: LightExtensionFlowModelOwnerLocator;
+    kind: LightExtensionKind;
+    ownerLocator: LightExtensionReferenceOwnerLocator;
     ownerLocatorHash: string;
     settingsHash: string;
     resolvedStatus: LightExtensionReferenceResolvedStatus;
@@ -897,6 +961,19 @@ export class ReferenceService {
       settingsHash: input.settingsHash,
       resolvedStatus: input.resolvedStatus,
     };
+    if (input.ctx.dryRun) {
+      pushDryRunItem(input.ctx, {
+        action: 'upsert',
+        kind: input.kind,
+        ownerKind: OWNER_KIND,
+        ownerLocatorHash: input.ownerLocatorHash,
+        repoId: input.repoId,
+        entryId: input.entryId,
+        publicationId: input.publicationId,
+        resolvedStatus: input.resolvedStatus,
+      });
+      return;
+    }
     const existing = await repository.findOne({
       filter: {
         ownerLocatorHash: input.ownerLocatorHash,
@@ -961,6 +1038,21 @@ export class ReferenceService {
       if (reference.get('repoId') === repoId && reference.get('entryId') === entryId) {
         continue;
       }
+      if (ctx.dryRun) {
+        pushDryRunItem(ctx, {
+          action: 'remove',
+          kind: normalizeReferenceKind(reference.get('kind')),
+          ownerKind: normalizeOwnerKind(reference.get('ownerKind')),
+          ownerLocatorHash,
+          repoId: normalizeString(reference.get('repoId')),
+          entryId: normalizeString(reference.get('entryId')),
+          publicationId: normalizeString(reference.get('publicationId')) || null,
+          resolvedStatus: normalizeStatus(reference.get('resolvedStatus')),
+          reasonCode: 'binding_changed',
+        });
+        removed += 1;
+        continue;
+      }
       await this.db.getRepository('lightExtensionReferences').destroy({
         filterByTk: reference.get('id'),
         transaction: ctx.transaction,
@@ -1002,6 +1094,20 @@ export class ReferenceService {
       ctx,
     );
     for (const reference of references) {
+      if (ctx.dryRun) {
+        pushDryRunItem(ctx, {
+          action: 'remove',
+          kind: normalizeReferenceKind(reference.get('kind')),
+          ownerKind: normalizeOwnerKind(reference.get('ownerKind')),
+          ownerLocatorHash,
+          repoId: normalizeString(reference.get('repoId')),
+          entryId: normalizeString(reference.get('entryId')),
+          publicationId: normalizeString(reference.get('publicationId')) || null,
+          resolvedStatus: normalizeStatus(reference.get('resolvedStatus')),
+          reasonCode: options.reasonCode || 'source_mode_inline',
+        });
+        continue;
+      }
       await this.db.getRepository('lightExtensionReferences').destroy({
         filterByTk: reference.get('id'),
         transaction: ctx.transaction,
@@ -1027,7 +1133,7 @@ export class ReferenceService {
     return references.length;
   }
 
-  private async removeReferencesForNonJsBlockOwners(
+  private async removeReferencesForNonAdapterOwners(
     uids: string[],
     action: ReferenceSyncAction,
     requestId: string,
@@ -1044,7 +1150,7 @@ export class ReferenceService {
         ctx,
         {
           repoId: scopeRepoId,
-          reasonCode: 'owner_not_js_block',
+          reasonCode: 'owner_not_reference_adapter',
         },
       );
       if (removed) {
@@ -1107,6 +1213,21 @@ export class ReferenceService {
         if (reference.get('resolvedStatus') === 'owner_missing') {
           continue;
         }
+        if (ctx.dryRun) {
+          pushDryRunItem(ctx, {
+            action: 'owner_missing',
+            kind: normalizeReferenceKind(reference.get('kind')),
+            ownerKind: normalizeOwnerKind(reference.get('ownerKind')),
+            ownerLocatorHash,
+            repoId: normalizeString(reference.get('repoId')),
+            entryId: normalizeString(reference.get('entryId')),
+            publicationId: normalizeString(reference.get('publicationId')) || null,
+            resolvedStatus: 'owner_missing',
+          });
+          summary.ownerMissing += 1;
+          incrementStatus(summary, 'owner_missing');
+          continue;
+        }
         await reference.update(
           {
             resolvedStatus: 'owner_missing',
@@ -1136,7 +1257,8 @@ export class ReferenceService {
         });
       }
     }
-    return summaryToResult(summary);
+    summary.items.push(...(ctx.dryRunItems || []));
+    return summaryToResult(summary, Boolean(ctx.dryRun));
   }
 
   private async markMissingReferenceOwners(
@@ -1183,10 +1305,10 @@ export class ReferenceService {
   }
 
   async canReadReferenceOwner(
-    ownerLocator: LightExtensionFlowModelOwnerLocator,
+    ownerLocator: LightExtensionReferenceOwnerLocator,
     ctx: ReferenceServiceContext,
   ): Promise<boolean> {
-    const modelUid = normalizeString(ownerLocator.modelUid);
+    const modelUid = getReferenceOwnerModelUid(ownerLocator);
     if (!modelUid) {
       return false;
     }
@@ -1584,62 +1706,16 @@ function normalizeSettings(value: unknown): Record<string, unknown> {
   return isPlainRecord(value) ? cloneRecord(value) : {};
 }
 
-function buildFlowModelOwnerLocator(modelUid: string): LightExtensionFlowModelOwnerLocator {
-  return {
-    kind: OWNER_KIND,
-    modelUid,
-    use: JS_BLOCK_USE,
-    stepPath: ['stepParams', 'jsSettings'],
-  };
+function buildFlowModelOwnerLocator(modelUid: string): LightExtensionReferenceOwnerLocator {
+  return buildReferenceOwnerLocator(JS_BLOCK_REFERENCE_OWNER_ADAPTER, modelUid);
 }
 
-function normalizeOwnerLocator(value: unknown): LightExtensionFlowModelOwnerLocator | null {
-  if (!isPlainRecord(value)) {
-    return null;
-  }
-  const modelUid = normalizeString(value.modelUid);
-  if (value.kind !== OWNER_KIND || !modelUid) {
-    return null;
-  }
-  return buildFlowModelOwnerLocator(modelUid);
+function normalizeOwnerLocator(value: unknown): LightExtensionReferenceOwnerLocator | null {
+  return normalizeReferenceOwnerLocator(value);
 }
 
-function hashOwnerLocator(ownerLocator: LightExtensionFlowModelOwnerLocator): string {
-  return stableJsonHash(ownerLocator);
-}
-
-function stableJsonHash(value: unknown): string {
-  return `sha256:${createHash('sha256').update(stableSerialize(value)).digest('hex')}`;
-}
-
-function stableSerialize(value: unknown): string {
-  if (Array.isArray(value)) {
-    return `[${value.map((item) => stableSerialize(item)).join(',')}]`;
-  }
-  if (isPlainRecord(value)) {
-    return `{${Object.keys(value)
-      .sort()
-      .map((key) => `${JSON.stringify(key)}:${stableSerialize(value[key])}`)
-      .join(',')}}`;
-  }
-
-  const serialized = JSON.stringify(value);
-  return typeof serialized === 'undefined' ? 'undefined' : serialized;
-}
-
-function collectJsBlockNodes(node: FlowModelNode | null | undefined, bucket: FlowModelNode[] = []): FlowModelNode[] {
-  if (!node || typeof node !== 'object') {
-    return bucket;
-  }
-  if (node.use === JS_BLOCK_USE && node.uid) {
-    bucket.push(node);
-  }
-  for (const value of Object.values(node.subModels || {})) {
-    for (const child of Array.isArray(value) ? value : value ? [value] : []) {
-      collectJsBlockNodes(child, bucket);
-    }
-  }
-  return bucket;
+function hashOwnerLocator(ownerLocator: LightExtensionReferenceOwnerLocator): string {
+  return hashReferenceOwnerLocator(ownerLocator);
 }
 
 function collectModelUids(node: FlowModelNode | null | undefined, bucket: string[] = []): string[] {
@@ -1691,8 +1767,8 @@ function referenceFromModel(record: Model): LightExtensionReferenceRecord {
     repoId: normalizeString(record.get('repoId')),
     entryId: normalizeString(record.get('entryId')),
     publicationId: normalizeString(record.get('publicationId')) || null,
-    kind: 'js-block',
-    ownerKind: OWNER_KIND,
+    kind: normalizeReferenceKind(record.get('kind')),
+    ownerKind: normalizeOwnerKind(record.get('ownerKind')),
     ownerLocator,
     ownerLocatorHash: normalizeString(record.get('ownerLocatorHash')),
     versionPolicy: normalizeVersionPolicy(record.get('versionPolicy')),
@@ -1726,6 +1802,18 @@ function normalizeStatus(value: unknown): LightExtensionReferenceResolvedStatus 
     : 'publication_missing';
 }
 
+function normalizeReferenceKind(value: unknown): LightExtensionKind {
+  const normalized = normalizeString(value);
+  const adapter = normalized ? listReferenceOwnerAdapters().find((item) => item.kind === normalized) : null;
+  return adapter?.kind || JS_BLOCK_REFERENCE_OWNER_ADAPTER.kind;
+}
+
+function normalizeOwnerKind(value: unknown): LightExtensionReferenceRecord['ownerKind'] {
+  const normalized = normalizeString(value);
+  const adapter = normalized ? listReferenceOwnerAdapters().find((item) => item.ownerKind === normalized) : null;
+  return adapter?.ownerKind || OWNER_KIND;
+}
+
 function emptySummary(): ReferenceUpsertSummary {
   return {
     scanned: 0,
@@ -1733,21 +1821,50 @@ function emptySummary(): ReferenceUpsertSummary {
     removed: 0,
     ownerMissing: 0,
     statusCounts: {},
+    items: [],
   };
 }
 
-function emptyRebuildResult(): LightExtensionReferenceRebuildResult {
-  return summaryToResult(emptySummary());
+function emptyRebuildResult(dryRun = false): LightExtensionReferenceRebuildResult {
+  return summaryToResult(emptySummary(), dryRun);
 }
 
-function summaryToResult(summary: ReferenceUpsertSummary): LightExtensionReferenceRebuildResult {
+function summaryToResult(summary: ReferenceUpsertSummary, dryRun = false): LightExtensionReferenceRebuildResult {
   return {
+    ...(dryRun ? { dryRun: true } : {}),
     scanned: summary.scanned,
     upserted: summary.upserted,
     removed: summary.removed,
     ownerMissing: summary.ownerMissing,
     statusCounts: { ...summary.statusCounts },
+    ...(summary.items.length ? { items: dedupeRebuildItems(summary.items) } : {}),
   };
+}
+
+function pushDryRunItem(ctx: ReferenceServiceContext, item: LightExtensionReferenceRebuildItem): void {
+  if (!ctx.dryRun) {
+    return;
+  }
+  if (!ctx.dryRunItems) {
+    ctx.dryRunItems = [];
+  }
+  ctx.dryRunItems.push(item);
+}
+
+function dedupeRebuildItems(items: LightExtensionReferenceRebuildItem[]): LightExtensionReferenceRebuildItem[] {
+  const seen = new Set<string>();
+  const output: LightExtensionReferenceRebuildItem[] = [];
+  for (const item of items) {
+    const key = `${item.action}:${item.ownerLocatorHash}:${item.repoId || ''}:${item.entryId || ''}:${
+      item.reasonCode || ''
+    }`;
+    if (seen.has(key)) {
+      continue;
+    }
+    seen.add(key);
+    output.push(item);
+  }
+  return output;
 }
 
 function incrementStatus(summary: ReferenceUpsertSummary, status: LightExtensionReferenceResolvedStatus): void {
@@ -1769,10 +1886,21 @@ function shouldPreserveReferenceStatusOnRepoRefresh(status: LightExtensionRefere
 }
 
 function buildInputOwnerLocatorHash(input: {
-  ownerLocator?: Partial<LightExtensionFlowModelOwnerLocator>;
+  ownerLocator?: Partial<LightExtensionReferenceOwnerLocator>;
 }): string | undefined {
+  const ownerLocator = normalizeOwnerLocator(input.ownerLocator);
+  if (ownerLocator) {
+    return hashOwnerLocator(ownerLocator);
+  }
   const modelUid = normalizeString(input.ownerLocator?.modelUid);
   return modelUid ? hashOwnerLocator(buildFlowModelOwnerLocator(modelUid)) : undefined;
+}
+
+function getRebuildRootUid(ownerLocator: LightExtensionReferenceOwnerLocator | null): string {
+  if (!ownerLocator || !isFlowModelStepOwnerLocator(ownerLocator)) {
+    return '';
+  }
+  return normalizeString(ownerLocator.modelUid);
 }
 
 function mergeSettingsForReferenceHash(
