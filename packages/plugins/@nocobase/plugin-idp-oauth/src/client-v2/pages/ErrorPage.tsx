@@ -10,13 +10,15 @@
 import { Result, Space, Typography } from 'antd';
 import React from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { useT } from '../locale';
 
 const ErrorPage = () => {
   const [searchParams] = useSearchParams();
+  const t = useT();
   const error = searchParams.get('error');
   const errorDescription = searchParams.get('error_description');
   const iss = searchParams.get('iss');
-  const title = error || 'Authentication failed';
+  const title = error || t('Authentication failed');
   const subTitle = errorDescription || undefined;
 
   return (
@@ -25,7 +27,7 @@ const ErrorPage = () => {
       <Space direction="vertical" size="middle" style={{ width: '100%' }}>
         {iss ? (
           <div>
-            <Typography.Text type="secondary">Issuer</Typography.Text>
+            <Typography.Text type="secondary">{t('Issuer')}</Typography.Text>
             <div>
               <Typography.Text code>{iss}</Typography.Text>
             </div>

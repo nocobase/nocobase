@@ -116,7 +116,7 @@ const DevicePage = () => {
   }, [location.pathname, location.search, requestDeviceState, userCode]);
 
   useEffect(() => {
-    void loadDeviceState();
+    loadDeviceState();
   }, [loadDeviceState]);
 
   const submitCode = useCallback(

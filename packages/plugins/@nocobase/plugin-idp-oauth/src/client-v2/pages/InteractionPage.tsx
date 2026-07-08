@@ -11,6 +11,7 @@ import { useFlowContext } from '@nocobase/flow-engine';
 import { Alert, Button, Card, Result, Space, Spin, Typography } from 'antd';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useT } from '../locale';
 
 type InteractionResponse = {
   prompt?: 'login' | 'consent';
@@ -18,6 +19,8 @@ type InteractionResponse = {
   clientName?: string;
   details?: string;
 };
+
+type InteractionPayload = Record<string, unknown>;
 
 function getErrorMessage(error: unknown, fallback: string) {
   return error instanceof Error ? error.message : fallback;
@@ -29,6 +32,7 @@ const InteractionPage = () => {
   const app = ctx.app;
   const navigate = useNavigate();
   const params = useParams<{ uid: string }>();
+  const t = useT();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [interaction, setInteraction] = useState<InteractionResponse | null>(null);
@@ -53,9 +57,9 @@ const InteractionPage = () => {
   }, [params.uid]);
 
   const runInteraction = useCallback(
-    async (method: 'get' | 'post', payload?: Record<string, any>) => {
+    async (method: 'get' | 'post', payload?: InteractionPayload) => {
       if (!interactionApiPath) {
-        setError('Invalid interaction path');
+        setError(t('Invalid interaction path'));
         setLoading(false);
         return;
       }
@@ -101,7 +105,7 @@ const InteractionPage = () => {
       setInteraction(data);
       setLoading(false);
     },
-    [api, currentPath, interactionApiPath, navigate],
+    [api, currentPath, interactionApiPath, navigate, t],
   );
 
   const onSubmit = useCallback(
@@ -112,11 +116,11 @@ const InteractionPage = () => {
       try {
         await runInteraction('post', cancel ? { cancel: 1 } : { submit: 1 });
       } catch (error: unknown) {
-        setError(getErrorMessage(error, 'Failed to submit interaction'));
+        setError(getErrorMessage(error, t('Failed to submit interaction.')));
         setLoading(false);
       }
     },
-    [runInteraction],
+    [runInteraction, t],
   );
 
   useEffect(() => {
@@ -127,17 +131,17 @@ const InteractionPage = () => {
         await runInteraction('get');
       } catch (error: unknown) {
         if (!cancelled) {
-          setError(getErrorMessage(error, 'Failed to load interaction'));
+          setError(getErrorMessage(error, t('Failed to load interaction.')));
           setLoading(false);
         }
       }
     };
 
-    void run();
+    run();
     return () => {
       cancelled = true;
     };
-  }, [runInteraction]);
+  }, [runInteraction, t]);
 
   useEffect(() => {
     if (interaction?.prompt !== 'consent' || loading) {
@@ -149,7 +153,7 @@ const InteractionPage = () => {
         return;
       }
       const el = e.target as HTMLElement | null;
-      if (el?.closest('input, textarea, select, [contenteditable="true"]')) {
+      if (el instanceof Element && el.closest('input, textarea, select, [contenteditable="true"]')) {
         return;
       }
 
@@ -159,13 +163,13 @@ const InteractionPage = () => {
           return;
         }
         e.preventDefault();
-        void onSubmit(false);
+        onSubmit(false);
         return;
       }
 
       if (e.key === 'Escape') {
         e.preventDefault();
-        void onSubmit(true);
+        onSubmit(true);
       }
     };
 
@@ -204,21 +208,23 @@ const InteractionPage = () => {
           <Space direction="vertical" size="large" style={{ width: '100%' }}>
             <div>
               <Typography.Title level={3} style={{ marginBottom: 8 }}>
-                Authorize application
+                {t('Authorize application')}
               </Typography.Title>
               <Typography.Paragraph style={{ marginBottom: 0 }}>
-                {interaction.clientName || 'Application'} requests access to your account.
+                {t('{{clientName}} requests access to your account.', {
+                  clientName: interaction.clientName || t('Application'),
+                })}
               </Typography.Paragraph>
             </div>
             {interaction.details ? (
-              <Alert type="info" showIcon message="Requested permissions" description={interaction.details} />
+              <Alert type="info" showIcon message={t('Requested permissions')} description={interaction.details} />
             ) : null}
             <Space>
               <Button type="primary" loading={loading} onClick={() => onSubmit(false)}>
-                Continue
+                {t('Continue')}
               </Button>
               <Button loading={loading} onClick={() => onSubmit(true)}>
-                Cancel
+                {t('Cancel')}
               </Button>
             </Space>
           </Space>
@@ -229,7 +235,7 @@ const InteractionPage = () => {
 
   return (
     <div style={{ maxWidth: 640, margin: '48px auto', padding: '0 24px' }}>
-      <Result title="Redirecting..." subTitle="Please wait while authorization continues." />
+      <Result title={t('Redirecting...')} subTitle={t('Please wait while authorization continues.')} />
     </div>
   );
 };
