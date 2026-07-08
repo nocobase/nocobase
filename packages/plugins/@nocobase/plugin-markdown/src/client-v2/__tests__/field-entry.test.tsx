@@ -36,7 +36,7 @@ function createMarkdownContext(): MarkdownContext {
 }
 
 describe('Markdown v2 field entry', () => {
-  it('exposes only the Vditor field interface as the product entry', async () => {
+  it('exposes only the Markdown field interface as the product entry', async () => {
     const context = createMarkdownContext();
     const registeredInterfaces: unknown[] = [];
     const flowEngine = {
@@ -64,9 +64,9 @@ describe('Markdown v2 field entry', () => {
     const fieldInterface = new MarkdownVditorFieldInterface(
       {} as ConstructorParameters<typeof MarkdownVditorFieldInterface>[0],
     );
-    expect(fieldInterface.name).toBe('vditor');
-    expect(fieldInterface.default.interface).toBe('vditor');
-    expect(fieldInterface.title).toBe('Markdown(Vditor)');
+    expect(fieldInterface.name).toBe('markdown');
+    expect(fieldInterface.default.interface).toBe('markdown');
+    expect(fieldInterface.title).toBe('Markdown');
 
     const legacyMarkdownFieldInterface = new MarkdownFieldInterface(
       {} as ConstructorParameters<typeof MarkdownFieldInterface>[0],

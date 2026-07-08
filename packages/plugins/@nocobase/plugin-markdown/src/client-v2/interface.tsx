@@ -28,14 +28,14 @@ export const defaultToolbar = [
 ];
 
 export class MarkdownVditorFieldInterface extends CollectionFieldInterface {
-  name = 'vditor';
+  name = 'markdown';
   type = 'object';
   group = 'media';
   order = 1;
-  title = 'Markdown(Vditor)';
+  title = 'Markdown';
   sortable = true;
   default = {
-    interface: 'vditor',
+    interface: 'markdown',
     type: 'text',
     length: 'long',
     uiSchema: {
