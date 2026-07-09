@@ -34,6 +34,7 @@ describe('app', () => {
     afterEach(() => {
       document.querySelectorAll('link[rel="shortcut icon"]').forEach((node) => node.remove());
       document.documentElement.removeAttribute('lang');
+      delete window['__webpack_public_path__'];
       vi.restoreAllMocks();
     });
 
@@ -56,6 +57,31 @@ describe('app', () => {
       expect(app.jsonLogic.apply({ $eq: [1, '1'] })).toBe(true);
       app.jsonLogic.addOperation('$testAlwaysTrue', () => true);
       expect(app.jsonLogic.apply({ $testAlwaysTrue: [] })).toBe(true);
+    });
+
+    it('should normalize publicPath and webpack public path with a single trailing slash', () => {
+      const app = new Application({
+        router,
+        publicPath: '/admin//',
+      });
+
+      expect(app.getPublicPath()).toBe('/admin/');
+
+      window['__webpack_public_path__'] = '/cdn/assets///';
+      expect(app.getCdnUrl()).toBe('/cdn/assets/');
+
+      delete window['__webpack_public_path__'];
+      expect(app.getCdnUrl()).toBe('/admin/');
+    });
+
+    it('should normalize webpack public path without a trailing slash', () => {
+      const app = new Application({
+        router,
+        publicPath: '/admin/',
+      });
+
+      window['__webpack_public_path__'] = '/cdn/assets';
+      expect(app.getCdnUrl()).toBe('/cdn/assets/');
     });
 
     it('should apply the provided favicon immediately', () => {

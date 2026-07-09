@@ -11,6 +11,16 @@ import type { AuthConfig, AuthStoreOptions } from './auth-store.js';
 import { loadExactAuthConfig, saveAuthConfig } from './auth-store.js';
 import { resolveCliHomeRoot, resolveDefaultConfigScope } from './cli-home.js';
 import { CLI_LOCALE_FLAG_OPTIONS, normalizeCliLocale, resolveCliLocale } from './cli-locale.js';
+import {
+  DEFAULT_NB_IMAGE_REGISTRY,
+  DEFAULT_NB_IMAGE_VARIANT,
+  NB_IMAGE_REGISTRY_OPTIONS,
+  NB_IMAGE_VARIANT_OPTIONS,
+  normalizeNbImageRegistry,
+  normalizeNbImageVariant,
+  type NbImageRegistry,
+  type NbImageVariant,
+} from './docker-image.js';
 
 export const DEFAULT_LICENSE_PKG_URL = 'https://pkg.nocobase.com/';
 export const DEFAULT_DOCKER_NETWORK = 'nocobase';
@@ -45,6 +55,8 @@ export const SUPPORTED_CLI_CONFIG_KEYS = [
   'license.pkg-url',
   'docker.network',
   'docker.container-prefix',
+  'nb-image-registry',
+  'nb-image-variant',
   'bin.docker',
   'bin.caddy',
   'bin.git',
@@ -159,7 +171,13 @@ function pruneSettings(config: AuthConfig): void {
   }
 
   const docker = config.settings?.docker;
-  if (docker && !trimValue(docker.network) && !trimValue(docker.containerPrefix)) {
+  if (
+    docker &&
+    !trimValue(docker.network) &&
+    !trimValue(docker.containerPrefix) &&
+    !trimValue(docker.nbImageRegistry) &&
+    !trimValue(docker.nbImageVariant)
+  ) {
     delete config.settings?.docker;
   }
 
@@ -223,6 +241,10 @@ export function getExplicitCliConfigValue(config: AuthConfig, key: SupportedCliC
       return trimValue(config.settings?.docker?.network);
     case 'docker.container-prefix':
       return trimValue(config.settings?.docker?.containerPrefix);
+    case 'nb-image-registry':
+      return normalizeNbImageRegistry(config.settings?.docker?.nbImageRegistry);
+    case 'nb-image-variant':
+      return normalizeNbImageVariant(config.settings?.docker?.nbImageVariant);
     case 'bin.docker':
       return trimValue(config.settings?.bin?.docker);
     case 'bin.caddy':
@@ -273,6 +295,12 @@ export function getEffectiveCliConfigValue(config: AuthConfig, key: SupportedCli
       return trimValue(config.name) || DEFAULT_DOCKER_NETWORK;
     case 'docker.container-prefix':
       return trimValue(config.name) || DEFAULT_DOCKER_CONTAINER_PREFIX;
+    case 'nb-image-registry':
+      return explicit ?? (resolveCliLocale(undefined, { configuredLocale: trimValue(config.settings?.locale) }) === 'zh-CN'
+        ? 'aliyun'
+        : DEFAULT_NB_IMAGE_REGISTRY);
+    case 'nb-image-variant':
+      return explicit ?? DEFAULT_NB_IMAGE_VARIANT;
     case 'bin.docker':
       return DEFAULT_DOCKER_BIN;
     case 'bin.caddy':
@@ -363,6 +391,24 @@ export function normalizeCliConfigValue(key: SupportedCliConfigKey, value: strin
     return driver;
   }
 
+  if (key === 'nb-image-registry') {
+    const registry = normalizeNbImageRegistry(normalized);
+    if (!registry) {
+      throw new Error(`Config key "${key}" must be one of: ${NB_IMAGE_REGISTRY_OPTIONS.join(', ')}`);
+    }
+
+    return registry;
+  }
+
+  if (key === 'nb-image-variant') {
+    const variant = normalizeNbImageVariant(normalized);
+    if (!variant) {
+      throw new Error(`Config key "${key}" must be one of: ${NB_IMAGE_VARIANT_OPTIONS.join(', ')}`);
+    }
+
+    return variant;
+  }
+
   return normalized;
 }
 
@@ -439,6 +485,18 @@ export async function setCliConfigValue(
       config.settings.docker = {
         ...(config.settings.docker ?? {}),
         containerPrefix: normalized,
+      };
+      break;
+    case 'nb-image-registry':
+      config.settings.docker = {
+        ...(config.settings.docker ?? {}),
+        nbImageRegistry: normalized as NbImageRegistry,
+      };
+      break;
+    case 'nb-image-variant':
+      config.settings.docker = {
+        ...(config.settings.docker ?? {}),
+        nbImageVariant: normalized as NbImageVariant,
       };
       break;
     case 'bin.docker':
@@ -565,6 +623,16 @@ export async function deleteCliConfigValue(
     case 'docker.container-prefix':
       if (config.settings.docker) {
         delete config.settings.docker.containerPrefix;
+      }
+      break;
+    case 'nb-image-registry':
+      if (config.settings.docker) {
+        delete config.settings.docker.nbImageRegistry;
+      }
+      break;
+    case 'nb-image-variant':
+      if (config.settings.docker) {
+        delete config.settings.docker.nbImageVariant;
       }
       break;
     case 'bin.docker':

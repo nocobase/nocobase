@@ -1,7 +1,7 @@
 ---
-title: "nb config"
-description: "nb config 命令参考：管理 NocoBase CLI 的默认配置项。"
-keywords: "nb config,NocoBase CLI,配置,默认配置"
+title: 'nb config'
+description: 'nb config 命令参考：管理 NocoBase CLI 的默认配置项。'
+keywords: 'nb config,NocoBase CLI,配置,默认配置'
 ---
 
 # nb config
@@ -10,28 +10,41 @@ keywords: "nb config,NocoBase CLI,配置,默认配置"
 
 - CLI 自身：`locale`、`update.policy`、`license.pkg-url`
 - Docker 运行：`docker.network`、`docker.container-prefix`
+- NocoBase 官方镜像：`nb-image-registry`、`nb-image-variant`
 - 外部可执行文件：`bin.docker`、`bin.caddy`、`bin.git`、`bin.nginx`、`bin.pnpm`、`bin.yarn`
 - 代理生成：`proxy.nb-cli-root`、`proxy.upstream-host`、`proxy.nginx-driver`、`proxy.caddy-driver`
 
+多数项目只需要配置少数几个键，常见的是：
+
+- `update.policy`
+- `docker.network`
+- `docker.container-prefix`
+- `nb-image-registry`
+- `nb-image-variant`
+- `bin.nginx` 或 `bin.caddy`
+- `proxy.nginx-driver` 或 `proxy.caddy-driver`
+
 ## 常用配置项
 
-| 配置项 | 默认值 | 说明 |
-| --- | --- | --- |
-| `locale` | 按 CLI 当前规则解析 | 覆盖 CLI 使用的语言 |
-| `update.policy` | `prompt` | 启动时更新策略：`prompt`、`auto` 或 `off` |
-| `license.pkg-url` | `https://pkg.nocobase.com/` | 覆盖商业扩展包下载地址 |
-| `docker.network` | `nocobase` | CLI 管理的 Docker 应用默认网络 |
-| `docker.container-prefix` | `nb` | CLI 管理的 Docker 容器默认前缀 |
-| `bin.docker` | `docker` | 覆盖 Docker 可执行文件路径 |
-| `bin.caddy` | `caddy` | 覆盖 Caddy 可执行文件路径 |
-| `bin.git` | `git` | 覆盖 Git 可执行文件路径 |
-| `bin.nginx` | `nginx` | 覆盖 Nginx 可执行文件路径 |
-| `bin.pnpm` | `pnpm` | 覆盖 pnpm 可执行文件路径 |
-| `bin.yarn` | `yarn` | 覆盖 Yarn 可执行文件路径 |
-| `proxy.nb-cli-root` | CLI root（通常是当前用户 Home 目录） | 把 `.nocobase` 路径映射到代理进程实际看到的根目录 |
-| `proxy.upstream-host` | `127.0.0.1` | 代理回源到 NocoBase 应用时使用的主机地址 |
-| `proxy.nginx-driver` | `local` | `nb proxy nginx` 默认使用的运行方式 |
-| `proxy.caddy-driver` | `local` | `nb proxy caddy` 默认使用的运行方式 |
+| 配置项                    | 默认值                               | 说明                                                                                        |
+| ------------------------- | ------------------------------------ | ------------------------------------------------------------------------------------------- |
+| `locale`                  | 按 CLI 当前规则解析                  | 覆盖 CLI 使用的语言                                                                         |
+| `update.policy`           | `prompt`                             | 启动时更新策略：`prompt`、`auto` 或 `off`                                                   |
+| `license.pkg-url`         | `https://pkg.nocobase.com/`          | 覆盖商业扩展包下载地址                                                                      |
+| `docker.network`          | `nocobase`                           | CLI 管理的 Docker 应用默认网络                                                              |
+| `docker.container-prefix` | `nb`                                 | CLI 管理的 Docker 容器默认前缀                                                              |
+| `nb-image-registry`       | `dockerhub`                          | 官方 NocoBase 镜像默认使用的仓库体系：`dockerhub` 或 `aliyun`                               |
+| `nb-image-variant`        | `full`                               | 官方 NocoBase 应用镜像默认使用的标签变体：`standard`、`no-nginx`、`full` 或 `full-no-nginx` |
+| `bin.docker`              | `docker`                             | 覆盖 Docker 可执行文件路径                                                                  |
+| `bin.caddy`               | `caddy`                              | 覆盖 Caddy 可执行文件路径                                                                   |
+| `bin.git`                 | `git`                                | 覆盖 Git 可执行文件路径                                                                     |
+| `bin.nginx`               | `nginx`                              | 覆盖 Nginx 可执行文件路径                                                                   |
+| `bin.pnpm`                | `pnpm`                               | 覆盖 pnpm 可执行文件路径                                                                    |
+| `bin.yarn`                | `yarn`                               | 覆盖 Yarn 可执行文件路径                                                                    |
+| `proxy.nb-cli-root`       | CLI root（通常是当前用户 Home 目录） | 把 `.nocobase` 路径映射到代理进程实际看到的根目录                                           |
+| `proxy.upstream-host`     | `127.0.0.1`                          | 代理回源到 NocoBase 应用时使用的主机地址                                                    |
+| `proxy.nginx-driver`      | `local`                              | `nb proxy nginx` 默认使用的运行方式                                                         |
+| `proxy.caddy-driver`      | `local`                              | `nb proxy caddy` 默认使用的运行方式                                                         |
 
 ## 用法
 
@@ -41,12 +54,12 @@ nb config <command>
 
 ## 子命令
 
-| 命令 | 说明 |
-| --- | --- |
-| [`nb config get`](./get.md) | 读取某个配置项的生效值 |
-| [`nb config set`](./set.md) | 设置某个配置项 |
-| [`nb config delete`](./delete.md) | 删除某个显式配置项 |
-| [`nb config list`](./list.md) | 列出当前显式设置过的配置项 |
+| 命令                              | 说明                       |
+| --------------------------------- | -------------------------- |
+| [`nb config get`](./get.md)       | 读取某个配置项的生效值     |
+| [`nb config set`](./set.md)       | 设置某个配置项             |
+| [`nb config delete`](./delete.md) | 删除某个显式配置项         |
+| [`nb config list`](./list.md)     | 列出当前显式设置过的配置项 |
 
 ## 示例
 
@@ -61,6 +74,9 @@ nb config set proxy.nginx-driver docker
 nb config set proxy.caddy-driver local
 nb config get docker.network
 nb config set docker.network nocobase
+nb config get nb-image-registry
+nb config set nb-image-registry aliyun
+nb config set nb-image-variant full-no-nginx
 nb config set bin.nginx /usr/sbin/nginx
 nb config set bin.git /usr/bin/git
 nb config set bin.pnpm /usr/local/bin/pnpm
@@ -69,7 +85,10 @@ nb config delete docker.container-prefix
 
 ## 说明
 
-`bin.pnpm` 会在命令需要直接运行 pnpm 时使用，比如 `nb self update` 更新由 pnpm 管理的全局 CLI 安装。
+- `bin.pnpm` 会在命令需要直接运行 pnpm 时使用，比如 `nb self update` 更新由 pnpm 管理的全局 CLI 安装
+- `nb-image-registry` 只影响 CLI 为官方 NocoBase 镜像推导出来的默认值。`dockerhub` 对应应用镜像仓库 `nocobase/nocobase`，`aliyun` 对应 `registry.cn-shanghai.aliyuncs.com/nocobase/nocobase`
+- `nb-image-variant` 只影响官方 NocoBase 应用镜像的 tag。以版本 `1.7.14` 为例，`standard` 对应 `1.7.14`，`no-nginx` 对应 `1.7.14-no-nginx`，`full` 对应 `1.7.14-full`，`full-no-nginx` 对应 `1.7.14-full-no-nginx`
+- 当 `nb-image-registry=aliyun` 时，CLI 也会把内置 PostgreSQL、MySQL、MariaDB 和 Kingbase 的默认数据库镜像切到阿里云官方镜像地址
 
 ## 相关命令
 
