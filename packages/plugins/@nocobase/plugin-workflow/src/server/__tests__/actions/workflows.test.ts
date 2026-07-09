@@ -98,8 +98,8 @@ describe('workflow > actions > workflows', () => {
       });
 
       expect(status).toBe(200);
-      expect(body.rows).toHaveLength(1);
-      expect(body.rows[0]).toMatchObject({
+      expect(body.data).toHaveLength(1);
+      expect(body.data[0]).toMatchObject({
         validation: {
           approval: {
             legacyUi: {
@@ -109,7 +109,7 @@ describe('workflow > actions > workflows', () => {
           },
         },
       });
-      expect(body.rows[0]).not.toHaveProperty('legacyApprovalUi');
+      expect(body.data[0]).not.toHaveProperty('legacyApprovalUi');
       expect(flowNodesFind).not.toHaveBeenCalled();
       flowNodesFind.mockRestore();
     });
