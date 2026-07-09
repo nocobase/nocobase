@@ -135,44 +135,12 @@ describe('linkageRulesRefresh action', () => {
     expect(handler).toHaveBeenCalledWith(ctx, { value: ['master-mounted'] });
   });
 
-  it('runs linkage action on master model when forks exist in design mode', async () => {
+  it('skips master model when forks can handle flow in design mode', async () => {
     const handler = vi.fn(async () => {});
     const model: any = {
-      isFork: false,
-      forks: new Set([{}]),
-      getFlow: vi.fn(() => ({})),
-      getStepParams: vi.fn(() => ({ value: ['master'] })),
-      context: {
-        flowSettingsEnabled: true,
-      },
-    };
-    const ctx: any = {
-      model,
-      resolveJsonTemplate: vi.fn(async (p: any) => p),
-      getAction: vi.fn(() => ({ handler })),
-    };
-
-    await linkageRulesRefresh.handler(ctx, {
-      actionName: 'actionLinkageRules',
-      flowKey: 'buttonSettings',
-    });
-
-    expect(handler).toHaveBeenCalledWith(ctx, { value: ['master'] });
-  });
-
-  it('skips record action master in design mode when row forks can handle linkage rules', async () => {
-    const handler = vi.fn(async () => {});
-    class TestRecordAction {
-      static _getScene() {
-        return ['record'];
-      }
-    }
-    const model: any = {
-      constructor: TestRecordAction,
       isFork: false,
       forks: new Set([
         {
-          disposed: false,
           getFlow: vi.fn(() => ({})),
         },
       ]),

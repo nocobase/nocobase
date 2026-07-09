@@ -21,32 +21,6 @@ type LinkageRulesRefreshParams = {
   stepKey?: string;
 };
 
-function isRecordActionLinkageRefresh(params: Partial<LinkageRulesRefreshParams>) {
-  return params?.actionName === 'actionLinkageRules' && params?.flowKey === 'buttonSettings';
-}
-
-type RecordActionClassLike = {
-  _getScene?: () => unknown;
-};
-
-type ModelWithActionClass = {
-  constructor?: RecordActionClassLike;
-};
-
-function isRecordActionModel(model: unknown) {
-  const modelClass = (model as ModelWithActionClass | null)?.constructor;
-  const getScene = modelClass?._getScene;
-  if (typeof getScene !== 'function') {
-    return false;
-  }
-  try {
-    const scene = getScene.call(modelClass);
-    return Array.isArray(scene) && scene.includes('record');
-  } catch {
-    return false;
-  }
-}
-
 export const linkageRulesRefresh = defineAction({
   name: 'linkageRulesRefresh',
   async handler(ctx, params) {
@@ -61,12 +35,8 @@ export const linkageRulesRefresh = defineAction({
     // Prefer running on the current model; fallback to blockModel when the current model doesn't own the flow.
     if (!hasFlow) return;
 
-    // In runtime, only skip master when there are mounted forks that can handle the same flow.
+    // Skip master when unmounted forks can handle the same flow.
     // Otherwise master is likely the rendered model and still needs refresh.
-    // In design mode, always refresh master so the currently edited model state stays in sync.
-    const flowSettingsEnabled = Boolean(
-      (ctx as any)?.flowSettingsEnabled || (model as any)?.context?.flowSettingsEnabled,
-    );
     const hasForkWithFlow =
       !model?.isFork &&
       !!model?.forks?.size &&
@@ -75,12 +45,7 @@ export const linkageRulesRefresh = defineAction({
         return !!fork?.getFlow?.(flowKey);
       });
     const isMasterMounted = Boolean((model as any)?.context?.ref?.current);
-    const shouldPreferRowForks =
-      hasForkWithFlow && isRecordActionLinkageRefresh({ actionName, flowKey, stepKey }) && isRecordActionModel(model);
-    if (shouldPreferRowForks) {
-      return;
-    }
-    if (hasForkWithFlow && !isMasterMounted && !flowSettingsEnabled) {
+    if (hasForkWithFlow && !isMasterMounted) {
       return;
     }
 
