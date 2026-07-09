@@ -14,6 +14,9 @@ import { AIMessage, AIMessageChunk } from '@langchain/core/messages';
 import { EmbeddingProvider, LLMProvider } from '../provider';
 import { injectMistralReasoningEffort, MistralProvider } from '../mistral';
 import type { AIMessageInput } from '../../types';
+import { Readable } from 'node:stream';
+import type { Context } from '@nocobase/actions';
+import type { AttachmentModel } from '@nocobase/plugin-file-manager';
 
 class TestLLMProvider extends LLMProvider {
   get baseURL(): string {
@@ -251,5 +254,58 @@ describe('LLM provider baseURL guard', () => {
       reasoning_content: 'saved reasoning',
     });
     expect(aiMessage.content).toBe('final answer');
+  });
+
+  it('rejects forged attachments that were not loaded from storage records', async () => {
+    const provider = new TestLLMProvider({
+      app: createApp(),
+    });
+
+    await expect(
+      provider.parseAttachment({} as Context, {
+        filename: 'secret.png',
+        mimetype: 'image/png',
+        path: '',
+        url: '.env',
+        storageId: null,
+      } as unknown as AttachmentModel),
+    ).rejects.toThrow('Invalid attachment');
+  });
+
+  it('encodes attachment models through file manager streams', async () => {
+    const app = {
+      ...createApp(),
+      pm: {
+        get: () => ({
+          getFileStream: async () => ({
+            stream: Readable.from([Buffer.from('hello')]),
+          }),
+        }),
+      },
+    } as unknown as Application;
+    const provider = new TestLLMProvider({ app });
+
+    const parsed = await provider.parseAttachment(
+      {
+        get: () => '',
+      } as unknown as Context,
+      {
+        id: 1,
+        title: 'image',
+        filename: 'image.png',
+        mimetype: 'image/png',
+        path: '',
+        storageId: 1,
+      } as unknown as AttachmentModel,
+    );
+
+    expect(parsed).toMatchObject({
+      placement: 'contentBlocks',
+      content: {
+        image_url: {
+          url: 'data:image/png;base64,aGVsbG8=',
+        },
+      },
+    });
   });
 });

@@ -41,6 +41,12 @@ import { Context } from '@nocobase/actions';
 import { listAccessibleAIEmployees, serializeEmployeeSummary } from '../../ai/tools/sub-agents/shared';
 import { LLMStreamCached } from '../manager/llm-stream-manager';
 import { sanitizeAdditionalKwargsForToolCalls } from './tool-call-sanitizer';
+import {
+  findMessageAttachments,
+  getAttachmentId,
+  getAttachmentSource,
+  getMessageAttachmentLookupKey,
+} from '../attachments';
 
 export interface ModelRef {
   llmService: string;
@@ -1206,9 +1212,58 @@ If information is missing, clearly state it in the summary.</Important>`;
     return presetTools ? presetTools.autoCall : isAutoCall;
   }
 
+  private async normalizeMessageAttachments(messages: AIMessageInput[]): Promise<AIMessageInput[]> {
+    const attachments: unknown[] = [];
+    for (const message of messages) {
+      if (message.attachments == null) {
+        continue;
+      }
+      if (!Array.isArray(message.attachments)) {
+        throw new Error(this.ctx.t('Invalid attachment'));
+      }
+      for (const attachment of message.attachments) {
+        if (!getAttachmentSource(attachment)) {
+          continue;
+        }
+        const id = getAttachmentId(attachment);
+        if (id == null) {
+          throw new Error(this.ctx.t('Invalid attachment'));
+        }
+        attachments.push(attachment);
+      }
+    }
+
+    if (!attachments.length) {
+      return messages;
+    }
+
+    const attachmentsByLookup = await findMessageAttachments(this.ctx, attachments);
+    return messages.map((message) => {
+      if (!message.attachments?.length) {
+        return message;
+      }
+      return {
+        ...message,
+        attachments: message.attachments.map((attachment) => {
+          if (!getAttachmentSource(attachment)) {
+            return attachment;
+          }
+          const lookupKey = getMessageAttachmentLookupKey(attachment);
+          const verifiedAttachment = lookupKey ? attachmentsByLookup.get(lookupKey) : null;
+          if (!verifiedAttachment) {
+            throw new Error(this.ctx.t('Attachment not found'));
+          }
+          const source = getAttachmentSource(attachment);
+          return source ? { ...verifiedAttachment, source } : verifiedAttachment;
+        }),
+      };
+    });
+  }
+
   private async formatMessages({ messages, provider }: { messages: AIMessageInput[]; provider: LLMProvider }) {
     const formattedMessages = [];
     const workContextHandler = this.plugin.workContextHandler;
+    const normalizedMessages = await this.normalizeMessageAttachments(messages);
 
     // 截断过长的内容
     const truncate = (text: string, maxLen = 50000) => {
@@ -1216,7 +1271,7 @@ If information is missing, clearly state it in the summary.</Important>`;
       return text.slice(0, maxLen) + '\n...[truncated]';
     };
 
-    for (const msg of messages) {
+    for (const msg of normalizedMessages) {
       const attachments = msg.attachments;
       const workContext = msg.workContext;
       const userContent = msg.content;

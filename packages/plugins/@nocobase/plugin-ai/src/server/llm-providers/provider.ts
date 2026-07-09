@@ -9,11 +9,11 @@
 
 import { BaseChatModel } from '@langchain/core/language_models/chat_models';
 import { Model } from '@nocobase/database';
-import { AttachmentModel, PluginFileManagerServer } from '@nocobase/plugin-file-manager';
+import { type AttachmentModel, PluginFileManagerServer } from '@nocobase/plugin-file-manager';
 import { Application } from '@nocobase/server';
 import { checkUrlAgainstWhitelist, serverRequest } from '@nocobase/utils';
 import { AIChatContext, AIMessageInput } from '../types/ai-chat-conversation.type';
-import { buildTool, encodeFile, parseResponseMessage, stripToolCallTags } from '../utils';
+import { buildTool, encodeReadableStream, parseResponseMessage, stripToolCallTags } from '../utils';
 import { EmbeddingsInterface } from '@langchain/core/embeddings';
 import { AIMessage, AIMessageChunk } from '@langchain/core/messages';
 import { Context } from '@nocobase/actions';
@@ -219,6 +219,7 @@ export abstract class LLMProvider {
   }
 
   async parseAttachment(ctx: Context, attachment: AttachmentModel): Promise<ParsedAttachmentResult> {
+    this.assertAttachment(ctx, attachment);
     if (this.isApiSupportedAttachment(attachment)) {
       return await this.convertToContent(ctx, attachment);
     } else if (this.isDocumentLoaderSupportedAttachment(attachment)) {
@@ -245,10 +246,27 @@ export abstract class LLMProvider {
     return SUPPORTED_DOCUMENT_EXTNAMES.includes(ext);
   }
 
-  protected async convertToContent(ctx: Context, attachment: any): Promise<ParsedAttachmentResult> {
+  protected assertAttachment(ctx: Context, attachment: AttachmentModel) {
+    if (!attachment?.storageId || !attachment?.filename) {
+      throw new Error(typeof ctx.t === 'function' ? ctx.t('Invalid attachment') : 'Invalid attachment');
+    }
+  }
+
+  protected async encodeAttachment(ctx: Context, attachment: AttachmentModel) {
     const fileManager = this.app.pm.get('file-manager') as PluginFileManagerServer;
-    const url = await fileManager.getFileURL(attachment);
-    const data = await encodeFile(ctx, decodeURIComponent(url));
+    const { stream } = await fileManager.getFileStream(attachment, {
+      requestOptions: {
+        headers: {
+          Referer: ctx.get('referer') || '',
+          'User-Agent': ctx.get('user-agent') || '',
+        },
+      },
+    });
+    return await encodeReadableStream(stream);
+  }
+
+  protected async convertToContent(ctx: Context, attachment: AttachmentModel): Promise<ParsedAttachmentResult> {
+    const data = await this.encodeAttachment(ctx, attachment);
     if (attachment.mimetype.startsWith('image/')) {
       return {
         placement: 'contentBlocks',
