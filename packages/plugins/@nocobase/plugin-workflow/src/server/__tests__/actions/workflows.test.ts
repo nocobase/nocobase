@@ -24,6 +24,7 @@ describe('workflow > actions > workflows', () => {
   let ExecutionModel;
   let WorkflowStatsRepo;
   let WorkflowVersionStatsRepo;
+  let FlowNodeRepo;
 
   beforeEach(async () => {
     app = await getApp();
@@ -34,6 +35,7 @@ describe('workflow > actions > workflows', () => {
     ExecutionModel = db.getCollection('executions').model;
     WorkflowStatsRepo = db.getCollection('workflowStats').repository;
     WorkflowVersionStatsRepo = db.getCollection('workflowVersionStats').repository;
+    FlowNodeRepo = db.getCollection('flow_nodes').repository;
     PostModel = db.getCollection('posts').model;
     PostRepo = db.getCollection('posts').repository;
   });
@@ -58,6 +60,58 @@ describe('workflow > actions > workflows', () => {
         },
       });
       expect(status).toBe(400);
+    });
+  });
+
+  describe('list', () => {
+    it('returns persisted validation without calculating approval UI status', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'approval',
+        config: {
+          applyForm: 'legacy_schema',
+        },
+        validation: {
+          approval: {
+            legacyUi: {
+              initiator: true,
+              approver: false,
+            },
+          },
+        },
+      });
+      await workflow.createNode({
+        type: 'approval',
+        config: {
+          applyDetail: 'legacy_schema',
+        },
+      });
+      const flowNodesFind = vi.spyOn(FlowNodeRepo, 'find');
+
+      const { status, body } = await agent.resource('workflows').list({
+        sort: ['id'],
+        appends: ['stats'],
+        except: ['config'],
+        filter: {
+          id: workflow.id,
+        },
+      });
+
+      expect(status).toBe(200);
+      expect(body.data).toHaveLength(1);
+      expect(body.data[0]).toMatchObject({
+        validation: {
+          approval: {
+            legacyUi: {
+              initiator: true,
+              approver: false,
+            },
+          },
+        },
+      });
+      expect(body.data[0]).not.toHaveProperty('legacyApprovalUi');
+      expect(flowNodesFind).not.toHaveBeenCalled();
+      flowNodesFind.mockRestore();
     });
   });
 
