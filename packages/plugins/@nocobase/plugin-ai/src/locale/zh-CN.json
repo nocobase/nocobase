@@ -133,6 +133,7 @@
   "Fields": "字段",
   "Files": "文件",
   "Files storage": "文件存储",
+  "Fill form fields with the given content. This tool only writes values into the form UI; it does not submit or save the form.": "用给定内容填写表单字段。此工具只会把值写入表单界面，不会提交或保存表单。",
   "Fill the form with the given content": "用给定内容填写表单",
   "Filter": "筛选",
   "Filter group": "条件分组",
