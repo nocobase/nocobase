@@ -14,11 +14,14 @@ import type { TaskTypeOptions, WorkflowTaskRegistry } from '../../taskCenter';
 
 const holder = vi.hoisted(() => ({
   navigate: vi.fn(),
+  reload: vi.fn(),
   isMobileLayout: false,
   taskTypes: {
     getKeys: () => [],
     get: (_key: string) => undefined,
   } as WorkflowTaskRegistry,
+  counts: {},
+  total: 0,
 }));
 
 vi.mock('@nocobase/client-v2', () => ({
@@ -61,16 +64,39 @@ vi.mock('@nocobase/flow-engine', () => ({
   }),
 }));
 
+vi.mock('../../taskCenter', () => ({
+  getAvailableWorkflowTaskTypeKeys: (
+    taskTypes: WorkflowTaskRegistry | undefined,
+    counts: Record<string, { all?: number }>,
+  ) =>
+    taskTypes
+      ? Array.from(taskTypes.getKeys()).filter((key) => {
+          const type = taskTypes.get(key);
+          return Boolean(type?.alwaysShow || counts[key]?.all);
+        })
+      : [],
+  getWorkflowTaskRegistry: () => holder.taskTypes,
+  useWorkflowTaskCounts: () => ({
+    counts: holder.counts,
+    total: holder.total,
+    reload: holder.reload,
+  }),
+}));
+
 import { WorkflowTasksTopbarActionModel } from '../WorkflowTasksTopbarActionModel';
 
 describe('WorkflowTasksTopbarActionModel', () => {
   beforeEach(() => {
     holder.navigate.mockClear();
+    holder.reload.mockReset();
+    holder.reload.mockResolvedValue(undefined);
     holder.isMobileLayout = false;
     holder.taskTypes = {
       getKeys: () => [],
       get: (_key: string) => undefined,
     };
+    holder.counts = {};
+    holder.total = 0;
   });
 
   it('does not render the workflow todos entry before task types are registered', () => {
@@ -96,6 +122,7 @@ describe('WorkflowTasksTopbarActionModel', () => {
       getKeys: () => ['demo'],
       get: (key: string) => (key === 'demo' ? taskType : undefined),
     };
+    holder.total = 3;
     const ModelClass = WorkflowTasksTopbarActionModel as unknown as { new (): WorkflowTasksTopbarActionModel };
     const model = new ModelClass();
 
@@ -104,6 +131,7 @@ describe('WorkflowTasksTopbarActionModel', () => {
     const button = screen.getByTestId('workflow-tasks-button');
     fireEvent.click(button);
 
+    expect(holder.reload).toHaveBeenCalled();
     expect(holder.navigate).toHaveBeenCalledWith('/admin/workflow/tasks');
   });
 });
