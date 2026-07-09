@@ -19,15 +19,13 @@ import { variables, inferSelectsFromUsage } from '../variables/registry';
 export function createFlowEngineMockServer(options: MockServerOptions = {}) {
   const { database, ...restOptions } = options;
   const databaseOptions = isRecord(database) ? database : {};
+  const databaseDefaults = getDatabaseDefaults(databaseOptions);
 
   return createMockServer({
     skipSupervisor: true,
     ...restOptions,
     database: {
-      dialect: 'sqlite',
-      storage: ':memory:',
-      // CI postgres jobs set DB_SCHEMA; SQLite cannot create schemas.
-      schema: undefined,
+      ...databaseDefaults,
       ...databaseOptions,
     },
   });
@@ -35,6 +33,21 @@ export function createFlowEngineMockServer(options: MockServerOptions = {}) {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function getDatabaseDefaults(databaseOptions: Record<string, unknown>) {
+  const dialect = String(databaseOptions.dialect || process.env.DB_DIALECT || 'sqlite').toLowerCase();
+
+  if (dialect !== 'sqlite') {
+    return {};
+  }
+
+  return {
+    dialect: 'sqlite',
+    storage: ':memory:',
+    // CI postgres jobs set DB_SCHEMA; SQLite cannot create schemas.
+    schema: undefined,
+  };
 }
 
 /**
