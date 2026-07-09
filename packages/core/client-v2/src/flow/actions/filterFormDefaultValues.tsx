@@ -23,16 +23,6 @@ import { hasPersistedAssignRulesValue } from '../models/blocks/shared/legacyDefa
 import { getDefaultOperator } from '../models/blocks/filter-manager/utils';
 import { operators } from '../../flow-compat';
 
-function hasPersistedRuleItem(value: unknown, item: FieldAssignRuleItem, index: number): boolean {
-  if (!Array.isArray(value)) return false;
-  if (item?.key) {
-    return value.some(
-      (rule) => Boolean(rule) && typeof rule === 'object' && (rule as { key?: unknown }).key === item.key,
-    );
-  }
-  return Boolean(value[index]);
-}
-
 const FilterFormDefaultValuesUI = observer(
   (props: { value?: FieldAssignRuleItem[]; onChange?: (value: FieldAssignRuleItem[]) => void }) => {
     const { value: propValue, onChange } = props;
@@ -56,17 +46,14 @@ const FilterFormDefaultValuesUI = observer(
     const getValueInputProps = React.useCallback(
       (item: FieldAssignRuleItem, index: number) => {
         const targetPath = item?.targetPath ? String(item.targetPath) : '';
-        const ruleKey = item?.key || index;
-        const persistedValue = ctx.model?.getStepParams?.('formFilterBlockModelSettings', 'defaultValues')?.value;
-        const hasSource = ctx.model?.uid && hasPersistedRuleItem(persistedValue, item, index);
         const sourceProps = {
-          sourceLocator: hasSource
+          sourceLocator: ctx.model?.uid
             ? {
                 kind: 'flowModel.nestedRunJS' as const,
                 modelUid: ctx.model.uid,
                 containerFlowKey: 'formFilterBlockModelSettings',
                 containerStepKey: 'defaultValues',
-                valuePath: ['value', ruleKey, 'value'],
+                valuePath: ['value', index, 'value'],
                 scene: 'filterFormDefaultValues',
               }
             : undefined,

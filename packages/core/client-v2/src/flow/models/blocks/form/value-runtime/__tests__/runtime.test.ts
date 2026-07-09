@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { describe, it, expect, vi } from 'vitest';
+import { afterEach, describe, it, expect, vi } from 'vitest';
 import { waitFor } from '@testing-library/react';
 import { EventEmitter } from 'events';
 import dayjs from 'dayjs';
@@ -16,7 +16,12 @@ import { get as lodashGet, merge as lodashMerge, set as lodashSet } from 'lodash
 import { FlowContext, JSRunner } from '@nocobase/flow-engine';
 import { getValuesByPath } from '@nocobase/shared';
 import { FormValueRuntime } from '..';
+import { RunJSSourceResolverRegistry } from '../../../../../components/runjs-source';
 import type { FormInstance } from 'antd';
+
+afterEach(() => {
+  RunJSSourceResolverRegistry.clear();
+});
 
 function createFormStub(initialValues: any = {}) {
   const store: any = JSON.parse(JSON.stringify(initialValues || {}));
@@ -609,6 +614,136 @@ describe('FormValueRuntime (form assign rules)', () => {
 
     await runtime.setFormValues(blockCtx, [{ path: ['b'], value: 'Y' }], { source: 'user' });
     await waitFor(() => expect(formStub.getFieldValue(['a'])).toBe('Y'));
+  });
+
+  it('supports light-extension RunJSValue settings and dependency refresh', async () => {
+    RunJSSourceResolverRegistry.registerResolver({
+      sourceMode: 'light-extension',
+      resolve: (input) => ({
+        code: 'return `${ctx.settings.prefix}${ctx.formValues.b}`',
+        version: 'v2',
+        settings: input.settings || {},
+      }),
+    });
+    const engineEmitter = new EventEmitter();
+    const blockEmitter = new EventEmitter();
+    const formStub = createFormStub({ b: 'X' });
+
+    const blockModel: any = {
+      uid: 'form-assign-runjs-le',
+      flowEngine: { emitter: engineEmitter },
+      emitter: blockEmitter,
+      dispatchEvent: vi.fn(),
+      getAclActionName: () => 'create',
+    };
+
+    const runtime = new FormValueRuntime({ model: blockModel, getForm: () => formStub as any });
+    runtime.mount({ sync: true });
+
+    const blockCtx = createFieldContext(runtime);
+    blockModel.context = blockCtx;
+
+    runtime.syncAssignRules([
+      {
+        key: 'r1',
+        enable: true,
+        targetPath: 'a',
+        mode: 'assign',
+        condition: { logic: '$and', items: [] },
+        value: {
+          code: '',
+          version: 'v2',
+          sourceMode: 'light-extension',
+          sourceBinding: {
+            type: 'light-extension-entry',
+            repoId: 'ler_runjs',
+            entryId: 'lee_normalize_amount',
+            kind: 'runjs',
+            publicationId: 'lep_normalize_amount',
+            versionPolicy: 'pinned',
+          },
+          settings: { prefix: 'LE:' },
+        },
+      },
+    ]);
+
+    await waitFor(() => expect(formStub.getFieldValue(['a'])).toBe('LE:X'));
+
+    await runtime.setFormValues(blockCtx, [{ path: ['b'], value: 'Y' }], { source: 'user' });
+    await waitFor(() => expect(formStub.getFieldValue(['a'])).toBe('LE:Y'));
+  });
+
+  it('reports light-extension RunJSValue errors with persisted assign-rule owner locator paths', async () => {
+    RunJSSourceResolverRegistry.registerResolver({
+      sourceMode: 'light-extension',
+      resolve: (input) => ({
+        code: 'throw new Error("bad")',
+        version: 'v2',
+        sourceMap: { entryPath: 'src/client/runjs/normalize-amount/index.ts' },
+        settings: input.settings || {},
+        context: input.context,
+      }),
+    });
+    const engineEmitter = new EventEmitter();
+    const blockEmitter = new EventEmitter();
+    const formStub = createFormStub({ a: 'INIT' });
+
+    const blockModel: any = {
+      uid: 'form-assign-runjs-le-error',
+      flowEngine: { emitter: engineEmitter },
+      emitter: blockEmitter,
+      dispatchEvent: vi.fn(),
+      getAclActionName: () => 'create',
+    };
+
+    const runtime = new FormValueRuntime({ model: blockModel, getForm: () => formStub as any });
+    runtime.mount({ sync: true });
+
+    const reportRuntimeError = vi.fn();
+    const blockCtx = createFieldContext(runtime);
+    blockCtx.defineProperty('reportRuntimeError', { value: reportRuntimeError });
+    blockModel.context = blockCtx;
+
+    runtime.syncAssignRules([
+      {
+        key: 'r1',
+        enable: true,
+        targetPath: 'a',
+        mode: 'assign',
+        condition: { logic: '$and', items: [] },
+        value: {
+          code: '',
+          version: 'v2',
+          sourceMode: 'light-extension',
+          sourceBinding: {
+            type: 'light-extension-entry',
+            repoId: 'ler_runjs',
+            entryId: 'lee_normalize_amount',
+            kind: 'runjs',
+            publicationId: 'lep_normalize_amount',
+            versionPolicy: 'pinned',
+          },
+          settings: { prefix: 'LE:' },
+        },
+      },
+    ]);
+
+    await waitFor(() => expect(reportRuntimeError).toHaveBeenCalled());
+    expect(formStub.getFieldValue(['a'])).toBe('INIT');
+    expect(reportRuntimeError).toHaveBeenCalledWith(
+      expect.objectContaining({
+        repoId: 'ler_runjs',
+        entryId: 'lee_normalize_amount',
+        publicationId: 'lep_normalize_amount',
+        ownerKind: 'flowModel.runjsHost',
+        path: 'src/client/runjs/normalize-amount/index.ts',
+        ownerLocator: expect.objectContaining({
+          modelUid: 'form-assign-runjs-le-error',
+          hostPath: ['stepParams', 'formModelSettings', 'assignRules', 'value', '0', 'value'],
+        }),
+        ownerLocatorHash: expect.stringMatching(/^sha256:/),
+      }),
+    );
   });
 
   it('supports RunJSValue and tracks ctx var deps from code', async () => {

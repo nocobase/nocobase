@@ -103,6 +103,7 @@ export class LightExtensionWorkspaceCompilerBridge {
       );
     }
 
+    const inspectAuthoring = this.authoringInspector.createRunJSSourceInspector();
     const compiled = compileRunJSSourceWorkspace({
       files: prepareLightExtensionCompileFiles(input.files),
       entry: input.entryPath,
@@ -120,7 +121,11 @@ export class LightExtensionWorkspaceCompilerBridge {
           surface: surface.surface,
         },
       },
-      inspectAuthoring: this.authoringInspector.createRunJSSourceInspector(),
+      inspectAuthoring: (inspectionInput) =>
+        inspectAuthoring({
+          ...inspectionInput,
+          code: input.kind === 'runjs' ? wrapRunJSDefaultExportEntry(inspectionInput.code) : inspectionInput.code,
+        }),
     });
     const result = this.buildCompileResult(input, surface, compiled);
     await this.recordCompileAudit(input, ctx, requestId, result, classifyFailureReason(result, compiled.failureCode));
@@ -188,8 +193,11 @@ export class LightExtensionWorkspaceCompilerBridge {
     compiled: CompileRunJSSourceWorkspaceResult,
   ): LightExtensionWorkspaceCompileResult {
     const diagnostics = sortDiagnostics(compiled.artifact.diagnostics.map((item) => toLightExtensionDiagnostic(item)));
+    const artifactCode =
+      input.kind === 'runjs' ? wrapRunJSDefaultExportEntry(compiled.artifact.code) : compiled.artifact.code;
     const artifact: RunJSRuntimeArtifact = {
       ...compiled.artifact,
+      code: artifactCode,
       filesHash: buildRunJSFilesHash(input.files),
       metadata: {
         ...compiled.artifact.metadata,
@@ -362,6 +370,19 @@ function inferEntryName(path: string): string {
   const normalized = normalizeSourcePath(path);
   const segments = normalized.split('/');
   return segments.length >= 2 ? segments[segments.length - 2] : normalized;
+}
+
+function wrapRunJSDefaultExportEntry(code: string): string {
+  const defaultSymbol = findRunJSDefaultExportSymbol(code);
+  if (!defaultSymbol) {
+    return code;
+  }
+  return `${code}\n\nif (typeof ${defaultSymbol} === 'function') {\n  return await ${defaultSymbol}(ctx);\n}\nreturn ${defaultSymbol};`;
+}
+
+function findRunJSDefaultExportSymbol(code: string): string | null {
+  const match = code.match(/(?:^|\n)const (__runjs_default_[A-Za-z0-9_$]+)\s*=/);
+  return match?.[1] || null;
 }
 
 function normalizeSourcePath(path: string): string {

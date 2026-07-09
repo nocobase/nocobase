@@ -25,6 +25,9 @@ import {
   createJsFieldPublicationRecord,
   createJsFieldReferenceRecord,
   createJsFieldSourceBinding,
+  createRunJSEntryRecord,
+  createRunJSHostNode,
+  createRunJSPublicationRecord,
   createPublicationRecord,
   createReferenceRecord,
   createReferenceServiceFixture,
@@ -481,6 +484,148 @@ describe('plugin-light-extension reference service', () => {
         vipColor: '#f5222d',
       }),
       resolvedStatus: 'active',
+    });
+  });
+
+  it.each([
+    ['default value', createRunJSHostNode({ uid: 'flow_default_runjs', settings: { currency: 'USD' } })],
+    [
+      'form assignment',
+      createRunJSHostNode({
+        uid: 'flow_assign_runjs',
+        hostPath: 'assignRule',
+        settings: { currency: 'CNY' },
+      }),
+    ],
+    [
+      'assign form item',
+      createRunJSHostNode({
+        uid: 'flow_assign_form_runjs',
+        hostPath: 'assignForm',
+        settings: { currency: 'EUR' },
+      }),
+    ],
+  ] as const)('upserts RunJS references for %s hosts with per-host locators', async (_title, node) => {
+    const { service, repositories } = createReferenceServiceFixture({
+      flowModelTrees: {
+        [node.uid]: node,
+      },
+      publications: [createRunJSPublicationRecord()],
+      repos: [createRepoRecord({ id: 'ler_runjs' })],
+      entries: [createRunJSEntryRecord()],
+    });
+
+    const result = await service.syncFlowModelReferencesForNodeTree({
+      rootUid: node.uid,
+      action: 'flowModels.save',
+    });
+
+    expect(result).toMatchObject({
+      scanned: 1,
+      upserted: 1,
+      removed: 0,
+      statusCounts: {
+        active: 1,
+      },
+    });
+    expect(repositories.lightExtensionReferences.records).toHaveLength(1);
+    const record = repositories.lightExtensionReferences.records[0].toJSON();
+    expect(record).toMatchObject({
+      repoId: 'ler_runjs',
+      entryId: 'lee_normalize_amount',
+      publicationId: 'lep_normalize_amount',
+      kind: 'runjs',
+      ownerKind: 'flowModel.runjsHost',
+      ownerLocator: expect.objectContaining({
+        kind: 'flowModel.runjsHost',
+        modelUid: node.uid,
+        hostPath: expect.arrayContaining(['stepParams']),
+      }),
+      versionPolicy: 'pinned',
+      resolvedStatus: 'active',
+    });
+    expect(record.settingsHash).toMatch(/^sha256:/);
+  });
+
+  it('removes RunJS references when the nested host switches back to inline', async () => {
+    const flowModelTrees = {
+      flow_assign_runjs: createRunJSHostNode({
+        uid: 'flow_assign_runjs',
+        hostPath: 'assignRule',
+        settings: { currency: 'USD' },
+      }),
+    };
+    const {
+      service,
+      repositories,
+      flowModelTrees: fixtureFlowModelTrees,
+    } = createReferenceServiceFixture({
+      flowModelTrees,
+      publications: [createRunJSPublicationRecord()],
+      repos: [createRepoRecord({ id: 'ler_runjs' })],
+      entries: [createRunJSEntryRecord()],
+    });
+
+    await service.syncFlowModelReferencesForNodeTree({
+      rootUid: 'flow_assign_runjs',
+      action: 'flowModels.save',
+    });
+    expect(repositories.lightExtensionReferences.records).toHaveLength(1);
+
+    fixtureFlowModelTrees.flow_assign_runjs = createRunJSHostNode({
+      uid: 'flow_assign_runjs',
+      hostPath: 'assignRule',
+      sourceMode: 'inline',
+    });
+    const result = await service.syncFlowModelReferencesForNodeTree({
+      rootUid: 'flow_assign_runjs',
+      action: 'flowSurfaces.updateSettings',
+    });
+
+    expect(result).toMatchObject({
+      scanned: 1,
+      upserted: 0,
+      removed: 1,
+    });
+    expect(repositories.lightExtensionReferences.records).toHaveLength(0);
+  });
+
+  it('rebuilds RunJS references from nested FlowModel children', async () => {
+    const child = createRunJSHostNode({
+      uid: 'flow_nested_assign_form_runjs',
+      hostPath: 'assignForm',
+      settings: { currency: 'JPY' },
+    });
+    const { service, repositories } = createReferenceServiceFixture({
+      flowModelTrees: {
+        flow_page_with_runjs_child: {
+          uid: 'flow_page_with_runjs_child',
+          use: 'PageModel',
+          subModels: {
+            items: [child],
+          },
+        },
+      },
+      publications: [createRunJSPublicationRecord()],
+      repos: [createRepoRecord({ id: 'ler_runjs' })],
+      entries: [createRunJSEntryRecord()],
+    });
+
+    const result = await service.syncFlowModelReferencesForNodeTree({
+      rootUid: 'flow_page_with_runjs_child',
+      action: 'flowModels.save',
+    });
+
+    expect(result).toMatchObject({
+      scanned: 1,
+      upserted: 1,
+      removed: 0,
+    });
+    expect(repositories.lightExtensionReferences.records[0].toJSON()).toMatchObject({
+      kind: 'runjs',
+      ownerLocator: expect.objectContaining({
+        modelUid: 'flow_nested_assign_form_runjs',
+      }),
     });
   });
 

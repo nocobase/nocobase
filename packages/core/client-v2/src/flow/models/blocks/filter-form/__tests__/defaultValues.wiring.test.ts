@@ -10,8 +10,9 @@
 import React from 'react';
 import { render, waitFor } from '@testing-library/react';
 import { FlowEngine } from '@nocobase/flow-engine';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { filterFormDefaultValues } from '../../../../actions/filterFormDefaultValues';
+import { RunJSSourceResolverRegistry } from '../../../../components/runjs-source';
 import { FilterFormBlockModel } from '../FilterFormBlockModel';
 
 function resolveTemplateValue(raw: any, values: Record<string, any>): any {
@@ -104,6 +105,10 @@ function createFilterFormDefaultValuesModel(rules: any[], initialValues: Record<
 }
 
 describe('filter-form defaultValues wiring', () => {
+  afterEach(() => {
+    RunJSSourceResolverRegistry.clear();
+  });
+
   it('loads action and model modules', () => {
     expect(filterFormDefaultValues).toBeTruthy();
     expect(FilterFormBlockModel).toBeTruthy();
@@ -416,6 +421,107 @@ describe('filter-form defaultValues wiring', () => {
     values.nickname_nick = 'allow';
     await FilterFormBlockModel.prototype.applyFormDefaultValues.call(model as any);
     expect(values.username_user).toBe('Matched');
+  });
+
+  it('resolves light-extension RunJS filter field values with settings', async () => {
+    RunJSSourceResolverRegistry.registerResolver({
+      sourceMode: 'light-extension',
+      resolve: (input) => ({
+        code: 'return `${ctx.settings.currency}:${ctx.runJsSource.sourceBinding.entryId}`',
+        version: 'v2',
+        settings: input.settings || {},
+      }),
+    });
+    const { model, values } = createFilterFormDefaultValuesModel([
+      {
+        key: 'username-runjs',
+        enable: true,
+        targetPath: 'username',
+        mode: 'assign',
+        value: {
+          code: '',
+          version: 'v2',
+          sourceMode: 'light-extension',
+          sourceBinding: {
+            type: 'light-extension-entry',
+            repoId: 'ler_runjs',
+            entryId: 'lee_normalize_amount',
+            kind: 'runjs',
+            publicationId: 'lep_normalize_amount',
+            versionPolicy: 'pinned',
+          },
+          settings: { currency: 'USD' },
+        },
+      },
+    ]);
+    (model.context as any).runjs = async function (this: any, code: string) {
+      return {
+        success: true,
+        value: `${this.settings.currency}:${this.runJsSource.sourceBinding.entryId}:${code.includes('ctx.settings')}`,
+      };
+    };
+
+    await FilterFormBlockModel.prototype.applyFormDefaultValues.call(model as any);
+
+    expect(values.username_user).toBe('USD:lee_normalize_amount:true');
+  });
+
+  it('reports light-extension RunJS filter field value runtime errors with persisted owner locator paths', async () => {
+    RunJSSourceResolverRegistry.registerResolver({
+      sourceMode: 'light-extension',
+      resolve: (input) => ({
+        code: 'throw new Error("boom")',
+        version: 'v2',
+        sourceMap: { entryPath: 'src/client/runjs/normalize-amount/index.ts' },
+        settings: input.settings || {},
+        context: input.context,
+      }),
+    });
+    const { model, values } = createFilterFormDefaultValuesModel([
+      {
+        key: 'username-runjs-error',
+        enable: true,
+        targetPath: 'username',
+        mode: 'assign',
+        value: {
+          code: '',
+          version: 'v2',
+          sourceMode: 'light-extension',
+          sourceBinding: {
+            type: 'light-extension-entry',
+            repoId: 'ler_runjs',
+            entryId: 'lee_normalize_amount',
+            kind: 'runjs',
+            publicationId: 'lep_normalize_amount',
+            versionPolicy: 'pinned',
+          },
+          settings: { currency: 'USD' },
+        },
+      },
+    ]);
+    const reportRuntimeError = vi.fn();
+    (model as any).uid = 'filter_form_1';
+    (model.context as any).reportRuntimeError = reportRuntimeError;
+    (model.context as any).runjs = async () => ({ success: false, error: new Error('boom') });
+
+    await FilterFormBlockModel.prototype.applyFormDefaultValues.call(model as any);
+
+    expect(values.username_user).toBeUndefined();
+    expect(reportRuntimeError).toHaveBeenCalledWith(
+      expect.objectContaining({
+        repoId: 'ler_runjs',
+        entryId: 'lee_normalize_amount',
+        publicationId: 'lep_normalize_amount',
+        ownerKind: 'flowModel.runjsHost',
+        path: 'src/client/runjs/normalize-amount/index.ts',
+        ownerLocator: expect.objectContaining({
+          modelUid: 'filter_form_1',
+          use: 'Object',
+          hostPath: ['stepParams', 'formFilterBlockModelSettings', 'defaultValues', 'value', '0', 'value'],
+        }),
+        ownerLocatorHash: expect.stringMatching(/^(sha256|local):/),
+      }),
+    );
   });
 
   it('emits formValuesChange with final values after applying dependent field values', async () => {

@@ -36,7 +36,9 @@ export async function submitHandler(ctx, params, cb?: (values?: any, filterByTk?
   });
   const rawValues = blockModel.form.getFieldsValue(true);
   const formValues = omitHiddenModelValuesFromSubmit(rawValues, blockModel);
-  const assignedValues = await resolveAssignFieldValues(ctx, params?.assignedValues, 'FormSubmitAction');
+  const assignedValues = await resolveAssignFieldValues(ctx, params?.assignedValues, 'FormSubmitAction', {
+    settingsFlowKey: 'submitSettings',
+  });
   if (!assignedValues) {
     ctx.exit?.();
     return;

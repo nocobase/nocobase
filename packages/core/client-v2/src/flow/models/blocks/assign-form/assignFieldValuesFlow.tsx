@@ -9,7 +9,8 @@
 
 import {
   FlowModelRenderer,
-  resolveRunJSObjectValues,
+  isRunJSValue,
+  normalizeRunJSValue,
   tExpr,
   type FlowModelContext,
   useFlowEngine,
@@ -19,6 +20,13 @@ import React, { useEffect } from 'react';
 import { CollectionActionModel } from '../../base/CollectionActionModel';
 import { RecordActionModel } from '../../base/RecordActionModel';
 import { AssignFormModel } from './AssignFormModel';
+import {
+  buildRunJSOwnerLocator,
+  evaluateResolvedRunJSValue,
+  reportRunJSRuntimeErrorBestEffort,
+  resolveRuntimeRunJS,
+  type ResolvedRuntimeRunJS,
+} from '../../../components/runjs-source';
 
 export const ASSIGN_FIELD_VALUES_STEP_KEY = 'assignFieldValues';
 
@@ -52,6 +60,12 @@ type AssignFieldValuesStepOptions = {
   validateBeforeSave?: boolean;
   clearRecordContext?: boolean;
 };
+
+type ResolveAssignFieldValuesOptions = {
+  settingsFlowKey?: string;
+};
+
+const SKIP_ASSIGN_VALUE = Symbol('SKIP_ASSIGN_VALUE');
 
 function getContextCollection(ctx: AssignFieldValuesContext | undefined): AssignFieldValuesCollection | undefined {
   const collection = ctx?.collection;
@@ -162,17 +176,90 @@ export async function resolveAssignFieldValues(
   ctx: {
     message?: { error?: (message: string) => void };
     t?: (message: string) => string;
+    model?: { uid?: string; use?: string };
   },
   rawAssignedValues: unknown,
   logName = 'AssignFieldValues',
+  options: ResolveAssignFieldValuesOptions = {},
 ): Promise<AssignedValues | null> {
   try {
-    return await resolveRunJSObjectValues(ctx, rawAssignedValues);
+    const ownerPathPrefix = options.settingsFlowKey
+      ? ['stepParams', options.settingsFlowKey, ASSIGN_FIELD_VALUES_STEP_KEY, 'assignedValues']
+      : ['assignedValues'];
+    return await resolveAssignRunJSObjectValues(ctx, rawAssignedValues, ownerPathPrefix);
   } catch (error) {
     console.error(`[${logName}] RunJS execution failed`, error);
     ctx.message?.error?.(ctx.t?.('RunJS execution failed') || 'RunJS execution failed');
     return null;
   }
+}
+
+async function resolveAssignRunJSObjectValues(
+  ctx: {
+    model?: { uid?: string; use?: string };
+  },
+  rawAssignedValues: unknown,
+  ownerPathPrefix: Array<string | number> = ['assignedValues'],
+): Promise<AssignedValues> {
+  if (!rawAssignedValues || typeof rawAssignedValues !== 'object' || Array.isArray(rawAssignedValues)) {
+    return {};
+  }
+
+  const output: AssignedValues = {};
+  for (const [key, value] of Object.entries(rawAssignedValues)) {
+    if (typeof value === 'undefined') {
+      continue;
+    }
+
+    const resolved = await resolveAssignRunJSValue(ctx, value, [...ownerPathPrefix, key]);
+    if (resolved !== SKIP_ASSIGN_VALUE) {
+      output[key] = resolved;
+    }
+  }
+
+  return output;
+}
+
+async function resolveAssignRunJSValue(
+  ctx: {
+    model?: { uid?: string; use?: string };
+  },
+  value: unknown,
+  hostPath: Array<string | number>,
+): Promise<unknown> {
+  if (isRunJSValue(value)) {
+    const normalized = normalizeRunJSValue(value);
+    if (normalized.sourceMode !== 'light-extension' && !normalized.code.trim()) {
+      return SKIP_ASSIGN_VALUE;
+    }
+    let resolved: ResolvedRuntimeRunJS | undefined;
+    const ownerLocator = buildRunJSOwnerLocator({
+      modelUid: ctx.model?.uid,
+      use: ctx.model?.use,
+      hostPath,
+    });
+    try {
+      resolved = await resolveRuntimeRunJS({
+        runJs: value,
+        context: {
+          ownerKind: 'flowModel.runjsHost',
+          ownerLocator,
+        },
+      });
+      const evaluated = await evaluateResolvedRunJSValue({ ctx, resolved });
+      return typeof evaluated === 'undefined' ? SKIP_ASSIGN_VALUE : evaluated;
+    } catch (error) {
+      await reportRunJSRuntimeErrorBestEffort({
+        ctx,
+        error,
+        resolved,
+        ownerLocator,
+      });
+      throw error;
+    }
+  }
+
+  return value;
 }
 
 export function mergeAssignFieldValues<T extends Record<string, unknown>>(

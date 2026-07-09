@@ -79,7 +79,10 @@ export const LIGHT_EXTENSION_AUTHORING_SURFACES: Record<LightExtensionKind, Ligh
   runjs: {
     kind: 'runjs',
     surfaceStyle: 'run',
-    enabled: false,
+    compilerSurfaceStyle: 'value',
+    modelUse: 'JSItemModel',
+    surface: 'reaction.value-runjs',
+    enabled: true,
   },
   event: {
     kind: 'event',

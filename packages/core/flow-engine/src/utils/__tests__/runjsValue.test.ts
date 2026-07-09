@@ -14,6 +14,15 @@ describe('runjsValue utils', () => {
   it('isRunJSValue: strict shape detection', () => {
     expect(isRunJSValue({ code: 'return 1' })).toBe(true);
     expect(isRunJSValue({ code: 'return 1', version: 'v1' })).toBe(true);
+    expect(
+      isRunJSValue({
+        code: '',
+        version: 'v2',
+        sourceMode: 'light-extension',
+        sourceBinding: { type: 'light-extension-entry' },
+        settings: { currency: 'USD' },
+      }),
+    ).toBe(true);
 
     expect(isRunJSValue(null)).toBe(false);
     expect(isRunJSValue('return 1')).toBe(false);
@@ -21,12 +30,29 @@ describe('runjsValue utils', () => {
     expect(isRunJSValue({ version: 'v1' })).toBe(false);
     expect(isRunJSValue({ code: 1 })).toBe(false);
     expect(isRunJSValue({ code: 'return 1', foo: 1 })).toBe(false);
+    expect(isRunJSValue({ code: 'return 1', sourceBinding: [] })).toBe(false);
+    expect(isRunJSValue({ code: 'return 1', settings: [] })).toBe(false);
     expect(isRunJSValue([])).toBe(false);
   });
 
   it('normalizeRunJSValue: defaults version to v1', () => {
     expect(normalizeRunJSValue({ code: 'return 1' })).toEqual({ code: 'return 1', version: 'v1' });
     expect(normalizeRunJSValue({ code: 'return 1', version: 'v2' })).toEqual({ code: 'return 1', version: 'v2' });
+    expect(
+      normalizeRunJSValue({
+        code: '',
+        version: 'v2',
+        sourceMode: 'light-extension',
+        sourceBinding: { type: 'light-extension-entry' },
+        settings: { currency: 'USD' },
+      }),
+    ).toEqual({
+      code: '',
+      version: 'v2',
+      sourceMode: 'light-extension',
+      sourceBinding: { type: 'light-extension-entry' },
+      settings: { currency: 'USD' },
+    });
   });
 
   it('extractUsedVariablePathsFromRunJS: extracts ctx usage (dot + bracket root)', () => {

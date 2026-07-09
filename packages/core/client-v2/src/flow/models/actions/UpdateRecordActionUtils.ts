@@ -60,7 +60,9 @@ export async function applyUpdateRecordAction(
   const confirmParams = savedConfirm && typeof savedConfirm === 'object' ? savedConfirm : { enable: false };
   await ctx.runAction('confirm', confirmParams);
 
-  const assignedValues = await resolveAssignFieldValues(ctx, params?.assignedValues, 'UpdateRecordAction');
+  const assignedValues = await resolveAssignFieldValues(ctx, params?.assignedValues, 'UpdateRecordAction', {
+    settingsFlowKey,
+  });
   if (!assignedValues) {
     return;
   }

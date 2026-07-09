@@ -8,7 +8,7 @@
  */
 
 import { isObservable, reaction, toJS } from '@formily/reactive';
-import { FlowContext, FlowModel, isRunJSValue, normalizeRunJSValue, runjsWithSafeGlobals } from '@nocobase/flow-engine';
+import { FlowContext, FlowModel, isRunJSValue } from '@nocobase/flow-engine';
 import { getValuesByPath } from '@nocobase/shared';
 import _ from 'lodash';
 import { dayjs } from '@nocobase/utils/client';
@@ -19,6 +19,14 @@ import type { FormAssignRuleItem, FormValueWriteMeta, NamePath, Patch, SetOption
 import { createTxId, isEmptyValue } from './utils';
 import { isToManyAssociationField } from '../../../../internal/utils/modelUtils';
 import { getSubTableRowIdentity } from '../../../fields/AssociationFieldModel/SubTableFieldModel/rowIdentity';
+import {
+  buildRunJSOwnerLocator,
+  evaluateResolvedRunJSValue,
+  reportRunJSRuntimeErrorBestEffort,
+  resolveRuntimeRunJS,
+  type ResolvedRuntimeRunJS,
+  type RunJSOwnerLocator,
+} from '../../../../components/runjs-source';
 
 /** Symbol to indicate rule value resolution should be skipped */
 const SKIP_RULE_VALUE = Symbol('SKIP_RULE_VALUE');
@@ -49,6 +57,7 @@ type RuntimeRule = {
   getValue: () => any;
   getCondition?: () => any;
   getContext: () => any;
+  getRunJSOwnerLocator?: () => RunJSOwnerLocator;
 };
 
 type ObservableBinding = {
@@ -63,6 +72,10 @@ function normalizeAssignMode(mode: unknown): AssignMode {
   if (mode === 'default') return 'default';
   if (mode === 'override') return 'override';
   return 'assign';
+}
+
+function toNonEmptyString(value: unknown): string | undefined {
+  return typeof value === 'string' && value.trim() ? value.trim() : undefined;
 }
 
 function getSourceByAssignMode(mode: AssignMode): ValueSource {
@@ -116,7 +129,7 @@ export class RuleEngine {
   >();
   private readonly assignTemplatesByTargetPath = new Map<
     string,
-    Array<FormAssignRuleItem & { __key: string; __order: number }>
+    Array<FormAssignRuleItem & { __key: string; __order: number; __index: number }>
   >();
   /** 当前表单中“已配置到 UI 的字段（FormItemModel）”的 targetPath 集合，用于避免对 row grid 重复注册规则 */
   private readonly formItemTargetPaths = new Set<string>();
@@ -208,6 +221,7 @@ export class RuleEngine {
         getValue: () => template?.value,
         getCondition: () => template?.condition,
         getContext: () => this.options.getBlockContext(),
+        getRunJSOwnerLocator: () => this.getAssignRunJSOwnerLocator(template),
       };
 
       this.rules.set(id, { rule, state: { deps: new Set(), depDisposers: [], runSeq: 0, scheduledAtWriteSeq: 0 } });
@@ -469,6 +483,7 @@ export class RuleEngine {
     const next = raw.map((item, index) => ({
       ...item,
       key: item?.key ? String(item.key) : `idx:${index}`,
+      __index: index,
     }));
     const prefix = 'form-assign:';
 
@@ -488,7 +503,7 @@ export class RuleEngine {
       if (!targetPath) continue;
       const arr = this.assignTemplatesByTargetPath.get(targetPath) || [];
       order += 1;
-      arr.push({ ...(item as any), __key: String(item.key), __order: order });
+      arr.push({ ...(item as any), __key: String(item.key), __order: order, __index: item.__index });
       this.assignTemplatesByTargetPath.set(targetPath, arr);
     }
 
@@ -545,6 +560,7 @@ export class RuleEngine {
           getValue: () => template?.value,
           getCondition: () => template?.condition,
           getContext: () => this.options.getBlockContext(),
+          getRunJSOwnerLocator: () => this.getAssignRunJSOwnerLocator(template),
         };
 
         this.rules.set(id, { rule, state: { deps: new Set(), depDisposers: [], runSeq: 0, scheduledAtWriteSeq: 0 } });
@@ -782,6 +798,7 @@ export class RuleEngine {
         return getStepDefaultValue();
       },
       getContext: () => model?.context,
+      getRunJSOwnerLocator: () => this.getDefaultRunJSOwnerLocator(master, getPropsInitialValue),
     };
 
     this.rules.set(id, {
@@ -815,6 +832,55 @@ export class RuleEngine {
     const forkId = model?.['isFork'] ? String(model?.['forkId'] ?? 'fork') : 'master';
     const uid = model?.uid ? String(model.uid) : String(model);
     return `form-assign:${templateKey}:${uid}:${forkId}`;
+  }
+
+  private getAssignRunJSOwnerLocator(template: { __index: number }): RunJSOwnerLocator {
+    return buildRunJSOwnerLocator({
+      modelUid: this.options.getBlockModelUid(),
+      hostPath: ['stepParams', 'formModelSettings', 'assignRules', 'value', template.__index, 'value'],
+    });
+  }
+
+  private getDefaultRunJSOwnerLocator(model: FlowModel, getPropsInitialValue: () => unknown): RunJSOwnerLocator {
+    return buildRunJSOwnerLocator({
+      modelUid: model?.uid,
+      use: this.getModelUseForRunJSOwner(model),
+      hostPath: this.getDefaultRunJSHostPath(model, getPropsInitialValue),
+    });
+  }
+
+  private getDefaultRunJSHostPath(model: FlowModel, getPropsInitialValue: () => unknown): Array<string | number> {
+    try {
+      const fromEdit = model?.getStepParams?.('editItemSettings', 'initialValue')?.defaultValue;
+      if (typeof fromEdit !== 'undefined') {
+        return ['stepParams', 'editItemSettings', 'initialValue', 'defaultValue'];
+      }
+      const fromLegacy = model?.getStepParams?.('formItemSettings', 'initialValue')?.defaultValue;
+      if (typeof fromLegacy !== 'undefined') {
+        return ['stepParams', 'formItemSettings', 'initialValue', 'defaultValue'];
+      }
+    } catch {
+      // ignore
+    }
+    if (typeof getPropsInitialValue() !== 'undefined') {
+      return ['props', 'initialValue'];
+    }
+    return ['props', 'initialValue'];
+  }
+
+  private getModelUseForRunJSOwner(model: unknown): string | undefined {
+    if (!model || typeof model !== 'object') {
+      return undefined;
+    }
+    const record = model as Record<string, unknown>;
+    const options = record._options as Record<string, unknown> | undefined;
+    const createModelOptions = record.createModelOptions as Record<string, unknown> | undefined;
+    return (
+      toNonEmptyString(record.use) ||
+      toNonEmptyString(options?.use) ||
+      toNonEmptyString(createModelOptions?.use) ||
+      toNonEmptyString((model as { constructor?: { name?: unknown } }).constructor?.name)
+    );
   }
 
   private getDeepestFieldIndexKey(baseCtx: any): string | null {
@@ -913,6 +979,7 @@ export class RuleEngine {
           getValue: () => template?.value,
           getCondition: () => template?.condition,
           getContext: () => model?.context,
+          getRunJSOwnerLocator: () => this.getAssignRunJSOwnerLocator(template),
         };
 
         this.rules.set(id, { rule, state: { deps: new Set(), depDisposers: [], runSeq: 0, scheduledAtWriteSeq: 0 } });
@@ -1716,16 +1783,27 @@ export class RuleEngine {
     collector: DepCollector,
     rule: RuntimeRule,
   ): Promise<any> {
+    let resolved: ResolvedRuntimeRunJS | undefined;
     try {
-      const { code, version } = normalizeRunJSValue(rawValue);
-      const ret = await runjsWithSafeGlobals(evalCtx, code, { version });
-      if (!ret?.success) {
-        if (seq !== state.runSeq) return SKIP_RULE_VALUE;
-        this.commitRuleDeps(rule, state, collector);
-        return SKIP_RULE_VALUE;
-      }
-      return ret.value;
-    } catch {
+      const ownerLocator = rule.getRunJSOwnerLocator?.();
+      resolved = await resolveRuntimeRunJS({
+        runJs: rawValue,
+        context: {
+          ownerKind: 'flowModel.runjsHost',
+          ownerLocator,
+        },
+      });
+      return await evaluateResolvedRunJSValue({
+        ctx: evalCtx,
+        resolved,
+      });
+    } catch (error) {
+      await reportRunJSRuntimeErrorBestEffort({
+        ctx: evalCtx,
+        error,
+        resolved,
+        ownerLocator: rule.getRunJSOwnerLocator?.(),
+      });
       if (seq !== state.runSeq) return SKIP_RULE_VALUE;
       this.commitRuleDeps(rule, state, collector);
       return SKIP_RULE_VALUE;

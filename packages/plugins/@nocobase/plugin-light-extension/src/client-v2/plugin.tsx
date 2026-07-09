@@ -19,6 +19,7 @@ import {
   JS_ITEM_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
   Plugin,
   RunJSSourceResolverRegistry,
+  RunJSEditorRegistry,
   registerBlockGridSelectSceneAddBlockProvider,
 } from '@nocobase/client-v2';
 
@@ -29,7 +30,9 @@ import {
   JSBlockLightExtensionSourceField,
   JSFieldLightExtensionSourceField,
   JSItemLightExtensionSourceField,
+  RunJSLightExtensionSourceField,
 } from './components/JSBlockLightExtensionSourceField';
+import { createRunJSLightExtensionEditorProvider } from './components/RunJSLightExtensionEditorProvider';
 import { RepoEntryPublicationSelector } from './components/RepoEntryPublicationSelector';
 import { SettingsAutoForm, SettingsSingleField } from './components/SettingsAutoForm';
 import { VersionPolicyField } from './components/VersionPolicyField';
@@ -55,6 +58,7 @@ export class PluginLightExtensionClientV2 extends Plugin<Record<string, never>, 
       [JS_FIELD_LIGHT_EXTENSION_SETTINGS_STEP_FIELD]: SettingsSingleField,
       [JS_ITEM_LIGHT_EXTENSION_FULL_SOURCE_FIELD]: JSItemLightExtensionSourceField,
       [JS_ITEM_LIGHT_EXTENSION_SETTINGS_STEP_FIELD]: SettingsSingleField,
+      RunJSLightExtensionSourceField,
       RepoEntryPublicationSelector,
       SettingsAutoForm,
       VersionPolicyField,
@@ -62,6 +66,7 @@ export class PluginLightExtensionClientV2 extends Plugin<Record<string, never>, 
     this.disposers.push(
       RunJSSourceResolverRegistry.registerResolver(createLightExtensionRunJSResolver(this.app.apiClient)),
     );
+    this.disposers.push(RunJSEditorRegistry.registerProvider(createRunJSLightExtensionEditorProvider()));
     this.disposers.push(
       registerBlockGridSelectSceneAddBlockProvider('light-extension-js-blocks', createLightExtensionJSBlockAddItems),
     );

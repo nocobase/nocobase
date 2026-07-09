@@ -105,6 +105,13 @@ type NormalizedJsBlockSource = {
   settings: Record<string, unknown>;
 };
 
+type ReferenceOwnerSource = {
+  adapter: ReferenceOwnerAdapter;
+  node: FlowModelNode;
+  ownerLocator?: LightExtensionReferenceOwnerLocator;
+  source?: NormalizedJsBlockSource;
+};
+
 const DEFAULT_VERSION_POLICY: LightExtensionSourceBindingVersionPolicy = 'pinned';
 const EMPTY_SETTINGS_HASH = stableJsonHash({});
 
@@ -146,10 +153,11 @@ export class ReferenceService {
     const modelUids = collectModelUids(node);
     const templateOwnerUids = await this.collectTemplateTargetOwnerUids(ctx, new Set(modelUids));
     const seenOwnerHashes = new Set<string>();
-    for (const owner of collectReferenceOwnerNodes(node)) {
+    const owners = [...collectReferenceOwnerNodes(node), ...collectRunJSReferenceOwners(node)];
+    for (const owner of owners) {
       const modelUid = normalizeString(owner.node.uid);
       if (modelUid) {
-        seenOwnerHashes.add(hashOwnerLocator(buildFlowModelOwnerLocator(owner.adapter, modelUid, owner.node.use)));
+        seenOwnerHashes.add(hashOwnerLocator(buildOwnerLocatorForSource(owner, modelUid)));
       }
       if (templateOwnerUids.has(modelUid)) {
         continue;
@@ -172,6 +180,15 @@ export class ReferenceService {
       scopeRepoId,
     );
     await this.removeReferencesForNonAdapterOwners(
+      modelUids.filter((modelUid) => !templateOwnerUids.has(modelUid)),
+      input.action || 'flowModels.save',
+      requestId,
+      ctx,
+      summary,
+      scopeRepoId,
+      seenOwnerHashes,
+    );
+    await this.removeReferencesForMissingRunJSHosts(
       modelUids.filter((modelUid) => !templateOwnerUids.has(modelUid)),
       input.action || 'flowModels.save',
       requestId,
@@ -283,6 +300,7 @@ export class ReferenceService {
     const records = await this.findAllFlowModelRecords(rebuildContext);
     const templateOwnerUids = await this.collectTemplateTargetOwnerUids(rebuildContext);
     const seenOwnerHashes = new Set<string>();
+    const existingModelUids = new Set(records.map((record) => normalizeString(flowModelNodeFromRecord(record).uid)));
 
     for (const record of records) {
       const node = flowModelNodeFromRecord(record);
@@ -294,19 +312,20 @@ export class ReferenceService {
         continue;
       }
       const adapter = getReferenceOwnerAdapterByUse(node.use || '');
-      if (!adapter || adapter.status !== 'active') {
-        continue;
+      const owners: ReferenceOwnerSource[] = adapter && adapter.status === 'active' ? [{ adapter, node }] : [];
+      owners.push(...collectRunJSReferenceOwners(node));
+      for (const owner of owners) {
+        const ownerLocator = buildOwnerLocatorForSource(owner, modelUid);
+        seenOwnerHashes.add(hashOwnerLocator(ownerLocator));
+        await this.syncLightExtensionReference(
+          owner,
+          'referenceRebuild',
+          requestId,
+          rebuildContext,
+          summary,
+          scopeRepoId,
+        );
       }
-      const ownerLocator = buildFlowModelOwnerLocator(adapter, modelUid, node.use);
-      seenOwnerHashes.add(hashOwnerLocator(ownerLocator));
-      await this.syncLightExtensionReference(
-        { adapter, node },
-        'referenceRebuild',
-        requestId,
-        rebuildContext,
-        summary,
-        scopeRepoId,
-      );
     }
     await this.removeReferencesForTemplateOwners(
       Array.from(templateOwnerUids),
@@ -322,6 +341,9 @@ export class ReferenceService {
     for (const reference of references) {
       const ownerLocator = normalizeOwnerLocator(reference.get('ownerLocator'));
       if (!ownerLocator?.modelUid || seenOwnerHashes.has(normalizeString(reference.get('ownerLocatorHash')))) {
+        continue;
+      }
+      if (ownerLocator.kind === 'flowModel.runjsHost' && existingModelUids.has(ownerLocator.modelUid)) {
         continue;
       }
       missingOwnerUids.push(ownerLocator.modelUid);
@@ -342,6 +364,15 @@ export class ReferenceService {
       summary.ownerMissing += ownerMissing.ownerMissing;
       mergeStatusCounts(summary, ownerMissing.statusCounts);
     }
+    await this.removeReferencesForMissingRunJSHosts(
+      Array.from(existingModelUids).filter(Boolean),
+      'referenceRebuild',
+      requestId,
+      rebuildContext,
+      summary,
+      scopeRepoId,
+      seenOwnerHashes,
+    );
     summary.items.push(...(rebuildContext.dryRunItems || []));
 
     await this.recordReferenceAuditBestEffort({
@@ -510,7 +541,7 @@ export class ReferenceService {
   }
 
   private async syncLightExtensionReference(
-    owner: { adapter: ReferenceOwnerAdapter; node: FlowModelNode },
+    owner: ReferenceOwnerSource,
     action: ReferenceSyncAction,
     requestId: string,
     ctx: ReferenceServiceContext,
@@ -530,9 +561,9 @@ export class ReferenceService {
         countedScanned = true;
       }
     };
-    const ownerLocator = buildFlowModelOwnerLocator(adapter, modelUid, node.use);
+    const ownerLocator = owner.ownerLocator || buildFlowModelOwnerLocator(adapter, modelUid, node.use);
     const ownerLocatorHash = hashOwnerLocator(ownerLocator);
-    const source = readRunJsSource(node, adapter);
+    const source = owner.source || readRunJsSource(node, adapter);
     const scopeRepoId = normalizeString(limitRepoId);
     if (source.sourceMode !== 'light-extension') {
       const removed = await this.removeReferencesForOwner(ownerLocatorHash, action, requestId, ctx, {
@@ -915,7 +946,7 @@ export class ReferenceService {
       const ownerModelUid = getReferenceOwnerModelUid(reference.ownerLocator);
       const ownerNode = ownerModelUid ? await this.loadFlowModelTree(ownerModelUid, ctx).catch(() => null) : null;
       const adapter = getReferenceOwnerAdapterByOwnerKind(reference.ownerLocator.kind);
-      const source = readRunJsSource(ownerNode || {}, adapter);
+      const source = readReferenceOwnerSource(ownerNode || {}, adapter, reference.ownerLocator);
       if (source.sourceBinding?.versionPolicy === 'follow-active') {
         const resolution = await this.resolveReferenceFromBinding(
           source.sourceBinding,
@@ -1196,6 +1227,47 @@ export class ReferenceService {
         }
         summary.removed += removed;
       }
+    }
+  }
+
+  private async removeReferencesForMissingRunJSHosts(
+    uids: string[],
+    action: ReferenceSyncAction,
+    requestId: string,
+    ctx: ReferenceServiceContext,
+    summary: ReferenceUpsertSummary,
+    scopeRepoId?: string,
+    seenOwnerHashes: Set<string> = new Set(),
+  ): Promise<void> {
+    const ownerUids = Array.from(new Set(uids.map((item) => normalizeString(item)).filter(Boolean)));
+    if (!ownerUids.length) {
+      return;
+    }
+    const references = await this.findReferenceModels(
+      {
+        ownerKind: 'flowModel.runjsHost',
+        ...(scopeRepoId ? { repoId: scopeRepoId } : {}),
+      },
+      ctx,
+    );
+    for (const reference of references) {
+      const ownerLocator = normalizeOwnerLocator(reference.get('ownerLocator'));
+      const modelUid = normalizeString(ownerLocator?.modelUid);
+      if (!modelUid || !ownerUids.includes(modelUid)) {
+        continue;
+      }
+      const ownerLocatorHash = normalizeString(reference.get('ownerLocatorHash'));
+      if (ownerLocatorHash && seenOwnerHashes.has(ownerLocatorHash)) {
+        continue;
+      }
+      const removed = await this.removeReferencesForOwner(ownerLocatorHash, action, requestId, ctx, {
+        repoId: scopeRepoId,
+        reasonCode: 'runjs_host_removed',
+      });
+      if (removed) {
+        summary.scanned += 1;
+      }
+      summary.removed += removed;
     }
   }
 
@@ -1720,6 +1792,118 @@ function readRunJsSource(node: FlowModelNode, adapter?: ReferenceOwnerAdapter): 
   };
 }
 
+function readReferenceOwnerSource(
+  node: FlowModelNode,
+  adapter: ReferenceOwnerAdapter | undefined,
+  ownerLocator: LightExtensionReferenceOwnerLocator,
+): NormalizedJsBlockSource {
+  if (adapter?.ownerKind === 'flowModel.runjsHost' && ownerLocator.hostPath?.length) {
+    return readNestedRunJSHostSource(node, ownerLocator.hostPath);
+  }
+  return readRunJsSource(node, adapter);
+}
+
+function collectRunJSReferenceOwners(
+  node: FlowModelNode | null | undefined,
+  bucket: ReferenceOwnerSource[] = [],
+): ReferenceOwnerSource[] {
+  const adapter = getReferenceOwnerAdapterByKind('runjs');
+  if (!adapter || adapter.status !== 'active' || !node || typeof node !== 'object') {
+    return bucket;
+  }
+
+  const modelUid = normalizeString(node.uid);
+  if (modelUid) {
+    collectNestedRunJSHosts(node.stepParams, ['stepParams'], (hostPath, source) => {
+      if (source.sourceMode !== 'light-extension' || source.sourceBinding?.kind !== 'runjs') {
+        return;
+      }
+      bucket.push({
+        adapter,
+        node,
+        ownerLocator: buildFlowModelOwnerLocator(adapter, modelUid, node.use, hostPath),
+        source,
+      });
+    });
+  }
+
+  for (const value of Object.values(node.subModels || {})) {
+    for (const child of Array.isArray(value) ? value : value ? [value] : []) {
+      collectRunJSReferenceOwners(child, bucket);
+    }
+  }
+  return bucket;
+}
+
+function collectNestedRunJSHosts(
+  value: unknown,
+  path: Array<string | number>,
+  push: (hostPath: Array<string | number>, source: NormalizedJsBlockSource) => void,
+): void {
+  if (Array.isArray(value)) {
+    value.forEach((item, index) => collectNestedRunJSHosts(item, [...path, index], push));
+    return;
+  }
+  if (!isPlainRecord(value)) {
+    return;
+  }
+
+  const source = readRunJSValueSource(value);
+  if (source) {
+    push(path, source);
+  }
+
+  for (const [key, child] of Object.entries(value)) {
+    collectNestedRunJSHosts(child, [...path, key], push);
+  }
+}
+
+function readNestedRunJSHostSource(node: FlowModelNode, hostPath: string[]): NormalizedJsBlockSource {
+  const value = getAtPath(node, hostPath);
+  return (
+    readRunJSValueSource(value) || {
+      sourceMode: 'inline',
+      settings: {},
+    }
+  );
+}
+
+function readRunJSValueSource(value: unknown): NormalizedJsBlockSource | null {
+  if (!isPlainRecord(value)) {
+    return null;
+  }
+  const sourceMode = normalizeString(value.sourceMode) || 'inline';
+  const sourceBinding = normalizeSourceBinding(value.sourceBinding);
+  if (sourceMode !== 'light-extension' && sourceBinding?.kind !== 'runjs') {
+    return null;
+  }
+  return {
+    sourceMode,
+    sourceBinding,
+    settings: normalizeSettings(value.settings),
+  };
+}
+
+function getAtPath(root: unknown, path: string[]): unknown {
+  let current = root;
+  const normalized = path[0] === 'stepParams' ? path.slice(1) : path;
+  for (const key of normalized) {
+    if (Array.isArray(current)) {
+      const index = Number(key);
+      if (!Number.isInteger(index)) {
+        return undefined;
+      }
+      current = current[index];
+      continue;
+    }
+    if (!isPlainRecord(current)) {
+      return undefined;
+    }
+    current = current[key];
+  }
+  return current;
+}
+
 function normalizeSourceBinding(value: unknown): LightExtensionRuntimeSourceBinding | undefined {
   if (!isPlainRecord(value)) {
     return undefined;
@@ -1760,8 +1944,16 @@ function buildFlowModelOwnerLocator(
   adapter: ReferenceOwnerAdapter,
   modelUid: string,
   modelUse?: string,
+  hostPath?: Array<string | number>,
 ): LightExtensionReferenceOwnerLocator {
-  return buildReferenceOwnerLocator(adapter, modelUid, modelUse);
+  return buildReferenceOwnerLocator(adapter, modelUid, modelUse, hostPath);
+}
+
+function buildOwnerLocatorForSource(
+  owner: ReferenceOwnerSource,
+  modelUid: string,
+): LightExtensionReferenceOwnerLocator {
+  return owner.ownerLocator || buildFlowModelOwnerLocator(owner.adapter, modelUid, owner.node.use);
 }
 
 function normalizeOwnerLocator(value: unknown): LightExtensionReferenceOwnerLocator | null {

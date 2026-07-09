@@ -272,7 +272,7 @@ describe('plugin-light-extension entry scanner', () => {
         'js-action:batch-approve:ready',
         'js-field:phone-link:ready',
         'js-item:customer-menu:ready',
-        'runjs:sales-kpi:disabled',
+        'runjs:sales-kpi:ready',
       ],
     );
     expect(scan.diagnostics.filter((item) => item.code === 'kind_not_enabled')).toEqual([
@@ -280,11 +280,6 @@ describe('plugin-light-extension entry scanner', () => {
         kind: 'event',
         entryName: 'log-page-open',
         path: 'src/client/events/log-page-open',
-      }),
-      expect.objectContaining({
-        kind: 'runjs',
-        entryName: 'sales-kpi',
-        path: 'src/client/runjs/sales-kpi',
       }),
     ]);
   });
@@ -774,7 +769,7 @@ describe('plugin-light-extension entry scanner', () => {
     expect(response.status).toBe(200);
     expect(response.body).toMatchObject({
       supportedKinds: expect.arrayContaining(['js-block', 'js-field', 'js-action', 'js-item', 'runjs', 'event']),
-      enabledKinds: ['js-block', 'js-field', 'js-action', 'js-item'],
+      enabledKinds: ['js-block', 'js-field', 'js-action', 'js-item', 'runjs'],
       validatorVersion: 'light-extension-validator-v1',
       sdkTemplateVersion: 'light-extension-sdk-template-v1',
       writePolicy: {
@@ -969,7 +964,7 @@ describe('plugin-light-extension capabilities HTTP permissions', () => {
     expect(adminResponse.status).toBe(200);
     expect(adminResponse.body).toMatchObject({
       supportedKinds: expect.arrayContaining(['js-block', 'js-field', 'js-action', 'js-item', 'runjs', 'event']),
-      enabledKinds: ['js-block', 'js-field', 'js-action', 'js-item'],
+      enabledKinds: ['js-block', 'js-field', 'js-action', 'js-item', 'runjs'],
       validatorVersion: 'light-extension-validator-v1',
     });
   });
@@ -1006,7 +1001,7 @@ describe('plugin-light-extension capabilities HTTP permissions', () => {
       expect(response.status).toBe(200);
       expect(defaultPrefixResponse.status).not.toBe(200);
       expect(response.body).toMatchObject({
-        enabledKinds: ['js-block', 'js-field', 'js-action', 'js-item'],
+        enabledKinds: ['js-block', 'js-field', 'js-action', 'js-item', 'runjs'],
         validatorVersion: 'light-extension-validator-v1',
       });
     } finally {

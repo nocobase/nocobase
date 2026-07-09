@@ -97,10 +97,10 @@ const REFERENCE_OWNER_ADAPTERS: ReferenceOwnerAdapter[] = [
     kind: 'runjs',
     ownerKind: 'flowModel.runjsHost',
     title: 'RunJS',
-    status: 'placeholder',
+    status: 'active',
     locatorContract: 'RunJS value host locator for field linkage, defaults, and assignment forms',
     implementationTask: '06-task-runjs-entry-end-to-end.md',
-    message: 'Waiting for the RunJS host task to provide concrete RunJSValue locators and save hooks.',
+    message: 'Active adapter scans nested RunJSValue hosts and rebuilds references with per-host locators.',
     supportsVersionPolicy: true,
     supportsImpact: true,
     supportsBulkUpgrade: true,
@@ -164,6 +164,7 @@ export function buildReferenceOwnerLocator(
   adapter: ReferenceOwnerAdapter,
   modelUid: string,
   modelUse?: string,
+  hostPath?: Array<string | number>,
 ): LightExtensionReferenceOwnerLocator {
   if (adapter.ownerKind === 'flowModel.step') {
     return {
@@ -178,6 +179,7 @@ export function buildReferenceOwnerLocator(
     kind: adapter.ownerKind,
     modelUid,
     use: normalizeString(modelUse) || adapter.modelUse,
+    hostPath: hostPath?.length ? hostPath.map(String) : undefined,
     descriptor: adapter.locatorContract,
   };
 }

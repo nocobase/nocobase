@@ -240,6 +240,18 @@ export function createJsItemSourceBinding(
   });
 }
 
+export function createRunJSSourceBinding(
+  input: Partial<LightExtensionRuntimeSourceBinding> = {},
+): LightExtensionRuntimeSourceBinding {
+  return createSourceBinding({
+    repoId: 'ler_runjs',
+    entryId: 'lee_normalize_amount',
+    kind: 'runjs',
+    publicationId: 'lep_normalize_amount',
+    ...input,
+  });
+}
+
 export function createJsBlockNode(
   input: {
     uid?: string;
@@ -332,6 +344,68 @@ export function createJsItemNode(
           sourceMode: input.sourceMode || 'light-extension',
           sourceBinding: input.sourceBinding || createJsItemSourceBinding(),
           settings: input.settings || {},
+        },
+      },
+    },
+  };
+}
+
+export function createRunJSHostNode(
+  input: {
+    uid?: string;
+    use?: string;
+    sourceMode?: string;
+    sourceBinding?: LightExtensionRuntimeSourceBinding;
+    settings?: Record<string, unknown>;
+    hostPath?: 'defaultValue' | 'assignRule' | 'assignForm';
+  } = {},
+): FlowModelNode {
+  const runJsValue = {
+    code: '',
+    version: 'v2',
+    sourceMode: input.sourceMode || 'light-extension',
+    sourceBinding: input.sourceBinding || createRunJSSourceBinding(),
+    settings: input.settings || {},
+  };
+  if (input.hostPath === 'assignRule') {
+    return {
+      uid: input.uid || 'flow_form_runjs',
+      use: input.use || 'FormBlockModel',
+      stepParams: {
+        formModelSettings: {
+          assignRules: {
+            value: [
+              {
+                key: 'amountText',
+                targetPath: 'amountText',
+                value: runJsValue,
+              },
+            ],
+          },
+        },
+      },
+    };
+  }
+  if (input.hostPath === 'assignForm') {
+    return {
+      uid: input.uid || 'flow_assign_item_runjs',
+      use: input.use || 'AssignFormItemModel',
+      stepParams: {
+        fieldSettings: {
+          assignValue: {
+            value: runJsValue,
+          },
+        },
+      },
+    };
+  }
+  return {
+    uid: input.uid || 'flow_field_default_runjs',
+    use: input.use || 'InputFieldModel',
+    stepParams: {
+      editItemSettings: {
+        initialValue: {
+          defaultValue: runJsValue,
         },
       },
     },
@@ -485,6 +559,39 @@ export function createJsItemPublicationRecord(input: Record<string, unknown> = {
   });
 }
 
+export function createRunJSPublicationRecord(input: Record<string, unknown> = {}): Record<string, unknown> {
+  return createPublicationRecord({
+    id: 'lep_normalize_amount',
+    repoId: 'ler_runjs',
+    entryId: 'lee_normalize_amount',
+    entryPath: 'src/client/runjs/normalize-amount/index.ts',
+    kind: 'runjs',
+    surfaceStyle: 'value',
+    artifact: {
+      code: 'return ctx.settings.currency;',
+      sourceMap: '{"version":3}',
+      version: 'v2',
+      entryPath: 'src/client/runjs/normalize-amount/index.ts',
+      filesHash: 'files_hash_runjs_1',
+      diagnostics: [],
+      metadata: {},
+    },
+    settingsSchemaSnapshot: {
+      type: 'object',
+      properties: {
+        currency: {
+          type: 'string',
+          default: 'USD',
+        },
+      },
+    },
+    settingsDefaultsSnapshot: {
+      currency: 'USD',
+    },
+    ...input,
+  });
+}
+
 export function createRepoRecord(input: Record<string, unknown> = {}): Record<string, unknown> {
   return {
     id: 'ler_sales',
@@ -518,6 +625,16 @@ export function createJsItemEntryRecord(input: Record<string, unknown> = {}): Re
     id: 'lee_level_label',
     repoId: 'ler_items',
     kind: 'js-item',
+    healthStatus: 'ready',
+    ...input,
+  });
+}
+
+export function createRunJSEntryRecord(input: Record<string, unknown> = {}): Record<string, unknown> {
+  return createEntryRecord({
+    id: 'lee_normalize_amount',
+    repoId: 'ler_runjs',
+    kind: 'runjs',
     healthStatus: 'ready',
     ...input,
   });
@@ -613,7 +730,11 @@ export function createJsItemReferenceRecord(input: Record<string, unknown> = {})
 
 export function createOwnerLocator(
   modelUid: string,
-  input: { kind?: 'js-block' | 'js-field' | 'js-action' | 'js-item'; use?: string } = {},
+  input: {
+    kind?: 'js-block' | 'js-field' | 'js-action' | 'js-item' | 'runjs';
+    use?: string;
+    hostPath?: string[];
+  } = {},
 ): LightExtensionReferenceOwnerLocator {
   if (input.kind === 'js-field') {
     return {
@@ -637,6 +758,15 @@ export function createOwnerLocator(
       modelUid,
       use: input.use || 'JSItemModel',
       descriptor: 'Item model settings locator',
+    };
+  }
+  if (input.kind === 'runjs') {
+    return {
+      kind: 'flowModel.runjsHost',
+      modelUid,
+      use: input.use,
+      hostPath: input.hostPath,
+      descriptor: 'RunJS value host locator for field linkage, defaults, and assignment forms',
     };
   }
   return {

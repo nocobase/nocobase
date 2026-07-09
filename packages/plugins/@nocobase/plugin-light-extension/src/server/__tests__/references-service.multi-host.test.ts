@@ -75,7 +75,7 @@ describe('plugin-light-extension multi-host reference foundation', () => {
         expect.objectContaining({
           kind: 'runjs',
           ownerKind: 'flowModel.runjsHost',
-          status: 'placeholder',
+          status: 'active',
         }),
       ]),
     );
@@ -158,7 +158,7 @@ describe('plugin-light-extension multi-host reference foundation', () => {
 
     const result = await service.rebuildIndex({
       ownerLocator: {
-        kind: 'flowModel.runjsHost',
+        kind: 'flowModel.eventSettings',
         modelUid: 'flow_js_block',
       },
       dryRun: true,

@@ -45,7 +45,7 @@ describe('plugin-light-extension kind enablement validator', () => {
     expect(result.capabilities.supportedKinds).toEqual(
       expect.arrayContaining(['js-block', 'js-field', 'js-action', 'js-item', 'runjs', 'event']),
     );
-    expect(result.capabilities.enabledKinds).toEqual(['js-block', 'js-field', 'js-action', 'js-item']);
+    expect(result.capabilities.enabledKinds).toEqual(['js-block', 'js-field', 'js-action', 'js-item', 'runjs']);
     expect(result.entries.map((entry) => `${entry.kind}:${entry.entryName}`)).toEqual([
       'event:log-page-open',
       'js-action:batch-approve',
@@ -58,11 +58,6 @@ describe('plugin-light-extension kind enablement validator', () => {
         severity: 'warning',
         kind: 'event',
         path: 'src/client/events/log-page-open',
-      }),
-      expect.objectContaining({
-        severity: 'warning',
-        kind: 'runjs',
-        path: 'src/client/runjs/sales-kpi',
       }),
     ]);
     expect(result.capabilities.allowedPaths.entries.runjs).toEqual(

@@ -17,8 +17,6 @@ import {
   isVariableExpression,
   parseValueToPath,
   isRunJSValue,
-  normalizeRunJSValue,
-  runjsWithSafeGlobals,
   useFlowContext,
   extractPropertyPath,
   FlowModel,
@@ -35,6 +33,13 @@ import { pickOperatorStyle as pickStyle, resolveOperatorComponent } from '../int
 import { RunJSValueEditor } from './RunJSValueEditor';
 import { buildDynamicNamePath } from '../models/blocks/form/dynamicNamePath';
 import type { RunJSSourceLocator } from './runjs-studio';
+import {
+  buildRunJSOwnerLocatorFromSourceLocator,
+  evaluateResolvedRunJSValue,
+  reportRunJSRuntimeErrorBestEffort,
+  resolveRuntimeRunJS,
+  type ResolvedRuntimeRunJS,
+} from './runjs-source';
 
 interface Props {
   value: any;
@@ -249,11 +254,32 @@ export const DefaultValue = connect((props: Props) => {
       let out = rawVal;
       // RunJS default: execute and use the computed result for preview/backfill
       if (isRunJSValue(out)) {
+        let resolved: ResolvedRuntimeRunJS | undefined;
         try {
-          const { code, version } = normalizeRunJSValue(out);
-          const ret = await runjsWithSafeGlobals(model?.context, code, { version });
-          out = ret?.success ? ret.value : undefined;
-        } catch {
+          resolved = await resolveRuntimeRunJS({
+            runJs: out,
+            context: {
+              ownerKind: 'flowModel.runjsHost',
+              ownerLocator: buildRunJSOwnerLocatorFromSourceLocator(sourceLocator, {
+                modelUid: model?.uid,
+                use: (model as any)?.use,
+              }),
+            },
+          });
+          out = await evaluateResolvedRunJSValue({
+            ctx: model?.context,
+            resolved,
+          });
+        } catch (error) {
+          await reportRunJSRuntimeErrorBestEffort({
+            ctx: model?.context,
+            error,
+            resolved,
+            ownerLocator: buildRunJSOwnerLocatorFromSourceLocator(sourceLocator, {
+              modelUid: model?.uid,
+              use: (model as any)?.use,
+            }),
+          });
           out = undefined;
         }
         return out;
@@ -268,7 +294,7 @@ export const DefaultValue = connect((props: Props) => {
       }
       return out;
     },
-    [model],
+    [model, sourceLocator],
   );
 
   // 构建动态 NamePath（兼容数组子表单的行索引）

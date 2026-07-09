@@ -21,16 +21,6 @@ import {
 } from '../models/blocks/form/legacyDefaultValueMigration';
 import { hasPersistedAssignRulesValue } from '../models/blocks/shared/legacyDefaultValueMigrationBase';
 
-function hasPersistedRuleItem(value: unknown, item: FieldAssignRuleItem, index: number): boolean {
-  if (!Array.isArray(value)) return false;
-  if (item?.key) {
-    return value.some(
-      (rule) => Boolean(rule) && typeof rule === 'object' && (rule as { key?: unknown }).key === item.key,
-    );
-  }
-  return Boolean(value[index]);
-}
-
 const FormAssignRulesUI = observer(
   (props: { value?: FieldAssignRuleItem[]; onChange?: (value: FieldAssignRuleItem[]) => void }) => {
     const { value: propValue, onChange } = props;
@@ -90,18 +80,15 @@ const FormAssignRulesUI = observer(
     );
 
     const getValueInputProps = React.useCallback(
-      (item: FieldAssignRuleItem, index: number) => {
-        const ruleKey = item?.key || index;
-        const persistedValue = ctx.model?.getStepParams?.('formModelSettings', 'assignRules')?.value;
-        const hasSource = ctx.model?.uid && hasPersistedRuleItem(persistedValue, item, index);
+      (_item: FieldAssignRuleItem, index: number) => {
         return {
-          sourceLocator: hasSource
+          sourceLocator: ctx.model?.uid
             ? {
                 kind: 'flowModel.nestedRunJS' as const,
                 modelUid: ctx.model.uid,
                 containerFlowKey: 'formModelSettings',
                 containerStepKey: 'assignRules',
-                valuePath: ['value', ruleKey, 'value'],
+                valuePath: ['value', index, 'value'],
                 scene: 'formValue',
               }
             : undefined,

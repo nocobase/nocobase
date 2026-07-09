@@ -10,9 +10,17 @@
 export type RunJSValue = {
   code: string;
   version?: string;
+  sourceMode?: string;
+  sourceBinding?: Record<string, unknown>;
+  settings?: Record<string, unknown>;
 };
 
-const RUNJS_ALLOWED_KEYS = new Set(['code', 'version']);
+export type NormalizedRunJSValue = RunJSValue & {
+  code: string;
+  version: string;
+};
+
+const RUNJS_ALLOWED_KEYS = new Set(['code', 'version', 'sourceMode', 'sourceBinding', 'settings']);
 
 /**
  * Strictly detect RunJSValue to avoid conflicting with normal constant objects.
@@ -21,24 +29,42 @@ const RUNJS_ALLOWED_KEYS = new Set(['code', 'version']);
  * - MAY include string `version`
  * - MUST NOT include any other enumerable keys
  */
-export function isRunJSValue(value: any): value is RunJSValue {
+export function isRunJSValue(value: unknown): value is RunJSValue {
   if (!value || typeof value !== 'object') return false;
   if (Array.isArray(value)) return false;
   const keys = Object.keys(value);
   if (!keys.includes('code')) return false;
-  if (typeof (value as any).code !== 'string') return false;
-  if ('version' in value && (value as any).version != null && typeof (value as any).version !== 'string') return false;
+  const record = value as Record<string, unknown>;
+  if (typeof record.code !== 'string') return false;
+  if ('version' in value && record.version != null && typeof record.version !== 'string') return false;
+  if ('sourceMode' in value && record.sourceMode != null && typeof record.sourceMode !== 'string') return false;
+  if ('sourceBinding' in value && record.sourceBinding != null && !isPlainRecord(record.sourceBinding)) return false;
+  if ('settings' in value && record.settings != null && !isPlainRecord(record.settings)) return false;
   for (const k of keys) {
     if (!RUNJS_ALLOWED_KEYS.has(k)) return false;
   }
   return true;
 }
 
-export function normalizeRunJSValue(value: RunJSValue): Required<RunJSValue> {
+export function normalizeRunJSValue(value: RunJSValue | null | undefined): NormalizedRunJSValue {
+  const sourceMode = typeof value?.sourceMode === 'string' && value.sourceMode ? value.sourceMode : undefined;
+  const sourceBinding = isPlainRecord(value?.sourceBinding) ? cloneRecord(value.sourceBinding) : undefined;
+  const settings = isPlainRecord(value?.settings) ? cloneRecord(value.settings) : undefined;
   return {
     code: String(value?.code ?? ''),
     version: String(value?.version ?? 'v1'),
+    ...(sourceMode ? { sourceMode } : {}),
+    ...(sourceBinding ? { sourceBinding } : {}),
+    ...(settings ? { settings } : {}),
   };
+}
+
+function isPlainRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+function cloneRecord(value: Record<string, unknown>): Record<string, unknown> {
+  return { ...value };
 }
 
 function stripStringsAndComments(code: string): string {

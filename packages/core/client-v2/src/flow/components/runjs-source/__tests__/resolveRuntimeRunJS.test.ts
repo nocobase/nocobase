@@ -95,6 +95,50 @@ describe('resolveRuntimeRunJS', () => {
     );
   });
 
+  it('resolves source fields stored inside a RunJSValue', async () => {
+    const resolve = vi.fn(() => ({
+      code: 'return ctx.settings.currency;',
+      version: 'v2',
+      settings: {
+        currency: 'USD',
+      },
+    }));
+    RunJSSourceResolverRegistry.registerResolver({
+      sourceMode: 'light-extension',
+      resolve,
+    });
+
+    await expect(
+      resolveRuntimeRunJS({
+        runJs: {
+          code: 'return "inline";',
+          version: 'v1',
+          sourceMode: 'light-extension',
+          sourceBinding: LIGHT_EXTENSION_SOURCE_BINDING,
+          settings: {
+            currency: 'CNY',
+          },
+        },
+      }),
+    ).resolves.toMatchObject({
+      code: 'return ctx.settings.currency;',
+      version: 'v2',
+      sourceMode: 'light-extension',
+      sourceBinding: LIGHT_EXTENSION_SOURCE_BINDING,
+      settings: {
+        currency: 'USD',
+      },
+    });
+    expect(resolve).toHaveBeenCalledWith(
+      expect.objectContaining({
+        sourceBinding: LIGHT_EXTENSION_SOURCE_BINDING,
+        settings: {
+          currency: 'CNY',
+        },
+      }),
+    );
+  });
+
   it('lets resolver-returned settings override input settings intentionally', async () => {
     RunJSSourceResolverRegistry.registerResolver({
       sourceMode: 'custom-source',

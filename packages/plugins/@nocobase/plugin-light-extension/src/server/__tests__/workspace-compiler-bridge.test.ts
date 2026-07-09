@@ -258,6 +258,53 @@ describe('plugin-light-extension workspace compiler bridge', () => {
     );
   });
 
+  it('compiles RunJS entries through the enabled value compiler surface', async () => {
+    const result = await bridge.compileEntry(
+      {
+        repoId: 'ler_sales',
+        entryId: 'lee_normalize_amount',
+        kind: 'runjs',
+        entryName: 'normalize-amount',
+        entryPath: 'src/client/runjs/normalize-amount/index.ts',
+        surfaceStyle: 'run',
+        files: [
+          {
+            path: 'src/client/runjs/normalize-amount/index.ts',
+            content:
+              'export default async function normalizeAmount(ctx) {\n  const amount = await ctx.getValue("amount");\n  await ctx.setValue("amountText", `${ctx.settings.currency}:${amount}`);\n  return amount;\n}\n',
+          },
+        ],
+      },
+      {
+        requestId: 'req_compile_runjs',
+      },
+    );
+
+    expect(result.accepted).toBe(true);
+    expect(result.diagnostics).toEqual([]);
+    expect(result.surface).toMatchObject({
+      kind: 'runjs',
+      surfaceStyle: 'run',
+      compilerSurfaceStyle: 'value',
+      enabled: true,
+      modelUse: 'JSItemModel',
+      surface: 'reaction.value-runjs',
+    });
+    expect(result.artifact).toMatchObject({
+      version: 'v2',
+      entryPath: 'src/client/runjs/normalize-amount/index.ts',
+      metadata: expect.objectContaining({
+        repoId: 'ler_sales',
+        entryId: 'lee_normalize_amount',
+        kind: 'runjs',
+        entryName: 'normalize-amount',
+        surfaceStyle: 'run',
+        compilerSurfaceStyle: 'value',
+      }),
+    });
+    expect(result.artifact.code).toContain('return await __runjs_default_');
+  });
+
   it('reuses FlowEngine authoring rules for js-block render surfaces', async () => {
     const result = await bridge.compileEntry(
       {

@@ -9,4 +9,5 @@
 
 export * from './RunJSSourceResolverRegistry';
 export * from './resolveRuntimeRunJS';
+export * from './runJSRuntime';
 export * from './types';

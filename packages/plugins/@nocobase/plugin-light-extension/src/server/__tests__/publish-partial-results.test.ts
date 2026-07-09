@@ -232,6 +232,78 @@ describe('plugin-light-extension publish partial results', () => {
     );
   });
 
+  it('publishes RunJS entries with run surface publications', async () => {
+    const repo = createRepo();
+    const { db, publicationsRepository, reposRepository } = createDbStub([
+      {
+        ...createEntryRecord({ id: 'lee_normalize_amount', repoId: repo.id, entryName: 'normalize-amount' }),
+        kind: 'runjs',
+        entryPath: 'src/client/runjs/normalize-amount/index.ts',
+      },
+    ]);
+    const service = createPublishService(
+      db,
+      createFileServiceStub(repo, [
+        {
+          path: 'src/client/runjs/normalize-amount/index.ts',
+          content:
+            'export default async function normalizeAmount(ctx) {\n  const amount = await ctx.getValue("amount");\n  await ctx.setValue("amountText", `${ctx.settings.currency}:${amount}`);\n  return amount;\n}\n',
+        },
+      ]),
+    );
+
+    const result = await service.publish({
+      repoId: repo.id,
+      entryIds: ['lee_normalize_amount'],
+      commitId: 'vsc_commit_1',
+      clientRequestId: 'publish_req_runjs',
+    });
+
+    expect(result).toMatchObject({
+      status: 'success',
+      httpStatus: 200,
+      entryResults: [
+        expect.objectContaining({
+          entryId: 'lee_normalize_amount',
+          kind: 'runjs',
+          status: 'created',
+          publication: expect.objectContaining({
+            id: 'lep_created_1',
+            entryPath: 'src/client/runjs/normalize-amount/index.ts',
+            kind: 'runjs',
+            surfaceStyle: 'run',
+            artifact: expect.objectContaining({
+              entryPath: 'src/client/runjs/normalize-amount/index.ts',
+              metadata: expect.objectContaining({
+                kind: 'runjs',
+                surfaceStyle: 'run',
+                compilerSurfaceStyle: 'value',
+              }),
+            }),
+          }),
+        }),
+      ],
+    });
+    expect(publicationsRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        values: expect.objectContaining({
+          artifact: expect.objectContaining({
+            code: expect.stringContaining('return await __runjs_default_'),
+          }),
+        }),
+      }),
+    );
+    expect(publicationsRepository.create).toHaveBeenCalledTimes(1);
+    expect(reposRepository.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        filterByTk: repo.id,
+        values: {
+          lastPublishedAt: expect.any(Date),
+        },
+      }),
+    );
+  });
+
   it('activates the created publication when activate is true', async () => {
     const repo = createRepo();
     const { db, entryModels, logsRepository } = createDbStub([

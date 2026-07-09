@@ -21,8 +21,6 @@ import {
   createSafeNavigator,
   observer,
   isRunJSValue,
-  normalizeRunJSValue,
-  runjsWithSafeGlobals,
 } from '@nocobase/flow-engine';
 import { evaluateConditions, FilterGroupType, removeInvalidFilterItems } from '@nocobase/utils/client';
 import React from 'react';
@@ -54,6 +52,13 @@ import {
 } from '../internal/utils/modelUtils';
 import { namePathToPathKey, parsePathString, resolveDynamicNamePath } from '../models/blocks/form/value-runtime/path';
 import { ensureFormValueDrivenLinkageRefresh } from './linkageRulesFormValueRefresh';
+import {
+  buildRunJSOwnerLocator,
+  evaluateResolvedRunJSValue,
+  reportRunJSRuntimeErrorBestEffort,
+  resolveRuntimeRunJS,
+  type ResolvedRuntimeRunJS,
+} from '../components/runjs-source';
 
 interface LinkageRule {
   /** 随机生成的字符串 */
@@ -485,22 +490,81 @@ function createLegacyTargetPathResolver(ctx: FlowContext) {
 
 const SKIP_RUNJS_ASSIGN_VALUE = Symbol('SKIP_RUNJS_ASSIGN_VALUE');
 
-async function resolveLinkageAssignRuntimeValue(ctx: FlowContext, rawValue: any) {
+async function resolveLinkageAssignRuntimeValue(ctx: FlowContext, rawValue: any, options: { itemIndex?: number } = {}) {
   if (!isRunJSValue(rawValue)) {
     return rawValue;
   }
 
+  let resolved: ResolvedRuntimeRunJS | undefined;
+  const ownerLocator = buildRunJSOwnerLocator({
+    modelUid: (ctx.model as any)?.uid,
+    use: getRunJSModelUse(ctx.model),
+    hostPath: buildLinkageAssignRunJSHostPath(ctx, options.itemIndex),
+  });
   try {
-    const { code, version } = normalizeRunJSValue(rawValue);
-    const ret = await runjsWithSafeGlobals(ctx, code, { version });
-    if (!ret?.success) {
-      return SKIP_RUNJS_ASSIGN_VALUE;
-    }
-    return ret.value;
+    resolved = await resolveRuntimeRunJS({
+      runJs: rawValue,
+      context: {
+        ownerKind: 'flowModel.runjsHost',
+        ownerLocator,
+      },
+    });
+    return await evaluateResolvedRunJSValue({
+      ctx,
+      resolved,
+    });
   } catch (error) {
+    await reportRunJSRuntimeErrorBestEffort({
+      ctx,
+      error,
+      resolved,
+      ownerLocator,
+    });
     console.warn('[linkageRules] Failed to evaluate RunJS assign value', error);
     return SKIP_RUNJS_ASSIGN_VALUE;
   }
+}
+
+function buildLinkageAssignRunJSHostPath(ctx: FlowContext, itemIndex?: number): Array<string | number> {
+  const flowKey = typeof (ctx as any)?.flowKey === 'string' ? (ctx as any).flowKey : undefined;
+  const stepKey = getCurrentStepKey(ctx);
+  const itemPath = typeof itemIndex === 'number' ? [itemIndex, 'value'] : ['value'];
+  const ownerPath = (ctx as { __linkageRunJSOwnerPath?: { ruleIndex?: number; actionIndex?: number } })
+    .__linkageRunJSOwnerPath;
+  if (flowKey && stepKey && typeof ownerPath?.ruleIndex === 'number' && typeof ownerPath?.actionIndex === 'number') {
+    return [
+      'stepParams',
+      flowKey,
+      stepKey,
+      'value',
+      ownerPath.ruleIndex,
+      'actions',
+      ownerPath.actionIndex,
+      'params',
+      'value',
+      ...itemPath,
+    ];
+  }
+  return flowKey && stepKey ? ['stepParams', flowKey, stepKey, 'value', ...itemPath] : ['linkageAssign', ...itemPath];
+}
+
+function getRunJSModelUse(model: unknown): string | undefined {
+  if (!model || typeof model !== 'object') {
+    return undefined;
+  }
+  const record = model as Record<string, unknown>;
+  const options = record._options as Record<string, unknown> | undefined;
+  const createModelOptions = record.createModelOptions as Record<string, unknown> | undefined;
+  return (
+    toNonEmptyString(record.use) ||
+    toNonEmptyString(options?.use) ||
+    toNonEmptyString(createModelOptions?.use) ||
+    toNonEmptyString((model as { constructor?: { name?: unknown } }).constructor?.name)
+  );
+}
+
+function toNonEmptyString(value: unknown): string | undefined {
+  return typeof value === 'string' && value.trim() ? value.trim() : undefined;
 }
 
 function getSubFormHostFieldPath(ctx: FlowContext): string | null {
@@ -890,61 +954,9 @@ type ArrayFieldComponentProps = {
   linkageActionIndex?: number;
 };
 
-function findPersistedArrayItem(items: unknown, key?: string | number, index?: number): unknown {
-  if (!Array.isArray(items)) return undefined;
-  if (typeof key === 'string') {
-    return items.find((item) => Boolean(item) && typeof item === 'object' && (item as { key?: unknown }).key === key);
-  }
-  if (typeof key === 'number') {
-    return items[key];
-  }
-  return typeof index === 'number' ? items[index] : undefined;
-}
-
 function getCurrentStepKey(ctx: FlowContext): string | undefined {
   const currentStep = (ctx as { currentStep?: { key?: unknown } }).currentStep;
   return typeof currentStep?.key === 'string' ? currentStep.key : undefined;
-}
-
-function getPersistedLinkageActionParams(
-  ctx: FlowContext,
-  ruleKey?: string | number,
-  ruleIndex?: number,
-  actionKey?: string | number,
-  actionIndex?: number,
-): unknown {
-  if (typeof ctx.flowKey !== 'string') return undefined;
-  const stepKey = getCurrentStepKey(ctx);
-  if (!stepKey) return undefined;
-
-  const persistedValue = ctx.model?.getStepParams?.(ctx.flowKey, stepKey)?.value;
-  const rule = findPersistedArrayItem(persistedValue, ruleKey, ruleIndex);
-  const action = findPersistedArrayItem(_.get(rule, ['actions']), actionKey, actionIndex);
-  return _.get(action, ['params']);
-}
-
-function hasPersistedLinkageAssignItem(
-  ctx: FlowContext,
-  item: FieldAssignRuleItem,
-  index: number,
-  ruleKey?: string | number,
-  ruleIndex?: number,
-  actionKey?: string | number,
-  actionIndex?: number,
-): boolean {
-  const params = getPersistedLinkageActionParams(ctx, ruleKey, ruleIndex, actionKey, actionIndex);
-  return Boolean(findPersistedArrayItem(_.get(params, ['value']), item?.key, index));
-}
-
-function hasPersistedLinkageScriptValue(
-  ctx: FlowContext,
-  ruleKey?: string | number,
-  ruleIndex?: number,
-  actionKey?: string | number,
-  actionIndex?: number,
-): boolean {
-  const params = getPersistedLinkageActionParams(ctx, ruleKey, ruleIndex, actionKey, actionIndex);
-  return typeof _.get(params, ['value', 'script']) === 'string';
 }
 
 const LEGACY_ASSIGN_RULE = { mode: 'assign', valueKey: 'assignValue' } as const;
@@ -970,8 +982,7 @@ const FieldAssignRulesActionComponent: React.FC<
     fixedMode?: 'assign' | 'default';
   }
 > = (props) => {
-  const { value, onChange, legacy, fixedMode, linkageRuleKey, linkageRuleIndex, linkageActionKey, linkageActionIndex } =
-    props;
+  const { value, onChange, legacy, fixedMode, linkageRuleIndex, linkageActionIndex } = props;
   const ctx = useFlowContext();
 
   const t = React.useCallback((key: string) => ctx.model.translate(key), [ctx.model]);
@@ -996,36 +1007,32 @@ const FieldAssignRulesActionComponent: React.FC<
   );
 
   const getValueInputProps = React.useCallback(
-    (item: FieldAssignRuleItem, index: number) => {
-      const ruleKey = linkageRuleKey ?? linkageRuleIndex;
-      const actionKey = linkageActionKey ?? linkageActionIndex;
-      const itemKey = item?.key || index;
+    (_item: FieldAssignRuleItem, index: number) => {
       const containerFlowKey = typeof ctx.flowKey === 'string' ? ctx.flowKey : undefined;
       const containerStepKey = getCurrentStepKey(ctx);
-      const hasSource = hasPersistedLinkageAssignItem(
-        ctx,
-        item,
-        index,
-        ruleKey,
-        linkageRuleIndex,
-        actionKey,
-        linkageActionIndex,
-      );
 
       return {
         sourceLocator:
           ctx.model?.uid &&
           containerFlowKey &&
           containerStepKey &&
-          typeof ruleKey !== 'undefined' &&
-          typeof actionKey !== 'undefined' &&
-          hasSource
+          typeof linkageRuleIndex === 'number' &&
+          typeof linkageActionIndex === 'number'
             ? {
                 kind: 'flowModel.nestedRunJS' as const,
                 modelUid: ctx.model.uid,
                 containerFlowKey,
                 containerStepKey,
-                valuePath: ['value', ruleKey, 'actions', actionKey, 'params', 'value', itemKey, 'value'],
+                valuePath: [
+                  'value',
+                  linkageRuleIndex,
+                  'actions',
+                  linkageActionIndex,
+                  'params',
+                  'value',
+                  index,
+                  'value',
+                ],
                 scene: 'formValue',
               }
             : undefined,
@@ -1033,7 +1040,7 @@ const FieldAssignRulesActionComponent: React.FC<
         surfaceStyle: 'value' as const,
       };
     },
-    [ctx, linkageActionIndex, linkageActionKey, linkageRuleIndex, linkageRuleKey, t],
+    [ctx, linkageActionIndex, linkageRuleIndex, t],
   );
 
   return (
@@ -1065,24 +1072,11 @@ const SetFieldsDefaultValueComponent: React.FC<ArrayFieldComponentProps> = (prop
 };
 
 const LinkageRunJSValueComponent: React.FC<ArrayFieldComponentProps> = (props) => {
-  const {
-    value = { script: '' },
-    onChange,
-    linkageRuleKey,
-    linkageRuleIndex,
-    linkageActionKey,
-    linkageActionIndex,
-  } = props;
+  const { value = { script: '' }, onChange } = props;
   const ctx = useFlowContext();
   const t = React.useCallback((key: string) => ctx.model.translate(key), [ctx.model]);
   const scriptValue =
     typeof (value as { script?: unknown })?.script === 'string' ? (value as { script: string }).script : '';
-  const containerFlowKey = typeof ctx.flowKey === 'string' ? ctx.flowKey : undefined;
-  const containerStepKey = getCurrentStepKey(ctx);
-  const ruleKey = linkageRuleKey ?? linkageRuleIndex;
-  const actionKey = linkageActionKey ?? linkageActionIndex;
-  const hasSource = hasPersistedLinkageScriptValue(ctx, ruleKey, linkageRuleIndex, actionKey, linkageActionIndex);
-
   const handleScriptChange = (script: string) => {
     onChange?.({
       ...(value && typeof value === 'object' ? value : {}),
@@ -1099,23 +1093,6 @@ const LinkageRunJSValueComponent: React.FC<ArrayFieldComponentProps> = (props) =
           onChange={(next) => handleScriptChange(next.code)}
           height="200px"
           scene="linkage"
-          sourceLocator={
-            ctx.model?.uid &&
-            containerFlowKey &&
-            containerStepKey &&
-            typeof ruleKey !== 'undefined' &&
-            typeof actionKey !== 'undefined' &&
-            hasSource
-              ? {
-                  kind: 'flowModel.nestedRunJS',
-                  modelUid: ctx.model.uid,
-                  containerFlowKey,
-                  containerStepKey,
-                  valuePath: ['value', ruleKey, 'actions', actionKey, 'params', 'value', 'script'],
-                  scene: 'linkage',
-                }
-              : undefined
-          }
           sourceLabel={`${t('Linkage rule')} / ${t('Execute JavaScript')}`}
           surfaceStyle="action"
         />
@@ -1148,7 +1125,7 @@ export const linkageAssignField = defineAction({
         return ctx.app.jsonLogic.apply({ [operator]: [path, right] });
       };
 
-      for (const it of items) {
+      for (const [itemIndex, it] of items.entries()) {
         if (it?.enable === false) continue;
         const targetPath = it?.targetPath ? String(it.targetPath) : '';
         if (!targetPath) continue;
@@ -1164,7 +1141,9 @@ export const linkageAssignField = defineAction({
           (fieldModel as any)?.collectionField ?? getCollectionFromModel(ctx.model)?.getField?.(top);
         let runtimeValue = it?.value;
         if (isRunJSValue(runtimeValue)) {
-          runtimeValue = await resolveLinkageAssignRuntimeValue(ctx, runtimeValue);
+          runtimeValue = await resolveLinkageAssignRuntimeValue(ctx, runtimeValue, {
+            itemIndex,
+          });
           if (runtimeValue === SKIP_RUNJS_ASSIGN_VALUE) {
             continue;
           }
@@ -1344,7 +1323,7 @@ export const subFormLinkageAssignField = defineAction({
         return model as any;
       };
 
-      for (const it of items) {
+      for (const [itemIndex, it] of items.entries()) {
         if (it?.enable === false) continue;
         const rawTargetPath = it?.targetPath ? String(it.targetPath) : '';
         if (!rawTargetPath) continue;
@@ -1377,7 +1356,9 @@ export const subFormLinkageAssignField = defineAction({
           getCollectionFromModel((ctx.model as any)?.parent ?? ctx.model)?.getField?.(top);
         let runtimeValue = it?.value;
         if (isRunJSValue(runtimeValue)) {
-          runtimeValue = await resolveLinkageAssignRuntimeValue(ctx, runtimeValue);
+          runtimeValue = await resolveLinkageAssignRuntimeValue(ctx, runtimeValue, {
+            itemIndex,
+          });
           if (runtimeValue === SKIP_RUNJS_ASSIGN_VALUE) {
             continue;
           }
@@ -1454,7 +1435,7 @@ export const setFieldsDefaultValue = defineAction({
         return ctx.app.jsonLogic.apply({ [operator]: [path, right] });
       };
 
-      for (const it of items) {
+      for (const [itemIndex, it] of items.entries()) {
         if (it?.enable === false) continue;
         const targetPath = it?.targetPath ? String(it.targetPath) : '';
         if (!targetPath) continue;
@@ -1470,7 +1451,9 @@ export const setFieldsDefaultValue = defineAction({
           (fieldModel as any)?.collectionField ?? getCollectionFromModel(ctx.model)?.getField?.(top);
         let runtimeValue = it?.value;
         if (isRunJSValue(runtimeValue)) {
-          runtimeValue = await resolveLinkageAssignRuntimeValue(ctx, runtimeValue);
+          runtimeValue = await resolveLinkageAssignRuntimeValue(ctx, runtimeValue, {
+            itemIndex,
+          });
           if (runtimeValue === SKIP_RUNJS_ASSIGN_VALUE) {
             continue;
           }
@@ -2307,13 +2290,16 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
   };
 
   // 1. 运行所有的联动规则
-  for (const rule of linkageRules.filter((r) => r.enable)) {
+  for (const [ruleIndex, rule] of linkageRules.entries()) {
+    if (!rule.enable) {
+      continue;
+    }
     const { condition: conditions, actions } = rule;
 
     const matched = evaluateConditions(removeInvalidFilterItems(conditions), evaluator);
     if (!matched) continue;
 
-    for (const action of actions) {
+    for (const [actionIndex, action] of actions.entries()) {
       const setProps = (model: FlowModel & { __originalProps?: any; __shouldReset?: boolean }, props: any) => {
         const normalizedProps =
           props && typeof props === 'object' && Object.prototype.hasOwnProperty.call(props, 'value')
@@ -2355,7 +2341,20 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
       };
 
       // TODO: 需要改成 runAction 的写法。但 runAction 是异步的，用在这里会不符合预期。后面需要解决这个问题
-      await ctx.getAction(action.name)?.handler(ctx, { ...action.params, setProps, addFormValuePatch });
+      const previousOwnerPath = (ctx as { __linkageRunJSOwnerPath?: unknown }).__linkageRunJSOwnerPath;
+      (ctx as { __linkageRunJSOwnerPath?: { ruleIndex: number; actionIndex: number } }).__linkageRunJSOwnerPath = {
+        ruleIndex: Number((rule as { __linkageRuleIndex?: unknown }).__linkageRuleIndex ?? ruleIndex),
+        actionIndex: Number((action as { __linkageActionIndex?: unknown }).__linkageActionIndex ?? actionIndex),
+      };
+      try {
+        await ctx.getAction(action.name)?.handler(ctx, { ...action.params, setProps, addFormValuePatch });
+      } finally {
+        if (typeof previousOwnerPath === 'undefined') {
+          delete (ctx as { __linkageRunJSOwnerPath?: unknown }).__linkageRunJSOwnerPath;
+        } else {
+          (ctx as { __linkageRunJSOwnerPath?: unknown }).__linkageRunJSOwnerPath = previousOwnerPath;
+        }
+      }
     }
   }
 
@@ -2728,23 +2727,25 @@ export const fieldLinkageRules = defineAction({
         rowRulesByKey.set(rowKey, arr);
       };
 
-      for (const rule of rawRules) {
+      for (const [ruleIndex, rule] of rawRules.entries()) {
         if (!rule || typeof rule !== 'object') continue;
         const baseRule = {
           key: (rule as any).key,
           title: (rule as any).title,
           enable: (rule as any).enable,
           condition: (rule as any).condition,
+          __linkageRuleIndex: ruleIndex,
         };
         const actions = Array.isArray((rule as any).actions) ? ((rule as any).actions as any[]) : [];
 
         const blockActions: any[] = [];
         const rowActionsByKey = new Map<string, any[]>();
 
-        for (const action of actions) {
+        for (const [actionIndex, action] of actions.entries()) {
           const actionName = (action as any)?.name;
           const actionParams = (action as any)?.params;
           const rawValue = actionParams?.value;
+          const actionWithIndex = { ...action, __linkageActionIndex: actionIndex };
 
           const splitAssignAction = (legacy: {
             mode: 'default' | 'assign';
@@ -2776,7 +2777,7 @@ export const fieldLinkageRules = defineAction({
             const blockAction =
               blockItems.length > 0
                 ? {
-                    ...action,
+                    ...actionWithIndex,
                     params: { ...actionParams, value: blockItems },
                   }
                 : null;
@@ -2785,7 +2786,7 @@ export const fieldLinkageRules = defineAction({
             for (const [rowScopeKey, rowItems] of rowItemsByKey.entries()) {
               if (!rowItems.length) continue;
               rowActions.set(rowScopeKey, {
-                ...action,
+                ...actionWithIndex,
                 params: { ...actionParams, value: rowItems },
               });
             }
@@ -2816,7 +2817,7 @@ export const fieldLinkageRules = defineAction({
           }
 
           // other actions: run at block scope only
-          blockActions.push(action);
+          blockActions.push(actionWithIndex);
         }
 
         if (blockActions.length) {

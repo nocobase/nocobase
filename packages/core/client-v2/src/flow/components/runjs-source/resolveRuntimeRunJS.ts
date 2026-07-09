@@ -94,28 +94,27 @@ export async function resolveRuntimeRunJS(
   input: RuntimeRunJSInput,
   registry: RunJSSourceResolverRegistryManager = RunJSSourceResolverRegistry,
 ): Promise<ResolvedRuntimeRunJS> {
-  const sourceMode = normalizeSourceMode(input.sourceMode);
+  const runJs = normalizeRunJSValue(input.runJs);
+  const sourceMode = normalizeSourceMode(input.sourceMode ?? runJs.sourceMode);
+  const sourceBinding = input.sourceBinding ?? runJs.sourceBinding;
+  const settings = input.settings ?? runJs.settings;
   if (sourceMode !== INLINE_RUNJS_SOURCE_MODE) {
     return resolveRunJSSourceBinding(
       {
         sourceMode,
-        sourceBinding: input.sourceBinding,
-        settings: input.settings,
+        sourceBinding,
+        settings,
         context: input.context,
       },
       registry,
     );
   }
 
-  const runJs = normalizeRunJSValue({
-    code: input.runJs?.code ?? '',
-    version: input.runJs?.version,
-  });
   return {
     code: runJs.code,
     version: runJs.version,
     sourceMode: INLINE_RUNJS_SOURCE_MODE,
-    settings: normalizeSettings(input.settings),
+    settings: normalizeSettings(settings),
     context: input.context,
   };
 }
