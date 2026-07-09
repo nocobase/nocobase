@@ -158,6 +158,27 @@ describe('VariableFilterItem', () => {
     expect(value.value).toBe('abc');
   });
 
+  it('passes disabled through to the left selector, operator select, and right variable input', async () => {
+    const value: VariableFilterItemValue = { path: '', operator: '', value: '' };
+    const model = CreateModel();
+
+    render(<VariableFilterItem value={value} model={model} rightAsVariable disabled />);
+
+    const leftVariableInputProps = (globalThis as any).__LAST_VARIABLE_INPUT_PROPS__;
+    expect(leftVariableInputProps.disabled).toBe(true);
+
+    fireEvent.click(screen.getAllByTestId('variable-input')[0]);
+
+    const variableInputs = screen.getAllByTestId('variable-input');
+    expect(variableInputs.length).toBeGreaterThanOrEqual(2);
+    const rightVariableInputProps = (globalThis as any).__LAST_VARIABLE_INPUT_PROPS__;
+    expect(rightVariableInputProps.disabled).toBe(true);
+
+    const operatorSelect = document.body.querySelector('.ant-select') as HTMLDivElement | null;
+    expect(operatorSelect).not.toBeNull();
+    expect(operatorSelect).toHaveClass('ant-select-disabled');
+  });
+
   it('uses scoped context dataSourceManager when app dataSourceManager has no field interface manager', async () => {
     const value = observable({ path: '', operator: '', value: '' }) as any;
     const model = CreateModel();

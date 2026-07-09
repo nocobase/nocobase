@@ -48,7 +48,7 @@ vi.mock('@nocobase/client-v2', async () => {
         </button>
       );
     },
-    SkeletonFallback: () => <div data-testid="skeleton-fallback" />,
+    SkeletonFallback: () => <div data-testid="workflow-cc-detail-loading" />,
     useMobileLayout: () => ({
       isMobileLayout: holder.isMobileLayout,
     }),

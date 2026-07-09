@@ -14,6 +14,8 @@ import { Button, Tag, theme } from 'antd';
 import { css } from '@emotion/css';
 import { parseWorkflowValueToPath } from './workflowVariableConverters';
 
+const VARIABLE_PARSING_FAILED_TEXT = 'Variable parsing failed';
+
 export type WorkflowVariableTagProps = {
   value?: string | null;
   metaTree: MetaTreeNode[];
@@ -46,6 +48,21 @@ function resolveVariableLabels(path: string[], metaTree: MetaTreeNode[], t: (tex
     nodes = Array.isArray(matched.children) ? matched.children : undefined;
   }
   return labels;
+}
+
+function canResolveVariablePath(path: string[], metaTree: MetaTreeNode[]): boolean {
+  let nodes: MetaTreeNode[] | undefined = metaTree;
+  for (const segment of path) {
+    if (!nodes) {
+      return false;
+    }
+    const matched = nodes.find((node) => node.name === segment);
+    if (!matched) {
+      return false;
+    }
+    nodes = Array.isArray(matched.children) ? matched.children : undefined;
+  }
+  return true;
 }
 
 export function WorkflowVariableTag({
@@ -106,6 +123,12 @@ export function WorkflowVariableTag({
     void updateFlag;
     return variablePath ? resolveVariableLabels(variablePath, metaTree, t) : [];
   }, [metaTree, t, updateFlag, variablePath]);
+  const invalid = useMemo(() => {
+    if (!variablePath?.length) {
+      return false;
+    }
+    return !canResolveVariablePath(variablePath, metaTree);
+  }, [metaTree, variablePath]);
 
   const variableValueClassName = useMemo(
     () => css`
@@ -169,7 +192,7 @@ export function WorkflowVariableTag({
       }}
     >
       <Tag
-        color="blue"
+        color={invalid ? 'error' : 'blue'}
         style={{
           marginInlineEnd: 0,
           maxWidth: '100%',
@@ -178,12 +201,14 @@ export function WorkflowVariableTag({
           whiteSpace: 'nowrap',
         }}
       >
-        {variableLabels.map((label, index) => (
-          <React.Fragment key={`${label}-${index}`}>
-            {index ? ' / ' : ''}
-            {label}
-          </React.Fragment>
-        ))}
+        {invalid
+          ? VARIABLE_PARSING_FAILED_TEXT
+          : variableLabels.map((label, index) => (
+              <React.Fragment key={`${label}-${index}`}>
+                {index ? ' / ' : ''}
+                {label}
+              </React.Fragment>
+            ))}
       </Tag>
       {!disabled && onClear ? (
         <Button
