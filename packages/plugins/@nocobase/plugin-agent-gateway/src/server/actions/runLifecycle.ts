@@ -50,6 +50,12 @@ import {
   requireManagePermission,
 } from './utils';
 import { serializeSkillVersionSourceForNode } from './skillVersions';
+import {
+  ensureDefaultTaskTemplates,
+  findActiveTaskTemplateForRun,
+  getTaskTemplateDefaults,
+  TaskTemplateDefaults,
+} from './taskTemplates';
 import { AGENT_GATEWAY_TERMINATE_CONTROL_CANCEL_REASON } from '../../shared/runControl';
 import { getRunProviderCapabilitySummary, isRunCapabilitySupported } from './capabilityUtils';
 
@@ -61,18 +67,8 @@ const MAX_RUN_LIST_PAGE_SIZE = 100;
 const DEFAULT_TASK_RUN_PROFILE_KEY = 'codex';
 const UI_BUILD_SOURCE_TYPE = 'ui-build';
 const TASK_RUN_SOURCE_TYPE = 'task-run';
-const GENERIC_TASK_RUN_SCENARIO = 'generic';
-const UI_BUILD_TASK_RUN_SCENARIO = 'nocobase-ui-build';
-const OPENCODE_UI_BATCH_TASK_RUN_SCENARIO = 'opencode-ui-batch';
-const OPENCODE_UI_BATCH_SKILL_KEY = 'nb-opencode-ui-batch';
-const OPENCODE_UI_BATCH_DEFAULT_TIMEOUT_MS = 2 * 60 * 60 * 1000;
 const SAME_HOST_NODE_SUPERSEDED_REASON = 'same-host-node-replaced';
 const UI_BUILD_REROUTE_SOURCE_TYPES = new Set([UI_BUILD_SOURCE_TYPE, 'manual-ui-build']);
-const TASK_RUN_SCENARIOS = new Set([
-  GENERIC_TASK_RUN_SCENARIO,
-  UI_BUILD_TASK_RUN_SCENARIO,
-  OPENCODE_UI_BATCH_TASK_RUN_SCENARIO,
-]);
 const RUNNER_ONLINE_THRESHOLD_MS = 120_000;
 const TASK_RUN_INITIAL_EVENT_SOURCE = 'agent-gateway-task';
 const LEASE_RECOVERY_BATCH_LIMIT = 100;
@@ -127,6 +123,21 @@ interface TaskRunSkillVersionOption {
   displayName?: string;
   versionLabel: string;
   status: string;
+}
+
+interface TaskRunTemplateOption {
+  id: string;
+  templateKey: string;
+  displayName: string;
+  description?: string;
+  defaultTitle?: string;
+  defaultPrompt?: string;
+  cwd?: string;
+  nodeId?: string;
+  agentProfileId?: string;
+  skillVersionIds: string[];
+  artifactRoot?: string;
+  artifacts: JsonRecord[];
 }
 
 interface ValidatedTaskRunSkillSelection {
@@ -653,6 +664,23 @@ function serializeTaskRunSkillVersion(skillVersion: ModelRecord): TaskRunSkillVe
   };
 }
 
+function serializeTaskRunTemplate(template: ModelRecord): TaskRunTemplateOption {
+  return {
+    id: String(getModelTargetKey(template, 'id')),
+    templateKey: getModelString(template, 'templateKey'),
+    displayName: getModelString(template, 'displayName') || getModelString(template, 'templateKey'),
+    description: getModelString(template, 'description') || undefined,
+    defaultTitle: getModelString(template, 'defaultTitle') || undefined,
+    defaultPrompt: getString(getModelValue(template, 'defaultPrompt')) || undefined,
+    cwd: getModelString(template, 'cwd') || undefined,
+    nodeId: getOptionalTargetKey(template, 'nodeId') || undefined,
+    agentProfileId: getOptionalTargetKey(template, 'agentProfileId') || undefined,
+    skillVersionIds: getStringList(getModelValue(template, 'skillVersionIdsJson')),
+    artifactRoot: getModelString(template, 'artifactRoot') || undefined,
+    artifacts: getTaskRunArtifactDeclarations(getModelValue(template, 'artifactsJson')),
+  };
+}
+
 async function listBuildRunOptions(ctx: Context) {
   await requireAgentGatewayPermission(
     ctx,
@@ -660,7 +688,8 @@ async function listBuildRunOptions(ctx: Context) {
     'Agent Gateway dispatch permission required',
   );
 
-  const [nodes, profiles, skillVersions] = (await Promise.all([
+  await ensureDefaultTaskTemplates(ctx);
+  const [nodes, profiles, skillVersions, taskTemplates] = (await Promise.all([
     ctx.db.getRepository('agNodes').find({
       sort: ['nodeKey'],
     }),
@@ -677,7 +706,13 @@ async function listBuildRunOptions(ctx: Context) {
       appends: ['skill'],
       sort: ['-createdAt'],
     }),
-  ])) as [ModelRecord[], ModelRecord[], ModelRecord[]];
+    ctx.db.getRepository('agTaskTemplates').find({
+      filter: {
+        status: 'active',
+      },
+      sort: ['sort', 'templateKey'],
+    }),
+  ])) as [ModelRecord[], ModelRecord[], ModelRecord[], ModelRecord[]];
   const now = new Date();
   const profilesByNodeId = new Map<string, ModelRecord[]>();
   for (const profile of profiles) {
@@ -702,6 +737,7 @@ async function listBuildRunOptions(ctx: Context) {
     skillVersions: skillVersions
       .map(serializeTaskRunSkillVersion)
       .filter((skillVersion): skillVersion is TaskRunSkillVersionOption => Boolean(skillVersion)),
+    taskTemplates: taskTemplates.map(serializeTaskRunTemplate),
   };
 }
 
@@ -962,73 +998,61 @@ async function resolveBuildRunnerSelection(
   };
 }
 
-function buildUiBuildPrompt(values: JsonRecord) {
-  const prompt = getTaskInstruction(values);
-  if (!prompt) {
-    return '';
-  }
-  const title = getString(values.title);
-  return [
-    '请在当前 NocoBase 环境中完成以下搭建任务。',
-    '要求：',
-    '- 不要清空已有数据，除非任务明确要求。',
-    '- 如果搭建需要补齐字段、区块配置或数据模型，请按任务需要处理，并在最终结果中说明。',
-    '- 执行过程中持续输出关键步骤，完成后验证页面可以打开。',
-    '',
-    title ? `任务标题：${title}` : '',
-    '搭建指令：',
-    prompt,
-  ]
-    .filter((line) => line !== '')
-    .join('\n');
-}
-
-function buildOpenCodeUiBatchPrompt(values: JsonRecord) {
-  const prompt = getTaskInstruction(values);
-  if (!prompt) {
-    return '';
-  }
-  const title = getString(values.title);
-  return [
-    `Run the uploaded ${OPENCODE_UI_BATCH_SKILL_KEY} Agent Gateway skill harness.`,
-    'Requirements:',
-    '- Read the SKILL.md path injected by Agent Gateway for this run before executing.',
-    '- Execute the harness from that installed skill directory. Use the skill default command unless the instruction below overrides it.',
-    '- Emit progress lines when possible as: AGW_PROGRESS phase=<phase> status=<started|succeeded|failed> message=<short text>.',
-    '- After the suite writes browser-verification-request.json, complete the required external Agent Browser verification pass, write browser-verification.json and browser-screenshots/**, then rerender report.html.',
-    '- Rerender with a bounded command: timeout 10m node scripts/run-suite.mjs --render-run <run_dir> --no-open. If it times out, stop retrying, preserve current artifacts, and report renderRunTimeout: true.',
-    '- Leave generated files in the current run directory and do not delete reports, browser-verification files, screenshots, logs, or task output files.',
-    '- Do not use historical runs/ output as the result of this task.',
-    '',
-    title ? `Task title: ${title}` : '',
-    'Instruction:',
-    prompt,
-  ]
-    .filter((line) => line !== '')
-    .join('\n');
-}
-
 function getTaskInstruction(values: JsonRecord) {
   return getString(values.instruction) || getString(values.prompt);
 }
 
-function getTaskRunScenario(values: JsonRecord, defaultScenario: string) {
-  const scenario = getString(values.scenario) || defaultScenario;
-  return TASK_RUN_SCENARIOS.has(scenario) ? scenario : GENERIC_TASK_RUN_SCENARIO;
+function hasOwnKey(values: JsonRecord, key: string) {
+  return Object.prototype.hasOwnProperty.call(values, key);
 }
 
-function buildTaskRunPrompt(values: JsonRecord, scenario: string) {
-  if (scenario === UI_BUILD_TASK_RUN_SCENARIO) {
-    return buildUiBuildPrompt(values);
+function applyTaskTemplateDefaults(values: JsonRecord, taskTemplate: TaskTemplateDefaults) {
+  const merged: JsonRecord = {
+    ...values,
+    taskTemplateId: taskTemplate.taskTemplateId,
+  };
+  if (!getString(values.title) && taskTemplate.title) {
+    merged.title = taskTemplate.title;
   }
-  if (scenario === OPENCODE_UI_BATCH_TASK_RUN_SCENARIO) {
-    return buildOpenCodeUiBatchPrompt(values);
+  if (!getTaskInstruction(values) && taskTemplate.prompt) {
+    merged.prompt = taskTemplate.prompt;
   }
-  return getTaskInstruction(values);
+  if (!getString(values.cwd) && taskTemplate.cwd) {
+    merged.cwd = taskTemplate.cwd;
+  }
+  if (!getString(values.nodeId) && taskTemplate.nodeId) {
+    merged.nodeId = taskTemplate.nodeId;
+  }
+  if (!getString(values.agentProfileId) && taskTemplate.agentProfileId) {
+    merged.agentProfileId = taskTemplate.agentProfileId;
+  }
+  if (!getTaskRunSkillVersionIds(values).length && taskTemplate.skillVersionIds.length) {
+    merged.skillVersionIds = taskTemplate.skillVersionIds;
+  }
+  if (!getString(values.artifactRoot) && taskTemplate.artifactRoot) {
+    merged.artifactRoot = taskTemplate.artifactRoot;
+  }
+  if (!hasOwnKey(values, 'artifacts') && taskTemplate.artifacts.length) {
+    merged.artifacts = taskTemplate.artifacts;
+  }
+  return merged;
 }
 
-function getTaskRunSourceType(scenario: string) {
-  return scenario === UI_BUILD_TASK_RUN_SCENARIO ? UI_BUILD_SOURCE_TYPE : TASK_RUN_SOURCE_TYPE;
+async function getTaskRunValuesWithTemplateDefaults(ctx: Context, values: JsonRecord, transaction: Transaction) {
+  const taskTemplateIdentifier = getString(values.taskTemplateId) || getString(values.taskTemplateKey);
+  if (!taskTemplateIdentifier) {
+    return {
+      values,
+      taskTemplate: null,
+    };
+  }
+
+  const template = await findActiveTaskTemplateForRun(ctx, taskTemplateIdentifier, transaction);
+  const taskTemplate = getTaskTemplateDefaults(template);
+  return {
+    values: applyTaskTemplateDefaults(values, taskTemplate),
+    taskTemplate,
+  };
 }
 
 function getStringList(value: unknown) {
@@ -1096,11 +1120,8 @@ function getTaskRunResolvedSkills(values: JsonRecord) {
   return skillVersionIds.map((skillVersionId) => ({ skillVersionId }));
 }
 
-function getTaskRunTimeoutMs(values: JsonRecord, scenario: string) {
-  return (
-    getPositiveNumber(values.timeoutMs) ||
-    (scenario === OPENCODE_UI_BATCH_TASK_RUN_SCENARIO ? OPENCODE_UI_BATCH_DEFAULT_TIMEOUT_MS : undefined)
-  );
+function getTaskRunTimeoutMs(values: JsonRecord) {
+  return getPositiveNumber(values.timeoutMs);
 }
 
 async function createInitialTaskConversationEvent(
@@ -1108,7 +1129,6 @@ async function createInitialTaskConversationEvent(
   options: {
     runId: string;
     renderedPrompt: string;
-    scenario: string;
     title?: string;
     transaction: Transaction;
   },
@@ -1126,7 +1146,6 @@ async function createInitialTaskConversationEvent(
       contentText: options.renderedPrompt,
       contentJson: getRecord(
         redactEventPayload({
-          scenario: options.scenario,
           ...(options.title ? { title: options.title } : {}),
           participant: {
             id: 'user:requester',
@@ -1619,6 +1638,7 @@ async function createRun(ctx: Context) {
       nodeId: getString(values.nodeId) || null,
       agentProfileId: getString(values.agentProfileId) || null,
       promptTemplateId: getString(values.promptTemplateId) || null,
+      taskTemplateId: getString(values.taskTemplateId) || null,
       dispatchBindingId: getString(values.dispatchBindingId) || null,
     },
   })) as ModelRecord;
@@ -1626,21 +1646,21 @@ async function createRun(ctx: Context) {
   ctx.body = serializeCreatedRunForUser(run);
 }
 
-async function createTaskRun(ctx: Context, options: { defaultScenario?: string } = {}) {
+async function createTaskRun(ctx: Context) {
   await requireAgentGatewayPermission(
     ctx,
     AGENT_GATEWAY_ACTIONS.dispatch,
     'Agent Gateway dispatch permission required',
   );
 
-  const values = getBodyValues(ctx);
-  const scenario = getTaskRunScenario(values, options.defaultScenario || GENERIC_TASK_RUN_SCENARIO);
-  const renderedPrompt = buildTaskRunPrompt(values, scenario);
-  if (!renderedPrompt) {
-    ctx.throw(400, 'instruction is required');
-  }
+  const bodyValues = getBodyValues(ctx);
 
   const result = await ctx.db.sequelize.transaction(async (transaction) => {
+    const { values, taskTemplate } = await getTaskRunValuesWithTemplateDefaults(ctx, bodyValues, transaction);
+    const renderedPrompt = getTaskInstruction(values);
+    if (!renderedPrompt) {
+      ctx.throw(400, 'instruction is required');
+    }
     const selection = await resolveBuildRunnerSelection(ctx, values, transaction);
     const nodeId = String(getModelTargetKey(selection.node, 'id'));
     const agentProfileId = String(getModelTargetKey(selection.profile, 'id'));
@@ -1650,24 +1670,13 @@ async function createTaskRun(ctx: Context, options: { defaultScenario?: string }
     const now = new Date();
     const artifactPayload = getTaskRunArtifactPayload(values);
     const resolvedSkills = getTaskRunResolvedSkills(values);
-    const timeoutMs = getTaskRunTimeoutMs(values, scenario);
-    if (scenario === OPENCODE_UI_BATCH_TASK_RUN_SCENARIO && !resolvedSkills?.length) {
-      ctx.throw(400, 'skillVersionIds is required for OpenCode UI batch harness');
-    }
-    const validatedSkills: ValidatedTaskRunSkillSelection[] = [];
+    const timeoutMs = getTaskRunTimeoutMs(values);
     if (resolvedSkills) {
       for (const skillSelection of resolvedSkills) {
-        validatedSkills.push(await assertTaskRunSkillVersionActive(ctx, skillSelection.skillVersionId, transaction));
+        await assertTaskRunSkillVersionActive(ctx, skillSelection.skillVersionId, transaction);
       }
     }
-    if (
-      scenario === OPENCODE_UI_BATCH_TASK_RUN_SCENARIO &&
-      !validatedSkills.some((skillSelection) => skillSelection.skillKey === OPENCODE_UI_BATCH_SKILL_KEY)
-    ) {
-      ctx.throw(400, 'OpenCode UI batch harness requires the nb-opencode-ui-batch skill');
-    }
     const executionPayloadJson = {
-      scenario,
       source: 'agent-gateway-ui',
       title: getString(values.title) || null,
       prompt: renderedPrompt,
@@ -1680,6 +1689,15 @@ async function createTaskRun(ctx: Context, options: { defaultScenario?: string }
       ...(timeoutMs ? { timeoutMs } : {}),
       ...artifactPayload,
       ...(resolvedSkills ? { resolvedSkills } : {}),
+      ...(taskTemplate
+        ? {
+            taskTemplate: {
+              id: taskTemplate.taskTemplateId,
+              key: taskTemplate.taskTemplateKey,
+              displayName: taskTemplate.taskTemplateDisplayName,
+            },
+          }
+        : {}),
     };
     const run = (await ctx.db.getRepository('agRuns').create({
       values: {
@@ -1695,7 +1713,7 @@ async function createTaskRun(ctx: Context, options: { defaultScenario?: string }
           variables: {
             title: getString(values.title) || null,
             instruction: getTaskInstruction(values),
-            scenario,
+            ...(taskTemplate ? { taskTemplateKey: taskTemplate.taskTemplateKey } : {}),
           },
           renderedAt: now.toISOString(),
         },
@@ -1703,21 +1721,21 @@ async function createTaskRun(ctx: Context, options: { defaultScenario?: string }
         resultSummaryJson: {
           title: getString(values.title) || null,
           requestedFrom: 'agent-gateway-ui',
-          scenario,
+          ...(taskTemplate ? { taskTemplateKey: taskTemplate.taskTemplateKey } : {}),
         },
-        sourceType: getTaskRunSourceType(scenario),
+        sourceType: TASK_RUN_SOURCE_TYPE,
         requestedAt: now,
         queuedAt: now,
         requestedById: getCurrentUserId(ctx) || null,
         nodeId,
         agentProfileId,
+        taskTemplateId: taskTemplate?.taskTemplateId || null,
       },
       transaction,
     })) as ModelRecord;
     await createInitialTaskConversationEvent(ctx, {
       runId: String(getModelTargetKey(run, 'id')),
       renderedPrompt,
-      scenario,
       title: getString(values.title) || undefined,
       transaction,
     });
@@ -2934,9 +2952,7 @@ export function registerRunLifecycleRoutes(plugin: Plugin) {
       }
 
       if (ctx.method === 'POST' && routePath === '/build-runs:create') {
-        await createTaskRun(ctx, {
-          defaultScenario: UI_BUILD_TASK_RUN_SCENARIO,
-        });
+        await createTaskRun(ctx);
         return;
       }
 

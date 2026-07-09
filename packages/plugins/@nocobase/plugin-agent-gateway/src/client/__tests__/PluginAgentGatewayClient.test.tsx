@@ -60,6 +60,13 @@ describe('PluginAgentGatewayClient', () => {
       }),
     );
     expect(addSetting).toHaveBeenCalledWith(
+      'agent-gateway.task-templates',
+      expect.objectContaining({
+        aclSnippet: 'pm.agent-gateway',
+        componentLoader: expect.any(Function),
+      }),
+    );
+    expect(addSetting).toHaveBeenCalledWith(
       'agent-gateway.prompt-templates',
       expect.objectContaining({
         aclSnippet: 'pm.agent-gateway.prompt-templates',
@@ -79,6 +86,9 @@ describe('PluginAgentGatewayClient', () => {
     expect(app.pluginSettingsManager.getRoutePath('agent-gateway.provider-capabilities')).toBe(
       '/admin/settings/agent-gateway/provider-capabilities',
     );
+    expect(app.pluginSettingsManager.getRoutePath('agent-gateway.task-templates')).toBe(
+      '/admin/settings/agent-gateway/task-templates',
+    );
     expect(app.pluginSettingsManager.getRoutePath('agent-gateway.prompt-templates')).toBe(
       '/admin/settings/agent-gateway/prompt-templates',
     );
@@ -89,6 +99,7 @@ describe('PluginAgentGatewayClient', () => {
       'agent-gateway.nodes',
       'agent-gateway.runs',
       'agent-gateway.provider-capabilities',
+      'agent-gateway.task-templates',
       'agent-gateway.prompt-templates',
       'agent-gateway.dispatch-bindings',
     ]);

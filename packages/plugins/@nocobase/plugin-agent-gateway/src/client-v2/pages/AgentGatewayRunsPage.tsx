@@ -8,7 +8,6 @@
  */
 
 import {
-  DeleteOutlined,
   EnterOutlined,
   EyeOutlined,
   ImportOutlined,
@@ -59,6 +58,21 @@ import { TerminalStreamSmokePanel, isTerminalStreamSmokeEnabled } from '../compo
 import { useTerminalStream, UseTerminalStreamState } from '../hooks/useTerminalStream';
 import { useT } from '../locale';
 import {
+  AgentGatewayTaskParameterFormItems,
+  BuildRunOptions,
+  BuildTaskArtifactDeclarationFormValue,
+  getBuildRunnerSelectOptions,
+  getBuildSkillVersionSelectOptions,
+  getDefaultBuildRunnerValue,
+  getOptionalFormString,
+  getTaskArtifactDeclarations,
+  getTaskArtifactFormValues,
+  getBuildRunnerValue,
+  hasSelectableBuildRunner,
+  OPENCODE_UI_BATCH_SKILL_KEY,
+  parseBuildRunnerValue,
+} from './AgentGatewayTaskParameterFormItems';
+import {
   AgentGatewayContext,
   AgentGatewayApiResponse,
   JsonPreview,
@@ -83,6 +97,7 @@ interface RunRecord {
   sourceType?: string | null;
   sourceCollection?: string | null;
   sourceRecordId?: string | null;
+  taskTemplateId?: string | null;
   cancelRequested?: boolean;
   resultSummaryJson?: JsonRecord;
   tokenUsageJson?: TokenUsageRecord | null;
@@ -296,45 +311,9 @@ interface RunListData {
 
 type RunDetailTabKey = 'summary' | 'agent-sessions' | 'logs' | 'artifacts' | 'api-logs';
 
-interface BuildRunnerProfileOption {
-  id: string;
-  nodeId: string;
-  profileKey: string;
-  displayName?: string;
-  provider?: string | null;
-  status?: string;
-}
-
-interface BuildRunnerNodeOption {
-  id: string;
-  nodeKey: string;
-  displayName?: string;
-  status?: string;
-  online?: boolean;
-  onlineReason?: string | null;
-  lastHeartbeatAt?: string | null;
-  profiles?: BuildRunnerProfileOption[];
-}
-
-interface BuildSkillVersionOption {
-  id: string;
-  skillId?: string;
-  skillKey?: string;
-  displayName?: string;
-  versionLabel: string;
-  status?: string;
-}
-
-interface BuildRunOptions {
-  defaultProfileKey?: string;
-  defaultCwd?: string;
-  nodes?: BuildRunnerNodeOption[];
-  skillVersions?: BuildSkillVersionOption[];
-}
-
 interface BuildTaskFormValues {
+  taskTemplateId?: string;
   title?: string;
-  scenario?: string;
   prompt?: string;
   skillVersionIds?: string[];
   runner?: string;
@@ -342,22 +321,6 @@ interface BuildTaskFormValues {
   artifactRoot?: string;
   artifactDeclarations?: BuildTaskArtifactDeclarationFormValue[];
 }
-
-interface BuildTaskArtifactDeclarationFormValue {
-  kind?: 'path' | 'glob';
-  value?: string;
-  groupLabel?: string;
-}
-
-type BuildTaskArtifactDeclarationPayload =
-  | {
-      path: string;
-      groupLabel?: string;
-    }
-  | {
-      glob: string;
-      groupLabel?: string;
-    };
 
 interface SkillUploadFormValues {
   skillKey?: string;
@@ -474,8 +437,6 @@ const DEFAULT_DETAIL_TABLE_PAGE_SIZE = 20;
 const DEFAULT_DETAIL_LIST_PAGE_SIZE = 10;
 const DETAIL_PAGE_SIZE_OPTIONS = ['10', '20', '50', '100'];
 const TASK_RUN_DRAWER_WIDTH = 1040;
-const OPENCODE_UI_BATCH_SCENARIO = 'opencode-ui-batch';
-const OPENCODE_UI_BATCH_SKILL_KEY = 'nb-opencode-ui-batch';
 const DEFAULT_SKILL_UPLOAD_FORM_VALUES: SkillUploadFormValues = {
   skillKey: OPENCODE_UI_BATCH_SKILL_KEY,
   displayName: 'NB OpenCode UI Batch',
@@ -516,31 +477,6 @@ function readFileAsText(file: File) {
 
 function getSkillVersionIds(value: unknown) {
   return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string' && Boolean(item)) : [];
-}
-
-function getOptionalFormString(value: unknown) {
-  return typeof value === 'string' && value.trim() ? value.trim() : undefined;
-}
-
-function getBuildTaskArtifactDeclarations(
-  values: BuildTaskArtifactDeclarationFormValue[] | undefined,
-): BuildTaskArtifactDeclarationPayload[] {
-  if (!Array.isArray(values)) {
-    return [];
-  }
-  const declarations: BuildTaskArtifactDeclarationPayload[] = [];
-  for (const value of values) {
-    const artifactPath = getOptionalFormString(value.value);
-    if (!artifactPath) {
-      continue;
-    }
-    const groupLabel = getOptionalFormString(value.groupLabel);
-    declarations.push({
-      ...(value.kind === 'path' ? { path: artifactPath } : { glob: artifactPath }),
-      ...(groupLabel ? { groupLabel } : {}),
-    });
-  }
-  return declarations;
 }
 const ARTIFACT_PREVIEW_MAX_ITEMS = 80;
 const ARTIFACT_ITEM_TEXT_MAX_CHARS = 4000;
@@ -793,124 +729,22 @@ function getRouterPathFromBrowserPath(pathname: string) {
   return pathname.replace(/^\/v2?(?=\/admin(?:\/|$))/, '');
 }
 
-function getBuildRunnerValue(nodeId: string, profileId: string) {
-  return `${nodeId}:${profileId}`;
-}
-
-function parseBuildRunnerValue(value?: string) {
-  if (!value) {
-    return {};
-  }
-  const [nodeId, agentProfileId] = value.split(':');
-  return {
-    nodeId: nodeId || undefined,
-    agentProfileId: agentProfileId || undefined,
-  };
-}
-
-function compareBuildRunnerNodes(first: BuildRunnerNodeOption, second: BuildRunnerNodeOption) {
-  if (first.online !== second.online) {
-    return first.online ? -1 : 1;
-  }
-  if (first.status !== second.status) {
-    return first.status === 'active' ? -1 : 1;
-  }
-  if (Boolean(first.profiles?.length) !== Boolean(second.profiles?.length)) {
-    return first.profiles?.length ? -1 : 1;
-  }
-  return (first.displayName || first.nodeKey).localeCompare(second.displayName || second.nodeKey);
-}
-
-function getSortedBuildRunnerNodes(options: BuildRunOptions | undefined) {
-  return [...(options?.nodes || [])].sort(compareBuildRunnerNodes);
-}
-
-function isBuildRunnerProfileSelectable(node: BuildRunnerNodeOption, profile: BuildRunnerProfileOption) {
-  return node.online === true && node.status !== 'disabled' && profile.status === 'active';
-}
-
-function getBuildRunnerConnectionText(node: BuildRunnerNodeOption, t: TFunction) {
-  if (node.online === true) {
-    return t('Online');
-  }
-  if (node.onlineReason === 'heartbeat-stale') {
-    return t('Offline - stale heartbeat');
-  }
-  if (node.onlineReason === 'missing-heartbeat') {
-    return t('Offline - no heartbeat');
-  }
-  if (node.onlineReason === 'node-disabled' || node.status === 'disabled') {
-    return t('Offline - disabled');
-  }
-  return t('Offline');
-}
-
-function hasSelectableBuildRunner(options: BuildRunOptions | undefined) {
-  return getSortedBuildRunnerNodes(options).some((node) =>
-    (node.profiles || []).some((profile) => isBuildRunnerProfileSelectable(node, profile)),
-  );
-}
-
-function getDefaultBuildRunnerValue(options: BuildRunOptions | undefined) {
-  const nodes = getSortedBuildRunnerNodes(options);
-  const nodePool = nodes.filter((node) => node.online === true && node.status !== 'disabled');
-  for (const node of nodePool) {
-    const profile = (node.profiles || []).find(
-      (item) =>
-        item.profileKey === (options?.defaultProfileKey || 'codex') && isBuildRunnerProfileSelectable(node, item),
-    );
-    if (profile) {
-      return getBuildRunnerValue(node.id, profile.id);
-    }
-  }
-  for (const node of nodePool) {
-    const profile = (node.profiles || []).find((item) => isBuildRunnerProfileSelectable(node, item));
-    if (profile) {
-      return getBuildRunnerValue(node.id, profile.id);
-    }
-  }
-  return undefined;
-}
-
-function getBuildRunnerSelectOptions(options: BuildRunOptions | undefined, t: TFunction) {
-  return getSortedBuildRunnerNodes(options).flatMap((node) =>
-    (node.profiles || []).map((profile) => {
-      const selectable = isBuildRunnerProfileSelectable(node, profile);
-      return {
-        value: getBuildRunnerValue(node.id, profile.id),
-        label: [
-          node.displayName || node.nodeKey,
-          profile.displayName || profile.profileKey,
-          getBuildRunnerConnectionText(node, t),
-        ].join(' / '),
-        disabled: !selectable,
-      };
-    }),
-  );
-}
-
-function getBuildSkillVersionSelectOptions(options: BuildRunOptions | undefined) {
-  return (options?.skillVersions || []).map((skillVersion) => ({
-    value: skillVersion.id,
-    label: [skillVersion.displayName || skillVersion.skillKey || skillVersion.id, skillVersion.versionLabel]
-      .filter(Boolean)
-      .join(' / '),
+function getBuildTaskTemplateSelectOptions(options: BuildRunOptions | undefined) {
+  return (options?.taskTemplates || []).map((template) => ({
+    value: template.id,
+    label: template.displayName || template.templateKey,
   }));
 }
 
-function getPreferredBuildSkillVersionId(options: BuildRunOptions | undefined, scenario?: string) {
-  if (scenario !== OPENCODE_UI_BATCH_SCENARIO) {
-    return undefined;
+function findBuildTaskTemplate(options: BuildRunOptions | undefined, templateId?: string) {
+  if (!templateId) {
+    return null;
   }
-  const skillVersions = options?.skillVersions || [];
-  const exactMatch = skillVersions.find((skillVersion) => skillVersion.skillKey === OPENCODE_UI_BATCH_SKILL_KEY);
-  if (exactMatch) {
-    return exactMatch.id;
-  }
-  return skillVersions.find((skillVersion) => {
-    const text = `${skillVersion.skillKey || ''} ${skillVersion.displayName || ''}`.toLowerCase();
-    return text.includes('opencode') && text.includes('batch');
-  })?.id;
+  return (
+    (options?.taskTemplates || []).find(
+      (template) => template.id === templateId || template.templateKey === templateId,
+    ) || null
+  );
 }
 
 function findBuildRunnerNodeByValue(options: BuildRunOptions | undefined, value?: string) {
@@ -2379,7 +2213,6 @@ export default function AgentGatewayRunsPage() {
   const [buildTaskForm] = Form.useForm<BuildTaskFormValues>();
   const [externalRunImportForm] = Form.useForm<ExternalRunImportFormValues>();
   const [skillUploadForm] = Form.useForm<SkillUploadFormValues>();
-  const buildTaskScenario = Form.useWatch('scenario', buildTaskForm);
   const [runFilters, setRunFilters] = useState<Record<string, unknown>>({});
   const [runPagination, setRunPagination] = useState({
     current: 1,
@@ -2482,9 +2315,9 @@ export default function AgentGatewayRunsPage() {
     () => getBuildSkillVersionSelectOptions(buildRunOptionsRequest.data),
     [buildRunOptionsRequest.data],
   );
-  const preferredBuildSkillVersionId = useMemo(
-    () => getPreferredBuildSkillVersionId(buildRunOptionsRequest.data, buildTaskScenario),
-    [buildRunOptionsRequest.data, buildTaskScenario],
+  const buildTaskTemplateSelectOptions = useMemo(
+    () => getBuildTaskTemplateSelectOptions(buildRunOptionsRequest.data),
+    [buildRunOptionsRequest.data],
   );
   const defaultBuildRunnerValue = useMemo(
     () => getDefaultBuildRunnerValue(buildRunOptionsRequest.data),
@@ -2495,14 +2328,14 @@ export default function AgentGatewayRunsPage() {
   const createBuildTaskRequest = useRequest(
     async (values: BuildTaskFormValues) => {
       const runner = parseBuildRunnerValue(values.runner || defaultBuildRunnerValue);
-      const artifacts = getBuildTaskArtifactDeclarations(values.artifactDeclarations);
+      const artifacts = getTaskArtifactDeclarations(values.artifactDeclarations);
       const artifactRoot = getOptionalFormString(values.artifactRoot);
       const response = await ctx.api.request<CreateBuildRunResult>({
         url: 'agent-gateway/task-runs:create',
         method: 'post',
         data: {
+          taskTemplateId: values.taskTemplateId,
           title: values.title,
-          scenario: values.scenario,
           prompt: values.prompt,
           skillVersionIds: values.skillVersionIds,
           cwd: values.cwd || defaultBuildTaskCwd || '.',
@@ -3295,7 +3128,6 @@ export default function AgentGatewayRunsPage() {
     buildTaskForm.setFieldsValue({
       cwd: buildTaskForm.getFieldValue('cwd') || defaultBuildTaskCwd,
       runner: buildTaskForm.getFieldValue('runner') || defaultBuildRunnerValue,
-      scenario: buildTaskForm.getFieldValue('scenario') || 'generic',
     });
     setBuildTaskOpen(true);
   }, [buildRunOptionsRequest, buildTaskForm, defaultBuildRunnerValue, defaultBuildTaskCwd]);
@@ -3330,13 +3162,27 @@ export default function AgentGatewayRunsPage() {
     skillUploadForm.resetFields();
   }, [skillUploadForm]);
 
-  const handleBuildTaskScenarioChange = useCallback(
-    (scenario: string) => {
-      if (scenario !== OPENCODE_UI_BATCH_SCENARIO) {
-        buildTaskForm.setFieldValue('skillVersionIds', []);
+  const handleBuildTaskTemplateChange = useCallback(
+    (templateId?: string) => {
+      const template = findBuildTaskTemplate(buildRunOptionsRequest.data, templateId);
+      if (!template) {
+        return;
       }
+      const runner =
+        template.nodeId && template.agentProfileId
+          ? getBuildRunnerValue(template.nodeId, template.agentProfileId)
+          : undefined;
+      buildTaskForm.setFieldsValue({
+        title: template.defaultTitle || '',
+        prompt: template.defaultPrompt || '',
+        cwd: template.cwd || defaultBuildTaskCwd || '.',
+        ...(runner ? { runner } : {}),
+        skillVersionIds: template.skillVersionIds || [],
+        artifactRoot: template.artifactRoot,
+        artifactDeclarations: getTaskArtifactFormValues(template.artifacts),
+      });
     },
-    [buildTaskForm],
+    [buildRunOptionsRequest.data, buildTaskForm, defaultBuildTaskCwd],
   );
 
   const submitSkillUpload = useCallback(async () => {
@@ -3396,7 +3242,10 @@ export default function AgentGatewayRunsPage() {
   const submitBuildTask = useCallback(async () => {
     try {
       const values = await buildTaskForm.validateFields();
-      createBuildTaskRequest.run(values);
+      createBuildTaskRequest.run({
+        ...buildTaskForm.getFieldsValue(true),
+        ...values,
+      });
     } catch (error) {
       if (!isFormValidationError(error)) {
         ctx.message?.error(t('Failed to create task run'));
@@ -3624,14 +3473,6 @@ export default function AgentGatewayRunsPage() {
     }
     buildTaskForm.setFieldValue('cwd', defaultBuildTaskCwd);
   }, [buildTaskForm, buildTaskOpen, defaultBuildTaskCwd]);
-
-  useEffect(() => {
-    const currentSkillVersionIds = getSkillVersionIds(buildTaskForm.getFieldValue('skillVersionIds'));
-    if (!buildTaskOpen || !preferredBuildSkillVersionId || currentSkillVersionIds.length) {
-      return;
-    }
-    buildTaskForm.setFieldValue('skillVersionIds', [preferredBuildSkillVersionId]);
-  }, [buildTaskForm, buildTaskOpen, preferredBuildSkillVersionId]);
 
   useEffect(() => {
     syncRunDetailFromLocation();
@@ -3950,7 +3791,6 @@ export default function AgentGatewayRunsPage() {
             form={buildTaskForm}
             layout="vertical"
             initialValues={{
-              scenario: 'generic',
               cwd: defaultBuildTaskCwd,
               runner: defaultBuildRunnerValue,
             }}
@@ -3958,183 +3798,25 @@ export default function AgentGatewayRunsPage() {
             <Form.Item label={t('Title')} name="title">
               <Input />
             </Form.Item>
-            <Form.Item label={t('Task preset')} name="scenario">
-              <Select
-                onChange={handleBuildTaskScenarioChange}
-                options={[
-                  { value: 'generic', label: t('Generic task') },
-                  { value: 'nocobase-ui-build', label: t('NocoBase UI build') },
-                  { value: OPENCODE_UI_BATCH_SCENARIO, label: t('OpenCode UI batch harness') },
-                ]}
-              />
-            </Form.Item>
-            <Form.Item
-              label={t('Instruction')}
-              name="prompt"
-              rules={[{ required: true, message: t('Instruction is required') }]}
-            >
-              <Input.TextArea autoSize={{ minRows: 6, maxRows: 12 }} />
-            </Form.Item>
-            <Form.Item
-              noStyle
-              shouldUpdate={(previousValues, currentValues) => previousValues.scenario !== currentValues.scenario}
-            >
-              {({ getFieldValue }) => (
-                <Form.Item
-                  label={t('Skill versions')}
-                  name="skillVersionIds"
-                  rules={
-                    getFieldValue('scenario') === OPENCODE_UI_BATCH_SCENARIO
-                      ? [
-                          {
-                            required: true,
-                            message: t('Skill version is required for OpenCode UI batch harness'),
-                          },
-                        ]
-                      : []
-                  }
-                >
-                  <Select
-                    allowClear
-                    mode="multiple"
-                    showSearch
-                    loading={buildRunOptionsRequest.loading}
-                    options={buildSkillVersionSelectOptions}
-                    optionFilterProp="label"
-                    placeholder={t('Select skill versions')}
-                  />
-                </Form.Item>
-              )}
-            </Form.Item>
-            <Button icon={<UploadOutlined />} onClick={openSkillUploadModal}>
-              {t('Upload skill')}
-            </Button>
-            <Form.Item label={t('Runner')} name="runner" rules={[{ required: true, message: t('Runner is required') }]}>
+            <Form.Item label={t('Task template')} name="taskTemplateId">
               <Select
                 allowClear
                 loading={buildRunOptionsRequest.loading}
-                options={buildRunnerSelectOptions}
-                placeholder={t('Select runner')}
+                onChange={handleBuildTaskTemplateChange}
+                options={buildTaskTemplateSelectOptions}
+                optionFilterProp="label"
+                placeholder={t('Select task template')}
+                showSearch
               />
             </Form.Item>
-            <FastCollapse
-              ghost
-              size="small"
-              openMotion={NO_COLLAPSE_MOTION}
-              items={[
-                {
-                  key: 'advanced',
-                  label: t('Advanced'),
-                  children: (
-                    <Space direction="vertical" size={16} style={{ width: '100%' }}>
-                      <Form.Item label={t('Working directory')} name="cwd">
-                        <Input />
-                      </Form.Item>
-                      <Form.Item label={t('Artifact root')} name="artifactRoot">
-                        <Input placeholder={t('Defaults to working directory')} />
-                      </Form.Item>
-                      <Form.List name="artifactDeclarations">
-                        {(fields, { add, remove }) => {
-                          const artifactDeclarationColumns: ColumnsType<(typeof fields)[number]> = [
-                            {
-                              title: (
-                                <Space size={4}>
-                                  <Typography.Text type="danger">*</Typography.Text>
-                                  <span>{t('Match type')}</span>
-                                </Space>
-                              ),
-                              width: 150,
-                              onCell: () => ({ style: { verticalAlign: 'bottom' } }),
-                              render: (_, field) => (
-                                <Form.Item
-                                  name={[field.name, 'kind']}
-                                  initialValue="glob"
-                                  rules={[{ required: true, message: t('Match type is required') }]}
-                                  style={{ marginBottom: 0 }}
-                                >
-                                  <Select
-                                    aria-label={t('Match type')}
-                                    options={[
-                                      { value: 'path', label: t('Path') },
-                                      { value: 'glob', label: t('Glob') },
-                                    ]}
-                                  />
-                                </Form.Item>
-                              ),
-                            },
-                            {
-                              title: (
-                                <Space size={4}>
-                                  <Typography.Text type="danger">*</Typography.Text>
-                                  <span>{t('Artifact path or glob')}</span>
-                                </Space>
-                              ),
-                              onCell: () => ({ style: { verticalAlign: 'bottom' } }),
-                              render: (_, field) => (
-                                <Form.Item
-                                  name={[field.name, 'value']}
-                                  rules={[{ required: true, message: t('Artifact path or glob is required') }]}
-                                  style={{ marginBottom: 0 }}
-                                >
-                                  <Input aria-label={t('Artifact path or glob')} placeholder="runs/example/**/*.html" />
-                                </Form.Item>
-                              ),
-                            },
-                            {
-                              title: t('Artifact group'),
-                              width: 220,
-                              onCell: () => ({ style: { verticalAlign: 'bottom' } }),
-                              render: (_, field) => (
-                                <Form.Item name={[field.name, 'groupLabel']} style={{ marginBottom: 0 }}>
-                                  <Input aria-label={t('Artifact group')} placeholder={t('Optional group')} />
-                                </Form.Item>
-                              ),
-                            },
-                            {
-                              title: '',
-                              width: 88,
-                              align: 'left',
-                              onCell: () => ({ style: { verticalAlign: 'bottom' } }),
-                              render: (_, field) => (
-                                <Tooltip title={t('Remove artifact declaration')}>
-                                  <Button
-                                    aria-label={t('Remove artifact declaration')}
-                                    danger
-                                    icon={<DeleteOutlined />}
-                                    onClick={() => remove(field.name)}
-                                    type="text"
-                                  />
-                                </Tooltip>
-                              ),
-                            },
-                          ];
-
-                          return (
-                            <Space direction="vertical" size={12} style={{ width: '100%' }}>
-                              <Space align="center" style={{ justifyContent: 'space-between', width: '100%' }}>
-                                <Typography.Text strong>{t('Artifact collection')}</Typography.Text>
-                                <Button icon={<PlusOutlined />} onClick={() => add({ kind: 'glob' })}>
-                                  {t('Add artifact declaration')}
-                                </Button>
-                              </Space>
-                              {fields.length ? (
-                                <Table
-                                  columns={artifactDeclarationColumns}
-                                  dataSource={fields}
-                                  pagination={false}
-                                  rowKey="key"
-                                  scroll={{ x: 720 }}
-                                  size="small"
-                                />
-                              ) : null}
-                            </Space>
-                          );
-                        }}
-                      </Form.List>
-                    </Space>
-                  ),
-                },
-              ]}
+            <AgentGatewayTaskParameterFormItems
+              t={t}
+              loading={buildRunOptionsRequest.loading}
+              runnerSelectOptions={buildRunnerSelectOptions}
+              skillVersionSelectOptions={buildSkillVersionSelectOptions}
+              promptRequired
+              runnerRequired
+              onUploadSkill={openSkillUploadModal}
             />
           </Form>
         </Space>

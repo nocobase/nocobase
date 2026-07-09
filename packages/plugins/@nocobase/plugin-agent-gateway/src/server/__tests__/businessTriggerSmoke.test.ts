@@ -290,7 +290,9 @@ describe('agent gateway no-code business trigger smoke', () => {
             driver: 'fake',
             status: 'active',
             capabilities: {
+              artifacts: true,
               maxConcurrency: 1,
+              structuredEvents: true,
             },
           },
         ],
@@ -353,7 +355,6 @@ describe('agent gateway no-code business trigger smoke', () => {
       templateText: UI_BUILD_PROMPT_TEMPLATE,
       status: 'active',
       defaultExecutionPayload: {
-        scenario: 'nocobase-ui-build',
         driver: 'fake',
       },
     });
@@ -612,7 +613,6 @@ describe('agent gateway no-code business trigger smoke', () => {
       expect.stringContaining('capture-after-build-and-verify'),
     );
     expect(storedRun.get('executionPayloadJson')).toMatchObject({
-      scenario: 'nocobase-ui-build',
       driver: 'fake',
       dispatch: {
         bindingId: binding.id,

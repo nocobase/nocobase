@@ -57,13 +57,21 @@ export class PluginAgentGatewayClient extends Plugin {
       sort: 24,
     });
 
+    this.pluginSettingsManager.add(`${AGENT_GATEWAY_SETTINGS_KEY}.task-templates`, {
+      icon: 'ProfileOutlined',
+      title: tval('Task Templates', { ns: AGENT_GATEWAY_SETTINGS_KEY }),
+      aclSnippet: `pm.${AGENT_GATEWAY_SETTINGS_KEY}`,
+      componentLoader: () => import('../client-v2/pages/AgentGatewayTaskTemplatesPage'),
+      sort: 30,
+    });
+
     this.pluginSettingsManager.add(`${AGENT_GATEWAY_SETTINGS_KEY}.prompt-templates`, {
       icon: 'FileTextOutlined',
       title: tval('Prompt Templates', { ns: AGENT_GATEWAY_SETTINGS_KEY }),
       aclSnippet: `pm.${AGENT_GATEWAY_SETTINGS_KEY}.prompt-templates`,
       componentLoader: () => import('../client-v2/pages/AgentGatewayPromptTemplatesPage'),
       hidden: true,
-      sort: 30,
+      sort: 40,
     });
 
     this.pluginSettingsManager.add(`${AGENT_GATEWAY_SETTINGS_KEY}.dispatch-bindings`, {
@@ -72,7 +80,7 @@ export class PluginAgentGatewayClient extends Plugin {
       aclSnippet: `pm.${AGENT_GATEWAY_SETTINGS_KEY}.dispatch-bindings`,
       componentLoader: () => import('../client-v2/pages/AgentGatewayDispatchBindingsPage'),
       hidden: true,
-      sort: 40,
+      sort: 50,
     });
   }
 }

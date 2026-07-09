@@ -304,7 +304,7 @@ describe('agent gateway run lifecycle APIs', () => {
     });
   });
 
-  it('creates UI build runs with a default Codex runner payload and runner diagnostics', async () => {
+  it('creates task runs through the build-runs route with a default Codex runner payload and runner diagnostics', async () => {
     const offlineRunner = await createRunner({
       nodeKey: 'aaa-offline-codex',
       profileKey: 'codex',
@@ -355,7 +355,7 @@ describe('agent gateway run lifecycle APIs', () => {
       runId: expect.any(String),
       run: expect.objectContaining({
         status: 'queued',
-        sourceType: 'ui-build',
+        sourceType: 'task-run',
         nodeId: runner.nodeId,
         agentProfileId: runner.profileId,
         runnerStatusJson: expect.objectContaining({
@@ -373,7 +373,6 @@ describe('agent gateway run lifecycle APIs', () => {
       renderedPrompt: expect.stringContaining('搭建一个日历测试页面'),
     });
     expect(storedRun.get('executionPayloadJson')).toMatchObject({
-      scenario: 'nocobase-ui-build',
       prompt: expect.stringContaining('搭建一个日历测试页面'),
       profileKey: 'codex',
       commandKey: 'codex',
@@ -391,7 +390,6 @@ describe('agent gateway run lifecycle APIs', () => {
     expect(initialConversationEvents[0].get('source')).toBe('agent-gateway-task');
     expect(initialConversationEvents[0].get('contentText')).toContain('搭建一个日历测试页面');
     expect(initialConversationEvents[0].get('contentJson')).toMatchObject({
-      scenario: 'nocobase-ui-build',
       title: 'Calendar build',
     });
 
@@ -405,7 +403,7 @@ describe('agent gateway run lifecycle APIs', () => {
     const reroutedResult = getData(reroutedResponse);
     expect(reroutedResult).toMatchObject({
       run: expect.objectContaining({
-        sourceType: 'ui-build',
+        sourceType: 'task-run',
         nodeId: runner.nodeId,
         agentProfileId: runner.profileId,
         runnerStatusJson: expect.objectContaining({
@@ -445,7 +443,6 @@ describe('agent gateway run lifecycle APIs', () => {
 
     const createResponse = await rootAgent.post('/api/agent-gateway/task-runs:create').send({
       title: 'Queued forever prevention',
-      scenario: 'generic',
       prompt: 'This should not be queued when the daemon is offline',
       nodeId: offlineRunner.nodeId,
       agentProfileId: offlineRunner.profileId,
@@ -457,7 +454,6 @@ describe('agent gateway run lifecycle APIs', () => {
 
     const implicitCreateResponse = await rootAgent.post('/api/agent-gateway/task-runs:create').send({
       title: 'Implicit runner also blocked',
-      scenario: 'generic',
       prompt: 'This should also fail without an online runner',
     });
 
@@ -466,7 +462,129 @@ describe('agent gateway run lifecycle APIs', () => {
     expect(await app.db.getRepository('agRuns').count()).toBe(0);
   });
 
-  it('creates generic task runs without the UI build prompt wrapper', async () => {
+  it('lists task templates and applies selected template defaults to task runs', async () => {
+    const runner = await createRunner({
+      nodeKey: 'remote-187-codex',
+      profileKey: 'codex',
+      profileProvider: 'codex',
+    });
+
+    const optionsResponse = await rootAgent.get('/api/agent-gateway/task-runs:options');
+    expect(optionsResponse.status).toBe(200);
+    const options = getData(optionsResponse);
+    const taskTemplates = Array.isArray(options.taskTemplates) ? options.taskTemplates : [];
+    expect(taskTemplates).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          templateKey: 'generic',
+        }),
+        expect.objectContaining({
+          templateKey: 'nocobase-ui-build',
+        }),
+        expect.objectContaining({
+          templateKey: 'opencode-ui-batch',
+        }),
+      ]),
+    );
+
+    const createTemplateResponse = await rootAgent.post('/api/agent-gateway/task-templates:create').send({
+      templateKey: 'build-on-187',
+      displayName: 'Build on 187',
+      description: 'Browser validation build template',
+      defaultTitle: '187 browser validation',
+      defaultPrompt: '搭建一个用于浏览器验收的任务页面',
+      cwd: '/root/work/nocobase',
+      nodeId: runner.nodeId,
+      agentProfileId: runner.profileId,
+      artifactRoot: 'storage/agent-gateway',
+      artifacts: [
+        {
+          glob: 'screenshots/**/*.png',
+          groupLabel: 'Screenshots',
+        },
+      ],
+    });
+    expect(createTemplateResponse.status).toBe(200);
+    const createdTemplate = getData(createTemplateResponse);
+    expect(createdTemplate).toMatchObject({
+      templateKey: 'build-on-187',
+      displayName: 'Build on 187',
+      nodeId: runner.nodeId,
+      agentProfileId: runner.profileId,
+    });
+
+    const listResponse = await rootAgent.get('/api/agent-gateway/task-templates:list?includeDisabled=true');
+    expect(listResponse.status).toBe(200);
+    const listedTemplates = Array.isArray(listResponse.body.data) ? listResponse.body.data : [];
+    expect(listedTemplates).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          templateKey: 'build-on-187',
+        }),
+      ]),
+    );
+
+    const createRunResponse = await rootAgent.post('/api/agent-gateway/task-runs:create').send({
+      taskTemplateId: createdTemplate.id,
+    });
+    expect(createRunResponse.status).toBe(200);
+    const createRunResult = getData(createRunResponse);
+    expect(createRunResult).toMatchObject({
+      runId: expect.any(String),
+      run: expect.objectContaining({
+        sourceType: 'task-run',
+        nodeId: runner.nodeId,
+        agentProfileId: runner.profileId,
+      }),
+    });
+
+    const storedRun = await app.db.getRepository('agRuns').findOne({
+      filterByTk: String(createRunResult.runId),
+    });
+    expect(storedRun.get('taskTemplateId')).toBe(createdTemplate.id);
+    expect(storedRun.get('promptSnapshot')).toMatchObject({
+      renderedPrompt: expect.stringContaining('搭建一个用于浏览器验收的任务页面'),
+      variables: expect.objectContaining({
+        title: '187 browser validation',
+        taskTemplateKey: 'build-on-187',
+      }),
+    });
+    expect(storedRun.get('executionPayloadJson')).toMatchObject({
+      title: '187 browser validation',
+      instruction: '搭建一个用于浏览器验收的任务页面',
+      cwd: '/root/work/nocobase',
+      artifactRoot: 'storage/agent-gateway',
+      artifacts: [
+        {
+          glob: 'screenshots/**/*.png',
+          groupLabel: 'Screenshots',
+        },
+      ],
+      taskTemplate: {
+        id: createdTemplate.id,
+        key: 'build-on-187',
+        displayName: 'Build on 187',
+      },
+    });
+
+    const updateTemplateResponse = await rootAgent
+      .post(`/api/agent-gateway/task-templates:update/${createdTemplate.id}`)
+      .send({
+        status: 'disabled',
+      });
+    expect(updateTemplateResponse.status).toBe(200);
+    expect(getData(updateTemplateResponse)).toMatchObject({
+      status: 'disabled',
+    });
+
+    const disabledCreateResponse = await rootAgent.post('/api/agent-gateway/task-runs:create').send({
+      taskTemplateKey: 'build-on-187',
+    });
+    expect(disabledCreateResponse.status).toBe(409);
+    expect(JSON.stringify(disabledCreateResponse.body)).toContain('Task template is not active');
+  });
+
+  it('creates task runs with selected skill versions and artifact declarations', async () => {
     const runner = await createRunner({
       nodeKey: 'generic-task-codex',
       profileKey: 'codex',
@@ -552,7 +670,6 @@ describe('agent gateway run lifecycle APIs', () => {
 
     const inactiveSkillResponse = await rootAgent.post('/api/agent-gateway/task-runs:create').send({
       title: 'Inactive skill evaluation',
-      scenario: 'opencode-ui-batch',
       prompt: '运行 nb-opencode-ui-batch harness 并汇总结果',
       skillVersionId: inactiveSkillVersion.get('id'),
       cwd: 'myskills/skills/nb-opencode-ui-batch',
@@ -561,30 +678,8 @@ describe('agent gateway run lifecycle APIs', () => {
     });
     expect(inactiveSkillResponse.status).toBe(409);
 
-    const missingSkillResponse = await rootAgent.post('/api/agent-gateway/task-runs:create').send({
-      title: 'Missing skill evaluation',
-      scenario: 'opencode-ui-batch',
-      prompt: '运行 nb-opencode-ui-batch harness 并汇总结果',
-      cwd: 'myskills/skills/nb-opencode-ui-batch',
-      nodeId: runner.nodeId,
-      agentProfileId: runner.profileId,
-    });
-    expect(missingSkillResponse.status).toBe(400);
-
-    const wrongSkillResponse = await rootAgent.post('/api/agent-gateway/task-runs:create').send({
-      title: 'Wrong skill evaluation',
-      scenario: 'opencode-ui-batch',
-      prompt: '运行 nb-opencode-ui-batch harness 并汇总结果',
-      skillVersionId: otherSkillVersion.get('id'),
-      cwd: 'myskills/skills/nb-opencode-ui-batch',
-      nodeId: runner.nodeId,
-      agentProfileId: runner.profileId,
-    });
-    expect(wrongSkillResponse.status).toBe(400);
-
     const createResponse = await rootAgent.post('/api/agent-gateway/task-runs:create').send({
       title: 'Batch evaluation',
-      scenario: 'opencode-ui-batch',
       prompt: '运行 nb-opencode-ui-batch harness 并汇总结果',
       skillVersionIds: [otherSkillVersion.get('id'), activeSkillVersion.get('id'), activeSkillVersion.get('id')],
       cwd: 'myskills/skills/nb-opencode-ui-batch',
@@ -618,15 +713,13 @@ describe('agent gateway run lifecycle APIs', () => {
       filterByTk: String(createResult.runId),
     });
     expect(storedRun.get('promptSnapshot')).toMatchObject({
-      renderedPrompt: expect.stringContaining('Run the uploaded nb-opencode-ui-batch Agent Gateway skill harness.'),
+      renderedPrompt: '运行 nb-opencode-ui-batch harness 并汇总结果',
       variables: expect.objectContaining({
-        scenario: 'opencode-ui-batch',
+        title: 'Batch evaluation',
       }),
     });
     expect(storedRun.get('executionPayloadJson')).toMatchObject({
-      scenario: 'opencode-ui-batch',
-      prompt: expect.stringContaining('browser-screenshots/**'),
-      timeoutMs: 7_200_000,
+      prompt: '运行 nb-opencode-ui-batch harness 并汇总结果',
       instruction: '运行 nb-opencode-ui-batch harness 并汇总结果',
       profileKey: 'codex',
       commandKey: 'codex',
@@ -652,15 +745,6 @@ describe('agent gateway run lifecycle APIs', () => {
         },
       ],
     });
-    expect(String((storedRun.get('executionPayloadJson') as Record<string, unknown>).prompt)).toContain(
-      'timeout 10m node scripts/run-suite.mjs --render-run <run_dir> --no-open',
-    );
-    expect(String((storedRun.get('executionPayloadJson') as Record<string, unknown>).prompt)).toContain(
-      'Leave generated files in the current run directory',
-    );
-    expect(String((storedRun.get('executionPayloadJson') as Record<string, unknown>).prompt)).toContain(
-      'AGW_PROGRESS phase=<phase> status=<started|succeeded|failed>',
-    );
     const initialConversationEvents = await app.db.getRepository('agAgentConversationEvents').find({
       filter: {
         runId: String(createResult.runId),
@@ -670,11 +754,8 @@ describe('agent gateway run lifecycle APIs', () => {
     expect(initialConversationEvents).toHaveLength(1);
     expect(initialConversationEvents[0].get('eventType')).toBe('agent.user.message');
     expect(initialConversationEvents[0].get('source')).toBe('agent-gateway-task');
-    expect(initialConversationEvents[0].get('contentText')).toContain(
-      'Run the uploaded nb-opencode-ui-batch Agent Gateway skill harness.',
-    );
+    expect(initialConversationEvents[0].get('contentText')).toContain('运行 nb-opencode-ui-batch harness 并汇总结果');
     expect(initialConversationEvents[0].get('contentJson')).toMatchObject({
-      scenario: 'opencode-ui-batch',
       title: 'Batch evaluation',
     });
   });

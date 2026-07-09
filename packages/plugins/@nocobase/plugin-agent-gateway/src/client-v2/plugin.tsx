@@ -57,11 +57,19 @@ export class PluginAgentGatewayClientV2 extends Plugin {
 
     this.pluginSettingsManager.addPageTabItem({
       menuKey: NAMESPACE,
+      key: 'task-templates',
+      title: this.t('Task Templates'),
+      componentLoader: () => import('./pages/AgentGatewayTaskTemplatesPage'),
+      sort: 30,
+    });
+
+    this.pluginSettingsManager.addPageTabItem({
+      menuKey: NAMESPACE,
       key: 'prompt-templates',
       title: this.t('Prompt Templates'),
       hidden: true,
       componentLoader: () => import('./pages/AgentGatewayPromptTemplatesPage'),
-      sort: 30,
+      sort: 40,
     });
 
     this.pluginSettingsManager.addPageTabItem({
@@ -70,7 +78,7 @@ export class PluginAgentGatewayClientV2 extends Plugin {
       title: this.t('Dispatch Bindings'),
       hidden: true,
       componentLoader: () => import('./pages/AgentGatewayDispatchBindingsPage'),
-      sort: 40,
+      sort: 50,
     });
   }
 }

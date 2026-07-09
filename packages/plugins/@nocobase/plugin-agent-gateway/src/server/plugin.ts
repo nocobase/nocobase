@@ -24,6 +24,7 @@ import { registerTerminalStreamTicketRoutes } from './actions/terminalStreamTick
 import { registerRunTerminalRoutes } from './actions/runTerminal';
 import { registerSkillInstallRoutes } from './actions/skillInstalls';
 import { registerSkillVersionRoutes } from './actions/skillVersions';
+import { registerTaskTemplateRoutes } from './actions/taskTemplates';
 import { TerminalStreamBroker, registerTerminalStreamBroker } from './actions/terminalStreamBroker';
 import { registerAgentGatewayAcl } from './security/permissions';
 
@@ -79,6 +80,7 @@ export class PluginAgentGatewayServer extends Plugin {
     registerTerminalStreamTicketRoutes(this);
     registerRunObservabilityRoutes(this);
     registerExternalRunImportRoutes(this);
+    registerTaskTemplateRoutes(this);
     registerPromptTemplateRoutes(this);
     registerDispatchBindingRoutes(this);
     this.terminalStreamBroker = registerTerminalStreamBroker(this);

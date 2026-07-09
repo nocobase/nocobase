@@ -379,7 +379,6 @@ describe('agent gateway daemon runner', () => {
           id: 'run-1',
           requestedAt,
           executionPayloadJson: {
-            scenario: 'opencode-ui-batch',
             commandKey: 'codex',
             prompt: 'Run the local batch harness',
             cwd: '.',
@@ -590,7 +589,6 @@ describe('agent gateway daemon runner', () => {
           id: 'run-2',
           requestedAt: new Date(Date.now() - 1000).toISOString(),
           executionPayloadJson: {
-            scenario: 'opencode-ui-batch',
             commandKey: 'codex',
             prompt: 'Run the local batch harness from cwd',
             cwd: 'myskills/skills/nb-opencode-ui-batch',
@@ -809,7 +807,6 @@ describe('agent gateway daemon runner', () => {
           id: 'run-2',
           requestedAt: new Date(Date.now() - 1000).toISOString(),
           executionPayloadJson: {
-            scenario: 'opencode-ui-batch',
             commandKey: 'codex',
             prompt: 'Run the local batch harness from cwd',
             cwd: 'myskills/skills/nb-opencode-ui-batch',

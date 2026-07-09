@@ -41,6 +41,7 @@ export const AGENT_GATEWAY_STANDARD_COLLECTIONS = [
   'agRunEvents',
   'agRunSnapshots',
   'agRuns',
+  'agTaskTemplates',
   'agTerminalStreamTickets',
   'agSkillVersions',
   'agSkills',

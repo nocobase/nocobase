@@ -301,6 +301,13 @@ export default defineCollection({
     },
     {
       type: 'belongsTo',
+      name: 'taskTemplate',
+      target: 'agTaskTemplates',
+      foreignKey: 'taskTemplateId',
+      onDelete: 'SET NULL',
+    },
+    {
+      type: 'belongsTo',
       name: 'dispatchBinding',
       target: 'agDispatchBindings',
       foreignKey: 'dispatchBindingId',

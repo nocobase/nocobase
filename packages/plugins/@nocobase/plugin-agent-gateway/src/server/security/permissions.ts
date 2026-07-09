@@ -91,6 +91,7 @@ export const AGENT_GATEWAY_PERMISSION_DEFINITIONS = [
       'agSkills:*',
       'agSkillVersions:*',
       'agNodeSkillInstalls:*',
+      'agTaskTemplates:*',
       'agPromptTemplates:*',
       'agDispatchBindings:*',
       'agRunControlRequests:*',
