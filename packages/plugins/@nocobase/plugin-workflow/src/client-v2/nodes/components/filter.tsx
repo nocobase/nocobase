@@ -11,6 +11,7 @@ import React from 'react';
 import { Form } from 'antd';
 import { isValidFilter } from '@nocobase/utils/client';
 import { FilterDynamicComponent } from '../../components/FilterDynamicComponent';
+import { useCurrentWorkflowContext } from '../../canvas/contexts';
 import { useT } from '../../locale';
 
 export function NodeFilterField({
@@ -27,6 +28,8 @@ export function NodeFilterField({
   maxAssociationFieldDepth?: number;
 }) {
   const t = useT();
+  const workflow = useCurrentWorkflowContext();
+  const disabled = Boolean(workflow?.versionStats?.executed);
 
   return (
     <Form.Item
@@ -47,7 +50,11 @@ export function NodeFilterField({
           : undefined
       }
     >
-      <FilterDynamicComponent collection={collection} maxAssociationFieldDepth={maxAssociationFieldDepth} />
+      <FilterDynamicComponent
+        collection={collection}
+        disabled={disabled}
+        maxAssociationFieldDepth={maxAssociationFieldDepth}
+      />
     </Form.Item>
   );
 }
