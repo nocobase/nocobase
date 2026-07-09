@@ -68,20 +68,28 @@ vi.mock('@nocobase/flow-engine', async (importOriginal) => {
   };
 });
 
-vi.mock('../../canvas/contexts', () => ({
-  useFlowContext: () => ({
-    workflow: {
-      id: 1,
-      type: 'collection',
-      title: 'Workflow title',
-      triggerTitle: 'Collection trigger',
-      config: {},
+vi.mock('../../canvas/contexts', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../canvas/contexts')>();
+  return {
+    ...actual,
+    useFlowContext: () =>
+      React.useContext(actual.FlowContext) ?? {
+        workflow: {
+          id: 1,
+          type: 'collection',
+          title: 'Workflow title',
+          triggerTitle: 'Collection trigger',
+          config: {},
+        },
+        refresh: vi.fn(),
+      },
+    useWorkflowCanvasExecuted: () => {
+      const flow = React.useContext(actual.FlowContext);
+      return BigInt(flow?.workflow?.versionStats?.executed || 0);
     },
-    refresh: vi.fn(),
-  }),
-  useWorkflowCanvasExecuted: () => false,
-  CurrentWorkflowContext: React.createContext(null),
-}));
+    CurrentWorkflowContext: React.createContext(null),
+  };
+});
 
 vi.mock('../../canvas/style', () => ({
   default: () => ({
@@ -280,7 +288,22 @@ describe('TriggerConfig', () => {
       description: `{{t('Triggered when data changes in the collection.', { ns: "workflow" })}}`,
     });
 
-    const { container } = render(<TriggerConfig />);
+    const { container } = render(
+      <FlowContext.Provider
+        value={{
+          workflow: {
+            id: 1,
+            type: 'collection',
+            title: 'Workflow title',
+            triggerTitle: 'Collection trigger',
+            config: {},
+          },
+          refresh: vi.fn(),
+        }}
+      >
+        <TriggerConfig />
+      </FlowContext.Provider>,
+    );
 
     expect(container.querySelector('.workflow-node-meta .ant-tooltip-open')).toBeNull();
     expect(container.querySelector('.workflow-node-meta .ant-tooltip-trigger')).toBeNull();
