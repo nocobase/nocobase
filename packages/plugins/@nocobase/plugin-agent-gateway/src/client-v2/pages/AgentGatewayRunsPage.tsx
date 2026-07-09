@@ -43,7 +43,7 @@ import {
   Typography,
   Upload,
 } from 'antd';
-import type { PaginationProps, UploadProps } from 'antd';
+import type { PaginationProps, TableProps, UploadProps } from 'antd';
 import type { ColumnsType, TablePaginationConfig } from 'antd/es/table';
 import type { CSSMotionProps } from 'rc-motion';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -61,6 +61,7 @@ import { useT } from '../locale';
 import {
   AgentGatewayTaskParameterFormItems,
   BuildRunOptions,
+  BuildSkillVersionOption,
   BuildTaskArtifactDeclarationFormValue,
   getBuildRunnerSelectOptions,
   getBuildSkillVersionSelectOptions,
@@ -68,7 +69,6 @@ import {
   getOptionalFormString,
   getTaskArtifactDeclarations,
   getTaskArtifactFormValues,
-  getBuildRunnerValue,
   hasSelectableBuildRunner,
   OPENCODE_UI_BATCH_SKILL_KEY,
   parseBuildRunnerValue,
@@ -99,6 +99,7 @@ interface RunRecord {
   sourceCollection?: string | null;
   sourceRecordId?: string | null;
   taskTemplateId?: string | null;
+  taskTemplateJson?: RunTaskTemplateSummary | null;
   cancelRequested?: boolean;
   resultSummaryJson?: JsonRecord;
   tokenUsageJson?: TokenUsageRecord | null;
@@ -138,6 +139,14 @@ interface RunRecord {
   startedAt?: string;
   finishedAt?: string;
   createdAt?: string;
+}
+
+interface RunTaskTemplateSummary {
+  id: string;
+  templateKey: string;
+  displayName?: string;
+  skillVersionIds?: string[];
+  skills?: BuildSkillVersionOption[];
 }
 
 interface TokenUsageRecord extends JsonRecord {
@@ -303,11 +312,18 @@ interface RunListMeta {
   page?: number;
   pageSize?: number;
   totalPage?: number;
+  taskTemplates?: RunTaskTemplateFilterOption[];
 }
 
 interface RunListData {
   runs: RunRecord[];
   meta: RunListMeta;
+}
+
+interface RunTaskTemplateFilterOption {
+  id: string;
+  templateKey?: string;
+  displayName?: string;
 }
 
 type RunDetailTabKey = 'summary' | 'agent-sessions' | 'logs' | 'artifacts' | 'api-logs';
@@ -442,58 +458,75 @@ const DEFAULT_EXTERNAL_RUN_IMPORT_FORM_VALUES: ExternalRunImportFormValues = {
   format: 'codex-jsonl',
   status: 'succeeded',
 };
-const RUNS_FILTER_FIELD_NAMES = ['status', 'nodeId', 'agentProfileId', 'createdAt'];
-const RUNS_FILTER_COLLECTION_OPTIONS: CollectionOptions = {
-  name: 'agentGatewayRunsFilter',
-  title: '{{t("Runs")}}',
-  filterTargetKey: 'id',
-  fields: [
-    {
-      type: 'string',
-      name: 'status',
-      interface: 'select',
-      uiSchema: {
+const RUNS_FILTER_FIELD_NAMES = ['taskTemplateId', 'status', 'nodeId', 'agentProfileId', 'createdAt'];
+const RUN_SORT_FALLBACK = '-createdAt';
+
+function getRunsFilterCollectionOptions(
+  taskTemplateOptions: Array<{ label: string; value: string }>,
+): CollectionOptions {
+  return {
+    name: 'agentGatewayRunsFilter',
+    title: '{{t("Runs")}}',
+    filterTargetKey: 'id',
+    fields: [
+      {
         type: 'string',
-        title: '{{t("Status")}}',
-        'x-component': 'Select',
-        enum: RUN_STATUS_OPTIONS.map((status) => ({
-          label: status,
-          value: status,
-        })),
+        name: 'taskTemplateId',
+        interface: 'select',
+        uiSchema: {
+          type: 'string',
+          title: '{{t("Task template")}}',
+          'x-component': 'Select',
+          enum: taskTemplateOptions,
+        },
       },
-    },
-    {
-      type: 'string',
-      name: 'nodeId',
-      interface: 'input',
-      uiSchema: {
+      {
         type: 'string',
-        title: '{{t("Node ID")}}',
-        'x-component': 'Input',
+        name: 'status',
+        interface: 'select',
+        uiSchema: {
+          type: 'string',
+          title: '{{t("Status")}}',
+          'x-component': 'Select',
+          enum: RUN_STATUS_OPTIONS.map((status) => ({
+            label: status,
+            value: status,
+          })),
+        },
       },
-    },
-    {
-      type: 'string',
-      name: 'agentProfileId',
-      interface: 'input',
-      uiSchema: {
+      {
         type: 'string',
-        title: '{{t("Profile ID")}}',
-        'x-component': 'Input',
+        name: 'nodeId',
+        interface: 'input',
+        uiSchema: {
+          type: 'string',
+          title: '{{t("Node ID")}}',
+          'x-component': 'Input',
+        },
       },
-    },
-    {
-      type: 'date',
-      name: 'createdAt',
-      interface: 'createdAt',
-      uiSchema: {
-        type: 'datetime',
-        title: '{{t("Created at")}}',
-        'x-component': 'DatePicker',
+      {
+        type: 'string',
+        name: 'agentProfileId',
+        interface: 'input',
+        uiSchema: {
+          type: 'string',
+          title: '{{t("Profile ID")}}',
+          'x-component': 'Input',
+        },
       },
-    },
-  ],
-};
+      {
+        type: 'date',
+        name: 'createdAt',
+        interface: 'createdAt',
+        uiSchema: {
+          type: 'datetime',
+          title: '{{t("Created at")}}',
+          'x-component': 'DatePicker',
+        },
+      },
+    ],
+  };
+}
 
 function readFileAsBase64(file: File) {
   return new Promise<string>((resolve, reject) => {
@@ -694,6 +727,22 @@ function getNumberMetaValue(value: unknown) {
   return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
 }
 
+function getRunTaskTemplateMetaOptions(value: unknown): RunTaskTemplateFilterOption[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+  return value
+    .map((item) => {
+      const record = getObjectRecord(item);
+      return {
+        id: getStringValue(record.id),
+        templateKey: getStringValue(record.templateKey),
+        displayName: getStringValue(record.displayName),
+      };
+    })
+    .filter((template) => Boolean(template.id));
+}
+
 function getRunListMeta(value: unknown): RunListMeta {
   const record = getObjectRecord(value);
   return {
@@ -701,7 +750,54 @@ function getRunListMeta(value: unknown): RunListMeta {
     page: getNumberMetaValue(record.page),
     pageSize: getNumberMetaValue(record.pageSize),
     totalPage: getNumberMetaValue(record.totalPage),
+    taskTemplates: getRunTaskTemplateMetaOptions(record.taskTemplates),
   };
+}
+
+function getRunTaskTemplateFilterOptions(runListData: RunListData) {
+  const optionsById = new Map<string, { label: string; value: string }>();
+  const addTemplate = (template: RunTaskTemplateFilterOption | RunTaskTemplateSummary | null | undefined) => {
+    if (!template?.id) {
+      return;
+    }
+    optionsById.set(template.id, {
+      value: template.id,
+      label: template.displayName || template.templateKey || template.id,
+    });
+  };
+
+  for (const template of runListData.meta.taskTemplates || []) {
+    addTemplate(template);
+  }
+  for (const run of runListData.runs) {
+    addTemplate(run.taskTemplateJson);
+  }
+
+  return [...optionsById.values()].sort((left, right) => left.label.localeCompare(right.label));
+}
+
+function getRunSortParam(sorter: Parameters<NonNullable<TableProps<RunRecord>['onChange']>>[2]) {
+  const activeSorter = Array.isArray(sorter) ? sorter[0] : sorter;
+  if (!activeSorter?.order) {
+    return undefined;
+  }
+  const columnKey = typeof activeSorter.columnKey === 'string' ? activeSorter.columnKey : '';
+  const field = typeof activeSorter.field === 'string' ? activeSorter.field : '';
+  const sortField = columnKey || field;
+  if (!sortField) {
+    return undefined;
+  }
+  return activeSorter.order === 'descend' ? `-${sortField}` : sortField;
+}
+
+function getRunColumnSortOrder(runSort: string | undefined, columnKey: string) {
+  if (runSort === columnKey) {
+    return 'ascend' as const;
+  }
+  if (runSort === `-${columnKey}`) {
+    return 'descend' as const;
+  }
+  return null;
 }
 
 function EmptyInline({ description }: { description: string }) {
@@ -838,12 +934,84 @@ function getRunTaskTitle(run: RunRecord, t: TFunction) {
   return title || run.runCode || t('Untitled task');
 }
 
-function RunTaskTitle({ run, t }: { run: RunRecord; t: TFunction }) {
+function RunTaskTitle({ run, t, onOpen }: { run: RunRecord; t: TFunction; onOpen?: (run: RunRecord) => void }) {
   const title = getRunTaskTitle(run, t);
+  if (onOpen) {
+    return (
+      <Typography.Link
+        href="#"
+        strong
+        ellipsis
+        title={title}
+        onClick={(event) => {
+          event.preventDefault();
+          onOpen(run);
+        }}
+        style={{ display: 'inline-block', maxWidth: 300 }}
+      >
+        {title}
+      </Typography.Link>
+    );
+  }
   return (
     <Typography.Text strong ellipsis={{ tooltip: title }} style={{ display: 'inline-block', maxWidth: 300 }}>
       {title}
     </Typography.Text>
+  );
+}
+
+function RunTaskTemplateLink({ run, t, onOpen }: { run: RunRecord; t: TFunction; onOpen: (run: RunRecord) => void }) {
+  const template = run.taskTemplateJson;
+  const label = template?.displayName || template?.templateKey || run.taskTemplateId || '';
+  if (!label) {
+    return <Typography.Text type="secondary">-</Typography.Text>;
+  }
+  return (
+    <Typography.Link
+      href="#"
+      aria-label={`${t('View run details')}: ${label}`}
+      ellipsis
+      title={label}
+      onClick={(event) => {
+        event.preventDefault();
+        onOpen(run);
+      }}
+      style={{ display: 'inline-block', maxWidth: 220 }}
+    >
+      {label}
+    </Typography.Link>
+  );
+}
+
+function getSkillVersionLabel(skillVersion: BuildSkillVersionOption) {
+  return [skillVersion.displayName || skillVersion.skillKey || skillVersion.id, skillVersion.versionLabel]
+    .filter(Boolean)
+    .join(' / ');
+}
+
+function RunTaskTemplateSkills({ run, onOpen }: { run: RunRecord; onOpen: (run: RunRecord) => void }) {
+  const skills = run.taskTemplateJson?.skills || [];
+  if (!skills.length) {
+    return <Typography.Text type="secondary">-</Typography.Text>;
+  }
+  return (
+    <Space wrap size={[4, 0]}>
+      {skills.map((skillVersion) => {
+        const label = getSkillVersionLabel(skillVersion);
+        return (
+          <Typography.Link
+            key={skillVersion.id}
+            href="#"
+            onClick={(event) => {
+              event.preventDefault();
+              onOpen(run);
+            }}
+          >
+            {label}
+          </Typography.Link>
+        );
+      })}
+    </Space>
   );
 }
 
@@ -2240,6 +2408,7 @@ export default function AgentGatewayRunsPage() {
   const [externalRunImportForm] = Form.useForm<ExternalRunImportFormValues>();
   const [skillUploadForm] = Form.useForm<SkillUploadFormValues>();
   const [runFilters, setRunFilters] = useState<CompiledFilter>();
+  const [runSort, setRunSort] = useState<string | undefined>(RUN_SORT_FALLBACK);
   const [runPagination, setRunPagination] = useState({
     current: 1,
     pageSize: DEFAULT_RUNS_PAGE_SIZE,
@@ -2265,15 +2434,6 @@ export default function AgentGatewayRunsPage() {
     {},
   );
   const selectedRunIdRef = useRef<string | undefined>(initialRunId);
-  const runsFilterCollection = useMemo(() => {
-    const dataSource = ctx.dataSourceManager?.getDataSource('main');
-    if (!dataSource) {
-      return undefined;
-    }
-    const collection = new Collection(RUNS_FILTER_COLLECTION_OPTIONS);
-    collection.setDataSource(dataSource);
-    return collection;
-  }, [ctx.dataSourceManager]);
 
   const syncRunDetailFromLocation = useCallback(() => {
     const runId = getRunIdFromLocationSearch();
@@ -2309,7 +2469,8 @@ export default function AgentGatewayRunsPage() {
         url: 'agent-gateway/runs:list',
         method: 'get',
         params: {
-          ...(runFilters ? { filter: runFilters } : {}),
+          ...(runFilters ? { filter: JSON.stringify(runFilters) } : {}),
+          ...(runSort ? { sort: runSort } : {}),
           page: runPagination.current,
           pageSize: runPagination.pageSize,
         },
@@ -2320,7 +2481,7 @@ export default function AgentGatewayRunsPage() {
       };
     },
     {
-      refreshDeps: [runFilters, runPagination.current, runPagination.pageSize],
+      refreshDeps: [runFilters, runPagination.current, runPagination.pageSize, runSort],
     },
   );
   const { refresh: refreshRuns } = runsRequest;
@@ -3139,12 +3300,17 @@ export default function AgentGatewayRunsPage() {
     setRunFilters(filter);
   }, []);
 
-  const handleRunPageChange = useCallback((page: number, pageSize: number) => {
-    setRunPagination({
-      current: page,
-      pageSize,
-    });
-  }, []);
+  const handleRunTableChange = useCallback<NonNullable<TableProps<RunRecord>['onChange']>>(
+    (pagination, _filters, sorter) => {
+      const nextSort = getRunSortParam(sorter) || RUN_SORT_FALLBACK;
+      setRunPagination((current) => ({
+        current: nextSort === runSort ? pagination.current || current.current : 1,
+        pageSize: pagination.pageSize || current.pageSize,
+      }));
+      setRunSort(nextSort);
+    },
+    [runSort],
+  );
 
   const openBuildTask = useCallback(() => {
     buildRunOptionsRequest.run();
@@ -3191,15 +3357,10 @@ export default function AgentGatewayRunsPage() {
       if (!template) {
         return;
       }
-      const runner =
-        template.nodeId && template.agentProfileId
-          ? getBuildRunnerValue(template.nodeId, template.agentProfileId)
-          : undefined;
       buildTaskForm.setFieldsValue({
         title: template.defaultTitle || '',
         prompt: template.defaultPrompt || '',
         cwd: template.cwd || defaultBuildTaskCwd || '.',
-        ...(runner ? { runner } : {}),
         skillVersionIds: template.skillVersionIds || [],
         artifactRoot: template.artifactRoot,
         artifactDeclarations: getTaskArtifactFormValues(template.artifacts),
@@ -3312,15 +3473,37 @@ export default function AgentGatewayRunsPage() {
     () => [
       {
         title: t('Task'),
-        key: 'task',
+        dataIndex: 'runCode',
+        key: 'runCode',
         width: 320,
-        render: (_value: unknown, record) => <RunTaskTitle run={record} t={t} />,
+        sorter: true,
+        sortOrder: getRunColumnSortOrder(runSort, 'runCode'),
+        render: (_value: unknown, record) => <RunTaskTitle run={record} t={t} onOpen={openRunDetails} />,
+      },
+      {
+        title: t('Task template'),
+        dataIndex: 'taskTemplateId',
+        key: 'taskTemplateId',
+        width: 220,
+        sorter: true,
+        sortOrder: getRunColumnSortOrder(runSort, 'taskTemplateId'),
+        render: (_value: string | null | undefined, record) => (
+          <RunTaskTemplateLink run={record} t={t} onOpen={openRunDetails} />
+        ),
+      },
+      {
+        title: t('Skills'),
+        key: 'taskTemplateSkills',
+        width: 240,
+        render: (_value: unknown, record) => <RunTaskTemplateSkills run={record} onOpen={openRunDetails} />,
       },
       {
         title: t('Status'),
         dataIndex: 'status',
         key: 'status',
         width: 132,
+        sorter: true,
+        sortOrder: getRunColumnSortOrder(runSort, 'status'),
         render: (value: string | undefined) => statusTag(value),
       },
       {
@@ -3333,6 +3516,8 @@ export default function AgentGatewayRunsPage() {
         title: t('Source'),
         dataIndex: 'sourceType',
         key: 'sourceType',
+        sorter: true,
+        sortOrder: getRunColumnSortOrder(runSort, 'sourceType'),
         render: (value: string | null | undefined, record) =>
           [value, record.sourceCollection, record.sourceRecordId].filter(Boolean).join(' / ') || '-',
       },
@@ -3341,6 +3526,8 @@ export default function AgentGatewayRunsPage() {
         dataIndex: 'startedAt',
         key: 'startedAt',
         width: 180,
+        sorter: true,
+        sortOrder: getRunColumnSortOrder(runSort, 'startedAt'),
         render: (value: string | undefined) => formatDateTime(value),
       },
       {
@@ -3373,7 +3560,7 @@ export default function AgentGatewayRunsPage() {
         ),
       },
     ],
-    [openRunDetails, renderCancelButton, t],
+    [openRunDetails, renderCancelButton, runSort, t],
   );
 
   const activeRunDetails =
@@ -3383,8 +3570,17 @@ export default function AgentGatewayRunsPage() {
   const activeRunEventsDetails = runEventsDetailsState?.runId === selectedRunId ? runEventsDetailsState : null;
   const activeRunArtifactsDetails = runArtifactsDetailsState?.runId === selectedRunId ? runArtifactsDetailsState : null;
   const activeRunApiLogsDetails = runApiLogsDetailsState?.runId === selectedRunId ? runApiLogsDetailsState : null;
-  const runListData: RunListData = runsRequest.data || { runs: [], meta: {} };
+  const runListData = useMemo<RunListData>(() => runsRequest.data || { runs: [], meta: {} }, [runsRequest.data]);
   const runListTotal = runListData.meta.count ?? runListData.runs.length;
+  const runTaskTemplateFilterOptions = useMemo(() => getRunTaskTemplateFilterOptions(runListData), [runListData]);
+  const runsFilterCollection = useMemo(() => {
+    const collection = new Collection(getRunsFilterCollectionOptions(runTaskTemplateFilterOptions));
+    const dataSource = ctx.dataSourceManager?.getDataSource('main');
+    if (dataSource) {
+      collection.setDataSource(dataSource);
+    }
+    return collection;
+  }, [ctx.dataSourceManager, runTaskTemplateFilterOptions]);
   const { current: runPageCurrent, pageSize: runPageSize } = runPagination;
   const runTablePagination = useMemo<TablePaginationConfig>(
     () => ({
@@ -3394,10 +3590,8 @@ export default function AgentGatewayRunsPage() {
       showSizeChanger: true,
       pageSizeOptions: ['10', '20', '50', '100'],
       showTotal: (total) => t('Total {{count}} runs', { count: total }),
-      onChange: handleRunPageChange,
-      onShowSizeChange: handleRunPageChange,
     }),
-    [handleRunPageChange, runListTotal, runPageCurrent, runPageSize, t],
+    [runListTotal, runPageCurrent, runPageSize, t],
   );
   const selectedRun = activeRunDetails?.run || runListData.runs.find((run) => run.id === selectedRunId);
   const actionPermissions = activeRunDetails?.run.agentGatewayActionPermissionsJson || {};
@@ -3618,6 +3812,7 @@ export default function AgentGatewayRunsPage() {
             rowKey="id"
             locale={{ emptyText: <EmptyInline description={t('No runs yet')} /> }}
             pagination={runTablePagination}
+            onChange={handleRunTableChange}
           />
         </Space>
       </Card>
@@ -3794,9 +3989,6 @@ export default function AgentGatewayRunsPage() {
               runner: defaultBuildRunnerValue,
             }}
           >
-            <Form.Item label={t('Title')} name="title">
-              <Input />
-            </Form.Item>
             <Form.Item label={t('Task template')} name="taskTemplateId">
               <Select
                 allowClear
@@ -3881,7 +4073,7 @@ export default function AgentGatewayRunsPage() {
           <Form.Item label={t('Title')} name="title">
             <Input />
           </Form.Item>
-          <Form.Item label={t('Instruction')} name="instruction">
+          <Form.Item label={t('Prompt')} name="instruction">
             <Input.TextArea autoSize={{ minRows: 3, maxRows: 8 }} />
           </Form.Item>
           <Form.Item label={t('Status')} name="status" rules={[{ required: true, message: t('Status is required') }]}>

@@ -386,6 +386,8 @@
   "Default artifacts": "Default artifacts",
   "Instruction": "Instruction",
   "Instruction is required": "Instruction is required",
+  "Prompt": "Prompt",
+  "Prompt is required": "Prompt is required",
   "Skill version": "Skill version",
   "Skill versions": "Skill versions",
   "Select skill version": "Select skill version",

@@ -81,6 +81,18 @@ const CONTROL_RUN_STATUSES = new Set(['claimed', 'syncing_skills', 'running']);
 const TERMINAL_RUN_STATUSES = ['succeeded', 'failed', 'canceled', 'timeout', 'abandoned'] as const;
 const HEARTBEAT_RUN_STATUSES = ['claimed', 'syncing_skills', 'running', 'finalizing'] as const;
 const NODE_OWNED_INLINE_SKILL_SOURCE_TYPES = new Set(['opencode-smoke']);
+const RUN_LIST_SORT_FIELD_MAP: Record<string, string> = {
+  runCode: 'runCode',
+  status: 'status',
+  sourceType: 'sourceType',
+  taskTemplateId: 'taskTemplateId',
+  startedAt: 'startedAt',
+  finishedAt: 'finishedAt',
+  requestedAt: 'requestedAt',
+  queuedAt: 'queuedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt',
+};
 
 type ActiveRunStatus = (typeof ACTIVE_RUN_STATUSES)[number];
 type TerminalRunStatus = (typeof TERMINAL_RUN_STATUSES)[number];
@@ -133,11 +145,17 @@ interface TaskRunTemplateOption {
   defaultTitle?: string;
   defaultPrompt?: string;
   cwd?: string;
-  nodeId?: string;
-  agentProfileId?: string;
   skillVersionIds: string[];
   artifactRoot?: string;
   artifacts: JsonRecord[];
+}
+
+interface RunTaskTemplateSummary {
+  id: string;
+  templateKey: string;
+  displayName: string;
+  skillVersionIds: string[];
+  skills: TaskRunSkillVersionOption[];
 }
 
 interface ValidatedTaskRunSkillSelection {
@@ -673,12 +691,75 @@ function serializeTaskRunTemplate(template: ModelRecord): TaskRunTemplateOption 
     defaultTitle: getModelString(template, 'defaultTitle') || undefined,
     defaultPrompt: getString(getModelValue(template, 'defaultPrompt')) || undefined,
     cwd: getModelString(template, 'cwd') || undefined,
-    nodeId: getOptionalTargetKey(template, 'nodeId') || undefined,
-    agentProfileId: getOptionalTargetKey(template, 'agentProfileId') || undefined,
     skillVersionIds: getStringList(getModelValue(template, 'skillVersionIdsJson')),
     artifactRoot: getModelString(template, 'artifactRoot') || undefined,
     artifacts: getTaskRunArtifactDeclarations(getModelValue(template, 'artifactsJson')),
   };
+}
+
+function serializeRunTaskTemplateFilterOption(template: ModelRecord) {
+  return {
+    id: String(getModelTargetKey(template, 'id')),
+    templateKey: getModelString(template, 'templateKey'),
+    displayName: getModelString(template, 'displayName') || getModelString(template, 'templateKey'),
+  };
+}
+
+async function getTaskTemplateSkills(ctx: Context, skillVersionIds: string[]): Promise<TaskRunSkillVersionOption[]> {
+  const uniqueSkillVersionIds = [...new Set(skillVersionIds)];
+  if (!uniqueSkillVersionIds.length) {
+    return [];
+  }
+  const skillVersions = (await ctx.db.getRepository('agSkillVersions').find({
+    filter: {
+      id: {
+        $in: uniqueSkillVersionIds,
+      },
+    },
+    appends: ['skill'],
+  })) as ModelRecord[];
+  const skillVersionsById = new Map<string, TaskRunSkillVersionOption>();
+  for (const skillVersion of skillVersions) {
+    const serialized = serializeTaskRunSkillVersion(skillVersion);
+    if (serialized) {
+      skillVersionsById.set(serialized.id, serialized);
+    }
+  }
+  return skillVersionIds
+    .map((skillVersionId) => skillVersionsById.get(skillVersionId))
+    .filter((skillVersion): skillVersion is TaskRunSkillVersionOption => Boolean(skillVersion));
+}
+
+async function getRunTaskTemplateSummary(ctx: Context, run: ModelRecord): Promise<RunTaskTemplateSummary | null> {
+  const taskTemplateId = getOptionalTargetKey(run, 'taskTemplateId');
+  if (!taskTemplateId) {
+    return null;
+  }
+  const taskTemplate = (await ctx.db.getRepository('agTaskTemplates').findOne({
+    filterByTk: taskTemplateId,
+  })) as ModelRecord | null;
+  if (!taskTemplate) {
+    return {
+      id: taskTemplateId,
+      templateKey: taskTemplateId,
+      displayName: taskTemplateId,
+      skillVersionIds: [],
+      skills: [],
+    };
+  }
+  const skillVersionIds = getStringList(getModelValue(taskTemplate, 'skillVersionIdsJson'));
+  return {
+    ...serializeRunTaskTemplateFilterOption(taskTemplate),
+    skillVersionIds,
+    skills: await getTaskTemplateSkills(ctx, skillVersionIds),
+  };
+}
+
+async function listRunTaskTemplateFilterOptions(ctx: Context) {
+  const templates = (await ctx.db.getRepository('agTaskTemplates').find({
+    sort: ['templateKey'],
+  })) as ModelRecord[];
+  return templates.map(serializeRunTaskTemplateFilterOption);
 }
 
 async function listBuildRunOptions(ctx: Context) {
@@ -1020,12 +1101,6 @@ function applyTaskTemplateDefaults(values: JsonRecord, taskTemplate: TaskTemplat
   if (!getString(values.cwd) && taskTemplate.cwd) {
     merged.cwd = taskTemplate.cwd;
   }
-  if (!getString(values.nodeId) && taskTemplate.nodeId) {
-    merged.nodeId = taskTemplate.nodeId;
-  }
-  if (!getString(values.agentProfileId) && taskTemplate.agentProfileId) {
-    merged.agentProfileId = taskTemplate.agentProfileId;
-  }
   if (!getTaskRunSkillVersionIds(values).length && taskTemplate.skillVersionIds.length) {
     merged.skillVersionIds = taskTemplate.skillVersionIds;
   }
@@ -1313,6 +1388,7 @@ export async function serializeRunForManagement(ctx: Context, run: ModelRecord) 
         filterByTk: agentSessionId,
       })) as ModelRecord | null)
     : null;
+  const taskTemplateJson = await getRunTaskTemplateSummary(ctx, run);
   const capabilitySummary = await getRunProviderCapabilitySummary(ctx, run, session);
   const actionPermissions = await getAgentGatewayActionPermissions(ctx);
   const interruptCapable = await getRunControlCapability(ctx, run, session, 'interrupt');
@@ -1320,6 +1396,7 @@ export async function serializeRunForManagement(ctx: Context, run: ModelRecord) 
   return {
     ...json,
     taskTitle: getRunTaskTitle(run) || null,
+    taskTemplateJson,
     tokenUsageJson: await getRunTokenUsageSummary(ctx, run),
     ...(session
       ? {
@@ -1509,6 +1586,47 @@ function getRunListPagination(ctx: Context) {
   };
 }
 
+function normalizeRunListSortItem(value: unknown) {
+  const rawSort = getString(value).trim();
+  if (!rawSort) {
+    return null;
+  }
+  const descending = rawSort.startsWith('-');
+  const requestedField = descending ? rawSort.slice(1) : rawSort;
+  const sortField = RUN_LIST_SORT_FIELD_MAP[requestedField];
+  if (!sortField) {
+    return null;
+  }
+  return `${descending ? '-' : ''}${sortField}`;
+}
+
+function getRunListSort(ctx: Context) {
+  const rawSort = getRecord(ctx.query).sort;
+  let sortValues: unknown[] = Array.isArray(rawSort) ? rawSort : [rawSort];
+  if (typeof rawSort === 'string') {
+    const trimmed = rawSort.trim();
+    if (trimmed.startsWith('[')) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        sortValues = Array.isArray(parsed) ? parsed : [rawSort];
+      } catch {
+        sortValues = [rawSort];
+      }
+    } else if (trimmed.includes(',')) {
+      sortValues = trimmed.split(',');
+    }
+  }
+
+  const sort = sortValues.map(normalizeRunListSortItem).filter((item): item is string => Boolean(item));
+  if (!sort.length) {
+    return ['-createdAt'];
+  }
+  if (!sort.includes('createdAt') && !sort.includes('-createdAt')) {
+    sort.push('-createdAt');
+  }
+  return sort;
+}
+
 function getTotalPage(count: number, pageSize: number) {
   return Math.ceil(count / pageSize);
 }
@@ -1551,6 +1669,7 @@ function getRunListFilter(ctx: Context) {
   const status = getQueryString(ctx, 'status');
   const nodeId = getQueryString(ctx, 'nodeId');
   const agentProfileId = getQueryString(ctx, 'agentProfileId');
+  const taskTemplateId = getQueryString(ctx, 'taskTemplateId');
   const createdAtFrom = getDate(getQueryValue(ctx, 'createdAtFrom'));
   const createdAtTo = getDate(getQueryValue(ctx, 'createdAtTo'));
 
@@ -1569,6 +1688,9 @@ function getRunListFilter(ctx: Context) {
   }
   if (agentProfileId) {
     legacyFilter.agentProfileId = agentProfileId;
+  }
+  if (taskTemplateId) {
+    legacyFilter.taskTemplateId = taskTemplateId;
   }
   if (createdAtFrom || createdAtTo) {
     legacyFilter.createdAt = {
@@ -1796,18 +1918,20 @@ async function listRuns(ctx: Context) {
   );
   const filter = await getVisibleRunFilter(ctx, getRunListFilter(ctx), 'list');
   const { page, pageSize, offset } = getRunListPagination(ctx);
+  const sort = getRunListSort(ctx);
   const runRepo = ctx.db.getRepository('agRuns');
 
-  const [count, runs] = await Promise.all([
+  const [count, runs, taskTemplates] = await Promise.all([
     runRepo.count({
       filter,
     }),
     runRepo.find({
       filter,
-      sort: ['-createdAt'],
+      sort,
       limit: pageSize,
       offset,
     }) as Promise<ModelRecord[]>,
+    listRunTaskTemplateFilterOptions(ctx),
   ]);
 
   ctx.body = {
@@ -1816,6 +1940,7 @@ async function listRuns(ctx: Context) {
     page,
     pageSize,
     totalPage: getTotalPage(count, pageSize),
+    taskTemplates,
   };
 }
 

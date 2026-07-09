@@ -58,8 +58,6 @@ export interface TaskTemplateDefaults {
   title?: string;
   prompt?: string;
   cwd?: string;
-  nodeId?: string;
-  agentProfileId?: string;
   skillVersionIds: string[];
   artifactRoot?: string;
   artifacts: JsonRecord[];
@@ -298,8 +296,6 @@ export function getTaskTemplateDefaults(template: ModelRecord): TaskTemplateDefa
     title: getModelString(template, 'defaultTitle') || undefined,
     prompt: getString(getModelValue(template, 'defaultPrompt')) || undefined,
     cwd: getModelString(template, 'cwd') || undefined,
-    nodeId: getModelString(template, 'nodeId') || undefined,
-    agentProfileId: getModelString(template, 'agentProfileId') || undefined,
     skillVersionIds: getOptionalStringArray(getModelValue(template, 'skillVersionIdsJson')),
     artifactRoot: getModelString(template, 'artifactRoot') || undefined,
     artifacts: getOptionalJsonArray(getModelValue(template, 'artifactsJson')),

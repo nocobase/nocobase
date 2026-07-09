@@ -386,6 +386,8 @@
   "Default artifacts": "默认产物",
   "Instruction": "指令",
   "Instruction is required": "请输入指令",
+  "Prompt": "Prompt",
+  "Prompt is required": "请输入 Prompt",
   "Skill version": "Skill 版本",
   "Skill versions": "Skill 版本",
   "Select skill version": "选择 Skill 版本",

@@ -200,6 +200,16 @@ function renderSettingsPage(request: (config: RequestConfig) => Promise<unknown>
   renderAgentGatewayPage(AgentGatewaySettingsPage, request);
 }
 
+function getTaskTemplateSelectInput() {
+  const input = screen
+    .getAllByLabelText('Task template')
+    .find((element) => element.getAttribute('role') === 'combobox');
+  if (!input) {
+    throw new Error('Task template select input not found');
+  }
+  return input;
+}
+
 function stubAnimationFrameWithTimeout() {
   vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback): number => {
     return window.setTimeout(() => callback(performance.now()), 0);
@@ -936,6 +946,19 @@ describe('PluginAgentGatewayClientV2', () => {
         };
       }
 
+      if (config.url === 'agent-gateway/skill-versions:upload-zip') {
+        return {
+          data: {
+            data: {
+              skillVersionId: 'uploaded-template-skill-version-id',
+              skillKey: config.data?.skillKey,
+              versionLabel: config.data?.versionLabel,
+              status: 'active',
+            },
+          },
+        };
+      }
+
       if (config.url === 'agent-gateway/task-templates:create') {
         templates.push({
           id: 'template-id-2',
@@ -943,7 +966,9 @@ describe('PluginAgentGatewayClientV2', () => {
           displayName: String(config.data?.displayName),
           status: 'active',
           cwd: String(config.data?.cwd),
-          skillVersionIdsJson: [],
+          skillVersionIdsJson: Array.isArray(config.data?.skillVersionIds)
+            ? (config.data.skillVersionIds as string[])
+            : [],
           artifactsJson: [],
         });
         return {
@@ -963,6 +988,9 @@ describe('PluginAgentGatewayClientV2', () => {
     expect(document.querySelector('.ant-table-row-expand-icon')).toBeNull();
 
     fireEvent.click(screen.getByText('New template'));
+    expect(screen.queryByLabelText('Sort')).toBeNull();
+    expect(screen.queryByLabelText('Runner')).toBeNull();
+    expect(screen.getAllByLabelText('Title')).toHaveLength(1);
     fireEvent.change(screen.getByPlaceholderText('build-on-187'), {
       target: { value: 'build-on-187' },
     });
@@ -972,11 +1000,38 @@ describe('PluginAgentGatewayClientV2', () => {
     fireEvent.change(screen.getByLabelText('Title'), {
       target: { value: '187 browser validation' },
     });
-    fireEvent.change(screen.getByLabelText('Instruction'), {
+    fireEvent.change(screen.getByLabelText('Prompt'), {
       target: { value: '搭建一个用于浏览器验收的任务页面' },
     });
-    fireEvent.mouseDown(screen.getByLabelText('Runner'));
-    fireEvent.click(await screen.findByText('Remote 187 / Codex / Online'));
+    fireEvent.click(screen.getByText('Upload skill'));
+    fireEvent.change(screen.getByLabelText('Skill key'), {
+      target: { value: 'template-skill' },
+    });
+    const fileInput = document.querySelector('input[type="file"]');
+    expect(fileInput).toBeTruthy();
+    await act(async () => {
+      fireEvent.change(fileInput as HTMLInputElement, {
+        target: {
+          files: [new File(['fake zip bytes'], 'template-skill.zip', { type: 'application/zip' })],
+        },
+      });
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Upload' }));
+
+    await waitFor(() => {
+      expect(request).toHaveBeenCalledWith(
+        expect.objectContaining({
+          url: 'agent-gateway/skill-versions:upload-zip',
+          method: 'post',
+          data: expect.objectContaining({
+            skillKey: 'template-skill',
+            versionLabel: 'local',
+            contentBase64: expect.any(String),
+          }),
+        }),
+      );
+    });
+
     fireEvent.click(screen.getByText('Save'));
 
     await waitFor(() => {
@@ -989,12 +1044,15 @@ describe('PluginAgentGatewayClientV2', () => {
             displayName: 'Build on 187',
             defaultTitle: '187 browser validation',
             defaultPrompt: '搭建一个用于浏览器验收的任务页面',
-            nodeId: 'node-187',
-            agentProfileId: 'profile-187',
+            nodeId: null,
+            agentProfileId: null,
+            skillVersionIds: ['uploaded-template-skill-version-id'],
           }),
         }),
       );
     });
+    const createCall = request.mock.calls.find(([config]) => config.url === 'agent-gateway/task-templates:create');
+    expect(createCall?.[0].data).not.toHaveProperty('sort');
   });
 
   it('creates a task run from the runs page and opens the run details', async () => {
@@ -1132,10 +1190,11 @@ describe('PluginAgentGatewayClientV2', () => {
     renderAgentGatewayPage(AgentGatewayRunsPage, request);
 
     fireEvent.click(await screen.findByText('New task run'));
-    fireEvent.mouseDown(screen.getByLabelText('Task template'));
+    expect(screen.getAllByLabelText('Title')).toHaveLength(1);
+    fireEvent.mouseDown(getTaskTemplateSelectInput());
     fireEvent.click(await screen.findByText('OpenCode UI batch harness'));
     expect(screen.getByLabelText('Title')).toHaveValue('Batch evaluation');
-    expect(screen.getByLabelText('Instruction')).toHaveValue('运行 nb-opencode-ui-batch harness 并汇总结果');
+    expect(screen.getByLabelText('Prompt')).toHaveValue('运行 nb-opencode-ui-batch harness 并汇总结果');
     expect(await screen.findByText('NB OpenCode UI Batch / v1')).toBeTruthy();
     fireEvent.click(screen.getByText('Create'));
 
@@ -1221,7 +1280,7 @@ describe('PluginAgentGatewayClientV2', () => {
     fireEvent.change(screen.getByLabelText('Title'), {
       target: { value: 'Imported Codex log' },
     });
-    fireEvent.change(screen.getByLabelText('Instruction'), {
+    fireEvent.change(screen.getByLabelText('Prompt'), {
       target: { value: 'Import a build task that was started outside Agent Gateway' },
     });
     fireEvent.change(screen.getByLabelText('Raw log'), {
@@ -1271,6 +1330,23 @@ describe('PluginAgentGatewayClientV2', () => {
                 runCode: `run-code-page-${page}`,
                 status: 'queued',
                 taskTitle: `Run page ${page}`,
+                taskTemplateId: 'task-template-1',
+                taskTemplateJson: {
+                  id: 'task-template-1',
+                  templateKey: 'ui-build',
+                  displayName: 'UI Build',
+                  skillVersionIds: ['skill-version-1'],
+                  skills: [
+                    {
+                      id: 'skill-version-1',
+                      skillId: 'skill-1',
+                      skillKey: 'nb-opencode-ui-batch',
+                      displayName: 'NB OpenCode UI Batch',
+                      versionLabel: 'v1',
+                      status: 'active',
+                    },
+                  ],
+                },
                 agentGatewayActionPermissionsJson: {},
               },
             ],
@@ -1279,6 +1355,43 @@ describe('PluginAgentGatewayClientV2', () => {
               page,
               pageSize,
               totalPage: Math.ceil(42 / pageSize),
+              taskTemplates: [
+                {
+                  id: 'task-template-1',
+                  templateKey: 'ui-build',
+                  displayName: 'UI Build',
+                },
+              ],
+            },
+          },
+        };
+      }
+      if (config.url === 'agent-gateway/runs:get/run-page-1') {
+        return {
+          data: {
+            data: {
+              id: 'run-page-1',
+              runCode: 'run-code-page-1',
+              status: 'queued',
+              taskTitle: 'Run page 1',
+              taskTemplateId: 'task-template-1',
+              taskTemplateJson: {
+                id: 'task-template-1',
+                templateKey: 'ui-build',
+                displayName: 'UI Build',
+                skillVersionIds: ['skill-version-1'],
+                skills: [
+                  {
+                    id: 'skill-version-1',
+                    skillId: 'skill-1',
+                    skillKey: 'nb-opencode-ui-batch',
+                    displayName: 'NB OpenCode UI Batch',
+                    versionLabel: 'v1',
+                    status: 'active',
+                  },
+                ],
+              },
+              agentGatewayActionPermissionsJson: {},
             },
           },
         };
@@ -1290,6 +1403,8 @@ describe('PluginAgentGatewayClientV2', () => {
     renderAgentGatewayPage(AgentGatewayRunsPage, request);
 
     expect(await screen.findByText('Run page 1')).toBeTruthy();
+    expect(await screen.findByText('UI Build')).toBeTruthy();
+    expect(await screen.findByText('NB OpenCode UI Batch / v1')).toBeTruthy();
     expect(screen.getByRole('button', { name: /Filter$/ })).not.toBeDisabled();
     expect(screen.queryByRole('button', { name: 'Reset' })).toBeNull();
     await waitFor(() => {
@@ -1304,6 +1419,27 @@ describe('PluginAgentGatewayClientV2', () => {
       );
     });
     expect(await screen.findByText('Total 42 runs')).toBeTruthy();
+
+    fireEvent.click(screen.getByText('Status'));
+    await waitFor(() => {
+      expect(request).toHaveBeenCalledWith(
+        expect.objectContaining({
+          url: 'agent-gateway/runs:list',
+          params: expect.objectContaining({
+            sort: 'status',
+          }),
+        }),
+      );
+    });
+
+    fireEvent.click(screen.getByRole('link', { name: /UI Build/ }));
+    await waitFor(() => {
+      expect(request).toHaveBeenCalledWith(
+        expect.objectContaining({
+          url: 'agent-gateway/runs:get/run-page-1',
+        }),
+      );
+    });
 
     fireEvent.click(screen.getByTitle('2'));
 
@@ -1411,7 +1547,7 @@ describe('PluginAgentGatewayClientV2', () => {
     fireEvent.change(screen.getByLabelText('Title'), {
       target: { value: 'Uploaded skill task' },
     });
-    fireEvent.change(screen.getByLabelText('Instruction'), {
+    fireEvent.change(screen.getByLabelText('Prompt'), {
       target: { value: 'Run with uploaded skill' },
     });
     fireEvent.click(await screen.findByText('Upload skill'));
@@ -1607,9 +1743,9 @@ describe('PluginAgentGatewayClientV2', () => {
     renderAgentGatewayPage(AgentGatewayRunsPage, request);
 
     fireEvent.click(await screen.findByText('New task run'));
-    fireEvent.mouseDown(screen.getByLabelText('Task template'));
+    fireEvent.mouseDown(getTaskTemplateSelectInput());
     fireEvent.click(await screen.findByText('OpenCode UI batch harness'));
-    fireEvent.change(screen.getByLabelText('Instruction'), {
+    fireEvent.change(screen.getByLabelText('Prompt'), {
       target: { value: '运行 nb-opencode-ui-batch harness 并汇总结果' },
     });
     fireEvent.click(screen.getByText('Create'));

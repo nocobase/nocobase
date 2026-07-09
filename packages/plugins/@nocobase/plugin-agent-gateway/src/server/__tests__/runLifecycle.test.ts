@@ -880,6 +880,109 @@ describe('agent gateway run lifecycle APIs', () => {
     });
   });
 
+  it('lists management runs with task template summaries and supports template sorting', async () => {
+    const skill = await app.db.getRepository('agSkills').create({
+      values: {
+        id: randomUUID(),
+        skillKey: 'template-skill',
+        displayName: 'Template Skill',
+        status: 'active',
+      },
+    });
+    const skillVersion = await app.db.getRepository('agSkillVersions').create({
+      values: {
+        id: randomUUID(),
+        skillId: skill.get('id'),
+        versionLabel: 'v1',
+        status: 'active',
+        metadataJson: {},
+      },
+    });
+    const template = await app.db.getRepository('agTaskTemplates').create({
+      values: {
+        id: randomUUID(),
+        templateKey: 'template-run-filter',
+        displayName: 'Template run filter',
+        status: 'active',
+        defaultTitle: '',
+        defaultPrompt: '',
+        cwd: '.',
+        skillVersionIdsJson: [skillVersion.get('id')],
+        artifactsJson: [],
+        metadataJson: {},
+      },
+    });
+    const otherTemplate = await app.db.getRepository('agTaskTemplates').create({
+      values: {
+        id: randomUUID(),
+        templateKey: 'other-template-run-filter',
+        displayName: 'Other template',
+        status: 'active',
+        defaultTitle: '',
+        defaultPrompt: '',
+        cwd: '.',
+        skillVersionIdsJson: [],
+        artifactsJson: [],
+        metadataJson: {},
+      },
+    });
+
+    await seedQueuedRun('run-template-sort-b', {
+      taskTemplateId: template.get('id'),
+      createdAt: new Date('2026-07-01T00:00:01.000Z'),
+    });
+    await seedQueuedRun('run-template-sort-a', {
+      taskTemplateId: template.get('id'),
+      createdAt: new Date('2026-07-01T00:00:02.000Z'),
+    });
+    await seedQueuedRun('run-template-sort-other', {
+      taskTemplateId: otherTemplate.get('id'),
+      createdAt: new Date('2026-07-01T00:00:03.000Z'),
+    });
+
+    const listResponse = await rootAgent.get('/api/agent-gateway/runs:list').query({
+      filter: JSON.stringify({
+        taskTemplateId: {
+          $eq: template.get('id'),
+        },
+      }),
+      sort: 'runCode',
+    });
+
+    expect(listResponse.status).toBe(200);
+    const runs = listResponse.body.data as Array<Record<string, unknown>>;
+    expect(runs.map((run) => run.runCode)).toEqual(['run-template-sort-a', 'run-template-sort-b']);
+    expect(runs[0]).toMatchObject({
+      taskTemplateId: template.get('id'),
+      taskTemplateJson: {
+        id: template.get('id'),
+        templateKey: 'template-run-filter',
+        displayName: 'Template run filter',
+        skillVersionIds: [skillVersion.get('id')],
+        skills: [
+          {
+            id: skillVersion.get('id'),
+            skillId: skill.get('id'),
+            skillKey: 'template-skill',
+            displayName: 'Template Skill',
+            versionLabel: 'v1',
+            status: 'active',
+          },
+        ],
+      },
+    });
+    expect(listResponse.body.meta).toMatchObject({
+      count: 2,
+      taskTemplates: expect.arrayContaining([
+        expect.objectContaining({
+          id: template.get('id'),
+          templateKey: 'template-run-filter',
+          displayName: 'Template run filter',
+        }),
+      ]),
+    });
+  });
+
   it('ignores session and continuation lineage fields when dispatch creates queued runs', async () => {
     const parentRun = await seedQueuedRun('run-parent-for-continuation');
     const continuationRequestedAt = '2026-07-01T00:00:00.000Z';

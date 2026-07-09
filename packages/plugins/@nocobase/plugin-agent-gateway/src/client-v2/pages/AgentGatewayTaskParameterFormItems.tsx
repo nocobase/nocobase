@@ -54,8 +54,6 @@ export interface BuildTaskTemplateOption {
   defaultTitle?: string;
   defaultPrompt?: string;
   cwd?: string;
-  nodeId?: string | null;
-  agentProfileId?: string | null;
   skillVersionIds?: string[];
   artifactRoot?: string;
   artifacts?: BuildTaskArtifactDeclarationPayload[];
@@ -267,6 +265,8 @@ interface AgentGatewayTaskParameterFormItemsProps {
   skillVersionSelectOptions: Array<{ value: string; label: string }>;
   promptRequired?: boolean;
   runnerRequired?: boolean;
+  showTitle?: boolean;
+  showRunner?: boolean;
   onUploadSkill?: () => void;
 }
 
@@ -283,6 +283,8 @@ export function AgentGatewayTaskParameterFormItems({
   skillVersionSelectOptions,
   promptRequired,
   runnerRequired,
+  showTitle = true,
+  showRunner = true,
   onUploadSkill,
 }: AgentGatewayTaskParameterFormItemsProps) {
   const artifactDeclarationColumns: ColumnsType<ArtifactDeclarationField> = [
@@ -361,13 +363,15 @@ export function AgentGatewayTaskParameterFormItems({
 
   return (
     <>
-      <Form.Item label={t('Title')} name="title">
-        <Input />
-      </Form.Item>
+      {showTitle ? (
+        <Form.Item label={t('Title')} name="title">
+          <Input />
+        </Form.Item>
+      ) : null}
       <Form.Item
-        label={t('Instruction')}
+        label={t('Prompt')}
         name="prompt"
-        rules={promptRequired ? [{ required: true, message: t('Instruction is required') }] : []}
+        rules={promptRequired ? [{ required: true, message: t('Prompt is required') }] : []}
       >
         <Input.TextArea autoSize={{ minRows: 6, maxRows: 12 }} />
       </Form.Item>
@@ -387,13 +391,15 @@ export function AgentGatewayTaskParameterFormItems({
           {t('Upload skill')}
         </Button>
       ) : null}
-      <Form.Item
-        label={t('Runner')}
-        name="runner"
-        rules={runnerRequired ? [{ required: true, message: t('Runner is required') }] : []}
-      >
-        <Select allowClear loading={loading} options={runnerSelectOptions} placeholder={t('Select runner')} />
-      </Form.Item>
+      {showRunner ? (
+        <Form.Item
+          label={t('Runner')}
+          name="runner"
+          rules={runnerRequired ? [{ required: true, message: t('Runner is required') }] : []}
+        >
+          <Select allowClear loading={loading} options={runnerSelectOptions} placeholder={t('Select runner')} />
+        </Form.Item>
+      ) : null}
       <FastCollapse
         ghost
         size="small"

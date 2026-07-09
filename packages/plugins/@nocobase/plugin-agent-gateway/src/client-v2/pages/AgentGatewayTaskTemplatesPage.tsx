@@ -7,10 +7,26 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { EditOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons';
+import { EditOutlined, PlusOutlined, ReloadOutlined, UploadOutlined } from '@ant-design/icons';
 import { useFlowContext } from '@nocobase/flow-engine';
 import { useRequest } from 'ahooks';
-import { Button, Card, Drawer, Empty, Flex, Form, Input, InputNumber, Space, Switch, Table, Tooltip } from 'antd';
+import {
+  Alert,
+  Button,
+  Card,
+  Drawer,
+  Empty,
+  Flex,
+  Form,
+  Input,
+  Modal,
+  Space,
+  Switch,
+  Table,
+  Tooltip,
+  Upload,
+} from 'antd';
+import type { UploadProps } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import React, { useCallback, useMemo, useState } from 'react';
 import { useT } from '../locale';
@@ -19,12 +35,10 @@ import {
   AgentGatewayTaskParameterFormValues,
   BuildRunOptions,
   BuildTaskArtifactDeclarationPayload,
-  getBuildRunnerSelectOptions,
-  getBuildRunnerValue,
+  OPENCODE_UI_BATCH_SKILL_KEY,
   getBuildSkillVersionSelectOptions,
   getTaskArtifactDeclarations,
   getTaskArtifactFormValues,
-  parseBuildRunnerValue,
 } from './AgentGatewayTaskParameterFormItems';
 import {
   AgentGatewayContext,
@@ -34,19 +48,15 @@ import {
 } from './AgentGatewayPageUtils';
 
 const TASK_TEMPLATE_DRAWER_WIDTH = 1040;
-
 interface TaskTemplateRecord {
   id: string;
   templateKey: string;
   displayName?: string;
   description?: string;
   status?: string;
-  sort?: number;
   defaultTitle?: string;
   defaultPrompt?: string;
   cwd?: string;
-  nodeId?: string | null;
-  agentProfileId?: string | null;
   skillVersionIdsJson?: string[];
   artifactRoot?: string;
   artifactsJson?: BuildTaskArtifactDeclarationPayload[];
@@ -56,19 +66,62 @@ interface TaskTemplateFormValues extends AgentGatewayTaskParameterFormValues {
   templateKey: string;
   displayName?: string;
   description?: string;
-  sort?: number;
 }
 
-function getOptionalRunnerValue(nodeId?: string | null, agentProfileId?: string | null) {
-  return nodeId && agentProfileId ? getBuildRunnerValue(nodeId, agentProfileId) : undefined;
+interface SkillUploadFormValues {
+  skillKey?: string;
+  displayName?: string;
+  versionLabel?: string;
+}
+
+interface SkillUploadResult {
+  skillId?: string;
+  skillKey?: string;
+  skillVersionId: string;
+  versionLabel?: string;
+  status?: string;
+  idempotent?: boolean;
+}
+
+const DEFAULT_SKILL_UPLOAD_FORM_VALUES: SkillUploadFormValues = {
+  skillKey: OPENCODE_UI_BATCH_SKILL_KEY,
+  displayName: 'NB OpenCode UI Batch',
+  versionLabel: 'local',
+};
+
+function readFileAsBase64(file: File) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = typeof reader.result === 'string' ? reader.result : '';
+      resolve(result.includes(',') ? result.split(',').pop() || '' : result);
+    };
+    reader.onerror = () => {
+      reject(reader.error || new Error('Failed to read file'));
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function getSkillVersionIds(value: unknown) {
+  return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string' && Boolean(item)) : [];
+}
+
+function isFormValidationError(value: unknown) {
+  const record = value && typeof value === 'object' ? (value as Record<string, unknown>) : {};
+  return Array.isArray(record.errorFields);
 }
 
 export default function AgentGatewayTaskTemplatesPage() {
   const t = useT();
   const ctx = useFlowContext() as unknown as AgentGatewayContext;
   const [templateForm] = Form.useForm<TaskTemplateFormValues>();
+  const [skillUploadForm] = Form.useForm<SkillUploadFormValues>();
   const [templateDrawerOpen, setTemplateDrawerOpen] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<TaskTemplateRecord | null>(null);
+  const [skillUploadOpen, setSkillUploadOpen] = useState(false);
+  const [skillZipContentBase64, setSkillZipContentBase64] = useState('');
+  const [skillUploadResult, setSkillUploadResult] = useState<SkillUploadResult | null>(null);
 
   const templatesRequest = useRequest(async () => {
     const response = await ctx.api.request<TaskTemplateRecord[]>({
@@ -89,10 +142,6 @@ export default function AgentGatewayTaskTemplatesPage() {
     return getResponseData(response, {});
   });
 
-  const runnerSelectOptions = useMemo(
-    () => getBuildRunnerSelectOptions(optionsRequest.data, t),
-    [optionsRequest.data, t],
-  );
   const skillVersionSelectOptions = useMemo(
     () => getBuildSkillVersionSelectOptions(optionsRequest.data),
     [optionsRequest.data],
@@ -100,18 +149,16 @@ export default function AgentGatewayTaskTemplatesPage() {
 
   const saveTemplateRequest = useRequest(
     async (values: TaskTemplateFormValues) => {
-      const runner = parseBuildRunnerValue(values.runner);
       const payload = {
         templateKey: values.templateKey,
         displayName: values.displayName,
         description: values.description,
         status: editingTemplate?.status || 'active',
-        sort: values.sort ?? 0,
         defaultTitle: values.title,
         defaultPrompt: values.prompt,
         cwd: values.cwd || optionsRequest.data?.defaultCwd || '.',
-        nodeId: runner.nodeId,
-        agentProfileId: runner.agentProfileId,
+        nodeId: null,
+        agentProfileId: null,
         skillVersionIds: values.skillVersionIds || [],
         artifactRoot: values.artifactRoot,
         artifacts: getTaskArtifactDeclarations(values.artifactDeclarations),
@@ -149,6 +196,33 @@ export default function AgentGatewayTaskTemplatesPage() {
     },
   );
 
+  const uploadSkillVersionRequest = useRequest(
+    async (values: SkillUploadFormValues & { contentBase64: string }) => {
+      const response = await ctx.api.request<SkillUploadResult>({
+        url: 'agent-gateway/skill-versions:upload-zip',
+        method: 'post',
+        data: { ...values },
+      });
+      return getRequiredResponseData(response, t('Failed to upload skill'));
+    },
+    {
+      manual: true,
+      onSuccess(result) {
+        const currentSkillVersionIds = getSkillVersionIds(templateForm.getFieldValue('skillVersionIds'));
+        templateForm.setFieldValue('skillVersionIds', [...new Set([...currentSkillVersionIds, result.skillVersionId])]);
+        setSkillUploadResult(result);
+        setSkillZipContentBase64('');
+        skillUploadForm.resetFields();
+        setSkillUploadOpen(false);
+        optionsRequest.refresh();
+        ctx.message?.success(t('Skill uploaded'));
+      },
+      onError() {
+        ctx.message?.error(t('Failed to upload skill'));
+      },
+    },
+  );
+
   const updateTemplateStatusRequest = useRequest(
     async (template: TaskTemplateRecord, enabled: boolean) => {
       const response = await ctx.api.request<TaskTemplateRecord>({
@@ -176,7 +250,6 @@ export default function AgentGatewayTaskTemplatesPage() {
     setEditingTemplate(null);
     templateForm.resetFields();
     templateForm.setFieldsValue({
-      sort: 0,
       cwd: optionsRequest.data?.defaultCwd || '.',
       skillVersionIds: [],
       artifactDeclarations: [],
@@ -191,10 +264,8 @@ export default function AgentGatewayTaskTemplatesPage() {
         templateKey: template.templateKey,
         displayName: template.displayName,
         description: template.description,
-        sort: template.sort || 0,
         title: template.defaultTitle,
         prompt: template.defaultPrompt,
-        runner: getOptionalRunnerValue(template.nodeId, template.agentProfileId),
         cwd: template.cwd || optionsRequest.data?.defaultCwd || '.',
         skillVersionIds: template.skillVersionIdsJson || [],
         artifactRoot: template.artifactRoot,
@@ -211,6 +282,20 @@ export default function AgentGatewayTaskTemplatesPage() {
     templateForm.resetFields();
   }, [templateForm]);
 
+  const openSkillUploadModal = useCallback(() => {
+    setSkillZipContentBase64('');
+    setSkillUploadResult(null);
+    skillUploadForm.setFieldsValue(DEFAULT_SKILL_UPLOAD_FORM_VALUES);
+    setSkillUploadOpen(true);
+  }, [skillUploadForm]);
+
+  const closeSkillUploadModal = useCallback(() => {
+    setSkillUploadOpen(false);
+    setSkillZipContentBase64('');
+    setSkillUploadResult(null);
+    skillUploadForm.resetFields();
+  }, [skillUploadForm]);
+
   const submitTemplate = useCallback(async () => {
     try {
       const values = await templateForm.validateFields();
@@ -219,6 +304,42 @@ export default function AgentGatewayTaskTemplatesPage() {
       // Field-level validation messages are already rendered by the form.
     }
   }, [templateForm, saveTemplateRequest]);
+
+  const submitSkillUpload = useCallback(async () => {
+    try {
+      const values = await skillUploadForm.validateFields();
+      if (!skillZipContentBase64) {
+        ctx.message?.error(t('Skill ZIP file is required'));
+        return;
+      }
+      uploadSkillVersionRequest.run({
+        ...values,
+        contentBase64: skillZipContentBase64,
+      });
+    } catch (error) {
+      if (!isFormValidationError(error)) {
+        ctx.message?.error(t('Failed to upload skill'));
+      }
+    }
+  }, [ctx.message, skillUploadForm, skillZipContentBase64, t, uploadSkillVersionRequest]);
+
+  const handleSkillZipBeforeUpload = useCallback<NonNullable<UploadProps['beforeUpload']>>(
+    async (file) => {
+      try {
+        setSkillZipContentBase64(await readFileAsBase64(file));
+      } catch {
+        setSkillZipContentBase64('');
+        ctx.message?.error(t('Failed to read skill ZIP file'));
+      }
+      return false;
+    },
+    [ctx.message, t],
+  );
+
+  const handleSkillZipRemove = useCallback<NonNullable<UploadProps['onRemove']>>(() => {
+    setSkillZipContentBase64('');
+    return true;
+  }, []);
 
   const templateColumns = useMemo<ColumnsType<TaskTemplateRecord>>(
     () => [
@@ -336,18 +457,74 @@ export default function AgentGatewayTaskTemplatesPage() {
             <Form.Item label={t('Description')} name="description">
               <Input.TextArea rows={2} />
             </Form.Item>
-            <Form.Item label={t('Sort')} name="sort">
-              <InputNumber style={{ width: '100%' }} />
-            </Form.Item>
             <AgentGatewayTaskParameterFormItems
               t={t}
               loading={optionsRequest.loading}
-              runnerSelectOptions={runnerSelectOptions}
+              runnerSelectOptions={[]}
               skillVersionSelectOptions={skillVersionSelectOptions}
+              showRunner={false}
+              onUploadSkill={openSkillUploadModal}
             />
           </Space>
         </Form>
       </Drawer>
+      <Modal
+        title={t('Upload skill')}
+        open={skillUploadOpen}
+        onCancel={closeSkillUploadModal}
+        onOk={submitSkillUpload}
+        confirmLoading={uploadSkillVersionRequest.loading}
+        okText={t('Upload')}
+        cancelText={t('Close')}
+        destroyOnClose
+      >
+        <Space direction="vertical" size={16} style={{ width: '100%' }}>
+          <Form<SkillUploadFormValues>
+            form={skillUploadForm}
+            layout="vertical"
+            initialValues={DEFAULT_SKILL_UPLOAD_FORM_VALUES}
+          >
+            <Form.Item
+              label={t('Skill key')}
+              name="skillKey"
+              rules={[{ required: true, message: t('Skill key is required') }]}
+            >
+              <Input />
+            </Form.Item>
+            <Form.Item label={t('Display name')} name="displayName">
+              <Input />
+            </Form.Item>
+            <Form.Item
+              label={t('Version label')}
+              name="versionLabel"
+              rules={[{ required: true, message: t('Version label is required') }]}
+            >
+              <Input placeholder="local" />
+            </Form.Item>
+            <Form.Item label={t('Skill ZIP file')} required>
+              <Upload
+                accept=".zip,application/zip"
+                beforeUpload={handleSkillZipBeforeUpload}
+                maxCount={1}
+                onRemove={handleSkillZipRemove}
+              >
+                <Button icon={<UploadOutlined />}>{t('Select ZIP')}</Button>
+              </Upload>
+            </Form.Item>
+          </Form>
+
+          {skillUploadResult ? (
+            <Alert
+              type="success"
+              showIcon
+              message={t('Skill uploaded')}
+              description={[skillUploadResult.skillKey, skillUploadResult.versionLabel, skillUploadResult.status]
+                .filter(Boolean)
+                .join(' / ')}
+            />
+          ) : null}
+        </Space>
+      </Modal>
     </section>
   );
 }
