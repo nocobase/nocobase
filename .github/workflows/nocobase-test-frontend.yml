@@ -36,7 +36,7 @@ jobs:
       fail-fast: false
       matrix:
         node_version: ['22']
-        shard: [1, 2, 3, 4, 5, 6]
+        shard: [1, 2, 3]
     runs-on: ubuntu-latest
     container: node:${{ matrix.node_version }}
     steps:
@@ -49,6 +49,6 @@ jobs:
           cache: 'yarn'
 
       - run: yarn install
-      - run: yarn test:client --pool=forks --shard=${{ matrix.shard }}/6
-    # Vitest shards by hashed file path and file count, not historical runtime; use 6 shards to reduce long-tail UI test imbalance without excessive duplicated setup.
+      - run: yarn test:client --pool=forks --shard=${{ matrix.shard }}/3
+    # Vitest shards by hashed file path and file count, not historical runtime; use 3 shards to keep each job under 60 minutes while avoiding excessive duplicated setup.
     timeout-minutes: 60
