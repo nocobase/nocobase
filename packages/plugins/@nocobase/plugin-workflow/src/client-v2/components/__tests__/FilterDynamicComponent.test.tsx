@@ -301,4 +301,24 @@ describe('FilterDynamicComponent', () => {
     expect(testState.variableFilterItems).toHaveLength(1);
     expect(testState.variableFilterItems[0].rightAsVariable).toBe(false);
   });
+
+  it('passes disabled state through to the shared variable filter item', () => {
+    const { engine } = setupEngine();
+
+    render(
+      <FlowEngineProvider engine={engine}>
+        <FilterDynamicComponent
+          collection="posts"
+          value={{ $and: [{ title: { $eq: 'foo' } }] }}
+          onChange={() => undefined}
+          disabled
+        />
+      </FlowEngineProvider>,
+    );
+
+    expect(testState.variableFilterItems.length).toBeGreaterThan(0);
+    expect(testState.variableFilterItems.at(-1)?.disabled).toBe(true);
+    expect(screen.getByText('Add condition').closest('button')).toBeDisabled();
+    expect(screen.getByText('Add condition group').closest('button')).toBeDisabled();
+  });
 });
