@@ -127,26 +127,29 @@ Use `dataSourceCounting` only for a simple total when grouped output is unnecess
 4. For metrics, put aggregate definitions in `measures`.
 5. Use aliases when the user clearly needs stable output keys.
 6. For dotted relation fields, prefer the exact field path confirmed from metadata, such as `createdBy.nickname`.
-7. Default row limit is 50 and the tool caps the limit at 100.
-8. Always follow the same frontend date filter contract used by NocoBase filters.
-8.1. `filter` and `having` must be structured objects, not JSON-encoded strings.
-9. Supported date operators are exactly `$dateOn`, `$dateNotOn`, `$dateBefore`, `$dateAfter`, `$dateNotBefore`, `$dateNotAfter`, `$dateBetween`, `$empty`, and `$notEmpty`.
-10. For calendar-style date filtering, do not generate `$gte`, `$gt`, `$lte`, `$lt`, or custom operator names.
-11. Allowed value shapes are:
+7. For `dataSourceQuery`, `fields` controls which values are returned. `appends` only loads relation data and does not select returned fields by itself.
+8. When returning relation field values, put the dotted relation paths in `fields` and the root relation names in `appends`; for example, use `fields: ["plain_field", "relation_field.display_field"]` with `appends: ["relation_field"]`.
+9. Do not put only root relation names in `appends` when the user asks for relation attributes. Without the dotted paths in `fields`, those relation attributes will not be returned.
+10. Default row limit is 50 and the tool caps the limit at 100.
+11. Always follow the same frontend date filter contract used by NocoBase filters.
+11.1. `filter` and `having` must be structured objects, not JSON-encoded strings.
+12. Supported date operators are exactly `$dateOn`, `$dateNotOn`, `$dateBefore`, `$dateAfter`, `$dateNotBefore`, `$dateNotAfter`, `$dateBetween`, `$empty`, and `$notEmpty`.
+13. For calendar-style date filtering, do not generate `$gte`, `$gt`, `$lte`, `$lt`, or custom operator names.
+14. Allowed value shapes are:
     - for `$dateOn`, `$dateNotOn`, `$dateBefore`, `$dateAfter`, `$dateNotBefore`, `$dateNotAfter`: `YYYY-MM-DD`, `YYYY-MM`, `YYYY`, a relative period object, or an exact datetime string only when the user explicitly wants timestamp comparison
     - for `$dateBetween`: `["YYYY-MM-DD", "YYYY-MM-DD"]` or a relative period object
     - for `$empty` and `$notEmpty`: no value
-12. Relative period objects must use exactly these `type` values: `today`, `yesterday`, `tomorrow`, `thisWeek`, `lastWeek`, `nextWeek`, `thisMonth`, `lastMonth`, `nextMonth`, `thisQuarter`, `lastQuarter`, `nextQuarter`, `thisYear`, `lastYear`, `nextYear`, `past`, `next`.
-13. If `type` is `past` or `next`, the object must also include `number` as a positive integer and `unit` as one of `day`, `week`, `month`, `quarter`, `year`.
-14. For day, week, month, quarter, year, and common relative-period queries, prefer frontend date filters such as `{ createdAt: { $dateOn: "2026-04" } }`, `{ createdAt: { $dateOn: { type: "thisMonth" } } }`, or `{ createdAt: { $dateBetween: ["2026-04-01", "2026-04-30"] } }`.
-15. Do not expand calendar queries into UTC boundary expressions such as `createdAt >= 2026-04-01T00:00:00.000Z` and `< 2026-05-01T00:00:00.000Z`.
-16. For fields such as `createdAt` and `updatedAt`, still prefer the frontend date operators above for calendar queries instead of UTC boundary expansion.
-17. Only inspect field type when the user explicitly asks for an exact timestamp comparison rather than a calendar period.
-18. If an exact timestamp comparison is required, keep the operator frontend-compatible and choose the value format that matches the field semantics:
+15. Relative period objects must use exactly these `type` values: `today`, `yesterday`, `tomorrow`, `thisWeek`, `lastWeek`, `nextWeek`, `thisMonth`, `lastMonth`, `nextMonth`, `thisQuarter`, `lastQuarter`, `nextQuarter`, `thisYear`, `lastYear`, `nextYear`, `past`, `next`.
+16. If `type` is `past` or `next`, the object must also include `number` as a positive integer and `unit` as one of `day`, `week`, `month`, `quarter`, `year`.
+17. For day, week, month, quarter, year, and common relative-period queries, prefer frontend date filters such as `{ createdAt: { $dateOn: "2026-04" } }`, `{ createdAt: { $dateOn: { type: "thisMonth" } } }`, or `{ createdAt: { $dateBetween: ["2026-04-01", "2026-04-30"] } }`.
+18. Do not expand calendar queries into UTC boundary expressions such as `createdAt >= 2026-04-01T00:00:00.000Z` and `< 2026-05-01T00:00:00.000Z`.
+19. For fields such as `createdAt` and `updatedAt`, still prefer the frontend date operators above for calendar queries instead of UTC boundary expansion.
+20. Only inspect field type when the user explicitly asks for an exact timestamp comparison rather than a calendar period.
+21. If an exact timestamp comparison is required, keep the operator frontend-compatible and choose the value format that matches the field semantics:
     - timezone-aware datetime fields: ISO 8601 timestamp strings such as `2026-04-10T12:00:00.000Z`
     - `datetimeNoTz` fields: timezone-free local datetime strings such as `2026-04-10 12:00:00`
     - `dateOnly` fields: date-only strings without time components
-19. Do not provide a timezone parameter yourself. The runtime request timezone is already supplied by the system.
+22. Do not provide a timezone parameter yourself. The runtime request timezone is already supplied by the system.
 
 # Available Tools
 
