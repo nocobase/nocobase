@@ -13,8 +13,10 @@ import { useRequest } from 'ahooks';
 import {
   Alert,
   Button,
+  Card,
   Descriptions,
   Empty,
+  Flex,
   Form,
   Input,
   Modal,
@@ -426,9 +428,8 @@ export default function AgentGatewaySettingsPage() {
           <Switch
             aria-label={t('Toggle node status')}
             checked={(record.status || 'active') !== 'disabled'}
-            checkedChildren={t('Enabled')}
-            unCheckedChildren={t('Disabled')}
             loading={updateNodeStatusRequest.loading}
+            size="small"
             onChange={(checked) => updateNodeStatusRequest.run(record, checked)}
           />
         ),
@@ -524,130 +525,129 @@ export default function AgentGatewaySettingsPage() {
 
   return (
     <section aria-label={t('Agent Gateway Nodes')}>
-      <Space direction="vertical" size={16} style={{ width: '100%' }}>
-        <Space wrap style={{ justifyContent: 'space-between', width: '100%' }}>
-          <Typography.Title level={3} style={{ margin: 0 }}>
-            {t('Agent Gateway')}
-          </Typography.Title>
-          <Space>
-            <Button icon={<ReloadOutlined />} onClick={refreshAll}>
-              {t('Refresh')}
-            </Button>
-            <Button icon={<UploadOutlined />} onClick={openSkillUploadModal}>
-              {t('Upload skill')}
-            </Button>
-            <Button type="primary" icon={<PlusOutlined />} onClick={() => setInvitationOpen(true)}>
-              {t('Create invitation')}
-            </Button>
-          </Space>
+      <Card variant="borderless">
+        <Space direction="vertical" size={16} style={{ width: '100%' }}>
+          <Flex justify="flex-end">
+            <Space>
+              <Button icon={<ReloadOutlined />} onClick={refreshAll}>
+                {t('Refresh')}
+              </Button>
+              <Button icon={<UploadOutlined />} onClick={openSkillUploadModal}>
+                {t('Upload skill')}
+              </Button>
+              <Button type="primary" icon={<PlusOutlined />} onClick={() => setInvitationOpen(true)}>
+                {t('Create invitation')}
+              </Button>
+            </Space>
+          </Flex>
+
+          <Tabs
+            items={[
+              {
+                key: 'nodes',
+                label: t('Nodes'),
+                children: (
+                  <Space direction="vertical" size={16} style={{ width: '100%' }}>
+                    <Table<NodeRecord>
+                      columns={nodeColumns}
+                      dataSource={nodesRequest.data || []}
+                      loading={nodesRequest.loading}
+                      rowKey="id"
+                      locale={{
+                        emptyText: <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('No nodes yet')} />,
+                      }}
+                      pagination={false}
+                      rowSelection={{
+                        type: 'radio',
+                        selectedRowKeys: selectedNodeId ? [selectedNodeId] : [],
+                        onChange: (keys) => setSelectedNodeId(String(keys[0] || '')),
+                      }}
+                      onRow={(record) => ({
+                        onClick: () => setSelectedNodeId(record.id),
+                      })}
+                    />
+
+                    {selectedNode ? (
+                      <Space direction="vertical" size={12} style={{ width: '100%' }}>
+                        <Descriptions bordered size="small" column={2} title={t('Node detail')}>
+                          <Descriptions.Item label={t('Node key')}>{selectedNode.nodeKey}</Descriptions.Item>
+                          <Descriptions.Item label={t('Enabled state')}>
+                            {renderEnabledState(selectedNode.status, t)}
+                          </Descriptions.Item>
+                          <Descriptions.Item label={t('Connection')}>
+                            {renderNodeConnection(selectedNode, t)}
+                          </Descriptions.Item>
+                          <Descriptions.Item label={t('Last heartbeat')}>
+                            {formatDateTime(selectedNode.lastHeartbeatAt)}
+                          </Descriptions.Item>
+                          <Descriptions.Item label={t('Daemon version')}>
+                            {selectedNode.metadataJson?.daemonVersion || '-'}
+                          </Descriptions.Item>
+                          <Descriptions.Item label={t('Registered at')}>
+                            {formatDateTime(selectedNode.registeredAt)}
+                          </Descriptions.Item>
+                          <Descriptions.Item label={t('Disabled at')} span={2}>
+                            {formatDateTime(selectedNode.disabledAt || undefined)}
+                          </Descriptions.Item>
+                        </Descriptions>
+                        {selectedNode.online === false ? (
+                          <Alert
+                            type="warning"
+                            showIcon
+                            message={t('Daemon is offline')}
+                            description={
+                              <Space direction="vertical" size={8} style={{ width: '100%' }}>
+                                <Typography.Text>
+                                  {t(
+                                    'Restart the Agent Gateway daemon service on this node or rerun the bootstrap command.',
+                                  )}
+                                </Typography.Text>
+                                <Typography.Paragraph copyable style={{ margin: 0 }}>
+                                  {DAEMON_RESTART_COMMAND}
+                                </Typography.Paragraph>
+                              </Space>
+                            }
+                          />
+                        ) : null}
+                      </Space>
+                    ) : null}
+
+                    <Table<AgentProfileRecord>
+                      columns={profileColumns}
+                      dataSource={profilesRequest.data || []}
+                      loading={profilesRequest.loading}
+                      rowKey="id"
+                      locale={{
+                        emptyText: (
+                          <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('No agent profiles yet')} />
+                        ),
+                      }}
+                      pagination={false}
+                      title={() => t('Agent profiles')}
+                    />
+                  </Space>
+                ),
+              },
+              {
+                key: 'skills',
+                label: t('Skills'),
+                children: (
+                  <Table<SkillVersionRecord>
+                    columns={skillVersionColumns}
+                    dataSource={skillVersionsRequest.data || []}
+                    loading={skillVersionsRequest.loading}
+                    rowKey="id"
+                    locale={{
+                      emptyText: <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('No skills yet')} />,
+                    }}
+                    pagination={false}
+                  />
+                ),
+              },
+            ]}
+          />
         </Space>
-
-        <Tabs
-          items={[
-            {
-              key: 'nodes',
-              label: t('Nodes'),
-              children: (
-                <Space direction="vertical" size={16} style={{ width: '100%' }}>
-                  <Table<NodeRecord>
-                    columns={nodeColumns}
-                    dataSource={nodesRequest.data || []}
-                    loading={nodesRequest.loading}
-                    rowKey="id"
-                    locale={{
-                      emptyText: <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('No nodes yet')} />,
-                    }}
-                    pagination={false}
-                    rowSelection={{
-                      type: 'radio',
-                      selectedRowKeys: selectedNodeId ? [selectedNodeId] : [],
-                      onChange: (keys) => setSelectedNodeId(String(keys[0] || '')),
-                    }}
-                    onRow={(record) => ({
-                      onClick: () => setSelectedNodeId(record.id),
-                    })}
-                  />
-
-                  {selectedNode ? (
-                    <Space direction="vertical" size={12} style={{ width: '100%' }}>
-                      <Descriptions bordered size="small" column={2} title={t('Node detail')}>
-                        <Descriptions.Item label={t('Node key')}>{selectedNode.nodeKey}</Descriptions.Item>
-                        <Descriptions.Item label={t('Enabled state')}>
-                          {renderEnabledState(selectedNode.status, t)}
-                        </Descriptions.Item>
-                        <Descriptions.Item label={t('Connection')}>
-                          {renderNodeConnection(selectedNode, t)}
-                        </Descriptions.Item>
-                        <Descriptions.Item label={t('Last heartbeat')}>
-                          {formatDateTime(selectedNode.lastHeartbeatAt)}
-                        </Descriptions.Item>
-                        <Descriptions.Item label={t('Daemon version')}>
-                          {selectedNode.metadataJson?.daemonVersion || '-'}
-                        </Descriptions.Item>
-                        <Descriptions.Item label={t('Registered at')}>
-                          {formatDateTime(selectedNode.registeredAt)}
-                        </Descriptions.Item>
-                        <Descriptions.Item label={t('Disabled at')} span={2}>
-                          {formatDateTime(selectedNode.disabledAt || undefined)}
-                        </Descriptions.Item>
-                      </Descriptions>
-                      {selectedNode.online === false ? (
-                        <Alert
-                          type="warning"
-                          showIcon
-                          message={t('Daemon is offline')}
-                          description={
-                            <Space direction="vertical" size={8} style={{ width: '100%' }}>
-                              <Typography.Text>
-                                {t(
-                                  'Restart the Agent Gateway daemon service on this node or rerun the bootstrap command.',
-                                )}
-                              </Typography.Text>
-                              <Typography.Paragraph copyable style={{ margin: 0 }}>
-                                {DAEMON_RESTART_COMMAND}
-                              </Typography.Paragraph>
-                            </Space>
-                          }
-                        />
-                      ) : null}
-                    </Space>
-                  ) : null}
-
-                  <Table<AgentProfileRecord>
-                    columns={profileColumns}
-                    dataSource={profilesRequest.data || []}
-                    loading={profilesRequest.loading}
-                    rowKey="id"
-                    locale={{
-                      emptyText: (
-                        <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('No agent profiles yet')} />
-                      ),
-                    }}
-                    pagination={false}
-                    title={() => t('Agent profiles')}
-                  />
-                </Space>
-              ),
-            },
-            {
-              key: 'skills',
-              label: t('Skills'),
-              children: (
-                <Table<SkillVersionRecord>
-                  columns={skillVersionColumns}
-                  dataSource={skillVersionsRequest.data || []}
-                  loading={skillVersionsRequest.loading}
-                  rowKey="id"
-                  locale={{
-                    emptyText: <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('No skills yet')} />,
-                  }}
-                  pagination={false}
-                />
-              ),
-            },
-          ]}
-        />
-      </Space>
+      </Card>
 
       <Modal
         title={t('Create invitation')}

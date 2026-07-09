@@ -10,7 +10,7 @@
 import { EditOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons';
 import { useFlowContext } from '@nocobase/flow-engine';
 import { useRequest } from 'ahooks';
-import { Button, Drawer, Empty, Form, Input, InputNumber, Space, Switch, Table, Tooltip, Typography } from 'antd';
+import { Button, Card, Drawer, Empty, Flex, Form, Input, InputNumber, Space, Switch, Table, Tooltip } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import React, { useCallback, useMemo, useState } from 'react';
 import { useT } from '../locale';
@@ -28,7 +28,6 @@ import {
 } from './AgentGatewayTaskParameterFormItems';
 import {
   AgentGatewayContext,
-  JsonPreview,
   getApiErrorMessage,
   getRequiredResponseData,
   getResponseData,
@@ -238,14 +237,13 @@ export default function AgentGatewayTaskTemplatesPage() {
         title: t('Status'),
         dataIndex: 'status',
         key: 'status',
-        width: 140,
+        width: 112,
         render: (value: string | undefined, record) => (
           <Switch
             aria-label={t('Toggle task template status')}
             checked={(value || 'active') === 'active'}
-            checkedChildren={t('Enabled')}
-            unCheckedChildren={t('Disabled')}
             loading={updateTemplateStatusRequest.loading}
+            size="small"
             onChange={(checked) => updateTemplateStatusRequest.run(record, checked)}
           />
         ),
@@ -270,50 +268,37 @@ export default function AgentGatewayTaskTemplatesPage() {
 
   return (
     <section aria-label={t('Task Templates')}>
-      <Space direction="vertical" size={16} style={{ width: '100%' }}>
-        <Space wrap style={{ justifyContent: 'space-between', width: '100%' }}>
-          <Typography.Title level={3} style={{ margin: 0 }}>
-            {t('Task Templates')}
-          </Typography.Title>
-          <Space>
-            <Button
-              icon={<ReloadOutlined />}
-              onClick={() => {
-                templatesRequest.refresh();
-                optionsRequest.refresh();
-              }}
-            >
-              {t('Refresh')}
-            </Button>
-            <Button type="primary" icon={<PlusOutlined />} onClick={openCreateTemplateDrawer}>
-              {t('New template')}
-            </Button>
-          </Space>
-        </Space>
+      <Card variant="borderless">
+        <Space direction="vertical" size={16} style={{ width: '100%' }}>
+          <Flex justify="flex-end">
+            <Space>
+              <Button
+                icon={<ReloadOutlined />}
+                onClick={() => {
+                  templatesRequest.refresh();
+                  optionsRequest.refresh();
+                }}
+              >
+                {t('Refresh')}
+              </Button>
+              <Button type="primary" icon={<PlusOutlined />} onClick={openCreateTemplateDrawer}>
+                {t('New template')}
+              </Button>
+            </Space>
+          </Flex>
 
-        <Table<TaskTemplateRecord>
-          columns={templateColumns}
-          dataSource={templatesRequest.data || []}
-          expandable={{
-            expandedRowRender: (record) => (
-              <Space direction="vertical" size={8} style={{ width: '100%' }}>
-                <Typography.Text strong>{t('Default instruction')}</Typography.Text>
-                <Typography.Paragraph style={{ margin: 0, whiteSpace: 'pre-wrap' }}>
-                  {record.defaultPrompt || '-'}
-                </Typography.Paragraph>
-                <Typography.Text strong>{t('Artifact collection')}</Typography.Text>
-                <JsonPreview value={record.artifactsJson || []} />
-              </Space>
-            ),
-          }}
-          loading={templatesRequest.loading}
-          rowKey="id"
-          locale={{
-            emptyText: <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('No task templates yet')} />,
-          }}
-          pagination={false}
-        />
-      </Space>
+          <Table<TaskTemplateRecord>
+            columns={templateColumns}
+            dataSource={templatesRequest.data || []}
+            loading={templatesRequest.loading}
+            rowKey="id"
+            locale={{
+              emptyText: <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('No task templates yet')} />,
+            }}
+            pagination={false}
+          />
+        </Space>
+      </Card>
 
       <Drawer
         title={editingTemplate ? t('Edit task template') : t('Create task template')}

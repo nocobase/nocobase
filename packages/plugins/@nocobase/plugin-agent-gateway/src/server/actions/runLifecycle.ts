@@ -1513,8 +1513,41 @@ function getTotalPage(count: number, pageSize: number) {
   return Math.ceil(count / pageSize);
 }
 
+function hasFilterValues(filter: JsonRecord) {
+  return Object.keys(filter).length > 0;
+}
+
+function getQueryFilter(ctx: Context) {
+  const filter = getQueryValue(ctx, 'filter');
+  if (typeof filter === 'string') {
+    if (!filter.trim()) {
+      return {};
+    }
+    try {
+      return getRecord(JSON.parse(filter));
+    } catch {
+      return {};
+    }
+  }
+  return getRecord(filter);
+}
+
+function mergeRunFilters(filters: JsonRecord[]) {
+  const activeFilters = filters.filter(hasFilterValues);
+  if (!activeFilters.length) {
+    return {};
+  }
+  if (activeFilters.length === 1) {
+    return activeFilters[0];
+  }
+  return {
+    $and: activeFilters,
+  };
+}
+
 function getRunListFilter(ctx: Context) {
-  const filter: JsonRecord = {};
+  const compiledFilter = getQueryFilter(ctx);
+  const legacyFilter: JsonRecord = {};
   const status = getQueryString(ctx, 'status');
   const nodeId = getQueryString(ctx, 'nodeId');
   const agentProfileId = getQueryString(ctx, 'agentProfileId');
@@ -1522,7 +1555,7 @@ function getRunListFilter(ctx: Context) {
   const createdAtTo = getDate(getQueryValue(ctx, 'createdAtTo'));
 
   if (status) {
-    filter.status = status.includes(',')
+    legacyFilter.status = status.includes(',')
       ? {
           $in: status
             .split(',')
@@ -1532,19 +1565,19 @@ function getRunListFilter(ctx: Context) {
       : status;
   }
   if (nodeId) {
-    filter.nodeId = nodeId;
+    legacyFilter.nodeId = nodeId;
   }
   if (agentProfileId) {
-    filter.agentProfileId = agentProfileId;
+    legacyFilter.agentProfileId = agentProfileId;
   }
   if (createdAtFrom || createdAtTo) {
-    filter.createdAt = {
+    legacyFilter.createdAt = {
       ...(createdAtFrom ? { $gte: createdAtFrom } : {}),
       ...(createdAtTo ? { $lte: createdAtTo } : {}),
     };
   }
 
-  return filter;
+  return mergeRunFilters([compiledFilter, legacyFilter]);
 }
 
 function respondLeaseLost(ctx: Context, message: string) {

@@ -10,7 +10,7 @@
 import { EditOutlined, EyeOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons';
 import { useFlowContext } from '@nocobase/flow-engine';
 import { useRequest } from 'ahooks';
-import { Alert, Button, Empty, Form, Input, Modal, Space, Switch, Table, Tooltip, Typography } from 'antd';
+import { Alert, Button, Card, Empty, Flex, Form, Input, Modal, Space, Switch, Table, Tooltip, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import React, { useCallback, useMemo, useState } from 'react';
 import { useT } from '../locale';
@@ -243,13 +243,13 @@ export default function AgentGatewayPromptTemplatesPage() {
         title: t('Status'),
         dataIndex: 'status',
         key: 'status',
+        width: 112,
         render: (value: string | undefined, record) => (
           <Switch
             aria-label={t('Toggle template status')}
             checked={(value || 'active') === 'active'}
-            checkedChildren={t('Enabled')}
-            unCheckedChildren={t('Disabled')}
             loading={updateTemplateStatusRequest.loading}
+            size="small"
             onChange={(checked) => updateTemplateStatusRequest.run(record, checked)}
           />
         ),
@@ -283,32 +283,31 @@ export default function AgentGatewayPromptTemplatesPage() {
 
   return (
     <section aria-label={t('Prompt Templates')}>
-      <Space direction="vertical" size={16} style={{ width: '100%' }}>
-        <Space wrap style={{ justifyContent: 'space-between', width: '100%' }}>
-          <Typography.Title level={3} style={{ margin: 0 }}>
-            {t('Prompt Templates')}
-          </Typography.Title>
-          <Space>
-            <Button icon={<ReloadOutlined />} onClick={templatesRequest.refresh}>
-              {t('Refresh')}
-            </Button>
-            <Button type="primary" icon={<PlusOutlined />} onClick={openCreateTemplateModal}>
-              {t('New template')}
-            </Button>
-          </Space>
-        </Space>
+      <Card variant="borderless">
+        <Space direction="vertical" size={16} style={{ width: '100%' }}>
+          <Flex justify="flex-end">
+            <Space>
+              <Button icon={<ReloadOutlined />} onClick={templatesRequest.refresh}>
+                {t('Refresh')}
+              </Button>
+              <Button type="primary" icon={<PlusOutlined />} onClick={openCreateTemplateModal}>
+                {t('New template')}
+              </Button>
+            </Space>
+          </Flex>
 
-        <Table<PromptTemplateRecord>
-          columns={templateColumns}
-          dataSource={templatesRequest.data || []}
-          loading={templatesRequest.loading}
-          rowKey="id"
-          locale={{
-            emptyText: <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('No prompt templates yet')} />,
-          }}
-          pagination={false}
-        />
-      </Space>
+          <Table<PromptTemplateRecord>
+            columns={templateColumns}
+            dataSource={templatesRequest.data || []}
+            loading={templatesRequest.loading}
+            rowKey="id"
+            locale={{
+              emptyText: <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('No prompt templates yet')} />,
+            }}
+            pagination={false}
+          />
+        </Space>
+      </Card>
 
       <Modal
         title={editingTemplate ? t('Edit template') : t('Create template')}

@@ -10,7 +10,7 @@
 import { CheckCircleOutlined, CloseCircleOutlined, ReloadOutlined } from '@ant-design/icons';
 import { useFlowContext } from '@nocobase/flow-engine';
 import { useRequest } from 'ahooks';
-import { Button, Empty, Space, Table, Tag, Typography } from 'antd';
+import { Button, Card, Empty, Flex, Space, Table, Tag, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import React, { useMemo } from 'react';
 import {
@@ -455,37 +455,36 @@ export default function AgentGatewayProviderCapabilitiesPage() {
 
   return (
     <section aria-label={t('Provider Capabilities')}>
-      <Space direction="vertical" size={16} style={{ width: '100%' }}>
-        <Space wrap style={{ justifyContent: 'space-between', width: '100%' }}>
-          <Typography.Title level={3} style={{ margin: 0 }}>
-            {t('Provider Capabilities')}
-          </Typography.Title>
-          <Button icon={<ReloadOutlined />} onClick={matrixRequest.refresh}>
-            {t('Refresh')}
-          </Button>
-        </Space>
+      <Card variant="borderless">
+        <Space direction="vertical" size={16} style={{ width: '100%' }}>
+          <Flex justify="flex-end">
+            <Button icon={<ReloadOutlined />} onClick={matrixRequest.refresh}>
+              {t('Refresh')}
+            </Button>
+          </Flex>
 
-        <Space wrap>
-          {COMPACT_CAPABILITY_KEYS.map((key) => (
-            <Tag key={key}>
-              {t(key)}: {summary[key] || 0}
-            </Tag>
-          ))}
-        </Space>
+          <Space wrap>
+            {COMPACT_CAPABILITY_KEYS.map((key) => (
+              <Tag key={key}>
+                {t(key)}: {summary[key] || 0}
+              </Tag>
+            ))}
+          </Space>
 
-        <Table<ProviderCapabilityRow>
-          columns={columns}
-          dataSource={matrixRequest.data || []}
-          loading={matrixRequest.loading}
-          rowKey="id"
-          size="small"
-          scroll={{ x: 2580 }}
-          locale={{
-            emptyText: <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('No agent profiles yet')} />,
-          }}
-          pagination={false}
-        />
-      </Space>
+          <Table<ProviderCapabilityRow>
+            columns={columns}
+            dataSource={matrixRequest.data || []}
+            loading={matrixRequest.loading}
+            rowKey="id"
+            size="small"
+            scroll={{ x: 2580 }}
+            locale={{
+              emptyText: <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('No agent profiles yet')} />,
+            }}
+            pagination={false}
+          />
+        </Space>
+      </Card>
     </section>
   );
 }

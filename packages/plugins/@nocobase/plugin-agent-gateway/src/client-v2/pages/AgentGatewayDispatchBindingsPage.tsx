@@ -12,7 +12,9 @@ import { useFlowContext } from '@nocobase/flow-engine';
 import { useRequest } from 'ahooks';
 import {
   Button,
+  Card,
   Empty,
+  Flex,
   Form,
   Input,
   InputNumber,
@@ -272,9 +274,8 @@ export default function AgentGatewayDispatchBindingsPage() {
           <Switch
             aria-label={t('Toggle dispatch binding status')}
             checked={getBindingEnabled(record)}
-            checkedChildren={t('Enabled')}
-            unCheckedChildren={t('Disabled')}
             loading={updateBindingStatusRequest.loading}
+            size="small"
             onChange={(checked) => updateBindingStatusRequest.run(record, checked)}
           />
         ),
@@ -305,42 +306,41 @@ export default function AgentGatewayDispatchBindingsPage() {
 
   return (
     <section aria-label={t('Dispatch Bindings')}>
-      <Space direction="vertical" size={16} style={{ width: '100%' }}>
-        <Space wrap style={{ justifyContent: 'space-between', width: '100%' }}>
-          <Typography.Title level={3} style={{ margin: 0 }}>
-            {t('Dispatch Bindings')}
-          </Typography.Title>
-          <Space>
-            <Button icon={<ReloadOutlined />} onClick={bindingsRequest.refresh}>
-              {t('Refresh')}
-            </Button>
-            <Button type="primary" icon={<PlusOutlined />} onClick={openCreateBindingModal}>
-              {t('New binding')}
-            </Button>
-          </Space>
-        </Space>
+      <Card variant="borderless">
+        <Space direction="vertical" size={16} style={{ width: '100%' }}>
+          <Flex justify="flex-end">
+            <Space>
+              <Button icon={<ReloadOutlined />} onClick={bindingsRequest.refresh}>
+                {t('Refresh')}
+              </Button>
+              <Button type="primary" icon={<PlusOutlined />} onClick={openCreateBindingModal}>
+                {t('New binding')}
+              </Button>
+            </Space>
+          </Flex>
 
-        <Table<DispatchBindingRecord>
-          columns={bindingColumns}
-          dataSource={bindingsRequest.data || []}
-          loading={bindingsRequest.loading}
-          rowKey="id"
-          expandable={{
-            expandedRowRender: (record) => (
-              <Space direction="vertical" size={8} style={{ width: '100%' }}>
-                <Typography.Text strong>{t('Field mappings')}</Typography.Text>
-                <JsonPreview value={record.fieldMappingsJson} />
-                <Typography.Text strong>{t('Skill fields')}</Typography.Text>
-                <JsonPreview value={record.skillFieldsJson} />
-              </Space>
-            ),
-          }}
-          locale={{
-            emptyText: <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('No dispatch bindings yet')} />,
-          }}
-          pagination={false}
-        />
-      </Space>
+          <Table<DispatchBindingRecord>
+            columns={bindingColumns}
+            dataSource={bindingsRequest.data || []}
+            loading={bindingsRequest.loading}
+            rowKey="id"
+            expandable={{
+              expandedRowRender: (record) => (
+                <Space direction="vertical" size={8} style={{ width: '100%' }}>
+                  <Typography.Text strong>{t('Field mappings')}</Typography.Text>
+                  <JsonPreview value={record.fieldMappingsJson} />
+                  <Typography.Text strong>{t('Skill fields')}</Typography.Text>
+                  <JsonPreview value={record.skillFieldsJson} />
+                </Space>
+              ),
+            }}
+            locale={{
+              emptyText: <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('No dispatch bindings yet')} />,
+            }}
+            pagination={false}
+          />
+        </Space>
+      </Card>
 
       <Modal
         title={editingBinding ? t('Edit dispatch binding') : t('Create dispatch binding')}

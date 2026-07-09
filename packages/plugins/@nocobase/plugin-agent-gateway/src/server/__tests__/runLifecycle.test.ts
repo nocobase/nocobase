@@ -847,6 +847,39 @@ describe('agent gateway run lifecycle APIs', () => {
     });
   });
 
+  it('supports the standard collection filter payload on the management run list', async () => {
+    await seedQueuedRun('run-filter-queued', {
+      createdAt: new Date('2026-07-01T00:00:01.000Z'),
+    });
+    await seedQueuedRun('run-filter-succeeded', {
+      status: 'succeeded',
+      createdAt: new Date('2026-07-01T00:00:02.000Z'),
+    });
+
+    const listResponse = await rootAgent.get('/api/agent-gateway/runs:list').query({
+      filter: JSON.stringify({
+        $and: [
+          {
+            status: {
+              $eq: 'succeeded',
+            },
+          },
+        ],
+      }),
+    });
+
+    expect(listResponse.status).toBe(200);
+    expect((listResponse.body.data as Array<Record<string, unknown>>).map((run) => run.runCode)).toEqual([
+      'run-filter-succeeded',
+    ]);
+    expect(listResponse.body.meta).toMatchObject({
+      count: 1,
+      page: 1,
+      pageSize: 50,
+      totalPage: 1,
+    });
+  });
+
   it('ignores session and continuation lineage fields when dispatch creates queued runs', async () => {
     const parentRun = await seedQueuedRun('run-parent-for-continuation');
     const continuationRequestedAt = '2026-07-01T00:00:00.000Z';

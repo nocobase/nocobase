@@ -14,20 +14,21 @@ import {
   PoweroffOutlined,
   PlusOutlined,
   ReloadOutlined,
-  SearchOutlined,
   StopOutlined,
   UploadOutlined,
 } from '@ant-design/icons';
-import { useFlowContext } from '@nocobase/flow-engine';
+import { Collection, type CollectionOptions, type DataSource, useFlowContext } from '@nocobase/flow-engine';
+import { CollectionFilter, type CompiledFilter } from '@nocobase/client-v2';
 import { useRequest } from 'ahooks';
 import {
   Alert,
   Button,
+  Card,
   Collapse,
-  DatePicker,
   Descriptions,
   Drawer,
   Empty,
+  Flex,
   Form,
   Input,
   List,
@@ -364,10 +365,6 @@ interface ExternalRunImportResult {
   deduped?: boolean;
 }
 
-interface DateLike {
-  toISOString(): string;
-}
-
 type ReadableArtifactItemKind = 'message' | 'tool' | 'error' | 'event';
 
 interface ReadableArtifactItem {
@@ -387,14 +384,12 @@ interface ReadableArtifactPreview {
   rawTruncated: boolean;
 }
 
-interface RunFilterFormValues {
-  status?: string;
-  nodeId?: string;
-  agentProfileId?: string;
-  createdAtRange?: [DateLike, DateLike];
-}
-
 type TFunction = (key: string, options?: Record<string, unknown>) => string;
+type AgentGatewayPageContext = AgentGatewayContext & {
+  dataSourceManager?: {
+    getDataSource(key: string): DataSource | undefined;
+  };
+};
 
 const RUN_STATUS_OPTIONS = [
   'queued',
@@ -446,6 +441,58 @@ const DEFAULT_EXTERNAL_RUN_IMPORT_FORM_VALUES: ExternalRunImportFormValues = {
   provider: 'codex',
   format: 'codex-jsonl',
   status: 'succeeded',
+};
+const RUNS_FILTER_FIELD_NAMES = ['status', 'nodeId', 'agentProfileId', 'createdAt'];
+const RUNS_FILTER_COLLECTION_OPTIONS: CollectionOptions = {
+  name: 'agentGatewayRunsFilter',
+  title: '{{t("Runs")}}',
+  filterTargetKey: 'id',
+  fields: [
+    {
+      type: 'string',
+      name: 'status',
+      interface: 'select',
+      uiSchema: {
+        type: 'string',
+        title: '{{t("Status")}}',
+        'x-component': 'Select',
+        enum: RUN_STATUS_OPTIONS.map((status) => ({
+          label: status,
+          value: status,
+        })),
+      },
+    },
+    {
+      type: 'string',
+      name: 'nodeId',
+      interface: 'input',
+      uiSchema: {
+        type: 'string',
+        title: '{{t("Node ID")}}',
+        'x-component': 'Input',
+      },
+    },
+    {
+      type: 'string',
+      name: 'agentProfileId',
+      interface: 'input',
+      uiSchema: {
+        type: 'string',
+        title: '{{t("Profile ID")}}',
+        'x-component': 'Input',
+      },
+    },
+    {
+      type: 'date',
+      name: 'createdAt',
+      interface: 'createdAt',
+      uiSchema: {
+        type: 'datetime',
+        title: '{{t("Created at")}}',
+        'x-component': 'DatePicker',
+      },
+    },
+  ],
 };
 
 function readFileAsBase64(file: File) {
@@ -641,26 +688,6 @@ function getHttpErrorStatus(error: unknown) {
 function shouldResetControlIdempotencyKey(error: unknown) {
   const status = getHttpErrorStatus(error);
   return status !== null && status >= 400 && status < 500;
-}
-
-function normalizeRunFilters(values: RunFilterFormValues) {
-  const filters: Record<string, unknown> = {};
-  if (values.status) {
-    filters.status = values.status;
-  }
-  if (values.nodeId) {
-    filters.nodeId = values.nodeId;
-  }
-  if (values.agentProfileId) {
-    filters.agentProfileId = values.agentProfileId;
-  }
-  if (values.createdAtRange?.[0]) {
-    filters.createdAtFrom = values.createdAtRange[0].toISOString();
-  }
-  if (values.createdAtRange?.[1]) {
-    filters.createdAtTo = values.createdAtRange[1].toISOString();
-  }
-  return filters;
 }
 
 function getNumberMetaValue(value: unknown) {
@@ -2207,13 +2234,12 @@ function ArtifactsPanel({
 
 export default function AgentGatewayRunsPage() {
   const t = useT();
-  const ctx = useFlowContext() as unknown as AgentGatewayContext;
+  const ctx = useFlowContext() as unknown as AgentGatewayPageContext;
   const initialRunId = useInitialRunDetailQuery();
-  const [filterForm] = Form.useForm<RunFilterFormValues>();
   const [buildTaskForm] = Form.useForm<BuildTaskFormValues>();
   const [externalRunImportForm] = Form.useForm<ExternalRunImportFormValues>();
   const [skillUploadForm] = Form.useForm<SkillUploadFormValues>();
-  const [runFilters, setRunFilters] = useState<Record<string, unknown>>({});
+  const [runFilters, setRunFilters] = useState<CompiledFilter>();
   const [runPagination, setRunPagination] = useState({
     current: 1,
     pageSize: DEFAULT_RUNS_PAGE_SIZE,
@@ -2239,6 +2265,15 @@ export default function AgentGatewayRunsPage() {
     {},
   );
   const selectedRunIdRef = useRef<string | undefined>(initialRunId);
+  const runsFilterCollection = useMemo(() => {
+    const dataSource = ctx.dataSourceManager?.getDataSource('main');
+    if (!dataSource) {
+      return undefined;
+    }
+    const collection = new Collection(RUNS_FILTER_COLLECTION_OPTIONS);
+    collection.setDataSource(dataSource);
+    return collection;
+  }, [ctx.dataSourceManager]);
 
   const syncRunDetailFromLocation = useCallback(() => {
     const runId = getRunIdFromLocationSearch();
@@ -2274,7 +2309,7 @@ export default function AgentGatewayRunsPage() {
         url: 'agent-gateway/runs:list',
         method: 'get',
         params: {
-          ...runFilters,
+          ...(runFilters ? { filter: runFilters } : {}),
           page: runPagination.current,
           pageSize: runPagination.pageSize,
         },
@@ -3096,25 +3131,13 @@ export default function AgentGatewayRunsPage() {
     replaceRunIdInLocationSearch();
   }, []);
 
-  const submitFilters = useCallback(
-    (values: RunFilterFormValues) => {
-      setRunPagination((current) => ({
-        ...current,
-        current: 1,
-      }));
-      setRunFilters(normalizeRunFilters(values));
-    },
-    [setRunFilters],
-  );
-
-  const resetFilters = useCallback(() => {
-    filterForm.resetFields();
+  const handleRunFilterChange = useCallback((filter: CompiledFilter) => {
     setRunPagination((current) => ({
       ...current,
       current: 1,
     }));
-    setRunFilters({});
-  }, [filterForm]);
+    setRunFilters(filter);
+  }, []);
 
   const handleRunPageChange = useCallback((page: number, pageSize: number) => {
     setRunPagination({
@@ -3565,63 +3588,39 @@ export default function AgentGatewayRunsPage() {
 
   return (
     <section aria-label={t('Runs')}>
-      <Space direction="vertical" size={16} style={{ width: '100%' }}>
-        <Space wrap style={{ justifyContent: 'space-between', width: '100%' }}>
-          <Typography.Title level={3} style={{ margin: 0 }}>
-            {t('Runs')}
-          </Typography.Title>
-          <Space wrap>
-            <Button type="primary" icon={<PlusOutlined />} onClick={openBuildTask}>
-              {t('New task run')}
-            </Button>
-            <Button icon={<ImportOutlined />} onClick={openExternalRunImport}>
-              {t('Import external run')}
-            </Button>
-            <Button icon={<ReloadOutlined />} onClick={runsRequest.refresh}>
-              {t('Refresh')}
-            </Button>
-          </Space>
-        </Space>
-
-        <Form<RunFilterFormValues> form={filterForm} layout="inline" onFinish={submitFilters}>
-          <Form.Item label={t('Status')} name="status">
-            <Select
-              allowClear
-              style={{ width: 180 }}
-              options={RUN_STATUS_OPTIONS.map((status) => ({
-                value: status,
-                label: status,
-              }))}
+      <Card variant="borderless">
+        <Space direction="vertical" size={16} style={{ width: '100%' }}>
+          <Flex justify="space-between" align="center" gap={8} wrap="wrap">
+            <CollectionFilter
+              collection={runsFilterCollection}
+              filterableFieldNames={RUNS_FILTER_FIELD_NAMES}
+              initialValue={runFilters}
+              onChange={handleRunFilterChange}
+              t={t}
             />
-          </Form.Item>
-          <Form.Item label={t('Node ID')} name="nodeId">
-            <Input style={{ width: 220 }} />
-          </Form.Item>
-          <Form.Item label={t('Profile ID')} name="agentProfileId">
-            <Input style={{ width: 220 }} />
-          </Form.Item>
-          <Form.Item label={t('Created at')} name="createdAtRange">
-            <DatePicker.RangePicker />
-          </Form.Item>
-          <Form.Item>
-            <Space>
-              <Button type="primary" htmlType="submit" icon={<SearchOutlined />}>
-                {t('Filter')}
+            <Space wrap>
+              <Button type="primary" icon={<PlusOutlined />} onClick={openBuildTask}>
+                {t('New task run')}
               </Button>
-              <Button onClick={resetFilters}>{t('Reset')}</Button>
+              <Button icon={<ImportOutlined />} onClick={openExternalRunImport}>
+                {t('Import external run')}
+              </Button>
+              <Button icon={<ReloadOutlined />} onClick={runsRequest.refresh}>
+                {t('Refresh')}
+              </Button>
             </Space>
-          </Form.Item>
-        </Form>
+          </Flex>
 
-        <Table<RunRecord>
-          columns={runColumns}
-          dataSource={runListData.runs}
-          loading={runsRequest.loading && !runsRequest.data}
-          rowKey="id"
-          locale={{ emptyText: <EmptyInline description={t('No runs yet')} /> }}
-          pagination={runTablePagination}
-        />
-      </Space>
+          <Table<RunRecord>
+            columns={runColumns}
+            dataSource={runListData.runs}
+            loading={runsRequest.loading && !runsRequest.data}
+            rowKey="id"
+            locale={{ emptyText: <EmptyInline description={t('No runs yet')} /> }}
+            pagination={runTablePagination}
+          />
+        </Space>
+      </Card>
 
       <Drawer
         title={selectedRun ? getRunTaskTitle(selectedRun, t) : t('Run details')}

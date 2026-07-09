@@ -421,7 +421,7 @@ describe('PluginAgentGatewayClientV2', () => {
 
     renderSettingsPage(request);
 
-    expect(await screen.findByRole('heading', { name: 'Agent Gateway' })).toBeTruthy();
+    expect(await screen.findByRole('region', { name: 'Agent Gateway Nodes' })).toBeTruthy();
     await waitFor(() => {
       expect(screen.getAllByText('node-1').length).toBeGreaterThan(0);
     });
@@ -615,7 +615,7 @@ describe('PluginAgentGatewayClientV2', () => {
 
     renderAgentGatewayPage(AgentGatewayProviderCapabilitiesPage, request);
 
-    expect(await screen.findByText('Provider Capabilities')).toBeTruthy();
+    expect(await screen.findByRole('region', { name: 'Provider Capabilities' })).toBeTruthy();
     expect(await screen.findByText('Run detail')).toBeTruthy();
     expect(await screen.findByText('Detail controls')).toBeTruthy();
     expect(await screen.findByText('Server response')).toBeTruthy();
@@ -832,7 +832,7 @@ describe('PluginAgentGatewayClientV2', () => {
 
     renderAgentGatewayPage(AgentGatewayPromptTemplatesPage, request);
 
-    expect(await screen.findByText('Prompt Templates')).toBeTruthy();
+    expect(await screen.findByRole('region', { name: 'Prompt Templates' })).toBeTruthy();
     expect(await screen.findByText('ticket-summary')).toBeTruthy();
 
     fireEvent.click(screen.getByText('New template'));
@@ -958,8 +958,9 @@ describe('PluginAgentGatewayClientV2', () => {
 
     renderAgentGatewayPage(AgentGatewayTaskTemplatesPage, request);
 
-    expect(await screen.findByText('Task Templates')).toBeTruthy();
+    expect(await screen.findByRole('region', { name: 'Task Templates' })).toBeTruthy();
     expect((await screen.findAllByText('generic')).length).toBeGreaterThan(0);
+    expect(document.querySelector('.ant-table-row-expand-icon')).toBeNull();
 
     fireEvent.click(screen.getByText('New template'));
     fireEvent.change(screen.getByPlaceholderText('build-on-187'), {
@@ -1289,6 +1290,8 @@ describe('PluginAgentGatewayClientV2', () => {
     renderAgentGatewayPage(AgentGatewayRunsPage, request);
 
     expect(await screen.findByText('Run page 1')).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Filter$/ })).not.toBeDisabled();
+    expect(screen.queryByRole('button', { name: 'Reset' })).toBeNull();
     await waitFor(() => {
       expect(request).toHaveBeenLastCalledWith(
         expect.objectContaining({
