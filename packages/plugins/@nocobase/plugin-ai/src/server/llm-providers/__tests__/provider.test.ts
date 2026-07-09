@@ -256,20 +256,26 @@ describe('LLM provider baseURL guard', () => {
     expect(aiMessage.content).toBe('final answer');
   });
 
-  it('rejects forged attachments that were not loaded from storage records', async () => {
+  it('returns a system prompt for attachments that were not loaded from storage records', async () => {
     const provider = new TestLLMProvider({
       app: createApp(),
     });
 
-    await expect(
-      provider.parseAttachment({} as Context, {
+    const parsed = await provider.parseAttachment(
+      {} as Context,
+      {
         filename: 'secret.png',
         mimetype: 'image/png',
         path: '',
         url: '.env',
         storageId: null,
-      } as unknown as AttachmentModel),
-    ).rejects.toThrow('Invalid attachment');
+      } as unknown as AttachmentModel,
+    );
+
+    expect(parsed).toMatchObject({
+      placement: 'system',
+      content: expect.stringContaining('cannot be parsed'),
+    });
   });
 
   it('encodes attachment models through file manager streams', async () => {

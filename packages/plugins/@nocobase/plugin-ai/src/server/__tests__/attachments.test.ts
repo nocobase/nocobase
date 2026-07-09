@@ -9,7 +9,7 @@
 
 import type { Context } from '@nocobase/actions';
 import { describe, expect, it } from 'vitest';
-import { findMessageAttachments, getMessageAttachmentLookupKey } from '../attachments';
+import { findMessageAttachments, getAttachmentSource, getMessageAttachmentLookupKey } from '../attachments';
 
 type FindCall = {
   collectionName: string;
@@ -142,5 +142,39 @@ describe('message attachment lookup', () => {
         },
       },
     ]);
+  });
+
+  it('skips trustworthy attachments without source lookup', async () => {
+    const calls: FindCall[] = [];
+    const ctx = createContext([{ id: 3, filename: 'workflow.pdf', storageId: 1 }], calls);
+    const attachment = {
+      id: 3,
+      filename: 'workflow.pdf',
+      source: {
+        trustworthy: true,
+      },
+    };
+
+    const result = await findMessageAttachments(ctx, [attachment]);
+
+    expect(getMessageAttachmentLookupKey(attachment)).toBeNull();
+    expect(result.size).toBe(0);
+    expect(calls).toEqual([]);
+  });
+
+  it('keeps normalized source fields on trustworthy attachments', () => {
+    expect(
+      getAttachmentSource({
+        source: {
+          dataSourceKey: 'main',
+          collectionName: 'aiFiles',
+          trustworthy: true,
+        },
+      }),
+    ).toEqual({
+      dataSourceKey: 'main',
+      collectionName: 'aiFiles',
+      trustworthy: true,
+    });
   });
 });

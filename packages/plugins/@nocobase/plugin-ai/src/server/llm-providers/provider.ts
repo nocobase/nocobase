@@ -219,7 +219,13 @@ export abstract class LLMProvider {
   }
 
   async parseAttachment(ctx: Context, attachment: AttachmentModel): Promise<ParsedAttachmentResult> {
-    this.assertAttachment(ctx, attachment);
+    if (!attachment?.storageId || !attachment?.filename) {
+      return {
+        placement: 'system',
+        content:
+          'The user provided an attachment, but it is unavailable or invalid and cannot be parsed. Do not use this attachment as evidence; tell the user the attachment is unavailable.',
+      };
+    }
     if (this.isApiSupportedAttachment(attachment)) {
       return await this.convertToContent(ctx, attachment);
     } else if (this.isDocumentLoaderSupportedAttachment(attachment)) {
@@ -244,12 +250,6 @@ export abstract class LLMProvider {
   protected isDocumentLoaderSupportedAttachment(attachment: AttachmentModel): boolean {
     const ext = path.extname(attachment?.filename ?? '').toLocaleLowerCase();
     return SUPPORTED_DOCUMENT_EXTNAMES.includes(ext);
-  }
-
-  protected assertAttachment(ctx: Context, attachment: AttachmentModel) {
-    if (!attachment?.storageId || !attachment?.filename) {
-      throw new Error(typeof ctx.t === 'function' ? ctx.t('Invalid attachment') : 'Invalid attachment');
-    }
   }
 
   protected async encodeAttachment(ctx: Context, attachment: AttachmentModel) {

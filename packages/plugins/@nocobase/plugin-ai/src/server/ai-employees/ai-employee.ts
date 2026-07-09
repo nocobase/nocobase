@@ -43,9 +43,9 @@ import { LLMStreamCached } from '../manager/llm-stream-manager';
 import { sanitizeAdditionalKwargsForToolCalls } from './tool-call-sanitizer';
 import {
   findMessageAttachments,
-  getAttachmentId,
   getAttachmentSource,
   getMessageAttachmentLookupKey,
+  shouldSkipAttachmentSourceLookup,
 } from '../attachments';
 
 export interface ModelRef {
@@ -1213,25 +1213,9 @@ If information is missing, clearly state it in the summary.</Important>`;
   }
 
   private async normalizeMessageAttachments(messages: AIMessageInput[]): Promise<AIMessageInput[]> {
-    const attachments: unknown[] = [];
-    for (const message of messages) {
-      if (message.attachments == null) {
-        continue;
-      }
-      if (!Array.isArray(message.attachments)) {
-        throw new Error(this.ctx.t('Invalid attachment'));
-      }
-      for (const attachment of message.attachments) {
-        if (!getAttachmentSource(attachment)) {
-          continue;
-        }
-        const id = getAttachmentId(attachment);
-        if (id == null) {
-          throw new Error(this.ctx.t('Invalid attachment'));
-        }
-        attachments.push(attachment);
-      }
-    }
+    const attachments = messages
+      .filter((message) => Array.isArray(message.attachments))
+      .flatMap((message) => message.attachments);
 
     if (!attachments.length) {
       return messages;
@@ -1239,22 +1223,22 @@ If information is missing, clearly state it in the summary.</Important>`;
 
     const attachmentsByLookup = await findMessageAttachments(this.ctx, attachments);
     return messages.map((message) => {
-      if (!message.attachments?.length) {
+      if (!Array.isArray(message.attachments) || !message.attachments.length) {
         return message;
       }
       return {
         ...message,
-        attachments: message.attachments.map((attachment) => {
-          if (!getAttachmentSource(attachment)) {
-            return attachment;
+        attachments: message.attachments.flatMap((attachment) => {
+          const source = getAttachmentSource(attachment);
+          if (!source || shouldSkipAttachmentSourceLookup(source)) {
+            return [attachment];
           }
           const lookupKey = getMessageAttachmentLookupKey(attachment);
           const verifiedAttachment = lookupKey ? attachmentsByLookup.get(lookupKey) : null;
           if (!verifiedAttachment) {
-            throw new Error(this.ctx.t('Attachment not found'));
+            return [];
           }
-          const source = getAttachmentSource(attachment);
-          return source ? { ...verifiedAttachment, source } : verifiedAttachment;
+          return [{ ...verifiedAttachment, source }];
         }),
       };
     });

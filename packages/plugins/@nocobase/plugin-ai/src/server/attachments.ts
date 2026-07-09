@@ -18,6 +18,7 @@ export type AttachmentSource = {
   dataSourceKey?: string;
   collectionName?: string;
   field?: string;
+  trustworthy?: boolean;
 };
 
 type AttachmentLookup = {
@@ -70,20 +71,26 @@ export function getAttachmentId(attachment: unknown): AttachmentId | null {
   return null;
 }
 
+export function shouldSkipAttachmentSourceLookup(source: AttachmentSource | null) {
+  return source?.trustworthy === true;
+}
+
 export function getAttachmentSource(attachment: unknown): AttachmentSource | null {
   if (!isRecord(attachment) || !isRecord(attachment.source)) {
     return null;
   }
-  const { type, dataSourceKey, collectionName, field } = attachment.source;
-  if (typeof collectionName !== 'string' || !collectionName) {
-    return null;
-  }
-  return {
+  const { type, dataSourceKey, collectionName, field, trustworthy } = attachment.source;
+  const source = {
     ...(typeof type === 'string' ? { type } : {}),
     dataSourceKey: typeof dataSourceKey === 'string' && dataSourceKey ? dataSourceKey : 'main',
-    collectionName,
+    ...(typeof collectionName === 'string' && collectionName ? { collectionName } : {}),
     ...(typeof field === 'string' ? { field } : {}),
+    ...(trustworthy === true ? { trustworthy } : {}),
   };
+  if (!source.trustworthy && !source.collectionName) {
+    return null;
+  }
+  return source;
 }
 
 function getSourceDatabase(ctx: Context, dataSourceKey?: string): Database | null {
@@ -159,7 +166,7 @@ export async function findMessageAttachments(ctx: Context, attachments: unknown[
   const lookups: AttachmentLookup[] = [];
   for (const attachment of attachments) {
     const source = getAttachmentSource(attachment);
-    if (!source) {
+    if (!source || shouldSkipAttachmentSourceLookup(source)) {
       continue;
     }
     const id = getAttachmentId(attachment);
@@ -177,7 +184,7 @@ export async function findMessageAttachments(ctx: Context, attachments: unknown[
 
 export function getMessageAttachmentLookupKey(attachment: unknown) {
   const source = getAttachmentSource(attachment);
-  if (!source) {
+  if (!source || shouldSkipAttachmentSourceLookup(source)) {
     return null;
   }
   const id = getAttachmentId(attachment);
