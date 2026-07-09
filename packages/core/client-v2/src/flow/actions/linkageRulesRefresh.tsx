@@ -21,6 +21,32 @@ type LinkageRulesRefreshParams = {
   stepKey?: string;
 };
 
+function isRecordActionLinkageRefresh(params: Partial<LinkageRulesRefreshParams>) {
+  return params?.actionName === 'actionLinkageRules' && params?.flowKey === 'buttonSettings';
+}
+
+type RecordActionClassLike = {
+  _getScene?: () => unknown;
+};
+
+type ModelWithActionClass = {
+  constructor?: RecordActionClassLike;
+};
+
+function isRecordActionModel(model: unknown) {
+  const modelClass = (model as ModelWithActionClass | null)?.constructor;
+  const getScene = modelClass?._getScene;
+  if (typeof getScene !== 'function') {
+    return false;
+  }
+  try {
+    const scene = getScene.call(modelClass);
+    return Array.isArray(scene) && scene.includes('record');
+  } catch {
+    return false;
+  }
+}
+
 export const linkageRulesRefresh = defineAction({
   name: 'linkageRulesRefresh',
   async handler(ctx, params) {
@@ -49,6 +75,11 @@ export const linkageRulesRefresh = defineAction({
         return !!fork?.getFlow?.(flowKey);
       });
     const isMasterMounted = Boolean((model as any)?.context?.ref?.current);
+    const shouldPreferRowForks =
+      hasForkWithFlow && isRecordActionLinkageRefresh({ actionName, flowKey, stepKey }) && isRecordActionModel(model);
+    if (shouldPreferRowForks) {
+      return;
+    }
     if (hasForkWithFlow && !isMasterMounted && !flowSettingsEnabled) {
       return;
     }
