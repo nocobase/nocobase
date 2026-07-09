@@ -45,7 +45,7 @@ jobs:
         with:
           node-version: ${{ matrix.node_version }}
 
-      - run: yarn install
+      - run: yarn install --frozen-lockfile
       - name: Pack dependencies
         run: |
           find . -name node_modules -type d -prune -print0 > node_modules.list
