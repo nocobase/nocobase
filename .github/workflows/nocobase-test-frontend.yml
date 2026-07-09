@@ -45,7 +45,7 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: node_modules.tar
-          key: frontend-node-modules-v1-${{ runner.os }}-node-${{ matrix.node_version }}-${{ hashFiles('yarn.lock') }}
+          key: frontend-node-modules-v2-${{ runner.os }}-node-${{ matrix.node_version }}-${{ hashFiles('yarn.lock', 'package.json', 'packages/**/package.json', '.env.example', '.env.test.example', 'patches/**') }}
 
       - name: Use Node.js ${{ matrix.node_version }}
         if: steps.restore-dependencies.outputs.cache-hit != 'true'
