@@ -10,8 +10,6 @@
 import { css } from '@emotion/css';
 import React, { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import { useMemoizedFn } from 'ahooks';
-import { App, Form, Input, Skeleton, Tag, Typography, theme } from 'antd';
-import { ThunderboltOutlined } from '@ant-design/icons';
 import { Alert, App, Form, Input, Skeleton, Tag, Typography, theme } from 'antd';
 import {
   CheckCircleFilled,
