@@ -122,6 +122,10 @@ NocoBase 会根据 PostgreSQL 字段类型，自动映射到合适的 Field type
 
 如果接入的是视图、无主键表或联合主键表，需要在数据表配置中手动设置「Record unique key」。没有可用唯一标识时，页面区块可能无法正确查看、编辑或删除记录。
 
+![edit_collection](https://static-docs.nocobase.com/edit_collection.png)
+
+![edit_collection_configure](https://static-docs.nocobase.com/edit_collection_configure.png)
+
 ## 相关链接
 
 - [外部数据库](./index.md) — 查看外部数据库的通用配置和管理说明

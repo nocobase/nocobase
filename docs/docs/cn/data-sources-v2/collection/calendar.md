@@ -23,17 +23,6 @@ keywords: "日历表,Calendar Collection,日历事件,重复事件,日历区块,
 - 值班计划、排班记录、巡检计划
 - 需要按日、周、月查看的事件记录
 
-## 可用区块
-
-日历表可以使用[普通表](./general.md)的多数数据区块做增删改查。另外，它通常会配合日历区块使用：
-
-| 区块 | 用途 |
-| --- | --- |
-| [日历区块](../../interface-builder/blocks/data-blocks/calendar.md) | 按日、周、月等视图展示事件记录，并在日历中创建、查看和编辑事件。 |
-| [表格区块](../../interface-builder/blocks/data-blocks/table.md) | 按列表方式查看、筛选和批量维护事件记录。 |
-| [表单区块](../../interface-builder/blocks/data-blocks/form.md) | 新增或编辑单条事件记录。 |
-| [详情区块](../../interface-builder/blocks/data-blocks/details.md) | 查看单条事件的详细信息。 |
-
 ## 创建配置
 
 在主数据库中点击「Create collection」，选择「Calendar collection」可以创建日历表。
@@ -71,6 +60,41 @@ keywords: "日历表,Calendar Collection,日历事件,重复事件,日历区块,
 `cron` 和 `exclude` 通常由日历能力维护，不建议当作普通业务字段直接编辑。标题、开始日期和结束日期字段需要根据业务自己创建和配置，否则日历区块无法正确展示事件。
 
 :::
+
+## 主键字段
+
+日历表和普通表一样需要主键字段。创建表时建议保留 ID 预设字段，默认主键类型是 `Snowflake ID (53-bit)`。
+
+如果日历表没有主键，需要在编辑数据表时设置「Record unique key」，否则日历区块可能无法正确打开、编辑或定位事件记录。
+
+## 编辑配置
+
+在数据表列表中，点击日历表右侧的「Edit」，可以修改数据表显示名称、分类、说明、简单分页模式和「Record unique key」等配置。
+
+日历表的 `cron`、`exclude` 等内置字段通常用于日历能力，不建议改成其他业务含义。如果需要扩展事件信息，可以新增普通业务字段，比如地点、参与人、会议室、状态等。
+
+## 删除数据表
+
+在数据表列表中，点击日历表右侧的「Delete」，可以删除日历表。
+
+删除日历表会删除事件记录、日历内置字段数据和相关 Collection 元数据。删除前先确认日历区块、表格区块、权限、工作流和 API 是否仍然依赖这张表。
+
+:::danger 警告
+
+日历表通常保存排期、预约和值班等时间数据。删除后，历史事件和重复规则都会丢失，操作前先确认数据已经备份或不再需要。
+
+:::
+
+## 页面配置使用
+
+日历表可以使用[普通表](./general.md)的多数数据区块做增删改查。另外，它通常会配合日历区块使用：
+
+| 区块 | 用途 |
+| --- | --- |
+| [日历区块](../../interface-builder/blocks/data-blocks/calendar.md) | 按日、周、月等视图展示事件记录，并在日历中创建、查看和编辑事件。 |
+| [表格区块](../../interface-builder/blocks/data-blocks/table.md) | 按列表方式查看、筛选和批量维护事件记录。 |
+| [表单区块](../../interface-builder/blocks/data-blocks/form.md) | 新增或编辑单条事件记录。 |
+| [详情区块](../../interface-builder/blocks/data-blocks/details.md) | 查看单条事件的详细信息。 |
 
 ## 相关链接
 

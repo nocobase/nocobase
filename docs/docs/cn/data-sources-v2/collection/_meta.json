@@ -11,11 +11,6 @@
   },
   {
     "type": "custom-link",
-    "label": "继承表",
-    "link": "/data-sources-v2/collection/inheritance"
-  },
-  {
-    "type": "custom-link",
     "label": "树表",
     "link": "/data-sources-v2/collection/tree"
   },
@@ -43,5 +38,10 @@
     "type": "custom-link",
     "label": "SQL 表",
     "link": "/data-sources-v2/collection/sql"
+  },
+  {
+    "type": "custom-link",
+    "label": "继承表",
+    "link": "/data-sources-v2/collection/inheritance"
   }
 ]

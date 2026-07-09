@@ -2,7 +2,7 @@
   { "type": "custom-link", "label": "概述", "link": "/data-sources-v2/field/" },
   {
     "type": "custom-link",
-    "label": "字段验证",
+    "label": "字段校验",
     "link": "/data-sources-v2/field/validation"
   },
   {

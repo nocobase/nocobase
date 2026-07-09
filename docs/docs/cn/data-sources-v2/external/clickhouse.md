@@ -114,6 +114,10 @@ ClickHouse 的排序键、分区键不一定等同于业务唯一标识。用于
 
 如果接入的是无唯一字段的表或视图，需要在数据表配置中手动设置「Record unique key」。没有可用唯一标识时，页面区块可能无法正确查看记录详情，也不适合配置编辑或删除操作。
 
+![edit_collection](https://static-docs.nocobase.com/edit_collection.png)
+
+![edit_collection_configure](https://static-docs.nocobase.com/edit_collection_configure.png)
+
 ## 相关链接
 
 - [外部数据库](./index.md) — 查看外部数据库的通用配置和管理说明
