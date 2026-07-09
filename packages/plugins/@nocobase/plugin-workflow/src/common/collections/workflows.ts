@@ -100,6 +100,11 @@ export default {
       defaultValue: {},
     },
     {
+      type: 'jsonb',
+      name: 'validation',
+      defaultValue: {},
+    },
+    {
       type: 'hasMany',
       name: 'nodes',
       target: 'flow_nodes',
