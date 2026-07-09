@@ -24,7 +24,8 @@ import {
   type SubModelItem,
   type SubModelItemsType,
 } from '@nocobase/flow-engine';
-import { Avatar, Button, Card, Tooltip, Typography } from 'antd';
+import { Avatar, Badge, Button, Card, Tooltip, Typography } from 'antd';
+import type { BadgeProps } from 'antd';
 import React from 'react';
 
 const defaultIconColors = ['#3d8bff', '#00a8b5', '#35b26b', '#f5a623', '#ff7a45', '#e85d75', '#9254de', '#597ef7'];
@@ -63,6 +64,14 @@ function isEntryActionUnavailable(action: ActionModel) {
 function getEntryActionUnavailableMessage(action: ActionModel) {
   const candidate = action as ActionModel & EntryActionAvailability;
   return candidate.getEntryActionUnavailableMessage?.();
+}
+
+type ActionPanelBadgeProvider = {
+  actionPanelBadge?: BadgeProps | null;
+};
+
+function getActionPanelBadge(action: ActionModel) {
+  return (action as ActionModel & ActionPanelBadgeProvider).actionPanelBadge || null;
 }
 
 export class AppSwitcherActionPanelModel extends FlowModel<AppSwitcherActionPanelStructure> {
@@ -149,7 +158,20 @@ export class AppSwitcherActionPanelModel extends FlowModel<AppSwitcherActionPane
               {actions.map((action) => {
                 const { icon = 'AppstoreOutlined', color } = action.props;
                 const title = action.getTitle();
+                const actionPanelBadge = getActionPanelBadge(action);
                 const entryActionUnavailable = isEntryActionUnavailable(action);
+                const iconContent = (
+                  <Avatar
+                    size={32}
+                    shape="square"
+                    icon={<Icon type={icon as string} />}
+                    style={{
+                      flex: '0 0 auto',
+                      borderRadius: 6,
+                      background: color || getDefaultIconColor(title),
+                    }}
+                  />
+                );
                 const renderActionContent = (compact = false) => (
                   <Card
                     bordered={false}
@@ -174,16 +196,15 @@ export class AppSwitcherActionPanelModel extends FlowModel<AppSwitcherActionPane
                     `}
                     styles={{ body: { background: 'transparent' } }}
                   >
-                    <Avatar
-                      size={32}
-                      shape="square"
-                      icon={<Icon type={icon as string} />}
-                      style={{
-                        flex: '0 0 auto',
-                        borderRadius: 6,
-                        background: color || getDefaultIconColor(title),
-                      }}
-                    />
+                    <span style={{ display: 'inline-flex', flex: '0 0 auto' }}>
+                      {actionPanelBadge ? (
+                        <Badge {...actionPanelBadge} size={actionPanelBadge.size ?? 'small'}>
+                          {iconContent}
+                        </Badge>
+                      ) : (
+                        iconContent
+                      )}
+                    </span>
                     <Typography.Text
                       ellipsis
                       title={typeof title === 'string' ? title : undefined}
