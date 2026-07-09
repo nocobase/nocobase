@@ -45,6 +45,10 @@ function validateWorkflow(
   }
 }
 
+export async function list(context: Context, next) {
+  return actions.list(context, next);
+}
+
 export async function create(context: Context, next) {
   const plugin = context.app.pm.get(Plugin) as Plugin;
   const { values } = context.action.params;

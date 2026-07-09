@@ -134,11 +134,20 @@ function isInteractiveClickTarget(target: EventTarget | null): boolean {
  * the canvas `nodeClass`/`nodeCardClass` chrome (drag mousedown, click-to-open
  * config, copy/drag highlight). Exported and given a `children` slot so a node's
  * `ComponentLoader` can reuse the exact card and append its own subtree after it
- * (e.g. the condition node's Yes/No branches) — the v2 mirror of v1's
- * `NodeDefaultView` (doc §9.5, ADR-0003). Assumes the type is registered; the
- * unregistered placeholder is handled by `NodeCard`.
+ * (e.g. the condition node's Yes/No branches). `cardExtra` is an internal slot
+ * for node-specific notices inside the card, directly after the title — the v2
+ * mirror of v1's `NodeDefaultView` (doc §9.5, ADR-0003). Assumes the type is
+ * registered; the unregistered placeholder is handled by `NodeCard`.
  */
-export function NodeDefaultView({ data, children }: { data: any; children?: React.ReactNode }) {
+export function NodeDefaultView({
+  cardExtra,
+  data,
+  children,
+}: {
+  cardExtra?: React.ReactNode;
+  data: any;
+  children?: React.ReactNode;
+}) {
   const { styles, cx } = useStyles();
   const t = useT();
   const flowEngine = useFlowEngine();
@@ -198,6 +207,7 @@ export function NodeDefaultView({ data, children }: { data: any; children?: Reac
           </div>
         </div>
         <NodeTitle data={data} fallback={typeTitle} />
+        {cardExtra}
       </div>
       {children}
     </div>

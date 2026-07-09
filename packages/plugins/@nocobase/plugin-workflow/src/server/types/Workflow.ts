@@ -28,6 +28,7 @@ export default class WorkflowModel extends Model {
   declare description?: string;
   declare type: string;
   declare config: any;
+  declare validation?: Record<string, any>;
   declare options: {
     timeout?: number;
     stackLimit?: number;
