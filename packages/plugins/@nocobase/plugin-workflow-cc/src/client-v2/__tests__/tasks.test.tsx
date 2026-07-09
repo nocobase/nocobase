@@ -48,6 +48,7 @@ vi.mock('@nocobase/client-v2', async () => {
         </button>
       );
     },
+    SkeletonFallback: () => <div data-testid="workflow-cc-detail-loading" />,
     useMobileLayout: () => ({
       isMobileLayout: holder.isMobileLayout,
     }),
@@ -436,6 +437,9 @@ describe('workflow-cc v2 task type', () => {
   it('renders the detail read action after the remote flow model content', () => {
     holder.record = {
       id: 1,
+      job: {
+        id: 1,
+      },
       node: {
         config: {
           ccUid: 'cc-detail-uid',
