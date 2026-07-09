@@ -72,13 +72,31 @@ describe('plugin-light-extension client-v2 boundary', () => {
     expect(sdkSource).not.toMatch(
       /defineClientExtension|defineServerExtension|registerBlock|registerAction|registerResource/,
     );
-    expect(sdkSource).not.toMatch(/JSBlockContext|RunJSContext|getVar|getValue|setValue/);
+    expect(sdkSource).toMatch(/JSBlockContext|RunJSContext/);
+    expect(sdkSource).not.toMatch(/getVar|getValue|setValue/);
   });
 
   it('keeps the package root separate from local SDK shims', () => {
+    const pluginRoot = path.resolve(__dirname, '../../..');
     const rootSource = fs.readFileSync(path.resolve(__dirname, '../../index.ts'), 'utf8');
+    const packageJson = JSON.parse(fs.readFileSync(path.join(pluginRoot, 'package.json'), 'utf8')) as {
+      exports: Record<string, { import?: string; types?: string } | string>;
+    };
 
     expect(rootSource).not.toContain('./sdk/client');
+    expect(packageJson.exports['./client']).toMatchObject({
+      types: './client.d.ts',
+      import: './client.js',
+    });
+    expect(packageJson.exports['./client-v2']).toMatchObject({
+      types: './client-v2.d.ts',
+      import: './client-v2.js',
+    });
+    expect(packageJson.exports['./sdk/client']).toBeUndefined();
+    expect(packageJson.exports['./sdk/shared']).toBeUndefined();
+    expect(fs.existsSync(path.join(pluginRoot, 'client.js'))).toBe(true);
+    expect(fs.existsSync(path.join(pluginRoot, 'client-v2.js'))).toBe(true);
+    expect(fs.existsSync(path.join(pluginRoot, 'server.js'))).toBe(true);
   });
 
   it('keeps publication authoring pages out of the legacy client while sharing runtime JS block bridges', () => {

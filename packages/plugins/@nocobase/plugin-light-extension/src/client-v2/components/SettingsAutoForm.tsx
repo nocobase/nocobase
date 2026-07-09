@@ -10,6 +10,7 @@
 import {
   Alert,
   Checkbox,
+  ColorPicker,
   DatePicker,
   Divider,
   Input,
@@ -20,6 +21,8 @@ import {
   Switch,
   Typography,
 } from 'antd';
+import type { SelectProps } from 'antd';
+import { ApplicationContext } from '@nocobase/client-v2';
 import dayjs, { type Dayjs } from 'dayjs';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
@@ -41,6 +44,7 @@ export type JsonSchema = {
   maximum?: number;
   format?: string;
   'x-component'?: string;
+  'x-component-props'?: Record<string, unknown>;
 };
 
 export type SettingsValidationError = {
@@ -311,7 +315,18 @@ function updateAtPath(root: Record<string, unknown>, path: string[], value: unkn
 }
 
 export function normalizeSettingsForSchema(schema: unknown, value: unknown): SettingsValidationResult {
-  return normalizeSettings(schema, value);
+  const rootSchema = asSchema(schema);
+  const result = normalizeSettings(rootSchema, value);
+  const normalizedValue = normalizeAdvancedSelectorValues(rootSchema, result.value, result.value);
+  if (JSON.stringify(normalizedValue) === JSON.stringify(result.value)) {
+    return result;
+  }
+  const normalizedResult = normalizeSettings(rootSchema, normalizedValue);
+
+  return {
+    ...normalizedResult,
+    value: normalizeAdvancedSelectorValues(rootSchema, normalizedResult.value, normalizedResult.value),
+  };
 }
 
 export function serializeDatePickerValue(schema: JsonSchema, value: Dayjs | null): string | undefined {
@@ -369,6 +384,8 @@ export const SettingsAutoForm: React.FC<SettingsAutoFormProps> = ({ schema, valu
         <SettingsField
           key={key}
           path={[key]}
+          rootValue={current}
+          scopeValues={[current]}
           schema={childSchema}
           value={current[key]}
           onChange={handleChange}
@@ -439,6 +456,8 @@ export const SettingsSingleField: React.FC<SettingsSingleFieldProps> = ({
       ) : null}
       <SettingsField
         path={[fieldName]}
+        rootValue={current}
+        scopeValues={[current]}
         schema={schema}
         value={current[fieldName]}
         onChange={handleChange}
@@ -450,13 +469,23 @@ export const SettingsSingleField: React.FC<SettingsSingleFieldProps> = ({
 
 interface SettingsFieldProps {
   path: string[];
+  rootValue: Record<string, unknown>;
+  scopeValues: Array<Record<string, unknown>>;
   schema: JsonSchema;
   value: unknown;
   onChange: (path: string[], value: unknown) => void;
   disabled?: boolean;
 }
 
-const SettingsField: React.FC<SettingsFieldProps> = ({ path, schema, value, onChange, disabled }) => {
+const SettingsField: React.FC<SettingsFieldProps> = ({
+  path,
+  rootValue,
+  scopeValues,
+  schema,
+  value,
+  onChange,
+  disabled,
+}) => {
   const label = schema.title || path[path.length - 1];
   const description = schema.description;
   const type = normalizeType(schema);
@@ -473,6 +502,8 @@ const SettingsField: React.FC<SettingsFieldProps> = ({ path, schema, value, onCh
             <SettingsField
               key={key}
               path={[...path, key]}
+              rootValue={rootValue}
+              scopeValues={[record, ...scopeValues]}
               schema={childSchema}
               value={record[key]}
               onChange={onChange}
@@ -487,16 +518,35 @@ const SettingsField: React.FC<SettingsFieldProps> = ({ path, schema, value, onCh
   return (
     <Space direction="vertical" style={{ width: '100%' }} size={4}>
       <Typography.Text>{label}</Typography.Text>
-      {renderLeafInput({ path, schema, value, onChange, disabled })}
+      {renderLeafInput({ path, rootValue, scopeValues, schema, value, onChange, disabled })}
       {description ? <Typography.Text type="secondary">{description}</Typography.Text> : null}
     </Space>
   );
 };
 
 function renderLeafInput(props: SettingsFieldProps) {
-  const { path, schema, value, onChange, disabled } = props;
+  const { path, rootValue, scopeValues, schema, value, onChange, disabled } = props;
   const component = schema['x-component'];
   const type = normalizeType(schema);
+
+  if (
+    component === 'CollectionSelect' ||
+    component === 'CollectionFieldSelect' ||
+    component === 'RoleSelect' ||
+    component === 'DataSourceSelect'
+  ) {
+    return (
+      <SettingsAdvancedSelect
+        component={component}
+        disabled={disabled}
+        onChange={(next) => onChange(path, next)}
+        rootValue={rootValue}
+        scopeValues={scopeValues}
+        schema={schema}
+        value={value}
+      />
+    );
+  }
 
   if (schema.enum && schema.enum.every(isPrimitiveSelectValue)) {
     const options = schema.enum.map((item) => ({
@@ -591,6 +641,17 @@ function renderLeafInput(props: SettingsFieldProps) {
     );
   }
 
+  if (component === 'ColorPicker') {
+    return (
+      <ColorPicker
+        disabled={disabled}
+        showText
+        value={typeof value === 'string' ? value : undefined}
+        onChange={(_color, hex) => onChange(path, hex)}
+      />
+    );
+  }
+
   if (component === 'Input.TextArea') {
     return (
       <Input.TextArea
@@ -613,6 +674,368 @@ function renderLeafInput(props: SettingsFieldProps) {
 
 function isPrimitiveSelectValue(value: unknown): value is string | number | boolean {
   return typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean';
+}
+
+type AdvancedComponentName = 'CollectionSelect' | 'CollectionFieldSelect' | 'RoleSelect' | 'DataSourceSelect';
+
+type SettingsSelectOption = NonNullable<SelectProps<string>['options']>[number];
+
+interface SettingsAdvancedSelectProps {
+  component: AdvancedComponentName;
+  schema: JsonSchema;
+  rootValue: Record<string, unknown>;
+  scopeValues: Array<Record<string, unknown>>;
+  value: unknown;
+  onChange: (value: string | undefined) => void;
+  disabled?: boolean;
+}
+
+interface SettingsDataSourceManager {
+  getDataSources?: () => SettingsDataSource[];
+  getDataSource?: (key: string) => SettingsDataSource | undefined;
+}
+
+interface SettingsDataSource {
+  key?: string;
+  name?: string;
+  displayName?: string;
+  getCollections?: () => SettingsCollection[];
+  getCollection?: (name: string) => SettingsCollection | undefined;
+}
+
+interface SettingsCollection {
+  name?: string;
+  title?: string;
+  hidden?: boolean;
+  getFields?: () => SettingsCollectionField[];
+}
+
+interface SettingsCollectionField {
+  name?: string;
+  title?: string;
+  hidden?: boolean;
+}
+
+interface SettingsApplicationLike {
+  apiClient?: SettingsApiClient;
+  dataSourceManager?: SettingsDataSourceManager;
+  flowEngine?: {
+    context?: {
+      user?: {
+        roles?: SettingsRole[];
+      };
+      t?: (key: string) => string;
+    };
+  };
+}
+
+interface SettingsRole {
+  name?: string;
+  title?: string;
+}
+
+interface SettingsApiClient {
+  resource?: (name: string) => SettingsApiResource | undefined;
+}
+
+interface SettingsApiResource {
+  list?: (params?: Record<string, unknown>) => Promise<unknown>;
+}
+
+const SettingsAdvancedSelect: React.FC<SettingsAdvancedSelectProps> = ({
+  component,
+  disabled,
+  onChange,
+  rootValue,
+  scopeValues,
+  schema,
+  value,
+}) => {
+  const { t } = useTranslation(NAMESPACE);
+  const app = React.useContext(ApplicationContext) as SettingsApplicationLike | null;
+  const [systemRoles, setSystemRoles] = React.useState<SettingsRole[]>([]);
+  const selectedCollectionName =
+    component === 'CollectionFieldSelect' ? resolveCollectionName(schema, rootValue, scopeValues) : undefined;
+  React.useEffect(() => {
+    if (component !== 'RoleSelect') {
+      return undefined;
+    }
+    const roleResource = app?.apiClient?.resource?.('roles');
+    if (!roleResource?.list) {
+      setSystemRoles([]);
+      return undefined;
+    }
+    let ignore = false;
+    roleResource
+      .list({
+        appends: [],
+        filter: { 'name.$ne': 'root' },
+        paginate: false,
+        showAnonymous: true,
+        sort: ['createdAt'],
+      })
+      .then((response) => {
+        if (!ignore) {
+          setSystemRoles(parseRoleListResponse(response));
+        }
+      })
+      .catch(() => {
+        if (!ignore) {
+          setSystemRoles([]);
+        }
+      });
+
+    return () => {
+      ignore = true;
+    };
+  }, [app, component]);
+  const options = React.useMemo(
+    () => buildAdvancedSelectOptions({ app, component, rootValue, scopeValues, schema, systemRoles }),
+    [app, component, rootValue, scopeValues, schema, systemRoles],
+  );
+  const isFieldSelectWaitingForCollection = component === 'CollectionFieldSelect' && !selectedCollectionName;
+
+  return (
+    <Select
+      allowClear
+      disabled={disabled || isFieldSelectWaitingForCollection}
+      optionFilterProp="label"
+      options={options}
+      placeholder={getAdvancedSelectPlaceholder(component, t)}
+      showSearch
+      style={{ width: '100%' }}
+      value={normalizeAdvancedSelectValue(component, value, selectedCollectionName)}
+      onChange={(next) => onChange(next)}
+    />
+  );
+};
+
+function buildAdvancedSelectOptions(input: {
+  app: SettingsApplicationLike | null;
+  component: AdvancedComponentName;
+  rootValue: Record<string, unknown>;
+  scopeValues: Array<Record<string, unknown>>;
+  schema: JsonSchema;
+  systemRoles: SettingsRole[];
+}): SettingsSelectOption[] {
+  const dataSourceManager = input.app?.dataSourceManager;
+  if (input.component === 'DataSourceSelect') {
+    return getDataSources(dataSourceManager).map((dataSource) => ({
+      label: dataSource.displayName || dataSource.key || dataSource.name || '',
+      value: dataSource.key || dataSource.name || '',
+    }));
+  }
+  if (input.component === 'RoleSelect') {
+    const translate = input.app?.flowEngine?.context?.t;
+    return mergeRoleOptions(input.systemRoles, input.app?.flowEngine?.context?.user?.roles || [])
+      .filter((role) => role.name && role.name !== '__union__')
+      .map((role) => ({
+        label: role.title ? translate?.(role.title) || role.title : role.name || '',
+        value: role.name || '',
+      }));
+  }
+
+  const selectedDataSourceKey = resolveDataSourceKey(
+    input.schema,
+    input.rootValue,
+    input.scopeValues,
+    dataSourceManager,
+  );
+  const selectedDataSource = getSelectedDataSource(dataSourceManager, selectedDataSourceKey);
+  if (input.component === 'CollectionSelect') {
+    return getCollections(selectedDataSource)
+      .filter((collection) => !collection.hidden)
+      .map((collection) => ({
+        label: collection.title || collection.name || '',
+        value: collection.name || '',
+      }));
+  }
+
+  const selectedCollectionName = resolveCollectionName(input.schema, input.rootValue, input.scopeValues);
+  const selectedCollection = selectedCollectionName
+    ? selectedDataSource?.getCollection?.(selectedCollectionName)
+    : undefined;
+  if (selectedCollection) {
+    return getFields(selectedCollection).map((field) => ({
+      label: field.title || field.name || '',
+      value: field.name || '',
+    }));
+  }
+
+  return [];
+}
+
+function getAdvancedSelectPlaceholder(component: AdvancedComponentName, t: (key: string) => unknown): string {
+  if (component === 'CollectionSelect') {
+    return String(t('Select collection'));
+  }
+  if (component === 'CollectionFieldSelect') {
+    return String(t('Select collection field'));
+  }
+  if (component === 'RoleSelect') {
+    return String(t('Select role'));
+  }
+  return String(t('Select data source'));
+}
+
+function resolveDataSourceKey(
+  schema: JsonSchema,
+  rootValue: Record<string, unknown>,
+  scopeValues: Array<Record<string, unknown>>,
+  dataSourceManager?: SettingsDataSourceManager,
+): string | undefined {
+  const componentProps = isRecord(schema['x-component-props']) ? schema['x-component-props'] : {};
+  const explicitDataSource = toNonEmptyString(componentProps.dataSource);
+  if (explicitDataSource) {
+    return explicitDataSource;
+  }
+  const dataSourceField = toNonEmptyString(componentProps.dataSourceField) || 'dataSource';
+  const dataSourceFromField = resolveSettingsFieldReference(dataSourceField, rootValue, scopeValues);
+  if (dataSourceFromField) {
+    return dataSourceFromField;
+  }
+  const dataSources = getDataSources(dataSourceManager);
+  return dataSources.length === 1 ? dataSources[0].key || dataSources[0].name : undefined;
+}
+
+function resolveCollectionName(
+  schema: JsonSchema,
+  rootValue: Record<string, unknown>,
+  scopeValues: Array<Record<string, unknown>>,
+): string | undefined {
+  const componentProps = isRecord(schema['x-component-props']) ? schema['x-component-props'] : {};
+  const explicitCollection =
+    toNonEmptyString(componentProps.collection) || toNonEmptyString(componentProps.collectionName);
+  if (explicitCollection) {
+    return explicitCollection;
+  }
+  const collectionField = toNonEmptyString(componentProps.collectionField) || 'collection';
+  return resolveSettingsFieldReference(collectionField, rootValue, scopeValues);
+}
+
+function normalizeAdvancedSelectorValues(
+  schema: JsonSchema,
+  value: Record<string, unknown>,
+  rootValue: Record<string, unknown>,
+  scopeValues: Array<Record<string, unknown>> = [rootValue],
+): Record<string, unknown> {
+  const next = { ...value };
+  for (const [key, childSchema] of Object.entries(schema.properties || {})) {
+    if (normalizeType(childSchema) === 'object' && isRecord(next[key])) {
+      const childValue = next[key] as Record<string, unknown>;
+      next[key] = normalizeAdvancedSelectorValues(childSchema, childValue, rootValue, [childValue, ...scopeValues]);
+      continue;
+    }
+    if (childSchema['x-component'] !== 'CollectionFieldSelect' || typeof next[key] !== 'string') {
+      continue;
+    }
+    const selectedCollectionName = resolveCollectionName(childSchema, rootValue, [next, ...scopeValues]);
+    const normalizedFieldName = normalizeCollectionFieldValue(next[key], selectedCollectionName);
+    if (normalizedFieldName !== next[key]) {
+      next[key] = normalizedFieldName;
+    }
+  }
+  return next;
+}
+
+function normalizeAdvancedSelectValue(
+  component: AdvancedComponentName,
+  value: unknown,
+  selectedCollectionName?: string,
+): string | undefined {
+  if (component === 'CollectionFieldSelect' && typeof value === 'string') {
+    return normalizeCollectionFieldValue(value, selectedCollectionName);
+  }
+  return typeof value === 'string' ? value : undefined;
+}
+
+function normalizeCollectionFieldValue(value: string, selectedCollectionName?: string): string | undefined {
+  if (!value) {
+    return undefined;
+  }
+  const prefix = selectedCollectionName ? `${selectedCollectionName}.` : '';
+  if (prefix && value.startsWith(prefix)) {
+    return value.slice(prefix.length) || undefined;
+  }
+  return value.includes('.') ? undefined : value;
+}
+
+function resolveSettingsFieldReference(
+  fieldReference: string,
+  rootValue: Record<string, unknown>,
+  scopeValues: Array<Record<string, unknown>>,
+): string | undefined {
+  if (fieldReference.includes('.')) {
+    return toNonEmptyString(getValueAtPath(rootValue, fieldReference.split('.')));
+  }
+  for (const scopeValue of scopeValues) {
+    const value = toNonEmptyString(scopeValue[fieldReference]);
+    if (value) {
+      return value;
+    }
+  }
+  return undefined;
+}
+
+function mergeRoleOptions(systemRoles: SettingsRole[], fallbackRoles: SettingsRole[]): SettingsRole[] {
+  const byName = new Map<string, SettingsRole>();
+  for (const role of [...systemRoles, ...fallbackRoles]) {
+    if (role.name && !byName.has(role.name)) {
+      byName.set(role.name, role);
+    }
+  }
+  return Array.from(byName.values());
+}
+
+function parseRoleListResponse(response: unknown): SettingsRole[] {
+  const responseData = isRecord(response) ? response.data : undefined;
+  const payload = isRecord(responseData) ? responseData.data : responseData;
+  if (!Array.isArray(payload)) {
+    return [];
+  }
+  return payload.filter(isSettingsRole);
+}
+
+function isSettingsRole(value: unknown): value is SettingsRole {
+  return isRecord(value) && typeof value.name === 'string';
+}
+
+function getValueAtPath(root: Record<string, unknown>, path: string[]): unknown {
+  let cursor: unknown = root;
+  for (const segment of path) {
+    if (!isRecord(cursor)) {
+      return undefined;
+    }
+    cursor = cursor[segment];
+  }
+  return cursor;
+}
+
+function getSelectedDataSource(
+  dataSourceManager: SettingsDataSourceManager | undefined,
+  dataSourceKey: string | undefined,
+): SettingsDataSource | undefined {
+  if (dataSourceKey) {
+    return dataSourceManager?.getDataSource?.(dataSourceKey);
+  }
+  const dataSources = getDataSources(dataSourceManager);
+  return dataSources[0];
+}
+
+function getDataSources(dataSourceManager?: SettingsDataSourceManager): SettingsDataSource[] {
+  return dataSourceManager?.getDataSources?.() || [];
+}
+
+function getCollections(dataSource?: SettingsDataSource): SettingsCollection[] {
+  return dataSource?.getCollections?.() || [];
+}
+
+function getFields(collection: SettingsCollection): SettingsCollectionField[] {
+  return (collection.getFields?.() || []).filter((field) => !field.hidden);
+}
+
+function toNonEmptyString(value: unknown): string | undefined {
+  return typeof value === 'string' && value.trim() ? value : undefined;
 }
 
 export default SettingsAutoForm;

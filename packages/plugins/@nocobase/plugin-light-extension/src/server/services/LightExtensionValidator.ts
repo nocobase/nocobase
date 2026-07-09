@@ -15,6 +15,7 @@ import {
   LIGHT_EXTENSION_SUPPORTED_KINDS,
   type LightExtensionKind,
 } from '../../constants';
+import { isAmbiguousSettingsTypeImport, isNamespacedSettingsTypeImport } from '../../sdk/settings-typegen';
 import type {
   LightExtensionCapabilities,
   LightExtensionDiagnostic,
@@ -44,6 +45,10 @@ export const LIGHT_EXTENSION_X_COMPONENT_WHITELIST = [
   'Input.TextArea',
   'InputNumber',
   'Select',
+  'CollectionSelect',
+  'CollectionFieldSelect',
+  'RoleSelect',
+  'DataSourceSelect',
   'Switch',
   'Checkbox',
   'Radio.Group',
@@ -1066,6 +1071,13 @@ export class LightExtensionValidator {
               target,
             ),
           );
+        }
+      }
+
+      if (ts.isImportTypeNode(node)) {
+        const specifier = getImportTypeSpecifier(node);
+        if (specifier?.startsWith('light-extension:settings/')) {
+          diagnostics.push(...validateSettingsImportTypeNode(node, sourceFile, specifier, target));
         }
       }
 
@@ -3560,6 +3572,10 @@ function validateExternalSdkImport(
   specifier: string,
   target: Omit<DiagnosticTarget, 'path'>,
 ): LightExtensionDiagnostic[] {
+  if (specifier.startsWith('light-extension:settings/')) {
+    return validateSettingsTypeImport(node, sourceFile, specifier, target);
+  }
+
   if (!allowedClientSdkImports.has(specifier)) {
     return [
       diagnosticAt(
@@ -3663,6 +3679,84 @@ function validateExternalSdkImport(
   return diagnostics;
 }
 
+function validateSettingsTypeImport(
+  node: ts.ImportDeclaration,
+  sourceFile: ts.SourceFile,
+  specifier: string,
+  target: Omit<DiagnosticTarget, 'path'>,
+): LightExtensionDiagnostic[] {
+  const importClause = node.importClause;
+  if (!importClause?.isTypeOnly) {
+    return [
+      diagnosticAt(
+        sourceFile,
+        node.moduleSpecifier.getStart(sourceFile),
+        'settings_type_import_runtime_not_allowed',
+        'error',
+        `Settings type import "${specifier}" must use import type`,
+        target,
+      ),
+    ];
+  }
+  if (importClause.name) {
+    return [
+      diagnosticAt(
+        sourceFile,
+        importClause.name.getStart(sourceFile),
+        'settings_type_import_invalid',
+        'error',
+        `Default import from "${specifier}" is not supported`,
+        target,
+      ),
+    ];
+  }
+
+  return validateSettingsTypeSpecifier(sourceFile, node.moduleSpecifier.getStart(sourceFile), specifier, target);
+}
+
+function validateSettingsImportTypeNode(
+  node: ts.ImportTypeNode,
+  sourceFile: ts.SourceFile,
+  specifier: string,
+  target: Omit<DiagnosticTarget, 'path'>,
+): LightExtensionDiagnostic[] {
+  return validateSettingsTypeSpecifier(sourceFile, node.argument.getStart(sourceFile), specifier, target);
+}
+
+function validateSettingsTypeSpecifier(
+  sourceFile: ts.SourceFile,
+  position: number,
+  specifier: string,
+  target: Omit<DiagnosticTarget, 'path'>,
+): LightExtensionDiagnostic[] {
+  if (isNamespacedSettingsTypeImport(specifier)) {
+    return [];
+  }
+  if (isAmbiguousSettingsTypeImport(specifier)) {
+    return [
+      diagnosticAt(
+        sourceFile,
+        position,
+        'settings_type_import_ambiguous',
+        'error',
+        'Settings type import must include target and kind, for example light-extension:settings/client/js-block/product-list',
+        target,
+      ),
+    ];
+  }
+
+  return [
+    diagnosticAt(
+      sourceFile,
+      position,
+      'settings_type_import_invalid',
+      'error',
+      `Settings type import "${specifier}" is not valid`,
+      target,
+    ),
+  ];
+}
+
 function isRelativeImportOutsideCurrentEntry(
   filePath: string,
   specifier: string,
@@ -3713,6 +3807,12 @@ function scriptKind(path: string): ts.ScriptKind {
 
 function getImportSpecifier(moduleSpecifier: ts.Expression): string | null {
   return ts.isStringLiteral(moduleSpecifier) ? moduleSpecifier.text : null;
+}
+
+function getImportTypeSpecifier(node: ts.ImportTypeNode): string | null {
+  return ts.isLiteralTypeNode(node.argument) && ts.isStringLiteral(node.argument.literal)
+    ? node.argument.literal.text
+    : null;
 }
 
 function getImportEqualsSpecifier(node: ts.ImportEqualsDeclaration): string | null {

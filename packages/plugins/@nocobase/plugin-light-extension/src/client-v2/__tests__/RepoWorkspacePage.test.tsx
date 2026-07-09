@@ -108,11 +108,12 @@ vi.mock('@nocobase/plugin-vsc-file/client-v2', () => {
       activeFile?: { content: string; path: string };
       onChange: (value: string) => void;
       showRunButton?: boolean;
-      workspaceFiles: Array<{ path: string }>;
+      workspaceFiles: Array<{ content: string; path: string }>;
     }) => (
       <div
         data-show-run-button={String(showRunButton)}
         data-testid="runjs-code-tab"
+        data-workspace-file-contents={JSON.stringify(workspaceFiles.map((file) => [file.path, file.content]))}
         data-workspace-files={workspaceFiles.map((file) => file.path).join(',')}
       >
         {activeFile ? <span>{activeFile.path}</span> : null}
@@ -542,13 +543,20 @@ describe('LightExtensionWorkspacePage', () => {
     fireEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
 
     await waitFor(() => expect(mocks.api.push).toHaveBeenCalledTimes(1));
-    expect(mocks.api.push.mock.calls[0][0].files).toEqual([
-      expect.objectContaining({
-        path: 'src/client/js-fields/phone-link/index.tsx',
-        content: expect.stringContaining('defineSettings'),
-        operation: 'upsert',
-      }),
-    ]);
+    expect(mocks.api.push.mock.calls[0][0].files).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: 'src/client/js-fields/phone-link/index.tsx',
+          content: expect.stringContaining('defineSettings'),
+          operation: 'upsert',
+        }),
+        expect.objectContaining({
+          path: 'src/shared/light-extension-sdk.d.ts',
+          content: expect.stringContaining('JSFieldContext'),
+          operation: 'upsert',
+        }),
+      ]),
+    );
   });
 
   it('creates future client kind folders directly under src/client from the reused default folder entry', async () => {
@@ -595,6 +603,103 @@ describe('LightExtensionWorkspacePage', () => {
     await screen.findByTestId('runjs-code-tab');
     fireEvent.click(screen.getByRole('button', { name: 'New default folder' }));
     expect(await screen.findByText('src/client/js-fields')).toBeInTheDocument();
+  });
+
+  it('previews and downloads generated multi-entry settings type files from the source workspace', async () => {
+    mocks.api.pull.mockResolvedValueOnce({
+      repo: { id: 'ler_sales' },
+      commit: { id: 'commit-1' },
+      tree: { hash: 'tree-1', entryCount: 4, byteSize: 260 },
+      unchanged: false,
+      files: [
+        {
+          path: 'src/client/js-blocks/product-list/index.tsx',
+          content:
+            'import type { Settings } from "light-extension:settings/client/js-block/product-list";\nctx.render(null as unknown as Settings);\n',
+          language: 'typescript',
+        },
+        {
+          path: 'src/client/js-blocks/product-list/settings.json',
+          content:
+            '{"type":"object","properties":{"title":{"type":"string","default":"Products"},"pageSize":{"type":"integer","default":5}}}',
+          language: 'json',
+        },
+        {
+          path: 'src/client/js-blocks/order-list/index.tsx',
+          content: 'ctx.render(null);\n',
+          language: 'typescript',
+        },
+        {
+          path: 'src/client/js-blocks/order-list/settings.json',
+          content: '{"type":"object","properties":{"orderStatus":{"type":"string"},"limit":{"type":"integer"}}}',
+          language: 'json',
+        },
+      ],
+    });
+
+    render(
+      <MemoryRouter initialEntries={['/admin/settings/light-extension?panel=source&repoId=ler_sales']}>
+        <LightExtensionWorkspacePage />
+      </MemoryRouter>,
+    );
+
+    await screen.findByTestId('runjs-code-tab');
+    expect(screen.getByTestId('runjs-code-tab').getAttribute('data-workspace-files')).toContain(
+      '.light-extension/types/client/js-block/product-list.d.ts',
+    );
+    expect(screen.getByTestId('runjs-code-tab').getAttribute('data-workspace-files')).toContain(
+      '.light-extension/types/client/js-block/order-list.d.ts',
+    );
+    expect(screen.getByTestId('runjs-code-tab').getAttribute('data-workspace-files')).toContain(
+      '.light-extension/types/modules.d.ts',
+    );
+    fireEvent.click(screen.getByRole('button', { name: /Settings type preview/ }));
+
+    expect(await screen.findByTestId('light-extension-settings-type-preview')).toHaveTextContent(
+      '.light-extension/types/index.d.ts',
+    );
+    expect(screen.getByTestId('light-extension-settings-type-preview')).toHaveTextContent(
+      '.light-extension/types/client/js-block/product-list.d.ts',
+    );
+    expect(screen.getByTestId('light-extension-settings-type-preview')).toHaveTextContent('orderStatus?: string;');
+  });
+
+  it('overlays the current SDK shim for existing source repositories with an outdated shim', async () => {
+    mocks.api.pull.mockResolvedValueOnce({
+      repo: { id: 'ler_sales' },
+      commit: { id: 'commit-1' },
+      tree: { hash: 'tree-1', entryCount: 3, byteSize: 260 },
+      unchanged: false,
+      files: [
+        {
+          path: 'src/shared/light-extension-sdk.d.ts',
+          content:
+            'declare module "@nocobase/light-extension-sdk/client" { export interface LightExtensionSettingsContext<TSettings = unknown> { settings: TSettings; } }\n',
+          language: 'typescript',
+        },
+        {
+          path: 'src/client/js-blocks/product-list/index.tsx',
+          content: 'import type { Settings } from "light-extension:settings/client/js-block/product-list";\n',
+          language: 'typescript',
+        },
+        {
+          path: 'src/client/js-blocks/product-list/settings.json',
+          content: '{"type":"object","properties":{"title":{"type":"string"}}}',
+          language: 'json',
+        },
+      ],
+    });
+
+    render(
+      <MemoryRouter initialEntries={['/admin/settings/light-extension?panel=source&repoId=ler_sales']}>
+        <LightExtensionWorkspacePage />
+      </MemoryRouter>,
+    );
+
+    const codeTab = await screen.findByTestId('runjs-code-tab');
+    const workspaceFileContents = codeTab.getAttribute('data-workspace-file-contents') || '';
+    expect(workspaceFileContents).toContain('JSBlockContext');
+    expect(workspaceFileContents).toContain('RunJSContext');
   });
 
   it('shows persisted save diagnostics after validation failure', async () => {

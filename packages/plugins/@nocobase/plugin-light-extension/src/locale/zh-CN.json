@@ -273,6 +273,15 @@
   "partial_failed": "部分失败",
   "ready": "就绪",
   "runjs": "RunJS",
+  "Download settings types": "下载配置类型",
+  "Generated settings types": "生成的配置类型",
+  "No settings types": "没有配置类型",
+  "Select collection": "选择数据表",
+  "Select collection field": "选择数据表字段",
+  "Select data source": "选择数据源",
+  "Select role": "选择角色",
+  "Settings type diagnostics": "配置类型诊断",
+  "Settings type preview": "配置类型预览",
   "scan_failed": "扫描失败",
   "warning": "警告"
 }

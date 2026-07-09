@@ -273,6 +273,15 @@
   "partial_failed": "Partial failed",
   "ready": "Ready",
   "runjs": "RunJS",
+  "Download settings types": "Download settings types",
+  "Generated settings types": "Generated settings types",
+  "No settings types": "No settings types",
+  "Select collection": "Select collection",
+  "Select collection field": "Select collection field",
+  "Select data source": "Select data source",
+  "Select role": "Select role",
+  "Settings type diagnostics": "Settings type diagnostics",
+  "Settings type preview": "Settings type preview",
   "scan_failed": "Scan failed",
   "warning": "Warning"
 }

@@ -7,6 +7,31 @@
   "version": "2.1.12",
   "license": "Apache-2.0",
   "main": "./dist/server/index.js",
+  "exports": {
+    ".": {
+      "types": "./server.d.ts",
+      "import": "./dist/server/index.js",
+      "require": "./dist/server/index.js"
+    },
+    "./client": {
+      "types": "./client.d.ts",
+      "import": "./client.js",
+      "require": "./client.js"
+    },
+    "./client-v2": {
+      "types": "./client-v2.d.ts",
+      "import": "./client-v2.js",
+      "require": "./client-v2.js"
+    },
+    "./server": {
+      "types": "./server.d.ts",
+      "import": "./server.js",
+      "require": "./server.js"
+    },
+    "./package.json": "./package.json",
+    "./dist/*": "./dist/*",
+    "./src/*": "./src/*"
+  },
   "homepage": "https://docs.nocobase.com",
   "homepage.zh-CN": "https://docs-cn.nocobase.com",
   "keywords": [

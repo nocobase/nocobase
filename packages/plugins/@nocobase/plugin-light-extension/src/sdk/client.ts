@@ -7,5 +7,39 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export type { LightExtensionSettingsContext } from './shared';
+import type { LightExtensionDataContext, LightExtensionRecord, LightExtensionSettingsContext } from './shared';
+
+export type { LightExtensionDataContext, LightExtensionRecord, LightExtensionSettingsContext } from './shared';
 export { assertSettings, defineSettings } from './shared';
+
+export interface JSBlockContext<TSettings = unknown> extends LightExtensionDataContext<TSettings> {
+  element?: HTMLElement | null;
+  render?: (node: unknown) => void;
+  i18n?: {
+    t: (key: string, options?: Record<string, unknown>) => string;
+  };
+}
+
+export interface JSFieldContext<TSettings = unknown, TValue = unknown> extends LightExtensionDataContext<TSettings> {
+  value?: TValue;
+}
+
+export interface JSActionContext<TSettings = unknown> extends LightExtensionDataContext<TSettings> {
+  event?: unknown;
+  formValues?: LightExtensionRecord;
+}
+
+export interface JSItemContext<TSettings = unknown, TValue = unknown> extends LightExtensionDataContext<TSettings> {
+  value?: TValue;
+}
+
+export interface RunJSContext<TSettings = unknown, TInput = unknown> extends LightExtensionDataContext<TSettings> {
+  input?: TInput;
+  event?: unknown;
+  formValues?: LightExtensionRecord;
+}
+
+export interface EventContext<TSettings = unknown, TEvent = unknown> extends LightExtensionSettingsContext<TSettings> {
+  event?: TEvent;
+  payload?: unknown;
+}

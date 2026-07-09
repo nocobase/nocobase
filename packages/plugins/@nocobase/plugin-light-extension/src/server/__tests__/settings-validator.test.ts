@@ -29,6 +29,22 @@ describe('plugin-light-extension settings validator', () => {
           default: true,
           'x-component': 'Switch',
         },
+        collection: {
+          type: 'string',
+          'x-component': 'CollectionSelect',
+        },
+        displayField: {
+          type: 'string',
+          'x-component': 'CollectionFieldSelect',
+        },
+        visibleForRole: {
+          type: 'string',
+          'x-component': 'RoleSelect',
+        },
+        dataSource: {
+          type: 'string',
+          'x-component': 'DataSourceSelect',
+        },
       },
     };
 
@@ -42,6 +58,9 @@ describe('plugin-light-extension settings validator', () => {
     expect(result.entries[0].settingsSchema).toMatchObject(schema);
     expect(result.capabilities.schemaSubset.allowedKeywords).toContain('x-component');
     expect(result.capabilities.xComponentWhitelist).toContain('InputNumber');
+    expect(result.capabilities.xComponentWhitelist).toEqual(
+      expect.arrayContaining(['CollectionSelect', 'CollectionFieldSelect', 'RoleSelect', 'DataSourceSelect']),
+    );
     expect(result.capabilities.writePolicy).toMatchObject({
       validateFinalWorkspaceOnPush: true,
       allowDeleteExistingInvalidPaths: true,
@@ -129,6 +148,45 @@ describe('plugin-light-extension settings validator', () => {
     expect(result.accepted).toBe(false);
     expect(result.diagnostics.filter((item) => item.code === 'settings_json_invalid')).toHaveLength(1);
     expect(result.diagnostics.filter((item) => item.code === 'settings_schema_invalid')).toHaveLength(0);
+  });
+
+  it('allows namespaced type-only settings imports and rejects ambiguous settings type imports', () => {
+    const valid = new LightExtensionValidator().validateWorkspace({
+      files: validEntryFiles({
+        'index.tsx':
+          'import type { Settings } from "light-extension:settings/client/js-block/sales-kpi";\nctx.render(String({} as Settings));\n',
+      }),
+    });
+    expect(valid.accepted).toBe(true);
+
+    const invalid = new LightExtensionValidator().validateWorkspace({
+      files: validEntryFiles({
+        'index.tsx': 'import type { Settings } from "light-extension:settings/sales-kpi";\nctx.render(null);\n',
+      }),
+    });
+
+    expect(invalid.accepted).toBe(false);
+    expect(invalid.diagnostics.map((item) => item.code)).toContain('settings_type_import_ambiguous');
+  });
+
+  it('validates import type settings references like settings import declarations', () => {
+    const valid = new LightExtensionValidator().validateWorkspace({
+      files: validEntryFiles({
+        'index.tsx':
+          'type Settings = import("light-extension:settings/client/js-block/sales-kpi").Settings;\nexport default function SalesKpi() { return null as Settings | null; }\n',
+      }),
+    });
+    expect(valid.accepted).toBe(true);
+
+    const ambiguous = new LightExtensionValidator().validateWorkspace({
+      files: validEntryFiles({
+        'index.tsx':
+          'type Settings = import("light-extension:settings/sales-kpi").Settings;\nexport default function SalesKpi() { return null as Settings | null; }\n',
+      }),
+    });
+
+    expect(ambiguous.accepted).toBe(false);
+    expect(ambiguous.diagnostics.map((item) => item.code)).toContain('settings_type_import_ambiguous');
   });
 });
 

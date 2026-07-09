@@ -18,4 +18,4 @@ The local SDK boundary is limited to TypeScript types and zero-runtime helpers s
 
 CLI templates should generate local `.d.ts` shims and TypeScript path mappings for entry typechecking. Published entry code should import SDK types with `import type` and receive runtime objects from the injected context.
 
-The package root remains the server plugin entry. SDK shims are intentionally kept behind an explicit local template path until a separate `@nocobase/light-extension-sdk/client` package or subpath is introduced.
+The package root remains the server plugin entry. The source workspace seeds local `.d.ts` shims for `@nocobase/light-extension-sdk/client` and `@nocobase/light-extension-sdk/shared` so browser authoring can typecheck before a standalone SDK package exists.

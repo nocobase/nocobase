@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { SaveOutlined } from '@ant-design/icons';
+import { DownloadOutlined, FileTextOutlined, SaveOutlined } from '@ant-design/icons';
 import {
   CodeTab,
   CloseConfirmModal,
@@ -29,6 +29,7 @@ import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
 import { NAMESPACE } from '../../constants';
+import { generateClientSettingsTypes, type LightExtensionSettingsTypegenResult } from '../../sdk/settings-typegen';
 import type {
   LightExtensionDiagnostic,
   LightExtensionEntryRecord,
@@ -73,6 +74,49 @@ const LIGHT_EXTENSION_SDK_SHIM_CONTENT = `declare module "@nocobase/light-extens
     settings: TSettings;
   }
 
+  export type LightExtensionRecord = Record<string, unknown>;
+
+  export interface LightExtensionDataContext<TSettings = unknown> extends LightExtensionSettingsContext<TSettings> {
+    record?: LightExtensionRecord | null;
+    records?: LightExtensionRecord[];
+    values?: LightExtensionRecord;
+    collection?: unknown;
+    collectionField?: unknown;
+    dataSource?: unknown;
+  }
+
+  export interface JSBlockContext<TSettings = unknown> extends LightExtensionDataContext<TSettings> {
+    element?: HTMLElement | null;
+    render?: (node: unknown) => void;
+    i18n?: {
+      t: (key: string, options?: Record<string, unknown>) => string;
+    };
+  }
+
+  export interface JSFieldContext<TSettings = unknown, TValue = unknown> extends LightExtensionDataContext<TSettings> {
+    value?: TValue;
+  }
+
+  export interface JSActionContext<TSettings = unknown> extends LightExtensionDataContext<TSettings> {
+    event?: unknown;
+    formValues?: LightExtensionRecord;
+  }
+
+  export interface JSItemContext<TSettings = unknown, TValue = unknown> extends LightExtensionDataContext<TSettings> {
+    value?: TValue;
+  }
+
+  export interface RunJSContext<TSettings = unknown, TInput = unknown> extends LightExtensionDataContext<TSettings> {
+    input?: TInput;
+    event?: unknown;
+    formValues?: LightExtensionRecord;
+  }
+
+  export interface EventContext<TSettings = unknown, TEvent = unknown> extends LightExtensionSettingsContext<TSettings> {
+    event?: TEvent;
+    payload?: unknown;
+  }
+
   export function defineSettings<TSettings>(settings: TSettings): TSettings;
   export function assertSettings<TSettings>(settings: TSettings): TSettings;
 }
@@ -82,12 +126,23 @@ declare module "@nocobase/light-extension-sdk/shared" {
     settings: TSettings;
   }
 
+  export type LightExtensionRecord = Record<string, unknown>;
+
+  export interface LightExtensionDataContext<TSettings = unknown> extends LightExtensionSettingsContext<TSettings> {
+    record?: LightExtensionRecord | null;
+    records?: LightExtensionRecord[];
+    values?: LightExtensionRecord;
+    collection?: unknown;
+    collectionField?: unknown;
+    dataSource?: unknown;
+  }
+
   export function defineSettings<TSettings>(settings: TSettings): TSettings;
   export function assertSettings<TSettings>(settings: TSettings): TSettings;
 }
 `;
 const LIGHT_EXTENSION_TSCONFIG_CONTENT =
-  '{\n  "compilerOptions": {\n    "baseUrl": ".",\n    "jsx": "react-jsx",\n    "strict": true,\n    "target": "ES2020",\n    "paths": {\n      "@nocobase/light-extension-sdk/client": ["src/shared/light-extension-sdk.d.ts"],\n      "@nocobase/light-extension-sdk/shared": ["src/shared/light-extension-sdk.d.ts"]\n    }\n  }\n}\n';
+  '{\n  "compilerOptions": {\n    "baseUrl": ".",\n    "jsx": "react-jsx",\n    "strict": true,\n    "target": "ES2020",\n    "paths": {\n      "@nocobase/light-extension-sdk/client": ["src/shared/light-extension-sdk.d.ts"],\n      "@nocobase/light-extension-sdk/shared": ["src/shared/light-extension-sdk.d.ts"],\n      "light-extension:settings/*": [".light-extension/types/*"]\n    }\n  }\n}\n';
 const LIGHT_EXTENSION_REPO_ROOT_FILE_PATHS = ['README.md', 'light-extension.json', 'tsconfig.json'] as const;
 const LIGHT_EXTENSION_REPO_ROOT_FILES = new Set<string>(LIGHT_EXTENSION_REPO_ROOT_FILE_PATHS);
 const LIGHT_EXTENSION_CLIENT_KIND_TEMPLATE_FILES = [
@@ -139,6 +194,7 @@ function LightExtensionWorkspacePage({
   const [restoreCommit, setRestoreCommit] = useState<RunJSSourceHistoryItem | null>(null);
   const [restoringVersion, setRestoringVersion] = useState(false);
   const [closeConfirmOpen, setCloseConfirmOpen] = useState(false);
+  const [settingsTypePreviewOpen, setSettingsTypePreviewOpen] = useState(false);
   const [notice, setNotice] = useState<{ type: 'success' | 'info' | 'warning' | 'error'; message: string } | null>(
     null,
   );
@@ -197,7 +253,11 @@ function LightExtensionWorkspacePage({
   }, [loadWorkspace]);
 
   const activeFile = files.find((file) => file.path === activePath);
-  const authoringFiles = useMemo(() => addLightExtensionSdkShim(files), [files]);
+  const settingsTypegen = useMemo(() => generateClientSettingsTypes({ files }), [files]);
+  const authoringFiles = useMemo(
+    () => addLightExtensionSdkShim(addSettingsTypeFiles(files, settingsTypegen.files)),
+    [files, settingsTypegen.files],
+  );
   const filesForSave = useMemo(() => ensurePersistedLightExtensionSdkShim(files), [files]);
   const dirtyChanges = useMemo(() => buildFileChanges(baseFiles, filesForSave), [baseFiles, filesForSave]);
   const diffRows = useMemo(
@@ -447,6 +507,17 @@ function LightExtensionWorkspacePage({
     URL.revokeObjectURL(url);
   };
 
+  const downloadSettingsTypes = () => {
+    const content = JSON.stringify({ files: settingsTypegen.files, diagnostics: settingsTypegen.diagnostics }, null, 2);
+    const blob = new Blob([content], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${repo?.normalizedName || repo?.name || repoId || 'light-extension'}-settings-types.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
   const openSaveModal = useCallback(() => {
     if (!canWrite) {
       return;
@@ -685,32 +756,48 @@ function LightExtensionWorkspacePage({
                   <Empty description={t('Empty repository')} image={Empty.PRESENTED_IMAGE_SIMPLE} />
                 ) : null}
                 {files.length > 0 ? (
-                  <CodeTab
-                    activeFile={activeFile}
-                    activePath={activePath}
-                    diffRows={diffRows}
-                    filesCollapsed={filesCollapsed}
-                    fullscreenControl={{
-                      isFullscreen: workspaceFullscreen.isFullscreen,
-                      toggleFullscreen: workspaceFullscreen.toggleFullscreen,
-                    }}
-                    isDiff={isDiff}
-                    onChange={updateActiveFile}
-                    onCloseFile={closeOpenFile}
-                    onDiffToggle={() => setIsDiff((current) => !current)}
-                    onFilesCollapsedChange={setFilesCollapsed}
-                    onOpenFile={openFilePath}
-                    onRunPreview={() => {}}
-                    openPaths={openPaths}
-                    previewing={false}
-                    readOnly={!canWrite}
-                    savedFiles={baseFiles}
-                    scene="render"
-                    showRunButton={false}
-                    t={studioT}
-                    version="v2"
-                    workspaceFiles={authoringFiles}
-                  />
+                  <>
+                    <Flex align="center" gap={8} justify="space-between" style={{ marginBottom: 8 }}>
+                      <Space wrap>
+                        <Button
+                          icon={<FileTextOutlined />}
+                          onClick={() => setSettingsTypePreviewOpen((current) => !current)}
+                        >
+                          {t('Settings type preview')}
+                        </Button>
+                        <Button icon={<DownloadOutlined />} onClick={downloadSettingsTypes}>
+                          {t('Download settings types')}
+                        </Button>
+                      </Space>
+                    </Flex>
+                    {settingsTypePreviewOpen ? <SettingsTypePreviewPanel result={settingsTypegen} t={t} /> : null}
+                    <CodeTab
+                      activeFile={activeFile}
+                      activePath={activePath}
+                      diffRows={diffRows}
+                      filesCollapsed={filesCollapsed}
+                      fullscreenControl={{
+                        isFullscreen: workspaceFullscreen.isFullscreen,
+                        toggleFullscreen: workspaceFullscreen.toggleFullscreen,
+                      }}
+                      isDiff={isDiff}
+                      onChange={updateActiveFile}
+                      onCloseFile={closeOpenFile}
+                      onDiffToggle={() => setIsDiff((current) => !current)}
+                      onFilesCollapsedChange={setFilesCollapsed}
+                      onOpenFile={openFilePath}
+                      onRunPreview={() => {}}
+                      openPaths={openPaths}
+                      previewing={false}
+                      readOnly={!canWrite}
+                      savedFiles={baseFiles}
+                      scene="render"
+                      showRunButton={false}
+                      t={studioT}
+                      version="v2"
+                      workspaceFiles={authoringFiles}
+                    />
+                  </>
                 ) : null}
               </main>
             </div>,
@@ -749,6 +836,65 @@ function LightExtensionWorkspacePage({
         t={studioT}
       />
     </Flex>
+  );
+}
+
+function SettingsTypePreviewPanel({
+  result,
+  t,
+}: {
+  result: LightExtensionSettingsTypegenResult;
+  t: (key: string) => unknown;
+}) {
+  const firstFile = result.files[0];
+  return (
+    <div
+      data-testid="light-extension-settings-type-preview"
+      style={{
+        border: '1px solid #d9d9d9',
+        marginBottom: 8,
+        maxHeight: 260,
+        minHeight: 0,
+        overflow: 'auto',
+        padding: 12,
+      }}
+    >
+      <Space direction="vertical" size={8} style={{ width: '100%' }}>
+        <Typography.Text strong>{t('Generated settings types')}</Typography.Text>
+        {result.files.length > 0 ? (
+          <Space direction="vertical" size={2}>
+            {result.files.map((file) => (
+              <Typography.Text code key={file.path}>
+                {file.path}
+              </Typography.Text>
+            ))}
+          </Space>
+        ) : (
+          <Typography.Text type="secondary">{t('No settings types')}</Typography.Text>
+        )}
+        {result.diagnostics.length > 0 ? (
+          <Alert
+            showIcon
+            type={result.diagnostics.some((item) => item.severity === 'error') ? 'error' : 'warning'}
+            message={t('Settings type diagnostics')}
+            description={result.diagnostics.map((item) => `${item.code}: ${item.message}`).join('\n')}
+          />
+        ) : null}
+        {firstFile ? (
+          <Typography.Text
+            code
+            style={{
+              display: 'block',
+              maxHeight: 140,
+              overflow: 'auto',
+              whiteSpace: 'pre',
+            }}
+          >
+            {firstFile.content}
+          </Typography.Text>
+        ) : null}
+      </Space>
+    </div>
   );
 }
 
@@ -1220,42 +1366,58 @@ export function buildJsBlockTemplate(files: Array<{ path: string }>): LightExten
 }
 
 function addLightExtensionSdkShim(files: WorkspaceFile[]): WorkspaceFile[] {
-  return shouldAddLightExtensionSdkShim(files) ? addWorkspaceSdkShim(files) : files;
+  return upsertWorkspaceSdkShim(files);
+}
+
+function addSettingsTypeFiles(
+  files: WorkspaceFile[],
+  settingsTypeFiles: LightExtensionSettingsTypegenResult['files'],
+): WorkspaceFile[] {
+  const sourceFiles = files.filter((file) => !file.path.startsWith('.light-extension/types/'));
+  return mergeFiles(
+    sourceFiles,
+    settingsTypeFiles.map((file) => ({
+      path: file.path,
+      content: file.content,
+      language: 'typescript',
+    })),
+  );
 }
 
 function ensurePersistedLightExtensionSdkShim(files: WorkspaceFile[]): WorkspaceFile[] {
-  return shouldPersistLightExtensionSdkShim(files) ? addWorkspaceSdkShim(files) : files;
-}
-
-function shouldAddLightExtensionSdkShim(files: WorkspaceFile[]): boolean {
-  return !files.some((file) => file.path === LIGHT_EXTENSION_SDK_SHIM_PATH);
+  return shouldPersistLightExtensionSdkShim(files) ? upsertWorkspaceSdkShim(files) : files;
 }
 
 function shouldPersistLightExtensionSdkShim(files: WorkspaceFile[]): boolean {
-  if (files.some((file) => file.path === LIGHT_EXTENSION_SDK_SHIM_PATH)) {
+  const existingShim = files.find((file) => file.path === LIGHT_EXTENSION_SDK_SHIM_PATH);
+  if (existingShim?.content === LIGHT_EXTENSION_SDK_SHIM_CONTENT) {
     return false;
   }
 
   return files.some(
     (file) =>
       (file.path === 'tsconfig.json' && file.content.includes('@nocobase/light-extension-sdk/')) ||
+      isClientSettingsFilePath(file.path) ||
       (isCodeFilePath(file.path) && file.content.includes('@nocobase/light-extension-sdk/')),
   );
 }
 
-function addWorkspaceSdkShim(files: WorkspaceFile[]): WorkspaceFile[] {
-  return [
-    ...files,
+function upsertWorkspaceSdkShim(files: WorkspaceFile[]): WorkspaceFile[] {
+  return mergeFiles(files, [
     {
       path: LIGHT_EXTENSION_SDK_SHIM_PATH,
       content: LIGHT_EXTENSION_SDK_SHIM_CONTENT,
       language: 'typescript',
     },
-  ];
+  ]);
 }
 
 function isCodeFilePath(path: string): boolean {
   return ['.ts', '.tsx', '.js', '.jsx'].includes(getExtension(path));
+}
+
+function isClientSettingsFilePath(path: string): boolean {
+  return /^src\/client\/(?:js-blocks|js-fields|js-actions|js-items|runjs|events)\/[^/]+\/settings\.json$/.test(path);
 }
 
 function nextEntryName(existing: Set<string>): string {
