@@ -40,24 +40,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Restore dependency archive
-        id: restore-dependencies
-        uses: actions/cache/restore@v4
-        with:
-          path: node_modules.tar
-          key: frontend-node-modules-v2-${{ runner.os }}-node-${{ matrix.node_version }}-${{ hashFiles('yarn.lock', 'package.json', 'packages/**/package.json', '.env.example', '.env.test.example', 'patches/**') }}
-
       - name: Use Node.js ${{ matrix.node_version }}
-        if: steps.restore-dependencies.outputs.cache-hit != 'true'
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node_version }}
           cache: 'yarn'
 
       - run: yarn install --frozen-lockfile
-        if: steps.restore-dependencies.outputs.cache-hit != 'true'
       - name: Pack dependencies
-        if: steps.restore-dependencies.outputs.cache-hit != 'true'
         run: |
           find . -name node_modules -type d -prune -print0 > node_modules.list
           for file in .env .env.test; do
@@ -66,12 +56,6 @@ jobs:
             fi
           done
           tar --null -cf node_modules.tar -T node_modules.list
-      - name: Save dependency archive
-        if: steps.restore-dependencies.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
-        with:
-          path: node_modules.tar
-          key: ${{ steps.restore-dependencies.outputs.cache-primary-key }}
       - uses: actions/upload-artifact@v4
         with:
           name: frontend-node-modules-node-${{ matrix.node_version }}
