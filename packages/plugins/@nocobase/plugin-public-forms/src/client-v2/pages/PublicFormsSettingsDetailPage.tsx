@@ -51,7 +51,8 @@ function PublicFormPageRenderer(props: { model: FlowModel }) {
       value: view,
     });
     nextContext.defineProperty('flowSettingsEnabled', {
-      value: true,
+      get: () => !!ctx?.flowSettingsEnabled,
+      cache: false,
     });
     return nextContext;
   }, [ctx]);
