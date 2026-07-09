@@ -160,7 +160,7 @@ export const useMobileActionDrawerStyle = genStyleHook('nb-mobile-action-drawer'
         borderBottom: `1px solid ${token.colorSplit}`,
         position: 'sticky',
         top: 0,
-        backgroundColor: 'white',
+        backgroundColor: token.colorBgContainer,
         zIndex: 1000,
 
         // to match the button named 'Add block'
@@ -172,12 +172,23 @@ export const useMobileActionDrawerStyle = genStyleHook('nb-mobile-action-drawer'
       '.nb-mobile-action-drawer-placeholder': {
         display: 'inline-block',
         padding: 12,
+        flex: '0 0 auto',
         visibility: 'hidden',
+      },
+
+      '.nb-mobile-action-drawer-title': {
+        flex: '1 1 auto',
+        minWidth: 0,
+        overflow: 'hidden',
+        textAlign: 'center',
+        textOverflow: 'ellipsis',
+        whiteSpace: 'nowrap',
       },
 
       '.nb-mobile-action-drawer-close-icon': {
         display: 'inline-block',
         padding: 12,
+        flex: '0 0 auto',
         cursor: 'pointer',
       },
 

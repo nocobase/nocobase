@@ -1300,13 +1300,14 @@ function resolveApplyBlueprintAssociationContext(input: {
     normalizeMetadataText(input.targetCollectionName) ||
     normalizeMetadataText(getCollectionName(targetCollection)) ||
     normalizeMetadataText(getFieldTarget(field));
+  const resolvedAssociationName = resolveAssociationNameFromField(
+    field,
+    associationPath.includes('.') ? undefined : sourceCollection,
+  );
   return {
     dataSourceKey,
     surfaceCollectionName: targetCollectionName || undefined,
-    associationName:
-      (associationPath.includes('.') ? `${sourceCollectionName}.${associationPath}` : undefined) ||
-      resolveAssociationNameFromField(field, sourceCollection) ||
-      `${sourceCollectionName}.${associationPath || associationFieldPath}`,
+    associationName: resolvedAssociationName || `${sourceCollectionName}.${associationPath || associationFieldPath}`,
   };
 }
 
@@ -1391,7 +1392,7 @@ function resolveApplyBlueprintBlockResourceContext(
       dataSourceKey,
       surfaceCollectionName:
         directCollectionName || associatedContext?.surfaceCollectionName || parentContext?.surfaceCollectionName,
-      associationName: parentContext?.associationName || associatedContext?.associationName,
+      associationName: associatedContext?.associationName || parentContext?.associationName,
     };
   }
 
@@ -2205,7 +2206,7 @@ function compileField(
     hostBlock: popupOptions.hostBlock,
     dataSourceKey: fieldAssociationContext?.dataSourceKey || popupOptions.dataSourceKey,
     surfaceCollectionName: fieldAssociationContext?.surfaceCollectionName || popupOptions.surfaceCollectionName,
-    associationName: popupOptions.associationName || fieldAssociationContext?.associationName,
+    associationName: fieldAssociationContext?.associationName || popupOptions.associationName,
     dynamicBlockTypes: popupOptions.dynamicBlockTypes,
   });
   settings = resolvePopupTitleSettings(settings, popupResult.popupTitle);

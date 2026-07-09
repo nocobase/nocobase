@@ -4436,11 +4436,14 @@ export class FlowSurfacesService {
       (associationField ? getFieldTarget(associationField) : undefined) ||
       parsed.collectionName ||
       input.collectionName;
-    const associationName = parsed.associationPathName
+    const fallbackAssociationName = parsed.associationPathName
       ? `${parsed.collectionName}.${parsed.associationPathName}`
-      : associationField
-        ? resolveAssociationNameFromField(associationField, input.collection)
-        : undefined;
+      : undefined;
+    const associationName = associationField
+      ? parsed.associationPathName?.includes('.')
+        ? fallbackAssociationName
+        : resolveAssociationNameFromField(associationField, input.collection)
+      : undefined;
 
     return {
       associationField,
@@ -4451,7 +4454,7 @@ export class FlowSurfacesService {
         parsed.dataSourceKey ||
         input.dataSourceKey,
       collectionName: targetCollectionName,
-      associationName,
+      associationName: associationName || fallbackAssociationName,
     };
   }
 
@@ -8567,6 +8570,10 @@ export class FlowSurfacesService {
         options.transaction,
         options,
       ).catch(() => null);
+      const sourceId =
+        String(openView.sourceId || '').trim() ||
+        (popupProfile?.sourceIdInferred ? '' : String(popupProfile?.sourceId || '').trim()) ||
+        undefined;
       const popupSourceNode = popupTargetUid
         ? await this.repository
             .findModelById(popupTargetUid, {
@@ -8593,7 +8600,7 @@ export class FlowSurfacesService {
           undefined,
         filterByTk:
           String(openView.filterByTk || '').trim() || String(popupProfile?.filterByTk || '').trim() || undefined,
-        sourceId: String(openView.sourceId || '').trim() || String(popupProfile?.sourceId || '').trim() || undefined,
+        sourceId,
         openViewStep,
       };
     }
