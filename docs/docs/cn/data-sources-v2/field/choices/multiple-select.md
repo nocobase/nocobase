@@ -96,6 +96,7 @@ keywords: "下拉多选,multiple select,标签,选项字段,NocoBase"
 ## 页面配置使用
 
 下拉多选字段适合表达多个标签或多个固定选项。
+![20260709230017](https://static-docs.nocobase.com/20260709230017.png)
 
 | 场景 | 用途 |
 | --- | --- |

@@ -26,6 +26,7 @@ keywords: "复选框组,checkbox group,多选,选项字段,NocoBase"
 ## 创建配置
 
 在数据表的「Configure fields」页面中，点击「Add field」，选择「复选框组」可以创建复选框组字段。
+![20260709231244](https://static-docs.nocobase.com/20260709231244.png)
 
 | 配置 | 说明 |
 | --- | --- |
@@ -94,6 +95,7 @@ keywords: "复选框组,checkbox group,多选,选项字段,NocoBase"
 ## 页面配置使用
 
 复选框组适合在表单中平铺展示少量多选项。
+![20260709230421](https://static-docs.nocobase.com/20260709230421.png)
 
 | 场景 | 用途 |
 | --- | --- |

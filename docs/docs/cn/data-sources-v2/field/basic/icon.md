@@ -96,6 +96,7 @@ keywords: "图标,icon,字段,NocoBase"
 ## 页面配置使用
 
 图标字段适合在列表、卡片和详情中做视觉提示。
+![20260709225630](https://static-docs.nocobase.com/20260709225630.png)
 
 | 场景 | 用途 |
 | --- | --- |

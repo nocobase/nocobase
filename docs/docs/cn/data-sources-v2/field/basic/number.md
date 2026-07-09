@@ -96,6 +96,7 @@ keywords: "数字,number,double,decimal,NocoBase"
 ## 页面配置使用
 
 数字字段适合在录入、统计、图表和工作流判断中使用。
+![20260709225103](https://static-docs.nocobase.com/20260709225103.png)
 
 | 场景 | 用途 |
 | --- | --- |

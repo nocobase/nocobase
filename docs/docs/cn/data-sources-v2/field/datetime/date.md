@@ -27,7 +27,7 @@ keywords: "日期,date,日期字段,NocoBase"
 
 在数据表的「Configure fields」页面中，点击「Add field」，选择「日期」可以创建日期字段。
 
-![20240512181142](https://static-docs.nocobase.com/20240512181142.png)
+![20260709232951](https://static-docs.nocobase.com/20260709232951.png)
 
 | 配置 | 说明 |
 | --- | --- |
@@ -96,6 +96,7 @@ keywords: "日期,date,日期字段,NocoBase"
 ## 页面配置使用
 
 日期字段适合在表单、表格、筛选、日历和统计中使用。
+![20260709232644](https://static-docs.nocobase.com/20260709232644.png)
 
 | 场景 | 用途 |
 | --- | --- |

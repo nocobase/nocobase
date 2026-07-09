@@ -96,6 +96,7 @@ keywords: "时间,time,时间字段,NocoBase"
 ## 页面配置使用
 
 时间字段适合在表单和规则配置中使用。
+![20260709232726](https://static-docs.nocobase.com/20260709232726.png)
 
 | 场景 | 用途 |
 | --- | --- |

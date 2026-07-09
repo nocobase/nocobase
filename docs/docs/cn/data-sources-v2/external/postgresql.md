@@ -39,8 +39,7 @@ PostgreSQL 可以作为外部数据库接入 NocoBase。接入后，NocoBase 会
 ## 添加数据源
 
 在「数据源管理」中点击「Add new」，选择 PostgreSQL，然后填写连接信息。
-
-![20240507204820](https://static-docs.nocobase.com/20240507204820.png)
+![20260709204045](https://static-docs.nocobase.com/20260709204045.png)
 
 常见连接配置如下：
 
@@ -69,7 +68,7 @@ PostgreSQL 可以作为外部数据库接入 NocoBase。接入后，NocoBase 会
 
 默认会启用「Add all collections」，表示接入当前范围内的全部表和视图。如果只想接入部分对象，可以关闭「Add all collections」，然后在列表中勾选需要的数据表或视图。
 
-![add_new_database_configure_load_collection](https://static-docs.nocobase.com/add_new_database_configure_load_collection.png)
+![20260709204309](https://static-docs.nocobase.com/20260709204309.png)
 
 :::warning 注意
 
@@ -122,9 +121,8 @@ NocoBase 会根据 PostgreSQL 字段类型，自动映射到合适的 Field type
 
 如果接入的是视图、无主键表或联合主键表，需要在数据表配置中手动设置「Record unique key」。没有可用唯一标识时，页面区块可能无法正确查看、编辑或删除记录。
 
-![edit_collection](https://static-docs.nocobase.com/edit_collection.png)
-
-![edit_collection_configure](https://static-docs.nocobase.com/edit_collection_configure.png)
+![20260709204742](https://static-docs.nocobase.com/20260709204742.png)
+![20260709204827](https://static-docs.nocobase.com/20260709204827.png)
 
 ## 相关链接
 

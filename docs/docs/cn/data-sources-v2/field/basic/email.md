@@ -96,6 +96,7 @@ keywords: "邮箱,email,联系方式,NocoBase"
 ## 页面配置使用
 
 邮箱字段适合在表单、详情和通知流程中使用。
+![20260709224700](https://static-docs.nocobase.com/20260709224700.png)
 
 | 场景 | 用途 |
 | --- | --- |

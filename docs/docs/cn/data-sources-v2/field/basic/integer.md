@@ -96,6 +96,7 @@ keywords: "整数,integer,数字字段,NocoBase"
 ## 页面配置使用
 
 整数字段适合在表格、表单、统计和工作流中使用。
+![20260709224913](https://static-docs.nocobase.com/20260709224913.png)
 
 | 场景 | 用途 |
 | --- | --- |

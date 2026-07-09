@@ -96,6 +96,7 @@ keywords: "富文本,rich text,内容字段,NocoBase"
 ## 页面配置使用
 
 富文本字段适合在内容编辑和展示场景中使用。
+![20260709231418](https://static-docs.nocobase.com/20260709231418.png)
 
 | 场景 | 用途 |
 | --- | --- |

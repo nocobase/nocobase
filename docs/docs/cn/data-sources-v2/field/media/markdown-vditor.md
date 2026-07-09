@@ -96,6 +96,7 @@ Markdown Vditor字段的默认行为如下：
 ## 页面配置使用
 
 Markdown Vditor 字段适合在需要编辑体验的正文和评论场景中使用。
+![20260709230930](https://static-docs.nocobase.com/20260709230930.png)
 
 | 场景 | 用途 |
 | --- | --- |

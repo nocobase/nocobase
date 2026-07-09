@@ -96,6 +96,7 @@ keywords: "附件,attachment,文件上传,文件表,NocoBase"
 ## 页面配置使用
 
 附件字段适合在表单、详情和文件管理场景中使用。
+![20260709231642](https://static-docs.nocobase.com/20260709231642.png)
 
 | 场景 | 用途 |
 | --- | --- |

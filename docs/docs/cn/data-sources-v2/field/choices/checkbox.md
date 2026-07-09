@@ -96,6 +96,7 @@ keywords: "勾选,checkbox,布尔值,boolean,NocoBase"
 ## 页面配置使用
 
 勾选字段适合在表单、表格、筛选和工作流条件中使用。
+![20260709225738](https://static-docs.nocobase.com/20260709225738.png)
 
 | 场景 | 用途 |
 | --- | --- |

@@ -39,7 +39,7 @@ keywords: "文件表,File Collection,attachments,元信息,附件,NocoBase"
 
 ![20240324090414](https://static-docs.nocobase.com/20240324090414.png)
 
-文件表的创建配置与普通表基本一致。`Preset fields` 会在普通表内置字段之外，增加一组文件元信息字段。
+文件表的创建配置与普通表基本一致。文件表会预置一组文件元信息字段，用来保存上传文件的标题、路径、URL、存储位置和扩展信息。
 
 | 配置 | 说明 |
 | --- | --- |
@@ -52,10 +52,11 @@ keywords: "文件表,File Collection,attachments,元信息,附件,NocoBase"
 
 ## 内置字段
 
-文件表会在普通表内置字段之外，增加一组文件元信息字段。
+文件表创建后通常包含这些内置字段。文件本体保存在文件存储中，文件表保存的是这些元信息。
 
 | 字段 | 字段名 | 说明 |
 | --- | --- | --- |
+| ID | `id` | 默认主键字段，用于唯一标识一条文件记录。 |
 | Title | `title` | 文件标题，通常用于界面展示。 |
 | File name | `filename` | 文件名。 |
 | Extension name | `extname` | 文件扩展名。 |
@@ -64,8 +65,13 @@ keywords: "文件表,File Collection,attachments,元信息,附件,NocoBase"
 | Path | `path` | 文件在存储中的路径。 |
 | URL | `url` | 文件访问地址。 |
 | Preview | `preview` | 文件预览地址。 |
-| Storage | `storage` / `storageId` | 文件所属存储。 |
+| Storage | `storage` / `storageId` | 文件所属存储。`storage` 是关系字段，`storageId` 是对应外键。 |
 | Meta | `meta` | 文件扩展元信息。 |
+| 创建时间 | `createdAt` | 自动记录文件记录的创建时间。 |
+| 创建人 | `createdBy` | 自动记录上传或创建文件记录的用户。 |
+| 更新时间 | `updatedAt` | 自动记录文件记录最后一次更新的时间。 |
+| 更新人 | `updatedBy` | 自动记录最后一次更新文件记录的用户。 |
+| 空间 | `space` | 启用[多空间插件](../../multi-app/multi-space/index.md)后可用，用于按空间隔离数据。没有启用多空间时不会出现。 |
 
 ![20240324090527](https://static-docs.nocobase.com/20240324090527.png)
 
@@ -115,3 +121,4 @@ keywords: "文件表,File Collection,attachments,元信息,附件,NocoBase"
 - [普通表](./general.md) — 查看通用配置和区块使用方式
 - [数据表字段](../field/index.md) — 查看附件字段和关系字段配置
 - [文件管理器](../../plugins/@nocobase/plugin-file-manager/index.md) — 查看文件存储相关配置
+- [多空间](../../multi-app/multi-space/index.md) — 了解空间字段和空间隔离能力

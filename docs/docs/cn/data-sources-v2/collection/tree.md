@@ -41,13 +41,19 @@ keywords: "树表,树形集合,邻接表,层次数据,Tree Collection,NocoBase"
 
 ## 内置字段
 
-树表会在普通表内置字段之外，增加用于保存层级关系的字段。
+树表创建后通常包含这些内置字段。`parentId`、`parent` 和 `children` 用来保存树形层级关系。
 
 | 字段 | 字段名 | 说明 |
 | --- | --- | --- |
+| ID | `id` | 默认主键字段，用于唯一标识一条记录。 |
+| 创建时间 | `createdAt` | 自动记录这条记录的创建时间。 |
+| 创建人 | `createdBy` | 自动记录创建这条记录的用户。 |
+| 更新时间 | `updatedAt` | 自动记录这条记录最后一次更新的时间。 |
+| 更新人 | `updatedBy` | 自动记录最后一次更新这条记录的用户。 |
 | Parent ID | `parentId` | 保存父节点 ID。根节点通常为空。 |
 | Parent | `parent` | 多对一关系字段，指向当前表中的父节点。 |
 | Children | `children` | 一对多关系字段，表示当前节点的子节点。 |
+| 空间 | `space` | 启用[多空间插件](../../multi-app/multi-space/index.md)后可用，用于按空间隔离数据。没有启用多空间时不会出现。 |
 
 ![20240324143555](https://static-docs.nocobase.com/20240324143555.png)
 
@@ -97,3 +103,4 @@ keywords: "树表,树形集合,邻接表,层次数据,Tree Collection,NocoBase"
 - [普通表](./general.md) — 查看通用配置和区块使用方式
 - [表格区块](../../interface-builder/blocks/data-blocks/table.md) — 在表格中启用树表展示
 - [树筛选区块](../../interface-builder/blocks/filter-blocks/tree.md) — 使用树结构筛选数据
+- [多空间](../../multi-app/multi-space/index.md) — 了解空间字段和空间隔离能力

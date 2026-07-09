@@ -96,6 +96,7 @@ keywords: "日期时间,datetime,时区,NocoBase"
 ## 页面配置使用
 
 日期时间（含时区）字段适合在日历、表格、筛选和工作流中使用。
+![20260709232355](https://static-docs.nocobase.com/20260709232355.png)
 
 | 场景 | 用途 |
 | --- | --- |

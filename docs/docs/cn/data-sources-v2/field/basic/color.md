@@ -96,6 +96,7 @@ keywords: "颜色,color,字段,NocoBase"
 ## 页面配置使用
 
 颜色字段适合在页面展示和配置场景中使用。
+![20260709225444](https://static-docs.nocobase.com/20260709225444.png)
 
 | 场景 | 用途 |
 | --- | --- |

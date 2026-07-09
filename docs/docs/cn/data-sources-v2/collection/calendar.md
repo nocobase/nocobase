@@ -27,7 +27,7 @@ keywords: "日历表,Calendar Collection,日历事件,重复事件,日历区块,
 
 在主数据库中点击「Create collection」，选择「Calendar collection」可以创建日历表。
 
-日历表的创建配置与普通表基本一致。`Preset fields` 会在普通表内置字段之外，增加用于保存重复事件的字段。
+日历表的创建配置与普通表基本一致。`Preset fields` 用来控制常用系统字段，日历表还会预置用于保存重复事件的字段。
 
 | 配置 | 说明 |
 | --- | --- |
@@ -40,12 +40,19 @@ keywords: "日历表,Calendar Collection,日历事件,重复事件,日历区块,
 
 ## 内置字段
 
-日历表会在普通表内置字段之外增加这些字段：
+日历表创建后通常包含这些内置字段。`cron` 和 `exclude` 用来保存重复事件规则和排除日期。
 
 | 字段 | 字段名 | 说明 |
 | --- | --- | --- |
+| ID | `id` | 默认主键字段，用于唯一标识一条事件记录。 |
+| 创建时间 | `createdAt` | 自动记录事件记录的创建时间。 |
+| 创建人 | `createdBy` | 自动记录创建事件记录的用户。 |
+| 更新时间 | `updatedAt` | 自动记录事件记录最后一次更新的时间。 |
+| 更新人 | `updatedBy` | 自动记录最后一次更新事件记录的用户。 |
+| 排序 | `sort` | 保存事件记录的排序值，用于支持拖拽排序等排序能力。 |
 | Repeats | `cron` | 保存重复事件规则，比如每天、每周、每月或每年重复。 |
 | Exclude | `exclude` | 保存重复事件中被排除的日期，通常由日历交互自动维护。 |
+| 空间 | `space` | 启用[多空间插件](../../multi-app/multi-space/index.md)后可用，用于按空间隔离数据。没有启用多空间时不会出现。 |
 
 日历区块使用日历表时，还需要指定用于展示事件的业务字段：
 
@@ -101,3 +108,4 @@ keywords: "日历表,Calendar Collection,日历事件,重复事件,日历区块,
 - [普通表](./general.md) — 查看通用配置和区块使用方式
 - [日期和时间字段](../field/datetime/datetime.md) — 创建事件开始时间和结束时间字段
 - [日历区块](../../interface-builder/blocks/data-blocks/calendar.md) — 在页面中按日历方式展示数据
+- [多空间](../../multi-app/multi-space/index.md) — 了解空间字段和空间隔离能力

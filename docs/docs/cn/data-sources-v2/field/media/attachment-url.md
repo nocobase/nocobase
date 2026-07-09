@@ -100,6 +100,7 @@ keywords: "附件 URL,attachment url,外部文件,URL,NocoBase"
 ## 页面配置使用
 
 附件 URL 字段适合展示和访问外部文件。
+![20260709231803](https://static-docs.nocobase.com/20260709231803.png)
 
 | 场景 | 用途 |
 | --- | --- |

@@ -96,6 +96,7 @@ keywords: "密码,password,敏感输入,NocoBase"
 ## 页面配置使用
 
 密码字段适合在配置表单中录入敏感文本。
+![20260709225244](https://static-docs.nocobase.com/20260709225244.png)
 
 | 场景 | 用途 |
 | --- | --- |
