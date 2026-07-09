@@ -191,6 +191,135 @@ describe('FilterFormItemModel defineChildren association fields', () => {
     expect(filterItem.collectionField).toBeTruthy();
   });
 
+  it('lists filterable children from association field interfaces', async () => {
+    const engine = new FlowEngine();
+    engine.registerModels({
+      FilterFormItemModel: FilterFormItemModel as any,
+      DummyCollectionBlockModel,
+      InputFieldModel,
+      FilterFormRecordSelectFieldModel,
+    });
+    engine.context.defineProperty('t', {
+      value: (value: string) => (value === '{{t("Province/city/area name")}}' ? '省/市/区名称' : value),
+    });
+
+    const ds = engine.dataSourceManager.getDataSource('main');
+    ds?.addCollection({
+      name: 'students',
+      filterTargetKey: 'id',
+      fields: [
+        { name: 'id', type: 'integer', interface: 'number', filterable: { operators: [] } },
+        {
+          name: 'studentName',
+          title: 'Student name',
+          type: 'string',
+          interface: 'input',
+          filterable: { operators: [] },
+        },
+        {
+          name: 'birthPlace',
+          title: 'Birth place',
+          type: 'belongsToMany',
+          interface: 'chinaRegion',
+          target: 'chinaRegions',
+          filterable: {
+            children: [
+              {
+                name: 'name',
+                title: '{{t("Province/city/area name")}}',
+                operators: 'string',
+                schema: {
+                  title: '{{t("Province/city/area name")}}',
+                  type: 'string',
+                  'x-component': 'Input',
+                },
+              },
+            ],
+          },
+        },
+      ],
+    });
+
+    const model = engine.createModel<DummyCollectionBlockModel>({
+      uid: 'students-block',
+      use: 'DummyCollectionBlockModel',
+      stepParams: {
+        resourceSettings: {
+          init: {
+            dataSourceKey: 'main',
+            collectionName: 'students',
+          },
+        },
+      },
+    });
+    const getFilterFields = model.getFilterFields.bind(model);
+    model.getFilterFields = async () => {
+      const fields = await getFilterFields();
+      return fields.map((field: any) =>
+        field.name === 'birthPlace'
+          ? {
+              name: field.name,
+              title: field.title,
+              type: field.type,
+              interface: field.interface,
+              target: field.target,
+              filterable: field.filterable,
+              isAssociationField: () => true,
+            }
+          : field,
+      ) as any;
+    };
+
+    const children = (await FilterFormItemModel.defineChildren({
+      blockGridModel: {
+        filterSubModels: (_key: string, predicate: (item: any) => boolean) => [model].filter(predicate),
+      },
+      t: (value: string) => value,
+    } as any)) as any[];
+
+    const groups = await children[0].children();
+    const fieldsGroup = groups.find((group: any) => group.key === 'fields');
+    const associationGroup = groups.find((group: any) => group.key === 'relation-fields');
+    const fieldKeys = (fieldsGroup?.children || []).map((item: any) => item.key);
+    const associationKeys = (associationGroup?.children || []).map((item: any) => item.key);
+
+    expect(fieldKeys).toContain('studentName');
+    expect(associationKeys).toContain('birthPlace-associationField');
+    expect(associationKeys).not.toContain('studentName-associationField');
+
+    const regionAssociation = associationGroup?.children?.find(
+      (item: any) => item.key === 'birthPlace-associationField',
+    );
+    const regionGroups = await regionAssociation.children();
+    const regionFieldsGroup = regionGroups.find((group: any) => group.key === 'birthPlace-fields');
+    const regionNameItem = regionFieldsGroup?.children?.find((item: any) => item.key === 'birthPlace.name');
+
+    expect(regionNameItem?.label).toBe('Birth place / 省/市/区名称');
+
+    const createOptions = await regionNameItem.createModelOptions();
+    const filterItem = engine.createModel({
+      uid: 'filter-item-region-name',
+      ...createOptions,
+    } as any) as unknown as FilterFormItemModel;
+
+    expect(filterItem.fieldPath).toBe('birthPlace.name');
+    expect(filterItem.context.filterField).toMatchObject({
+      name: 'name',
+      title: 'Birth place / 省/市/区名称',
+      interface: 'input',
+      type: 'string',
+    });
+    expect(filterItem.context.filterField?.filterable?.operators).toBe('string');
+    expect(filterItem.collectionField).toMatchObject({
+      name: 'name',
+      title: 'Birth place / 省/市/区名称',
+      interface: 'input',
+      type: 'string',
+    });
+    expect(filterItem.collectionField?.filterable?.operators).toBe('string');
+    expect(filterItem.subModels.field).toBeInstanceOf(InputFieldModel);
+  });
+
   it('provides fallback field metadata for sql fields without collection context', async () => {
     const engine = new FlowEngine();
     engine.registerModels({
