@@ -11,6 +11,14 @@ import { css } from '@emotion/css';
 import { useField } from '@formily/react';
 import { useMemoizedFn } from 'ahooks';
 import {
+  DataSourceManager as FlowDataSourceManager,
+  FlowContext,
+  FlowModelRenderer,
+  FlowViewContextProvider,
+  useFlowEngine,
+} from '@nocobase/flow-engine';
+import type { CollectionOptions, CreateModelOptions, DataSourceOptions, FlowModel } from '@nocobase/flow-engine';
+import {
   ACLCustomContext,
   Action,
   APIClientProvider,
@@ -29,12 +37,17 @@ import {
   useRequest,
   VariablesProvider,
 } from '@nocobase/client';
-import { Input, Modal, Spin } from 'antd';
+import { Form, Input, Modal, Spin } from 'antd';
 import { Button as MobileButton, Dialog as MobileDialog } from 'antd-mobile';
-import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { isDesktop, isMobile } from 'react-device-detect';
 import { useParams } from 'react-router';
+import {
+  isPublicFormFlowModelRepository,
+  PublicFormFlowModelRepository,
+} from '../../client-v2/publicFormFlowModelRepository';
 import { usePublicSubmitActionProps } from '../hooks';
+import { usePublicFormTranslation } from '../locale';
 import { MobileDateTimePicker } from './components/MobileDatePicker';
 import { MobilePicker } from './components/MobilePicker';
 import { UnEnabledFormPlaceholder, UnFoundFormPlaceholder } from './UnEnabledFormPlaceholder';
@@ -171,23 +184,294 @@ const mobileComponents = {
   Modal: MobileDialog,
   AssociationField: AssociationFieldMobile,
 };
+
+type PublicFormDataSourceOptions = DataSourceOptions & {
+  collections?: CollectionOptions[];
+};
+
+type PublicFormMeta = {
+  dataSource?: PublicFormDataSourceOptions | null;
+  flowModel?: CreateModelOptions | null;
+  schema?: unknown;
+};
+
+type PublicFormRuntimeView = {
+  type: 'embed';
+  inputArgs: Record<string, unknown>;
+  Header: null;
+  Footer: null;
+  close: () => Promise<void>;
+  update: () => void;
+};
+
+const PUBLIC_FORM_RUNTIME_CACHE_KEYS = ['dataSourceManager', 'dataSource', 'collection', 'resource', 'association'];
+
+function getPublicFormPageModel(routeModel?: FlowModel | null) {
+  const page = routeModel?.subModels?.page;
+  return Array.isArray(page) ? page[0] : page;
+}
+
+function visitFlowModelTree(model: FlowModel | null | undefined, callback: (model: FlowModel) => void) {
+  const visited = new Set<FlowModel>();
+  const visit = (current?: FlowModel | FlowModel[] | null) => {
+    if (!current) {
+      return;
+    }
+
+    if (Array.isArray(current)) {
+      current.forEach(visit);
+      return;
+    }
+
+    if (visited.has(current)) {
+      return;
+    }
+
+    visited.add(current);
+    callback(current);
+    Object.values(current.subModels || {}).forEach(visit);
+  };
+
+  visit(model);
+}
+
+function PublicFormFlowRuntime(props: { formKey?: string; meta: PublicFormMeta }) {
+  const { formKey, meta } = props;
+  const app = useApp();
+  const flowEngine = useFlowEngine();
+  const [loading, setLoading] = useState(true);
+  const [routeModel, setRouteModel] = useState<FlowModel | null>(null);
+  const [publicFormSubmitted, setPublicFormSubmitted] = useState(false);
+  const publicFormSubmittedRef = useRef(false);
+  const runtimeContextRef = useRef<FlowContext>();
+  const publicDataSourceManagerRef = useRef<FlowDataSourceManager>();
+  const attachedRuntimeModelsRef = useRef<Set<FlowModel>>(new Set());
+  const originalModelRepositoryRef = useRef(flowEngine.modelRepository);
+
+  publicFormSubmittedRef.current = publicFormSubmitted;
+
+  const getPublicDataSourceManager = useCallback(() => {
+    if (!publicDataSourceManagerRef.current) {
+      const manager = new FlowDataSourceManager();
+      const rootManager = flowEngine.context.dataSourceManager;
+
+      manager.setFlowEngine(flowEngine);
+      manager.setRequester(rootManager?.requester);
+      manager.setCollectionFieldInterfaceManager(rootManager?.collectionFieldInterfaceManager);
+      publicDataSourceManagerRef.current = manager;
+    }
+
+    return publicDataSourceManagerRef.current;
+  }, [flowEngine]);
+
+  if (!runtimeContextRef.current) {
+    const runtimeContext = new FlowContext();
+    const view: PublicFormRuntimeView = {
+      type: 'embed',
+      inputArgs: {},
+      Header: null,
+      Footer: null,
+      close: async () => undefined,
+      update: () => undefined,
+    };
+
+    runtimeContext.addDelegate(flowEngine.context);
+    runtimeContext.defineProperty('view', {
+      value: view,
+    });
+    runtimeContext.defineProperty('publicFormRuntime', {
+      get: () => true,
+      cache: false,
+    });
+    runtimeContext.defineProperty('dataSourceManager', {
+      get: () => getPublicDataSourceManager(),
+      cache: false,
+    });
+    runtimeContext.defineProperty('publicFormDataSourceManager', {
+      get: () => getPublicDataSourceManager(),
+      cache: false,
+    });
+    runtimeContext.defineProperty('publicFormSubmitted', {
+      get: () => publicFormSubmittedRef.current,
+      observable: true,
+      cache: false,
+    });
+    runtimeContext.defineProperty('skipAclCheck', {
+      get: () => true,
+      cache: false,
+    });
+    runtimeContext.defineProperty('flowSettingsEnabled', {
+      get: () => false,
+      cache: false,
+    });
+    runtimeContext.defineMethod('setPublicFormSubmitted', (submitted: boolean) => {
+      setPublicFormSubmitted(!!submitted);
+    });
+    runtimeContextRef.current = runtimeContext;
+  }
+
+  useEffect(() => {
+    const currentRepository = flowEngine.modelRepository;
+
+    if (isPublicFormFlowModelRepository(currentRepository)) {
+      currentRepository.setFormKey(formKey);
+      return;
+    }
+
+    if (!app?.apiClient || !currentRepository) {
+      return;
+    }
+
+    const repository = new PublicFormFlowModelRepository({
+      app,
+      formKey,
+      delegate: currentRepository,
+    });
+
+    originalModelRepositoryRef.current = currentRepository;
+    flowEngine.setModelRepository(repository);
+
+    return () => {
+      if (flowEngine.modelRepository === repository && originalModelRepositoryRef.current) {
+        flowEngine.setModelRepository(originalModelRepositoryRef.current);
+      }
+    };
+  }, [app, flowEngine, formKey]);
+
+  useEffect(() => {
+    const dataSource = meta?.dataSource;
+    if (!dataSource?.key) {
+      return;
+    }
+
+    const { collections = [], ...options } = dataSource;
+    const manager = getPublicDataSourceManager();
+
+    manager.upsertDataSource(options);
+    manager.getDataSource(dataSource.key)?.setCollections(collections, { clearFields: true });
+  }, [getPublicDataSourceManager, meta?.dataSource]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const detachRuntimeContext = () => {
+      const runtimeContext = runtimeContextRef.current;
+      if (runtimeContext) {
+        attachedRuntimeModelsRef.current.forEach((model) => {
+          model.context?.removeDelegate?.(runtimeContext);
+        });
+      }
+      attachedRuntimeModelsRef.current.clear();
+    };
+
+    const attachRuntimeContext = (model: FlowModel) => {
+      const runtimeContext = runtimeContextRef.current;
+      if (!runtimeContext) {
+        return;
+      }
+
+      visitFlowModelTree(model, (currentModel) => {
+        currentModel.context?.addDelegate?.(runtimeContext);
+        PUBLIC_FORM_RUNTIME_CACHE_KEYS.forEach((key) => {
+          currentModel.context?.removeCache?.(key);
+        });
+        attachedRuntimeModelsRef.current.add(currentModel);
+      });
+    };
+
+    const loadFlowModel = async () => {
+      const tree = meta?.flowModel;
+
+      if (!tree?.uid) {
+        detachRuntimeContext();
+        setRouteModel(null);
+        setLoading(false);
+        return;
+      }
+
+      setLoading(true);
+      await flowEngine.resolveModelTree(tree);
+      if (cancelled) {
+        return;
+      }
+      const nextRouteModel =
+        flowEngine.getModel(tree.uid) ||
+        (await flowEngine.createModelAsync(tree, {
+          delegate: runtimeContextRef.current,
+        }));
+      if (cancelled) {
+        return;
+      }
+      const pageModel = getPublicFormPageModel(nextRouteModel);
+
+      if (pageModel?.setProps) {
+        pageModel.setProps('publicRuntime', true);
+      }
+      detachRuntimeContext();
+      attachRuntimeContext(nextRouteModel);
+
+      if (!cancelled) {
+        setRouteModel(nextRouteModel);
+        setLoading(false);
+      }
+    };
+
+    loadFlowModel();
+
+    return () => {
+      cancelled = true;
+      detachRuntimeContext();
+    };
+  }, [flowEngine, meta?.flowModel]);
+
+  const pageModel = getPublicFormPageModel(routeModel);
+
+  if (loading) {
+    return <Spin />;
+  }
+
+  if (!pageModel || !runtimeContextRef.current) {
+    return <UnFoundFormPlaceholder />;
+  }
+
+  return (
+    <FlowViewContextProvider context={runtimeContextRef.current}>
+      <FlowModelRenderer model={pageModel} showFlowSettings={false} />
+    </FlowViewContextProvider>
+  );
+}
+
 function InternalPublicForm() {
   const params = useParams();
+  const { t } = usePublicFormTranslation();
+  const [pwd, setPwd] = useState('');
+  const [passwordErrorMessage, setPasswordErrorMessage] = useState('');
   const { error, data, loading, run } = useRequest<any>(
     {
       url: `publicForms:getMeta/${params.name}`,
       skipAuth: true,
+      skipNotify: (nextError) => nextError?.response?.status === 401,
     },
     {
       onSuccess(data) {
+        setPasswordErrorMessage('');
         localStorage.setItem('NOCOBASE_FORM_TOKEN', data?.data?.token);
+      },
+      onError(nextError) {
+        if (nextError?.response?.status === 401) {
+          setPasswordErrorMessage(t('Incorrect password'));
+        }
       },
     },
   );
-  const [pwd, setPwd] = useState('');
   const ctx = useContext(SchemaComponentContext);
 
   useTitle(data);
+  useEffect(() => {
+    if (error?.['response']?.status === 401) {
+      setPasswordErrorMessage(t('Incorrect password'));
+    }
+  }, [error, t]);
   // 设置的移动端 meta
   useEffect(() => {
     if (!isDesktop) {
@@ -214,22 +498,36 @@ function InternalPublicForm() {
       <div>
         <Modal
           centered
-          title="Password"
+          title={t('Password')}
           open={true}
           cancelButtonProps={{
             hidden: true,
           }}
+          confirmLoading={loading}
           onOk={() => {
+            setPasswordErrorMessage('');
             run({
               password: pwd,
             });
           }}
         >
-          <Input.Password
-            onChange={(e) => {
-              setPwd(e.target.value);
-            }}
-          />
+          <Form layout="vertical">
+            <Form.Item
+              validateStatus={passwordErrorMessage ? 'error' : undefined}
+              help={passwordErrorMessage || undefined}
+              style={{ marginBottom: 0 }}
+            >
+              <Input.Password
+                value={pwd}
+                onChange={(e) => {
+                  setPwd(e.target.value);
+                  if (passwordErrorMessage) {
+                    setPasswordErrorMessage('');
+                  }
+                }}
+              />
+            </Form.Item>
+          </Form>
         </Modal>
       </div>
     );
@@ -245,6 +543,7 @@ function InternalPublicForm() {
   if (!data?.data) {
     return <UnEnabledFormPlaceholder />;
   }
+  const meta = data.data as PublicFormMeta;
   const components = isMobile ? mobileComponents : {};
   const containerHeight = getPublicFormContainerHeight();
   return (
@@ -278,17 +577,21 @@ function InternalPublicForm() {
               padding-top: 0px;
             `}
           >
-            <PublicPublicFormProvider dataSource={data?.data?.dataSource}>
-              <SchemaComponentContext.Provider value={{ ...ctx, designable: false }}>
-                <SchemaComponent
-                  schema={data?.data?.schema}
-                  scope={{
-                    useCreateActionProps: usePublicSubmitActionProps,
-                  }}
-                  components={{ PublicFormMessageProvider: PublicFormMessageProvider, ...components }}
-                />
-              </SchemaComponentContext.Provider>
-            </PublicPublicFormProvider>
+            {meta.flowModel ? (
+              <PublicFormFlowRuntime formKey={params.name} meta={meta} />
+            ) : (
+              <PublicPublicFormProvider dataSource={meta.dataSource}>
+                <SchemaComponentContext.Provider value={{ ...ctx, designable: false }}>
+                  <SchemaComponent
+                    schema={meta.schema}
+                    scope={{
+                      useCreateActionProps: usePublicSubmitActionProps,
+                    }}
+                    components={{ PublicFormMessageProvider: PublicFormMessageProvider, ...components }}
+                  />
+                </SchemaComponentContext.Provider>
+              </PublicPublicFormProvider>
+            )}
             <div style={{ marginBottom: '20px' }}>
               <PoweredBy />
             </div>
