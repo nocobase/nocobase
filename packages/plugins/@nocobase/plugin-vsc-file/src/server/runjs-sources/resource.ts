@@ -342,8 +342,7 @@ const actionRunners: Record<RunJSSourceActionName, RunJSSourceActionRunner> = {
 
       await adapter.assertCanWrite({ locator: publishInput.locator, ctx: adapterCtx });
       const legacy = await adapter.readLegacy({ locator: publishInput.locator, ctx: adapterCtx });
-
-      await assertCurrentOwnerFingerprint(adapter, publishInput.locator, adapterCtx, publishInput.baseOwnerFingerprint);
+      const currentOwnerFingerprint = await adapter.getFingerprint({ locator: publishInput.locator, ctx: adapterCtx });
 
       const repositoryIdentity = buildRunJSSourceRepositoryIdentity(publishInput.locator);
       const serviceCtx = {
@@ -366,17 +365,15 @@ const actionRunners: Record<RunJSSourceActionName, RunJSSourceActionRunner> = {
             )
           ).repository;
       assertRepositoryMatchesIdentity(repository, repositoryIdentity, publishInput.locator.kind);
-      const basePublishedOwnerFingerprint =
-        publishInput.basePublishedOwnerFingerprint || publishInput.baseOwnerFingerprint;
-      await assertPublishedOwnerFingerprintCurrent(service, repository, basePublishedOwnerFingerprint, serviceCtx);
-      const publishBase = resolvePublishBase(repository, publishInput);
-      const initialCompileFiles = await materializeRunJSCompileFiles(
+      const publishBase = {
+        baseCommitId: repository.headCommitId,
+        basePublishedCommitId: repository.publishedCommitId,
+      };
+      const initialCompileFiles = await buildOverwriteRunJSFileChanges(
         db,
         repository.id,
         publishBase.baseCommitId,
-        {
-          files: publishInput.files,
-        },
+        publishInput.files,
         serviceCtx,
       );
       const entryPath = selectEntryPath(initialCompileFiles, publishInput.entryPath);
@@ -385,12 +382,19 @@ const actionRunners: Record<RunJSSourceActionName, RunJSSourceActionRunner> = {
         publishInput.files,
         runJSManifestFileChange(entryPath, runtimeVersion, legacy.surfaceStyle, publishInput.files),
       );
+      const overwriteFiles = await buildOverwriteRunJSFileChanges(
+        db,
+        repository.id,
+        publishBase.baseCommitId,
+        publishFiles,
+        serviceCtx,
+      );
       const compileFiles = await materializeRunJSCompileFiles(
         db,
         repository.id,
         publishBase.baseCommitId,
         {
-          files: publishFiles,
+          files: overwriteFiles,
         },
         serviceCtx,
       );
@@ -414,9 +418,8 @@ const actionRunners: Record<RunJSSourceActionName, RunJSSourceActionRunner> = {
       };
       const publishMetadata = {
         sourceKind: publishInput.locator.kind,
-        ownerFingerprint: publishInput.baseOwnerFingerprint,
-        baseOwnerFingerprint: publishInput.baseOwnerFingerprint,
-        basePublishedOwnerFingerprint,
+        ownerFingerprint: currentOwnerFingerprint,
+        baseOwnerFingerprint: currentOwnerFingerprint,
         filesHash: artifact.filesHash,
         entry: artifact.entryPath || null,
         runtimeVersion: artifact.version,
@@ -428,7 +431,7 @@ const actionRunners: Record<RunJSSourceActionName, RunJSSourceActionRunner> = {
           repoId: repository.id,
           baseCommitId: publishBase.baseCommitId,
           message: publishInput.message,
-          files: publishFiles,
+          files: overwriteFiles,
           authorId: userId,
           metadata: publishMetadata,
         },
@@ -443,12 +446,11 @@ const actionRunners: Record<RunJSSourceActionName, RunJSSourceActionRunner> = {
         },
         serviceCtx,
       );
-      await assertCurrentOwnerFingerprint(adapter, publishInput.locator, adapterCtx, publishInput.baseOwnerFingerprint);
       const writeResult = await adapter.writePublished({
         locator: publishInput.locator,
         artifact,
         commitId: pushResult.commit.id,
-        baseOwnerFingerprint: publishInput.baseOwnerFingerprint,
+        baseOwnerFingerprint: currentOwnerFingerprint,
         ctx: adapterCtx,
       });
       const nextOwnerFingerprint = await adapter.getFingerprint({
@@ -1527,29 +1529,6 @@ function markPublishedCommit(commit: VscCommitRecord, publishedCommitId: string 
   };
 }
 
-function resolvePublishBase(
-  repository: VscRepositoryRecord,
-  input: RunJSSourcePublishInput,
-): Pick<RunJSSourcePublishInput, 'baseCommitId' | 'basePublishedCommitId'> {
-  if (
-    input.repoId ||
-    input.baseCommitId !== null ||
-    input.basePublishedCommitId !== null ||
-    !repository.headCommitId ||
-    repository.publishedCommitId !== repository.headCommitId
-  ) {
-    return {
-      baseCommitId: input.baseCommitId,
-      basePublishedCommitId: input.basePublishedCommitId,
-    };
-  }
-
-  return {
-    baseCommitId: repository.headCommitId,
-    basePublishedCommitId: repository.publishedCommitId,
-  };
-}
-
 function diffWorkspaceFiles(baseFiles: PulledFile[], changes: VscFileChange[]): FileDiffResult {
   const baseByPath = new Map(baseFiles.map((file) => [normalizePath(file.path), workspaceFileFromPulledFile(file)]));
   const nextByPath = new Map(baseByPath);
@@ -1696,6 +1675,53 @@ async function materializeCompilePreviewFiles(
     },
     serviceCtx,
   );
+}
+
+async function buildOverwriteRunJSFileChanges(
+  db: Database,
+  repoId: string,
+  baseCommitId: string | null,
+  files: VscFileChange[],
+  serviceCtx: VscServiceContext,
+): Promise<VscFileChange[]> {
+  const baseFiles = baseCommitId
+    ? await loadCommitFilesForCompile(db, repoId, baseCommitId, serviceCtx.transaction)
+    : [];
+  const basePaths = new Set(baseFiles.map((file) => file.path));
+  const allowedBlobHashes = new Set(baseFiles.map((file) => file.blobHash).filter(isStringValue));
+  const desiredFiles = new Map<string, PublishCompileFile>();
+
+  for (const file of files) {
+    const normalizedPath = normalizePath(file.path);
+    const operation = file.operation || 'upsert';
+
+    if (operation === 'delete') {
+      desiredFiles.delete(normalizedPath);
+      continue;
+    }
+    if (operation !== 'upsert') {
+      throw new VscError('PATH_INVALID', `Unsupported file operation "${operation}"`);
+    }
+
+    desiredFiles.set(normalizedPath, {
+      path: normalizedPath,
+      content: await resolvePublishCompileFileContent(db, file, allowedBlobHashes, serviceCtx.transaction),
+      language: file.language,
+      mode: file.mode,
+    });
+  }
+
+  const changes = Array.from(desiredFiles.values()).map(canonicalCompileFileChange);
+  for (const path of basePaths) {
+    if (!desiredFiles.has(path)) {
+      changes.push({
+        path,
+        operation: 'delete',
+      });
+    }
+  }
+
+  return changes.sort((left, right) => left.path.localeCompare(right.path));
 }
 
 async function materializeRunJSCompileFiles(
@@ -1935,16 +1961,6 @@ async function assertCurrentOwnerFingerprint(
   });
 }
 
-async function assertPublishedOwnerFingerprintCurrent(
-  service: VscFileService,
-  repository: VscRepositoryRecord,
-  currentOwnerFingerprint: string,
-  serviceCtx: VscServiceContext,
-): Promise<void> {
-  const publishedOwnerFingerprint = await getPublishedOwnerFingerprintForRepository(service, repository, serviceCtx);
-  assertPublishedOwnerFingerprintMatches(publishedOwnerFingerprint, currentOwnerFingerprint);
-}
-
 async function getPublishedOwnerFingerprintForRepository(
   service: VscFileService,
   repository: VscRepositoryRecord,
@@ -2161,15 +2177,10 @@ function normalizeDiffVersionInput(input: ResourceActionInput): RunJSSourceDiffV
 
 function normalizePublishInput(input: ResourceActionInput): RunJSSourcePublishInput {
   const repoId = optionalString(input, 'repoId');
-  const hasExplicitBaseInput = hasOwn(input, 'baseCommitId') || hasOwn(input, 'basePublishedCommitId');
 
   return {
     locator: normalizeRunJSSourceLocator(input.locator),
     repoId,
-    baseCommitId: normalizePublishBaseInput(input, 'baseCommitId', repoId, hasExplicitBaseInput),
-    basePublishedCommitId: normalizePublishBaseInput(input, 'basePublishedCommitId', repoId, hasExplicitBaseInput),
-    baseOwnerFingerprint: requireString(input, 'baseOwnerFingerprint'),
-    basePublishedOwnerFingerprint: optionalString(input, 'basePublishedOwnerFingerprint'),
     message: requireCommitMessage(input.message),
     files: requireArray(input, 'files', normalizeRunJSFileChange),
     entryPath: optionalRunJSWorkspacePath(input, 'entryPath'),

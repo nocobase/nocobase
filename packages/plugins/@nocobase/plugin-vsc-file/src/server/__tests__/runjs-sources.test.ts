@@ -165,10 +165,6 @@ describe('runJSSources resource', () => {
       values: {
         locator,
         repoId: firstOpen.body.data.repository.id,
-        baseCommitId: firstOpen.body.data.repository.publishedCommitId,
-        basePublishedCommitId: firstOpen.body.data.repository.publishedCommitId,
-        baseOwnerFingerprint: firstOpen.body.data.ownerFingerprint,
-        basePublishedOwnerFingerprint: firstOpen.body.data.publishedOwnerFingerprint,
         message: 'Publish workspace files',
         files: [
           {
@@ -230,6 +226,90 @@ describe('runJSSources resource', () => {
         }),
       ]),
     );
+  });
+
+  it('publishes stale editor contents by overwriting the latest RunJS source', async () => {
+    const publishedArtifacts: RunJSRuntimeArtifact[] = [];
+    const locator = createLocator('fm_overwrite_stale');
+
+    registerFlowModelAdapter({
+      label: 'JS block / Overwrite stale',
+      modelUid: 'fm_overwrite_stale',
+      readCode: () => 'ctx.render("legacy");',
+      onPublish: (artifact) => {
+        publishedArtifacts.push(artifact);
+      },
+    });
+
+    const opened = await agent.resource('runJSSources').open({
+      values: {
+        locator,
+      },
+    });
+
+    const firstPublish = await agent.resource('runJSSources').publish({
+      values: {
+        locator,
+        repoId: opened.body.data.repository.id,
+        message: 'Publish first writer',
+        files: [
+          {
+            path: 'src/client/extra.ts',
+            operation: 'upsert',
+            content: 'export const extra = "first";',
+            language: 'typescript',
+          },
+          {
+            path: 'src/client/index.tsx',
+            operation: 'upsert',
+            content: 'import { extra } from "./extra";\nctx.render(extra);',
+            language: 'typescript',
+          },
+        ],
+        entryPath: 'src/client/index.tsx',
+        version: 'v2',
+      },
+    });
+
+    expect(firstPublish.status).toBe(200);
+
+    const stalePublish = await agent.resource('runJSSources').publish({
+      values: {
+        locator,
+        repoId: opened.body.data.repository.id,
+        message: 'Overwrite from stale editor',
+        files: [
+          {
+            path: 'src/client/index.tsx',
+            operation: 'upsert',
+            content: 'ctx.render("stale editor wins");',
+            language: 'typescript',
+          },
+        ],
+        entryPath: 'src/client/index.tsx',
+        version: 'v2',
+      },
+    });
+
+    expect(stalePublish.status).toBe(200);
+    expect(stalePublish.body.data.commit).toMatchObject({
+      message: 'Overwrite from stale editor',
+      seq: 3,
+    });
+    expect(publishedArtifacts).toHaveLength(2);
+    expect(publishedArtifacts[1].code).toContain('stale editor wins');
+
+    const version = await agent.resource('runJSSources').getVersion({
+      values: {
+        locator,
+        repoId: opened.body.data.repository.id,
+        commitId: stalePublish.body.data.commit.id,
+        includeFiles: true,
+      },
+    });
+
+    expect(version.status).toBe(200);
+    expect(version.body.data.files.map((file: { path: string }) => file.path)).not.toContain('src/client/extra.ts');
   });
 
   it('imports a ZIP snapshot as the current published version and exposes sync/export APIs', async () => {
@@ -418,9 +498,6 @@ describe('runJSSources resource', () => {
       values: {
         locator: createLocator('fm_repo_guard'),
         repoId: wrongRepositoryResponse.body.data.repository.id,
-        baseCommitId: null,
-        basePublishedCommitId: null,
-        baseOwnerFingerprint: 'owner:fm_repo_guard:v1',
         message: 'Update guarded RunJS source',
         files: [
           {

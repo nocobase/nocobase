@@ -74,64 +74,6 @@ export function buildWorkspaceChanges(
   return changes.sort((left, right) => compareRunJSPaths(left.path, right.path));
 }
 
-export function buildChangedWorkspaceFileList(
-  baseFiles: RunJSWorkspaceFile[],
-  nextFiles: RunJSWorkspaceFile[],
-): VscFileChange[] {
-  const baseByPath = new Map(normalizeWorkspaceFiles(baseFiles).map((file) => [file.path, file]));
-  const nextByPath = new Map(normalizeWorkspaceFiles(nextFiles).map((file) => [file.path, file]));
-  const paths = Array.from(new Set([...baseByPath.keys(), ...nextByPath.keys()])).sort(compareRunJSPaths);
-  const changes: VscFileChange[] = [];
-
-  for (const path of paths) {
-    const base = baseByPath.get(path);
-    const next = nextByPath.get(path);
-    if (base && next && base.content === next.content && base.language === next.language && base.mode === next.mode) {
-      continue;
-    }
-
-    if (!next) {
-      changes.push({
-        path,
-        operation: 'delete',
-      });
-      continue;
-    }
-
-    changes.push({
-      path: next.path,
-      operation: 'upsert',
-      content: next.content,
-      language: next.language || inferLanguageFromPath(next.path),
-      mode: next.mode,
-    });
-  }
-
-  return changes;
-}
-
-export function applyWorkspaceChanges(baseFiles: RunJSWorkspaceFile[], changes: VscFileChange[]): RunJSWorkspaceFile[] {
-  const nextByPath = new Map(normalizeWorkspaceFiles(baseFiles).map((file) => [file.path, file]));
-
-  for (const change of changes) {
-    const path = normalizePath(change.path);
-    if (change.operation === 'delete') {
-      nextByPath.delete(path);
-      continue;
-    }
-
-    const current = nextByPath.get(path);
-    nextByPath.set(path, {
-      path,
-      content: change.content ?? current?.content ?? '',
-      language: change.language || current?.language || inferLanguageFromPath(path),
-      mode: change.mode || current?.mode,
-    });
-  }
-
-  return Array.from(nextByPath.values()).sort((left, right) => compareRunJSPaths(left.path, right.path));
-}
-
 export function hasWorkspaceChanges(baseFiles: RunJSWorkspaceFile[], nextFiles: RunJSWorkspaceFile[]): boolean {
   const baseByPath = new Map(normalizeWorkspaceFiles(baseFiles).map((file) => [file.path, file]));
   const nextByPath = new Map(normalizeWorkspaceFiles(nextFiles).map((file) => [file.path, file]));

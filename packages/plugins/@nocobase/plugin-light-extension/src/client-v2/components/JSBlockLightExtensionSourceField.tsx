@@ -9,7 +9,7 @@
 
 import type { Field } from '@formily/core';
 import { useField, useForm } from '@formily/react';
-import { Alert, Button, Modal, Radio, Space, Typography } from 'antd';
+import { Alert, Button, Modal, Select, Space, Typography } from 'antd';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -19,16 +19,25 @@ import type {
   LightExtensionKind,
   LightExtensionPublicationMetadataRecord,
   LightExtensionRuntimeSourceBinding,
+  LightExtensionSelectableEntryRecord,
   LightExtensionSourceBindingVersionPolicy,
 } from '../../shared/types';
 import type { ApiClientLike } from '../api/lightExtensionEntriesRequests';
+import { listSelectableLightExtensionEntries } from '../api/lightExtensionEntriesRequests';
 import { resolveLightExtensionRuntimeSource } from '../resolvers/LightExtensionRunJSResolver';
-import { RepoEntryPublicationSelector } from './RepoEntryPublicationSelector';
+import {
+  cloneLightExtensionPublicationDefaults,
+  createLightExtensionRuntimeSourceBinding,
+  getLightExtensionEntryLabel,
+  hasLightExtensionActivePublication,
+  RepoEntryPublicationSelector,
+} from './RepoEntryPublicationSelector';
 import { formatSettingsValidationErrors, SettingsAutoForm, type SettingsValidationResult } from './SettingsAutoForm';
 import { VersionPolicyField } from './VersionPolicyField';
 
 const INLINE_SOURCE_MODE = 'inline';
 const LIGHT_EXTENSION_SOURCE_MODE = 'light-extension';
+const INLINE_SOURCE_SELECT_VALUE = INLINE_SOURCE_MODE;
 
 type FlowContextWithApi = {
   api: ApiClientLike;
@@ -45,6 +54,16 @@ type JSBlockRunJSFormValues = {
   sourceMode?: string;
   sourceBinding?: LightExtensionRuntimeSourceBinding;
   settings?: Record<string, unknown>;
+};
+
+type SelectableLightExtensionEntryWithPublication = LightExtensionSelectableEntryRecord & {
+  activePublication: LightExtensionPublicationMetadataRecord;
+};
+
+type SourceSelectOption = {
+  label: string;
+  value: string;
+  searchText: string;
 };
 
 export interface JSBlockLightExtensionSourceFieldProps {
@@ -95,6 +114,32 @@ function getFieldPath(field: Field): string {
   return field.path?.toString() || '';
 }
 
+function getEntrySelectValue(entry: Pick<LightExtensionSelectableEntryRecord, 'id' | 'repoId'>): string {
+  return `${LIGHT_EXTENSION_SOURCE_MODE}:${entry.repoId}:${entry.id}`;
+}
+
+function getBindingSelectValue(binding: Pick<LightExtensionRuntimeSourceBinding, 'entryId' | 'repoId'>): string {
+  return `${LIGHT_EXTENSION_SOURCE_MODE}:${binding.repoId}:${binding.entryId}`;
+}
+
+function getBindingLabel(binding: LightExtensionRuntimeSourceBinding): string {
+  return binding.entryTitle || binding.entryName || binding.entryId || binding.repoTitle || binding.repoId;
+}
+
+function getErrorMessage(error: unknown): string | undefined {
+  if (isRecord(error)) {
+    if (typeof error.message === 'string') {
+      return error.message;
+    }
+    const response = isRecord(error.response) ? error.response : null;
+    const data = isRecord(response?.data) ? response.data : null;
+    if (Array.isArray(data?.errors) && isRecord(data.errors[0]) && typeof data.errors[0].message === 'string') {
+      return data.errors[0].message;
+    }
+  }
+  return undefined;
+}
+
 export const JSBlockLightExtensionSourceField: React.FC<JSBlockLightExtensionSourceFieldProps> = ({
   value,
   onChange,
@@ -115,6 +160,9 @@ export const JSBlockLightExtensionSourceField: React.FC<JSBlockLightExtensionSou
     errors: [],
   });
   const [copying, setCopying] = React.useState(false);
+  const [sourceEntries, setSourceEntries] = React.useState<SelectableLightExtensionEntryWithPublication[]>([]);
+  const [sourceEntriesLoading, setSourceEntriesLoading] = React.useState(false);
+  const [sourceEntriesError, setSourceEntriesError] = React.useState<string | null>(null);
 
   const values = form.values as JSBlockRunJSFormValues;
   const rendersSourceModeControl = typeof value === 'string' || getFieldPath(field) === 'sourceMode';
@@ -152,6 +200,39 @@ export const JSBlockLightExtensionSourceField: React.FC<JSBlockLightExtensionSou
       form.unsubscribe(subscriptionId);
     };
   }, [form]);
+
+  React.useEffect(() => {
+    if (!rendersSourceModeControl) {
+      return;
+    }
+
+    let mounted = true;
+    setSourceEntriesLoading(true);
+    setSourceEntriesError(null);
+    const loadSourceEntries = async () => {
+      try {
+        const entries = await listSelectableLightExtensionEntries(ctx.api, { kind });
+        if (!mounted) {
+          return;
+        }
+        setSourceEntries(entries.filter((entry) => entry.kind === kind && hasLightExtensionActivePublication(entry)));
+      } catch (requestError) {
+        if (!mounted) {
+          return;
+        }
+        setSourceEntries([]);
+        setSourceEntriesError(getErrorMessage(requestError) || t('Failed to load entries'));
+      } finally {
+        if (mounted) {
+          setSourceEntriesLoading(false);
+        }
+      }
+    };
+    loadSourceEntries();
+    return () => {
+      mounted = false;
+    };
+  }, [ctx.api, kind, rendersSourceModeControl, t]);
 
   React.useEffect(() => {
     if (!rendersSourceModeControl || values.sourceMode) {
@@ -264,6 +345,37 @@ export const JSBlockLightExtensionSourceField: React.FC<JSBlockLightExtensionSou
     setSelectedPublication(publication);
   };
 
+  const handleSourceEntrySelect = (entry: SelectableLightExtensionEntryWithPublication) => {
+    const binding = createLightExtensionRuntimeSourceBinding(entry, entry.activePublication);
+    const nextBinding: LightExtensionRuntimeSourceBinding = {
+      ...binding,
+      versionPolicy: getNextLightExtensionSourceBindingVersionPolicy({
+        sourceBinding,
+        binding,
+        defaultVersionPolicy,
+      }),
+    };
+    const defaults = cloneLightExtensionPublicationDefaults(entry.activePublication);
+    form.setValuesIn('sourceMode', LIGHT_EXTENSION_SOURCE_MODE);
+    form.setValuesIn('sourceBinding', nextBinding);
+    form.setValuesIn('settings', mergeSettings(defaults, values.settings, entry.activePublication));
+    setSelectedPublication(entry.activePublication);
+    onChange?.(LIGHT_EXTENSION_SOURCE_MODE);
+  };
+
+  const handleSourceSelectChange = (nextValue: string) => {
+    if (nextValue === INLINE_SOURCE_SELECT_VALUE) {
+      handleModeChange(INLINE_SOURCE_MODE);
+      return;
+    }
+
+    const entry = sourceEntries.find((item) => getEntrySelectValue(item) === nextValue);
+    if (!entry) {
+      return;
+    }
+    handleSourceEntrySelect(entry);
+  };
+
   const handleSelectorClear = () => {
     setSelectedPublication(null);
     form.setValuesIn('sourceBinding', undefined);
@@ -315,6 +427,47 @@ export const JSBlockLightExtensionSourceField: React.FC<JSBlockLightExtensionSou
     }
   };
 
+  const sourceSelectValue =
+    sourceMode === LIGHT_EXTENSION_SOURCE_MODE && sourceBinding
+      ? getBindingSelectValue(sourceBinding)
+      : sourceMode === LIGHT_EXTENSION_SOURCE_MODE
+        ? undefined
+        : INLINE_SOURCE_SELECT_VALUE;
+  const sourceSelectOptions = React.useMemo<SourceSelectOption[]>(() => {
+    const options: SourceSelectOption[] = [
+      {
+        label: t('Inline code'),
+        value: INLINE_SOURCE_SELECT_VALUE,
+        searchText: t('Inline code'),
+      },
+      ...sourceEntries.map((entry) => {
+        const label = getLightExtensionEntryLabel(entry);
+        return {
+          label,
+          value: getEntrySelectValue(entry),
+          searchText: [label, entry.entryName, entry.entryPath, entry.repoId, t('Light extension')]
+            .filter(Boolean)
+            .join(' '),
+        };
+      }),
+    ];
+    if (
+      sourceMode === LIGHT_EXTENSION_SOURCE_MODE &&
+      sourceBinding &&
+      !options.some((option) => option.value === getBindingSelectValue(sourceBinding))
+    ) {
+      const label = getBindingLabel(sourceBinding);
+      options.push({
+        label,
+        value: getBindingSelectValue(sourceBinding),
+        searchText: [label, sourceBinding.entryName, sourceBinding.entryId, sourceBinding.repoId, t('Light extension')]
+          .filter(Boolean)
+          .join(' '),
+      });
+    }
+    return options;
+  }, [sourceBinding, sourceEntries, sourceMode, t]);
+
   const lightExtensionBinding = (
     <Space direction="vertical" style={{ width: '100%' }} size={16}>
       <RepoEntryPublicationSelector
@@ -351,17 +504,18 @@ export const JSBlockLightExtensionSourceField: React.FC<JSBlockLightExtensionSou
 
   return (
     <Space direction="vertical" style={{ width: '100%' }} size={12}>
-      <Radio.Group
+      <Select
+        aria-label={t('Code source')}
         disabled={disabled}
-        value={sourceMode}
-        optionType="button"
-        buttonStyle="solid"
-        onChange={(event) => handleModeChange(event.target.value)}
-        options={[
-          { label: t('Inline code'), value: INLINE_SOURCE_MODE },
-          { label: t('Light extension'), value: LIGHT_EXTENSION_SOURCE_MODE },
-        ]}
+        loading={sourceEntriesLoading}
+        value={sourceSelectValue}
+        showSearch
+        optionFilterProp="searchText"
+        options={sourceSelectOptions}
+        onChange={handleSourceSelectChange}
+        placeholder={t('Select a light extension entry')}
       />
+      {sourceEntriesError ? <Alert type="error" showIcon message={sourceEntriesError} /> : null}
       {sourceMode === LIGHT_EXTENSION_SOURCE_MODE ? (
         lightExtensionBinding
       ) : (

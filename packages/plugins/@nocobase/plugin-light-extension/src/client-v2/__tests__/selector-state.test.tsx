@@ -9,13 +9,14 @@
 
 import { createForm } from '@formily/core';
 import { createSchemaField, FormProvider } from '@formily/react';
-import { act, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { FlowEngine, FlowEngineProvider } from '@nocobase/flow-engine';
 
 import {
   getNextLightExtensionSourceBindingVersionPolicy,
+  JSBlockLightExtensionSourceField,
   JSFieldLightExtensionSourceField,
 } from '../components/JSBlockLightExtensionSourceField';
 import {
@@ -36,6 +37,7 @@ vi.mock('react-i18next', () => ({
 
 const SchemaField = createSchemaField({
   components: {
+    JSBlockLightExtensionSourceField,
     JSFieldLightExtensionSourceField,
   },
 });
@@ -602,6 +604,69 @@ describe('RepoEntryPublicationSelector state consistency', () => {
       }),
     );
     expect(screen.getAllByLabelText('Publication').length).toBeGreaterThan(0);
+  });
+
+  it('lets the shared code source control search and select a concrete light extension entry', async () => {
+    mockSelectorRequests();
+    const engine = new FlowEngine();
+    engine.context.defineProperty('api', {
+      value: {
+        request: mocks.request,
+      },
+    });
+    const form = createForm({
+      initialValues: {
+        sourceMode: 'inline',
+        settings: {},
+      },
+    });
+
+    render(
+      <FlowEngineProvider engine={engine}>
+        <FormProvider form={form}>
+          <SchemaField
+            schema={{
+              type: 'object',
+              properties: {
+                sourceMode: {
+                  type: 'string',
+                  'x-component': 'JSBlockLightExtensionSourceField',
+                },
+              },
+            }}
+          />
+        </FormProvider>
+      </FlowEngineProvider>,
+    );
+
+    await waitFor(() => {
+      expect(mocks.request).toHaveBeenCalledWith(
+        expect.objectContaining({
+          url: 'lightExtensionEntries:listSelectable',
+          method: 'post',
+          data: { kind: 'js-block' },
+        }),
+      );
+    });
+
+    const codeSource = screen.getByRole('combobox', { name: 'Code source' });
+    fireEvent.mouseDown(codeSource);
+    fireEvent.change(codeSource, { target: { value: 'Support' } });
+    fireEvent.click(await screen.findByText('Support Entry'));
+
+    await waitFor(() => {
+      expect(form.values.sourceMode).toBe('light-extension');
+      expect(form.values.sourceBinding).toMatchObject({
+        type: 'light-extension-entry',
+        repoId: 'repo_sales',
+        entryId: 'entry_support',
+        entryTitle: 'Support Entry',
+        kind: 'js-block',
+        publicationId: 'pub_support',
+        versionPolicy: 'follow-active',
+      });
+    });
+    expect(screen.getAllByText('Support Entry').length).toBeGreaterThan(0);
   });
 
   it('scopes selectable entries to the requested kind and clears mismatched bindings', async () => {

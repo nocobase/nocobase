@@ -55,7 +55,7 @@ import type { DataNode } from 'antd/es/tree';
 import type { MenuProps } from 'antd';
 import type { RcFile } from 'rc-upload/lib/interface';
 import type { UploadFile } from 'antd/es/upload/interface';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
@@ -1083,12 +1083,40 @@ function LightExtensionListPageInner() {
 
 function useLightExtensionRepoFilterCollection(): Collection | undefined {
   const engine = useFlowEngine();
+  const ownsFilterCollectionRef = useRef(false);
 
-  return useMemo(() => {
-    return engine.context.dataSourceManager
-      ?.getDataSource?.('main')
-      ?.getCollection?.(LIGHT_EXTENSION_REPO_FILTER_COLLECTION);
+  const collection = useMemo(() => {
+    const dataSource = engine.context.dataSourceManager?.getDataSource?.('main');
+    const existingCollection = dataSource?.getCollection?.(LIGHT_EXTENSION_REPO_FILTER_COLLECTION);
+
+    if (existingCollection) {
+      return existingCollection;
+    }
+
+    dataSource?.addCollection?.(lightExtensionRepoFilterCollection);
+    const registeredCollection = dataSource?.getCollection?.(LIGHT_EXTENSION_REPO_FILTER_COLLECTION);
+
+    if (registeredCollection) {
+      ownsFilterCollectionRef.current = true;
+    }
+
+    return registeredCollection;
   }, [engine]);
+
+  useEffect(() => {
+    return () => {
+      if (!ownsFilterCollectionRef.current) {
+        return;
+      }
+
+      engine.context.dataSourceManager
+        ?.getDataSource?.('main')
+        ?.removeCollection?.(LIGHT_EXTENSION_REPO_FILTER_COLLECTION);
+      ownsFilterCollectionRef.current = false;
+    };
+  }, [engine]);
+
+  return collection;
 }
 
 function parseDetailPanel(value: string | null): DetailPanel | null {

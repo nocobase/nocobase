@@ -605,7 +605,7 @@ describe('LightExtensionWorkspacePage', () => {
     expect(await screen.findByText('src/client/js-fields')).toBeInTheDocument();
   });
 
-  it('previews and downloads generated multi-entry settings type files from the source workspace', async () => {
+  it('injects generated multi-entry settings type files into the source workspace editor', async () => {
     mocks.api.pull.mockResolvedValueOnce({
       repo: { id: 'ler_sales' },
       commit: { id: 'commit-1' },
@@ -653,15 +653,12 @@ describe('LightExtensionWorkspacePage', () => {
     expect(screen.getByTestId('runjs-code-tab').getAttribute('data-workspace-files')).toContain(
       '.light-extension/types/modules.d.ts',
     );
-    fireEvent.click(screen.getByRole('button', { name: /Settings type preview/ }));
-
-    expect(await screen.findByTestId('light-extension-settings-type-preview')).toHaveTextContent(
-      '.light-extension/types/index.d.ts',
+    expect(screen.queryByRole('button', { name: /Settings type preview/ })).toBeNull();
+    expect(screen.queryByRole('button', { name: /Download settings types/ })).toBeNull();
+    expect(screen.queryByTestId('light-extension-settings-type-preview')).toBeNull();
+    expect(screen.getByTestId('runjs-code-tab').getAttribute('data-workspace-file-contents')).toContain(
+      'orderStatus?: string;',
     );
-    expect(screen.getByTestId('light-extension-settings-type-preview')).toHaveTextContent(
-      '.light-extension/types/client/js-block/product-list.d.ts',
-    );
-    expect(screen.getByTestId('light-extension-settings-type-preview')).toHaveTextContent('orderStatus?: string;');
   });
 
   it('overlays the current SDK shim for existing source repositories with an outdated shim', async () => {

@@ -69,42 +69,50 @@ const publication = {
 describe('JSBlockLightExtensionSourceField save behavior', () => {
   beforeEach(() => {
     mocks.request.mockReset();
-    mocks.request
-      .mockResolvedValueOnce({
-        data: {
-          data: [
-            {
-              id: 'entry_sales',
-              repoId: 'repo_sales',
-              target: 'client',
-              kind: 'js-block',
-              entryName: 'sales',
-              entryPath: 'src/client/js-blocks/sales/index.tsx',
-              metaPath: null,
-              settingsPath: null,
-              title: 'Sales',
-              description: null,
-              category: null,
-              icon: null,
-              tags: null,
-              sort: null,
-              activePublicationId: 'pub_sales',
-              activePublication: publication,
-              healthStatus: 'ready',
-              diagnostics: [],
-            },
-          ],
-        },
-      })
-      .mockResolvedValueOnce({
-        data: {
+    mocks.request.mockImplementation((options: { url: string }) => {
+      if (options.url === 'lightExtensionEntries:listSelectable') {
+        return Promise.resolve({
           data: {
-            entryId: 'entry_sales',
-            activePublicationId: 'pub_sales',
-            publications: [publication],
+            data: [
+              {
+                id: 'entry_sales',
+                repoId: 'repo_sales',
+                target: 'client',
+                kind: 'js-block',
+                entryName: 'sales',
+                entryPath: 'src/client/js-blocks/sales/index.tsx',
+                metaPath: null,
+                settingsPath: null,
+                title: 'Sales',
+                description: null,
+                category: null,
+                icon: null,
+                tags: null,
+                sort: null,
+                activePublicationId: 'pub_sales',
+                activePublication: publication,
+                healthStatus: 'ready',
+                diagnostics: [],
+              },
+            ],
           },
-        },
-      });
+        });
+      }
+
+      if (options.url === '/light-extension-entries/entry_sales/publications') {
+        return Promise.resolve({
+          data: {
+            data: {
+              entryId: 'entry_sales',
+              activePublicationId: 'pub_sales',
+              publications: [publication],
+            },
+          },
+        });
+      }
+
+      return Promise.reject(new Error(`Unexpected request: ${options.url}`));
+    });
   });
 
   it('writes binding/settings without clearing existing inline code and version', async () => {

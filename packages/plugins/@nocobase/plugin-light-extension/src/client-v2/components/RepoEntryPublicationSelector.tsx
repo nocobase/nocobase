@@ -84,7 +84,7 @@ function isLightExtensionEntryBinding(
   );
 }
 
-function hasActivePublication(
+export function hasLightExtensionActivePublication(
   entry: LightExtensionSelectableEntryRecord,
 ): entry is LightExtensionSelectableEntryRecord & { activePublication: LightExtensionPublicationMetadataRecord } {
   return Boolean(
@@ -97,18 +97,20 @@ function hasActivePublication(
   );
 }
 
-function cloneDefaults(publication: LightExtensionPublicationMetadataRecord): Record<string, unknown> {
+export function cloneLightExtensionPublicationDefaults(
+  publication: LightExtensionPublicationMetadataRecord,
+): Record<string, unknown> {
   if (!isRecord(publication.settingsDefaultsSnapshot)) {
     return {};
   }
   return JSON.parse(JSON.stringify(publication.settingsDefaultsSnapshot)) as Record<string, unknown>;
 }
 
-function getEntryLabel(entry: LightExtensionSelectableEntryRecord): string {
+export function getLightExtensionEntryLabel(entry: LightExtensionSelectableEntryRecord): string {
   return entry.title || entry.entryName || entry.id;
 }
 
-function toBinding(
+export function createLightExtensionRuntimeSourceBinding(
   entry: LightExtensionSelectableEntryRecord,
   publication: LightExtensionPublicationMetadataRecord,
   versionPolicy: LightExtensionRuntimeSourceBinding['versionPolicy'] = 'follow-active',
@@ -118,7 +120,7 @@ function toBinding(
     repoId: entry.repoId,
     repoTitle: entry.repoId,
     entryId: entry.id,
-    entryTitle: getEntryLabel(entry),
+    entryTitle: getLightExtensionEntryLabel(entry),
     entryName: entry.entryName,
     entryPath: entry.entryPath,
     kind: entry.kind,
@@ -159,7 +161,7 @@ export const RepoEntryPublicationSelector: React.FC<RepoEntryPublicationSelector
   const valuePublicationId = controlledValue?.publicationId;
 
   const selectableEntries = React.useMemo(
-    () => entries.filter((entry) => entry.kind === kind && hasActivePublication(entry)),
+    () => entries.filter((entry) => entry.kind === kind && hasLightExtensionActivePublication(entry)),
     [entries, kind],
   );
   const repoIds = React.useMemo(
@@ -254,7 +256,9 @@ export const RepoEntryPublicationSelector: React.FC<RepoEntryPublicationSelector
         if (!mounted) {
           return;
         }
-        const filtered = nextEntries.filter((entry) => entry.kind === kind && hasActivePublication(entry));
+        const filtered = nextEntries.filter(
+          (entry) => entry.kind === kind && hasLightExtensionActivePublication(entry),
+        );
         setEntries(filtered);
         const currentValue = latestValueRef.current;
         if (currentValue && !isLightExtensionEntrySelection(currentValue, kind)) {
@@ -438,7 +442,7 @@ export const RepoEntryPublicationSelector: React.FC<RepoEntryPublicationSelector
       selectedPublicationId: selectedPublication.id,
       manuallySelectedPublicationId: manuallySelectedPublicationIdRef.current,
     });
-    const binding = toBinding(selectedEntry, selectedPublication, versionPolicy);
+    const binding = createLightExtensionRuntimeSourceBinding(selectedEntry, selectedPublication, versionPolicy);
     const bindingKey = getBindingKey(binding);
     if (lastEmittedBindingRef.current === bindingKey) {
       return;
@@ -447,7 +451,7 @@ export const RepoEntryPublicationSelector: React.FC<RepoEntryPublicationSelector
     if (manuallySelectedPublication) {
       manuallySelectedPublicationIdRef.current = null;
     }
-    onChange?.(binding, selectedPublication, cloneDefaults(selectedPublication));
+    onChange?.(binding, selectedPublication, cloneLightExtensionPublicationDefaults(selectedPublication));
   }, [controlledValue, onChange, selectedEntry, selectedPublication, valueEntryId]);
 
   const handleRepoChange = (nextRepoId: string) => {
@@ -487,6 +491,8 @@ export const RepoEntryPublicationSelector: React.FC<RepoEntryPublicationSelector
         placeholder={t('Repository')}
         value={repoId}
         options={repoIds.map((id) => ({ label: id, value: id }))}
+        showSearch
+        optionFilterProp="label"
         onChange={handleRepoChange}
       />
       <Select
@@ -494,7 +500,9 @@ export const RepoEntryPublicationSelector: React.FC<RepoEntryPublicationSelector
         disabled={disabled || loading || publicationsLoading}
         placeholder={t('Entry')}
         value={entryId}
-        options={entriesInRepo.map((entry) => ({ label: getEntryLabel(entry), value: entry.id }))}
+        options={entriesInRepo.map((entry) => ({ label: getLightExtensionEntryLabel(entry), value: entry.id }))}
+        showSearch
+        optionFilterProp="label"
         onChange={handleEntryChange}
       />
       <Select
@@ -506,6 +514,8 @@ export const RepoEntryPublicationSelector: React.FC<RepoEntryPublicationSelector
           label: getPublicationLabel(publication, activePublicationId, t),
           value: publication.id,
         }))}
+        showSearch
+        optionFilterProp="label"
         onChange={handlePublicationChange}
       />
     </Space>

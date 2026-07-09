@@ -46,6 +46,8 @@ vi.mock('@nocobase/client-v2', () => ({
     toolbarLeftExtra,
     runButton,
     fullscreenControl,
+    enableLinter,
+    language,
   }: {
     value?: string;
     onChange?: (value: string) => void;
@@ -54,8 +56,10 @@ vi.mock('@nocobase/client-v2', () => ({
     toolbarLeftExtra?: React.ReactNode;
     runButton?: React.ReactNode;
     fullscreenControl?: { isFullscreen: boolean; toggleFullscreen: () => void };
+    enableLinter?: boolean;
+    language?: string;
   }) => (
-    <div>
+    <div data-enable-linter={String(Boolean(enableLinter))} data-language={language} data-testid="mock-code-editor">
       <div>
         {toolbarLeftExtra}
         {runButton}
@@ -449,13 +453,7 @@ describe('runJSStudioProvider', () => {
       'Dismiss',
       'Workspace imported',
       'Workspace exported',
-      'Load latest version',
-      'Keep my changes on latest version',
       'RunJS entry file under src/client was not found',
-      'Your changes are based on',
-      'Local changes were reapplied to the latest version',
-      'Already up to date',
-      'The source owner changed outside this workspace. Load latest version before saving.',
     ] as const;
 
     for (const [locale, messages] of Object.entries(runJSLocaleMessages)) {
@@ -548,6 +546,64 @@ describe('runJSStudioProvider', () => {
 
     const filesPanel = await screen.findByLabelText('File resource manager');
     expect(within(filesPanel).getByRole('button', { name: 'src/client/index.tsx' })).toBeTruthy();
+  });
+
+  it('does not run the JavaScript linter for JSON workspace files', async () => {
+    mocks.request.mockImplementation(({ url }: { url: string }) => {
+      if (url === 'runJSSources:open') {
+        return Promise.resolve({
+          data: {
+            data: {
+              ...openResult,
+              files: [
+                {
+                  path: 'src/client/index.tsx',
+                  content: 'return 1;',
+                  language: 'typescriptreact',
+                },
+                {
+                  path: 'src/client/settings.json',
+                  content: `${JSON.stringify(
+                    {
+                      type: 'object',
+                      properties: {
+                        region: {
+                          type: 'string',
+                          title: 'Region',
+                          'x-component': 'Input',
+                        },
+                      },
+                    },
+                    null,
+                    2,
+                  )}\n`,
+                  language: 'json',
+                },
+              ],
+            },
+          },
+        });
+      }
+
+      return Promise.resolve({
+        data: {
+          data: {},
+        },
+      });
+    });
+
+    renderEditor();
+
+    await screen.findByLabelText('Edit file content');
+    expect(screen.getByTestId('mock-code-editor')).toHaveAttribute('data-enable-linter', 'true');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Expand files' }));
+    const filesPanel = screen.getByLabelText('File resource manager');
+    fireEvent.click(within(filesPanel).getByRole('button', { name: 'src/client/settings.json' }));
+
+    expect(screen.getByTestId('mock-code-editor')).toHaveAttribute('data-language', 'json');
+    expect(screen.getByTestId('mock-code-editor')).toHaveAttribute('data-enable-linter', 'false');
+    expect((screen.getByLabelText('Edit file content') as HTMLTextAreaElement).value).toContain('"type": "object"');
   });
 
   it('creates folders under src/client and moves files into them', async () => {
@@ -981,6 +1037,13 @@ describe('runJSStudioProvider', () => {
         }),
       );
     });
+    const publishRequest = mocks.request.mock.calls
+      .map(([request]) => request as { url: string; data?: Record<string, unknown> })
+      .find((request) => request.url === 'runJSSources:publish');
+    expect(publishRequest?.data).not.toHaveProperty('baseCommitId');
+    expect(publishRequest?.data).not.toHaveProperty('basePublishedCommitId');
+    expect(publishRequest?.data).not.toHaveProperty('baseOwnerFingerprint');
+    expect(publishRequest?.data).not.toHaveProperty('basePublishedOwnerFingerprint');
     expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ code: 'return 2;', version: 'v2' }));
     expect(mocks.closeView).toHaveBeenCalled();
   });

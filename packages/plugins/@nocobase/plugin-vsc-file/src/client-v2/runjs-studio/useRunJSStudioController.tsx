@@ -20,7 +20,6 @@ import { useT } from '../locale';
 import {
   CloseConfirmModal,
   CodeTab,
-  ConflictDialog,
   ConsolePanel,
   FilesPanel,
   PublishModal,
@@ -37,7 +36,6 @@ import type {
 import type {
   ActionErrorState,
   ClosableView,
-  ConflictState,
   DiffViewState,
   ExportDownloadState,
   OpenWorkspaceAction,
@@ -62,7 +60,6 @@ import {
   getRunJSBaseName,
   getRunJSDirectory,
   hasCompileErrorDiagnostics,
-  isConflictError,
   isOwnerOutdatedError,
   isRunJSPathInsideFolder,
   minConsolePanelHeight,
@@ -78,8 +75,6 @@ import {
   useRunJSSourceResource,
 } from './useRunJSSourceResource';
 import {
-  applyWorkspaceChanges,
-  buildChangedWorkspaceFileList,
   buildLineDiff,
   buildWorkspaceChanges,
   buildWorkspaceSnapshotKey,
@@ -172,7 +167,6 @@ export function useRunJSStudioController(props: RunJSEditorProviderRenderProps) 
   const [restoringVersion, setRestoringVersion] = useState(false);
   const [closeConfirmOpen, setCloseConfirmOpen] = useState(false);
   const [pendingDirtyAction, setPendingDirtyAction] = useState<PendingDirtyAction>('close');
-  const [conflict, setConflict] = useState<ConflictState | null>(null);
   const [consoleHeight, setConsoleHeight] = useState(defaultConsolePanelHeight);
   const [exportDownload, setExportDownload] = useState<ExportDownloadState | null>(null);
   const workspaceFullscreen = useFullscreenOverlay();
@@ -271,10 +265,6 @@ export function useRunJSStudioController(props: RunJSEditorProviderRenderProps) 
   }, []);
 
   const reportActionError = useCallback((error: unknown, title: string, retry: () => unknown | Promise<unknown>) => {
-    if (isConflictError(error)) {
-      return;
-    }
-
     setActionError({ error, title, retry });
   }, []);
 
@@ -334,7 +324,6 @@ export function useRunJSStudioController(props: RunJSEditorProviderRenderProps) 
     setRestoringVersion(false);
     setCloseConfirmOpen(false);
     setPendingDirtyAction('close');
-    setConflict(null);
   }, []);
 
   useEffect(() => {
@@ -580,9 +569,6 @@ export function useRunJSStudioController(props: RunJSEditorProviderRenderProps) 
     try {
       const result = await runJSSourceRequest('compilePreview', {
         locator: props.locator,
-        repoId: currentWorkspace.opened.repository.repoId,
-        baseCommitId:
-          currentWorkspace.opened.repository.headCommitId ?? currentWorkspace.opened.repository.publishedCommitId,
         files: buildWorkspaceChanges([], currentWorkspace.currentFiles),
         entryPath: currentWorkspace.entryPath,
         version: value.version,
@@ -620,7 +606,6 @@ export function useRunJSStudioController(props: RunJSEditorProviderRenderProps) 
         message: hasCompileError ? t('Compile failed') : t('Run completed'),
       });
     } catch (error) {
-      await handleWorkspaceError(error);
       reportActionError(error, t('Run failed'), runPreview);
       appendConsole({
         level: 'error',
@@ -656,7 +641,6 @@ export function useRunJSStudioController(props: RunJSEditorProviderRenderProps) 
 
       setPublishOpen(true);
     } catch (error) {
-      await handleWorkspaceError(error);
       reportActionError(error, t('Save failed'), openPublishModal);
       appendConsole({
         level: 'error',
@@ -704,10 +688,6 @@ export function useRunJSStudioController(props: RunJSEditorProviderRenderProps) 
       const result = await runJSSourceRequest('publish', {
         locator: props.locator,
         repoId: workspace.repository.repoId,
-        baseCommitId,
-        basePublishedCommitId: workspace.repository.publishedCommitId,
-        baseOwnerFingerprint: workspace.ownerFingerprint,
-        basePublishedOwnerFingerprint: workspace.publishedOwnerFingerprint || workspace.ownerFingerprint,
         message: commitMessage.trim(),
         files: buildWorkspaceChanges(baseFiles, requestFiles),
         entryPath: requestEntryPath,
@@ -739,7 +719,6 @@ export function useRunJSStudioController(props: RunJSEditorProviderRenderProps) 
       setPreviewDiagnostics(result.artifact.diagnostics);
       await closeEditorView();
     } catch (error) {
-      await handleWorkspaceError(error);
       reportActionError(error, t('Save failed'), publish);
       appendConsole({
         level: 'error',
@@ -771,8 +750,6 @@ export function useRunJSStudioController(props: RunJSEditorProviderRenderProps) 
     try {
       const result = await runJSSourceRequest('compilePreview', {
         locator: props.locator,
-        repoId: workspace.repository.repoId,
-        baseCommitId,
         files: buildWorkspaceChanges([], requestFiles),
         entryPath: requestEntryPath,
         version: value.version,
@@ -874,7 +851,6 @@ export function useRunJSStudioController(props: RunJSEditorProviderRenderProps) 
         message: `${t('Restored from')} ${formatVersion(commit.seq)}`,
       });
     } catch (error) {
-      await handleWorkspaceError(error);
       reportActionError(error, t('Failed to restore version'), () => loadVersionIntoEditor(commit));
       appendConsole({
         level: 'error',
@@ -1333,7 +1309,6 @@ export function useRunJSStudioController(props: RunJSEditorProviderRenderProps) 
         ),
       );
     } catch (error) {
-      await handleWorkspaceError(error);
       reportActionError(error, t('Import failed'), requestImportWorkspace);
       appendConsole({
         level: 'error',
@@ -1390,81 +1365,6 @@ export function useRunJSStudioController(props: RunJSEditorProviderRenderProps) 
     }
 
     await closeEditorView();
-  };
-
-  const keepChangesAndRebase = async () => {
-    if (!conflict || !workspace || !conflict.canRebase) {
-      return;
-    }
-
-    const userPatch = buildChangedWorkspaceFileList(conflict.staleBaseFiles, conflict.localFiles);
-    const rebasedFiles = applyWorkspaceChanges(conflict.latestFiles, userPatch);
-    const rebasePatch = buildChangedWorkspaceFileList(conflict.latestFiles, rebasedFiles);
-
-    setActionError(null);
-    const nextFiles = rebasePatch.length ? rebasedFiles : normalizeWorkspaceFiles(conflict.latestFiles);
-    const nextEntryPath = resolveWorkspaceEntryPath(nextFiles, entryPath);
-    const nextActivePath = nextFiles.find((file) => file.path === nextEntryPath)?.path || nextFiles[0]?.path;
-
-    setSavedFiles(conflict.latestFiles);
-    setFiles(nextFiles);
-    setBaseFiles(conflict.latestFiles);
-    setEntryPath(nextEntryPath);
-    setActivePath(nextActivePath);
-    setOpenPaths(nextActivePath ? [nextActivePath] : []);
-    setWorkspace((current) =>
-      current
-        ? {
-            ...current,
-            repository: conflict.latestRepository,
-            ownerFingerprint: conflict.latestOwnerFingerprint,
-            history: conflict.latestHistory,
-          }
-        : current,
-    );
-    setConflict(null);
-    setDiffView(null);
-    invalidatePreview();
-    appendConsole({
-      level: 'info',
-      message: rebasePatch.length ? t('Local changes were reapplied to the latest version') : t('Already up to date'),
-    });
-  };
-
-  const loadLatestAfterConflict = async () => {
-    setConflict(null);
-    await loadWorkspaceByAction('openLatest');
-  };
-
-  const handleWorkspaceError = async (error: unknown) => {
-    if (isConflictError(error)) {
-      if (!workspace) {
-        return;
-      }
-      let latest: WorkspaceLoadResult | null = null;
-      try {
-        latest = await openWorkspaceSnapshot(error.code === 'RUNJS_SOURCE_OWNER_OUTDATED' ? 'openLatest' : 'open');
-      } catch (_) {
-        latest = null;
-      }
-      const latestBaseFiles = latest?.baseFiles || baseFiles;
-      const latestBaseCommitId = latest?.opened.repository.publishedCommitId ?? baseCommitId;
-      const latestPublishedCommit = findCommit(latest?.opened.history.items || historyItems, latestBaseCommitId);
-      const canRebase = error.code !== 'RUNJS_SOURCE_OWNER_OUTDATED';
-      setConflict({
-        message: error.message,
-        localFiles: files,
-        staleBaseFiles: baseFiles,
-        latestFiles: latestBaseFiles,
-        latestHistory: latest?.opened.history || workspace.history,
-        latestRepository: latest?.opened.repository || workspace.repository,
-        canRebase,
-        baseVersion: formatVersion(baseCommit?.seq),
-        latestVersion: formatVersion(latestPublishedCommit?.seq),
-        latestBaseCommitId,
-        latestOwnerFingerprint: latest?.opened.ownerFingerprint || workspace?.ownerFingerprint || '',
-      });
-    }
   };
 
   const copyWorkspaceErrorDetails = async () => {
@@ -1874,31 +1774,6 @@ export function useRunJSStudioController(props: RunJSEditorProviderRenderProps) 
         loading={restoringVersion}
         onCancel={() => setRestoreCommit(null)}
         onRestore={confirmLoadVersion}
-        t={t}
-      />
-
-      <ConflictDialog
-        conflict={conflict}
-        onCancel={() => setConflict(null)}
-        onDiscard={loadLatestAfterConflict}
-        onRebase={keepChangesAndRebase}
-        onViewChanges={() => {
-          if (conflict) {
-            if (!conflict.canRebase) {
-              return;
-            }
-            const userPatch = buildChangedWorkspaceFileList(conflict.staleBaseFiles, conflict.localFiles);
-            const rebasedFiles = applyWorkspaceChanges(conflict.latestFiles, userPatch);
-            const conflictDiffFiles = buildChangedWorkspaceFileList(conflict.latestFiles, rebasedFiles);
-            setDiffView({
-              baseFiles: conflict.latestFiles,
-              files: rebasedFiles,
-            });
-            setSelectedDiffPath(conflictDiffFiles[0]?.path);
-            setActiveTab('diff');
-            setConflict(null);
-          }
-        }}
         t={t}
       />
     </div>

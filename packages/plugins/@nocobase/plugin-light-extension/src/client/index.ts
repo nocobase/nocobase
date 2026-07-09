@@ -21,7 +21,6 @@ import {
   registerBlockGridSelectSceneAddBlockProvider,
 } from '@nocobase/client-v2';
 
-import LightExtensionHomePage from '../client-shared/LightExtensionHomePage';
 import { LIGHT_EXTENSION_ACL_SNIPPET, LIGHT_EXTENSION_SETTINGS_KEY, NAMESPACE } from '../constants';
 import { createLightExtensionJSBlockAddItems } from '../client-v2/add-block/lightExtensionJsBlockItems';
 import {
@@ -33,6 +32,7 @@ import {
 import { RepoEntryPublicationSelector } from '../client-v2/components/RepoEntryPublicationSelector';
 import { SettingsAutoForm, SettingsSingleField } from '../client-v2/components/SettingsAutoForm';
 import { VersionPolicyField } from '../client-v2/components/VersionPolicyField';
+import LightExtensionListPage from '../client-v2/pages/LightExtensionListPage';
 import { createLightExtensionRunJSResolver } from '../client-v2/resolvers/LightExtensionRunJSResolver';
 
 interface LightExtensionLegacyClientOptions {
@@ -126,7 +126,7 @@ export class PluginLightExtensionClient {
     this.app?.pluginSettingsManager?.add(LIGHT_EXTENSION_SETTINGS_KEY, {
       icon: 'CodeOutlined',
       title: translate(this.app, 'Light extensions'),
-      Component: LightExtensionHomePage,
+      Component: LightExtensionListPage,
       aclSnippet: LIGHT_EXTENSION_ACL_SNIPPET,
     });
   }

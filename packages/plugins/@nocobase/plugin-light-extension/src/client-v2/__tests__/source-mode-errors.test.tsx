@@ -229,7 +229,8 @@ describe('JSBlockLightExtensionSourceField source mode errors', () => {
       expect(form.query('sourceMode').take()?.selfErrors).toContain('plan: Must be one of the allowed values');
     });
 
-    fireEvent.click(screen.getByText('Inline code'));
+    fireEvent.mouseDown(screen.getByRole('combobox', { name: 'Code source' }));
+    fireEvent.click(await screen.findByText('Inline code'));
 
     await waitFor(() => {
       expect(form.values.sourceMode).toBe('inline');

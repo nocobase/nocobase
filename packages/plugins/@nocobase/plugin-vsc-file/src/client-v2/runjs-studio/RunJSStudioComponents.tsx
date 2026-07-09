@@ -38,7 +38,7 @@ import type {
   RunJSSourceHistoryItem,
   RunJSWorkspaceFile,
 } from './types';
-import type { ConflictState, PendingDirtyAction } from './studioInternalTypes';
+import type { PendingDirtyAction } from './studioInternalTypes';
 import {
   buildFileTreeRows,
   buildRunJSTypeScriptProject,
@@ -51,6 +51,7 @@ import {
   getRunJSDirectory,
   getRunJSTreeDragPayload,
   type InlineEditTarget,
+  isRunJSTypeScriptProjectFile,
   isWorkspaceFileDirty,
   joinRunJSPath,
   RunJSFileTypeIcon,
@@ -854,7 +855,7 @@ export function CodeTab(props: {
       }}
     >
       <CodeEditor
-        enableLinter
+        enableLinter={isRunJSTypeScriptProjectFile(activeFile.path)}
         height="100%"
         language={isDiff ? 'diff' : activeFile.language || inferLanguageFromPath(activeFile.path)}
         minHeight={0}
@@ -1708,51 +1709,4 @@ export function RestoreVersionModal(props: {
 
 function formatRestoreTitle(version: string, t: (key: string) => string): string {
   return t('Restore {{version}}?').replace('{{version}}', version);
-}
-
-export function ConflictDialog(props: {
-  conflict: ConflictState | null;
-  onCancel: () => void;
-  onDiscard: () => void;
-  onRebase: () => void;
-  onViewChanges: () => void;
-  t: (key: string) => string;
-}) {
-  const { conflict, onCancel, onDiscard, onRebase, onViewChanges, t } = props;
-
-  return (
-    <Modal footer={null} onCancel={onCancel} open={Boolean(conflict)} title={t('Conflict')}>
-      {conflict ? (
-        <Space direction="vertical" style={{ width: '100%' }}>
-          <Alert
-            message={t('This JavaScript source changed while you were editing.')}
-            role="alert"
-            showIcon
-            type="warning"
-          />
-          {!conflict.canRebase ? (
-            <Alert
-              message={t('The source owner changed outside this workspace. Load latest version before saving.')}
-              role="alert"
-              showIcon
-              type="error"
-            />
-          ) : null}
-          <Typography.Text>{`${t('Your changes are based on')} ${conflict.baseVersion}.`}</Typography.Text>
-          <Typography.Text>{`${t('Latest published version is')} ${conflict.latestVersion}.`}</Typography.Text>
-          <Space wrap>
-            {conflict.canRebase ? <Button onClick={onViewChanges}>{t('View changes')}</Button> : null}
-            {conflict.canRebase ? (
-              <Button onClick={onRebase} type="primary">
-                {t('Keep my changes on latest version')}
-              </Button>
-            ) : null}
-            <Button danger onClick={onDiscard}>
-              {t('Load latest version')}
-            </Button>
-          </Space>
-        </Space>
-      ) : null}
-    </Modal>
-  );
 }

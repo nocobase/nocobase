@@ -96,9 +96,13 @@ vi.mock('../pages/LightExtensionWorkspacePage', async () => {
   };
 });
 
-function renderListPage(initialEntry = '/admin/settings/light-extension') {
+function renderListPage(
+  initialEntry = '/admin/settings/light-extension',
+  setupApp?: (app: ReturnType<typeof createMockClient>) => void,
+) {
   const app = createMockClient();
   app.apiMock.onGet('app:getInfo').reply(200, { data: { version: 'test' } });
+  setupApp?.(app);
 
   return render(
     <FlowEngineProvider engine={app.flowEngine}>
@@ -187,7 +191,7 @@ describe('LightExtensionListPage', () => {
   it('shows the standard settings toolbar with filter, refresh, and add-new import actions', async () => {
     renderListPage();
 
-    expect(await screen.findByText('Filter')).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: /filter/i })).toBeEnabled();
     expect(screen.getByText('Refresh')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Batch actions/ })).toBeDisabled();
 
@@ -195,6 +199,16 @@ describe('LightExtensionListPage', () => {
 
     expect(await screen.findByText('Create empty')).toBeInTheDocument();
     expect(await screen.findByText('Add new from import')).toBeInTheDocument();
+  });
+
+  it('keeps the filter action enabled when rendered through a legacy app shell', async () => {
+    renderListPage('/admin/settings/light-extension', (app) => {
+      app.dataSourceManager = {
+        getDataSource: vi.fn(() => ({})),
+      };
+    });
+
+    expect(await screen.findByRole('button', { name: /filter/i })).toBeEnabled();
   });
 
   it('imports a JS Block package and publishes the active entry', async () => {

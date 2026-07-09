@@ -22,6 +22,7 @@
   "Batch actions": "批量操作",
   "Cancel": "取消",
   "Click or drag a light extension export file to this area": "点击或拖拽轻插件导出文件到此处",
+  "Code source": "代码来源",
   "Compile preview": "编译预览",
   "Compile preview completed": "编译预览完成",
   "Compile preview completed with diagnostics": "编译预览完成但存在诊断",
@@ -273,15 +274,10 @@
   "partial_failed": "部分失败",
   "ready": "就绪",
   "runjs": "RunJS",
-  "Download settings types": "下载配置类型",
-  "Generated settings types": "生成的配置类型",
-  "No settings types": "没有配置类型",
   "Select collection": "选择数据表",
   "Select collection field": "选择数据表字段",
   "Select data source": "选择数据源",
   "Select role": "选择角色",
-  "Settings type diagnostics": "配置类型诊断",
-  "Settings type preview": "配置类型预览",
   "scan_failed": "扫描失败",
   "warning": "警告"
 }

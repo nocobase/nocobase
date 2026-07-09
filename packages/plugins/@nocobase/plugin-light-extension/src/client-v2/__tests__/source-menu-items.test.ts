@@ -64,6 +64,31 @@ const selectableEntry = {
   diagnostics: [],
 };
 
+const chartPublication = {
+  ...activePublication,
+  id: 'pub_order_chart',
+  entryId: 'entry_order_chart',
+  entryPath: 'src/client/js-blocks/order-chart/index.tsx',
+  artifact: {
+    ...activePublication.artifact,
+    entryPath: 'src/client/js-blocks/order-chart/index.tsx',
+  },
+  settingsDefaultsSnapshot: {},
+  settingsDefaultsHash: 'defaults_hash_chart',
+  filesHash: 'files_hash_chart',
+  runtimeCodeHash: 'runtime_hash_chart',
+};
+
+const chartSelectableEntry = {
+  ...selectableEntry,
+  id: 'entry_order_chart',
+  entryName: 'order-chart',
+  entryPath: 'src/client/js-blocks/order-chart/index.tsx',
+  title: 'Order chart block',
+  activePublicationId: 'pub_order_chart',
+  activePublication: chartPublication,
+};
+
 const selectableRepo = {
   id: 'repo_orders',
   name: 'orders',
@@ -77,7 +102,7 @@ const selectableRepo = {
 };
 
 describe('light extension source menu items', () => {
-  it('groups active entries by repository and writes the active publication binding', async () => {
+  it('shows single-entry repositories directly and writes the active publication binding', async () => {
     const api = {
       request: vi.fn(async (options: { url: string }) => {
         if (options.url === 'lightExtensionRepos:list') {
@@ -107,8 +132,7 @@ describe('light extension source menu items', () => {
       t: (key) => key,
     });
     const lightExtensionItem = items?.[0];
-    const repoItem = lightExtensionItem?.children?.[0];
-    const entryItem = repoItem?.children?.[0];
+    const entryItem = items?.[1];
 
     expect(api.request).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -125,10 +149,13 @@ describe('light extension source menu items', () => {
         method: 'post',
       }),
     );
-    expect(lightExtensionItem?.label).toBe('Light extension');
-    expect(repoItem?.label).toBe('Orders');
-    expect(entryItem?.label).toBe('Order total calculator');
+    expect(lightExtensionItem?.label).toBe('Light extensions');
+    expect(lightExtensionItem?.disabled).toBe(true);
+    expect(lightExtensionItem?.children).toBeUndefined();
+    expect(entryItem?.label).toBe('Orders');
+    expect(entryItem?.children).toBeUndefined();
     expect(entryItem?.searchText).toContain('Orders');
+    expect(entryItem?.searchText).toContain('Order total calculator');
 
     const selectedParams = await entryItem?.onSelect?.({
       kind: 'js-block',
@@ -160,5 +187,39 @@ describe('light extension source menu items', () => {
       version: 'v2',
     });
     expect(selectedParams).not.toHaveProperty('settings.stale');
+  });
+
+  it('keeps a repository submenu when a repository has multiple entries', async () => {
+    const api = {
+      request: vi.fn(async (options: { url: string }) => {
+        if (options.url === 'lightExtensionRepos:list') {
+          return {
+            data: {
+              data: [selectableRepo],
+            },
+          };
+        }
+
+        return {
+          data: {
+            data: [selectableEntry, chartSelectableEntry],
+          },
+        };
+      }),
+    };
+    const resolver = createLightExtensionRunJSResolver(api);
+
+    const items = await resolver.listSourceMenuItems?.({
+      kind: 'js-block',
+      sourceMode: 'inline',
+      defaultVersionPolicy: 'follow-active',
+      t: (key) => key,
+    });
+    const repoItem = items?.[1];
+
+    expect(items?.[0]?.label).toBe('Light extensions');
+    expect(repoItem?.label).toBe('Orders');
+    expect(repoItem?.children?.map((item) => item.label)).toEqual(['Order total calculator', 'Order chart block']);
+    expect(repoItem?.searchText).toContain('Order chart block');
   });
 });

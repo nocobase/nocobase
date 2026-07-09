@@ -34,6 +34,50 @@ const SchemaField = createSchemaField({
   },
 });
 
+const publication = {
+  id: 'pub_sales',
+  repoId: 'repo_sales',
+  entryId: 'entry_sales',
+  commitId: 'commit_sales',
+  entryPath: 'src/client/js-blocks/sales/index.tsx',
+  target: 'client',
+  kind: 'js-block',
+  surfaceStyle: 'render',
+  runtimeVersion: 'v2',
+  artifact: {
+    version: 'v2',
+    entryPath: 'src/client/js-blocks/sales/index.tsx',
+  },
+  settingsSchemaSnapshot: null,
+  settingsDefaultsSnapshot: {},
+  settingsSchemaHash: 'schema_hash',
+  settingsDefaultsHash: 'defaults_hash',
+  filesHash: 'files_hash',
+  runtimeCodeHash: 'runtime_hash',
+  diagnostics: [],
+};
+
+const entry = {
+  id: 'entry_sales',
+  repoId: 'repo_sales',
+  target: 'client',
+  kind: 'js-block',
+  entryName: 'sales',
+  entryPath: 'src/client/js-blocks/sales/index.tsx',
+  metaPath: null,
+  settingsPath: null,
+  title: 'Sales',
+  description: null,
+  category: null,
+  icon: null,
+  tags: null,
+  sort: null,
+  activePublicationId: 'pub_sales',
+  activePublication: publication,
+  healthStatus: 'ready',
+  diagnostics: [],
+};
+
 describe('JSBlockLightExtensionSourceField copyback', () => {
   beforeEach(() => {
     mocks.request.mockImplementation((options: { url: string }) => {
@@ -56,11 +100,27 @@ describe('JSBlockLightExtensionSourceField copyback', () => {
         });
       }
 
-      return Promise.resolve({
-        data: {
-          data: [],
-        },
-      });
+      if (options.url === 'lightExtensionEntries:listSelectable') {
+        return Promise.resolve({
+          data: {
+            data: [entry],
+          },
+        });
+      }
+
+      if (options.url === '/light-extension-entries/entry_sales/publications') {
+        return Promise.resolve({
+          data: {
+            data: {
+              entryId: 'entry_sales',
+              activePublicationId: 'pub_sales',
+              publications: [publication],
+            },
+          },
+        });
+      }
+
+      return Promise.reject(new Error(`Unexpected request: ${options.url}`));
     });
   });
 
@@ -117,7 +177,8 @@ describe('JSBlockLightExtensionSourceField copyback', () => {
       </FlowEngineProvider>,
     );
 
-    fireEvent.click(screen.getByText('Inline code'));
+    fireEvent.mouseDown(screen.getByRole('combobox', { name: 'Code source' }));
+    fireEvent.click(await screen.findByText('Inline code'));
 
     expect(confirmSpy).toHaveBeenCalled();
     await waitFor(() => {

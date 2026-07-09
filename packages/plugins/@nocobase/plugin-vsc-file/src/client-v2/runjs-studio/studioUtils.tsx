@@ -737,13 +737,6 @@ export function hasCompileErrorDiagnostics(diagnostics: RunJSCompileDiagnostic[]
   return diagnostics.some((item) => item.severity === 'error');
 }
 
-export function isConflictError(error: unknown): error is RunJSSourceRequestError {
-  return (
-    error instanceof RunJSSourceRequestError &&
-    (error.code === 'BASE_COMMIT_OUTDATED' || error.code === 'RUNJS_SOURCE_OWNER_OUTDATED')
-  );
-}
-
 export function isOwnerOutdatedError(error: unknown): error is RunJSSourceRequestError {
   return error instanceof RunJSSourceRequestError && error.code === 'RUNJS_SOURCE_OWNER_OUTDATED';
 }

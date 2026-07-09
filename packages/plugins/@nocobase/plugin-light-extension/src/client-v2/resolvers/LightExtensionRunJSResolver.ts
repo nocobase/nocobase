@@ -164,25 +164,40 @@ async function listLightExtensionSourceMenuItems(
     ? (input.sourceBinding as LightExtensionRuntimeSourceBinding)
     : null;
   const repoLabels = new Map(repos.map((repo) => [repo.id, getRepoLabel(repo)]));
-  const repoItems = Array.from(new Set(selectableEntries.map((entry) => entry.repoId))).map((repoId) => {
-    const entriesInRepo = selectableEntries.filter((entry) => entry.repoId === repoId);
+  const entriesByRepo = selectableEntries.reduce((groups, entry) => {
+    const entriesInRepo = groups.get(entry.repoId);
+    if (entriesInRepo) {
+      entriesInRepo.push(entry);
+    } else {
+      groups.set(entry.repoId, [entry]);
+    }
+    return groups;
+  }, new Map<string, LightExtensionSelectableEntryRecord[]>());
+  const sourceItems = Array.from(entriesByRepo.entries()).map(([repoId, entriesInRepo]) => {
     const repoLabel = repoLabels.get(repoId) || repoId;
+    if (entriesInRepo.length === 1) {
+      return createEntryMenuItem(entriesInRepo[0], currentBinding, input, t, repoLabel, {
+        label: repoLabel,
+      });
+    }
+
+    const entryItems = entriesInRepo.map((entry) => createEntryMenuItem(entry, currentBinding, input, t, repoLabel));
     return {
       key: `repo:${repoId}`,
       label: repoLabel,
       searchText: [repoId, repoLabel, ...entriesInRepo.map((entry) => getEntryLabel(entry))].join(' '),
-      children: entriesInRepo.map((entry) => createEntryMenuItem(entry, currentBinding, input, t, repoLabel)),
+      children: entryItems,
     };
   });
 
   return [
     {
       key: 'light-extension',
-      label: t('Light extension'),
-      searchText: [t('Light extension'), ...selectableEntries.map((entry) => getEntryLabel(entry))].join(' '),
-      disabled: repoItems.length === 0,
-      children: repoItems,
+      label: t('Light extensions'),
+      searchText: [t('Light extensions'), ...selectableEntries.map((entry) => getEntryLabel(entry))].join(' '),
+      disabled: true,
     },
+    ...sourceItems,
   ];
 }
 
@@ -192,13 +207,16 @@ function createEntryMenuItem(
   input: RunJSSourceMenuInput,
   t: (key: string, options?: Record<string, unknown>) => string,
   repoLabel: string,
+  options: { label?: string } = {},
 ): RunJSSourceMenuItem {
-  const label = getEntryLabel(entry);
+  const entryLabel = getEntryLabel(entry);
+  const label = options.label || entryLabel;
   return {
     key: `entry:${entry.id}`,
     label,
     searchText: [
       label,
+      entryLabel,
       entry.entryName,
       entry.entryPath,
       entry.repoId,

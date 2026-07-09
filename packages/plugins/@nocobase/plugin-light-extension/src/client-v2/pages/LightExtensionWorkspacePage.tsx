@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { DownloadOutlined, FileTextOutlined, SaveOutlined } from '@ant-design/icons';
+import { SaveOutlined } from '@ant-design/icons';
 import {
   CodeTab,
   CloseConfirmModal,
@@ -194,7 +194,6 @@ function LightExtensionWorkspacePage({
   const [restoreCommit, setRestoreCommit] = useState<RunJSSourceHistoryItem | null>(null);
   const [restoringVersion, setRestoringVersion] = useState(false);
   const [closeConfirmOpen, setCloseConfirmOpen] = useState(false);
-  const [settingsTypePreviewOpen, setSettingsTypePreviewOpen] = useState(false);
   const [notice, setNotice] = useState<{ type: 'success' | 'info' | 'warning' | 'error'; message: string } | null>(
     null,
   );
@@ -507,17 +506,6 @@ function LightExtensionWorkspacePage({
     URL.revokeObjectURL(url);
   };
 
-  const downloadSettingsTypes = () => {
-    const content = JSON.stringify({ files: settingsTypegen.files, diagnostics: settingsTypegen.diagnostics }, null, 2);
-    const blob = new Blob([content], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `${repo?.normalizedName || repo?.name || repoId || 'light-extension'}-settings-types.json`;
-    link.click();
-    URL.revokeObjectURL(url);
-  };
-
   const openSaveModal = useCallback(() => {
     if (!canWrite) {
       return;
@@ -757,20 +745,6 @@ function LightExtensionWorkspacePage({
                 ) : null}
                 {files.length > 0 ? (
                   <>
-                    <Flex align="center" gap={8} justify="space-between" style={{ marginBottom: 8 }}>
-                      <Space wrap>
-                        <Button
-                          icon={<FileTextOutlined />}
-                          onClick={() => setSettingsTypePreviewOpen((current) => !current)}
-                        >
-                          {t('Settings type preview')}
-                        </Button>
-                        <Button icon={<DownloadOutlined />} onClick={downloadSettingsTypes}>
-                          {t('Download settings types')}
-                        </Button>
-                      </Space>
-                    </Flex>
-                    {settingsTypePreviewOpen ? <SettingsTypePreviewPanel result={settingsTypegen} t={t} /> : null}
                     <CodeTab
                       activeFile={activeFile}
                       activePath={activePath}
@@ -836,65 +810,6 @@ function LightExtensionWorkspacePage({
         t={studioT}
       />
     </Flex>
-  );
-}
-
-function SettingsTypePreviewPanel({
-  result,
-  t,
-}: {
-  result: LightExtensionSettingsTypegenResult;
-  t: (key: string) => unknown;
-}) {
-  const firstFile = result.files[0];
-  return (
-    <div
-      data-testid="light-extension-settings-type-preview"
-      style={{
-        border: '1px solid #d9d9d9',
-        marginBottom: 8,
-        maxHeight: 260,
-        minHeight: 0,
-        overflow: 'auto',
-        padding: 12,
-      }}
-    >
-      <Space direction="vertical" size={8} style={{ width: '100%' }}>
-        <Typography.Text strong>{t('Generated settings types')}</Typography.Text>
-        {result.files.length > 0 ? (
-          <Space direction="vertical" size={2}>
-            {result.files.map((file) => (
-              <Typography.Text code key={file.path}>
-                {file.path}
-              </Typography.Text>
-            ))}
-          </Space>
-        ) : (
-          <Typography.Text type="secondary">{t('No settings types')}</Typography.Text>
-        )}
-        {result.diagnostics.length > 0 ? (
-          <Alert
-            showIcon
-            type={result.diagnostics.some((item) => item.severity === 'error') ? 'error' : 'warning'}
-            message={t('Settings type diagnostics')}
-            description={result.diagnostics.map((item) => `${item.code}: ${item.message}`).join('\n')}
-          />
-        ) : null}
-        {firstFile ? (
-          <Typography.Text
-            code
-            style={{
-              display: 'block',
-              maxHeight: 140,
-              overflow: 'auto',
-              whiteSpace: 'pre',
-            }}
-          >
-            {firstFile.content}
-          </Typography.Text>
-        ) : null}
-      </Space>
-    </div>
   );
 }
 

@@ -180,10 +180,6 @@ export interface RunJSSourcePublishResult {
 export interface RunJSSourcePublishInput {
   locator: RunJSSourceLocator;
   repoId?: string;
-  baseCommitId: string | null;
-  basePublishedCommitId: string | null;
-  baseOwnerFingerprint: string;
-  basePublishedOwnerFingerprint?: string;
   message: string;
   files: VscFileChange[];
   artifact?: Partial<RunJSRuntimeArtifact>;

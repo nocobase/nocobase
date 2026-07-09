@@ -28,20 +28,6 @@ export type ActionErrorState = {
 
 export type PendingDirtyAction = 'close' | 'refresh';
 
-export type ConflictState = {
-  message: string;
-  localFiles: RunJSWorkspaceFile[];
-  staleBaseFiles: RunJSWorkspaceFile[];
-  latestFiles: RunJSWorkspaceFile[];
-  latestHistory: RunJSSourceOpenWorkspaceResult['history'];
-  latestRepository: RunJSSourceOpenWorkspaceResult['repository'];
-  canRebase: boolean;
-  baseVersion: string;
-  latestVersion: string;
-  latestBaseCommitId: string | null;
-  latestOwnerFingerprint: string;
-};
-
 export type DiffViewState = {
   baseFiles: RunJSWorkspaceFile[];
   files: RunJSWorkspaceFile[];

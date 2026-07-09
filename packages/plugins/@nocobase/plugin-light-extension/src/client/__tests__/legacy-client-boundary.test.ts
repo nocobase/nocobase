@@ -10,7 +10,6 @@
 import fs from 'fs';
 import path from 'path';
 
-import { render, screen } from '@testing-library/react';
 import {
   JS_ACTION_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
   JS_ACTION_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
@@ -21,8 +20,8 @@ import {
   RunJSSourceResolverRegistry,
   registerBlockGridSelectSceneAddBlockProvider,
 } from '@nocobase/client-v2';
-import React from 'react';
 
+import LightExtensionListPage from '../../client-v2/pages/LightExtensionListPage';
 import PluginLightExtensionClient from '..';
 
 vi.mock('@nocobase/client-v2', async () => {
@@ -110,16 +109,7 @@ describe('plugin-light-extension legacy client boundary', () => {
     expect(source).not.toMatch(/from\s+['"]@nocobase\/client['"]|require\(['"]@nocobase\/client['"]\)/);
   });
 
-  it('links the legacy empty-state create button to the v2 creation flow', async () => {
-    Object.defineProperty(window, '__nocobase_modern_client_prefix__', {
-      configurable: true,
-      value: 'v',
-    });
-    Object.defineProperty(window, '__nocobase_public_path__', {
-      configurable: true,
-      value: '/',
-    });
-
+  it('uses the v2 settings page for the legacy settings route', async () => {
     const add = vi.fn();
     const plugin = new PluginLightExtensionClient(
       { name: 'light-extension' },
@@ -134,11 +124,6 @@ describe('plugin-light-extension legacy client boundary', () => {
     await plugin.load();
 
     const Component = add.mock.calls[0][1].Component;
-    render(React.createElement(Component));
-
-    expect(screen.getByRole('link', { name: 'Create light extension' })).toHaveAttribute(
-      'href',
-      '/v/admin/settings/light-extension?create=1',
-    );
+    expect(Component).toBe(LightExtensionListPage);
   });
 });
