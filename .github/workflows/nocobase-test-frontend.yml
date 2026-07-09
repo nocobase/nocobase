@@ -88,5 +88,7 @@ jobs:
           path: .
 
       - run: tar -xf node_modules.tar
-      - run: yarn test:client --shard=${{ matrix.shard }}/4
+      - run: yarn test:client --shard=${{ matrix.shard }}/4 --silent
+        env:
+          LOGGER_LEVEL: error
     timeout-minutes: 60
