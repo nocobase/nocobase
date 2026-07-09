@@ -80,6 +80,10 @@ const trimTrailingSlashes = (value: string) => {
   return match ? value.slice(0, -match[0].length) : value;
 };
 
+const ensureTrailingSlash = (value: string) => {
+  return `${trimTrailingSlashes(value)}/`;
+};
+
 const isRenderableComponentType = (value: unknown): value is AnyComponent => isValidElementType(value);
 
 export type DevDynamicImport = (packageName: string) => Promise<{ default: PluginClass }>;
@@ -432,15 +436,11 @@ export abstract class BaseApplication<
   }
 
   getCdnUrl() {
-    return window['__webpack_public_path__'] || this.getPublicPath();
+    return ensureTrailingSlash(window['__webpack_public_path__'] || this.getPublicPath());
   }
 
   getPublicPath() {
-    let publicPath = this.options.publicPath || '/';
-    if (!publicPath.endsWith('/')) {
-      publicPath += '/';
-    }
-    return publicPath;
+    return ensureTrailingSlash(this.options.publicPath || '/');
   }
 
   getApiUrl(pathname = '') {
