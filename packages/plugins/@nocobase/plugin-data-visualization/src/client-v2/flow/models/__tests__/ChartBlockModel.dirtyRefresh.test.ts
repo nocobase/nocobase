@@ -8,7 +8,7 @@
  */
 
 import { FlowEngine } from '@nocobase/flow-engine';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { ChartBlockModel } from '../ChartBlockModel';
 
 type ChartQuery = {
@@ -225,5 +225,191 @@ describe('ChartBlockModel onActive dirty refresh', () => {
     await model.onActive();
 
     expect(resource.refreshCalls).toBe(2);
+  });
+});
+
+describe('ChartBlockModel chart events binding', () => {
+  it('runs chart events once for the same chart instance and raw events, then reruns for a new chart instance', async () => {
+    const { model } = setupModel({
+      mode: 'builder',
+      collectionPath: ['main', 'orders'],
+    });
+    const raw = 'chart.on("click", () => {})';
+    const chartA = {} as any;
+    const chartB = {} as any;
+    const runjs = vi.spyOn(model.context, 'runjs').mockResolvedValue({ success: true, value: undefined });
+
+    await model.applyEvents(raw, chartA);
+    await model.applyEvents(raw, chartA);
+    await model.applyEvents(raw, chartB);
+
+    expect(runjs).toHaveBeenCalledTimes(2);
+    expect(runjs).toHaveBeenNthCalledWith(1, raw, expect.objectContaining({ chart: chartA }));
+    expect(runjs).toHaveBeenNthCalledWith(2, raw, expect.objectContaining({ chart: chartB }));
+  });
+
+  it('runs the previous cleanup function before applying different raw events', async () => {
+    const { model } = setupModel({
+      mode: 'builder',
+      collectionPath: ['main', 'orders'],
+    });
+    const firstCleanup = vi.fn();
+    const secondCleanup = vi.fn();
+    const chart = {} as any;
+
+    vi.spyOn(model.context, 'runjs').mockImplementation(async (raw: string) => {
+      return { success: true, value: raw === 'first' ? firstCleanup : secondCleanup };
+    });
+
+    await model.applyEvents('first', chart);
+    await model.applyEvents('second', chart);
+
+    expect(firstCleanup).toHaveBeenCalledTimes(1);
+    expect(secondCleanup).not.toHaveBeenCalled();
+  });
+
+  it('runs returned cleanup functions when events are cleared', async () => {
+    const { model } = setupModel({
+      mode: 'builder',
+      collectionPath: ['main', 'orders'],
+    });
+    const cleanup = vi.fn();
+    const chart = {} as any;
+
+    vi.spyOn(model.context, 'runjs').mockResolvedValue({ success: true, value: cleanup });
+
+    await model.applyEvents('return cleanup;', chart);
+    await model.applyEvents(undefined, chart);
+
+    expect(cleanup).toHaveBeenCalledTimes(1);
+  });
+
+  it('ignores stale onRefReady callbacks after chart events are cleared', async () => {
+    const { model } = setupModel({
+      mode: 'builder',
+      collectionPath: ['main', 'orders'],
+    });
+    const chartRef = { current: null as any };
+    const chart = {} as any;
+    let readyCallback: (() => Promise<void>) | undefined;
+    const runjs = vi.spyOn(model.context, 'runjs').mockResolvedValue({ success: true, value: undefined });
+
+    model.context.defineProperty('chartRef', { value: chartRef });
+    vi.spyOn(model.context, 'onRefReady').mockImplementation((_ref: any, callback: any) => {
+      readyCallback = callback;
+    });
+
+    await model.applyEvents('chart.on("click", () => {})');
+    await model.applyEvents(undefined);
+
+    chartRef.current = chart;
+    await readyCallback?.();
+
+    expect(runjs).not.toHaveBeenCalled();
+  });
+
+  it('ignores stale onRefReady callbacks after chart events are replaced', async () => {
+    const { model } = setupModel({
+      mode: 'builder',
+      collectionPath: ['main', 'orders'],
+    });
+    const chartRef = { current: null as any };
+    const chart = {} as any;
+    const readyCallbacks: (() => Promise<void>)[] = [];
+    const runjs = vi.spyOn(model.context, 'runjs').mockResolvedValue({ success: true, value: undefined });
+
+    model.context.defineProperty('chartRef', { value: chartRef });
+    vi.spyOn(model.context, 'onRefReady').mockImplementation((_ref: any, callback: any) => {
+      readyCallbacks.push(callback);
+    });
+
+    await model.applyEvents('first');
+    await model.applyEvents('second');
+
+    chartRef.current = chart;
+    await readyCallbacks[0]?.();
+    await readyCallbacks[1]?.();
+
+    expect(runjs).toHaveBeenCalledTimes(1);
+    expect(runjs).toHaveBeenCalledWith('second', expect.objectContaining({ chart }));
+  });
+
+  it('does not run stale chart events after asynchronous cleanup finishes', async () => {
+    const { model } = setupModel({
+      mode: 'builder',
+      collectionPath: ['main', 'orders'],
+    });
+    const chart = {} as any;
+    let resolveCleanup: (() => void) | undefined;
+    const cleanup = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          resolveCleanup = resolve;
+        }),
+    );
+    const runjs = vi
+      .spyOn(model.context, 'runjs')
+      .mockResolvedValueOnce({ success: true, value: cleanup })
+      .mockResolvedValueOnce({ success: true, value: undefined });
+
+    await model.applyEvents('active', chart);
+    const staleApply = model.applyEvents('stale', chart);
+    await Promise.resolve();
+    expect(cleanup).toHaveBeenCalledTimes(1);
+    const clearApply = model.applyEvents(undefined, chart);
+    resolveCleanup?.();
+    await Promise.all([staleApply, clearApply]);
+
+    expect(runjs).toHaveBeenCalledTimes(1);
+    expect(runjs).toHaveBeenCalledWith('active', expect.objectContaining({ chart }));
+  });
+
+  it('clears the bound marker when chart events throw so the same chart can retry', async () => {
+    const { model } = setupModel({
+      mode: 'builder',
+      collectionPath: ['main', 'orders'],
+    });
+    const raw = 'chart.on("click", () => {})';
+    const chart = {} as any;
+    const runjs = vi
+      .spyOn(model.context, 'runjs')
+      .mockRejectedValueOnce(new Error('events failed'))
+      .mockResolvedValueOnce({ success: true, value: undefined });
+
+    await expect(model.applyEvents(raw, chart)).rejects.toThrow('events failed');
+    await model.applyEvents(raw, chart);
+
+    expect(runjs).toHaveBeenCalledTimes(2);
+  });
+
+  it('handles asynchronous onRefReady chart event failures explicitly', async () => {
+    const { model } = setupModel({
+      mode: 'builder',
+      collectionPath: ['main', 'orders'],
+    });
+    const raw = 'chart.on("click", () => {})';
+    const chart = {} as any;
+    const error = new Error('events failed');
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const applyEvents = vi.spyOn(model, 'applyEvents').mockRejectedValue(error);
+    model.setProps({ chart: {} } as any);
+    model.setStepParams('chartSettings', 'configure', {
+      query: {
+        mode: 'builder',
+        collectionPath: ['main', 'orders'],
+      },
+      chart: {
+        events: {
+          raw,
+        },
+      },
+    });
+
+    (model as any).__onChartRefReady(chart);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(applyEvents).toHaveBeenCalledWith(raw, chart);
+    expect(consoleError).toHaveBeenCalledWith('Chart applyEvents error:', error);
+    consoleError.mockRestore();
   });
 });

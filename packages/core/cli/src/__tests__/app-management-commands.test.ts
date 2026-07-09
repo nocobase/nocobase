@@ -2828,6 +2828,9 @@ test('env info shows grouped app details with secrets masked by default', async 
 
   await EnvInfo.prototype.run.call(command);
 
+  expect(String(command.log.mock.calls[0]?.[0] ?? '')).toContain('Env');
+  expect(String(command.log.mock.calls[0]?.[0] ?? '')).toContain('name');
+  expect(String(command.log.mock.calls[0]?.[0] ?? '')).toContain('app1');
   expect(String(command.log.mock.calls[0]?.[0] ?? '')).toContain('App');
   expect(String(command.log.mock.calls[0]?.[0] ?? '')).toContain('sourcePath');
   expect(String(command.log.mock.calls[0]?.[0] ?? '')).toContain('/tmp/local-app');
@@ -2885,6 +2888,7 @@ test('env info supports the deprecated --env alias with grouped json output', as
 
   expect(JSON.parse(String(command.log.mock.calls[0]?.[0] ?? '{}'))).toEqual({
     ok: true,
+    name: 'remote',
     kind: 'http',
     env: 'remote',
     app: {
@@ -2961,6 +2965,7 @@ test('env info derives app url from api base urls with public paths and subapps'
 
   expect(JSON.parse(String(command.log.mock.calls[0]?.[0] ?? '{}'))).toMatchObject({
     ok: true,
+    name: 'remote',
     kind: 'http',
     env: 'remote',
     app: {
@@ -3118,6 +3123,7 @@ test('env info supports positional env name and shows grouped details', async ()
   expect(mocks.resolveManagedAppRuntime.mock.calls).toEqual([['remote']]);
   expect(JSON.parse(String(command.log.mock.calls[0]?.[0] ?? '{}'))).toMatchObject({
     ok: true,
+    name: 'remote',
     kind: 'http',
     env: 'remote',
     api: {

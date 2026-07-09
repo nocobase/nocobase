@@ -892,6 +892,7 @@ export class AIEmployee {
       knowledgeBase,
       availableSkills,
       availableAIEmployees,
+      webSearch: this.webSearch,
     });
 
     const { important } = this.ctx.action?.params?.values || {};

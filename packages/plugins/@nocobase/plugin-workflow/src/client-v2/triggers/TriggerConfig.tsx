@@ -10,8 +10,14 @@
 import { css } from '@emotion/css';
 import React, { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import { useMemoizedFn } from 'ahooks';
-import { App, Form, Input, Skeleton, Tag, Tooltip, Typography, theme } from 'antd';
-import { ThunderboltOutlined } from '@ant-design/icons';
+import { Alert, App, Form, Input, Skeleton, Tag, Tooltip, Typography, theme } from 'antd';
+import {
+  CheckCircleFilled,
+  CloseCircleFilled,
+  ExclamationCircleFilled,
+  InfoCircleFilled,
+  ThunderboltOutlined,
+} from '@ant-design/icons';
 import { DrawerFormLayout } from '@nocobase/client-v2';
 import { useFlowContext as useFlowEngineContext } from '@nocobase/flow-engine';
 import {
@@ -22,6 +28,7 @@ import {
 import useStyles from '../canvas/style';
 import { useT } from '../locale';
 import { PluginWorkflowClientV2 } from '../plugin';
+import type { WorkflowNotice } from '../plugin';
 import { TriggerExecutionButton } from './TriggerExecutionButton';
 import type { Trigger } from '.';
 
@@ -203,15 +210,45 @@ function isInteractiveClickTarget(target: EventTarget | null): boolean {
   return Boolean(target.closest('textarea, input, button, a, .ant-dropdown, .workflow-node-actions, .ant-modal'));
 }
 
+function CompactNoticeMessage({
+  message,
+  token,
+}: {
+  message: React.ReactNode;
+  token: ReturnType<typeof theme.useToken>['token'];
+}) {
+  return (
+    <span style={{ fontSize: token.fontSize, fontWeight: 'normal', lineHeight: token.lineHeight }}>{message}</span>
+  );
+}
+
+function getCompactNoticeIcon(type: WorkflowNotice['type'], token: ReturnType<typeof theme.useToken>['token']) {
+  const style = { fontSize: token.fontSize, marginTop: token.marginXXS };
+
+  switch (type) {
+    case 'error':
+      return <CloseCircleFilled style={{ ...style, color: token.colorError }} />;
+    case 'info':
+      return <InfoCircleFilled style={{ ...style, color: token.colorInfo }} />;
+    case 'success':
+      return <CheckCircleFilled style={{ ...style, color: token.colorSuccess }} />;
+    case 'warning':
+    default:
+      return <ExclamationCircleFilled style={{ ...style, color: token.colorWarning }} />;
+  }
+}
+
 export function TriggerConfig() {
   const flowEngine = useFlowEngineContext();
   const t = useT();
+  const { token } = theme.useToken();
   const { styles, cx } = useStyles();
   const { workflow, refresh } = useCanvasFlowContext() ?? {};
   const executed = Boolean(useWorkflowCanvasExecuted());
   const plugin = flowEngine.app.pm.get(PluginWorkflowClientV2) as PluginWorkflowClientV2;
   const trigger = workflow?.type ? plugin.getTriggerOptions(workflow.type) : undefined;
   const triggerTitle = trigger ? t(trigger.title) : workflow?.type ?? t('Unknown trigger');
+  const notices = executed ? [] : plugin.getWorkflowNotices({ surface: 'trigger-node-card', workflow });
   const [editingTitle, setEditingTitle] = useState<string>('');
 
   useEffect(() => {
@@ -288,6 +325,16 @@ export function TriggerConfig() {
             aria-label={t('Trigger title')}
           />
         </div>
+        {notices.map((notice) => (
+          <Alert
+            key={notice.key}
+            type={notice.type || 'warning'}
+            showIcon
+            icon={getCompactNoticeIcon(notice.type || 'warning', token)}
+            message={<CompactNoticeMessage message={notice.message} token={token} />}
+            style={{ marginTop: token.marginSM, alignItems: 'flex-start' }}
+          />
+        ))}
       </div>
     </div>
   );

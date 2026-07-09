@@ -385,7 +385,7 @@ describe('PublicFormsSettingsPage toolbar', () => {
 });
 
 describe('PublicFormsSettingsLayoutModel password settings', () => {
-  it('renders the configured page model inside an embed FlowView context', async () => {
+  it('renders the configured page model inside an embed FlowView context without forcing UI Editor mode', async () => {
     const pageModel = {
       uid: 'page-model-1',
       context: new FlowContext(),
@@ -424,12 +424,105 @@ describe('PublicFormsSettingsLayoutModel password settings', () => {
       type: 'embed',
       inputArgs: {},
     });
-    expect(testState.renderedFlowSettingsEnabled).toBe(true);
+    expect(testState.renderedFlowSettingsEnabled).toBe(false);
     expect(testState.renderedModelFlowView).toMatchObject({
       type: 'embed',
       inputArgs: {},
     });
+    expect(testState.renderedModelFlowSettingsEnabled).toBe(false);
+  });
+
+  it('inherits UI Editor mode from the outer flow context', async () => {
+    const pageModel = {
+      uid: 'page-model-1',
+      context: new FlowContext(),
+    };
+    const routeModel = {
+      uid: 'form-1',
+      subModels: {
+        page: pageModel,
+      },
+    };
+    testState.routeParams = {
+      name: 'form-1',
+    };
+    (testState.flowContext as FlowContext).defineProperty('flowSettingsEnabled', {
+      value: true,
+    });
+    testState.get.mockResolvedValue({
+      data: {
+        data: {
+          key: 'form-1',
+          title: 'Form 1',
+          version: 'v2',
+          enabled: true,
+        },
+      },
+    });
+    testState.ensurePublicFormFlowModel.mockResolvedValue(routeModel);
+
+    render(
+      React.createElement(
+        MemoryRouter,
+        null,
+        React.createElement(App, null, React.createElement(PublicFormsSettingsDetailPage)),
+      ),
+    );
+
+    expect((await screen.findByTestId('flow-model-renderer')).textContent).toBe('page-model-1');
+    expect(testState.renderedFlowSettingsEnabled).toBe(true);
     expect(testState.renderedModelFlowSettingsEnabled).toBe(true);
+  });
+
+  it('keeps UI Editor mode bound to the outer flow context after render', async () => {
+    let flowSettingsEnabled = false;
+    const pageModel = {
+      uid: 'page-model-1',
+      context: new FlowContext(),
+    };
+    const routeModel = {
+      uid: 'form-1',
+      subModels: {
+        page: pageModel,
+      },
+    };
+    const getFlowSettingsEnabled = (context: FlowContext) =>
+      (context as FlowContext & { flowSettingsEnabled?: boolean }).flowSettingsEnabled;
+
+    testState.routeParams = {
+      name: 'form-1',
+    };
+    (testState.flowContext as FlowContext).defineProperty('flowSettingsEnabled', {
+      get: () => flowSettingsEnabled,
+      cache: false,
+    });
+    testState.get.mockResolvedValue({
+      data: {
+        data: {
+          key: 'form-1',
+          title: 'Form 1',
+          version: 'v2',
+          enabled: true,
+        },
+      },
+    });
+    testState.ensurePublicFormFlowModel.mockResolvedValue(routeModel);
+
+    render(
+      React.createElement(
+        MemoryRouter,
+        null,
+        React.createElement(App, null, React.createElement(PublicFormsSettingsDetailPage)),
+      ),
+    );
+
+    expect((await screen.findByTestId('flow-model-renderer')).textContent).toBe('page-model-1');
+    expect(testState.renderedFlowSettingsEnabled).toBe(false);
+    expect(testState.renderedModelFlowSettingsEnabled).toBe(false);
+    expect(getFlowSettingsEnabled(pageModel.context)).toBe(false);
+
+    flowSettingsEnabled = true;
+    expect(getFlowSettingsEnabled(pageModel.context)).toBe(true);
   });
 
   it('does not render v1 records from the v2 configure route', async () => {
