@@ -93,20 +93,52 @@ describe('JSFieldModel light extension source', () => {
         | Promise<{ props?: { footer?: unknown; title?: unknown } }>;
     };
     const sourceModeStep = flow?.steps?.sourceMode as {
+      uiMode?: { props?: { loadItems?: (input: unknown) => Promise<unknown> } };
       useRawParams?: boolean;
       uiSchema?: Record<string, Record<string, unknown>>;
       defaultParams?: (ctx: FlowSettingsContext<JSFieldModel>) => Record<string, unknown>;
       beforeParamsSave?: (ctx: typeof model.context, params: Record<string, unknown>, previousParams: unknown) => void;
     };
     const sourceBindingStep = flow?.steps?.sourceBinding as {
+      hideInSettings?: boolean;
       uiSchema?: Record<string, Record<string, unknown>>;
     };
 
     expect(sourceModeStep?.useRawParams).toBe(true);
+    const listSourceMenuItems = vi.fn(async () => []);
+    RunJSSourceResolverRegistry.registerResolver({
+      sourceMode: 'light-extension',
+      resolve: () => ({
+        code: '',
+      }),
+      listSourceMenuItems,
+    });
+    await sourceModeStep?.uiMode?.props?.loadItems?.({
+      params: {
+        sourceMode: 'inline',
+      },
+      defaultParams: {},
+      t: (key: string) => key,
+    });
+    expect(listSourceMenuItems).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: 'js-field',
+        defaultVersionPolicy: 'follow-active',
+      }),
+    );
     expect(sourceModeStep?.uiSchema?.sourceMode?.['x-component']).toBe('JSFieldLightExtensionFullSourceField');
+    expect(sourceModeStep?.uiSchema?.sourceMode?.['x-component-props']).toMatchObject({
+      kind: 'js-field',
+      defaultVersionPolicy: 'follow-active',
+    });
     expect(sourceModeStep?.uiSchema?.sourceBinding?.['x-display']).toBe('hidden');
     expect(sourceModeStep?.uiSchema?.settings?.['x-display']).toBe('hidden');
+    expect(sourceBindingStep?.hideInSettings).toBe(true);
     expect(sourceBindingStep?.uiSchema?.sourceBinding?.['x-component']).toBe('JSFieldLightExtensionFullSourceField');
+    expect(sourceBindingStep?.uiSchema?.sourceBinding?.['x-component-props']).toMatchObject({
+      kind: 'js-field',
+      defaultVersionPolicy: 'follow-active',
+    });
     expect(runJsStep?.uiSchema?.sourceMode?.['x-display']).toBe('hidden');
     expect(runJsStep?.uiSchema?.sourceBinding?.['x-display']).toBe('hidden');
     expect(runJsStep?.uiSchema?.settings?.['x-display']).toBe('hidden');

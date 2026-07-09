@@ -284,7 +284,11 @@ export type StepUIMode =
   | 'embed'
   // | 'switch'
   // | 'select'
-  | { type?: 'dialog' | 'drawer' | 'embed' | 'select' | 'switch'; props?: Record<string, any>; key?: string };
+  | {
+      type?: 'dialog' | 'drawer' | 'embed' | 'select' | 'switch' | 'cascadeMenu';
+      props?: Record<string, any>;
+      key?: string;
+    };
 // | { type: 'switch'; props?: Record<string, any> }
 // | { type: 'select'; props?: Record<string, any> }
 

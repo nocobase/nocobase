@@ -9,6 +9,7 @@
 
 import type {
   LightExtensionEntryPublicationsSelectorResult,
+  LightExtensionRepoRecord,
   LightExtensionSelectableEntryRecord,
   LightExtensionSelectableEntriesInput,
 } from '../../shared/types';
@@ -52,6 +53,15 @@ export async function listLightExtensionEntryPublications(
   });
 
   return unwrapResourceResponse(response);
+}
+
+export async function listLightExtensionRepos(api: ApiClientLike): Promise<LightExtensionRepoRecord[]> {
+  const response = await api.request<ResourceResponse<LightExtensionRepoRecord[]>>({
+    url: 'lightExtensionRepos:list',
+    method: 'post',
+  });
+
+  return unwrapResourceResponse(response) || [];
 }
 
 export function unwrapResourceResponse<T>(response: ResourceResponse<T>): T {

@@ -110,7 +110,7 @@ describe('JSBlockModel light extension source', () => {
     expect(app.flowEngine.flowSettings.components.JSBlockLightExtensionSourceField).toBe(JSBlockSourceModeField);
   });
 
-  it('moves code source selection to the block settings menu', async () => {
+  it('uses the cascade source picker in the block settings menu', async () => {
     const engine = new FlowEngine();
     engine.registerModels({ JSBlockModel });
     const model = engine.createModel<JSBlockModel>({
@@ -131,9 +131,17 @@ describe('JSBlockModel light extension source', () => {
         type?: string;
         key?: string;
         props?: {
-          options?: Array<{ label: string; value: string }>;
+          searchPlaceholder?: string;
+          loadItems?: (input: {
+            params: Record<string, unknown>;
+            defaultParams: Record<string, unknown>;
+            t: (key: string) => string;
+          }) => Promise<Array<{ key: string; label: string }>>;
+          getDisplayLabel?: (input: { params: Record<string, unknown>; t: (key: string) => string }) => string;
         };
       };
+      useRawParams?: boolean;
+      uiSchema?: Record<string, Record<string, unknown>>;
       defaultParams?: (ctx: typeof model.context) => Record<string, unknown> | Promise<Record<string, unknown>>;
       beforeParamsSave?: (ctx: typeof model.context, params: Record<string, unknown>, previousParams: unknown) => void;
       afterParamsSave?: (ctx: typeof model.context, params: Record<string, unknown>, previousParams: unknown) => void;
@@ -141,16 +149,33 @@ describe('JSBlockModel light extension source', () => {
 
     expect(sourceModeStep?.title).toBe('{{t("Code source")}}');
     expect(sourceModeStep?.uiMode).toMatchObject({
-      type: 'select',
+      type: 'cascadeMenu',
       key: 'sourceMode',
       props: {
-        options: [
-          { label: 'Light extension', value: 'light-extension' },
-          { label: 'Inline Code', value: 'inline' },
-        ],
+        searchPlaceholder: 'Search light extensions',
       },
     });
-    expect(await sourceModeStep.defaultParams?.(model.context)).toEqual({ sourceMode: 'inline' });
+    expect(sourceModeStep?.uiMode?.props?.loadItems).toBeTypeOf('function');
+    expect(sourceModeStep?.uiMode?.props?.getDisplayLabel).toBeTypeOf('function');
+    expect(
+      sourceModeStep?.uiMode?.props?.getDisplayLabel?.({
+        params: {
+          sourceMode: 'light-extension',
+          sourceBinding: {
+            repoTitle: 'Orders',
+            entryTitle: 'Order total calculator',
+          },
+        },
+        t: (key: string) => key,
+      }),
+    ).toBe('Orders / Order total calculator');
+    expect(sourceModeStep?.useRawParams).toBe(true);
+    expect(sourceModeStep?.uiSchema).toBeUndefined();
+    expect(await sourceModeStep.defaultParams?.(model.context)).toEqual({
+      sourceMode: 'inline',
+      sourceBinding: undefined,
+      settings: {},
+    });
     expect(runJsStep?.uiSchema?.sourceMode?.['x-display']).toBe('hidden');
     expect(runJsStep?.uiSchema?.sourceMode?.['x-component']).toBeUndefined();
     expect(runJsStep?.uiSchema?.sourceBinding?.['x-display']).toBe('hidden');
@@ -161,6 +186,56 @@ describe('JSBlockModel light extension source', () => {
     const runJsUiMode = await runJsStep?.uiMode?.(new FlowRuntimeContext(model, 'jsSettings', 'settings'));
     expect(runJsUiMode?.props?.footer).toBeNull();
     expect(model.getFlow('jsSettings')?.steps?.lightExtensionSource).toBeUndefined();
+  });
+
+  it('loads inline and resolver-backed source menu items for JS Block', async () => {
+    const listSourceMenuItems = vi.fn(async () => [
+      {
+        key: 'light-extension',
+        label: 'Light extension',
+      },
+    ]);
+    RunJSSourceResolverRegistry.registerResolver({
+      sourceMode: 'light-extension',
+      resolve: () => ({
+        code: 'ctx.render("ok");',
+      }),
+      listSourceMenuItems,
+    });
+    const engine = new FlowEngine();
+    engine.registerModels({ JSBlockModel });
+    const model = engine.createModel<JSBlockModel>({
+      use: 'JSBlockModel',
+      uid: 'js-block-source-menu-items',
+    });
+    const sourceModeStep = model.getFlow('jsSettings')?.steps?.sourceMode as {
+      uiMode?: {
+        props?: {
+          loadItems?: (input: {
+            params: Record<string, unknown>;
+            defaultParams: Record<string, unknown>;
+            t: (key: string) => string;
+          }) => Promise<Array<{ key: string; label: string }>>;
+        };
+      };
+    };
+
+    const items = await sourceModeStep.uiMode?.props?.loadItems?.({
+      params: {
+        sourceMode: 'inline',
+      },
+      defaultParams: {},
+      t: (key) => key,
+    });
+
+    expect(items?.map((item) => item.key)).toEqual(['inline', 'light-extension']);
+    expect(listSourceMenuItems).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: 'js-block',
+        defaultVersionPolicy: 'follow-active',
+        sourceMode: 'inline',
+      }),
+    );
   });
 
   it('includes the selected light extension name in the RunJS drawer title', async () => {
@@ -254,10 +329,24 @@ describe('JSBlockModel light extension source', () => {
     const invalidateSpy = vi.spyOn(model, 'invalidateFlowCache');
     const rerenderSpy = vi.spyOn(model, 'rerender').mockResolvedValue(undefined);
 
-    sourceModeStep.beforeParamsSave?.(model.context, { sourceMode: 'light-extension' }, {});
+    sourceModeStep.beforeParamsSave?.(
+      model.context,
+      {
+        sourceMode: 'light-extension',
+        sourceBinding: SOURCE_BINDING,
+        settings: {
+          title: 'Sales',
+        },
+      },
+      {},
+    );
 
     expect(model.getStepParams('jsSettings', 'runJs')).toMatchObject({
       sourceMode: 'light-extension',
+      sourceBinding: SOURCE_BINDING,
+      settings: {
+        title: 'Sales',
+      },
       code: 'ctx.render("inline");',
       version: 'v2',
     });

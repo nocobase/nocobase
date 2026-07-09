@@ -50,6 +50,29 @@ export interface RunJSSourceSettingsDescriptor {
   schemaHash?: string;
 }
 
+export interface RunJSSourceMenuItem {
+  key: string;
+  label: string;
+  children?: RunJSSourceMenuItem[];
+  disabled?: boolean;
+  searchText?: string;
+  selected?: boolean;
+  onSelect?: (
+    input: RunJSSourceMenuSelectInput,
+  ) => Record<string, unknown> | void | Promise<Record<string, unknown> | void>;
+}
+
+export interface RunJSSourceMenuInput extends RuntimeRunJSInput {
+  kind?: string;
+  defaultVersionPolicy?: string;
+  t?: (key: string, options?: Record<string, unknown>) => string;
+}
+
+export interface RunJSSourceMenuSelectInput extends RunJSSourceMenuInput {
+  params: Record<string, unknown>;
+  defaultParams: Record<string, unknown>;
+}
+
 export interface ResolvedRuntimeRunJS {
   code: string;
   version: string;
@@ -67,6 +90,7 @@ export interface RunJSSourceResolver {
   getSettingsDescriptor?: (
     input: RunJSSourceResolverInput,
   ) => RunJSSourceSettingsDescriptor | undefined | Promise<RunJSSourceSettingsDescriptor | undefined>;
+  listSourceMenuItems?: (input: RunJSSourceMenuInput) => RunJSSourceMenuItem[] | Promise<RunJSSourceMenuItem[]>;
 }
 
 export type RunJSSourceResolverErrorCode =

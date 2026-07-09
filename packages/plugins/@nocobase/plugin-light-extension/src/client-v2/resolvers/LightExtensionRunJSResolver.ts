@@ -7,12 +7,19 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { RunJSSourceResolver, RunJSSourceResolverInput, RunJSSourceResolverResult } from '@nocobase/client-v2';
+import type {
+  RunJSSourceMenuInput,
+  RunJSSourceMenuItem,
+  RunJSSourceResolver,
+  RunJSSourceResolverInput,
+  RunJSSourceResolverResult,
+} from '@nocobase/client-v2';
 
 import { LIGHT_EXTENSION_SUPPORTED_KINDS } from '../../constants';
 import type {
   LightExtensionKind,
   LightExtensionPublicationMetadataRecord,
+  LightExtensionRepoRecord,
   LightExtensionRuntimeResolveInput,
   LightExtensionRuntimeResolveResult,
   LightExtensionRuntimeSourceBinding,
@@ -21,6 +28,7 @@ import type {
 import type { ApiClientLike } from '../api/lightExtensionEntriesRequests';
 import {
   listLightExtensionEntryPublications,
+  listLightExtensionRepos,
   listSelectableLightExtensionEntries,
   unwrapResourceResponse,
 } from '../api/lightExtensionEntriesRequests';
@@ -107,6 +115,9 @@ export function createLightExtensionRunJSResolver(api: ApiClientLike): RunJSSour
         schemaHash: publication.settingsSchemaHash,
       };
     },
+    async listSourceMenuItems(input) {
+      return listLightExtensionSourceMenuItems(api, input);
+    },
   };
 }
 
@@ -130,6 +141,168 @@ export async function resolveLightExtensionRuntimeSource(
 
 function getEntryLabel(entry: LightExtensionSelectableEntryRecord): string {
   return entry.title || entry.entryName || entry.id;
+}
+
+async function listLightExtensionSourceMenuItems(
+  api: ApiClientLike,
+  input: RunJSSourceMenuInput,
+): Promise<RunJSSourceMenuItem[]> {
+  const kind = toSupportedKind(input.kind);
+  if (!kind) {
+    return [];
+  }
+
+  const [entries, repos] = await Promise.all([
+    listSelectableLightExtensionEntries(api, { kind }),
+    listLightExtensionRepos(api).catch(() => [] as LightExtensionRepoRecord[]),
+  ]);
+  const selectableEntries = entries.filter(
+    (entry) => entry.kind === kind && isPublicationForEntry(entry.activePublication, entry, kind),
+  );
+  const t = input.t || ((key: string) => key);
+  const currentBinding = isRecord(input.sourceBinding)
+    ? (input.sourceBinding as LightExtensionRuntimeSourceBinding)
+    : null;
+  const repoLabels = new Map(repos.map((repo) => [repo.id, getRepoLabel(repo)]));
+  const repoItems = Array.from(new Set(selectableEntries.map((entry) => entry.repoId))).map((repoId) => {
+    const entriesInRepo = selectableEntries.filter((entry) => entry.repoId === repoId);
+    const repoLabel = repoLabels.get(repoId) || repoId;
+    return {
+      key: `repo:${repoId}`,
+      label: repoLabel,
+      searchText: [repoId, repoLabel, ...entriesInRepo.map((entry) => getEntryLabel(entry))].join(' '),
+      children: entriesInRepo.map((entry) => createEntryMenuItem(entry, currentBinding, input, t, repoLabel)),
+    };
+  });
+
+  return [
+    {
+      key: 'light-extension',
+      label: t('Light extension'),
+      searchText: [t('Light extension'), ...selectableEntries.map((entry) => getEntryLabel(entry))].join(' '),
+      disabled: repoItems.length === 0,
+      children: repoItems,
+    },
+  ];
+}
+
+function createEntryMenuItem(
+  entry: LightExtensionSelectableEntryRecord,
+  currentBinding: LightExtensionRuntimeSourceBinding | null,
+  input: RunJSSourceMenuInput,
+  t: (key: string, options?: Record<string, unknown>) => string,
+  repoLabel: string,
+): RunJSSourceMenuItem {
+  const label = getEntryLabel(entry);
+  return {
+    key: `entry:${entry.id}`,
+    label,
+    searchText: [
+      label,
+      entry.entryName,
+      entry.entryPath,
+      entry.repoId,
+      repoLabel,
+      getKindLabel(entry.kind as LightExtensionKind, t),
+    ]
+      .filter(Boolean)
+      .join(' '),
+    selected:
+      input.sourceMode === 'light-extension' &&
+      currentBinding?.repoId === entry.repoId &&
+      currentBinding.entryId === entry.id &&
+      currentBinding.kind === entry.kind,
+    onSelect({ params, defaultParams }) {
+      return {
+        ...defaultParams,
+        ...params,
+        sourceMode: 'light-extension',
+        sourceBinding: createRuntimeSourceBinding(entry, input.defaultVersionPolicy, repoLabel),
+        settings: mergeSettings(
+          clonePublicationDefaults(entry.activePublication),
+          isRecord(params.settings) ? params.settings : undefined,
+          entry.activePublication,
+        ),
+      };
+    },
+  };
+}
+
+function createRuntimeSourceBinding(
+  entry: LightExtensionSelectableEntryRecord,
+  defaultVersionPolicy: string | undefined,
+  repoLabel: string,
+): LightExtensionRuntimeSourceBinding {
+  return {
+    type: 'light-extension-entry',
+    repoId: entry.repoId,
+    repoTitle: repoLabel,
+    entryId: entry.id,
+    entryTitle: getEntryLabel(entry),
+    entryName: entry.entryName,
+    entryPath: entry.entryPath,
+    kind: entry.kind,
+    publicationId: entry.activePublication.id,
+    versionPolicy: defaultVersionPolicy === 'follow-active' ? 'follow-active' : 'pinned',
+  };
+}
+
+function getRepoLabel(repo: LightExtensionRepoRecord): string {
+  return repo.title || repo.name || repo.id;
+}
+
+function clonePublicationDefaults(publication: LightExtensionPublicationMetadataRecord): Record<string, unknown> {
+  return isRecord(publication.settingsDefaultsSnapshot)
+    ? cloneRecord(publication.settingsDefaultsSnapshot as Record<string, unknown>)
+    : {};
+}
+
+function mergeSettings(
+  defaults: Record<string, unknown>,
+  current: Record<string, unknown> | undefined,
+  publication: LightExtensionPublicationMetadataRecord,
+): Record<string, unknown> {
+  const allowedSettings = getSettingsSchemaPropertyNames(publication.settingsSchemaSnapshot);
+  if (!allowedSettings) {
+    return {
+      ...defaults,
+      ...(current || {}),
+    };
+  }
+
+  return {
+    ...defaults,
+    ...(current ? Object.fromEntries(Object.entries(current).filter(([key]) => allowedSettings.has(key))) : {}),
+  };
+}
+
+function getSettingsSchemaPropertyNames(schema: unknown): Set<string> | null {
+  if (!isRecord(schema) || !isRecord(schema.properties)) {
+    return null;
+  }
+  return new Set(Object.keys(schema.properties));
+}
+
+function getKindLabel(kind: LightExtensionKind | string, t: (key: string) => string): string {
+  if (kind === 'js-block') {
+    return t('JS Block');
+  }
+  if (kind === 'js-field') {
+    return t('JS Field');
+  }
+  if (kind === 'js-action') {
+    return t('JS Action');
+  }
+  if (kind === 'js-item') {
+    return t('JS Item');
+  }
+  if (kind === 'runjs') {
+    return t('RunJS');
+  }
+  if (kind === 'event') {
+    return t('Event');
+  }
+  return String(kind);
 }
 
 async function getSettingsDescriptorPublication(

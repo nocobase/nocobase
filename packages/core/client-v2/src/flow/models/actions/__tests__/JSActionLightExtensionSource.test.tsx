@@ -25,7 +25,7 @@ describe('JSActionModel light extension source', () => {
     RunJSSourceResolverRegistry.clear();
   });
 
-  it('adds JS Action source mode, binding, and hidden RunJS source fields', () => {
+  it('adds JS Action source mode, binding, and hidden RunJS source fields', async () => {
     const { model } = createActionModel<JSActionModel>({
       ModelClass: JSActionModel,
       use: 'JSActionModel',
@@ -38,14 +38,42 @@ describe('JSActionModel light extension source', () => {
     const runJsStep = flow?.steps?.runJs as StepDefinition;
 
     expect(sourceModeStep?.useRawParams).toBe(true);
+    const listSourceMenuItems = vi.fn(async () => []);
+    RunJSSourceResolverRegistry.registerResolver({
+      sourceMode: 'light-extension',
+      resolve: () => ({
+        code: '',
+      }),
+      listSourceMenuItems,
+    });
+    await (
+      sourceModeStep.uiMode as { props?: { loadItems?: (input: unknown) => Promise<unknown> } }
+    )?.props?.loadItems?.({
+      params: {
+        sourceMode: 'inline',
+      },
+      defaultParams: {},
+      t: (key: string) => key,
+    });
+    expect(listSourceMenuItems).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: 'js-action',
+        defaultVersionPolicy: 'follow-active',
+      }),
+    );
     expect(sourceModeStep?.uiSchema?.sourceMode?.['x-component']).toBe('JSActionLightExtensionFullSourceField');
     expect(sourceModeStep?.uiSchema?.sourceMode?.['x-component-props']).toMatchObject({
       kind: 'js-action',
-      defaultVersionPolicy: 'pinned',
+      defaultVersionPolicy: 'follow-active',
     });
     expect(sourceModeStep?.uiSchema?.sourceBinding?.['x-display']).toBe('hidden');
     expect(sourceModeStep?.uiSchema?.settings?.['x-display']).toBe('hidden');
+    expect(sourceBindingStep?.hideInSettings).toBe(true);
     expect(sourceBindingStep?.uiSchema?.sourceBinding?.['x-component']).toBe('JSActionLightExtensionFullSourceField');
+    expect(sourceBindingStep?.uiSchema?.sourceBinding?.['x-component-props']).toMatchObject({
+      kind: 'js-action',
+      defaultVersionPolicy: 'follow-active',
+    });
     expect(runJsStep?.uiSchema?.sourceMode?.['x-display']).toBe('hidden');
     expect(runJsStep?.uiSchema?.sourceBinding?.['x-display']).toBe('hidden');
     expect(runJsStep?.uiSchema?.settings?.['x-display']).toBe('hidden');

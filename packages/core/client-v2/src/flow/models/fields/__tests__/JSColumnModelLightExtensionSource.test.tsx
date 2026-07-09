@@ -81,11 +81,20 @@ describe('JSColumnModel light extension source', () => {
 
     expect(flow?.steps?.sourceMode?.useRawParams).toBe(true);
     expect(flow?.steps?.sourceMode?.uiSchema?.sourceMode?.['x-component']).toBe('JSFieldLightExtensionFullSourceField');
+    expect(flow?.steps?.sourceMode?.uiSchema?.sourceMode?.['x-component-props']).toMatchObject({
+      kind: 'js-field',
+      defaultVersionPolicy: 'follow-active',
+    });
     expect(flow?.steps?.sourceMode?.uiSchema?.sourceBinding?.['x-display']).toBe('hidden');
     expect(flow?.steps?.sourceMode?.uiSchema?.settings?.['x-display']).toBe('hidden');
+    expect(flow?.steps?.sourceBinding?.hideInSettings).toBe(true);
     expect(flow?.steps?.sourceBinding?.uiSchema?.sourceBinding?.['x-component']).toBe(
       'JSFieldLightExtensionFullSourceField',
     );
+    expect(flow?.steps?.sourceBinding?.uiSchema?.sourceBinding?.['x-component-props']).toMatchObject({
+      kind: 'js-field',
+      defaultVersionPolicy: 'follow-active',
+    });
     expect(flow?.steps?.runJs?.uiSchema?.sourceBinding?.['x-display']).toBe('hidden');
   });
 

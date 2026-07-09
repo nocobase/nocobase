@@ -19,6 +19,7 @@ import {
 
 import {
   resolveRuntimeRunJS,
+  createRunJSSourceCascadeMenuUIMode,
   RunJSSourceResolverRegistry,
   type ResolvedRuntimeRunJS,
   type RunJSSourceBinding,
@@ -158,12 +159,20 @@ export function isCurrentJSFieldRuntimeRun(model: JSFieldRuntimeModel, runId: nu
 export function createJSFieldSourceModeStep(): StepDefinition {
   return {
     title: '{{t("Code source")}}',
+    uiMode: createRunJSSourceCascadeMenuUIMode({
+      kind: 'js-field',
+      defaultVersionPolicy: 'follow-active',
+    }),
     useRawParams: true,
     uiSchema: {
       sourceMode: {
         type: 'string',
         'x-decorator': 'FormItem',
         'x-component': JS_FIELD_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
+        'x-component-props': {
+          kind: 'js-field',
+          defaultVersionPolicy: 'follow-active',
+        },
       },
       sourceBinding: {
         type: 'object',
@@ -183,6 +192,7 @@ export function createJSFieldSourceModeStep(): StepDefinition {
 export function createJSFieldSourceBindingStep(): StepDefinition {
   return {
     title: '{{t("Light extension source")}}',
+    hideInSettings: true,
     useRawParams: true,
     uiSchema: {
       sourceMode: {
@@ -193,6 +203,10 @@ export function createJSFieldSourceBindingStep(): StepDefinition {
         type: 'object',
         'x-decorator': 'FormItem',
         'x-component': JS_FIELD_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
+        'x-component-props': {
+          kind: 'js-field',
+          defaultVersionPolicy: 'follow-active',
+        },
       },
       settings: {
         type: 'object',

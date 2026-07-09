@@ -22,6 +22,7 @@ import React from 'react';
 
 import {
   resolveRuntimeRunJS,
+  createRunJSSourceCascadeMenuUIMode,
   RunJSSourceResolverRegistry,
   type ResolvedRuntimeRunJS,
   type RunJSSourceBinding,
@@ -187,12 +188,20 @@ export function isCurrentJSItemRuntimeRun(model: JSItemRuntimeModel, runId: numb
 export function createJSItemSourceModeStep(): StepDefinition {
   return {
     title: '{{t("Code source")}}',
+    uiMode: createRunJSSourceCascadeMenuUIMode({
+      kind: 'js-item',
+      defaultVersionPolicy: 'follow-active',
+    }),
     useRawParams: true,
     uiSchema: {
       sourceMode: {
         type: 'string',
         'x-decorator': 'FormItem',
         'x-component': JS_ITEM_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
+        'x-component-props': {
+          kind: 'js-item',
+          defaultVersionPolicy: 'follow-active',
+        },
       },
       sourceBinding: {
         type: 'object',
@@ -212,6 +221,7 @@ export function createJSItemSourceModeStep(): StepDefinition {
 export function createJSItemSourceBindingStep(): StepDefinition {
   return {
     title: '{{t("Light extension source")}}',
+    hideInSettings: true,
     useRawParams: true,
     uiSchema: {
       sourceMode: {
@@ -222,6 +232,10 @@ export function createJSItemSourceBindingStep(): StepDefinition {
         type: 'object',
         'x-decorator': 'FormItem',
         'x-component': JS_ITEM_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
+        'x-component-props': {
+          kind: 'js-item',
+          defaultVersionPolicy: 'follow-active',
+        },
       },
       settings: {
         type: 'object',

@@ -20,6 +20,7 @@ import {
 
 import {
   resolveRuntimeRunJS,
+  createRunJSSourceCascadeMenuUIMode,
   RunJSSourceResolverRegistry,
   type ResolvedRuntimeRunJS,
   type RunJSSourceBinding,
@@ -109,6 +110,10 @@ export function isCurrentJSActionRuntimeRun(model: JSActionRuntimeModel, runId: 
 export function createJSActionSourceModeStep(): StepDefinition {
   return {
     title: '{{t("Code source")}}',
+    uiMode: createRunJSSourceCascadeMenuUIMode({
+      kind: 'js-action',
+      defaultVersionPolicy: 'follow-active',
+    }),
     useRawParams: true,
     uiSchema: {
       sourceMode: {
@@ -117,7 +122,7 @@ export function createJSActionSourceModeStep(): StepDefinition {
         'x-component': JS_ACTION_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
         'x-component-props': {
           kind: 'js-action',
-          defaultVersionPolicy: 'pinned',
+          defaultVersionPolicy: 'follow-active',
         },
       },
       sourceBinding: {
@@ -138,6 +143,7 @@ export function createJSActionSourceModeStep(): StepDefinition {
 export function createJSActionSourceBindingStep(): StepDefinition {
   return {
     title: '{{t("Light extension source")}}',
+    hideInSettings: true,
     useRawParams: true,
     uiSchema: {
       sourceMode: {
@@ -150,7 +156,7 @@ export function createJSActionSourceBindingStep(): StepDefinition {
         'x-component': JS_ACTION_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
         'x-component-props': {
           kind: 'js-action',
-          defaultVersionPolicy: 'pinned',
+          defaultVersionPolicy: 'follow-active',
         },
       },
       settings: {

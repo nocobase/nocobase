@@ -27,6 +27,7 @@ import { resolveRunJsParams } from '../../utils/resolveRunJsParams';
 import { RunJSEditorField } from '../../../components/runjs-studio';
 import {
   resolveRuntimeRunJS,
+  createRunJSSourceCascadeMenuUIMode,
   RunJSSourceResolverRegistry,
   type RunJSSourceBinding,
   type RunJSSourceSettings,
@@ -41,6 +42,8 @@ const LIGHT_EXTENSION_SOURCE_MODE = 'light-extension';
 type JSBlockSourceMode = typeof INLINE_SOURCE_MODE | typeof LIGHT_EXTENSION_SOURCE_MODE;
 type JSBlockSourceModeParams = {
   sourceMode?: string;
+  sourceBinding?: unknown;
+  settings?: unknown;
 };
 type JSBlockLightExtensionSourceBinding = {
   repoId?: unknown;
@@ -979,16 +982,27 @@ async function getRunJsEditorTitle(ctx: { model: JSBlockModel }): Promise<string
 }
 
 function getSourceModeDefaultParams(ctx: FlowSettingsContext<JSBlockModel>): JSBlockSourceModeParams {
+  const runJs = getRunJsStepParams(ctx.model);
   return {
-    sourceMode: normalizeJSBlockSourceMode(getRunJsStepParams(ctx.model).sourceMode),
+    sourceMode: normalizeJSBlockSourceMode(runJs.sourceMode),
+    sourceBinding: isRecord(runJs.sourceBinding) ? cloneJsonValue(runJs.sourceBinding) : undefined,
+    settings: isRecord(runJs.settings) ? cloneJsonValue(runJs.settings) : {},
   };
 }
 
 function syncSourceModeToRunJs(ctx: FlowSettingsContext<JSBlockModel>, params: JSBlockSourceModeParams) {
   const sourceMode = normalizeJSBlockSourceMode(params?.sourceMode);
+  const sourceBinding = isRecord(params?.sourceBinding) ? cloneJsonValue(params.sourceBinding) : undefined;
+  if (sourceMode === LIGHT_EXTENSION_SOURCE_MODE && !sourceBinding) {
+    ctx.model.context?.message?.error?.(ctx.model.context.t('Select a light extension entry'));
+    throw new FlowCancelSaveException('Light extension source binding is required.');
+  }
+  const settings = isRecord(params?.settings) ? cloneJsonValue(params.settings) : {};
   ctx.model.setStepParams('jsSettings', 'runJs', {
     ...getRunJsStepParams(ctx.model),
     sourceMode,
+    sourceBinding,
+    settings,
   });
 }
 
@@ -1017,16 +1031,11 @@ JSBlockModel.registerFlow({
     },
     sourceMode: {
       title: tExpr('Code source'),
-      uiMode: {
-        type: 'select',
-        key: 'sourceMode',
-        props: {
-          options: [
-            { label: 'Light extension', value: LIGHT_EXTENSION_SOURCE_MODE },
-            { label: 'Inline Code', value: INLINE_SOURCE_MODE },
-          ],
-        },
-      },
+      uiMode: createRunJSSourceCascadeMenuUIMode({
+        kind: 'js-block',
+        defaultVersionPolicy: 'follow-active',
+      }),
+      useRawParams: true,
       defaultParams: getSourceModeDefaultParams,
       beforeParamsSave: syncSourceModeToRunJs,
       afterParamsSave: refreshJSBlockAfterSettingsSave,

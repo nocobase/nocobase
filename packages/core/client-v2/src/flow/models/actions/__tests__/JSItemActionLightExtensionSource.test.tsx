@@ -89,7 +89,7 @@ describe('JSItemActionModel light extension source', () => {
     RunJSSourceResolverRegistry.clear();
   });
 
-  it('adds JS Item source mode, binding, and hidden RunJS source fields', () => {
+  it('adds JS Item source mode, binding, and hidden RunJS source fields', async () => {
     const { model } = createJSItemAction({});
     const flow = model.getFlow('jsSettings');
     const sourceModeStep = flow?.steps?.sourceMode;
@@ -97,10 +97,42 @@ describe('JSItemActionModel light extension source', () => {
     const runJsStep = flow?.steps?.runJs;
 
     expect(sourceModeStep?.useRawParams).toBe(true);
+    const listSourceMenuItems = vi.fn(async () => []);
+    RunJSSourceResolverRegistry.registerResolver({
+      sourceMode: 'light-extension',
+      resolve: () => ({
+        code: '',
+      }),
+      listSourceMenuItems,
+    });
+    await (
+      sourceModeStep?.uiMode as { props?: { loadItems?: (input: unknown) => Promise<unknown> } }
+    )?.props?.loadItems?.({
+      params: {
+        sourceMode: 'inline',
+      },
+      defaultParams: {},
+      t: (key: string) => key,
+    });
+    expect(listSourceMenuItems).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: 'js-item',
+        defaultVersionPolicy: 'follow-active',
+      }),
+    );
     expect(sourceModeStep?.uiSchema?.sourceMode?.['x-component']).toBe('JSItemLightExtensionFullSourceField');
+    expect(sourceModeStep?.uiSchema?.sourceMode?.['x-component-props']).toMatchObject({
+      kind: 'js-item',
+      defaultVersionPolicy: 'follow-active',
+    });
     expect(sourceModeStep?.uiSchema?.sourceBinding?.['x-display']).toBe('hidden');
     expect(sourceModeStep?.uiSchema?.settings?.['x-display']).toBe('hidden');
+    expect(sourceBindingStep?.hideInSettings).toBe(true);
     expect(sourceBindingStep?.uiSchema?.sourceBinding?.['x-component']).toBe('JSItemLightExtensionFullSourceField');
+    expect(sourceBindingStep?.uiSchema?.sourceBinding?.['x-component-props']).toMatchObject({
+      kind: 'js-item',
+      defaultVersionPolicy: 'follow-active',
+    });
     expect(runJsStep?.uiSchema?.sourceMode?.['x-display']).toBe('hidden');
     expect(runJsStep?.uiSchema?.sourceBinding?.['x-display']).toBe('hidden');
     expect(runJsStep?.uiSchema?.settings?.['x-display']).toBe('hidden');
