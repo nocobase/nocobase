@@ -11,23 +11,30 @@
  * 测试工具：重置变量注册表到默认状态
  * 说明：避免在实现文件中暴露测试专用 API，这里通过测试侧工具完成清理与基础内置变量的恢复。
  */
-import type { ResourcerContext } from '@nocobase/resourcer';
 import { createMockServer, type MockServerOptions } from '@nocobase/test';
-import type { HttpRequestContext } from '../template/contexts';
-import { variables, inferSelectsFromUsage } from '../variables/registry';
+import { variables, registerBuiltInVariables } from '../variables/registry';
+
+function shouldUseEnvDatabase() {
+  return ['postgres', 'mysql', 'mariadb'].includes(String(process.env.DB_DIALECT || '').toLowerCase());
+}
 
 export function createFlowEngineMockServer(options: MockServerOptions = {}) {
   const { database, ...restOptions } = options;
   const databaseOptions = isRecord(database) ? database : {};
+  const defaultDatabaseOptions = shouldUseEnvDatabase()
+    ? {}
+    : {
+        dialect: 'sqlite',
+        storage: ':memory:',
+        // CI postgres jobs set DB_SCHEMA; SQLite cannot create schemas.
+        schema: undefined,
+      };
 
   return createMockServer({
     skipSupervisor: true,
     ...restOptions,
     database: {
-      dialect: 'sqlite',
-      storage: ':memory:',
-      // CI postgres jobs set DB_SCHEMA; SQLite cannot create schemas.
-      schema: undefined,
+      ...defaultDatabaseOptions,
       ...databaseOptions,
     },
   });
@@ -40,7 +47,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 /**
  * 重置变量注册表：
  * - 清空所有已注册的变量定义
- * - 恢复内置变量（当前仅内置 user）
+ * - 恢复内置变量
  */
 export function resetVariablesRegistryForTest() {
   const reg: any = variables as any;
@@ -49,38 +56,5 @@ export function resetVariablesRegistryForTest() {
     reg.vars.clear();
   }
 
-  // 恢复内置变量：user
-  reg.register({
-    name: 'user',
-    scope: 'request',
-    attach: (
-      flowCtx: HttpRequestContext,
-      koaCtx: ResourcerContext,
-      _params?: unknown,
-      usage?: Record<string, string[]>,
-    ) => {
-      const paths = usage?.['user'] || [];
-      const { generatedAppends, generatedFields } = inferSelectsFromUsage(paths);
-      flowCtx.defineProperty('user', {
-        get: async () => {
-          try {
-            const uid = (koaCtx as any)?.auth?.user?.id;
-            if (uid === undefined || uid === null) return undefined;
-            const ds = (koaCtx as any).app.dataSourceManager.get('main');
-            const cm = ds.collectionManager;
-            const repo = cm.db.getRepository('users');
-            const rec = await repo.findOne({
-              filterByTk: uid,
-              fields: generatedFields,
-              appends: generatedAppends,
-            });
-            return rec ? rec.toJSON?.() : undefined;
-          } catch (_) {
-            return undefined;
-          }
-        },
-        cache: true,
-      });
-    },
-  });
+  registerBuiltInVariables(variables);
 }

@@ -13,6 +13,7 @@ import { parseLiquidContext, transformSQL } from '@nocobase/utils';
 import { registerFlowSurfacesResource } from './flow-surfaces';
 import PluginUISchemaStorageServer from './server';
 import { JSONValue } from './template/resolver';
+import { authorizeVariablesResolve } from './variables/allow-list';
 import { resolveVariablesBatch, resolveVariablesTemplate } from './variables/resolve';
 
 export class PluginFlowEngineServer extends PluginUISchemaStorageServer {
@@ -73,11 +74,63 @@ export class PluginFlowEngineServer extends PluginUISchemaStorageServer {
           // 批量解析分支
           if (Array.isArray(values?.batch)) {
             const batchItems = values.batch as Array<{
+              rd?: string;
               id?: string | number;
               template: JSONValue;
               contextParams?: Record<string, unknown>;
             }>;
-            const results = await resolveVariablesBatch(ctx as ResourcerContext, batchItems);
+            type AuthorizedBatchItem = {
+              contextParams?: Record<string, unknown>;
+              id?: string | number;
+              index: number;
+              template: JSONValue;
+            };
+            const authorizedItems: AuthorizedBatchItem[] = [];
+            const authorizedItemsByIndex = new Map<number, AuthorizedBatchItem>();
+            const passthroughResults: Array<{ id?: string | number; data: unknown } | undefined> = [];
+
+            for (const [index, item] of batchItems.entries()) {
+              const template = item?.template ?? {};
+              const authorization = await authorizeVariablesResolve(ctx as ResourcerContext, {
+                contextParams: item?.contextParams || {},
+                rd: item?.rd,
+                template,
+              });
+
+              if (authorization.allowed) {
+                const authorizedItem = {
+                  contextParams: authorization.contextParams,
+                  id: item?.id,
+                  index,
+                  template,
+                };
+                authorizedItems.push(authorizedItem);
+                authorizedItemsByIndex.set(index, authorizedItem);
+              } else {
+                passthroughResults[index] = { id: item?.id, data: template };
+              }
+            }
+
+            const resolvedItems = await resolveVariablesBatch(
+              ctx as ResourcerContext,
+              authorizedItems.map((item) => ({
+                id: item.index,
+                template: item.template,
+                contextParams: item.contextParams,
+              })),
+            );
+            for (const item of resolvedItems) {
+              const index = Number(item.id);
+              const original = authorizedItemsByIndex.get(index);
+              passthroughResults[index] = {
+                id: original?.id,
+                data: item.data,
+              };
+            }
+
+            const results = passthroughResults.filter(
+              (item): item is { id?: string | number; data: unknown } => !!item,
+            );
             ctx.body = { results };
             await next();
             return;
@@ -92,7 +145,14 @@ export class PluginFlowEngineServer extends PluginUISchemaStorageServer {
           }
           const template = values.template as JSONValue;
           const contextParams = values?.contextParams || {};
-          ctx.body = await resolveVariablesTemplate(ctx as ResourcerContext, template, contextParams);
+          const authorization = await authorizeVariablesResolve(ctx as ResourcerContext, {
+            contextParams,
+            rd: values?.rd,
+            template,
+          });
+          ctx.body = authorization.allowed
+            ? await resolveVariablesTemplate(ctx as ResourcerContext, template, authorization.contextParams)
+            : template;
           await next();
         },
       },
