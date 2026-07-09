@@ -68,6 +68,62 @@ vi.mock('@nocobase/flow-engine', async (importOriginal) => {
   };
 });
 
+vi.mock('../../canvas/contexts', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../canvas/contexts')>();
+  return {
+    ...actual,
+    useFlowContext: () =>
+      React.useContext(actual.FlowContext) ?? {
+        workflow: {
+          id: 1,
+          type: 'collection',
+          title: 'Workflow title',
+          triggerTitle: 'Collection trigger',
+          config: {},
+        },
+        refresh: vi.fn(),
+      },
+    useWorkflowCanvasExecuted: () => {
+      const flow = React.useContext(actual.FlowContext);
+      return BigInt(flow?.workflow?.versionStats?.executed || 0);
+    },
+    CurrentWorkflowContext: React.createContext(null),
+  };
+});
+
+vi.mock('../../canvas/style', () => ({
+  default: () => ({
+    styles: {
+      nodeClass: 'node-class',
+      nodeCardClass: 'node-card-class',
+      nodeHeaderClass: 'node-header-class',
+      nodeMetaClass: 'node-meta-class',
+    },
+    cx: (...args: Array<string | Record<string, boolean> | undefined | null | false>) =>
+      args
+        .flatMap((arg) => {
+          if (!arg) {
+            return [];
+          }
+          if (typeof arg === 'string') {
+            return [arg];
+          }
+          return Object.entries(arg)
+            .filter(([, enabled]) => Boolean(enabled))
+            .map(([key]) => key);
+        })
+        .join(' '),
+  }),
+}));
+
+vi.mock('../TriggerExecutionButton', () => ({
+  TriggerExecutionButton: ({ triggerTitle }: { triggerTitle: string }) => <button>{triggerTitle}</button>,
+}));
+
+vi.mock('../plugin', () => ({
+  PluginWorkflowClientV2: class PluginWorkflowClientV2 {},
+}));
+
 vi.mock('../../locale', () => ({
   NAMESPACE: 'workflow',
   tExpr: (key: string) => key,
@@ -224,5 +280,34 @@ describe('TriggerConfig', () => {
       expect(screen.getByTestId('fieldset')).toBeInTheDocument();
     });
     expect(container.querySelector('.ant-form-item-label label')?.textContent).toBe('*Collection:');
+  });
+
+  it('renders the trigger tag without a hover tooltip on the v2 canvas card', () => {
+    holder.workflowPlugin.getTriggerOptions.mockReturnValue({
+      title: `{{t('Collection event', { ns: "workflow" })}}`,
+      description: `{{t('Triggered when data changes in the collection.', { ns: "workflow" })}}`,
+    });
+
+    const { container } = render(
+      <FlowContext.Provider
+        value={{
+          workflow: {
+            id: 1,
+            type: 'collection',
+            title: 'Workflow title',
+            triggerTitle: 'Collection trigger',
+            config: {},
+          },
+          refresh: vi.fn(),
+        }}
+      >
+        <TriggerConfig />
+      </FlowContext.Provider>,
+    );
+
+    expect(container.querySelector('.workflow-node-meta .ant-tooltip-open')).toBeNull();
+    expect(container.querySelector('.workflow-node-meta .ant-tooltip-trigger')).toBeNull();
+    expect(container.querySelector('.workflow-node-meta .type')).toHaveTextContent('Collection event');
+    expect(container.querySelector('.workflow-node-meta .ant-tag')).toHaveTextContent('Collection event');
   });
 });

@@ -10,7 +10,7 @@
 import { css } from '@emotion/css';
 import React, { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import { useMemoizedFn } from 'ahooks';
-import { Alert, App, Form, Input, Skeleton, Tag, Tooltip, Typography, theme } from 'antd';
+import { Alert, App, Form, Input, Skeleton, Tag, Typography, theme } from 'antd';
 import {
   CheckCircleFilled,
   CloseCircleFilled,
@@ -303,11 +303,9 @@ export function TriggerConfig() {
       <div className={cx(styles.nodeCardClass, { invalid: !trigger })}>
         <div className={styles.nodeHeaderClass}>
           <div className={cx(styles.nodeMetaClass, 'workflow-node-meta')}>
-            <Tooltip title={trigger?.description ? t(trigger.description) : undefined}>
-              <Tag color={trigger ? 'gold' : 'error'} icon={<ThunderboltOutlined />}>
-                <span className="type">{triggerTitle}</span>
-              </Tag>
-            </Tooltip>
+            <Tag color={trigger ? 'gold' : 'error'} icon={<ThunderboltOutlined />}>
+              <span className="type">{triggerTitle}</span>
+            </Tag>
           </div>
           <div className="workflow-node-actions">
             <TriggerExecutionButton triggerTitle={triggerTitle} />

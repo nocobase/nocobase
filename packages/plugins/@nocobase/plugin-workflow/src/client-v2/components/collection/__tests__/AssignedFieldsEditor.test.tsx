@@ -179,4 +179,34 @@ describe('AssignedFieldsEditor', () => {
     expect(screen.getByRole('button', { name: 'Add field' })).toBeDisabled();
     expect(onChange).not.toHaveBeenCalled();
   });
+
+  it('passes workflow variable converters so stored {{$context...}} values can round-trip', async () => {
+    render(
+      <AssignedFieldsEditor
+        collection="posts"
+        value={{ title: '{{$context.data.updatedAt}}' }}
+        onChange={() => undefined}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(mockFieldAssignValueInput).toHaveBeenCalledWith(
+        expect.objectContaining({
+          targetPath: 'title',
+          variableConverters: expect.objectContaining({
+            resolvePathFromValue: expect.any(Function),
+            resolveValueFromPath: expect.any(Function),
+          }),
+        }),
+        expect.anything(),
+      );
+    });
+
+    const latestCall = mockFieldAssignValueInput.mock.calls.at(-1)?.[0];
+    expect(latestCall.variableConverters.resolvePathFromValue('{{$context.data.updatedAt}}')).toEqual([
+      '$context',
+      'data',
+      'updatedAt',
+    ]);
+  });
 });

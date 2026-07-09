@@ -95,6 +95,7 @@ export interface VariableInputProps {
 export interface VariableTagProps {
   value?: string;
   onClear?: () => void;
+  disabled?: boolean;
   className?: string;
   style?: React.CSSProperties;
   metaTreeNode?: MetaTreeNode | null;
