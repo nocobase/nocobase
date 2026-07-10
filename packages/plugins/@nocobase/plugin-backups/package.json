@@ -4,7 +4,7 @@
   "displayName.zh-CN": "备份管理器",
   "description": "Provides backup and restore functionality, supports scheduled backups, and ensures data security and quick recovery.",
   "description.zh-CN": "提供备份与还原功能，支持定时备份，确保数据安全与快速恢复。",
-  "version": "2.1.22",
+  "version": "2.1.23",
   "license": "Apache-2.0",
   "main": "dist/server/index.js",
   "nocobase": {
