@@ -23,6 +23,7 @@ const VariableTagComponent: React.FC<VariableTagProps> = ({
   value,
   onClear,
   disabled = false,
+  allowCustomTagInput = true,
   className,
   style,
   metaTreeNode,
@@ -177,8 +178,10 @@ const VariableTagComponent: React.FC<VariableTagProps> = ({
         ...style,
       }}
       value={displayState?.text ? [displayState.text] : []}
-      mode="tags"
+      mode={allowCustomTagInput ? 'tags' : 'multiple'}
       open={false}
+      showSearch={allowCustomTagInput}
+      searchValue={allowCustomTagInput ? undefined : ''}
       allowClear={!disabled && !!onClear}
       onClear={disabled ? undefined : onClear}
       disabled={disabled || !onClear}
