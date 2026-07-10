@@ -49,7 +49,7 @@ keywords: "评论表,评论功能,富文本评论,多级评论,Collection Commen
 | Description | 数据表说明。可以写这个评论表服务于哪个业务对象、由谁维护、评论权限怎么设计。 |
 | Preset fields | 预设字段。创建评论表时建议保留系统字段和评论表内置字段。 |
 
-## 内置字段
+### 内置字段
 
 评论表创建后通常包含这些内置字段。评论区块主要依赖 `content`、`createdBy` 和 `createdAt` 展示评论内容、评论人和评论时间。
 
@@ -69,11 +69,27 @@ keywords: "评论表,评论功能,富文本评论,多级评论,Collection Commen
 
 :::
 
-## 主键字段
+### 主键字段
 
 评论表和普通表一样需要主键字段。评论区块会通过主键定位评论记录和回复关系。
 
 如果评论表没有主键，需要在编辑数据表时设置「Record unique key」，否则评论区块可能无法正确查看、回复或删除评论。
+
+## 建立关联关系
+在业务表中创建关系字段，关联到评论表
+![](https://static-docs.nocobase.com/Solution/demoE3v1-19N.gif)
+
+## 页面配置使用
+
+评论表通常通过评论区块使用。你可以在业务表的详情页、弹窗或记录页中添加评论区块，让用户围绕当前记录发表评论。
+
+![Enable Comments Collection](https://static-docs.nocobase.com/Solution/demoE3v1-20.gif)
+
+| 配置位置 | 用途 |
+| --- | --- |
+| [详情区块](../../interface-builder/blocks/data-blocks/details.md) | 在业务记录详情中展示评论入口。 |
+| [表单区块](../../interface-builder/blocks/data-blocks/form.md) | 配合业务表编辑流程使用评论关系字段。 |
+| 评论区块 | 展示评论列表、发表评论和回复评论。 |
 
 ## 编辑配置
 
@@ -92,20 +108,6 @@ keywords: "评论表,评论功能,富文本评论,多级评论,Collection Commen
 删除评论表会让已有业务记录失去评论数据。评论通常承载协作过程和处理意见，操作前先确认是否需要备份或归档。
 
 :::
-
-## 页面配置使用
-
-为了让评论能够关联到目标数据表，需要配置关系字段，评论表通常通过评论区块使用。你可以在业务表的详情页、弹窗或记录页中添加评论区块，让用户围绕当前记录发表评论。
-
-![](https://static-docs.nocobase.com/Solution/demoE3v1-19N.gif)
-
-![Enable Comments Collection](https://static-docs.nocobase.com/Solution/demoE3v1-20.gif)
-
-| 配置位置 | 用途 |
-| --- | --- |
-| [详情区块](../../interface-builder/blocks/data-blocks/details.md) | 在业务记录详情中展示评论入口。 |
-| [表单区块](../../interface-builder/blocks/data-blocks/form.md) | 配合业务表编辑流程使用评论关系字段。 |
-| 评论区块 | 展示评论列表、发表评论和回复评论。 |
 
 ## 相关链接
 

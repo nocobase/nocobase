@@ -96,6 +96,7 @@ keywords: "圆,Circle,几何图形,地图,NocoBase"
 ## 页面配置使用
 
 圆字段适合在服务范围和覆盖范围场景中使用。
+![20260710145031](https://static-docs.nocobase.com/20260710145031.png)
 
 | 场景 | 用途 |
 | --- | --- |

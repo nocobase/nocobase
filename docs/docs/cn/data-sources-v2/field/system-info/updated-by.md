@@ -96,6 +96,7 @@ keywords: "更新人,updatedBy,系统字段,用户,NocoBase"
 ## 页面配置使用
 
 更新人字段适合在审计、筛选和工作流中使用。
+![20260710153223](https://static-docs.nocobase.com/20260710153223.png)
 
 | 场景 | 用途 |
 | --- | --- |

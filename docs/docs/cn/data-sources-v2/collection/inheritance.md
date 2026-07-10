@@ -53,7 +53,7 @@ keywords: "继承表,Inheritance Collection,表继承,数据表扩展,PostgreSQL
 
 :::
 
-## 内置字段
+### 内置字段
 
 继承表会继承父表已有字段，同时也可以继续添加自己的字段。
 
@@ -69,11 +69,22 @@ keywords: "继承表,Inheritance Collection,表继承,数据表扩展,PostgreSQL
 
 :::
 
-## 主键字段
+### 主键字段
 
 继承表和普通表一样需要主键字段。创建表时建议保留 ID 预设字段，默认主键类型是 `Snowflake ID (53-bit)`。
 
 如果接入或同步后的继承表没有主键，需要在编辑数据表时设置「Record unique key」，否则页面区块可能无法正确查看或编辑记录。
+
+## 页面配置使用
+
+继承表可以用于普通表支持的大多数页面区块。常见用法是把不同子表分别配置为独立的表格、表单、详情或看板区块。
+
+| 区块 | 用途 |
+| --- | --- |
+| [表格区块](../../interface-builder/blocks/data-blocks/table.md) | 查看、筛选、排序、批量处理子表记录。 |
+| [表单区块](../../interface-builder/blocks/data-blocks/form.md) | 新增或编辑单条子表记录。 |
+| [详情区块](../../interface-builder/blocks/data-blocks/details.md) | 查看单条子表记录详情。 |
+| [看板区块](../../interface-builder/blocks/data-blocks/kanban.md) | 按状态、阶段、负责人等字段分组展示子表记录。 |
 
 ## 编辑配置
 
@@ -92,17 +103,6 @@ keywords: "继承表,Inheritance Collection,表继承,数据表扩展,PostgreSQL
 删除继承表不会自动等同于删除父表。是否删除依赖对象取决于删除确认中的选项，操作前先确认父表和其他子表是否仍然需要保留。
 
 :::
-
-## 页面配置使用
-
-继承表可以用于普通表支持的大多数页面区块。常见用法是把不同子表分别配置为独立的表格、表单、详情或看板区块。
-
-| 区块 | 用途 |
-| --- | --- |
-| [表格区块](../../interface-builder/blocks/data-blocks/table.md) | 查看、筛选、排序、批量处理子表记录。 |
-| [表单区块](../../interface-builder/blocks/data-blocks/form.md) | 新增或编辑单条子表记录。 |
-| [详情区块](../../interface-builder/blocks/data-blocks/details.md) | 查看单条子表记录详情。 |
-| [看板区块](../../interface-builder/blocks/data-blocks/kanban.md) | 按状态、阶段、负责人等字段分组展示子表记录。 |
 
 ## 相关链接
 

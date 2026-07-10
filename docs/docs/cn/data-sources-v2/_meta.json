@@ -450,11 +450,6 @@
           },
           {
             "type": "custom-link",
-            "label": "数据表选择器",
-            "link": "/data-sources-v2/field/advanced/collection-select"
-          },
-          {
-            "type": "custom-link",
             "label": "加密",
             "link": "/data-sources-v2/field/advanced/encryption"
           },
@@ -493,11 +488,6 @@
             "type": "custom-link",
             "label": "空间",
             "link": "/data-sources-v2/field/system-info/space"
-          },
-          {
-            "type": "custom-link",
-            "label": "Table OID",
-            "link": "/data-sources-v2/field/system-info/table-oid"
           }
         ]
       }

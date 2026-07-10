@@ -96,6 +96,7 @@ keywords: "更新日期,updatedAt,系统字段,NocoBase"
 ## 页面配置使用
 
 更新日期字段适合在列表、详情、筛选和同步判断中使用。
+![20260710153223](https://static-docs.nocobase.com/20260710153223.png)
 
 | 场景 | 用途 |
 | --- | --- |

@@ -48,7 +48,7 @@ keywords: "普通表,General Collection,系统字段,数据表,NocoBase"
 | Use simple pagination mode | 简单分页模式。启用后，表格区块分页时会跳过总记录数统计，适合数据量很大的表，可以减少查询压力。 |
 | Preset fields | 预设字段。创建表时可以选择是否自动添加 ID、创建时间、创建人、更新时间、更新人等常用字段。普通业务表建议保留这些字段。 |
 
-## 内置字段
+### 内置字段
 
 普通表创建时可以通过 `Preset fields` 自动添加常用系统字段。
 
@@ -61,7 +61,7 @@ keywords: "普通表,General Collection,系统字段,数据表,NocoBase"
 | 更新人 | `updatedBy` | 自动记录最后一次更新这条记录的用户。常用于审计和协作场景。 |
 | [空间](../../multi-app/multi-space/index.md) | `space` | 启用[多空间插件](../../multi-app/multi-space/index.md)后可用，用于按空间隔离数据。没有启用多空间时不会出现在普通表预设字段中。 |
 
-## 主键字段
+### 主键字段
 
 **Primary key** 标识主键字段。它用于在数据库层唯一标识一条记录。创建表时建议保留 ID 预设字段，默认主键类型是 `Snowflake ID (53-bit)`。
 
@@ -84,6 +84,26 @@ keywords: "普通表,General Collection,系统字段,数据表,NocoBase"
 无主键数据表需要在编辑数据表时设置「Record unique key」，否则无法在页面中创建区块，也无法正确查看或编辑记录。
 
 :::
+
+
+## 页面配置使用
+
+普通表可以用于大多数数据区块和筛选区块。
+
+| 区块 | 用途 |
+| --- | --- |
+| [表格区块](../../interface-builder/blocks/data-blocks/table.md) | 查看、筛选、排序、批量处理记录。 |
+| [表单区块](../../interface-builder/blocks/data-blocks/form.md) | 新增或编辑单条记录。 |
+| [详情区块](../../interface-builder/blocks/data-blocks/details.md) | 查看单条记录详情。 |
+| [列表区块](../../interface-builder/blocks/data-blocks/list.md) | 以列表方式展示记录。 |
+| [网格卡片区块](../../interface-builder/blocks/data-blocks/grid-card.md) | 以卡片网格展示图片、文件、商品、资产等记录。 |
+| [看板区块](../../interface-builder/blocks/data-blocks/kanban.md) | 按状态、阶段、负责人等字段分组展示记录。 |
+| [日历区块](../../interface-builder/blocks/data-blocks/calendar.md) | 按日期或时间范围展示记录。 |
+| [图表区块](../../interface-builder/blocks/data-blocks/chart.md) | 基于记录生成统计图表。 |
+| [地图区块](../../interface-builder/blocks/data-blocks/map.md) | 按地理位置展示记录。 |
+| [甘特图区块](../../interface-builder/blocks/data-blocks/gantt.md) | 按开始、结束时间展示项目计划、任务排期。 |
+| [表单筛选区块](../../interface-builder/blocks/filter-blocks/form.md) | 使用表单条件筛选页面中的数据区块。 |
+| [树筛选区块](../../interface-builder/blocks/filter-blocks/tree.md) | 使用树结构筛选页面中的数据区块，常用于分类、组织、地区等层级筛选。 |
 
 ## 编辑配置
 
@@ -128,22 +148,3 @@ keywords: "普通表,General Collection,系统字段,数据表,NocoBase"
 删除普通表是高风险操作。删除后，表结构、表数据、字段元数据，以及依赖这张表的页面区块、关系字段、权限、工作流和 API 调用都可能失效。勾选自动删除依赖对象前，先确认这些对象也可以被删除。
 
 :::
-
-## 页面配置使用
-
-普通表可以用于大多数数据区块和筛选区块。
-
-| 区块 | 用途 |
-| --- | --- |
-| [表格区块](../../interface-builder/blocks/data-blocks/table.md) | 查看、筛选、排序、批量处理记录。 |
-| [表单区块](../../interface-builder/blocks/data-blocks/form.md) | 新增或编辑单条记录。 |
-| [详情区块](../../interface-builder/blocks/data-blocks/details.md) | 查看单条记录详情。 |
-| [列表区块](../../interface-builder/blocks/data-blocks/list.md) | 以列表方式展示记录。 |
-| [网格卡片区块](../../interface-builder/blocks/data-blocks/grid-card.md) | 以卡片网格展示图片、文件、商品、资产等记录。 |
-| [看板区块](../../interface-builder/blocks/data-blocks/kanban.md) | 按状态、阶段、负责人等字段分组展示记录。 |
-| [日历区块](../../interface-builder/blocks/data-blocks/calendar.md) | 按日期或时间范围展示记录。 |
-| [图表区块](../../interface-builder/blocks/data-blocks/chart.md) | 基于记录生成统计图表。 |
-| [地图区块](../../interface-builder/blocks/data-blocks/map.md) | 按地理位置展示记录。 |
-| [甘特图区块](../../interface-builder/blocks/data-blocks/gantt.md) | 按开始、结束时间展示项目计划、任务排期。 |
-| [表单筛选区块](../../interface-builder/blocks/filter-blocks/form.md) | 使用表单条件筛选页面中的数据区块。 |
-| [树筛选区块](../../interface-builder/blocks/filter-blocks/tree.md) | 使用树结构筛选页面中的数据区块，常用于分类、组织、地区等层级筛选。 |

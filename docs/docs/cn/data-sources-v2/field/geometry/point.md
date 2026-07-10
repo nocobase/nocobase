@@ -96,6 +96,7 @@ keywords: "点,Point,几何图形,地图,NocoBase"
 ## 页面配置使用
 
 点字段适合在地图和位置管理场景中使用。
+![20260710144034](https://static-docs.nocobase.com/20260710144034.png)
 
 | 场景 | 用途 |
 | --- | --- |

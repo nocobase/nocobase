@@ -45,12 +45,11 @@ keywords: "文件表,File Collection,attachments,元信息,附件,NocoBase"
 | --- | --- |
 | Collection display name | 数据表在界面中显示的名称，比如「合同附件」「发票文件」「产品图片」。 |
 | Collection name | 数据表的标识名称，用于 API、关系字段、权限、工作流等内部引用。 |
-| Inherits | 选择要继承的父表。只有主数据库是 PostgreSQL 时可见。 |
 | Categories | 数据表分类。分类只影响数据表管理界面的组织方式，不改变数据表结构。 |
 | Description | 数据表说明。可以写这个文件表保存什么文件、由谁上传、和哪些业务表有关。 |
 | Preset fields | 预设字段。创建文件表时建议保留系统字段和文件表内置字段。 |
 
-## 内置字段
+### 内置字段
 
 文件表创建后通常包含这些内置字段。文件本体保存在文件存储中，文件表保存的是这些元信息。
 
@@ -75,11 +74,32 @@ keywords: "文件表,File Collection,attachments,元信息,附件,NocoBase"
 
 ![20240324090527](https://static-docs.nocobase.com/20240324090527.png)
 
-## 主键字段
+### 主键字段
 
 文件表和普通表一样需要主键字段。附件字段和关系字段会通过主键记录关联文件元信息。
 
 如果文件表没有主键，需要在编辑数据表时设置「Record unique key」，否则附件记录可能无法正确关联、预览或编辑。
+
+## 建立关联关系
+在业务表中创建关系字段，关联到文件表。
+
+![20240324091529](https://static-docs.nocobase.com/20240324091529.png)
+
+## 页面配置使用
+
+文件表的数据通常通过附件组件上传自动生成。在表单区块、详情区块或关系区块中使用。
+
+![20260710160424](https://static-docs.nocobase.com/20260710160424.png)
+
+![20240324091321](https://static-docs.nocobase.com/20240324091321.png)
+
+| 配置位置 | 用途 |
+| --- | --- |
+| [表单区块](../../interface-builder/blocks/data-blocks/form.md) | 在业务表记录中上传附件。 |
+| [详情区块](../../interface-builder/blocks/data-blocks/details.md) | 展示、预览或下载附件。 |
+| [表格区块](../../interface-builder/blocks/data-blocks/table.md) | 在列表中展示附件字段。 |
+| [关系区块](../../interface-builder/blocks/data-blocks/table.md) | 直接管理关联到当前业务记录的文件记录。 |
+
 
 ## 编辑配置
 
@@ -98,23 +118,6 @@ keywords: "文件表,File Collection,attachments,元信息,附件,NocoBase"
 文件表保存的是文件元信息。删除文件表记录可能导致业务记录里的附件引用失效；是否同步删除文件本体取决于文件存储和业务配置。操作前先确认文件是否仍被业务使用。
 
 :::
-
-## 页面配置使用
-
-文件表的数据通常通过附件字段上传自动生成。你可以在业务表中创建关系字段，关联文件表，然后在表单区块、详情区块或关系区块中使用。
-
-![20240324090848](https://static-docs.nocobase.com/20240324090848.png)
-
-![20240324091529](https://static-docs.nocobase.com/20240324091529.png)
-
-![20240324091321](https://static-docs.nocobase.com/20240324091321.png)
-
-| 配置位置 | 用途 |
-| --- | --- |
-| [表单区块](../../interface-builder/blocks/data-blocks/form.md) | 在业务表记录中上传附件。 |
-| [详情区块](../../interface-builder/blocks/data-blocks/details.md) | 展示、预览或下载附件。 |
-| [表格区块](../../interface-builder/blocks/data-blocks/table.md) | 在列表中展示附件字段。 |
-| [关系区块](../../interface-builder/blocks/data-blocks/table.md) | 直接管理关联到当前业务记录的文件记录。 |
 
 ## 相关链接
 

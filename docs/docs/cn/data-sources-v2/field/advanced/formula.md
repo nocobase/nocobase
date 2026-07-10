@@ -96,6 +96,7 @@ keywords: "公式,formula,计算字段,NocoBase"
 ## 页面配置使用
 
 公式字段适合在表格、详情、统计和工作流中展示计算结果。
+![20260710151619](https://static-docs.nocobase.com/20260710151619.png)
 
 | 场景 | 用途 |
 | --- | --- |

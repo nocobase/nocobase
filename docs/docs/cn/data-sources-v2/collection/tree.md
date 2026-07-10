@@ -39,7 +39,7 @@ keywords: "树表,树形集合,邻接表,层次数据,Tree Collection,NocoBase"
 | Description | 数据表说明。可以写这个树表保存什么层级数据、由谁维护、用于哪些页面筛选。 |
 | Preset fields | 预设字段。创建树表时建议保留系统字段和树表内置字段。 |
 
-## 内置字段
+### 内置字段
 
 树表创建后通常包含这些内置字段。`parentId`、`parent` 和 `children` 用来保存树形层级关系。
 
@@ -63,11 +63,22 @@ keywords: "树表,树形集合,邻接表,层次数据,Tree Collection,NocoBase"
 
 :::
 
-## 主键字段
+### 主键字段
 
 树表和普通表一样需要主键字段。树形关系字段会通过父节点 ID 关联到同一张表中的主键记录。
 
 如果树表没有主键，需要在编辑数据表时设置「Record unique key」，否则页面区块可能无法正确查看或编辑记录，树形展示也可能无法稳定定位节点。
+
+## 页面配置使用
+
+树表可以使用[普通表](./general.md)的多数数据区块做增删改查。另外，它还可以配合树形能力使用：
+
+| 区块 | 用途 |
+| --- | --- |
+| [表格区块](../../interface-builder/blocks/data-blocks/table.md#启用树表) | 展示树形记录，用于查看和维护上下级结构。 |
+| [表单区块](../../interface-builder/blocks/data-blocks/form.md) | 新增或编辑单条树节点记录。 |
+| [详情区块](../../interface-builder/blocks/data-blocks/details.md) | 查看单条树节点详情。 |
+| [树筛选区块](../../interface-builder/blocks/filter-blocks/tree.md) | 用树结构筛选其他数据区块，常用于分类、组织、地区等层级筛选。 |
 
 ## 编辑配置
 
@@ -86,17 +97,6 @@ keywords: "树表,树形集合,邻接表,层次数据,Tree Collection,NocoBase"
 树表经常被用作其他区块的筛选条件。删除树表后，相关树筛选区块和依赖该分类层级的页面配置都可能失效。
 
 :::
-
-## 页面配置使用
-
-树表可以使用[普通表](./general.md)的多数数据区块做增删改查。另外，它还可以配合树形能力使用：
-
-| 区块 | 用途 |
-| --- | --- |
-| [表格区块](../../interface-builder/blocks/data-blocks/table.md#启用树表) | 展示树形记录，用于查看和维护上下级结构。 |
-| [表单区块](../../interface-builder/blocks/data-blocks/form.md) | 新增或编辑单条树节点记录。 |
-| [详情区块](../../interface-builder/blocks/data-blocks/details.md) | 查看单条树节点详情。 |
-| [树筛选区块](../../interface-builder/blocks/filter-blocks/tree.md) | 用树结构筛选其他数据区块，常用于分类、组织、地区等层级筛选。 |
 
 ## 相关链接
 

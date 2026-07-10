@@ -96,6 +96,7 @@ keywords: "创建人,createdBy,系统字段,用户,NocoBase"
 ## 页面配置使用
 
 创建人字段适合在权限、筛选、审计和工作流中使用。
+![20260710153223](https://static-docs.nocobase.com/20260710153223.png)
 
 | 场景 | 用途 |
 | --- | --- |

@@ -96,6 +96,7 @@ keywords: "线,LineString,路线,几何图形,NocoBase"
 ## 页面配置使用
 
 线字段适合在地图路径和空间分析场景中使用。
+![20260710144453](https://static-docs.nocobase.com/20260710144453.png)
 
 | 场景 | 用途 |
 | --- | --- |

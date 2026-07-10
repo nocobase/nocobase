@@ -96,6 +96,7 @@ Snowflake ID字段的默认行为如下：
 ## 页面配置使用
 
 Snowflake ID 字段适合作为主键和内部唯一标识。
+![20260710145423](https://static-docs.nocobase.com/20260710145423.png)
 
 | 场景 | 用途 |
 | --- | --- |

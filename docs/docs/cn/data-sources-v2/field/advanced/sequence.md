@@ -96,6 +96,7 @@ keywords: "序列,sequence,编号,自动编号,NocoBase"
 ## 页面配置使用
 
 序列字段适合在业务编号和人工检索场景中使用。
+![20260710151731](https://static-docs.nocobase.com/20260710151731.png)
 
 | 场景 | 用途 |
 | --- | --- |

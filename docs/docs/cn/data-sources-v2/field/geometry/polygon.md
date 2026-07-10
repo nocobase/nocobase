@@ -96,6 +96,7 @@ keywords: "多边形,Polygon,区域,几何图形,NocoBase"
 ## 页面配置使用
 
 多边形字段适合在区域管理和地图展示场景中使用。
+![20260710145218](https://static-docs.nocobase.com/20260710145218.png)
 
 | 场景 | 用途 |
 | --- | --- |

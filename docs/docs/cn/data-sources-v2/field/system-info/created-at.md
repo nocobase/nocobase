@@ -96,6 +96,7 @@ keywords: "创建日期,createdAt,系统字段,NocoBase"
 ## 页面配置使用
 
 创建日期字段适合在列表、详情、筛选和审计中使用。
+![20260710153223](https://static-docs.nocobase.com/20260710153223.png)
 
 | 场景 | 用途 |
 | --- | --- |
