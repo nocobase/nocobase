@@ -8,6 +8,7 @@
  */
 
 import { describe, expect, it, vi } from 'vitest';
+import { APIClient, type IResource, type RequestOptions } from '@nocobase/sdk';
 import { FlowContext } from '../../flowContext';
 import { FlowEngine } from '../../flowEngine';
 import { createViewScopedEngine } from '../../ViewScopedFlowEngine';
@@ -123,6 +124,219 @@ describe('dirtyAwareApiClient', () => {
     expect(update).toHaveBeenCalledTimes(1);
     expect(api.resource).toBe(originalResource);
     expect(engine.getDataSourceDirtyVersion('main', 'posts')).toBe(1);
+  });
+
+  it('should route resource actions through the local request override without double-marking', async () => {
+    const engine = new FlowEngine();
+    const api = new APIClient();
+    const transport = vi.spyOn(api.axios, 'request').mockResolvedValue({ data: { ok: true } });
+    const wrappedApi = getDirtyAwareApiClient(api, engine.context) as APIClient;
+    const delegatedRequest = wrappedApi.request.bind(wrappedApi);
+    const requestOverride = vi.fn((config: Parameters<APIClient['request']>[0]) => delegatedRequest(config));
+
+    wrappedApi.request = requestOverride as APIClient['request'];
+
+    await wrappedApi.resource('posts').update({ filterByTk: 1, values: { title: 'updated' } });
+
+    expect(requestOverride).toHaveBeenCalledTimes(1);
+    expect(transport).toHaveBeenCalledTimes(1);
+    expect(engine.getDataSourceDirtyVersion('main', 'posts')).toBe(1);
+  });
+
+  it('should keep one dirty mark when the request override rebuilds the config', async () => {
+    const engine = new FlowEngine();
+    const api = new APIClient();
+    const transport = vi.spyOn(api.axios, 'request').mockResolvedValue({ data: { ok: true } });
+    const wrappedApi = getDirtyAwareApiClient(api, engine.context) as APIClient;
+    const delegatedRequest = wrappedApi.request.bind(wrappedApi);
+    const requestOverride = vi.fn((config: Parameters<APIClient['request']>[0]) => {
+      const { url, method, headers, params, data } = config as RequestOptions;
+      return delegatedRequest({ url, method, headers, params, data });
+    });
+
+    wrappedApi.request = requestOverride as APIClient['request'];
+
+    await wrappedApi.resource('posts').update({ filterByTk: 1, values: { title: 'updated' } });
+
+    expect(requestOverride).toHaveBeenCalledTimes(1);
+    expect(transport).toHaveBeenCalledTimes(1);
+    expect(engine.getDataSourceDirtyVersion('main', 'posts')).toBe(1);
+  });
+
+  it('should keep nested mutations from a request override independent', async () => {
+    const engine = new FlowEngine();
+    const api = new APIClient();
+    const transport = vi.spyOn(api.axios, 'request').mockResolvedValue({ data: { ok: true } });
+    const wrappedApi = getDirtyAwareApiClient(api, engine.context) as APIClient;
+    const delegatedRequest = wrappedApi.request.bind(wrappedApi);
+    const requestOverride = vi.fn(async (config: Parameters<APIClient['request']>[0]) => {
+      await delegatedRequest({ url: 'comments:create', method: 'post' });
+      return delegatedRequest(config);
+    });
+
+    wrappedApi.request = requestOverride as APIClient['request'];
+
+    await wrappedApi.resource('posts').update({ filterByTk: 1, values: { title: 'updated' } });
+
+    expect(requestOverride).toHaveBeenCalledTimes(1);
+    expect(transport).toHaveBeenCalledTimes(2);
+    expect(engine.getDataSourceDirtyVersion('main', 'comments')).toBe(1);
+    expect(engine.getDataSourceDirtyVersion('main', 'posts')).toBe(1);
+  });
+
+  it('should route structured requests through the local resource override without double-marking', async () => {
+    const engine = new FlowEngine();
+    const api = new APIClient();
+    const transport = vi.spyOn(api.axios, 'request').mockResolvedValue({ data: { ok: true } });
+    const wrappedApi = getDirtyAwareApiClient(api, engine.context) as APIClient;
+    const delegatedResource = wrappedApi.resource.bind(wrappedApi);
+    const resourceOverride = vi.fn((...args: Parameters<APIClient['resource']>) => delegatedResource(...args));
+
+    wrappedApi.resource = resourceOverride;
+
+    await wrappedApi.request({
+      resource: 'posts',
+      action: 'update',
+      params: { filterByTk: 1, values: { title: 'updated' } },
+    });
+
+    expect(resourceOverride).toHaveBeenCalledTimes(1);
+    expect(transport).toHaveBeenCalledTimes(1);
+    expect(engine.getDataSourceDirtyVersion('main', 'posts')).toBe(1);
+  });
+
+  it('should keep one dirty mark when the resource override delegates lazily', async () => {
+    const engine = new FlowEngine();
+    const api = new APIClient();
+    const transport = vi.spyOn(api.axios, 'request').mockResolvedValue({ data: { ok: true } });
+    const wrappedApi = getDirtyAwareApiClient(api, engine.context) as APIClient;
+    const delegatedResource = wrappedApi.resource.bind(wrappedApi);
+    const resourceOverride = vi.fn(
+      (...args: Parameters<APIClient['resource']>): IResource => ({
+        update: async (...actionArgs: Parameters<IResource['update']>) => {
+          await Promise.resolve();
+          return delegatedResource(...args).update(...actionArgs);
+        },
+      }),
+    );
+
+    wrappedApi.resource = resourceOverride;
+
+    await wrappedApi.request({
+      resource: 'posts',
+      action: 'update',
+      params: { filterByTk: 1, values: { title: 'updated' } },
+    });
+
+    expect(resourceOverride).toHaveBeenCalledTimes(1);
+    expect(transport).toHaveBeenCalledTimes(1);
+    expect(engine.getDataSourceDirtyVersion('main', 'posts')).toBe(1);
+  });
+
+  it('should keep nested mutations from a resource override independent', async () => {
+    const engine = new FlowEngine();
+    const api = new APIClient();
+    const transport = vi.spyOn(api.axios, 'request').mockResolvedValue({ data: { ok: true } });
+    const wrappedApi = getDirtyAwareApiClient(api, engine.context) as APIClient;
+    const delegatedResource = wrappedApi.resource.bind(wrappedApi);
+    let nestedMutation: Promise<unknown> | undefined;
+    const resourceOverride = vi.fn((...args: Parameters<APIClient['resource']>) => {
+      nestedMutation = delegatedResource('comments').create({ values: { body: 'nested' } });
+      return delegatedResource(...args);
+    });
+
+    wrappedApi.resource = resourceOverride;
+
+    await wrappedApi.request({
+      resource: 'posts',
+      action: 'update',
+      params: { filterByTk: 1, values: { title: 'updated' } },
+    });
+    await nestedMutation;
+
+    expect(resourceOverride).toHaveBeenCalledTimes(1);
+    expect(transport).toHaveBeenCalledTimes(2);
+    expect(engine.getDataSourceDirtyVersion('main', 'comments')).toBe(1);
+    expect(engine.getDataSourceDirtyVersion('main', 'posts')).toBe(1);
+  });
+
+  it('should clear local request and resource overrides when deleted', () => {
+    const engine = new FlowEngine();
+    const api: TestApi = {
+      auth: { locale: 'zh-CN' },
+      request: vi.fn(async () => ({ data: { ok: true } })),
+      resource: vi.fn(() => ({})),
+    };
+    const wrappedApi = getWrappedApi(engine, api);
+    const defaultRequest = wrappedApi.request;
+    const defaultResource = wrappedApi.resource;
+
+    wrappedApi.request = vi.fn();
+    wrappedApi.resource = vi.fn();
+
+    expect(Reflect.deleteProperty(wrappedApi, 'request')).toBe(true);
+    expect(Reflect.deleteProperty(wrappedApi, 'resource')).toBe(true);
+    expect(wrappedApi.request).toBe(defaultRequest);
+    expect(wrappedApi.resource).toBe(defaultResource);
+  });
+
+  it('should reject request and resource descriptor overrides without mutating the raw api', () => {
+    const engine = new FlowEngine();
+    const api: TestApi = {
+      auth: { locale: 'zh-CN' },
+      request: vi.fn(async () => ({ data: { ok: true } })),
+      resource: vi.fn(() => ({})),
+    };
+    const wrappedApi = getWrappedApi(engine, api);
+    const originalRequest = api.request;
+    const originalResource = api.resource;
+
+    expect(Reflect.defineProperty(wrappedApi, 'request', { value: vi.fn() })).toBe(false);
+    expect(Reflect.defineProperty(wrappedApi, 'resource', { value: vi.fn() })).toBe(false);
+    expect(() => Object.defineProperty(wrappedApi, 'request', { value: vi.fn() })).toThrow(TypeError);
+    expect(() => Object.defineProperty(wrappedApi, 'resource', { value: vi.fn() })).toThrow(TypeError);
+    expect(api.request).toBe(originalRequest);
+    expect(api.resource).toBe(originalResource);
+  });
+
+  it('should reject local overrides for own methods on a non-extensible raw api', () => {
+    const engine = new FlowEngine();
+    const api: TestApi = {
+      auth: { locale: 'zh-CN' },
+      request: vi.fn(async () => ({ data: { ok: true } })),
+      resource: vi.fn(() => ({})),
+    };
+    const wrappedApi = getWrappedApi(engine, api);
+    const defaultMethods = {
+      request: wrappedApi.request,
+      resource: wrappedApi.resource,
+    };
+
+    Object.preventExtensions(api);
+
+    for (const methodName of ['request', 'resource'] as const) {
+      expect(Reflect.set(wrappedApi, methodName, vi.fn())).toBe(false);
+      expect(wrappedApi[methodName]).toBe(defaultMethods[methodName]);
+      expect(Reflect.deleteProperty(wrappedApi, methodName)).toBe(false);
+    }
+  });
+
+  it('should keep overrides isolated between flow contexts', () => {
+    const api: TestApi = {
+      auth: { locale: 'zh-CN' },
+      request: vi.fn(async () => ({ data: { ok: true } })),
+      resource: vi.fn(() => ({})),
+    };
+    const firstContextApi = getDirtyAwareApiClient(api, new FlowContext()) as TestApi;
+    const secondContextApi = getDirtyAwareApiClient(api, new FlowContext()) as TestApi;
+    const secondRequest = secondContextApi.request;
+    const requestOverride = vi.fn();
+
+    firstContextApi.request = requestOverride;
+
+    expect(firstContextApi.request).toBe(requestOverride);
+    expect(secondContextApi.request).toBe(secondRequest);
+    expect(api.request).not.toBe(requestOverride);
   });
 
   it('should not mark dirty for read actions', async () => {
