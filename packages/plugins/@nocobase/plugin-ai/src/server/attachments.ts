@@ -14,7 +14,6 @@ import type { AttachmentModel } from '@nocobase/plugin-file-manager';
 export type AttachmentId = string | number;
 
 export type AttachmentSource = {
-  type?: string;
   dataSourceKey?: string;
   collectionName?: string;
   field?: string;
@@ -27,7 +26,6 @@ type AttachmentLookup = {
 };
 
 const AI_FILES_ATTACHMENT_SOURCE = {
-  type: 'aiFiles',
   dataSourceKey: 'main',
   collectionName: 'aiFiles',
 };
@@ -79,9 +77,8 @@ export function getAttachmentSource(attachment: unknown): AttachmentSource | nul
   if (!isRecord(attachment) || !isRecord(attachment.source)) {
     return null;
   }
-  const { type, dataSourceKey, collectionName, field, trustworthy } = attachment.source;
+  const { dataSourceKey, collectionName, field, trustworthy } = attachment.source;
   const source = {
-    ...(typeof type === 'string' ? { type } : {}),
     dataSourceKey: typeof dataSourceKey === 'string' && dataSourceKey ? dataSourceKey : 'main',
     ...(typeof collectionName === 'string' && collectionName ? { collectionName } : {}),
     ...(typeof field === 'string' ? { field } : {}),

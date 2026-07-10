@@ -85,7 +85,6 @@ describe('message attachment lookup', () => {
       id: 1,
       filename: 'upload.png',
       source: {
-        type: 'aiFiles',
         dataSourceKey: 'main',
         collectionName: 'aiFiles',
       },
@@ -118,7 +117,6 @@ describe('message attachment lookup', () => {
       id: 2,
       filename: 'block.pdf',
       source: {
-        type: 'collectionField',
         dataSourceKey: 'main',
         collectionName: 'attachments',
         field: 'orders.files',

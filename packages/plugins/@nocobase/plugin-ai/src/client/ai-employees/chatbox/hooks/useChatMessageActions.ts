@@ -27,7 +27,6 @@ import { UploadFieldModel } from '@nocobase/plugin-file-manager/client';
 const STREAM_UPDATE_INTERVAL = 50;
 
 type UploadAttachmentSource = {
-  type: 'collectionField';
   dataSourceKey: string;
   collectionName: string;
   field?: string;
@@ -54,7 +53,6 @@ const getUploadAttachmentSource = (model: UploadFieldModelWithContext): UploadAt
   }
 
   return {
-    type: 'collectionField',
     dataSourceKey: model.context?.collection?.dataSourceKey || 'main',
     collectionName,
     field: `${collectionField.collectionName}.${collectionField.name}`,
