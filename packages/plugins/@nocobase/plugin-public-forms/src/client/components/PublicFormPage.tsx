@@ -37,6 +37,7 @@ import {
   useRequest,
   VariablesProvider,
 } from '@nocobase/client';
+import type { ISchema } from '@nocobase/client';
 import { Form, Input, Modal, Spin } from 'antd';
 import { Button as MobileButton, Dialog as MobileDialog } from 'antd-mobile';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
@@ -192,8 +193,18 @@ type PublicFormDataSourceOptions = DataSourceOptions & {
 type PublicFormMeta = {
   dataSource?: PublicFormDataSourceOptions | null;
   flowModel?: CreateModelOptions | null;
-  schema?: unknown;
+  schema?: ISchema | null;
 };
+
+type ResponseErrorLike = {
+  response?: {
+    status?: number;
+  };
+};
+
+function getResponseStatus(error: unknown) {
+  return (error as ResponseErrorLike | null)?.response?.status;
+}
 
 type PublicFormRuntimeView = {
   type: 'embed';
@@ -450,7 +461,7 @@ function InternalPublicForm() {
     {
       url: `publicForms:getMeta/${params.name}`,
       skipAuth: true,
-      skipNotify: (nextError) => nextError?.response?.status === 401,
+      skipNotify: (nextError) => getResponseStatus(nextError) === 401,
     },
     {
       onSuccess(data) {
@@ -458,7 +469,7 @@ function InternalPublicForm() {
         localStorage.setItem('NOCOBASE_FORM_TOKEN', data?.data?.token);
       },
       onError(nextError) {
-        if (nextError?.response?.status === 401) {
+        if (getResponseStatus(nextError) === 401) {
           setPasswordErrorMessage(t('Incorrect password'));
         }
       },
@@ -468,7 +479,7 @@ function InternalPublicForm() {
 
   useTitle(data);
   useEffect(() => {
-    if (error?.['response']?.status === 401) {
+    if (getResponseStatus(error) === 401) {
       setPasswordErrorMessage(t('Incorrect password'));
     }
   }, [error, t]);
@@ -493,7 +504,7 @@ function InternalPublicForm() {
     }
   }, []);
 
-  if (error?.['response']?.status === 401 || data?.data?.passwordRequired) {
+  if (getResponseStatus(error) === 401 || data?.data?.passwordRequired) {
     return (
       <div>
         <Modal
@@ -533,7 +544,7 @@ function InternalPublicForm() {
     );
   }
 
-  if (error?.['response']?.status === 500) {
+  if (getResponseStatus(error) === 500) {
     return <UnFoundFormPlaceholder />;
   }
 
@@ -583,7 +594,7 @@ function InternalPublicForm() {
               <PublicPublicFormProvider dataSource={meta.dataSource}>
                 <SchemaComponentContext.Provider value={{ ...ctx, designable: false }}>
                   <SchemaComponent
-                    schema={meta.schema}
+                    schema={meta.schema || undefined}
                     scope={{
                       useCreateActionProps: usePublicSubmitActionProps,
                     }}

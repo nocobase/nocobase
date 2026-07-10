@@ -77,11 +77,7 @@ type PublicFormAdminRecord = {
   [key: string]: unknown;
 };
 
-function LegacyAdminPublicFormPage(props: {
-  name?: string;
-  data?: PublicFormAdminRecord;
-  refresh: () => Promise<void>;
-}) {
+function LegacyAdminPublicFormPage(props: { name?: string; data?: PublicFormAdminRecord; refresh: () => void }) {
   const { data, name, refresh } = props;
   const { t } = usePublicFormTranslation();
   const { theme } = useGlobalTheme();
@@ -96,7 +92,7 @@ function LegacyAdminPublicFormPage(props: {
       filterByTk: name,
       values: { ...values },
     });
-    await refresh();
+    refresh();
   };
   const handleSetPassword = async () => {
     const values = await FormDialog(
@@ -136,7 +132,7 @@ function LegacyAdminPublicFormPage(props: {
 
   const handleCopyLink = () => {
     const baseURL = window.location.origin;
-    const link = baseURL + app.getHref(`public-forms/${params.name}`);
+    const link = baseURL + app.getHref(`public-forms/${name}`);
     navigator.clipboard.writeText(link);
     message.success(t('Link copied successfully'));
   };
