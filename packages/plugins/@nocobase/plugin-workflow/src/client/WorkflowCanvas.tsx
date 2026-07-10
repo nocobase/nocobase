@@ -97,7 +97,14 @@ function ExecutedStatusMessage({ data, option }) {
   );
 }
 
-function getExecutedStatusMessage({ id, status }) {
+function getExecutedStatusMessage(execution) {
+  if (!execution) {
+    return {
+      type: 'info' as NoticeType,
+      content: lang('Workflow was not triggered because the current request did not meet the trigger requirements.'),
+    };
+  }
+  const { id, status } = execution;
   const option = ExecutionStatusOptionsMap[status];
   if (!option) {
     return null;
