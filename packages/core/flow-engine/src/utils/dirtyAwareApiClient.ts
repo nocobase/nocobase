@@ -7,7 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { ActionParams, APIClient, IResource, RequestOptions } from '@nocobase/sdk';
+import { APIClient } from '@nocobase/sdk';
+import type { ActionParams, IResource, RequestOptions } from '@nocobase/sdk';
 import type { FlowContext } from '../flowContext';
 import { getDataSourceKeyFromHeaders, markDataSourceDirty } from './dataSourceDirty';
 
@@ -485,6 +486,9 @@ function createDirtyAwareResource(
 function createDirtyAwareApiClient(api: DirtyAwareAPIClient, context: FlowContext): APIClient {
   const baseResource = api.resource;
   const baseRequest = api.request;
+  // SDK methods use the dispatch receiver; custom methods keep the original instance for private fields and state.
+  const shouldUseResourceDispatchReceiver = baseResource === APIClient.prototype.resource;
+  const shouldUseRequestDispatchReceiver = baseRequest === APIClient.prototype.request;
   // Stacks cover synchronous delegation; the symbol token survives async overrides that forward arguments.
   const resourceTokenStack: DirtyDispatchFrame[] = [];
   const requestTokenStack: DirtyDispatchFrame[] = [];
@@ -598,7 +602,12 @@ function createDirtyAwareApiClient(api: DirtyAwareAPIClient, context: FlowContex
     const stackFrame = resourceTokenStack.at(-1);
     const parentToken = resourceKey && stackFrame?.key === resourceKey ? stackFrame.token : undefined;
     const receiver = createDispatchReceiver(parentToken);
-    const resourceInstance = Reflect.apply(baseResource, receiver, [name, of, headers, cancel]);
+    const resourceInstance = Reflect.apply(baseResource, shouldUseResourceDispatchReceiver ? receiver : api, [
+      name,
+      of,
+      headers,
+      cancel,
+    ]);
     return createDirtyAwareResource(context, resourceInstance, name, of, headers, requestTokenStack, parentToken);
   };
 
@@ -626,7 +635,9 @@ function createDirtyAwareApiClient(api: DirtyAwareAPIClient, context: FlowContex
       ...cleanConfig
     } = options;
     const receiver = createDispatchReceiver(token);
-    return (Reflect.apply(baseRequest, receiver, [cleanConfig]) as Promise<R>).then((result) => {
+    return (
+      Reflect.apply(baseRequest, shouldUseRequestDispatchReceiver ? receiver : api, [cleanConfig]) as Promise<R>
+    ).then((result) => {
       if (ownsToken) {
         markResourceActionDataSourceDirtyOnce(token, context, dirtyResourceAction, options.headers);
       }

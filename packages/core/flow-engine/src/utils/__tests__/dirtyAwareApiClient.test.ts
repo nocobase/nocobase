@@ -143,6 +143,68 @@ describe('dirtyAwareApiClient', () => {
     expect(engine.getDataSourceDirtyVersion('main', 'posts')).toBe(1);
   });
 
+  it('should invoke custom request methods on the original api instance', async () => {
+    class StatefulRequestAPIClient extends APIClient {
+      #privateRequestCalls = 0;
+      publicRequestCalls = 0;
+
+      get privateRequestCalls() {
+        return this.#privateRequestCalls;
+      }
+
+      override request<T, R, D>(config: Parameters<APIClient['request']>[0]): Promise<R> {
+        this.#privateRequestCalls += 1;
+        this.publicRequestCalls += 1;
+        return super.request<T, R, D>(config);
+      }
+    }
+
+    const engine = new FlowEngine();
+    const api = new StatefulRequestAPIClient();
+    const transport = vi.spyOn(api.axios, 'request').mockResolvedValue({ data: { ok: true } });
+    const wrappedApi = getDirtyAwareApiClient(api, engine.context) as APIClient;
+
+    await wrappedApi.resource('posts').update({ filterByTk: 1, values: { title: 'updated' } });
+
+    expect(transport).toHaveBeenCalledTimes(1);
+    expect(api.privateRequestCalls).toBe(1);
+    expect(api.publicRequestCalls).toBe(1);
+    expect(engine.getDataSourceDirtyVersion('main', 'posts')).toBe(1);
+  });
+
+  it('should invoke custom resource methods on the original api instance', async () => {
+    class StatefulResourceAPIClient extends APIClient {
+      #privateResourceCalls = 0;
+      publicResourceCalls = 0;
+
+      get privateResourceCalls() {
+        return this.#privateResourceCalls;
+      }
+
+      override resource(...args: Parameters<APIClient['resource']>): IResource {
+        this.#privateResourceCalls += 1;
+        this.publicResourceCalls += 1;
+        return super.resource(...args);
+      }
+    }
+
+    const engine = new FlowEngine();
+    const api = new StatefulResourceAPIClient();
+    const transport = vi.spyOn(api.axios, 'request').mockResolvedValue({ data: { ok: true } });
+    const wrappedApi = getDirtyAwareApiClient(api, engine.context) as APIClient;
+
+    await wrappedApi.request({
+      resource: 'posts',
+      action: 'update',
+      params: { filterByTk: 1, values: { title: 'updated' } },
+    });
+
+    expect(transport).toHaveBeenCalledTimes(1);
+    expect(api.privateResourceCalls).toBe(1);
+    expect(api.publicResourceCalls).toBe(1);
+    expect(engine.getDataSourceDirtyVersion('main', 'posts')).toBe(1);
+  });
+
   it('should keep one dirty mark when the request override rebuilds the config', async () => {
     const engine = new FlowEngine();
     const api = new APIClient();
