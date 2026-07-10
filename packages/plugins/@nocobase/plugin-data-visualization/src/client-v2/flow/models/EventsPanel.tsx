@@ -14,14 +14,15 @@ import { useT } from '../../locale';
 import { FunctionOutlined } from '@ant-design/icons';
 import { observer, useFlowSettingsContext } from '@nocobase/flow-engine';
 
-const DEFAULT_EVENTS_RAW = `// chart.off('click');
-// chart.on('click', 'series', function() {
+const DEFAULT_EVENTS_RAW = `// const handler = function() {
 //   ctx.openView(ctx.model.uid + '-1', {
 //     mode: 'dialog',
 //     size: 'large',
 //     defineProperties: {}, // inject context into the new view
 //   });
-// });
+// };
+// chart.on('click', 'series', handler);
+// return () => chart.off('click', handler);
 `;
 
 const getFormValues = (ctx: any) => ctx.getStepFormValues('chartSettings', 'configure') || {};
