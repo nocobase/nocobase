@@ -46,6 +46,7 @@ const STATIC_TRANSLATION_HELPER_NAMES = new Set(['tExpr']);
 export type FlowSurfaceAstExtractionInput = {
   source: string;
   sourceFile?: string;
+  sourcePath?: string;
 };
 
 type FlowSurfaceAstExtractionContext = {
@@ -79,7 +80,7 @@ export function collectFlowSurfaceExtractorAstEvents(
   const sourceFile = ts.createSourceFile(source, input.source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
   const context: FlowSurfaceAstExtractionContext = {
     source,
-    ...(input.sourceFile ? { sourcePath: input.sourceFile } : {}),
+    ...(input.sourcePath || input.sourceFile ? { sourcePath: input.sourcePath || input.sourceFile } : {}),
     namespaceImports: collectNamespaceImports(sourceFile),
     namedImports: collectNamedImports(sourceFile),
     moduleSourceCache: new Map(),
@@ -107,6 +108,70 @@ export function collectFlowSurfaceExtractorAstEvents(
 
   visit(sourceFile);
   return recorder.getEvents();
+}
+
+export function collectFlowSurfaceExtractorModuleSpecifiers(input: FlowSurfaceAstExtractionInput): string[] {
+  const sourceFile = ts.createSourceFile(
+    input.sourceFile || 'ast',
+    input.source,
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TSX,
+  );
+  const specifiers = new Set<string>();
+
+  function addSpecifier(node: ts.Expression | undefined) {
+    if (node && (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node))) {
+      specifiers.add(node.text);
+    }
+  }
+
+  function visit(node: ts.Node) {
+    if (ts.isImportDeclaration(node) && !isTypeOnlyImportDeclaration(node)) {
+      addSpecifier(node.moduleSpecifier);
+    } else if (ts.isExportDeclaration(node) && !isTypeOnlyExportDeclaration(node)) {
+      addSpecifier(node.moduleSpecifier);
+    } else if (
+      ts.isImportEqualsDeclaration(node) &&
+      !node.isTypeOnly &&
+      ts.isExternalModuleReference(node.moduleReference)
+    ) {
+      addSpecifier(node.moduleReference.expression);
+    } else if (
+      ts.isCallExpression(node) &&
+      (node.expression.kind === ts.SyntaxKind.ImportKeyword ||
+        (ts.isIdentifier(node.expression) && node.expression.text === 'require'))
+    ) {
+      addSpecifier(node.arguments[0]);
+    }
+    ts.forEachChild(node, visit);
+  }
+
+  visit(sourceFile);
+  return Array.from(specifiers);
+}
+
+function isTypeOnlyImportDeclaration(node: ts.ImportDeclaration) {
+  if (node.importClause?.isTypeOnly) {
+    return true;
+  }
+  const bindings = node.importClause?.namedBindings;
+  return (
+    !!bindings &&
+    ts.isNamedImports(bindings) &&
+    bindings.elements.length > 0 &&
+    bindings.elements.every((item) => item.isTypeOnly)
+  );
+}
+
+function isTypeOnlyExportDeclaration(node: ts.ExportDeclaration) {
+  return (
+    node.isTypeOnly ||
+    (!!node.exportClause &&
+      ts.isNamedExports(node.exportClause) &&
+      node.exportClause.elements.length > 0 &&
+      node.exportClause.elements.every((item) => item.isTypeOnly))
+  );
 }
 
 function collectRegisteredModelLoaderFunctionNodes(

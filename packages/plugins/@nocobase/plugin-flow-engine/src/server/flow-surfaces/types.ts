@@ -603,6 +603,7 @@ export type FlowSurfaceCatalogItem = {
   origin?: FlowSurfaceCapabilityOriginSource;
   supportLevel?: FlowSurfaceSupportLevel;
   confidence?: FlowSurfaceCapabilityConfidence;
+  placement?: FlowSurfacePlacementSummary;
   availability?: FlowSurfaceCapabilityAvailability;
   warnings?: FlowSurfaceCapabilityWarning[];
   identity?: FlowSurfaceCapabilityIdentity;

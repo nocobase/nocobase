@@ -328,9 +328,18 @@ async function buildPackageSourceLifecycle(
       await doBuildPackage(pkg.location, userConfig, sourcemap, log);
     });
 
-    if (targetDir === 'dist') {
+    if (targetDir === 'dist' || pkg.location === CORE_CLIENT_V2) {
       await runPhase('flowSurfaceArtifacts', async () => {
-        await buildFlowSurfaceArtifact(pkg.location, log);
+        const result = await buildFlowSurfaceArtifact(pkg.location, log);
+        if (result.status === 'failed' && process.env.FLOW_SURFACE_ARTIFACT_OPTIONAL !== 'true') {
+          const detail =
+            result.error ||
+            result.summary?.results
+              .flatMap((item) => item.errors || [])
+              .map((error) => error.message)
+              .join('; ');
+          throw new Error(`Flow surface snapshot artifact generation failed${detail ? `: ${detail}` : ''}`);
+        }
       });
     }
 

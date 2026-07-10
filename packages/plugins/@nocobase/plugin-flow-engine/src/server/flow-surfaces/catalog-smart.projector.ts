@@ -34,6 +34,7 @@ const LIGHT_CATALOG_ITEM_KEYS = [
   'origin',
   'supportLevel',
   'confidence',
+  'placement',
   'availability',
   'warnings',
   'scope',

@@ -3675,7 +3675,7 @@ describe('flowSurfaces capabilities projection', () => {
     expect(response.data).toEqual([]);
   });
 
-  it('should keep field component auto snapshots out of global discovery', async () => {
+  it('should expose field component auto snapshots as read-only capabilities', async () => {
     const options = {
       enabledPackages: new Set(['@nocobase/plugin-fields']),
       autoSnapshots: [createInputFieldAutoSnapshot()],
@@ -3687,28 +3687,92 @@ describe('flowSurfaces capabilities projection', () => {
         kinds: ['fieldComponent'],
         publicTypes: ['pluginFields.input'],
         includeUnavailable: true,
+        expand: ['item.identity'],
       },
       options,
     );
 
-    expect(response.data).toEqual([]);
+    expect(response.data).toEqual([
+      expect.objectContaining({
+        kind: 'fieldComponent',
+        publicType: 'pluginFields.input',
+        origin: 'autoSnapshot',
+        supportLevel: 'readback-only',
+        identity: {
+          capabilityId: '@nocobase/plugin-fields:autoSnapshot:fieldComponent:pluginFields.input',
+        },
+        availability: expect.objectContaining({
+          create: expect.objectContaining({ supported: false }),
+        }),
+      }),
+    ]);
 
-    let caught: unknown;
-    try {
-      await buildFlowSurfaceDescribeCapabilityResponse(
+    await expect(
+      buildFlowSurfaceDescribeCapabilityResponse(
         {
-          publicType: 'pluginFields.input',
+          capabilityId: response.data[0].identity?.capabilityId,
+          includeUnavailable: true,
         },
         options,
-      );
-    } catch (error) {
-      caught = error;
-    }
+      ),
+    ).resolves.toEqual(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          kind: 'fieldComponent',
+          publicType: 'pluginFields.input',
+          supportLevel: 'readback-only',
+        }),
+      }),
+    );
+  });
 
-    expect(caught).toBeInstanceOf(FlowSurfaceBadRequestError);
-    expect((caught as FlowSurfaceBadRequestError).options.details).toMatchObject({
-      reasonCode: 'unsupported',
-      reasonSource: 'registry',
+  it('should merge client-v2 auto snapshots into canonical core capabilities by model use', async () => {
+    const coreSnapshot = buildFlowSurfaceAutoSnapshot({
+      plugin: '@nocobase/client-v2',
+      generatedAt: '2026-06-04T00:00:00.000Z',
+      sourceHash: 'core-client-v2-source-hash',
+      extractorVersion: 'test',
+      events: [
+        {
+          type: 'model.registered',
+          modelUse: 'RefreshActionModel',
+          className: 'RefreshActionModel',
+          source: 'src/flow/models/actions/RefreshActionModel.tsx',
+          evidenceSource: 'ast',
+          confidence: 'high',
+        },
+        {
+          type: 'menu.itemRegistered',
+          menuKey: 'refresh',
+          label: 'Refresh',
+          modelUse: 'RefreshActionModel',
+          slot: 'actions',
+          createModelOptionsStatus: 'static',
+          source: 'src/flow/models/actions/RefreshActionModel.tsx',
+          evidenceSource: 'ast',
+          confidence: 'high',
+        },
+      ],
+    });
+    const { service } = createAutoSnapshotService([coreSnapshot]);
+    const response = await service.capabilities(
+      {
+        kinds: ['action'],
+        query: 'nocobaseClientV2.refresh',
+        includeUnavailable: true,
+      },
+      {
+        enabledPackages: new Set(),
+      },
+    );
+
+    expect(response.data.map((item) => item.publicType)).toEqual(['refresh']);
+    expect(response.data[0]).toMatchObject({
+      ownerPlugin: '@nocobase/core/client',
+      origin: 'builtInStatic',
+      availability: {
+        create: expect.objectContaining({ supported: true }),
+      },
     });
   });
 
@@ -4047,7 +4111,7 @@ describe('flowSurfaces capabilities projection', () => {
     ]);
   });
 
-  it('should keep provider capabilities global-only until target placement filtering exists', async () => {
+  it('should only expose provider capabilities returned by target-scoped catalog', async () => {
     const recorder = createCatalogRecorder();
     const response = await buildFlowSurfaceCapabilitiesResponse(
       {
@@ -4070,6 +4134,56 @@ describe('flowSurfaces capabilities projection', () => {
       },
     });
     expect(response.data).toEqual([]);
+  });
+
+  it('should reuse provider discovery for catalog and capability projection', async () => {
+    const baseProvider = createGanttProvider();
+    const getCapabilities = vi.fn(baseProvider.getCapabilities);
+    const provider = { ...baseProvider, getCapabilities };
+    const providerRegistry = createProviderRegistry([provider]);
+    const enabledPackages = new Set(['@nocobase/plugin-gantt']);
+    class ProviderCatalogService extends FlowSurfacesService {
+      override async catalog(
+        values: FlowSurfaceCatalogValues,
+        options: Parameters<FlowSurfacesService['catalog']>[1] = {},
+      ): Promise<FlowSurfaceCatalogResponse> {
+        return {
+          target: null,
+          scenario: {
+            surfaceKind: 'global' as const,
+          },
+          selectedSections: values.sections || [],
+          blocks: await collectProviderCatalogItems({
+            providerRegistry,
+            providerCapabilities: options.providerCapabilities,
+            enabledPackages,
+          }),
+        };
+      }
+    }
+    const service = new ProviderCatalogService({
+      flowSurfaceCapabilityProviders: providerRegistry,
+    } as unknown as ConstructorParameters<typeof FlowSurfacesService>[0]);
+    const response = await service.capabilities(
+      {
+        query: 'gantt',
+      },
+      {
+        enabledPackages,
+      },
+    );
+
+    expect(getCapabilities).toHaveBeenCalledTimes(1);
+    expect(response.data).toEqual([
+      expect.objectContaining({
+        publicType: 'gantt',
+        placement: {
+          scenes: ['page', 'tab'],
+          slots: ['blocks'],
+          collectionRequired: true,
+        },
+      }),
+    ]);
   });
 
   it('should return provider identity, settings, warnings, and full semantic only when expanded', async () => {

@@ -19,6 +19,7 @@ import { normalizeComposeFieldSpec } from '../flow-surfaces/service-utils';
 import type { FlowSurfaceCapabilityAdmissionReport } from '../flow-surfaces/admission-report';
 import type {
   FlowSurfaceCapabilitiesProvider,
+  FlowSurfaceCapabilityManifestItem,
   FlowSurfaceCatalogItem,
   FlowSurfaceDynamicCapabilityCreateActionName,
   FlowSurfaceJsonCreateRecipe,
@@ -770,6 +771,7 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
       withoutResolveCreate?: boolean;
       acceptedAliases?: string[];
       modelUse?: string;
+      placement?: FlowSurfaceCapabilityManifestItem['placement'];
     } = {},
   ): FlowSurfaceCapabilitiesProvider {
     const modelUse = input.modelUse || 'TableBlockModel';
@@ -785,6 +787,7 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
           semantic: {
             title: 'Dry run',
           },
+          ...(input.placement ? { placement: input.placement } : {}),
           implementation: {
             modelUse,
           },
@@ -5626,13 +5629,15 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
 
   it('should persist provider alias writes and read back canonical public type', async () => {
     const providerModelUse = 'AliasDryRunBlockModel';
-    const provider = createDryRunProvider({
+    const baseProvider = createDryRunProvider({
       acceptedAliases: ['legacyDryRun'],
       modelUse: providerModelUse,
       resolveCreate: () => ({
         use: providerModelUse,
       }),
     });
+    const getCapabilities = vi.fn(baseProvider.getCapabilities);
+    const provider = { ...baseProvider, getCapabilities };
     const enabledPackages = new Set(['@nocobase/plugin-dry-run']);
     const service = new FlowSurfacesService({
       flowSurfaceCapabilityProviders: createProviderRegistry([provider]),
@@ -5723,6 +5728,7 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
         use: providerModelUse,
       }),
     ]);
+    expect(getCapabilities).toHaveBeenCalledTimes(1);
 
     const projected = await harness.projectDynamicBlockReadbackTypes(
       {
@@ -8673,26 +8679,76 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
     });
   });
 
-  it('should keep provider-backed block catalog items out of popup-scoped raw projection', async () => {
-    const service = new FlowSurfacesService({
-      flowSurfaceCapabilityProviders: createProviderRegistry([createDryRunProvider()]),
-    } as unknown as ConstructorParameters<typeof FlowSurfacesService>[0]);
+  it('should filter provider blocks by declared target placement without hiding global discovery', async () => {
     type ProviderBlockCatalogBuilder = {
       buildProviderBlockCatalogItems(input: {
         builtInBlocks: FlowSurfaceCatalogItem[];
+        hasTarget: boolean;
         popupProfile: unknown;
+        resolved: unknown;
+        node?: unknown;
+        scenario: Record<string, unknown>;
+        selectedSections: string[];
         enabledPackages: ReadonlySet<string>;
       }): Promise<FlowSurfaceCatalogItem[]>;
     };
-    const buildProviderBlockCatalogItems = (
-      service as unknown as ProviderBlockCatalogBuilder
-    ).buildProviderBlockCatalogItems.bind(service);
     const enabledPackages = new Set(['@nocobase/plugin-dry-run']);
+    const build = (provider: FlowSurfaceCapabilitiesProvider) => {
+      const service = new FlowSurfacesService({
+        flowSurfaceCapabilityProviders: createProviderRegistry([provider]),
+      } as unknown as ConstructorParameters<typeof FlowSurfacesService>[0]);
+      return (service as unknown as ProviderBlockCatalogBuilder).buildProviderBlockCatalogItems.bind(service);
+    };
+    const pageTarget = {
+      builtInBlocks: [],
+      hasTarget: true,
+      popupProfile: null,
+      resolved: {
+        uid: 'page-grid',
+        kind: 'grid',
+        pageRoute: { type: 'page' },
+      },
+      node: {
+        uid: 'page-grid',
+        type: 'grid',
+        use: 'BlockGridModel',
+      },
+      scenario: { surfaceKind: 'grid' },
+      selectedSections: ['blocks'],
+      enabledPackages,
+    };
+    const popupTarget = {
+      ...pageTarget,
+      popupProfile: {
+        isPopupSurface: true,
+        collectionName: 'tasks',
+        hasCurrentRecord: true,
+        hasAssociationContext: false,
+        scene: 'one',
+      },
+      resolved: { uid: 'popup-grid', kind: 'grid' },
+      scenario: {
+        surfaceKind: 'grid',
+        popup: {
+          kind: 'recordPopup',
+          scene: 'one',
+          hasCurrentRecord: true,
+          hasAssociationContext: false,
+        },
+      },
+    };
+    const withoutPlacement = build(createDryRunProvider());
 
     await expect(
-      buildProviderBlockCatalogItems({
+      withoutPlacement({
         builtInBlocks: [],
+        hasTarget: false,
         popupProfile: null,
+        resolved: null,
+        scenario: {
+          surfaceKind: 'global',
+        },
+        selectedSections: ['blocks'],
         enabledPackages,
       }),
     ).resolves.toEqual([
@@ -8703,18 +8759,47 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
       }),
     ]);
 
-    await expect(
-      buildProviderBlockCatalogItems({
-        builtInBlocks: [],
-        popupProfile: {
-          isPopupSurface: true,
-          hasCurrentRecord: true,
-          hasAssociationContext: false,
-          scene: 'one',
+    await expect(withoutPlacement(pageTarget)).resolves.toEqual([]);
+
+    const pagePlacement = build(
+      createDryRunProvider({
+        placement: {
+          scenes: ['page'],
+          slots: ['blocks'],
+          parentPublicTypes: ['grid'],
+          containerKinds: ['grid'],
+          collectionRequired: true,
         },
-        enabledPackages,
       }),
-    ).resolves.toEqual([]);
+    );
+    await expect(pagePlacement(pageTarget)).resolves.toEqual([
+      expect.objectContaining({
+        publicType: 'dryRun',
+        placement: expect.objectContaining({
+          scenes: ['page'],
+          collectionRequired: true,
+        }),
+      }),
+    ]);
+    await expect(pagePlacement(popupTarget)).resolves.toEqual([]);
+
+    const popupPlacement = build(
+      createDryRunProvider({
+        placement: {
+          scenes: ['popup'],
+          slots: ['blocks'],
+          containerKinds: ['popup'],
+        },
+      }),
+    );
+    await expect(popupPlacement(popupTarget)).resolves.toEqual([
+      expect.objectContaining({
+        publicType: 'dryRun',
+        placement: expect.objectContaining({
+          scenes: ['popup'],
+        }),
+      }),
+    ]);
   });
 
   it('should route create-disabled provider block writes through dynamic availability gating', async () => {

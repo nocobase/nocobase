@@ -16,6 +16,7 @@ import {
   getFlowSurfacePublicCapabilityInferredAuthoring,
   getFlowSurfacePublicCapabilityModelUses,
   type FlowSurfaceCapabilityRegistryLike,
+  type FlowSurfaceCollectedProviderCapability,
 } from './capability-registry';
 import {
   resolveFlowSurfaceCapabilityAdmissionRuntimeEvidence,
@@ -100,6 +101,7 @@ const DYNAMIC_INTERNAL_PROVIDER_TOKENS = new Set([
 type ResolveDynamicCapabilityCreateOptions = FlowSurfaceDynamicCapabilityCreateValues & {
   enabledPackages: ReadonlySet<string>;
   providerRegistry?: FlowSurfaceCapabilityRegistryLike;
+  providerCapabilities?: readonly FlowSurfaceCollectedProviderCapability[];
   providerTimeoutMs?: number;
   actionName?: FlowSurfaceDynamicCapabilityCreateActionName;
   autoSnapshots?: readonly FlowSurfaceAutoSnapshot[];
@@ -189,13 +191,14 @@ export async function resolveDynamicCapabilityCreate(
   });
   assertPublicPayloadDoesNotContainInternalKeys(requestedPublicPayload);
 
-  const providerCapability = (
-    await collectNormalizedProviderCapabilities({
+  const providerCapabilities =
+    input.providerCapabilities ||
+    (await collectNormalizedProviderCapabilities({
       providerRegistry: input.providerRegistry,
       enabledPackages: input.enabledPackages,
       providerTimeoutMs: input.providerTimeoutMs,
-    })
-  ).find((item) => {
+    }));
+  const providerCapability = providerCapabilities.find((item) => {
     if (item.publicItem.kind !== kind || !matchesDynamicCapabilityPublicType(item.publicItem, publicType)) {
       return false;
     }

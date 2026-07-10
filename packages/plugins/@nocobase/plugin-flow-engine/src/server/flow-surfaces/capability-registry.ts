@@ -42,7 +42,7 @@ import type {
 } from './types';
 
 const FLOW_SURFACE_PROVIDER_DISCOVERY_CONCURRENCY = 4;
-const AUTO_SNAPSHOT_PUBLIC_CAPABILITY_KINDS = new Set<FlowSurfaceCapabilityKind>(['block', 'action']);
+const AUTO_SNAPSHOT_PUBLIC_CAPABILITY_KINDS = new Set<FlowSurfaceCapabilityKind>(['block', 'action', 'fieldComponent']);
 const AUTO_SNAPSHOT_ORIGIN: FlowSurfaceCapabilityOriginSource = 'autoSnapshot';
 const INTERNAL_PUBLIC_PAYLOAD_KEYS = new Set([
   'capabilityId',
@@ -101,6 +101,7 @@ type FlowSurfaceProviderRegistryProjectionOptions = {
   providerRegistry?: FlowSurfaceCapabilityRegistryLike;
   enabledPackages: ReadonlySet<string>;
   providerTimeoutMs?: number;
+  providerCapabilities?: readonly FlowSurfaceCollectedProviderCapability[];
 };
 
 type FlowSurfaceAutoSnapshotProjectionOptions = {
@@ -125,7 +126,7 @@ export type FlowSurfaceCollectedProviderCapability = NormalizedFlowSurfaceProvid
 export async function collectProviderPublicCapabilities(
   options: FlowSurfaceProviderRegistryProjectionOptions,
 ): Promise<FlowSurfacePublicCapabilityItem[]> {
-  const normalized = await collectNormalizedProviderCapabilities(options);
+  const normalized = options.providerCapabilities || (await collectNormalizedProviderCapabilities(options));
   return normalized.map((item) =>
     setFlowSurfacePublicCapabilityModelUse(item.publicItem, [
       item.implementation.modelUse,
@@ -509,7 +510,7 @@ function hasStrictVerifiedAutoCatalogAllowlists(config: NormalizedFlowSurfaceCap
 export async function collectProviderCatalogItems(
   options: FlowSurfaceProviderRegistryProjectionOptions,
 ): Promise<FlowSurfaceCatalogItem[]> {
-  const normalized = await collectNormalizedProviderCapabilities(options);
+  const normalized = options.providerCapabilities || (await collectNormalizedProviderCapabilities(options));
   return normalized.filter((item) => item.catalogItem.createSupported).map((item) => item.catalogItem);
 }
 
@@ -648,6 +649,7 @@ function toVerifiedAutoSnapshotCatalogItem(item: FlowSurfacePublicCapabilityItem
       origin: item.origin,
       supportLevel: item.supportLevel,
       confidence: item.confidence,
+      ...(item.placement ? { placement: item.placement } : {}),
       availability: item.availability,
       createSupported: item.availability.create.supported,
       ...(getCatalogRequiredInitParams(item.initParamsSchema).length

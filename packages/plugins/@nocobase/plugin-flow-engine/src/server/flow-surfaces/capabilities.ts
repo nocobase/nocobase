@@ -19,6 +19,7 @@ import {
 } from './capability-policy';
 import {
   collectAutoSnapshotPublicCapabilities,
+  collectNormalizedProviderCapabilities,
   collectProviderPublicCapabilities,
   getFlowSurfaceCatalogCapabilityModelUses,
   getFlowSurfacePublicCapabilityAdmissionCapabilityId,
@@ -30,6 +31,7 @@ import {
   setFlowSurfacePublicCapabilityInferredAuthoring,
   setFlowSurfacePublicCapabilityModelUse,
   type FlowSurfaceCapabilityRegistryLike,
+  type FlowSurfaceCollectedProviderCapability,
 } from './capability-registry';
 import { resolveFlowSurfaceCapabilityReadiness } from './capability-readiness';
 import { FlowSurfaceBadRequestError } from './errors';
@@ -134,7 +136,11 @@ type BuildFlowSurfaceCapabilitiesOptions = {
   autoSnapshots?: readonly FlowSurfaceAutoSnapshot[];
   admissionReports?: readonly FlowSurfaceCapabilityAdmissionReport[];
   capabilityPolicyConfig?: FlowSurfaceCapabilityPolicyConfig | NormalizedFlowSurfaceCapabilityPolicyConfig;
-  catalog: (values: FlowSurfaceCatalogValues) => Promise<FlowSurfaceCatalogResponse>;
+  providerCapabilities?: readonly FlowSurfaceCollectedProviderCapability[];
+  catalog: (
+    values: FlowSurfaceCatalogValues,
+    providerCapabilities: readonly FlowSurfaceCollectedProviderCapability[],
+  ) => Promise<FlowSurfaceCatalogResponse>;
   generatedAt?: string;
   includeCatalogSettingsSchema?: boolean;
 };
@@ -162,13 +168,23 @@ export async function buildFlowSurfaceCapabilitiesResponse(
     includeCatalogSettingsSchema: options.includeCatalogSettingsSchema === true,
   });
   const capabilityPolicyConfig = normalizeFlowSurfaceCapabilityPolicyConfig(options.capabilityPolicyConfig);
-  const catalog = await options.catalog(request.catalogValues);
+  const providerCapabilities =
+    options.providerCapabilities ||
+    (request.kinds.has('block')
+      ? await collectNormalizedProviderCapabilities({
+          providerRegistry: options.providerRegistry,
+          enabledPackages: options.enabledPackages,
+          providerTimeoutMs: capabilityPolicyConfig.providerTimeoutMs,
+        })
+      : []);
+  const catalog = await options.catalog(request.catalogValues, providerCapabilities);
   const providerItems = request.targetHintUsed
     ? []
     : await collectProviderPublicCapabilities({
         providerRegistry: options.providerRegistry,
         enabledPackages: options.enabledPackages,
         providerTimeoutMs: capabilityPolicyConfig.providerTimeoutMs,
+        providerCapabilities,
       });
   const autoSnapshotItems = request.targetHintUsed
     ? []
@@ -211,10 +227,21 @@ export async function buildFlowSurfaceDescribeCapabilityResponse(
   options: BuildFlowSurfaceCapabilitiesOptions,
 ): Promise<FlowSurfaceDescribeCapabilityResponse> {
   const request = normalizeDescribeCapabilityRequest(input);
-  const response = await buildDescribeCapabilityListResponse(request, options, request.target);
+  const capabilityPolicyConfig = normalizeFlowSurfaceCapabilityPolicyConfig(options.capabilityPolicyConfig);
+  const providerCapabilities =
+    options.providerCapabilities ||
+    (!request.kind || request.kind === 'block'
+      ? await collectNormalizedProviderCapabilities({
+          providerRegistry: options.providerRegistry,
+          enabledPackages: options.enabledPackages,
+          providerTimeoutMs: capabilityPolicyConfig.providerTimeoutMs,
+        })
+      : []);
+  const sharedOptions = { ...options, providerCapabilities };
+  const response = await buildDescribeCapabilityListResponse(request, sharedOptions, request.target);
   let data = findBestDescribeCapabilityMatch(response.data, request);
   if (!data && request.target) {
-    const globalResponse = await buildDescribeCapabilityListResponse(request, options, undefined, {
+    const globalResponse = await buildDescribeCapabilityListResponse(request, sharedOptions, undefined, {
       includeAutoSnapshots: false,
     });
     data = findBestDescribeCapabilityMatch(globalResponse.data, request);
@@ -519,7 +546,11 @@ function normalizeDescribeCapabilityRequest(
       },
     );
   }
-  if (!input.target && (kind === 'fieldComponent' || isFieldComponentCapabilityId(capabilityId))) {
+  if (
+    !input.target &&
+    (kind === 'fieldComponent' || isFieldComponentCapabilityId(capabilityId)) &&
+    !isAutoSnapshotFieldComponentCapabilityId(capabilityId)
+  ) {
     throw new FlowSurfaceBadRequestError(
       `flowSurfaces describeCapability fieldComponent lookup requires target.uid or target.targetUid`,
       undefined,
@@ -604,6 +635,11 @@ function isFieldComponentCapabilityId(capabilityId: string) {
   return capabilityId.split(':').includes('fieldComponent');
 }
 
+function isAutoSnapshotFieldComponentCapabilityId(capabilityId: string) {
+  const [, origin, kind] = capabilityId.split(':');
+  return origin === 'autoSnapshot' && kind === 'fieldComponent';
+}
+
 function normalizeDescribeCapabilityExpand(input: FlowSurfaceDescribeCapabilityValues['expand']) {
   const requestedExpand = normalizeCapabilityExpand(input);
   return Array.from(new Set(['item.identity', 'item.semantic', 'item.warnings', ...requestedExpand])) as NonNullable<
@@ -677,9 +713,8 @@ function mergeAutoSnapshotDiagnosticsByModelUse(items: FlowSurfacePublicCapabili
 }
 
 function getCapabilityModelUseKeys(item: FlowSurfacePublicCapabilityItem) {
-  return getFlowSurfacePublicCapabilityModelUses(item).map((modelUse) =>
-    [item.kind, item.ownerPlugin, modelUse].join('::'),
-  );
+  const ownerPlugin = item.ownerPlugin === '@nocobase/client-v2' ? DEFAULT_OWNER_PLUGIN : item.ownerPlugin;
+  return getFlowSurfacePublicCapabilityModelUses(item).map((modelUse) => [item.kind, ownerPlugin, modelUse].join('::'));
 }
 
 function mergeAutoSnapshotDiagnostics(
@@ -1098,14 +1133,16 @@ function projectCatalogCapabilityItem(
       availability,
       warnings,
     }),
-    placement: {
-      slots: resolvePlacementSlots(item),
-      ...(item.scene
-        ? { scenes: [item.scene as NonNullable<FlowSurfacePublicCapabilityItem['placement']>['scenes'][number]] }
-        : {}),
-      ...(item.requiredInitParams?.includes('collectionName') ? { collectionRequired: true } : {}),
-      ...(item.requiredInitParams?.includes('fieldPath') ? { fieldRequired: true } : {}),
-    },
+    placement:
+      item.placement ||
+      ({
+        slots: resolvePlacementSlots(item),
+        ...(item.scene
+          ? { scenes: [item.scene as NonNullable<FlowSurfacePublicCapabilityItem['placement']>['scenes'][number]] }
+          : {}),
+        ...(item.requiredInitParams?.includes('collectionName') ? { collectionRequired: true } : {}),
+        ...(item.requiredInitParams?.includes('fieldPath') ? { fieldRequired: true } : {}),
+      } as FlowSurfacePublicCapabilityItem['placement']),
     ...(request.expand.has('item.identity') && item.identity ? { identity: item.identity } : {}),
     ...(request.expand.has('item.settings')
       ? {

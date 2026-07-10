@@ -42,12 +42,10 @@ write contract. Model loaders are recorded by key only; the CLI does not execute
 
 ## What Can Be Discovered
 
-The first extractor layer supports deterministic evidence:
+The extractor supports deterministic evidence:
 
-- Runtime recorder events for `registerModels`, `registerModelLoaders`, `registerFlow`, menu items, and field bindings.
-- Guarded runtime inspection with browser, network, storage, scheduler, and process APIs blocked.
-- AST fallback for common static `registerModels`, `registerModelLoaders`, `registerFlow`, `bindModelToInterface`, and
-  `AddSubModelButton` patterns.
+- AST extraction for common static `registerModels`, `registerModelLoaders`, `registerFlow`,
+  `bindModelToInterface`, and `AddSubModelButton` patterns.
 - Structured labels from direct text and simple translation-expression labels.
 - Snapshot normalization and safe snapshot writes into an explicit output directory.
 

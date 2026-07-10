@@ -1141,6 +1141,9 @@ describe('flowSurfaces swagger', () => {
     expect(schemas.FlowSurfaceCatalogItem.properties.configureOptions.$ref).toBe(
       '#/components/schemas/FlowSurfaceConfigureOptions',
     );
+    expect(schemas.FlowSurfaceCatalogItem.properties.placement.$ref).toBe(
+      '#/components/schemas/FlowSurfacePlacementSummary',
+    );
     expect(schemas.FlowSurfaceCatalogNodeInfo.properties.configureOptions.$ref).toBe(
       '#/components/schemas/FlowSurfaceConfigureOptions',
     );

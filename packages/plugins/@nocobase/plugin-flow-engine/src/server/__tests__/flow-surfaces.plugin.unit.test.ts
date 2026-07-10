@@ -22,6 +22,8 @@ import {
 import { FLOW_SURFACE_INFERRED_AUTHORING_CONTRACT_VERSION } from '../flow-surfaces/extractor/types';
 
 const FLOW_SURFACE_PLUGIN_TEST_DATE = '2026-06-04T00:00:00.000Z';
+const FLOW_SURFACE_PLUGIN_OLDER_TEST_DATE = '2026-06-03T00:00:00.000Z';
+const FLOW_SURFACE_PLUGIN_NEWER_TEST_DATE = '2026-06-05T00:00:00.000Z';
 
 type FlowSurfaceAutoSnapshotRefreshInternals = {
   flowSurfaceAutoSnapshotRefreshPromise?: Promise<readonly FlowSurfaceAutoSnapshot[]>;
@@ -104,10 +106,16 @@ describe('PluginFlowEngineServer flow surface auto snapshot cache', () => {
     });
   }
 
-  function createPluginSnapshot(plugin: string, sourceHash: string) {
+  function createPluginSnapshot(
+    plugin: string,
+    sourceHash: string,
+    options: { pluginVersion?: string; generatedAt?: string } = {},
+  ) {
     return {
       ...createSnapshot(sourceHash),
       plugin,
+      ...(options.pluginVersion ? { pluginVersion: options.pluginVersion } : {}),
+      ...(options.generatedAt ? { generatedAt: options.generatedAt } : {}),
     };
   }
 
@@ -281,20 +289,25 @@ describe('PluginFlowEngineServer flow surface auto snapshot cache', () => {
     }
   });
 
-  it('should load packaged plugin snapshot artifacts and let storage snapshots override them', async () => {
+  it('should let newer storage snapshots override packaged artifacts only for the same source', async () => {
     const tempRoot = await realpath(tmpdir());
     const packageRoot = await mkdtemp(join(tempRoot, 'flow-surfaces-packaged-plugin-'));
     const storageOutDir = await mkdtemp(join(tempRoot, 'flow-surfaces-storage-override-'));
     try {
       const pluginName = '@nocobase/plugin-packaged-snapshot-test';
-      const packagedSnapshot = createPluginSnapshot(pluginName, 'packaged-source-hash');
+      const packagedSnapshot = createPluginSnapshot(pluginName, 'same-source-hash', {
+        pluginVersion: '2.0.0',
+      });
       await writeFlowSurfaceAutoSnapshot({
         snapshot: packagedSnapshot,
         outDir: join(packageRoot, 'dist', 'flow-surfaces-capabilities'),
         fileName: getFlowSurfaceAutoSnapshotFileName(pluginName),
       });
       await writeFlowSurfaceAutoSnapshot({
-        snapshot: createPluginSnapshot(pluginName, 'storage-source-hash'),
+        snapshot: createPluginSnapshot(pluginName, 'same-source-hash', {
+          pluginVersion: '2.0.0',
+          generatedAt: FLOW_SURFACE_PLUGIN_NEWER_TEST_DATE,
+        }),
         outDir: storageOutDir,
         fileName: getFlowSurfaceAutoSnapshotFileName(pluginName),
       });
@@ -309,13 +322,134 @@ describe('PluginFlowEngineServer flow surface auto snapshot cache', () => {
       await expect(plugin.refreshFlowSurfaceAutoSnapshots(storageOutDir, { force: true })).resolves.toEqual([
         expect.objectContaining({
           plugin: pluginName,
-          sourceHash: 'storage-source-hash',
+          sourceHash: 'same-source-hash',
         }),
         expect.objectContaining({
           plugin: '@nocobase/plugin-storage-only-snapshot-test',
           sourceHash: 'storage-only-source-hash',
         }),
       ]);
+    } finally {
+      await Promise.all([
+        rm(packageRoot, { recursive: true, force: true }),
+        rm(storageOutDir, { recursive: true, force: true }),
+      ]);
+    }
+  });
+
+  it('should load the core client-v2 auto snapshot artifact', async () => {
+    const tempRoot = await realpath(tmpdir());
+    const packageRoot = await mkdtemp(join(tempRoot, 'flow-surfaces-core-client-'));
+    const storageOutDir = await mkdtemp(join(tempRoot, 'flow-surfaces-core-storage-'));
+    try {
+      const corePackageName = '@nocobase/client-v2';
+      await writeFlowSurfaceAutoSnapshot({
+        snapshot: createPluginSnapshot(corePackageName, 'core-client-source-hash', {
+          pluginVersion: '2.0.0',
+        }),
+        outDir: join(packageRoot, 'es', 'flow-surfaces-capabilities'),
+        fileName: getFlowSurfaceAutoSnapshotFileName(corePackageName),
+      });
+      const plugin = new PackagedSnapshotPluginFlowEngineServer({
+        [corePackageName]: packageRoot,
+      });
+
+      await expect(plugin.refreshFlowSurfaceAutoSnapshots(storageOutDir, { force: true })).resolves.toEqual([
+        expect.objectContaining({
+          plugin: corePackageName,
+          sourceHash: 'core-client-source-hash',
+        }),
+      ]);
+    } finally {
+      await Promise.all([
+        rm(packageRoot, { recursive: true, force: true }),
+        rm(storageOutDir, { recursive: true, force: true }),
+      ]);
+    }
+  });
+
+  it('should keep packaged snapshots when storage snapshots are incompatible or not newer', async () => {
+    const tempRoot = await realpath(tmpdir());
+    const packageRoot = await mkdtemp(join(tempRoot, 'flow-surfaces-packaged-precedence-'));
+    const storageOutDir = await mkdtemp(join(tempRoot, 'flow-surfaces-storage-precedence-'));
+    try {
+      const packagedNewerPlugin = '@nocobase/plugin-packaged-newer-snapshot-test';
+      const sourceConflictPlugin = '@nocobase/plugin-source-conflict-snapshot-test';
+      const versionMismatchPlugin = '@nocobase/plugin-version-mismatch-snapshot-test';
+      const extractorMismatchPlugin = '@nocobase/plugin-extractor-mismatch-snapshot-test';
+      const packagedOutDir = join(packageRoot, 'dist', 'flow-surfaces-capabilities');
+      const cases = [
+        {
+          plugin: packagedNewerPlugin,
+          packaged: createPluginSnapshot(packagedNewerPlugin, 'packaged-newer-source-hash', {
+            pluginVersion: '2.0.0',
+            generatedAt: FLOW_SURFACE_PLUGIN_NEWER_TEST_DATE,
+          }),
+          storage: createPluginSnapshot(packagedNewerPlugin, 'storage-older-source-hash', {
+            pluginVersion: '2.0.0',
+            generatedAt: FLOW_SURFACE_PLUGIN_OLDER_TEST_DATE,
+          }),
+        },
+        {
+          plugin: sourceConflictPlugin,
+          packaged: createPluginSnapshot(sourceConflictPlugin, 'packaged-current-source-hash', {
+            pluginVersion: '2.0.0',
+          }),
+          storage: createPluginSnapshot(sourceConflictPlugin, 'storage-conflicting-source-hash', {
+            pluginVersion: '2.0.0',
+            generatedAt: FLOW_SURFACE_PLUGIN_NEWER_TEST_DATE,
+          }),
+        },
+        {
+          plugin: versionMismatchPlugin,
+          packaged: createPluginSnapshot(versionMismatchPlugin, 'packaged-installed-version-source-hash', {
+            pluginVersion: '2.0.0',
+          }),
+          storage: createPluginSnapshot(versionMismatchPlugin, 'storage-old-version-source-hash', {
+            pluginVersion: '1.0.0',
+            generatedAt: FLOW_SURFACE_PLUGIN_NEWER_TEST_DATE,
+          }),
+        },
+        {
+          plugin: extractorMismatchPlugin,
+          packaged: createPluginSnapshot(extractorMismatchPlugin, 'same-extractor-source-hash', {
+            pluginVersion: '2.0.0',
+          }),
+          storage: {
+            ...createPluginSnapshot(extractorMismatchPlugin, 'same-extractor-source-hash', {
+              pluginVersion: '2.0.0',
+              generatedAt: FLOW_SURFACE_PLUGIN_NEWER_TEST_DATE,
+            }),
+            extractorVersion: 'older-extractor',
+          },
+        },
+      ];
+      for (const snapshotCase of cases) {
+        await writeFlowSurfaceAutoSnapshot({
+          snapshot: snapshotCase.packaged,
+          outDir: packagedOutDir,
+          fileName: getFlowSurfaceAutoSnapshotFileName(snapshotCase.plugin),
+        });
+        await writeFlowSurfaceAutoSnapshot({
+          snapshot: snapshotCase.storage,
+          outDir: storageOutDir,
+          fileName: getFlowSurfaceAutoSnapshotFileName(snapshotCase.plugin),
+        });
+      }
+      const plugin = new PackagedSnapshotPluginFlowEngineServer(
+        Object.fromEntries(cases.map((snapshotCase) => [snapshotCase.plugin, packageRoot])),
+      );
+
+      await expect(plugin.refreshFlowSurfaceAutoSnapshots(storageOutDir, { force: true })).resolves.toEqual(
+        [...cases]
+          .sort((left, right) => left.plugin.localeCompare(right.plugin))
+          .map((snapshotCase) =>
+            expect.objectContaining({
+              plugin: snapshotCase.plugin,
+              sourceHash: snapshotCase.packaged.sourceHash,
+            }),
+          ),
+      );
     } finally {
       await Promise.all([
         rm(packageRoot, { recursive: true, force: true }),
@@ -336,7 +470,10 @@ describe('PluginFlowEngineServer flow surface auto snapshot cache', () => {
         fileName: getFlowSurfaceAutoSnapshotFileName(pluginName),
       });
       await writeFlowSurfaceAutoSnapshot({
-        snapshot: createInferredAuthoringSnapshot(pluginName, 'same-source-hash', { currentContract: false }),
+        snapshot: {
+          ...createInferredAuthoringSnapshot(pluginName, 'same-source-hash', { currentContract: false }),
+          generatedAt: FLOW_SURFACE_PLUGIN_NEWER_TEST_DATE,
+        },
         outDir: storageOutDir,
         fileName: getFlowSurfaceAutoSnapshotFileName(pluginName),
       });

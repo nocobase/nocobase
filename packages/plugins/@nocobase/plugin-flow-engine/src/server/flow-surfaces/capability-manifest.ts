@@ -233,6 +233,7 @@ export function normalizeFlowSurfaceCapabilityManifestItem(input: {
     origin: input.source,
     supportLevel,
     confidence: publicItem.confidence,
+    ...(placement ? { placement } : {}),
     availability,
     createSupported: availability.create.supported,
     ...(initParamsSchema ? { requiredInitParams: getJsonSchemaRequired(initParamsSchema) } : {}),

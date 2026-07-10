@@ -8,23 +8,24 @@
  */
 
 import { createHash } from 'crypto';
-import { readdir, readFile } from 'fs/promises';
-import { extname, join } from 'path';
+import { readdir, readFile, stat } from 'fs/promises';
+import { dirname, extname, isAbsolute, join, relative, resolve, sep } from 'path';
 import type { Application } from '@nocobase/server';
-import { getPackageDir, PluginManager } from '@nocobase/server';
 import {
   buildFlowSurfaceAutoSnapshot,
   deriveFlowSurfaceAutoCapabilityCandidates,
   getFlowSurfaceAutoSnapshotStorageDir,
   writeFlowSurfaceAutoSnapshot,
 } from './snapshot';
-import { collectFlowSurfaceExtractorAstEvents } from './ast';
+import { collectFlowSurfaceExtractorAstEvents, collectFlowSurfaceExtractorModuleSpecifiers } from './ast';
 import { resolveFlowSurfacePluginEntry } from './entry-resolver';
 import type { FlowSurfaceAutoSnapshot, FlowSurfaceExtractorCliResult, FlowSurfaceExtractionEvent } from './types';
 
 export type FlowSurfaceExtractorCliTarget = {
   plugin: string;
   packageRoot?: string;
+  sourceEntry?: string;
+  sourceRoot?: string;
 };
 
 export type FlowSurfaceExtractorCliOptions = {
@@ -72,7 +73,18 @@ type FlowSurfaceCliError = {
 };
 
 const FLOW_SURFACE_EXTRACTOR_CLI_VERSION = 'flow-surfaces-extractor@1';
-const FLOW_SURFACE_EXTRACTOR_SOURCE_EXTENSIONS = new Set(['.js', '.jsx', '.ts', '.tsx']);
+const FLOW_SURFACE_EXTRACTOR_SOURCE_EXTENSIONS = ['.js', '.jsx', '.mjs', '.ts', '.tsx'];
+const FLOW_SURFACE_EXTRACTOR_EXCLUDED_DIRS = new Set([
+  '__benchmarks__',
+  '__e2e__',
+  '__test__',
+  '__tests__',
+  'demos',
+  'fixtures',
+  'node_modules',
+]);
+const FLOW_SURFACE_EXTRACTOR_TEST_FILE_PATTERN = /\.(?:e2e|spec|test)\.(?:js|jsx|mjs|ts|tsx)$/i;
+const DEFAULT_FLOW_SURFACE_SOURCE_ROOT = 'src/client-v2';
 
 export async function runFlowSurfaceExtractorCli(
   targets: FlowSurfaceExtractorCliTarget[],
@@ -141,11 +153,13 @@ export async function extractFlowSurfacePluginCapabilities(
   target: FlowSurfaceExtractorCliTarget,
   options: Pick<FlowSurfaceExtractorCliOptions, 'preferMode' | 'generatedAt' | 'extractorVersion'> = {},
 ): Promise<FlowSurfaceExtractorPluginExtraction> {
-  const packageRoot = target.packageRoot || getPackageDir(target.plugin);
+  const packageRoot = target.packageRoot || (await import('@nocobase/server')).getPackageDir(target.plugin);
   const resolution = await resolveFlowSurfacePluginEntry({
     plugin: target.plugin,
     packageRoot,
     preferMode: options.preferMode,
+    sourceEntry: target.sourceEntry,
+    sourceRoot: target.sourceRoot,
   });
   const packageJsonSource = await readOptionalTextFile(resolution.packageJsonPath);
   const packageJson = parsePackageJson(packageJsonSource);
@@ -153,19 +167,26 @@ export async function extractFlowSurfacePluginCapabilities(
     packageRoot: resolution.packageRoot,
     selectedEntry: resolution.selectedEntry,
     selectedMode: resolution.mode,
+    sourceRoot: target.sourceRoot,
   });
   const events = sourceFiles.flatMap((sourceFile) =>
     collectFlowSurfaceExtractorAstEvents({
       source: sourceFile.source,
-      sourceFile: sourceFile.filePath,
+      sourceFile: sourceFile.sourceRef,
+      sourcePath: sourceFile.filePath,
     }),
   );
   const snapshot = buildFlowSurfaceAutoSnapshot({
     plugin: resolution.plugin || target.plugin,
     pluginVersion: getPackageVersion(packageJson),
     generatedAt: options.generatedAt,
-    resolvedEntry: resolution.selectedEntry,
-    sourceHash: hashExtractorSources([packageJsonSource || '', ...sourceFiles.map((sourceFile) => sourceFile.source)]),
+    resolvedEntry: resolution.selectedEntry
+      ? toFlowSurfaceExtractorSourceRef(resolution.packageRoot, resolution.selectedEntry)
+      : undefined,
+    sourceHash: hashExtractorSources([
+      packageJsonSource || '',
+      ...sourceFiles.flatMap((sourceFile) => [sourceFile.sourceRef, sourceFile.source]),
+    ]),
     extractorVersion: options.extractorVersion || FLOW_SURFACE_EXTRACTOR_CLI_VERSION,
     events,
     warnings: resolution.warnings,
@@ -182,26 +203,79 @@ async function collectFlowSurfaceExtractorSourceFiles(input: {
   packageRoot: string;
   selectedEntry?: string;
   selectedMode?: 'source' | 'dist';
+  sourceRoot?: string;
 }) {
-  const filePaths =
-    input.selectedMode === 'dist'
-      ? []
-      : await collectFlowSurfaceClientV2SourceFilePaths(join(input.packageRoot, 'src/client-v2'));
-  if (input.selectedEntry) {
-    filePaths.push(input.selectedEntry);
-  }
-  const sourceFiles = await Promise.all(
-    Array.from(new Set(filePaths))
-      .sort((left, right) => left.localeCompare(right))
-      .map(async (filePath) => ({
-        filePath,
-        source: await readFile(filePath, 'utf8'),
-      })),
-  );
-  return sourceFiles;
+  const sources = input.selectedEntry
+    ? await collectReachableFlowSurfaceSources(input.packageRoot, input.selectedEntry)
+    : new Map(
+        await Promise.all(
+          (input.selectedMode === 'dist'
+            ? []
+            : await collectFlowSurfaceClientV2SourceFilePaths(
+                resolve(input.packageRoot, input.sourceRoot || DEFAULT_FLOW_SURFACE_SOURCE_ROOT),
+              )
+          ).map(async (filePath) => [filePath, await readFile(filePath, 'utf8')] as const),
+        ),
+      );
+  return Array.from(sources, ([filePath, source]) => ({
+    filePath,
+    sourceRef: toFlowSurfaceExtractorSourceRef(input.packageRoot, filePath),
+    source,
+  })).sort((left, right) => left.filePath.localeCompare(right.filePath));
 }
 
-async function collectFlowSurfaceClientV2SourceFilePaths(rootDir: string): Promise<string[]> {
+async function collectReachableFlowSurfaceSources(packageRoot: string, selectedEntry: string) {
+  const sources = new Map<string, string>();
+  const pending = [selectedEntry];
+  const seen = new Set<string>();
+
+  while (pending.length) {
+    const filePath = pending.shift();
+    if (!filePath) {
+      continue;
+    }
+    if (seen.has(filePath) || !isFlowSurfaceExtractorProductionSourceFile(filePath, packageRoot)) {
+      continue;
+    }
+    seen.add(filePath);
+    const source = await readFile(filePath, 'utf8');
+    sources.set(filePath, source);
+    for (const specifier of collectFlowSurfaceExtractorModuleSpecifiers({ source, sourceFile: filePath })) {
+      const dependency = await resolveFlowSurfaceExtractorModulePath(packageRoot, filePath, specifier);
+      if (dependency && !seen.has(dependency)) {
+        pending.push(dependency);
+      }
+    }
+  }
+
+  return sources;
+}
+
+async function resolveFlowSurfaceExtractorModulePath(packageRoot: string, importer: string, specifier: string) {
+  const cleanSpecifier = specifier.split(/[?#]/, 1)[0];
+  if (!cleanSpecifier.startsWith('.')) {
+    return undefined;
+  }
+  const basePath = resolve(dirname(importer), cleanSpecifier);
+  if (!isPathInside(packageRoot, basePath)) {
+    return undefined;
+  }
+  const candidates = FLOW_SURFACE_EXTRACTOR_SOURCE_EXTENSIONS.includes(extname(basePath).toLowerCase())
+    ? [basePath]
+    : [
+        ...FLOW_SURFACE_EXTRACTOR_SOURCE_EXTENSIONS.map((extension) => `${basePath}${extension}`),
+        ...FLOW_SURFACE_EXTRACTOR_SOURCE_EXTENSIONS.map((extension) => join(basePath, `index${extension}`)),
+      ];
+  for (const candidate of candidates) {
+    if (!isFlowSurfaceExtractorProductionSourceFile(candidate, packageRoot) || !(await isFile(candidate))) {
+      continue;
+    }
+    return candidate;
+  }
+  return undefined;
+}
+
+async function collectFlowSurfaceClientV2SourceFilePaths(rootDir: string, sourceRoot = rootDir): Promise<string[]> {
   const entries = await readFlowSurfaceClientV2SourceDir(rootDir);
   if (!entries.length) {
     return [];
@@ -211,17 +285,49 @@ async function collectFlowSurfaceClientV2SourceFilePaths(rootDir: string): Promi
   for (const entry of entries) {
     const entryPath = join(rootDir, entry.name);
     if (entry.isDirectory()) {
-      files.push(...(await collectFlowSurfaceClientV2SourceFilePaths(entryPath)));
+      if (FLOW_SURFACE_EXTRACTOR_EXCLUDED_DIRS.has(entry.name)) {
+        continue;
+      }
+      files.push(...(await collectFlowSurfaceClientV2SourceFilePaths(entryPath, sourceRoot)));
       continue;
     }
-    if (!entry.isFile() || entry.name.endsWith('.d.ts')) {
-      continue;
-    }
-    if (FLOW_SURFACE_EXTRACTOR_SOURCE_EXTENSIONS.has(extname(entry.name))) {
+    if (entry.isFile() && isFlowSurfaceExtractorProductionSourceFile(entryPath, sourceRoot)) {
       files.push(entryPath);
     }
   }
   return files;
+}
+
+export function isFlowSurfaceExtractorProductionSourceFile(filePath: string, sourceRoot?: string) {
+  const normalizedPath = (sourceRoot ? relative(sourceRoot, filePath) : filePath).replace(/\\/g, '/');
+  const segments = normalizedPath.split('/');
+  const fileName = segments[segments.length - 1] || '';
+  return (
+    !segments.some((segment) => FLOW_SURFACE_EXTRACTOR_EXCLUDED_DIRS.has(segment)) &&
+    !fileName.endsWith('.d.ts') &&
+    !FLOW_SURFACE_EXTRACTOR_TEST_FILE_PATTERN.test(fileName) &&
+    FLOW_SURFACE_EXTRACTOR_SOURCE_EXTENSIONS.includes(extname(fileName).toLowerCase())
+  );
+}
+
+function toFlowSurfaceExtractorSourceRef(packageRoot: string, filePath: string) {
+  return relative(packageRoot, filePath).split(sep).join('/');
+}
+
+function isPathInside(parent: string, child: string) {
+  const relativePath = relative(parent, child);
+  return (
+    relativePath === '' ||
+    (!!relativePath && relativePath !== '..' && !relativePath.startsWith(`..${sep}`) && !isAbsolute(relativePath))
+  );
+}
+
+async function isFile(filePath: string) {
+  try {
+    return (await stat(filePath)).isFile();
+  } catch {
+    return false;
+  }
 }
 
 async function readFlowSurfaceClientV2SourceDir(rootDir: string) {
@@ -251,26 +357,6 @@ export function formatFlowSurfaceExtractorCliSummary(
   }
   lines.push(`status=${summary.ok ? 'ok' : 'failed'} dryRun=${summary.dryRun ? 'true' : 'false'}`);
   return `${lines.join('\n')}\n`;
-}
-
-export function registerFlowSurfaceExtractorCommand(app: Application) {
-  const command = (app.findCommand('flow-surfaces') || app.command('flow-surfaces')) as ReturnType<
-    Application['command']
-  >;
-  command
-    .command('extract-capabilities')
-    .option('--plugin <packageName>', 'extract one plugin package')
-    .option('--all-enabled', 'extract every enabled plugin package')
-    .option('--out <dir>', 'snapshot output directory')
-    .option('--json', 'print a machine-readable summary')
-    .option('--dry-run', 'do not write snapshot files')
-    .option('--fail-on-warning', 'return a failing exit code when warnings are produced')
-    .option('--prefer-mode <mode>', 'prefer source or dist client-v2 entries')
-    .action(async (options: FlowSurfaceExtractorCliCommandOptions) => {
-      const summary = await runFlowSurfaceExtractorCommand(app, options);
-      process.stdout.write(formatFlowSurfaceExtractorCliSummary(summary, { json: !!options.json }));
-      process.exitCode = summary.exitCode;
-    });
 }
 
 export async function runFlowSurfaceExtractorCommand(
@@ -329,6 +415,7 @@ async function resolveFlowSurfaceExtractorCliTargets(
     throw new Error('Either --plugin or --all-enabled is required.');
   }
 
+  const { PluginManager } = await import('@nocobase/server');
   const parsed = await PluginManager.parseName(options.plugin);
   return [
     {

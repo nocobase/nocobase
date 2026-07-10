@@ -16,6 +16,8 @@ export type ResolveFlowSurfacePluginEntryInput = {
   plugin?: string;
   packageRoot: string;
   preferMode?: 'source' | 'dist';
+  sourceEntry?: string;
+  sourceRoot?: string;
 };
 
 type FlowSurfacePluginPackageJson = Record<string, unknown>;
@@ -25,12 +27,8 @@ type FlowSurfacePluginEntryCandidate = {
   mode: 'source' | 'dist';
 };
 
-const SOURCE_ENTRY_CANDIDATES = [
-  'src/client-v2/plugin.ts',
-  'src/client-v2/plugin.tsx',
-  'src/client-v2/index.ts',
-  'src/client-v2/index.tsx',
-];
+const SOURCE_ENTRY_FILE_NAMES = ['plugin.ts', 'plugin.tsx', 'index.ts', 'index.tsx'];
+const DEFAULT_SOURCE_ROOT = 'src/client-v2';
 const DIST_ENTRY_CANDIDATES = ['dist/client-v2/index.js'];
 const PACKAGE_JSON_CLIENT_V2_FIELDS = ['client-v2', 'clientV2', 'client-v2-entry', 'clientV2Entry'];
 
@@ -42,9 +40,14 @@ export async function resolveFlowSurfacePluginEntry(
   const warnings: FlowSurfaceCapabilityWarning[] = [];
   const packageJson = await readFlowSurfacePluginPackageJson(packageJsonPath, warnings);
   const plugin = normalizeString(input.plugin) || normalizeString(packageJson?.name) || '';
+  const sourceRoot = normalizeString(input.sourceRoot) || DEFAULT_SOURCE_ROOT;
+  const sourceCandidates = input.sourceEntry
+    ? [{ entry: input.sourceEntry, mode: 'source' as const }]
+    : SOURCE_ENTRY_FILE_NAMES.map((entry) => ({ entry: `${sourceRoot}/${entry}`, mode: 'source' as const }));
   const candidates = [
+    ...(input.sourceEntry ? sourceCandidates : []),
     ...getPackageJsonClientV2EntryCandidates(packageJson),
-    ...SOURCE_ENTRY_CANDIDATES.map((entry) => ({ entry, mode: 'source' as const })),
+    ...(!input.sourceEntry ? sourceCandidates : []),
     ...DIST_ENTRY_CANDIDATES.map((entry) => ({ entry, mode: 'dist' as const })),
   ];
   const existingCandidates = await collectExistingEntryCandidates(packageRoot, candidates, warnings);

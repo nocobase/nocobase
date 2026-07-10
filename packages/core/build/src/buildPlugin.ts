@@ -303,6 +303,7 @@ export function writeExternalPackageVersion(cwd: string, log: PkgLog) {
 export async function buildServerDeps(cwd: string, serverFiles: string[], log: PkgLog) {
   log('build plugin server dependencies');
   const outDir = path.join(cwd, target_dir, 'node_modules');
+  const packageName = getPackageJson(cwd).name;
   const serverFileSource = serverFiles
     .filter((item) => validExts.includes(path.extname(item)))
     .map((item) => fs.readFileSync(item, 'utf-8'));
@@ -334,13 +335,35 @@ export async function buildServerDeps(cwd: string, serverFiles: string[], log: P
   for (const dep of Object.keys(deps)) {
     const { outputDir, mainFile, pkg, nccConfig, depDir } = deps[dep];
     const outputPackageJson = path.join(outputDir, 'package.json');
+    const copyTypeScriptRuntimeOnly = packageName === '@nocobase/plugin-flow-engine' && pkg.name === 'typescript';
 
     // cache check
     if (fs.existsSync(outputPackageJson)) {
       const outputPackage = require(outputPackageJson);
-      if (outputPackage.version === pkg.version) {
+      if (
+        outputPackage.version === pkg.version &&
+        (!copyTypeScriptRuntimeOnly || outputPackage._nocobaseRuntimeOnly === true)
+      ) {
         continue;
       }
+    }
+
+    if (copyTypeScriptRuntimeOnly) {
+      await fs.remove(outputDir);
+      await fs.ensureDir(path.dirname(mainFile));
+      await fs.copyFile(dep, mainFile);
+      for (const fileName of ['LICENSE.txt', 'ThirdPartyNoticeText.txt']) {
+        const sourcePath = path.join(depDir, fileName);
+        if (await fs.pathExists(sourcePath)) {
+          await fs.copyFile(sourcePath, path.join(outputDir, fileName));
+        }
+      }
+      await fs.writeJSON(outputPackageJson, {
+        ...pkg,
+        _nocobaseRuntimeOnly: true,
+        _lastModified: new Date().toISOString(),
+      });
+      continue;
     }
 
     // copy package

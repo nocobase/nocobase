@@ -2190,6 +2190,7 @@ const schemas = {
       origin: ref('FlowSurfaceCapabilityOriginSource'),
       supportLevel: ref('FlowSurfaceSupportLevel'),
       confidence: ref('FlowSurfaceCapabilityConfidence'),
+      placement: ref('FlowSurfacePlacementSummary'),
       availability: ref('FlowSurfaceCapabilityAvailability'),
       warnings: {
         type: 'array',
