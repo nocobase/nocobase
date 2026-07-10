@@ -15,6 +15,7 @@ import {
   Button,
   Card,
   Descriptions,
+  Drawer,
   Empty,
   Flex,
   Form,
@@ -30,7 +31,7 @@ import {
 } from 'antd';
 import type { UploadProps } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useT } from '../locale';
 import {
   AgentGatewayContext,
@@ -122,6 +123,9 @@ const DEFAULT_SKILL_UPLOAD_FORM_VALUES: SkillUploadFormValues = {
   versionLabel: 'local',
 };
 
+const SKILL_VERSION_DETAIL_QUERY_PARAM = 'skillVersionId';
+const SKILL_DETAIL_DRAWER_WIDTH = 720;
+
 const DAEMON_RESTART_COMMAND =
   'systemctl restart agent-gateway-daemon.service || systemctl --user restart agent-gateway-daemon.service || tmux attach -t agent-gateway-daemon';
 
@@ -190,12 +194,51 @@ function renderEnabledState(status: string | undefined, t: ReturnType<typeof use
   return <Tag color={enabled ? 'green' : 'red'}>{enabled ? t('Enabled') : t('Disabled')}</Tag>;
 }
 
+function getSkillVersionIdFromLocationSearch() {
+  if (typeof window === 'undefined') {
+    return undefined;
+  }
+  return new URLSearchParams(window.location.search).get(SKILL_VERSION_DETAIL_QUERY_PARAM) || undefined;
+}
+
+function replaceSkillVersionIdInLocationSearch(skillVersionId?: string) {
+  if (typeof window === 'undefined') {
+    return;
+  }
+  const params = new URLSearchParams(window.location.search);
+  if (skillVersionId) {
+    params.set(SKILL_VERSION_DETAIL_QUERY_PARAM, skillVersionId);
+  } else {
+    params.delete(SKILL_VERSION_DETAIL_QUERY_PARAM);
+  }
+  const search = params.toString();
+  const nextUrl = `${window.location.pathname}${search ? `?${search}` : ''}${window.location.hash}`;
+  window.history.replaceState(window.history.state, '', nextUrl);
+}
+
+function useInitialSkillVersionDetailQuery() {
+  return useState(() => getSkillVersionIdFromLocationSearch())[0];
+}
+
+function getSkillVersionDisplayLabel(skillVersion: SkillVersionRecord) {
+  return [
+    skillVersion.displayName || skillVersion.skillKey || skillVersion.skillId || skillVersion.id,
+    skillVersion.versionLabel,
+  ]
+    .filter(Boolean)
+    .join(' / ');
+}
+
 export default function AgentGatewaySettingsPage() {
   const t = useT();
   const ctx = useFlowContext() as unknown as AgentGatewayContext;
   const [form] = Form.useForm<InvitationFormValues>();
   const [skillUploadForm] = Form.useForm<SkillUploadFormValues>();
+  const initialSkillVersionId = useInitialSkillVersionDetailQuery();
+  const [activeTabKey, setActiveTabKey] = useState(initialSkillVersionId ? 'skills' : 'nodes');
   const [selectedNodeId, setSelectedNodeId] = useState<string>();
+  const [selectedSkillVersionId, setSelectedSkillVersionId] = useState<string | undefined>(initialSkillVersionId);
+  const [skillDetailOpen, setSkillDetailOpen] = useState(Boolean(initialSkillVersionId));
   const [invitationOpen, setInvitationOpen] = useState(false);
   const [invitationResult, setInvitationResult] = useState<InvitationResult | null>(null);
   const [skillUploadOpen, setSkillUploadOpen] = useState(false);
@@ -293,6 +336,15 @@ export default function AgentGatewaySettingsPage() {
     return getResponseData(response, []);
   });
 
+  const selectedSkillVersion = useMemo(
+    () =>
+      skillVersionsRequest.data?.find(
+        (skillVersion) =>
+          skillVersion.id === selectedSkillVersionId || skillVersion.skillVersionId === selectedSkillVersionId,
+      ),
+    [selectedSkillVersionId, skillVersionsRequest.data],
+  );
+
   const uploadSkillVersionRequest = useRequest(
     async (values: SkillUploadFormValues & { contentBase64: string }) => {
       const response = await ctx.api.request<SkillUploadResult>({
@@ -334,6 +386,31 @@ export default function AgentGatewaySettingsPage() {
     skillUploadForm.setFieldsValue(DEFAULT_SKILL_UPLOAD_FORM_VALUES);
     setSkillUploadOpen(true);
   }, [skillUploadForm]);
+
+  const openSkillDetails = useCallback((skillVersion: SkillVersionRecord, options?: { updateLocation?: boolean }) => {
+    const skillVersionId = skillVersion.skillVersionId || skillVersion.id;
+    setSelectedSkillVersionId(skillVersionId);
+    setActiveTabKey('skills');
+    setSkillDetailOpen(true);
+    if (options?.updateLocation !== false) {
+      replaceSkillVersionIdInLocationSearch(skillVersionId);
+    }
+  }, []);
+
+  const closeSkillDetails = useCallback(() => {
+    setSkillDetailOpen(false);
+    setSelectedSkillVersionId(undefined);
+    replaceSkillVersionIdInLocationSearch();
+  }, []);
+
+  const syncSkillDetailFromLocation = useCallback(() => {
+    const skillVersionId = getSkillVersionIdFromLocationSearch();
+    setSelectedSkillVersionId(skillVersionId);
+    setSkillDetailOpen(Boolean(skillVersionId));
+    if (skillVersionId) {
+      setActiveTabKey('skills');
+    }
+  }, []);
 
   const submitInvitation = useCallback(async () => {
     const values = await form.validateFields();
@@ -383,6 +460,27 @@ export default function AgentGatewaySettingsPage() {
     refreshNodes();
     skillVersionsRequest.refresh();
   }, [refreshNodes, skillVersionsRequest]);
+
+  useEffect(() => {
+    syncSkillDetailFromLocation();
+    window.addEventListener('popstate', syncSkillDetailFromLocation);
+    return () => {
+      window.removeEventListener('popstate', syncSkillDetailFromLocation);
+    };
+  }, [syncSkillDetailFromLocation]);
+
+  useEffect(() => {
+    if (!selectedSkillVersion || !skillDetailOpen) {
+      return;
+    }
+    if (
+      selectedSkillVersion.id !== selectedSkillVersionId &&
+      selectedSkillVersion.skillVersionId !== selectedSkillVersionId
+    ) {
+      return;
+    }
+    setActiveTabKey('skills');
+  }, [selectedSkillVersion, selectedSkillVersionId, skillDetailOpen]);
 
   const nodeColumns = useMemo<ColumnsType<NodeRecord>>(
     () => [
@@ -484,7 +582,9 @@ export default function AgentGatewaySettingsPage() {
         key: 'skill',
         render: (_value: unknown, record) => (
           <Space direction="vertical" size={0}>
-            <Typography.Text strong>{record.displayName || record.skillKey || record.skillId || '-'}</Typography.Text>
+            <Typography.Link strong onClick={() => openSkillDetails(record)}>
+              {record.displayName || record.skillKey || record.skillId || '-'}
+            </Typography.Link>
             {record.skillKey ? <Typography.Text type="secondary">{record.skillKey}</Typography.Text> : null}
           </Space>
         ),
@@ -520,7 +620,7 @@ export default function AgentGatewaySettingsPage() {
         render: (value: string | null | undefined) => formatDateTime(value || undefined),
       },
     ],
-    [t],
+    [openSkillDetails, t],
   );
 
   return (
@@ -542,6 +642,8 @@ export default function AgentGatewaySettingsPage() {
           </Flex>
 
           <Tabs
+            activeKey={activeTabKey}
+            onChange={setActiveTabKey}
             items={[
               {
                 key: 'nodes',
@@ -648,6 +750,51 @@ export default function AgentGatewaySettingsPage() {
           />
         </Space>
       </Card>
+
+      <Drawer
+        title={selectedSkillVersion ? getSkillVersionDisplayLabel(selectedSkillVersion) : t('Skill detail')}
+        open={skillDetailOpen}
+        onClose={closeSkillDetails}
+        width={SKILL_DETAIL_DRAWER_WIDTH}
+        destroyOnClose
+      >
+        {selectedSkillVersion ? (
+          <Descriptions bordered size="small" column={1}>
+            <Descriptions.Item label={t('Skill')}>{selectedSkillVersion.displayName || '-'}</Descriptions.Item>
+            <Descriptions.Item label={t('Skill key')}>{selectedSkillVersion.skillKey || '-'}</Descriptions.Item>
+            <Descriptions.Item label={t('Skill ID')}>{selectedSkillVersion.skillId || '-'}</Descriptions.Item>
+            <Descriptions.Item label={t('Skill version ID')}>
+              {selectedSkillVersion.skillVersionId || selectedSkillVersion.id}
+            </Descriptions.Item>
+            <Descriptions.Item label={t('Version label')}>{selectedSkillVersion.versionLabel || '-'}</Descriptions.Item>
+            <Descriptions.Item label={t('Status')}>
+              <Space size={4} wrap>
+                {statusTag(selectedSkillVersion.status)}
+                {selectedSkillVersion.skillStatus && selectedSkillVersion.skillStatus !== selectedSkillVersion.status
+                  ? statusTag(selectedSkillVersion.skillStatus)
+                  : null}
+              </Space>
+            </Descriptions.Item>
+            <Descriptions.Item label={t('Source')}>
+              {[selectedSkillVersion.sourceType, selectedSkillVersion.sourceSha256].filter(Boolean).join(' / ') || '-'}
+            </Descriptions.Item>
+            <Descriptions.Item label={t('Content size')}>
+              {selectedSkillVersion.sourceSizeBytes ?? '-'}
+            </Descriptions.Item>
+            <Descriptions.Item label={t('Uploaded at')}>
+              {formatDateTime(selectedSkillVersion.sourceUploadedAt || undefined)}
+            </Descriptions.Item>
+            <Descriptions.Item label={t('Created at')}>
+              {formatDateTime(selectedSkillVersion.createdAt || undefined)}
+            </Descriptions.Item>
+            <Descriptions.Item label={t('Updated at')}>
+              {formatDateTime(selectedSkillVersion.updatedAt || undefined)}
+            </Descriptions.Item>
+          </Descriptions>
+        ) : (
+          <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('Skill details unavailable')} />
+        )}
+      </Drawer>
 
       <Modal
         title={t('Create invitation')}

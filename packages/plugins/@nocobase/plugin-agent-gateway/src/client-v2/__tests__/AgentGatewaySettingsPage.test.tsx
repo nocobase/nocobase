@@ -516,12 +516,53 @@ describe('PluginAgentGatewayClientV2', () => {
     expect(await screen.findByText('nb-opencode-ui-batch')).toBeTruthy();
     expect(await screen.findByText('local')).toBeTruthy();
     expect(await screen.findByText('zip / abcdef01...')).toBeTruthy();
+    fireEvent.click(await screen.findByText('NB OpenCode UI Batch'));
+    expect(new URLSearchParams(window.location.search).get('skillVersionId')).toBe('skill-version-id-1');
+    expect(await screen.findByText('Skill version ID')).toBeTruthy();
+    expect(await screen.findByText('skill-version-id-1')).toBeTruthy();
     expect(request).toHaveBeenCalledWith(
       expect.objectContaining({
         url: 'agent-gateway/skill-versions:list',
         method: 'get',
       }),
     );
+  });
+
+  it('opens skill details from the skillVersionId query parameter', async () => {
+    window.history.pushState({}, '', '/admin/settings/agent-gateway/nodes?skillVersionId=skill-version-id-1');
+    const request = vi.fn(async (config: RequestConfig) => {
+      if (config.url === 'agent-gateway/skill-versions:list') {
+        return {
+          data: {
+            data: [
+              {
+                id: 'skill-version-id-1',
+                skillId: 'skill-id-1',
+                skillKey: 'nb-opencode-ui-batch',
+                displayName: 'NB OpenCode UI Batch',
+                versionLabel: 'local',
+                status: 'active',
+                skillStatus: 'active',
+                sourceType: 'zip',
+                sourceSha256: 'abcdef0123456789',
+                sourceSizeBytes: 1024,
+                sourceUploadedAt: '2026-07-05T09:00:00.000Z',
+                createdAt: '2026-07-05T09:00:00.000Z',
+                updatedAt: '2026-07-05T10:00:00.000Z',
+              },
+            ],
+          },
+        };
+      }
+      return { data: { data: [] } };
+    });
+
+    renderSettingsPage(request);
+
+    expect(await screen.findByRole('tab', { name: 'Skills', selected: true })).toBeTruthy();
+    expect(await screen.findByText('Skill version ID')).toBeTruthy();
+    expect(await screen.findByText('skill-version-id-1')).toBeTruthy();
+    expect(await screen.findByText('skill-id-1')).toBeTruthy();
   });
 
   it('renders a compact provider capability matrix', async () => {
@@ -1055,6 +1096,191 @@ describe('PluginAgentGatewayClientV2', () => {
     expect(createCall?.[0].data).not.toHaveProperty('sort');
   });
 
+  it('opens task template details from the templateId query parameter', async () => {
+    window.history.pushState({}, '', '/admin/settings/agent-gateway/task-templates?templateId=template-id-1');
+    const request = vi.fn(async (config: RequestConfig) => {
+      if (config.url === 'agent-gateway/task-templates:list') {
+        return {
+          data: {
+            data: [
+              {
+                id: 'template-id-1',
+                templateKey: 'generic',
+                displayName: 'Generic task',
+                status: 'active',
+                cwd: '.',
+                skillVersionIdsJson: [],
+                artifactsJson: [],
+              },
+            ],
+          },
+        };
+      }
+
+      if (config.url === 'agent-gateway/task-runs:options') {
+        return {
+          data: {
+            data: {
+              defaultCwd: '.',
+              skillVersions: [],
+            },
+          },
+        };
+      }
+
+      return { data: { data: [] } };
+    });
+
+    renderAgentGatewayPage(AgentGatewayTaskTemplatesPage, request);
+
+    expect(await screen.findByDisplayValue('generic')).toBeTruthy();
+    expect(screen.getByDisplayValue('Generic task')).toBeTruthy();
+    fireEvent.click(screen.getAllByRole('button', { name: 'Close' }).at(-1) as HTMLElement);
+    await waitFor(() => {
+      expect(new URLSearchParams(window.location.search).get('templateId')).toBeNull();
+    });
+  });
+
+  it('opens associated task template and skill details from the runs table links', async () => {
+    const request = vi.fn(async (config: RequestConfig) => {
+      if (config.url === 'agent-gateway/runs:list') {
+        return {
+          data: {
+            data: [
+              {
+                id: 'run-id-link',
+                runCode: 'run-link-1',
+                taskTitle: 'Build linked app',
+                status: 'succeeded',
+                taskTemplateId: 'template-id-link',
+                taskTemplateJson: {
+                  id: 'template-id-link',
+                  templateKey: 'linked-template',
+                  displayName: 'Linked task template',
+                  skillVersionIds: ['skill-version-id-link'],
+                  skills: [
+                    {
+                      id: 'skill-version-id-link',
+                      skillKey: 'nb-opencode-ui-batch',
+                      displayName: 'NB OpenCode UI Batch',
+                      versionLabel: 'local',
+                      status: 'active',
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+        };
+      }
+
+      if (config.url === 'agent-gateway/runs:get/run-id-link') {
+        return {
+          data: {
+            data: {
+              id: 'run-id-link',
+              runCode: 'run-link-1',
+              taskTitle: 'Build linked app',
+              status: 'succeeded',
+              agentGatewayActionPermissionsJson: {},
+            },
+          },
+        };
+      }
+
+      if (config.url === 'agent-gateway/task-templates:get/template-id-link') {
+        return {
+          data: {
+            data: {
+              id: 'template-id-link',
+              templateKey: 'linked-template',
+              displayName: 'Linked task template',
+              description: 'Linked task template description',
+              status: 'active',
+              defaultTitle: 'Build linked app',
+              defaultPrompt: 'Build the linked app',
+              cwd: '/srv/nocobase',
+              skillVersionIdsJson: ['skill-version-id-link'],
+              artifactsJson: [],
+            },
+          },
+        };
+      }
+
+      if (config.url === 'agent-gateway/skill-versions:list') {
+        return {
+          data: {
+            data: [
+              {
+                id: 'skill-version-id-link',
+                skillVersionId: 'skill-version-id-link',
+                skillId: 'skill-id-link',
+                skillKey: 'nb-opencode-ui-batch',
+                displayName: 'NB OpenCode UI Batch',
+                versionLabel: 'local',
+                status: 'active',
+                sourceType: 'zip',
+              },
+            ],
+          },
+        };
+      }
+
+      return { data: { data: [] } };
+    });
+
+    renderAgentGatewayPage(AgentGatewayRunsPage, request);
+
+    expect(await screen.findByText('Build linked app')).toBeTruthy();
+    expect(screen.queryByText('Actions')).toBeNull();
+
+    fireEvent.click(screen.getByText('Linked task template'));
+    expect(window.location.pathname).toBe('/admin/settings/agent-gateway/runs');
+    expect(new URLSearchParams(window.location.search).get('templateId')).toBe('template-id-link');
+    expect(await screen.findByText('Linked task template description')).toBeTruthy();
+    await waitFor(() => {
+      expect(request).toHaveBeenCalledWith(
+        expect.objectContaining({
+          url: 'agent-gateway/task-templates:get/template-id-link',
+          method: 'get',
+        }),
+      );
+    });
+
+    await act(async () => {
+      window.history.pushState({}, '', '/admin/settings/agent-gateway/runs');
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    });
+    fireEvent.click(screen.getByText('NB OpenCode UI Batch / local'));
+    expect(window.location.pathname).toBe('/admin/settings/agent-gateway/runs');
+    expect(new URLSearchParams(window.location.search).get('skillVersionId')).toBe('skill-version-id-link');
+    expect(await screen.findByText('skill-id-link')).toBeTruthy();
+    await waitFor(() => {
+      expect(request).toHaveBeenCalledWith(
+        expect.objectContaining({
+          url: 'agent-gateway/skill-versions:list',
+          method: 'get',
+        }),
+      );
+    });
+
+    await act(async () => {
+      window.history.pushState({}, '', '/admin/settings/agent-gateway/runs');
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    });
+    fireEvent.click(screen.getByText('Build linked app'));
+    expect(window.location.pathname).toBe('/admin/settings/agent-gateway/runs');
+    expect(new URLSearchParams(window.location.search).get('runId')).toBe('run-id-link');
+    await waitFor(() => {
+      expect(request).toHaveBeenCalledWith(
+        expect.objectContaining({
+          url: 'agent-gateway/runs:get/run-id-link',
+          method: 'get',
+        }),
+      );
+    });
+  });
+
   it('creates a task run from the runs page and opens the run details', async () => {
     const request = vi.fn(async (config: RequestConfig) => {
       if (config.url === 'agent-gateway/task-runs:options') {
@@ -1432,7 +1658,7 @@ describe('PluginAgentGatewayClientV2', () => {
       );
     });
 
-    fireEvent.click(screen.getByRole('link', { name: /UI Build/ }));
+    fireEvent.click(screen.getByLabelText('View run details'));
     await waitFor(() => {
       expect(request).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -2168,6 +2394,7 @@ describe('PluginAgentGatewayClientV2', () => {
               requestedAt: '2026-06-30T10:00:00.000Z',
               startedAt: '2026-06-30T10:01:00.000Z',
               agentGatewayActionPermissionsJson: {
+                cancelRun: true,
                 readSessionMessages: true,
                 readTerminal: true,
                 readArtifacts: true,
@@ -2408,6 +2635,11 @@ describe('PluginAgentGatewayClientV2', () => {
     expect(screen.queryByText('Finished at')).toBeNull();
     expect(screen.queryByText('Session')).toBeNull();
     expect(screen.queryByText('No agent session')).toBeNull();
+    expect(screen.queryByText('Actions')).toBeNull();
+
+    const detailButtons = await screen.findAllByLabelText('View run details');
+    fireEvent.click(detailButtons[0]);
+    expect(new URLSearchParams(window.location.search).get('runId')).toBe('run-id-1');
 
     const cancelButtons = await screen.findAllByLabelText('Cancel run');
     expect(cancelButtons).toHaveLength(1);
@@ -2420,10 +2652,6 @@ describe('PluginAgentGatewayClientV2', () => {
         }),
       );
     });
-
-    const detailButtons = await screen.findAllByLabelText('View run details');
-    fireEvent.click(detailButtons[0]);
-    expect(new URLSearchParams(window.location.search).get('runId')).toBe('run-id-1');
 
     expect(await screen.findByText('Task conversation')).toBeTruthy();
     expect(await screen.findByText('timeline says build started')).toBeTruthy();

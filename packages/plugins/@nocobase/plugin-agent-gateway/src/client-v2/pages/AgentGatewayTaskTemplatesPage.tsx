@@ -28,7 +28,7 @@ import {
 } from 'antd';
 import type { UploadProps } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useT } from '../locale';
 import {
   AgentGatewayTaskParameterFormItems,
@@ -48,6 +48,8 @@ import {
 } from './AgentGatewayPageUtils';
 
 const TASK_TEMPLATE_DRAWER_WIDTH = 1040;
+const TASK_TEMPLATE_DETAIL_QUERY_PARAM = 'templateId';
+
 interface TaskTemplateRecord {
   id: string;
   templateKey: string;
@@ -112,13 +114,41 @@ function isFormValidationError(value: unknown) {
   return Array.isArray(record.errorFields);
 }
 
+function getTaskTemplateIdFromLocationSearch() {
+  if (typeof window === 'undefined') {
+    return undefined;
+  }
+  return new URLSearchParams(window.location.search).get(TASK_TEMPLATE_DETAIL_QUERY_PARAM) || undefined;
+}
+
+function replaceTaskTemplateIdInLocationSearch(templateId?: string) {
+  if (typeof window === 'undefined') {
+    return;
+  }
+  const params = new URLSearchParams(window.location.search);
+  if (templateId) {
+    params.set(TASK_TEMPLATE_DETAIL_QUERY_PARAM, templateId);
+  } else {
+    params.delete(TASK_TEMPLATE_DETAIL_QUERY_PARAM);
+  }
+  const search = params.toString();
+  const nextUrl = `${window.location.pathname}${search ? `?${search}` : ''}${window.location.hash}`;
+  window.history.replaceState(window.history.state, '', nextUrl);
+}
+
+function useInitialTaskTemplateDetailQuery() {
+  return useState(() => getTaskTemplateIdFromLocationSearch())[0];
+}
+
 export default function AgentGatewayTaskTemplatesPage() {
   const t = useT();
   const ctx = useFlowContext() as unknown as AgentGatewayContext;
   const [templateForm] = Form.useForm<TaskTemplateFormValues>();
   const [skillUploadForm] = Form.useForm<SkillUploadFormValues>();
+  const initialTemplateId = useInitialTaskTemplateDetailQuery();
   const [templateDrawerOpen, setTemplateDrawerOpen] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<TaskTemplateRecord | null>(null);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string | undefined>(initialTemplateId);
   const [skillUploadOpen, setSkillUploadOpen] = useState(false);
   const [skillZipContentBase64, setSkillZipContentBase64] = useState('');
   const [skillUploadResult, setSkillUploadResult] = useState<SkillUploadResult | null>(null);
@@ -185,6 +215,8 @@ export default function AgentGatewayTaskTemplatesPage() {
       onSuccess() {
         setTemplateDrawerOpen(false);
         setEditingTemplate(null);
+        setSelectedTemplateId(undefined);
+        replaceTaskTemplateIdInLocationSearch();
         templateForm.resetFields();
         templatesRequest.refresh();
         optionsRequest.refresh();
@@ -248,6 +280,8 @@ export default function AgentGatewayTaskTemplatesPage() {
 
   const openCreateTemplateDrawer = useCallback(() => {
     setEditingTemplate(null);
+    setSelectedTemplateId(undefined);
+    replaceTaskTemplateIdInLocationSearch();
     templateForm.resetFields();
     templateForm.setFieldsValue({
       cwd: optionsRequest.data?.defaultCwd || '.',
@@ -258,8 +292,9 @@ export default function AgentGatewayTaskTemplatesPage() {
   }, [optionsRequest.data?.defaultCwd, templateForm]);
 
   const openEditTemplateDrawer = useCallback(
-    (template: TaskTemplateRecord) => {
+    (template: TaskTemplateRecord, options?: { updateLocation?: boolean }) => {
       setEditingTemplate(template);
+      setSelectedTemplateId(template.id);
       templateForm.setFieldsValue({
         templateKey: template.templateKey,
         displayName: template.displayName,
@@ -272,6 +307,9 @@ export default function AgentGatewayTaskTemplatesPage() {
         artifactDeclarations: getTaskArtifactFormValues(template.artifactsJson),
       });
       setTemplateDrawerOpen(true);
+      if (options?.updateLocation !== false) {
+        replaceTaskTemplateIdInLocationSearch(template.id);
+      }
     },
     [optionsRequest.data?.defaultCwd, templateForm],
   );
@@ -279,7 +317,19 @@ export default function AgentGatewayTaskTemplatesPage() {
   const closeTemplateDrawer = useCallback(() => {
     setTemplateDrawerOpen(false);
     setEditingTemplate(null);
+    setSelectedTemplateId(undefined);
+    replaceTaskTemplateIdInLocationSearch();
     templateForm.resetFields();
+  }, [templateForm]);
+
+  const syncTemplateDetailFromLocation = useCallback(() => {
+    const templateId = getTaskTemplateIdFromLocationSearch();
+    setSelectedTemplateId(templateId);
+    if (!templateId) {
+      setTemplateDrawerOpen(false);
+      setEditingTemplate(null);
+      templateForm.resetFields();
+    }
   }, [templateForm]);
 
   const openSkillUploadModal = useCallback(() => {
@@ -340,6 +390,25 @@ export default function AgentGatewayTaskTemplatesPage() {
     setSkillZipContentBase64('');
     return true;
   }, []);
+
+  useEffect(() => {
+    syncTemplateDetailFromLocation();
+    window.addEventListener('popstate', syncTemplateDetailFromLocation);
+    return () => {
+      window.removeEventListener('popstate', syncTemplateDetailFromLocation);
+    };
+  }, [syncTemplateDetailFromLocation]);
+
+  useEffect(() => {
+    if (!selectedTemplateId || !templatesRequest.data) {
+      return;
+    }
+    const template = templatesRequest.data.find((record) => record.id === selectedTemplateId);
+    if (!template || (templateDrawerOpen && editingTemplate?.id === template.id)) {
+      return;
+    }
+    openEditTemplateDrawer(template, { updateLocation: false });
+  }, [editingTemplate?.id, openEditTemplateDrawer, selectedTemplateId, templateDrawerOpen, templatesRequest.data]);
 
   const templateColumns = useMemo<ColumnsType<TaskTemplateRecord>>(
     () => [

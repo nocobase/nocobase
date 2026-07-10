@@ -9,7 +9,6 @@
 
 import {
   EnterOutlined,
-  EyeOutlined,
   ImportOutlined,
   PoweroffOutlined,
   PlusOutlined,
@@ -147,6 +146,37 @@ interface RunTaskTemplateSummary {
   displayName?: string;
   skillVersionIds?: string[];
   skills?: BuildSkillVersionOption[];
+}
+
+interface TaskTemplateDetailRecord {
+  id: string;
+  templateKey: string;
+  displayName?: string | null;
+  description?: string | null;
+  status?: string | null;
+  defaultTitle?: string | null;
+  defaultPrompt?: string | null;
+  cwd?: string | null;
+  skillVersionIdsJson?: string[];
+  artifactRoot?: string | null;
+  artifactsJson?: JsonRecord[];
+}
+
+interface SkillVersionDetailRecord {
+  id: string;
+  skillVersionId?: string;
+  skillId?: string | null;
+  skillKey?: string | null;
+  displayName?: string | null;
+  skillStatus?: string | null;
+  versionLabel?: string;
+  status?: string;
+  sourceType?: string | null;
+  sourceSha256?: string | null;
+  sourceSizeBytes?: number | null;
+  sourceUploadedAt?: string | null;
+  createdAt?: string | null;
+  updatedAt?: string | null;
 }
 
 interface TokenUsageRecord extends JsonRecord {
@@ -443,11 +473,14 @@ const DANGLING_TOOL_LIVE_RUN_STATUSES = new Set([
   'canceling',
 ]);
 const RUN_DETAIL_QUERY_PARAM = 'runId';
+const TASK_TEMPLATE_DETAIL_QUERY_PARAM = 'templateId';
+const SKILL_VERSION_DETAIL_QUERY_PARAM = 'skillVersionId';
 const DEFAULT_RUNS_PAGE_SIZE = 20;
 const DEFAULT_DETAIL_TABLE_PAGE_SIZE = 20;
 const DEFAULT_DETAIL_LIST_PAGE_SIZE = 10;
 const DETAIL_PAGE_SIZE_OPTIONS = ['10', '20', '50', '100'];
 const TASK_RUN_DRAWER_WIDTH = 1040;
+const SKILL_DETAIL_DRAWER_WIDTH = 720;
 const DEFAULT_SKILL_UPLOAD_FORM_VALUES: SkillUploadFormValues = {
   skillKey: OPENCODE_UI_BATCH_SKILL_KEY,
   displayName: 'NB OpenCode UI Batch',
@@ -844,12 +877,62 @@ function replaceRunIdInLocationSearch(runId?: string) {
   window.history.replaceState(window.history.state, '', nextUrl);
 }
 
+function getTaskTemplateIdFromLocationSearch() {
+  if (typeof window === 'undefined') {
+    return undefined;
+  }
+  return new URLSearchParams(window.location.search).get(TASK_TEMPLATE_DETAIL_QUERY_PARAM) || undefined;
+}
+
+function replaceTaskTemplateIdInLocationSearch(templateId?: string) {
+  if (typeof window === 'undefined') {
+    return;
+  }
+  const params = new URLSearchParams(window.location.search);
+  if (templateId) {
+    params.set(TASK_TEMPLATE_DETAIL_QUERY_PARAM, templateId);
+    params.delete(SKILL_VERSION_DETAIL_QUERY_PARAM);
+  } else {
+    params.delete(TASK_TEMPLATE_DETAIL_QUERY_PARAM);
+  }
+  const search = params.toString();
+  const nextUrl = `${window.location.pathname}${search ? `?${search}` : ''}${window.location.hash}`;
+  window.history.replaceState(window.history.state, '', nextUrl);
+}
+
+function getSkillVersionIdFromLocationSearch() {
+  if (typeof window === 'undefined') {
+    return undefined;
+  }
+  return new URLSearchParams(window.location.search).get(SKILL_VERSION_DETAIL_QUERY_PARAM) || undefined;
+}
+
+function replaceSkillVersionIdInLocationSearch(skillVersionId?: string) {
+  if (typeof window === 'undefined') {
+    return;
+  }
+  const params = new URLSearchParams(window.location.search);
+  if (skillVersionId) {
+    params.set(SKILL_VERSION_DETAIL_QUERY_PARAM, skillVersionId);
+    params.delete(TASK_TEMPLATE_DETAIL_QUERY_PARAM);
+  } else {
+    params.delete(SKILL_VERSION_DETAIL_QUERY_PARAM);
+  }
+  const search = params.toString();
+  const nextUrl = `${window.location.pathname}${search ? `?${search}` : ''}${window.location.hash}`;
+  window.history.replaceState(window.history.state, '', nextUrl);
+}
+
 function useInitialRunDetailQuery() {
   return useState(() => getRunIdFromLocationSearch())[0];
 }
 
-function getRouterPathFromBrowserPath(pathname: string) {
-  return pathname.replace(/^\/v2?(?=\/admin(?:\/|$))/, '');
+function useInitialTaskTemplateDetailQuery() {
+  return useState(() => getTaskTemplateIdFromLocationSearch())[0];
+}
+
+function useInitialSkillVersionDetailQuery() {
+  return useState(() => getSkillVersionIdFromLocationSearch())[0];
 }
 
 function getBuildTaskTemplateSelectOptions(options: BuildRunOptions | undefined) {
@@ -941,6 +1024,7 @@ function RunTaskTitle({ run, t, onOpen }: { run: RunRecord; t: TFunction; onOpen
       <Typography.Link
         href="#"
         strong
+        aria-label={t('View run details')}
         ellipsis
         title={title}
         onClick={(event) => {
@@ -960,21 +1044,28 @@ function RunTaskTitle({ run, t, onOpen }: { run: RunRecord; t: TFunction; onOpen
   );
 }
 
-function RunTaskTemplateLink({ run, t, onOpen }: { run: RunRecord; t: TFunction; onOpen: (run: RunRecord) => void }) {
+function RunTaskTemplateLink({ run, onOpen }: { run: RunRecord; onOpen: (templateId: string) => void }) {
   const template = run.taskTemplateJson;
   const label = template?.displayName || template?.templateKey || run.taskTemplateId || '';
+  const templateId = template?.id || run.taskTemplateId || '';
   if (!label) {
     return <Typography.Text type="secondary">-</Typography.Text>;
+  }
+  if (!templateId) {
+    return (
+      <Typography.Text ellipsis={{ tooltip: label }} style={{ display: 'inline-block', maxWidth: 220 }}>
+        {label}
+      </Typography.Text>
+    );
   }
   return (
     <Typography.Link
       href="#"
-      aria-label={`${t('View run details')}: ${label}`}
       ellipsis
       title={label}
       onClick={(event) => {
         event.preventDefault();
-        onOpen(run);
+        onOpen(templateId);
       }}
       style={{ display: 'inline-block', maxWidth: 220 }}
     >
@@ -989,7 +1080,16 @@ function getSkillVersionLabel(skillVersion: BuildSkillVersionOption) {
     .join(' / ');
 }
 
-function RunTaskTemplateSkills({ run, onOpen }: { run: RunRecord; onOpen: (run: RunRecord) => void }) {
+function getSkillVersionDetailDisplayLabel(skillVersion: SkillVersionDetailRecord) {
+  return [
+    skillVersion.displayName || skillVersion.skillKey || skillVersion.skillId || skillVersion.id,
+    skillVersion.versionLabel,
+  ]
+    .filter(Boolean)
+    .join(' / ');
+}
+
+function RunTaskTemplateSkills({ run, onOpen }: { run: RunRecord; onOpen: (skillVersionId: string) => void }) {
   const skills = run.taskTemplateJson?.skills || [];
   if (!skills.length) {
     return <Typography.Text type="secondary">-</Typography.Text>;
@@ -1004,7 +1104,7 @@ function RunTaskTemplateSkills({ run, onOpen }: { run: RunRecord; onOpen: (run: 
             href="#"
             onClick={(event) => {
               event.preventDefault();
-              onOpen(run);
+              onOpen(skillVersion.id);
             }}
           >
             {label}
@@ -1012,6 +1112,128 @@ function RunTaskTemplateSkills({ run, onOpen }: { run: RunRecord; onOpen: (run: 
         );
       })}
     </Space>
+  );
+}
+
+function TaskTemplateDetailDrawerContent({
+  template,
+  loading,
+  error,
+  t,
+}: {
+  template: TaskTemplateDetailRecord | null | undefined;
+  loading: boolean;
+  error?: string;
+  t: TFunction;
+}) {
+  if (error) {
+    return <Alert type="warning" showIcon message={t('Task template details unavailable')} description={error} />;
+  }
+  if (loading && !template) {
+    return <Spin />;
+  }
+  if (!template) {
+    return <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('Task template details unavailable')} />;
+  }
+
+  const skillVersionIds = Array.isArray(template.skillVersionIdsJson) ? template.skillVersionIdsJson : [];
+  const artifacts = Array.isArray(template.artifactsJson) ? template.artifactsJson : [];
+
+  return (
+    <Space direction="vertical" size={16} style={{ width: '100%' }}>
+      <Descriptions bordered size="small" column={1}>
+        <Descriptions.Item label={t('Template key')}>{template.templateKey || '-'}</Descriptions.Item>
+        <Descriptions.Item label={t('Display name')}>{template.displayName || '-'}</Descriptions.Item>
+        <Descriptions.Item label={t('Description')}>{template.description || '-'}</Descriptions.Item>
+        <Descriptions.Item label={t('Status')}>{statusTag(template.status || 'active')}</Descriptions.Item>
+        <Descriptions.Item label={t('Default title')}>{template.defaultTitle || '-'}</Descriptions.Item>
+        <Descriptions.Item label={t('Prompt')}>
+          {template.defaultPrompt ? (
+            <Typography.Paragraph style={{ margin: 0, whiteSpace: 'pre-wrap' }}>
+              {template.defaultPrompt}
+            </Typography.Paragraph>
+          ) : (
+            '-'
+          )}
+        </Descriptions.Item>
+        <Descriptions.Item label={t('Working directory')}>{template.cwd || '-'}</Descriptions.Item>
+        <Descriptions.Item label={t('Skills')}>
+          {skillVersionIds.length ? (
+            <Space size={[4, 4]} wrap>
+              {skillVersionIds.map((skillVersionId) => (
+                <Tag key={skillVersionId}>{skillVersionId}</Tag>
+              ))}
+            </Space>
+          ) : (
+            '-'
+          )}
+        </Descriptions.Item>
+        <Descriptions.Item label={t('Artifact root')}>{template.artifactRoot || '-'}</Descriptions.Item>
+      </Descriptions>
+      {artifacts.length ? (
+        <Space direction="vertical" size={8} style={{ width: '100%' }}>
+          <Typography.Title level={5} style={{ margin: 0 }}>
+            {t('Artifacts')}
+          </Typography.Title>
+          <JsonPreview value={artifacts} />
+        </Space>
+      ) : null}
+    </Space>
+  );
+}
+
+function SkillDetailDrawerContent({
+  skillVersion,
+  loading,
+  error,
+  t,
+}: {
+  skillVersion: SkillVersionDetailRecord | null | undefined;
+  loading: boolean;
+  error?: string;
+  t: TFunction;
+}) {
+  if (error) {
+    return <Alert type="warning" showIcon message={t('Skill details unavailable')} description={error} />;
+  }
+  if (loading && !skillVersion) {
+    return <Spin />;
+  }
+  if (!skillVersion) {
+    return <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('Skill details unavailable')} />;
+  }
+
+  return (
+    <Descriptions bordered size="small" column={1}>
+      <Descriptions.Item label={t('Skill')}>{skillVersion.displayName || '-'}</Descriptions.Item>
+      <Descriptions.Item label={t('Skill key')}>{skillVersion.skillKey || '-'}</Descriptions.Item>
+      <Descriptions.Item label={t('Skill ID')}>{skillVersion.skillId || '-'}</Descriptions.Item>
+      <Descriptions.Item label={t('Skill version ID')}>
+        {skillVersion.skillVersionId || skillVersion.id}
+      </Descriptions.Item>
+      <Descriptions.Item label={t('Version label')}>{skillVersion.versionLabel || '-'}</Descriptions.Item>
+      <Descriptions.Item label={t('Status')}>
+        <Space size={4} wrap>
+          {statusTag(skillVersion.status)}
+          {skillVersion.skillStatus && skillVersion.skillStatus !== skillVersion.status
+            ? statusTag(skillVersion.skillStatus)
+            : null}
+        </Space>
+      </Descriptions.Item>
+      <Descriptions.Item label={t('Source')}>
+        {[skillVersion.sourceType, skillVersion.sourceSha256].filter(Boolean).join(' / ') || '-'}
+      </Descriptions.Item>
+      <Descriptions.Item label={t('Content size')}>{skillVersion.sourceSizeBytes ?? '-'}</Descriptions.Item>
+      <Descriptions.Item label={t('Uploaded at')}>
+        {formatDateTime(skillVersion.sourceUploadedAt || undefined)}
+      </Descriptions.Item>
+      <Descriptions.Item label={t('Created at')}>
+        {formatDateTime(skillVersion.createdAt || undefined)}
+      </Descriptions.Item>
+      <Descriptions.Item label={t('Updated at')}>
+        {formatDateTime(skillVersion.updatedAt || undefined)}
+      </Descriptions.Item>
+    </Descriptions>
   );
 }
 
@@ -2404,6 +2626,8 @@ export default function AgentGatewayRunsPage() {
   const t = useT();
   const ctx = useFlowContext() as unknown as AgentGatewayPageContext;
   const initialRunId = useInitialRunDetailQuery();
+  const initialTaskTemplateId = useInitialTaskTemplateDetailQuery();
+  const initialSkillVersionId = useInitialSkillVersionDetailQuery();
   const [buildTaskForm] = Form.useForm<BuildTaskFormValues>();
   const [externalRunImportForm] = Form.useForm<ExternalRunImportFormValues>();
   const [skillUploadForm] = Form.useForm<SkillUploadFormValues>();
@@ -2422,6 +2646,12 @@ export default function AgentGatewayRunsPage() {
   const [detailOpen, setDetailOpen] = useState(Boolean(initialRunId));
   const [selectedRunId, setSelectedRunId] = useState<string | undefined>(initialRunId);
   const [runDetailsError, setRunDetailsError] = useState<string>();
+  const [taskTemplateDetailOpen, setTaskTemplateDetailOpen] = useState(Boolean(initialTaskTemplateId));
+  const [selectedTaskTemplateId, setSelectedTaskTemplateId] = useState<string | undefined>(initialTaskTemplateId);
+  const [taskTemplateDetailsError, setTaskTemplateDetailsError] = useState<string>();
+  const [skillDetailOpen, setSkillDetailOpen] = useState(Boolean(initialSkillVersionId));
+  const [selectedSkillVersionId, setSelectedSkillVersionId] = useState<string | undefined>(initialSkillVersionId);
+  const [skillDetailsError, setSkillDetailsError] = useState<string>();
   const [activeDetailTab, setActiveDetailTab] = useState<RunDetailTabKey>('summary');
   const [terminalSnapshotState, setTerminalSnapshotState] = useState<TerminalSnapshotState | null>(null);
   const [conversationEventsState, setConversationEventsState] = useState<ConversationEventsState | null>(null);
@@ -2463,6 +2693,17 @@ export default function AgentGatewayRunsPage() {
     setDetailOpen(true);
   }, []);
 
+  const syncRelatedDetailsFromLocation = useCallback(() => {
+    const templateId = getTaskTemplateIdFromLocationSearch();
+    const skillVersionId = templateId ? undefined : getSkillVersionIdFromLocationSearch();
+    setSelectedTaskTemplateId(templateId);
+    setTaskTemplateDetailOpen(Boolean(templateId));
+    setTaskTemplateDetailsError(undefined);
+    setSelectedSkillVersionId(skillVersionId);
+    setSkillDetailOpen(Boolean(skillVersionId));
+    setSkillDetailsError(undefined);
+  }, []);
+
   const runsRequest = useRequest(
     async () => {
       const response = await ctx.api.request<RunRecord[]>({
@@ -2485,6 +2726,60 @@ export default function AgentGatewayRunsPage() {
     },
   );
   const { refresh: refreshRuns } = runsRequest;
+
+  const taskTemplateDetailsRequest = useRequest(
+    async () => {
+      if (!selectedTaskTemplateId || !taskTemplateDetailOpen) {
+        return null;
+      }
+      const response = await ctx.api.request<TaskTemplateDetailRecord>({
+        url: `agent-gateway/task-templates:get/${encodeURIComponent(selectedTaskTemplateId)}`,
+        method: 'get',
+      });
+      return getRequiredResponseData(response, t('Failed to load task template detail'));
+    },
+    {
+      refreshDeps: [selectedTaskTemplateId, taskTemplateDetailOpen],
+      onSuccess() {
+        setTaskTemplateDetailsError(undefined);
+      },
+      onError(error) {
+        const message = getApiErrorMessage(error, t('Failed to load task template detail'));
+        setTaskTemplateDetailsError(message);
+        ctx.message?.error(message);
+      },
+    },
+  );
+
+  const skillVersionDetailsRequest = useRequest(
+    async () => {
+      if (!selectedSkillVersionId || !skillDetailOpen) {
+        return null;
+      }
+      const response = await ctx.api.request<SkillVersionDetailRecord[]>({
+        url: 'agent-gateway/skill-versions:list',
+        method: 'get',
+      });
+      const skillVersions = getResponseData(response, []);
+      return (
+        skillVersions.find(
+          (skillVersion) =>
+            skillVersion.id === selectedSkillVersionId || skillVersion.skillVersionId === selectedSkillVersionId,
+        ) || null
+      );
+    },
+    {
+      refreshDeps: [selectedSkillVersionId, skillDetailOpen],
+      onSuccess() {
+        setSkillDetailsError(undefined);
+      },
+      onError(error) {
+        const message = getApiErrorMessage(error, t('Failed to load skill detail'));
+        setSkillDetailsError(message);
+        ctx.message?.error(message);
+      },
+    },
+  );
 
   const buildRunOptionsRequest = useRequest(
     async () => {
@@ -3278,6 +3573,40 @@ export default function AgentGatewayRunsPage() {
     replaceRunIdInLocationSearch(run.id);
   }, []);
 
+  const openTaskTemplateDetails = useCallback((templateId: string) => {
+    setSelectedTaskTemplateId(templateId);
+    setTaskTemplateDetailsError(undefined);
+    setTaskTemplateDetailOpen(true);
+    setSelectedSkillVersionId(undefined);
+    setSkillDetailsError(undefined);
+    setSkillDetailOpen(false);
+    replaceTaskTemplateIdInLocationSearch(templateId);
+  }, []);
+
+  const closeTaskTemplateDetails = useCallback(() => {
+    setTaskTemplateDetailOpen(false);
+    setSelectedTaskTemplateId(undefined);
+    setTaskTemplateDetailsError(undefined);
+    replaceTaskTemplateIdInLocationSearch();
+  }, []);
+
+  const openSkillDetails = useCallback((skillVersionId: string) => {
+    setSelectedSkillVersionId(skillVersionId);
+    setSkillDetailsError(undefined);
+    setSkillDetailOpen(true);
+    setSelectedTaskTemplateId(undefined);
+    setTaskTemplateDetailsError(undefined);
+    setTaskTemplateDetailOpen(false);
+    replaceSkillVersionIdInLocationSearch(skillVersionId);
+  }, []);
+
+  const closeSkillDetails = useCallback(() => {
+    setSkillDetailOpen(false);
+    setSelectedSkillVersionId(undefined);
+    setSkillDetailsError(undefined);
+    replaceSkillVersionIdInLocationSearch();
+  }, []);
+
   const closeRunDetails = useCallback(() => {
     setDetailOpen(false);
     setSelectedRunId(undefined);
@@ -3488,14 +3817,14 @@ export default function AgentGatewayRunsPage() {
         sorter: true,
         sortOrder: getRunColumnSortOrder(runSort, 'taskTemplateId'),
         render: (_value: string | null | undefined, record) => (
-          <RunTaskTemplateLink run={record} t={t} onOpen={openRunDetails} />
+          <RunTaskTemplateLink run={record} onOpen={openTaskTemplateDetails} />
         ),
       },
       {
         title: t('Skills'),
         key: 'taskTemplateSkills',
         width: 240,
-        render: (_value: unknown, record) => <RunTaskTemplateSkills run={record} onOpen={openRunDetails} />,
+        render: (_value: unknown, record) => <RunTaskTemplateSkills run={record} onOpen={openSkillDetails} />,
       },
       {
         title: t('Status'),
@@ -3542,25 +3871,8 @@ export default function AgentGatewayRunsPage() {
         width: 180,
         render: (_value: unknown, record) => <RunTokenUsageSummary usage={record.tokenUsageJson} t={t} />,
       },
-      {
-        title: t('Actions'),
-        key: 'actions',
-        width: 112,
-        render: (_value: unknown, record) => (
-          <Space>
-            <Tooltip title={t('View run details')}>
-              <Button
-                aria-label={t('View run details')}
-                icon={<EyeOutlined />}
-                onClick={() => openRunDetails(record)}
-              />
-            </Tooltip>
-            {renderCancelButton(record)}
-          </Space>
-        ),
-      },
     ],
-    [openRunDetails, renderCancelButton, runSort, t],
+    [openRunDetails, openSkillDetails, openTaskTemplateDetails, runSort, t],
   );
 
   const activeRunDetails =
@@ -3594,6 +3906,20 @@ export default function AgentGatewayRunsPage() {
     [runListTotal, runPageCurrent, runPageSize, t],
   );
   const selectedRun = activeRunDetails?.run || runListData.runs.find((run) => run.id === selectedRunId);
+  const selectedTaskTemplate =
+    taskTemplateDetailsRequest.data &&
+    selectedTaskTemplateId &&
+    (taskTemplateDetailsRequest.data.id === selectedTaskTemplateId ||
+      taskTemplateDetailsRequest.data.templateKey === selectedTaskTemplateId)
+      ? taskTemplateDetailsRequest.data
+      : null;
+  const selectedSkillVersion =
+    skillVersionDetailsRequest.data &&
+    selectedSkillVersionId &&
+    (skillVersionDetailsRequest.data.id === selectedSkillVersionId ||
+      skillVersionDetailsRequest.data.skillVersionId === selectedSkillVersionId)
+      ? skillVersionDetailsRequest.data
+      : null;
   const actionPermissions = activeRunDetails?.run.agentGatewayActionPermissionsJson || {};
   const canResumeAgentSession =
     isRunActionAllowed(actionPermissions, 'resumeAgentSession') &&
@@ -3698,6 +4024,14 @@ export default function AgentGatewayRunsPage() {
       window.removeEventListener('popstate', syncRunDetailFromLocation);
     };
   }, [syncRunDetailFromLocation]);
+
+  useEffect(() => {
+    syncRelatedDetailsFromLocation();
+    window.addEventListener('popstate', syncRelatedDetailsFromLocation);
+    return () => {
+      window.removeEventListener('popstate', syncRelatedDetailsFromLocation);
+    };
+  }, [syncRelatedDetailsFromLocation]);
 
   useEffect(() => {
     setControlRequestState(null);
@@ -3948,6 +4282,40 @@ export default function AgentGatewayRunsPage() {
             ]}
           />
         ) : null}
+      </Drawer>
+
+      <Drawer
+        title={
+          selectedTaskTemplate
+            ? selectedTaskTemplate.displayName || selectedTaskTemplate.templateKey
+            : t('Task template detail')
+        }
+        open={taskTemplateDetailOpen}
+        onClose={closeTaskTemplateDetails}
+        width={TASK_RUN_DRAWER_WIDTH}
+        destroyOnClose
+      >
+        <TaskTemplateDetailDrawerContent
+          template={selectedTaskTemplate}
+          loading={taskTemplateDetailsRequest.loading}
+          error={taskTemplateDetailsError}
+          t={t}
+        />
+      </Drawer>
+
+      <Drawer
+        title={selectedSkillVersion ? getSkillVersionDetailDisplayLabel(selectedSkillVersion) : t('Skill detail')}
+        open={skillDetailOpen}
+        onClose={closeSkillDetails}
+        width={SKILL_DETAIL_DRAWER_WIDTH}
+        destroyOnClose
+      >
+        <SkillDetailDrawerContent
+          skillVersion={selectedSkillVersion}
+          loading={skillVersionDetailsRequest.loading}
+          error={skillDetailsError}
+          t={t}
+        />
       </Drawer>
 
       <Drawer
