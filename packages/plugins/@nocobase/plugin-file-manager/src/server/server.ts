@@ -389,8 +389,8 @@ export class PluginFileManagerServer extends Plugin {
   }
 
   async setFileResponseURLs(record: AttachmentModel, collectionName: string) {
-    const url = await this.getFileURL(record, false, { collectionName });
-    const previewUrl = await this.getFileURL(record, true, { collectionName });
+    const url = this.getPermanentFileURL(record, false, { collectionName });
+    const previewUrl = this.getPermanentFileURL(record, true, { collectionName });
     const storage = this.storagesCache.get(record.get('storageId'));
     record.set('url', url);
     record.set('preview', previewUrl);
@@ -421,12 +421,8 @@ export class PluginFileManagerServer extends Plugin {
     return preview ? `${url}/preview` : url;
   }
 
-  async getFileURL(
-    file: AttachmentModel,
-    preview = false,
-    options: { dataSourceKey?: string; collectionName?: string } = {},
-  ) {
-    return this.getPermanentFileURL(file, preview, options);
+  async getFileURL(file: AttachmentModel, preview = false) {
+    return this.getStorageFileURL(file, preview);
   }
 
   async getStorageFileURL(file: AttachmentModel, preview = false) {

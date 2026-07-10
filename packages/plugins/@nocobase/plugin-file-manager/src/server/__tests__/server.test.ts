@@ -290,6 +290,10 @@ describe('file manager > server', () => {
           storageId: defaultStorage.id,
         };
         expect(data).toMatchObject(matcher);
+
+        const url = await plugin.getFileURL(data);
+        expect(url).toBe(await plugin.getStorageFileURL(data));
+        expect(url).not.toContain('/files/main/main/attachments/undefined');
       });
 
       it('should upload file to subPath', async () => {
@@ -337,7 +341,8 @@ describe('file manager > server', () => {
         });
 
         const url = await plugin.getFileURL(body.data);
-        expect(url).toBe(`${process.env.APP_PUBLIC_PATH?.replace(/\/$/g, '') || ''}${body.data.url}`);
+        expect(url).toBe(await plugin.getStorageFileURL(body.data));
+        expect(url).not.toBe(body.data.url);
       });
 
       it('keeps permanent file URL path-only when API_BASE_URL is absolute', async () => {
@@ -397,10 +402,11 @@ describe('file manager > server', () => {
           });
 
           const url = await plugin.getFileURL(body.data);
-          expect(url).toBe(`/app/files/main/main/attachments/${body.data.id}`);
+          expect(url).toBe(`${process.env.APP_PUBLIC_PATH}/storage/uploads/${body.data.filename}`);
+          expect(body.data.url).toBe(`/app/files/main/main/attachments/${body.data.id}`);
 
           const storageUrl = await plugin.getStorageFileURL(body.data);
-          expect(storageUrl).toBe(`${process.env.APP_PUBLIC_PATH}/storage/uploads/${body.data.filename}`);
+          expect(url).toBe(storageUrl);
         } finally {
           restoreEnv('APP_PUBLIC_PATH', originalPath);
         }
@@ -427,10 +433,11 @@ describe('file manager > server', () => {
           });
 
           const url = await plugin.getFileURL(body.data);
-          expect(url).toBe(`/nocobase/files/main/main/attachments/${body.data.id}`);
+          expect(url).toBe(`/nocobase/${body.data.filename}`);
+          expect(body.data.url).toBe(`/nocobase/files/main/main/attachments/${body.data.id}`);
 
           const storageUrl = await plugin.getStorageFileURL(body.data);
-          expect(storageUrl).toBe(`/nocobase/${body.data.filename}`);
+          expect(url).toBe(storageUrl);
         } finally {
           restoreEnv('APP_PUBLIC_PATH', originalPath);
         }
@@ -456,16 +463,11 @@ describe('file manager > server', () => {
         });
 
         const url = await plugin.getFileURL(body.data, true);
-        expect(url).toBe(
-          `${process.env.APP_PUBLIC_PATH?.replace(/\/$/g, '') || ''}/files/main/main/attachments/${
-            body.data.id
-          }/preview`,
-        );
+        expect(url).toBe(`${process.env.APP_PUBLIC_PATH?.replace(/\/$/g, '') || ''}/${body.data.filename}?small`);
+        expect(body.data.preview).toBe(`/files/main/main/attachments/${body.data.id}/preview`);
 
         const storageUrl = await plugin.getStorageFileURL(body.data, true);
-        expect(storageUrl).toBe(
-          `${process.env.APP_PUBLIC_PATH?.replace(/\/$/g, '') || ''}/${body.data.filename}?small`,
-        );
+        expect(url).toBe(storageUrl);
       });
 
       it('get file url with preview parameters on non-image file', async () => {
@@ -488,14 +490,11 @@ describe('file manager > server', () => {
         });
 
         const url = await plugin.getFileURL(body.data, true);
-        expect(url).toBe(
-          `${process.env.APP_PUBLIC_PATH?.replace(/\/$/g, '') || ''}/files/main/main/attachments/${
-            body.data.id
-          }/preview`,
-        );
+        expect(url).toBe(`${process.env.APP_PUBLIC_PATH?.replace(/\/$/g, '') || ''}/${body.data.filename}`);
+        expect(body.data.preview).toBe(`/files/main/main/attachments/${body.data.id}/preview`);
 
         const storageUrl = await plugin.getStorageFileURL(body.data, true);
-        expect(storageUrl).toBe(`${process.env.APP_PUBLIC_PATH?.replace(/\/$/g, '') || ''}/${body.data.filename}`);
+        expect(url).toBe(storageUrl);
       });
 
       it('file with null mimetype should not add preview parameter', async () => {
@@ -529,12 +528,11 @@ describe('file manager > server', () => {
         });
         expect(file.mimetype).toBeNull();
         const url = await plugin.getFileURL(file, true);
-        expect(url).toBe(
-          `${process.env.APP_PUBLIC_PATH?.replace(/\/$/g, '') || ''}/files/main/main/attachments/${file.id}/preview`,
-        );
+        expect(url).toBe(`${process.env.APP_PUBLIC_PATH?.replace(/\/$/g, '') || ''}/${file.filename}`);
+        expect(plugin.getPermanentFileURL(file, true)).toBe(`/files/main/main/attachments/${file.id}/preview`);
 
         const storageUrl = await plugin.getStorageFileURL(file, true);
-        expect(storageUrl).toBe(`${process.env.APP_PUBLIC_PATH?.replace(/\/$/g, '') || ''}/${file.filename}`);
+        expect(url).toBe(storageUrl);
       });
     });
 

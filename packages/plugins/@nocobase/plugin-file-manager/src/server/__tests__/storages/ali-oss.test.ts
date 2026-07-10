@@ -159,10 +159,11 @@ describe('storage:ali-oss', () => {
       });
 
       const url = await plugin.getFileURL(body.data);
-      expect(url).toBe(`/files/main/main/attachments/${body.data.id}`);
+      expect(url).toBe(await plugin.getStorageFileURL(body.data));
+      expect(body.data.url).toBe(`/files/main/main/attachments/${body.data.id}`);
 
       // 通过 url 是否能正确访问
-      const content1 = await requestFile(await plugin.getStorageFileURL(body.data), agent);
+      const content1 = await requestFile(url, agent);
       expect(content1.text).toBe('Hello world!\n');
     });
   });
