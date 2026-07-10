@@ -4,9 +4,15 @@ description: "附件字段用于上传和关联文件，文件元信息保存在
 keywords: "附件,attachment,文件上传,文件表,NocoBase"
 ---
 
-# 附件
+# 附件（废弃）
 
 ## 介绍
+
+:::warning 注意
+
+附件字段已被废弃，建议使用[文件表](../../collection/file.md)或[附件 URL](./attachment-url.md)字段。
+
+:::
 
 在 NocoBase 中，**附件（Attachment）** 用于上传文件并把文件记录关联到当前业务记录。
 

@@ -270,7 +270,7 @@
           },
           {
             "type": "custom-link",
-            "label": "中国行政区",
+            "label": "中国行政区（废弃）",
             "link": "/data-sources-v2/field/choices/china-region"
           }
         ]
@@ -296,7 +296,7 @@
           },
           {
             "type": "custom-link",
-            "label": "附件（关系）",
+            "label": "附件（废弃）",
             "link": "/data-sources-v2/field/media/attachment"
           },
           {
