@@ -35,6 +35,7 @@ describe('app', () => {
       document.querySelectorAll('link[rel="shortcut icon"]').forEach((node) => node.remove());
       document.documentElement.removeAttribute('lang');
       delete window['__webpack_public_path__'];
+      delete window['__nocobase_modern_client_prefix__'];
       vi.restoreAllMocks();
     });
 
@@ -82,6 +83,34 @@ describe('app', () => {
 
       window['__webpack_public_path__'] = '/cdn/assets';
       expect(app.getCdnUrl()).toBe('/cdn/assets/');
+    });
+
+    it('should remove the modern client prefix from the CDN fallback path', () => {
+      const app = new Application({
+        router,
+        publicPath: '/v/',
+      });
+
+      expect(app.getCdnUrl()).toBe('/');
+    });
+
+    it('should preserve APP_PUBLIC_PATH when removing the modern client prefix', () => {
+      const app = new Application({
+        router,
+        publicPath: '/nocobase/v/',
+      });
+
+      expect(app.getCdnUrl()).toBe('/nocobase/');
+    });
+
+    it('should support a custom modern client prefix', () => {
+      window['__nocobase_modern_client_prefix__'] = 'modern';
+      const app = new Application({
+        router,
+        publicPath: '/nocobase/modern/',
+      });
+
+      expect(app.getCdnUrl()).toBe('/nocobase/');
     });
 
     it('should apply the provided favicon immediately', () => {
