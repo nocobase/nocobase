@@ -12,25 +12,16 @@ import type { HandlerType, ResourceOptions } from '@nocobase/resourcer';
 
 import { LightExtensionError, isLightExtensionError } from '../../shared/errors';
 import type {
-  LightExtensionBulkUpgradeInput,
   LightExtensionReferenceContractDiagnosticsInput,
-  LightExtensionReferenceImpactInput,
   LightExtensionReferenceListInput,
   LightExtensionReferenceRebuildInput,
 } from '../../shared/types';
-import { BulkUpgradeService } from '../services/BulkUpgradeService';
 import type { LightExtensionCanFunction } from '../services/LightExtensionPermissionService';
 import { ReferenceService } from '../services/ReferenceService';
 import { normalizeReferenceOwnerLocator } from '../services/ReferenceOwnerRegistry';
 import type { LightExtensionServiceContext } from '../services/LightExtensionRepoService';
 
-export const lightExtensionReferenceActionNames = [
-  'readReferences',
-  'rebuildIndex',
-  'diagnostics',
-  'impact',
-  'bulkUpgrade',
-] as const;
+export const lightExtensionReferenceActionNames = ['readReferences', 'rebuildIndex', 'diagnostics'] as const;
 
 type LightExtensionReferenceActionName = (typeof lightExtensionReferenceActionNames)[number];
 type ResourceActionInput = Record<string, unknown>;
@@ -63,7 +54,6 @@ type ResourceActionRunner = (
 
 interface LightExtensionReferenceActionServices {
   referenceService: ReferenceService;
-  bulkUpgradeService?: BulkUpgradeService;
 }
 
 const resourceActionRunners: Record<LightExtensionReferenceActionName, ResourceActionRunner> = {
@@ -73,27 +63,11 @@ const resourceActionRunners: Record<LightExtensionReferenceActionName, ResourceA
     services.referenceService.rebuildIndex(normalizeRebuildInput(input), currentUser),
   diagnostics: (services, input, currentUser) =>
     services.referenceService.getContractDiagnostics(normalizeDiagnosticsInput(input), currentUser),
-  impact: (services, input, currentUser) => {
-    if (!services.bulkUpgradeService) {
-      throw invalidInput('Light extension bulk upgrade service is not available');
-    }
-    return services.bulkUpgradeService.analyzeImpact(normalizeImpactInput(input), currentUser);
-  },
-  bulkUpgrade: (services, input, currentUser) => {
-    if (!services.bulkUpgradeService) {
-      throw invalidInput('Light extension bulk upgrade service is not available');
-    }
-    return services.bulkUpgradeService.bulkUpgrade(normalizeBulkUpgradeInput(input), currentUser);
-  },
 };
 
-export function createLightExtensionReferencesResource(
-  referenceService: ReferenceService,
-  bulkUpgradeService?: BulkUpgradeService,
-): ResourceOptions {
+export function createLightExtensionReferencesResource(referenceService: ReferenceService): ResourceOptions {
   const services = {
     referenceService,
-    bulkUpgradeService,
   };
 
   return {
@@ -165,7 +139,6 @@ function normalizeListInput(input: ResourceActionInput): LightExtensionReference
   return {
     repoId: optionalString(input, 'repoId'),
     entryId: optionalString(input, 'entryId'),
-    publicationId: optionalString(input, 'publicationId'),
     ownerLocator: normalizeOwnerLocator(input.ownerLocator),
   };
 }
@@ -181,23 +154,6 @@ function normalizeRebuildInput(input: ResourceActionInput): LightExtensionRefere
 
 function normalizeDiagnosticsInput(input: ResourceActionInput): LightExtensionReferenceContractDiagnosticsInput {
   return normalizeRebuildInput(input);
-}
-
-function normalizeImpactInput(input: ResourceActionInput): LightExtensionReferenceImpactInput {
-  return {
-    ...normalizeListInput(input),
-    toPublicationId: requireString(input, 'toPublicationId'),
-    referenceIds: optionalStringArray(input, 'referenceIds'),
-  };
-}
-
-function normalizeBulkUpgradeInput(input: ResourceActionInput): LightExtensionBulkUpgradeInput {
-  return {
-    toPublicationId: requireString(input, 'toPublicationId'),
-    referenceIds: requireStringArray(input, 'referenceIds'),
-    expectedPublicationIdByReference: optionalNullableStringMap(input, 'expectedPublicationIdByReference'),
-    expectedSettingsHashByReference: optionalStringMap(input, 'expectedSettingsHashByReference'),
-  };
 }
 
 function normalizeOwnerLocator(value: unknown): LightExtensionReferenceListInput['ownerLocator'] {
@@ -252,74 +208,6 @@ function optionalBoolean(input: ResourceActionInput, key: string): boolean | und
     throw invalidInput(`${key} must be a boolean`);
   }
   return value;
-}
-
-function requireString(input: ResourceActionInput, key: string): string {
-  const value = optionalString(input, key);
-  if (!value) {
-    throw invalidInput(`${key} is required`);
-  }
-  return value;
-}
-
-function requireStringArray(input: ResourceActionInput, key: string): string[] {
-  const value = optionalStringArray(input, key);
-  if (!value?.length) {
-    throw invalidInput(`${key} are required`);
-  }
-  return value;
-}
-
-function optionalStringArray(input: ResourceActionInput, key: string): string[] | undefined {
-  const value = input[key];
-  if (typeof value === 'undefined' || value === null) {
-    return undefined;
-  }
-  if (!Array.isArray(value)) {
-    throw invalidInput(`${key} must be an array`);
-  }
-  return value.map((item) => {
-    if (typeof item !== 'string' || !item.trim()) {
-      throw invalidInput(`${key} must contain strings`);
-    }
-    return item.trim();
-  });
-}
-
-function optionalStringMap(input: ResourceActionInput, key: string): Record<string, string> | undefined {
-  const value = input[key];
-  if (typeof value === 'undefined' || value === null) {
-    return undefined;
-  }
-  if (!value || typeof value !== 'object' || Array.isArray(value)) {
-    throw invalidInput(`${key} must be an object`);
-  }
-  const output: Record<string, string> = {};
-  for (const [mapKey, mapValue] of Object.entries(value as Record<string, unknown>)) {
-    if (typeof mapValue !== 'string') {
-      throw invalidInput(`${key} values must be strings`);
-    }
-    output[mapKey] = mapValue;
-  }
-  return output;
-}
-
-function optionalNullableStringMap(input: ResourceActionInput, key: string): Record<string, string | null> | undefined {
-  const value = input[key];
-  if (typeof value === 'undefined' || value === null) {
-    return undefined;
-  }
-  if (!value || typeof value !== 'object' || Array.isArray(value)) {
-    throw invalidInput(`${key} must be an object`);
-  }
-  const output: Record<string, string | null> = {};
-  for (const [mapKey, mapValue] of Object.entries(value as Record<string, unknown>)) {
-    if (mapValue !== null && typeof mapValue !== 'string') {
-      throw invalidInput(`${key} values must be strings or null`);
-    }
-    output[mapKey] = mapValue;
-  }
-  return output;
 }
 
 function getHeader(headers: Record<string, string | string[] | undefined>, name: string): string | undefined {

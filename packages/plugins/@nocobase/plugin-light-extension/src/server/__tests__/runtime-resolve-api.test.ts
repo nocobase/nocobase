@@ -18,7 +18,6 @@ import PluginLightExtensionServer from '../plugin';
 import { createLightExtensionRuntimeResource } from '../resources/lightExtensionRuntime';
 import { LightExtensionAuditService } from '../services/LightExtensionAuditService';
 import { LightExtensionPermissionService } from '../services/LightExtensionPermissionService';
-import { LightExtensionPublicationResolveService } from '../services/LightExtensionPublicationResolveService';
 import { RuntimeResolveService } from '../services/RuntimeResolveService';
 
 type RouteMiddleware = (
@@ -33,11 +32,11 @@ type RouteMiddleware = (
 ) => Promise<void>;
 
 describe('plugin-light-extension runtime resolve API', () => {
-  it('returns runtime code, source map, merged settings, and cache metadata through usePublication', async () => {
-    const { service, publicationsRepository } = createRuntimeResolveService(createPublicationRecord());
-    const can = vi.fn(({ action }: { action: string }) => (action === 'usePublication' ? {} : null));
+  it('returns runtime code, source map, merged settings, and cache metadata through useRuntime', async () => {
+    const { service, entriesRepository } = createRuntimeResolveService();
+    const can = vi.fn(({ action }: { action: string }) => (action === 'useRuntime' ? {} : null));
 
-    const result = await service.resolveRuntime(
+    const result = await service.resolve(
       {
         sourceMode: 'light-extension',
         sourceBinding: createSourceBinding(),
@@ -57,16 +56,16 @@ describe('plugin-light-extension runtime resolve API', () => {
 
     expect(can).toHaveBeenCalledWith({
       resource: 'lightExtension',
-      action: 'usePublication',
+      action: 'useRuntime',
     });
-    expect(publicationsRepository.findOne).toHaveBeenCalledWith(
+    expect(entriesRepository.findOne).toHaveBeenCalledWith(
       expect.objectContaining({
-        filterByTk: 'lep_sales_kpi',
+        filterByTk: 'lee_sales_kpi',
       }),
     );
     expect(result).toMatchObject({
-      publicationId: 'lep_sales_kpi',
       entryId: 'lee_sales_kpi',
+      entryPath: 'src/client/js-blocks/sales-kpi/index.tsx',
       runtimeCodeHash: 'runtime_hash_1',
       code: expect.stringContaining('runtime secret'),
       version: 'v2',
@@ -80,31 +79,31 @@ describe('plugin-light-extension runtime resolve API', () => {
         },
       },
       cache: {
-        immutable: true,
+        immutable: false,
         etag: expect.stringMatching(/^"[a-f0-9]{64}"$/),
       },
     });
   });
 
-  it('rejects runtime bindings whose kind does not match the publication snapshot', async () => {
-    const { service } = createRuntimeResolveService(createPublicationRecord());
+  it('rejects runtime bindings whose identity does not match the entry current runtime', async () => {
+    const { service } = createRuntimeResolveService();
 
     await expect(
-      service.resolveRuntime(
+      service.resolve(
         {
           sourceMode: 'light-extension',
           sourceBinding: createSourceBinding({ kind: 'js-field' }),
           settings: {},
         },
         {
-          can: ({ action }: { action: string }) => (action === 'usePublication' ? {} : null),
+          can: ({ action }: { action: string }) => (action === 'useRuntime' ? {} : null),
         },
       ),
     ).rejects.toMatchObject({
       code: 'LIGHT_EXTENSION_BINDING_OUTDATED',
       status: 409,
       details: {
-        publicationId: 'lep_sales_kpi',
+        entryId: 'lee_sales_kpi',
         mismatches: [
           {
             field: 'kind',
@@ -118,15 +117,15 @@ describe('plugin-light-extension runtime resolve API', () => {
 
   it('normalizes the runtime resolve resource input and passes request context to the service', async () => {
     const resolve = vi.fn().mockResolvedValue({
-      publicationId: 'lep_sales_kpi',
       entryId: 'lee_sales_kpi',
+      entryPath: 'src/client/js-blocks/sales-kpi/index.tsx',
       runtimeCodeHash: 'runtime_hash_1',
       code: 'ctx.render("ok");',
       version: 'v2',
       settings: {},
       cache: {
         etag: '"etag"',
-        immutable: true,
+        immutable: false,
       },
     });
     const resource = createLightExtensionRuntimeResource({
@@ -178,7 +177,7 @@ describe('plugin-light-extension runtime resolve API', () => {
       }),
     );
     expect((ctx as { body?: unknown }).body).toMatchObject({
-      publicationId: 'lep_sales_kpi',
+      entryId: 'lee_sales_kpi',
       code: 'ctx.render("ok");',
     });
   });
@@ -235,11 +234,11 @@ describe('plugin-light-extension runtime resolve API', () => {
     expect(ctx.request.path).toBe('/api/light-extension-runtime/resolve');
   });
 
-  it('returns 422 with field-level issues when settings do not match the publication snapshot schema', async () => {
-    const { service } = createRuntimeResolveService(createPublicationRecord());
+  it('returns 422 with field-level issues when settings do not match the entry current schema', async () => {
+    const { service } = createRuntimeResolveService();
 
     await expect(
-      service.resolveRuntime(
+      service.resolve(
         {
           sourceMode: 'light-extension',
           sourceBinding: createSourceBinding(),
@@ -251,7 +250,7 @@ describe('plugin-light-extension runtime resolve API', () => {
           },
         },
         {
-          can: ({ action }: { action: string }) => (action === 'usePublication' ? {} : null),
+          can: ({ action }: { action: string }) => (action === 'useRuntime' ? {} : null),
         },
       ),
     ).rejects.toMatchObject({
@@ -259,7 +258,6 @@ describe('plugin-light-extension runtime resolve API', () => {
       status: 422,
       details: {
         reasonCode: 'settings_invalid',
-        publicationId: 'lep_sales_kpi',
         issues: expect.arrayContaining([
           expect.objectContaining({
             path: '$.threshold',
@@ -282,129 +280,56 @@ describe('plugin-light-extension runtime resolve API', () => {
     });
   });
 
-  it('prunes stale settings before resolving a follow-active publication', async () => {
-    const { service } = createRuntimeResolveService(
-      {
-        ...createPublicationRecord(),
-        id: 'lep_sales_active',
-        settingsSchemaHash: 'schema_active',
-        settingsSchemaSnapshot: {
-          type: 'object',
-          properties: {
-            activePlan: {
-              type: 'string',
-            },
-          },
-        },
-        settingsDefaultsSnapshot: {
-          activePlan: 'active-default',
-        },
-      },
-      {
-        activePublicationId: 'lep_sales_active',
-      },
-    );
-
-    const result = await service.resolveRuntime(
-      {
-        sourceMode: 'light-extension',
-        sourceBinding: createSourceBinding({
-          publicationId: 'lep_sales_legacy',
-          versionPolicy: 'follow-active',
-        }),
-        settings: {
-          legacyPlan: 'legacy-value',
-        },
-      },
-      {
-        can: ({ action }: { action: string }) => (action === 'usePublication' ? {} : null),
-      },
-    );
-
-    expect(result).toMatchObject({
-      publicationId: 'lep_sales_active',
-      settings: {
-        activePlan: 'active-default',
-      },
-      cache: {
-        immutable: false,
-      },
-    });
-    expect(JSON.stringify(result.settings)).not.toContain('legacyPlan');
-  });
-
-  it('can derive settings defaults from the publication schema snapshot when defaults snapshot is absent', async () => {
-    const { service } = createRuntimeResolveService({
-      ...createPublicationRecord(),
-      settingsDefaultsSnapshot: null,
-    });
-
-    const result = await service.resolveRuntime(
-      {
-        sourceMode: 'light-extension',
-        sourceBinding: createSourceBinding(),
-        settings: {
-          nested: {
-            label: 'Fallback',
-          },
-        },
-      },
-      {
-        can: ({ action }: { action: string }) => (action === 'usePublication' ? {} : null),
-      },
-    );
-
-    expect(result.settings).toMatchObject({
-      threshold: 5,
-      region: 'APAC',
-      contactEmail: 'ops@example.com',
-      nested: {
-        enabled: true,
-        label: 'Fallback',
-      },
-    });
-  });
-
-  it('blocks runtime code for disabled repos and missing or disabled entries', async () => {
+  it('blocks runtime code for disabled repos, unhealthy entries, disabled kinds, and missing artifacts', async () => {
     const blockedCases = [
       {
         name: 'disabled repo',
         repoLifecycleStatus: 'disabled',
-        entryHealthStatus: 'ready',
         reasonCode: 'repo_disabled',
       },
       {
         name: 'archived repo',
         repoLifecycleStatus: 'archived',
-        entryHealthStatus: 'ready',
         reasonCode: 'repo_archived',
       },
       {
         name: 'missing entry',
-        repoLifecycleStatus: 'enabled',
         entryHealthStatus: 'missing',
         reasonCode: 'entry_missing',
       },
       {
         name: 'disabled entry',
-        repoLifecycleStatus: 'enabled',
         entryHealthStatus: 'disabled',
         reasonCode: 'entry_disabled',
+      },
+      {
+        name: 'event kind',
+        entryKind: 'event',
+        sourceKind: 'event',
+        reasonCode: 'kind_disabled',
+      },
+      {
+        name: 'missing runtime',
+        runtimeArtifact: null,
+        compiledCommitId: null,
+        reasonCode: 'runtime_missing',
       },
     ];
 
     for (const blockedCase of blockedCases) {
-      const { service } = createRuntimeResolveService(createPublicationRecord(), blockedCase);
+      const { service } = createRuntimeResolveService(blockedCase);
 
       await expect(
-        service.resolveRuntime(
+        service.resolve(
           {
             sourceMode: 'light-extension',
-            sourceBinding: createSourceBinding(),
+            sourceBinding: createSourceBinding({
+              kind: blockedCase.sourceKind || 'js-block',
+            }),
             settings: {},
           },
           {
-            can: ({ action }: { action: string }) => (action === 'usePublication' ? {} : null),
+            can: ({ action }: { action: string }) => (action === 'useRuntime' ? {} : null),
           },
         ),
       ).rejects.toMatchObject({
@@ -412,66 +337,24 @@ describe('plugin-light-extension runtime resolve API', () => {
         status: 409,
         details: {
           reasonCode: blockedCase.reasonCode,
-          publicationId: 'lep_sales_kpi',
+          entryId: 'lee_sales_kpi',
         },
       });
     }
   });
 
-  it('blocks runtime code for historical ready publications whose kind is not enabled', async () => {
-    const { service } = createRuntimeResolveService(
-      {
-        ...createPublicationRecord(),
-        id: 'lep_run_task',
-        entryId: 'lee_run_task',
-        entryPath: 'src/client/runjs/run-task/index.ts',
-        kind: 'runjs',
-        surfaceStyle: 'run',
-      },
-      {
-        entryId: 'lee_run_task',
-        entryKind: 'runjs',
-      },
-    );
+  it('uses 422 for runtime resolve input contract failures before loading entries', async () => {
+    const { service, entriesRepository } = createRuntimeResolveService();
 
     await expect(
-      service.resolveRuntime(
-        {
-          sourceMode: 'light-extension',
-          sourceBinding: createSourceBinding({
-            publicationId: 'lep_run_task',
-            entryId: 'lee_run_task',
-            kind: 'runjs',
-          }),
-          settings: {},
-        },
-        {
-          can: ({ action }: { action: string }) => (action === 'usePublication' ? {} : null),
-        },
-      ),
-    ).rejects.toMatchObject({
-      code: 'LIGHT_EXTENSION_LIFECYCLE_CONFLICT',
-      status: 409,
-      details: {
-        reasonCode: 'kind_disabled',
-        publicationId: 'lep_run_task',
-        kind: 'runjs',
-      },
-    });
-  });
-
-  it('uses 422 for runtime resolve input contract failures', async () => {
-    const { service, publicationsRepository } = createRuntimeResolveService(createPublicationRecord());
-
-    await expect(
-      service.resolveRuntime(
+      service.resolve(
         {
           sourceMode: 'inline',
           sourceBinding: createSourceBinding(),
           settings: {},
         } as never,
         {
-          can: ({ action }: { action: string }) => (action === 'usePublication' ? {} : null),
+          can: ({ action }: { action: string }) => (action === 'useRuntime' ? {} : null),
         },
       ),
     ).rejects.toMatchObject({
@@ -481,23 +364,21 @@ describe('plugin-light-extension runtime resolve API', () => {
         reasonCode: 'invalid_input',
       },
     });
-    expect(publicationsRepository.findOne).not.toHaveBeenCalled();
+    expect(entriesRepository.findOne).not.toHaveBeenCalled();
   });
 });
 
 function createRuntimeResolveService(
-  record: Record<string, unknown>,
   options: {
     repoLifecycleStatus?: string;
     entryHealthStatus?: string;
-    activePublicationId?: string;
-    entryId?: string;
     entryKind?: string;
+    sourceKind?: string;
+    runtimeArtifact?: Record<string, unknown> | null;
+    compiledCommitId?: string | null;
   } = {},
 ) {
-  const publicationsRepository = {
-    findOne: vi.fn().mockResolvedValue(createModel(record)),
-  };
+  const entryRecord = createEntryRecord(options);
   const reposRepository = {
     findOne: vi.fn().mockResolvedValue(
       createModel({
@@ -507,24 +388,13 @@ function createRuntimeResolveService(
     ),
   };
   const entriesRepository = {
-    findOne: vi.fn().mockResolvedValue(
-      createModel({
-        id: options.entryId || 'lee_sales_kpi',
-        repoId: 'ler_sales',
-        kind: options.entryKind || 'js-block',
-        healthStatus: options.entryHealthStatus || 'ready',
-        activePublicationId: options.activePublicationId,
-      }),
-    ),
+    findOne: vi.fn().mockResolvedValue(createModel(entryRecord)),
   };
   const logsRepository = {
     create: vi.fn().mockResolvedValue(createModel({})),
   };
   const db = {
     getRepository: (name: string) => {
-      if (name === 'lightExtensionEntryPublications') {
-        return publicationsRepository;
-      }
       if (name === 'lightExtensionRepos') {
         return reposRepository;
       }
@@ -542,8 +412,7 @@ function createRuntimeResolveService(
   const permissionService = new LightExtensionPermissionService(auditService);
 
   return {
-    service: new LightExtensionPublicationResolveService(db, auditService, permissionService),
-    publicationsRepository,
+    service: new RuntimeResolveService(db, auditService, permissionService),
     reposRepository,
     entriesRepository,
   };
@@ -557,35 +426,52 @@ function createSourceBinding(
     repoId: 'ler_sales',
     entryId: 'lee_sales_kpi',
     kind: 'js-block',
-    publicationId: 'lep_sales_kpi',
-    versionPolicy: 'pinned',
     ...input,
   };
 }
 
-function createPublicationRecord(): Record<string, unknown> {
+function createEntryRecord(
+  input: {
+    entryHealthStatus?: string;
+    entryKind?: string;
+    runtimeArtifact?: Record<string, unknown> | null;
+    compiledCommitId?: string | null;
+  } = {},
+): Record<string, unknown> {
+  const kind = input.entryKind || 'js-block';
+  const entryPath =
+    kind === 'event' ? 'src/client/events/page-open/index.ts' : 'src/client/js-blocks/sales-kpi/index.tsx';
+  const runtimeArtifact =
+    typeof input.runtimeArtifact === 'undefined'
+      ? {
+          code: "const secret = 'runtime secret';\nctx.render(secret);\n",
+          sourceMap: '{"version":3}',
+          version: 'v2',
+          entryPath,
+          filesHash: 'files_hash_1',
+          diagnostics: [],
+          metadata: {
+            runtimeContract: 'light-extension.current-runtime.v1',
+          },
+        }
+      : input.runtimeArtifact;
+
   return {
-    id: 'lep_sales_kpi',
+    id: 'lee_sales_kpi',
     repoId: 'ler_sales',
-    entryId: 'lee_sales_kpi',
-    commitId: 'vsc_commit_1',
-    entryPath: 'src/client/js-blocks/sales-kpi/index.tsx',
     target: 'client',
-    kind: 'js-block',
-    surfaceStyle: 'render',
-    runtimeVersion: 'v2',
-    artifact: {
-      code: "const secret = 'runtime secret';\nctx.render(secret);\n",
-      sourceMap: '{"version":3}',
-      version: 'v2',
-      entryPath: 'src/client/js-blocks/sales-kpi/index.tsx',
-      filesHash: 'files_hash_1',
-      diagnostics: [],
-      metadata: {
-        publicationContract: 'light-extension.external-runjs.v1',
-      },
-    },
-    settingsSchemaSnapshot: {
+    kind,
+    entryName: 'sales-kpi',
+    entryPath,
+    metaPath: null,
+    settingsPath: null,
+    title: 'Sales KPI',
+    description: null,
+    category: null,
+    icon: null,
+    tags: null,
+    sort: null,
+    settingsSchema: {
       type: 'object',
       required: ['threshold'],
       properties: {
@@ -620,26 +506,30 @@ function createPublicationRecord(): Record<string, unknown> {
         },
       },
     },
-    settingsDefaultsSnapshot: {
-      threshold: 5,
-      region: 'APAC',
-      contactEmail: 'ops@example.com',
-      nested: {
-        enabled: true,
-        label: 'KPI',
-      },
-    },
-    settingsSchemaHash: 'schema_hash_1',
-    settingsDefaultsHash: 'defaults_hash_1',
-    filesHash: 'files_hash_1',
-    runtimeCodeHash: 'runtime_hash_1',
+    compiledCommitId: typeof input.compiledCommitId === 'undefined' ? 'vsc_commit_1' : input.compiledCommitId,
+    runtimeArtifact,
+    runtimeVersion: runtimeArtifact ? 'v2' : null,
+    surfaceStyle: runtimeArtifact ? 'render' : null,
+    runtimeCodeHash: runtimeArtifact ? 'runtime_hash_1' : null,
+    filesHash: runtimeArtifact ? 'files_hash_1' : null,
+    settingsDefaultsHash: runtimeArtifact ? 'defaults_hash_1' : null,
+    compiledAt: runtimeArtifact ? '2026-07-06T00:00:00.000Z' : null,
+    healthStatus: input.entryHealthStatus || 'ready',
     diagnostics: [],
-    createdAt: new Date('2026-07-06T00:00:00.000Z'),
+    validatorVersion: 'test',
+    lastScannedCommitId: 'vsc_commit_1',
+    lastScannedAt: null,
+    createdAt: null,
+    updatedAt: null,
   };
 }
 
 function createModel(values: Record<string, unknown>): Model {
   return {
     get: (key: string) => values[key],
+    update: vi.fn(async (nextValues: Record<string, unknown>) => {
+      Object.assign(values, nextValues);
+      return createModel(values);
+    }),
   } as unknown as Model;
 }

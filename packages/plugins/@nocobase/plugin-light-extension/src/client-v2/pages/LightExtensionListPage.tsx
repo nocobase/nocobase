@@ -11,7 +11,6 @@ import {
   CodeOutlined,
   DeleteOutlined,
   DownOutlined,
-  DownloadOutlined,
   EyeOutlined,
   PlusOutlined,
   ReloadOutlined,
@@ -62,15 +61,11 @@ import { useTranslation } from 'react-i18next';
 import { NAMESPACE } from '../../constants';
 import type {
   LightExtensionEntryRecord,
-  LightExtensionPublicationMetadataRecord,
-  LightExtensionPublishResult,
   LightExtensionPulledFile,
   LightExtensionRepoLifecycleStatus,
   LightExtensionRepoRecord,
-  LightExtensionScanResult,
 } from '../../shared/types';
 import { toLifecycleInput, useLightExtensionRepo } from '../hooks/useLightExtensionRepo';
-import { useLightExtensionPublications } from '../hooks/useLightExtensionPublications';
 import { useT } from '../locale';
 import { ReferenceContractDiagnosticsPanel } from '../components/ReferenceContractDiagnosticsPanel';
 import LightExtensionWorkspacePage, { type LightExtensionWorkspaceFooterActions } from './LightExtensionWorkspacePage';
@@ -91,7 +86,6 @@ type Notice = {
 type RepoOverview = {
   repoId: string;
   entries: LightExtensionEntryRecord[];
-  publications: LightExtensionPublicationMetadataRecord[];
   files: LightExtensionPulledFile[];
 };
 
@@ -185,7 +179,6 @@ function LightExtensionListPageInner() {
     pull,
     scanEntries: scanEntriesRequest,
   } = useLightExtensionRepo();
-  const { listPublications, publish } = useLightExtensionPublications();
   const [searchParams, setSearchParams] = useSearchParams();
   const [form] = Form.useForm<CreateRepoFormValues>();
   const [importForm] = Form.useForm<ImportRepoFormValues>();
@@ -202,7 +195,6 @@ function LightExtensionListPageInner() {
   const [importing, setImporting] = useState(false);
   const [batchChanging, setBatchChanging] = useState<ToggleLifecycleStatus | null>(null);
   const [changingRepoIds, setChangingRepoIds] = useState<Set<string>>(() => new Set());
-  const [exportingRepoIds, setExportingRepoIds] = useState<Set<string>>(() => new Set());
   const [removingRepoIds, setRemovingRepoIds] = useState<Set<string>>(() => new Set());
   const [importFileList, setImportFileList] = useState<UploadFile[]>([]);
   const [importPackage, setImportPackage] = useState<ImportedLightExtensionPackage | null>(null);
@@ -266,31 +258,28 @@ function LightExtensionListPageInner() {
     setOverviewLoading(true);
     setOverviewError(null);
     try {
-      const [nextRepo, nextEntries, nextPublications, pullResult] = await Promise.all([
+      const [nextRepo, nextEntries, pullResult] = await Promise.all([
         getRepo(selectedRepoId),
         listEntries(selectedRepoId),
-        listPublications(selectedRepoId),
         pull({ repoId: selectedRepoId, includeContent: 'none' }).catch(() => null),
       ]);
       setRepos((current) => upsertRepo(current, nextRepo));
       setOverview({
         repoId: selectedRepoId,
         entries: nextEntries,
-        publications: nextPublications,
         files: pullResult?.files || [],
       });
     } catch (error) {
       setOverview({
         repoId: selectedRepoId,
         entries: [],
-        publications: [],
         files: [],
       });
       setOverviewError(error instanceof Error ? error.message : t('Failed to load entries'));
     } finally {
       setOverviewLoading(false);
     }
-  }, [activePanel, getRepo, listEntries, listPublications, pull, selectedRepoId, t]);
+  }, [activePanel, getRepo, listEntries, pull, selectedRepoId, t]);
 
   useEffect(() => {
     loadSelectedOverview();
@@ -378,7 +367,6 @@ function LightExtensionListPageInner() {
       setSearchParams(nextSearchParams, { replace: true });
       form.resetFields();
       setCreateOpen(false);
-      setNotice({ type: 'success', message: t('Repository created') });
     } catch (error) {
       setNotice({ type: 'error', message: error instanceof Error ? error.message : t('Failed to create repository') });
     } finally {
@@ -442,14 +430,6 @@ function LightExtensionListPageInner() {
         })),
         message: t('Import light extension'),
       });
-      const publishOutcome = repo.headCommitId
-        ? await publishCurrentHead({
-            commitId: repo.headCommitId,
-            publish,
-            repoId: repo.id,
-            scanEntries: scanEntriesRequest,
-          })
-        : { published: false };
       setRepos((current) => [repo, ...current.filter((item) => item.id !== repo.id)]);
       setSelectedRepoId(repo.id);
       const nextSearchParams = new URLSearchParams(searchParams);
@@ -457,10 +437,8 @@ function LightExtensionListPageInner() {
       setSearchParams(nextSearchParams, { replace: true });
       closeImportModal();
       setNotice({
-        type: publishOutcome.published ? 'success' : 'warning',
-        message: publishOutcome.published
-          ? t('Repository imported and published')
-          : t('Repository imported, but no publishable JS block was found'),
+        type: 'success',
+        message: t('Repository imported and compiled'),
       });
     } catch (error) {
       setNotice({ type: 'error', message: error instanceof Error ? error.message : t('Failed to import repository') });
@@ -597,42 +575,6 @@ function LightExtensionListPageInner() {
     [deleteRepoRequest, searchParams, selectedRepoId, setSearchParams, t],
   );
 
-  const exportRepo = useCallback(
-    async (repo: LightExtensionRepoRecord) => {
-      setNotice(null);
-      setExportingRepoIds((current) => new Set(current).add(repo.id));
-      try {
-        const result = await pull({ repoId: repo.id, includeContent: 'all' });
-        downloadJsonFile(`${repo.name}.light-extension.json`, {
-          repo: {
-            id: repo.id,
-            name: repo.name,
-            title: repo.title,
-            description: repo.description,
-            lifecycleStatus: repo.lifecycleStatus,
-            headCommitId: repo.headCommitId,
-          },
-          commit: result.commit,
-          tree: result.tree,
-          files: result.files || [],
-        });
-        setNotice({ type: 'success', message: t('Repository exported') });
-      } catch (error) {
-        setNotice({
-          type: 'error',
-          message: error instanceof Error ? error.message : t('Failed to export repository'),
-        });
-      } finally {
-        setExportingRepoIds((current) => {
-          const next = new Set(current);
-          next.delete(repo.id);
-          return next;
-        });
-      }
-    },
-    [pull, t],
-  );
-
   const columns = useMemo<ColumnsType<LightExtensionRepoRecord>>(
     () => [
       {
@@ -654,7 +596,7 @@ function LightExtensionListPageInner() {
         title: t('Updated at'),
         dataIndex: 'updatedAt',
         width: 180,
-        render: (_value, repo) => formatDate(repo.lastPublishedAt || repo.updatedAt || repo.lastScannedAt),
+        render: (_value, repo) => formatDate(repo.lastCompiledAt || repo.updatedAt || repo.lastScannedAt),
       },
       {
         title: t('Enabled'),
@@ -688,13 +630,6 @@ function LightExtensionListPageInner() {
               size="small"
             />
             <Button
-              aria-label={t('Export')}
-              icon={<DownloadOutlined />}
-              loading={exportingRepoIds.has(repo.id)}
-              onClick={() => exportRepo(repo)}
-              size="small"
-            />
-            <Button
               aria-label={t('View details')}
               icon={<EyeOutlined />}
               onClick={() => selectRepo(repo.id, { panel: 'overview' })}
@@ -725,7 +660,7 @@ function LightExtensionListPageInner() {
         ),
       },
     ],
-    [changeRepoLifecycle, changingRepoIds, exportRepo, exportingRepoIds, removeRepo, removingRepoIds, selectRepo, t],
+    [changeRepoLifecycle, changingRepoIds, removeRepo, removingRepoIds, selectRepo, t],
   );
 
   const entryStats = useMemo(() => buildEntryStats(selectedOverview?.entries || []), [selectedOverview?.entries]);
@@ -818,7 +753,7 @@ function LightExtensionListPageInner() {
 
         <section>
           <Flex align="center" justify="space-between">
-            <Typography.Text strong>{t('Latest scan and publish status')}</Typography.Text>
+            <Typography.Text strong>{t('Latest scan and compile status')}</Typography.Text>
             <Button icon={<ScanOutlined />} loading={scanning} onClick={scanSelectedRepo} size="small">
               {t('Scan')}
             </Button>
@@ -828,11 +763,15 @@ function LightExtensionListPageInner() {
             items={[
               { key: 'lastScannedAt', label: t('Last scanned at'), children: formatDate(selectedRepo.lastScannedAt) },
               {
-                key: 'activePublications',
-                label: t('Active publications'),
-                children: selectedOverview?.entries.filter((entry) => entry.activePublicationId).length || 0,
+                key: 'lastCompiledAt',
+                label: t('Last compiled at'),
+                children: formatDate(selectedRepo.lastCompiledAt),
               },
-              { key: 'publications', label: t('Publications'), children: selectedOverview?.publications.length || 0 },
+              {
+                key: 'compiledEntries',
+                label: t('Compiled entries'),
+                children: selectedOverview?.entries.filter((entry) => Boolean(entry.runtimeArtifact?.code)).length || 0,
+              },
             ]}
             size="small"
             style={{ marginTop: 10 }}
@@ -1018,7 +957,7 @@ function LightExtensionListPageInner() {
               <p className="ant-upload-drag-icon">
                 <UploadOutlined />
               </p>
-              <p className="ant-upload-text">{t('Click or drag a light extension export file to this area')}</p>
+              <p className="ant-upload-text">{t('Click or drag a light extension import file to this area')}</p>
             </Upload.Dragger>
             {importError ? (
               <Alert message={importError} showIcon style={{ marginTop: token.marginSM }} type="error" />
@@ -1346,73 +1285,6 @@ function toImportRepoName(value: string): string {
     .toLowerCase();
 
   return `${normalized || 'light-extension'}-import`;
-}
-
-type PublishCurrentHeadInput = {
-  repoId: string;
-  commitId: string;
-  scanEntries: (repoId: string) => Promise<LightExtensionScanResult>;
-  publish: (input: {
-    repoId: string;
-    entryIds: string[];
-    commitId: string;
-    clientRequestId: string;
-    activate: boolean;
-    expectedCurrentPublicationIdByEntry: Record<string, string | null>;
-  }) => Promise<LightExtensionPublishResult>;
-};
-
-async function publishCurrentHead(input: PublishCurrentHeadInput): Promise<{ published: boolean }> {
-  const scanResult = await input.scanEntries(input.repoId);
-  const publishableEntries = getReadyJsBlockEntries(scanResult);
-
-  if (!publishableEntries.length) {
-    return {
-      published: false,
-    };
-  }
-
-  const publishResult = await input.publish({
-    repoId: input.repoId,
-    entryIds: publishableEntries.map((entry) => entry.id),
-    commitId: input.commitId,
-    clientRequestId: buildClientRequestId('light_extension_import'),
-    activate: true,
-    expectedCurrentPublicationIdByEntry: Object.fromEntries(
-      publishableEntries.map((entry) => [entry.id, entry.activePublicationId]),
-    ),
-  });
-
-  return {
-    published: publishResult.status !== 'failed',
-  };
-}
-
-function getReadyJsBlockEntries(scanResult: LightExtensionScanResult): LightExtensionEntryRecord[] {
-  return scanResult.entries
-    .map((item) => item.entry)
-    .filter((entry) => entry.kind === 'js-block' && entry.healthStatus === 'ready');
-}
-
-function buildClientRequestId(prefix: string): string {
-  return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
-}
-
-function downloadJsonFile(fileName: string, value: unknown) {
-  const blob = new Blob([JSON.stringify(value, null, 2)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-
-  try {
-    link.href = url;
-    link.download = fileName;
-    link.style.display = 'none';
-    document.body.appendChild(link);
-    link.click();
-  } finally {
-    link.remove();
-    URL.revokeObjectURL(url);
-  }
 }
 
 export default LightExtensionListPage;

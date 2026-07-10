@@ -15,6 +15,8 @@ import { LightExtensionError, isLightExtensionError } from '../../shared/errors'
 import type { LightExtensionCreateRepoInput, LightExtensionTreeEntryInput } from '../../shared/types';
 import type { LightExtensionServiceContext } from '../services/LightExtensionRepoService';
 import { LightExtensionRepoService } from '../services/LightExtensionRepoService';
+import { LightExtensionEntryScanner } from '../services/LightExtensionEntryScanner';
+import { LightExtensionRuntimeCompileService } from '../services/LightExtensionRuntimeCompileService';
 import { toLightExtensionSourceError } from './errorContract';
 
 export const lightExtensionRepoActionNames = ['create', 'list', 'get', 'changeLifecycle', 'archive', 'delete'] as const;
@@ -45,17 +47,23 @@ type LightExtensionResourceContext = Context & {
 };
 
 type ResourceActionRunner = (
-  service: LightExtensionRepoService,
+  services: LightExtensionRepoActionServices,
   input: ResourceActionInput,
   currentUser: LightExtensionServiceContext,
 ) => Promise<unknown>;
 
+interface LightExtensionRepoActionServices {
+  repoService: LightExtensionRepoService;
+  scanner?: LightExtensionEntryScanner;
+  runtimeCompileService?: LightExtensionRuntimeCompileService;
+}
+
 const resourceActionRunners: Record<LightExtensionRepoActionName, ResourceActionRunner> = {
-  create: (service, input, currentUser) => service.createRepo(normalizeCreateInput(input), currentUser),
-  list: (service, _input, currentUser) => service.listRepos(currentUser),
-  get: (service, input, currentUser) => service.getRepo(requireRepoId(input), currentUser),
-  changeLifecycle: (service, input, currentUser) =>
-    service.changeLifecycle(
+  create: (services, input, currentUser) => createRepoAndCompileInitialSource(services, input, currentUser),
+  list: (services, _input, currentUser) => services.repoService.listRepos(currentUser),
+  get: (services, input, currentUser) => services.repoService.getRepo(requireRepoId(input), currentUser),
+  changeLifecycle: (services, input, currentUser) =>
+    services.repoService.changeLifecycle(
       {
         repoId: requireRepoId(input),
         lifecycleStatus: requireString(input, 'lifecycleStatus'),
@@ -64,8 +72,8 @@ const resourceActionRunners: Record<LightExtensionRepoActionName, ResourceAction
       },
       currentUser,
     ),
-  archive: (service, input, currentUser) =>
-    service.archiveRepo(
+  archive: (services, input, currentUser) =>
+    services.repoService.archiveRepo(
       {
         repoId: requireRepoId(input),
         expectedLifecycleStatus: optionalString(input, 'expectedLifecycleStatus'),
@@ -73,8 +81,8 @@ const resourceActionRunners: Record<LightExtensionRepoActionName, ResourceAction
       },
       currentUser,
     ),
-  delete: (service, input, currentUser) =>
-    service.deleteRepo(
+  delete: (services, input, currentUser) =>
+    services.repoService.deleteRepo(
       {
         repoId: requireRepoId(input),
       },
@@ -82,26 +90,38 @@ const resourceActionRunners: Record<LightExtensionRepoActionName, ResourceAction
     ),
 };
 
-export function createLightExtensionReposResource(service: LightExtensionRepoService): ResourceOptions {
+export function createLightExtensionReposResource(
+  repoService: LightExtensionRepoService,
+  scanner?: LightExtensionEntryScanner,
+  runtimeCompileService?: LightExtensionRuntimeCompileService,
+): ResourceOptions {
+  const services = {
+    repoService,
+    scanner,
+    runtimeCompileService,
+  };
   return {
     name: 'lightExtensionRepos',
     only: [...lightExtensionRepoActionNames],
     actions: Object.fromEntries(
       lightExtensionRepoActionNames.map((actionName) => [
         actionName,
-        createLightExtensionRepoAction(service, resourceActionRunners[actionName]),
+        createLightExtensionRepoAction(services, resourceActionRunners[actionName]),
       ]),
     ) as Record<LightExtensionRepoActionName, HandlerType>,
   };
 }
 
-function createLightExtensionRepoAction(service: LightExtensionRepoService, run: ResourceActionRunner): HandlerType {
+function createLightExtensionRepoAction(
+  services: LightExtensionRepoActionServices,
+  run: ResourceActionRunner,
+): HandlerType {
   return async (ctx: Context, next) => {
     const resourceCtx = ctx as LightExtensionResourceContext;
     const input = getActionInput(resourceCtx);
 
     try {
-      resourceCtx.body = await run(service, input, getServiceContext(resourceCtx));
+      resourceCtx.body = await run(services, input, getServiceContext(resourceCtx));
       await next();
     } catch (error) {
       const safeError = isVscError(error) ? toLightExtensionSourceError(error, getOptionalRepoId(input)) : error;
@@ -115,6 +135,31 @@ function createLightExtensionRepoAction(service: LightExtensionRepoService, run:
       resourceCtx.body = safeError.toResponseBody();
     }
   };
+}
+
+async function createRepoAndCompileInitialSource(
+  services: LightExtensionRepoActionServices,
+  input: ResourceActionInput,
+  currentUser: LightExtensionServiceContext,
+) {
+  const createInput = normalizeCreateInput(input);
+  const repo = await services.repoService.createRepo(createInput, currentUser);
+  if (!createInput.initialFiles?.length || !repo.headCommitId || !services.scanner || !services.runtimeCompileService) {
+    return repo;
+  }
+
+  const scan = await services.scanner.scanRepo(
+    { repoId: repo.id },
+    {
+      ...currentUser,
+      requestSource: currentUser.requestSource || 'light-extension-create',
+    },
+  );
+  const compile = await services.runtimeCompileService.compileCurrentRuntime(repo.id, repo.headCommitId, scan, {
+    ...currentUser,
+    requestSource: currentUser.requestSource || 'light-extension-create',
+  });
+  return compile.repo;
 }
 
 function normalizeCreateInput(input: ResourceActionInput): LightExtensionCreateRepoInput {

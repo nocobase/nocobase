@@ -182,7 +182,7 @@ export class LightExtensionFileService {
           this.vscFileService.push(
             {
               repoId: repo.vscRepoId,
-              baseCommitId: input.baseCommitId,
+              baseCommitId: repo.headCommitId,
               message: input.message,
               files: input.files.map(toVscFileChange),
               allowEmptyCommit: input.allowEmptyCommit,

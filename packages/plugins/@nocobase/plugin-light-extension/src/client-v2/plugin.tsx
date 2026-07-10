@@ -33,9 +33,7 @@ import {
   RunJSLightExtensionSourceField,
 } from './components/JSBlockLightExtensionSourceField';
 import { createRunJSLightExtensionEditorProvider } from './components/RunJSLightExtensionEditorProvider';
-import { RepoEntryPublicationSelector } from './components/RepoEntryPublicationSelector';
 import { SettingsAutoForm, SettingsSingleField } from './components/SettingsAutoForm';
-import { VersionPolicyField } from './components/VersionPolicyField';
 import { createLightExtensionRunJSResolver } from './resolvers/LightExtensionRunJSResolver';
 
 let activeLightExtensionClientV2Instance: PluginLightExtensionClientV2 | null = null;
@@ -59,9 +57,7 @@ export class PluginLightExtensionClientV2 extends Plugin<Record<string, never>, 
       [JS_ITEM_LIGHT_EXTENSION_FULL_SOURCE_FIELD]: JSItemLightExtensionSourceField,
       [JS_ITEM_LIGHT_EXTENSION_SETTINGS_STEP_FIELD]: SettingsSingleField,
       RunJSLightExtensionSourceField,
-      RepoEntryPublicationSelector,
       SettingsAutoForm,
-      VersionPolicyField,
     });
     this.disposers.push(
       RunJSSourceResolverRegistry.registerResolver(createLightExtensionRunJSResolver(this.app.apiClient)),

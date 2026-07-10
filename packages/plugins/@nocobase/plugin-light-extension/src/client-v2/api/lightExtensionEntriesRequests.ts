@@ -8,7 +8,6 @@
  */
 
 import type {
-  LightExtensionEntryPublicationsSelectorResult,
   LightExtensionRepoRecord,
   LightExtensionSelectableEntryRecord,
   LightExtensionSelectableEntriesInput,
@@ -41,18 +40,6 @@ export async function listSelectableLightExtensionEntries(
   });
 
   return unwrapResourceResponse(response) || [];
-}
-
-export async function listLightExtensionEntryPublications(
-  api: ApiClientLike,
-  entryId: string,
-): Promise<LightExtensionEntryPublicationsSelectorResult> {
-  const response = await api.request<ResourceResponse<LightExtensionEntryPublicationsSelectorResult>>({
-    url: `/light-extension-entries/${encodeURIComponent(entryId)}/publications`,
-    method: 'get',
-  });
-
-  return unwrapResourceResponse(response);
 }
 
 export async function listLightExtensionRepos(api: ApiClientLike): Promise<LightExtensionRepoRecord[]> {

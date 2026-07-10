@@ -45,7 +45,7 @@ export interface LightExtensionRepoRecord {
   lastScannedCommitId?: string | null;
   lastError?: string | null;
   lastScannedAt?: string | null;
-  lastPublishedAt?: string | null;
+  lastCompiledAt?: string | null;
   createdAt?: string | null;
   updatedAt?: string | null;
 }
@@ -152,6 +152,16 @@ export interface LightExtensionDiagnostic {
   details?: Record<string, unknown>;
 }
 
+export interface LightExtensionEntryRuntimeArtifact {
+  code: string;
+  sourceMap?: string;
+  version: string;
+  entryPath: string;
+  filesHash?: string;
+  diagnostics?: LightExtensionDiagnostic[];
+  metadata?: Record<string, unknown>;
+}
+
 export interface LightExtensionEntryRecord {
   id: string;
   repoId: string;
@@ -168,7 +178,14 @@ export interface LightExtensionEntryRecord {
   tags: string[] | null;
   sort: number | null;
   settingsSchema: Record<string, unknown> | null;
-  activePublicationId: string | null;
+  compiledCommitId: string | null;
+  runtimeArtifact: LightExtensionEntryRuntimeArtifact | null;
+  runtimeVersion: string | null;
+  surfaceStyle: string | null;
+  runtimeCodeHash: string | null;
+  filesHash: string | null;
+  settingsDefaultsHash: string | null;
+  compiledAt: string | null;
   healthStatus: LightExtensionEntryHealthStatus;
   diagnostics: LightExtensionDiagnostic[];
   validatorVersion?: string | null;
@@ -176,6 +193,35 @@ export interface LightExtensionEntryRecord {
   lastScannedAt?: string | null;
   createdAt?: string | null;
   updatedAt?: string | null;
+}
+
+export interface LightExtensionSaveSourceInput extends Omit<LightExtensionPushInput, 'baseCommitId'> {
+  baseCommitId?: string | null;
+}
+
+export type LightExtensionCompileEntryStatus = 'success' | 'failed' | 'skipped';
+
+export interface LightExtensionSaveSourceCompileEntryResult {
+  entryId: string;
+  entryName: string;
+  kind: string;
+  entryPath: string;
+  status: LightExtensionCompileEntryStatus;
+  diagnostics: LightExtensionDiagnostic[];
+  artifact?: LightExtensionCompilePreviewArtifactSummary;
+  failureCode?: string;
+}
+
+export interface LightExtensionSaveSourceResult {
+  repo: LightExtensionRepoRecord;
+  commit: LightExtensionCommitRecord;
+  tree: LightExtensionStoredTree;
+  scan: LightExtensionScanResult;
+  compile: {
+    status: 'success' | 'partial_success' | 'failed' | 'skipped';
+    entries: LightExtensionSaveSourceCompileEntryResult[];
+  };
+  diagnostics: LightExtensionDiagnostic[];
 }
 
 export interface LightExtensionValidationLimits {
@@ -243,7 +289,6 @@ export interface LightExtensionCompilePreviewEntryResult {
   kind: string;
   entryName: string;
   entryPath: string | null;
-  activePublicationId?: string | null;
   status: LightExtensionCompilePreviewEntryStatus;
   accepted: boolean;
   diagnostics: LightExtensionDiagnostic[];
@@ -259,54 +304,21 @@ export interface LightExtensionCompilePreviewResult {
   entries: LightExtensionCompilePreviewEntryResult[];
 }
 
-export interface LightExtensionPublicationArtifactMetadata {
-  version: string;
-  entryPath: string;
-  filesHash?: string;
-  metadata?: Record<string, unknown>;
-  diagnostics?: LightExtensionDiagnostic[];
-}
-
-export interface LightExtensionPublicationMetadataRecord {
-  id: string;
-  repoId: string;
-  entryId: string;
-  commitId: string;
-  entryPath: string;
-  target: 'client';
-  kind: string;
-  surfaceStyle: string;
+export interface LightExtensionSelectableEntryRecord extends LightExtensionEntryRecord {
+  compiledCommitId: string;
+  runtimeArtifact: LightExtensionEntryRuntimeArtifact;
   runtimeVersion: string;
-  artifact: LightExtensionPublicationArtifactMetadata;
-  settingsSchemaSnapshot: Record<string, unknown> | null;
-  settingsDefaultsSnapshot: unknown;
-  settingsSchemaHash: string;
-  settingsDefaultsHash: string;
-  filesHash: string;
+  surfaceStyle: string;
   runtimeCodeHash: string;
-  diagnostics: LightExtensionDiagnostic[];
-  createdById?: string | null;
-  createdFromRequestSource?: string | null;
-  createdAt?: string | null;
-}
-
-export interface LightExtensionSelectableEntryRecord extends Omit<LightExtensionEntryRecord, 'settingsSchema'> {
-  activePublicationId: string;
-  activePublication: LightExtensionPublicationMetadataRecord;
-}
-
-export interface LightExtensionEntryPublicationsSelectorResult {
-  entryId: string;
-  activePublicationId: string | null;
-  publications: LightExtensionPublicationMetadataRecord[];
+  filesHash: string;
+  settingsDefaultsHash: string;
+  compiledAt: string;
 }
 
 export interface LightExtensionSelectableEntriesInput {
   repoId?: string;
   kind?: LightExtensionKind;
 }
-
-export type LightExtensionSourceBindingVersionPolicy = 'pinned' | 'follow-active';
 
 export interface LightExtensionRuntimeSourceBinding {
   type: 'light-extension-entry';
@@ -317,8 +329,6 @@ export interface LightExtensionRuntimeSourceBinding {
   entryName?: string | null;
   entryPath?: string | null;
   kind: string;
-  publicationId: string;
-  versionPolicy?: LightExtensionSourceBindingVersionPolicy;
 }
 
 export interface LightExtensionRuntimeResolveInput {
@@ -333,7 +343,6 @@ export interface LightExtensionRuntimeCacheMetadata {
 }
 
 export interface LightExtensionRuntimeResolveResult {
-  publicationId: string;
   entryId: string;
   entryPath: string;
   runtimeCodeHash: string;
@@ -383,9 +392,6 @@ export interface LightExtensionReferenceOwnerAdapterContract {
   modelUse?: string;
   implementationTask?: string;
   message: string;
-  supportsVersionPolicy: boolean;
-  supportsImpact: boolean;
-  supportsBulkUpgrade: boolean;
   supportsRebuild: boolean;
 }
 
@@ -393,12 +399,10 @@ export interface LightExtensionReferenceRecord {
   id: string;
   repoId: string;
   entryId: string;
-  publicationId: string | null;
   kind: LightExtensionKind;
   ownerKind: LightExtensionReferenceOwnerKind;
   ownerLocator: LightExtensionReferenceOwnerLocator;
   ownerLocatorHash: string;
-  versionPolicy: LightExtensionSourceBindingVersionPolicy;
   settingsHash: string;
   resolvedStatus: LightExtensionReferenceResolvedStatus;
   createdAt?: string | null;
@@ -408,7 +412,6 @@ export interface LightExtensionReferenceRecord {
 export interface LightExtensionReferenceListInput {
   repoId?: string;
   entryId?: string;
-  publicationId?: string;
   ownerLocator?: Partial<LightExtensionReferenceOwnerLocator>;
 }
 
@@ -428,7 +431,6 @@ export interface LightExtensionReferenceRebuildItem {
   ownerLocatorHash: string;
   repoId?: string;
   entryId?: string;
-  publicationId?: string | null;
   resolvedStatus?: LightExtensionReferenceResolvedStatus;
   reasonCode?: string;
 }
@@ -455,77 +457,4 @@ export interface LightExtensionSettingsValidationIssue {
   code: string;
   message: string;
   details?: Record<string, unknown>;
-}
-
-export interface LightExtensionReferenceImpactInput extends LightExtensionReferenceListInput {
-  toPublicationId: string;
-  referenceIds?: string[];
-}
-
-export interface LightExtensionReferenceImpactItem {
-  reference: LightExtensionReferenceRecord;
-  targetPublicationId: string;
-  settingsValidation: {
-    compatible: boolean;
-    settingsHash?: string;
-    issues: LightExtensionSettingsValidationIssue[];
-  };
-  upgradeBlockedReason?: string;
-}
-
-export interface LightExtensionReferenceImpactResult {
-  toPublication: LightExtensionPublicationMetadataRecord;
-  references: LightExtensionReferenceImpactItem[];
-  summary: {
-    total: number;
-    upgradable: number;
-    incompatible: number;
-    skipped: number;
-  };
-}
-
-export interface LightExtensionBulkUpgradeInput {
-  toPublicationId: string;
-  referenceIds: string[];
-  expectedPublicationIdByReference?: Record<string, string | null>;
-  expectedSettingsHashByReference?: Record<string, string>;
-}
-
-export type LightExtensionBulkUpgradeItemStatus = 'upgraded' | 'conflict' | 'incompatible' | 'skipped' | 'missing';
-
-export interface LightExtensionBulkUpgradeItemResult {
-  referenceId: string;
-  status: LightExtensionBulkUpgradeItemStatus;
-  publicationId?: string | null;
-  settingsHash?: string;
-  reasonCode?: string;
-  issues?: LightExtensionSettingsValidationIssue[];
-}
-
-export interface LightExtensionBulkUpgradeResult {
-  toPublication: LightExtensionPublicationMetadataRecord;
-  items: LightExtensionBulkUpgradeItemResult[];
-  summary: Record<LightExtensionBulkUpgradeItemStatus, number>;
-}
-
-export type LightExtensionPublishEntryStatus = 'created' | 'reused' | 'failed' | 'conflict' | 'skipped';
-
-export interface LightExtensionPublishEntryResult {
-  entryId: string;
-  entryName: string;
-  kind: string;
-  status: LightExtensionPublishEntryStatus;
-  publication?: LightExtensionPublicationMetadataRecord;
-  diagnostics: LightExtensionDiagnostic[];
-  reasonCode?: string;
-}
-
-export interface LightExtensionPublishResult {
-  repo: LightExtensionRepoRecord;
-  commitId: string;
-  clientRequestId: string;
-  status: 'success' | 'partial_success' | 'failed';
-  httpStatus: 200 | 207 | 422;
-  entryResults: LightExtensionPublishEntryResult[];
-  diagnostics: LightExtensionDiagnostic[];
 }

@@ -426,12 +426,6 @@ export class LightExtensionRepoService {
             }),
           ),
         );
-        await this.db.getRepository('lightExtensionEntryPublications').destroy({
-          filter: {
-            repoId: input.repoId,
-          },
-          transaction,
-        });
         await this.db.getRepository('lightExtensionEntries').destroy({
           filter: {
             repoId: input.repoId,
@@ -671,7 +665,7 @@ export function internalRepoFromModel(record: Model): LightExtensionRepoInternal
     lastScannedCommitId: (record.get('lastScannedCommitId') as string | null) || null,
     lastError: (record.get('lastError') as string | null) || null,
     lastScannedAt: normalizeRecordDate(record.get('lastScannedAt')),
-    lastPublishedAt: normalizeRecordDate(record.get('lastPublishedAt')),
+    lastCompiledAt: normalizeRecordDate(record.get('lastCompiledAt')),
     createdAt: normalizeRecordDate(record.get('createdAt')),
     updatedAt: normalizeRecordDate(record.get('updatedAt')),
   };

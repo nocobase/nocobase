@@ -13,7 +13,6 @@ import { vi } from 'vitest';
 
 import type { LightExtensionReferenceOwnerLocator, LightExtensionRuntimeSourceBinding } from '../../shared/types';
 import { LightExtensionAuditService } from '../services/LightExtensionAuditService';
-import { BulkUpgradeService } from '../services/BulkUpgradeService';
 import { LightExtensionPermissionService } from '../services/LightExtensionPermissionService';
 import { ReferenceService } from '../services/ReferenceService';
 
@@ -37,7 +36,6 @@ export function createReferenceServiceFixture(
   input: {
     flowModelTrees?: Record<string, FlowModelNode>;
     flowModels?: Record<string, unknown>[];
-    publications?: Record<string, unknown>[];
     repos?: Record<string, unknown>[];
     entries?: Record<string, unknown>[];
     references?: Record<string, unknown>[];
@@ -50,7 +48,6 @@ export function createReferenceServiceFixture(
   const flowModelTrees = { ...(input.flowModelTrees || {}) };
   const repositories = {
     flowModels: createRepository({ records: input.flowModels || [] }),
-    lightExtensionEntryPublications: createRepository({ records: input.publications || [] }),
     lightExtensionRepos: createRepository({ records: input.repos || [] }),
     lightExtensionEntries: createRepository({ records: input.entries || [] }),
     lightExtensionReferences: createRepository({ records: input.references || [] }),
@@ -102,7 +99,6 @@ export function createReferenceServiceFixture(
   return {
     db,
     service,
-    bulkUpgradeService: new BulkUpgradeService(db, auditService, permissionService, undefined, service),
     repositories,
     flowModelTrees,
     auditService,
@@ -198,8 +194,6 @@ export function createSourceBinding(
     repoId: 'ler_sales',
     entryId: 'lee_sales_kpi',
     kind: 'js-block',
-    publicationId: 'lep_sales_kpi',
-    versionPolicy: 'pinned',
     ...input,
   };
 }
@@ -211,7 +205,6 @@ export function createJsFieldSourceBinding(
     repoId: 'ler_fields',
     entryId: 'lee_phone_link',
     kind: 'js-field',
-    publicationId: 'lep_phone_link',
     ...input,
   });
 }
@@ -223,7 +216,6 @@ export function createJsActionSourceBinding(
     repoId: 'ler_actions',
     entryId: 'lee_mark_approved',
     kind: 'js-action',
-    publicationId: 'lep_mark_approved',
     ...input,
   });
 }
@@ -235,7 +227,6 @@ export function createJsItemSourceBinding(
     repoId: 'ler_items',
     entryId: 'lee_level_label',
     kind: 'js-item',
-    publicationId: 'lep_level_label',
     ...input,
   });
 }
@@ -247,7 +238,6 @@ export function createRunJSSourceBinding(
     repoId: 'ler_runjs',
     entryId: 'lee_normalize_amount',
     kind: 'runjs',
-    publicationId: 'lep_normalize_amount',
     ...input,
   });
 }
@@ -412,186 +402,6 @@ export function createRunJSHostNode(
   };
 }
 
-export function createPublicationRecord(input: Record<string, unknown> = {}): Record<string, unknown> {
-  return {
-    id: 'lep_sales_kpi',
-    repoId: 'ler_sales',
-    entryId: 'lee_sales_kpi',
-    commitId: 'vsc_commit_1',
-    entryPath: 'src/client/js-blocks/sales-kpi/index.tsx',
-    target: 'client',
-    kind: 'js-block',
-    surfaceStyle: 'render',
-    runtimeVersion: 'v2',
-    artifact: {
-      code: 'ctx.render("ok");',
-      sourceMap: '{"version":3}',
-      version: 'v2',
-      entryPath: 'src/client/js-blocks/sales-kpi/index.tsx',
-      filesHash: 'files_hash_1',
-      diagnostics: [],
-      metadata: {},
-    },
-    settingsSchemaSnapshot: {
-      type: 'object',
-      properties: {
-        threshold: {
-          type: 'number',
-          default: 5,
-          maximum: 10,
-        },
-        region: {
-          type: 'string',
-          default: 'APAC',
-        },
-      },
-    },
-    settingsDefaultsSnapshot: {
-      threshold: 5,
-      region: 'APAC',
-    },
-    settingsSchemaHash: 'schema_hash_1',
-    settingsDefaultsHash: 'defaults_hash_1',
-    filesHash: 'files_hash_1',
-    runtimeCodeHash: 'runtime_hash_1',
-    diagnostics: [],
-    createdAt: new Date('2026-07-06T00:00:00.000Z'),
-    ...input,
-  };
-}
-
-export function createJsFieldPublicationRecord(input: Record<string, unknown> = {}): Record<string, unknown> {
-  return createPublicationRecord({
-    id: 'lep_phone_link',
-    repoId: 'ler_fields',
-    entryId: 'lee_phone_link',
-    entryPath: 'src/client/js-fields/phone-link/index.tsx',
-    kind: 'js-field',
-    surfaceStyle: 'value',
-    artifact: {
-      code: 'ctx.render("phone");',
-      sourceMap: '{"version":3}',
-      version: 'v2',
-      entryPath: 'src/client/js-fields/phone-link/index.tsx',
-      filesHash: 'files_hash_field_1',
-      diagnostics: [],
-      metadata: {},
-    },
-    settingsSchemaSnapshot: {
-      type: 'object',
-      properties: {
-        prefix: {
-          type: 'string',
-          default: 'tel:',
-        },
-      },
-    },
-    settingsDefaultsSnapshot: {
-      prefix: 'tel:',
-    },
-    ...input,
-  });
-}
-
-export function createJsActionPublicationRecord(input: Record<string, unknown> = {}): Record<string, unknown> {
-  return createPublicationRecord({
-    id: 'lep_mark_approved',
-    repoId: 'ler_actions',
-    entryId: 'lee_mark_approved',
-    entryPath: 'src/client/js-actions/mark-approved/index.ts',
-    kind: 'js-action',
-    surfaceStyle: 'action',
-    artifact: {
-      code: 'ctx.message.success("approved");',
-      sourceMap: '{"version":3}',
-      version: 'v2',
-      entryPath: 'src/client/js-actions/mark-approved/index.ts',
-      filesHash: 'files_hash_action_1',
-      diagnostics: [],
-      metadata: {},
-    },
-    settingsSchemaSnapshot: {
-      type: 'object',
-      properties: {
-        successMessage: {
-          type: 'string',
-          default: 'Approved',
-        },
-      },
-    },
-    settingsDefaultsSnapshot: {
-      successMessage: 'Approved',
-    },
-    ...input,
-  });
-}
-
-export function createJsItemPublicationRecord(input: Record<string, unknown> = {}): Record<string, unknown> {
-  return createPublicationRecord({
-    id: 'lep_level_label',
-    repoId: 'ler_items',
-    entryId: 'lee_level_label',
-    entryPath: 'src/client/js-items/level-label/index.tsx',
-    kind: 'js-item',
-    surfaceStyle: 'render',
-    artifact: {
-      code: 'ctx.render("level");',
-      sourceMap: '{"version":3}',
-      version: 'v2',
-      entryPath: 'src/client/js-items/level-label/index.tsx',
-      filesHash: 'files_hash_item_1',
-      diagnostics: [],
-      metadata: {},
-    },
-    settingsSchemaSnapshot: {
-      type: 'object',
-      properties: {
-        vipColor: {
-          type: 'string',
-          default: '#f5222d',
-        },
-      },
-    },
-    settingsDefaultsSnapshot: {
-      vipColor: '#f5222d',
-    },
-    ...input,
-  });
-}
-
-export function createRunJSPublicationRecord(input: Record<string, unknown> = {}): Record<string, unknown> {
-  return createPublicationRecord({
-    id: 'lep_normalize_amount',
-    repoId: 'ler_runjs',
-    entryId: 'lee_normalize_amount',
-    entryPath: 'src/client/runjs/normalize-amount/index.ts',
-    kind: 'runjs',
-    surfaceStyle: 'value',
-    artifact: {
-      code: 'return ctx.settings.currency;',
-      sourceMap: '{"version":3}',
-      version: 'v2',
-      entryPath: 'src/client/runjs/normalize-amount/index.ts',
-      filesHash: 'files_hash_runjs_1',
-      diagnostics: [],
-      metadata: {},
-    },
-    settingsSchemaSnapshot: {
-      type: 'object',
-      properties: {
-        currency: {
-          type: 'string',
-          default: 'USD',
-        },
-      },
-    },
-    settingsDefaultsSnapshot: {
-      currency: 'USD',
-    },
-    ...input,
-  });
-}
-
 export function createRepoRecord(input: Record<string, unknown> = {}): Record<string, unknown> {
   return {
     id: 'ler_sales',
@@ -641,11 +451,60 @@ export function createRunJSEntryRecord(input: Record<string, unknown> = {}): Rec
 }
 
 export function createEntryRecord(input: Record<string, unknown> = {}): Record<string, unknown> {
+  const kind = typeof input.kind === 'string' ? input.kind : 'js-block';
+  const entryPath =
+    typeof input.entryPath === 'string' ? input.entryPath : `src/client/${kindToFolder(kind)}/sales-kpi/index.tsx`;
   return {
     id: 'lee_sales_kpi',
     repoId: 'ler_sales',
-    kind: 'js-block',
+    target: 'client',
+    kind,
+    entryName: 'sales-kpi',
+    entryPath,
+    metaPath: null,
+    settingsPath: null,
+    title: 'Sales KPI',
+    description: null,
+    category: null,
+    icon: null,
+    tags: null,
+    sort: null,
+    settingsSchema: {
+      type: 'object',
+      properties: {
+        threshold: {
+          type: 'number',
+          default: 5,
+          maximum: 10,
+        },
+        region: {
+          type: 'string',
+          default: 'APAC',
+          enum: ['APAC', 'EMEA'],
+        },
+      },
+    },
+    compiledCommitId: 'vsc_commit_1',
+    runtimeArtifact: {
+      code: 'ctx.render("ok");',
+      sourceMap: '{"version":3}',
+      version: 'v2',
+      entryPath,
+      filesHash: 'files_hash_1',
+      diagnostics: [],
+      metadata: {},
+    },
+    runtimeVersion: 'v2',
+    surfaceStyle: kind === 'js-action' ? 'action' : 'render',
+    runtimeCodeHash: 'runtime_hash_1',
+    filesHash: 'files_hash_1',
+    settingsDefaultsHash: stableJsonHash({
+      threshold: 5,
+      region: 'APAC',
+    }),
+    compiledAt: '2026-07-06T00:00:00.000Z',
     healthStatus: 'ready',
+    diagnostics: [],
     ...input,
   };
 }
@@ -659,12 +518,10 @@ export function createReferenceRecord(input: Record<string, unknown> = {}): Reco
     id: `lef_${modelUid}`,
     repoId: 'ler_sales',
     entryId: 'lee_sales_kpi',
-    publicationId: 'lep_sales_kpi',
     kind: 'js-block',
     ownerKind: 'flowModel.step',
     ownerLocator,
     ownerLocatorHash: hashOwnerLocator(ownerLocator),
-    versionPolicy: 'pinned',
     settingsHash: stableJsonHash({}),
     resolvedStatus: 'active',
     ...input,
@@ -681,7 +538,6 @@ export function createJsFieldReferenceRecord(input: Record<string, unknown> = {}
     id: `lef_${modelUid}`,
     repoId: 'ler_fields',
     entryId: 'lee_phone_link',
-    publicationId: 'lep_phone_link',
     kind: 'js-field',
     ownerKind: 'flowModel.fieldSettings',
     ownerLocator,
@@ -700,7 +556,6 @@ export function createJsActionReferenceRecord(input: Record<string, unknown> = {
     id: `lef_${modelUid}`,
     repoId: 'ler_actions',
     entryId: 'lee_mark_approved',
-    publicationId: 'lep_mark_approved',
     kind: 'js-action',
     ownerKind: 'flowModel.actionSettings',
     ownerLocator,
@@ -719,13 +574,28 @@ export function createJsItemReferenceRecord(input: Record<string, unknown> = {})
     id: `lef_${modelUid}`,
     repoId: 'ler_items',
     entryId: 'lee_level_label',
-    publicationId: 'lep_level_label',
     kind: 'js-item',
     ownerKind: 'flowModel.itemSettings',
     ownerLocator,
     ownerLocatorHash: hashOwnerLocator(ownerLocator),
     ...input,
   });
+}
+
+function kindToFolder(kind: string): string {
+  if (kind === 'js-field') {
+    return 'js-fields';
+  }
+  if (kind === 'js-action') {
+    return 'js-actions';
+  }
+  if (kind === 'js-item') {
+    return 'js-items';
+  }
+  if (kind === 'runjs') {
+    return 'runjs';
+  }
+  return 'js-blocks';
 }
 
 export function createOwnerLocator(

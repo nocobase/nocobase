@@ -12,13 +12,9 @@ import { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { NAMESPACE } from '../../constants';
-import type {
-  LightExtensionEntryPublicationsSelectorResult,
-  LightExtensionSelectableEntryRecord,
-  LightExtensionSelectableEntriesInput,
-} from '../../shared/types';
+import type { LightExtensionSelectableEntryRecord, LightExtensionSelectableEntriesInput } from '../../shared/types';
 
-export const lightExtensionEntrySelectorOperations = ['listSelectableEntries', 'listEntryPublications'] as const;
+export const lightExtensionEntrySelectorOperations = ['listSelectableEntries'] as const;
 
 export type LightExtensionEntrySelectorOperation = (typeof lightExtensionEntrySelectorOperations)[number];
 
@@ -55,7 +51,6 @@ export interface UseLightExtensionEntriesResult {
   loading: LightExtensionEntrySelectorOperationState<boolean>;
   errors: LightExtensionEntrySelectorOperationState<LightExtensionEntriesHookError>;
   listSelectableEntries(input?: LightExtensionSelectableEntriesInput): Promise<LightExtensionSelectableEntryRecord[]>;
-  listEntryPublications(entryId: string): Promise<LightExtensionEntryPublicationsSelectorResult>;
   isLoading(operation: LightExtensionEntrySelectorOperation): boolean;
   getError(operation: LightExtensionEntrySelectorOperation): LightExtensionEntriesHookError | null;
   clearError(operation?: LightExtensionEntrySelectorOperation): void;
@@ -83,12 +78,10 @@ type ResourceResponse<T> = {
 
 type OperationInputMap = {
   listSelectableEntries: LightExtensionSelectableEntriesInput | undefined;
-  listEntryPublications: { entryId: string };
 };
 
 type OperationResultMap = {
   listSelectableEntries: LightExtensionSelectableEntryRecord[];
-  listEntryPublications: LightExtensionEntryPublicationsSelectorResult;
 };
 
 export function useLightExtensionEntries(): UseLightExtensionEntriesResult {
@@ -128,7 +121,7 @@ export function useLightExtensionEntries(): UseLightExtensionEntriesResult {
 
       try {
         const response = await ctx.api.request<ResourceResponse<OperationResultMap[TOperation]>>(
-          getRequestOptions(operation, input),
+          getRequestOptions(input),
         );
 
         return unwrapResourceResponse(response);
@@ -162,7 +155,6 @@ export function useLightExtensionEntries(): UseLightExtensionEntriesResult {
       loading,
       errors,
       listSelectableEntries: (input) => requestOperation('listSelectableEntries', input),
-      listEntryPublications: (entryId) => requestOperation('listEntryPublications', { entryId }),
       isLoading: (operation) => Boolean(loading[operation]),
       getError: (operation) => errors[operation] || null,
       clearError,
@@ -176,17 +168,8 @@ export function isLightExtensionEntriesHookError(error: unknown): error is Light
 }
 
 function getRequestOptions<TOperation extends LightExtensionEntrySelectorOperation>(
-  operation: TOperation,
   input: OperationInputMap[TOperation],
 ): ApiRequestOptions {
-  if (operation === 'listEntryPublications') {
-    const entryId = (input as OperationInputMap['listEntryPublications']).entryId;
-    return {
-      url: `/light-extension-entries/${encodeURIComponent(entryId)}/publications`,
-      method: 'get',
-    };
-  }
-
   return {
     url: 'lightExtensionEntries:listSelectable',
     method: 'post',

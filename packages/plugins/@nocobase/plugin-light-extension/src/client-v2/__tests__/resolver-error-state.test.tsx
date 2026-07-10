@@ -16,8 +16,6 @@ const SOURCE_BINDING = {
   repoId: 'repo_sales',
   entryId: 'entry_sales',
   kind: 'js-block',
-  publicationId: 'pub_sales',
-  versionPolicy: 'pinned',
 };
 
 describe('LightExtensionRunJSResolver error state', () => {
@@ -116,108 +114,7 @@ describe('LightExtensionRunJSResolver error state', () => {
     });
   });
 
-  it('returns the pinned publication settings descriptor for dynamic JS block settings', async () => {
-    const api = {
-      request: vi.fn((options: { url: string }) => {
-        if (options.url === 'lightExtensionEntries:listSelectable') {
-          return Promise.resolve({
-            data: {
-              data: [
-                {
-                  id: 'entry_sales',
-                  repoId: 'repo_sales',
-                  kind: 'js-block',
-                  entryName: 'sales-kpi',
-                  title: 'Sales KPI',
-                  activePublicationId: 'pub_active',
-                  activePublication: {
-                    id: 'pub_active',
-                    repoId: 'repo_sales',
-                    entryId: 'entry_sales',
-                    kind: 'js-block',
-                    settingsSchemaSnapshot: {
-                      type: 'object',
-                      properties: {
-                        message: {
-                          type: 'string',
-                          title: 'Active message',
-                        },
-                      },
-                    },
-                    settingsDefaultsSnapshot: {
-                      message: 'Active',
-                    },
-                    settingsSchemaHash: 'schema_active',
-                  },
-                },
-              ],
-            },
-          });
-        }
-        if (options.url === '/light-extension-entries/entry_sales/publications') {
-          return Promise.resolve({
-            data: {
-              data: {
-                entryId: 'entry_sales',
-                activePublicationId: 'pub_active',
-                publications: [
-                  {
-                    id: 'pub_pinned',
-                    repoId: 'repo_sales',
-                    entryId: 'entry_sales',
-                    kind: 'js-block',
-                    settingsSchemaSnapshot: {
-                      type: 'object',
-                      properties: {
-                        message: {
-                          type: 'string',
-                          title: 'Pinned message',
-                        },
-                      },
-                    },
-                    settingsDefaultsSnapshot: {
-                      message: 'Pinned',
-                    },
-                    settingsSchemaHash: 'schema_pinned',
-                  },
-                ],
-              },
-            },
-          });
-        }
-        return Promise.reject(new Error(`Unexpected request: ${options.url}`));
-      }),
-    };
-    const resolver = createLightExtensionRunJSResolver(api);
-
-    await expect(
-      resolver.getSettingsDescriptor?.({
-        sourceMode: 'light-extension',
-        sourceBinding: {
-          ...SOURCE_BINDING,
-          publicationId: 'pub_pinned',
-          versionPolicy: 'pinned',
-        },
-      }),
-    ).resolves.toEqual({
-      publicationId: 'pub_pinned',
-      schema: {
-        type: 'object',
-        properties: {
-          message: {
-            type: 'string',
-            title: 'Pinned message',
-          },
-        },
-      },
-      defaults: {
-        message: 'Pinned',
-      },
-      schemaHash: 'schema_pinned',
-    });
-  });
-
-  it('returns the active publication settings descriptor for follow-active bindings', async () => {
+  it('returns the current entry settings descriptor for dynamic JS block settings', async () => {
     const api = {
       request: vi.fn().mockResolvedValue({
         data: {
@@ -228,26 +125,17 @@ describe('LightExtensionRunJSResolver error state', () => {
               kind: 'js-block',
               entryName: 'sales-kpi',
               title: 'Sales KPI',
-              activePublicationId: 'pub_active',
-              activePublication: {
-                id: 'pub_active',
-                repoId: 'repo_sales',
-                entryId: 'entry_sales',
-                kind: 'js-block',
-                settingsSchemaSnapshot: {
-                  type: 'object',
-                  properties: {
-                    message: {
-                      type: 'string',
-                      title: 'Message',
-                    },
+              settingsSchema: {
+                type: 'object',
+                properties: {
+                  message: {
+                    type: 'string',
+                    title: 'Message',
+                    default: 'Hello',
                   },
                 },
-                settingsDefaultsSnapshot: {
-                  message: 'Hello',
-                },
-                settingsSchemaHash: 'schema_active',
               },
+              settingsDefaultsHash: 'defaults_hash',
             },
           ],
         },
@@ -258,27 +146,23 @@ describe('LightExtensionRunJSResolver error state', () => {
     await expect(
       resolver.getSettingsDescriptor?.({
         sourceMode: 'light-extension',
-        sourceBinding: {
-          ...SOURCE_BINDING,
-          publicationId: 'pub_active',
-          versionPolicy: 'follow-active',
-        },
+        sourceBinding: SOURCE_BINDING,
       }),
     ).resolves.toEqual({
-      publicationId: 'pub_active',
       schema: {
         type: 'object',
         properties: {
           message: {
             type: 'string',
             title: 'Message',
+            default: 'Hello',
           },
         },
       },
       defaults: {
         message: 'Hello',
       },
-      schemaHash: 'schema_active',
+      schemaHash: 'defaults_hash',
     });
   });
 

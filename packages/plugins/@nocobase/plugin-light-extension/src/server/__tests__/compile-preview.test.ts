@@ -24,15 +24,15 @@ import { LightExtensionPermissionService } from '../services/LightExtensionPermi
 import { LightExtensionWorkspaceCompilerBridge } from '../services/LightExtensionWorkspaceCompilerBridge';
 
 describe('plugin-light-extension compile preview', () => {
-  it('previews good and bad entries without publication or active state mutations', async () => {
+  it('previews good and bad entries without runtime state mutations', async () => {
     const repo = createRepo();
-    const { db, entriesRepository, publicationsRepository } = createDbStub([
+    const { db, entriesRepository } = createDbStub([
       createEntryRecord({ id: 'lee_sales_kpi', repoId: repo.id, entryName: 'sales-kpi' }),
       createEntryRecord({
         id: 'lee_sales_trend',
         repoId: repo.id,
         entryName: 'sales-trend',
-        activePublicationId: 'lep_keep_existing',
+        compiledCommitId: 'commit_keep_existing',
       }),
     ]);
     const fileService = createFileServiceStub(repo, [
@@ -77,7 +77,6 @@ describe('plugin-light-extension compile preview', () => {
     expect(JSON.stringify(salesKpi?.artifact)).not.toContain('sourceMap');
     expect(salesTrend).toMatchObject({
       entryId: 'lee_sales_trend',
-      activePublicationId: 'lep_keep_existing',
       status: 'failed',
       accepted: false,
     });
@@ -92,8 +91,6 @@ describe('plugin-light-extension compile preview', () => {
     );
     expect(entriesRepository.create).not.toHaveBeenCalled();
     expect(entriesRepository.update).not.toHaveBeenCalled();
-    expect(publicationsRepository.create).not.toHaveBeenCalled();
-    expect(publicationsRepository.update).not.toHaveBeenCalled();
     expect(recordCompileEvent).toHaveBeenCalledWith(
       expect.objectContaining({
         repoId: repo.id,
@@ -409,18 +406,10 @@ function createDbStub(entries: Record<string, unknown>[]) {
     create: vi.fn(),
     update: vi.fn(),
   };
-  const publicationsRepository = {
-    find: vi.fn().mockResolvedValue([]),
-    create: vi.fn(),
-    update: vi.fn(),
-  };
   const db = {
     getRepository: (name: string) => {
       if (name === 'lightExtensionEntries') {
         return entriesRepository;
-      }
-      if (name === 'lightExtensionEntryPublications') {
-        return publicationsRepository;
       }
 
       throw new Error(`Unexpected repository ${name}`);
@@ -430,7 +419,6 @@ function createDbStub(entries: Record<string, unknown>[]) {
   return {
     db,
     entriesRepository,
-    publicationsRepository,
   };
 }
 
@@ -481,7 +469,7 @@ function createEntryRecord(input: {
   id: string;
   repoId: string;
   entryName: string;
-  activePublicationId?: string | null;
+  compiledCommitId?: string | null;
 }): Record<string, unknown> {
   return {
     id: input.id,
@@ -499,7 +487,20 @@ function createEntryRecord(input: {
     tags: null,
     sort: null,
     settingsSchema: null,
-    activePublicationId: input.activePublicationId || null,
+    compiledCommitId: input.compiledCommitId || null,
+    runtimeArtifact: input.compiledCommitId
+      ? {
+          code: 'ctx.render("existing");',
+          version: 'v2',
+          entryPath: `src/client/js-blocks/${input.entryName}/index.tsx`,
+        }
+      : null,
+    runtimeVersion: input.compiledCommitId ? 'v2' : null,
+    surfaceStyle: input.compiledCommitId ? 'render' : null,
+    runtimeCodeHash: input.compiledCommitId ? 'runtime_hash_existing' : null,
+    filesHash: input.compiledCommitId ? 'files_hash_existing' : null,
+    settingsDefaultsHash: input.compiledCommitId ? 'settings_defaults_hash_existing' : null,
+    compiledAt: input.compiledCommitId ? new Date('2026-07-06T00:00:00.000Z') : null,
     healthStatus: 'ready',
     diagnostics: [],
     validatorVersion: 'test',

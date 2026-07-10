@@ -73,7 +73,7 @@ describe('plugin-light-extension file service resource bridge', () => {
       });
       const repo = createResponse.body.data;
 
-      const pushResponse = await agent.resource('lightExtensionFiles').push({
+      const pushResponse = await agent.resource('lightExtensionFiles').saveSource({
         values: {
           repoId: repo.id,
           baseCommitId: null,
@@ -119,7 +119,7 @@ describe('plugin-light-extension file service resource bridge', () => {
       },
     });
     const pushRepo = pushRepoResponse.body.data;
-    const pushResponse = await agent.resource('lightExtensionFiles').push({
+    const pushResponse = await agent.resource('lightExtensionFiles').saveSource({
       values: {
         repoId: pushRepo.id,
         baseCommitId: null,
@@ -158,7 +158,7 @@ describe('plugin-light-extension file service resource bridge', () => {
       filterByTk: repo.id,
     });
     const vscRepoId = repoRecord?.get('vscRepoId') as string;
-    const firstPush = await agent.resource('lightExtensionFiles').push({
+    const firstPush = await agent.resource('lightExtensionFiles').saveSource({
       values: {
         repoId: repo.id,
         baseCommitId: null,
@@ -173,7 +173,7 @@ describe('plugin-light-extension file service resource bridge', () => {
       },
     });
     const firstCommit = firstPush.body.data.commit;
-    const secondPush = await agent.resource('lightExtensionFiles').push({
+    const secondPush = await agent.resource('lightExtensionFiles').saveSource({
       values: {
         repoId: repo.id,
         baseCommitId: firstCommit.id,
@@ -297,7 +297,7 @@ describe('plugin-light-extension file service resource bridge', () => {
         status: 'archived',
       },
     });
-    const response = await agent.resource('lightExtensionFiles').push({
+    const response = await agent.resource('lightExtensionFiles').saveSource({
       values: {
         repoId: repo.id,
         baseCommitId: null,
@@ -375,7 +375,7 @@ describe('plugin-light-extension file service resource bridge', () => {
       },
     });
     const repo = createResponse.body.data;
-    const pushResponse = await agent.resource('lightExtensionFiles').push({
+    const pushResponse = await agent.resource('lightExtensionFiles').saveSource({
       values: {
         repoId: repo.id,
         baseCommitId: null,
@@ -444,7 +444,7 @@ describe('plugin-light-extension file service resource bridge', () => {
         path: 'README.md',
       },
     });
-    const ordinaryWrite = await agent.resource('lightExtensionFiles').push({
+    const ordinaryWrite = await agent.resource('lightExtensionFiles').saveSource({
       values: {
         repoId: repo.id,
         baseCommitId: repo.headCommitId,
@@ -512,7 +512,7 @@ describe('plugin-light-extension file service resource bridge', () => {
   });
 
   it('does not create orphan write audit logs when push rejects before repo lookup succeeds', async () => {
-    const response = await agent.resource('lightExtensionFiles').push({
+    const response = await agent.resource('lightExtensionFiles').saveSource({
       values: {
         repoId: 'ler_missing_for_push',
         baseCommitId: null,
@@ -645,7 +645,7 @@ describe('plugin-light-extension file service resource bridge', () => {
     });
     const repo = createResponse.body.data;
 
-    await agent.resource('lightExtensionFiles').push({
+    await agent.resource('lightExtensionFiles').saveSource({
       values: {
         repoId: repo.id,
         baseCommitId: null,
@@ -680,7 +680,7 @@ describe('plugin-light-extension file service resource bridge', () => {
       },
     });
     const repo = createResponse.body.data;
-    const response = await agent.resource('lightExtensionFiles').push({
+    const response = await agent.resource('lightExtensionFiles').saveSource({
       values: {
         repoId: repo.id,
         baseCommitId: null,
@@ -713,7 +713,7 @@ describe('plugin-light-extension file service resource bridge', () => {
       },
     });
     const repo = createResponse.body.data;
-    const response = await agent.resource('lightExtensionFiles').push({
+    const response = await agent.resource('lightExtensionFiles').saveSource({
       values: {
         repoId: repo.id,
         baseCommitId: null,
@@ -749,7 +749,7 @@ describe('plugin-light-extension file service resource bridge', () => {
       },
     });
     const repo = createResponse.body.data;
-    const response = await agent.resource('lightExtensionFiles').push({
+    const response = await agent.resource('lightExtensionFiles').saveSource({
       values: {
         repoId: repo.id,
         baseCommitId: null,
@@ -786,7 +786,7 @@ describe('plugin-light-extension file service resource bridge', () => {
       },
     });
     const repo = createResponse.body.data;
-    const response = await agent.resource('lightExtensionFiles').push({
+    const response = await agent.resource('lightExtensionFiles').saveSource({
       values: {
         repoId: repo.id,
         baseCommitId: null,
@@ -844,7 +844,7 @@ describe('plugin-light-extension file service resource bridge', () => {
         content: '{"private":true}\n',
       },
     ]);
-    const response = await agent.resource('lightExtensionFiles').push({
+    const response = await agent.resource('lightExtensionFiles').saveSource({
       values: {
         repoId: repo.id,
         baseCommitId: seeded.commit.id,
@@ -875,7 +875,7 @@ describe('plugin-light-extension file service resource bridge', () => {
       },
     });
     const repo = createResponse.body.data;
-    const firstPushResponse = await agent.resource('lightExtensionFiles').push({
+    const firstPushResponse = await agent.resource('lightExtensionFiles').saveSource({
       values: {
         repoId: repo.id,
         baseCommitId: null,
@@ -886,7 +886,7 @@ describe('plugin-light-extension file service resource bridge', () => {
         })),
       },
     });
-    const response = await agent.resource('lightExtensionFiles').push({
+    const response = await agent.resource('lightExtensionFiles').saveSource({
       values: {
         repoId: repo.id,
         baseCommitId: firstPushResponse.body.data.commit.id,
@@ -977,7 +977,7 @@ describe('plugin-light-extension file service resource bridge', () => {
       },
     });
     const repo = createResponse.body.data;
-    const response = await agent.resource('lightExtensionFiles').push({
+    const response = await agent.resource('lightExtensionFiles').saveSource({
       values: {
         repoId: repo.id,
         baseCommitId: null,
@@ -1065,7 +1065,7 @@ describe('plugin-light-extension file service resource bridge', () => {
       },
     });
     const repo = createResponse.body.data;
-    const invalidPushResponse = await agent.resource('lightExtensionFiles').push({
+    const invalidPushResponse = await agent.resource('lightExtensionFiles').saveSource({
       values: {
         repoId: repo.id,
         baseCommitId: null,
@@ -1084,7 +1084,7 @@ describe('plugin-light-extension file service resource bridge', () => {
         title: 'Missing name',
       },
     });
-    const missingPushSourceResponse = await agent.resource('lightExtensionFiles').push({
+    const missingPushSourceResponse = await agent.resource('lightExtensionFiles').saveSource({
       values: {
         repoId: repo.id,
         baseCommitId: null,

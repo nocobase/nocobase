@@ -16,6 +16,7 @@ import type {
   LightExtensionDiagnostic,
   LightExtensionEntryHealthStatus,
   LightExtensionEntryRecord,
+  LightExtensionEntryRuntimeArtifact,
   LightExtensionRepoHealthStatus,
   LightExtensionScanEntryResult,
   LightExtensionScanResult,
@@ -197,6 +198,7 @@ export class LightExtensionEntryScanner {
         },
         transaction,
       });
+      const healthStatus = getEntryHealthStatus(entry);
       const values = {
         repoId,
         target: entry.target,
@@ -212,11 +214,12 @@ export class LightExtensionEntryScanner {
         tags: entry.tags,
         sort: entry.sort,
         settingsSchema: entry.settingsSchema,
-        healthStatus: getEntryHealthStatus(entry),
+        healthStatus,
         diagnostics: entry.diagnostics,
         validatorVersion: LIGHT_EXTENSION_VALIDATOR_VERSION,
         lastScannedCommitId: commitId,
         lastScannedAt: scannedAt,
+        ...(healthStatus === 'ready' ? {} : emptyRuntimeFields()),
       };
 
       if (existing) {
@@ -281,6 +284,7 @@ export class LightExtensionEntryScanner {
           validatorVersion: LIGHT_EXTENSION_VALIDATOR_VERSION,
           lastScannedCommitId: commitId,
           lastScannedAt: scannedAt,
+          ...emptyRuntimeFields(),
         },
         { transaction },
       );
@@ -387,6 +391,19 @@ export class LightExtensionEntryScanner {
   }
 }
 
+function emptyRuntimeFields() {
+  return {
+    compiledCommitId: null,
+    runtimeArtifact: null,
+    runtimeVersion: null,
+    surfaceStyle: null,
+    runtimeCodeHash: null,
+    filesHash: null,
+    settingsDefaultsHash: null,
+    compiledAt: null,
+  };
+}
+
 export function entryFromModel(record: Model): LightExtensionEntryRecord {
   return {
     id: String(record.get('id')),
@@ -404,7 +421,14 @@ export function entryFromModel(record: Model): LightExtensionEntryRecord {
     tags: normalizeTags(record.get('tags')),
     sort: normalizeNullableNumber(record.get('sort')),
     settingsSchema: normalizeRecord(record.get('settingsSchema')),
-    activePublicationId: nullableString(record.get('activePublicationId')),
+    compiledCommitId: nullableString(record.get('compiledCommitId')),
+    runtimeArtifact: normalizeRuntimeArtifact(record.get('runtimeArtifact')),
+    runtimeVersion: nullableString(record.get('runtimeVersion')),
+    surfaceStyle: nullableString(record.get('surfaceStyle')),
+    runtimeCodeHash: nullableString(record.get('runtimeCodeHash')),
+    filesHash: nullableString(record.get('filesHash')),
+    settingsDefaultsHash: nullableString(record.get('settingsDefaultsHash')),
+    compiledAt: normalizeDate(record.get('compiledAt')),
     healthStatus: record.get('healthStatus') as LightExtensionEntryHealthStatus,
     diagnostics: normalizeDiagnostics(record.get('diagnostics')),
     validatorVersion: nullableString(record.get('validatorVersion')),
@@ -479,6 +503,26 @@ function normalizeDiagnostics(value: unknown): LightExtensionDiagnostic[] {
   }
 
   return value.filter(isDiagnostic);
+}
+
+function normalizeRuntimeArtifact(value: unknown): LightExtensionEntryRuntimeArtifact | null {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return null;
+  }
+  const artifact = value as Partial<LightExtensionEntryRuntimeArtifact>;
+  if (typeof artifact.code !== 'string') {
+    return null;
+  }
+
+  return {
+    code: artifact.code,
+    sourceMap: typeof artifact.sourceMap === 'string' ? artifact.sourceMap : undefined,
+    version: typeof artifact.version === 'string' ? artifact.version : 'v2',
+    entryPath: typeof artifact.entryPath === 'string' ? artifact.entryPath : '',
+    filesHash: typeof artifact.filesHash === 'string' ? artifact.filesHash : undefined,
+    diagnostics: normalizeDiagnostics(artifact.diagnostics),
+    metadata: normalizeRecord(artifact.metadata) || undefined,
+  };
 }
 
 function isDiagnostic(value: unknown): value is LightExtensionDiagnostic {

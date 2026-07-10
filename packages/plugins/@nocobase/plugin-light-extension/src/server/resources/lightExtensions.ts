@@ -16,13 +16,9 @@ import {
   LightExtensionCompilePreviewService,
 } from '../services/LightExtensionCompilePreviewService';
 import type { LightExtensionCanFunction } from '../services/LightExtensionPermissionService';
-import {
-  type LightExtensionPublishInput,
-  LightExtensionPublishService,
-} from '../services/LightExtensionPublishService';
 import type { LightExtensionServiceContext } from '../services/LightExtensionRepoService';
 
-export const lightExtensionActionNames = ['compilePreview', 'publish'] as const;
+export const lightExtensionActionNames = ['compilePreview'] as const;
 
 type LightExtensionActionName = (typeof lightExtensionActionNames)[number];
 type ResourceActionInput = Record<string, unknown>;
@@ -57,31 +53,18 @@ type ResourceActionRunner = (
 
 interface LightExtensionActionServices {
   compilePreviewService: LightExtensionCompilePreviewService;
-  publishService?: LightExtensionPublishService;
 }
 
 const resourceActionRunners: Record<LightExtensionActionName, ResourceActionRunner> = {
   compilePreview: (services, input, currentUser) =>
     services.compilePreviewService.compilePreview(normalizeCompilePreviewInput(input), currentUser),
-  publish: (services, input, currentUser) => {
-    if (!services.publishService) {
-      throw new LightExtensionError(
-        'LIGHT_EXTENSION_INVALID_INPUT',
-        'Light extension publish service is not available',
-      );
-    }
-
-    return services.publishService.publish(normalizePublishInput(input), currentUser);
-  },
 };
 
 export function createLightExtensionsResource(
   compilePreviewService: LightExtensionCompilePreviewService,
-  publishService?: LightExtensionPublishService,
 ): ResourceOptions {
   const services = {
     compilePreviewService,
-    publishService,
   };
 
   return {
@@ -126,17 +109,6 @@ function normalizeCompilePreviewInput(input: ResourceActionInput): LightExtensio
   return {
     repoId: requireRepoId(input),
     entryIds: optionalStringArray(input, 'entryIds'),
-  };
-}
-
-function normalizePublishInput(input: ResourceActionInput): LightExtensionPublishInput {
-  return {
-    repoId: requireRepoId(input),
-    entryIds: requireStringArray(input, 'entryIds'),
-    commitId: requireString(input, 'commitId'),
-    clientRequestId: requireString(input, 'clientRequestId'),
-    activate: optionalBoolean(input, 'activate'),
-    expectedCurrentPublicationIdByEntry: optionalStringNullRecord(input, 'expectedCurrentPublicationIdByEntry'),
   };
 }
 
@@ -219,47 +191,6 @@ function optionalStringArray(input: ResourceActionInput, key: string): string[] 
   }
 
   return value.map((item) => item.trim());
-}
-
-function requireStringArray(input: ResourceActionInput, key: string): string[] {
-  const value = optionalStringArray(input, key);
-  if (!value?.length) {
-    throw invalidInput(`${key} is required`);
-  }
-
-  return value;
-}
-
-function optionalBoolean(input: ResourceActionInput, key: string): boolean | undefined {
-  const value = input[key];
-  if (typeof value === 'undefined') {
-    return undefined;
-  }
-  if (typeof value !== 'boolean') {
-    throw invalidInput(`${key} must be a boolean`);
-  }
-
-  return value;
-}
-
-function optionalStringNullRecord(input: ResourceActionInput, key: string): Record<string, string | null> | undefined {
-  const value = input[key];
-  if (typeof value === 'undefined') {
-    return undefined;
-  }
-  if (!value || typeof value !== 'object' || Array.isArray(value)) {
-    throw invalidInput(`${key} must be an object`);
-  }
-
-  const record: Record<string, string | null> = {};
-  for (const [recordKey, recordValue] of Object.entries(value)) {
-    if (typeof recordValue !== 'string' && recordValue !== null) {
-      throw invalidInput(`${key}.${recordKey} must be a string or null`);
-    }
-    record[recordKey] = recordValue;
-  }
-
-  return record;
 }
 
 function toRecord(value: unknown): ResourceActionInput {

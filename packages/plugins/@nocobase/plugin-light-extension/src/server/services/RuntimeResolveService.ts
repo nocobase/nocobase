@@ -7,17 +7,390 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { LightExtensionRuntimeResolveInput, LightExtensionRuntimeResolveResult } from '../../shared/types';
-import { LightExtensionPublicationResolveService } from './LightExtensionPublicationResolveService';
+import type { Database, Model } from '@nocobase/database';
+import { createHash, randomUUID } from 'crypto';
+
+import {
+  LIGHT_EXTENSION_ENABLED_KINDS,
+  LIGHT_EXTENSION_SUPPORTED_KINDS,
+  type LightExtensionKind,
+} from '../../constants';
+import { LightExtensionError, isLightExtensionError } from '../../shared/errors';
+import type {
+  LightExtensionEntryRecord,
+  LightExtensionRuntimeResolveInput,
+  LightExtensionRuntimeResolveResult,
+  LightExtensionSelectableEntryRecord,
+} from '../../shared/types';
+import { LightExtensionAuditService } from './LightExtensionAuditService';
+import { entryFromModel } from './LightExtensionEntryScanner';
+import { LightExtensionPermissionService } from './LightExtensionPermissionService';
 import type { LightExtensionServiceContext } from './LightExtensionRepoService';
+import { SettingsResolverService, type LightExtensionRuntimeSettingsSource } from './SettingsResolverService';
 
 export class RuntimeResolveService {
-  constructor(private readonly publicationResolveService: LightExtensionPublicationResolveService) {}
+  constructor(
+    private readonly db: Database,
+    private readonly auditService: LightExtensionAuditService,
+    private readonly permissionService: LightExtensionPermissionService,
+    private readonly settingsResolver = new SettingsResolverService(),
+  ) {}
+
+  async listSelectableEntries(
+    input: { repoId?: string; kind?: string } = {},
+    ctx: LightExtensionServiceContext = {},
+  ): Promise<LightExtensionSelectableEntryRecord[]> {
+    const requestId = ctx.requestId || randomUUID();
+    try {
+      await this.permissionService.assertActionAllowed({
+        action: 'useRuntime',
+        ctx,
+      });
+    } catch (error) {
+      await this.recordUseDenied('selector:entries', { ...ctx, requestId }, error);
+      throw error;
+    }
+
+    const filter: Record<string, unknown> = {
+      healthStatus: 'ready',
+    };
+    if (input.repoId) {
+      filter.repoId = input.repoId;
+    }
+    if (input.kind) {
+      const kind = assertSupportedKind(input.kind);
+      if (!isEnabledKind(kind)) {
+        return [];
+      }
+      filter.kind = kind;
+    }
+
+    const records = await this.db.getRepository('lightExtensionEntries').find({
+      filter,
+      sort: ['kind', 'entryName'],
+      transaction: ctx.transaction,
+    });
+    const entries: LightExtensionSelectableEntryRecord[] = [];
+
+    for (const record of records) {
+      const entry = entryFromModel(record as Model);
+      if (!isSelectableRuntimeEntry(entry) || !(await this.entryRepoIsEnabled(entry.repoId, ctx))) {
+        continue;
+      }
+      entries.push(entry);
+    }
+
+    return entries;
+  }
 
   async resolve(
     input: LightExtensionRuntimeResolveInput,
     ctx: LightExtensionServiceContext = {},
   ): Promise<LightExtensionRuntimeResolveResult> {
-    return this.publicationResolveService.resolveRuntime(input, ctx);
+    const requestId = ctx.requestId || randomUUID();
+    assertRuntimeResolveInput(input);
+
+    const sourceBinding = input.sourceBinding;
+    try {
+      await this.permissionService.assertActionAllowed({
+        action: 'useRuntime',
+        ctx,
+      });
+    } catch (error) {
+      await this.recordUseDenied(sourceBinding.entryId, { ...ctx, requestId }, error);
+      throw error;
+    }
+
+    const entry = await this.loadRuntimeEntry(sourceBinding.entryId, ctx);
+    assertSourceBindingMatches(sourceBinding, entry);
+    await this.assertRuntimeStateAllowsEntry(entry, ctx);
+    const settingsSource = toSettingsSource(entry);
+    const settings = this.settingsResolver.resolveRuntimeSettings(settingsSource, input.settings);
+    const artifact = entry.runtimeArtifact;
+    if (!artifact?.code) {
+      throw runtimeLifecycleError('Light extension entry has no compiled runtime artifact', {
+        reasonCode: 'runtime_missing',
+        repoId: entry.repoId,
+        entryId: entry.id,
+      });
+    }
+
+    return {
+      entryId: entry.id,
+      entryPath: entry.entryPath,
+      runtimeCodeHash: entry.runtimeCodeHash || stableJsonHash(artifact.code),
+      code: artifact.code,
+      version: entry.runtimeVersion || artifact.version,
+      ...(artifact.sourceMap ? { sourceMap: artifact.sourceMap } : {}),
+      settings,
+      cache: buildRuntimeCacheMetadata(entry, settings),
+    };
   }
+
+  private async loadRuntimeEntry(
+    entryId: string,
+    ctx: LightExtensionServiceContext,
+  ): Promise<LightExtensionEntryRecord> {
+    const record = await this.db.getRepository('lightExtensionEntries').findOne({
+      filterByTk: entryId,
+      transaction: ctx.transaction,
+    });
+    if (!record) {
+      throw new LightExtensionError(
+        'LIGHT_EXTENSION_ENTRY_NOT_FOUND',
+        `Light extension entry "${entryId}" was not found`,
+        {
+          details: {
+            reasonCode: 'entry_missing',
+            entryId,
+          },
+        },
+      );
+    }
+
+    return entryFromModel(record);
+  }
+
+  private async entryRepoIsEnabled(repoId: string, ctx: LightExtensionServiceContext): Promise<boolean> {
+    const repo = await this.db.getRepository('lightExtensionRepos').findOne({
+      filterByTk: repoId,
+      transaction: ctx.transaction,
+    });
+
+    return String(repo?.get('lifecycleStatus') || '') === 'enabled';
+  }
+
+  private async assertRuntimeStateAllowsEntry(
+    entry: LightExtensionEntryRecord,
+    ctx: LightExtensionServiceContext,
+  ): Promise<void> {
+    const repo = await this.db.getRepository('lightExtensionRepos').findOne({
+      filterByTk: entry.repoId,
+      transaction: ctx.transaction,
+    });
+    if (!repo) {
+      throw new LightExtensionError(
+        'LIGHT_EXTENSION_REPO_NOT_FOUND',
+        `Light extension repository "${entry.repoId}" was not found`,
+        {
+          details: {
+            reasonCode: 'repo_missing',
+            repoId: entry.repoId,
+            entryId: entry.id,
+          },
+        },
+      );
+    }
+
+    const repoLifecycleStatus = String(repo.get('lifecycleStatus') || '');
+    if (repoLifecycleStatus === 'disabled' || repoLifecycleStatus === 'archived') {
+      throw runtimeLifecycleError(`Light extension repository lifecycle status is "${repoLifecycleStatus}"`, {
+        reasonCode: repoLifecycleStatus === 'disabled' ? 'repo_disabled' : 'repo_archived',
+        repoId: entry.repoId,
+        entryId: entry.id,
+        repoLifecycleStatus,
+      });
+    }
+    if (!isEnabledKind(entry.kind)) {
+      throw runtimeLifecycleError(`Light extension kind "${entry.kind}" is not enabled`, {
+        reasonCode: 'kind_disabled',
+        repoId: entry.repoId,
+        entryId: entry.id,
+        kind: entry.kind,
+      });
+    }
+    if (entry.healthStatus !== 'ready') {
+      throw runtimeLifecycleError(`Light extension entry health status is "${entry.healthStatus}"`, {
+        reasonCode: entry.healthStatus === 'disabled' ? 'entry_disabled' : 'entry_missing',
+        repoId: entry.repoId,
+        entryId: entry.id,
+        entryHealthStatus: entry.healthStatus,
+      });
+    }
+    if (!entry.runtimeArtifact?.code || !entry.runtimeCodeHash || !entry.compiledCommitId) {
+      throw runtimeLifecycleError('Light extension entry has no compiled runtime artifact', {
+        reasonCode: 'runtime_missing',
+        repoId: entry.repoId,
+        entryId: entry.id,
+      });
+    }
+  }
+
+  private async recordUseDenied(entryId: string, ctx: LightExtensionServiceContext, error: unknown): Promise<void> {
+    if (!isLightExtensionError(error)) {
+      return;
+    }
+
+    try {
+      await this.auditService.recordRuntimeUseDenied({
+        entryId,
+        requestId: ctx.requestId || randomUUID(),
+        actorUserId: ctx.actorUserId,
+        reasonCode: error.code,
+        requestSource: ctx.requestSource,
+        transaction: ctx.transaction,
+      });
+    } catch {
+      // Denial must not depend on audit persistence availability.
+    }
+  }
+}
+
+function assertRuntimeResolveInput(input: LightExtensionRuntimeResolveInput): void {
+  if (!input || typeof input !== 'object' || Array.isArray(input)) {
+    throw invalidInput('Runtime resolve input must be an object');
+  }
+  if (input.sourceMode !== 'light-extension') {
+    throw invalidInput('sourceMode must be "light-extension"');
+  }
+
+  const sourceBinding = input.sourceBinding;
+  if (!sourceBinding || typeof sourceBinding !== 'object' || Array.isArray(sourceBinding)) {
+    throw invalidInput('sourceBinding is required');
+  }
+  if (sourceBinding.type !== 'light-extension-entry') {
+    throw invalidInput('sourceBinding.type must be "light-extension-entry"');
+  }
+  if ('publicationId' in sourceBinding || 'versionPolicy' in sourceBinding) {
+    throw invalidInput('sourceBinding contains unsupported publication fields');
+  }
+  for (const key of ['repoId', 'entryId', 'kind'] as const) {
+    if (typeof sourceBinding[key] !== 'string' || !sourceBinding[key].trim()) {
+      throw invalidInput(`sourceBinding.${key} is required`);
+    }
+  }
+  if (
+    typeof input.settings !== 'undefined' &&
+    input.settings !== null &&
+    (!isPlainRecord(input.settings) || Array.isArray(input.settings))
+  ) {
+    throw invalidInput('settings must be an object');
+  }
+}
+
+function assertSourceBindingMatches(
+  sourceBinding: LightExtensionRuntimeResolveInput['sourceBinding'],
+  entry: LightExtensionEntryRecord,
+): void {
+  const mismatches = [
+    buildBindingMismatch('repoId', sourceBinding.repoId, entry.repoId),
+    buildBindingMismatch('entryId', sourceBinding.entryId, entry.id),
+    buildBindingMismatch('kind', sourceBinding.kind, entry.kind),
+  ].filter((item): item is { field: string; expected: string; actual: string } => Boolean(item));
+
+  if (!mismatches.length) {
+    return;
+  }
+
+  throw new LightExtensionError(
+    'LIGHT_EXTENSION_BINDING_OUTDATED',
+    'Light extension source binding does not match the entry identity',
+    {
+      details: {
+        entryId: entry.id,
+        mismatches,
+      },
+    },
+  );
+}
+
+function buildBindingMismatch(field: string, expected: string, actual: string) {
+  return expected === actual
+    ? null
+    : {
+        field,
+        expected,
+        actual,
+      };
+}
+
+function assertSupportedKind(kind: string): LightExtensionKind {
+  if ((LIGHT_EXTENSION_SUPPORTED_KINDS as readonly string[]).includes(kind)) {
+    return kind as LightExtensionKind;
+  }
+
+  throw invalidInput(`kind must be one of: ${LIGHT_EXTENSION_SUPPORTED_KINDS.join(', ')}`);
+}
+
+function isSelectableRuntimeEntry(entry: LightExtensionEntryRecord): entry is LightExtensionSelectableEntryRecord {
+  return (
+    entry.healthStatus === 'ready' &&
+    isEnabledKind(entry.kind) &&
+    Boolean(
+      entry.compiledCommitId &&
+        entry.runtimeArtifact?.code &&
+        entry.runtimeVersion &&
+        entry.surfaceStyle &&
+        entry.runtimeCodeHash &&
+        entry.filesHash &&
+        entry.settingsDefaultsHash &&
+        entry.compiledAt,
+    )
+  );
+}
+
+function isEnabledKind(kind: string): boolean {
+  return (LIGHT_EXTENSION_ENABLED_KINDS as readonly string[]).includes(kind);
+}
+
+function toSettingsSource(entry: LightExtensionEntryRecord): LightExtensionRuntimeSettingsSource {
+  return {
+    id: entry.id,
+    settingsSchema: entry.settingsSchema,
+    settingsDefaultsHash: entry.settingsDefaultsHash || '',
+  };
+}
+
+function buildRuntimeCacheMetadata(
+  entry: LightExtensionEntryRecord,
+  settings: Record<string, unknown>,
+): LightExtensionRuntimeResolveResult['cache'] {
+  return {
+    etag: `"${stableJsonHash({
+      entryId: entry.id,
+      compiledCommitId: entry.compiledCommitId,
+      runtimeCodeHash: entry.runtimeCodeHash,
+      settingsDefaultsHash: entry.settingsDefaultsHash,
+      settings,
+    })}"`,
+    immutable: false,
+  };
+}
+
+function stableJsonHash(value: unknown): string {
+  return createHash('sha256').update(stableSerialize(value)).digest('hex');
+}
+
+function stableSerialize(value: unknown): string {
+  if (Array.isArray(value)) {
+    return `[${value.map((item) => stableSerialize(item)).join(',')}]`;
+  }
+  if (isPlainRecord(value)) {
+    return `{${Object.keys(value)
+      .sort()
+      .map((key) => `${JSON.stringify(key)}:${stableSerialize(value[key])}`)
+      .join(',')}}`;
+  }
+
+  const serialized = JSON.stringify(value);
+  return typeof serialized === 'undefined' ? 'undefined' : serialized;
+}
+
+function isPlainRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+function invalidInput(message: string): LightExtensionError {
+  return new LightExtensionError('LIGHT_EXTENSION_INVALID_INPUT', message, {
+    status: 422,
+    details: {
+      reasonCode: 'invalid_input',
+    },
+  });
+}
+
+function runtimeLifecycleError(message: string, details: Record<string, unknown>): LightExtensionError {
+  return new LightExtensionError('LIGHT_EXTENSION_LIFECYCLE_CONFLICT', message, {
+    details,
+  });
 }

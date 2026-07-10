@@ -71,8 +71,8 @@ export function FilesPanel(props: {
   onCreateFolder: (parentPath?: string) => string | undefined;
   onDelete: (path: string) => void;
   onDeleteFolder: (path: string) => boolean;
-  onExportWorkspace: () => void;
-  onImportWorkspace: () => void;
+  onExportWorkspace?: () => void;
+  onImportWorkspace?: () => void;
   onMoveFile: (path: string, folderPath: string) => void;
   onMoveFolder: (path: string, folderPath: string) => void;
   onOpen: (path: string) => void;
@@ -338,24 +338,28 @@ export function FilesPanel(props: {
           {t('Files')}
         </Typography.Text>
         <Space size={4}>
-          <Tooltip title={t('Export workspace')}>
-            <Button
-              aria-label={t('Export workspace')}
-              icon={<DownloadOutlined />}
-              loading={exporting}
-              onClick={onExportWorkspace}
-              size="small"
-            />
-          </Tooltip>
-          <Tooltip title={t('Import workspace')}>
-            <Button
-              aria-label={t('Import workspace')}
-              disabled={readOnly}
-              icon={<UploadOutlined />}
-              onClick={onImportWorkspace}
-              size="small"
-            />
-          </Tooltip>
+          {onExportWorkspace ? (
+            <Tooltip title={t('Export workspace')}>
+              <Button
+                aria-label={t('Export workspace')}
+                icon={<DownloadOutlined />}
+                loading={exporting}
+                onClick={onExportWorkspace}
+                size="small"
+              />
+            </Tooltip>
+          ) : null}
+          {onImportWorkspace ? (
+            <Tooltip title={t('Import workspace')}>
+              <Button
+                aria-label={t('Import workspace')}
+                disabled={readOnly}
+                icon={<UploadOutlined />}
+                onClick={onImportWorkspace}
+                size="small"
+              />
+            </Tooltip>
+          ) : null}
           <Tooltip title={t('New folder')}>
             <Button
               aria-label={t('New folder')}
@@ -702,6 +706,7 @@ export function CodeTab(props: {
   activeFile?: RunJSWorkspaceFile;
   activePath?: string;
   diffRows: RunJSLineDiffRow[];
+  emptyDiffDescription?: string;
   filesCollapsed: boolean;
   isDiff: boolean;
   onChange: (content: string) => void;
@@ -725,6 +730,7 @@ export function CodeTab(props: {
     activeFile,
     activePath,
     diffRows,
+    emptyDiffDescription,
     filesCollapsed,
     isDiff,
     onChange,
@@ -836,7 +842,7 @@ export function CodeTab(props: {
           <div style={{ flex: 1, minWidth: 0 }}>{fileTabsContent}</div>
           {runAndDiffActions}
         </div>
-        <SideBySideDiffView rows={diffRows} t={t} />
+        <SideBySideDiffView emptyDescription={emptyDiffDescription} rows={diffRows} t={t} />
       </section>
     );
   }
@@ -1153,8 +1159,12 @@ function DiffCodeLine(props: {
   );
 }
 
-function SideBySideDiffView(props: { rows: RunJSLineDiffRow[]; t: (key: string) => string }) {
-  const { rows, t } = props;
+function SideBySideDiffView(props: {
+  emptyDescription?: string;
+  rows: RunJSLineDiffRow[];
+  t: (key: string) => string;
+}) {
+  const { emptyDescription, rows, t } = props;
   const sideBySideRows = buildSideBySideDiffRows(rows);
   const hasChanges = rows.some((row) => row.type !== 'context');
 
@@ -1192,7 +1202,7 @@ function SideBySideDiffView(props: { rows: RunJSLineDiffRow[]; t: (key: string) 
       </div>
       {!hasChanges ? (
         <div style={{ padding: 24 }}>
-          <Empty description={t('No changes between current editor and published version')} />
+          <Empty description={emptyDescription || t('No changes between current editor and published version')} />
         </div>
       ) : (
         <div
@@ -1233,6 +1243,7 @@ function SideBySideDiffView(props: { rows: RunJSLineDiffRow[]; t: (key: string) 
 export function VersionHistoryDock(props: {
   baseVersion: string;
   collapsed: boolean;
+  emptyHistoryDescription?: string;
   hasUnsavedLocalChanges: boolean;
   historyItems: RunJSSourceHistoryItem[];
   loading: boolean;
@@ -1241,11 +1252,13 @@ export function VersionHistoryDock(props: {
   onSelect: (commit: RunJSSourceHistoryItem) => void;
   onViewChanges: () => void;
   publishedCommitId?: string | null;
+  showVersionBadges?: boolean;
   t: (key: string) => string;
 }) {
   const {
     baseVersion,
     collapsed,
+    emptyHistoryDescription,
     hasUnsavedLocalChanges,
     historyItems,
     loading,
@@ -1254,6 +1267,7 @@ export function VersionHistoryDock(props: {
     onSelect,
     onViewChanges,
     publishedCommitId,
+    showVersionBadges = true,
     t,
   } = props;
 
@@ -1307,7 +1321,9 @@ export function VersionHistoryDock(props: {
             </div>
           ) : null}
           <div style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
-            {historyItems.length === 0 ? <Empty description={t('No published versions yet')} /> : null}
+            {historyItems.length === 0 ? (
+              <Empty description={emptyHistoryDescription || t('No published versions yet')} />
+            ) : null}
             {historyItems.map((commit) => (
               <button
                 aria-label={`${t('Restore')} ${formatCommitTime(commit)} ${formatVersion(commit.seq)}`}
@@ -1330,7 +1346,7 @@ export function VersionHistoryDock(props: {
                     <Space size={6}>
                       <Typography.Text strong>{formatCommitTime(commit)}</Typography.Text>
                       <Typography.Text type="secondary">{formatVersion(commit.seq)}</Typography.Text>
-                      {commit.isPublished || commit.id === publishedCommitId ? (
+                      {showVersionBadges && (commit.isPublished || commit.id === publishedCommitId) ? (
                         <Tag color="green">{t('Published')}</Tag>
                       ) : null}
                     </Space>
@@ -1679,9 +1695,10 @@ export function RestoreVersionModal(props: {
   loading: boolean;
   onCancel: () => void;
   onRestore: () => void;
+  showRestoreSecondaryNote?: boolean;
   t: (key: string) => string;
 }) {
-  const { commit, loading, onCancel, onRestore, t } = props;
+  const { commit, loading, onCancel, onRestore, showRestoreSecondaryNote = true, t } = props;
   const version = commit ? formatVersion(commit.seq) : '';
 
   return (
@@ -1700,7 +1717,9 @@ export function RestoreVersionModal(props: {
     >
       <Space direction="vertical" style={{ width: '100%' }}>
         <Typography.Text>{t('This will copy files from this version into the editor.')}</Typography.Text>
-        <Typography.Text>{t('It will not change the published version.')}</Typography.Text>
+        {showRestoreSecondaryNote ? (
+          <Typography.Text>{t('It will not change the published version.')}</Typography.Text>
+        ) : null}
         <Typography.Text>{t('You can review and save after restoring.')}</Typography.Text>
       </Space>
     </Modal>

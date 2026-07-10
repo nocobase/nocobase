@@ -8,18 +8,16 @@
  */
 
 export { PluginLightExtensionServer } from './plugin';
-export * from './services/BulkUpgradeService';
 export * from './services/LightExtensionAuditService';
 export * from './services/LightExtensionAuthoringInspector';
 export * from './services/LightExtensionCompilePreviewService';
 export * from './services/LightExtensionEntryScanner';
 export * from './services/LightExtensionFileService';
 export * from './services/LightExtensionPermissionService';
-export * from './services/LightExtensionPublicationResolveService';
-export * from './services/LightExtensionPublicationService';
-export * from './services/LightExtensionPublishService';
 export * from './services/LightExtensionValidator';
+export * from './services/LightExtensionRuntimeCompileService';
 export * from './services/LightExtensionWorkspaceCompilerBridge';
+export * from './services/RuntimeResolveService';
 export * from './services/errorContract';
 export * from '../shared/errors';
 export * from '../shared/types';

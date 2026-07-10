@@ -54,10 +54,10 @@ export const LIGHT_EXTENSION_AUTHORING_SURFACES: Record<LightExtensionKind, Ligh
   },
   'js-field': {
     kind: 'js-field',
-    surfaceStyle: 'value',
-    compilerSurfaceStyle: 'value',
+    surfaceStyle: 'render',
+    compilerSurfaceStyle: 'render',
     modelUse: 'JSEditableFieldModel',
-    surface: 'reaction.value-runjs',
+    surface: 'js-model.render',
     enabled: true,
   },
   'js-action': {

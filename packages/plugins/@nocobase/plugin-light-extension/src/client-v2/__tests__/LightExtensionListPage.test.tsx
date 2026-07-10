@@ -31,8 +31,6 @@ const mocks = vi.hoisted(() => ({
     listCommits: vi.fn(),
     pull: vi.fn(),
     scanEntries: vi.fn(),
-    listPublications: vi.fn(),
-    publish: vi.fn(),
   },
 }));
 
@@ -53,13 +51,6 @@ vi.mock('../hooks/useLightExtensionRepo', async (importOriginal) => {
     useLightExtensionRepo: () => mocks.api as unknown as UseLightExtensionRepoResult,
   };
 });
-
-vi.mock('../hooks/useLightExtensionPublications', () => ({
-  useLightExtensionPublications: () => ({
-    listPublications: mocks.api.listPublications,
-    publish: mocks.api.publish,
-  }),
-}));
 
 vi.mock('../pages/LightExtensionWorkspacePage', async () => {
   const React = await import('react');
@@ -156,16 +147,6 @@ describe('LightExtensionListPage', () => {
       entries: [],
       capabilities: {},
     });
-    mocks.api.listPublications.mockResolvedValue([]);
-    mocks.api.publish.mockResolvedValue({
-      repo: { id: 'ler_browser_smoke' },
-      commitId: 'commit-1',
-      clientRequestId: 'request-1',
-      status: 'success',
-      httpStatus: 200,
-      diagnostics: [],
-      entryResults: [],
-    });
     mocks.api.deleteRepo.mockResolvedValue({ deleted: true, repoId: 'ler_browser_smoke' });
   });
 
@@ -186,6 +167,7 @@ describe('LightExtensionListPage', () => {
         initialFiles: [],
       }),
     );
+    expect(screen.queryByText('Repository created')).not.toBeInTheDocument();
   });
 
   it('shows the standard settings toolbar with filter, refresh, and add-new import actions', async () => {
@@ -211,7 +193,7 @@ describe('LightExtensionListPage', () => {
     expect(await screen.findByRole('button', { name: /filter/i })).toBeEnabled();
   });
 
-  it('imports a JS Block package and publishes the active entry', async () => {
+  it('imports a JS Block package and relies on create to compile current runtime', async () => {
     mocks.api.createRepo.mockResolvedValueOnce({
       id: 'ler_imported',
       name: 'imported-smoke-import',
@@ -223,39 +205,6 @@ describe('LightExtensionListPage', () => {
       healthStatus: 'draft',
       headCommitId: 'commit-import',
     });
-    mocks.api.scanEntries.mockResolvedValueOnce({
-      repo: { id: 'ler_imported' },
-      commitId: 'commit-import',
-      accepted: true,
-      diagnostics: [],
-      entries: [
-        {
-          created: true,
-          entry: {
-            id: 'lee_imported',
-            repoId: 'ler_imported',
-            target: 'client',
-            kind: 'js-block',
-            entryName: 'imported-smoke',
-            entryPath: 'src/client/js-blocks/imported-smoke/index.tsx',
-            metaPath: 'src/client/js-blocks/imported-smoke/meta.json',
-            settingsPath: null,
-            title: 'Imported smoke',
-            description: null,
-            category: null,
-            icon: null,
-            tags: null,
-            sort: null,
-            settingsSchema: null,
-            activePublicationId: null,
-            healthStatus: 'ready',
-            diagnostics: [],
-          },
-        },
-      ],
-      capabilities: {},
-    });
-
     renderListPage();
 
     await userEvent.click(await screen.findByRole('button', { name: /Add new/ }));
@@ -303,19 +252,8 @@ describe('LightExtensionListPage', () => {
         ]),
       }),
     );
-    expect(mocks.api.scanEntries).toHaveBeenCalledWith('ler_imported');
-    expect(mocks.api.publish).toHaveBeenCalledWith(
-      expect.objectContaining({
-        repoId: 'ler_imported',
-        entryIds: ['lee_imported'],
-        commitId: 'commit-import',
-        activate: true,
-        expectedCurrentPublicationIdByEntry: {
-          lee_imported: null,
-        },
-      }),
-    );
-    expect(await screen.findByText('Repository imported and published')).toBeInTheDocument();
+    expect(mocks.api.scanEntries).not.toHaveBeenCalledWith('ler_imported');
+    expect(await screen.findByText('Repository imported and compiled')).toBeInTheDocument();
   });
 
   it('opens repository overview in a drawer from the view action', async () => {
@@ -360,7 +298,18 @@ describe('LightExtensionListPage', () => {
         tags: null,
         sort: null,
         settingsSchema: null,
-        activePublicationId: 'lep_sales',
+        compiledCommitId: 'commit-1234567890',
+        runtimeArtifact: {
+          code: 'ctx.render("sales");',
+          version: 'v2',
+          entryPath: 'src/client/js-blocks/sales-kpi/index.tsx',
+        },
+        runtimeVersion: 'v2',
+        surfaceStyle: 'render',
+        runtimeCodeHash: 'runtime_hash',
+        filesHash: 'files_hash',
+        settingsDefaultsHash: 'settings_defaults_hash',
+        compiledAt: '2026-07-09T00:00:00.000Z',
         healthStatus: 'ready',
         diagnostics: [],
       },
@@ -382,12 +331,10 @@ describe('LightExtensionListPage', () => {
         },
       ],
     });
-    mocks.api.listPublications.mockResolvedValueOnce([{ id: 'lep_sales', entryId: 'lee_sales', repoId: 'ler_sales' }]);
-
     renderListPage();
 
     expect(await screen.findByRole('button', { name: /Add new/ })).toBeInTheDocument();
-    expect(await screen.findByRole('button', { name: 'Export' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Export' })).not.toBeInTheDocument();
     expect(screen.queryByText('Light extension repositories')).not.toBeInTheDocument();
     expect(screen.queryByText('Core settings only')).not.toBeInTheDocument();
     expect(screen.queryByText('Repository overview')).not.toBeInTheDocument();

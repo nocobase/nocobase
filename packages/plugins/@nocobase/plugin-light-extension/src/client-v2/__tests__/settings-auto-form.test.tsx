@@ -68,7 +68,7 @@ describe('SettingsAutoForm', () => {
     });
   });
 
-  it('reports validation changes when the selected publication schema changes without changing settings', async () => {
+  it('reports validation changes when the selected entry schema changes without changing settings', async () => {
     const onChange = vi.fn();
     const value = {
       plan: 'pro',

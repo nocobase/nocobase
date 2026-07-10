@@ -33,29 +33,6 @@ const SchemaField = createSchemaField({
   },
 });
 
-const publication = {
-  id: 'pub_sales',
-  repoId: 'repo_sales',
-  entryId: 'entry_sales',
-  commitId: 'commit_sales',
-  entryPath: 'src/client/js-blocks/sales/index.tsx',
-  target: 'client',
-  kind: 'js-block',
-  surfaceStyle: 'render',
-  runtimeVersion: 'v2',
-  artifact: {
-    version: 'v2',
-    entryPath: 'src/client/js-blocks/sales/index.tsx',
-  },
-  settingsSchemaSnapshot: null,
-  settingsDefaultsSnapshot: {},
-  settingsSchemaHash: 'schema_hash',
-  settingsDefaultsHash: 'defaults_hash',
-  filesHash: 'files_hash',
-  runtimeCodeHash: 'runtime_hash',
-  diagnostics: [],
-};
-
 const entry = {
   id: 'entry_sales',
   repoId: 'repo_sales',
@@ -71,8 +48,19 @@ const entry = {
   icon: null,
   tags: null,
   sort: null,
-  activePublicationId: 'pub_sales',
-  activePublication: publication,
+  settingsSchema: null,
+  compiledCommitId: 'commit_sales',
+  runtimeArtifact: {
+    code: 'ctx.render("sales");',
+    version: 'v2',
+    entryPath: 'src/client/js-blocks/sales/index.tsx',
+  },
+  runtimeVersion: 'v2',
+  surfaceStyle: 'render',
+  runtimeCodeHash: 'runtime_hash',
+  filesHash: 'files_hash',
+  settingsDefaultsHash: 'defaults_hash',
+  compiledAt: '2026-07-09T00:00:00.000Z',
   healthStatus: 'ready',
   diagnostics: [],
 };
@@ -120,18 +108,6 @@ describe('JSBlockLightExtensionSourceField inline preservation', () => {
         return Promise.resolve({
           data: {
             data: [entry],
-          },
-        });
-      }
-
-      if (options.url === '/light-extension-entries/entry_sales/publications') {
-        return Promise.resolve({
-          data: {
-            data: {
-              entryId: 'entry_sales',
-              activePublicationId: 'pub_sales',
-              publications: [publication],
-            },
           },
         });
       }

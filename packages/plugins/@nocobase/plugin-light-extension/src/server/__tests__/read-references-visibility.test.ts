@@ -13,7 +13,7 @@ import { hashReferenceOwnerLocator, normalizeReferenceOwnerLocator } from '../se
 import { createReferenceRecord, createReferenceServiceFixture } from './reference-test-helpers';
 
 describe('plugin-light-extension readReferences visibility', () => {
-  it('filters references by owner visibility instead of publication visibility alone', async () => {
+  it('filters references by owner visibility', async () => {
     const { service, recordReferenceEvent } = createReferenceServiceFixture({
       references: [
         createReferenceRecord({

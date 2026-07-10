@@ -18,7 +18,6 @@ import type {
 import { LIGHT_EXTENSION_SUPPORTED_KINDS } from '../../constants';
 import type {
   LightExtensionKind,
-  LightExtensionPublicationMetadataRecord,
   LightExtensionRepoRecord,
   LightExtensionRuntimeResolveInput,
   LightExtensionRuntimeResolveResult,
@@ -27,7 +26,6 @@ import type {
 } from '../../shared/types';
 import type { ApiClientLike } from '../api/lightExtensionEntriesRequests';
 import {
-  listLightExtensionEntryPublications,
   listLightExtensionRepos,
   listSelectableLightExtensionEntries,
   unwrapResourceResponse,
@@ -52,7 +50,6 @@ export function createLightExtensionRunJSResolver(api: ApiClientLike): RunJSSour
         context: {
           ...(input.context || {}),
           lightExtension: {
-            publicationId: runtime.publicationId,
             entryId: runtime.entryId,
             entryPath: runtime.entryPath,
             runtimeCodeHash: runtime.runtimeCodeHash,
@@ -101,18 +98,10 @@ export function createLightExtensionRunJSResolver(api: ApiClientLike): RunJSSour
         return undefined;
       }
 
-      const publication = await getSettingsDescriptorPublication(api, entry, binding, kind);
-      if (!publication || publication.kind !== kind) {
-        return undefined;
-      }
-
       return {
-        publicationId: publication.id,
-        schema: publication.settingsSchemaSnapshot,
-        defaults: isRecord(publication.settingsDefaultsSnapshot)
-          ? cloneRecord(publication.settingsDefaultsSnapshot)
-          : undefined,
-        schemaHash: publication.settingsSchemaHash,
+        schema: entry.settingsSchema,
+        defaults: extractSettingsDefaults(entry.settingsSchema),
+        schemaHash: entry.settingsDefaultsHash,
       };
     },
     async listSourceMenuItems(input) {
@@ -156,9 +145,7 @@ async function listLightExtensionSourceMenuItems(
     listSelectableLightExtensionEntries(api, { kind }),
     listLightExtensionRepos(api).catch(() => [] as LightExtensionRepoRecord[]),
   ]);
-  const selectableEntries = entries.filter(
-    (entry) => entry.kind === kind && isPublicationForEntry(entry.activePublication, entry, kind),
-  );
+  const selectableEntries = entries.filter((entry) => entry.kind === kind && Boolean(entry.runtimeArtifact?.code));
   const t = input.t || ((key: string) => key);
   const currentBinding = isRecord(input.sourceBinding)
     ? (input.sourceBinding as LightExtensionRuntimeSourceBinding)
@@ -235,11 +222,11 @@ function createEntryMenuItem(
         ...defaultParams,
         ...params,
         sourceMode: 'light-extension',
-        sourceBinding: createRuntimeSourceBinding(entry, input.defaultVersionPolicy, repoLabel),
+        sourceBinding: createRuntimeSourceBinding(entry, repoLabel),
         settings: mergeSettings(
-          clonePublicationDefaults(entry.activePublication),
+          extractSettingsDefaults(entry.settingsSchema),
           isRecord(params.settings) ? params.settings : undefined,
-          entry.activePublication,
+          entry.settingsSchema,
         ),
       };
     },
@@ -248,7 +235,6 @@ function createEntryMenuItem(
 
 function createRuntimeSourceBinding(
   entry: LightExtensionSelectableEntryRecord,
-  defaultVersionPolicy: string | undefined,
   repoLabel: string,
 ): LightExtensionRuntimeSourceBinding {
   return {
@@ -260,8 +246,6 @@ function createRuntimeSourceBinding(
     entryName: entry.entryName,
     entryPath: entry.entryPath,
     kind: entry.kind,
-    publicationId: entry.activePublication.id,
-    versionPolicy: defaultVersionPolicy === 'follow-active' ? 'follow-active' : 'pinned',
   };
 }
 
@@ -269,18 +253,12 @@ function getRepoLabel(repo: LightExtensionRepoRecord): string {
   return repo.title || repo.name || repo.id;
 }
 
-function clonePublicationDefaults(publication: LightExtensionPublicationMetadataRecord): Record<string, unknown> {
-  return isRecord(publication.settingsDefaultsSnapshot)
-    ? cloneRecord(publication.settingsDefaultsSnapshot as Record<string, unknown>)
-    : {};
-}
-
 function mergeSettings(
   defaults: Record<string, unknown>,
   current: Record<string, unknown> | undefined,
-  publication: LightExtensionPublicationMetadataRecord,
+  settingsSchema: Record<string, unknown> | null,
 ): Record<string, unknown> {
-  const allowedSettings = getSettingsSchemaPropertyNames(publication.settingsSchemaSnapshot);
+  const allowedSettings = getSettingsSchemaPropertyNames(settingsSchema);
   if (!allowedSettings) {
     return {
       ...defaults,
@@ -323,32 +301,6 @@ function getKindLabel(kind: LightExtensionKind | string, t: (key: string) => str
   return String(kind);
 }
 
-async function getSettingsDescriptorPublication(
-  api: ApiClientLike,
-  entry: LightExtensionSelectableEntryRecord,
-  binding: LightExtensionRuntimeSourceBinding,
-  kind: LightExtensionKind,
-): Promise<LightExtensionPublicationMetadataRecord | undefined> {
-  if (binding.versionPolicy === 'follow-active') {
-    return isPublicationForEntry(entry.activePublication, entry, kind) ? entry.activePublication : undefined;
-  }
-
-  const result = await listLightExtensionEntryPublications(api, entry.id);
-  return result.publications.find(
-    (publication) => publication.id === binding.publicationId && isPublicationForEntry(publication, entry, kind),
-  );
-}
-
-function isPublicationForEntry(
-  publication: LightExtensionPublicationMetadataRecord | null | undefined,
-  entry: LightExtensionSelectableEntryRecord,
-  kind: LightExtensionKind,
-): publication is LightExtensionPublicationMetadataRecord {
-  return Boolean(
-    publication && publication.repoId === entry.repoId && publication.entryId === entry.id && publication.kind === kind,
-  );
-}
-
 function toSupportedKind(value: string | undefined): LightExtensionKind | undefined {
   if (value && (LIGHT_EXTENSION_SUPPORTED_KINDS as readonly string[]).includes(value)) {
     return value as LightExtensionKind;
@@ -363,4 +315,39 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function cloneRecord(value: Record<string, unknown>): Record<string, unknown> {
   return JSON.parse(JSON.stringify(value)) as Record<string, unknown>;
+}
+
+function extractSettingsDefaults(schema: Record<string, unknown> | null): Record<string, unknown> {
+  if (!schema) {
+    return {};
+  }
+  if (isRecord(schema.default)) {
+    return cloneRecord(schema.default);
+  }
+  if (!isRecord(schema.properties)) {
+    return {};
+  }
+
+  const defaults: Record<string, unknown> = {};
+  for (const [key, propertySchema] of Object.entries(schema.properties)) {
+    if (!isRecord(propertySchema)) {
+      continue;
+    }
+    if (Object.prototype.hasOwnProperty.call(propertySchema, 'default')) {
+      defaults[key] = cloneJsonValue(propertySchema.default);
+      continue;
+    }
+    const childDefaults = extractSettingsDefaults(propertySchema);
+    if (Object.keys(childDefaults).length > 0) {
+      defaults[key] = childDefaults;
+    }
+  }
+  return defaults;
+}
+
+function cloneJsonValue(value: unknown): unknown {
+  if (typeof value === 'undefined') {
+    return undefined;
+  }
+  return JSON.parse(JSON.stringify(value));
 }

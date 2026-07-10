@@ -27,7 +27,10 @@ export default defineCollection({
       fields: ['repoId', 'healthStatus'],
     },
     {
-      fields: ['activePublicationId'],
+      fields: ['compiledCommitId'],
+    },
+    {
+      fields: ['runtimeCodeHash'],
     },
     {
       fields: ['repoId', 'lastScannedCommitId'],
@@ -112,15 +115,35 @@ export default defineCollection({
     },
     {
       type: 'string',
-      name: 'activePublicationId',
+      name: 'compiledCommitId',
     },
     {
-      type: 'belongsTo',
-      name: 'activePublication',
-      target: 'lightExtensionEntryPublications',
-      targetKey: 'id',
-      foreignKey: 'activePublicationId',
-      constraints: false,
+      type: 'json',
+      name: 'runtimeArtifact',
+    },
+    {
+      type: 'string',
+      name: 'runtimeVersion',
+    },
+    {
+      type: 'string',
+      name: 'surfaceStyle',
+    },
+    {
+      type: 'string',
+      name: 'runtimeCodeHash',
+    },
+    {
+      type: 'string',
+      name: 'filesHash',
+    },
+    {
+      type: 'string',
+      name: 'settingsDefaultsHash',
+    },
+    {
+      type: 'date',
+      name: 'compiledAt',
     },
     {
       type: 'string',

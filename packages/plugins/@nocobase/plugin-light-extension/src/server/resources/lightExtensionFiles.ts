@@ -25,6 +25,7 @@ import type {
 } from '../services/LightExtensionFileService';
 import { LightExtensionFileService } from '../services/LightExtensionFileService';
 import type { LightExtensionServiceContext } from '../services/LightExtensionRepoService';
+import { LightExtensionRuntimeCompileService } from '../services/LightExtensionRuntimeCompileService';
 import { toLightExtensionSourceError } from './errorContract';
 
 export const lightExtensionFileActionNames = [
@@ -32,7 +33,7 @@ export const lightExtensionFileActionNames = [
   'pullCommit',
   'getFile',
   'readArchivedSource',
-  'push',
+  'saveSource',
   'listCommits',
   'history',
   'getCommit',
@@ -66,55 +67,75 @@ type LightExtensionResourceContext = Context & {
 };
 
 type ResourceActionRunner = (
-  service: LightExtensionFileService,
+  services: LightExtensionFileActionServices,
   input: ResourceActionInput,
   currentUser: LightExtensionServiceContext,
 ) => Promise<unknown>;
 
+interface LightExtensionFileActionServices {
+  fileService: LightExtensionFileService;
+  runtimeCompileService: LightExtensionRuntimeCompileService;
+}
+
 const resourceActionRunners: Record<LightExtensionFileActionName, ResourceActionRunner> = {
-  pull: (service, input, currentUser) => service.pull(normalizePullInput(input), currentUser),
-  pullCommit: (service, input, currentUser) => service.pullCommit(normalizePullCommitInput(input), currentUser),
-  getFile: (service, input, currentUser) => service.getFile(normalizeGetFileInput(input), currentUser),
-  readArchivedSource: (service, input, currentUser) =>
-    service.readArchivedSource(normalizeGetFileInput(input), currentUser),
-  push: (service, input, currentUser) =>
-    service.push(
+  pull: (services, input, currentUser) => services.fileService.pull(normalizePullInput(input), currentUser),
+  pullCommit: (services, input, currentUser) =>
+    services.fileService.pullCommit(normalizePullCommitInput(input), currentUser),
+  getFile: (services, input, currentUser) => services.fileService.getFile(normalizeGetFileInput(input), currentUser),
+  readArchivedSource: (services, input, currentUser) =>
+    services.fileService.readArchivedSource(normalizeGetFileInput(input), currentUser),
+  saveSource: (services, input, currentUser) =>
+    services.runtimeCompileService.saveSource(
       {
         repoId: requireRepoId(input),
-        baseCommitId: requireNullableString(input, 'baseCommitId'),
+        baseCommitId: optionalNullableString(input, 'baseCommitId') ?? null,
         message: requireString(input, 'message'),
         files: requireArray(input, 'files', normalizeFileChange),
         allowEmptyCommit: optionalBoolean(input, 'allowEmptyCommit'),
       },
       currentUser,
     ),
-  listCommits: (service, input, currentUser) => service.listCommits(normalizeListCommitsInput(input), currentUser),
-  history: (service, input, currentUser) => service.listCommits(normalizeListCommitsInput(input), currentUser),
-  getCommit: (service, input, currentUser) => service.getCommit(normalizeGetCommitInput(input), currentUser),
-  diff: (service, input, currentUser) => service.diff(normalizeDiffInput(input), currentUser),
-  diffFile: (service, input, currentUser) => service.diffFile(normalizeDiffFileInput(input), currentUser),
+  listCommits: (services, input, currentUser) =>
+    services.fileService.listCommits(normalizeListCommitsInput(input), currentUser),
+  history: (services, input, currentUser) =>
+    services.fileService.listCommits(normalizeListCommitsInput(input), currentUser),
+  getCommit: (services, input, currentUser) =>
+    services.fileService.getCommit(normalizeGetCommitInput(input), currentUser),
+  diff: (services, input, currentUser) => services.fileService.diff(normalizeDiffInput(input), currentUser),
+  diffFile: (services, input, currentUser) => services.fileService.diffFile(normalizeDiffFileInput(input), currentUser),
 };
 
-export function createLightExtensionFilesResource(service: LightExtensionFileService): ResourceOptions {
+export function createLightExtensionFilesResource(
+  fileService: LightExtensionFileService,
+  runtimeCompileService: LightExtensionRuntimeCompileService,
+): ResourceOptions {
+  const services = {
+    fileService,
+    runtimeCompileService,
+  };
+
   return {
     name: 'lightExtensionFiles',
     only: [...lightExtensionFileActionNames],
     actions: Object.fromEntries(
       lightExtensionFileActionNames.map((actionName) => [
         actionName,
-        createLightExtensionFileAction(service, resourceActionRunners[actionName]),
+        createLightExtensionFileAction(services, resourceActionRunners[actionName]),
       ]),
     ) as Record<LightExtensionFileActionName, HandlerType>,
   };
 }
 
-function createLightExtensionFileAction(service: LightExtensionFileService, run: ResourceActionRunner): HandlerType {
+function createLightExtensionFileAction(
+  services: LightExtensionFileActionServices,
+  run: ResourceActionRunner,
+): HandlerType {
   return async (ctx: Context, next) => {
     const resourceCtx = ctx as LightExtensionResourceContext;
     const input = getActionInput(resourceCtx);
 
     try {
-      resourceCtx.body = await run(service, input, getServiceContext(resourceCtx));
+      resourceCtx.body = await run(services, input, getServiceContext(resourceCtx));
       await next();
     } catch (error) {
       const safeError = isVscError(error) ? toLightExtensionSourceError(error, getOptionalRepoId(input)) : error;
@@ -316,8 +337,11 @@ function optionalString(input: ResourceActionInput, key: string, label = key): s
   return value;
 }
 
-function requireNullableString(input: ResourceActionInput, key: string, label = key): string | null {
+function optionalNullableString(input: ResourceActionInput, key: string, label = key): string | null | undefined {
   const value = input[key];
+  if (typeof value === 'undefined') {
+    return undefined;
+  }
   if (value === null) {
     return null;
   }

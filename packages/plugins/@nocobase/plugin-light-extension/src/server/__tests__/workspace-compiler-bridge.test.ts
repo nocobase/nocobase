@@ -205,6 +205,51 @@ describe('plugin-light-extension workspace compiler bridge', () => {
     ).toEqual([...LIGHT_EXTENSION_ENABLED_KINDS].sort());
   });
 
+  it('compiles JS Field entries through the render surface used by the field runtime', async () => {
+    const result = await bridge.compileEntry(
+      {
+        repoId: 'ler_sales',
+        entryId: 'lee_phone_link',
+        kind: 'js-field',
+        entryName: 'phone-link',
+        entryPath: 'src/client/js-fields/phone-link/index.tsx',
+        surfaceStyle: 'render',
+        files: [
+          {
+            path: 'src/client/js-fields/phone-link/index.tsx',
+            content: 'ctx.render(<a href={`tel:${String(ctx.value ?? "")}`}>{String(ctx.value ?? "")}</a>);\n',
+          },
+        ],
+      },
+      {
+        requestId: 'req_compile_js_field',
+      },
+    );
+
+    expect(result.accepted).toBe(true);
+    expect(result.diagnostics).toEqual([]);
+    expect(result.surface).toMatchObject({
+      kind: 'js-field',
+      surfaceStyle: 'render',
+      compilerSurfaceStyle: 'render',
+      enabled: true,
+      modelUse: 'JSEditableFieldModel',
+      surface: 'js-model.render',
+    });
+    expect(result.artifact).toMatchObject({
+      version: 'v2',
+      entryPath: 'src/client/js-fields/phone-link/index.tsx',
+      metadata: expect.objectContaining({
+        repoId: 'ler_sales',
+        entryId: 'lee_phone_link',
+        kind: 'js-field',
+        entryName: 'phone-link',
+        surfaceStyle: 'render',
+        compilerSurfaceStyle: 'render',
+      }),
+    });
+  });
+
   it('compiles JS Item render entries through the enabled compiler surface', async () => {
     const result = await bridge.compileEntry(
       {

@@ -23,14 +23,13 @@ import type {
   LightExtensionReferenceRecord,
   LightExtensionReferenceResolvedStatus,
   LightExtensionRuntimeSourceBinding,
-  LightExtensionSourceBindingVersionPolicy,
 } from '../../shared/types';
 import { isLightExtensionError } from '../../shared/errors';
 import { LightExtensionAuditService } from './LightExtensionAuditService';
 import { LightExtensionPermissionService } from './LightExtensionPermissionService';
 import type { LightExtensionCanFunction } from './LightExtensionPermissionService';
 import type { LightExtensionServiceContext } from './LightExtensionRepoService';
-import { type LightExtensionPublicationRecord, publicationFromModel } from './LightExtensionPublicationService';
+import { entryFromModel } from './LightExtensionEntryScanner';
 import {
   JS_BLOCK_REFERENCE_OWNER_ADAPTER,
   buildReferenceOwnerLocator,
@@ -112,7 +111,6 @@ type ReferenceOwnerSource = {
   source?: NormalizedJsBlockSource;
 };
 
-const DEFAULT_VERSION_POLICY: LightExtensionSourceBindingVersionPolicy = 'pinned';
 const EMPTY_SETTINGS_HASH = stableJsonHash({});
 
 export class ReferenceService {
@@ -422,7 +420,6 @@ export class ReferenceService {
     input: {
       repoId?: string;
       entryId?: string;
-      publicationId?: string;
       ownerLocator?: Partial<LightExtensionReferenceOwnerLocator>;
     } = {},
     ctx: ReferenceServiceContext = {},
@@ -435,12 +432,11 @@ export class ReferenceService {
       ctx,
       repoId: normalizeString(input.repoId),
       entryId: normalizeString(input.entryId),
-      publicationId: normalizeString(input.publicationId),
       ownerLocatorHash: buildInputOwnerLocatorHash(input),
     });
 
     const filter: Record<string, unknown> = {};
-    for (const key of ['repoId', 'entryId', 'publicationId'] as const) {
+    for (const key of ['repoId', 'entryId'] as const) {
       const value = normalizeString(input[key]);
       if (value) {
         filter[key] = value;
@@ -464,7 +460,6 @@ export class ReferenceService {
       await this.recordReferenceAuditBestEffort({
         repoId: reference.repoId,
         entryId: reference.entryId,
-        publicationId: reference.publicationId,
         action: 'readReferences',
         result: 'denied',
         requestId,
@@ -497,23 +492,13 @@ export class ReferenceService {
 
     for (const reference of references) {
       const current = referenceFromModel(reference);
-      const currentStatus = current.resolvedStatus;
-      if (current.versionPolicy === 'pinned' && shouldPreserveReferenceStatusOnRepoRefresh(currentStatus)) {
-        statusCounts[currentStatus] = (statusCounts[currentStatus] || 0) + 1;
-        continue;
-      }
       const resolution = await this.resolveStoredReferenceResolution(current, ctx);
       statusCounts[resolution.resolvedStatus] = (statusCounts[resolution.resolvedStatus] || 0) + 1;
-      if (
-        resolution.resolvedStatus === current.resolvedStatus &&
-        resolution.publicationId === current.publicationId &&
-        resolution.settingsHash === current.settingsHash
-      ) {
+      if (resolution.resolvedStatus === current.resolvedStatus && resolution.settingsHash === current.settingsHash) {
         continue;
       }
       await reference.update(
         {
-          publicationId: resolution.publicationId,
           settingsHash: resolution.settingsHash,
           resolvedStatus: resolution.resolvedStatus,
         },
@@ -625,8 +610,6 @@ export class ReferenceService {
     await this.upsertReference({
       repoId: resolution.repoId,
       entryId: resolution.entryId,
-      publicationId: resolution.publicationId,
-      versionPolicy: resolution.versionPolicy,
       kind: adapter.kind,
       ownerLocator,
       ownerLocatorHash,
@@ -651,7 +634,6 @@ export class ReferenceService {
           modelUidHash: stableJsonHash({ modelUid }),
           repoId: resolution.repoId,
           entryId: resolution.entryId,
-          publicationId: resolution.publicationId,
         },
       );
     }
@@ -665,18 +647,13 @@ export class ReferenceService {
   ): Promise<{
     repoId: string;
     entryId: string;
-    publicationId: string | null;
-    versionPolicy: LightExtensionSourceBindingVersionPolicy;
     settingsHash: string;
     resolvedStatus: LightExtensionReferenceResolvedStatus;
     conflictReason?: string;
   }> {
-    const versionPolicy = normalizeVersionPolicy(sourceBinding.versionPolicy);
     const fallback = {
       repoId: sourceBinding.repoId,
       entryId: sourceBinding.entryId,
-      publicationId: normalizeString(sourceBinding.publicationId) || null,
-      versionPolicy,
       settingsHash: stableJsonHash(settings),
     };
     if (sourceBinding.kind !== expectedKind) {
@@ -686,87 +663,6 @@ export class ReferenceService {
         conflictReason: 'kind_mismatch',
       };
     }
-    if (versionPolicy === 'follow-active') {
-      return this.resolveFollowActiveReferenceFromBinding(sourceBinding, settings, ctx, fallback);
-    }
-
-    const publication = await this.findPublication(sourceBinding.publicationId, ctx);
-    if (!publication) {
-      return {
-        ...fallback,
-        resolvedStatus: 'publication_missing',
-        conflictReason: 'publication_missing',
-      };
-    }
-
-    const mismatch =
-      publication.repoId !== sourceBinding.repoId ||
-      publication.entryId !== sourceBinding.entryId ||
-      publication.kind !== sourceBinding.kind;
-    const settingsForHash = mergeSettingsForReferenceHash(
-      this.settingsResolver.getPublicationDefaults(publication),
-      settings,
-    );
-    let resolvedSettings: Record<string, unknown>;
-    try {
-      resolvedSettings = this.settingsResolver.resolvePublicationSettings(publication, settings);
-    } catch (error) {
-      if (!isLightExtensionError(error) || error.code !== 'LIGHT_EXTENSION_SETTINGS_INVALID') {
-        throw error;
-      }
-      return {
-        repoId: publication.repoId,
-        entryId: publication.entryId,
-        publicationId: publication.id,
-        versionPolicy,
-        settingsHash: stableJsonHash(settingsForHash),
-        resolvedStatus: 'settings_invalid',
-        conflictReason: 'settings_invalid',
-      };
-    }
-
-    if (mismatch) {
-      return {
-        repoId: publication.repoId,
-        entryId: publication.entryId,
-        publicationId: publication.id,
-        versionPolicy,
-        settingsHash: stableJsonHash(resolvedSettings),
-        resolvedStatus: 'binding_outdated',
-        conflictReason: 'binding_outdated',
-      };
-    }
-
-    return {
-      repoId: publication.repoId,
-      entryId: publication.entryId,
-      publicationId: publication.id,
-      versionPolicy,
-      settingsHash: stableJsonHash(resolvedSettings),
-      resolvedStatus: await this.resolvePublicationRuntimeStatus(publication, ctx),
-    };
-  }
-
-  private async resolveFollowActiveReferenceFromBinding(
-    sourceBinding: LightExtensionRuntimeSourceBinding,
-    settings: Record<string, unknown>,
-    ctx: ReferenceServiceContext,
-    fallback: {
-      repoId: string;
-      entryId: string;
-      publicationId: string | null;
-      versionPolicy: LightExtensionSourceBindingVersionPolicy;
-      settingsHash: string;
-    },
-  ): Promise<{
-    repoId: string;
-    entryId: string;
-    publicationId: string | null;
-    versionPolicy: LightExtensionSourceBindingVersionPolicy;
-    settingsHash: string;
-    resolvedStatus: LightExtensionReferenceResolvedStatus;
-    conflictReason?: string;
-  }> {
     const repo = await this.db.getRepository('lightExtensionRepos').findOne({
       filterByTk: sourceBinding.repoId,
       transaction: ctx.transaction,
@@ -774,7 +670,6 @@ export class ReferenceService {
     if (!repo) {
       return {
         ...fallback,
-        publicationId: null,
         resolvedStatus: 'repo_missing',
         conflictReason: 'repo_missing',
       };
@@ -783,7 +678,6 @@ export class ReferenceService {
     if (lifecycleStatus === 'disabled' || lifecycleStatus === 'archived') {
       return {
         ...fallback,
-        publicationId: null,
         resolvedStatus: lifecycleStatus === 'disabled' ? 'repo_disabled' : 'repo_archived',
         conflictReason: lifecycleStatus === 'disabled' ? 'repo_disabled' : 'repo_archived',
       };
@@ -796,7 +690,6 @@ export class ReferenceService {
     if (!entry) {
       return {
         ...fallback,
-        publicationId: null,
         resolvedStatus: 'entry_missing',
         conflictReason: 'entry_missing',
       };
@@ -808,8 +701,6 @@ export class ReferenceService {
       return {
         repoId: entryRepoId || fallback.repoId,
         entryId: normalizeString(entry.get('id')) || fallback.entryId,
-        publicationId: null,
-        versionPolicy: fallback.versionPolicy,
         settingsHash: fallback.settingsHash,
         resolvedStatus: 'binding_outdated',
         conflictReason: 'binding_outdated',
@@ -818,197 +709,107 @@ export class ReferenceService {
     if (healthStatus !== 'ready') {
       return {
         ...fallback,
-        publicationId: null,
         resolvedStatus: 'entry_missing',
         conflictReason: healthStatus === 'disabled' ? 'entry_disabled' : 'entry_missing',
       };
     }
 
-    const activePublicationId = normalizeString(entry.get('activePublicationId'));
-    if (!activePublicationId) {
+    const runtimeArtifact = entry.get('runtimeArtifact');
+    const runtimeCodeHash = normalizeString(entry.get('runtimeCodeHash'));
+    const compiledCommitId = normalizeString(entry.get('compiledCommitId'));
+    if (!isPlainRecord(runtimeArtifact) || !runtimeCodeHash || !compiledCommitId) {
       return {
         ...fallback,
-        publicationId: null,
-        resolvedStatus: 'no_active_publication',
-        conflictReason: 'no_active_publication',
+        resolvedStatus: 'runtime_missing',
+        conflictReason: 'runtime_missing',
       };
     }
-    const publication = await this.findPublication(activePublicationId, ctx);
-    if (!publication) {
-      return {
-        ...fallback,
-        publicationId: activePublicationId,
-        resolvedStatus: 'publication_missing',
-        conflictReason: 'publication_missing',
-      };
-    }
-    const mismatch =
-      publication.repoId !== sourceBinding.repoId ||
-      publication.entryId !== sourceBinding.entryId ||
-      publication.kind !== sourceBinding.kind;
-    const sourceSettings = this.settingsResolver.pruneUnknownSettings(publication, settings);
+    const runtimeEntry = entryFromModel(entry);
+    const settingsSource = {
+      id: runtimeEntry.id,
+      settingsSchema: runtimeEntry.settingsSchema,
+      settingsDefaultsHash: runtimeEntry.settingsDefaultsHash,
+    };
+    const sourceSettings = this.settingsResolver.pruneUnknownSettings(settingsSource, settings);
     const settingsForHash = mergeSettingsForReferenceHash(
-      this.settingsResolver.getPublicationDefaults(publication),
+      this.settingsResolver.getRuntimeDefaults(settingsSource),
       sourceSettings,
     );
     let resolvedSettings: Record<string, unknown>;
     try {
-      resolvedSettings = this.settingsResolver.resolvePublicationSettings(publication, sourceSettings);
+      resolvedSettings = this.settingsResolver.resolveRuntimeSettings(settingsSource, sourceSettings);
     } catch (error) {
       if (!isLightExtensionError(error) || error.code !== 'LIGHT_EXTENSION_SETTINGS_INVALID') {
         throw error;
       }
       return {
-        repoId: publication.repoId,
-        entryId: publication.entryId,
-        publicationId: publication.id,
-        versionPolicy: fallback.versionPolicy,
+        repoId: runtimeEntry.repoId,
+        entryId: runtimeEntry.id,
         settingsHash: stableJsonHash(settingsForHash),
         resolvedStatus: 'settings_invalid',
         conflictReason: 'settings_invalid',
       };
     }
 
-    if (mismatch) {
-      return {
-        repoId: publication.repoId,
-        entryId: publication.entryId,
-        publicationId: publication.id,
-        versionPolicy: fallback.versionPolicy,
-        settingsHash: stableJsonHash(resolvedSettings),
-        resolvedStatus: 'binding_outdated',
-        conflictReason: 'binding_outdated',
-      };
-    }
-
     return {
-      repoId: publication.repoId,
-      entryId: publication.entryId,
-      publicationId: publication.id,
-      versionPolicy: fallback.versionPolicy,
+      repoId: runtimeEntry.repoId,
+      entryId: runtimeEntry.id,
       settingsHash: stableJsonHash(resolvedSettings),
-      resolvedStatus: await this.resolvePublicationRuntimeStatus(publication, ctx),
+      resolvedStatus: 'active',
     };
-  }
-
-  private async resolvePublicationRuntimeStatus(
-    publication: LightExtensionPublicationRecord,
-    ctx: ReferenceServiceContext,
-  ): Promise<LightExtensionReferenceResolvedStatus> {
-    const repo = await this.db.getRepository('lightExtensionRepos').findOne({
-      filterByTk: publication.repoId,
-      transaction: ctx.transaction,
-    });
-    if (!repo) {
-      return 'repo_missing';
-    }
-    const lifecycleStatus = normalizeString(repo.get('lifecycleStatus'));
-    if (lifecycleStatus === 'disabled') {
-      return 'repo_disabled';
-    }
-    if (lifecycleStatus === 'archived') {
-      return 'repo_archived';
-    }
-
-    const entry = await this.db.getRepository('lightExtensionEntries').findOne({
-      filterByTk: publication.entryId,
-      transaction: ctx.transaction,
-    });
-    if (!entry) {
-      return 'entry_missing';
-    }
-    const entryRepoId = normalizeString(entry.get('repoId'));
-    const entryKind = normalizeString(entry.get('kind'));
-    const healthStatus = normalizeString(entry.get('healthStatus'));
-    if (entryRepoId !== publication.repoId || entryKind !== publication.kind || healthStatus !== 'ready') {
-      return 'entry_missing';
-    }
-
-    return 'active';
-  }
-
-  private async resolveStoredReferenceStatus(
-    reference: LightExtensionReferenceRecord,
-    ctx: ReferenceServiceContext,
-  ): Promise<LightExtensionReferenceResolvedStatus> {
-    return (await this.resolveStoredReferenceResolution(reference, ctx)).resolvedStatus;
   }
 
   private async resolveStoredReferenceResolution(
     reference: LightExtensionReferenceRecord,
     ctx: ReferenceServiceContext,
   ): Promise<{
-    publicationId: string | null;
     settingsHash: string;
     resolvedStatus: LightExtensionReferenceResolvedStatus;
   }> {
-    if (reference.versionPolicy === 'follow-active') {
-      const ownerModelUid = getReferenceOwnerModelUid(reference.ownerLocator);
-      const ownerNode = ownerModelUid ? await this.loadFlowModelTree(ownerModelUid, ctx).catch(() => null) : null;
-      const adapter = getReferenceOwnerAdapterByOwnerKind(reference.ownerLocator.kind);
-      const source = readReferenceOwnerSource(ownerNode || {}, adapter, reference.ownerLocator);
-      if (source.sourceBinding?.versionPolicy === 'follow-active') {
-        const resolution = await this.resolveReferenceFromBinding(
-          source.sourceBinding,
-          source.settings,
-          ctx,
-          reference.kind,
-        );
-        return {
-          publicationId: resolution.publicationId,
-          settingsHash: resolution.settingsHash,
-          resolvedStatus: resolution.resolvedStatus,
-        };
-      }
+    const entry = await this.db.getRepository('lightExtensionEntries').findOne({
+      filterByTk: reference.entryId,
+      transaction: ctx.transaction,
+    });
+    if (!entry) {
       return {
-        publicationId: reference.publicationId,
         settingsHash: reference.settingsHash,
-        resolvedStatus: ownerNode ? 'binding_outdated' : 'owner_missing',
+        resolvedStatus: 'entry_missing',
       };
     }
-
-    const publicationId = normalizeString(reference.publicationId);
-    if (!publicationId) {
+    const repoId = normalizeString(entry.get('repoId'));
+    const kind = normalizeString(entry.get('kind'));
+    if (repoId !== reference.repoId || kind !== reference.kind) {
       return {
-        publicationId: null,
-        settingsHash: reference.settingsHash,
-        resolvedStatus: 'publication_missing',
-      };
-    }
-    const publication = await this.findPublication(publicationId, ctx);
-    if (!publication) {
-      return {
-        publicationId,
-        settingsHash: reference.settingsHash,
-        resolvedStatus: 'publication_missing',
-      };
-    }
-    if (publication.repoId !== reference.repoId || publication.entryId !== reference.entryId) {
-      return {
-        publicationId,
         settingsHash: reference.settingsHash,
         resolvedStatus: 'binding_outdated',
       };
     }
-    if (publication.kind !== reference.kind) {
+    const resolution = await this.resolveReferenceFromBinding(
+      {
+        type: 'light-extension-entry',
+        repoId: reference.repoId,
+        entryId: reference.entryId,
+        kind: reference.kind,
+      },
+      {},
+      ctx,
+      reference.kind,
+    );
+    if (resolution.resolvedStatus !== 'settings_invalid') {
       return {
-        publicationId,
         settingsHash: reference.settingsHash,
-        resolvedStatus: 'binding_outdated',
+        resolvedStatus: resolution.resolvedStatus,
       };
     }
     return {
-      publicationId,
-      settingsHash: reference.settingsHash,
-      resolvedStatus: await this.resolvePublicationRuntimeStatus(publication, ctx),
+      settingsHash: resolution.settingsHash,
+      resolvedStatus: resolution.resolvedStatus,
     };
   }
 
   private async upsertReference(input: {
     repoId: string;
     entryId: string;
-    publicationId: string | null;
-    versionPolicy: LightExtensionSourceBindingVersionPolicy;
     kind: LightExtensionKind;
     ownerLocator: LightExtensionReferenceOwnerLocator;
     ownerLocatorHash: string;
@@ -1022,12 +823,10 @@ export class ReferenceService {
     const values = {
       repoId: input.repoId,
       entryId: input.entryId,
-      publicationId: input.publicationId,
       kind: input.kind,
       ownerKind: input.ownerLocator.kind,
       ownerLocator: input.ownerLocator,
       ownerLocatorHash: input.ownerLocatorHash,
-      versionPolicy: input.versionPolicy,
       settingsHash: input.settingsHash,
       resolvedStatus: input.resolvedStatus,
     };
@@ -1039,7 +838,6 @@ export class ReferenceService {
         ownerLocatorHash: input.ownerLocatorHash,
         repoId: input.repoId,
         entryId: input.entryId,
-        publicationId: input.publicationId,
         resolvedStatus: input.resolvedStatus,
       });
       return;
@@ -1070,7 +868,6 @@ export class ReferenceService {
     await this.recordReferenceAuditBestEffort({
       repoId: input.repoId,
       entryId: input.entryId,
-      publicationId: input.publicationId,
       action: 'referenceUpsert',
       result: 'success',
       requestId: input.requestId,
@@ -1116,7 +913,6 @@ export class ReferenceService {
           ownerLocatorHash,
           repoId: normalizeString(reference.get('repoId')),
           entryId: normalizeString(reference.get('entryId')),
-          publicationId: normalizeString(reference.get('publicationId')) || null,
           resolvedStatus: normalizeStatus(reference.get('resolvedStatus')),
           reasonCode: 'binding_changed',
         });
@@ -1131,7 +927,6 @@ export class ReferenceService {
       await this.recordReferenceAuditBestEffort({
         repoId: normalizeString(reference.get('repoId')),
         entryId: normalizeString(reference.get('entryId')),
-        publicationId: normalizeString(reference.get('publicationId')),
         action: 'referenceRemove',
         result: 'success',
         requestId,
@@ -1172,7 +967,6 @@ export class ReferenceService {
           ownerLocatorHash,
           repoId: normalizeString(reference.get('repoId')),
           entryId: normalizeString(reference.get('entryId')),
-          publicationId: normalizeString(reference.get('publicationId')) || null,
           resolvedStatus: normalizeStatus(reference.get('resolvedStatus')),
           reasonCode: options.reasonCode || 'source_mode_inline',
         });
@@ -1185,7 +979,6 @@ export class ReferenceService {
       await this.recordReferenceAuditBestEffort({
         repoId: normalizeString(reference.get('repoId')),
         entryId: normalizeString(reference.get('entryId')),
-        publicationId: normalizeString(reference.get('publicationId')),
         action: 'referenceRemove',
         result: 'success',
         requestId,
@@ -1323,7 +1116,6 @@ export class ReferenceService {
           ownerLocatorHash,
           repoId: normalizeString(reference.get('repoId')),
           entryId: normalizeString(reference.get('entryId')),
-          publicationId: normalizeString(reference.get('publicationId')) || null,
           resolvedStatus: 'owner_missing',
         });
         summary.ownerMissing += 1;
@@ -1343,7 +1135,6 @@ export class ReferenceService {
       await this.recordReferenceAuditBestEffort({
         repoId: normalizeString(reference.get('repoId')),
         entryId: normalizeString(reference.get('entryId')),
-        publicationId: normalizeString(reference.get('publicationId')),
         action: 'referenceOwnerMissing',
         result: 'success',
         requestId: input.requestId,
@@ -1629,21 +1420,6 @@ export class ReferenceService {
     });
   }
 
-  private async findPublication(
-    publicationId: string,
-    ctx: ReferenceServiceContext,
-  ): Promise<LightExtensionPublicationRecord | null> {
-    const normalizedPublicationId = normalizeString(publicationId);
-    if (!normalizedPublicationId) {
-      return null;
-    }
-    const record = await this.db.getRepository('lightExtensionEntryPublications').findOne({
-      filterByTk: normalizedPublicationId,
-      transaction: ctx.transaction,
-    });
-    return record ? publicationFromModel(record) : null;
-  }
-
   private async assertReferenceActionAllowed(input: {
     permissionAction: 'readReferences' | 'updateReferences';
     auditAction: Parameters<LightExtensionAuditService['recordReferenceEvent']>[0]['action'];
@@ -1651,7 +1427,6 @@ export class ReferenceService {
     ctx: ReferenceServiceContext;
     repoId?: string;
     entryId?: string;
-    publicationId?: string;
     ownerLocatorHash?: string;
   }): Promise<void> {
     try {
@@ -1664,7 +1439,6 @@ export class ReferenceService {
         await this.recordReferenceAuditBestEffort({
           repoId: input.repoId,
           entryId: input.entryId,
-          publicationId: input.publicationId,
           action: input.auditAction,
           result: 'denied',
           requestId: input.requestId,
@@ -1912,9 +1686,7 @@ function normalizeSourceBinding(value: unknown): LightExtensionRuntimeSourceBind
   const repoId = normalizeString(value.repoId);
   const entryId = normalizeString(value.entryId);
   const kind = normalizeString(value.kind);
-  const publicationId = normalizeString(value.publicationId);
-  const versionPolicy = normalizeVersionPolicy(value.versionPolicy);
-  if (type !== 'light-extension-entry' || !repoId || !entryId || !kind || !publicationId) {
+  if (type !== 'light-extension-entry' || !repoId || !entryId || !kind) {
     return undefined;
   }
   return {
@@ -1922,8 +1694,6 @@ function normalizeSourceBinding(value: unknown): LightExtensionRuntimeSourceBind
     repoId,
     entryId,
     kind,
-    publicationId,
-    versionPolicy,
   };
 }
 
@@ -2014,21 +1784,15 @@ function referenceFromModel(record: Model): LightExtensionReferenceRecord {
     id: normalizeString(record.get('id')),
     repoId: normalizeString(record.get('repoId')),
     entryId: normalizeString(record.get('entryId')),
-    publicationId: normalizeString(record.get('publicationId')) || null,
     kind: normalizeReferenceKind(record.get('kind')),
     ownerKind: normalizeOwnerKind(record.get('ownerKind')),
     ownerLocator,
     ownerLocatorHash: normalizeString(record.get('ownerLocatorHash')),
-    versionPolicy: normalizeVersionPolicy(record.get('versionPolicy')),
     settingsHash: normalizeString(record.get('settingsHash')) || EMPTY_SETTINGS_HASH,
     resolvedStatus: normalizeStatus(record.get('resolvedStatus')),
     createdAt: normalizeDate(record.get('createdAt')),
     updatedAt: normalizeDate(record.get('updatedAt')),
   };
-}
-
-function normalizeVersionPolicy(value: unknown): LightExtensionSourceBindingVersionPolicy {
-  return value === 'follow-active' ? 'follow-active' : DEFAULT_VERSION_POLICY;
 }
 
 function normalizeStatus(value: unknown): LightExtensionReferenceResolvedStatus {
@@ -2040,14 +1804,13 @@ function normalizeStatus(value: unknown): LightExtensionReferenceResolvedStatus 
     'repo_disabled',
     'repo_archived',
     'entry_missing',
-    'publication_missing',
     'owner_missing',
     'settings_invalid',
-    'no_active_publication',
+    'runtime_missing',
   ];
   return statuses.includes(normalized as LightExtensionReferenceResolvedStatus)
     ? (normalized as LightExtensionReferenceResolvedStatus)
-    : 'publication_missing';
+    : 'runtime_missing';
 }
 
 function normalizeReferenceKind(value: unknown): LightExtensionKind {
@@ -2127,10 +1890,6 @@ function mergeStatusCounts(
     const normalizedStatus = normalizeStatus(status);
     summary.statusCounts[normalizedStatus] = (summary.statusCounts[normalizedStatus] || 0) + (count || 0);
   }
-}
-
-function shouldPreserveReferenceStatusOnRepoRefresh(status: LightExtensionReferenceResolvedStatus): boolean {
-  return status === 'owner_missing' || status === 'settings_invalid' || status === 'binding_outdated';
 }
 
 function buildActiveOwnerLocatorHashes(modelUid: string): string[] {

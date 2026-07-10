@@ -113,10 +113,6 @@ async function createLegacyTables(app: MockServer): Promise<void> {
       type: DataTypes.STRING,
       allowNull: false,
     },
-    versionPolicy: {
-      type: DataTypes.STRING,
-      allowNull: false,
-    },
     resolvedStatus: {
       type: DataTypes.STRING,
       allowNull: false,
@@ -154,8 +150,7 @@ function createReferenceRow(id: string, repoId: string, now: Date) {
       stepKey: 'runjs',
     }),
     ownerLocatorHash: `owner_${id}`,
-    versionPolicy: 'pinned',
-    resolvedStatus: 'no_active_publication',
+    resolvedStatus: 'runtime_missing',
     createdAt: now,
     updatedAt: now,
   };

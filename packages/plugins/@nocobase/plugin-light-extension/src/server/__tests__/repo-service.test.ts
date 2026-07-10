@@ -361,30 +361,25 @@ describe('plugin-light-extension repo service', () => {
       filterByTk: repo.id,
     });
     const vscRepoId = repoRecord?.get('vscRepoId') as string;
-    const entry = await app.db.getRepository('lightExtensionEntries').create({
+    await app.db.getRepository('lightExtensionEntries').create({
       values: {
         repoId: repo.id,
         target: 'client',
         kind: 'jsBlock',
         entryName: 'main',
         entryPath: 'src/client/index.tsx',
-      },
-    });
-    await app.db.getRepository('lightExtensionEntryPublications').create({
-      values: {
-        repoId: repo.id,
-        entryId: entry.get('id'),
-        commitId: 'vscc_deleted',
-        entryPath: 'src/client/index.tsx',
-        target: 'client',
-        kind: 'jsBlock',
-        surfaceStyle: 'render',
-        runtimeVersion: 'v2',
-        artifact: {
-          type: 'compiled',
+        compiledCommitId: 'vscc_deleted',
+        runtimeArtifact: {
+          code: 'ctx.render("deleted");',
+          version: 'v2',
+          entryPath: 'src/client/index.tsx',
         },
-        filesHash: 'files_hash',
+        runtimeVersion: 'v2',
+        surfaceStyle: 'render',
         runtimeCodeHash: 'runtime_hash',
+        filesHash: 'files_hash',
+        settingsDefaultsHash: 'settings_defaults_hash',
+        compiledAt: new Date(),
       },
     });
 
@@ -397,9 +392,6 @@ describe('plugin-light-extension repo service', () => {
     expect(deleted).not.toHaveProperty('vscRepoId');
     expect(await app.db.getRepository('lightExtensionRepos').findOne({ filterByTk: repo.id })).toBeNull();
     expect(await app.db.getRepository('lightExtensionEntries').count({ filter: { repoId: repo.id } })).toBe(0);
-    expect(await app.db.getRepository('lightExtensionEntryPublications').count({ filter: { repoId: repo.id } })).toBe(
-      0,
-    );
     expect(vscRepo?.get('status')).toBe('archived');
     await expect(
       app.db.getRepository('lightExtensionReferences').create({

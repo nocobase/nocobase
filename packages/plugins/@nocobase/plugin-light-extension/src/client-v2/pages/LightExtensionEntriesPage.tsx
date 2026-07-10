@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { CheckCircleOutlined, ReloadOutlined, ScanOutlined } from '@ant-design/icons';
+import { ReloadOutlined, ScanOutlined } from '@ant-design/icons';
 import { Alert, Button, Empty, Flex, Space, Table, Tag, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
@@ -126,15 +126,16 @@ function LightExtensionEntriesPage({ embedded = false }: LightExtensionEntriesPa
           value ? <Tag color="success">{t('Settings schema')}</Tag> : <Tag>{t('No settings')}</Tag>,
       },
       {
-        title: t('Active publication'),
-        dataIndex: 'activePublicationId',
-        render: (value: string | null) =>
-          value ? (
-            <Tag color="success" icon={<CheckCircleOutlined />}>
-              {shortId(value)}
-            </Tag>
+        title: t('Compile health'),
+        dataIndex: 'runtimeArtifact',
+        render: (_value, entry) =>
+          entry.runtimeArtifact?.code ? (
+            <Space direction="vertical" size={0}>
+              <Tag color="success">{t('Compiled')}</Tag>
+              <Typography.Text type="secondary">{formatDate(entry.compiledAt)}</Typography.Text>
+            </Space>
           ) : (
-            <Tag>{t('No active publication')}</Tag>
+            <Tag>{t('Not compiled')}</Tag>
           ),
       },
       {
@@ -214,6 +215,11 @@ function LightExtensionEntriesPage({ embedded = false }: LightExtensionEntriesPa
 
 export default LightExtensionEntriesPage;
 
-function shortId(value: string): string {
-  return value.length > 12 ? value.slice(0, 12) : value;
+function formatDate(value?: string | null): string {
+  if (!value) {
+    return '-';
+  }
+
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? value : date.toLocaleString();
 }

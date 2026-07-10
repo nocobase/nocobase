@@ -49,7 +49,7 @@ describe('plugin-light-extension entry scanner', () => {
     await app?.destroy();
   });
 
-  it('creates and updates stable entry snapshots without creating publications', async () => {
+  it('creates and updates stable entry records without touching compiled runtime fields for ready entries', async () => {
     const repo = await repoService.createRepo(
       {
         name: 'Scanner Demo',
@@ -69,10 +69,22 @@ describe('plugin-light-extension entry scanner', () => {
       },
     );
     const firstEntry = firstScan.entries[0].entry;
+    const compiledAt = new Date('2026-07-06T00:00:00.000Z');
     await app.db.getRepository('lightExtensionEntries').update({
       filterByTk: firstEntry.id,
       values: {
-        activePublicationId: 'leep_keep_existing_active',
+        compiledCommitId: 'commit_compiled',
+        runtimeArtifact: {
+          code: 'ctx.render("compiled");',
+          version: 'v2',
+          entryPath: firstEntry.entryPath,
+        },
+        runtimeVersion: 'v2',
+        surfaceStyle: 'render',
+        runtimeCodeHash: 'runtime_hash',
+        filesHash: 'files_hash',
+        settingsDefaultsHash: 'settings_defaults_hash',
+        compiledAt,
       },
     });
     const push = await fileService.push(
@@ -142,10 +154,10 @@ describe('plugin-light-extension entry scanner', () => {
     expect(secondScan.entries[0].entry.id).toBe(firstEntry.id);
     expect(secondScan.entries[0].entry.title).toBe('Updated KPI');
     expect(secondScan.repo.lastScannedCommitId).toBe(push.commit.id);
-    expect(persisted?.get('activePublicationId')).toBe('leep_keep_existing_active');
-    expect(await app.db.getRepository('lightExtensionEntryPublications').count({ filter: { repoId: repo.id } })).toBe(
-      0,
-    );
+    expect(persisted?.get('compiledCommitId')).toBe('commit_compiled');
+    expect(persisted?.get('runtimeArtifact')).toMatchObject({
+      code: 'ctx.render("compiled");',
+    });
   });
 
   it('serializes concurrent scans for the same repository', async () => {

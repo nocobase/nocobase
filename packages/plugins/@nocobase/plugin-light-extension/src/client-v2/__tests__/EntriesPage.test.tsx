@@ -72,7 +72,14 @@ describe('LightExtensionEntriesPage', () => {
         tags: ['sales'],
         sort: 10,
         settingsSchema: { type: 'object' },
-        activePublicationId: 'lep_active',
+        compiledCommitId: null,
+        runtimeArtifact: null,
+        runtimeVersion: null,
+        surfaceStyle: null,
+        runtimeCodeHash: null,
+        filesHash: null,
+        settingsDefaultsHash: null,
+        compiledAt: null,
         healthStatus: 'failed',
         diagnostics: [
           {
@@ -121,7 +128,18 @@ describe('LightExtensionEntriesPage', () => {
             tags: ['sales'],
             sort: 10,
             settingsSchema: { type: 'object' },
-            activePublicationId: null,
+            compiledCommitId: 'commit-2',
+            runtimeArtifact: {
+              code: 'ctx.render("updated");',
+              version: 'v2',
+              entryPath: 'src/client/js-blocks/sales-kpi/index.tsx',
+            },
+            runtimeVersion: 'v2',
+            surfaceStyle: 'render',
+            runtimeCodeHash: 'runtime_hash',
+            filesHash: 'files_hash',
+            settingsDefaultsHash: 'settings_defaults_hash',
+            compiledAt: '2026-07-09T00:00:00.000Z',
             healthStatus: 'ready',
             diagnostics: [],
             validatorVersion: 'light-extension-validator-v1',
@@ -144,7 +162,7 @@ describe('LightExtensionEntriesPage', () => {
     expect(screen.getByText('sales-kpi')).toBeTruthy();
     expect(screen.getByText('src/client/js-blocks/sales-kpi/index.tsx')).toBeTruthy();
     expect(screen.getByText('Settings schema')).toBeTruthy();
-    expect(screen.getByText('lep_active')).toBeTruthy();
+    expect(screen.getByText('Not compiled')).toBeTruthy();
     expect(screen.getAllByText('Errors: 1').length).toBeGreaterThan(0);
     expect(screen.getByText('settings.json keyword "x-reactions" is not supported')).toBeTruthy();
   });

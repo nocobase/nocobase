@@ -45,7 +45,6 @@ describe('plugin-light-extension client-v2 boundary', () => {
     });
     expect(app.pluginSettingsManager.get(`${LIGHT_EXTENSION_SETTINGS_KEY}.source`, false)).toBeNull();
     expect(app.pluginSettingsManager.get(`${LIGHT_EXTENSION_SETTINGS_KEY}.entries`, false)).toBeNull();
-    expect(app.pluginSettingsManager.get(`${LIGHT_EXTENSION_SETTINGS_KEY}.publications`, false)).toBeNull();
     expect(app.pluginSettingsManager.get(`${LIGHT_EXTENSION_SETTINGS_KEY}.references`, false)).toBeNull();
   });
 
@@ -99,12 +98,11 @@ describe('plugin-light-extension client-v2 boundary', () => {
     expect(fs.existsSync(path.join(pluginRoot, 'server.js'))).toBe(true);
   });
 
-  it('keeps publication authoring pages out of the legacy client while sharing runtime JS block bridges', () => {
+  it('keeps authoring-only pages out of the legacy client while sharing runtime JS block bridges', () => {
     const pluginSource = fs.readFileSync(path.resolve(__dirname, '../plugin.tsx'), 'utf8');
 
     expect(pluginSource).toContain('createLightExtensionRunJSResolver');
     expect(pluginSource).toContain('registerBlockGridSelectSceneAddBlockProvider');
-    expect(pluginSource).not.toContain('LightExtensionPublicationsPage');
     expect(pluginSource).not.toContain('EntryReferencesPanel');
 
     const legacySource = fs.readFileSync(path.resolve(__dirname, '../../client/index.ts'), 'utf8');
@@ -112,7 +110,6 @@ describe('plugin-light-extension client-v2 boundary', () => {
     expect(legacySource).toContain('RunJSSourceResolverRegistry');
     expect(legacySource).toContain('registerBlockGridSelectSceneAddBlockProvider');
     expect(legacySource).toContain('JS_BLOCK_LIGHT_EXTENSION_FULL_SOURCE_FIELD');
-    expect(legacySource).not.toContain('LightExtensionPublicationsPage');
     expect(legacySource).not.toContain('EntryReferencesPanel');
   });
 });

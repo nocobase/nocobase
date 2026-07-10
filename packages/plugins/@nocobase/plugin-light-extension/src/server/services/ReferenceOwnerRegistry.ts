@@ -35,9 +35,6 @@ const REFERENCE_OWNER_ADAPTERS: ReferenceOwnerAdapter[] = [
     modelUse: 'JSBlockModel',
     stepPath: JS_BLOCK_STEP_PATH,
     message: 'Active adapter scans FlowModel JSBlockModel nodes and rebuilds references from persisted settings.',
-    supportsVersionPolicy: true,
-    supportsImpact: true,
-    supportsBulkUpgrade: true,
     supportsRebuild: true,
   },
   {
@@ -50,9 +47,6 @@ const REFERENCE_OWNER_ADAPTERS: ReferenceOwnerAdapter[] = [
     modelUses: ['JSFieldModel', 'JSEditableFieldModel', 'JSColumnModel'],
     implementationTask: '03-task-js-field-entry-end-to-end.md',
     message: 'Active adapter scans JS field display, editable field, and table column model settings.',
-    supportsVersionPolicy: true,
-    supportsImpact: true,
-    supportsBulkUpgrade: true,
     supportsRebuild: true,
   },
   {
@@ -73,9 +67,6 @@ const REFERENCE_OWNER_ADAPTERS: ReferenceOwnerAdapter[] = [
     implementationTask: '04-task-js-action-entry-end-to-end.md',
     message:
       'Active adapter scans JS action button click settings across normal, record, collection, form, and filter form actions.',
-    supportsVersionPolicy: true,
-    supportsImpact: true,
-    supportsBulkUpgrade: true,
     supportsRebuild: true,
   },
   {
@@ -88,9 +79,6 @@ const REFERENCE_OWNER_ADAPTERS: ReferenceOwnerAdapter[] = [
     modelUses: ['JSItemModel', 'JSItemActionModel'],
     implementationTask: '05-task-js-item-entry-end-to-end.md',
     message: 'Active adapter scans JS item display and action-item model settings.',
-    supportsVersionPolicy: true,
-    supportsImpact: true,
-    supportsBulkUpgrade: true,
     supportsRebuild: true,
   },
   {
@@ -101,9 +89,6 @@ const REFERENCE_OWNER_ADAPTERS: ReferenceOwnerAdapter[] = [
     locatorContract: 'RunJS value host locator for field linkage, defaults, and assignment forms',
     implementationTask: '06-task-runjs-entry-end-to-end.md',
     message: 'Active adapter scans nested RunJSValue hosts and rebuilds references with per-host locators.',
-    supportsVersionPolicy: true,
-    supportsImpact: true,
-    supportsBulkUpgrade: true,
     supportsRebuild: true,
   },
   {
@@ -114,9 +99,6 @@ const REFERENCE_OWNER_ADAPTERS: ReferenceOwnerAdapter[] = [
     locatorContract: 'Lifecycle event settings locator',
     implementationTask: '07-task-event-entry-end-to-end.md',
     message: 'Waiting for the Event host task to provide concrete lifecycle event locators and save hooks.',
-    supportsVersionPolicy: true,
-    supportsImpact: true,
-    supportsBulkUpgrade: true,
     supportsRebuild: true,
   },
 ];
@@ -239,9 +221,6 @@ function toPublicOwnerAdapterContract(adapter: ReferenceOwnerAdapter): LightExte
     modelUse: adapter.modelUse,
     implementationTask: adapter.implementationTask,
     message: adapter.message,
-    supportsVersionPolicy: adapter.supportsVersionPolicy,
-    supportsImpact: adapter.supportsImpact,
-    supportsBulkUpgrade: adapter.supportsBulkUpgrade,
     supportsRebuild: adapter.supportsRebuild,
   };
 }

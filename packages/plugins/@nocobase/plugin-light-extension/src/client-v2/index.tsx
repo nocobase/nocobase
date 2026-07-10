@@ -11,7 +11,6 @@ export { default as LightExtensionEntriesPage } from './pages/LightExtensionEntr
 export { default as EntryReferencesPanel } from './pages/EntryReferencesPanel';
 export { default as LightExtensionHomePage } from './pages/LightExtensionHomePage';
 export { default as LightExtensionListPage } from './pages/LightExtensionListPage';
-export { default as LightExtensionPublicationsPage } from './pages/LightExtensionPublicationsPage';
 export { default as LightExtensionWorkspacePage } from './pages/LightExtensionWorkspacePage';
 export {
   JSActionLightExtensionSourceField,
@@ -19,10 +18,7 @@ export {
   JSFieldLightExtensionSourceField,
   JSItemLightExtensionSourceField,
 } from './components/JSBlockLightExtensionSourceField';
-export { RepoEntryPublicationSelector } from './components/RepoEntryPublicationSelector';
-export { ReferenceImpactPanel } from './components/ReferenceImpactPanel';
 export { SettingsAutoForm } from './components/SettingsAutoForm';
-export { VersionPolicyField } from './components/VersionPolicyField';
 export { createLightExtensionRunJSResolver } from './resolvers/LightExtensionRunJSResolver';
 export { PluginLightExtensionClientV2 } from './plugin';
 export { default } from './plugin';

@@ -90,9 +90,7 @@ describe('plugin-light-extension legacy client boundary', () => {
         [JS_BLOCK_LIGHT_EXTENSION_SETTINGS_STEP_FIELD]: expect.any(Function),
         [JS_ITEM_LIGHT_EXTENSION_FULL_SOURCE_FIELD]: expect.any(Function),
         [JS_ITEM_LIGHT_EXTENSION_SETTINGS_STEP_FIELD]: expect.any(Function),
-        RepoEntryPublicationSelector: expect.any(Function),
         SettingsAutoForm: expect.any(Function),
-        VersionPolicyField: expect.any(Function),
       }),
     );
     expect(registerBlockGridSelectSceneAddBlockProvider).toHaveBeenCalledWith(

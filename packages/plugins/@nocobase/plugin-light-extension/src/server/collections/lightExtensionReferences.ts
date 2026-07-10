@@ -23,9 +23,6 @@ export default defineCollection({
       fields: ['repoId', 'entryId', 'resolvedStatus'],
     },
     {
-      fields: ['publicationId'],
-    },
-    {
       fields: ['ownerKind'],
     },
     {
@@ -68,18 +65,6 @@ export default defineCollection({
     },
     {
       type: 'string',
-      name: 'publicationId',
-    },
-    {
-      type: 'belongsTo',
-      name: 'publication',
-      target: 'lightExtensionEntryPublications',
-      targetKey: 'id',
-      foreignKey: 'publicationId',
-      constraints: false,
-    },
-    {
-      type: 'string',
       name: 'kind',
       allowNull: false,
       defaultValue: 'js-block',
@@ -102,12 +87,6 @@ export default defineCollection({
     },
     {
       type: 'string',
-      name: 'versionPolicy',
-      allowNull: false,
-      defaultValue: 'pinned',
-    },
-    {
-      type: 'string',
       name: 'settingsHash',
       allowNull: false,
       defaultValue: 'sha256:44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a',
@@ -116,7 +95,7 @@ export default defineCollection({
       type: 'string',
       name: 'resolvedStatus',
       allowNull: false,
-      defaultValue: 'no_active_publication',
+      defaultValue: 'runtime_missing',
     },
   ],
 });

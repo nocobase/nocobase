@@ -16,8 +16,8 @@ import { LIGHT_EXTENSION_ACL_ACTIONS, LIGHT_EXTENSION_ACL_SNIPPET, NAMESPACE } f
 import { lightExtensionCapabilitiesActionNames } from '../resources/lightExtensionCapabilities';
 import { lightExtensionEntryActionNames } from '../resources/lightExtensionEntries';
 import { lightExtensionFileActionNames } from '../resources/lightExtensionFiles';
+import { lightExtensionReferenceActionNames } from '../resources/lightExtensionReferences';
 import { lightExtensionActionNames } from '../resources/lightExtensions';
-import { lightExtensionPublicationActionNames } from '../resources/lightExtensionPublications';
 import { lightExtensionRepoActionNames } from '../resources/lightExtensionRepos';
 import { lightExtensionRuntimeActionNames } from '../resources/lightExtensionRuntime';
 import { LightExtensionAuditService } from '../services/LightExtensionAuditService';
@@ -64,18 +64,16 @@ describe('plugin-light-extension permission service', () => {
       actions: [
         ...LIGHT_EXTENSION_ACL_ACTIONS.map((action) => `lightExtension:${action}`),
         ...lightExtensionActionNames.map((action) => `lightExtensions:${action}`),
-        ...lightExtensionPublicationActionNames.map((action) => `lightExtensionPublications:${action}`),
         ...lightExtensionRuntimeActionNames.map((action) => `lightExtensionRuntime:${action}`),
+        ...lightExtensionReferenceActionNames.map((action) => `lightExtensionReferences:${action}`),
         ...lightExtensionRepoActionNames.map((action) => `lightExtensionRepos:${action}`),
         ...lightExtensionFileActionNames.map((action) => `lightExtensionFiles:${action}`),
         ...lightExtensionEntryActionNames.map((action) => `lightExtensionEntries:${action}`),
         ...lightExtensionCapabilitiesActionNames.map((action) => `lightExtensionCapabilities:${action}`),
       ],
     });
-    expect(registeredSnippet?.actions).toContain('lightExtensionPublications:list');
     expect(registeredSnippet?.actions).toContain('lightExtensionRuntime:resolve');
-    expect(registeredSnippet?.actions).toContain('lightExtensionEntries:activatePublication');
-    expect(registeredSnippet?.actions).toContain('lightExtensionEntries:emergencyRollback');
+    expect(registeredSnippet?.actions).toContain('lightExtensionFiles:saveSource');
     expect(registeredSnippet?.actions).toContain('lightExtensionCapabilities:get');
   });
 

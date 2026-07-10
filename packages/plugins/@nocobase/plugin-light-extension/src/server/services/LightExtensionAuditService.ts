@@ -112,8 +112,8 @@ export interface LightExtensionCompileAuditInput {
   transaction?: Transaction;
 }
 
-export interface LightExtensionPublicationReadDeniedAuditInput {
-  publicationId: string;
+export interface LightExtensionRuntimeUseDeniedAuditInput {
+  entryId: string;
   requestId: string;
   actorUserId?: string | null;
   reasonCode: string;
@@ -121,60 +121,15 @@ export interface LightExtensionPublicationReadDeniedAuditInput {
   transaction?: Transaction;
 }
 
-export type LightExtensionPublicationUseDeniedAuditInput = LightExtensionPublicationReadDeniedAuditInput;
-
-export interface LightExtensionPublishAuditInput {
-  repoId: string;
-  action: 'publish';
-  result: 'success' | 'partial_success' | 'blocked';
-  requestId: string;
-  actorUserId?: string | null;
-  commitId: string;
-  clientRequestId: string;
-  entryResults: Array<{
-    entryId: string;
-    status: string;
-    reasonCode?: string;
-    publicationId?: string;
-  }>;
-  diagnosticCount: number;
-  errorCount: number;
-  warningCount: number;
-  diagnostics?: LightExtensionDiagnostic[];
-  message: string;
-  reasonCode?: string;
-  transaction?: Transaction;
-}
-
-export interface LightExtensionActivationAuditInput {
-  repoId: string;
-  entryId: string;
-  publicationId?: string | null;
-  action: 'activatePublication' | 'emergencyRollback';
-  result: 'success' | 'blocked';
-  requestId: string;
-  actorUserId?: string | null;
-  expectedCurrentPublicationId?: string | null;
-  oldPublicationId?: string | null;
-  newPublicationId?: string | null;
-  reason?: string | null;
-  reasonCode?: string;
-  message: string;
-  transaction?: Transaction;
-}
-
 export interface LightExtensionReferenceAuditInput {
   repoId?: string | null;
   entryId?: string | null;
-  publicationId?: string | null;
   action:
     | 'referenceUpsert'
     | 'referenceRemove'
     | 'referenceRebuild'
     | 'referenceOwnerMissing'
     | 'referenceConflict'
-    | 'referenceImpact'
-    | 'referenceBulkUpgrade'
     | 'readReferences';
   result: 'success' | 'partial_success' | 'blocked' | 'denied';
   requestId: string;
@@ -323,98 +278,20 @@ export class LightExtensionAuditService {
     });
   }
 
-  async recordPublicationReadDenied(input: LightExtensionPublicationReadDeniedAuditInput): Promise<void> {
+  async recordRuntimeUseDenied(input: LightExtensionRuntimeUseDeniedAuditInput): Promise<void> {
     await this.db.getRepository('lightExtensionLogs').create({
       values: {
+        entryId: sanitizeText(input.entryId),
         level: 'warn',
-        action: 'readPublication',
+        action: 'useRuntime',
         result: 'denied',
         requestId: input.requestId,
         actorUserId: input.actorUserId || undefined,
         reasonCode: sanitizeText(input.reasonCode),
-        message: 'Light extension publication read denied',
+        message: 'Light extension runtime use denied',
         details: compactObject({
-          publicationId: sanitizeText(input.publicationId),
+          entryId: sanitizeText(input.entryId),
           requestSource: sanitizeText(input.requestSource),
-        }),
-        createdAt: new Date(),
-      },
-      transaction: input.transaction,
-    });
-  }
-
-  async recordPublicationUseDenied(input: LightExtensionPublicationUseDeniedAuditInput): Promise<void> {
-    await this.db.getRepository('lightExtensionLogs').create({
-      values: {
-        publicationId: sanitizeText(input.publicationId),
-        level: 'warn',
-        action: 'usePublication',
-        result: 'denied',
-        requestId: input.requestId,
-        actorUserId: input.actorUserId || undefined,
-        reasonCode: sanitizeText(input.reasonCode),
-        message: 'Light extension publication use denied',
-        details: compactObject({
-          publicationId: sanitizeText(input.publicationId),
-          requestSource: sanitizeText(input.requestSource),
-        }),
-        createdAt: new Date(),
-      },
-      transaction: input.transaction,
-    });
-  }
-
-  async recordPublishEvent(input: LightExtensionPublishAuditInput): Promise<void> {
-    await this.db.getRepository('lightExtensionLogs').create({
-      values: {
-        repoId: input.repoId,
-        level: input.result === 'success' ? 'info' : 'warn',
-        action: input.action,
-        result: input.result,
-        requestId: input.requestId,
-        actorUserId: input.actorUserId || undefined,
-        reasonCode: sanitizeText(input.reasonCode),
-        message: sanitizeText(input.message),
-        details: compactObject({
-          commitId: sanitizeText(input.commitId),
-          clientRequestId: sanitizeText(input.clientRequestId),
-          diagnosticCount: input.diagnosticCount,
-          errorCount: input.errorCount,
-          warningCount: input.warningCount,
-          entryResults: input.entryResults.map((entry) =>
-            compactObject({
-              entryId: sanitizeText(entry.entryId),
-              status: sanitizeText(entry.status),
-              reasonCode: sanitizeText(entry.reasonCode),
-              publicationId: sanitizeText(entry.publicationId),
-            }),
-          ),
-          diagnostics: summarizeDiagnostics(input.diagnostics || []),
-        }),
-        createdAt: new Date(),
-      },
-      transaction: input.transaction,
-    });
-  }
-
-  async recordActivationEvent(input: LightExtensionActivationAuditInput): Promise<void> {
-    await this.db.getRepository('lightExtensionLogs').create({
-      values: {
-        repoId: input.repoId,
-        entryId: input.entryId,
-        publicationId: input.publicationId || undefined,
-        level: input.result === 'success' ? 'info' : 'warn',
-        action: input.action,
-        result: input.result,
-        requestId: input.requestId,
-        actorUserId: input.actorUserId || undefined,
-        reasonCode: sanitizeText(input.reasonCode),
-        message: sanitizeText(input.message),
-        details: compactObject({
-          expectedCurrentPublicationId: sanitizeText(input.expectedCurrentPublicationId),
-          oldPublicationId: sanitizeText(input.oldPublicationId),
-          newPublicationId: sanitizeText(input.newPublicationId),
-          sanitizedReason: sanitizeText(input.reason),
         }),
         createdAt: new Date(),
       },
@@ -427,7 +304,6 @@ export class LightExtensionAuditService {
       values: {
         repoId: sanitizeText(input.repoId),
         entryId: sanitizeText(input.entryId),
-        publicationId: sanitizeText(input.publicationId),
         level: input.result === 'success' ? 'info' : 'warn',
         action: input.action,
         result: input.result,

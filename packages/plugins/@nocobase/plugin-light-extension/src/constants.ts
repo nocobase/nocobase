@@ -27,8 +27,7 @@ export const LIGHT_EXTENSION_ACL_ACTIONS = [
   'list',
   'readSource',
   'readArchivedSource',
-  'readPublication',
-  'usePublication',
+  'useRuntime',
   'readReferences',
   'writeSource',
   'create',
@@ -38,9 +37,6 @@ export const LIGHT_EXTENSION_ACL_ACTIONS = [
   'archive',
   'scan',
   'compilePreview',
-  'publish',
-  'activatePublication',
-  'emergencyRollback',
   'updateReferences',
   'viewLogs',
   'sync',
@@ -56,10 +52,9 @@ export const LIGHT_EXTENSION_REFERENCE_RESOLVED_STATUSES = [
   'repo_disabled',
   'repo_archived',
   'entry_missing',
-  'publication_missing',
   'owner_missing',
   'settings_invalid',
-  'no_active_publication',
+  'runtime_missing',
 ] as const;
 
 export type LightExtensionAclAction = (typeof LIGHT_EXTENSION_ACL_ACTIONS)[number];

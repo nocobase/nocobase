@@ -72,7 +72,6 @@ describe('PluginLightExtensionClientV2', () => {
     });
     expect(app.pluginSettingsManager.get(`${LIGHT_EXTENSION_SETTINGS_KEY}.source`, false)).toBeNull();
     expect(app.pluginSettingsManager.get(`${LIGHT_EXTENSION_SETTINGS_KEY}.entries`, false)).toBeNull();
-    expect(app.pluginSettingsManager.get(`${LIGHT_EXTENSION_SETTINGS_KEY}.publications`, false)).toBeNull();
     expect(app.pluginSettingsManager.get(`${LIGHT_EXTENSION_SETTINGS_KEY}.references`, false)).toBeNull();
     expect(app.flowEngine.flowSettings.components).toMatchObject({
       [JS_ACTION_LIGHT_EXTENSION_FULL_SOURCE_FIELD]: expect.any(Function),
@@ -82,9 +81,7 @@ describe('PluginLightExtensionClientV2', () => {
       [JS_ITEM_LIGHT_EXTENSION_FULL_SOURCE_FIELD]: expect.any(Function),
       [JS_ITEM_LIGHT_EXTENSION_SETTINGS_STEP_FIELD]: expect.any(Function),
       RunJSLightExtensionSourceField: expect.any(Function),
-      RepoEntryPublicationSelector: expect.any(Function),
       SettingsAutoForm: expect.any(Function),
-      VersionPolicyField: expect.any(Function),
     });
     expect(warn.mock.calls.flat().join('\n')).not.toContain('JSBlockLightExtensionSourceField');
     expect(RunJSSourceResolverRegistry.getResolver('light-extension')).toBeTruthy();

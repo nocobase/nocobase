@@ -19,10 +19,6 @@ import {
 } from './resources/lightExtensionCapabilities';
 import { createLightExtensionEntriesResource, lightExtensionEntryActionNames } from './resources/lightExtensionEntries';
 import { createLightExtensionFilesResource, lightExtensionFileActionNames } from './resources/lightExtensionFiles';
-import {
-  createLightExtensionPublicationsResource,
-  lightExtensionPublicationActionNames,
-} from './resources/lightExtensionPublications';
 import { createLightExtensionReposResource, lightExtensionRepoActionNames } from './resources/lightExtensionRepos';
 import {
   createLightExtensionRuntimeResource,
@@ -33,17 +29,14 @@ import {
   lightExtensionReferenceActionNames,
 } from './resources/lightExtensionReferences';
 import { createLightExtensionsResource, lightExtensionActionNames } from './resources/lightExtensions';
-import { BulkUpgradeService } from './services/BulkUpgradeService';
 import { LightExtensionAuditService } from './services/LightExtensionAuditService';
 import { LightExtensionAuthoringInspector } from './services/LightExtensionAuthoringInspector';
 import { LightExtensionCompilePreviewService } from './services/LightExtensionCompilePreviewService';
 import { LightExtensionEntryScanner } from './services/LightExtensionEntryScanner';
 import { LightExtensionFileService } from './services/LightExtensionFileService';
 import { LightExtensionPermissionService } from './services/LightExtensionPermissionService';
-import { LightExtensionPublicationResolveService } from './services/LightExtensionPublicationResolveService';
-import { LightExtensionPublicationService } from './services/LightExtensionPublicationService';
-import { LightExtensionPublishService } from './services/LightExtensionPublishService';
 import { LightExtensionRepoService } from './services/LightExtensionRepoService';
+import { LightExtensionRuntimeCompileService } from './services/LightExtensionRuntimeCompileService';
 import { LightExtensionValidator } from './services/LightExtensionValidator';
 import { LightExtensionWorkspaceCompilerBridge } from './services/LightExtensionWorkspaceCompilerBridge';
 import { RuntimeResolveService } from './services/RuntimeResolveService';
@@ -98,8 +91,6 @@ type LightExtensionRouteContext = {
 const VSC_FILE_PLUGIN_ALIASES = ['@nocobase/plugin-vsc-file', 'vsc-file', 'plugin-vsc-file'];
 const DOCUMENTED_CAPABILITIES_ROUTE = '/light-extensions/capabilities';
 const DOCUMENTED_COMPILE_PREVIEW_ROUTE = /^\/light-extensions\/([^/]+)\/compile-preview$/;
-const DOCUMENTED_PUBLICATION_ROUTE = /^\/light-extension-publications\/([^/]+)$/;
-const DOCUMENTED_ENTRY_PUBLICATIONS_ROUTE = /^\/light-extension-entries\/([^/]+)\/publications$/;
 const DOCUMENTED_RUNTIME_RESOLVE_ROUTE = '/light-extension-runtime/resolve';
 
 export class PluginLightExtensionServer extends Plugin {
@@ -119,19 +110,13 @@ export class PluginLightExtensionServer extends Plugin {
 
   private compilePreviewService?: LightExtensionCompilePreviewService;
 
-  private publicationService?: LightExtensionPublicationService;
-
-  private publicationResolveService?: LightExtensionPublicationResolveService;
-
   private runtimeResolveService?: RuntimeResolveService;
 
-  private publishService?: LightExtensionPublishService;
+  private runtimeCompileService?: LightExtensionRuntimeCompileService;
 
   private entryScanner?: LightExtensionEntryScanner;
 
   private referenceService?: ReferenceService;
-
-  private bulkUpgradeService?: BulkUpgradeService;
 
   private unregisterVscPermissionHook?: () => void;
 
@@ -219,63 +204,38 @@ export class PluginLightExtensionServer extends Plugin {
       this.validator,
     );
     this.referenceService = new ReferenceService(db, this.auditService, this.permissionService);
-    this.bulkUpgradeService = new BulkUpgradeService(
-      db,
-      this.auditService,
-      this.permissionService,
-      undefined,
-      this.referenceService,
-    );
-    this.publicationService = new LightExtensionPublicationService(
-      db,
-      this.auditService,
-      this.permissionService,
-      this.referenceService,
-    );
-    this.publicationResolveService = new LightExtensionPublicationResolveService(
-      db,
-      this.auditService,
-      this.permissionService,
-    );
-    this.runtimeResolveService = new RuntimeResolveService(this.publicationResolveService);
-    this.publishService = new LightExtensionPublishService(
+    this.runtimeResolveService = new RuntimeResolveService(db, this.auditService, this.permissionService);
+    this.runtimeCompileService = new LightExtensionRuntimeCompileService(
       db,
       this.fileService,
-      this.permissionService,
+      this.entryScanner,
       this.workspaceCompilerBridge,
-      this.publicationService,
-      this.validator,
-      this.auditService,
     );
     this.repoService.useReferenceService(this.referenceService);
+    this.runtimeCompileService.useReferenceService(this.referenceService);
     (this.app as unknown as AppWithPluginEvents).resourceManager?.define?.(
-      createLightExtensionsResource(this.compilePreviewService, this.publishService),
-    );
-    (this.app as unknown as AppWithPluginEvents).resourceManager?.define?.(
-      createLightExtensionPublicationsResource(this.publicationResolveService),
+      createLightExtensionsResource(this.compilePreviewService),
     );
     (this.app as unknown as AppWithPluginEvents).resourceManager?.define?.(
       createLightExtensionRuntimeResource(this.runtimeResolveService),
     );
     (this.app as unknown as AppWithPluginEvents).resourceManager?.define?.(
-      createLightExtensionReferencesResource(this.referenceService, this.bulkUpgradeService),
+      createLightExtensionReferencesResource(this.referenceService),
     );
     (this.app as unknown as AppWithPluginEvents).resourceManager?.define?.(
-      createLightExtensionReposResource(this.repoService),
+      createLightExtensionReposResource(this.repoService, this.entryScanner, this.runtimeCompileService),
     );
     (this.app as unknown as AppWithPluginEvents).resourceManager?.define?.(
-      createLightExtensionFilesResource(this.fileService),
+      createLightExtensionFilesResource(this.fileService, this.runtimeCompileService),
     );
     (this.app as unknown as AppWithPluginEvents).resourceManager?.define?.(
-      createLightExtensionEntriesResource(this.entryScanner, this.publicationService, this.publicationResolveService),
+      createLightExtensionEntriesResource(this.entryScanner, this.runtimeResolveService),
     );
     (this.app as unknown as AppWithPluginEvents).resourceManager?.define?.(
       createLightExtensionCapabilitiesResource(this.validator),
     );
     this.registerCapabilitiesHttpRoute();
     this.registerCompilePreviewHttpRoute();
-    this.registerPublicationHttpRoute();
-    this.registerEntryPublicationsHttpRoute();
     this.registerRuntimeResolveHttpRoute();
     this.registerAclActions();
     this.registerVscPermissionHookWhenAvailable();
@@ -300,7 +260,6 @@ export class PluginLightExtensionServer extends Plugin {
       actions: [
         ...LIGHT_EXTENSION_ACL_ACTIONS.map((action) => `lightExtension:${action}`),
         ...lightExtensionActionNames.map((action) => `lightExtensions:${action}`),
-        ...lightExtensionPublicationActionNames.map((action) => `lightExtensionPublications:${action}`),
         ...lightExtensionRuntimeActionNames.map((action) => `lightExtensionRuntime:${action}`),
         ...lightExtensionReferenceActionNames.map((action) => `lightExtensionReferences:${action}`),
         ...lightExtensionRepoActionNames.map((action) => `lightExtensionRepos:${action}`),
@@ -344,39 +303,6 @@ export class PluginLightExtensionServer extends Plugin {
     );
   }
 
-  private registerPublicationHttpRoute() {
-    const app = this.app as unknown as AppWithPluginEvents;
-    app.use?.(
-      async (ctx, next) => {
-        const publicationId = getDocumentedPublicationId(ctx.path, app.resourceManager?.options?.prefix);
-        if (ctx.method !== 'GET' || !publicationId) {
-          await next();
-          return;
-        }
-
-        const resourcePath = getPublicationResourcePath(publicationId, app.resourceManager?.options?.prefix);
-        const originalPath = ctx.path;
-        const originalRequestPath = ctx.request?.path;
-        try {
-          ctx.path = resourcePath;
-          if (ctx.request) {
-            ctx.request.path = resourcePath;
-          }
-          await next();
-        } finally {
-          ctx.path = originalPath;
-          if (ctx.request && originalRequestPath) {
-            ctx.request.path = originalRequestPath;
-          }
-        }
-      },
-      {
-        tag: 'light-extension-publications',
-        before: 'dataSource',
-      },
-    );
-  }
-
   private registerRuntimeResolveHttpRoute() {
     const app = this.app as unknown as AppWithPluginEvents;
     app.use?.(
@@ -407,39 +333,6 @@ export class PluginLightExtensionServer extends Plugin {
       },
       {
         tag: 'light-extension-runtime-resolve',
-        before: 'dataSource',
-      },
-    );
-  }
-
-  private registerEntryPublicationsHttpRoute() {
-    const app = this.app as unknown as AppWithPluginEvents;
-    app.use?.(
-      async (ctx, next) => {
-        const entryId = getDocumentedEntryPublicationsEntryId(ctx.path, app.resourceManager?.options?.prefix);
-        if (ctx.method !== 'GET' || !entryId) {
-          await next();
-          return;
-        }
-
-        const resourcePath = getEntryPublicationsResourcePath(entryId, app.resourceManager?.options?.prefix);
-        const originalPath = ctx.path;
-        const originalRequestPath = ctx.request?.path;
-        try {
-          ctx.path = resourcePath;
-          if (ctx.request) {
-            ctx.request.path = resourcePath;
-          }
-          await next();
-        } finally {
-          ctx.path = originalPath;
-          if (ctx.request && originalRequestPath) {
-            ctx.request.path = originalRequestPath;
-          }
-        }
-      },
-      {
-        tag: 'light-extension-entry-publications',
         before: 'dataSource',
       },
     );
@@ -567,54 +460,12 @@ function getDocumentedCompilePreviewRepoId(path: string, resourcePrefix?: string
   return decodeURIComponent(match[1]);
 }
 
-function getDocumentedPublicationId(path: string, resourcePrefix?: string): string | null {
-  const basePath = normalizeBasePath(resourcePrefix ?? process.env.API_BASE_PATH ?? '/api');
-  if (!path.startsWith(`${basePath}/`)) {
-    return null;
-  }
-
-  const routePath = path.slice(basePath.length);
-  const match = DOCUMENTED_PUBLICATION_ROUTE.exec(routePath);
-  if (!match?.[1]) {
-    return null;
-  }
-
-  return decodeURIComponent(match[1]);
-}
-
-function getDocumentedEntryPublicationsEntryId(path: string, resourcePrefix?: string): string | null {
-  const basePath = normalizeBasePath(resourcePrefix ?? process.env.API_BASE_PATH ?? '/api');
-  if (!path.startsWith(`${basePath}/`)) {
-    return null;
-  }
-
-  const routePath = path.slice(basePath.length);
-  const match = DOCUMENTED_ENTRY_PUBLICATIONS_ROUTE.exec(routePath);
-  if (!match?.[1]) {
-    return null;
-  }
-
-  return decodeURIComponent(match[1]);
-}
-
 function getCapabilitiesResourcePath(resourcePrefix?: string): string {
   return `${normalizeBasePath(resourcePrefix ?? '')}/lightExtensionCapabilities:get`;
 }
 
 function getCompilePreviewResourcePath(repoId: string, resourcePrefix?: string): string {
   return `${normalizeBasePath(resourcePrefix ?? '')}/lightExtensions:compilePreview/${encodeURIComponent(repoId)}`;
-}
-
-function getPublicationResourcePath(publicationId: string, resourcePrefix?: string): string {
-  return `${normalizeBasePath(resourcePrefix ?? '')}/lightExtensionPublications:get/${encodeURIComponent(
-    publicationId,
-  )}`;
-}
-
-function getEntryPublicationsResourcePath(entryId: string, resourcePrefix?: string): string {
-  return `${normalizeBasePath(resourcePrefix ?? '')}/lightExtensionEntries:listPublications/${encodeURIComponent(
-    entryId,
-  )}`;
 }
 
 function getRuntimeResolveResourcePath(resourcePrefix?: string): string {

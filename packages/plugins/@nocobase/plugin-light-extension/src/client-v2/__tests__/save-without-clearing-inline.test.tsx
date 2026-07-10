@@ -33,39 +33,6 @@ const SchemaField = createSchemaField({
   },
 });
 
-const publication = {
-  id: 'pub_sales',
-  repoId: 'repo_sales',
-  entryId: 'entry_sales',
-  commitId: 'commit_sales',
-  entryPath: 'src/client/js-blocks/sales/index.tsx',
-  target: 'client',
-  kind: 'js-block',
-  surfaceStyle: 'render',
-  runtimeVersion: 'v2',
-  artifact: {
-    version: 'v2',
-    entryPath: 'src/client/js-blocks/sales/index.tsx',
-  },
-  settingsSchemaSnapshot: {
-    type: 'object',
-    properties: {
-      title: {
-        type: 'string',
-        default: 'Sales',
-      },
-    },
-  },
-  settingsDefaultsSnapshot: {
-    title: 'Sales',
-  },
-  settingsSchemaHash: 'schema_hash',
-  settingsDefaultsHash: 'defaults_hash',
-  filesHash: 'files_hash',
-  runtimeCodeHash: 'runtime_hash',
-  diagnostics: [],
-};
-
 describe('JSBlockLightExtensionSourceField save behavior', () => {
   beforeEach(() => {
     mocks.request.mockReset();
@@ -73,40 +40,7 @@ describe('JSBlockLightExtensionSourceField save behavior', () => {
       if (options.url === 'lightExtensionEntries:listSelectable') {
         return Promise.resolve({
           data: {
-            data: [
-              {
-                id: 'entry_sales',
-                repoId: 'repo_sales',
-                target: 'client',
-                kind: 'js-block',
-                entryName: 'sales',
-                entryPath: 'src/client/js-blocks/sales/index.tsx',
-                metaPath: null,
-                settingsPath: null,
-                title: 'Sales',
-                description: null,
-                category: null,
-                icon: null,
-                tags: null,
-                sort: null,
-                activePublicationId: 'pub_sales',
-                activePublication: publication,
-                healthStatus: 'ready',
-                diagnostics: [],
-              },
-            ],
-          },
-        });
-      }
-
-      if (options.url === '/light-extension-entries/entry_sales/publications') {
-        return Promise.resolve({
-          data: {
-            data: {
-              entryId: 'entry_sales',
-              activePublicationId: 'pub_sales',
-              publications: [publication],
-            },
+            data: [createSelectableEntry()],
           },
         });
       }
@@ -115,98 +49,152 @@ describe('JSBlockLightExtensionSourceField save behavior', () => {
     });
   });
 
-  it('writes binding/settings without clearing existing inline code and version', async () => {
-    const engine = new FlowEngine();
-    engine.context.defineProperty('api', {
-      value: {
-        request: mocks.request,
-      },
-    });
+  it('keeps existing inline code and version when editing a valid light-extension binding', async () => {
     const form = createForm({
       initialValues: {
         sourceMode: 'light-extension',
+        sourceBinding: createSourceBinding(),
+        settings: {},
         code: 'ctx.render("keep inline");',
         version: 'v2',
       },
     });
 
-    render(
-      <FlowEngineProvider engine={engine}>
-        <FormProvider form={form}>
-          <SchemaField
-            schema={{
-              type: 'object',
-              properties: {
-                sourceMode: {
-                  type: 'string',
-                  'x-component': 'JSBlockLightExtensionSourceField',
-                },
-              },
-            }}
-          />
-        </FormProvider>
-      </FlowEngineProvider>,
-    );
+    renderSourceField(form);
 
     await waitFor(() => {
-      expect(form.values.sourceBinding?.publicationId).toBe('pub_sales');
+      expect(screen.getByText('title')).toBeTruthy();
+      expect(form.values.sourceBinding).toMatchObject(createSourceBinding());
     });
 
-    expect(form.values.settings).toEqual({
-      title: 'Sales',
-    });
     expect(form.values.code).toBe('ctx.render("keep inline");');
     expect(form.values.version).toBe('v2');
   });
 
   it('renders as a binding editor without source mode controls when bound to sourceBinding', async () => {
-    const engine = new FlowEngine();
-    engine.context.defineProperty('api', {
-      value: {
-        request: mocks.request,
-      },
-    });
     const form = createForm({
       initialValues: {
         sourceMode: 'light-extension',
+        sourceBinding: createSourceBinding(),
+        settings: {},
         code: 'ctx.render("keep inline");',
         version: 'v2',
       },
     });
 
-    render(
-      <FlowEngineProvider engine={engine}>
-        <FormProvider form={form}>
-          <SchemaField
-            schema={{
-              type: 'object',
-              properties: {
-                sourceMode: {
-                  type: 'string',
-                  'x-display': 'hidden',
-                },
-                sourceBinding: {
-                  type: 'object',
-                  'x-component': 'JSBlockLightExtensionSourceField',
-                },
-              },
-            }}
-          />
-        </FormProvider>
-      </FlowEngineProvider>,
-    );
+    renderSourceBindingField(form);
 
     await waitFor(() => {
-      expect(form.values.sourceBinding?.publicationId).toBe('pub_sales');
+      expect(screen.getByText('title')).toBeTruthy();
     });
 
     expect(screen.queryByText('Inline code')).toBeNull();
-    expect(screen.queryByText('Light extension')).toBeNull();
     expect(screen.queryByText('Copy selected light extension code')).toBeNull();
-    expect(form.values.settings).toEqual({
-      title: 'Sales',
-    });
     expect(form.values.code).toBe('ctx.render("keep inline");');
     expect(form.values.version).toBe('v2');
   });
 });
+
+function renderSourceField(form: ReturnType<typeof createForm>) {
+  return renderWithEngine(
+    form,
+    <SchemaField
+      schema={{
+        type: 'object',
+        properties: {
+          sourceMode: {
+            type: 'string',
+            'x-component': 'JSBlockLightExtensionSourceField',
+          },
+        },
+      }}
+    />,
+  );
+}
+
+function renderSourceBindingField(form: ReturnType<typeof createForm>) {
+  return renderWithEngine(
+    form,
+    <SchemaField
+      schema={{
+        type: 'object',
+        properties: {
+          sourceMode: {
+            type: 'string',
+            'x-display': 'hidden',
+          },
+          sourceBinding: {
+            type: 'object',
+            'x-component': 'JSBlockLightExtensionSourceField',
+          },
+        },
+      }}
+    />,
+  );
+}
+
+function renderWithEngine(form: ReturnType<typeof createForm>, children: React.ReactNode) {
+  const engine = new FlowEngine();
+  engine.context.defineProperty('api', {
+    value: {
+      request: mocks.request,
+    },
+  });
+
+  return render(
+    <FlowEngineProvider engine={engine}>
+      <FormProvider form={form}>{children}</FormProvider>
+    </FlowEngineProvider>,
+  );
+}
+
+function createSourceBinding() {
+  return {
+    type: 'light-extension-entry',
+    repoId: 'repo_sales',
+    entryId: 'entry_sales',
+    kind: 'js-block',
+  };
+}
+
+function createSelectableEntry() {
+  return {
+    id: 'entry_sales',
+    repoId: 'repo_sales',
+    target: 'client',
+    kind: 'js-block',
+    entryName: 'sales',
+    entryPath: 'src/client/js-blocks/sales/index.tsx',
+    metaPath: null,
+    settingsPath: null,
+    title: 'Sales',
+    description: null,
+    category: null,
+    icon: null,
+    tags: null,
+    sort: null,
+    settingsSchema: {
+      type: 'object',
+      properties: {
+        title: {
+          type: 'string',
+          default: 'Sales',
+        },
+      },
+    },
+    compiledCommitId: 'commit_sales',
+    runtimeArtifact: {
+      code: 'ctx.render("sales");',
+      version: 'v2',
+      entryPath: 'src/client/js-blocks/sales/index.tsx',
+    },
+    runtimeVersion: 'v2',
+    surfaceStyle: 'render',
+    runtimeCodeHash: 'runtime_hash',
+    filesHash: 'files_hash',
+    settingsDefaultsHash: 'defaults_hash',
+    compiledAt: '2026-07-09T00:00:00.000Z',
+    healthStatus: 'ready',
+    diagnostics: [],
+  };
+}

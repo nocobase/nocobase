@@ -103,7 +103,7 @@ export default defineCollection({
     },
     {
       type: 'date',
-      name: 'lastPublishedAt',
+      name: 'lastCompiledAt',
     },
   ],
 });

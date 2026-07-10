@@ -19,8 +19,6 @@ const SOURCE_BINDING = {
   repoId: 'repo_sales',
   entryId: 'entry_sales',
   kind: 'js-block',
-  publicationId: 'pub_sales',
-  versionPolicy: 'pinned',
 };
 
 function createDeferred<T>() {

@@ -11,38 +11,6 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { createLightExtensionRunJSResolver } from '../resolvers/LightExtensionRunJSResolver';
 
-const activePublication = {
-  id: 'pub_order_total',
-  repoId: 'repo_orders',
-  entryId: 'entry_order_total',
-  commitId: 'commit_latest',
-  entryPath: 'src/client/js-blocks/order-total/index.tsx',
-  target: 'client',
-  kind: 'js-block',
-  surfaceStyle: 'render',
-  runtimeVersion: 'v2',
-  artifact: {
-    version: 'v2',
-    entryPath: 'src/client/js-blocks/order-total/index.tsx',
-  },
-  settingsSchemaSnapshot: {
-    type: 'object',
-    properties: {
-      currency: {
-        type: 'string',
-      },
-    },
-  },
-  settingsDefaultsSnapshot: {
-    currency: 'USD',
-  },
-  settingsSchemaHash: 'schema_hash',
-  settingsDefaultsHash: 'defaults_hash',
-  filesHash: 'files_hash',
-  runtimeCodeHash: 'runtime_hash',
-  diagnostics: [],
-};
-
 const selectableEntry = {
   id: 'entry_order_total',
   repoId: 'repo_orders',
@@ -58,25 +26,29 @@ const selectableEntry = {
   icon: null,
   tags: null,
   sort: null,
-  activePublicationId: 'pub_order_total',
-  activePublication,
+  settingsSchema: {
+    type: 'object',
+    properties: {
+      currency: {
+        type: 'string',
+        default: 'USD',
+      },
+    },
+  },
+  compiledCommitId: 'commit_latest',
+  runtimeArtifact: {
+    code: 'ctx.render("orders");',
+    version: 'v2',
+    entryPath: 'src/client/js-blocks/order-total/index.tsx',
+  },
+  runtimeVersion: 'v2',
+  surfaceStyle: 'render',
+  runtimeCodeHash: 'runtime_hash',
+  filesHash: 'files_hash',
+  settingsDefaultsHash: 'defaults_hash',
+  compiledAt: '2026-07-09T00:00:00.000Z',
   healthStatus: 'ready',
   diagnostics: [],
-};
-
-const chartPublication = {
-  ...activePublication,
-  id: 'pub_order_chart',
-  entryId: 'entry_order_chart',
-  entryPath: 'src/client/js-blocks/order-chart/index.tsx',
-  artifact: {
-    ...activePublication.artifact,
-    entryPath: 'src/client/js-blocks/order-chart/index.tsx',
-  },
-  settingsDefaultsSnapshot: {},
-  settingsDefaultsHash: 'defaults_hash_chart',
-  filesHash: 'files_hash_chart',
-  runtimeCodeHash: 'runtime_hash_chart',
 };
 
 const chartSelectableEntry = {
@@ -85,8 +57,14 @@ const chartSelectableEntry = {
   entryName: 'order-chart',
   entryPath: 'src/client/js-blocks/order-chart/index.tsx',
   title: 'Order chart block',
-  activePublicationId: 'pub_order_chart',
-  activePublication: chartPublication,
+  runtimeArtifact: {
+    ...selectableEntry.runtimeArtifact,
+    entryPath: 'src/client/js-blocks/order-chart/index.tsx',
+  },
+  settingsSchema: null,
+  settingsDefaultsHash: 'defaults_hash_chart',
+  filesHash: 'files_hash_chart',
+  runtimeCodeHash: 'runtime_hash_chart',
 };
 
 const selectableRepo = {
@@ -102,7 +80,7 @@ const selectableRepo = {
 };
 
 describe('light extension source menu items', () => {
-  it('shows single-entry repositories directly and writes the active publication binding', async () => {
+  it('shows single-entry repositories directly and writes the current runtime binding', async () => {
     const api = {
       request: vi.fn(async (options: { url: string }) => {
         if (options.url === 'lightExtensionRepos:list') {
@@ -125,7 +103,6 @@ describe('light extension source menu items', () => {
     const items = await resolver.listSourceMenuItems?.({
       kind: 'js-block',
       sourceMode: 'inline',
-      defaultVersionPolicy: 'follow-active',
       settings: {
         stale: true,
       },
@@ -178,8 +155,9 @@ describe('light extension source menu items', () => {
         repoTitle: 'Orders',
         entryId: 'entry_order_total',
         entryTitle: 'Order total calculator',
-        publicationId: 'pub_order_total',
-        versionPolicy: 'follow-active',
+        entryName: 'order-total',
+        entryPath: 'src/client/js-blocks/order-total/index.tsx',
+        kind: 'js-block',
       },
       settings: {
         currency: 'EUR',
@@ -212,7 +190,6 @@ describe('light extension source menu items', () => {
     const items = await resolver.listSourceMenuItems?.({
       kind: 'js-block',
       sourceMode: 'inline',
-      defaultVersionPolicy: 'follow-active',
       t: (key) => key,
     });
     const repoItem = items?.[1];

@@ -12,7 +12,6 @@ import { vi } from 'vitest';
 import {
   createEntryRecord,
   createJsBlockNode,
-  createPublicationRecord,
   createRepository,
   createReferenceRecord,
   createReferenceServiceFixture,
@@ -30,7 +29,8 @@ describe('plugin-light-extension reference rebuild audit', () => {
           options: createJsBlockNode({
             uid: 'flow_active',
             settings: {
-              region: 'secret-rebuild-value',
+              region: 'EMEA',
+              secretPayload: 'secret-rebuild-value',
             },
           }),
         },
@@ -49,7 +49,6 @@ describe('plugin-light-extension reference rebuild audit', () => {
           },
         },
       ],
-      publications: [createPublicationRecord()],
       repos: [createRepoRecord()],
       entries: [createEntryRecord()],
       references: [
@@ -118,7 +117,7 @@ describe('plugin-light-extension reference rebuild audit', () => {
     expect(JSON.stringify(recordReferenceEvent.mock.calls)).not.toContain('secret-rebuild-value');
   });
 
-  it('records sanitized conflict audit events when settings fail the publication snapshot schema', async () => {
+  it('records sanitized conflict audit events when settings fail the entry current schema', async () => {
     const { service, repositories, recordReferenceEvent } = createReferenceServiceFixture({
       flowModelTrees: {
         flow_invalid_settings: createJsBlockNode({
@@ -129,7 +128,6 @@ describe('plugin-light-extension reference rebuild audit', () => {
           },
         }),
       },
-      publications: [createPublicationRecord()],
       repos: [createRepoRecord()],
       entries: [createEntryRecord()],
     });
@@ -149,7 +147,6 @@ describe('plugin-light-extension reference rebuild audit', () => {
       settingsHash: stableJsonHash({
         threshold: 99,
         region: 'APAC',
-        secretPayload: 'secret-settings-value',
       }),
     });
     expect(recordReferenceEvent).toHaveBeenCalledWith(
@@ -307,7 +304,6 @@ describe('plugin-light-extension reference rebuild audit', () => {
       modelUid: 'flow_rebound',
       repoId: 'ler_sales',
       entryId: 'lee_sales_kpi',
-      publicationId: 'lep_sales_kpi',
     });
     const { service, repositories } = createReferenceServiceFixture({
       flowModels: [
@@ -320,18 +316,9 @@ describe('plugin-light-extension reference rebuild audit', () => {
               repoId: 'ler_support',
               entryId: 'lee_support_kpi',
               kind: 'js-block',
-              publicationId: 'lep_support_kpi',
-              versionPolicy: 'pinned',
             },
           }),
         },
-      ],
-      publications: [
-        createPublicationRecord({
-          id: 'lep_support_kpi',
-          repoId: 'ler_support',
-          entryId: 'lee_support_kpi',
-        }),
       ],
       repos: [createRepoRecord({ id: 'ler_sales' }), createRepoRecord({ id: 'ler_support' })],
       entries: [
@@ -373,14 +360,12 @@ describe('plugin-light-extension reference rebuild audit', () => {
       modelUid: 'flow_shared_missing',
       repoId: 'ler_sales',
       entryId: 'lee_sales_kpi',
-      publicationId: 'lep_sales_kpi',
     });
     const repoBReference = createReferenceRecord({
       id: 'lef_repo_b_same_owner',
       modelUid: 'flow_shared_missing',
       repoId: 'ler_support',
       entryId: 'lee_support_kpi',
-      publicationId: 'lep_support_kpi',
       resolvedStatus: 'active',
     });
     const { service, repositories } = createReferenceServiceFixture({

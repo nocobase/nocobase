@@ -47,7 +47,6 @@ interface LightExtensionCompilePreviewTarget {
   kind: string;
   entryName: string;
   entryPath: string | null;
-  activePublicationId?: string | null;
   validationEntry?: LightExtensionEntryValidationResult;
   diagnostics: LightExtensionDiagnostic[];
   missingReason?: 'entry_missing' | 'entry_not_found';
@@ -145,7 +144,6 @@ export class LightExtensionCompilePreviewService {
         kind: target.validationEntry.kind,
         entryName: target.validationEntry.entryName,
         entryPath: target.validationEntry.entryPath,
-        activePublicationId: target.activePublicationId,
         status: compiled.accepted ? 'success' : 'failed',
         accepted: compiled.accepted,
         diagnostics: sortDiagnostics([...target.diagnostics, ...compiled.diagnostics]),
@@ -251,7 +249,6 @@ export class LightExtensionCompilePreviewService {
       message: 'Light extension compile preview entry validation failed',
       details: {
         requestSource: ctx.requestSource,
-        activePublicationId: entry.activePublicationId,
       },
     });
   }
@@ -353,7 +350,6 @@ function buildValidationEntryTarget(
     kind: validationEntry.kind,
     entryName: validationEntry.entryName,
     entryPath: validationEntry.entryPath,
-    activePublicationId: persisted?.activePublicationId,
     validationEntry,
     diagnostics: validationEntry.diagnostics,
   };
@@ -376,7 +372,6 @@ function buildMissingPersistedEntryTarget(entry: LightExtensionEntryRecord): Lig
     kind: entry.kind,
     entryName: entry.entryName,
     entryPath: entry.entryPath,
-    activePublicationId: entry.activePublicationId,
     diagnostics: [diagnostic],
     missingReason: 'entry_missing',
   };
@@ -410,7 +405,6 @@ function buildSkippedEntryResult(target: LightExtensionCompilePreviewTarget): Li
     kind: target.kind,
     entryName: target.entryName,
     entryPath: target.entryPath,
-    activePublicationId: target.activePublicationId,
     status: 'skipped',
     accepted: false,
     diagnostics: sortDiagnostics(target.diagnostics),
@@ -428,7 +422,6 @@ function buildWorkspaceBlockedEntryResult(
     kind: target.kind,
     entryName: target.entryName,
     entryPath: target.entryPath,
-    activePublicationId: target.activePublicationId,
     status: target.validationEntry ? 'failed' : 'skipped',
     accepted: false,
     diagnostics: sortDiagnostics([...target.diagnostics, ...workspaceDiagnostics]),

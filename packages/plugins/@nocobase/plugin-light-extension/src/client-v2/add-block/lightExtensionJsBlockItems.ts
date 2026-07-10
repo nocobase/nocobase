@@ -10,35 +10,33 @@
 import type { FlowModelContext, SubModelItem } from '@nocobase/flow-engine';
 
 import { NAMESPACE } from '../../constants';
-import type { LightExtensionPublicationMetadataRecord, LightExtensionSelectableEntryRecord } from '../../shared/types';
-import { listSelectableLightExtensionEntries } from '../api/lightExtensionEntriesRequests';
+import type { LightExtensionRepoRecord, LightExtensionSelectableEntryRecord } from '../../shared/types';
+import { listLightExtensionRepos, listSelectableLightExtensionEntries } from '../api/lightExtensionEntriesRequests';
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
-}
-
-function cloneSettingsDefaults(publication: LightExtensionPublicationMetadataRecord): Record<string, unknown> {
-  if (!isRecord(publication.settingsDefaultsSnapshot)) {
-    return {};
-  }
-
-  return JSON.parse(JSON.stringify(publication.settingsDefaultsSnapshot)) as Record<string, unknown>;
 }
 
 function getEntryLabel(entry: LightExtensionSelectableEntryRecord): string {
   return entry.title || entry.entryName || entry.id;
 }
 
-function toLightExtensionJSBlockItem(entry: LightExtensionSelectableEntryRecord): SubModelItem | null {
-  if (entry.kind !== 'js-block' || !entry.activePublicationId || !entry.activePublication) {
+function getRepoLabel(repo: LightExtensionRepoRecord): string {
+  return repo.title || repo.name || repo.id;
+}
+
+function toLightExtensionJSBlockItem(
+  entry: LightExtensionSelectableEntryRecord,
+  repoLabel: string,
+  options: { label?: string } = {},
+): SubModelItem | null {
+  if (entry.kind !== 'js-block' || !entry.runtimeArtifact?.code) {
     return null;
   }
 
-  const publication = entry.activePublication;
-
   return {
-    key: `light-extension-js-block:${entry.id}:${publication.id}`,
-    label: getEntryLabel(entry),
+    key: `light-extension-js-block:${entry.id}`,
+    label: options.label || getEntryLabel(entry),
     sort: entry.sort ?? 1000,
     createModelOptions: () => ({
       use: 'JSBlockModel',
@@ -49,16 +47,15 @@ function toLightExtensionJSBlockItem(entry: LightExtensionSelectableEntryRecord)
             sourceBinding: {
               type: 'light-extension-entry',
               repoId: entry.repoId,
-              repoTitle: entry.repoId,
+              repoTitle: repoLabel,
               entryId: entry.id,
               entryTitle: getEntryLabel(entry),
               entryName: entry.entryName,
+              entryPath: entry.entryPath,
               kind: 'js-block',
-              publicationId: publication.id,
-              versionPolicy: 'follow-active',
             },
-            settings: cloneSettingsDefaults(publication),
-            version: publication.runtimeVersion || publication.artifact?.version || 'v2',
+            settings: extractSettingsDefaults(entry.settingsSchema),
+            version: entry.runtimeVersion || entry.runtimeArtifact.version || 'v2',
           },
         },
       },
@@ -68,9 +65,39 @@ function toLightExtensionJSBlockItem(entry: LightExtensionSelectableEntryRecord)
 
 export async function createLightExtensionJSBlockAddItems(ctx: FlowModelContext): Promise<SubModelItem[]> {
   try {
-    const entries = await listSelectableLightExtensionEntries(ctx.api, { kind: 'js-block' });
-    const children = entries
-      .map((entry) => toLightExtensionJSBlockItem(entry))
+    const [entries, repos] = await Promise.all([
+      listSelectableLightExtensionEntries(ctx.api, { kind: 'js-block' }),
+      listLightExtensionRepos(ctx.api).catch(() => [] as LightExtensionRepoRecord[]),
+    ]);
+    const repoLabels = new Map(repos.map((repo) => [repo.id, getRepoLabel(repo)]));
+    const entriesByRepo = entries
+      .filter((entry) => entry.kind === 'js-block' && Boolean(entry.runtimeArtifact?.code))
+      .reduce((groups, entry) => {
+        const items = groups.get(entry.repoId);
+        if (items) {
+          items.push(entry);
+        } else {
+          groups.set(entry.repoId, [entry]);
+        }
+        return groups;
+      }, new Map<string, LightExtensionSelectableEntryRecord[]>());
+    const children = Array.from(entriesByRepo.entries())
+      .map(([repoId, repoEntries]) => {
+        const repoLabel = repoLabels.get(repoId) || repoId;
+        if (repoEntries.length === 1) {
+          return toLightExtensionJSBlockItem(repoEntries[0], repoLabel, { label: repoLabel });
+        }
+
+        return {
+          key: `light-extension-js-block-repo:${repoId}`,
+          type: 'group' as const,
+          label: repoLabel,
+          sort: Math.min(...repoEntries.map((entry) => entry.sort ?? 1000)),
+          children: repoEntries
+            .map((entry) => toLightExtensionJSBlockItem(entry, repoLabel))
+            .filter((item): item is SubModelItem => Boolean(item)),
+        };
+      })
       .filter((item): item is SubModelItem => Boolean(item));
 
     if (children.length === 0) {
@@ -90,4 +117,43 @@ export async function createLightExtensionJSBlockAddItems(ctx: FlowModelContext)
     console.error('[NocoBase] Failed to load light extension JS block items:', error);
     return [];
   }
+}
+
+function extractSettingsDefaults(schema: Record<string, unknown> | null): Record<string, unknown> {
+  if (!schema) {
+    return {};
+  }
+  if (isRecord(schema.default)) {
+    return cloneRecord(schema.default);
+  }
+  if (!isRecord(schema.properties)) {
+    return {};
+  }
+
+  const defaults: Record<string, unknown> = {};
+  for (const [key, propertySchema] of Object.entries(schema.properties)) {
+    if (!isRecord(propertySchema)) {
+      continue;
+    }
+    if (Object.prototype.hasOwnProperty.call(propertySchema, 'default')) {
+      defaults[key] = cloneJsonValue(propertySchema.default);
+      continue;
+    }
+    const childDefaults = extractSettingsDefaults(propertySchema);
+    if (Object.keys(childDefaults).length > 0) {
+      defaults[key] = childDefaults;
+    }
+  }
+  return defaults;
+}
+
+function cloneRecord(value: Record<string, unknown>): Record<string, unknown> {
+  return JSON.parse(JSON.stringify(value)) as Record<string, unknown>;
+}
+
+function cloneJsonValue(value: unknown): unknown {
+  if (typeof value === 'undefined') {
+    return undefined;
+  }
+  return JSON.parse(JSON.stringify(value));
 }

@@ -104,9 +104,6 @@ export const ReferenceContractDiagnosticsPanel: React.FC<ReferenceContractDiagno
         key: 'contracts',
         render: (_value, adapter) => (
           <Space wrap size={4}>
-            {adapter.supportsVersionPolicy ? <Tag>{t('Version policy')}</Tag> : null}
-            {adapter.supportsImpact ? <Tag>{t('Impact')}</Tag> : null}
-            {adapter.supportsBulkUpgrade ? <Tag>{t('Bulk upgrade')}</Tag> : null}
             {adapter.supportsRebuild ? <Tag>{t('Rebuild dry-run')}</Tag> : null}
           </Space>
         ),
@@ -146,11 +143,6 @@ export const ReferenceContractDiagnosticsPanel: React.FC<ReferenceContractDiagno
         title: t('Entry'),
         dataIndex: 'entryId',
         render: (value: string | undefined) => (value ? <Typography.Text code>{value}</Typography.Text> : '-'),
-      },
-      {
-        title: t('Publication'),
-        dataIndex: 'publicationId',
-        render: (value: string | null | undefined) => (value ? <Typography.Text code>{value}</Typography.Text> : '-'),
       },
       {
         title: t('Status'),

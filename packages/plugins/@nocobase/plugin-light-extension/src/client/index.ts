@@ -29,9 +29,7 @@ import {
   JSFieldLightExtensionSourceField,
   JSItemLightExtensionSourceField,
 } from '../client-v2/components/JSBlockLightExtensionSourceField';
-import { RepoEntryPublicationSelector } from '../client-v2/components/RepoEntryPublicationSelector';
 import { SettingsAutoForm, SettingsSingleField } from '../client-v2/components/SettingsAutoForm';
-import { VersionPolicyField } from '../client-v2/components/VersionPolicyField';
 import LightExtensionListPage from '../client-v2/pages/LightExtensionListPage';
 import { createLightExtensionRunJSResolver } from '../client-v2/resolvers/LightExtensionRunJSResolver';
 
@@ -107,9 +105,7 @@ export class PluginLightExtensionClient {
       [JS_FIELD_LIGHT_EXTENSION_SETTINGS_STEP_FIELD]: SettingsSingleField,
       [JS_ITEM_LIGHT_EXTENSION_FULL_SOURCE_FIELD]: JSItemLightExtensionSourceField,
       [JS_ITEM_LIGHT_EXTENSION_SETTINGS_STEP_FIELD]: SettingsSingleField,
-      RepoEntryPublicationSelector,
       SettingsAutoForm,
-      VersionPolicyField,
     });
 
     if (this.app?.apiClient) {

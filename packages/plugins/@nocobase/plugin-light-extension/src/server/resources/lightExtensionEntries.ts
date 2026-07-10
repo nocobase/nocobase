@@ -14,19 +14,10 @@ import { LightExtensionError, isLightExtensionError } from '../../shared/errors'
 import type { LightExtensionScanResult } from '../../shared/types';
 import { LightExtensionEntryScanner } from '../services/LightExtensionEntryScanner';
 import type { LightExtensionCanFunction } from '../services/LightExtensionPermissionService';
-import { LightExtensionPublicationResolveService } from '../services/LightExtensionPublicationResolveService';
-import { LightExtensionPublicationService } from '../services/LightExtensionPublicationService';
 import type { LightExtensionServiceContext } from '../services/LightExtensionRepoService';
+import { RuntimeResolveService } from '../services/RuntimeResolveService';
 
-export const lightExtensionEntryActionNames = [
-  'scan',
-  'list',
-  'get',
-  'listSelectable',
-  'listPublications',
-  'activatePublication',
-  'emergencyRollback',
-] as const;
+export const lightExtensionEntryActionNames = ['scan', 'list', 'get', 'listSelectable'] as const;
 
 type LightExtensionEntryActionName = (typeof lightExtensionEntryActionNames)[number];
 type ResourceActionInput = Record<string, unknown>;
@@ -57,8 +48,7 @@ type ResourceActionRunner = (
 
 interface LightExtensionEntryActionServices {
   scanner: LightExtensionEntryScanner;
-  publicationService?: LightExtensionPublicationService;
-  publicationResolveService?: LightExtensionPublicationResolveService;
+  runtimeResolveService: RuntimeResolveService;
 }
 
 const resourceActionRunners: Record<LightExtensionEntryActionName, ResourceActionRunner> = {
@@ -72,66 +62,23 @@ const resourceActionRunners: Record<LightExtensionEntryActionName, ResourceActio
     ),
   list: (services, input, currentUser) => services.scanner.listEntries(requireRepoId(input), currentUser),
   get: (services, input, currentUser) => services.scanner.getEntry(requireEntryId(input), currentUser),
-  listSelectable: (services, input, currentUser) => {
-    if (!services.publicationResolveService) {
-      throw invalidInput('Light extension publication resolve service is not available');
-    }
-
-    return services.publicationResolveService.listSelectableEntries(
+  listSelectable: (services, input, currentUser) =>
+    services.runtimeResolveService.listSelectableEntries(
       {
         repoId: optionalString(input, 'repoId'),
         kind: optionalString(input, 'kind'),
       },
       currentUser,
-    );
-  },
-  listPublications: (services, input, currentUser) => {
-    if (!services.publicationResolveService) {
-      throw invalidInput('Light extension publication resolve service is not available');
-    }
-
-    return services.publicationResolveService.listSelectablePublicationsByEntry(requireEntryId(input), currentUser);
-  },
-  activatePublication: (services, input, currentUser) => {
-    if (!services.publicationService) {
-      throw invalidInput('Light extension publication service is not available');
-    }
-
-    return services.publicationService.activatePublication(
-      {
-        entryId: requireEntryId(input),
-        toPublicationId: requireString(input, 'toPublicationId'),
-        expectedCurrentPublicationId: requireNullableString(input, 'expectedCurrentPublicationId'),
-      },
-      currentUser,
-    );
-  },
-  emergencyRollback: (services, input, currentUser) => {
-    if (!services.publicationService) {
-      throw invalidInput('Light extension publication service is not available');
-    }
-
-    return services.publicationService.emergencyRollback(
-      {
-        entryId: requireEntryId(input),
-        toPublicationId: requireString(input, 'toPublicationId'),
-        expectedCurrentPublicationId: requireNullableString(input, 'expectedCurrentPublicationId'),
-        reason: requireString(input, 'reason'),
-      },
-      currentUser,
-    );
-  },
+    ),
 };
 
 export function createLightExtensionEntriesResource(
   scanner: LightExtensionEntryScanner,
-  publicationService?: LightExtensionPublicationService,
-  publicationResolveService?: LightExtensionPublicationResolveService,
+  runtimeResolveService: RuntimeResolveService,
 ): ResourceOptions {
   const services = {
     scanner,
-    publicationService,
-    publicationResolveService,
+    runtimeResolveService,
   };
 
   return {
@@ -282,15 +229,6 @@ function requireString(input: ResourceActionInput, key: string): string {
   }
 
   return value.trim();
-}
-
-function requireNullableString(input: ResourceActionInput, key: string): string | null {
-  const value = input[key];
-  if (value === null) {
-    return null;
-  }
-
-  return requireString(input, key);
 }
 
 function toRecord(value: unknown): ResourceActionInput {

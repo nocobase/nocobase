@@ -21,11 +21,10 @@ const mocks = vi.hoisted(() => ({
     getRepo: vi.fn(),
     pull: vi.fn(),
     pullCommit: vi.fn(),
-    push: vi.fn(),
+    saveSource: vi.fn(),
     compilePreview: vi.fn(),
     scanEntries: vi.fn(),
     listCommits: vi.fn(),
-    publish: vi.fn(),
   },
 }));
 
@@ -124,34 +123,6 @@ vi.mock('@nocobase/plugin-vsc-file/client-v2', () => {
         />
       </div>
     ),
-    PublishModal: ({
-      commitMessage,
-      onCancel,
-      onCommitMessageChange,
-      onPublish,
-      open,
-    }: {
-      commitMessage: string;
-      onCancel: () => void;
-      onCommitMessageChange: (value: string) => void;
-      onPublish: () => void;
-      open: boolean;
-    }) =>
-      open ? (
-        <div aria-label="Commit message" role="dialog">
-          <input
-            aria-label="Commit message"
-            onChange={(event) => onCommitMessageChange(event.target.value)}
-            value={commitMessage}
-          />
-          <button onClick={onCancel} type="button">
-            Cancel
-          </button>
-          <button disabled={!commitMessage.trim()} onClick={onPublish} type="button">
-            Save
-          </button>
-        </div>
-      ) : null,
     RestoreVersionModal: ({
       commit,
       onCancel,
@@ -205,12 +176,6 @@ vi.mock('../hooks/useLightExtensionRepo', async (importOriginal) => {
   };
 });
 
-vi.mock('../hooks/useLightExtensionPublications', () => ({
-  useLightExtensionPublications: () => ({
-    publish: mocks.api.publish,
-  }),
-}));
-
 describe('LightExtensionWorkspacePage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -260,10 +225,23 @@ describe('LightExtensionWorkspacePage', () => {
         },
       ],
     });
-    mocks.api.push.mockResolvedValue({
+    mocks.api.saveSource.mockResolvedValue({
       repo: { id: 'ler_sales' },
       commit: { id: 'commit-2' },
       tree: { hash: 'tree-2', entryCount: 1, byteSize: 55 },
+      scan: {
+        repo: { id: 'ler_sales' },
+        commitId: 'commit-2',
+        accepted: true,
+        diagnostics: [],
+        entries: [],
+        capabilities: {},
+      },
+      compile: {
+        status: 'success',
+        entries: [],
+      },
+      diagnostics: [],
     });
     mocks.api.compilePreview.mockResolvedValue({
       repo: { id: 'ler_sales' },
@@ -296,7 +274,18 @@ describe('LightExtensionWorkspacePage', () => {
             tags: null,
             sort: null,
             settingsSchema: null,
-            activePublicationId: null,
+            compiledCommitId: 'commit-2',
+            runtimeArtifact: {
+              code: 'ctx.render("Sales KPI");',
+              version: 'v2',
+              entryPath: 'src/client/js-blocks/sales-kpi/index.tsx',
+            },
+            runtimeVersion: 'v2',
+            surfaceStyle: 'render',
+            runtimeCodeHash: 'runtime_hash',
+            filesHash: 'files_hash',
+            settingsDefaultsHash: 'settings_defaults_hash',
+            compiledAt: '2026-07-09T00:00:00.000Z',
             healthStatus: 'ready',
             diagnostics: [],
           },
@@ -305,23 +294,6 @@ describe('LightExtensionWorkspacePage', () => {
       capabilities: {},
     });
     mocks.api.listCommits.mockResolvedValue([]);
-    mocks.api.publish.mockResolvedValue({
-      repo: { id: 'ler_sales' },
-      commitId: 'commit-2',
-      clientRequestId: 'request-1',
-      status: 'success',
-      httpStatus: 200,
-      diagnostics: [],
-      entryResults: [
-        {
-          entryId: 'lee_sales',
-          entryName: 'sales-kpi',
-          kind: 'js-block',
-          status: 'created',
-          diagnostics: [],
-        },
-      ],
-    });
   });
 
   it('loads files and saves edited source through the light extension API', async () => {
@@ -337,18 +309,14 @@ describe('LightExtensionWorkspacePage', () => {
       target: { value: 'export default function SalesKpi() { return "ok"; }\n' },
     });
     fireEvent.click(screen.getByRole('button', { name: /Save/ }));
-    const dialog = await screen.findByRole('dialog', { name: 'Commit message' });
-    fireEvent.change(within(dialog).getByLabelText('Commit message'), {
-      target: { value: 'Update source' },
-    });
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
 
-    await waitFor(() => expect(mocks.api.push).toHaveBeenCalledTimes(1));
-    expect(mocks.api.push).toHaveBeenCalledWith(
+    await waitFor(() => expect(mocks.api.saveSource).toHaveBeenCalledTimes(1));
+    expect(mocks.api.saveSource).toHaveBeenCalledWith(
       expect.objectContaining({
         repoId: 'ler_sales',
         baseCommitId: 'commit-1',
-        message: 'Update source',
+        message: 'Update light extension source',
+        allowEmptyCommit: true,
         files: [
           expect.objectContaining({
             path: 'src/client/js-blocks/sales-kpi/index.tsx',
@@ -358,21 +326,7 @@ describe('LightExtensionWorkspacePage', () => {
         ],
       }),
     );
-    await waitFor(() => expect(mocks.api.scanEntries).toHaveBeenCalledWith('ler_sales'));
-    await waitFor(() =>
-      expect(mocks.api.publish).toHaveBeenCalledWith(
-        expect.objectContaining({
-          repoId: 'ler_sales',
-          entryIds: ['lee_sales'],
-          commitId: 'commit-2',
-          activate: true,
-          expectedCurrentPublicationIdByEntry: {
-            lee_sales: null,
-          },
-        }),
-      ),
-    );
-    expect(await screen.findByText('Source saved and published')).toBeInTheDocument();
+    expect(await screen.findByText('Source saved and compiled')).toBeInTheDocument();
   });
 
   it('does not reload source when hook state updates replace the hook result object', async () => {
@@ -411,14 +365,10 @@ describe('LightExtensionWorkspacePage', () => {
       'src/shared/light-extension-sdk.d.ts',
     );
     fireEvent.click(screen.getByRole('button', { name: /Save/ }));
-    const dialog = await screen.findByRole('dialog', { name: 'Commit message' });
-    fireEvent.change(within(dialog).getByLabelText('Commit message'), {
-      target: { value: 'Seed source' },
-    });
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
 
-    await waitFor(() => expect(mocks.api.push).toHaveBeenCalledTimes(1));
-    const pushedPaths = mocks.api.push.mock.calls[0][0].files.map((file) => file.path);
+    await waitFor(() => expect(mocks.api.saveSource).toHaveBeenCalledTimes(1));
+    const pushedFiles = mocks.api.saveSource.mock.calls[0][0].files;
+    const pushedPaths = pushedFiles.map((file) => file.path);
     expect(pushedPaths).toEqual(
       expect.arrayContaining([
         'README.md',
@@ -434,6 +384,21 @@ describe('LightExtensionWorkspacePage', () => {
         'src/client/events/log-page-open/index.ts',
       ]),
     );
+    expect(pushedFiles).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: 'src/client/js-fields/phone-link/index.tsx',
+          content: expect.stringContaining('ctx.render(<PhoneLink />);'),
+        }),
+        expect.objectContaining({
+          path: 'src/client/js-items/row-menu-label/index.tsx',
+          content: 'ctx.render(<span>Row menu</span>);\n',
+        }),
+      ]),
+    );
+    const phoneFieldFile = pushedFiles.find((file) => file.path === 'src/client/js-fields/phone-link/index.tsx');
+    expect(phoneFieldFile?.content).toContain('return <a href={"tel:" + value}>{value}</a>;');
+    expect(phoneFieldFile?.content).not.toContain('ctx.readOnly');
   });
 
   it('creates missing repo root files from the reused default new-file entry', async () => {
@@ -458,14 +423,9 @@ describe('LightExtensionWorkspacePage', () => {
     );
 
     fireEvent.click(screen.getByRole('button', { name: /Save/ }));
-    const dialog = await screen.findByRole('dialog', { name: 'Commit message' });
-    fireEvent.change(within(dialog).getByLabelText('Commit message'), {
-      target: { value: 'Add root files' },
-    });
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
 
-    await waitFor(() => expect(mocks.api.push).toHaveBeenCalledTimes(1));
-    expect(mocks.api.push.mock.calls[0][0].files).toEqual(
+    await waitFor(() => expect(mocks.api.saveSource).toHaveBeenCalledTimes(1));
+    expect(mocks.api.saveSource.mock.calls[0][0].files).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           path: 'README.md',
@@ -536,23 +496,13 @@ describe('LightExtensionWorkspacePage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'New default file' }));
     expect(await screen.findByText('src/client/js-fields/phone-link/index.tsx')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /Save/ }));
-    const dialog = await screen.findByRole('dialog', { name: 'Commit message' });
-    fireEvent.change(within(dialog).getByLabelText('Commit message'), {
-      target: { value: 'Add JS field entry' },
-    });
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
 
-    await waitFor(() => expect(mocks.api.push).toHaveBeenCalledTimes(1));
-    expect(mocks.api.push.mock.calls[0][0].files).toEqual(
+    await waitFor(() => expect(mocks.api.saveSource).toHaveBeenCalledTimes(1));
+    expect(mocks.api.saveSource.mock.calls[0][0].files).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           path: 'src/client/js-fields/phone-link/index.tsx',
-          content: expect.stringContaining('defineSettings'),
-          operation: 'upsert',
-        }),
-        expect.objectContaining({
-          path: 'src/shared/light-extension-sdk.d.ts',
-          content: expect.stringContaining('JSFieldContext'),
+          content: expect.stringContaining('ctx.render(<PhoneLink />);'),
           operation: 'upsert',
         }),
       ]),
@@ -700,7 +650,7 @@ describe('LightExtensionWorkspacePage', () => {
   });
 
   it('shows persisted save diagnostics after validation failure', async () => {
-    mocks.api.push.mockRejectedValueOnce(
+    mocks.api.saveSource.mockRejectedValueOnce(
       Object.assign(new Error('Light extension scan completed with validation errors'), {
         diagnostics: [
           {
@@ -726,18 +676,13 @@ describe('LightExtensionWorkspacePage', () => {
       target: { value: 'import React from "react";\n' },
     });
     fireEvent.click(screen.getByRole('button', { name: /Save/ }));
-    const dialog = await screen.findByRole('dialog', { name: 'Commit message' });
-    fireEvent.change(within(dialog).getByLabelText('Commit message'), {
-      target: { value: 'Invalid source' },
-    });
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
 
     await screen.findByText('Import "react" is not allowed');
     expect(screen.getByText('import_not_allowed')).toBeInTheDocument();
   });
 
   it('opens diagnostic source locations after save validation failure', async () => {
-    mocks.api.push.mockRejectedValueOnce(
+    mocks.api.saveSource.mockRejectedValueOnce(
       Object.assign(new Error('Light extension source workspace is invalid'), {
         diagnostics: [
           {
@@ -765,11 +710,6 @@ describe('LightExtensionWorkspacePage', () => {
       target: { value: 'import Missing from "./missing";\n' },
     });
     fireEvent.click(screen.getByRole('button', { name: /Save/ }));
-    const dialog = await screen.findByRole('dialog', { name: 'Commit message' });
-    fireEvent.change(within(dialog).getByLabelText('Commit message'), {
-      target: { value: 'Invalid source' },
-    });
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
 
     expect(await screen.findByText('Import target was not found')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /Line 1/ }));

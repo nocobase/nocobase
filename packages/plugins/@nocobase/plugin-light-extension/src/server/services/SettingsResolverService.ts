@@ -8,7 +8,12 @@
  */
 
 import { LightExtensionError } from '../../shared/errors';
-import type { LightExtensionPublicationRecord } from './LightExtensionPublicationService';
+
+export interface LightExtensionRuntimeSettingsSource {
+  id: string;
+  settingsSchema: Record<string, unknown> | null;
+  settingsDefaultsHash?: string | null;
+}
 
 export interface SettingsValidationIssue {
   path: string;
@@ -18,27 +23,27 @@ export interface SettingsValidationIssue {
 }
 
 export class SettingsResolverService {
-  resolvePublicationSettings(
-    publication: LightExtensionPublicationRecord,
+  resolveRuntimeSettings(
+    source: LightExtensionRuntimeSettingsSource,
     inputSettings: Record<string, unknown> | null | undefined,
   ): Record<string, unknown> {
-    const defaults = this.getPublicationDefaults(publication);
+    const defaults = this.getRuntimeDefaults(source);
     const settings = mergeSettings(defaults, inputSettings || {});
     const issues: SettingsValidationIssue[] = [];
 
-    if (publication.settingsSchemaSnapshot) {
-      validateSettingsValue(publication.settingsSchemaSnapshot, settings, '$', issues);
+    if (source.settingsSchema) {
+      validateSettingsValue(source.settingsSchema, settings, '$', issues);
     }
 
     if (issues.length) {
       throw new LightExtensionError(
         'LIGHT_EXTENSION_SETTINGS_INVALID',
-        'Light extension publication settings are invalid',
+        'Light extension runtime settings are invalid',
         {
           details: {
             reasonCode: 'settings_invalid',
-            publicationId: publication.id,
-            settingsSchemaHash: publication.settingsSchemaHash,
+            entryId: source.id,
+            settingsDefaultsHash: source.settingsDefaultsHash,
             issues,
           },
         },
@@ -48,24 +53,20 @@ export class SettingsResolverService {
     return settings;
   }
 
-  getPublicationDefaults(publication: LightExtensionPublicationRecord): Record<string, unknown> {
-    if (isPlainRecord(publication.settingsDefaultsSnapshot)) {
-      return cloneRecord(publication.settingsDefaultsSnapshot);
-    }
-
-    const extracted = extractSettingsDefaults(publication.settingsSchemaSnapshot);
+  getRuntimeDefaults(source: LightExtensionRuntimeSettingsSource): Record<string, unknown> {
+    const extracted = extractSettingsDefaults(source.settingsSchema);
     return isPlainRecord(extracted) ? extracted : {};
   }
 
   pruneUnknownSettings(
-    publication: LightExtensionPublicationRecord,
+    source: LightExtensionRuntimeSettingsSource,
     inputSettings: Record<string, unknown> | null | undefined,
   ): Record<string, unknown> {
     const settings = isPlainRecord(inputSettings) ? inputSettings : {};
-    if (!settingsSchemaHasProperties(publication.settingsSchemaSnapshot)) {
+    if (!settingsSchemaHasProperties(source.settingsSchema)) {
       return cloneRecord(settings);
     }
-    const pruned = pruneSettingsValue(publication.settingsSchemaSnapshot, settings);
+    const pruned = pruneSettingsValue(source.settingsSchema, settings);
     return isPlainRecord(pruned) ? pruned : {};
   }
 }
@@ -303,7 +304,7 @@ function validateObjectSettings(
       issues.push({
         path: `${path}.${key}`,
         code: 'settings_unknown_property',
-        message: `Settings field "${key}" is not defined by the publication settings schema`,
+        message: `Settings field "${key}" is not defined by the runtime settings schema`,
       });
     }
   }

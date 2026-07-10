@@ -55,10 +55,6 @@ export default defineCollection({
     },
     {
       type: 'string',
-      name: 'publicationId',
-    },
-    {
-      type: 'string',
       name: 'level',
       allowNull: false,
       defaultValue: 'info',

@@ -21,9 +21,9 @@ import type {
   LightExtensionFileChange,
   LightExtensionFileResult,
   LightExtensionPullResult,
-  LightExtensionPushResult,
   LightExtensionRepoLifecycleStatus,
   LightExtensionRepoRecord,
+  LightExtensionSaveSourceResult,
   LightExtensionScanResult,
 } from '../../shared/types';
 
@@ -37,7 +37,7 @@ export const lightExtensionRepoOperations = [
   'pull',
   'pullCommit',
   'getFile',
-  'push',
+  'saveSource',
   'compilePreview',
   'scanEntries',
   'listEntries',
@@ -103,9 +103,9 @@ export interface LightExtensionListCommitsInput {
   beforeSeq?: number;
 }
 
-export interface LightExtensionPushInput {
+export interface LightExtensionSaveSourceInput {
   repoId: string;
-  baseCommitId: string | null;
+  baseCommitId?: string | null;
   message: string;
   files: LightExtensionFileChange[];
   allowEmptyCommit?: boolean;
@@ -123,7 +123,7 @@ export interface UseLightExtensionRepoResult {
   pull(input: LightExtensionPullInput): Promise<LightExtensionPullResult>;
   pullCommit(input: LightExtensionPullCommitInput): Promise<LightExtensionPullResult>;
   getFile(input: LightExtensionGetFileInput): Promise<LightExtensionFileResult>;
-  push(input: LightExtensionPushInput): Promise<LightExtensionPushResult>;
+  saveSource(input: LightExtensionSaveSourceInput): Promise<LightExtensionSaveSourceResult>;
   compilePreview(input: { repoId: string; entryIds?: string[] }): Promise<LightExtensionCompilePreviewResult>;
   scanEntries(repoId: string): Promise<LightExtensionScanResult>;
   listEntries(repoId: string): Promise<LightExtensionEntryRecord[]>;
@@ -163,7 +163,7 @@ type OperationInputMap = {
   pull: LightExtensionPullInput;
   pullCommit: LightExtensionPullCommitInput;
   getFile: LightExtensionGetFileInput;
-  push: LightExtensionPushInput;
+  saveSource: LightExtensionSaveSourceInput;
   compilePreview: { repoId: string; entryIds?: string[] };
   scanEntries: { repoId: string };
   listEntries: { repoId: string };
@@ -180,7 +180,7 @@ type OperationResultMap = {
   pull: LightExtensionPullResult;
   pullCommit: LightExtensionPullResult;
   getFile: LightExtensionFileResult;
-  push: LightExtensionPushResult;
+  saveSource: LightExtensionSaveSourceResult;
   compilePreview: LightExtensionCompilePreviewResult;
   scanEntries: LightExtensionScanResult;
   listEntries: LightExtensionEntryRecord[];
@@ -197,7 +197,7 @@ const operationResourceActions: Record<LightExtensionRepoOperation, string> = {
   pull: 'lightExtensionFiles:pull',
   pullCommit: 'lightExtensionFiles:pullCommit',
   getFile: 'lightExtensionFiles:getFile',
-  push: 'lightExtensionFiles:push',
+  saveSource: 'lightExtensionFiles:saveSource',
   compilePreview: 'lightExtensions:compilePreview',
   scanEntries: 'lightExtensionEntries:scan',
   listEntries: 'lightExtensionEntries:list',
@@ -296,7 +296,10 @@ export function useLightExtensionRepo(): UseLightExtensionRepoResult {
     (input: LightExtensionGetFileInput) => requestOperation('getFile', input),
     [requestOperation],
   );
-  const push = useCallback((input: LightExtensionPushInput) => requestOperation('push', input), [requestOperation]);
+  const saveSource = useCallback(
+    (input: LightExtensionSaveSourceInput) => requestOperation('saveSource', input),
+    [requestOperation],
+  );
   const compilePreview = useCallback(
     (input: { repoId: string; entryIds?: string[] }) => requestOperation('compilePreview', input),
     [requestOperation],
@@ -323,7 +326,7 @@ export function useLightExtensionRepo(): UseLightExtensionRepoResult {
       pull,
       pullCommit,
       getFile,
-      push,
+      saveSource,
       compilePreview,
       scanEntries,
       listEntries,
@@ -350,7 +353,7 @@ export function useLightExtensionRepo(): UseLightExtensionRepoResult {
       loading,
       pull,
       pullCommit,
-      push,
+      saveSource,
       scanEntries,
     ],
   );

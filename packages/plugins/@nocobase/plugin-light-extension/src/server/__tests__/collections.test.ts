@@ -63,37 +63,29 @@ describe('plugin-light-extension collections', () => {
       'entryName',
       'entryPath',
       'settingsSchema',
-      'activePublicationId',
+      'compiledCommitId',
+      'runtimeArtifact',
+      'runtimeVersion',
+      'surfaceStyle',
+      'runtimeCodeHash',
+      'filesHash',
+      'settingsDefaultsHash',
+      'compiledAt',
       'healthStatus',
       'diagnostics',
       'validatorVersion',
       'lastScannedCommitId',
       'lastScannedAt',
     ]);
-    expectCollectionFields('lightExtensionEntryPublications', [
-      'id',
-      'repoId',
-      'entryId',
-      'commitId',
-      'artifact',
-      'settingsSchemaSnapshot',
-      'settingsDefaultsSnapshot',
-      'settingsSchemaHash',
-      'settingsDefaultsHash',
-      'filesHash',
-      'runtimeCodeHash',
-      'diagnostics',
-    ]);
+    expect(app.db.getCollection('lightExtensionEntryPublications')).toBeFalsy();
     expectCollectionFields('lightExtensionReferences', [
       'id',
       'repoId',
       'entryId',
-      'publicationId',
       'kind',
       'ownerKind',
       'ownerLocator',
       'ownerLocatorHash',
-      'versionPolicy',
       'settingsHash',
       'resolvedStatus',
     ]);
@@ -101,7 +93,6 @@ describe('plugin-light-extension collections', () => {
       'id',
       'repoId',
       'entryId',
-      'publicationId',
       'level',
       'action',
       'result',
@@ -121,10 +112,9 @@ describe('plugin-light-extension collections', () => {
       'repo_disabled',
       'repo_archived',
       'entry_missing',
-      'publication_missing',
       'owner_missing',
       'settings_invalid',
-      'no_active_publication',
+      'runtime_missing',
     ]);
   });
 
@@ -167,7 +157,6 @@ describe('plugin-light-extension collections', () => {
         values: {
           repoId: repo.get('id'),
           entryId: `entry_${resolvedStatus}`,
-          publicationId: `publication_${resolvedStatus}`,
           kind: 'js-block',
           ownerKind: 'flowModel.step',
           ownerLocator: {
@@ -177,7 +166,6 @@ describe('plugin-light-extension collections', () => {
             stepPath: ['stepParams', 'jsSettings'],
           },
           ownerLocatorHash: `owner_${resolvedStatus}`,
-          versionPolicy: 'pinned',
           settingsHash: 'sha256:44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a',
           resolvedStatus,
         },
