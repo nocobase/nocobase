@@ -59,7 +59,6 @@ export default {
       target: 'storages',
       foreignKey: 'storageId',
       deletable: false,
-      hidden: true,
       interface: 'm2o',
       uiSchema: {
         type: 'object',
@@ -78,7 +77,6 @@ export default {
       comment: '相对路径（含“/”前缀）',
       type: 'text',
       name: 'path',
-      hidden: true,
     },
     {
       comment: '其他文件信息（如图片的宽高）',

@@ -22,6 +22,7 @@ import {
   getFileName,
   getPreviewThumbnailUrl,
   getPreviewFileUrl,
+  matchMimetype,
   normalizePreviewFile,
 } from '../previewer/filePreviewTypes';
 
@@ -48,7 +49,7 @@ const mergeCurrentFileRecordMeta = (file: unknown, record: unknown) => {
   };
 };
 
-const FilePreview = ({
+export const FilePreview = ({
   file,
   size,
   showFileName,
@@ -67,6 +68,14 @@ const FilePreview = ({
   const fileName = getFileName(previewFile, src);
   const fallback = getFallbackIcon(previewFile, src);
   const thumbnail = getPreviewThumbnailUrl(previewFile) || fallback;
+  const imageStyle: React.CSSProperties = {
+    border: '1px solid #d9d9d9',
+    padding: 2,
+    borderRadius: 4,
+    objectFit: 'cover',
+    boxShadow: '0 0 0 2px #fff',
+  };
+  const isImage = matchMimetype(previewFile, 'image/*');
   const imageNode = (
     <div
       className={css`
@@ -76,18 +85,11 @@ const FilePreview = ({
         }
       `}
     >
-      <Image
-        src={thumbnail}
-        fallback={fallback}
-        width={size}
-        height={size}
-        preview={false}
-        style={{
-          borderRadius: 4,
-          objectFit: 'cover',
-          boxShadow: '0 0 0 2px #fff',
-        }}
-      />
+      {isImage ? (
+        <img src={thumbnail} alt={fileName} width={size} height={size} style={imageStyle} />
+      ) : (
+        <Image src={thumbnail} fallback={fallback} width={size} height={size} preview={false} style={imageStyle} />
+      )}
     </div>
   );
   return (

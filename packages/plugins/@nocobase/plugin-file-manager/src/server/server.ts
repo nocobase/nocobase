@@ -317,7 +317,6 @@ export class PluginFileManagerServer extends Plugin {
           type: 'bigInt',
           createOnly: true,
           visible: true,
-          hidden: true,
           index: true,
         });
       }

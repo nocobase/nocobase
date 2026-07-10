@@ -10,6 +10,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   getDownloadFileName,
+  getFallbackIcon,
   getFileFetchCredentials,
   getFileName,
   getPdfPreviewApiSrc,
@@ -32,6 +33,7 @@ describe('getDownloadFileName', () => {
     delete window.__webpack_public_path__;
     delete window.__nocobase_public_path__;
     delete window.__nocobase_modern_client_prefix__;
+    delete window['__nocobase_dev_public_path__'];
     vi.restoreAllMocks();
     if (originalCreateObjectURL) {
       Object.defineProperty(URL, 'createObjectURL', { value: originalCreateObjectURL, configurable: true });
@@ -93,6 +95,27 @@ describe('getDownloadFileName', () => {
     expect(getPreviewThumbnailUrl({ mimetype: 'image/svg+xml', url: 'https://example.com/files/logo.svg' })).toBe(
       '/file-placeholder/svg-200-200.png',
     );
+  });
+
+  it('文件占位图应优先使用版本化静态资源路径', () => {
+    window.__webpack_public_path__ = '/console/dist/2.1.0/';
+    window.__nocobase_public_path__ = '/console/admin/';
+
+    expect(getFallbackIcon({ filename: 'report.pdf' })).toBe('/console/dist/2.1.0/file-placeholder/pdf-200-200.png');
+  });
+
+  it('未配置版本化静态资源路径时应使用应用 public path', () => {
+    window.__nocobase_public_path__ = '/nocobase/v/';
+
+    expect(getFallbackIcon({ filename: 'report.pdf' })).toBe('/nocobase/v/file-placeholder/pdf-200-200.png');
+  });
+
+  it('v1 开发路径不应覆盖配置的应用 public path', () => {
+    window['__nocobase_dev_public_path__'] = '/';
+    window.__webpack_public_path__ = '/';
+    window.__nocobase_public_path__ = '/nocobase/';
+
+    expect(getFallbackIcon({ filename: 'report.pdf' })).toBe('/nocobase/file-placeholder/pdf-200-200.png');
   });
 
   it('永久文件地址应根据记录文件名推断图片缩略图', () => {

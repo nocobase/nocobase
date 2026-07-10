@@ -27,14 +27,20 @@ import type { PDFDocumentLoadingTask, PDFDocumentProxy, PDFWorker, RenderTask } 
 import type { DocumentInitParameters } from 'pdfjs-dist/types/src/display/api';
 import { NAMESPACE } from '../../common/constants';
 
-// Static placeholder icons live under the app's public folder, served by the gateway at the
-// runtime public path (`/nocobase/v/` in the modern client, `/nocobase/` in v1). Prefix the bare
-// `/file-placeholder/...` paths so they resolve when APP_PUBLIC_PATH !== '/'. We intentionally
-// read only `__nocobase_public_path__` (not v1's `__nocobase_dev_public_path__`, which is '/'
-// for the v1 dev-server-direct scenario) because this app is always reached through the gateway.
-const PUBLIC_PATH = (typeof window !== 'undefined' && window['__nocobase_public_path__']) || '/';
+type NocoBaseWindow = Window & {
+  __nocobase_modern_client_prefix__?: string;
+  __nocobase_public_path__?: string;
+  __webpack_public_path__?: string;
+};
 
-const withPublicPath = (path: string) => `${PUBLIC_PATH.replace(/\/$/, '')}/${path.replace(/^\//, '')}`;
+const withPublicPath = (path: string) => {
+  const browserWindow = typeof window === 'undefined' ? undefined : (window as NocoBaseWindow);
+  const assetPublicPath = browserWindow?.__webpack_public_path__;
+  const appPublicPath = browserWindow?.__nocobase_public_path__;
+  const publicPath =
+    assetPublicPath && assetPublicPath !== '/' ? assetPublicPath : appPublicPath || assetPublicPath || '/';
+  return `${publicPath.replace(/\/+$/g, '')}/${path.replace(/^\//, '')}`;
+};
 
 export interface FilePreviewerProps {
   file: any;
@@ -396,7 +402,10 @@ export const isSameOriginUrl = (url?: string) => {
 };
 
 const isPermanentFileUrl = (url: URL) => {
-  const publicPath = new URL(PUBLIC_PATH, window.location.href).pathname.replace(/\/+$/g, '');
+  const publicPath = new URL(window.__nocobase_public_path__ || '/', window.location.href).pathname.replace(
+    /\/+$/g,
+    '',
+  );
   const filesPath = `${publicPath}/files`;
   return (
     url.pathname === '/files' ||
@@ -650,12 +659,6 @@ type PdfJs = typeof import('pdfjs-dist/legacy/build/pdf.mjs');
 type PdfTextLayer = InstanceType<PdfJs['TextLayer']>;
 
 let pdfjsPromise: Promise<PdfJs> | null = null;
-
-type NocoBaseWindow = Window & {
-  __nocobase_modern_client_prefix__?: string;
-  __nocobase_public_path__?: string;
-  __webpack_public_path__?: string;
-};
 
 const ensureTrailingSlash = (path: string) => (path.endsWith('/') ? path : `${path}/`);
 
