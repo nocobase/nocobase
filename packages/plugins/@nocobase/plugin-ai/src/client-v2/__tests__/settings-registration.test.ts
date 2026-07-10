@@ -8,8 +8,13 @@
  */
 
 import { createMockClient } from '@nocobase/client-v2';
+import { createJSRunnerWithVersion, FlowContext, getRunJSDocFor, setupRunJSContexts } from '@nocobase/flow-engine';
 import { describe, expect, it, vi } from 'vitest';
-import PluginAIClientV2, { registerPluginAIPermissionsTab, registerPluginAISettingsPages } from '../plugin';
+import PluginAIClientV2, {
+  registerPluginAIPermissionsTab,
+  registerPluginAIRunJSContextContribution,
+  registerPluginAISettingsPages,
+} from '../plugin';
 
 describe('plugin-ai v2 settings registration', () => {
   it('registers AI settings menu and page tabs', () => {
@@ -92,5 +97,63 @@ describe('plugin-ai v2 settings registration', () => {
 
     expect(plugin.aiManager.getWorkContext('flow-model')).toBeDefined();
     expect(plugin.aiManager.getWorkContext('datasource')).toBeUndefined();
+    const context = app.flowEngine.context as unknown as {
+      ai?: {
+        triggerTask?: unknown;
+        triggerModelTask?: unknown;
+        onChatBoxMounted?: unknown;
+      };
+    };
+
+    expect(context.ai?.triggerTask).toEqual(expect.any(Function));
+    expect(context.ai?.triggerModelTask).toEqual(expect.any(Function));
+    expect(context.ai?.onChatBoxMounted).toBeUndefined();
+  });
+
+  it('registers RunJS docs for ctx.ai.triggerTask and ctx.ai.triggerModelTask', async () => {
+    registerPluginAIRunJSContextContribution();
+    await setupRunJSContexts();
+
+    const docs = [
+      getRunJSDocFor(new FlowContext(), { version: 'v1' }),
+      getRunJSDocFor(new FlowContext(), { version: 'v2' }),
+    ];
+
+    for (const doc of docs) {
+      expect(doc?.properties?.ai?.properties?.triggerTask).toBeDefined();
+      expect(doc?.properties?.ai?.properties?.triggerModelTask).toBeDefined();
+    }
+  });
+
+  it('exposes ctx.ai from the engine context at RunJS runtime', async () => {
+    registerPluginAIRunJSContextContribution();
+    await setupRunJSContexts();
+
+    for (const version of ['v1', 'v2'] as const) {
+      const triggerTask = vi.fn();
+      const triggerModelTask = vi.fn();
+      const engineContext = new FlowContext();
+      engineContext.defineProperty('ai', {
+        value: {
+          triggerTask,
+          triggerModelTask,
+        },
+      });
+      const ctx = new FlowContext();
+      ctx.addDelegate(engineContext);
+      ctx.defineProperty('model', { value: { constructor: { name: 'JSBlockModel' } } });
+
+      const runner = createJSRunnerWithVersion.call(ctx, { version });
+      const result = await runner.run(`
+        ctx.ai.triggerTask({ aiEmployee: 'nathan', tasks: [], open: true });
+        ctx.ai.triggerModelTask('flow-model-uid', 0);
+        return typeof ctx.ai.triggerTask === 'function' && typeof ctx.ai.triggerModelTask === 'function';
+      `);
+
+      expect(result?.success).toBe(true);
+      expect(result?.value).toBe(true);
+      expect(triggerTask).toHaveBeenCalledWith({ aiEmployee: 'nathan', tasks: [], open: true });
+      expect(triggerModelTask).toHaveBeenCalledWith('flow-model-uid', 0);
+    }
   });
 });

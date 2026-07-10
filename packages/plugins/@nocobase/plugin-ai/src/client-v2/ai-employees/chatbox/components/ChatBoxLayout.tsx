@@ -21,12 +21,19 @@ import { dialogController } from '../../stores/dialog-controller';
 import { useChatBoxStore } from '../stores/chat-box';
 import { useChatToolsStore } from '../stores/chat-tools';
 import { useChatConversationActions } from '../hooks/useChatConversationActions';
+import { useChatBoxActions } from '../hooks/useChatBoxActions';
+import { useAIConfigRepository } from '../../../repositories/hooks/useAIConfigRepository';
+import { AI_EMPLOYEE_TRIGGER_TASK_EVENT } from '../../../manager/ai-manager';
+import type { PluginAIClientV2 } from '../../../plugin';
+import {
+  normalizeTriggerTaskOptions,
+  type RunJSAIEmployeeTriggerTaskOptions,
+} from '../utils/normalizeTriggerTaskOptions';
 
 export const ChatBoxLayout: React.FC<{
   children?: React.ReactNode;
 }> = ({ children }) => {
   const app = useApp();
-  const { token } = theme.useToken();
   const screens = Grid.useBreakpoint();
   const open = useChatBoxStore.use.open();
   const expanded = useChatBoxStore.use.expanded();
@@ -34,6 +41,8 @@ export const ChatBoxLayout: React.FC<{
   const setOpen = useChatBoxStore.use.setOpen();
   const activeTool = useChatToolsStore.use.activeTool();
   const { loadUnreadCounts } = useChatConversationActions();
+  const { triggerTask } = useChatBoxActions();
+  const aiConfigRepository = useAIConfigRepository();
 
   const refreshUnreadCounts = useCallback(() => {
     loadUnreadCounts().catch(console.error);
@@ -48,6 +57,33 @@ export const ChatBoxLayout: React.FC<{
       app.eventBus.removeEventListener('ws:message:ai-conversations:read', refreshUnreadCounts);
     };
   }, [app.eventBus, refreshUnreadCounts]);
+
+  useEffect(() => {
+    const plugin = app.pm.get('ai') as PluginAIClientV2 | undefined;
+    const aiManager = plugin?.aiManager;
+    const handler = (event: Event) => {
+      const options = (event as CustomEvent<RunJSAIEmployeeTriggerTaskOptions>).detail;
+
+      normalizeTriggerTaskOptions(options, {
+        aiConfigRepository,
+        apiClient: app.apiClient,
+      })
+        .then((normalized) => {
+          if (!normalized) {
+            return undefined;
+          }
+          return triggerTask(normalized);
+        })
+        .catch(console.error);
+    };
+
+    app.eventBus.addEventListener(AI_EMPLOYEE_TRIGGER_TASK_EVENT, handler);
+    aiManager?.onChatBoxMounted();
+    return () => {
+      aiManager?.onChatBoxUnmounted();
+      app.eventBus.removeEventListener(AI_EMPLOYEE_TRIGGER_TASK_EVENT, handler);
+    };
+  }, [aiConfigRepository, app.apiClient, app.eventBus, app.pm, triggerTask]);
 
   const panelWidth = 450;
   const zIndex = 1100;

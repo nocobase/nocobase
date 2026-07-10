@@ -8,13 +8,38 @@
  */
 
 import React from 'react';
-import { describe, expect, it } from 'vitest';
-import { AIManager } from '../manager/ai-manager';
+import { describe, expect, it, vi } from 'vitest';
+import { AI_EMPLOYEE_TRIGGER_TASK_EVENT, AIManager } from '../manager/ai-manager';
+import type { RunJSAIEmployeeTriggerTaskOptions } from '../ai-employees/chatbox/utils/normalizeTriggerTaskOptions';
+import type { ContextItem, Task } from '../ai-employees/types';
 import type { LLMProviderOptions, ToolModalProps, ToolOptions } from '../manager/ai-manager';
 
 const ProviderSettingsForm = () => <div />;
 const ModelSettingsForm = () => <div />;
 const ChatSettingsForm = () => <div />;
+
+function createManager(getModel?: (uid: string, searchInPreviousEngines?: boolean) => unknown) {
+  const eventBus = new EventTarget();
+  const app = {
+    eventBus,
+    flowEngine: {
+      getModel: getModel ?? vi.fn(),
+    },
+  };
+
+  return {
+    manager: new AIManager(app),
+    eventBus,
+  };
+}
+
+function listenTasks(eventBus: EventTarget) {
+  const details: RunJSAIEmployeeTriggerTaskOptions[] = [];
+  eventBus.addEventListener(AI_EMPLOYEE_TRIGGER_TASK_EVENT, (event) => {
+    details.push((event as CustomEvent<RunJSAIEmployeeTriggerTaskOptions>).detail);
+  });
+  return details;
+}
 
 describe('AIManager v2', () => {
   it('registers LLM providers with provider/model/message components', () => {
@@ -72,5 +97,116 @@ describe('AIManager v2', () => {
     const modalProps: ToolModalProps = { width: 720 };
 
     expect({ tool, modalProps }).toBeDefined();
+  });
+
+  it('queues AI employee tasks until ChatBox is mounted', () => {
+    const { manager, eventBus } = createManager();
+    const details = listenTasks(eventBus);
+
+    manager.triggerTask({ aiEmployee: 'nathan', tasks: [{ title: 'Draft' }] });
+
+    expect(details).toEqual([]);
+
+    manager.onChatBoxMounted();
+
+    expect(details).toEqual([{ aiEmployee: 'nathan', tasks: [{ title: 'Draft' }] }]);
+  });
+
+  it('dispatches AI employee tasks immediately after ChatBox is mounted', () => {
+    const { manager, eventBus } = createManager();
+    const details = listenTasks(eventBus);
+
+    manager.onChatBoxMounted();
+    manager.triggerTask({ aiEmployee: 'nathan', tasks: [{ title: 'Now' }] });
+
+    expect(details).toEqual([{ aiEmployee: 'nathan', tasks: [{ title: 'Now' }] }]);
+  });
+
+  it('drops the oldest queued task when the pending AI employee task queue exceeds 20 tasks', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const { manager, eventBus } = createManager();
+    const details = listenTasks(eventBus);
+
+    for (let index = 0; index < 21; index += 1) {
+      manager.triggerTask({ aiEmployee: 'nathan', tasks: [{ title: `Task ${index}` }] });
+    }
+    manager.onChatBoxMounted();
+
+    expect(details).toHaveLength(20);
+    expect(details[0].tasks?.[0].title).toBe('Task 1');
+    expect(details[19].tasks?.[0].title).toBe('Task 20');
+    expect(warn).toHaveBeenCalledWith(
+      '[plugin-ai] AI employee task queue exceeded 20 items. The oldest task was dropped.',
+    );
+
+    warn.mockRestore();
+  });
+
+  it('triggers a model task by reading model AI employee and 0-based task index', () => {
+    const task: Task = { title: 'Summarize' };
+    const getModel = vi.fn(() => ({
+      props: {
+        aiEmployee: { username: 'nathan' },
+        tasks: [{ title: 'Skip' }, task],
+      },
+    }));
+    const { manager, eventBus } = createManager(getModel);
+    const details = listenTasks(eventBus);
+
+    manager.onChatBoxMounted();
+    manager.triggerModelTask('flow-model-uid', 1, { open: true });
+
+    expect(getModel).toHaveBeenCalledWith('flow-model-uid', true);
+    expect(details).toEqual([{ aiEmployee: 'nathan', tasks: [task], open: true }]);
+  });
+
+  it('warns when model props have no task at the requested index', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const getModel = vi.fn(() => ({
+      props: {
+        aiEmployee: { username: 'viz' },
+      },
+    }));
+    const { manager, eventBus } = createManager(getModel);
+    const details = listenTasks(eventBus);
+
+    manager.onChatBoxMounted();
+    manager.triggerModelTask('ai-employee-action-uid', 0, { open: true });
+
+    expect(details).toEqual([]);
+    expect(warn).toHaveBeenCalledWith(
+      '[plugin-ai] Cannot trigger AI employee task because model "ai-employee-action-uid" has no task at index 0.',
+    );
+
+    warn.mockRestore();
+  });
+
+  it('does not merge model context workContext into the triggered model task message', () => {
+    const taskWorkContext: ContextItem = { type: 'flow-model', uid: 'task-context' };
+    const modelWorkContext: ContextItem = { type: 'flow-model', uid: 'model-context' };
+    const getModel = vi.fn(() => ({
+      props: {
+        aiEmployee: { username: 'nathan' },
+        tasks: [
+          {
+            title: 'Explain',
+            message: {
+              user: 'Explain this chart',
+              workContext: [taskWorkContext],
+            },
+          },
+        ],
+        context: {
+          workContext: [modelWorkContext],
+        },
+      },
+    }));
+    const { manager, eventBus } = createManager(getModel);
+    const details = listenTasks(eventBus);
+
+    manager.onChatBoxMounted();
+    manager.triggerModelTask('flow-model-uid', 0);
+
+    expect(details[0].tasks?.[0].message?.workContext).toEqual([taskWorkContext]);
   });
 });

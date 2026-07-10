@@ -33,6 +33,7 @@ import { AIEmployeeInstruction } from './workflow/nodes/employee';
 import { registerPluginAIClientV2BuiltinTools } from '../client-v2/ai-employees/tools';
 import { builtinLLMProviderOptions } from '../client-v2/llm-providers';
 import { ChatBoxLayout } from '../client-v2/ai-employees/chatbox/components/ChatBoxLayout';
+import { registerPluginAIRunJSFacade } from '../shared/runjs/registerAIEmployeeRunJSFacade';
 const Employees = lazy(() => import('../client-v2/pages/EmployeesPage'));
 const LLMServices = lazy(() => import('../client-v2/pages/LLMServicesPage'));
 const MCPSettings = lazy(() => import('../client-v2/pages/MCPSettingsPage'));
@@ -45,7 +46,7 @@ const { AIResourceContextCollector } = lazy(
 
 export class PluginAIClient extends Plugin {
   features = new AIPluginFeatureManagerImpl();
-  aiManager = new AIManager();
+  aiManager = new AIManager(this.app);
 
   async afterAdd() {
     // await this.app.pm.add()
@@ -126,6 +127,7 @@ export class PluginAIClient extends Plugin {
       toolsManager: this.app.aiManager.toolsManager,
     });
     this.app.flowEngine.context.defineProperty('aiConfigRepository', { value: aiConfigRepository });
+    registerPluginAIRunJSFacade(this.app.flowEngine.context, this.aiManager);
 
     builtinLLMProviderOptions.forEach(([name, options]) => {
       this.aiManager.registerLLMProvider(name, options);

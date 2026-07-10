@@ -85,6 +85,7 @@ export const SURFACE_ALLOWED_MODEL_USES: Record<string, Set<string>> = {
 
 export const ALLOWED_CTX_ROOTS = new Set([
   'acl',
+  'ai',
   'antd',
   'antdIcons',
   'api',
