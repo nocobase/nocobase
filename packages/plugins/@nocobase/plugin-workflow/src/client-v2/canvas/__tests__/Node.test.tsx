@@ -7,10 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { NodeDefaultView } from '../Node';
+
+const openNodeConfigDrawerMock = vi.hoisted(() => vi.fn());
+const useInstructionMock = vi.hoisted(() => vi.fn());
+const requestRemoveMock = vi.hoisted(() => vi.fn());
 
 vi.mock('@nocobase/flow-engine', () => ({
   useFlowEngine: () => ({
@@ -55,9 +59,7 @@ vi.mock('../style', () => ({
 }));
 
 vi.mock('../useWorkflowInstruction', () => ({
-  useInstruction: () => ({
-    title: 'Approval',
-  }),
+  useInstruction: useInstructionMock,
 }));
 
 vi.mock('../NodeClipboardContext', () => ({
@@ -69,11 +71,13 @@ vi.mock('../NodeDragContext', () => ({
 }));
 
 vi.mock('../RemoveNodeContext', () => ({
-  useRemoveNodeContext: () => null,
+  useRemoveNodeContext: () => ({
+    requestRemove: requestRemoveMock,
+  }),
 }));
 
 vi.mock('../NodeConfigDrawer', () => ({
-  openNodeConfigDrawer: vi.fn(),
+  openNodeConfigDrawer: openNodeConfigDrawerMock,
 }));
 
 vi.mock('../JobButton', () => ({
@@ -81,6 +85,14 @@ vi.mock('../JobButton', () => ({
 }));
 
 describe('NodeDefaultView', () => {
+  beforeEach(() => {
+    openNodeConfigDrawerMock.mockClear();
+    requestRemoveMock.mockClear();
+    useInstructionMock.mockReturnValue({
+      title: 'Approval',
+    });
+  });
+
   it('renders card extra content inside the node card after the title while keeping children outside', () => {
     const { container } = render(
       <NodeDefaultView
@@ -98,5 +110,20 @@ describe('NodeDefaultView', () => {
     expect(nodeCard).toContainElement(cardExtra);
     expect(nodeCard).not.toContainElement(children);
     expect(nodeCard.lastElementChild).toBe(cardExtra);
+  });
+
+  it('renders unsupported node types as a normal card without opening the config drawer', () => {
+    useInstructionMock.mockReturnValue(undefined);
+
+    const { container } = render(<NodeDefaultView data={{ id: 13, title: 'Legacy node', type: 'legacy' }} />);
+
+    const nodeCard = container.querySelector('.node-card') as HTMLElement;
+
+    expect(screen.getByText('Unsupported node')).toBeInTheDocument();
+    expect(container.querySelector('.workflow-node-action-button')).toBeInTheDocument();
+
+    fireEvent.click(nodeCard);
+
+    expect(openNodeConfigDrawerMock).not.toHaveBeenCalled();
   });
 });

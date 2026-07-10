@@ -20,7 +20,7 @@
  */
 
 import React, { Suspense, lazy, useCallback, useMemo, useState } from 'react';
-import { Button, Dropdown, Input, Skeleton, Tag, Tooltip } from 'antd';
+import { Button, Dropdown, Input, Skeleton, Tag } from 'antd';
 import { CloseOutlined, CopyOutlined, DeleteOutlined, EllipsisOutlined } from '@ant-design/icons';
 import { useFlowEngine } from '@nocobase/flow-engine';
 import { NodeContext, useFlowContext, useWorkflowCanvasExecuted } from './contexts';
@@ -136,8 +136,8 @@ function isInteractiveClickTarget(target: EventTarget | null): boolean {
  * `ComponentLoader` can reuse the exact card and append its own subtree after it
  * (e.g. the condition node's Yes/No branches). `cardExtra` is an internal slot
  * for node-specific notices inside the card, directly after the title — the v2
- * mirror of v1's `NodeDefaultView` (doc §9.5, ADR-0003). Assumes the type is
- * registered; the unregistered placeholder is handled by `NodeCard`.
+ * mirror of v1's `NodeDefaultView` (doc §9.5, ADR-0003). Unregistered types
+ * still render with the same card chrome, but do not open the config drawer.
  */
 export function NodeDefaultView({
   cardExtra,
@@ -161,6 +161,9 @@ export function NodeDefaultView({
   const isDraggingSelf = Boolean(dragContext?.dragging && dragContext?.dragNode?.id === data.id);
 
   const openConfig = useCallback(() => {
+    if (!instruction) {
+      return;
+    }
     openNodeConfigDrawer({ ctx: flowEngine.context, data, instruction, t, workflow, refresh });
   }, [flowEngine, data, instruction, t, workflow, refresh]);
 
@@ -176,7 +179,7 @@ export function NodeDefaultView({
     [data, dragContext],
   );
 
-  const typeTitle = t(instruction?.title as string);
+  const typeTitle = instruction ? t(instruction.title as string) : t('Unsupported node');
 
   return (
     <div className={cx(styles.nodeClass, nodeTypeClassName(data.type))}>
@@ -185,6 +188,7 @@ export function NodeDefaultView({
         role="button"
         aria-label={`${typeTitle}-${data.title ?? data.id}`}
         onMouseDown={onCardMouseDown}
+        aria-disabled={!instruction}
         onClick={(ev) => {
           // A drag just ended → swallow the click so it doesn't open the drawer.
           if (dragContext?.consumeClick?.()) {
@@ -198,7 +202,9 @@ export function NodeDefaultView({
       >
         <div className={styles.nodeHeaderClass}>
           <div className={cx(styles.nodeMetaClass, 'workflow-node-meta')}>
-            <Tag icon={instruction?.icon}>{typeTitle}</Tag>
+            <Tag icon={instruction?.icon} color={instruction ? undefined : 'error'}>
+              {typeTitle}
+            </Tag>
             <span className="workflow-node-id">{data.id}</span>
           </div>
           <div className="workflow-node-actions">
@@ -215,8 +221,6 @@ export function NodeDefaultView({
 }
 
 function NodeCard({ data }: { data: any }) {
-  const { styles, cx } = useStyles();
-  const t = useT();
   const instruction = useInstruction(data.type);
 
   const Rendered = useMemo(() => {
@@ -226,23 +230,9 @@ function NodeCard({ data }: { data: any }) {
     return null;
   }, [instruction]);
 
-  // Unregistered in v2 (only implemented in v1) → placeholder card, topology intact.
+  // Unregistered in v2 (only implemented in v1) → keep the normal card actions and title editing, but disable config.
   if (!instruction) {
-    return (
-      <div className={cx(styles.nodeClass, nodeTypeClassName(data.type))}>
-        <Tooltip title={t('This node type is not available in the new canvas yet.')}>
-          <div className={cx(styles.nodeCardClass, 'invalid')}>
-            <div className={styles.nodeHeaderClass}>
-              <div className={cx(styles.nodeMetaClass, 'workflow-node-meta')}>
-                <Tag color="warning">{t('Unsupported node')}</Tag>
-                <span className="workflow-node-id">{data.id}</span>
-              </div>
-            </div>
-            <Input.TextArea value={data.title ?? `#${data.id}`} disabled autoSize />
-          </div>
-        </Tooltip>
-      </div>
-    );
+    return <NodeDefaultView data={data} />;
   }
 
   // Branch nodes self-render via ComponentLoader (it draws its own card by wrapping `NodeDefaultView` and appending
