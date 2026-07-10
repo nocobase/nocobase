@@ -35,6 +35,9 @@ type DecoratedFormModel = {
 
 type DraftFlowContext = FlowModelContext & {
   model: FlowModelContext['model'] & DecoratedFormModel;
+  inputArgs?: {
+    source?: unknown;
+  };
   draftRepository: FormDraftRepository;
   form: {
     getFieldsValue: () => FormDraftValues;
@@ -207,6 +210,10 @@ FormBlockModel.registerFlow({
     saveDraft: {
       async handler(ctx) {
         const draftCtx = ctx as unknown as DraftFlowContext;
+        const source = draftCtx.inputArgs?.source;
+        if (typeof source !== 'undefined' && source !== 'user') {
+          return;
+        }
         if (draftCtx.draftRepository.disabled) {
           return;
         }

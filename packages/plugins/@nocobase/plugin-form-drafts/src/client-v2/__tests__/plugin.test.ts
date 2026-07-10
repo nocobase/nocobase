@@ -203,6 +203,41 @@ describe('PluginFormDraftsClient v2', () => {
     expect(setDecoratorProps).not.toHaveBeenCalled();
   });
 
+  it('does not overwrite a restored draft from non-user form value changes', async () => {
+    const engine = new FlowEngine();
+    const model = engine.createModel<FlowModel>({ use: 'FlowModel', uid: 'form-uid' });
+    const ctx = new FlowRuntimeContext(model, 'draftCreateFlow');
+    const draftCreateFlow = FormBlockModel.globalFlowRegistry.getFlow('draftCreateFlow');
+    const draftSaveFlow = FormBlockModel.globalFlowRegistry.getFlow('draftSaveFlow');
+    const restoredValues = { title: 'Restored title', roles: [{ roleName: 'Draft role' }] };
+    const setDecoratorProps = vi.fn();
+    const setFormValues = vi.fn();
+    const getUserEditedValuePatches = vi.fn(() => []);
+
+    Object.assign(model, { setDecoratorProps, formValueRuntime: { getUserEditedValuePatches } });
+    store.set('form-uid:123', { uid: 'form-uid:123', values: restoredValues });
+    model.context.defineProperty('resource', {
+      value: {
+        getFilterByTk: () => 123,
+      },
+    });
+    model.context.defineProperty('form', {
+      value: {
+        getFieldsValue: () => ({ fixed: 'Fixed auto value' }),
+        resetFields: vi.fn(),
+      },
+    });
+    model.context.defineMethod('setFormValues', setFormValues);
+    model.context.defineMethod('t', (key: string) => key);
+
+    await draftCreateFlow?.steps.createDraft.handler?.(ctx, { enabled: true });
+    ctx.defineProperty('inputArgs', { value: { source: 'default' } });
+    await draftSaveFlow?.steps.saveDraft.handler?.(ctx, {});
+
+    expect(getUserEditedValuePatches).not.toHaveBeenCalled();
+    expect(await ctx.draftRepository.get()).toEqual({ uid: 'form-uid:123', values: restoredValues });
+  });
+
   it('restores persisted draft patches without expanding parent containers', async () => {
     const engine = new FlowEngine();
     const model = engine.createModel<FlowModel>({ use: 'FlowModel', uid: 'form-uid' });
