@@ -41,8 +41,8 @@
     "file-saver": "^2.0.5",
     "html5-qrcode": "^2.3.8",
     "i18next": "^22.4.9",
-    "jsqr": "^1.4.0",
     "json5": "^2.2.3",
+    "jsqr": "^1.4.0",
     "lodash": "4.17.21",
     "react-i18next": "^11.15.1",
     "react-router-dom": "^6.30.1"
