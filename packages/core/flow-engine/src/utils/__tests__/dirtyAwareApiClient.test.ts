@@ -80,6 +80,51 @@ describe('dirtyAwareApiClient', () => {
     expect(engine.getDataSourceDirtyVersion('main', 'posts')).toBe(1);
   });
 
+  it('should keep request overrides local to the dirty-aware proxy', async () => {
+    const engine = new FlowEngine();
+    const request = vi.fn(async () => ({ data: { ok: true } }));
+    const api: TestApi = {
+      auth: { locale: 'zh-CN' },
+      request,
+      resource: vi.fn(),
+    };
+    const originalRequest = api.request;
+    const wrappedApi = getWrappedApi(engine, api);
+    const delegatedRequest = wrappedApi.request.bind(wrappedApi);
+    const requestOverride = vi.fn((config: TestRequestOptions) => delegatedRequest(config));
+
+    wrappedApi.request = requestOverride;
+
+    await wrappedApi.request({ url: 'posts:list' });
+
+    expect(requestOverride).toHaveBeenCalledTimes(1);
+    expect(request).toHaveBeenCalledTimes(1);
+    expect(api.request).toBe(originalRequest);
+  });
+
+  it('should keep resource overrides local to the dirty-aware proxy', async () => {
+    const engine = new FlowEngine();
+    const update = vi.fn(async () => ({ data: { ok: true } }));
+    const api: TestApi = {
+      auth: { locale: 'zh-CN' },
+      request: vi.fn(async () => ({ data: { ok: true } })),
+      resource: vi.fn(() => ({ update })),
+    };
+    const originalResource = api.resource;
+    const wrappedApi = getWrappedApi(engine, api);
+    const delegatedResource = wrappedApi.resource.bind(wrappedApi);
+    const resourceOverride = vi.fn((...args: Parameters<TestApi['resource']>) => delegatedResource(...args));
+
+    wrappedApi.resource = resourceOverride;
+
+    await wrappedApi.resource('posts').update({ filterByTk: 1 });
+
+    expect(resourceOverride).toHaveBeenCalledTimes(1);
+    expect(update).toHaveBeenCalledTimes(1);
+    expect(api.resource).toBe(originalResource);
+    expect(engine.getDataSourceDirtyVersion('main', 'posts')).toBe(1);
+  });
+
   it('should not mark dirty for read actions', async () => {
     const nonMutatingActions = [
       'get',

@@ -370,9 +370,13 @@ function createDirtyAwareResource(
 }
 
 function createDirtyAwareApiClient(api: DirtyAwareAPIClient, context: FlowContext): APIClient {
+  // RunJS may override proxy methods and delegate back to these dirty-aware wrappers.
+  const baseResource = api.resource.bind(api) as APIClient['resource'];
+  const baseRequest = api.request.bind(api) as APIClient['request'];
+
   const resource: APIClient['resource'] = (name, of, headers, cancel) => {
-    const targetResource = api.resource(name, of, headers, cancel);
-    return createDirtyAwareResource(context, targetResource, name, of, headers);
+    const resourceInstance = baseResource(name, of, headers, cancel);
+    return createDirtyAwareResource(context, resourceInstance, name, of, headers);
   };
 
   const request = (<T, R, D>(config: APIClientRequestConfig): Promise<R> => {
@@ -380,7 +384,7 @@ function createDirtyAwareApiClient(api: DirtyAwareAPIClient, context: FlowContex
     const skipDataSourceDirty = options?.[SKIP_DATA_SOURCE_DIRTY];
     const dirtyResourceAction = skipDataSourceDirty ? undefined : resolveDirtyResourceAction(options, context);
     const { [SKIP_DATA_SOURCE_DIRTY]: _skipDataSourceDirty, ...cleanConfig } = options;
-    return api.request<T, R, D>(cleanConfig as typeof config).then((result) => {
+    return baseRequest<T, R, D>(cleanConfig as typeof config).then((result) => {
       if (dirtyResourceAction && isMutatingResourceAction(dirtyResourceAction.actionName)) {
         markResourceActionDataSourceDirty(context, dirtyResourceAction, options.headers);
       }
@@ -388,15 +392,33 @@ function createDirtyAwareApiClient(api: DirtyAwareAPIClient, context: FlowContex
     });
   }) as APIClient['request'];
 
+  let hasResourceOverride = false;
+  let resourceOverride: unknown;
+  let hasRequestOverride = false;
+  let requestOverride: unknown;
+
   const proxy = new Proxy(api, {
     get(target, prop, receiver) {
       if (prop === 'resource') {
-        return resource;
+        return hasResourceOverride ? resourceOverride : resource;
       }
       if (prop === 'request') {
-        return request;
+        return hasRequestOverride ? requestOverride : request;
       }
       return Reflect.get(target, prop, receiver);
+    },
+    set(target, prop, value, receiver) {
+      if (prop === 'resource') {
+        hasResourceOverride = true;
+        resourceOverride = value;
+        return true;
+      }
+      if (prop === 'request') {
+        hasRequestOverride = true;
+        requestOverride = value;
+        return true;
+      }
+      return Reflect.set(target, prop, value, receiver);
     },
   }) as APIClient;
   dirtyAwareApiClientProxies.add(proxy);
