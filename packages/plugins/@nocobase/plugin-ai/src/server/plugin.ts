@@ -216,11 +216,22 @@ export class PluginAIServer extends Plugin {
           collection.options.storage = settings?.options?.storage;
         }
         await next();
+      },
+      { before: 'createMiddleware' },
+    );
+
+    this.app.resourceManager.use(
+      async (ctx, next) => {
+        const { resourceName, actionName } = ctx.action;
+        if (resourceName === 'aiFiles' && actionName === 'create') {
+          appendAIFileAttachmentSource(ctx.action.params.values);
+        }
+        await next();
         if (resourceName === 'aiFiles' && actionName === 'create') {
           appendAIFileAttachmentSource(ctx.body);
         }
       },
-      { before: 'createMiddleware' },
+      { after: 'createMiddleware' },
     );
 
     Object.entries(aiEmployeeActions).forEach(([name, action]) => {

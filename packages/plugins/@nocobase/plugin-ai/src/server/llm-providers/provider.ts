@@ -254,6 +254,10 @@ export abstract class LLMProvider {
 
   protected async encodeAttachment(ctx: Context, attachment: AttachmentModel) {
     const fileManager = this.app.pm.get('file-manager') as PluginFileManagerServer;
+    if (typeof ctx.get !== 'function') {
+      const { stream } = await fileManager.getFileStream(attachment);
+      return await encodeReadableStream(stream);
+    }
     const { stream } = await fileManager.getFileStream(attachment, {
       requestOptions: {
         headers: {

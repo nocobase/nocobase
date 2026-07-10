@@ -38,13 +38,17 @@ function appendSourceToAttachmentRecord(record: unknown) {
   if (!isRecord(record)) {
     return;
   }
+  const meta = {
+    ...(isRecord(record.meta) ? record.meta : {}),
+    source: AI_FILES_ATTACHMENT_SOURCE,
+  };
   if (typeof record.set === 'function') {
     const model = record as Model;
-    model.set('source', AI_FILES_ATTACHMENT_SOURCE);
-    model.dataValues.source = AI_FILES_ATTACHMENT_SOURCE;
+    model.set('meta', meta);
+    model.dataValues.meta = meta;
     return;
   }
-  record.source = AI_FILES_ATTACHMENT_SOURCE;
+  record.meta = meta;
 }
 
 export function appendAIFileAttachmentSource(body: unknown) {

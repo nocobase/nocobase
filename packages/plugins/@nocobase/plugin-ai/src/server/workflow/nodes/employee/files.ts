@@ -104,10 +104,11 @@ export abstract class Files {
                 filePath: tempFilePath,
                 storageName,
                 values: {
-                  ...fileIdentity,
+                  title: fileIdentity.title,
                   mimetype: contentType,
                   meta: {
                     sourceUrl: url,
+                    originalFilename: fileIdentity.filename,
                   },
                 },
               });

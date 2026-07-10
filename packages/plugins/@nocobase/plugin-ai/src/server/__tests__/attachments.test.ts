@@ -9,7 +9,12 @@
 
 import type { Context } from '@nocobase/actions';
 import { describe, expect, it } from 'vitest';
-import { findMessageAttachments, getAttachmentSource, getMessageAttachmentLookupKey } from '../attachments';
+import {
+  appendAIFileAttachmentSource,
+  findMessageAttachments,
+  getAttachmentSource,
+  getMessageAttachmentLookupKey,
+} from '../attachments';
 
 type FindCall = {
   collectionName: string;
@@ -66,6 +71,28 @@ function expectLookupKey(attachment: unknown, expected: string) {
 }
 
 describe('message attachment lookup', () => {
+  it('stores aiFiles attachment source in meta', () => {
+    const attachment = {
+      id: 1,
+      meta: {
+        foo: 'bar',
+      },
+    };
+
+    appendAIFileAttachmentSource(attachment);
+
+    expect(attachment).toEqual({
+      id: 1,
+      meta: {
+        foo: 'bar',
+        source: {
+          dataSourceKey: 'main',
+          collectionName: 'aiFiles',
+        },
+      },
+    });
+  });
+
   it('skips attachments without source for historical compatibility', async () => {
     const calls: FindCall[] = [];
     const ctx = createContext([{ id: 1, filename: 'upload.png', storageId: 1 }], calls);
