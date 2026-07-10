@@ -401,29 +401,35 @@ function PublicFormFlowRuntime(props: { formKey?: string; meta: PublicFormMeta }
       }
 
       setLoading(true);
-      await flowEngine.resolveModelTree(tree);
-      if (cancelled) {
-        return;
-      }
-      const nextRouteModel =
-        flowEngine.getModel(tree.uid) ||
-        (await flowEngine.createModelAsync(tree, {
-          delegate: runtimeContextRef.current,
-        }));
-      if (cancelled) {
-        return;
-      }
-      const pageModel = getPublicFormPageModel(nextRouteModel);
+      try {
+        await flowEngine.resolveModelTree(tree);
+        if (cancelled) {
+          return;
+        }
+        const nextRouteModel =
+          flowEngine.getModel(tree.uid) ||
+          (await flowEngine.createModelAsync(tree, {
+            delegate: runtimeContextRef.current,
+          }));
+        if (cancelled) {
+          return;
+        }
+        const pageModel = getPublicFormPageModel(nextRouteModel);
 
-      if (pageModel?.setProps) {
-        pageModel.setProps('publicRuntime', true);
-      }
-      detachRuntimeContext();
-      attachRuntimeContext(nextRouteModel);
+        if (pageModel?.setProps) {
+          pageModel.setProps('publicRuntime', true);
+        }
+        detachRuntimeContext();
+        attachRuntimeContext(nextRouteModel);
 
-      if (!cancelled) {
         setRouteModel(nextRouteModel);
         setLoading(false);
+      } catch (_error) {
+        if (!cancelled) {
+          detachRuntimeContext();
+          setRouteModel(null);
+          setLoading(false);
+        }
       }
     };
 

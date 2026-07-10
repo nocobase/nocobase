@@ -96,6 +96,11 @@ vi.mock('../components/components/MobilePicker', () => ({
   MobilePicker: () => <div data-testid="mobile-picker" />,
 }));
 
+vi.mock('../components/UnEnabledFormPlaceholder', () => ({
+  UnEnabledFormPlaceholder: () => <div data-testid="public-form-disabled" />,
+  UnFoundFormPlaceholder: () => <div data-testid="public-form-not-found" />,
+}));
+
 vi.mock('../hooks', () => ({
   usePublicSubmitActionProps: vi.fn(),
 }));
@@ -378,6 +383,30 @@ describe('PublicFormPage', () => {
         cache: false,
       }),
     );
+  });
+
+  it('shows the not-found state when the v2 FlowModel runtime fails to load', async () => {
+    mocks.useRequest.mockReturnValue({
+      data: {
+        data: {
+          dataSource: { key: 'main', collections: [] },
+          flowModel: {
+            uid: 'public-form-1',
+          },
+          title: 'V2 public form',
+          token: 'form-token',
+        },
+      },
+      error: null,
+      loading: false,
+      run: vi.fn(),
+    });
+    mocks.flowEngine.resolveModelTree.mockRejectedValueOnce(new Error('Failed to resolve public form model'));
+
+    render(<PublicFormPage />);
+
+    expect(await screen.findByTestId('public-form-not-found')).toBeInTheDocument();
+    expect(screen.queryByText('Loading')).toBeNull();
   });
 
   it('renders the public form password error inline', async () => {
