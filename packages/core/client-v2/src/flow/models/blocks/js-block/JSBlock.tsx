@@ -13,9 +13,6 @@ import {
   ElementProxy,
   FlowCancelSaveException,
   tExpr,
-  createSafeDocument,
-  createSafeWindow,
-  createSafeNavigator,
   type FlowRuntimeContext,
   type FlowSettingsContext,
   type StepDefinition,
@@ -1206,12 +1203,9 @@ ctx.render(\`
               },
             });
 
-            const navigator = createSafeNavigator();
-            const result = (await ctx.runjs(
-              resolved.code,
-              { window: createSafeWindow({ navigator }), document: createSafeDocument(), navigator },
-              { version: resolved.version },
-            )) as RunJSExecutionResult;
+            const result = (await ctx.runjs(resolved.code, undefined, {
+              version: resolved.version,
+            })) as RunJSExecutionResult;
 
             if (result?.success === false) {
               throw result.error || new Error('RunJS execution failed');

@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-vsc-file",
-  "version": "2.1.12",
+  "version": "2.2.0-beta.10",
   "main": "dist/server/index.js",
   "dependencies": {
     "jszip": "^3.10.1",

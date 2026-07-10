@@ -828,8 +828,14 @@ describe('flowSurfaces swagger', () => {
     expect(schemas.FlowSurfaceApplyBlueprintNavigationGroup.properties.routeId.description).toContain(
       'Preferred existing menu-group route id',
     );
+    expect(schemas.FlowSurfaceApplyBlueprintNavigationGroup.properties.routeId.description).toContain(
+      'Ignored when navigation.layoutUid targets a mobile layout',
+    );
     expect(schemas.FlowSurfaceApplyBlueprintNavigationGroup.properties.title.description).toContain(
       'reuses a same-title group if the match is unique',
+    );
+    expect(schemas.FlowSurfaceApplyBlueprintNavigationGroup.properties.title.description).toContain(
+      'Ignored when navigation.layoutUid targets a mobile layout',
     );
     expect(schemas.FlowSurfaceApplyBlueprintNavigationGroup.properties.title.description).toContain(
       'group metadata is ignored',
@@ -840,6 +846,15 @@ describe('flowSurfaces swagger', () => {
     expect(schemas.FlowSurfaceApplyBlueprintNavigationGroup.properties.icon.description).toContain(
       'Ignored when routeId is present',
     );
+    expect(schemas.FlowSurfaceApplyBlueprintNavigation.properties.layoutUid.description).toContain(
+      'mobile-layout-model',
+    );
+    expect(schemas.FlowSurfaceApplyBlueprintNavigation.properties.layoutUid.description).toContain(
+      'create a root-level tab page',
+    );
+    expect(schemas.FlowSurfaceApplyBlueprintRequest.description).toContain('`navigation.layoutUid`');
+    expect(schemas.FlowSurfaceApplyBlueprintRequest.description).toContain('target layout');
+    expect(schemas.FlowSurfaceApplyBlueprintRequest.description).toContain('`navigation.group` is ignored');
     expect(schemas.FlowSurfaceApplyBlueprintResponse.properties.surface.$ref).toBe(
       '#/components/schemas/FlowSurfaceGetResponse',
     );
@@ -1403,13 +1418,24 @@ describe('flowSurfaces swagger', () => {
       context: 'department',
     });
     expect(configureRequest.examples.jsBlockSettings.value.changes.showBlockCard).toBe(true);
-    expect(configureRequest.examples.jsBlockSettings.value.changes.code).toContain('Users hero');
+    expect(configureRequest.examples.jsBlockSettings.value.changes.sourceMode).toBe('light-extension');
+    expect(configureRequest.examples.jsBlockSettings.value.changes.sourceBinding).toMatchObject({
+      type: 'light-extension-entry',
+      repoId: 'repo_users',
+      entryId: 'entry_users_hero',
+      kind: 'js-block',
+      publicationId: 'publication_users_hero_v1',
+      versionPolicy: 'pinned',
+    });
+    expect(configureRequest.examples.jsBlockSettings.value.changes.settings).toEqual({
+      segment: 'active',
+    });
+    expect(configureRequest.examples.jsBlockSettings.value.changes.code).toBeUndefined();
     expect(configureRequest.examples.jsActionSettings.value.changes.version).toBe('1.0.1');
     expect(configureRequest.examples.jsItemActionSettings.value.changes.code).toContain('ctx.render');
     expect(configureRequest.examples.jsFieldSettings.value.changes.code).toContain('toUpperCase');
     expect(configureRequest.examples.jsColumnSettings.value.changes.fixed).toBe('left');
     expect(configureRequest.examples.jsItemSettings.value.changes.showLabel).toBe(true);
-    expect(configureRequest.examples.jsBlockSettings.value.changes.code).not.toContain("return { type: 'div'");
     expect(configureRequest.examples.jsFieldSettings.value.changes.code).not.toContain('return record.');
     expect(configureRequest.examples.jsColumnSettings.value.changes.code).not.toContain('return record.');
     expect(configureRequest.examples.jsItemSettings.value.changes.code).not.toContain('return record.');
@@ -1532,7 +1558,19 @@ describe('flowSurfaces swagger', () => {
     expect(swaggerDocument.paths['/flowSurfaces:addBlock'].post.description).not.toContain('Legacy');
     expect(swaggerDocument.paths['/flowSurfaces:addBlock'].post.description).toContain('`kanban`');
     expect(addBlockRequest.examples.jsBlock.value.type).toBe('jsBlock');
-    expect(addBlockRequest.examples.jsBlock.value.settings.code).toContain('Users banner');
+    expect(addBlockRequest.examples.jsBlock.value.settings.sourceMode).toBe('light-extension');
+    expect(addBlockRequest.examples.jsBlock.value.settings.sourceBinding).toMatchObject({
+      type: 'light-extension-entry',
+      repoId: 'repo_users',
+      entryId: 'entry_users_banner',
+      kind: 'js-block',
+      publicationId: 'publication_users_banner_v1',
+      versionPolicy: 'pinned',
+    });
+    expect(addBlockRequest.examples.jsBlock.value.settings.settings).toEqual({
+      segment: 'new-users',
+    });
+    expect(addBlockRequest.examples.jsBlock.value.settings.code).toBeUndefined();
     expect(
       addBlockRequest.examples.tableDefaultFilters.value.defaultActionSettings.filter.filterableFieldNames,
     ).toEqual(['username', 'email', 'status', 'phone']);
@@ -2123,7 +2161,9 @@ describe('flowSurfaces swagger', () => {
     ]);
     expect(swaggerDocument.components?.schemas?.FlowSurfaceCreateMenuRequest.required).toEqual(['title']);
     expect(swaggerDocument.components?.schemas?.FlowSurfaceUpdateMenuRequest.required).toEqual(['menuRouteId']);
+    expect(schemas.FlowSurfaceCreateMenuRequest.properties.layoutUid.description).toContain('mobile-layout-model');
     expect(schemas.FlowSurfaceCreateMenuRequest.properties.pageUid).toBeUndefined();
+    expect(schemas.FlowSurfaceCreatePageRequest.properties.layoutUid.description).toContain('existing route');
     expect(schemas.FlowSurfaceCreatePageRequest.properties.menuRouteId).toBeTruthy();
   });
 });

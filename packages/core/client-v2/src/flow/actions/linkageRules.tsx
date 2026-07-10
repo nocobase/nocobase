@@ -16,9 +16,6 @@ import {
   FlowRuntimeContext,
   useFlowContext,
   useFlowEngine,
-  createSafeWindow,
-  createSafeDocument,
-  createSafeNavigator,
   observer,
   isRunJSValue,
 } from '@nocobase/flow-engine';
@@ -1510,8 +1507,7 @@ export const linkageRunjs = defineAction({
     }
 
     try {
-      const navigator = createSafeNavigator();
-      await ctx.runjs(script, { window: createSafeWindow({ navigator }), document: createSafeDocument(), navigator });
+      await ctx.runjs(script);
     } catch (error) {
       console.error('Script execution error:', error);
       // 可以选择显示错误信息给用户

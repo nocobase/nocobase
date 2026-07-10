@@ -339,7 +339,7 @@ function collectDirectDomErrors(
   });
 }
 
-function collectGlobalErrors(
+function collectUnknownGlobalErrors(
   path: string,
   source: string,
   scan: RunJsScanResult,
@@ -347,57 +347,6 @@ function collectGlobalErrors(
   surface: string,
   errors: FlowSurfaceErrorItemInput[],
 ) {
-  scan.windowDocumentNavigatorAliases.forEach((entry) => {
-    errors.push(
-      buildRunJsAuthoringError({
-        path,
-        repairClass: 'blocked-global-stop',
-        message: `flowSurfaces authoring ${path} cannot alias forbidden global ${entry.root}`,
-        modelUse,
-        surface,
-        index: entry.index,
-        source,
-        details: {
-          global: entry.root,
-          alias: entry.alias,
-        },
-      }),
-    );
-  });
-  scan.windowDocumentNavigatorUses.forEach((entry) => {
-    errors.push(
-      buildRunJsAuthoringError({
-        path,
-        repairClass: 'blocked-global-stop',
-        ruleId: `runjs-${entry.root}-property-blocked`,
-        message: `flowSurfaces authoring ${path} cannot access ${entry.root}.${entry.member} in RunJS`,
-        modelUse,
-        surface,
-        index: entry.index,
-        source,
-        details: {
-          global: entry.root,
-          member: entry.member,
-        },
-      }),
-    );
-  });
-  scan.forbiddenBareGlobals.forEach((entry) => {
-    errors.push(
-      buildRunJsAuthoringError({
-        path,
-        repairClass: 'blocked-global-stop',
-        message: `flowSurfaces authoring ${path} cannot access forbidden global ${entry.name}`,
-        modelUse,
-        surface,
-        index: entry.index,
-        source,
-        details: {
-          global: entry.name,
-        },
-      }),
-    );
-  });
   scan.unknownBareGlobals.forEach((entry) => {
     const suggestion = entry.suggestedCapability
       ? `; use ${entry.suggestedCapability} or assign it to a local variable first`
@@ -922,7 +871,14 @@ export const RUNJS_INSPECTION_VALIDATORS: RunJsInspectionValidator[] = [
   ),
   createLegacyValidator('dom-global', (runtime, errors) => {
     collectDirectDomErrors(runtime.input.path, runtime.source, runtime.scan, runtime.modelUse, runtime.surface, errors);
-    collectGlobalErrors(runtime.input.path, runtime.source, runtime.scan, runtime.modelUse, runtime.surface, errors);
+    collectUnknownGlobalErrors(
+      runtime.input.path,
+      runtime.source,
+      runtime.scan,
+      runtime.modelUse,
+      runtime.surface,
+      errors,
+    );
   }),
   createLegacyValidator('react-runtime', (runtime, errors) =>
     collectReactRuntimeErrors(

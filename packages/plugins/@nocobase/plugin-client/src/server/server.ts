@@ -13,6 +13,7 @@ import { tval } from '@nocobase/utils';
 import _ from 'lodash';
 import * as process from 'node:process';
 import { resolve } from 'path';
+import { listAppPortals } from './appPortals';
 import { getAntdLocale } from './antd';
 import { getCronLocale } from './cron';
 import { getCronstrueLocale } from './cronstrue';
@@ -67,6 +68,7 @@ export class PluginClientServer extends Plugin {
     });
     this.app.acl.allow('app', 'getLang');
     this.app.acl.allow('app', 'getInfo');
+    this.app.acl.allow('app', 'getPortals', 'loggedIn');
     this.app.acl.registerSnippet({
       name: 'app',
       actions: ['app:restart', 'app:refresh', 'app:clearCache', 'app:publishEvent'],
@@ -120,6 +122,10 @@ export class PluginClientServer extends Plugin {
           };
           await next();
         },
+        getPortals: async (ctx, next) => {
+          ctx.body = await listAppPortals(ctx.app?.name);
+          await next();
+        },
         async clearCache(ctx, next) {
           await ctx.cache.reset();
           await next();
@@ -148,7 +154,7 @@ export class PluginClientServer extends Plugin {
           const { id, username } = ctx.auth?.user ?? {};
           const user = id ? { id, username } : undefined;
 
-          const eventName = `${command}@${plugin}`;
+          const eventName = `${command.replaceAll(':', '.')}.${plugin}`;
           try {
             await ctx.app.eventQueue.publish(eventName, {
               plugin,
@@ -201,7 +207,7 @@ export class PluginClientServer extends Plugin {
 
     this.app.acl.registerSnippet({
       name: `pm.desktopRoutes`,
-      actions: ['desktopRoutes:list', 'roles.desktopRoutes:*'],
+      actions: ['roles.desktopRoutes:*'],
     });
 
     this.app.acl.allow('desktopRoutes', ['listAccessible', 'getAccessible'], 'loggedIn');

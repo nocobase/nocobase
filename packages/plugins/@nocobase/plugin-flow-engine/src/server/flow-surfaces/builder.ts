@@ -957,6 +957,10 @@ function buildActionDefaults(options: {
     approvalDefaults?.props || {},
   );
   const normalizedProps = applyContainerActionStyle(props, options.containerUse);
+  const buttonGeneralProps = applyCompactRecordActionButtonDefaults(
+    pickButtonGeneralProps(normalizedProps),
+    options.containerUse,
+  );
   const stepParams: Record<string, any> = _.merge(
     {},
     _.cloneDeep(approvalDefaults?.stepParams || {}),
@@ -964,7 +968,7 @@ function buildActionDefaults(options: {
       ? {}
       : {
           buttonSettings: {
-            general: pickButtonGeneralProps(normalizedProps),
+            general: buttonGeneralProps,
           },
         },
   );
@@ -1083,6 +1087,9 @@ function buildActionDefaults(options: {
 function inferPopupActionSourceId(resourceInit?: Record<string, any>) {
   if (!resourceInit?.associationName) {
     return undefined;
+  }
+  if (!Object.prototype.hasOwnProperty.call(resourceInit, 'sourceId')) {
+    return '{{ctx.view.inputArgs.sourceId}}';
   }
   const sourceId = typeof resourceInit?.sourceId === 'string' ? resourceInit.sourceId.trim() : resourceInit?.sourceId;
   if (!sourceId) {
@@ -1289,12 +1296,33 @@ function inferActionDefaultProps(use: string, scope?: FlowSurfaceCatalogItem['sc
   );
 }
 
-function applyContainerActionStyle(props: Record<string, any>, containerUse?: string) {
+const COMPACT_RECORD_ACTION_CONTAINER_USES = new Set([
+  'TableActionsColumnModel',
+  'ListItemModel',
+  'GridCardItemModel',
+  'CommentItemModel',
+]);
+
+function isCompactRecordActionContainerUse(containerUse?: string) {
+  return COMPACT_RECORD_ACTION_CONTAINER_USES.has(String(containerUse || '').trim());
+}
+
+function applyCompactRecordActionButtonDefaults(props: Record<string, any>, containerUse?: string) {
   if (
-    ['TableActionsColumnModel', 'ListItemModel', 'GridCardItemModel', 'CommentItemModel'].includes(
-      String(containerUse || '').trim(),
-    )
+    isCompactRecordActionContainerUse(containerUse) &&
+    props.icon === null &&
+    !Object.prototype.hasOwnProperty.call(props, 'iconOnly')
   ) {
+    return {
+      ...props,
+      iconOnly: false,
+    };
+  }
+  return props;
+}
+
+function applyContainerActionStyle(props: Record<string, any>, containerUse?: string) {
+  if (isCompactRecordActionContainerUse(containerUse)) {
     return {
       ...props,
       type: 'link',

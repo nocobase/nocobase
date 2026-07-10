@@ -10,9 +10,6 @@
 import {
   ElementProxy,
   FlowCancelSaveException,
-  createSafeDocument,
-  createSafeNavigator,
-  createSafeWindow,
   type FlowModel,
   type FlowRuntimeContext,
   type FlowSettingsContext,
@@ -103,7 +100,7 @@ type JSItemRuntimeContext = FlowRuntimeContext<JSItemRuntimeModel> & {
   defineProperty: (key: string, options: Record<string, unknown>) => void;
   defineMethod?: (key: string, method: (...args: unknown[]) => unknown) => void;
   ref?: React.RefObject<HTMLElement>;
-  runjs: (code: string, globals: Record<string, unknown>, options: { version: string }) => Promise<unknown>;
+  runjs: (code: string, globals?: Record<string, unknown>, options?: { version: string }) => Promise<unknown>;
 };
 
 type JSItemEventHandler = (...args: unknown[]) => unknown;
@@ -406,15 +403,11 @@ export async function runResolvedJSItemCode(input: {
     cache: false,
   });
 
-  const navigator = createSafeNavigator();
   const queryRoot = elementTarget || globalThis.document.createDocumentFragment();
-  const document = createJSItemScopedDocument(queryRoot, errorState);
-  const window = createJSItemRuntimeSafeWindow(navigator, errorState);
-  const result = (await ctx.runjs(
-    resolved.code,
-    { window, document, navigator },
-    { version: resolved.version },
-  )) as RunJSExecutionResult;
+  const browserGlobals = createJSItemRuntimeBrowserGlobals(queryRoot, errorState);
+  const result = (await ctx.runjs(resolved.code, browserGlobals, {
+    version: resolved.version,
+  })) as RunJSExecutionResult;
 
   if (result?.success === false) {
     throw result.error || new Error('RunJS execution failed');
@@ -1455,16 +1448,55 @@ function createJSItemScopedDocument(
   root: Node | DocumentFragment | null | undefined,
   errorState: JSItemRuntimeErrorState,
 ): Document {
+  return createJSItemRuntimeBrowserGlobals(root, errorState).document;
+}
+
+function createJSItemScopedDocumentFacade(
+  root: Node | DocumentFragment | null | undefined,
+  errorState: JSItemRuntimeErrorState,
+  defaultView: Window,
+): Document {
   const queryRoot = root || errorState.scopeRoot || globalThis.document.createDocumentFragment();
-  return createSafeDocument({
-    defaultView: createJSItemRuntimeSafeWindow(createSafeNavigator(), errorState),
+  const allowedProperties: Record<string, unknown> = {
+    defaultView,
     createElement: (tagName: string, options?: ElementCreationOptions) =>
       protectJSItemDomEventTarget(globalThis.document.createElement(tagName, options), errorState),
     querySelector: (selectors: string) =>
       protectJSItemDomValue(queryRoot.querySelector(selectors), queryRoot, errorState),
     querySelectorAll: (selectors: string) =>
       protectJSItemDomCollection(queryRoot.querySelectorAll(selectors), queryRoot, errorState),
-  }) as Document;
+  };
+  const localProperties: Record<string, unknown> = Object.create(null);
+  return new Proxy(localProperties, {
+    get(target, prop) {
+      if (typeof prop !== 'string') {
+        return Reflect.get(target, prop);
+      }
+      if (Object.prototype.hasOwnProperty.call(allowedProperties, prop)) {
+        return allowedProperties[prop];
+      }
+      if (Object.prototype.hasOwnProperty.call(target, prop)) {
+        return target[prop];
+      }
+      throw new Error(`Access to document property "${prop}" is not allowed in a JS Item runtime`);
+    },
+    set(target, prop, value) {
+      if (typeof prop !== 'string') {
+        return Reflect.set(target, prop, value);
+      }
+      if (Object.prototype.hasOwnProperty.call(allowedProperties, prop)) {
+        throw new Error(`Mutation of document property "${prop}" is not allowed in a JS Item runtime`);
+      }
+      target[prop] = value;
+      return true;
+    },
+    has(target, prop) {
+      return (
+        (typeof prop === 'string' && Object.prototype.hasOwnProperty.call(allowedProperties, prop)) ||
+        Reflect.has(target, prop)
+      );
+    },
+  }) as unknown as Document;
 }
 
 function defineProtectedJSItemOwnerDocumentGetter(target: EventTarget, errorState: JSItemRuntimeErrorState): void {
@@ -1482,17 +1514,40 @@ function defineProtectedJSItemOwnerDocumentGetter(target: EventTarget, errorStat
   });
 }
 
-function createJSItemRuntimeSafeWindow(
+function createJSItemRuntimeBrowserGlobals(
+  root: Node | DocumentFragment | null | undefined,
+  errorState: JSItemRuntimeErrorState,
+): Record<string, unknown> & { document: Document; navigator: Navigator; window: Window } {
+  const scopedDocumentHolder: { current?: Document } = {};
+  const runtimeWindow = createJSItemRuntimeWindow(globalThis.navigator, errorState, () => {
+    if (!scopedDocumentHolder.current) {
+      throw new Error('JS Item scoped document is not initialized');
+    }
+    return scopedDocumentHolder.current;
+  });
+  const scopedDocument = createJSItemScopedDocumentFacade(root, errorState, runtimeWindow);
+  scopedDocumentHolder.current = scopedDocument;
+  return {
+    window: runtimeWindow,
+    document: scopedDocument,
+    navigator: globalThis.navigator,
+    setTimeout: runtimeWindow.setTimeout,
+    clearTimeout: runtimeWindow.clearTimeout,
+    setInterval: runtimeWindow.setInterval,
+    clearInterval: runtimeWindow.clearInterval,
+  };
+}
+
+function createJSItemRuntimeWindow(
   navigator: Navigator,
   errorState: JSItemRuntimeErrorState,
-  extra?: Record<string, unknown>,
-): ReturnType<typeof createSafeWindow> {
+  getDocument: () => Document,
+): Window {
   const timeoutCleanups = new Map<unknown, () => void>();
   const intervalCleanups = new Map<unknown, () => void>();
-  return createSafeWindow({
+  const overrides: Record<string, unknown> = {
     navigator,
     ...createJSItemSafeWindowDomTypes(),
-    ...(extra || {}),
     setTimeout(handler: TimerHandler, timeout?: number, ...args: unknown[]) {
       const wrappedHandler =
         typeof handler === 'function'
@@ -1571,7 +1626,46 @@ function createJSItemRuntimeSafeWindow(
       const wrapped = listener ? errorState.domEventHandlers.get(listener) : undefined;
       globalThis.removeEventListener(type, wrapped || listener, options);
     },
-  });
+  };
+  const runtimeWindowTarget: Record<PropertyKey, unknown> = Object.create(null);
+  const runtimeWindow = new Proxy(runtimeWindowTarget, {
+    get(_target, prop) {
+      if (prop === 'window' || prop === 'self' || prop === 'globalThis') {
+        return runtimeWindow;
+      }
+      if (prop === 'document') {
+        return getDocument();
+      }
+      if (typeof prop === 'string' && Object.prototype.hasOwnProperty.call(overrides, prop)) {
+        return overrides[prop];
+      }
+      const value = Reflect.get(globalThis.window, prop, globalThis.window);
+      return typeof value === 'function' ? value.bind(globalThis.window) : value;
+    },
+    set(_target, prop, value) {
+      if (
+        prop === 'window' ||
+        prop === 'self' ||
+        prop === 'globalThis' ||
+        prop === 'document' ||
+        (typeof prop === 'string' && Object.prototype.hasOwnProperty.call(overrides, prop))
+      ) {
+        throw new Error(`Mutation of window property "${String(prop)}" is not allowed in a JS Item runtime`);
+      }
+      return Reflect.set(globalThis.window, prop, value, globalThis.window);
+    },
+    has(_target, prop) {
+      return (
+        prop === 'window' ||
+        prop === 'self' ||
+        prop === 'globalThis' ||
+        prop === 'document' ||
+        (typeof prop === 'string' && Object.prototype.hasOwnProperty.call(overrides, prop)) ||
+        Reflect.has(globalThis.window, prop)
+      );
+    },
+  }) as unknown as Window;
+  return runtimeWindow;
 }
 
 function createJSItemSafeWindowDomTypes(): Record<string, unknown> {
@@ -1813,9 +1907,7 @@ function protectJSItemRuntimeEventValue(value: unknown, errorState: JSItemRuntim
     return value.map((item) => protectJSItemRuntimeEventValue(item, errorState));
   }
   if (isJSItemWindowLike(value)) {
-    return createJSItemRuntimeSafeWindow(createSafeNavigator(), errorState, {
-      document: createJSItemScopedDocument(errorState.scopeRoot, errorState),
-    });
+    return createJSItemRuntimeBrowserGlobals(errorState.scopeRoot, errorState).window;
   }
   if (value instanceof Document) {
     return createJSItemScopedDocument(errorState.scopeRoot, errorState);

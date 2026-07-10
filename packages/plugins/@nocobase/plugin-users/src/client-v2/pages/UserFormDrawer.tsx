@@ -82,6 +82,52 @@ function withPrivateUserFormModel(tree: PersistedFlowModelTree, uid: string): Pe
   };
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return !!value && typeof value === 'object' && !Array.isArray(value);
+}
+
+function cloneWithoutCreatePasswordDefaults(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.map(cloneWithoutCreatePasswordDefaults);
+  }
+  if (!isRecord(value)) {
+    return value;
+  }
+
+  const next = Object.fromEntries(
+    Object.entries(value).map(([key, item]) => [key, cloneWithoutCreatePasswordDefaults(item)]),
+  );
+  const stepParams = next.stepParams;
+  const fieldSettings = isRecord(stepParams) ? stepParams.fieldSettings : undefined;
+  const init = isRecord(fieldSettings) ? fieldSettings.init : undefined;
+  const fieldPath = isRecord(init) ? init.fieldPath : undefined;
+  if (fieldPath !== 'password') {
+    return next;
+  }
+
+  const editItemSettings = isRecord(stepParams) ? stepParams.editItemSettings : undefined;
+  if (isRecord(editItemSettings)) {
+    delete editItemSettings.initialValue;
+  }
+  const subModels = next.subModels;
+  const fieldModel = isRecord(subModels) ? subModels.field : undefined;
+  const fieldProps = isRecord(fieldModel) ? fieldModel.props : undefined;
+  if (isRecord(fieldProps)) {
+    delete fieldProps.initialValue;
+    delete fieldProps.defaultValue;
+    delete fieldProps.value;
+  }
+
+  return next;
+}
+
+function normalizePersistedUserFormModel(tree: PersistedFlowModelTree, uid: string): PersistedFlowModelTree {
+  if (uid !== ADMIN_PROFILE_CREATE_FORM_MODEL_UID) {
+    return tree;
+  }
+  return cloneWithoutCreatePasswordDefaults(tree) as PersistedFlowModelTree;
+}
+
 async function ensurePersistedUserFormModel(options: {
   flowEngine: ReturnType<typeof useFlowEngine>;
   api: FlowEngineContext['api'];
@@ -97,6 +143,7 @@ async function ensurePersistedUserFormModel(options: {
     });
     modelTree = fallbackTree;
   }
+  modelTree = normalizePersistedUserFormModel(modelTree, uid);
   return (await flowEngine.createModelAsync(withPrivateUserFormModel(modelTree, uid))) as LoadedUserFormModel;
 }
 

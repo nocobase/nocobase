@@ -460,6 +460,9 @@ function isAppDevHtml() {
 }
 
 function buildIndexHtml(force = false) {
+  if (process.env.NOCOBASE_EXTRACT_CLIENT_ASSETS === 'true') {
+    return;
+  }
   const file = `${process.env.APP_PACKAGE_ROOT}/dist/client/index.html`;
   if (!fs.existsSync(file)) {
     return;

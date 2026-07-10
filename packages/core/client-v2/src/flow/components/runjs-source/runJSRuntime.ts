@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FlowContext, runjsWithSafeGlobals } from '@nocobase/flow-engine';
+import { FlowContext } from '@nocobase/flow-engine';
 
 import type { ResolvedRuntimeRunJS } from './types';
 import type { RunJSSourceLocator } from '../runjs-studio';
@@ -26,6 +26,14 @@ type RunJSExecutionResult = {
   success?: boolean;
   value?: unknown;
   error?: unknown;
+};
+
+type RunJSRuntimeExecutor = {
+  runjs: (
+    code: string,
+    variables?: Record<string, unknown>,
+    options?: { version?: string },
+  ) => Promise<RunJSExecutionResult | undefined>;
 };
 
 export function createRunJSRuntimeContext(baseCtx: unknown, resolved: ResolvedRuntimeRunJS): unknown {
@@ -66,13 +74,20 @@ export async function evaluateResolvedRunJSValue(input: {
   resolved: ResolvedRuntimeRunJS;
 }): Promise<unknown> {
   const runtimeCtx = createRunJSRuntimeContext(input.ctx, input.resolved);
-  const ret = (await runjsWithSafeGlobals(runtimeCtx, input.resolved.code, {
+  if (!hasRunJSRuntimeExecutor(runtimeCtx)) {
+    throw new Error('RunJS runtime context does not provide ctx.runjs');
+  }
+  const ret = await runtimeCtx.runjs(input.resolved.code, undefined, {
     version: input.resolved.version,
-  })) as RunJSExecutionResult | undefined;
+  });
   if (!ret?.success) {
     throw ret?.error || new Error('RunJS execution failed');
   }
   return ret.value;
+}
+
+function hasRunJSRuntimeExecutor(value: unknown): value is RunJSRuntimeExecutor {
+  return Boolean(value) && typeof value === 'object' && typeof (value as RunJSRuntimeExecutor).runjs === 'function';
 }
 
 export async function reportRunJSRuntimeErrorBestEffort(input: {

@@ -8,6 +8,7 @@
  */
 
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { FlowEngine } from '@nocobase/flow-engine';
 import {
   resolveRunJSSourceBinding,
   resolveRuntimeRunJS,
@@ -15,6 +16,7 @@ import {
   RunJSSourceResolverRegistry,
   type RunJSSourceResolverResult,
 } from '../index';
+import { evaluateResolvedRunJSValue } from '../runJSRuntime';
 
 const LIGHT_EXTENSION_SOURCE_BINDING = {
   type: 'light-extension-entry',
@@ -49,6 +51,40 @@ describe('resolveRuntimeRunJS', () => {
         region: 'APAC',
       },
       context: undefined,
+    });
+  });
+
+  it('evaluates resolved code through FlowContext.runjs with browser globals', async () => {
+    const engine = new FlowEngine();
+
+    await expect(
+      evaluateResolvedRunJSValue({
+        ctx: engine.context,
+        resolved: {
+          code: `
+return {
+  region: ctx.settings.region,
+  sourceMode: ctx.runJsSource.sourceMode,
+  windowType: typeof window,
+  documentType: typeof document,
+  navigatorType: typeof navigator,
+  sharesDocument: window.document === document,
+};
+          `,
+          version: 'v2',
+          sourceMode: 'inline',
+          settings: {
+            region: 'APAC',
+          },
+        },
+      }),
+    ).resolves.toEqual({
+      region: 'APAC',
+      sourceMode: 'inline',
+      windowType: 'object',
+      documentType: 'object',
+      navigatorType: 'object',
+      sharesDocument: true,
     });
   });
 

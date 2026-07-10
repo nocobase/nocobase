@@ -25,6 +25,29 @@ Hiện tại NocoBase tích hợp sẵn các loại engine sau:
 
 Khi cài đặt hệ thống, một Local Storage engine sẽ được tự động thêm và có thể sử dụng ngay. Bạn cũng có thể thêm engine mới hoặc chỉnh sửa các tham số của engine đã có.
 
+
+Nếu bạn đang dùng storage engine chỉ hỗ trợ truy cập công khai và muốn di chuyển file lịch sử sang S3 Pro, hãy xem [Di chuyển sang S3 Pro](./migrate-to-s3-pro.md).
+
+## Khả năng truy cập file
+
+Mỗi storage engine hỗ trợ kiểm soát truy cập file khác nhau. Trước khi cấu hình, hãy xác nhận file có cần truy cập riêng tư hay không:
+
+| Storage engine | Khả năng truy cập file |
+| --- | --- |
+| [Local Storage](./local) | Chỉ hỗ trợ truy cập công khai; không hỗ trợ truy cập riêng tư |
+| [Amazon S3](./amazon-s3) | Chỉ hỗ trợ truy cập công khai; không hỗ trợ truy cập riêng tư |
+| [Aliyun OSS](./aliyun-oss) | Chỉ hỗ trợ truy cập công khai; không hỗ trợ truy cập riêng tư |
+| [Tencent COS](./tencent-cos) | Chỉ hỗ trợ truy cập công khai; không hỗ trợ truy cập riêng tư |
+| [S3 Pro](./s3-pro) | Hỗ trợ truy cập riêng tư qua URL ký tạm thời |
+
+:::warning Lưu ý
+
+Local Storage, Amazon S3, Aliyun OSS và Tencent COS không kiểm tra đăng nhập khi truy cập file và không tạo URL ký tạm thời. Sau khi file được upload, bất kỳ ai có URL truy cập file đều có thể truy cập trực tiếp.
+
+Nếu cần lưu hợp đồng, giấy tờ định danh, tài liệu nội bộ hoặc các file không nên công khai, hãy dùng [S3 Pro](./s3-pro) và bật truy cập riêng tư.
+
+:::
+
 ## Tham số chung
 
 Ngoài các tham số riêng của từng loại engine, các phần dưới đây là tham số chung (lấy Local Storage làm ví dụ):

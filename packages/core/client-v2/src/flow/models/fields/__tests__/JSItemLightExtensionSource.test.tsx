@@ -485,6 +485,56 @@ ctx.render(button);
     });
   });
 
+  it('isolates bare timer errors to the current JS Item and reports metadata', async () => {
+    const reportRuntimeError = vi.fn();
+    RunJSSourceResolverRegistry.registerResolver({
+      sourceMode: 'light-extension',
+      resolve: async () => ({
+        code: `
+ctx.render(<span data-testid="timer-error-item">{ctx.record.level}</span>);
+setTimeout(() => {
+  throw new Error('timer callback failed');
+}, 0);
+        `,
+        version: 'v2',
+        sourceMap: {
+          entryPath: 'src/client/js-items/level-label/index.tsx',
+        },
+        context: {
+          lightExtension: {
+            publicationId: 'pub_level_label',
+            entryPath: 'src/client/js-items/level-label/index.tsx',
+          },
+        },
+      }),
+    });
+    const { engine, model } = createJSItem({
+      sourceMode: 'light-extension',
+      sourceBinding: SOURCE_BINDING,
+    });
+    model.context.defineProperty('reportRuntimeError', {
+      value: reportRuntimeError,
+    });
+
+    renderModel(engine, model);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('js-item-runtime-error')).toHaveTextContent('timer callback failed');
+    });
+    await waitFor(() => {
+      expect(reportRuntimeError).toHaveBeenCalledWith(
+        expect.objectContaining({
+          repoId: 'repo_items',
+          entryId: 'entry_level_label',
+          publicationId: 'pub_level_label',
+          ownerKind: 'flowModel.itemSettings',
+          path: 'src/client/js-items/level-label/index.tsx',
+          ownerLocatorHash: expect.stringMatching(/^(sha256|local):/),
+        }),
+      );
+    });
+  });
+
   it('protects event listeners added after querying a React-rendered item node', async () => {
     const reportRuntimeError = vi.fn();
     RunJSSourceResolverRegistry.registerResolver({

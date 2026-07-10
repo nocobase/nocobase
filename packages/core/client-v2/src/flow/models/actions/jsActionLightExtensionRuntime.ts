@@ -9,9 +9,6 @@
 
 import {
   FlowCancelSaveException,
-  createSafeDocument,
-  createSafeNavigator,
-  createSafeWindow,
   type FlowModel,
   type FlowRuntimeContext,
   type FlowSettingsContext,
@@ -83,7 +80,7 @@ type JSActionRuntimeModel = FlowModel & {
 
 type JSActionRuntimeContext = FlowRuntimeContext<JSActionRuntimeModel> & {
   defineProperty: (key: string, options: Record<string, unknown>) => void;
-  runjs: (code: string, globals: Record<string, unknown>, options: { version: string }) => Promise<unknown>;
+  runjs: (code: string, globals?: Record<string, unknown>, options?: { version: string }) => Promise<unknown>;
 };
 
 const jsActionRuntimeRunIds = new WeakMap<object, number>();
@@ -329,12 +326,7 @@ export async function runResolvedJSActionCode(input: {
     },
   });
 
-  const navigator = createSafeNavigator();
-  const result = (await ctx.runjs(
-    resolved.code,
-    { window: createSafeWindow({ navigator }), document: createSafeDocument(), navigator },
-    { version: resolved.version },
-  )) as RunJSExecutionResult;
+  const result = (await ctx.runjs(resolved.code, undefined, { version: resolved.version })) as RunJSExecutionResult;
 
   if (result?.success === false) {
     throw result.error || new Error('RunJS execution failed');

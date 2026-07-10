@@ -19,17 +19,8 @@ Derzeit stellt NocoBase die folgenden Datei-Vorschau-Plugins bereit:
 
 ## PDF-Vorschau mit externem Speicher
 
-Die PDF-Vorschau verwendet PDF.js, um Dateien im Browser zu rendern. Der Browser muss zuerst den Inhalt der PDF-Datei lesen und ihn anschließend an PDF.js zum Rendern übergeben. Wenn Dateien daher in externem Speicher wie OSS, S3, COS oder einem CDN gespeichert sind und die Zugriffsdomäne der Datei von der NocoBase-Site-Domäne abweicht, muss der externe Speicher der NocoBase-Site das domänenübergreifende Lesen von Dateien erlauben.
+NocoBase zeigt PDFs über ein Browser-iframe an. Einige Browser oder PDF-Reader können Skripte, Formulare oder andere interaktive Inhalte in PDF-Dateien unterstützen. Wenn die Vorschau eine Datei aus einer nicht vertrauenswürdigen Quelle öffnet, solltest du auf die Sicherheitsgrenze für die Skriptausführung achten.
 
-Wenn CORS nicht konfiguriert ist, kann der PDF-Download weiterhin normal funktionieren, die Vorschau kann jedoch mit einem Fehler beim Laden der Datei fehlschlagen.
+Wir empfehlen, die Dateizugriffsdomäne von der NocoBase-Site- und API-Domäne zu isolieren. Zum Beispiel können Dateien aus OSS, S3, COS oder einem CDN über eine eigene Domäne bereitgestellt werden, statt denselben Origin wie das NocoBase-Frontend oder die API zu verwenden.
 
-Die CORS-Konfiguration für externen Speicher oder CDN sollte Folgendes enthalten:
-
-```http
-Access-Control-Allow-Origin: https://your-nocobase-domain
-Access-Control-Allow-Methods: GET, HEAD
-Access-Control-Allow-Headers: *
-Access-Control-Expose-Headers: Content-Length, Content-Range, Accept-Ranges, Content-Disposition, Content-Type
-```
-
-`Access-Control-Allow-Origin` sollte auf die tatsächliche Domäne gesetzt werden, über die NocoBase aufgerufen wird. Vermeiden Sie bei nicht öffentlichen Dateien langfristig die Verwendung von `*`, da dies den Kreis der Websites erweitert, die die Dateien lesen können.
+Wenn sich die Dateidomäne von der API-Domäne unterscheidet und die API keinen CORS-Zugriff für die Dateidomäne aktiviert, werden Skripte in der PDF-Vorschau normalerweise durch die Same-Origin-Policy des Browsers eingeschränkt. Sie können die NocoBase-Seite, den Browser-Speicher oder API-Antworten nicht direkt lesen.

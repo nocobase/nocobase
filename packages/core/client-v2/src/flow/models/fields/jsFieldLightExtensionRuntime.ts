@@ -9,9 +9,6 @@
 
 import {
   FlowCancelSaveException,
-  createSafeDocument,
-  createSafeNavigator,
-  createSafeWindow,
   type FlowRuntimeContext,
   type FlowSettingsContext,
   type StepDefinition,
@@ -100,7 +97,7 @@ type JSFieldRuntimeModel = FieldModel & {
 type JSFieldRuntimeContext = FlowRuntimeContext<JSFieldRuntimeModel> & {
   defineProperty: (key: string, options: Record<string, unknown>) => void;
   defineMethod?: (key: string, method: (...args: unknown[]) => unknown) => void;
-  runjs: (code: string, globals: Record<string, unknown>, options: { version: string }) => Promise<unknown>;
+  runjs: (code: string, globals?: Record<string, unknown>, options?: { version: string }) => Promise<unknown>;
 };
 
 export function normalizeJSFieldSourceMode(value: unknown): JSFieldSourceMode {
@@ -342,12 +339,7 @@ export async function runResolvedJSFieldCode(input: {
     },
   });
 
-  const navigator = createSafeNavigator();
-  const result = (await ctx.runjs(
-    resolved.code,
-    { window: createSafeWindow({ navigator }), document: createSafeDocument(), navigator },
-    { version: resolved.version },
-  )) as RunJSExecutionResult;
+  const result = (await ctx.runjs(resolved.code, undefined, { version: resolved.version })) as RunJSExecutionResult;
 
   if (result?.success === false) {
     throw result.error || new Error('RunJS execution failed');

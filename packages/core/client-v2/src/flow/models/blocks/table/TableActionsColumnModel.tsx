@@ -121,10 +121,11 @@ const Columns = observer<any>(({ record, model, index }) => {
           fork.context.defineProperty('recordIndex', {
             get: () => index,
           });
+          const rendererKey = `${fork.uid}:${fork.forkId}`;
           const renderer = (
             <FlowModelRenderer
               showFlowSettings={{ showBorder: false, toolbarPosition: 'above' }}
-              key={fork.uid}
+              key={rendererKey}
               model={fork}
               inputArgs={record}
               fallback={<Skeleton.Button size="small" />}
@@ -163,7 +164,7 @@ const AddActionToolbarComponent = observer(({ model }: any) => {
       subModelBaseClass={model.context.getModelClassName('RecordActionGroupModel')}
       subModelKey="actions"
       afterSubModelInit={async (actionModel) => {
-        actionModel.setStepParams('buttonSettings', 'general', { type: 'link', icon: null });
+        actionModel.setStepParams('buttonSettings', 'general', { type: 'link', icon: null, iconOnly: false });
       }}
     >
       <PlusOutlined />

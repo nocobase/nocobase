@@ -3504,11 +3504,12 @@ export class FlowEngineContext extends BaseFlowEngineContext {
     });
     this.defineProperty('auth', {
       get: () => ({
-        roleName: this.api.auth.role,
-        locale: this.api.auth.locale,
-        token: this.api.auth.token,
+        roleName: this.api?.auth?.role,
+        locale: this.api?.auth?.locale,
+        token: this.api?.auth?.token,
         user: this.user,
       }),
+      cache: false,
     });
     this.defineProperty('date', {
       get: () => {
@@ -3608,7 +3609,17 @@ export class FlowEngineContext extends BaseFlowEngineContext {
         doc = {};
       }
       const deprecatedCtx = createRunJSDeprecationProxy(runCtx, { doc });
-      const globals: Record<string, any> = { ctx: deprecatedCtx, ...(options?.globals || {}) };
+      const browserGlobals: Record<string, any> = {};
+      if (typeof window !== 'undefined') {
+        browserGlobals.window = window;
+        if (typeof navigator !== 'undefined') {
+          browserGlobals.navigator = navigator;
+        }
+      }
+      if (typeof document !== 'undefined') {
+        browserGlobals.document = document;
+      }
+      const globals: Record<string, any> = { ctx: deprecatedCtx, ...browserGlobals, ...(options?.globals || {}) };
       const { timeoutMs } = options || {};
       return new JSRunner({ globals, timeoutMs });
     });
