@@ -27,6 +27,7 @@ import {
   buildRunJSSourceRepositoryIdentity,
   normalizeRunJSSourceLocator,
   type RunJSLegacySource,
+  type RunJSSourceInitialSource,
   type RunJSSourceAdapterContext,
   type RunJSSourceAuthoringLegacyInfo,
   type RunJSSourceAuthoringInspector,
@@ -996,6 +997,7 @@ async function openRunJSWorkspace(
 
     await adapter.assertCanRead({ locator, ctx: adapterCtx });
     const legacy = await adapter.readLegacy({ locator, ctx: adapterCtx });
+    const workspaceLegacy = applyInitialRunJSSource(legacy, normalizeInitialRunJSSource(input.initialSource));
     const repositoryIdentity = buildRunJSSourceRepositoryIdentity(locator);
     let repository = await findRunJSRepositoryByIdentity(db, service, repositoryIdentity, serviceCtx);
     let permissions: RunJSSourcePermissions | undefined;
@@ -1013,14 +1015,14 @@ async function openRunJSWorkspace(
         return buildOpenResult({
           locator,
           repositoryIdentity,
-          legacy,
+          legacy: workspaceLegacy,
           repository: virtualRepository,
-          files: createLegacyWorkspaceFiles(legacy),
+          files: createLegacyWorkspaceFiles(workspaceLegacy),
           history: [],
           permissions,
         });
       }
-      repository = await ensureRunJSRepository(service, repositoryIdentity, locator.kind, legacy, serviceCtx);
+      repository = await ensureRunJSRepository(service, repositoryIdentity, locator.kind, workspaceLegacy, serviceCtx);
     }
     const headOwnerFingerprint = await getHeadOwnerFingerprintForRepository(service, repository, serviceCtx);
 
@@ -1042,13 +1044,45 @@ async function openRunJSWorkspace(
     return buildOpenResult({
       locator,
       repositoryIdentity,
-      legacy,
+      legacy: workspaceLegacy,
       repository: head.repository,
-      files: ensureRunJSManifestFiles(legacy, head.files || []),
+      files: ensureRunJSManifestFiles(workspaceLegacy, head.files || []),
       history,
       permissions,
     });
   });
+}
+
+function normalizeInitialRunJSSource(value: unknown): RunJSSourceInitialSource | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  const source = toRecord(value);
+  if (typeof source.code !== 'string' || typeof source.version !== 'string' || !source.version) {
+    throw new VscError('RUNJS_SOURCE_LOCATOR_INVALID', 'RunJS initial source is invalid');
+  }
+
+  return {
+    code: source.code,
+    version: source.version,
+  };
+}
+
+function applyInitialRunJSSource(
+  legacy: RunJSLegacySource,
+  initialSource: RunJSSourceInitialSource | undefined,
+): RunJSLegacySource {
+  if (!initialSource || !legacy.uninitialized) {
+    return legacy;
+  }
+
+  return {
+    ...legacy,
+    code: initialSource.code,
+    version: initialSource.version,
+    language: initialSource.version === 'v1' ? 'javascript' : legacy.language,
+  };
 }
 
 async function openOrCreateRunJSRepository(

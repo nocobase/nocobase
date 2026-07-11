@@ -79,7 +79,7 @@ function ensureACLStore(app: ReturnType<typeof useApp>) {
 /**
  * 在 v2 中执行 `roles:check`，并把 ACL 数据同步到 app context。
  */
-export const ACLRolesCheckProvider: FC = ({ children }) => {
+export const ACLRolesCheckProvider: FC<React.PropsWithChildren> = ({ children }) => {
   const app = useApp();
   const location = useLocation();
   const aclStore = ensureACLStore(app);

@@ -11,6 +11,7 @@ import type {
   RunJSLegacySource,
   RunJSRuntimeArtifact,
   RunJSSourceKind,
+  RunJSSourceInitialSource,
   RunJSSourceLocator,
   RunJSSourceOpenResult,
   RunJSSourceSaveInput,
@@ -133,7 +134,7 @@ export interface RunJSSourceImportZipResult extends RunJSSourceSaveResult {
 
 export interface RunJSSourceRequestMap {
   open: {
-    input: { locator: RunJSSourceLocator };
+    input: { locator: RunJSSourceLocator; initialSource?: RunJSSourceInitialSource };
     result: RunJSSourceOpenWorkspaceResult;
   };
   restoreFromCode: {

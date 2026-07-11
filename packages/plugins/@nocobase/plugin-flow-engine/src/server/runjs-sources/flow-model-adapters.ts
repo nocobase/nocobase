@@ -53,6 +53,11 @@ const ACTION_MODEL_USES = new Set([
   'FilterFormJSActionModel',
 ]);
 
+const INITIALIZABLE_FLOW_MODEL_RUNJS_PATHS = new Map<string, string>([
+  ...Array.from(RENDER_MODEL_USES, (modelUse) => [modelUse, 'jsSettings'] as const),
+  ...Array.from(ACTION_MODEL_USES, (modelUse) => [modelUse, 'clickSettings'] as const),
+]);
+
 const CHART_OPTION_RAW_PATH = ['stepParams', 'chartSettings', 'configure', 'chart', 'option', 'raw'];
 const CHART_EVENTS_RAW_PATH = ['stepParams', 'chartSettings', 'configure', 'chart', 'events', 'raw'];
 const LEGACY_CHART_OPTION_RAW_PATH = ['settings', 'visual', 'raw'];
@@ -92,7 +97,7 @@ function createFlowModelStepAdapter(db: Database): RunJSSourceAdapter<FlowModelS
     },
     async readLegacy({ locator, ctx }) {
       const model = await loadFlowModel(db, locator.modelUid, ctx);
-      const { codeValue, versionValue } = readFlowModelStepSource(model, locator);
+      const { codeValue, versionValue, sourceMissing } = readFlowModelStepSource(model, locator);
       const code = typeof codeValue === 'string' ? codeValue : '';
       const version = typeof versionValue === 'string' && versionValue ? versionValue : 'v2';
 
@@ -105,6 +110,7 @@ function createFlowModelStepAdapter(db: Database): RunJSSourceAdapter<FlowModelS
         entryPath: 'src/main.tsx',
         entry: 'src/main.tsx',
         ownerFingerprint: buildStepFingerprint(locator, model),
+        uninitialized: sourceMissing || undefined,
         metadata: modelUseMetadata(readModelUse(model)),
       };
     },
@@ -559,11 +565,17 @@ function readFlowModelStepSource(model: JsonRecord, locator: FlowModelStepLocato
   const stepPath: JsonPath = ['stepParams', locator.flowKey, locator.stepKey];
   const step = getAtPath(model, stepPath);
   if (!isRecord(step)) {
+    if (isInitializableFlowModelRunJSSource(model, locator)) {
+      return buildMissingFlowModelStepSource(locator);
+    }
     throwNestedPathNotFound(stepPath);
   }
 
   const codeValue = getAtPath(step, locator.paramPath);
   if (typeof codeValue === 'undefined') {
+    if (isInitializableFlowModelRunJSSource(model, locator)) {
+      return buildMissingFlowModelStepSource(locator);
+    }
     throwNestedPathNotFound([...stepPath, ...locator.paramPath]);
   }
 
@@ -572,6 +584,25 @@ function readFlowModelStepSource(model: JsonRecord, locator: FlowModelStepLocato
     codeValue,
     versionPath,
     versionValue: getAtPath(step, versionPath),
+    sourceMissing: false,
+  };
+}
+
+function isInitializableFlowModelRunJSSource(model: JsonRecord, locator: FlowModelStepLocator): boolean {
+  return (
+    locator.stepKey === 'runJs' &&
+    locator.paramPath.length === 1 &&
+    locator.paramPath[0] === 'code' &&
+    INITIALIZABLE_FLOW_MODEL_RUNJS_PATHS.get(readModelUse(model)) === locator.flowKey
+  );
+}
+
+function buildMissingFlowModelStepSource(locator: FlowModelStepLocator) {
+  return {
+    codeValue: undefined,
+    versionPath: resolveVersionPath(locator.paramPath, locator.versionPath),
+    versionValue: undefined,
+    sourceMissing: true,
   };
 }
 

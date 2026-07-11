@@ -50,6 +50,7 @@ vi.mock('@nocobase/client-v2', () => ({
     fullscreenControl,
     enableLinter,
     language,
+    typescriptProject,
   }: {
     value?: string;
     onChange?: (value: string) => void;
@@ -60,8 +61,14 @@ vi.mock('@nocobase/client-v2', () => ({
     fullscreenControl?: { isFullscreen: boolean; toggleFullscreen: () => void };
     enableLinter?: boolean;
     language?: string;
+    typescriptProject?: { runJSContext?: { modelUse?: string } };
   }) => (
-    <div data-enable-linter={String(Boolean(enableLinter))} data-language={language} data-testid="mock-code-editor">
+    <div
+      data-enable-linter={String(Boolean(enableLinter))}
+      data-language={language}
+      data-runjs-model-use={typescriptProject?.runJSContext?.modelUse}
+      data-testid="mock-code-editor"
+    >
       <div>
         {toolbarLeftExtra}
         {runButton}
@@ -194,6 +201,9 @@ const openResult = {
     runtimeVersion: 'v2',
     language: 'typescript',
     ownerFingerprint: 'owner-fingerprint-1',
+    metadata: {
+      modelUse: 'JSBlockModel',
+    },
   },
   repository,
   files: [
@@ -480,11 +490,24 @@ describe('runJSStudioProvider', () => {
     renderEditor();
 
     expect(await screen.findByRole('button', { name: 'Expand files' })).toBeTruthy();
+    expect(mocks.request).toHaveBeenCalledWith(
+      expect.objectContaining({
+        url: 'runJSSources:open',
+        data: {
+          locator,
+          initialSource: {
+            code: 'return 1;',
+            version: 'v2',
+          },
+        },
+      }),
+    );
     expect(screen.queryByRole('button', { name: 'src/client/index.tsx' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Open Studio' })).toBeNull();
     expect(screen.getByRole('button', { name: 'Save' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Run' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Diff' })).toBeTruthy();
+    expect(screen.getByTestId('mock-code-editor').getAttribute('data-runjs-model-use')).toBe('JSBlockModel');
     expect(screen.queryByRole('button', { name: 'Import workspace' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Export workspace' })).toBeNull();
     expect(screen.queryByText('Entry')).toBeNull();

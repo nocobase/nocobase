@@ -87,6 +87,7 @@ export interface RunJSLegacySource {
   entryPath?: string;
   entry?: string;
   ownerFingerprint: string;
+  uninitialized?: boolean;
   metadata?: Record<string, unknown>;
 }
 
@@ -158,6 +159,11 @@ export interface RunJSSourceOpenResult {
   repositoryIdentity: VscRepositoryIdentity;
   legacy: RunJSLegacySource;
   ownerFingerprint: string;
+}
+
+export interface RunJSSourceInitialSource {
+  code: string;
+  version: string;
 }
 
 export interface RunJSSourceSaveResult {

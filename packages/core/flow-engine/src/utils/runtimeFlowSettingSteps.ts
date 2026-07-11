@@ -18,7 +18,6 @@ type FlowLike = {
   manual?: boolean;
   defaultParams?: unknown;
   steps?: Record<string, StepDefinition>;
-  options?: Record<string, unknown>;
 };
 
 function isRecord(value: unknown): value is Record<string, unknown> {

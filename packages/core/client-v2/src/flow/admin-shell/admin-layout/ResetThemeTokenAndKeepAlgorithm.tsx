@@ -14,7 +14,7 @@ import { useGlobalTheme } from '../../../theme';
 /**
  * 重置主题，避免被 ProLayout 的主题影响，同时保留当前算法配置。
  */
-export const ResetThemeTokenAndKeepAlgorithm: FC = (props) => {
+export const ResetThemeTokenAndKeepAlgorithm: FC<React.PropsWithChildren> = (props) => {
   const { theme } = useGlobalTheme();
 
   return (

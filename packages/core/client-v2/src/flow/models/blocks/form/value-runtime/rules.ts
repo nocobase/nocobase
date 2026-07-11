@@ -927,7 +927,7 @@ export class RuleEngine {
 
     const register = (
       targetPathForRule: string,
-      ruleTemplates: Array<FormAssignRuleItem & { __key: string; __order: number }>,
+      ruleTemplates: Array<FormAssignRuleItem & { __key: string; __order: number; __index: number }>,
     ) => {
       if (!ruleTemplates || ruleTemplates.length === 0) return;
       matchedTargetPaths?.add(targetPathForRule);

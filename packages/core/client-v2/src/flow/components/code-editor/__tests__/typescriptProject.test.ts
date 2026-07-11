@@ -15,7 +15,7 @@ import {
   getTypeScriptProjectDiagnostics,
 } from '../typescriptProject';
 
-function baseProject(currentFileContent = ''): CodeEditorTypeScriptProject {
+function baseProject(currentFileContent = '', modelUse?: string): CodeEditorTypeScriptProject {
   return {
     currentFilePath: 'src/main.tsx',
     files: [
@@ -28,6 +28,7 @@ function baseProject(currentFileContent = ''): CodeEditorTypeScriptProject {
         path: 'src/helper.ts',
       },
     ],
+    ...(modelUse ? { runJSContext: { modelUse } } : {}),
   };
 }
 
@@ -90,5 +91,79 @@ describe('CodeEditor TypeScript project', () => {
 
     const diagnostics = await getTypeScriptProjectDiagnostics(project, 'ctx.notARealMember;');
     expect(diagnostics.some((diagnostic) => /notARealMember/.test(diagnostic.message))).toBe(true);
+  });
+
+  it('types the shared RunJS runtime APIs for known source models', async () => {
+    const code = `
+ctx.i18n.t('Hello', { ns: 'runjs' });
+ctx.message.success('Saved');
+await ctx.request({ url: 'users:list' });
+await ctx.api.request({ url: 'users:list' });
+ctx.React.createElement('div');
+ctx.onRefReady(ctx.ref, (element) => {
+  element.innerHTML = ctx.runJsSource.sourceMode;
+});
+ctx.settings.title;
+ctx.model.uid;
+`;
+
+    const diagnostics = await getTypeScriptProjectDiagnostics(baseProject(code, 'JSBlockModel'), code);
+    expect(diagnostics).toEqual([]);
+  });
+
+  it('types JS field values and field-specific context members', async () => {
+    const code = `
+ctx.element.innerHTML = String(ctx.value);
+ctx.record?.id;
+ctx.collection?.name;
+ctx.collectionField?.name;
+ctx.onRefReady(ctx.ref, (element) => {
+  element.textContent = String(ctx.value);
+});
+`;
+
+    const diagnostics = await getTypeScriptProjectDiagnostics(baseProject(code, 'JSFieldModel'), code);
+    expect(diagnostics).toEqual([]);
+  });
+
+  it('types editable JS field form APIs without exposing them to JS blocks', async () => {
+    const editableCode = `
+ctx.getValue();
+ctx.setValue('next');
+ctx.form?.getFieldValue('name');
+ctx.namePath?.join('.');
+ctx.disabled;
+ctx.readOnly;
+`;
+    const editableDiagnostics = await getTypeScriptProjectDiagnostics(
+      baseProject(editableCode, 'JSEditableFieldModel'),
+      editableCode,
+    );
+    expect(editableDiagnostics).toEqual([]);
+
+    const blockDiagnostics = await getTypeScriptProjectDiagnostics(
+      baseProject('ctx.getValue();', 'JSBlockModel'),
+      'ctx.getValue();',
+    );
+    expect(blockDiagnostics.some((diagnostic) => /getValue/.test(diagnostic.message))).toBe(true);
+  });
+
+  it('types action-specific RunJS context members', async () => {
+    const recordActionCode = `
+ctx.record.id;
+ctx.filterByTk;
+ctx.runJsSource.sourceMode;
+`;
+    expect(
+      await getTypeScriptProjectDiagnostics(baseProject(recordActionCode, 'JSRecordActionModel'), recordActionCode),
+    ).toEqual([]);
+
+    const formActionCode = `
+ctx.form?.getFieldsValue();
+await ctx.refresh();
+`;
+    expect(
+      await getTypeScriptProjectDiagnostics(baseProject(formActionCode, 'JSFormActionModel'), formActionCode),
+    ).toEqual([]);
   });
 });

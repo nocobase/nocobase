@@ -270,7 +270,11 @@ const LightExtensionSourceWorkspaceEditor: React.FC<RunJSEditorProviderRenderPro
   }
 
   return (
-    <Flex vertical style={{ height: props.minHeight || props.height || 'calc(100vh - 96px)', minHeight: 0 }}>
+    <Flex
+      data-testid="light-extension-source-workspace-editor"
+      vertical
+      style={{ height: 'calc(100vh - 96px)', minHeight: 0, minWidth: 0, overflow: 'hidden' }}
+    >
       <LightExtensionWorkspacePage
         embedded
         initialPath={binding.entryPath}

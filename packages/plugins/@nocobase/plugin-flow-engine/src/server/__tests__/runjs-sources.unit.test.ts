@@ -35,7 +35,7 @@ describe('flow-engine RunJS source registration', () => {
     expect(registrar.inspectors).toEqual([]);
   });
 
-  it('rejects a FlowModel step locator when the persisted step is missing', async () => {
+  it('treats a recognized FlowModel RunJS step as uninitialized when its params are not persisted yet', async () => {
     const registrar = createRegistrar();
     const db = {
       getCollection: () => ({
@@ -73,11 +73,57 @@ describe('flow-engine RunJS source registration', () => {
         },
         ctx: {},
       }),
+    ).resolves.toMatchObject({
+      code: '',
+      version: 'v2',
+      surfaceStyle: 'render',
+      uninitialized: true,
+      metadata: {
+        modelUse: 'JSBlockModel',
+      },
+    });
+  });
+
+  it('rejects an unknown FlowModel step locator when the persisted step is missing', async () => {
+    const registrar = createRegistrar();
+    const db = {
+      getCollection: () => ({
+        repository: {
+          findModelById: async () => ({
+            uid: 'js-step-model',
+            use: 'JSBlockModel',
+            stepParams: {},
+          }),
+        },
+      }),
+    } as unknown as Database;
+    registerFlowModelRunJSSourceAdapters({
+      db,
+      app: {
+        pm: {
+          get: () => registrar,
+        },
+      },
+    });
+
+    const stepAdapter = registrar.adapters.find((adapter) => adapter.kind === 'flowModel.step');
+
+    await expect(
+      stepAdapter?.readLegacy({
+        locator: {
+          kind: 'flowModel.step',
+          modelUid: 'js-step-model',
+          flowKey: 'unknownSettings',
+          stepKey: 'runJs',
+          paramPath: ['code'],
+        },
+        ctx: {},
+      }),
     ).rejects.toMatchObject({
       code: 'RUNJS_SOURCE_NOT_FOUND',
       status: 404,
       details: {
-        path: 'stepParams.jsSettings.runJs',
+        path: 'stepParams.unknownSettings.runJs',
       },
     });
   });

@@ -365,7 +365,7 @@ export class RouterManager<TApp extends BaseApplication<any> = BaseApplication<a
 
     const routes = this.getRoutesTree();
 
-    const BaseLayoutContext = createContext<ComponentType>((props) => props.children);
+    const BaseLayoutContext = createContext<ComponentType<React.PropsWithChildren>>((props) => props.children);
 
     const Provider = () => {
       const BaseLayout = useContext(BaseLayoutContext);

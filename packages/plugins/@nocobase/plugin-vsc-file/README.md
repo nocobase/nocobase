@@ -19,6 +19,30 @@ transpiled for runtime execution; this plugin does not currently perform project
 - Head advancement also requires the repository to remain `active`. If an archive wins after a writer read an older
   active snapshot, the write transaction rolls back with `REPO_ARCHIVED`; repository Head and its `head` ref stay put.
 
+## Uninitialized FlowModel RunJS sources
+
+New JS blocks, fields, items, and actions can open RunJS Studio before their `runJs` step params have been persisted.
+The client calls `runJSSources:open` with the normal `locator` plus the current editor value:
+
+```ts
+{
+  locator: RunJSSourceLocator;
+  initialSource?: { code: string; version: string };
+}
+```
+
+The FlowModel adapter marks only recognized `runJs.code` surfaces as `uninitialized`. In that state, `open` uses
+`initialSource` to initialize the workspace while keeping the server-generated owner fingerprint. A later
+`runJSSources:save` writes the compiled artifact and creates the previously missing step path in the same transaction.
+
+- Good: a new `JSBlockModel` at `jsSettings.runJs.code` opens with its current default code and can be saved.
+- Base: an existing persisted source ignores `initialSource` and remains server-authoritative.
+- Bad: unknown flow, step, or parameter paths still return `RUNJS_SOURCE_NOT_FOUND`; malformed `initialSource` returns
+  `RUNJS_SOURCE_LOCATOR_INVALID`.
+
+Regression coverage lives in `plugin-vsc-file`'s `RunJSStudioProvider.test.tsx` and `plugin-flow-engine`'s
+`runjs-sources.adapters.test.ts`.
+
 ## Current module boundary
 
 - Supported source files: `.ts`, `.tsx`, `.js`, `.jsx`, and `.json`.

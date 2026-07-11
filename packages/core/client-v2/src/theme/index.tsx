@@ -40,7 +40,7 @@ export const useGlobalTheme = () => {
   return React.useContext(GlobalThemeContext) || ({ theme: {}, isDarkTheme: false } as GlobalThemeContextProps);
 };
 
-interface GlobalThemeProviderProps {
+interface GlobalThemeProviderProps extends React.PropsWithChildren {
   theme?: ThemeConfig;
 }
 

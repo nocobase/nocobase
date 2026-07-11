@@ -573,6 +573,7 @@ export function isRunJSTypeScriptProjectFile(path: string): boolean {
 export function buildRunJSTypeScriptProject(
   files: RunJSWorkspaceFile[],
   activeFile?: RunJSWorkspaceFile,
+  modelUse?: string,
 ): CodeEditorTypeScriptProject | undefined {
   if (!activeFile || !isRunJSTypeScriptProjectFile(activeFile.path)) {
     return undefined;
@@ -587,6 +588,7 @@ export function buildRunJSTypeScriptProject(
         content: file.content,
         path: file.path,
       })),
+    ...(modelUse ? { runJSContext: { modelUse } } : {}),
   };
 }
 

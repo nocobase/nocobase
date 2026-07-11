@@ -215,6 +215,8 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
   const currentPreviewSnapshotKey = buildWorkspaceSnapshotKey(files, entryPath, value.version);
   const showDiff = activeTab === 'diff';
   const activeFile = activePath ? files.find((file) => file.path === activePath) : undefined;
+  const runJSModelUse =
+    typeof workspace?.source.metadata?.modelUse === 'string' ? workspace.source.metadata.modelUse : undefined;
   const historyItems = workspace?.history?.items || [];
   const baseVersion = formatVersion(workspace?.repository?.headSeq);
   const lineDiffRows = useMemo(
@@ -483,7 +485,13 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
     setWorkspaceError(null);
 
     try {
-      const opened = await runJSSourceRequest('open', { locator: props.locator });
+      const opened = await runJSSourceRequest('open', {
+        locator: props.locator,
+        initialSource: {
+          code: value.code,
+          version: value.version,
+        },
+      });
       const loaded = buildWorkspaceLoadResult(opened);
       if (requestSeqRef.current !== requestSeq) {
         return null;
@@ -501,7 +509,7 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
         setLoadingWorkspace(false);
       }
     }
-  }, [applyWorkspaceLoadResult, props.locator, runJSSourceRequest]);
+  }, [applyWorkspaceLoadResult, props.locator, runJSSourceRequest, value.code, value.version]);
 
   const restoreLatestVersionFromCurrentCode = useCallback(async (): Promise<void> => {
     if (!props.locator) {
@@ -1780,6 +1788,7 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
                         openPaths={openPaths}
                         previewing={previewing}
                         readOnly={workspaceEditingDisabled}
+                        runJSModelUse={runJSModelUse}
                         savedFiles={savedFiles}
                         scene={scene}
                         t={t}

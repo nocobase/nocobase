@@ -757,9 +757,12 @@ export class FlowSettings {
           ...(resolvedDefaultParams || {}),
           ...modelStepParams,
         };
+        const resolvedStepUiMode = await resolveUiMode(uiMode, flowRuntimeContext);
+        const resolvedStepUiModeType =
+          typeof resolvedStepUiMode === 'string' ? resolvedStepUiMode : resolvedStepUiMode.type;
         if (
           (!mergedUiSchema || Object.keys(mergedUiSchema).length === 0) &&
-          !['select', 'switch'].includes(uiMode?.type || uiMode)
+          !['select', 'switch', 'cascadeMenu'].includes(resolvedStepUiModeType)
         ) {
           continue;
         }

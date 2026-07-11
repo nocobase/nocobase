@@ -27,6 +27,7 @@ export type {
   RunJSSourceAuthoringInspector,
   RunJSSourceAuthoringLegacyInfo,
   RunJSSourceKind,
+  RunJSSourceInitialSource,
   RunJSSourceLocator,
   RunJSSourceOpenResult,
   RunJSSourcePermissionCheck,

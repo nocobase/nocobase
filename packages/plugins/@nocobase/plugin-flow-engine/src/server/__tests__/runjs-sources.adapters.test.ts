@@ -50,7 +50,10 @@ describe('flow-engine RunJS source adapters', () => {
       stepKey: 'runJs',
       paramPath: ['code'],
     };
-    const open = await openSource(locator);
+    const open = await openSource(locator, agent, {
+      code: 'ctx.render("client draft");',
+      version: 'v2',
+    });
 
     expect(open.status).toBe(200);
     expect(open.body.data.legacy).toMatchObject({
@@ -68,6 +71,62 @@ describe('flow-engine RunJS source adapters', () => {
       code: runtimeCode('ctx.render("newValue");'),
       version: 'v2',
       keep: 'preserved',
+      sourceRef: {
+        type: 'vsc-file',
+        repoId: save.body.data.repository.id,
+        commitId: save.body.data.commit.id,
+        entry: 'src/main.tsx',
+      },
+    });
+  });
+
+  it('initializes and saves a new JS block RunJS source before its step params exist', async () => {
+    await repository.insertModel({
+      uid: 'new-js-block-model',
+      title: 'New JS block',
+      use: 'JSBlockModel',
+      stepParams: {},
+    });
+
+    const locator: RunJSSourceLocator = {
+      kind: 'flowModel.step',
+      modelUid: 'new-js-block-model',
+      flowKey: 'jsSettings',
+      stepKey: 'runJs',
+      paramPath: ['code'],
+    };
+    const initialCode = 'ctx.render("new block");';
+    const open = await openSource(locator, agent, {
+      code: initialCode,
+      version: 'v2',
+    });
+
+    expect(open.status).toBe(200);
+    expect(open.body.data.legacy).toMatchObject({
+      code: initialCode,
+      version: 'v2',
+      surfaceStyle: 'render',
+      uninitialized: true,
+      metadata: {
+        modelUse: 'JSBlockModel',
+      },
+    });
+    expect(open.body.data.files).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: 'src/main.tsx',
+          content: initialCode,
+        }),
+      ]),
+    );
+
+    const save = await saveSource(locator, open.body.data, 'ctx.render("saved block");');
+    expect(save.status).toBe(200);
+
+    const updated = await repository.findModelById('new-js-block-model');
+    expect(getAtPath(updated, ['stepParams', 'jsSettings', 'runJs'])).toMatchObject({
+      code: runtimeCode('ctx.render("saved block");'),
+      version: 'v2',
       sourceRef: {
         type: 'vsc-file',
         repoId: save.body.data.repository.id,
@@ -2370,10 +2429,15 @@ describe('flow-engine RunJS source adapters', () => {
     repository = app.db.getCollection('flowModels').repository as FlowModelRepository;
   }
 
-  function openSource(locator: RunJSSourceLocator, requestAgent = agent) {
+  function openSource(
+    locator: RunJSSourceLocator,
+    requestAgent = agent,
+    initialSource?: { code: string; version: string },
+  ) {
     return requestAgent.resource('runJSSources').open({
       values: {
         locator,
+        initialSource,
       },
     });
   }

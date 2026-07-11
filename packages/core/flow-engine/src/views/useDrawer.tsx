@@ -22,13 +22,15 @@ import { createViewRecordResolveOnServer, getViewRecordFromParent } from '../uti
 import { runViewBeforeClose } from './runViewBeforeClose';
 import { inheritLayoutContextForDetachedView } from './inheritLayoutContext';
 
+type DrawerChildrenProps = React.PropsWithChildren;
+
 export function useDrawer() {
   const holderRef = React.useRef(null);
   const drawerList = React.useMemo(() => observable.shallow({ value: [] }), []);
 
   const RenderNestedDrawer = React.memo((props: { index: number }) => {
     const { index } = props;
-    const [RenderDrawer, setRenderDrawer] = React.useState<React.ComponentType | null>(null);
+    const [RenderDrawer, setRenderDrawer] = React.useState<React.ComponentType<DrawerChildrenProps> | null>(null);
 
     React.useEffect(() => {
       autorun(() => {
@@ -197,8 +199,8 @@ export function useDrawer() {
     registerPopupVariable(ctx, currentDrawer);
 
     // 内部组件，在 Provider 内部计算 content
-    const DrawerWithContext: React.FC = React.memo(
-      observer((props) => {
+    const DrawerWithContext: React.FC<DrawerChildrenProps> = React.memo(
+      observer((props: DrawerChildrenProps) => {
         // eslint-disable-next-line react-hooks/rules-of-hooks
         const mountedRef = React.useRef(false);
         const rawContent = typeof config.content === 'function' ? config.content(currentDrawer, ctx) : config.content;
@@ -241,7 +243,7 @@ export function useDrawer() {
 
     DrawerWithContext.displayName = 'DrawerWithContext';
 
-    const RenderDrawer = React.memo(({ children }) => (
+    const RenderDrawer = React.memo(({ children }: DrawerChildrenProps) => (
       <FlowEngineProvider engine={scopedEngine}>
         <FlowViewContextProvider context={ctx}>
           <DrawerWithContext>{children}</DrawerWithContext>

@@ -136,7 +136,7 @@ const popoverStyle = css`
   }
 `;
 
-const CollapsedButton: FC<{ collapsed: boolean }> = (props) => {
+const CollapsedButton: FC<React.PropsWithChildren<{ collapsed: boolean }>> = (props) => {
   const { token } = antdTheme.useToken();
   const customToken = token as CustomToken;
   const [container, setContainer] = useState<HTMLDivElement | null>(null);
@@ -202,7 +202,7 @@ const useHeaderStyle = createStyles(({ token }: any) => {
   };
 });
 const headerContextValue = { inHeader: true };
-const HeaderWrapper: FC = (props) => {
+const HeaderWrapper: FC<React.PropsWithChildren> = (props) => {
   const { styles } = useHeaderStyle();
 
   return (

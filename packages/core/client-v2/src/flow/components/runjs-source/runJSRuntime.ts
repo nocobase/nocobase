@@ -50,10 +50,12 @@ export function createRunJSRuntimeContext(baseCtx: unknown, resolved: ResolvedRu
   }
 
   const runtimeCtx = new FlowContext();
-  try {
-    runtimeCtx.delegate(baseCtx);
-  } catch {
-    // Keep the runtime context usable in tests and degraded integrations.
+  if (baseCtx instanceof FlowContext) {
+    try {
+      runtimeCtx.delegate(baseCtx);
+    } catch {
+      // Keep the runtime context usable in tests and degraded integrations.
+    }
   }
   runtimeCtx.defineProperty('settings', {
     value: resolved.settings,
