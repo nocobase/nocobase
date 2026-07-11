@@ -34,7 +34,12 @@ export type EventOptions = {
   manually?: boolean;
   force?: boolean;
   stack?: Array<number | string>;
-  onTriggerFail?: Function;
+  onTriggerFail?: (
+    workflow: WorkflowModel,
+    context: object,
+    options: EventOptions,
+    error?: unknown,
+  ) => void | Promise<void>;
   [key: string]: any;
 } & Transactionable;
 
@@ -82,12 +87,12 @@ export default class Dispatcher {
     workflow: WorkflowModel,
     context: object,
     options: EventOptions = {},
-  ): void | Promise<Processor | null> {
+  ): void | Promise<Processor | null | void> {
     const logger = this.plugin.getLogger(workflow.id);
     if (!this.ready) {
       logger.warn(`app is not ready, event of workflow ${workflow.id} will be ignored`);
       logger.debug(`ignored event data:`, context);
-      return;
+      return this.handleTriggerFail(workflow, context, options, new Error('app is not ready'));
     }
     if (!options.force && !options.manually && !workflow.enabled) {
       logger.warn(`workflow ${workflow.id} is not enabled, event will be ignored`);
@@ -104,7 +109,7 @@ export default class Dispatcher {
     }
     if (context == null) {
       logger.warn(`workflow ${workflow.id} event data context is null, event will be ignored`);
-      return;
+      return this.handleTriggerFail(workflow, context, options, new Error('event context is null'));
     }
 
     if (options.manually || this.plugin.isWorkflowSync(workflow)) {
@@ -266,6 +271,14 @@ export default class Dispatcher {
     return valid;
   }
 
+  private async handleTriggerFail(workflow: WorkflowModel, context: object, options: EventOptions, error?: unknown) {
+    try {
+      await options.onTriggerFail?.(workflow, context, options, error);
+    } catch (triggerFailError) {
+      this.plugin.getLogger(workflow.id).error(`trigger failure callback failed`, { error: triggerFailError });
+    }
+  }
+
   private async createExecution(
     workflow: WorkflowModel,
     context,
@@ -274,13 +287,23 @@ export default class Dispatcher {
     const { deferred } = options;
     const transaction = await this.plugin.useDataSourceTransaction('main', options.transaction, true);
     const sameTransaction = options.transaction === transaction;
-    const valid = await this.validateEvent(workflow, context, { ...options, transaction });
+    let valid: boolean;
+    try {
+      valid = await this.validateEvent(workflow, context, { ...options, transaction });
+    } catch (error) {
+      if (!sameTransaction) {
+        await transaction.rollback();
+      }
+      await this.handleTriggerFail(workflow, context, options, error);
+      throw error;
+    }
     if (!valid) {
+      const error = new Error('event is not valid');
       if (!sameTransaction) {
         await transaction.commit();
       }
-      options.onTriggerFail?.(workflow, context, options);
-      return Promise.reject(new Error('event is not valid'));
+      await this.handleTriggerFail(workflow, context, options, error);
+      throw error;
     }
 
     let execution: ExecutionModel;
@@ -301,6 +324,7 @@ export default class Dispatcher {
       if (!sameTransaction) {
         await transaction.rollback();
       }
+      await this.handleTriggerFail(workflow, context, options, err);
       throw err;
     }
 
