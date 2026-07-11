@@ -14,7 +14,7 @@ import { useRequest } from 'ahooks';
 import { App, Button, Divider, Space, theme } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { NAMESPACE } from '../constants';
 import { useBackupsContext } from '../contexts';
 import { useT } from '../locale';
@@ -35,7 +35,6 @@ export const BackupsTable = () => {
   const t = useT();
   const ctx = useFlowContext();
   const { token } = theme.useToken();
-  const downloadingFileNameRef = useRef<string | null>(null);
   const [downloadingFileName, setDownloadingFileName] = useState<string | null>(null);
   const backupsTableClassName = useMemo(
     () => css`
@@ -77,15 +76,10 @@ export const BackupsTable = () => {
 
   const handleDownload = useCallback(
     async (fileData: BackupFile) => {
-      if (downloadingFileNameRef.current) {
-        return;
-      }
-
-      downloadingFileNameRef.current = fileData.name;
       setDownloadingFileName(fileData.name);
 
       try {
-        const { url } = await ctx.api.auth.createTemporaryUrl({
+        const url = await ctx.api.auth.createTemporaryUrl({
           url: 'backups:download',
           params: {
             filterByTk: fileData.name,
@@ -99,13 +93,12 @@ export const BackupsTable = () => {
         link.click();
         link.remove();
       } catch {
-        // API request errors are displayed by the client's notification middleware.
+        message.error(t('Failed to create download link. Please try again.'));
       } finally {
-        downloadingFileNameRef.current = null;
         setDownloadingFileName(null);
       }
     },
-    [ctx.api],
+    [ctx.api, message, t],
   );
 
   const hideCellWhenInProgress = (record: BackupFile) => (record.inProgress ? { colSpan: 0 } : {});
@@ -158,7 +151,7 @@ export const BackupsTable = () => {
               aria-label={t('Download')}
               aria-busy={downloadingFileName === record.name}
               loading={downloadingFileName === record.name}
-              disabled={downloadingFileName !== null && downloadingFileName !== record.name}
+              disabled={downloadingFileName !== null}
               style={{ height: 'auto', padding: 0 }}
               onClick={() => {
                 handleDownload(record);

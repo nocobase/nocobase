@@ -8,7 +8,7 @@
  */
 
 import * as nocobaseClient from '@nocobase/client';
-import { act, render, screen, userEvent, waitFor } from '@nocobase/test/client';
+import { render, screen, userEvent, waitFor } from '@nocobase/test/client';
 import { App } from 'antd';
 import React from 'react';
 import { describe, vi } from 'vitest';
@@ -75,21 +75,16 @@ describe('BackupsTable', () => {
   });
 
   test('should handle download action', async () => {
-    let resolveTemporaryUrl!: (value: { url: string; expiresAt: number }) => void;
-    const temporaryUrlPromise = new Promise<{ url: string; expiresAt: number }>((resolve) => {
-      resolveTemporaryUrl = resolve;
-    });
-    const createTemporaryUrlSpy = vi.spyOn(apiClient.auth, 'createTemporaryUrl').mockReturnValue(temporaryUrlPromise);
+    const temporaryUrl = '/api/backups:download?filterByTk=backup_20240818_182301_9056.nbdata&accessCode=test-code';
+    const createTemporaryUrlSpy = vi.spyOn(apiClient.auth, 'createTemporaryUrl').mockResolvedValue(temporaryUrl);
     const anchorClickSpy = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
     const user = userEvent.setup();
     render(<MockedTable />, { wrapper: Wrapper });
     const downloadButton = await screen.findByRole('button', { name: 'Download' });
 
     await user.click(downloadButton);
-    await user.click(downloadButton);
 
     await waitFor(() => {
-      expect(downloadButton).toHaveAttribute('aria-busy', 'true');
       expect(createTemporaryUrlSpy).toHaveBeenCalledTimes(1);
       expect(createTemporaryUrlSpy).toHaveBeenCalledWith({
         url: 'backups:download',
@@ -97,51 +92,13 @@ describe('BackupsTable', () => {
           filterByTk: 'backup_20240818_182301_9056.nbdata',
         },
       });
-    });
-
-    await act(async () => {
-      resolveTemporaryUrl({
-        url: '/api/backups:download?filterByTk=backup_20240818_182301_9056.nbdata&accessCode=test-code',
-        expiresAt: Date.now() + 30_000,
-      });
-    });
-
-    await waitFor(() => {
       expect(anchorClickSpy).toHaveBeenCalledTimes(1);
-      expect(downloadButton).toHaveAttribute('aria-busy', 'false');
     });
 
     const link = anchorClickSpy.mock.instances[0] as HTMLAnchorElement;
-    expect(link.getAttribute('href')).toBe(
-      '/api/backups:download?filterByTk=backup_20240818_182301_9056.nbdata&accessCode=test-code',
-    );
+    expect(link.getAttribute('href')).toBe(temporaryUrl);
     expect(link.download).toBe('backup_20240818_182301_9056.nbdata');
     expect(link).not.toBeInTheDocument();
-  });
-
-  test('should reset download state when temporary URL creation fails', async () => {
-    let rejectTemporaryUrl!: (reason: Error) => void;
-    const createTemporaryUrlSpy = vi.spyOn(apiClient.auth, 'createTemporaryUrl').mockReturnValue(
-      new Promise<{ url: string; expiresAt: number }>((_resolve, reject) => {
-        rejectTemporaryUrl = reject;
-      }),
-    );
-    const user = userEvent.setup();
-    render(<MockedTable />, { wrapper: Wrapper });
-    const downloadButton = await screen.findByRole('button', { name: 'Download' });
-
-    await user.click(downloadButton);
-    await waitFor(() => {
-      expect(downloadButton).toHaveAttribute('aria-busy', 'true');
-      expect(createTemporaryUrlSpy).toHaveBeenCalledTimes(1);
-    });
-
-    await act(async () => {
-      rejectTemporaryUrl(new Error('temporary URL failed'));
-    });
-    await waitFor(() => {
-      expect(downloadButton).toHaveAttribute('aria-busy', 'false');
-    });
   });
 
   test('should handle delete action', async () => {

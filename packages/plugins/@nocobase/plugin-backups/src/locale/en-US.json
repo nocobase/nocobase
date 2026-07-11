@@ -29,6 +29,7 @@
   "ERROR_TRIGGERING_BACKUP": "Error backing up: {{detail}}",
   "ERROR_UPLOADING_FILES": "Error uploading files: {{detail}}",
   "FILE_NOT_FOUND": "File {{detail}} not found",
+  "Failed to create download link. Please try again.": "Failed to create download link. Please try again.",
   "File size": "File size",
   "If a restore password is set, it must be entered when restoring the backup.": "If a restore password is set, it must be entered when restoring the backup.",
   "Maximum number of backups": "Maximum number of backups",

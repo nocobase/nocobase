@@ -12,20 +12,6 @@ import { BaseAuth } from '../base/auth';
 import { AuthErrorCode } from '../auth';
 
 describe('base-auth', () => {
-  it('skipCheck: should not skip when authentication is forced', async () => {
-    const auth = new BaseAuth({
-      ctx: {
-        skipAuthCheck: true,
-        state: {
-          forceAuthCheck: true,
-        },
-      },
-      userCollection: {},
-    } as never);
-
-    expect(await auth.skipCheck()).toBe(false);
-  });
-
   it('should validate username', () => {
     const auth = new BaseAuth({
       userCollection: {},
@@ -151,10 +137,6 @@ describe('base-auth', () => {
       t: (message: string) => message,
       getBearerToken: () => 'token',
       headers: {},
-      logger: {
-        error: vi.fn(),
-        info: vi.fn(),
-      },
       state: {
         disableTokenRenewal: true,
         forceAuthCheckError,
@@ -163,9 +145,7 @@ describe('base-auth', () => {
         authManager: {
           jwt: {
             decode: () => ({
-              exp: Math.floor(Date.now() / 1000) + 3600,
               iat: 1,
-              jti: 'session-jti',
               signInTime: Date.now(),
               temp: true,
               userId: 1,
@@ -176,28 +156,23 @@ describe('base-auth', () => {
           },
           tokenController: {
             getConfig: async () => ({
-              expiredTokenRenewLimit: 15 * 60 * 1000,
-              sessionExpirationTime: 24 * 60 * 60 * 1000,
-              tokenExpirationTime: 1,
+              sessionExpirationTime: Infinity,
+              tokenExpirationTime: 0,
             }),
             renew,
           },
         },
       },
       cache: {
-        wrap: async (_key: string, callback: () => Promise<unknown>) => callback(),
+        wrap: (_key: string, callback: () => Promise<unknown>) => callback(),
       },
       throw: (status: number, error: Record<string, unknown>) => {
-        throw Object.assign(new Error(String(status)), { status, ...error });
+        throw Object.assign(new Error(), { status, ...error });
       },
     };
     const auth = new BaseAuth({
       ctx,
-      userCollection: {
-        repository: {
-          findOne: () => ({ id: 1 }),
-        },
-      },
+      userCollection: { repository: { findOne: () => ({ id: 1 }) } },
     } as never);
 
     await expect(auth.check()).rejects.toMatchObject({

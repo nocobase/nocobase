@@ -67,10 +67,6 @@ export abstract class Auth implements IAuth {
     this.ctx = ctx;
   }
 
-  get authenticatorName() {
-    return this.authenticator?.name;
-  }
-
   async skipCheck() {
     if (this.ctx.state?.forceAuthCheck === true) {
       return false;

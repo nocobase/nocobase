@@ -17,16 +17,6 @@ export interface CreateTemporaryUrlOptions {
   params?: Record<string, unknown>;
 }
 
-export interface TemporaryUrlResult {
-  url: string;
-  expiresAt: number;
-}
-
-interface TemporaryAccessCode {
-  code: string;
-  expiresAt: number;
-}
-
 const RESERVED_TEMPORARY_URL_PARAMS = ['accessCode', '__appName', 'token'];
 
 const stringifyQuery = (params: Record<string, unknown>) =>
@@ -34,18 +24,6 @@ const stringifyQuery = (params: Record<string, unknown>) =>
     strictNullHandling: true,
     arrayFormat: 'brackets',
   });
-
-const getBaseUrlPathname = (baseURL?: string) => {
-  if (!baseURL) {
-    return '';
-  }
-
-  try {
-    return new URL(baseURL, 'http://localhost').pathname.replace(/^\/+|\/+$/g, '');
-  } catch {
-    return '';
-  }
-};
 
 const buildTemporaryUrlTarget = ({ url, params = {} }: CreateTemporaryUrlOptions, baseURL?: string) => {
   if (/^[a-z][a-z\d+.-]*:\/\//i.test(url) || url.startsWith('//')) {
@@ -55,34 +33,36 @@ const buildTemporaryUrlTarget = ({ url, params = {} }: CreateTemporaryUrlOptions
     throw new TypeError('Temporary URL targets cannot contain a fragment');
   }
 
-  const queryIndex = url.indexOf('?');
-  const pathname = (queryIndex === -1 ? url : url.slice(0, queryIndex)).replace(/^\/+/, '');
-  const baseUrlPathname = getBaseUrlPathname(baseURL);
+  if (
+    url
+      .split('?', 1)[0]
+      .split('/')
+      .some((segment) => /^\.{1,2}$/.test(decodeURIComponent(segment)))
+  ) {
+    throw new TypeError('Temporary URL targets cannot contain dot path segments');
+  }
+
+  const parsedUrl = new URL(`/${url.replace(/^\/+/, '')}`, 'http://localhost');
+  const pathname = parsedUrl.pathname.replace(/^\/+/, '');
+  const baseUrlPathname = baseURL ? new URL(baseURL, 'http://localhost').pathname.replace(/^\/+|\/+$/g, '') : '';
   if (baseUrlPathname && (pathname === baseUrlPathname || pathname.startsWith(`${baseUrlPathname}/`))) {
     throw new TypeError('Temporary URL targets must not include the API baseURL pathname');
   }
-  const query = queryIndex === -1 ? '' : url.slice(queryIndex + 1);
+
   const queryParams = {
-    ...(qs.parse(query, { strictNullHandling: true }) as Record<string, unknown>),
+    ...(qs.parse(parsedUrl.search.slice(1), { strictNullHandling: true }) as Record<string, unknown>),
     ...params,
   };
+  const queryString = stringifyQuery(queryParams);
+  const searchParams = new URLSearchParams(queryString);
 
   for (const name of RESERVED_TEMPORARY_URL_PARAMS) {
-    if (Object.prototype.hasOwnProperty.call(queryParams, name)) {
+    if (searchParams.has(name)) {
       throw new TypeError(`Temporary URL targets cannot contain the ${name} parameter`);
     }
   }
 
-  const queryString = stringifyQuery(queryParams);
   return queryString ? `${pathname}?${queryString}` : pathname;
-};
-
-const appendQuery = (url: string, params: Record<string, unknown>) => {
-  const query = stringifyQuery(params);
-  if (!query) {
-    return url;
-  }
-  return `${url}${url.includes('?') ? '&' : '?'}${query}`;
 };
 
 export class Auth {
@@ -317,22 +297,21 @@ export class Auth {
    * Creates an app-local URL authenticated by a short-lived access code.
    * The server limits the URL to GET/HEAD and keeps the current app, authenticator, role, and ACL context.
    */
-  async createTemporaryUrl(options: CreateTemporaryUrlOptions): Promise<TemporaryUrlResult> {
+  async createTemporaryUrl(options: CreateTemporaryUrlOptions): Promise<string> {
     const target = buildTemporaryUrlTarget(options, this.api.axios.defaults.baseURL);
-    const response = await this.api.request<{ data: TemporaryAccessCode }>({
+    const response = await this.api.request<{ data: { code: string } }>({
       method: 'post',
       url: 'auth:createAccessCode',
       data: { target },
     });
-    const { code, expiresAt } = response.data.data;
-    const query: Record<string, string> = { accessCode: code };
+    const query = new URLSearchParams({ accessCode: response.data.data.code });
 
     const appName = this.api.getAppName();
     if (appName && appName !== 'main') {
-      query.__appName = appName;
+      query.set('__appName', appName);
     }
 
-    const path = appendQuery(target, query);
+    const path = `${target}${target.includes('?') ? '&' : '?'}${query}`;
     const baseURL = this.api.axios.defaults.baseURL?.replace(/\/+$/, '') || '';
     const combinedUrl = baseURL ? `${baseURL}/${path}` : `/${path}`;
     const url =
@@ -340,6 +319,6 @@ export class Auth {
         ? combinedUrl
         : new URL(combinedUrl, window.location.origin).toString();
 
-    return { url, expiresAt };
+    return url;
   }
 }

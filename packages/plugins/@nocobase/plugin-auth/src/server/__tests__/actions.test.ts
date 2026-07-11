@@ -9,6 +9,7 @@
 
 import Database, { Repository } from '@nocobase/database';
 import { createMockServer, MockServer } from '@nocobase/test';
+import { PluginAuthServer } from '../plugin';
 
 describe('actions', () => {
   describe('authenticators', () => {
@@ -491,6 +492,66 @@ describe('actions', () => {
       expect(res2.statusCode).toEqual(401);
       expect(res2.text).toBe('User password changed, please signin again.');
       expect(res2.headers['x-new-token']).toBeUndefined();
+    });
+  });
+
+  describe('temporary access code', () => {
+    const originalApiBasePath = process.env.API_BASE_PATH;
+    let app: MockServer;
+    let agent;
+
+    beforeEach(async () => {
+      process.env.API_BASE_PATH = '/api';
+      process.env.INIT_ROOT_EMAIL = 'test@nocobase.com';
+      process.env.INIT_ROOT_PASSWORD = '123456';
+      app = await createMockServer({
+        plugins: [
+          'field-sort',
+          [PluginAuthServer, { packageName: '@nocobase/plugin-auth' }],
+          'users',
+          'system-settings',
+        ],
+        resourcer: { prefix: '/api' },
+      });
+      agent = app.agent();
+    });
+
+    afterEach(async () => {
+      await app.db.clean({ drop: true });
+      await app.destroy();
+      if (originalApiBasePath === undefined) {
+        delete process.env.API_BASE_PATH;
+      } else {
+        process.env.API_BASE_PATH = originalApiBasePath;
+      }
+    });
+
+    it('restores authentication and ACL only for the signed target', async () => {
+      const signIn = await agent.post('/api/auth:signIn').set('X-Authenticator', 'basic').send({
+        account: process.env.INIT_ROOT_EMAIL,
+        password: process.env.INIT_ROOT_PASSWORD,
+      });
+      const authHeaders = {
+        Authorization: `Bearer ${signIn.body.data.token}`,
+        'X-Authenticator': 'basic',
+        'X-Role': 'root',
+      };
+      const issued = await agent
+        .post('/api/auth:createAccessCode')
+        .set(authHeaders)
+        .send({ target: 'users:list?pageSize=1' });
+      expect(issued.statusCode).toBe(200);
+      const code = issued.body.data.code;
+
+      for (let index = 0; index < 2; index++) {
+        const response = await agent.get(`/api/users:list?pageSize=1&accessCode=${code}`);
+        expect(response.statusCode).toBe(200);
+        expect(response.body.data).toHaveLength(1);
+      }
+
+      expect((await agent.get(`/api/users:list?pageSize=2&accessCode=${code}`)).statusCode).toBe(401);
+      expect((await agent.post('/api/auth:signOut').set(authHeaders)).statusCode).toBe(200);
+      expect((await agent.get(`/api/users:list?pageSize=1&accessCode=${code}`)).statusCode).toBe(401);
     });
   });
 });

@@ -167,7 +167,7 @@ export class AuthManager {
       try {
         authenticator = await ctx.app.authManager.get(name, ctx);
         ctx.auth = authenticator;
-        ctx.state.currentAuthenticator = authenticator.authenticatorName || name;
+        ctx.state.currentAuthenticator = name;
       } catch (err) {
         ctx.auth = {} as Auth;
         ctx.logger.warn(err.message, { method: 'check', authenticator: name });

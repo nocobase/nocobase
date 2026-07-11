@@ -70,14 +70,13 @@ describe('Application', () => {
         mock.onPost('auth:createAccessCode').reply(200, {
           data: {
             code: 'temporary-code',
-            expiresAt: 123456,
           },
         });
         const app = new Application({ apiClient });
-        const result = await app.apiClient.auth.createTemporaryUrl({ url: 'files:download' });
+        const url = await app.apiClient.auth.createTemporaryUrl({ url: 'files:download' });
 
         expect(app.apiClient).toBe(apiClient);
-        expect(new URL(result.url).searchParams.get('__appName')).toBe('sub1');
+        expect(new URL(url).searchParams.get('__appName')).toBe('sub1');
       } finally {
         mock.restore();
         window.history.replaceState({}, '', originalUrl);

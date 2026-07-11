@@ -9,7 +9,7 @@
 
 import { Context, Next } from '@nocobase/actions';
 import { Cache } from '@nocobase/cache';
-import { createHash, randomBytes } from 'crypto';
+import { randomBytes } from 'crypto';
 import { namespace } from '../preset';
 
 export const TEMPORARY_ACCESS_CODE_QUERY_PARAM = 'accessCode';
@@ -30,7 +30,6 @@ export interface TemporaryAccessCodeRecord {
   accessToken: string;
   appName: string;
   authenticator: string;
-  method: 'GET';
   roleName?: string;
   target: string;
 }
@@ -42,7 +41,7 @@ export interface CreateTemporaryAccessCodeOptions {
   target: string;
 }
 
-export interface TemporaryAccessRequest {
+interface TemporaryAccessRequest {
   appName: string;
   method: string;
   path: string;
@@ -51,32 +50,31 @@ export interface TemporaryAccessRequest {
 
 export class InvalidTemporaryAccessTargetError extends Error {}
 
-function normalizeApiBasePath() {
+function apiBasePath() {
   const path = (process.env.API_BASE_PATH || '/api').replace(/\/+$/, '');
   return path.startsWith('/') ? path : `/${path}`;
 }
 
 function stripApiBasePath(path: string) {
-  const apiBasePath = normalizeApiBasePath();
-  if (path === apiBasePath) {
+  const basePath = apiBasePath();
+  if (basePath === '/') {
+    return path;
+  }
+  if (path === basePath) {
     return '/';
   }
-  if (path.startsWith(`${apiBasePath}/`)) {
-    return path.slice(apiBasePath.length);
+  if (!path.startsWith(`${basePath}/`)) {
+    throw new InvalidTemporaryAccessTargetError();
   }
-  return path;
+  return path.slice(basePath.length);
 }
 
-function hasDotPathSegment(rawPath: string) {
-  return rawPath.split('/').some((segment) => {
+function hasDotPathSegment(path: string) {
+  return path.split('/').some((segment) => {
     let decoded = segment;
     for (let index = 0; index < 2; index++) {
       try {
-        const next = decodeURIComponent(decoded);
-        if (next === decoded) {
-          break;
-        }
-        decoded = next;
+        decoded = decodeURIComponent(decoded);
       } catch {
         return true;
       }
@@ -85,56 +83,9 @@ function hasDotPathSegment(rawPath: string) {
   });
 }
 
-function decodeQueryComponent(value: string) {
-  try {
-    return decodeURIComponent(value.replace(/\+/g, ' '));
-  } catch {
-    throw new InvalidTemporaryAccessTargetError();
-  }
-}
-
-function normalizeQuerystring(
-  querystring: string,
-  options: {
-    ignoredQueryParams?: Set<string>;
-    rejectReservedQueryParams?: boolean;
-  },
-) {
-  const params = querystring
-    .split('&')
-    .filter((segment) => segment.length > 0)
-    .map((segment) => {
-      const equalsIndex = segment.indexOf('=');
-      const hasEquals = equalsIndex !== -1;
-      const rawName = hasEquals ? segment.slice(0, equalsIndex) : segment;
-      const rawValue = hasEquals ? segment.slice(equalsIndex + 1) : undefined;
-      return {
-        hasEquals,
-        name: decodeQueryComponent(rawName),
-        value: rawValue === undefined ? undefined : decodeQueryComponent(rawValue),
-      };
-    })
-    .filter(({ name }) => {
-      if (options.rejectReservedQueryParams && RESERVED_TARGET_QUERY_PARAMS.has(name)) {
-        throw new InvalidTemporaryAccessTargetError();
-      }
-      return !options.ignoredQueryParams?.has(name);
-    });
-
-  return params
-    .map(({ hasEquals, name, value }) => {
-      const encodedName = encodeURIComponent(name);
-      return hasEquals ? `${encodedName}=${encodeURIComponent(value ?? '')}` : encodedName;
-    })
-    .join('&');
-}
-
-function normalizeTarget(
+function canonicalizeTarget(
   target: string,
-  options: {
-    ignoredQueryParams?: Set<string>;
-    rejectReservedQueryParams?: boolean;
-  } = {},
+  options: { ignoredQueryParams?: string[]; rejectReservedQueryParams?: boolean } = {},
 ) {
   if (
     typeof target !== 'string' ||
@@ -143,7 +94,7 @@ function normalizeTarget(
     target !== target.trim() ||
     target.includes('#') ||
     target.includes('\\') ||
-    /^https?:\/\//i.test(target) ||
+    /^[a-z][a-z\d+.-]*:\/\//i.test(target) ||
     target.startsWith('//')
   ) {
     throw new InvalidTemporaryAccessTargetError();
@@ -151,44 +102,44 @@ function normalizeTarget(
 
   const queryIndex = target.indexOf('?');
   const rawPath = queryIndex === -1 ? target : target.slice(0, queryIndex);
-  const rawQuerystring = queryIndex === -1 ? '' : target.slice(queryIndex + 1);
-  if (hasDotPathSegment(rawPath)) {
+  if (!rawPath || hasDotPathSegment(rawPath)) {
     throw new InvalidTemporaryAccessTargetError();
   }
 
-  // Resource actions such as `backups:download` contain a colon. Prefixing
-  // the path before URL parsing prevents it from being interpreted as a URL
-  // scheme.
+  // Prefix resource actions such as `backups:download` so URL does not treat
+  // the action separator as a scheme.
   const parsed = new URL(rawPath.startsWith('/') ? rawPath : `/${rawPath}`, 'http://temporary-access.local');
+  const searchParams = new URLSearchParams(queryIndex === -1 ? '' : target.slice(queryIndex + 1));
 
-  const path = stripApiBasePath(parsed.pathname);
-  const querystring = normalizeQuerystring(rawQuerystring, options);
+  if (options.rejectReservedQueryParams) {
+    for (const name of searchParams.keys()) {
+      if (RESERVED_TARGET_QUERY_PARAMS.has(name)) {
+        throw new InvalidTemporaryAccessTargetError();
+      }
+    }
+  }
+  options.ignoredQueryParams?.forEach((name) => searchParams.delete(name));
+
+  const path = parsed.pathname;
+  const querystring = searchParams.toString();
   return querystring ? `${path}?${querystring}` : path;
 }
 
 export function normalizeTemporaryAccessTarget(target: string) {
-  return normalizeTarget(target, { rejectReservedQueryParams: true });
+  const normalizedTarget = canonicalizeTarget(target, { rejectReservedQueryParams: true });
+  const path = normalizedTarget.split('?', 1)[0];
+  const basePath = apiBasePath();
+  if (basePath !== '/' && (path === basePath || path.startsWith(`${basePath}/`))) {
+    throw new InvalidTemporaryAccessTargetError();
+  }
+  return normalizedTarget;
 }
 
 function normalizeTemporaryAccessRequest(path: string, querystring = '') {
-  return normalizeTarget(querystring ? `${path}?${querystring}` : path, {
-    ignoredQueryParams: new Set([TEMPORARY_ACCESS_CODE_QUERY_PARAM, ROUTING_QUERY_PARAM]),
+  const relativePath = stripApiBasePath(path);
+  return canonicalizeTarget(querystring ? `${relativePath}?${querystring}` : relativePath, {
+    ignoredQueryParams: [TEMPORARY_ACCESS_CODE_QUERY_PARAM, ROUTING_QUERY_PARAM],
   });
-}
-
-function isTemporaryAccessCodeRecord(value: unknown): value is TemporaryAccessCodeRecord {
-  if (!value || typeof value !== 'object') {
-    return false;
-  }
-  const record = value as Partial<TemporaryAccessCodeRecord>;
-  return (
-    typeof record.accessToken === 'string' &&
-    typeof record.appName === 'string' &&
-    typeof record.authenticator === 'string' &&
-    record.method === 'GET' &&
-    (record.roleName === undefined || typeof record.roleName === 'string') &&
-    typeof record.target === 'string'
-  );
 }
 
 export class TemporaryAccessCodeService {
@@ -197,34 +148,28 @@ export class TemporaryAccessCodeService {
     private readonly appName: string,
   ) {}
 
-  private getCacheKey(code: string) {
-    const digest = createHash('sha256').update(code).digest('hex');
-    return `auth:temporary-access-code:${digest}`;
+  private cacheKey(code: string) {
+    return `temporary-access-code:${code}`;
   }
 
   async create(options: CreateTemporaryAccessCodeOptions) {
-    const target = normalizeTemporaryAccessTarget(options.target);
     const code = randomBytes(32).toString('base64url');
-    const expiresAt = Date.now() + TEMPORARY_ACCESS_CODE_TTL;
     const record: TemporaryAccessCodeRecord = {
       accessToken: options.accessToken,
       appName: this.appName,
       authenticator: options.authenticator,
-      method: 'GET',
       roleName: options.roleName,
-      target,
+      target: normalizeTemporaryAccessTarget(options.target),
     };
-
-    await this.cache.set(this.getCacheKey(code), record, TEMPORARY_ACCESS_CODE_TTL);
-    return { code, expiresAt };
+    await this.cache.set(this.cacheKey(code), record, TEMPORARY_ACCESS_CODE_TTL);
+    return { code };
   }
 
   async get(code: string) {
     if (!CODE_PATTERN.test(code)) {
       return;
     }
-    const record = await this.cache.get<TemporaryAccessCodeRecord>(this.getCacheKey(code));
-    return isTemporaryAccessCodeRecord(record) ? record : undefined;
+    return this.cache.get<TemporaryAccessCodeRecord>(this.cacheKey(code));
   }
 
   matches(record: TemporaryAccessCodeRecord, request: TemporaryAccessRequest) {
@@ -239,21 +184,10 @@ export class TemporaryAccessCodeService {
   }
 }
 
-function getQueryParamName(segment: string) {
-  const equalsIndex = segment.indexOf('=');
-  const rawName = equalsIndex === -1 ? segment : segment.slice(0, equalsIndex);
-  try {
-    return decodeQueryComponent(rawName);
-  } catch {
-    return;
-  }
-}
-
-function stripAccessCodeFromQuerystring(querystring: string) {
-  return querystring
-    .split('&')
-    .filter((segment) => getQueryParamName(segment) !== TEMPORARY_ACCESS_CODE_QUERY_PARAM)
-    .join('&');
+function stripAccessCode(querystring: string) {
+  const searchParams = new URLSearchParams(querystring);
+  searchParams.delete(TEMPORARY_ACCESS_CODE_QUERY_PARAM);
+  return searchParams.toString();
 }
 
 function stripAccessCodeFromUrl(url: string) {
@@ -261,28 +195,21 @@ function stripAccessCodeFromUrl(url: string) {
   if (queryIndex === -1) {
     return url;
   }
-  const path = url.slice(0, queryIndex);
-  const querystring = stripAccessCodeFromQuerystring(url.slice(queryIndex + 1));
-  return querystring ? `${path}?${querystring}` : path;
+  const querystring = stripAccessCode(url.slice(queryIndex + 1));
+  return querystring ? `${url.slice(0, queryIndex)}?${querystring}` : url.slice(0, queryIndex);
 }
 
 function removeAccessCodeFromRequest(ctx: Context) {
-  ctx.querystring = stripAccessCodeFromQuerystring(ctx.querystring || '');
-
-  const originalUrl = stripAccessCodeFromUrl(ctx.originalUrl);
-  ctx.originalUrl = originalUrl;
-  ctx.request.originalUrl = originalUrl;
+  ctx.querystring = stripAccessCode(ctx.querystring || '');
+  ctx.originalUrl = stripAccessCodeFromUrl(ctx.originalUrl);
+  ctx.request.originalUrl = ctx.originalUrl;
   const request = ctx.req as typeof ctx.req & { originalUrl?: string };
-  if (typeof request.originalUrl === 'string') {
+  if (request.originalUrl) {
     request.originalUrl = stripAccessCodeFromUrl(request.originalUrl);
   }
 }
 
-function rejectTemporaryAccessCode(ctx: Context) {
-  ctx.throw(401, getInvalidTemporaryAccessCodeError(ctx));
-}
-
-function getInvalidTemporaryAccessCodeError(ctx: Context) {
+function invalidAccessCodeError(ctx: Context) {
   return {
     code: INVALID_TEMPORARY_ACCESS_CODE,
     logLevel: 'trace',
@@ -290,33 +217,27 @@ function getInvalidTemporaryAccessCodeError(ctx: Context) {
   };
 }
 
-function preventTemporaryAccessResponseCaching(ctx: Context) {
+function rejectAccessCode(ctx: Context) {
+  ctx.throw(401, invalidAccessCodeError(ctx));
+}
+
+function preventResponseCaching(ctx: Context) {
   ctx.set('Cache-Control', 'private, no-store');
 }
 
 function hasRequestBody(ctx: Context) {
   const contentLength = Number(ctx.get('content-length'));
-  if (Number.isFinite(contentLength) && contentLength > 0) {
+  if ((Number.isFinite(contentLength) && contentLength > 0) || ctx.get('transfer-encoding')) {
     return true;
   }
-  if (ctx.get('transfer-encoding')) {
-    return true;
-  }
-
   const body: unknown = ctx.request.body;
   if (body === undefined || body === null) {
     return false;
   }
-  if (typeof body === 'string' || Buffer.isBuffer(body)) {
+  if (typeof body === 'string' || Buffer.isBuffer(body) || Array.isArray(body)) {
     return body.length > 0;
   }
-  if (Array.isArray(body)) {
-    return body.length > 0;
-  }
-  if (typeof body === 'object') {
-    return Object.keys(body).length > 0;
-  }
-  return true;
+  return typeof body === 'object' ? Object.keys(body).length > 0 : true;
 }
 
 export async function captureTemporaryAccessRequestMethod(ctx: Context, next: Next) {
@@ -325,54 +246,51 @@ export async function captureTemporaryAccessRequestMethod(ctx: Context, next: Ne
   await next();
 }
 
-function getOriginalRequestMethod(ctx: Context) {
+function originalRequestMethod(ctx: Context) {
   return (ctx.req as RequestWithOriginalMethod)[ORIGINAL_REQUEST_METHOD] || ctx.req.method;
 }
 
 export function resolveTemporaryAccessCode(service: TemporaryAccessCodeService) {
   return async function temporaryAccessCodeMiddleware(ctx: Context, next: Next) {
-    const searchParams = new URLSearchParams(ctx.querystring || '');
-    const codes = searchParams.getAll(TEMPORARY_ACCESS_CODE_QUERY_PARAM);
+    const codes = new URLSearchParams(ctx.querystring || '').getAll(TEMPORARY_ACCESS_CODE_QUERY_PARAM);
     if (!codes.length) {
       return next();
     }
 
-    preventTemporaryAccessResponseCaching(ctx);
+    preventResponseCaching(ctx);
     try {
-      // A regular Authorization header always wins. The access-code query
-      // parameter is still removed because it is reserved for authentication.
       if (ctx.get('Authorization')) {
         removeAccessCodeFromRequest(ctx);
-        await next();
-        return;
+        return await next();
       }
 
-      if (codes.length !== 1 || !codes[0]) {
-        removeAccessCodeFromRequest(ctx);
-        return rejectTemporaryAccessCode(ctx);
-      }
+      const method = originalRequestMethod(ctx)?.toUpperCase();
+      const path = ctx.path;
+      const querystring = ctx.querystring;
+      removeAccessCodeFromRequest(ctx);
 
-      const originalMethod = getOriginalRequestMethod(ctx)?.toUpperCase();
       if (
-        !originalMethod ||
-        !['GET', 'HEAD'].includes(originalMethod) ||
-        ctx.method.toUpperCase() !== originalMethod ||
+        codes.length !== 1 ||
+        !codes[0] ||
+        !method ||
+        !['GET', 'HEAD'].includes(method) ||
+        ctx.method.toUpperCase() !== method ||
         hasRequestBody(ctx)
       ) {
-        removeAccessCodeFromRequest(ctx);
-        return rejectTemporaryAccessCode(ctx);
+        return rejectAccessCode(ctx);
       }
 
-      const request: TemporaryAccessRequest = {
-        appName: ctx.app.name,
-        method: originalMethod,
-        path: ctx.path,
-        querystring: ctx.querystring,
-      };
-      removeAccessCodeFromRequest(ctx);
       const record = await service.get(codes[0]);
-      if (!record || !service.matches(record, request)) {
-        return rejectTemporaryAccessCode(ctx);
+      if (
+        !record ||
+        !service.matches(record, {
+          appName: ctx.app.name,
+          method,
+          path,
+          querystring,
+        })
+      ) {
+        return rejectAccessCode(ctx);
       }
 
       ctx.getBearerToken = () => record.accessToken;
@@ -385,11 +303,11 @@ export function resolveTemporaryAccessCode(service: TemporaryAccessCodeService) 
       ctx.state.authenticatedByAccessCode = true;
       ctx.state.disableTokenRenewal = true;
       ctx.state.forceAuthCheck = true;
-      ctx.state.forceAuthCheckError = getInvalidTemporaryAccessCodeError(ctx);
+      ctx.state.forceAuthCheckError = invalidAccessCodeError(ctx);
 
       await next();
     } finally {
-      preventTemporaryAccessResponseCaching(ctx);
+      preventResponseCaching(ctx);
       if (ctx.state.authenticatedByAccessCode === true) {
         ctx.remove('X-New-Token');
       }

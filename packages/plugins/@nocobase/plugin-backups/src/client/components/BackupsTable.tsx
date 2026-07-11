@@ -10,7 +10,7 @@
 import { DatePicker, useAPIClient, useRequest } from '@nocobase/client';
 import type { TableColumnsType } from 'antd';
 import { App, Button, Divider, message, Space, Table } from 'antd';
-import React, { useRef, useState } from 'react';
+import React, { useState } from 'react';
 import { NAMESPACE } from '../constants';
 import { useBackupsContext } from '../contexts';
 import { useT } from '../locale';
@@ -27,7 +27,6 @@ export const BackupsTable = () => {
   const t = useT();
   const api = useAPIClient();
   const { modal } = App.useApp();
-  const downloadingFileNameRef = useRef<string | null>(null);
   const [downloadingFileName, setDownloadingFileName] = useState<string | null>(null);
   const { data, loading, refreshAsync: refresh } = useBackupsContext();
   const { runAsync: destroy } = useRequest<{ data: BackupFile[] }>(
@@ -51,15 +50,10 @@ export const BackupsTable = () => {
   };
 
   const handleDownload = async (fileData: BackupFile) => {
-    if (downloadingFileNameRef.current) {
-      return;
-    }
-
-    downloadingFileNameRef.current = fileData.name;
     setDownloadingFileName(fileData.name);
 
     try {
-      const { url } = await api.auth.createTemporaryUrl({
+      const url = await api.auth.createTemporaryUrl({
         url: 'backups:download',
         params: {
           filterByTk: fileData.name,
@@ -75,7 +69,6 @@ export const BackupsTable = () => {
     } catch {
       // API request errors are displayed by the client's notification middleware.
     } finally {
-      downloadingFileNameRef.current = null;
       setDownloadingFileName(null);
     }
   };
@@ -128,7 +121,7 @@ export const BackupsTable = () => {
             aria-label={t('Download')}
             aria-busy={downloadingFileName === record.name}
             loading={downloadingFileName === record.name}
-            disabled={downloadingFileName !== null && downloadingFileName !== record.name}
+            disabled={downloadingFileName !== null}
             style={{ height: 'auto', padding: 0 }}
             onClick={() => {
               handleDownload(record);

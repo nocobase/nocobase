@@ -179,12 +179,9 @@ export default {
               schema: {
                 type: 'object',
                 required: ['target'],
-                additionalProperties: false,
                 properties: {
                   target: {
                     type: 'string',
-                    description:
-                      'App-local resource/action URL with business query parameters. Authentication and app-routing parameters are not allowed.',
                     example: 'backups:download?filterByTk=backup.nbdata',
                   },
                 },
@@ -199,20 +196,12 @@ export default {
               'application/json': {
                 schema: {
                   type: 'object',
-                  required: ['data'],
                   properties: {
                     data: {
                       type: 'object',
-                      required: ['code', 'expiresAt'],
                       properties: {
                         code: {
                           type: 'string',
-                          description: 'Opaque temporary access code',
-                        },
-                        expiresAt: {
-                          type: 'integer',
-                          format: 'int64',
-                          description: 'Expiration time as a Unix timestamp in milliseconds',
                         },
                       },
                     },

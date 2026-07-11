@@ -29,6 +29,7 @@
   "ERROR_TRIGGERING_BACKUP": "备份失败: {{detail}}",
   "ERROR_UPLOADING_FILES": "文件上传失败: {{detail}}",
   "FILE_NOT_FOUND": "File [{{detail}}] not found",
+  "Failed to create download link. Please try again.": "创建下载链接失败，请重试。",
   "File size": "文件大小",
   "If a restore password is set, it must be entered when restoring the backup.": "如果设置了还原密码，恢复备份时需要输入该密码。",
   "Maximum number of backups": "最大备份数",
