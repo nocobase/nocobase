@@ -115,10 +115,6 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
     }): Promise<ReadonlySet<string>>;
   };
 
-  type AutoSnapshotRefreshHarness = {
-    refreshAutoSnapshotsFromStorage(config: unknown): Promise<readonly unknown[]>;
-  };
-
   type TransactionHarness = {
     transaction<T>(callback: (transaction: unknown) => Promise<T>): Promise<T>;
   };
@@ -4183,40 +4179,6 @@ describe('flowSurfaces dynamic capability create dry-run', () => {
         popupActionContext,
       }),
     );
-  });
-
-  it('should refresh auto snapshots before direct addBlock resolves dynamic block types', async () => {
-    const service = new FlowSurfacesService({
-      options: {},
-      flowSurfaceAutoSnapshots: [],
-      flowSurfaceCapabilityProviders: createProviderRegistry([]),
-    } as unknown as ConstructorParameters<typeof FlowSurfacesService>[0]);
-    const refresh = vi
-      .spyOn(service as unknown as AutoSnapshotRefreshHarness, 'refreshAutoSnapshotsFromStorage')
-      .mockResolvedValue([]);
-    vi.spyOn(service as unknown as EnabledPackagesHarness, 'resolveEnabledPluginPackages').mockResolvedValue(
-      new Set(['@nocobase/plugin-gantt']),
-    );
-    const resolveDynamicBlockTypes = vi
-      .spyOn(service as unknown as DynamicBlockWriteGateHarness, 'resolveDynamicBlockTypes')
-      .mockRejectedValue(new Error('stop after dynamic type resolution'));
-
-    await expect(
-      service.addBlock({
-        target: {
-          uid: 'target-grid',
-        },
-        type: 'pluginGantt.gantt',
-        resource: {
-          collectionName: 'tasks',
-        },
-        settings: {},
-      }),
-    ).rejects.toThrow('stop after dynamic type resolution');
-
-    expect(refresh).toHaveBeenCalledTimes(1);
-    expect(resolveDynamicBlockTypes).toHaveBeenCalledTimes(1);
-    expect(refresh.mock.invocationCallOrder[0]).toBeLessThan(resolveDynamicBlockTypes.mock.invocationCallOrder[0]);
   });
 
   it('should expose Gantt child actions from JSON inferred child surfaces without server providers', async () => {

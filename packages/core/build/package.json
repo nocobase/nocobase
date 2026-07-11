@@ -48,14 +48,6 @@
     "update-notifier": "3.0.0",
     "yargs-parser": "13.1.2"
   },
-  "peerDependencies": {
-    "@nocobase/plugin-flow-engine": "2.x"
-  },
-  "peerDependenciesMeta": {
-    "@nocobase/plugin-flow-engine": {
-      "optional": true
-    }
-  },
   "license": "Apache-2.0",
   "scripts": {
     "build": "tsup",

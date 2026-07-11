@@ -10,8 +10,8 @@
 import fg from 'fast-glob';
 import fs from 'fs-extra';
 import path from 'path';
-import { register } from 'esbuild-register/dist/node';
-import { ROOT_PATH, globExcludeFiles } from './constant';
+import { runFlowSurfaceExtractorCli } from './flow-surface-extractor/cli';
+import { globExcludeFiles } from './constant';
 import { getPackageJson, PkgLog } from './utils';
 
 type FlowSurfaceExtractorTarget = {
@@ -51,10 +51,6 @@ type FlowSurfaceExtractorRunner = (
     extractorVersion?: string;
   },
 ) => Promise<FlowSurfaceExtractorSummary>;
-
-type FlowSurfaceExtractorModule = {
-  runFlowSurfaceExtractorCli?: unknown;
-};
 
 type BuildFlowSurfaceArtifactOptions = {
   runExtractor?: FlowSurfaceExtractorRunner;
@@ -141,7 +137,7 @@ export async function buildFlowSurfaceArtifact(
 
     log('flow surface snapshot artifact');
     await fs.remove(outDir);
-    const runExtractor = options.runExtractor || loadFlowSurfaceExtractorRunner(cwd);
+    const runExtractor = options.runExtractor || runFlowSurfaceExtractorCli;
     const summary = await runExtractor(
       [
         {
@@ -187,58 +183,6 @@ export async function buildFlowSurfaceArtifact(
   }
 }
 
-function loadFlowSurfaceExtractorRunner(cwd: string): FlowSurfaceExtractorRunner {
-  const candidates = getFlowSurfaceExtractorRunnerCandidates(cwd);
-  let lastError: unknown;
-  for (const candidate of candidates) {
-    if (!fs.existsSync(candidate)) {
-      continue;
-    }
-    let loaded: unknown;
-    try {
-      loaded = requireFlowSurfaceExtractor(candidate);
-    } catch (error) {
-      lastError = error;
-      continue;
-    }
-    const runner = (loaded as FlowSurfaceExtractorModule | undefined)?.runFlowSurfaceExtractorCli;
-    if (isFlowSurfaceExtractorRunner(runner)) {
-      return runner;
-    }
-  }
-  const detail = lastError instanceof Error ? `: ${lastError.message}` : '';
-  throw new Error(
-    `Flow surface extractor runner is not available. Install @nocobase/plugin-flow-engine@2.x alongside @nocobase/build${detail}`,
-  );
-}
-
-function getFlowSurfaceExtractorRunnerCandidates(cwd: string) {
-  const packageRoots = new Set<string>();
-  const monorepoPackageRoot = path.join(ROOT_PATH, 'packages/plugins/@nocobase/plugin-flow-engine');
-  const relativeToRoot = path.relative(ROOT_PATH, cwd);
-  const isMonorepoPackage = relativeToRoot !== '' && !relativeToRoot.startsWith('..') && !path.isAbsolute(relativeToRoot);
-  try {
-    if (getPackageJson(cwd).name === '@nocobase/plugin-flow-engine') {
-      packageRoots.add(cwd);
-    }
-  } catch {
-    // Continue with installed and monorepo package resolution.
-  }
-  if (isMonorepoPackage) {
-    packageRoots.add(monorepoPackageRoot);
-  }
-  try {
-    packageRoots.add(path.dirname(require.resolve('@nocobase/plugin-flow-engine/package.json', { paths: [cwd] })));
-  } catch {
-    // The monorepo source fallback below remains available during bootstrap builds.
-  }
-  packageRoots.add(monorepoPackageRoot);
-  return Array.from(packageRoots).flatMap((packageRoot) => [
-    path.join(packageRoot, 'src/server/flow-surfaces/extractor/cli.ts'),
-    path.join(packageRoot, 'dist/server/flow-surfaces/extractor/cli.js'),
-  ]);
-}
-
 function getFlowSurfaceArtifactGeneratedAt() {
   const sourceDateEpoch = process.env.SOURCE_DATE_EPOCH;
   if (!sourceDateEpoch) {
@@ -250,20 +194,4 @@ function getFlowSurfaceArtifactGeneratedAt() {
   }
   const generatedAt = new Date(epochSeconds * 1000);
   return Number.isNaN(generatedAt.getTime()) ? DEFAULT_FLOW_SURFACE_ARTIFACT_GENERATED_AT : generatedAt.toISOString();
-}
-
-function requireFlowSurfaceExtractor(filePath: string): unknown {
-  if (!filePath.endsWith('.ts')) {
-    return require(filePath);
-  }
-  const { unregister } = register({});
-  try {
-    return require(filePath);
-  } finally {
-    unregister();
-  }
-}
-
-function isFlowSurfaceExtractorRunner(value: unknown): value is FlowSurfaceExtractorRunner {
-  return typeof value === 'function';
 }

@@ -12,7 +12,7 @@ import { dirname, resolve as resolvePath } from 'path';
 import * as ts from 'typescript';
 import { parseFlowSurfaceTranslationExpressionLabel } from './labels';
 import { createFlowSurfaceExtractionRecorder } from './recorder';
-import type { FlowSurfaceNodeSpec } from '../types';
+import type { FlowSurfaceNodeSpec } from './public-types';
 import type {
   FlowSurfaceExtractionEvent,
   FlowSurfaceExtractorFlowStaticStatus,

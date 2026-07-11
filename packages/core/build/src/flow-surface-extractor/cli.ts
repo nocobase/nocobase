@@ -10,7 +10,6 @@
 import { createHash } from 'crypto';
 import { readdir, readFile, realpath, stat } from 'fs/promises';
 import { dirname, extname, isAbsolute, join, relative, resolve, sep } from 'path';
-import type { Application } from '@nocobase/server';
 import {
   buildFlowSurfaceAutoSnapshot,
   deriveFlowSurfaceAutoCapabilityCandidates,
@@ -55,16 +54,6 @@ export type FlowSurfaceExtractorPluginExtraction = {
   eventCount: number;
   candidateCount: number;
   warningCount: number;
-};
-
-type FlowSurfaceExtractorCliCommandOptions = {
-  plugin?: string;
-  allEnabled?: boolean;
-  dryRun?: boolean;
-  failOnWarning?: boolean;
-  json?: boolean;
-  out?: string;
-  preferMode?: string;
 };
 
 type FlowSurfaceCliError = {
@@ -153,7 +142,10 @@ export async function extractFlowSurfacePluginCapabilities(
   target: FlowSurfaceExtractorCliTarget,
   options: Pick<FlowSurfaceExtractorCliOptions, 'preferMode' | 'generatedAt' | 'extractorVersion'> = {},
 ): Promise<FlowSurfaceExtractorPluginExtraction> {
-  const packageRoot = target.packageRoot || (await import('@nocobase/server')).getPackageDir(target.plugin);
+  const packageRoot = target.packageRoot;
+  if (!packageRoot) {
+    throw new Error(`packageRoot is required for ${target.plugin}`);
+  }
   const resolution = await resolveFlowSurfacePluginEntry({
     plugin: target.plugin,
     packageRoot,
@@ -368,106 +360,6 @@ export function formatFlowSurfaceExtractorCliSummary(
   return `${lines.join('\n')}\n`;
 }
 
-export async function runFlowSurfaceExtractorCommand(
-  app: Application,
-  options: FlowSurfaceExtractorCliCommandOptions,
-  runtimeOptions: Pick<FlowSurfaceExtractorCliOptions, 'extractPlugin' | 'generatedAt' | 'extractorVersion'> = {},
-): Promise<FlowSurfaceExtractorCliSummary> {
-  try {
-    const preferMode = parsePreferMode(options.preferMode);
-    const targets = await resolveFlowSurfaceExtractorCliTargets(app, options);
-    return await runFlowSurfaceExtractorCli(targets, {
-      dryRun: !!options.dryRun,
-      extractPlugin: runtimeOptions.extractPlugin,
-      failOnWarning: !!options.failOnWarning,
-      generatedAt: runtimeOptions.generatedAt,
-      extractorVersion: runtimeOptions.extractorVersion,
-      outDir: options.out,
-      preferMode,
-    });
-  } catch (error) {
-    const result: FlowSurfaceExtractorCliResult = {
-      ok: false,
-      plugin: options.plugin || (options.allEnabled ? '--all-enabled' : 'unknown'),
-      eventCount: 0,
-      candidateCount: 0,
-      warningCount: 0,
-      errors: [toFlowSurfaceCliError(error)],
-    };
-    return {
-      ok: false,
-      dryRun: !!options.dryRun,
-      results: [result],
-      exitCode: 1,
-    };
-  }
-}
-
-async function resolveFlowSurfaceExtractorCliTargets(
-  app: Application,
-  options: FlowSurfaceExtractorCliCommandOptions,
-): Promise<FlowSurfaceExtractorCliTarget[]> {
-  if (options.allEnabled) {
-    await ensureFlowSurfaceExtractorAppLoaded(app, { suppressStdout: !!options.json });
-    const records = await app.pm.repository.find({
-      fields: ['packageName'],
-      filter: {
-        enabled: true,
-      },
-    });
-    return dedupeStrings(records.map(getPackageNameFromEnabledRecord).filter(isNonEmptyString)).map((plugin) => ({
-      plugin,
-    }));
-  }
-
-  if (!options.plugin) {
-    throw new Error('Either --plugin or --all-enabled is required.');
-  }
-
-  const { PluginManager } = await import('@nocobase/server');
-  const parsed = await PluginManager.parseName(options.plugin);
-  return [
-    {
-      plugin: parsed.packageName,
-    },
-  ];
-}
-
-async function ensureFlowSurfaceExtractorAppLoaded(app: Application, options: { suppressStdout?: boolean } = {}) {
-  if (app.loaded) {
-    return;
-  }
-  if (options.suppressStdout) {
-    await runWithSuppressedStdout(() => app.load());
-    return;
-  }
-  await app.load();
-}
-
-async function runWithSuppressedStdout<T>(task: () => Promise<T>) {
-  const originalWrite = process.stdout.write;
-  process.stdout.write = ((...args: Parameters<typeof process.stdout.write>) => {
-    const maybeCallback = args.find((arg): arg is (error?: Error | null) => void => typeof arg === 'function');
-    maybeCallback?.();
-    return true;
-  }) as typeof process.stdout.write;
-  try {
-    return await task();
-  } finally {
-    process.stdout.write = originalWrite;
-  }
-}
-
-function parsePreferMode(value: string | undefined) {
-  if (!value) {
-    return undefined;
-  }
-  if (value === 'source' || value === 'dist') {
-    return value;
-  }
-  throw new Error('--prefer-mode must be source or dist.');
-}
-
 function getWarningFailure(failOnWarning: boolean | undefined, warningCount: number): FlowSurfaceCliError | undefined {
   if (!failOnWarning || warningCount === 0) {
     return undefined;
@@ -515,29 +407,6 @@ function getPackageVersion(packageJson: Record<string, unknown> | undefined) {
   return typeof packageJson?.version === 'string' ? packageJson.version : undefined;
 }
 
-function getPackageNameFromEnabledRecord(record: unknown) {
-  if (!isPlainRecord(record)) {
-    return undefined;
-  }
-  if (typeof record.packageName === 'string') {
-    return normalizePluginPackageName(record.packageName);
-  }
-  const getValue = record.get;
-  if (typeof getValue === 'function') {
-    const packageName = getValue.call(record, 'packageName');
-    return normalizePluginPackageName(packageName);
-  }
-  return undefined;
-}
-
-function normalizePluginPackageName(value: unknown) {
-  if (typeof value !== 'string') {
-    return undefined;
-  }
-  const trimmed = value.trim();
-  return trimmed || undefined;
-}
-
 function toFlowSurfaceCliError(error: unknown): FlowSurfaceCliError {
   if (isPlainRecord(error)) {
     const code = typeof error.code === 'string' ? error.code : 'extractor-runtime-error';
@@ -555,14 +424,6 @@ function toFlowSurfaceCliError(error: unknown): FlowSurfaceCliError {
 
 function formatCliError(error: FlowSurfaceCliError) {
   return `${error.code}: ${error.message.replace(/\s+/g, ' ').trim()}`;
-}
-
-function dedupeStrings(values: string[]) {
-  return Array.from(new Set(values));
-}
-
-function isNonEmptyString(value: unknown): value is string {
-  return typeof value === 'string' && value.length > 0;
 }
 
 function isPlainRecord(value: unknown): value is Record<string, unknown> {

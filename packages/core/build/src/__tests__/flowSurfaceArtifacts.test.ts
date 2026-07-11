@@ -204,28 +204,15 @@ describe('flow surface build artifacts', () => {
     ]);
   });
 
-  test('resolves the extractor from an installed plugin-flow-engine package', async () => {
+  test('extracts artifacts without an installed plugin-flow-engine package', async () => {
     const cwd = await createTempPackageDir();
-    await fs.outputFile(path.join(cwd, 'src/client-v2/index.ts'), 'registerFlow("demoSettings", {});');
-    const extractorRoot = path.join(cwd, 'node_modules/@nocobase/plugin-flow-engine');
-    await fs.outputJson(path.join(extractorRoot, 'package.json'), {
-      name: '@nocobase/plugin-flow-engine',
-      version: '1.0.0',
-    });
     await fs.outputFile(
-      path.join(extractorRoot, 'dist/server/flow-surfaces/extractor/cli.js'),
-      `exports.runFlowSurfaceExtractorCli = async (targets) => ({
-        ok: true,
-        dryRun: false,
-        exitCode: 0,
-        results: [{
-          ok: true,
-          plugin: targets[0].plugin,
-          eventCount: 7,
-          candidateCount: 3,
-          warningCount: 0
-        }]
-      });`,
+      path.join(cwd, 'src/client-v2/index.ts'),
+      [
+        'class DemoBlockModel {}',
+        'flowEngine.registerModels({ DemoBlockModel });',
+        "DemoBlockModel.define({ createModelOptions: { use: 'DemoBlockModel' } });",
+      ].join('\n'),
     );
 
     const result = await buildFlowSurfaceArtifact(cwd, captureLog([]));
@@ -237,57 +224,15 @@ describe('flow surface build artifacts', () => {
         results: [
           {
             plugin: '@nocobase/plugin-flow-surface-build-test',
-            eventCount: 7,
-            candidateCount: 3,
+            eventCount: 2,
+            candidateCount: 1,
           },
         ],
       },
     });
-  });
-
-  test('resolves the extractor from plugin-flow-engine itself in standalone layouts', async () => {
-    const cwd = await createTempPackageDir('@nocobase/plugin-flow-engine');
-    await fs.outputFile(path.join(cwd, 'src/client-v2/index.ts'), 'registerFlow("demoSettings", {});');
-    await fs.outputFile(
-      path.join(cwd, 'dist/server/flow-surfaces/extractor/cli.js'),
-      `exports.runFlowSurfaceExtractorCli = async (targets) => ({
-        ok: true,
-        dryRun: false,
-        exitCode: 0,
-        results: [{
-          ok: true,
-          plugin: targets[0].plugin,
-          eventCount: 1,
-          candidateCount: 1,
-          warningCount: 0
-        }]
-      });`,
-    );
-
-    const result = await buildFlowSurfaceArtifact(cwd, captureLog([]));
-
-    expect(result).toMatchObject({
-      status: 'generated',
-      summary: {
-        results: [{ plugin: '@nocobase/plugin-flow-engine', eventCount: 1, candidateCount: 1 }],
-      },
-    });
-  });
-
-  test('explains the published extractor dependency when it is unavailable', async () => {
-    const cwd = await createTempPackageDir();
-    await fs.outputFile(path.join(cwd, 'src/client-v2/index.ts'), 'registerFlow("demoSettings", {});');
-    vi.spyOn(fs, 'existsSync').mockImplementation(
-      (candidate) => !String(candidate).includes('flow-surfaces/extractor/cli'),
-    );
-
-    const result = await buildFlowSurfaceArtifact(cwd, captureLog([]));
-
-    expect(result).toEqual({
-      status: 'failed',
-      error:
-        'Flow surface extractor runner is not available. Install @nocobase/plugin-flow-engine@2.x alongside @nocobase/build',
-    });
+    await expect(
+      fs.pathExists(path.join(getFlowSurfaceArtifactDir(cwd), '@nocobase__plugin-flow-surface-build-test.json')),
+    ).resolves.toBe(true);
   });
 
   test('removes partial artifacts when the extractor reports failure', async () => {

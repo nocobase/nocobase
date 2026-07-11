@@ -13,7 +13,7 @@ import type {
   FlowSurfaceConfigureOptions,
   FlowSurfaceNodeSpec,
   FlowSurfaceSettingBinding,
-} from '../types';
+} from './public-types';
 import { types as nodeUtilTypes } from 'util';
 import { parseFlowSurfaceTranslationExpressionLabel } from './labels';
 import type {

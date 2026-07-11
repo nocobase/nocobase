@@ -7,5 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+export * from './ast';
+export * from './cli';
+export * from './entry-resolver';
+export * from './recorder';
 export * from './snapshot';
 export * from './types';

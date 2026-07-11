@@ -1684,17 +1684,6 @@ function getFlowSurfaceAdmissionDiagnosticsIntegrityLookupKey(input: {
   return [input.kind, input.ownerPlugin, input.publicType, input.capabilityId || ''].join('\u0000');
 }
 
-type FlowSurfaceAutoSnapshotCachePlugin = Plugin & {
-  flowSurfaceAutoSnapshots?: readonly FlowSurfaceAutoSnapshot[];
-  flowSurfaceAutoSnapshotLoadWarnings?: readonly FlowSurfaceCapabilityDiagnosticWarning[];
-  refreshFlowSurfaceAutoSnapshots?: (
-    snapshotDir?: string,
-    options?: {
-      force?: boolean;
-    },
-  ) => Promise<readonly FlowSurfaceAutoSnapshot[]>;
-};
-
 const DEFAULT_ADMIN_UI_LAYOUT_UID = 'admin-layout-model';
 const MOBILE_UI_LAYOUT_TYPE = 'mobile';
 
@@ -1748,36 +1737,6 @@ export class FlowSurfacesService {
         }
       ).flowSurfaceAutoSnapshotLoadWarnings || []
     );
-  }
-
-  private async refreshAutoSnapshotsFromStorage(
-    capabilityPolicyConfig: ReturnType<typeof readFlowSurfaceCapabilityPolicyConfigFromPluginOptions>,
-  ) {
-    if (process.env.TEST_ENV || !this.plugin.app) {
-      return this.autoSnapshots;
-    }
-    const snapshotDir = String(capabilityPolicyConfig.extractorSnapshotDir || '').trim();
-    if (!snapshotDir) {
-      return this.autoSnapshots;
-    }
-
-    const cachePlugin = this.plugin as FlowSurfaceAutoSnapshotCachePlugin;
-    if (typeof cachePlugin.refreshFlowSurfaceAutoSnapshots !== 'function') {
-      return this.autoSnapshots;
-    }
-
-    try {
-      return await cachePlugin.refreshFlowSurfaceAutoSnapshots(snapshotDir);
-    } catch (error) {
-      this.plugin.app?.logger?.warn?.(
-        'flowSurfaces auto snapshot refresh failed',
-        buildDefinedPayload({
-          snapshotDir,
-          error: error instanceof Error ? error.message : String(error),
-        }),
-      );
-      return this.autoSnapshots;
-    }
   }
 
   private get configuredAdmissionReports(): readonly FlowSurfaceCapabilityAdmissionReport[] | undefined {
@@ -2822,9 +2781,6 @@ export class FlowSurfacesService {
       ? await this.resolvePopupBlockProfile(target.uid, resolved, node, options.transaction)
       : null;
     const enabledPackages = await this.resolveEnabledPluginPackages(options);
-    await this.refreshAutoSnapshotsFromStorage(
-      readFlowSurfaceCapabilityPolicyConfigFromPluginOptions(this.plugin.options),
-    );
     const expand = new Set(normalizeSmartCatalogExpand('catalog', input?.expand));
     const expandFlags = buildCatalogExpandFlags(expand);
     const requestedSections = _.isUndefined(input?.sections)
@@ -2935,7 +2891,6 @@ export class FlowSurfacesService {
   ): Promise<FlowSurfaceCapabilitiesResponse> {
     const enabledPackages = await this.resolveEnabledPluginPackages(options);
     const capabilityPolicyConfig = readFlowSurfaceCapabilityPolicyConfigFromPluginOptions(this.plugin.options);
-    await this.refreshAutoSnapshotsFromStorage(capabilityPolicyConfig);
     const admissionReports = await this.loadVerifiedAutoAdmissionReports(capabilityPolicyConfig);
     return buildFlowSurfaceCapabilitiesResponse(input, {
       enabledPackages,
@@ -2959,7 +2914,6 @@ export class FlowSurfacesService {
   ): Promise<FlowSurfaceDescribeCapabilityResponse> {
     const enabledPackages = await this.resolveEnabledPluginPackages(options);
     const capabilityPolicyConfig = readFlowSurfaceCapabilityPolicyConfigFromPluginOptions(this.plugin.options);
-    await this.refreshAutoSnapshotsFromStorage(capabilityPolicyConfig);
     const admissionReports = await this.loadVerifiedAutoAdmissionReports(capabilityPolicyConfig);
     return buildFlowSurfaceDescribeCapabilityResponse(input, {
       enabledPackages,
@@ -2983,7 +2937,6 @@ export class FlowSurfacesService {
     const auditStartedAt = Date.now();
     const enabledPackages = await this.resolveEnabledPluginPackages(options);
     const capabilityPolicyConfig = readFlowSurfaceCapabilityPolicyConfigFromPluginOptions(this.plugin.options);
-    await this.refreshAutoSnapshotsFromStorage(capabilityPolicyConfig);
     const admissionReports = await this.loadVerifiedAutoAdmissionReports(capabilityPolicyConfig);
     const providerCapabilities =
       !input.kind || input.kind === 'block' ? await this.collectDynamicBlockCapabilities(enabledPackages) : [];
@@ -7811,9 +7764,6 @@ export class FlowSurfacesService {
     values: Record<string, any>,
     options: { transaction?: any; currentRoles?: FlowSurfaceRequestRoles } = {},
   ) {
-    await this.refreshAutoSnapshotsFromStorage(
-      readFlowSurfaceCapabilityPolicyConfigFromPluginOptions(this.plugin.options),
-    );
     if (options.transaction) {
       const createdKanbanSortFields: FlowSurfaceApplyBlueprintKanbanCreatedSortField[] = [];
       const cleanupCreatedKanbanSortFields = async (transaction?: any) => {
@@ -7871,9 +7821,6 @@ export class FlowSurfacesService {
     values: Record<string, any>,
     options: { transaction?: any; currentRoles?: FlowSurfaceRequestRoles; enabledPackages?: ReadonlySet<string> } = {},
   ) {
-    await this.refreshAutoSnapshotsFromStorage(
-      readFlowSurfaceCapabilityPolicyConfigFromPluginOptions(this.plugin.options),
-    );
     const enabledPackages = await this.resolveEnabledPluginPackages(options);
     const dynamicBlockTypes = await this.resolveDynamicBlockTypes(enabledPackages);
     await assertFlowSurfaceAuthoringPayload('applyBlueprint', values, {
@@ -10081,9 +10028,6 @@ export class FlowSurfacesService {
       allowInternalComposeFieldMetadata?: boolean;
     } = {},
   ) {
-    await this.refreshAutoSnapshotsFromStorage(
-      readFlowSurfaceCapabilityPolicyConfigFromPluginOptions(this.plugin.options),
-    );
     const enabledPackages = await this.resolveEnabledPluginPackages(options);
     const dynamicBlockTypes = await this.resolveDynamicBlockTypes(enabledPackages);
     const composeValues = this.prepareComposeChartAssetSettings(values);
@@ -12548,9 +12492,6 @@ export class FlowSurfacesService {
       dynamicCapabilityActionName?: FlowSurfaceDynamicCapabilityCreateActionName;
     } = {},
   ) {
-    await this.refreshAutoSnapshotsFromStorage(
-      readFlowSurfaceCapabilityPolicyConfigFromPluginOptions(this.plugin.options),
-    );
     const enabledPackages = await this.resolveEnabledPluginPackages(options);
     const providerCapabilities = await this.collectDynamicBlockCapabilities(enabledPackages);
     const dynamicBlockTypes = await this.resolveDynamicBlockTypes(enabledPackages, providerCapabilities);
@@ -13062,9 +13003,6 @@ export class FlowSurfacesService {
       allowJsonInferredFieldAutoPopupMetadata?: boolean;
     } = {},
   ): Promise<FlowSurfaceAddFieldResult> {
-    await this.refreshAutoSnapshotsFromStorage(
-      readFlowSurfaceCapabilityPolicyConfigFromPluginOptions(this.plugin.options),
-    );
     const templateRef = !_.isUndefined(values?.template)
       ? this.normalizeFlowTemplateReference('addField', values.template, {
           expectedType: 'block',
@@ -13629,9 +13567,6 @@ export class FlowSurfacesService {
       popupTemplateTreeCache?: FlowSurfacePopupTemplateTreeCache;
     } = {},
   ) {
-    await this.refreshAutoSnapshotsFromStorage(
-      readFlowSurfaceCapabilityPolicyConfigFromPluginOptions(this.plugin.options),
-    );
     const target = await this.prepareWriteTarget('addAction', values?.target, values, options);
     ensureNoDirectActionScopeKey('addAction', values);
     ensureNoRawDirectAddKeys('addAction', values, ['props', 'decoratorProps', 'stepParams', 'flowRegistry']);
@@ -13879,9 +13814,6 @@ export class FlowSurfacesService {
       popupTemplateTreeCache?: FlowSurfacePopupTemplateTreeCache;
     } = {},
   ) {
-    await this.refreshAutoSnapshotsFromStorage(
-      readFlowSurfaceCapabilityPolicyConfigFromPluginOptions(this.plugin.options),
-    );
     const target = await this.prepareWriteTarget('addRecordAction', values?.target, values, options);
     ensureNoDirectActionScopeKey('addRecordAction', values);
     ensureNoRawDirectAddKeys('addRecordAction', values, ['props', 'decoratorProps', 'stepParams', 'flowRegistry']);
@@ -14085,9 +14017,6 @@ export class FlowSurfacesService {
   }
 
   async addBlocks(values: Record<string, any>) {
-    await this.refreshAutoSnapshotsFromStorage(
-      readFlowSurfaceCapabilityPolicyConfigFromPluginOptions(this.plugin.options),
-    );
     const enabledPackages = await this.resolveEnabledPluginPackages();
     const dynamicBlockTypes = await this.resolveDynamicBlockTypes(enabledPackages);
     await assertFlowSurfaceAuthoringPayload('addBlocks', values, {

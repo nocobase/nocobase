@@ -11,7 +11,7 @@ import { mkdir, mkdtemp, rm, symlink, writeFile } from 'fs/promises';
 import { tmpdir } from 'os';
 import { join } from 'path';
 import { afterEach, describe, expect, it } from 'vitest';
-import { extractFlowSurfacePluginCapabilities } from '../flow-surfaces/extractor/cli';
+import { extractFlowSurfacePluginCapabilities } from '../flow-surface-extractor/cli';
 
 const generatedAt = '2026-07-10T00:00:00.000Z';
 const tempDirs: string[] = [];

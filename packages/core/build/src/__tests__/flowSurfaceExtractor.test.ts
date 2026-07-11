@@ -22,19 +22,17 @@ import {
   formatFlowSurfaceExtractorCliSummary,
   getFlowSurfaceAutoSnapshotFileName,
   loadFlowSurfaceAutoSnapshotsFromDirectory,
-  registerFlowSurfaceExtractorCommand,
   resolveFlowSurfacePluginEntry,
-  runFlowSurfaceExtractorCommand,
   runFlowSurfaceExtractorCli,
   writeFlowSurfaceAutoSnapshot,
-} from '../flow-surfaces/extractor';
-import { collectAutoSnapshotPublicCapabilities } from '../flow-surfaces/capability-registry';
-import type { FlowSurfaceExtractionEvent } from '../flow-surfaces/extractor/types';
-import type { FlowSurfaceCapabilityDiagnosticWarning } from '../flow-surfaces/types';
+} from '../flow-surface-extractor';
+import { collectAutoSnapshotPublicCapabilities } from '../../../../plugins/@nocobase/plugin-flow-engine/src/server/flow-surfaces/capability-registry';
+import type { FlowSurfaceExtractionEvent } from '../flow-surface-extractor/types';
+import type { FlowSurfaceCapabilityDiagnosticWarning } from '../flow-surface-extractor/public-types';
 
 const FLOW_SURFACE_EXTRACTOR_TEST_DATE = '2026-06-04T00:00:00.000Z';
 const FLOW_SURFACE_EXTRACTOR_FIXTURES_ROOT = join(__dirname, 'flow-surfaces-extractor-fixtures');
-const FLOW_SURFACE_GANTT_PACKAGE_ROOT = join(__dirname, '../../../..', 'plugin-gantt');
+const FLOW_SURFACE_GANTT_PACKAGE_ROOT = join(__dirname, '../../../../plugins/@nocobase/plugin-gantt');
 
 type FlowSurfaceExtractorFixtureSource = {
   packageRoot: string;
@@ -1613,7 +1611,7 @@ describe('flowSurfaces extractor scaffold', () => {
     );
     const inferredGantt = snapshot.inferredAuthoring?.capabilities.find((item) => item.publicType === 'gantt');
     expect(inferredGantt?.childSurfaces?.[0].allowedChildren).toEqual(ganttAllowedActionModelUses);
-    expect(inferredGantt?.createRecipe?.nodeTemplate?.subModels?.actions?.map((action: any) => action?.use)).toEqual([
+    expect(inferredGantt?.createRecipe?.nodeTemplate?.subModels?.actions?.map((action) => action?.use)).toEqual([
       'FilterActionModel',
       'GanttTodayActionModel',
       'RefreshActionModel',
@@ -2728,286 +2726,6 @@ describe('flowSurfaces extractor scaffold', () => {
         { ok: true, plugin: '@example/plugin-ok-b' },
       ],
     });
-  });
-
-  it('should resolve all enabled plugin CLI targets and continue after failures', async () => {
-    const findEnabledPlugins = vi.fn(async () => [
-      { packageName: '@example/plugin-ok-a' },
-      {
-        get: (field: string) => (field === 'packageName' ? '@example/plugin-broken' : undefined),
-      },
-      { packageName: '@example/plugin-ok-a' },
-      { packageName: '  ' },
-    ]);
-    const app = {
-      loaded: false,
-      load: vi.fn(async () => undefined),
-      pm: {
-        repository: {
-          find: findEnabledPlugins,
-        },
-      },
-    } as unknown as Parameters<typeof runFlowSurfaceExtractorCommand>[0];
-    const visited: string[] = [];
-
-    const summary = await runFlowSurfaceExtractorCommand(
-      app,
-      {
-        allEnabled: true,
-        dryRun: true,
-      },
-      {
-        extractPlugin: async (target) => {
-          visited.push(target.plugin);
-          if (target.plugin === '@example/plugin-broken') {
-            throw Object.assign(new Error('Enabled plugin extraction failed.'), {
-              code: 'enabled-plugin-extractor-error',
-            });
-          }
-          const snapshot = buildFlowSurfaceAutoSnapshot({
-            plugin: target.plugin,
-            generatedAt: '2026-06-04T00:00:00.000Z',
-            sourceHash: 'source-hash',
-            extractorVersion: 'test',
-            events: [],
-          });
-          return {
-            snapshot,
-            eventCount: 0,
-            candidateCount: 0,
-            warningCount: 0,
-          };
-        },
-      },
-    );
-
-    expect(app.load).toHaveBeenCalledTimes(1);
-    expect(findEnabledPlugins).toHaveBeenCalledWith({
-      fields: ['packageName'],
-      filter: {
-        enabled: true,
-      },
-    });
-    expect(visited).toEqual(['@example/plugin-ok-a', '@example/plugin-broken']);
-    expect(summary).toMatchObject({
-      ok: false,
-      dryRun: true,
-      exitCode: 1,
-      results: [
-        { ok: true, plugin: '@example/plugin-ok-a' },
-        {
-          ok: false,
-          plugin: '@example/plugin-broken',
-          errors: [
-            {
-              code: 'enabled-plugin-extractor-error',
-              message: 'Enabled plugin extraction failed.',
-            },
-          ],
-        },
-      ],
-    });
-  });
-
-  it('should keep single-plugin CLI extraction independent from app preload', async () => {
-    const app = {
-      loaded: false,
-      load: vi.fn(async () => {
-        throw new Error('single plugin extraction should not load the app');
-      }),
-    } as unknown as Parameters<typeof runFlowSurfaceExtractorCommand>[0];
-
-    const summary = await runFlowSurfaceExtractorCommand(
-      app,
-      {
-        plugin: '@nocobase/plugin-gantt',
-        dryRun: true,
-        json: true,
-      },
-      {
-        extractPlugin: async (target) => {
-          const snapshot = buildFlowSurfaceAutoSnapshot({
-            plugin: target.plugin,
-            generatedAt: '2026-06-04T00:00:00.000Z',
-            sourceHash: 'source-hash',
-            extractorVersion: 'test',
-            events: [],
-          });
-          return {
-            snapshot,
-            eventCount: 0,
-            candidateCount: 0,
-            warningCount: 0,
-          };
-        },
-      },
-    );
-    const parsedJson = JSON.parse(formatFlowSurfaceExtractorCliSummary(summary, { json: true }));
-
-    expect(app.load).not.toHaveBeenCalled();
-    expect(parsedJson).toMatchObject({
-      ok: true,
-      dryRun: true,
-      exitCode: 0,
-      results: [
-        {
-          ok: true,
-          plugin: '@nocobase/plugin-gantt',
-        },
-      ],
-    });
-  });
-
-  it('should keep all-enabled JSON output parseable when loading the app emits stdout', async () => {
-    const originalWrite = process.stdout.write;
-    let stdout = '';
-    process.stdout.write = ((...args: Parameters<typeof process.stdout.write>) => {
-      const [chunk] = args;
-      if (typeof chunk === 'string' || Buffer.isBuffer(chunk)) {
-        stdout += chunk.toString();
-      }
-      const maybeCallback = args.find((arg): arg is (error?: Error | null) => void => typeof arg === 'function');
-      maybeCallback?.();
-      return true;
-    }) as typeof process.stdout.write;
-
-    try {
-      const app = {
-        loaded: false,
-        load: vi.fn(async () => {
-          process.stdout.write('bootstrap noise before json\n');
-        }),
-        pm: {
-          repository: {
-            find: vi.fn(async () => [{ packageName: '@example/plugin-json-a' }]),
-          },
-        },
-      } as unknown as Parameters<typeof runFlowSurfaceExtractorCommand>[0];
-
-      const summary = await runFlowSurfaceExtractorCommand(
-        app,
-        {
-          allEnabled: true,
-          dryRun: true,
-          json: true,
-        },
-        {
-          extractPlugin: async (target) => {
-            const snapshot = buildFlowSurfaceAutoSnapshot({
-              plugin: target.plugin,
-              generatedAt: '2026-06-04T00:00:00.000Z',
-              sourceHash: 'source-hash',
-              extractorVersion: 'test',
-              events: [],
-            });
-            return {
-              snapshot,
-              eventCount: 0,
-              candidateCount: 0,
-              warningCount: 0,
-            };
-          },
-        },
-      );
-      process.stdout.write(formatFlowSurfaceExtractorCliSummary(summary, { json: true }));
-
-      expect(app.load).toHaveBeenCalledTimes(1);
-      expect(stdout).not.toContain('bootstrap noise before json');
-      expect(JSON.parse(stdout)).toMatchObject({
-        ok: true,
-        dryRun: true,
-        exitCode: 0,
-        results: [
-          {
-            ok: true,
-            plugin: '@example/plugin-json-a',
-          },
-        ],
-      });
-    } finally {
-      process.stdout.write = originalWrite;
-    }
-  });
-
-  it('should restore stdout suppression when all-enabled preload fails', async () => {
-    const originalWrite = process.stdout.write;
-    let stdout = '';
-    process.stdout.write = ((...args: Parameters<typeof process.stdout.write>) => {
-      const [chunk] = args;
-      if (typeof chunk === 'string' || Buffer.isBuffer(chunk)) {
-        stdout += chunk.toString();
-      }
-      const maybeCallback = args.find((arg): arg is (error?: Error | null) => void => typeof arg === 'function');
-      maybeCallback?.();
-      return true;
-    }) as typeof process.stdout.write;
-
-    try {
-      const app = {
-        loaded: false,
-        load: vi.fn(async () => {
-          process.stdout.write('bootstrap noise before failure\n');
-          throw new Error('preload failed');
-        }),
-        pm: {
-          repository: {
-            find: vi.fn(async () => [{ packageName: '@example/plugin-json-a' }]),
-          },
-        },
-      } as unknown as Parameters<typeof runFlowSurfaceExtractorCommand>[0];
-
-      const summary = await runFlowSurfaceExtractorCommand(app, {
-        allEnabled: true,
-        dryRun: true,
-        json: true,
-      });
-      process.stdout.write(formatFlowSurfaceExtractorCliSummary(summary, { json: true }));
-
-      expect(app.load).toHaveBeenCalledTimes(1);
-      expect(stdout).not.toContain('bootstrap noise before failure');
-      expect(JSON.parse(stdout)).toMatchObject({
-        ok: false,
-        dryRun: true,
-        exitCode: 1,
-        results: [
-          {
-            ok: false,
-            plugin: '--all-enabled',
-            errors: [
-              {
-                message: 'preload failed',
-              },
-            ],
-          },
-        ],
-      });
-    } finally {
-      process.stdout.write = originalWrite;
-    }
-  });
-
-  it('should register the extractor CLI command without unconditional preload', () => {
-    const extractCommand = {
-      action: vi.fn(() => extractCommand),
-      option: vi.fn(() => extractCommand),
-      preload: vi.fn(() => extractCommand),
-    };
-    const flowSurfacesCommand = {
-      command: vi.fn(() => extractCommand),
-    };
-    const app = {
-      command: vi.fn(() => flowSurfacesCommand),
-      findCommand: vi.fn(() => flowSurfacesCommand),
-    } as unknown as Parameters<typeof registerFlowSurfaceExtractorCommand>[0];
-
-    registerFlowSurfaceExtractorCommand(app);
-
-    expect(app.findCommand).toHaveBeenCalledWith('flow-surfaces');
-    expect(app.command).not.toHaveBeenCalled();
-    expect(flowSurfacesCommand.command).toHaveBeenCalledWith('extract-capabilities');
-    expect(extractCommand.preload).not.toHaveBeenCalled();
-    expect(extractCommand.option).toHaveBeenCalledWith('--all-enabled', 'extract every enabled plugin package');
-    expect(extractCommand.action).toHaveBeenCalled();
   });
 
   it('should extract client-v2 AST facts for CLI plugin targets', async () => {

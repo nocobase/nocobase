@@ -11,7 +11,6 @@ import { constants, type Stats } from 'fs';
 import { randomUUID } from 'crypto';
 import { lstat, mkdir, open, readdir, realpath, rename, unlink, writeFile } from 'fs/promises';
 import { basename, parse, resolve, sep } from 'path';
-import { storagePathJoin } from '@nocobase/utils';
 import _ from 'lodash';
 import { inferFlowSurfaceAutoSnapshotAuthoring } from './inferred-authoring';
 import type {
@@ -19,7 +18,7 @@ import type {
   FlowSurfaceCapabilityDiagnosticWarning,
   FlowSurfaceCapabilityKind,
   FlowSurfaceCapabilityWarning,
-} from '../types';
+} from './public-types';
 import {
   FLOW_SURFACE_AUTO_SNAPSHOT_VERSION,
   type FlowSurfaceAutoCapabilityCandidate,
@@ -282,7 +281,7 @@ async function writeSnapshotFileAtomically(pinnedOutDir: PinnedOutputDirectory, 
 }
 
 export function getFlowSurfaceAutoSnapshotStorageDir() {
-  return storagePathJoin(FLOW_SURFACE_AUTO_SNAPSHOT_STORAGE_DIR);
+  return resolve(process.cwd(), 'storage', FLOW_SURFACE_AUTO_SNAPSHOT_STORAGE_DIR);
 }
 
 export async function loadFlowSurfaceAutoSnapshotsFromDirectory(
@@ -302,7 +301,7 @@ export async function loadFlowSurfaceAutoSnapshotsFromDirectory(
       }
       const snapshot = await readFlowSurfaceAutoSnapshotFile(pinnedDirectory, fileName, input.diagnosticWarnings);
       if (snapshot) {
-        snapshots.push(snapshot);
+        snapshots.push(refreshFlowSurfaceAutoSnapshotInferredAuthoring(snapshot));
       }
     }
     return snapshots;

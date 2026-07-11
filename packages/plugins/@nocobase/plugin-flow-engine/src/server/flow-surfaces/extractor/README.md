@@ -1,10 +1,10 @@
-# Flow Surfaces Extractor
+# Flow Surfaces Auto Snapshots
 
-The extractor records FlowModel registration facts from plugin client-v2 code and writes an auto snapshot for
-capability discovery. Every discovered block also receives a namespaced, create-only `inferredAuthoring` contract. A
-serializable static `createModelOptions` object becomes its node template; otherwise the template is the minimal
-`{ use }` node. Plugins therefore get basic block creation without a server provider, while specialized inferred
-contracts such as Gantt can still provide richer defaults and settings.
+`@nocobase/build` analyzes plugin client-v2 source while building and writes an auto snapshot for capability discovery.
+Every discovered block also receives a namespaced, create-only `inferredAuthoring` contract. A serializable static
+`createModelOptions` object becomes its node template; otherwise the template is the minimal `{ use }` node. Plugins
+therefore get basic block creation without a server provider, while specialized inferred contracts such as Gantt can
+still provide richer defaults and settings.
 
 ## Contract Boundary
 
@@ -27,26 +27,17 @@ Builder payloads just because they were visible to the extractor.
 
 ## Snapshot Output
 
-Generated snapshots are stored under `storage/flow-surfaces-capabilities/<plugin-package-name>.json` by default. The
-storage location is a cache for discovery evidence. Snapshot loading rebuilds the generic create-only contracts, while
-provider and manifest contracts can replace them with richer settings or custom server-side behavior.
-
-## CLI Output
-
-Use `yarn nocobase flow-surfaces extract-capabilities --plugin <package>` for one plugin, or `--all-enabled` to inspect
-enabled plugins. `--all-enabled` keeps processing after a plugin fails and reports a failing exit code at the end if any
-plugin failed.
-
-`--json` prints the machine-readable summary used by CI. Each result includes `ok`, `plugin`, optional `snapshotPath`,
-`eventCount`, `candidateCount`, `warningCount`, and optional `errors`. `--dry-run` skips snapshot writes and prints only
-the summary. `--fail-on-warning` turns extractor warnings into a failing result for CI without changing the snapshot
-write contract. Model loaders are recorded by key only; the CLI does not execute loader functions.
+Plugin snapshots are packaged under `dist/flow-surfaces-capabilities/`; the core client-v2 snapshot is packaged under
+`es/flow-surfaces-capabilities/`. Configured storage snapshots remain supported with the existing packaged-versus-storage
+precedence rules. The server loads both sources once during application startup, so changing snapshot files requires an
+application restart. Loading preserves the generated `inferredAuthoring` contract; older snapshots without one remain
+raw, read-only discovery evidence.
 
 ## What Can Be Discovered
 
 The extractor supports deterministic evidence:
 
-- AST extraction for common static `registerModels`, `registerModelLoaders`, `registerFlow`,
+- Build-time AST extraction for common static `registerModels`, `registerModelLoaders`, `registerFlow`,
   `bindModelToInterface`, and `AddSubModelButton` patterns.
 - Structured labels from direct text and simple translation-expression labels.
 - Snapshot normalization and safe snapshot writes into an explicit output directory.
