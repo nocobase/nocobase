@@ -7,12 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-/**
- * TODO (deferred to follow-up v2 migrations):
- *   - Mobile shell: MobileChannelPage / MobileMessagePage / MobileTabBarMessageItem /
- *     messageSchemaInitializerItem depend on `@nocobase/plugin-mobile` v2.
- */
-
 import { Plugin } from '@nocobase/client-v2';
 import type { Application } from '@nocobase/client-v2';
 import PluginNotificationManagerClientV2 from '@nocobase/plugin-notification-manager/client-v2';
@@ -54,6 +48,49 @@ export class PluginNotificationInAppMessageClientV2 extends Plugin<Record<string
         extends: 'TopbarActionModel',
         loader: () => import('./models/InboxTopbarActionModel'),
       },
+      NotificationEntryActionModel: {
+        extends: 'ActionModel',
+        loader: () => import('./models/NotificationEntryActionModel'),
+      },
+      NotificationEmbeddedPageModel: {
+        extends: 'ChildPageModel',
+        loader: () => import('./models/NotificationEmbeddedPageModel'),
+      },
+    });
+
+    this.registerNotificationEntryAction();
+  }
+
+  private registerNotificationEntryAction() {
+    if (!this.app.entryActionManager) {
+      return;
+    }
+    const t = (key: string) => this.app.i18n.t(key, { ns: NAMESPACE });
+    this.app.entryActionManager.register('notification-in-app-message:inbox:action-panel', {
+      scope: 'action-panel',
+      sort: 310,
+      provider: async () => [
+        {
+          key: 'notification-in-app-message:inbox',
+          label: t('Notification'),
+          createModelOptions: {
+            use: 'NotificationEntryActionModel',
+            props: {
+              title: tExpr('Notification'),
+              icon: 'BellOutlined',
+            },
+            stepParams: {
+              popupSettings: {
+                openView: {
+                  mode: 'embed',
+                  pageModelClass: 'NotificationEmbeddedPageModel',
+                  showFlowSettings: false,
+                },
+              },
+            },
+          },
+        },
+      ],
     });
   }
 }

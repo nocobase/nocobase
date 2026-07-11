@@ -16,13 +16,13 @@ import React, { useEffect } from 'react';
 import { TopbarActionModel, useCurrentUserContext, useMobileLayout } from '@nocobase/client-v2';
 import { InboxContent } from '../components/InboxContent';
 import { useInAppMessageTranslation } from '../locale';
+import { subscribeInAppUnreadCount } from '../service';
 import {
   fetchChannels,
   inboxVisibleObs,
   messageMapObs,
   selectedChannelNameObs,
   unreadMsgsCountObs,
-  updateUnreadMsgsCount,
   userIdObs,
 } from '../state';
 
@@ -91,9 +91,6 @@ const InboxButton = observer(
       fetchChannels({ filter: { name: detail.channelName, status: 'all' } }).catch((error) => {
         console.error('Failed to refresh channel after message created', error);
       });
-      updateUnreadMsgsCount().catch((error) => {
-        console.error('Failed to update unread count after message created', error);
-      });
 
       notification.info({
         message: (
@@ -125,16 +122,23 @@ const InboxButton = observer(
       fetchChannels({ filter: { name: detail.channelName } }).catch((error) => {
         console.error('Failed to refresh channel after message updated', error);
       });
-      updateUnreadMsgsCount().catch((error) => {
-        console.error('Failed to update unread count after message updated', error);
-      });
     });
 
     useEffect(() => {
-      updateUnreadMsgsCount().catch((error) => {
-        console.error('Failed to initialize unread count', error);
+      const app = flowEngine.context.app as any;
+      const subscription = subscribeInAppUnreadCount({
+        eventBus: app?.eventBus,
+        onChange: (count) => {
+          unreadMsgsCountObs.value = count;
+        },
+        onError: (error) => {
+          console.error('Failed to update in-app unread count', error);
+        },
       });
-    }, []);
+      return () => {
+        subscription.unsubscribe();
+      };
+    }, [flowEngine.context.app]);
 
     useEffect(() => {
       userIdObs.value = currentUserId ?? null;
